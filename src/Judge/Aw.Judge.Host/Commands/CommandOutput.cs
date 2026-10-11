@@ -43,6 +43,22 @@ internal static class CommandOutput
         }
     }
 
+    /// <summary>Reads stdin to the end as UTF-8 text (a question's input, which the evaluator itself deserializes).</summary>
+    internal static async Task<string> ReadText(CancellationToken cancellationToken)
+    {
+        if (_capture.Value is { } capture)
+        {
+            return capture.Stdin;
+        }
+
+        var stdin = Console.OpenStandardInput();
+        await using (stdin.ConfigureAwait(false))
+        {
+            using var reader = new StreamReader(stdin, Encoding.UTF8);
+            return await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     /// <summary>A value as Kernel-profile JSON (the context's records carry the contract's field names).</summary>
     internal static string Json<T>(T value, JsonSerializerOptions json) => Encoding.UTF8.GetString(AwJson.Serialize(value, json));
 

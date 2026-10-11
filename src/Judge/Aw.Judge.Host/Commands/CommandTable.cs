@@ -22,11 +22,6 @@ internal static class CommandTable
             return CommandOutput.Usage(Synopsis);
         }
 
-        if (!_routed.Contains(args[0]))
-        {
-            return QuestionCommand.Run(args[0]);
-        }
-
         var scope = provider.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {
@@ -34,6 +29,7 @@ internal static class CommandTable
             var services = scope.ServiceProvider;
             return args[0] switch
             {
+                _ when !_routed.Contains(args[0]) => await QuestionCommand.Run(args[0], rest, services, json).ConfigureAwait(false),
                 GetHealthCommand.Name when rest.Length == 0 => await GetHealthCommand.Run(services, json).ConfigureAwait(false),
                 GetHealthCommand.Name => CommandOutput.Usage("health"),
                 BriefCommands.Name => await BriefCommands.Run(rest, services, json).ConfigureAwait(false),

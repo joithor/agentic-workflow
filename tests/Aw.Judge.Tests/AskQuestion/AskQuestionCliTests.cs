@@ -1,8 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Aw.Judge.Core.Decisions;
 using Aw.Judge.Core.Ids;
 using Aw.Judge.Core.Providers;
+using Aw.Judge.Infrastructure.Sqlite;
+using Aw.Kernel.Data;
 using static Aw.Judge.Tests.AskQuestion.AskQuestionHarness;
 
 namespace Aw.Judge.Tests.AskQuestion;
@@ -59,8 +60,24 @@ public sealed class AskQuestionCliTests : IDisposable
         var run = await new JudgeCli(_state).RunWithInput("not json", "wake-gate");
 
         Assert.Equal((2, "invalid-input"), (run.ExitCode, run.Json().GetProperty("reasonCode").GetString()));
-        var outcomes = await _state.DecisionLog().LastAttemptOutcomes(5, TestContext.Current.CancellationToken);
-        Assert.Equal([DecisionOutcome.Escalated], outcomes.Value);
+        Assert.Equal(["wake-gate|none|invalid-input|escalated"], await DecisionRows());
+    }
+
+    private async Task<List<string>> DecisionRows()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var factory = new SqliteConnectionFactory(JudgeDatabase.OptionsFor(Path.Combine(_state.Path, "judge")));
+        await using var connection = (await factory.Open(ct)).Value;
+        await using var query = connection.CreateCommand();
+        query.CommandText = "SELECT question || '|' || provider || '|' || reason_code || '|' || outcome FROM decisions";
+        await using var reader = await query.ExecuteReaderAsync(ct);
+        List<string> rows = [];
+        while (await reader.ReadAsync(ct))
+        {
+            rows.Add(reader.GetString(0));
+        }
+
+        return rows;
     }
 
     [Theory, Trait("Lane", "integration")]

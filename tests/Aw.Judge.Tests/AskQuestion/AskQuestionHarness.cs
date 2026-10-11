@@ -30,6 +30,7 @@ internal sealed class AskQuestionHarness
             .AddSingleton(AwJson.CreateOptions(JudgeJsonContext.Default))
             .AddSingleton<IDecisionLog>(Log)
             .AddSingleton<IJudgeConfigStore>(Config)
+            .AddSingleton<IBriefStore>(new InMemoryBriefStore())
             .AddSingleton<IInputRedactor>(new FakeInputRedactor())
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
             .AddSingleton(new ProviderSet(providers, ChainSpec.Default))
