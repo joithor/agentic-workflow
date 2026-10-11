@@ -6,4 +6,8 @@ public static class A
     /// <summary>A caller context builder: a session over HTTP unless told otherwise.</summary>
     /// <returns>A new builder.</returns>
     public static CallerContextBuilder Caller() => new();
+
+    /// <summary>A ListCommandsRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static ListCommandsRequestBuilder ListCommandsRequest() => new();
 }

@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
@@ -32,4 +33,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ValidateProfileResponse))]
 [JsonSerializable(typeof(RunDoctorResponse))]
 [JsonSerializable(typeof(EventView))]
+[JsonSerializable(typeof(ListCommandsRequest))]
+[JsonSerializable(typeof(ListCommandsResponse))]
+[JsonSerializable(typeof(CommandListRow))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;
