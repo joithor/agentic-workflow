@@ -38,7 +38,7 @@ public sealed class FakeLinearServerTests
             ["updatedAt"] = new JsonObject { ["gt"] = "2026-07-22T10:20:00.000Z" },
         };
 
-        Assert.Equal(["SPL-105", "SPL-106"], Identifiers(await Issues(linear, new JsonObject { ["filter"] = filter.DeepClone() })));
+        Assert.Equal(["SPL-103", "SPL-105", "SPL-106"], Identifiers(await Issues(linear, new JsonObject { ["filter"] = filter.DeepClone() })));
 
         filter["team"]!["key"]!["eq"] = "OTHER";
         Assert.Empty(Identifiers(await Issues(linear, new JsonObject { ["filter"] = filter })));
@@ -66,8 +66,12 @@ public sealed class FakeLinearServerTests
 
         var first = await Issues(linear, new JsonObject { ["first"] = 4, ["orderBy"] = "updatedAt" });
         var rest = await Issues(linear, new JsonObject { ["first"] = 4, ["orderBy"] = "updatedAt", ["after"] = (string?)first["pageInfo"]!["endCursor"] });
+        var byCreation = await Issues(linear, new JsonObject { ["first"] = 4 });
+        var (badOrder, _) = await Post(linear, IssuesQuery, new JsonObject { ["orderBy"] = "title" });
 
-        Assert.Equal(["SPL-101", "SPL-102", "SPL-103", "SPL-104"], Identifiers(first));
+        Assert.Equal(["SPL-101", "SPL-102", "SPL-103", "SPL-104"], Identifiers(byCreation));
+        Assert.Equal(HttpStatusCode.BadRequest, badOrder);
+        Assert.Equal(["SPL-101", "SPL-102", "SPL-104", "SPL-103"], Identifiers(first));
         Assert.True((bool)first["pageInfo"]!["hasNextPage"]!);
         Assert.Equal(["SPL-105", "SPL-106"], Identifiers(rest));
         Assert.False((bool)rest["pageInfo"]!["hasNextPage"]!);
@@ -157,6 +161,63 @@ public sealed class FakeLinearServerTests
         Assert.NotEmpty(linear.Log);
         Assert.DoesNotContain(linear.Log, line => line.Contains(planted, StringComparison.Ordinal));
         Assert.DoesNotContain(linear.Requests, r => r.ToString().Contains(planted, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Replies_carry_only_the_selected_fields_under_their_aliases_and_nested_first_cuts_a_connection()
+    {
+        await using var linear = await FakeLinearServer.Start();
+        const string query = "query($id: String!) { one: issue(id: $id) { key: identifier comments(first: 1) { nodes { body } } } }";
+
+        var one = (await Post(linear, query, new JsonObject { ["id"] = "SPL-105" })).Body!["data"]!["one"]!.AsObject();
+
+        Assert.Equal(["key", "comments"], one.Select(p => p.Key), StringComparer.Ordinal);
+        Assert.Equal("SPL-105", (string?)one["key"]);
+        Assert.Equal(["body"], Assert.Single(one["comments"]!["nodes"]!.AsArray())!.AsObject().Select(p => p.Key), StringComparer.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("{ issues { nodes { identifier estimate } } }", "estimate")]
+    [InlineData("{ issues { nodes { identifier team } } }", "team")]
+    [InlineData("{ issues { nodes { identifier { id } } } }", "scalar")]
+    [InlineData("{ issues }", "subfields")]
+    [InlineData("{ issues { nodes { ...IssueFields } } }", "Fragments")]
+    [InlineData("query { issue(id: $id) { id } }", "$id")]
+    [InlineData("{ issue(id: \"SPL-1\\q\") { id } }", "escape")]
+    public async Task A_selection_or_variable_the_fake_cannot_answer_truthfully_is_a_clear_400(string query, string named)
+    {
+        await using var linear = await FakeLinearServer.Start();
+
+        var (status, body) = await Post(linear, query, variables: null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Contains(named, (string?)body!["errors"]![0]!["message"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Variable_defaults_apply_when_the_request_leaves_the_variable_out()
+    {
+        await using var linear = await FakeLinearServer.Start();
+        const string query = "query($first: Int = 2, $order: PaginationOrderBy = updatedAt) { issues(first: $first, orderBy: $order) { nodes { identifier } } }";
+
+        var (status, body) = await Post(linear, query, []);
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal(["SPL-101", "SPL-102"], Identifiers(body!["data"]!["issues"]!));
+    }
+
+    [Theory]
+    [InlineData("{\"completedAt\":{\"null\":\"yes\"}}", "Boolean")]
+    [InlineData("{\"stateName\":{\"eq\":\"Done\"}}", "stateName")]
+    [InlineData("{\"labels\":{\"name\":{\"eq\":\"layout\"}}}", "some")]
+    public async Task A_filter_the_fake_cannot_evaluate_truthfully_is_a_clear_400(string filter, string named)
+    {
+        await using var linear = await FakeLinearServer.Start();
+
+        var (status, body) = await Post(linear, IssuesQuery, new JsonObject { ["filter"] = JsonNode.Parse(filter) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Contains(named, (string?)body!["errors"]![0]!["message"], StringComparison.Ordinal);
     }
 
     private static async Task<JsonNode> Issues(FakeLinearServer linear, JsonObject variables)

@@ -8,7 +8,9 @@ namespace Aw.Context.Testing.Fakes;
 /// Evaluates a Linear filter object (IssueFilter, ProjectFilter, ...) against a recorded node: nested fields
 /// ('team: { key: { eq: "SPL" } }'), 'and' / 'or', 'some' / 'every' over a connection, and the comparators
 /// eq, neq, in, nin, gt, gte, lt, lte, null, eqIgnoreCase, contains, containsIgnoreCase, startsWith. Dates compare as
-/// instants; comparing a date field with something that isn't a date is refused, never guessed.
+/// instants; comparing a date field with something that isn't a date, a field the recordings don't have, or a field
+/// filter straight on a connection is refused, never guessed. A null field or relation fails every comparator but
+/// 'neq', 'nin' and 'null: true' (the fake doesn't model Linear's joins).
 /// </summary>
 internal static class LinearFilter
 {
@@ -26,12 +28,37 @@ internal static class LinearFilter
         "some" => Items(node).Any(item => Matches(item, Object(key, condition))),
         "every" => Items(node).All(item => Matches(item, Object(key, condition))),
         _ when _comparators.Contains(key) => Compare(node, key, condition),
-        _ => Matches(node is JsonObject o ? o[key] : null, Object(key, condition)),
+        _ => Field(node, key, condition),
     };
+
+    private static bool Field(JsonNode? node, string key, JsonNode? condition)
+    {
+        var filter = Object(key, condition);
+        if (node is null)
+        {
+            return Matches(node: null, filter);
+        }
+
+        if (node is not JsonObject o)
+        {
+            throw FakeRequestException.Invalid($"Filter field '{key}' is applied to a scalar value; compare it with eq, in, gt and the like.");
+        }
+
+        if (!o.TryGetPropertyValue(key, out var value))
+        {
+            throw FakeRequestException.Invalid(o.ContainsKey("nodes")
+                ? $"Filter '{key}' is on a connection; wrap it in 'some' or 'every'."
+                : $"Filter field '{key}' isn't in the recorded nodes (fields here: {string.Join(", ", o.Select(p => p.Key))}).");
+        }
+
+        return Matches(value, filter);
+    }
 
     private static bool Compare(JsonNode? value, string comparator, JsonNode? operand) => comparator switch
     {
-        "null" => (value is null) == operand?.GetValue<bool>(),
+        "null" => operand is JsonValue flag && flag.TryGetValue<bool>(out var want)
+            ? (value is null) == want
+            : throw FakeRequestException.Invalid("Filter 'null' takes a Boolean."),
         "eq" => Equal(value, operand),
         "neq" => !Equal(value, operand),
         "in" => List(comparator, operand).Any(o => Equal(value, o)),

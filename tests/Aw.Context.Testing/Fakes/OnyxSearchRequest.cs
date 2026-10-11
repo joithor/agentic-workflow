@@ -12,8 +12,8 @@ namespace Aw.Context.Testing.Fakes;
 internal sealed record OnyxSearchRequest(string Message, IReadOnlyList<string>? SourceTypes, DateTimeOffset? TimeCutoff, int Limit, int Offset)
 {
     private const int DefaultLimit = 10;
-    private static readonly string[] _top = ["message", "search_type", "retrieval_options"];
-    private static readonly string[] _options = ["filters", "limit", "offset", "run_search", "real_time", "enable_auto_detect_filters"];
+    private static readonly string[] _top = ["message", "retrieval_options"];
+    private static readonly string[] _options = ["filters", "limit", "offset"];
     private static readonly string[] _filters = ["source_type", "time_cutoff"];
 
     public static OnyxSearchRequest Parse(JsonObject body)
@@ -26,7 +26,7 @@ internal sealed record OnyxSearchRequest(string Message, IReadOnlyList<string>? 
         var filters = Section(options, "filters", _filters, "body", "retrieval_options");
         return new OnyxSearchRequest(
             message,
-            filters?["source_type"]?.AsArray().Select(s => (string?)s ?? "").ToList(),
+            Sources(filters?["source_type"]),
             Cutoff(filters?["time_cutoff"]),
             Number(options?["limit"], DefaultLimit),
             Number(options?["offset"], 0));
@@ -59,13 +59,22 @@ internal sealed record OnyxSearchRequest(string Message, IReadOnlyList<string>? 
         }
     }
 
+    private static List<string>? Sources(JsonNode? node) =>
+        node switch
+        {
+            null => null,
+            JsonArray list when list.All(x => x is JsonValue v && v.GetValueKind() == JsonValueKind.String) => [.. list.Select(x => x!.GetValue<string>())], // why: All checked every element is a string value
+            _ => throw Unprocessable(["body", "retrieval_options", "filters", "source_type"], "Must be a list of strings.", "list_type"),
+        };
+
     private static DateTimeOffset? Cutoff(JsonNode? node) =>
         node is null ? null
-        : DateTimeOffset.TryParse((string?)node, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var at) ? at
-        : throw Unprocessable(["body", "retrieval_options", "filters", "time_cutoff"], "Must be an ISO-8601 datetime.", "datetime_parsing");
+        : node is JsonValue v && v.GetValueKind() == JsonValueKind.String
+            && DateTimeOffset.TryParse(v.GetValue<string>(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var at) ? at
+        : throw Unprocessable(["body", "retrieval_options", "filters", "time_cutoff"], "Must be an ISO-8601 datetime string.", "datetime_parsing");
 
     private static int Number(JsonNode? node, int fallback) =>
         node is null ? fallback
-        : node.GetValueKind() == JsonValueKind.Number && node.GetValue<int>() >= 0 ? node.GetValue<int>()
+        : node is JsonValue v && v.TryGetValue<int>(out var n) && n >= 0 ? n
         : throw Unprocessable(["body", "retrieval_options"], "limit and offset are non-negative integers.", "int_type");
 }

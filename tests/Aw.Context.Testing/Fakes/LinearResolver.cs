@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 
 namespace Aw.Context.Testing.Fakes;
 
-/// <summary>Answers one root field from the recordings: a filtered, ordered, paged connection, or one node by id.</summary>
+/// <summary>Answers one root field from the recordings: a filtered, ordered, paged connection, or one node by id, cut to the selection.</summary>
 internal static class LinearResolver
 {
     private const int DefaultPage = 50;
@@ -17,7 +17,7 @@ internal static class LinearResolver
     {
         if (LinearRecordings.Connections.ContainsKey(field.Name))
         {
-            return (Connection(field), null);
+            return (LinearShape.Select(Connection(field), field, field.Name), null);
         }
 
         if (LinearRecordings.Singles.TryGetValue(field.Name, out var connection))
@@ -36,7 +36,9 @@ internal static class LinearResolver
         var node = LinearRecordings.Nodes(connection).Find(n =>
             (string?)n["id"] == id || string.Equals((string?)n["identifier"], id, StringComparison.OrdinalIgnoreCase));
         var type = char.ToUpperInvariant(field.Name[0]) + field.Name[1..];
-        return node is null ? (null, $"Entity not found: {type} - Could not find referenced {type} '{id}'.") : (node, null);
+        return node is null
+            ? (null, $"Entity not found: {type} - Could not find referenced {type} '{id}'.")
+            : (LinearShape.Select(node, field, field.Name), null);
     }
 
     private static JsonObject Connection(GraphQlField field)

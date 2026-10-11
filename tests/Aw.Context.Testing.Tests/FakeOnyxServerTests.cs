@@ -38,7 +38,7 @@ public sealed class FakeOnyxServerTests
         var recent = await Search(onyx, Request("pane", sources: null, "2026-07-29T00:00:00Z", limit: null));
         var one = await Search(onyx, Request("pane", sources: null, cutoff: null, 1));
 
-        Assert.Equal(["C0FIXTURE01__1721900000.000100"], slack.Select(d => (string?)d!["document_id"]), StringComparer.Ordinal);
+        Assert.Equal(["C0FIXTURE01__1784972400.000100"], slack.Select(d => (string?)d!["document_id"]), StringComparer.Ordinal);
         Assert.All(recent, d => Assert.True(DateTimeOffset.Parse((string)d!["updated_at"]!, CultureInfo.InvariantCulture) >= new DateTimeOffset(2026, 7, 29, 0, 0, 0, TimeSpan.Zero)));
         Assert.Contains(recent, d => (string?)d!["document_id"] == Spl105);
         _ = Assert.Single(one);
@@ -75,6 +75,33 @@ public sealed class FakeOnyxServerTests
         Assert.Contains("tags", field.Body!["detail"]!.ToJsonString(), StringComparison.Ordinal);
         Assert.Equal(HttpStatusCode.UnprocessableEntity, noMessage.Status);
         Assert.Contains("message", noMessage.Body!["detail"]!.ToJsonString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("{\"message\":\"pane\",\"search_type\":\"keyword\"}", "search_type")]
+    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"enable_auto_detect_filters\":false}}", "enable_auto_detect_filters")]
+    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"filters\":{\"source_type\":\"linear\"}}}", "source_type")]
+    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"filters\":{\"time_cutoff\":5}}}", "time_cutoff")]
+    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"limit\":1.5}}", "retrieval_options")]
+    public async Task A_field_the_fake_does_not_read_or_a_badly_typed_value_is_a_422_naming_it(string body, string named)
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+
+        var (status, reply) = await Http.Post(new Uri(onyx.Url, "api/query/document-search"), onyx.Authorization, body);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, status);
+        Assert.Contains(named, reply!["detail"]!.ToJsonString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Offset_skips_into_the_ranked_list()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+
+        var all = await Search(onyx, Request("pane", sources: null, cutoff: null, limit: null));
+        var second = await Search(onyx, new JsonObject { ["message"] = "pane", ["retrieval_options"] = new JsonObject { ["offset"] = 1, ["limit"] = 1 } });
+
+        Assert.Equal((string?)all[1]!["document_id"], (string?)Assert.Single(second)!["document_id"]);
     }
 
     [Fact]

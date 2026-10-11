@@ -4,6 +4,7 @@ using System.Net;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -45,8 +46,7 @@ internal sealed class LoopbackServer : IAsyncDisposable
         var server = new LoopbackServer(builder.Build(), log, handler);
         server._app.Run(server.Serve);
         await server._app.StartAsync().ConfigureAwait(false);
-        var address = new Uri(server._app.Urls.Single());
-        server.BaseUrl = new Uri(string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{address.Port}/"));
+        server.BaseUrl = new Uri(server._app.Urls.Single().TrimEnd('/') + "/");
         return server;
     }
 
@@ -59,7 +59,7 @@ internal sealed class LoopbackServer : IAsyncDisposable
     private async Task Serve(HttpContext context)
     {
         var request = await Read(context.Request).ConfigureAwait(false);
-        var reply = _handler(request);
+        var reply = Answer(request);
         var target = request.Path + context.Request.QueryString.Value;
         _requests.Enqueue(new RecordedRequest(request.Method, target, reply.Operation, reply.Status));
         _log.Enqueue(string.Create(CultureInfo.InvariantCulture, $"{request.Method} {target} -> {reply.Status} {reply.Operation}"));
@@ -68,6 +68,19 @@ internal sealed class LoopbackServer : IAsyncDisposable
         await using var json = new Utf8JsonWriter(context.Response.Body, _writer);
         reply.Body.WriteTo(json);
         await json.FlushAsync(context.RequestAborted).ConfigureAwait(false);
+    }
+
+    private FakeHttpReply Answer(FakeHttpRequest request)
+    {
+        try
+        {
+            return _handler(request);
+        }
+        catch (Exception e)
+        {
+            var name = e.GetType().Name;
+            return new FakeHttpReply(500, new JsonObject { ["error"] = $"The fake server failed on this request ({name}): {e.Message}" }, "error: " + name);
+        }
     }
 
     private static async Task<FakeHttpRequest> Read(HttpRequest request)

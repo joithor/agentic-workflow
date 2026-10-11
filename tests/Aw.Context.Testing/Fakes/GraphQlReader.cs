@@ -5,12 +5,14 @@ using System.Text.Json.Nodes;
 namespace Aw.Context.Testing.Fakes;
 
 /// <summary>
-/// Reads just enough GraphQL to answer a read: the operation's root fields, their aliases and arguments. Argument
-/// values are variables or scalar literals; objects and lists must come through variables. Sub-selections are skipped
-/// (the fake answers with whole recorded nodes).
+/// Reads the GraphQL a read needs: one query operation, its variable definitions (with defaults), and a tree of
+/// fields with aliases, arguments and sub-selections. Argument values are variables or scalar literals; objects and
+/// lists come through variables. Fragments, directives, block strings and undeclared variables are refused with a
+/// message saying so, never guessed.
 /// </summary>
 internal sealed class GraphQlReader(string text, JsonObject? variables)
 {
+    private readonly Dictionary<string, JsonNode?> _declared = new(StringComparer.Ordinal);
     private int _at;
 
     public static IReadOnlyList<GraphQlField> RootFields(string query, JsonObject? variables) =>
@@ -26,14 +28,9 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
             OperationHeader();
         }
 
-        Expect('{');
-        var fields = new List<GraphQlField>();
-        for (SkipIgnored(); Peek != '}'; SkipIgnored())
-        {
-            fields.Add(Field());
-        }
-
-        return fields;
+        var fields = SelectionSet();
+        SkipIgnored();
+        return Peek == '\0' ? fields : throw FakeRequestException.Invalid("Only one operation per request; fragment definitions aren't supported by the fake Linear server.");
     }
 
     private void OperationHeader()
@@ -44,7 +41,7 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
             throw FakeRequestException.Invalid($"The fake Linear server is read-only: '{kind}' operations aren't served.");
         }
 
-        if (kind != "query")
+        if (!string.Equals(kind, "query", StringComparison.Ordinal))
         {
             throw FakeRequestException.Invalid($"Expected 'query', 'mutation' or '{{' at the start of the document, found '{kind}'.");
         }
@@ -58,16 +55,65 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
 
         if (Peek == '(')
         {
-            SkipBalanced('(', ')');
+            VariableDefinitions();
             SkipIgnored();
         }
+
+        RefuseDirective();
+    }
+
+    private void VariableDefinitions()
+    {
+        Expect('(');
+        for (SkipIgnored(); Peek != ')'; SkipIgnored())
+        {
+            Expect('$');
+            var name = Name();
+            SkipIgnored();
+            Expect(':');
+            SkipType();
+            SkipIgnored();
+            JsonNode? fallback = null;
+            if (Peek == '=')
+            {
+                _at++;
+                SkipIgnored();
+                fallback = Literal($"${name}");
+            }
+
+            _declared[name] = fallback;
+        }
+
+        _at++;
+    }
+
+    private void SkipType()
+    {
+        SkipIgnored();
+        while (char.IsLetterOrDigit(Peek) || Peek is '_' or '[' or ']' or '!' || char.IsWhiteSpace(Peek))
+        {
+            _at++;
+        }
+    }
+
+    private List<GraphQlField> SelectionSet()
+    {
+        Expect('{');
+        var fields = new List<GraphQlField>();
+        for (SkipIgnored(); Peek != '}'; SkipIgnored())
+        {
+            fields.Add(Field());
+        }
+
+        _at++;
+        return fields.Count > 0 ? fields : throw FakeRequestException.Invalid("An empty selection set '{ }' isn't valid GraphQL.");
     }
 
     private GraphQlField Field()
     {
         if (Peek == '.')
         {
-            throw FakeRequestException.Invalid("Fragment spreads at the root aren't supported by the fake Linear server; select the root fields directly.");
+            throw FakeRequestException.Invalid("Fragments ('...') aren't supported by the fake Linear server; select the fields directly.");
         }
 
         var key = Name();
@@ -83,12 +129,9 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
 
         var arguments = Peek == '(' ? Arguments() : new Dictionary<string, JsonNode?>(StringComparer.Ordinal);
         SkipIgnored();
-        if (Peek == '{')
-        {
-            SkipBalanced('{', '}');
-        }
-
-        return new GraphQlField(key, name, arguments);
+        RefuseDirective();
+        var selections = Peek == '{' ? SelectionSet() : null;
+        return new GraphQlField(key, name, arguments, selections);
     }
 
     private Dictionary<string, JsonNode?> Arguments()
@@ -101,21 +144,27 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
             SkipIgnored();
             Expect(':');
             SkipIgnored();
-            arguments[name] = Value(name);
+            arguments[name] = Peek == '$' ? Variable() : Literal(name);
         }
 
         _at++;
         return arguments;
     }
 
-    private JsonNode? Value(string argument)
+    private JsonNode? Variable()
     {
-        if (Peek == '$')
+        _at++;
+        var name = Name();
+        if (!_declared.TryGetValue(name, out var fallback))
         {
-            _at++;
-            return variables?[Name()]?.DeepClone();
+            throw FakeRequestException.Invalid($"Variable \"${name}\" is not defined by the operation.");
         }
 
+        return variables is not null && variables.TryGetPropertyValue(name, out var value) ? value?.DeepClone() : fallback?.DeepClone();
+    }
+
+    private JsonValue? Literal(string argument)
+    {
         if (Peek is '{' or '[')
         {
             throw FakeRequestException.Invalid($"Argument '{argument}': pass object and list values through variables; the fake Linear server reads only scalar literals inline.");
@@ -127,7 +176,7 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
     private JsonValue? ScalarLiteral()
     {
         var start = _at;
-        while (char.IsLetterOrDigit(Peek) || Peek is '_' or '-' or '.')
+        while (char.IsLetterOrDigit(Peek) || Peek is '_' or '-' or '.' or '+')
         {
             _at++;
         }
@@ -139,26 +188,62 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
             "false" => JsonValue.Create(value: false),
             "null" => null,
             _ when int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) => JsonValue.Create(number),
-            _ when token.Length > 0 => JsonValue.Create(token),
-            _ => throw FakeRequestException.Invalid(string.Create(CultureInfo.InvariantCulture, $"Unexpected '{Peek}' at offset {_at} of the query.")),
+            _ when double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out var real) => JsonValue.Create(real),
+            _ when token.Length > 0 && (char.IsLetter(token[0]) || token[0] == '_') => JsonValue.Create(token),
+            _ => throw FakeRequestException.Invalid(string.Create(CultureInfo.InvariantCulture, $"Unexpected '{token}{Peek}' at offset {start} of the query.")),
         };
     }
 
     private string StringLiteral()
     {
+        if (text.AsSpan(_at).StartsWith("\"\"\"", StringComparison.Ordinal))
+        {
+            throw FakeRequestException.Invalid("Block strings (\"\"\") aren't supported by the fake Linear server; use a variable.");
+        }
+
         var value = new StringBuilder();
         for (_at++; Peek != '"'; _at++)
         {
-            if (Peek == '\0')
+            if (Peek is '\0' or '\n')
             {
                 throw FakeRequestException.Invalid("Unterminated string in the query.");
             }
 
-            _ = value.Append(Peek == '\\' ? text[++_at] : Peek);
+            _ = Peek == '\\' ? value.Append(Escape()) : value.Append(Peek);
         }
 
         _at++;
         return value.ToString();
+    }
+
+    private char Escape()
+    {
+        _at++;
+        return Peek switch
+        {
+            '"' or '\\' or '/' => Peek,
+            'b' => '\b',
+            'f' => '\f',
+            'n' => '\n',
+            'r' => '\r',
+            't' => '\t',
+            'u' when _at + 4 < text.Length && int.TryParse(text.AsSpan(_at + 1, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var code) => Unicode(code),
+            _ => throw FakeRequestException.Invalid(string.Create(CultureInfo.InvariantCulture, $"Invalid escape in a string at offset {_at} of the query.")),
+        };
+    }
+
+    private char Unicode(int code)
+    {
+        _at += 4;
+        return (char)code;
+    }
+
+    private void RefuseDirective()
+    {
+        if (Peek == '@')
+        {
+            throw FakeRequestException.Invalid("Directives ('@') aren't supported by the fake Linear server.");
+        }
     }
 
     private string Name()
@@ -180,23 +265,6 @@ internal sealed class GraphQlReader(string text, JsonObject? variables)
         }
 
         _at++;
-    }
-
-    private void SkipBalanced(char open, char close)
-    {
-        var depth = 0;
-        do
-        {
-            if (Peek == '"')
-            {
-                _ = StringLiteral();
-                continue;
-            }
-
-            depth += Peek == open ? 1 : Peek == close ? -1 : 0;
-            _at = Peek == '\0' ? throw FakeRequestException.Invalid($"Unbalanced '{open}' in the query.") : _at + 1;
-        }
-        while (depth > 0);
     }
 
     private void SkipIgnored()
