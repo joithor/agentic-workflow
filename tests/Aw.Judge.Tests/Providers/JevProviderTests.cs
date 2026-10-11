@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json.Nodes;
 using Aw.Judge.Core.Providers;
+using Aw.Judge.Core.Questions;
 using Aw.Judge.Core.Secrets;
 using Aw.Judge.Infrastructure.Providers;
 using Aw.Judge.Testing;
@@ -67,6 +68,37 @@ public sealed class JevProviderTests
         var state = JsonNode.Parse(Assert.Single(handler.Requests).Body)!["state"]!;   // why: the body always carries the state
         Assert.Equal("deploy with " + FakeInputRedactor.Placeholder, state["text"]?.GetValue<string>());
         Assert.True(state.ToJsonString().Length <= 16_000, $"the state is capped like the stored input, got {state.ToJsonString().Length} chars");
+    }
+
+    [Fact]
+    public async Task A_secret_in_the_input_leaves_the_machine_in_neither_the_state_nor_the_instructions()
+    {
+        var handler = FakeHttpHandler.Answering(HttpStatusCode.OK, """{"answers":{"decision":{"type":"choice","choice":"ask","confidence":0.9}}}""");
+        using var provider = new JevProvider(new HttpClient(handler), Secrets(), new FakeInputRedactor());
+        var tail = "I exported GH_TOKEN=" + SampleSecrets.GitHubToken + " and next I'll open the PR";
+        var question = AskCheckQuestion.Definition.ToRef(new AskCheckInput(tail));
+        var input = new JsonObject { ["transcriptTail"] = tail };
+
+        _ = await provider.Decide(question, input, Questions.Budget, TestContext.Current.CancellationToken);
+
+        var body = Assert.Single(handler.Requests).Body;
+        var json = JsonNode.Parse(body)!;   // why: the provider always sends a JSON body
+        Assert.DoesNotContain(SampleSecrets.GitHubToken, body, StringComparison.Ordinal);
+        Assert.Contains("GH_TOKEN=" + FakeInputRedactor.Placeholder, json["state"]?["transcriptTail"]?.GetValue<string>(), StringComparison.Ordinal);
+        Assert.Contains("GH_TOKEN=" + FakeInputRedactor.Placeholder, json["questions"]?["decision"]?["instructions"]?.GetValue<string>(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_instructions_are_capped_like_the_state()
+    {
+        var handler = FakeHttpHandler.Answering(HttpStatusCode.OK, Answer);
+        using var provider = new JevProvider(new HttpClient(handler), Secrets(), new FakeInputRedactor());
+        var question = Questions.Text with { Prompt = new string('p', 100_000) };
+
+        _ = await provider.Decide(question, Questions.Input, Questions.Budget, TestContext.Current.CancellationToken);
+
+        var instructions = JsonNode.Parse(Assert.Single(handler.Requests).Body)!["questions"]?["decision"]?["instructions"]?.GetValue<string>();
+        Assert.InRange(instructions?.Length ?? int.MaxValue, 1, 16_100);   // the stored input's cap plus the truncation marker
     }
 
     [Fact]
