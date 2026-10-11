@@ -45,3 +45,9 @@ ok    ledger   schema 3/3
 fail  profile  not approved (fix: sindri profile approve)
 fail  api      unreachable: no control plane is recorded (fix: sindri)
 exit 2
+## sindri recipe validate ROOT/recipes/sindri/workflow.step.yaml
+hash sha256:HASH
+## sindri recipe validate ROOT/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml
+RCP-REACH-001: state 'orphan' is unreachable from 'produce' at RCP-REACH-001.yaml:14:3 (states.orphan); add a transition into it or remove it
+hash sha256:HASH
+exit 1

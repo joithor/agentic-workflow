@@ -2,7 +2,8 @@
 # NativeAOT smoke for sindri (src/Sindri/Aw.Sindri.Host): publish it with PublishAot for the host RID, fail on any
 # trim/AOT (IL2xxx/IL3xxx) warning, then drive the native binary through the S1 journeys against a temp home: doctor
 # with nothing running, start headless with an unapproved profile, a second serve refused by the lease, the approve
-# preview and its non-terminal refusal, status, stop, and doctor again. The normalized output (pids, ports, hashes, times,
+# preview and its non-terminal refusal, status, stop, and doctor again; then recipe validate on a shipped recipe (its hash)
+# and on an invalid fixture (RCP-REACH-001, exit 1), the first verbs through the YAML reader and the recipe binding. The normalized output (pids, ports, hashes, times,
 # the host name and the temp path masked) must equal expected.txt.
 # Every invocation of the binary is bounded (30 s, perl's alarm); one that runs over prints 'exit 124'.
 # Output goes to artifacts/aot-sindri-smoke/ (gitignored). The publish runs on a copy of the files it needs: PublishAot
@@ -54,9 +55,11 @@ run() {
   run stop
   run status
   run doctor
+  run recipe validate "$root/recipes/sindri/workflow.step.yaml"
+  run recipe validate "$root/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml"
 } >"$out/actual.raw"
 
-sed -E -e "s#$work#WORK#g" -e "s#held by $(hostname -s)[^/ ]*#held by HOST#g" -e 's/[0-9a-f]{64}/HASH/g' -e 's/hash [0-9a-f]{6}/hash HASH6/g' \
+sed -E -e "s#$work#WORK#g" -e "s#$root#ROOT#g" -e "s#held by $(hostname -s)[^/ ]*#held by HOST#g" -e 's/[0-9a-f]{64}/HASH/g' -e 's/hash [0-9a-f]{6}/hash HASH6/g' \
   -e 's/pid [0-9]+/pid PID/g' -e 's#HOST/[0-9]+#HOST/PID#g' -e 's/127\.0\.0\.1:[0-9]+/127.0.0.1:PORT/g' \
   -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z/TIME/g' -e 's/\(last [0-9:]{8}Z\)/(last TIME)/g' "$out/actual.raw" >"$out/actual.txt"
 diff -u "$here/expected.txt" "$out/actual.txt"
