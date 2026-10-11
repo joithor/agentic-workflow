@@ -80,7 +80,7 @@ that graph plus rank fusion across adapters.
   `$AW_STATE_DIR/sindri/`): `context.db` and its `-wal`/`-shm` files, `eval/`, exports. Directories 0700, files 0600,
   set by `umask 077` on the process and checked by a test on all three SQLite files. Full-disk encryption is assumed.
 - **Nothing lands in a git worktree:** map files, exports, eval corpora and reports are refused inside one (the
-  `sindri scope` guard, SND-SCOPE-025, generalized as `SND-CONTEXT-030`).
+  `sindri scope` guard, SND-SCOPE-025, generalized as `SND-CONTEXT-005`).
 - **Before the switch** (readiness §4a step 3): `~/.local/bin/sindri` is still the TS wrapper. The C# app runs as
   `dotnet run --project src/Sindri/Aw.Sindri.Host -- <verb>` or its published AOT binary; `docs/sindri/context.md`
   defines `SINDRI=<that command>` and every phase signal uses `$SINDRI`, never the TS `sindri`. Nothing in `setup.sh`,
@@ -420,15 +420,15 @@ can't open); **75** the heavy-job lock stayed busy (`map build`, `eval`). Long j
 | `SND-CONTEXT-001` | `context:` profile section invalid (key path given) | Edit the profile, then `profile validate` and `profile approve` |
 | `SND-CONTEXT-002` | A source named in the profile is not configured or its secret pointer doesn't resolve | Set the pointer (§8.8) and re-approve |
 | `SND-CONTEXT-003` | Unknown anchor (node key, alias, item or symbol) | Use `suggestedAnchors`, or `context map status` |
-| `SND-CONTEXT-004` | No map yet | `context map import` or `context map build` |
+| `SND-CONTEXT-004` | Store schema mismatch or the store can't open | Rebuild with `context map build`, or check `$AW_SINDRI_HOME` permissions |
+| `SND-CONTEXT-005` | Output path inside a git worktree | Write outside repos |
 | `SND-CONTEXT-010` | A source is unavailable (degraded, not fatal) | `context sources status` |
-| `SND-CONTEXT-011` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
-| `SND-CONTEXT-012` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
-| `SND-CONTEXT-020` | Store schema mismatch or the store can't open | Rebuild with `context map build`, or check `$AW_SINDRI_HOME` permissions |
-| `SND-CONTEXT-021` | The heavy-job lock stayed busy | Retry; the message names the holder |
-| `SND-CONTEXT-030` | Output path inside a git worktree | Write outside repos |
-| `SND-CONTEXT-031` | Map review needs an interactive terminal | Run it at a terminal, or `--apply` a reviewed file there |
-| `SND-CONTEXT-040` | Labeling disabled or over its token cap | Enable `context.labeling` or raise `maxTokens` |
+| `SND-CONTEXT-030` | No map yet | `context map import` or `context map build` |
+| `SND-CONTEXT-040` | The heavy-job lock stayed busy | Retry; the message names the holder |
+| `SND-CONTEXT-041` | Map review needs an interactive terminal | Run it at a terminal, or `--apply` a reviewed file there |
+| `SND-CONTEXT-042` | Labeling disabled or over its token cap | Enable `context.labeling` or raise `maxTokens` |
+| `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
+| `SND-CONTEXT-070` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
 
 The full list, with HTTP status and MCP mapping, is kept in `docs/sindri/errors.md` (C# section) as phases add codes.
 
@@ -613,7 +613,7 @@ Every HIGH finding is fixed in this revision; MEDIUM and LOW findings are fixed 
 | S-H1 | User-wide MCP registration exposed work context to personal sessions | §3: per-repo `--scope local`, doctor `context:mcp-scope` |
 | S-H2 | Routes didn't state their Host/Origin checks | §3: S1's `LoopbackGuard` on every route and `/mcp`, with tests. No bearer token: S1's threat model (honest mistakes), and the Host and Origin checks already stop rebinding and cross-site posts |
 | S-H3 | Model-written text from untrusted sources became trusted | D15, §7 trust table, unit test |
-| S-H4 | Onyx's own exposure (bind, providers, telemetry) | §8.8 Onyx setup, doctor `context:onyx`, `SND-CONTEXT-012` |
+| S-H4 | Onyx's own exposure (bind, providers, telemetry) | §8.8 Onyx setup, doctor `context:onyx`, `SND-CONTEXT-070` |
 | D-1 | No CLI-runnable path before the switch | §3 `$SINDRI` |
 | D-2 | State dir collided with the TS sindri | §3 `$AW_SINDRI_HOME/context/` |
 | D-3 | No error catalogue | §8.6 |
@@ -657,11 +657,131 @@ D17).
 - **D-L1** (fusion over one source in Phase 1): intended; Phase 1 proves the pipeline shape, and fusion becomes
   meaningful in Phase 3.
 
+## Parallel delivery with an agent team
+
+The phases below are delivered by `/specToProvenPR`, run by an **agent team** so that agents are always working on
+every stage that is unblocked, instead of one stage at a time. Each stage is still exactly what `/specToProvenPR`
+requires: one PR, planned, built with TDD, tested by hand in the running app, evidenced, reviewed to zero blocking
+findings, then stopped at the human merge gate. What changes is that several stages are in flight at once, in their
+own worktrees, coordinated by a lead.
+
+### Stages and their dependencies
+
+Phases split into stages where part of a phase has fewer dependencies than the rest, so that part can start earlier.
+One stage = one PR.
+
+| Stage | What | Depends on | Wave |
+|---|---|---|---|
+| **S-1C** | The `compose` edge kind: `deps.yaml` schema, `check-deps.mjs` (`DEPS-COMPOSE-001`), the ArchUnitNET rule (`ARCH-COMPOSE-001`), rule records, the fan-out exception mechanism (Phase 1b, first half) | — (no S1 needed) | 0 |
+| **S-2R** | `Aw.Redaction` extra patterns from configuration, validated and compiled with the match timeout (Phase 2 without the `Aw.Context` wiring) | — | 0 |
+| **S-FX** | The fixture app and its recorded sources (§10): repo, Linear recordings, Onyx recordings, merged-PR history, probe file. Test assets only | — | 0 |
+| **S-1A** | Phase 1a: `Aw.Context` package, facade, contract, sanitizer, egress scrubber, repo-docs, planner skeleton, HTTP and CLI, plus the S-2R wiring if it has merged | S1 merged · S-1C · S-FX (repo part) | 1 |
+| **S-1M** | Phase 1b, second half: the `/mcp` host and tools, doctor checks, per-repo registration docs | S-1A | 2 |
+| **S-3** | Phase 3: graph store, overrides, cascade, `node`/`neighbors`/`path`, probe runner | S-1A | 2 |
+| **S-5A** | Phase 5, first half: the `linear` adapter (fetch, search, canonical keys, contract tests) and secret-pointer resolution | S-1A · S-2R | 2 |
+| **S-4** | Phase 4: extractor, file-level `implements`, map review | S-3 | 3 |
+| **S-5B** | Phase 5, second half: sync, rules-first linking, decisions, intent-vs-intent conflicts, the `item` shape | S-3 · S-5A | 3 |
+| **S-6** | Phase 6: Onyx adapter, dedup with Linear, Onyx setup doc and doctor | S-5A (secret pointers) · S-FX (Onyx part) | 3 |
+| **S-7A** | Phase 7, harness: corpus builder, as-of maps, arms runner, reports, on the fixture corpus | S-3 · S-FX | 3 |
+| **S-7B** | Phase 7, owner corpus: eligible-sample count, the real backtest and probes over work data | S-4 · S-5B · S-7A | 4 |
+| **S-8** | Phase 8: ranker features and the rerank arm | S-7B | 5 |
+| **S-9** | Phase 9: code adapter and symbol-level links | the code index block | blocked |
+| **S-10** | Phase 10: the `context.retrieve` block | the workflow engine | blocked |
+
+```mermaid
+flowchart LR
+  S1[S1 merged] --> S1A
+  S1C[S-1C compose edge] --> S1A
+  S2R[S-2R Redaction patterns] --> S5A
+  SFX[S-FX fixture app] --> S1A
+  SFX --> S6
+  SFX --> S7A
+  S1A[S-1A engine + CLI/HTTP] --> S1M[S-1M MCP]
+  S1A --> S3[S-3 graph]
+  S1A --> S5A[S-5A Linear adapter]
+  S3 --> S4[S-4 extractor]
+  S3 --> S5B[S-5B links + decisions]
+  S5A --> S5B
+  S5A --> S6[S-6 Onyx]
+  S3 --> S7A[S-7A eval harness]
+  S4 --> S7B[S-7B owner corpus]
+  S5B --> S7B
+  S7A --> S7B
+  S7B --> S8[S-8 ranker]
+```
+
+A wave is the set of stages whose dependencies are all **merged or open as review-clean PRs**. A stage may start
+on top of an unmerged dependency (stacked, below). Wave 0 can start before S1 merges.
+
+### The team
+
+| Role | Who | Does | Never does |
+|---|---|---|---|
+| **Lead** | The session that starts the epic (`/specToProvenPR` steps 0 and 0.5) | Writes `plans/<epic>/stages.md` with the table above, the reservations below and each stage's state. Asks the autonomy question once (recommended answer: run continuously; stop only at merge gates). Starts a stage owner for every unblocked stage, up to the concurrency cap. Assigns branches and bases. Watches for merges and rebases stacks. Re-plans when a stage's scope changes. Reports one status line per stage to the owner | Write product code or tests; merge anything |
+| **Stage owner** | One teammate per in-flight stage, in its own worktree on its own branch | Runs `/specToProvenPR` steps 1–9 for **its stage only**: plan, verification plan, TDD implementation, hand test, evidence, draft PR, review loop to zero blocking, re-check, ready. Reports to the lead at each step change and when blocked | Edit another stage's files outside the shared-file rules; touch another worktree; merge |
+| **Implementers** | Subagents of a stage owner (superpowers:subagent-driven-development) | Independent tasks inside one stage in parallel (for example the sanitizer, RRF and the repo-docs adapter in S-1A), each red-green with its own tests | Work across stages |
+| **Reviewers** | `/review`'s own multi-agent fan-out, per PR | The review loop on each stage's PR | — |
+
+The lead runs as the team's coordinator and starts the stage owners as named teammates (`stage-1a`, `stage-3`, …),
+each with `isolation: worktree`. Each stage owner gets: this spec's path, its stage row, the `stages.md` path, its
+branch and base, its reservations, and the instruction to run `/specToProvenPR` steps 1–9 for that stage only.
+Until `/specToProvenPR` takes a stage id (`/specToProvenPR <stages.md> --stage S-3`, a toolkit follow-up outside this
+spec), that instruction is spelled out in the teammate's brief.
+
+### Keeping agents busy
+
+- **Concurrency cap: 3 stages building at once.** It's bounded by the heavy-job lock (two slots, which `dotnet test`
+  integration and heavy lanes take) and by the owner's review and merge bandwidth. Stages waiting at the merge gate
+  don't count against the cap.
+- **A freed slot is filled at once** with the next ready stage, in this order: on the critical path
+  (S-1A → S-3 → S-4 → S-7B → S-8) first, then whichever unblocks the most other stages.
+- **Stacking:** a stage whose dependency is open as a review-clean PR starts on a branch based on that dependency's
+  branch, with its PR based on that branch (§17.10 stacked PRs). When the dependency merges, the lead rebases the stack
+  onto `main` and retargets the PR. A stage never stacks on a dependency that still has blocking findings.
+- **Prep while blocked.** When every ready stage is building or the cap is reached, idle teammates do prep work for the
+  next wave, which needs no code from unmerged stages:
+  - verification plans (step 2) for upcoming stages;
+  - fixture and probe assets;
+  - the Onyx setup doc draft;
+  - the eligible-sample count query for S-7B.
+- **At the merge gate** a stage owner's job ends with its PR ready. The lead tells the owner which PRs are waiting,
+  in merge order (dependencies first), in one message per batch, not one per PR.
+
+### Shared files and reservations
+
+Parallel stages touch a few shared files. The lead records these reservations in `stages.md` before any stage starts,
+so parallel PRs never pick the same number or overwrite each other's lines.
+
+| Shared thing | Rule |
+|---|---|
+| `context.db` migrations | Numbers reserved per stage: S-1A `001`, S-3 `002`, S-5A `003`, S-5B `004`, S-4 `005`, S-7A `006`, S-8 `007`. A migration is tested on the schema of every migration below its number |
+| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3 `030–039`, S-4 `040–049`, S-5A/B `050–069`, S-6 `070–079`, S-7A/B `080–089`, S-8 `090–099`. §8.6 already follows these ranges |
+| `deps.yaml`, `Directory.Packages.props`, `AgenticWorkflow.slnx`, `.env.example` | Append-only edits within the stage's own block. Conflicts are resolved by the later PR's rebase, never by editing the earlier PR |
+| `PublicAPI.Unshipped.txt`, Sindri's `EndpointTable`, `CommandTable`, JSON context, MCP tool list | One line or one block per slice; the later rebase keeps both |
+| `docs/sindri/context.md`, `docs/sindri/errors.md` | One section per stage, headed by the stage id |
+| `Aw.Context.Core` domain types | Owned by S-1A. A later stage that needs a new Core type adds it in its own PR; if two in-flight stages need the same new type, the lead assigns it to the earlier stage and the other stacks on it |
+
+### Gates that stay sequential
+
+- **Human merges.** Every stage stops at its merge gate; agents never merge (`/specToProvenPR` step 9).
+- **The owner's own steps:** company-OAuth sign-off and Onyx setup before S-6's hand test; `profile approve` at a
+  terminal for each new `context:` key; map review in S-4 and the probe-set confirmation in S-3; the work-data runs in
+  S-7B.
+- **S-7B and S-8 run alone:** they read work data and set the bars the earlier stages are judged by.
+
+### What the lead reports
+
+One line per stage on every change, and on request:
+`S-3  building  step 4 (hand test)  branch docs/… PR #…  base S-1A (#…, ready)  blockers: none`.
+`stages.md` is the single record, so `/specToProvenPR` resume mode works for the lead and for any stage owner after a
+restart.
+
 ## Phases
 
-Each phase is one PR. Sizes: XS ≤ 80, S ≤ 250, M ≤ 600 changed lines of production code (tests excluded), L above
-(split before starting). Every phase ends with its signal shown in the running app, with evidence written outside
-repos, and from Phase 3 on its signal includes "`$SINDRI context eval probes` doesn't regress".
+Each phase is one PR, or the stages the table above splits it into. Sizes: XS ≤ 80, S ≤ 250, M ≤ 600 changed lines
+of production code (tests excluded), L above (split before starting). Every phase ends with its signal shown in the
+running app, with evidence written outside repos, and from Phase 3 on its signal includes "`$SINDRI context eval
+probes` doesn't regress". Stage ids and waves are in "Parallel delivery" above.
 
 ### Phase 1: `Aw.Context` skeleton, repo-docs adapter, planner skeleton, HTTP + CLI + MCP
 
@@ -677,9 +797,10 @@ repos, and from Phase 3 on its signal includes "`$SINDRI context eval probes` do
   rule, rule records; `Directory.Packages.props` (MCP package); `docs/sindri/context.md` (setup, `$SINDRI`, MCP
   registration per repo, the agent-rules snippet, a text-output example); `docs/sindri/errors.md` (C# codes);
   `.env.example` for any new variable.
-- **Size:** L as listed: 1a (package, contract, sanitizer, scrubber, repo-docs, planner skeleton, HTTP and CLI: M)
-  and 1b (`compose` edge and checks, MCP host and tools, doctor: S–M) as two PRs. The phase is done when 1b ships.
-- **S1:** needs S1 merged.
+- **Size:** L as listed, so three stages: **S-1C** (`compose` edge and checks: S, wave 0), **S-1A** (package,
+  contract, sanitizer, scrubber, repo-docs, planner skeleton, HTTP and CLI: M, wave 1) and **S-1M** (MCP host and
+  tools, doctor: S, wave 2). The phase is done when S-1M ships.
+- **S1:** S-1A and S-1M need S1 merged; S-1C doesn't.
 - **Signal:** `$SINDRI context query "split pane orientation" --json` returns cited `repo:` results with blob shas;
   in a Claude Code session in the work repo with Sindri's MCP added (`--scope local`), `context_query` returns the
   same; a planted secret in a doc comes back as `[REDACTED:…]`; a request with a foreign `Origin` gets 403.
@@ -690,7 +811,8 @@ repos, and from Phase 3 on its signal includes "`$SINDRI context eval probes` do
 - **Files:** `src/Redaction/Aw.Redaction` (extra `RedactionRule`s from configuration, validated against the pattern
   rules, compiled with the match timeout), PublicAPI files, `docs/csharp/redaction.md`; `Aw.Context` wiring from
   `context.scrub.extraPatterns`.
-- **Size:** S.
+- **Size:** S. Stage **S-2R** (the `Aw.Redaction` part, wave 0); the `Aw.Context` wiring rides in S-1A, or in a
+  one-line follow-up if S-2R merges after S-1A.
 - **S1:** none new.
 - **Signal:** with `{id: acme-customer-id, pattern: "ACME-[0-9]{6}"}` approved, `$SINDRI context query` shows
   `[REDACTED:acme-customer-id]` where a doc held `ACME-123456`; an invalid pattern fails `profile validate` with
@@ -733,7 +855,8 @@ repos, and from Phase 3 on its signal includes "`$SINDRI context eval probes` do
   Host `Composition`, `SyncSource` and its scheduled service, the rules-first linker (§13), `Decision` extraction
   (labeling switch, `maxTokensPerSync`, queue), `supersedes`, intent-vs-intent conflicts, the `item` shape, the as-of
   check of document history (§12), the recorded Linear fake.
-- **Size:** M (split linking and decisions if over).
+- **Size:** M, as two stages: **S-5A** (adapter, canonical keys, secret pointers, contract tests; wave 2, beside
+  S-3) and **S-5B** (sync, linking, decisions, conflicts, `item`; wave 3).
 - **S1:** `IScheduledService`.
 - **Signal:** `$SINDRI context query --item ENG-482 --json` returns the issue's project PRD and TDD (`linear:doc/…`
   citations with `updatedAt`), the nodes it touches, its decisions quoting their source, and the PRs that shipped it.
@@ -756,7 +879,8 @@ repos, and from Phase 3 on its signal includes "`$SINDRI context eval probes` do
 - **Files:** corpus builder (issue samples, file truth from git, per-sample as-of maps, leaky labels), arms runner,
   adjudicator through `ILabeler`, report writer, `eval backtest | map | purge`; the eligible-sample count recorded
   first.
-- **Size:** M.
+- **Size:** M, as two stages: **S-7A** (the harness on the fixture corpus; wave 3) and **S-7B** (the owner's corpus;
+  wave 4, run alone).
 - **S1:** heavy-job lock (Phase 4).
 - **Signal:** `$SINDRI context eval backtest --arms all` prints per-arm node recall and precision, file recall@20 and
   the pass line for the owner's three projects, with sample count and leaky share.
