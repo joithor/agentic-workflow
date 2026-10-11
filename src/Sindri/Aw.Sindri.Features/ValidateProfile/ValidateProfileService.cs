@@ -18,8 +18,13 @@ internal sealed class ValidateProfileService(IProfileSource live, IApprovals app
         }
 
         var saved = await approvals.Latest(cancellationToken).ConfigureAwait(false);
-        var recorded = await RecordedApproval.Latest(ledger, events, cancellationToken).ConfigureAwait(false);
-        var approved = ProfileRules.IsApproved(saved.IsSuccess ? saved.Value?.Hash : null, recorded?.Hash, loaded.Value.Hash);
+        var recorded = RecordedApproval.From(await ledger.Latest(EventTypes.ProfileApproved, cancellationToken).ConfigureAwait(false), events);
+        if (recorded.IsError)
+        {
+            return recorded.Error;   // a ledger that can't be read isn't "not approved"
+        }
+
+        var approved = ProfileRules.IsApproved(saved.IsSuccess ? saved.Value?.Hash : null, recorded.Value?.Hash, loaded.Value.Hash);
         return new ValidateProfileResponse(loaded.Value.Hash, loaded.Value.Source, approved);
     }
 }

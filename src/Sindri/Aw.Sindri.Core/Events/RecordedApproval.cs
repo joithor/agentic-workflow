@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Ledger;
 
@@ -8,22 +9,27 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Sequence">The event's ledger sequence.</param>
 public sealed record RecordedApproval(ProfileHash Hash, long Sequence)
 {
-    /// <summary>Reads the latest recorded approval, or null when there is none or it can't be read.</summary>
-    /// <param name="ledger">The ledger.</param>
+    /// <summary>
+    /// Reads the latest recorded approval out of the ledger's answer for the latest 'profile.approved' event. A read
+    /// error (or a payload that doesn't read) stays an error, so it is never mistaken for "nothing recorded".
+    /// </summary>
+    /// <param name="latest">The ledger's answer for the latest 'profile.approved' event.</param>
     /// <param name="events">Reads the event's payload.</param>
-    /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The approval, or null.</returns>
-    public static async ValueTask<RecordedApproval?> Latest(ILedgerStore ledger, EventFactory events, CancellationToken cancellationToken)
+    /// <returns>The approval, null when none is recorded, or the error.</returns>
+    public static Result<RecordedApproval?> From(Result<LedgerEvent?> latest, EventFactory events)
     {
-        ArgumentNullException.ThrowIfNull(ledger);
         ArgumentNullException.ThrowIfNull(events);
-        var latest = await ledger.Latest(EventTypes.ProfileApproved, cancellationToken).ConfigureAwait(false);
-        if (latest.IsError || latest.Value is not { } recorded)
+        if (latest.IsError)
         {
-            return null;
+            return latest.Error;
+        }
+
+        if (latest.Value is not { } recorded)
+        {
+            return Results.Success<RecordedApproval?>(value: null);
         }
 
         var payload = events.Payload<ProfileApproved>(recorded);
-        return payload.IsSuccess ? new RecordedApproval(payload.Value.Hash, recorded.Sequence) : null;
+        return payload.IsError ? payload.Error : new RecordedApproval(payload.Value.Hash, recorded.Sequence);
     }
 }

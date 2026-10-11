@@ -57,4 +57,17 @@ public sealed class GetStatusTests
         Assert.Equal("5s", Assert.Single(status.Services).Every);
         Assert.Equal(HeartbeatService.ServiceId, Assert.Single(status.Services).Name);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task GetStatus_reports_a_ledger_that_cant_be_read_as_the_profile_problem()
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.Profiles.Save(live, Token);
+
+        var status = (await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, new ReadFailingLedger(_h.Store), _h.Events).Handle(new GetStatusRequest(), Token)).Value;
+
+        Assert.Equal(ReadFailingLedger.Failure.Message, status.Profile.Problem);
+        Assert.True(status.Profile.NeedsApproval);
+    }
 }

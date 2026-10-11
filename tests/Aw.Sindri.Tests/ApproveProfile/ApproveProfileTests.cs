@@ -90,6 +90,23 @@ public sealed class ApproveProfileTests
         Assert.Empty(_h.Store.Events);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ApproveProfile_refuses_when_the_recorded_approval_cant_be_read_and_records_nothing(bool approving)
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.HoldLease();
+        var service = new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, new ReadFailingLedger(_h.Store), _h.Events);
+
+        var refused = await service.Handle(new ApproveProfileRequest(approving ? live.Hash : null, Confirmed: approving), Token);
+
+        Assert.Equal(ReadFailingLedger.Failure, refused.Error);
+        Assert.Null((await _h.Profiles.Latest(Token)).Value);
+        Assert.Empty(_h.Store.Events);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task ApproveProfile_records_each_approval_of_a_back_and_forth_and_every_surface_agrees()
     {

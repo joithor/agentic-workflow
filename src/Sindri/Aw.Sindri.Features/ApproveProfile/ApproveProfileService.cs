@@ -27,7 +27,13 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
             return loaded.Error;
         }
 
-        var (shown, recorded) = await Show(loaded.Value, cancellationToken).ConfigureAwait(false);
+        var recorded = RecordedApproval.From(await ledger.Latest(EventTypes.ProfileApproved, cancellationToken).ConfigureAwait(false), events);
+        if (recorded.IsError)
+        {
+            return recorded.Error;   // refuse: without the latest recorded approval, the preview can't judge and the key can't name what it follows
+        }
+
+        var shown = await Show(loaded.Value, recorded.Value, cancellationToken).ConfigureAwait(false);
         if (request.Hash is not { } asked || shown.Approved)
         {
             return shown;
@@ -43,7 +49,7 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
             return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
         }
 
-        var appended = await Record(asked, shown.Changes, recorded, grant, cancellationToken).ConfigureAwait(false);
+        var appended = await Record(asked, shown.Changes, recorded.Value, grant, cancellationToken).ConfigureAwait(false);
         var saved = appended.IsError ? appended.Error : await approvals.Save(loaded.Value, cancellationToken).ConfigureAwait(false);
         return saved.IsError ? saved.Error : shown with { Approved = true };
     }
@@ -67,17 +73,15 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
     }
 
     /// <summary>
-    /// What to show, and the latest recorded approval. Approved is <see cref="ProfileRules.IsApproved"/>: saved and the
-    /// latest recorded approval, so a saved approval whose event is missing (or isn't the latest) shows as not approved
-    /// and approving again records it.
+    /// What to show. Approved is <see cref="ProfileRules.IsApproved"/>: saved and the latest recorded approval, so a saved
+    /// approval whose event is missing (or isn't the latest) shows as not approved and approving again records it.
     /// </summary>
-    private async ValueTask<(ApproveProfileResponse Shown, RecordedApproval? Recorded)> Show(LoadedProfile loaded, CancellationToken cancellationToken)
+    private async ValueTask<ApproveProfileResponse> Show(LoadedProfile loaded, RecordedApproval? recorded, CancellationToken cancellationToken)
     {
         var latest = await approvals.Latest(cancellationToken).ConfigureAwait(false);
         var previous = latest.IsSuccess ? latest.Value : null;
-        var recorded = await RecordedApproval.Latest(ledger, events, cancellationToken).ConfigureAwait(false);
         var approved = ProfileRules.IsApproved(previous?.Hash, recorded?.Hash, loaded.Hash);
-        return (new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), approved), recorded);
+        return new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), approved);
     }
 
     private static Error? Refusal(ProfileHash asked, LoadedProfile live, bool confirmed) => true switch
