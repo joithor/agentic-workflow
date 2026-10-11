@@ -101,9 +101,9 @@ and ports to native apps without a rewrite:
   trim- and AOT-safe.
 - **A client, not a second implementation:** the app talks to Sindri's host over its versioned HTTP API (factory
   addendum §17.27.1) and holds no logic of its own: no extra checks, shortcuts or UI-only state. It is its own
-  package (`SindriUi` in `deps.yaml`, above `Sindri`) and references no Sindri project: Sindri's HTTP contract is
-  its only edge. `deps.yaml` has no `http` edge kind yet (today: `project`, `cli`, `db`, `file`); the first UI PR
-  adds it to the schema and `check-deps.mjs`. Its own platform services (notifications, tray icon, opening
+  package (`SindriUi` in `deps.yaml`, above `Sindri`) and references no Sindri project: Sindri's HTTP contract (and the endpoint record it
+  finds the API by) is its only edge. The first UI PR (#168) added the `http` edge kind to `deps.yaml`, the schema and
+  `check-deps.mjs`. Its own platform services (notifications, tray icon, opening
   apps for attach, passkeys) sit behind ports in `Aw.Sindri.Ui`, one adapter per platform in the heads.
 - **Dependencies:** the MIT-licensed Avalonia packages only (no Avalonia XPF or paid add-ons), under the same
   Central Package Management, pinning and 14-day rules as every package (§4b.6).

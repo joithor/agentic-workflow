@@ -14,9 +14,11 @@ Sindri's handlers (factory addendum §17.27.1). Nothing installs it before the s
 | `src/Sindri/Aw.Sindri.Ui.Desktop` | The thin desktop head: `Main`, the composition and one adapter per port. NativeAOT binary `sindri-ui`. No views or view models |
 
 - **No Sindri project reference.** The app reaches Sindri only through its HTTP contract (`docs/csharp/sindri.md`
-  "Command layer and API"): `GET /sindri/ping`, `GET /sindri/status` and `GET /sindri/events`. `deps.yaml` declares it
-  as the `SindriUi -> Sindri` **http** edge; `node scripts/check-deps.mjs` finds it as a string literal starting with
-  Sindri's route prefix `/sindri/` in the app's C# projects, and fails on an undeclared or stale one.
+  "Command layer and API": `GET /sindri/ping`, `GET /sindri/status` and `GET /sindri/events`) and the endpoint
+  record it finds the API by (`control.json`, "Files"). `deps.yaml` declares them as the `SindriUi -> Sindri`
+  **http** and **file** edges; `node scripts/check-deps.mjs` finds them in the app's C# projects (a literal starting
+  with Sindri's route prefix `/sindri/`; the literals `"sindri-app"` and `"control.json"`) and fails on an undeclared
+  or stale one. The head's path rule (`ControlFilePath`) follows the documented one in `docs/csharp/sindri.md` "Files".
 - **Compiled bindings only.** `AvaloniaUseCompiledBindingsByDefault=true`, `x:DataType` on the window and every
   template, no `ReflectionBinding`, so the head publishes under NativeAOT.
 - **View models carry no Avalonia types** (plain C#, `INotifyPropertyChanged`), so they test in the unit lane.
@@ -31,9 +33,12 @@ Sindri's handlers (factory addendum §17.27.1). Nothing installs it before the s
    `AW_SINDRI_HOME`, else `$AW_STATE_DIR/sindri-app`, else `~/.agentic-workflow/sindri-app`, the same place the control
    plane writes it. No record means "Not running".
 2. `GET /sindri/ping` must answer the record's pid **and** epoch; otherwise the record is stale and reads as "Not running".
-3. `GET /sindri/status` fills the window. Each `/sindri/events` event (server-sent events, resumed from the last
+3. `GET /sindri/status` fills the window. A lower epoch than the last one means a new ledger, so the stream cursor
+   starts over. Each `/sindri/events` event (server-sent events, resumed from the last
    sequence seen) triggers one status refresh; a burst of events triggers one. When the stream ends (the control
-   plane stopped or was killed), the app looks again, every 2 s while nothing answers.
+   plane stopped or was killed), a status refresh fails, or `control.json` changes (checked every 2 s; a stopping
+   control plane can hold its stream open), the app looks again, every 2 s while nothing answers. A record the
+   platform can't read, or one with a relative `url`, reads as "can't be read" with the reason, and the app keeps trying.
 
 ## What the window shows
 
@@ -55,8 +60,15 @@ on the brand mark and the state pill.
 Bare `sindri` opens the app after it starts (or finds) the control plane: the `sindri-ui` binary next to `sindri`, or
 the one `AW_SINDRI_UI` names, started detached (`exec nohup`, no pipes to the terminal). The summary's `ui` line says
 what happened: `opened (sindri-ui, pid N)`, or `not found at <path>` with the fix. `sindri --headless` opens nothing and
-prints no `ui` line. Opening the app never changes `sindri`'s exit code. Each bare `sindri` opens a window; the app is
-not single-instance yet.
+prints no `ui` line. A relative `AW_SINDRI_UI` is resolved against the working directory before it is checked, and a file
+without an execute bit reads `not executable at <path>` with the fix. Opening the app never changes `sindri`'s exit
+code. Each bare `sindri` opens a window; the app is not single-instance yet.
+
+**Not a declared edge (owner question, PR #168).** Starting `sindri-ui` from `sindri` is a `Sindri -> SindriUi` cli
+dependency by `deps.yaml`'s definition, but declaring it would close a cycle with the `SindriUi -> Sindri` http edge
+(`DEPS-CYCLE-001`), and check-deps doesn't scan C# for cli edges. The two ways out are to invert the launch (the app
+starts `sindri --headless` itself) or to record a reasoned exception for this one cycle; the owner decides. Until then
+the launch is named in the `SindriUi` note in `deps.yaml`.
 
 ## Errors
 
