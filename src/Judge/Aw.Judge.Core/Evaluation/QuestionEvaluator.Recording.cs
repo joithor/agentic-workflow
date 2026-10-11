@@ -35,6 +35,7 @@ public sealed partial class QuestionEvaluator
         return new DecidedOutcome(decision, settlement.Confidence, model, settlement.ReasonCode, run.Id) { Extra = extra };
     }
 
+
     // Storage fails open: the outcome stands whatever happens here, and a failed write is itself a judge failure.
     private async ValueTask Record<TInput>(
         QuestionDefinition<TInput> question, EvaluationRun run, Settlement settlement, JsonNode? input, CancellationToken cancellationToken)

@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Aw.Judge.Core.Config;
 using Aw.Judge.Core.Decisions;
+using Aw.Judge.Core.Questions;
 using Aw.Judge.Features.ApproveDecision;
 using Aw.Judge.Features.ExplainDecision;
 using Aw.Judge.Features.GetBrief;
@@ -25,6 +26,14 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(JudgeConfig))]
 [JsonSerializable(typeof(IReadOnlyList<SkippedProvider>))]
 [JsonSerializable(typeof(IReadOnlyDictionary<string, double>))]
+[JsonSerializable(typeof(WakeGateInput))]
+[JsonSerializable(typeof(BriefScopeInput))]
+[JsonSerializable(typeof(AskCheckInput))]
+[JsonSerializable(typeof(RuleCheckInput))]
+[JsonSerializable(typeof(ResolutionCheckInput))]
+[JsonSerializable(typeof(TurnProgressInput))]
+[JsonSerializable(typeof(UiElementRepairInput))]
+[JsonSerializable(typeof(VisualCritiqueInput))]
 [JsonSerializable(typeof(GetHealthRequest))]
 [JsonSerializable(typeof(GetHealthResponse))]
 [JsonSerializable(typeof(BriefInput))]

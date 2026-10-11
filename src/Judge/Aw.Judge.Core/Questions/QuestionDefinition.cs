@@ -30,13 +30,19 @@ public sealed record QuestionDefinition<TInput>
     /// <summary>How long one provider may take.</summary>
     public required TimeSpan TimeBudget { get; init; }
 
+    /// <summary>
+    /// A check the input record's shape can't express (a required text that is blank): a non-null problem escalates the
+    /// call as 'invalid-input', like input that doesn't deserialize.
+    /// </summary>
+    public Func<TInput, string?>? InputProblem { get; init; }
+
     /// <summary>Rules run before any model: a non-null answer settles it ('pre-rule', confidence 1).</summary>
     public Func<TInput, string?>? PreRules { get; init; }
 
     /// <summary>A cheap rule answer used only when a model answered below threshold; a throw counts as no opinion.</summary>
     public Func<TInput, string?>? FallbackRules { get; init; }
 
-    /// <summary>Response fields beyond the decision, as JSON Schema fragments (chosenIndex, reasons).</summary>
+    /// <summary>Response fields beyond the decision, as JSON Schema fragments (chosenIndex, reasons); only these ride back to the caller.</summary>
     public IReadOnlyDictionary<string, JsonObject>? ExtraProperties { get; init; }
 
     /// <summary>What each output means.</summary>

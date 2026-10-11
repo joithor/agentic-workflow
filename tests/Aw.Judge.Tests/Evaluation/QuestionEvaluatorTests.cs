@@ -239,18 +239,18 @@ public sealed class QuestionEvaluatorTests
     }
 
     [Fact]
-    public async Task A_provider_gets_the_prompt_the_validated_input_and_the_time_budget_and_its_extra_comes_back()
+    public async Task A_provider_gets_the_prompt_the_validated_input_and_the_time_budget_and_its_declared_extra_comes_back()
     {
         var harness = new EvaluatorHarness();
-        var extra = new System.Text.Json.Nodes.JsonObject { ["chosenIndex"] = 2 };
+        var extra = new System.Text.Json.Nodes.JsonObject { ["chosenIndex"] = 2, ["undeclared"] = "dropped" };
         var cli = Cli().Returns(new ProviderDecided("send", 1, "model") { Extra = extra });
         var raw = new System.Text.Json.Nodes.JsonObject { ["text"] = "hi", ["unknown"] = true };
 
-        var outcome = await harness.Run(A.Question().Build(), raw, cli);
+        var outcome = await harness.Run(A.Question().WithExtraProperty("chosenIndex").Build(), raw, cli);
 
         var call = Assert.Single(cli.Calls);
         Assert.Equal(("Classify: hi", """{"text":"hi"}""", TimeSpan.FromSeconds(5)), (call.Question.Prompt, call.Input?.ToJsonString(), call.Budget));
-        Assert.Same(extra, Assert.IsType<DecidedOutcome>(outcome).Extra);
+        Assert.Equal("""{"chosenIndex":2}""", Assert.IsType<DecidedOutcome>(outcome).Extra?.ToJsonString());
         Assert.Equal(InputJson.Digest(Text("hi"), JsonOptions), harness.Row.InputDigest);
     }
 }
