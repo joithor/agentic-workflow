@@ -4,7 +4,7 @@
              x:Class="Aw.Sindri.Ui.Views.Shell.HomePage"
              x:DataType="shell:ShellViewModel">
   <!-- Home (UI spec §3.2, §4.2): four panels in a fixed order. Their routes arrive in later phases (U2, U3), so each
-       frame says "not served yet" until then. -->
+       frame says "not served yet" until then; the health strip is S1b's status in one line. -->
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
     <TextBlock Classes="page-title" Text="{Binding Text.Home}" AutomationProperties.Name="{Binding Text.Home}" />
 
@@ -30,11 +30,13 @@
       </Border>
     </Grid>
 
-    <Border x:Name="HealthStrip" Classes="panel" AutomationProperties.Name="{Binding Text.HealthPanel}">
+    <!-- Sindri health: the health line (§4.8) in full; it opens Health (§4.2), on a click or Enter. -->
+    <Button x:Name="HealthStrip" Classes="health-strip" Click="OnHealthStrip"
+            AutomationProperties.Name="{Binding Health.HealthLine}">
       <StackPanel Orientation="Horizontal" Spacing="12">
         <TextBlock Classes="eyebrow" Text="{Binding Text.HealthPanel}" AutomationProperties.Name="{Binding Text.HealthPanel}" Margin="0" VerticalAlignment="Center" />
-        <TextBlock Classes="body muted" Text="{Binding Text.NotServedYet}" AutomationProperties.Name="{Binding Text.NotServedYet}" />
+        <TextBlock x:Name="HealthLineText" Classes="body" Text="{Binding Health.HealthLine}" AutomationProperties.Name="{Binding Health.HealthLine}" />
       </StackPanel>
-    </Border>
+    </Button>
   </StackPanel>
 </UserControl>

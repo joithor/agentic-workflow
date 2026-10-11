@@ -40,7 +40,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
     public string HealthPill { get; private set => Set(ref field, value); } = Labels.Connecting;
 
     /// <summary>Home's health strip (§4.2, §4.8): the status's fields in the health line's order, or the state in words.</summary>
-    public string HealthLine { get; } = string.Empty;
+    public string HealthLine { get; private set => Set(ref field, value); } = Labels.Connecting;
 
     /// <summary>The state in one word: Connecting…, Running or Not running.</summary>
     public string Headline { get; private set => Set(ref field, value); } = Labels.Connecting;
@@ -148,6 +148,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
             lock (_gate)
             {
                 Headline = Labels.Running;
+                HealthLine = StatusText.HealthLine(status);
                 Reason = string.Empty;
                 IsRunning = true;
                 IsNotRunning = false;
@@ -172,6 +173,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
         lock (_gate)
         {
             Headline = Labels.NotRunning;
+            HealthLine = Labels.NotRunning;
             Reason = reason;
             IsRunning = false;
             IsNotRunning = true;
@@ -199,6 +201,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
         lock (_gate)
         {
             Reason = Labels.Versions(version, SindriApiClient.AppApiVersion);
+            HealthLine = Labels.VersionMismatch;
             State = ShellState.VersionMismatch;
             HealthPill = Labels.VersionMismatch;
         }

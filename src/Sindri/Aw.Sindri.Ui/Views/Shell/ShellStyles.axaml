@@ -62,6 +62,17 @@
     <Setter Property="Padding" Value="12,4" />
   </Style>
 
+  <!-- Home's health strip: a panel that is a button (it opens Health). -->
+  <Style Selector="Button.health-strip">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.LG}" />
+    <Setter Property="Padding" Value="20,16" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+  </Style>
+
   <!-- Panels, skeleton rows and the unreadable banner. -->
   <Style Selector="Border.panel">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
