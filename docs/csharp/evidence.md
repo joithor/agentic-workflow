@@ -241,6 +241,7 @@ The adapter (`DirectoryLocks`) is the same lock the shell tools take, so the two
 |---|---|
 | QA-stack lock | `$AW_QA_STACK_LOCK`, else `${AW_STATE_DIR:-~/.agentic-workflow}/locks/qa-stack.lock` |
 | Heavy-job lock | `$AW_HEAVY_JOB_LOCK`, else `${AW_STATE_DIR:-~/.agentic-workflow}/locks/heavy-job.lock`: slot 1. Slot k (2 … `$AW_HEAVY_SLOTS`) is `<lock>.k` |
+| Path form | A configured path is made absolute (against the working directory) and loses any trailing separators, so `/x/qa.lock//` is the lock `/x/qa.lock` |
 | Heavy-job slots | `$AW_HEAVY_SLOTS`, default 2: at most that many heavy jobs at once, the same count the `heavy` wrapper uses. A value that isn't a whole number of at least 1 isn't refused: the lock uses 2 and says once on stderr `ui-evidence: AW_HEAVY_SLOTS='<value>' isn't a whole number of at least 1; using 2 slots` |
 | Acquire | an atomic `mkdir` of a slot directory (libc `mkdir`; `EEXIST` means that slot is busy). Each poll tries slot 1, then 2 … N, the wrapper's order, so a holder that knows only `<lock>` (sindri's lock, a plain `acquire_lock` caller) occupies slot 1 and the total never exceeds the slot count. Polled every second until the timeout; `ui-evidence: waiting on lock: <lock>` once. The QA-stack lock has one slot |
 | Owner | `<slot>/owner`: `<pid> <UTC time> ui-evidence`, the file the `heavy` wrapper writes too |

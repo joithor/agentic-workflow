@@ -29,8 +29,10 @@ internal static class SettingsFromEnvironment
     private static int? HeavyJobSlots(string? value) =>
         value is not null && int.TryParse(value.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var slots) && slots >= 1 ? slots : null;
 
-    // why: '/x/qa.lock/' would make the lock its own parent and put slot 2 inside slot 1 ('/x/qa.lock/.2').
-    private static string? LockPath(string? value) => Set(value) is { } path ? Path.TrimEndingDirectorySeparator(path) : null;
+    // why: '/x/qa.lock/' (or '//') would make the lock its own parent and put slot 2 inside slot 1 ('/x/qa.lock/.2').
+    // GetFullPath collapses repeated separators (and anchors a relative path), so one trim leaves the bare lock path.
+    private static string? LockPath(string? value) =>
+        Set(value) is { } path ? Path.TrimEndingDirectorySeparator(Path.GetFullPath(path)) : null;
 
     private static string? Set(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 }
