@@ -75,8 +75,8 @@ window hides it (the app stays in the tray; an OS or app shutdown still closes i
 forward and Quit ends the app (`ShutdownMode.OnExplicitShutdown`), the tray follows `ShellState` (Normal: Neutral,
 "Sindri · running"; NotRunning: NotRunning; every other state: Stale, "Sindri not responding"), and an instance message
 is either `focus` (bring forward) or a `DeepLink` (bring forward, then the shell's `Navigate`); anything else is ignored,
-and no message runs an action. `AppLifetime.Start(desktop, window, platform, shell)` wires it in `SindriApp` once the
-shell exists.
+and no message runs an action. `SindriApp`'s `ShellOpened` (`Views/SindriApp.Lifetime.cs`) calls
+`AppLifetime.Start(desktop, window, platform, shell)` once the shell window shows, and disposes it on exit.
 
 **Preferences** (§12.3) are `UiPreferences`: `version` (1), `window` (x, y, width, height), `sheetWidth`, `lastPage`,
 `seenIds`, `paletteHistory`, `textScale`, `reduceMotion`, camelCase JSON. A head's store only moves bytes; the app's

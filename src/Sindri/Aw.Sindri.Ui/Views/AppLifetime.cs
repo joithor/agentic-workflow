@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
@@ -14,7 +13,6 @@ namespace Aw.Sindri.Ui.Views;
 /// ends it; the tray shows the shell's state; a later launch's message brings the window forward, and a deep link also
 /// navigates. A message never runs an action: anything that isn't "focus" or a deep link is ignored.
 /// </summary>
-[SuppressMessage("Design", "MA0182:Internal type is apparently never used", Justification = "U0 Unit B: SindriApp starts it once Unit A's shell lands (the integrator's one line); until then its tests use it.")]
 internal sealed class AppLifetime : IDisposable
 {
     private readonly Window _window;
