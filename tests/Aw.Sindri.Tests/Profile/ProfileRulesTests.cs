@@ -43,7 +43,8 @@ public sealed class ProfileRulesTests
     [InlineData("user", "user: must be non-empty text")]
     [InlineData("name", "services.Heart_Beat: is not a service name")]
     [InlineData("every", "services.heartbeat.every: 'every: 1s' is not a cadence")]
-    [InlineData("port", "api.port: must be 0 (a free port) to 65535")]
+    [InlineData("port", "api.port: must be 0 (a free port) or 1024 to 65535")]
+    [InlineData("privileged", "api.port: must be 0 (a free port) or 1024 to 65535")]
     public void An_invalid_value_names_its_key_path(string what, string message)
     {
         var bad = what switch
@@ -52,6 +53,7 @@ public sealed class ProfileRulesTests
             "user" => _valid with { User = " " },
             "name" => _valid with { Services = new Dictionary<string, ServiceSettings>(StringComparer.Ordinal) { ["Heart_Beat"] = new("30s") } },
             "every" => _valid with { Services = new Dictionary<string, ServiceSettings>(StringComparer.Ordinal) { ["heartbeat"] = new("1s") } },
+            "privileged" => _valid with { Api = new ApiSettings(Port: 80) },
             _ => _valid with { Api = new ApiSettings(Port: 70_000) },
         };
 

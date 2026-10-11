@@ -1,24 +1,31 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
+using System.Net.Sockets;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
+using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Host.Server;
 using Aw.Sindri.Tests.Ledger;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Server;
 
-/// <summary>The control plane on a real loopback port with real adapters in a temp home, through the pipeline Program runs.</summary>
-[Collection(nameof(ProcessEnvironment))]
+/// <summary>
+/// The control plane on a real loopback port with real adapters in a temp home, through the pipeline Program runs. Each
+/// test has a deadline, so a hung socket or stream fails the test instead of hanging the lane.
+/// </summary>
 public sealed class ServeTests : IDisposable
 {
     private readonly TempHome _home = new();
 
     public void Dispose() => _home.Dispose();
+
+    private const int Deadline = 30_000;
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -80,5 +87,63 @@ public sealed class ServeTests : IDisposable
         }
 
         return string.Join('\n', lines);
+    }
+
+    [Fact(Timeout = Deadline), Trait("Lane", "integration")]
+    public async Task Serve_on_a_taken_port_exits_2_with_SND_API_003()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var taken = new TcpListener(IPAddress.Loopback, 0);
+        taken.Start();
+        var port = ((IPEndPoint)taken.LocalEndpoint).Port.ToString(CultureInfo.InvariantCulture);
+        var error = new StringWriter();
+
+        var code = await ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => port, _ => null }, TimeProvider.System, error)
+            .WaitAsync(ct);
+
+        Assert.Equal(2, code);
+        Assert.StartsWith("SND-API-003 ", error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory(Timeout = Deadline), Trait("Lane", "integration")]
+    [InlineData("seventy")]
+    [InlineData("70000")]
+    [InlineData("-1")]
+    public async Task Serve_with_a_port_that_is_not_a_port_exits_2_before_taking_the_lease(string port)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var error = new StringWriter();
+
+        var code = await ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => port, _ => null }, TimeProvider.System, error)
+            .WaitAsync(ct);
+
+        Assert.Equal(2, code);
+        Assert.StartsWith($"SND-API-003 AW_SINDRI_PORT='{port}' isn't a port number (fix: ", error.ToString(), StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(_home.Path, "ledger.db")));
+    }
+
+    [Fact(Timeout = Deadline), Trait("Lane", "integration")]
+    public async Task Approving_a_stale_hash_through_the_api_exits_2_with_SND_PROFILE_003()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
+        await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), "schemaVersion: 1\nuser: thor\n", ct);
+        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
+        _ = Pipeline.Configure(app);
+        await using var scope = app.Services.CreateAsyncScope();
+        var grant = (await scope.ServiceProvider.GetRequiredService<IService<StartProcessRequest, StartProcessResponse>>().Handle(new StartProcessRequest(), ct)).Value.Grant;
+        await app.StartAsync(ct);
+        _ = await app.Services.GetRequiredService<IEndpointFile>().Write(new ControlEndpoint(new Uri(app.Urls.First()), grant.Holder.Pid, grant.Epoch), ct);
+        var stale = SliceHarness.Profile("9s").Hash;
+        var stderr = new StringWriter();
+        var probe = app.Services.GetRequiredService<IControlPlaneProbe>();
+        using var client = new ControlPlaneClient(probe, SliceHarness.Json);
+        var verbs = new Verbs(client, probe, new Output(new StringWriter(), stderr, SliceHarness.Json), scope.ServiceProvider);
+
+        var code = await verbs.Approve(stale.Value, interactive: true, new StringReader(stale.Abbreviated + "\n"), ct);
+
+        Assert.Equal(2, code);
+        Assert.StartsWith("SND-PROFILE-003 ", stderr.ToString(), StringComparison.Ordinal);
+        await app.StopAsync(ct);
     }
 }
