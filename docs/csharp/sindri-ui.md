@@ -28,6 +28,52 @@ Sindri's handlers (factory addendum §17.27.1). Nothing installs it before the s
 - **Packages.** MIT Avalonia packages only, all `[12.1.3]`: `Avalonia`, `Avalonia.Themes.Fluent`, `Avalonia.Fonts.Inter`
   (the library), `Avalonia.Desktop` (the head), `Avalonia.Headless` and `Avalonia.Skia` (tests).
 
+## U0: theme, ports and preferences (UI spec §14, §15, §18 U0)
+
+U0 turns the S1b window into the shell of the UI spec (`docs/superpowers/specs/2026-10-11-sindri-ui-design.md`). Its
+contract unit added:
+
+| Part | Where | What |
+|---|---|---|
+| Tokens | `Aw.Sindri.Ui/Theme/Tokens.axaml` | Every §14.1 colour as `Color.<Key>` and `Brush.<Key>`; the §14.2 ramp as `Type.<Step>.Size` and `.LineHeight` with one `Type.Scale`; `Space.*` (Double and `.Thickness`), `Radius.*`, `Size.*`, `Motion.*`, `Easing.Standard`; `Font.Text` (Inter) and `Font.Mono` |
+| Type ramp | `Theme/Typography.axaml` | `TextBlock` classes `page-title`, `detail-title`, `body`, `body-strong`, `caption`, `eyebrow`, `button`, `mono`, `kbd` (a Styles file: a ResourceDictionary can't hold styles). `TextScale.Apply` scales them 0.9–1.3 from the token bases |
+| Fluent | `Theme/FluentOverrides.axaml` | The §14.4 dark palette, button and tooltip brushes, `ControlCornerRadius` = `Radius.MD`, and the §11.1 focus ring: 2 px `PrimaryHover` at full opacity, 2 px outside the control. No shadows |
+| Mono font | `Theme/Fonts/` | JetBrains Mono 2.304 Regular and Medium, unmodified, with `OFL.txt` (SIL OFL 1.1, no Reserved Font Name), embedded as `AvaloniaResource`. From the release asset `JetBrainsMono-2.304.zip` (SHA-256 `6f6376c6ed2960ea8a963cd7387ec9d76e3f629125bc33d1fdcd7eb7012f7bbf`) |
+
+`SindriApp.axaml` merges the tokens and includes the two style files. **No hex colour outside `Theme/`**, and
+`InkTertiary` only for disabled text: the unit lane checks both, recomputes every §11.1 contrast pair from the token
+values, and holds every Fluent value equal to its token (`tests/Aw.Sindri.Ui.Tests/Theme/`). `docs/sindri/DESIGN.md`
+takes the ring, the darker primary hover and pressed fills, and `semantic-error` (X22).
+
+**Ports** (`Aw.Sindri.Ui/Platform`, public because heads implement them; each has a fake and a contract base in
+`tests/Aw.Sindri.Ui.Testing` that the head's adapter binds to):
+
+| Port | Desktop adapter (Unit B) | Contract base |
+|---|---|---|
+| `IMotionPreference` (`ReduceMotion`, `Changed`) | macOS `NSWorkspace`, Windows `SPI_GETCLIENTAREAANIMATION`, GNOME `enable-animations`; bound over a drivable OS seam | `MotionPreferenceContract` |
+| `ISingleInstance` (`TryClaim`, `Send`, `Messages`; `InstanceMessages.Focus`, `MaxLength` 512) | A local channel only the user can open, under `$AW_SINDRI_HOME/ui/`. A message only navigates: the app reads it as a `DeepLink` and ignores anything else | `SingleInstanceContract` |
+| `ITray` (`Show(TrayView)`, `Shown`, `OpenRequested`, `QuitRequested`; `TrayState` Neutral, NotRunning, Stale) | Avalonia `TrayIcon`; menu labels escape `_` | `TrayContract` |
+| `IPreferencesStore` (`Read`, `Write` of `UiPreferences`) | `$AW_SINDRI_HOME/ui/preferences.json`, 0600, temp file and rename | `PreferencesStoreContract` |
+
+A head hands its adapters to `SindriApp.Create(SindriPlatform, TimeProvider)` (`SindriPlatform` bundles them, so a
+new port doesn't change the signature).
+
+**Preferences** (§12.3) are `UiPreferences`: `version` (1), `window` (x, y, width, height), `sheetWidth`, `lastPage`,
+`seenIds`, `paletteHistory`, `textScale`, `reduceMotion`, camelCase JSON. Every store parses and writes with
+`UiPreferences.FromJson` / `ToJson`, so clamping is the same everywhere: the window grows to 900 × 600 (bounds that
+aren't finite are dropped), the sheet is 420–760, the scale 0.9–1.3, an unknown page reads as Home, and the id lists
+drop blanks and repeats and keep their newest 500 and 20. A malformed file, or one of another version, reads as the
+defaults.
+
+**Copy** the app owns (§12.4) lives in `ViewModels/Labels.cs`. **Deep links** (§3.3) are `Navigation/DeepLink`.
+**The caller headers** `X-Sindri-Caller: human` and `X-Sindri-Client: ui` go on every request (§9.1), and the status
+carries `apiVersion` from API P1 (`SindriApiClient.AppApiVersion` is 1; absent means no mismatch).
+
+**The shell** (`ViewModels/Shell/ShellViewModel`: navigation, Later ▾, pages, `ShellState` for §4.1's pre-API states,
+the health pill, the sheet and its edge tab, the attention band) is a stub with red tests in
+`tests/Aw.Sindri.Ui.Tests/Shell/ShellViewModelTests.cs`. They are `Explicit` (xUnit1004 forbids `Skip`) until Unit A
+implements the shell; `dotnet test --project tests/Aw.Sindri.Ui.Tests --explicit only` runs them.
+
 ## How it finds the control plane
 
 1. The endpoint-record port (`IEndpointRecordSource`) reads `control.json`. The desktop adapter reads it from
@@ -85,8 +131,8 @@ The app shows each as words in the window, never a dialog or a crash.
 
 | Lane | What |
 |---|---|
-| unit | The view model against the in-memory API and endpoint record; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; the control.json path |
-| integration | The window under Avalonia's headless platform (Skia rendering; frames saved under the test output's `frames/`); the control.json adapter against a temp directory (the endpoint-record contract) |
+| unit | The view model against the in-memory API and endpoint record; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; the control.json path; the theme (tokens, contrast, Fluent values, no hex outside `Theme/`); the port contracts over their fakes; preferences, deep links, labels |
+| integration | The window under Avalonia's headless platform (Skia rendering; frames saved under the test output's `frames/`); the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the control.json adapter against a temp directory (the endpoint-record contract) |
 
 `Avalonia.Headless.XUnit` 12.1.3 is compiled against xUnit v3 3.2.2 and fails discovery under the repo's xUnit v3 4.0.1
 (`MissingMethodException` in `TestIntrospectionHelper.GetTestCaseDetails`). The view tests are plain xUnit v3 facts that
