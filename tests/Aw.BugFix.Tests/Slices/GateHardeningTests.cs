@@ -60,7 +60,7 @@ public sealed class GateHardeningTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Mode_B_waits_for_its_second_candidate()
+    public async Task Mode_B_points_at_its_second_candidate_but_can_move_on()
     {
         var c1 = await _w.Candidate();
         _ = World.Ok(await _w.RunAgainst(c1, exitCode: 1));
@@ -72,7 +72,7 @@ public sealed class GateHardeningTests : IDisposable
         _ = World.Ok(await _w.Run<Features.RecordRun.RecordRunRequest, Features.RecordRun.RecordRunResponse>(new(World.State, c2, run.Evidence)));
 
         Assert.StartsWith("record-candidate for the second open hypothesis", World.Ok(await Resume()).Next, StringComparison.Ordinal);
-        Assert.Contains("1 of its 2 competing candidates", World.Refused(await _w.Start(), BugFixErrors.AttemptRefused).Message, StringComparison.Ordinal);
+        Assert.Equal(3, World.Ok(await _w.Start()).Attempt);   // the second implementer may produce nothing usable: the next attempt is still open
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -112,6 +112,72 @@ public sealed class GateHardeningTests : IDisposable
 
         _ = World.Refused(await _w.Run<InitRequest, InitResponse>(new InitRequest(World.State, World.TicketFile)), BugFixErrors.StateBusy);
         Assert.Equal(0, _w.Store.Saves);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_verdict_that_arrives_after_the_report_is_not_recorded()
+    {
+        var c1 = await _w.Candidate();
+        _ = World.Ok(await _w.RunAgainst(c1));
+        _w.Judge.WhileDeciding = () => World.Ok(_w.Run<Features.AdvanceReport.AdvanceReportRequest, Features.AdvanceReport.AdvanceReportResponse>(
+            new(World.State, Candidate: null, Unresolved: true)).GetAwaiter().GetResult());
+
+        _ = World.Refused(await Judge(c1), BugFixErrors.WrongPhase);
+
+        Assert.Equal((Phase.Report, BugFixStatus.Unresolved), (_w.Now.Phase, _w.Now.Status));
+        Assert.Null(_w.Now.Candidates[0].Verdict);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_interrupted_judge_call_is_never_asked_again()
+    {
+        var c1 = await _w.Candidate();
+        _ = World.Ok(await _w.RunAgainst(c1));
+        _w.Judge.WhileDeciding = static () => throw new OperationCanceledException("killed while judge was deciding");
+
+        _ = await Assert.ThrowsAsync<OperationCanceledException>(() => Judge(c1));
+        _w.Judge.WhileDeciding = null;
+
+        Assert.Contains("no answer was recorded", World.Refused(await Judge(c1), BugFixErrors.JudgeRefused).Message, StringComparison.Ordinal);
+        _ = Assert.Single(_w.Judge.Asked);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_judge_call_can_be_asked_again()
+    {
+        var c1 = await _w.Candidate();
+        _ = World.Ok(await _w.RunAgainst(c1));
+        _ = _w.Judge.Answers(ScriptedJudge.Fails());
+
+        _ = World.Refused(await Judge(c1), BugFixErrors.JudgeUnavailable);
+
+        Assert.Null(_w.Now.Candidates[0].JudgeAsked);
+        Assert.Equal(JudgeDecision.Resolved, World.Ok(await Judge(c1)).Decision);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_run_whose_program_resolved_elsewhere_is_not_the_frozen_check()
+    {
+        var c1 = await _w.Candidate();
+        _ = _w.Runner.Resolves("bash", "a bash someone put first on PATH");
+
+        Assert.Contains("resolved to a different file", World.Refused(await _w.RunAgainst(c1), BugFixErrors.RunRefused).Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Files_named_in_flag_values_are_protected_and_a_missing_one_refuses_the_baseline()
+    {
+        _w.Repos.Write("/repo/lib/setup.cjs", "hook\n");
+        _ = _w.Repos.Commit(World.Repo);
+        await _w.Investigated();
+        _ = _w.Runner.Exits("node", 1);
+        var missing = World.Ok(await TestRun(World.Repo, World.Check, ["node", "--config=tools/vt.ts", World.Check]));
+        Assert.Contains("tools/vt.ts", World.Refused(await Reproduce(missing.Evidence), BugFixErrors.CheckNotFrozen).Message, StringComparison.Ordinal);
+
+        var run = World.Ok(await TestRun(World.Repo, World.Check, ["node", "--require=./lib/setup.cjs", World.Check]));
+        _ = World.Ok(await Reproduce(run.Evidence));
+
+        Assert.Equal(["lib/setup.cjs"], _w.Now.Check?.CommandFiles);
     }
 
     private async Task PassAndJudge(CandidateId candidate, string worktree, JudgeDecision decision)

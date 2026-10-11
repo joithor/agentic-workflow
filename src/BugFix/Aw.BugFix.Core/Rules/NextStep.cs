@@ -66,7 +66,7 @@ public static class NextStep
 
         if (current.Count < AttemptRule.Candidates(state.Mode))
         {
-            return "record-candidate for the second open hypothesis (mode B runs two competing candidates)";
+            return "record-candidate for the second open hypothesis (mode B runs two competing candidates); if its implementer produced no usable commit, start-attempt with the failure reasons";
         }
 
         return AttemptRule.CanStart(state, FixMode.A).IsSuccess ? "start-attempt with the failure reasons" : "advance report --unresolved";

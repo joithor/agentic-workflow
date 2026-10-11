@@ -9,33 +9,43 @@ using Aw.Kernel.Json;
 namespace Aw.BugFix.Infrastructure;
 
 /// <summary>state.json in the state directory, written to a temporary file and renamed so a crash never leaves half a state.</summary>
-internal sealed class FileStateStore(JsonSerializerOptions json) : IStateStore
+internal sealed class FileStateStore(JsonSerializerOptions json, BugFixSettings settings) : IStateStore
 {
-    private const int LockAttempts = 300;
-    private static readonly TimeSpan _lockPause = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan _lockPause = TimeSpan.FromMilliseconds(50);
 
     public string StateFile(string directory) => Path.Combine(directory, "state.json");
 
     // An exclusive lock file: the OS releases it if the process dies, so a crash never leaves the directory locked.
-    public Result<IDisposable> Lock(string directory)
+    public Result<IDisposable> Lock(string directory, bool create)
     {
         var lockFile = Path.Combine(directory, "state.lock");
-        for (var attempt = 0; ; attempt++)
+        if (settings.FileLockingDisabled)
+        {
+            return BugFixErrors.StorageFailed.With("DOTNET_SYSTEM_IO_DISABLEFILELOCKING turns file locks off, so the state could be written by two calls at once; unset it");
+        }
+
+        if (!create && !Directory.Exists(directory))
+        {
+            return BugFixErrors.StateMissing.With($"no state at {StateFile(directory)}; run bugfix-state init first");
+        }
+
+        var waited = System.Diagnostics.Stopwatch.StartNew();
+        while (true)
         {
             try
             {
                 _ = Directory.CreateDirectory(directory);
                 return new FileStream(lockFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             }
-            catch (IOException) when (attempt < LockAttempts)
+            catch (IOException) when (File.Exists(lockFile) && waited.Elapsed < settings.LockWait)
             {
-                Thread.Sleep(_lockPause);
+                Thread.Sleep(_lockPause);   // another call holds it: wait
             }
-            catch (IOException ex)
+            catch (IOException ex) when (File.Exists(lockFile))
             {
                 return BugFixErrors.StateBusy.With($"another bugfix-state call holds {lockFile} ({ex.Message}); retry when it finishes");
             }
-            catch (UnauthorizedAccessException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 return BugFixErrors.StorageFailed.With($"cannot lock {lockFile}: {ex.Message}");
             }

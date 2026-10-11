@@ -10,12 +10,13 @@ public static class StateStoreExtensions
     /// <param name="store">The state store.</param>
     /// <param name="directory">The state directory.</param>
     /// <param name="work">The load-decide-save step.</param>
-    /// <returns>The step's result, or the lock's error (AW-BUGFIX-021, AW-BUGFIX-022).</returns>
-    public static Result<T> Locked<T>(this IStateStore store, string directory, Func<Result<T>> work)
+    /// <param name="create">Whether the step may create the state directory (init only).</param>
+    /// <returns>The step's result, or the lock's error (AW-BUGFIX-002, AW-BUGFIX-021, AW-BUGFIX-022).</returns>
+    public static Result<T> Locked<T>(this IStateStore store, string directory, Func<Result<T>> work, bool create = false)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(work);
-        var held = store.Lock(directory);
+        var held = store.Lock(directory, create);
         if (held.IsError)
         {
             return held.Error;

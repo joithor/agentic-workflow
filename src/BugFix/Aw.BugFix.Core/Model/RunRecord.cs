@@ -10,6 +10,7 @@ namespace Aw.BugFix.Core.Model;
 /// <param name="Directory">The working directory the run executed in, relative to the repository root ("" for the root).</param>
 /// <param name="CheckSha256">SHA-256 of the check file the run executed.</param>
 /// <param name="Command">The test command (argv); null for ui-evidence.</param>
+/// <param name="ProgramSha256">The SHA-256 of the program the test command ran (after the PATH lookup); empty for ui-evidence.</param>
 /// <param name="ExitCode">The test command's or ui-evidence's exit code.</param>
 /// <param name="Output">The run's log (test) or ui-evidence run directory.</param>
 public sealed record RunRecord(
@@ -19,6 +20,7 @@ public sealed record RunRecord(
     string Directory,
     string CheckSha256,
     IReadOnlyList<string>? Command,
+    string ProgramSha256,
     int ExitCode,
     string Output)
 {

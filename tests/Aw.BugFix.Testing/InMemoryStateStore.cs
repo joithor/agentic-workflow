@@ -22,10 +22,17 @@ public sealed class InMemoryStateStore : IStateStore
     public ISet<string> Held { get; } = new HashSet<string>(StringComparer.Ordinal);
 
     /// <inheritdoc/>
-    public Result<IDisposable> Lock(string directory) =>
-        Held.Add(directory)
+    public Result<IDisposable> Lock(string directory, bool create)
+    {
+        if (!create && !_states.ContainsKey(directory) && !_corrupt.Contains(directory))
+        {
+            return BugFixErrors.StateMissing.With($"no state at {StateFile(directory)}; run bugfix-state init first");
+        }
+
+        return Held.Add(directory)
             ? new Release(() => Held.Remove(directory))
             : BugFixErrors.StateBusy.With($"another bugfix-state call holds {directory}/state.lock; retry when it finishes");
+    }
 
     /// <inheritdoc/>
     public string StateFile(string directory) => $"{directory.TrimEnd('/')}/state.json";
@@ -46,6 +53,12 @@ public sealed class InMemoryStateStore : IStateStore
     /// <inheritdoc/>
     public void Save(string directory, BugFixState state)
     {
+        // Every state change runs under the lock (StateStoreExtensions.Locked): a save without it is a bug in the caller.
+        if (!Held.Contains(directory))
+        {
+            throw new InvalidOperationException($"Save of {directory} without its lock");
+        }
+
         _states[directory] = state;
         _ = _corrupt.Remove(directory);
         Saves++;

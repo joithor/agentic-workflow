@@ -17,15 +17,48 @@ internal sealed class JudgeCandidateService(IStateStore store, IRunLedger ledger
 {
     public ValueTask<Result<JudgeCandidateResponse>> Handle(JudgeCandidateRequest request, CancellationToken cancellationToken)
     {
-        var question = store.Load(request.StateDirectory)
-            .Bind(state => state.Require(Phase.Evaluate).Bind(_ => state.Find(request.Candidate)).Bind(static c => c.Judgeable())
-                .Bind(candidate => Input(state, candidate)))
-            .Map(input => ledger.WriteJudgeInput(request.StateDirectory, request.Candidate, input));
-        var answer = question.Bind(q => judge.ResolutionCheck(q).Bind(a => SameInput(q, a)));
+        var question = store.Locked(request.StateDirectory, () => Ask(request));
+        if (question.IsError)
+        {
+            return ValueTask.FromResult(Results.Failure<JudgeCandidateResponse>(question.Error));
+        }
 
-        // The judge call can take minutes: record under the lock onto the current state, never over a verdict another
-        // call recorded meanwhile.
-        return ValueTask.FromResult(answer.Bind(a => store.Locked(request.StateDirectory, () => Record(request, a))));
+        // The call can take minutes, so it runs without the lock; the candidate is marked as asked, so an interrupted
+        // call can't be asked again.
+        var answer = judge.ResolutionCheck(question.Value).Bind(a => SameInput(question.Value, a));
+        if (answer.IsError)
+        {
+            _ = store.Locked(request.StateDirectory, () => Unmark(request, question.Value));   // no verdict: asking again isn't a re-roll
+            return ValueTask.FromResult(Results.Failure<JudgeCandidateResponse>(answer.Error));
+        }
+
+        return ValueTask.FromResult(store.Locked(request.StateDirectory, () => Record(request, question.Value, answer.Value)));
+    }
+
+    private Result<JudgeQuestion> Ask(JudgeCandidateRequest request)
+    {
+        var state = store.Load(request.StateDirectory);
+        var candidate = state.Bind(s => s.Require(Phase.Evaluate)).Bind(_ => state.Value.Find(request.Candidate)).Bind(static c => c.Judgeable());
+        var question = candidate.Bind(c => Input(state.Value, c)).Map(input => ledger.WriteJudgeInput(request.StateDirectory, request.Candidate, input));
+        if (question.IsError)
+        {
+            return question.Error;
+        }
+
+        store.Save(request.StateDirectory, state.Value.With(candidate.Value with { JudgeAsked = question.Value.InputSha256 }));
+        return question;
+    }
+
+    private Result<Unit> Unmark(JudgeCandidateRequest request, JudgeQuestion question)
+    {
+        var state = store.Load(request.StateDirectory);
+        var candidate = state.Bind(s => s.Find(request.Candidate));
+        if (candidate.IsSuccess && candidate.Value.JudgeAsked == question.InputSha256)
+        {
+            store.Save(request.StateDirectory, state.Value.With(candidate.Value with { JudgeAsked = null }));
+        }
+
+        return Results.Ok();
     }
 
     // Built from state, never from agent-written text, so it can't steer the verdict.
@@ -51,18 +84,20 @@ internal sealed class JudgeCandidateService(IStateStore store, IRunLedger ledger
             ? answer
             : BugFixErrors.JudgeUnavailable.With($"judge answered about input {answer.InputSha256}, not the input the helper wrote ({question.InputSha256}); no verdict recorded");
 
-    private Result<JudgeCandidateResponse> Record(JudgeCandidateRequest request, JudgeAnswer answer)
+    // Recorded onto the current state, and only if it still allows it: the bug fix may have moved on (reported, a new
+    // attempt) while judge was deciding, and then nothing is recorded.
+    private Result<JudgeCandidateResponse> Record(JudgeCandidateRequest request, JudgeQuestion question, JudgeAnswer answer)
     {
         var fresh = store.Load(request.StateDirectory);
-        var candidate = fresh.Bind(state => state.Find(request.Candidate));
+        var candidate = fresh.Bind(state => state.Require(Phase.Evaluate)).Bind(_ => fresh.Value.Find(request.Candidate));
         if (candidate.IsError)
         {
             return candidate.Error;
         }
 
-        if (candidate.Value.Verdict is not null)
+        if (candidate.Value.Verdict is not null || candidate.Value.JudgeAsked != question.InputSha256)
         {
-            return BugFixErrors.JudgeRefused.With($"{request.Candidate.Value} was judged by another call meanwhile; that verdict stands");
+            return BugFixErrors.JudgeRefused.With($"{request.Candidate.Value} was judged or asked by another call meanwhile; that call's outcome stands");
         }
 
         var status = answer.Decision switch
@@ -73,7 +108,7 @@ internal sealed class JudgeCandidateService(IStateStore store, IRunLedger ledger
             _ => throw new ArgumentOutOfRangeException(nameof(answer), answer.Decision, "not a decision"),
         };
         var verdict = new JudgeVerdict(answer.Decision, answer.DecisionId, answer.ReasonCode, answer.InputSha256);
-        var state = fresh.Value.With(candidate.Value with { Verdict = verdict }) with { Status = status };
+        var state = fresh.Value.With(candidate.Value with { Verdict = verdict, JudgeAsked = null }) with { Status = status };
         store.Save(request.StateDirectory, state.Step(Phase.Evaluate, $"judge {request.Candidate.Value}", clock.GetUtcNow()));
         return new JudgeCandidateResponse(request.Candidate, answer.Decision, answer.DecisionId, answer.ReasonCode, answer.Reasons, status);
     }

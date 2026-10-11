@@ -15,7 +15,8 @@ internal sealed class LocalFiles : IFiles
 
     public string? RealPath(string path)
     {
-        var real = Path.IsPathRooted(path) ? Resolve(path, MaxLinks) : null;
+        var followed = 0;
+        var real = Path.IsPathRooted(path) ? Resolve(path, ref followed) : null;
         return real is not null && File.Exists(real) ? real : null;
     }
 
@@ -46,7 +47,8 @@ internal sealed class LocalFiles : IFiles
 
     // realpath(3): components left to right, each link resolved before the next component, and ".." applied to the
     // resolved directory (so "link/.." is the link target's parent, as the OS sees it, not the link's).
-    private static string? Resolve(string path, int budget)
+    // One link budget for the whole lookup, like the OS's MAXSYMLINKS (ELOOP past it).
+    private static string? Resolve(string path, ref int followed)
     {
         var current = Path.GetPathRoot(path) ?? "/";
         foreach (var part in path[current.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
@@ -69,7 +71,7 @@ internal sealed class LocalFiles : IFiles
                 continue;
             }
 
-            if (budget == 0 || Resolve(Path.IsPathRooted(target) ? target : Path.Join(current, target), budget - 1) is not { } resolved)
+            if (++followed > MaxLinks || Resolve(Path.IsPathRooted(target) ? target : Path.Join(current, target), ref followed) is not { } resolved)
             {
                 return null;
             }

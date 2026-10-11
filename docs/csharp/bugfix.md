@@ -51,29 +51,43 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   passing check can never prove a fix, and a **broken** run is not a reproduction: a test command that couldn't start or
   was killed at the time limit, or a ui run with broken steps and no failed one (a bad selector).
 - **The check is frozen.** Every later run must execute the same check file (same SHA-256); a test run must use the
-  same argv **in the same working directory** (relative to the repository root) as the baseline. `run-test` refuses a
-  command that doesn't name the check by a path that resolves to it from the working directory (a same-named file
-  elsewhere doesn't count; paths resolve like realpath(3), links before `..`), a non-runner (`grep`, `cat`, `true`, …),
-  a program that runs another one (`env`, `xargs`, `timeout`, `nice`, `nohup`, `sudo`, …), and inline code: `-c`/`-e`/
-  `-E` style flags, `--eval`/`--command`/`--print`, `node -p`, `php -r`, `deno eval`, `npx -c`.
+  same argv **in the same working directory** (relative to the repository root) as the baseline, and its program must
+  resolve (through PATH) to the same file (same SHA-256). `run-test` refuses a command that doesn't name the check by a
+  path that resolves to it from the working directory (a same-named file elsewhere doesn't count; paths resolve like
+  realpath(3), links before `..`), a non-runner (`grep`, `cat`, `true`, …), a program that runs another one (`env`,
+  `xargs`, `timeout`, `nice`, `nohup`, `sudo`, …), and inline code, by interpreter: shells and python `-c`, node/deno/bun
+  `-e`/`-p`/`--eval`/`--print`, perl and ruby `-e`/`-E`, php `-r`, `deno eval` (anywhere in a short-flag cluster, so
+  `bash -xec` counts and `bash -e` doesn't). A package runner (`npx`, `npm exec`, `pnpm exec|dlx`, `yarn exec|dlx`,
+  `bun x`, `uv run`, `poetry run`, `bundle exec`) is looked through: the program it runs is classified the same way.
+- **The caller's environment can't steer it.** The check runs without the loader variables that would change what it
+  executes (`BASH_ENV`, `ENV`, `NODE_OPTIONS`, `PYTHON*`, `RUBYOPT`, `PERL5OPT`, `LD_*`, `DYLD_*`, `DOTNET_STARTUP_HOOKS`,
+  …), git runs without `GIT_*` variables (`GIT_DIR`, `GIT_INDEX_FILE`, …), and bugfix-state refuses to change state while
+  `DOTNET_SYSTEM_IO_DISABLEFILELOCKING` is set. Residual risk: dependencies the runner loads from gitignored directories
+  (`node_modules`, `.venv`) aren't frozen; the check's program and the files the command names are.
 - **Candidates are real changes on the baseline:** a clean worktree on the named branch, with commits on top of the
   baseline commit and a tree different from it, not already recorded. A fix that touches the check, its directory,
   tests, fixtures, snapshots, runner config, `package.json`, or a repository file the frozen command names (its runner
-  or wrapper script) needs `--allow-test-changes` (the user's approval).
+  or wrapper script, a `--require=`/`--config=` value, a `-r./x` value, a `-m`/`-p` module's file) needs
+  `--allow-test-changes` (the user's approval). A baseline command that names a script or config file that doesn't
+  exist is refused (AW-BUGFIX-008): a fix could add it.
 - **Attempts.** Mode A one candidate, C one candidate (split by area, in sequence), B two candidates on different open
-  hypotheses, only after a failed attempt and with at least two hypotheses not ruled out. A new attempt waits until the
-  current one has all its candidates (two in mode B) evaluated and none resolves the ticket; `resume` gives the same
-  answer (`record-candidate for the second open hypothesis` while a mode-B attempt has one).
+  hypotheses, only after a failed attempt and with at least two hypotheses not ruled out. A new attempt waits until
+  every recorded candidate of the current one is evaluated and none resolves the ticket. While a mode-B attempt has
+  one candidate, `resume` points at the second (and says to start the next attempt if its implementer produced
+  nothing usable).
 - **One verdict per candidate.** `judge` builds the input from state (the ticket verbatim, the snapshotted root cause, a
   description of the frozen check, the diff stat and the diff without lock files (`package-lock.json`, `*.lock`,
   `pnpm-lock.yaml`, `packages.lock.json`) and `dist/` output, capped at 200,000 characters), writes it to
-  `judge-<candidate>.json`, asks judge about that file, and records the answer only when it names that file's SHA-256.
-  It never asks again. If judge gives no usable verdict (or one about another input) nothing is recorded, so a retry is
-  not a re-roll; the input file stays as a record of what was asked. An escalation sets the status to `needs-human`; a
+  `judge-<candidate>.json`, marks the candidate as asked, asks judge about that file without holding the lock, and
+  records the answer only when it names that file's SHA-256 and the bug fix is still in `evaluate`. It never asks
+  again: a call interrupted after asking leaves the mark, and the next `judge` is refused (ask the user). If judge gives
+  no usable verdict (or one about another input) the mark is cleared and nothing is recorded, so a retry is not a
+  re-roll; the input file stays as a record of what was asked. An escalation sets the status to `needs-human`; a
   later `resolved` verdict in the same attempt sets it back to `active`, and `resume` points at the resolving candidate.
 - **One writer at a time.** Every state change holds the state directory's lock (`state.lock`) from load to save; a
   long `run-test`, `run-ui` or `judge` takes it only to record its result onto the current state. A call that can't get
-  it within 30 seconds is refused with AW-BUGFIX-021 and changes nothing.
+  it within `AW_BUGFIX_LOCK_WAIT_SECONDS` (default 30) is refused with AW-BUGFIX-021 and changes nothing. Only `init`
+  creates the state directory; any other command on a missing one is AW-BUGFIX-002 and creates nothing.
 
 ## Output, exit codes and errors
 
@@ -118,11 +132,11 @@ Everything lives under the `--state` directory; the C# build never reads TS-writ
 
 - `state.json`: the state (`schemaVersion` 1), written to a temporary file and renamed, under `state.lock`. Fields: `ticket`, `phase`,
   `status`, `attempt`, `mode`, `investigation` (`handoff`, `rootCause`, `hypotheses`), `check` (`kind` test or ui,
-  `path`, `sha256`, `command`, `directory`, `commandFiles`), `baseline` (`evidence`, `commit`), `candidates` (`id`, `attempt`, `mode`, `branch`,
-  `worktree`, `commit`, `hypothesis`, `changedFiles`, `run`, `verdict`), `runs` (`evidence`, `sha256`), `resolvedBy`,
+  `path`, `sha256`, `command`, `directory`, `programSha256`, `commandFiles`), `baseline` (`evidence`, `commit`), `candidates` (`id`, `attempt`, `mode`, `branch`,
+  `worktree`, `commit`, `hypothesis`, `changedFiles`, `run`, `verdict`, `judgeAsked`), `runs` (`evidence`, `sha256`), `resolvedBy`,
   `history`.
 - `runs/<stamp>-<test|ui>-<n>.json`: a run record (`kind`, `outcome` passed, failed or broken, `commit`, `directory`,
-  `checkSha256`, `command`, `exitCode`, `output`); a ui run that produced nothing gives its slot back, with its `.log` (and, for ui, the ui-evidence run directory `<stem>/`).
+  `checkSha256`, `command`, `programSha256`, `exitCode`, `output`); a ui run that produced nothing gives its slot back, with its `.log` (and, for ui, the ui-evidence run directory `<stem>/`).
 - `judge-<candidate>.json`: the resolution-check input asked about the candidate.
 
 ## Ports and adapters
@@ -132,7 +146,7 @@ Everything lives under the `--state` directory; the C# build never reads TS-writ
 | `IStateStore` (load, save, exclusive lock) | `InMemoryStateStore` | `FileStateStore` (`state.lock`, `FileShare.None`) | `StateStoreContract` |
 | `IRunLedger` | `InMemoryRunLedger` | `FileRunLedger` | `RunLedgerContract` |
 | `IGit`, `IFiles` | `InMemoryRepos` (one fake: git answers about the files the file port reads) | `GitProcess` (git on PATH), `LocalFiles` | `ReposContract` |
-| `ICheckRunner` (returns the exit code and whether it ran to a verdict) | `ScriptedCheckRunner` | `ProcessCheckRunner`: output streamed to the log (16 MB cap); killed after `AW_BUGFIX_CHECK_TIMEOUT_SECONDS` (default 1800), also when a background child holds its output; that run didn't run (broken) | `CheckRunnerContract` |
+| `ICheckRunner` (returns the exit code and whether it ran to a verdict) | `ScriptedCheckRunner` | `ProcessCheckRunner`: output streamed to the log (16 MB cap); killed after `AW_BUGFIX_CHECK_TIMEOUT_SECONDS` (default 1800); a run that exits keeps its exit code even if background children still hold its output (output after the exit is dropped after 5 s, noted in the log; those children aren't killed: they left the process tree); a run killed at the limit or that couldn't start didn't run to a verdict (broken); runs without loader variables | `CheckRunnerContract` |
 | `IJudge` (asks about the written input file; the answer names its SHA-256) | `ScriptedJudge` | `UnavailableJudge` (**blocked**) | `JudgeContract` |
 | `IUiEvidence` | `ScriptedUiEvidence` | `UnavailableUiEvidence` (**blocked**) | `UiEvidenceContract` |
 

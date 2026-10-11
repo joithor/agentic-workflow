@@ -10,9 +10,13 @@ public sealed class ProcessCheckRunnerContractTests : CheckRunnerContract, IDisp
 {
     private readonly TempDirectory _temp = new();
 
-    protected override ICheckRunner Runner { get; } = new ProcessCheckRunner(new BugFixSettings(TimeSpan.FromSeconds(30)));
+    protected override ICheckRunner Runner { get; } = new ProcessCheckRunner(new BugFixSettings(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(1)), new LocalFiles());
 
     protected override string Directory => _temp.Path;
+
+    protected override ICheckRunner HangingRunner { get; } = new ProcessCheckRunner(new BugFixSettings(TimeSpan.FromMilliseconds(300), TimeSpan.FromSeconds(1)), new LocalFiles());
+
+    protected override IReadOnlyList<string> HangingCommand => ["sleep", "5"];
 
     public void Dispose() => _temp.Dispose();
 
@@ -20,23 +24,23 @@ public sealed class ProcessCheckRunnerContractTests : CheckRunnerContract, IDisp
     public void The_log_holds_the_output_and_a_hang_is_killed_and_fails()
     {
         var log = Path.Combine(_temp.Path, "echo.log");
-        Assert.Equal(new Core.Model.CheckExit(3, Ran: true), Runner.Run(["sh", "-c", "echo out; echo err >&2; exit 3"], Directory, log));
+        Assert.Equal((3, true), Runner.Run(["sh", "-c", "echo out; echo err >&2; exit 3"], Directory, log) is var e ? (e.Code, e.Ran) : default);
         Assert.Equal(["err", "out"], File.ReadAllLines(log).Order(StringComparer.Ordinal), StringComparer.Ordinal);   // two streams, one log: their order isn't fixed
 
-        var quick = new ProcessCheckRunner(new BugFixSettings(TimeSpan.FromMilliseconds(300)));
+        var quick = new ProcessCheckRunner(new BugFixSettings(TimeSpan.FromMilliseconds(300), TimeSpan.FromSeconds(1)), new LocalFiles());
         Assert.False(quick.Run(["sleep", "5"], Directory, Path.Combine(_temp.Path, "sleep.log")).Ran);
     }
 
     [Fact]
-    public void A_background_child_holding_the_output_cannot_stretch_the_time_limit()
+    public void A_background_child_holding_the_output_keeps_the_exit_code_and_does_not_stretch_the_run()
     {
-        var quick = new ProcessCheckRunner(new BugFixSettings(TimeSpan.FromSeconds(1)));
+        var runner = new ProcessCheckRunner(new BugFixSettings(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(1)), new LocalFiles());
         var clock = System.Diagnostics.Stopwatch.StartNew();
 
-        var exit = quick.Run(["sh", "-c", "sleep 30 & echo started; exit 1"], Directory, Path.Combine(_temp.Path, "bg.log"));
+        var exit = runner.Run(["sh", "-c", "sleep 30 & echo started; exit 1"], Directory, Path.Combine(_temp.Path, "bg.log"));
 
-        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(10), $"took {clock.Elapsed}");
-        Assert.False(exit.Ran);
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(15), $"took {clock.Elapsed}");
+        Assert.Equal((1, true), (exit.Code, exit.Ran));
         Assert.Contains("left processes holding its output", File.ReadAllText(Path.Combine(_temp.Path, "bg.log")), StringComparison.Ordinal);
     }
 }

@@ -75,6 +75,7 @@ internal sealed class GitProcess : IGit
     private static ProcessResult Run(string directory, params string[] args)
     {
         var start = Processes.Start("git", ["-C", directory, "-c", "core.quotepath=off", .. args]);
+        CheckEnvironment.StripGit(start.Environment);
         start.Environment["GIT_TERMINAL_PROMPT"] = "0";
         return Processes.Capture(start, _timeout);
     }

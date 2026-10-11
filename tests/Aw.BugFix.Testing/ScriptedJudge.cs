@@ -13,6 +13,9 @@ public sealed class ScriptedJudge : IJudge
 {
     private readonly Queue<Result<JudgeAnswer>> _answers = new();
 
+    /// <summary>Gets or sets what happens while judge is deciding (another command running meanwhile, or a crash).</summary>
+    public Action? WhileDeciding { get; set; }
+
     /// <summary>Gets every input asked, in order.</summary>
     public IList<ResolutionCheckInput> Asked { get; } = [];
 
@@ -29,6 +32,7 @@ public sealed class ScriptedJudge : IJudge
     public Result<JudgeAnswer> ResolutionCheck(JudgeQuestion question)
     {
         Asked.Add(question.Input);
+        WhileDeciding?.Invoke();
         var answer = _answers.Count > 0 ? _answers.Dequeue() : A.Verdict(JudgeDecision.Resolved);
         return answer.Map(a => a.InputSha256.Length == 0 ? a with { InputSha256 = question.InputSha256 } : a);
     }

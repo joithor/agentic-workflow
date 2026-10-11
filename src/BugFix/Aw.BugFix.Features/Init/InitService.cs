@@ -13,7 +13,7 @@ internal sealed class InitService(IStateStore store, IFiles files, TimeProvider 
     : IService<InitRequest, InitResponse>
 {
     public ValueTask<Result<InitResponse>> Handle(InitRequest request, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(files.ReadText(request.TicketFile).Bind(ReadTicket).Bind(ticket => store.Locked(request.StateDirectory, () => Start(request, ticket))));
+        ValueTask.FromResult(files.ReadText(request.TicketFile).Bind(ReadTicket).Bind(ticket => store.Locked(request.StateDirectory, () => Start(request, ticket), create: true)));
 
     private Result<Ticket> ReadTicket(string text)
     {

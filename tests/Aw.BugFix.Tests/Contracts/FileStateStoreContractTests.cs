@@ -12,7 +12,7 @@ public sealed class FileStateStoreContractTests : StateStoreContract, IDisposabl
 {
     private readonly TempDirectory _temp = new();
 
-    protected override IStateStore Store { get; } = new FileStateStore(AwJson.CreateOptions(BugFixJsonContext.Default));
+    protected override IStateStore Store { get; } = new FileStateStore(AwJson.CreateOptions(BugFixJsonContext.Default), new BugFixSettings(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(200)));
 
     protected override string Directory => Path.Combine(_temp.Path, "state");
 

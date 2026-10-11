@@ -9,8 +9,9 @@ namespace Aw.BugFix.Core.Model;
 /// <param name="Sha256">The check file's SHA-256 at the baseline.</param>
 /// <param name="Command">The test command (argv) of the baseline run; null for a ui-evidence check.</param>
 /// <param name="Directory">The working directory of the baseline run, relative to the repository root ("" for the root).</param>
+/// <param name="ProgramSha256">The SHA-256 of the program the baseline command ran: a later run must run the same program.</param>
 /// <param name="CommandFiles">Repository files the baseline command names besides the check (its runner, wrapper scripts): a fix may not change them without approval.</param>
-public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IReadOnlyList<string>? Command, string Directory, IReadOnlyList<string> CommandFiles)
+public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IReadOnlyList<string>? Command, string Directory, string ProgramSha256, IReadOnlyList<string> CommandFiles)
 {
     /// <summary>Accepts a later run only if it executed this check: same kind, a verdict (not broken), and for a test the same command in the same directory.</summary>
     /// <param name="record">The run.</param>
@@ -27,14 +28,17 @@ public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IRe
             return BugFixErrors.RunRefused.With("the run is broken (it didn't start, timed out, or only had broken steps); repair it and re-run, a broken run is not a verdict on the fix");
         }
 
-        if (Kind != CheckKind.Test)
-        {
-            return record;
-        }
+        return Kind == CheckKind.Test ? SameTestRun(record) : record;
+    }
 
-        return (record.Command ?? []).SequenceEqual(Command ?? [], StringComparer.Ordinal) && record.Directory == Directory
-            ? record
+    private Result<RunRecord> SameTestRun(RunRecord record) =>
+         (record.Command ?? []).SequenceEqual(Command ?? [], StringComparer.Ordinal) && record.Directory == Directory
+            ? SameProgram(record)
             : BugFixErrors.RunRefused.With(
                 $"the test command `{string.Join(' ', record.Command ?? [])}` in '{record.Directory}' differs from the baseline's `{string.Join(' ', Command ?? [])}` in '{Directory}'");
-    }
+
+    private Result<RunRecord> SameProgram(RunRecord record) =>
+        record.ProgramSha256 == ProgramSha256
+            ? record
+            : BugFixErrors.RunRefused.With($"the test command's program `{(Command ?? ["?"])[0]}` resolved to a different file than at the baseline (check PATH)");
 }

@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 
 namespace Aw.BugFix.Infrastructure;
@@ -16,11 +17,15 @@ internal static class Processes
     /// <summary>The most output kept or logged per run; the rest is dropped and the log says so.</summary>
     internal const int OutputCap = 16 * 1024 * 1024;
 
+    // How long output is still read after the program exits: background children that keep the pipes open don't hold
+    // the verdict hostage, and don't turn a finished run into a timed-out one.
+    private static readonly TimeSpan _drainAfterExit = TimeSpan.FromSeconds(5);
+
     internal static ProcessResult Capture(ProcessStartInfo start, TimeSpan timeout)
     {
         using var output = new MemoryStream();
         using var error = new MemoryStream();
-        var (code, note) = Run(start, timeout, output, error);
+        var (code, _, note) = Run(start, timeout, output, error);
         return new ProcessResult(code, Encoding.UTF8.GetString(output.ToArray()), note ?? Encoding.UTF8.GetString(error.ToArray()));
     }
 
@@ -29,13 +34,13 @@ internal static class Processes
     {
         using var file = new FileStream(log, FileMode.Create, FileAccess.Write, FileShare.Read);
         using var sink = Stream.Synchronized(file);
-        var (code, note) = Run(start, timeout, sink, sink);
+        var (code, ran, note) = Run(start, timeout, sink, sink);
         if (note is not null)
         {
             sink.Write(Encoding.UTF8.GetBytes($"\nbugfix-state: {note}\n"));
         }
 
-        return (code, note is null);
+        return (code, ran);
     }
 
     internal static ProcessStartInfo Start(string program, IEnumerable<string> args, string? directory = null)
@@ -49,8 +54,9 @@ internal static class Processes
         return start;
     }
 
-    // The deadline covers the process and its output: a background child that keeps the pipes open can't stretch it.
-    private static (int Code, string? Note) Run(ProcessStartInfo start, TimeSpan timeout, Stream output, Stream error)
+    // The deadline covers the process; after it exits, output is drained only briefly, so a background child holding the
+    // pipes neither stretches the run nor erases its exit code (the child itself left the process tree and isn't killed).
+    private static (int Code, bool Ran, string? Note) Run(ProcessStartInfo start, TimeSpan timeout, Stream output, Stream error)
     {
         start.RedirectStandardOutput = true;
         start.RedirectStandardError = true;
@@ -63,27 +69,22 @@ internal static class Processes
         }
         catch (Win32Exception ex)
         {
-            return (CouldNotStart, $"{start.FileName} can't run: {ex.Message}");
+            return (CouldNotStart, false, $"{start.FileName} can't run: {ex.Message}");
         }
 
         using (process)
         {
             process.StandardInput.Close();
-            var clock = Stopwatch.StartNew();
-            var pumps = Task.WhenAll(
-                Pump(process.StandardOutput.BaseStream, output),
-                Pump(process.StandardError.BaseStream, error));
-            var exited = process.WaitForExit(timeout);
-            var left = timeout - clock.Elapsed;
-            if (exited && pumps.Wait(left > TimeSpan.Zero ? left : TimeSpan.Zero))
+            var pumps = Task.WhenAll(Pump(process.StandardOutput.BaseStream, output), Pump(process.StandardError.BaseStream, error));
+            if (!process.WaitForExit(timeout))
             {
-                return (process.ExitCode, null);
+                Kill(process);
+                return (TimedOut, false, $"{start.FileName} took longer than {timeout}; killed and counted as not run");
             }
 
-            Kill(process);
-            return (TimedOut, exited
-                ? $"{start.FileName} left processes holding its output past the {timeout} limit; counted as not run"
-                : $"{start.FileName} took longer than {timeout}; killed and counted as not run");
+            return pumps.Wait(_drainAfterExit)
+                ? (process.ExitCode, true, null)
+                : (process.ExitCode, true, string.Create(CultureInfo.InvariantCulture, $"{start.FileName} exited {process.ExitCode} but left processes holding its output; output after the exit was not kept"));
         }
     }
 

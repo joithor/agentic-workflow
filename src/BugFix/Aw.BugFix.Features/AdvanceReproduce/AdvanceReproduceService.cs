@@ -47,19 +47,33 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
         }
 
         var root = file.FullPath[..^file.RepoPath.Length].TrimEnd('/');
-        return new FrozenCheck(record.Kind, file.RepoPath, sha, record.Command, record.Directory, CommandFiles(record, root, file));
+        return CommandFiles(record, root, file).Map(commandFiles =>
+            new FrozenCheck(record.Kind, file.RepoPath, sha, record.Command, record.Directory, record.ProgramSha256, commandFiles));
     }
 
-    // The repository files the baseline command names besides the check (its runner, wrapper scripts): a fix that changes
-    // them changes what the check executes, so they are protected like the check.
-    private List<string> CommandFiles(RunRecord record, string root, CheckFile check)
+    // The repository files the baseline command names besides the check (its runner, wrapper scripts, --require=,
+    // --config=, -m modules): a fix that changes them changes what the check executes, so they are protected like it.
+    // A script-like path that doesn't exist is refused: what isn't there now could be added by a fix.
+    private Result<IReadOnlyList<string>> CommandFiles(RunRecord record, string root, CheckFile check)
     {
         var directory = record.Directory.Length == 0 ? root : $"{root}/{record.Directory}";
-        return [.. (record.Command ?? [])
-            .Select(arg => files.RealPath(files.FullPath(directory, arg)))
-            .OfType<string>()
-            .Where(real => real.StartsWith(root + "/", StringComparison.Ordinal) && real != check.FullPath)
-            .Select(real => real[(root.Length + 1)..])
-            .Distinct(StringComparer.Ordinal)];
+        var found = new List<string>();
+        foreach (var (path, optional) in CommandFilesRule.Paths(record.Command ?? []))
+        {
+            var real = files.RealPath(files.FullPath(directory, path));
+            if (real is null && MustExist(path, optional))
+            {
+                return BugFixErrors.CheckNotFrozen.With($"the baseline command names {path}, which doesn't exist; a fix could add it, so name only files that exist");
+            }
+
+            if (real is not null && real.StartsWith(root + "/", StringComparison.Ordinal) && real != check.FullPath)
+            {
+                found.Add(real[(root.Length + 1)..]);
+            }
+        }
+
+        return Results.Success<IReadOnlyList<string>>([.. found.Distinct(StringComparer.Ordinal)]);
     }
+
+    private static bool MustExist(string path, bool optional) => !optional && !path.StartsWith('-') && CommandFilesRule.LooksLikeFile(path);
 }

@@ -28,7 +28,11 @@ public abstract class StateStoreContract
         var at = new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
         var state = BugFixState.Start(_ticket, at, "/t.json").Step(Phase.Investigate, "advance investigate", at.AddMinutes(1), "/h.md");
 
-        Store.Save(Directory, state);
+        using (Store.Lock(Directory, create: true).Value)
+        {
+            Store.Save(Directory, state);
+        }
+
         var loaded = Store.Load(Directory).Value;
 
         Expect.Equal((state.Phase, state.Status, state.Ticket, state.SchemaVersion), (loaded.Phase, loaded.Status, loaded.Ticket, loaded.SchemaVersion), "Equal((state.Phase, state.Status, state.Ticket, state.SchemaVersion), (loaded.Phase, loaded.Status, loaded.Tic");
@@ -40,15 +44,20 @@ public abstract class StateStoreContract
     [Fact]
     public void The_lock_is_exclusive_until_released()
     {
-        var first = Store.Lock(Directory);
+        var first = Store.Lock(Directory, create: true);
         Expect.That(first.IsSuccess, "the first taker gets the lock");
 
-        Expect.Equal(BugFixErrors.StateBusy.Code, Store.Lock(Directory).Match(static l => { l.Dispose(); return "taken"; }, static e => e.Code), "a second taker is refused while it is held");
+        Expect.Equal(BugFixErrors.StateBusy.Code, Store.Lock(Directory, create: true).Match(static l => { l.Dispose(); return "taken"; }, static e => e.Code), "a second taker is refused while it is held");
         first.Value.Dispose();
-        var again = Store.Lock(Directory);
+        var again = Store.Lock(Directory, create: true);
         Expect.That(again.IsSuccess, "after release it can be taken again");
         again.Value.Dispose();
     }
+
+    /// <summary>Only init creates a state directory: any other step on a missing one is AW-BUGFIX-002 and creates nothing.</summary>
+    [Fact]
+    public void A_missing_directory_is_not_created_by_a_step_that_needs_state() =>
+        Expect.Equal(BugFixErrors.StateMissing.Code, Store.Lock(Directory, create: false).Match(static l => { l.Dispose(); return "locked"; }, static e => e.Code), "no state, no lock");
 
     /// <summary>A state file that isn't a BugFix state is AW-BUGFIX-003.</summary>
     [Fact]

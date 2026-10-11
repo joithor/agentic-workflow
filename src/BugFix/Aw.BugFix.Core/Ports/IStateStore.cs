@@ -12,9 +12,10 @@ public interface IStateStore
     public string StateFile(string directory);
 
     /// <summary>Takes the state directory for this call; another call that holds it makes this one wait, then give up with AW-BUGFIX-021.</summary>
-    /// <param name="directory">The state directory (created when missing).</param>
-    /// <returns>The held lock (dispose to release), AW-BUGFIX-021, or AW-BUGFIX-022.</returns>
-    public Result<IDisposable> Lock(string directory);
+    /// <param name="directory">The state directory.</param>
+    /// <param name="create">Whether to create a missing directory (init); otherwise a missing one is AW-BUGFIX-002.</param>
+    /// <returns>The held lock (dispose to release), AW-BUGFIX-002, AW-BUGFIX-021, or AW-BUGFIX-022.</returns>
+    public Result<IDisposable> Lock(string directory, bool create);
 
     /// <summary>Loads the state.</summary>
     /// <param name="directory">The state directory.</param>

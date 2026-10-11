@@ -17,7 +17,7 @@ public abstract class CheckRunnerContract
     [Fact]
     public void The_exit_code_is_the_commands()
     {
-        Expect.Equal(new CheckExit(0, Ran: true), Runner.Run(["true"], Directory, $"{Directory}/true.log"), "Equal(0, Runner.Run(['true'], Directory, $'{Directory}/true.log'))");
+        Expect.That(Runner.Run(["true"], Directory, $"{Directory}/true.log") is { Code: 0, Ran: true }, "Equal(0, Runner.Run(['true'], Directory, $'{Directory}/true.log'))");
         Expect.That(Runner.Run(["false"], Directory, $"{Directory}/false.log") is { Ran: true, Code: not 0 }, "NotEqual(0, Runner.Run(['false'], Directory, $'{Directory}/false.log'))");
     }
 
@@ -25,4 +25,15 @@ public abstract class CheckRunnerContract
     [Fact]
     public void A_command_that_cannot_start_fails() =>
         Expect.That(Runner.Run(["no-such-program-aw-bugfix"], Directory, $"{Directory}/missing.log") is { Ran: false, Outcome: RunOutcome.Broken }, "NotEqual(0, Runner.Run(['no-such-program-aw-bugfix'], Directory, $'{Directory}/missing.log'))");
+
+    /// <summary>A command that runs past the time limit is cut off and didn't run to a verdict.</summary>
+    [Fact]
+    public void A_command_past_the_time_limit_did_not_run() =>
+        Expect.That(HangingRunner.Run(HangingCommand, Directory, $"{Directory}/hang.log") is { Ran: false, Outcome: RunOutcome.Broken }, "a run past the limit is broken");
+
+    /// <summary>Gets a runner whose time limit <see cref="HangingCommand"/> exceeds.</summary>
+    protected abstract ICheckRunner HangingRunner { get; }
+
+    /// <summary>Gets a command that runs longer than <see cref="HangingRunner"/>'s limit.</summary>
+    protected abstract IReadOnlyList<string> HangingCommand { get; }
 }

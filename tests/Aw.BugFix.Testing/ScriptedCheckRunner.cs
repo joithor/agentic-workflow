@@ -8,6 +8,7 @@ public sealed class ScriptedCheckRunner : ICheckRunner
 {
     private readonly Dictionary<string, int> _programs = new(StringComparer.Ordinal) { ["true"] = 0, ["false"] = 1 };
     private readonly HashSet<string> _hanging = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _resolves = new(StringComparer.Ordinal);
 
     /// <summary>Gets every command run, with its directory.</summary>
     public IList<(IReadOnlyList<string> Command, string Directory)> Runs { get; } = [];
@@ -32,15 +33,26 @@ public sealed class ScriptedCheckRunner : ICheckRunner
         return this;
     }
 
+    /// <summary>Makes <paramref name="program"/> resolve to a file with SHA-256 <paramref name="sha"/> (as a changed PATH would).</summary>
+    /// <param name="program">The program (argv[0]).</param>
+    /// <param name="sha">The resolved file's hash.</param>
+    /// <returns>This runner.</returns>
+    public ScriptedCheckRunner Resolves(string program, string sha)
+    {
+        _resolves[program] = sha;
+        return this;
+    }
+
     /// <inheritdoc/>
     public CheckExit Run(IReadOnlyList<string> command, string directory, string log)
     {
         Runs.Add((command, directory));
+        var program = _resolves.GetValueOrDefault(command[0], $"sha-of-{command[0]}");
         if (_hanging.Contains(command[0]))
         {
-            return new CheckExit(124, Ran: false);
+            return new CheckExit(124, Ran: false, program);
         }
 
-        return _programs.TryGetValue(command[0], out var code) ? new CheckExit(code, Ran: true) : new CheckExit(127, Ran: false);
+        return _programs.TryGetValue(command[0], out var code) ? new CheckExit(code, Ran: true, program) : new CheckExit(127, Ran: false, string.Empty);
     }
 }

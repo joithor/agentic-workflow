@@ -51,7 +51,9 @@ internal sealed class CliWorkspace : IDisposable
         return worktree;
     }
 
-    public (int Exit, string Out, string Err) Run(params string[] args)
+    public (int Exit, string Out, string Err) Run(params string[] args) => RunWith(new Dictionary<string, string>(StringComparer.Ordinal), args);
+
+    public (int Exit, string Out, string Err) RunWith(IReadOnlyDictionary<string, string> environment, params string[] args)
     {
         var start = new ProcessStartInfo(DotnetHost())
         {
@@ -67,6 +69,11 @@ internal sealed class CliWorkspace : IDisposable
 
         start.Environment["GIT_CONFIG_GLOBAL"] = "/dev/null";
         start.Environment["AW_LOG_LEVEL"] = "none";
+        foreach (var (name, value) in environment)
+        {
+            start.Environment[name] = value;
+        }
+
         using var process = Process.Start(start)!; // why: Start returns null only when UseShellExecute reuses a process; it is off.
         var output = process.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
         var error = process.StandardError.ReadToEnd();

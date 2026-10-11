@@ -30,12 +30,6 @@ public static class AttemptRule
             return BugFixErrors.AttemptRefused.With($"candidate {pending.Id.Value} has not been evaluated yet");
         }
 
-        if (state.Attempt > 0 && current.Count < Candidates(state.Mode))
-        {
-            return BugFixErrors.AttemptRefused.With(string.Create(CultureInfo.InvariantCulture,
-                $"attempt {state.Attempt} (mode B) has {current.Count} of its 2 competing candidates; record and evaluate the second, or advance report --unresolved"));
-        }
-
         if (state.Attempt >= BugFixState.MaxAttempts)
         {
             return BugFixErrors.AttemptRefused.With(string.Create(CultureInfo.InvariantCulture, $"attempt cap ({BugFixState.MaxAttempts}) reached; run advance report --unresolved"));

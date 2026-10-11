@@ -11,7 +11,7 @@ public abstract class RunLedgerContract
 {
     private static readonly DateTimeOffset _at = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
 
-    private static readonly RunRecord _record = new(CheckKind.Test, RunOutcome.Failed, new string('a', 40), "tests", new string('b', 64), ["bash", "t.sh"], 1, "/log");
+    private static readonly RunRecord _record = new(CheckKind.Test, RunOutcome.Failed, new string('a', 40), "tests", new string('b', 64), ["bash", "t.sh"], new string('c', 64), 1, "/log");
 
     /// <summary>Gets the ledger under test.</summary>
     protected abstract IRunLedger Ledger { get; }

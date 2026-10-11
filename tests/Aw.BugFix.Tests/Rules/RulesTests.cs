@@ -63,6 +63,14 @@ public sealed class RulesTests
     [InlineData("deno eval 1 t.ts", "inline code (`deno eval`)")]
     [InlineData("npx -c true t.test.ts", "inline code (`npx -c`)")]
     [InlineData("npx jest t.test.ts", null)]
+    [InlineData("npx node -e 1 t.js", "inline code (`node -e`)")]
+    [InlineData("npx --yes sh -c true t.sh", "inline code (`sh -c`)")]
+    [InlineData("npm exec cat t.sh", "not `cat`")]
+    [InlineData("uv run python -c 1 t.py", "inline code (`python -c`)")]
+    [InlineData("npm test t.test.ts", null)]
+    [InlineData("bash -e t.sh", null)]
+    [InlineData("python -E t.py", null)]
+    [InlineData("bash -xec true t.sh", "inline code (`bash -xec`)")]
     public void The_check_command_rule_refuses_non_runners_and_inline_code(string command, string? reason)
     {
         var refusal = CheckCommandRule.Refusal(command.Split(' '));
@@ -88,12 +96,25 @@ public sealed class RulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_frozen_test_check_accepts_only_the_same_command_in_the_same_directory()
     {
-        var check = new FrozenCheck(CheckKind.Test, "tests/bug.sh", "sha", ["bash", "tests/bug.sh"], Directory: string.Empty, CommandFiles: []);
-        var run = new RunRecord(CheckKind.Test, RunOutcome.Passed, "c", Directory: string.Empty, "sha", ["bash", "tests/bug.sh"], 0, "/log");
+        var check = new FrozenCheck(CheckKind.Test, "tests/bug.sh", "sha", ["bash", "tests/bug.sh"], Directory: string.Empty, ProgramSha256: "bash", CommandFiles: []);
+        var run = new RunRecord(CheckKind.Test, RunOutcome.Passed, "c", Directory: string.Empty, "sha", ["bash", "tests/bug.sh"], ProgramSha256: "bash", 0, "/log");
 
         _ = World.Ok(check.Accepts(run));
         _ = World.Refused(check.Accepts(run with { Directory = "lib" }), BugFixErrors.RunRefused);
         _ = World.Refused(check.Accepts(run with { Command = ["bash", "./tests/bug.sh"] }), BugFixErrors.RunRefused);
         _ = World.Refused(check.Accepts(run with { Outcome = RunOutcome.Broken }), BugFixErrors.RunRefused);
+        _ = World.Refused(check.Accepts(run with { ProgramSha256 = "another bash" }), BugFixErrors.RunRefused);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Command_files_include_flag_values_and_module_files()
+    {
+        var paths = CommandFilesRule.Paths(["node", "--require=./lib/setup.cjs", "-r./lib/r.js", "-m", "tools.runner", "t.js"]);
+
+        Assert.Contains(("./lib/setup.cjs", false), paths);
+        Assert.Contains(("./lib/r.js", true), paths);
+        Assert.Contains(("tools/runner.py", true), paths);
+        Assert.Contains(("tools/runner/__init__.py", true), paths);
+        Assert.Contains(("t.js", false), paths);
     }
 }

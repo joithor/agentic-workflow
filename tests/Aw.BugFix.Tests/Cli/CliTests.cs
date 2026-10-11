@@ -98,6 +98,38 @@ public sealed class CliTests : IDisposable
         Assert.Matches(@"^refused: .* \(AW-BUGFIX-02[12]\)$", error.TrimEnd());
     }
 
+    [Fact]
+    public void The_check_ignores_the_callers_loader_variables_and_git_overrides()
+    {
+        _ = Ok("init", "--state", _w.State, "--ticket", _w.Ticket);
+        _ = Ok("advance", "investigate", "--state", _w.State, "--evidence", _w.Handoff);
+        var pass = _w.Write("pass.sh", "exit 0\n");
+        var hostile = new Dictionary<string, string>(StringComparer.Ordinal) { ["BASH_ENV"] = pass, ["GIT_DIR"] = Path.Combine(_w.Root, "nowhere") };
+
+        var (exit, output, error) = _w.RunWith(hostile, "run-test", "--state", _w.State, "--check", "tests/bug.test.sh", "--", "bash", "tests/bug.test.sh");
+
+        Assert.True(exit == 0, error);
+        using var run = JsonDocument.Parse(output);
+        Assert.Equal("failed", run.RootElement.GetProperty("outcome").GetString());   // BASH_ENV would have made it exit 0
+    }
+
+    [Fact]
+    public void Disabled_file_locking_is_refused_and_a_mistyped_state_directory_is_not_created()
+    {
+        var off = new Dictionary<string, string>(StringComparer.Ordinal) { ["DOTNET_SYSTEM_IO_DISABLEFILELOCKING"] = "1" };
+        var typo = Path.Combine(_w.Root, "typo");
+
+        var (lockExit, _, lockError) = _w.RunWith(off, "init", "--state", _w.State, "--ticket", _w.Ticket);
+        var (typoExit, _, typoError) = _w.Run("resume", "--state", typo);
+        var (stepExit, _, _) = _w.Run("start-attempt", "--state", typo, "--mode", "A");
+
+        Assert.Equal(3, lockExit);
+        Assert.EndsWith("(AW-BUGFIX-022)", lockError.TrimEnd(), StringComparison.Ordinal);
+        Assert.Equal((1, 1), (typoExit, stepExit));
+        Assert.EndsWith("(AW-BUGFIX-002)", typoError.TrimEnd(), StringComparison.Ordinal);
+        Assert.False(Directory.Exists(typo));
+    }
+
     private JsonElement Ok(params string[] args)
     {
         var (exit, output, error) = _w.Run(args);
