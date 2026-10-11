@@ -167,7 +167,7 @@ packages:
     bins: [scorer]
     files: [scorer/live, context-guard]
     namespace: scorer
-    note: "daily cost and involvement report, live session numbers; owns the context-guard fires-log contract it reports on"
+    note: "daily cost and involvement report, live session numbers; owns the context-guard fires-log contract it reports on. Not ported as a standalone CLI (addendum §17.29, Q7): it comes back as a block of the Sindri app; the TS package runs until the switch"
   - id: Evidence
     kind: package
     tier: 2
@@ -178,7 +178,7 @@ packages:
     binPaths: [ui-evidence/dist/bin.js]
     files: [ui-evidence/runs, locks/heavy-job.lock, locks/qa-stack.lock]
     namespace: ui-evidence
-    note: "Playwright UI evidence; owns the box-wide heavy-job and QA-stack locks today (config/lib/locks.sh primitive). A tier-0 or tier-1 package can't take those locks (that would be an upward file edge, DEPS-TIER-002), so the locks move to the Kernel Lease port before one needs them"
+    note: "Playwright UI evidence; owns the box-wide heavy-job and QA-stack locks. In the C# build they sit behind Evidence's own Core port IMachineLocks, with a directory adapter (atomic mkdir, owner file) that interoperates with config/lib/locks.sh and the heavy wrapper. A tier-0 or tier-1 package can't take those locks (that would be an upward file edge, DEPS-TIER-002)"
   - id: BugFix
     kind: package
     tier: 2
@@ -201,7 +201,7 @@ packages:
     bins: [sindri]
     db: [sindri/ledger.db]
     namespace: sindri
-    note: "the Sindri app, built new (factory addendum §17.29): S1 app shell — CLI and control plane, host lease, ledger, profile, API, scheduler, doctor; reaches lower tiers only through Core contracts or CLIs"
+    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) is in src/Sindri; reaches lower tiers only through Core contracts or CLIs"
 
   # ---- outside the tiers: code that stays bash or TypeScript and calls the CLIs (§4a) ----
   - id: Hooks
@@ -259,7 +259,7 @@ edges:
     to: Evidence
     kind: file
     status: current
-    note: "sindri index builds take the box-wide heavy-job lock; moves to the Kernel Lease port at the port"
+    note: "sindri index builds take the box-wide heavy-job lock (the same lock directory Evidence's IMachineLocks adapter takes)"
   - from: Hooks
     to: Judge
     kind: cli
@@ -385,12 +385,12 @@ edges:
   - from: Evidence
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, IService, ports"
   - from: Evidence
     to: KernelTelemetry
     kind: project
-    status: planned
+    status: current
     note: "logging"
   - from: BugFix
     to: Kernel

@@ -1,0 +1,3 @@
+#nullable enable
+Aw.Evidence.Infrastructure.EvidenceInfrastructureServiceCollectionExtensions
+static Aw.Evidence.Infrastructure.EvidenceInfrastructureServiceCollectionExtensions.AddEvidenceInfrastructure(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<string!, string?>! environment) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

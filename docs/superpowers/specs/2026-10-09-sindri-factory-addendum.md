@@ -304,7 +304,7 @@ file list comes from git.
   `-`, never ends in `.`, and isn't a Windows device name (`con`, `prn`, `aux`, `nul`, `com1`–`com9`, `lpt1`–`lpt9`,
   with or without an extension), because the two sides are also directory names under `packets/` on every OS. Freezing
   the same hash again writes nothing. The packet directory is never changed. Until sindri's C# ledger exists this
-  record stands in for "records the hash in the ledger"; the ledger takes over when sindri is ported.
+  record stands in for "records the hash in the ledger"; the ledger takes over once the C# Sindri application has one (built new, §17.29).
 - **The hash** is digest v1 (readiness design §4c, Digests) over the packet's files.
 
 ## 17.5 Narrow scope and sandbox per session

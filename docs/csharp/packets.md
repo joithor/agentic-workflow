@@ -56,8 +56,8 @@ failure, one per passing or unchecked rule; each failure has `rule`, `subject`, 
 Runs the same checks. A packet with a failed check isn't frozen and nothing is written. Otherwise its canonical hash
 is recorded at `packets/<owner>/<name>/<id>/frozen/<hex>.json` (per repository: a packet id is unique only within one) (`FreezeRecord`: `schemaVersion`, `repo`, packet, hash,
 `digestVersion`, `baseSha`, `frozenAt`, the files the hash covers). Freezing the same hash again writes nothing and says `already frozen`. The
-packet directory itself is never changed; the record under `packets/` is authoritative (the sindri ledger takes over
-when sindri is ported, spec §4c).
+packet directory itself is never changed; the record under `packets/` is authoritative (the ledger of the C# Sindri
+application takes over once it exists, spec §4c; Sindri is built new, not ported, factory addendum §17.29).
 
 **The hash (`digestVersion` 1, spec §4c Digests):** SHA-256 over the canonical JSON of
 `{"digestVersion":1,"files":{<path>:<entry>}}`. A JSON packet file's entry is the file itself without its `$schema` editor hint (and `packet.json` without

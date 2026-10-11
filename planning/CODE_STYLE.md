@@ -1,7 +1,7 @@
 # Code Style Guide
 
-Two codebases live in this repo during the port (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md`
-§4a):
+Two codebases live in this repo until the switch (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md`
+§4a; Sindri is built new in C#, not ported, factory addendum §17.29):
 
 - **C#** (`src/`, `tests/`) is where new code goes. Its conventions of record are `.agents/rules/csharp.md` and
   `.agents/rules/csharp-testing.md`, enforced by analyzers, `dotnet format` and the architecture tests. This guide

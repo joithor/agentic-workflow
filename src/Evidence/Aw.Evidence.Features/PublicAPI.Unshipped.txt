@@ -1,0 +1,298 @@
+#nullable enable
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest.<Clone>$() -> Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest!
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest.CheckProvenanceRequest() -> void
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest.Equals(Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest? other) -> bool
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.<Clone>$() -> Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse!
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.CheckProvenanceResponse(Aw.Evidence.Core.Guard.DbProvenance Provenance, string! Reason) -> void
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Deconstruct(out Aw.Evidence.Core.Guard.DbProvenance Provenance, out string! Reason) -> void
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Equals(Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse? other) -> bool
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Provenance.get -> Aw.Evidence.Core.Guard.DbProvenance
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Provenance.init -> void
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Reason.get -> string!
+Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Reason.init -> void
+Aw.Evidence.Features.Doctor.DoctorRequest
+Aw.Evidence.Features.Doctor.DoctorRequest.<Clone>$() -> Aw.Evidence.Features.Doctor.DoctorRequest!
+Aw.Evidence.Features.Doctor.DoctorRequest.DoctorRequest() -> void
+Aw.Evidence.Features.Doctor.DoctorRequest.Equals(Aw.Evidence.Features.Doctor.DoctorRequest? other) -> bool
+Aw.Evidence.Features.Doctor.DoctorResponse
+Aw.Evidence.Features.Doctor.DoctorResponse.<Clone>$() -> Aw.Evidence.Features.Doctor.DoctorResponse!
+Aw.Evidence.Features.Doctor.DoctorResponse.Deconstruct(out bool Healthy, out System.Collections.Generic.IReadOnlyList<string!>! Failures) -> void
+Aw.Evidence.Features.Doctor.DoctorResponse.DoctorResponse(bool Healthy, System.Collections.Generic.IReadOnlyList<string!>! Failures) -> void
+Aw.Evidence.Features.Doctor.DoctorResponse.Equals(Aw.Evidence.Features.Doctor.DoctorResponse? other) -> bool
+Aw.Evidence.Features.Doctor.DoctorResponse.Failures.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Features.Doctor.DoctorResponse.Failures.init -> void
+Aw.Evidence.Features.Doctor.DoctorResponse.Healthy.get -> bool
+Aw.Evidence.Features.Doctor.DoctorResponse.Healthy.init -> void
+Aw.Evidence.Features.EvidenceFeaturesServiceCollectionExtensions
+Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest
+Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.<Clone>$() -> Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest!
+Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.Equals(Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest? other) -> bool
+Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.InstallBrowserRequest() -> void
+Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse
+Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse.<Clone>$() -> Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse!
+Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse.Deconstruct(out bool Installed) -> void
+Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse.Equals(Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse? other) -> bool
+Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse.InstallBrowserResponse(bool Installed) -> void
+Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse.Installed.get -> bool
+Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse.Installed.init -> void
+Aw.Evidence.Features.Parity.ParityRequest
+Aw.Evidence.Features.Parity.ParityRequest.<Clone>$() -> Aw.Evidence.Features.Parity.ParityRequest!
+Aw.Evidence.Features.Parity.ParityRequest.AllowPreviewHost.get -> bool
+Aw.Evidence.Features.Parity.ParityRequest.AllowPreviewHost.init -> void
+Aw.Evidence.Features.Parity.ParityRequest.AllowWrites.get -> bool
+Aw.Evidence.Features.Parity.ParityRequest.AllowWrites.init -> void
+Aw.Evidence.Features.Parity.ParityRequest.AppBuild.get -> string?
+Aw.Evidence.Features.Parity.ParityRequest.AppBuild.init -> void
+Aw.Evidence.Features.Parity.ParityRequest.DbProvenance.get -> Aw.Evidence.Core.Guard.DbProvenance?
+Aw.Evidence.Features.Parity.ParityRequest.DbProvenance.init -> void
+Aw.Evidence.Features.Parity.ParityRequest.Deconstruct(out string! ManifestPath, out string! RunDirectory, out System.TimeSpan LockTimeout, out string? Host, out bool AllowPreviewHost, out bool AllowWrites, out string? AppBuild, out Aw.Evidence.Core.Guard.DbProvenance? DbProvenance) -> void
+Aw.Evidence.Features.Parity.ParityRequest.Equals(Aw.Evidence.Features.Parity.ParityRequest? other) -> bool
+Aw.Evidence.Features.Parity.ParityRequest.Host.get -> string?
+Aw.Evidence.Features.Parity.ParityRequest.Host.init -> void
+Aw.Evidence.Features.Parity.ParityRequest.LockTimeout.get -> System.TimeSpan
+Aw.Evidence.Features.Parity.ParityRequest.LockTimeout.init -> void
+Aw.Evidence.Features.Parity.ParityRequest.ManifestPath.get -> string!
+Aw.Evidence.Features.Parity.ParityRequest.ManifestPath.init -> void
+Aw.Evidence.Features.Parity.ParityRequest.ParityRequest(string! ManifestPath, string! RunDirectory, System.TimeSpan LockTimeout, string? Host = null, bool AllowPreviewHost = false, bool AllowWrites = false, string? AppBuild = null, Aw.Evidence.Core.Guard.DbProvenance? DbProvenance = null) -> void
+Aw.Evidence.Features.Parity.ParityRequest.RunDirectory.get -> string!
+Aw.Evidence.Features.Parity.ParityRequest.RunDirectory.init -> void
+Aw.Evidence.Features.Parity.ParityResponse
+Aw.Evidence.Features.Parity.ParityResponse.<Clone>$() -> Aw.Evidence.Features.Parity.ParityResponse!
+Aw.Evidence.Features.Parity.ParityResponse.Deconstruct(out Aw.Evidence.Core.Runs.ParitySummary! Summary, out System.Collections.Generic.IReadOnlyList<string!>! GeometryFailures) -> void
+Aw.Evidence.Features.Parity.ParityResponse.Equals(Aw.Evidence.Features.Parity.ParityResponse? other) -> bool
+Aw.Evidence.Features.Parity.ParityResponse.GeometryFailures.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Features.Parity.ParityResponse.GeometryFailures.init -> void
+Aw.Evidence.Features.Parity.ParityResponse.ParityResponse(Aw.Evidence.Core.Runs.ParitySummary! Summary, System.Collections.Generic.IReadOnlyList<string!>! GeometryFailures) -> void
+Aw.Evidence.Features.Parity.ParityResponse.Passed.get -> bool
+Aw.Evidence.Features.Parity.ParityResponse.Summary.get -> Aw.Evidence.Core.Runs.ParitySummary!
+Aw.Evidence.Features.Parity.ParityResponse.Summary.init -> void
+Aw.Evidence.Features.ParityComment.CommentTarget
+Aw.Evidence.Features.ParityComment.CommentTarget.GitHub = 1 -> Aw.Evidence.Features.ParityComment.CommentTarget
+Aw.Evidence.Features.ParityComment.CommentTarget.Linear = 0 -> Aw.Evidence.Features.ParityComment.CommentTarget
+Aw.Evidence.Features.ParityComment.ParityCommentRequest
+Aw.Evidence.Features.ParityComment.ParityCommentRequest.<Clone>$() -> Aw.Evidence.Features.ParityComment.ParityCommentRequest!
+Aw.Evidence.Features.ParityComment.ParityCommentRequest.Deconstruct(out string! RunDirectory, out Aw.Evidence.Features.ParityComment.CommentTarget Target) -> void
+Aw.Evidence.Features.ParityComment.ParityCommentRequest.Equals(Aw.Evidence.Features.ParityComment.ParityCommentRequest? other) -> bool
+Aw.Evidence.Features.ParityComment.ParityCommentRequest.ParityCommentRequest(string! RunDirectory, Aw.Evidence.Features.ParityComment.CommentTarget Target) -> void
+Aw.Evidence.Features.ParityComment.ParityCommentRequest.RunDirectory.get -> string!
+Aw.Evidence.Features.ParityComment.ParityCommentRequest.RunDirectory.init -> void
+Aw.Evidence.Features.ParityComment.ParityCommentRequest.Target.get -> Aw.Evidence.Features.ParityComment.CommentTarget
+Aw.Evidence.Features.ParityComment.ParityCommentRequest.Target.init -> void
+Aw.Evidence.Features.ParityComment.ParityCommentResponse
+Aw.Evidence.Features.ParityComment.ParityCommentResponse.<Clone>$() -> Aw.Evidence.Features.ParityComment.ParityCommentResponse!
+Aw.Evidence.Features.ParityComment.ParityCommentResponse.Deconstruct(out string! Markdown) -> void
+Aw.Evidence.Features.ParityComment.ParityCommentResponse.Equals(Aw.Evidence.Features.ParityComment.ParityCommentResponse? other) -> bool
+Aw.Evidence.Features.ParityComment.ParityCommentResponse.Markdown.get -> string!
+Aw.Evidence.Features.ParityComment.ParityCommentResponse.Markdown.init -> void
+Aw.Evidence.Features.ParityComment.ParityCommentResponse.ParityCommentResponse(string! Markdown) -> void
+Aw.Evidence.Features.ParityPlan.ParityPlanRequest
+Aw.Evidence.Features.ParityPlan.ParityPlanRequest.<Clone>$() -> Aw.Evidence.Features.ParityPlan.ParityPlanRequest!
+Aw.Evidence.Features.ParityPlan.ParityPlanRequest.Deconstruct(out string! RunDirectory, out System.Collections.Generic.IReadOnlyList<string!>! Reviewed) -> void
+Aw.Evidence.Features.ParityPlan.ParityPlanRequest.Equals(Aw.Evidence.Features.ParityPlan.ParityPlanRequest? other) -> bool
+Aw.Evidence.Features.ParityPlan.ParityPlanRequest.ParityPlanRequest(string! RunDirectory, System.Collections.Generic.IReadOnlyList<string!>! Reviewed) -> void
+Aw.Evidence.Features.ParityPlan.ParityPlanRequest.Reviewed.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Features.ParityPlan.ParityPlanRequest.Reviewed.init -> void
+Aw.Evidence.Features.ParityPlan.ParityPlanRequest.RunDirectory.get -> string!
+Aw.Evidence.Features.ParityPlan.ParityPlanRequest.RunDirectory.init -> void
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.<Clone>$() -> Aw.Evidence.Features.ParityPlan.ParityPlanResponse!
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.AskFirst.get -> bool
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.AskFirst.init -> void
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.Deconstruct(out Aw.Evidence.Core.Guard.Provenance Provenance, out bool AskFirst, out bool ReviewBlocked, out System.Collections.Generic.IReadOnlyList<string!>! Unreviewed, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Publishing.PlannedAttachment!>! Plan) -> void
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.Equals(Aw.Evidence.Features.ParityPlan.ParityPlanResponse? other) -> bool
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.ParityPlanResponse(Aw.Evidence.Core.Guard.Provenance Provenance, bool AskFirst, bool ReviewBlocked, System.Collections.Generic.IReadOnlyList<string!>! Unreviewed, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Publishing.PlannedAttachment!>! Plan) -> void
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.Plan.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Publishing.PlannedAttachment!>!
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.Plan.init -> void
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.Provenance.get -> Aw.Evidence.Core.Guard.Provenance
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.Provenance.init -> void
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.ReviewBlocked.get -> bool
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.ReviewBlocked.init -> void
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.Unreviewed.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Features.ParityPlan.ParityPlanResponse.Unreviewed.init -> void
+Aw.Evidence.Features.ParityPut.ParityPutRequest
+Aw.Evidence.Features.ParityPut.ParityPutRequest.<Clone>$() -> Aw.Evidence.Features.ParityPut.ParityPutRequest!
+Aw.Evidence.Features.ParityPut.ParityPutRequest.Deconstruct(out string! UploadFile, out string! File) -> void
+Aw.Evidence.Features.ParityPut.ParityPutRequest.Equals(Aw.Evidence.Features.ParityPut.ParityPutRequest? other) -> bool
+Aw.Evidence.Features.ParityPut.ParityPutRequest.File.get -> string!
+Aw.Evidence.Features.ParityPut.ParityPutRequest.File.init -> void
+Aw.Evidence.Features.ParityPut.ParityPutRequest.ParityPutRequest(string! UploadFile, string! File) -> void
+Aw.Evidence.Features.ParityPut.ParityPutRequest.UploadFile.get -> string!
+Aw.Evidence.Features.ParityPut.ParityPutRequest.UploadFile.init -> void
+Aw.Evidence.Features.ParityPut.ParityPutResponse
+Aw.Evidence.Features.ParityPut.ParityPutResponse.<Clone>$() -> Aw.Evidence.Features.ParityPut.ParityPutResponse!
+Aw.Evidence.Features.ParityPut.ParityPutResponse.Argv.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Features.ParityPut.ParityPutResponse.Argv.init -> void
+Aw.Evidence.Features.ParityPut.ParityPutResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Argv) -> void
+Aw.Evidence.Features.ParityPut.ParityPutResponse.Equals(Aw.Evidence.Features.ParityPut.ParityPutResponse? other) -> bool
+Aw.Evidence.Features.ParityPut.ParityPutResponse.ParityPutResponse(System.Collections.Generic.IReadOnlyList<string!>! Argv) -> void
+Aw.Evidence.Features.ParityStale.ParityStaleRequest
+Aw.Evidence.Features.ParityStale.ParityStaleRequest.<Clone>$() -> Aw.Evidence.Features.ParityStale.ParityStaleRequest!
+Aw.Evidence.Features.ParityStale.ParityStaleRequest.AttachmentsFile.get -> string!
+Aw.Evidence.Features.ParityStale.ParityStaleRequest.AttachmentsFile.init -> void
+Aw.Evidence.Features.ParityStale.ParityStaleRequest.Deconstruct(out string! AttachmentsFile, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Ids.AttachmentId>! Keep) -> void
+Aw.Evidence.Features.ParityStale.ParityStaleRequest.Equals(Aw.Evidence.Features.ParityStale.ParityStaleRequest? other) -> bool
+Aw.Evidence.Features.ParityStale.ParityStaleRequest.Keep.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Ids.AttachmentId>!
+Aw.Evidence.Features.ParityStale.ParityStaleRequest.Keep.init -> void
+Aw.Evidence.Features.ParityStale.ParityStaleRequest.ParityStaleRequest(string! AttachmentsFile, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Ids.AttachmentId>! Keep) -> void
+Aw.Evidence.Features.ParityStale.ParityStaleResponse
+Aw.Evidence.Features.ParityStale.ParityStaleResponse.<Clone>$() -> Aw.Evidence.Features.ParityStale.ParityStaleResponse!
+Aw.Evidence.Features.ParityStale.ParityStaleResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Publishing.ExistingAttachment!>! Stale) -> void
+Aw.Evidence.Features.ParityStale.ParityStaleResponse.Equals(Aw.Evidence.Features.ParityStale.ParityStaleResponse? other) -> bool
+Aw.Evidence.Features.ParityStale.ParityStaleResponse.ParityStaleResponse(System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Publishing.ExistingAttachment!>! Stale) -> void
+Aw.Evidence.Features.ParityStale.ParityStaleResponse.Stale.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Publishing.ExistingAttachment!>!
+Aw.Evidence.Features.ParityStale.ParityStaleResponse.Stale.init -> void
+Aw.Evidence.Features.PublishPlan.PublishPlanRequest
+Aw.Evidence.Features.PublishPlan.PublishPlanRequest.<Clone>$() -> Aw.Evidence.Features.PublishPlan.PublishPlanRequest!
+Aw.Evidence.Features.PublishPlan.PublishPlanRequest.Deconstruct(out string! RunDirectory, out Aw.Evidence.Core.Guard.DbProvenance Provenance, out string? LinearIssue) -> void
+Aw.Evidence.Features.PublishPlan.PublishPlanRequest.Equals(Aw.Evidence.Features.PublishPlan.PublishPlanRequest? other) -> bool
+Aw.Evidence.Features.PublishPlan.PublishPlanRequest.LinearIssue.get -> string?
+Aw.Evidence.Features.PublishPlan.PublishPlanRequest.LinearIssue.init -> void
+Aw.Evidence.Features.PublishPlan.PublishPlanRequest.Provenance.get -> Aw.Evidence.Core.Guard.DbProvenance
+Aw.Evidence.Features.PublishPlan.PublishPlanRequest.Provenance.init -> void
+Aw.Evidence.Features.PublishPlan.PublishPlanRequest.PublishPlanRequest(string! RunDirectory, Aw.Evidence.Core.Guard.DbProvenance Provenance, string? LinearIssue = null) -> void
+Aw.Evidence.Features.PublishPlan.PublishPlanRequest.RunDirectory.get -> string!
+Aw.Evidence.Features.PublishPlan.PublishPlanRequest.RunDirectory.init -> void
+Aw.Evidence.Features.PublishPlan.PublishPlanResponse
+Aw.Evidence.Features.PublishPlan.PublishPlanResponse.<Clone>$() -> Aw.Evidence.Features.PublishPlan.PublishPlanResponse!
+Aw.Evidence.Features.PublishPlan.PublishPlanResponse.Deconstruct(out Aw.Evidence.Core.Publishing.RunPublishPlan! Plan) -> void
+Aw.Evidence.Features.PublishPlan.PublishPlanResponse.Equals(Aw.Evidence.Features.PublishPlan.PublishPlanResponse? other) -> bool
+Aw.Evidence.Features.PublishPlan.PublishPlanResponse.Plan.get -> Aw.Evidence.Core.Publishing.RunPublishPlan!
+Aw.Evidence.Features.PublishPlan.PublishPlanResponse.Plan.init -> void
+Aw.Evidence.Features.PublishPlan.PublishPlanResponse.PublishPlanResponse(Aw.Evidence.Core.Publishing.RunPublishPlan! Plan) -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest
+Aw.Evidence.Features.RunScript.RunScriptRequest.<Clone>$() -> Aw.Evidence.Features.RunScript.RunScriptRequest!
+Aw.Evidence.Features.RunScript.RunScriptRequest.AllowPreviewHost.get -> bool
+Aw.Evidence.Features.RunScript.RunScriptRequest.AllowPreviewHost.init -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest.AllowWrites.get -> bool
+Aw.Evidence.Features.RunScript.RunScriptRequest.AllowWrites.init -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest.AppBuild.get -> string?
+Aw.Evidence.Features.RunScript.RunScriptRequest.AppBuild.init -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest.Baseline.get -> string?
+Aw.Evidence.Features.RunScript.RunScriptRequest.Baseline.init -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest.CacheManifest.get -> string?
+Aw.Evidence.Features.RunScript.RunScriptRequest.CacheManifest.init -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest.Deconstruct(out string! ScriptPath, out string! RunDirectory, out System.TimeSpan LockTimeout, out string? Baseline, out string? AppBuild, out string? Fixtures, out string? CacheManifest, out string? Host, out bool AllowPreviewHost, out bool AllowWrites) -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest.Equals(Aw.Evidence.Features.RunScript.RunScriptRequest? other) -> bool
+Aw.Evidence.Features.RunScript.RunScriptRequest.Fixtures.get -> string?
+Aw.Evidence.Features.RunScript.RunScriptRequest.Fixtures.init -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest.Host.get -> string?
+Aw.Evidence.Features.RunScript.RunScriptRequest.Host.init -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest.LockTimeout.get -> System.TimeSpan
+Aw.Evidence.Features.RunScript.RunScriptRequest.LockTimeout.init -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest.RunDirectory.get -> string!
+Aw.Evidence.Features.RunScript.RunScriptRequest.RunDirectory.init -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest.RunScriptRequest(string! ScriptPath, string! RunDirectory, System.TimeSpan LockTimeout, string? Baseline = null, string? AppBuild = null, string? Fixtures = null, string? CacheManifest = null, string? Host = null, bool AllowPreviewHost = false, bool AllowWrites = false) -> void
+Aw.Evidence.Features.RunScript.RunScriptRequest.ScriptPath.get -> string!
+Aw.Evidence.Features.RunScript.RunScriptRequest.ScriptPath.init -> void
+Aw.Evidence.Features.RunScript.RunScriptResponse
+Aw.Evidence.Features.RunScript.RunScriptResponse.<Clone>$() -> Aw.Evidence.Features.RunScript.RunScriptResponse!
+Aw.Evidence.Features.RunScript.RunScriptResponse.Deconstruct(out Aw.Evidence.Core.Runs.RunSummary! Summary, out bool Passed) -> void
+Aw.Evidence.Features.RunScript.RunScriptResponse.Equals(Aw.Evidence.Features.RunScript.RunScriptResponse? other) -> bool
+Aw.Evidence.Features.RunScript.RunScriptResponse.Passed.get -> bool
+Aw.Evidence.Features.RunScript.RunScriptResponse.Passed.init -> void
+Aw.Evidence.Features.RunScript.RunScriptResponse.RunScriptResponse(Aw.Evidence.Core.Runs.RunSummary! Summary, bool Passed) -> void
+Aw.Evidence.Features.RunScript.RunScriptResponse.Summary.get -> Aw.Evidence.Core.Runs.RunSummary!
+Aw.Evidence.Features.RunScript.RunScriptResponse.Summary.init -> void
+override Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest.GetHashCode() -> int
+override Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest.ToString() -> string!
+override Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.GetHashCode() -> int
+override Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.ToString() -> string!
+override Aw.Evidence.Features.Doctor.DoctorRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.Doctor.DoctorRequest.GetHashCode() -> int
+override Aw.Evidence.Features.Doctor.DoctorRequest.ToString() -> string!
+override Aw.Evidence.Features.Doctor.DoctorResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.Doctor.DoctorResponse.GetHashCode() -> int
+override Aw.Evidence.Features.Doctor.DoctorResponse.ToString() -> string!
+override Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.GetHashCode() -> int
+override Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.ToString() -> string!
+override Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse.GetHashCode() -> int
+override Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse.ToString() -> string!
+override Aw.Evidence.Features.Parity.ParityRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.Parity.ParityRequest.GetHashCode() -> int
+override Aw.Evidence.Features.Parity.ParityRequest.ToString() -> string!
+override Aw.Evidence.Features.Parity.ParityResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.Parity.ParityResponse.GetHashCode() -> int
+override Aw.Evidence.Features.Parity.ParityResponse.ToString() -> string!
+override Aw.Evidence.Features.ParityComment.ParityCommentRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.ParityComment.ParityCommentRequest.GetHashCode() -> int
+override Aw.Evidence.Features.ParityComment.ParityCommentRequest.ToString() -> string!
+override Aw.Evidence.Features.ParityComment.ParityCommentResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.ParityComment.ParityCommentResponse.GetHashCode() -> int
+override Aw.Evidence.Features.ParityComment.ParityCommentResponse.ToString() -> string!
+override Aw.Evidence.Features.ParityPlan.ParityPlanRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.ParityPlan.ParityPlanRequest.GetHashCode() -> int
+override Aw.Evidence.Features.ParityPlan.ParityPlanRequest.ToString() -> string!
+override Aw.Evidence.Features.ParityPlan.ParityPlanResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.ParityPlan.ParityPlanResponse.GetHashCode() -> int
+override Aw.Evidence.Features.ParityPlan.ParityPlanResponse.ToString() -> string!
+override Aw.Evidence.Features.ParityPut.ParityPutRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.ParityPut.ParityPutRequest.GetHashCode() -> int
+override Aw.Evidence.Features.ParityPut.ParityPutRequest.ToString() -> string!
+override Aw.Evidence.Features.ParityPut.ParityPutResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.ParityPut.ParityPutResponse.GetHashCode() -> int
+override Aw.Evidence.Features.ParityPut.ParityPutResponse.ToString() -> string!
+override Aw.Evidence.Features.ParityStale.ParityStaleRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.ParityStale.ParityStaleRequest.GetHashCode() -> int
+override Aw.Evidence.Features.ParityStale.ParityStaleRequest.ToString() -> string!
+override Aw.Evidence.Features.ParityStale.ParityStaleResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.ParityStale.ParityStaleResponse.GetHashCode() -> int
+override Aw.Evidence.Features.ParityStale.ParityStaleResponse.ToString() -> string!
+override Aw.Evidence.Features.PublishPlan.PublishPlanRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.PublishPlan.PublishPlanRequest.GetHashCode() -> int
+override Aw.Evidence.Features.PublishPlan.PublishPlanRequest.ToString() -> string!
+override Aw.Evidence.Features.PublishPlan.PublishPlanResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.PublishPlan.PublishPlanResponse.GetHashCode() -> int
+override Aw.Evidence.Features.PublishPlan.PublishPlanResponse.ToString() -> string!
+override Aw.Evidence.Features.RunScript.RunScriptRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.RunScript.RunScriptRequest.GetHashCode() -> int
+override Aw.Evidence.Features.RunScript.RunScriptRequest.ToString() -> string!
+override Aw.Evidence.Features.RunScript.RunScriptResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.RunScript.RunScriptResponse.GetHashCode() -> int
+override Aw.Evidence.Features.RunScript.RunScriptResponse.ToString() -> string!
+static Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest.operator !=(Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest? left, Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest? right) -> bool
+static Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest.operator ==(Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest? left, Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest? right) -> bool
+static Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.operator !=(Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse? left, Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse? right) -> bool
+static Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.operator ==(Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse? left, Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse? right) -> bool
+static Aw.Evidence.Features.Doctor.DoctorRequest.operator !=(Aw.Evidence.Features.Doctor.DoctorRequest? left, Aw.Evidence.Features.Doctor.DoctorRequest? right) -> bool
+static Aw.Evidence.Features.Doctor.DoctorRequest.operator ==(Aw.Evidence.Features.Doctor.DoctorRequest? left, Aw.Evidence.Features.Doctor.DoctorRequest? right) -> bool
+static Aw.Evidence.Features.Doctor.DoctorResponse.operator !=(Aw.Evidence.Features.Doctor.DoctorResponse? left, Aw.Evidence.Features.Doctor.DoctorResponse? right) -> bool
+static Aw.Evidence.Features.Doctor.DoctorResponse.operator ==(Aw.Evidence.Features.Doctor.DoctorResponse? left, Aw.Evidence.Features.Doctor.DoctorResponse? right) -> bool
+static Aw.Evidence.Features.EvidenceFeaturesServiceCollectionExtensions.AddEvidenceFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.operator !=(Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest? left, Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest? right) -> bool
+static Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.operator ==(Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest? left, Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest? right) -> bool
+static Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse.operator !=(Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse? left, Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse? right) -> bool
+static Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse.operator ==(Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse? left, Aw.Evidence.Features.InstallBrowser.InstallBrowserResponse? right) -> bool
+static Aw.Evidence.Features.Parity.ParityRequest.operator !=(Aw.Evidence.Features.Parity.ParityRequest? left, Aw.Evidence.Features.Parity.ParityRequest? right) -> bool
+static Aw.Evidence.Features.Parity.ParityRequest.operator ==(Aw.Evidence.Features.Parity.ParityRequest? left, Aw.Evidence.Features.Parity.ParityRequest? right) -> bool
+static Aw.Evidence.Features.Parity.ParityResponse.operator !=(Aw.Evidence.Features.Parity.ParityResponse? left, Aw.Evidence.Features.Parity.ParityResponse? right) -> bool
+static Aw.Evidence.Features.Parity.ParityResponse.operator ==(Aw.Evidence.Features.Parity.ParityResponse? left, Aw.Evidence.Features.Parity.ParityResponse? right) -> bool
+static Aw.Evidence.Features.ParityComment.ParityCommentRequest.operator !=(Aw.Evidence.Features.ParityComment.ParityCommentRequest? left, Aw.Evidence.Features.ParityComment.ParityCommentRequest? right) -> bool
+static Aw.Evidence.Features.ParityComment.ParityCommentRequest.operator ==(Aw.Evidence.Features.ParityComment.ParityCommentRequest? left, Aw.Evidence.Features.ParityComment.ParityCommentRequest? right) -> bool
+static Aw.Evidence.Features.ParityComment.ParityCommentResponse.operator !=(Aw.Evidence.Features.ParityComment.ParityCommentResponse? left, Aw.Evidence.Features.ParityComment.ParityCommentResponse? right) -> bool
+static Aw.Evidence.Features.ParityComment.ParityCommentResponse.operator ==(Aw.Evidence.Features.ParityComment.ParityCommentResponse? left, Aw.Evidence.Features.ParityComment.ParityCommentResponse? right) -> bool
+static Aw.Evidence.Features.ParityPlan.ParityPlanRequest.operator !=(Aw.Evidence.Features.ParityPlan.ParityPlanRequest? left, Aw.Evidence.Features.ParityPlan.ParityPlanRequest? right) -> bool
+static Aw.Evidence.Features.ParityPlan.ParityPlanRequest.operator ==(Aw.Evidence.Features.ParityPlan.ParityPlanRequest? left, Aw.Evidence.Features.ParityPlan.ParityPlanRequest? right) -> bool
+static Aw.Evidence.Features.ParityPlan.ParityPlanResponse.operator !=(Aw.Evidence.Features.ParityPlan.ParityPlanResponse? left, Aw.Evidence.Features.ParityPlan.ParityPlanResponse? right) -> bool
+static Aw.Evidence.Features.ParityPlan.ParityPlanResponse.operator ==(Aw.Evidence.Features.ParityPlan.ParityPlanResponse? left, Aw.Evidence.Features.ParityPlan.ParityPlanResponse? right) -> bool
+static Aw.Evidence.Features.ParityPut.ParityPutRequest.operator !=(Aw.Evidence.Features.ParityPut.ParityPutRequest? left, Aw.Evidence.Features.ParityPut.ParityPutRequest? right) -> bool
+static Aw.Evidence.Features.ParityPut.ParityPutRequest.operator ==(Aw.Evidence.Features.ParityPut.ParityPutRequest? left, Aw.Evidence.Features.ParityPut.ParityPutRequest? right) -> bool
+static Aw.Evidence.Features.ParityPut.ParityPutResponse.operator !=(Aw.Evidence.Features.ParityPut.ParityPutResponse? left, Aw.Evidence.Features.ParityPut.ParityPutResponse? right) -> bool
+static Aw.Evidence.Features.ParityPut.ParityPutResponse.operator ==(Aw.Evidence.Features.ParityPut.ParityPutResponse? left, Aw.Evidence.Features.ParityPut.ParityPutResponse? right) -> bool
+static Aw.Evidence.Features.ParityStale.ParityStaleRequest.operator !=(Aw.Evidence.Features.ParityStale.ParityStaleRequest? left, Aw.Evidence.Features.ParityStale.ParityStaleRequest? right) -> bool
+static Aw.Evidence.Features.ParityStale.ParityStaleRequest.operator ==(Aw.Evidence.Features.ParityStale.ParityStaleRequest? left, Aw.Evidence.Features.ParityStale.ParityStaleRequest? right) -> bool
+static Aw.Evidence.Features.ParityStale.ParityStaleResponse.operator !=(Aw.Evidence.Features.ParityStale.ParityStaleResponse? left, Aw.Evidence.Features.ParityStale.ParityStaleResponse? right) -> bool
+static Aw.Evidence.Features.ParityStale.ParityStaleResponse.operator ==(Aw.Evidence.Features.ParityStale.ParityStaleResponse? left, Aw.Evidence.Features.ParityStale.ParityStaleResponse? right) -> bool
+static Aw.Evidence.Features.PublishPlan.PublishPlanRequest.operator !=(Aw.Evidence.Features.PublishPlan.PublishPlanRequest? left, Aw.Evidence.Features.PublishPlan.PublishPlanRequest? right) -> bool
+static Aw.Evidence.Features.PublishPlan.PublishPlanRequest.operator ==(Aw.Evidence.Features.PublishPlan.PublishPlanRequest? left, Aw.Evidence.Features.PublishPlan.PublishPlanRequest? right) -> bool
+static Aw.Evidence.Features.PublishPlan.PublishPlanResponse.operator !=(Aw.Evidence.Features.PublishPlan.PublishPlanResponse? left, Aw.Evidence.Features.PublishPlan.PublishPlanResponse? right) -> bool
+static Aw.Evidence.Features.PublishPlan.PublishPlanResponse.operator ==(Aw.Evidence.Features.PublishPlan.PublishPlanResponse? left, Aw.Evidence.Features.PublishPlan.PublishPlanResponse? right) -> bool
+static Aw.Evidence.Features.RunScript.RunScriptRequest.operator !=(Aw.Evidence.Features.RunScript.RunScriptRequest? left, Aw.Evidence.Features.RunScript.RunScriptRequest? right) -> bool
+static Aw.Evidence.Features.RunScript.RunScriptRequest.operator ==(Aw.Evidence.Features.RunScript.RunScriptRequest? left, Aw.Evidence.Features.RunScript.RunScriptRequest? right) -> bool
+static Aw.Evidence.Features.RunScript.RunScriptResponse.operator !=(Aw.Evidence.Features.RunScript.RunScriptResponse? left, Aw.Evidence.Features.RunScript.RunScriptResponse? right) -> bool
+static Aw.Evidence.Features.RunScript.RunScriptResponse.operator ==(Aw.Evidence.Features.RunScript.RunScriptResponse? left, Aw.Evidence.Features.RunScript.RunScriptResponse? right) -> bool

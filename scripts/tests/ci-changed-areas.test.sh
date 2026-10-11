@@ -54,6 +54,10 @@ expect "a schema or rule record change runs the bash tests (their checks' suites
   "$(printf 'schemas/rule-record.schema.json\nrules/engineering/csharp/method-length.yaml\n')" \
   "$(printf 'bash=true\ndotnet=false\npackages=[]')"
 
+expect "the shared lock library runs dotnet too (Evidence's lock interop tests source it)" \
+  "$(printf 'config/lib/locks.sh\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
 expect "a C# change runs dotnet only" \
   "$(printf 'src/Aw.Kernel/Result.cs\nDirectory.Packages.props\n')" \
   "$(printf 'bash=false\ndotnet=true\npackages=[]')"
