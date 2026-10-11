@@ -125,10 +125,11 @@ page says "On in your system settings" and the switch can't turn it off.
 
 The theme is changed in one place each: `Theme/Motion.Apply(resources, reduce)` sets every `Motion.*` duration to 0, or
 back to its token value, and `Theme/TextScale.Apply` scales the ramp. `Views/SettingsTheme.For(resources)` is the view
-model's apply callback over both. **Shell hook:** the shell builds
-`new SettingsViewModel(new Preferences(platform.Preferences), platform.Motion, SettingsTheme.For(Application.Current.Resources))`
-on the UI thread, awaits `Load` once at start-up (it applies the stored scale and motion before the first frame), shows
-`new SettingsView { DataContext = settings }` as its Settings page, and disposes it on exit. Stock Fluent controls'
+model's apply callback over both. **At start-up** `SindriApp` builds
+`new SettingsViewModel(new Preferences(platform.Preferences), platform.Motion, SettingsTheme.For(Resources))` on the UI
+thread, awaits `Load` once before the window shows (the stored scale and motion apply before the first frame; an
+unreadable preferences file leaves the defaults), puts `new SettingsView { DataContext = settings }` in the shell's
+`SettingsSlot`, and disposes it on exit. The shell and Settings each write only their own fields over the stored file. Stock Fluent controls'
 own transitions don't read the `Motion.*` tokens: `SettingsTheme.Follow(window, settings)` keeps the window's
 `reduce-motion` class in step with `IsMotionReduced`, and `Theme/FluentOverrides.axaml` turns those transitions off
 under it (today the ToggleSwitch knob); another stock control with its own transitions gets its line there.
