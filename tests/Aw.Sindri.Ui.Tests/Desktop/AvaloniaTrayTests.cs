@@ -21,7 +21,7 @@ public sealed class AvaloniaTrayTests
                 return true;
             }, TestContext.Current.CancellationToken);
 
-    private static NativeMenuItem Item(AvaloniaTray tray, int index) => tray.Icon!.Menu!.Items.OfType<NativeMenuItem>().ElementAt(index);
+    private static NativeMenuItem Item(AvaloniaTray tray, int index) => tray.Menu!.Items.OfType<NativeMenuItem>().Where(i => i is not NativeMenuItemSeparator).ElementAt(index);
 
     [Fact]
     public Task Menu_labels_escape_underscores_and_the_tooltip_is_as_given() => OnUi(() =>
@@ -54,7 +54,13 @@ public sealed class AvaloniaTrayTests
     [Fact]
     public Task Each_state_has_its_own_icon() => OnUi(() =>
     {
-        var pixels = Enum.GetValues<TrayState>().Select(state => Pixels(TrayMarks.Draw(state))).ToList();
+        var frames = Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "frames")).FullName;
+        var pixels = Enum.GetValues<TrayState>().Select(state =>
+        {
+            var icon = TrayMarks.Draw(state);
+            icon.Save(Path.Combine(frames, $"tray-{state}.png"), PngBitmapEncoderOptions.Default);
+            return Pixels(icon);
+        }).ToList();
 
         Assert.Equal(3, pixels.Distinct(StringComparer.Ordinal).Count());
     });

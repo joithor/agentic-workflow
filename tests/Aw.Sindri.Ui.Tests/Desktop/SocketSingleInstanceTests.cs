@@ -25,18 +25,35 @@ public sealed class SocketSingleInstanceTests : IDisposable
     [Fact]
     public async Task A_socket_left_by_a_crashed_instance_is_taken_over()
     {
+        // A crashed instance leaves its socket file; nothing listens on it, and binding over it fails until it's removed.
         _ = Directory.CreateDirectory(Paths.Directory);
-        using (var crashed = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
-        {
-            crashed.Bind(new UnixDomainSocketEndPoint(Paths.InstanceSocket));
-        }
-
-        Assert.True(File.Exists(Paths.InstanceSocket));
+        await File.WriteAllBytesAsync(Paths.InstanceSocket, [], Token);
         await using var first = Launch();
         await using var second = Launch();
 
         Assert.True(await first.TryClaim(Token));
         Assert.True(await second.Send(InstanceMessages.Focus, Token));
+    }
+
+    [Fact]
+    public async Task A_home_too_deep_for_a_socket_path_still_claims_and_hears()
+    {
+        var deep = UiStatePaths.In(Path.Combine(_dir, new string('d', 90), "ui"));
+        var socketDirectory = Path.GetDirectoryName(deep.InstanceSocket)!; // why: SocketIn always joins a directory and a file
+        try
+        {
+            await using var first = new SocketSingleInstance(deep, new FakeTimeProvider());
+            await using var second = new SocketSingleInstance(deep, new FakeTimeProvider());
+
+            Assert.True(await first.TryClaim(Token));
+            Assert.False(await second.TryClaim(Token));
+            Assert.True(await second.Send(InstanceMessages.Focus, Token));
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, Mode(socketDirectory));
+        }
+        finally
+        {
+            Directory.Delete(socketDirectory, recursive: true);
+        }
     }
 
     [Fact]

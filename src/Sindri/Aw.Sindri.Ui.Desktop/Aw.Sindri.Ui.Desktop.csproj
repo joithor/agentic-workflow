@@ -10,6 +10,9 @@
     <AssemblyName>sindri-ui</AssemblyName>
     <RootNamespace>Aw.Sindri.Ui.Desktop</RootNamespace>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- The reduce-motion readers' [LibraryImport]s (MacMotion's UTF-8 class and selector names) generate unsafe
+         marshalling code; the head's own code has no unsafe blocks. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
