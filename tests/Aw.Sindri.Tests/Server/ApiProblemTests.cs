@@ -8,6 +8,8 @@ using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Tests.Ledger;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Vogen;
 
 namespace Aw.Sindri.Tests.Server;
 
@@ -48,6 +50,28 @@ public sealed class ApiProblemTests : IDisposable
 
         Assert.Equal(("SND-API-004", ErrorKind.Unavailable), (answer.Error.Code, answer.Error.Kind));
         Assert.Contains("HTTP 404", answer.Error.Message, StringComparison.Ordinal);
+        await app.StopAsync(ct);
+    }
+
+    [Fact(Timeout = Deadline), Trait("Lane", "integration")]
+    public async Task A_value_object_refusal_is_a_400_with_fixed_text_and_the_framework_message_only_in_the_log()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var logs = new ListLoggerFactory();
+        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System,
+            services => services.AddSingleton<ILoggerFactory>(logs));
+        _ = Pipeline.Configure(app);
+        _ = app.MapGet("/probe-id", static string () => throw new ValueObjectValidationException("framework detail: Use of uninitialized Value Object"));
+        await app.StartAsync(ct);
+        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };
+
+        var answer = await http.GetAsync(new Uri("/probe-id", UriKind.Relative), ct);
+        var problem = System.Text.Json.JsonDocument.Parse(await answer.Content.ReadAsStringAsync(ct)).RootElement;
+
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, answer.StatusCode);
+        Assert.Equal(("SND-CLI-003", "GET /probe-id: a value in the request isn't valid for this route"),
+            (problem.GetProperty("title").GetString(), problem.GetProperty("detail").GetString()));
+        Assert.Contains(logs.Logger.Lines, l => l.Contains("framework detail: Use of uninitialized Value Object", StringComparison.Ordinal));
         await app.StopAsync(ct);
     }
 
