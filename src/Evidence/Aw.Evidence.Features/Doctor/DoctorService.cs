@@ -1,3 +1,4 @@
+using Aw.Evidence.Core.Guard;
 using Aw.Evidence.Core.Settings;
 using Aw.Evidence.Core.Stack;
 using Aw.Kernel;
@@ -11,7 +12,7 @@ namespace Aw.Evidence.Features.Doctor;
 /// </summary>
 internal sealed class DoctorService(IStackProbe probe, IEvidenceSettings settings) : IService<DoctorRequest, DoctorResponse>
 {
-    internal static readonly Uri LoginPage = new("http://localhost:3000/login");
+    internal static readonly Uri LoginPage = new(new Uri(HostGuard.DefaultOrigin), "/login");
 
     public async ValueTask<Result<DoctorResponse>> Handle(DoctorRequest request, CancellationToken cancellationToken)
     {
@@ -32,7 +33,7 @@ internal sealed class DoctorService(IStackProbe probe, IEvidenceSettings setting
 
         if ((await probe.DatabaseReadyAsync(cancellationToken).ConfigureAwait(false)).IsError)
         {
-            failures.Add("postgres_container is not ready");
+            failures.Add("the database is not ready");   // the container behind it is the probe adapter's detail
         }
 
         if ((await probe.PortOpenAsync("localhost", 5002, cancellationToken).ConfigureAwait(false)).IsError)

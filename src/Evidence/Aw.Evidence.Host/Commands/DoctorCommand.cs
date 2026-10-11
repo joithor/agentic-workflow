@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Evidence.Host.Commands;
 
-/// <summary>The 'doctor' command: prints the stack's health; exit 1 when unhealthy (each failure also on stderr).</summary>
+/// <summary>The 'doctor' command: prints the stack's health; exit 2 when unhealthy (each failure also on stderr).</summary>
 internal static class DoctorCommand
 {
     internal const string Name = "doctor";

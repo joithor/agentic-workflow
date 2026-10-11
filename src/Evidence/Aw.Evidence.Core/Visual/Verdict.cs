@@ -10,7 +10,7 @@ public enum Verdict
     [JsonStringEnumMemberName("unchecked")]
     Unchecked,
 
-    /// <summary>Pixel-identical to the approved baseline; no model consulted.</summary>
+    /// <summary>No pixel differs from the approved baseline beyond the diff tolerance (threshold 0.1, anti-aliasing ignored); no model consulted.</summary>
     [JsonStringEnumMemberName("unchanged")]
     Unchanged,
 

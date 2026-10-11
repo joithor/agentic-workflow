@@ -189,8 +189,8 @@ Scorer and bugfix-state read these files after their own ports; the fields they 
 A step's `status`: `passed` (the action ran and the expected state held), `failed` (the action ran, the expected state
 didn't hold: a behaviour failure, never repaired; also a repaired action that ran but missed the expectation, which is
 never repaired again), `broken` (the action itself failed and no repair made it run). Every
-step runs whatever an earlier one did. The visual verdict comes from the last passed step's screenshot: pixel-identical
-to `--baseline` is `unchanged` with no model (never for a run with a failed step); otherwise the verdict cache
+step runs whatever an earlier one did. The visual verdict comes from the last passed step's screenshot: no pixel
+differing from `--baseline` beyond the diff tolerance (threshold 0.1, anti-aliased pixels ignored) is `unchanged` with no model (never for a run with a failed step); otherwise the verdict cache
 (`--cache`, default `<run-dir>/verdict-cache.json`; keyed on the pixels' and baseline's hashes, the prompt version,
 `AW_VISUAL_MODEL`, the app build, the script's scenario hash, fixtures, viewports and the browser build; an entry without
 an app build is trusted only inside the run invocation that wrote it, its `runInstance`, so a rerun in the same directory

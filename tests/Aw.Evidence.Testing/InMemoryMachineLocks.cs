@@ -7,7 +7,9 @@ namespace Aw.Evidence.Testing;
 
 /// <summary>
 /// In-process IMachineLocks: one semaphore per kind, shared by every holder of this instance. The QA-stack lock has one
-/// slot; the heavy-job lock has <paramref name="heavyJobSlots"/> (2 by default, as on the machine).
+/// slot; the heavy-job lock has <paramref name="heavyJobSlots"/> (2 by default, as on the machine). It deliberately
+/// leaves out the directory adapter's own behaviour: the 'waiting on lock' notice, owner files and slot directories
+/// (DirectoryLocksTests covers those), so no test may depend on them through this fake.
 /// </summary>
 /// <param name="heavyJobSlots">How many holders the heavy-job lock admits at once.</param>
 public sealed class InMemoryMachineLocks(int heavyJobSlots = 2) : IMachineLocks
