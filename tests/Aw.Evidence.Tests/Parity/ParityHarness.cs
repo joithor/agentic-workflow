@@ -41,6 +41,8 @@ internal sealed class ParityHarness
 
     public Dictionary<string, string> Secrets { get; } = new(StringComparer.Ordinal);
 
+    public FakeEvidenceSettings Settings { get; } = new();
+
     public static ParityRequest Request() => new(ManifestPath, RunDirectory, TimeSpan.Zero);
 
     public static DesignManifest Manifest(params DesignFrame[] frames) =>
@@ -61,7 +63,7 @@ internal sealed class ParityHarness
         var secrets = new FakeSecrets(Secrets);
         var capture = new FrameCapture(new StepRunner(FakeJudge.Unavailable, new FakeTimeProvider()), new FrameComparison(Files, Codec));
         var service = new ValidatingService<ParityRequest, ParityResponse>(
-            new ParityService(new ParityFilesAccess(Files, json), Locks, secrets, new ParityRun(Browser, capture, secrets)), new ParityValidator());
+            new ParityService(new ParityFilesAccess(Files, json), Locks, secrets, new ParityRun(Browser, capture, Settings)), new ParityValidator());
         return service.Handle(request, interrupt);
     }
 }

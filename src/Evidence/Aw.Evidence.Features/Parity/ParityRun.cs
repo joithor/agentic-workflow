@@ -1,6 +1,6 @@
 using Aw.Evidence.Core.Browser;
-using Aw.Evidence.Core.Guard;
 using Aw.Evidence.Core.Runs;
+using Aw.Evidence.Core.Settings;
 using Aw.Kernel;
 
 namespace Aw.Evidence.Features.Parity;
@@ -10,14 +10,13 @@ namespace Aw.Evidence.Features.Parity;
 /// for the ready element (a text-absent check straight after navigation would pass on a loading spinner), then measure
 /// each frame in order. Any failure stops the run.
 /// </summary>
-internal sealed class ParityRun(IBrowser browser, FrameCapture capture, ISecretsSource settings)
+internal sealed class ParityRun(IBrowser browser, FrameCapture capture, IEvidenceSettings settings)
 {
-    internal const string UserAgentVariable = "UI_EVIDENCE_USER_AGENT";
     private static readonly TimeSpan _navigationTimeout = TimeSpan.FromSeconds(120);
 
     internal async ValueTask<Result<IReadOnlyList<ParityFrame>>> RunAsync(ParityContext context, CancellationToken cancellationToken)
     {
-        var options = new BrowserSessionOptions(context.Host, context.Manifest.Viewport, RecordDirectory: null, settings.Get(UserAgentVariable));
+        var options = new BrowserSessionOptions(context.Host, context.Manifest.Viewport, RecordDirectory: null, settings.UserAgent);
         var opened = await browser.OpenAsync(options, cancellationToken).ConfigureAwait(false);
         if (opened.IsError)
         {

@@ -1,4 +1,5 @@
 using Aw.Evidence.Core.Guard;
+using Aw.Evidence.Core.Stack;
 using Aw.Evidence.Features.CheckProvenance;
 using Aw.Evidence.Testing;
 
@@ -12,11 +13,7 @@ public sealed class CheckProvenanceTests
         var query = new FakeProvenanceQuery();
         query.Emails.Add("seed-1@seed.test");
         query.Emails.Add("staff@seed.test");
-        var settings = new FakeSecrets(new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["UI_EVIDENCE_SEED_DOMAINS"] = "seed.test",
-            ["UI_EVIDENCE_SEED_EMAIL_PATTERN"] = "seed-%@seed.test",
-        });
+        var settings = new FakeEvidenceSettings { SeedPolicy = new SeedPolicy(["seed.test"], "seed-%@seed.test") };
 
         var result = await new CheckProvenanceService(query, settings).Handle(new CheckProvenanceRequest(), CancellationToken.None);
 
@@ -29,7 +26,7 @@ public sealed class CheckProvenanceTests
     {
         var query = new FakeProvenanceQuery { Failure = "docker: no such container" };
 
-        var result = await new CheckProvenanceService(query, new FakeSecrets(new Dictionary<string, string>(StringComparer.Ordinal))).Handle(new CheckProvenanceRequest(), CancellationToken.None);
+        var result = await new CheckProvenanceService(query, new FakeEvidenceSettings()).Handle(new CheckProvenanceRequest(), CancellationToken.None);
 
         Assert.Equal((DbProvenance.Unknown, "docker: no such container"), (result.Value.Provenance, result.Value.Reason));
     }

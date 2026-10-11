@@ -181,7 +181,7 @@ public sealed class RunScriptTests
     public async Task RunScript_presents_the_configured_user_agent()
     {
         var harness = WithMenu();
-        harness.Settings["UI_EVIDENCE_USER_AGENT"] = "Agent/1";
+        harness.Settings.UserAgent = "Agent/1";
         _ = harness.WithScript(OpenMenu());
 
         _ = await harness.Run(A.RunScriptRequest().Build());

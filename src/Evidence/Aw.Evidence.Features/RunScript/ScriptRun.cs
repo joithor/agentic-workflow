@@ -5,6 +5,7 @@ using Aw.Evidence.Core.Guard;
 using Aw.Evidence.Core.Lint;
 using Aw.Evidence.Core.Runs;
 using Aw.Evidence.Core.Scripts;
+using Aw.Evidence.Core.Settings;
 using Aw.Evidence.Core.Steps;
 using Aw.Evidence.Core.Usage;
 using Aw.Kernel;
@@ -15,10 +16,8 @@ namespace Aw.Evidence.Features.RunScript;
 /// Drives every step of a script for real, viewport by viewport, in a recorded session: a screenshot after each step,
 /// a lint pass over each viewport's final page, then the trace and videos. A failed step never stops the run.
 /// </summary>
-internal sealed class ScriptRun(IBrowser browser, StepRunner runner, IRunFiles files, ISecretsSource settings)
+internal sealed class ScriptRun(IBrowser browser, StepRunner runner, IRunFiles files, IEvidenceSettings settings)
 {
-    internal const string UserAgentVariable = "UI_EVIDENCE_USER_AGENT";
-
     internal async ValueTask<Result<DrivenRun>> DriveAsync(UiScript script, RunTarget target, InvocationLog log, CancellationToken cancellationToken)
     {
         var (host, runDirectory) = (target.Host, target.RunDirectory);
@@ -26,7 +25,7 @@ internal sealed class ScriptRun(IBrowser browser, StepRunner runner, IRunFiles f
         var stepOptions = StepRunOptions.Run with { RefuseWrites = StepGuard.RunRefusesWrites(host, target.AllowWrites) };
         foreach (var viewport in script.Viewports)
         {
-            var options = new BrowserSessionOptions(host, ScriptViewports.SizeOf(viewport), runDirectory, settings.Get(UserAgentVariable));
+            var options = new BrowserSessionOptions(host, ScriptViewports.SizeOf(viewport), runDirectory, settings.UserAgent);
             var opened = await browser.OpenAsync(options, cancellationToken).ConfigureAwait(false);
             if (opened.IsError)
             {

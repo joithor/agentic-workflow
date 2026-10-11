@@ -1,5 +1,4 @@
-using Aw.Evidence.Core.Files;
-using Aw.Evidence.Core.Guard;
+using Aw.Evidence.Core.Settings;
 using Aw.Evidence.Core.Stack;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -7,22 +6,20 @@ using Aw.Kernel.Services;
 namespace Aw.Evidence.Features.Doctor;
 
 /// <summary>
-/// Read-only stack health. The app's page title is deployment-specific, so it comes from UI_EVIDENCE_APP_TITLE or the
-/// local env file UI_EVIDENCE_CONFIG names; a page on :3000 with another title is a foreign process, never driven.
+/// Read-only stack health. The app's page title is deployment-specific, so it comes from the settings; a page on
+/// :3000 with another title is a foreign process, never driven.
 /// </summary>
-internal sealed class DoctorService(IStackProbe probe, ISecretsSource settings, IRunFiles files) : IService<DoctorRequest, DoctorResponse>
+internal sealed class DoctorService(IStackProbe probe, IEvidenceSettings settings) : IService<DoctorRequest, DoctorResponse>
 {
-    internal const string TitleVariable = "UI_EVIDENCE_APP_TITLE";
-    internal const string ConfigVariable = "UI_EVIDENCE_CONFIG";
     internal static readonly Uri LoginPage = new("http://localhost:3000/login");
 
     public async ValueTask<Result<DoctorResponse>> Handle(DoctorRequest request, CancellationToken cancellationToken)
     {
         var failures = new List<string>();
-        var title = settings.Get(TitleVariable) ?? await ConfiguredTitleAsync(cancellationToken).ConfigureAwait(false);
+        var title = await settings.AppTitleAsync(cancellationToken).ConfigureAwait(false);
         if (title is null)
         {
-            failures.Add($"{TitleVariable} is not set: set it in the environment or in the env file {ConfigVariable} names");
+            failures.Add($"the app title is not set: set {settings.AppTitleSource}");
         }
         else
         {
@@ -44,16 +41,5 @@ internal sealed class DoctorService(IStackProbe probe, ISecretsSource settings, 
         }
 
         return new DoctorResponse(failures.Count == 0, failures);
-    }
-
-    private async ValueTask<string?> ConfiguredTitleAsync(CancellationToken cancellationToken)
-    {
-        if (settings.Get(ConfigVariable) is not { } path)
-        {
-            return null;
-        }
-
-        var content = await files.ReadAsync(path, cancellationToken).ConfigureAwait(false);
-        return content.IsError ? null : LocalEnvFile.Find(content.Value, TitleVariable);
     }
 }

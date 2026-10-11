@@ -1570,3 +1570,9 @@ static Aw.Evidence.Core.Ids.RunInstanceId.operator !=(Aw.Evidence.Core.Ids.RunIn
 static Aw.Evidence.Core.Ids.RunInstanceId.operator ==(Aw.Evidence.Core.Ids.RunInstanceId left, Aw.Evidence.Core.Ids.RunInstanceId right) -> bool
 const Aw.Evidence.Core.Runs.ParitySummary.FileName = "parity.json" -> string!
 const Aw.Evidence.Core.Runs.RunSummary.FileName = "summary.json" -> string!
+Aw.Evidence.Core.Settings.IEvidenceSettings
+Aw.Evidence.Core.Settings.IEvidenceSettings.AppTitleAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
+Aw.Evidence.Core.Settings.IEvidenceSettings.AppTitleSource.get -> string!
+Aw.Evidence.Core.Settings.IEvidenceSettings.SeedPolicy.get -> Aw.Evidence.Core.Stack.SeedPolicy!
+Aw.Evidence.Core.Settings.IEvidenceSettings.UserAgent.get -> string?
+Aw.Evidence.Core.Settings.IEvidenceSettings.VisualModel.get -> string!

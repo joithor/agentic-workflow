@@ -279,11 +279,14 @@ the manifest's `login` names (AW-EVIDENCE-006 lists the missing names, never val
 
 ## Environment
 
+These are read by Infrastructure's `EnvironmentEvidenceSettings` and lock settings; the use cases see only the typed
+`IEvidenceSettings` port, never a variable name. Blank counts as unset.
+
 | Variable | Read by |
 |---|---|
 | `UI_EVIDENCE_USER_AGENT` | `run`, `parity`: the user agent to present instead of desktop Chrome at the browser's build |
 | `AW_VISUAL_MODEL` | `run`: the model label in the verdict-cache key (default `judge-default`) |
-| `UI_EVIDENCE_APP_TITLE`, `UI_EVIDENCE_CONFIG` | `doctor`: the title the app on :3000 must show at `/login`; else the `NAME=value` env file `UI_EVIDENCE_CONFIG` names |
+| `UI_EVIDENCE_APP_TITLE`, `UI_EVIDENCE_CONFIG` | `doctor`: the title the app on :3000 must show at `/login`; else the `NAME=value` env file `UI_EVIDENCE_CONFIG` names (an `export ` prefix and quotes are allowed). Neither set (or an unreadable file) is itself a doctor failure: `the app title is not set: set …` |
 | `UI_EVIDENCE_SEED_DOMAINS`, `UI_EVIDENCE_SEED_EMAIL_PATTERN` | `provenance`: the seed policy (defaults match only `example.com`, so an unconfigured install stays `unknown`) |
 | `AW_QA_STACK_LOCK`, `AW_HEAVY_JOB_LOCK`, `AW_HEAVY_SLOTS`, `AW_HEAVY_LOCK_HELD`, `AW_STATE_DIR` | the lock adapter |
 | the manifest's `login.emailEnv` / `login.passwordEnv` | `parity` sign-in |
@@ -311,7 +314,9 @@ move behind an AOT host if the browser adapter ever allowed it.
 | `IMachineLocks` | `DirectoryLocks` | `InMemoryMachineLocks` |
 | `IJudge` | `UnavailableJudge` (CLI adapter blocked, above) | `FakeJudge` |
 | `IStackProbe`, `IProvenanceQuery` | `ProcessStackProbe`, `DockerPsqlProvenance` | `FakeStackProbe`, `FakeProvenanceQuery` |
-| `ISecretsSource` | `EnvironmentSecrets` | `FakeSecrets` |
+| `ISecretsSource` (credentials by the name the manifest gives) | `EnvironmentSecrets` | `FakeSecrets` |
+| `IEvidenceSettings` (user agent, visual model, seed policy, app title) | `EnvironmentEvidenceSettings` | `FakeEvidenceSettings` |
+| `IIdGenerator` (Kernel; the run instance) | `RandomIds` | `SequentialIds` |
 
 Each port's contract suite lives in `tests/Aw.Evidence.Testing`; the fake and the adapter both pass it.
 

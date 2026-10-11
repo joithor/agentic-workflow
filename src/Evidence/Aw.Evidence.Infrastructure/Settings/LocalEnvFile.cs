@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Aw.Evidence.Features.Doctor;
+namespace Aw.Evidence.Infrastructure.Settings;
 
 /// <summary>Reads one variable from a local, uncommitted env file of NAME=value lines (an optional export prefix, quotes stripped).</summary>
 internal static class LocalEnvFile
