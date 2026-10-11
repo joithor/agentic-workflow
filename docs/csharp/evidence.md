@@ -19,7 +19,7 @@ every path it writes into a run file is absolute.
 
 | Command | Does | Exit |
 |---|---|---|
-| `run <script.json> <run-dir> [--baseline png] [--app-build sha] [--fixtures id] [--cache manifest.json] [--host url] [--allow-preview-host] [--allow-writes] [--lock-timeout s]` | Runs every step of a UI script in each of its viewports, writes `<run-dir>/summary.json` and prints it | 0 every step passed · 2 a step failed or broke · 1 · 4 · 75 |
+| `run <script.json> <run-dir> [--baseline png] [--app-build sha] [--fixtures id] [--cache manifest.json] [--host url] [--allow-preview-host] [--allow-writes] [--lock-timeout s]` | Deletes `<run-dir>/summary.json`, runs every step of a UI script in each of its viewports, writes `summary.json` and prints it | 0 every step passed · 2 a step failed or broke · 1 · 4 · 75 |
 | `parity <manifest.json> <run-dir> [--host url] [--allow-preview-host] [--allow-writes] [--app-build sha] [--db-provenance seeded\|unknown] [--lock-timeout s]` | Deletes `<run-dir>/parity.json`, measures each design frame, writes `parity.json` and prints it; each failed box check is also a stderr line `ui-evidence: geometry: <frame> <target>: <failure>` | 0 every geometry check passed · 2 one failed · 1 · 4 · 75 |
 | `parity-plan <run-dir> [--reviewed file,file]` | Prints the Linear attachment plan (one side-by-side image per frame) | 0 every image reviewed · 3 an image is unreviewed · 1 provenance unknown (AW-EVIDENCE-016: the evidence stays local) |
 | `parity-comment <run-dir> --for linear\|github` | Prints the comment as markdown (Linear: a table with geometry; GitHub: a table, images stay on Linear) | 0 · 1 |
@@ -212,7 +212,8 @@ element is missing), `tolerance`, `pass`, `failure`), `knownDifferences[]`, `fil
 `sideBySide`: `<run-dir>/<frame>-{design,implementation,diff,side-by-side}.png`), `designNode`.
 
 A relative `designPng` in the manifest resolves against the manifest's directory. `parity.json` is deleted before the
-run, so a failed run never leaves an earlier summary for `parity-plan` to publish.
+run, so a failed run never leaves an earlier summary for `parity-plan` to publish. `run` does the same with
+`summary.json`: once the locks are held, an earlier `summary.json` in the run directory is deleted, so exit 4 leaves none.
 
 ### `publish-plan` output
 

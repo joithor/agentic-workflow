@@ -21,8 +21,12 @@ internal sealed class ScriptFiles(IRunFiles files, JsonSerializerOptions json)
             error => error with { Message = $"script {path}: {error.Message}" }));
     }
 
-    internal ValueTask<Result<Unit>> CreateRunDirectoryAsync(string runDirectory, CancellationToken cancellationToken) =>
-        files.CreateDirectoryAsync(runDirectory, cancellationToken);
+    // A run that errors must not leave an earlier run's summary behind as if it were this run's evidence.
+    internal async ValueTask<Result<Unit>> PrepareRunDirectoryAsync(string runDirectory, CancellationToken cancellationToken)
+    {
+        var created = await files.CreateDirectoryAsync(runDirectory, cancellationToken).ConfigureAwait(false);
+        return created.IsError ? created : await files.DeleteAsync(RunPath.Combine(runDirectory, SummaryFile), cancellationToken).ConfigureAwait(false);
+    }
 
     internal ValueTask<Result<Unit>> WriteSummaryAsync(string runDirectory, RunSummary summary, CancellationToken cancellationToken) =>
         files.WriteAsync(RunPath.Combine(runDirectory, SummaryFile), AwJson.Serialize(summary, json), cancellationToken);

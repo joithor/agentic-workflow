@@ -11,7 +11,8 @@ namespace Aw.Evidence.Features.RunScript;
 
 /// <summary>
 /// Runs a UI script: reads and checks it, vets the host and the steps (refusals take no lock), then holds the QA-stack
-/// and heavy-job locks for the whole browser run, writes summary.json and releases the locks on every path.
+/// and heavy-job locks for the whole browser run, deletes an earlier summary.json, writes the new one and releases the
+/// locks on every path.
 /// </summary>
 internal sealed class RunScriptService(ScriptFiles files, IMachineLocks locks, ScriptRun run, RunVerdict verdict, TimeProvider clock)
     : IService<RunScriptRequest, RunScriptResponse>
@@ -41,7 +42,7 @@ internal sealed class RunScriptService(ScriptFiles files, IMachineLocks locks, S
     private async ValueTask<Result<RunScriptResponse>> RunAsync(RunScriptRequest request, LoadedScript loaded, ResolvedHost host, CancellationToken cancellationToken)
     {
         var started = clock.GetUtcNow();
-        var created = await files.CreateRunDirectoryAsync(request.RunDirectory, cancellationToken).ConfigureAwait(false);
+        var created = await files.PrepareRunDirectoryAsync(request.RunDirectory, cancellationToken).ConfigureAwait(false);
         if (created.IsError)
         {
             return created.Error;
