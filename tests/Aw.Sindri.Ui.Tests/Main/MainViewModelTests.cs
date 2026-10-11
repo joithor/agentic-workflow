@@ -158,4 +158,45 @@ public sealed class MainViewModelTests : IDisposable
         }, "reconnected");
         Assert.Equal(30, _server.StreamCursors[^1]);
     }
+
+    [Fact]
+    public async Task A_restart_is_followed_while_the_old_stream_still_hangs_open()
+    {
+        _records.Write(A.Record());
+        Start();
+        await Eventually(() => _vm.Headline == "Running", "running");
+
+        // The old control plane is stopping but holds its event stream open; a new one records another endpoint.
+        _server.Pong = new(5151, 8);
+        _server.Current = A.Status(pid: 5151, epoch: 8);
+        _records.Write(A.Record(pid: 5151, epoch: 8, port: 7493));
+
+        await Eventually(() =>
+        {
+            _clock.Advance(MainViewModel.RetryEvery);
+            return _vm.Lease == "pid 5151 · epoch 8";
+        }, "followed the new endpoint");
+        Assert.Equal("127.0.0.1:7493", _vm.Api);
+    }
+
+    [Fact]
+    public async Task A_failed_refresh_ends_the_stream_instead_of_waiting_on_it()
+    {
+        _records.Write(A.Record());
+        Start();
+        await Eventually(() => _vm.Headline == "Running", "running");
+        var streams = _server.StreamCursors.Count;
+
+        _server.Current = A.Status(epoch: 7);
+        _server.FailStatus = true;
+        _server.Push(A.Event(40, "process.stopped"));
+        await Eventually(() => _vm.Headline == "Not running", "status failed");
+        _server.FailStatus = false;
+
+        await Eventually(() =>
+        {
+            _clock.Advance(MainViewModel.RetryEvery);
+            return _server.StreamCursors.Count > streams && _vm.Headline == "Running";
+        }, "reopened the stream");
+    }
 }
