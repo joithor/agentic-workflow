@@ -1,3 +1,4 @@
+using Aw.Judge.Core.Ports;
 using Aw.Judge.Features.ApproveDecision;
 using Aw.Judge.Features.AskQuestion;
 using Aw.Judge.Features.ExplainDecision;
@@ -79,9 +80,12 @@ public static class JudgeFeaturesServiceCollectionExtensions
             .AddScoped<AskQuestionService>()
             .AddScoped<IValidator<AskQuestionRequest>, AskQuestionValidator>()
             .AddScoped<IService<AskQuestionRequest, AskQuestionResponse>>(static sp =>
-                new ValidatingService<AskQuestionRequest, AskQuestionResponse>(
-                    sp.GetRequiredService<AskQuestionService>(),
-                    sp.GetRequiredService<IValidator<AskQuestionRequest>>()));
+                new PruneAfterQuestion(
+                    new ValidatingService<AskQuestionRequest, AskQuestionResponse>(
+                        sp.GetRequiredService<AskQuestionService>(),
+                        sp.GetRequiredService<IValidator<AskQuestionRequest>>()),
+                    sp.GetRequiredService<IDecisionLog>(),
+                    sp.GetRequiredService<TimeProvider>()));
     }
 
     // GetHealth.
