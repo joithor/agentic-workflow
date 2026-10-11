@@ -132,7 +132,7 @@ public abstract class WorkflowStoreContract
         Expect.Equal(WorkflowErrors.InstanceChanged.Code, refused.Error.Code);
         Expect.True(RowEquality.Same(current, (await store.Find(started.Id, Token))!));
         Expect.Equal(2, (await store.Events(started.Id, Token)).Count);
-        Expect.Equal<RecordedDecision?>(expected: null, await store.Recorded(key, Token));
+        Expect.Equal(expected: null, await store.Recorded(key, Token));
     }
 
     /// <summary>A bad request never burns a key (W12): a refused Commit records nothing, so the same key applies once the decision is made again from the current row.</summary>
@@ -188,7 +188,7 @@ public abstract class WorkflowStoreContract
         var refused = await store.Commit(StoreRows.Spawn(started, child, StoreRows.Key(started, "run:1.1:b")), Token);
 
         Expect.Equal(WorkflowErrors.InstanceChanged.Code, refused.Error.Code);
-        Expect.Equal<WorkflowInstance?>(expected: null, await store.Find(child.Id, Token));
+        Expect.Equal(expected: null, await store.Find(child.Id, Token));
         Expect.Equal(0, (await store.Children(started.Id, Token)).Count);
         Expect.Equal(0, (await store.Events(child.Id, Token)).Count);
     }
@@ -216,11 +216,11 @@ public abstract class WorkflowStoreContract
         var store = await Create(Clock);
         var root = StoreRows.Root();
 
-        Expect.Equal<WorkflowInstance?>(expected: null, await store.Find(root.Id, Token));
-        Expect.Equal<WorkflowInstance?>(expected: null, await store.FindByAddress(root.Address, Token));
+        Expect.Equal(expected: null, await store.Find(root.Id, Token));
+        Expect.Equal(expected: null, await store.FindByAddress(root.Address, Token));
         Expect.Equal(0, (await store.Children(root.Id, Token)).Count);
         Expect.Equal(0, (await store.Events(root.Id, Token)).Count);
-        Expect.Equal<RecordedDecision?>(expected: null, await store.Recorded(StoreRows.Key(root, "start:1"), Token));
+        Expect.Equal(expected: null, await store.Recorded(StoreRows.Key(root, "start:1"), Token));
     }
 
     private static WorkflowInstance Spend(WorkflowInstance row) =>
