@@ -22,7 +22,7 @@ internal static class WireJson
         return result.IsError ? null : result.Value;
     }
 
-    /// <summary>Parses text as any JSON value.</summary>
+    /// <summary>Parses text as any JSON value; an object that repeats a key isn't one.</summary>
     /// <param name="text">The text.</param>
     /// <param name="node">The value (null for JSON null).</param>
     /// <returns>Whether the text is JSON.</returns>
@@ -30,7 +30,8 @@ internal static class WireJson
     {
         try
         {
-            node = JsonNode.Parse(text);
+            // why: JsonNode.Parse otherwise accepts a repeated key and throws later, when the object is first read.
+            node = JsonNode.Parse(text, documentOptions: new JsonDocumentOptions { AllowDuplicateProperties = false });
             return true;
         }
         catch (JsonException)

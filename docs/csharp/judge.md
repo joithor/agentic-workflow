@@ -48,8 +48,9 @@ Everything the judge reads or writes as JSON goes through the Kernel `AwJson` pr
 
 - stdin is deserialized into the command's input record (`BriefInput` for `brief save`); any failure, syntax, shape or
   an id past its 4,096-character cap, is exit 1 with one line `invalid input: <reason>`. A question's stdin is
-  deserialized by the evaluator into the question's input record (Questions below); any failure, or a required text
-  that is blank, is the `invalid-input` escalation, recorded like any other;
+  deserialized by the evaluator into the question's input record (Questions below); any failure, an object that
+  repeats a key, or a required text that is blank, is the `invalid-input` escalation, recorded like any other (text
+  that isn't well-formed JSON is stored as one JSON string);
 - `config.json` is deserialized into `JudgeConfig` and then checked (`JudgeConfigParser`);
 - the JSON columns `decisions.skipped` (a list of `{provider, reason}`) and `decision_details.probabilities` (option
   → probability) are the typed values, serialized through the same options.

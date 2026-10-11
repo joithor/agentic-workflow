@@ -29,7 +29,7 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
     /// <summary>Evaluates a question against a raw input.</summary>
     /// <typeparam name="TInput">The question's validated input.</typeparam>
     /// <param name="question">The question.</param>
-    /// <param name="rawInput">The input text as read (stdin); anything that doesn't deserialize into the question's input record, syntax or shape, escalates as 'invalid-input'.</param>
+    /// <param name="rawInput">The input text as read (stdin); anything that doesn't deserialize into the question's input record (syntax, a repeated key, or shape) escalates as 'invalid-input'.</param>
     /// <param name="context">The providers, the chain and the question's config.</param>
     /// <param name="cancellationToken">Cancels the provider calls and the writes.</param>
     /// <returns>The decision, or an escalation.</returns>
@@ -40,14 +40,15 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
         ArgumentNullException.ThrowIfNull(question);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(rawInput);
-        var run = new EvaluationRun(DecisionId.From(ids.NewId().ToString()), clock.GetUtcNow(), RawNode(rawInput)) { SessionId = context.SessionId };
+        var (rawNode, wellFormed) = RawNode(rawInput);
+        var run = new EvaluationRun(DecisionId.From(ids.NewId().ToString()), clock.GetUtcNow(), rawNode) { SessionId = context.SessionId };
         var settings = context.Override;
         if (settings is { Enabled: false })
         {
             return await Escalate(question, run, EvaluationReasons.QuestionDisabled, DecisionOutcome.Escalated, cancellationToken).ConfigureAwait(false);
         }
 
-        var (input, escalation) = Validated(question, rawInput);
+        var (input, escalation) = wellFormed ? Validated(question, rawInput) : (null, EvaluationReasons.InvalidInput);
         if (input is null)
         {
             return escalation == EvaluationReasons.RuleTimeout
@@ -98,16 +99,21 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
         return await Walk(question, input, candidates, run, cancellationToken).ConfigureAwait(false);
     }
 
-    // What escalation rows digest and store: the parsed JSON, or the text itself as a JSON string when it isn't JSON.
-    private static JsonNode? RawNode(string rawInput)
+    // Repeated property names are refused at parse time: JsonNode.Parse otherwise accepts them and throws later, when
+    // something (the redactor, the cap) enumerates the object.
+    private static readonly JsonDocumentOptions _rawDocument = new() { AllowDuplicateProperties = false };
+
+    // What escalation rows digest and store: the parsed JSON, or the text itself as a JSON string when it isn't
+    // well-formed JSON (a syntax error or a repeated key). Text that isn't well-formed escalates as 'invalid-input'.
+    private static (JsonNode? Node, bool WellFormed) RawNode(string rawInput)
     {
         try
         {
-            return JsonNode.Parse(rawInput);
+            return (JsonNode.Parse(rawInput, documentOptions: _rawDocument), true);
         }
         catch (JsonException)
         {
-            return JsonValue.Create(rawInput);
+            return (JsonValue.Create(rawInput), false);
         }
     }
 
