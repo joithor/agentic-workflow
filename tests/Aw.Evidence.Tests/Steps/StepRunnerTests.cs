@@ -78,6 +78,23 @@ public sealed class StepRunnerTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_repaired_action_that_runs_but_misses_the_expectation_fails_and_is_not_repaired_again()
+    {
+        var judge = new FakeJudge().Repairs(Choose(0), Choose(1));
+        var session = Session(static p =>
+        {
+            p.Candidates.Add(new Candidate(0, "button", "Open", TestId.From("open-v2"), "Open"));
+            p.Candidates.Add(new Candidate(1, "button", "Other", TestId.From("other"), "Other"));
+        });
+
+        var (status, _) = await Run(session, ScriptBuilder.Click("open"), judge);
+
+        Assert.Equal(StepStatus.Failed, status);
+        _ = Assert.Single(judge.RepairRequests);
+        Assert.Equal(["click testId:open", "click candidate:0"], session.Calls);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_judge_that_answers_nothing_leaves_the_step_broken_after_two_failed_calls()
     {
         var judge = new FakeJudge();
