@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Aw.Kernel;
 using Aw.Kernel.Events;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Json;
@@ -26,4 +27,10 @@ public sealed class EventFactory(EventScope scope, TimeProvider clock, IIdGenera
         var text = Encoding.UTF8.GetString(AwJson.Serialize(payload, json));
         return new LedgerEntry(context.Envelope(type, text, clock, ids), key, Item: null);
     }
+
+    /// <summary>Reads <paramref name="recorded"/>'s payload as <typeparamref name="TPayload"/>, through the same AwJson options.</summary>
+    /// <param name="recorded">A recorded event.</param>
+    /// <typeparam name="TPayload">The payload type its event type carries.</typeparam>
+    /// <returns>The payload, or the JSON error when it doesn't read as one.</returns>
+    public Result<TPayload> Payload<TPayload>(LedgerEvent recorded) => AwJson.Deserialize<TPayload>(Encoding.UTF8.GetBytes(recorded.Envelope.Payload), json);
 }

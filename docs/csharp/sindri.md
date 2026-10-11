@@ -98,7 +98,8 @@ in-memory store and the SQLite adapter). Append-only, idempotent and fenced.
 | `payload_json` | the payload record, through AwJson |
 
 S1 events and their keys: `process.started` (`process.started:<epoch>`), `process.stopped` (`process.stopped:<epoch>`),
-`profile.approved` (`profile.approved:<hash>`), `service.heartbeat` (`service.heartbeat:<epoch>:<slot>`). A service's
+`profile.approved` (`profile.approved:<hash>:<previous approved hash, or none>`, so approving A, then B, then A
+again records three events), `service.heartbeat` (`service.heartbeat:<epoch>:<slot>`). A service's
 run event is `service.<name>`. `outbox_commands` is Kernel.Data's outbox table (migration 3), empty in S1: outward
 actions join it in later stages.
 
