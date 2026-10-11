@@ -56,7 +56,7 @@ public sealed class StackLocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Disposing_the_combined_lease_twice_releases_once()
+    public async Task Disposing_the_combined_lease_twice_releases_each_lock_once()
     {
         var locks = new InMemoryMachineLocks();
         var lease = (await StackLocks.AcquireAsync(locks, TimeSpan.Zero, CancellationToken.None)).Value;
