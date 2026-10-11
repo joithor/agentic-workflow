@@ -61,5 +61,7 @@
     <Project Path="tests/Aw.BugFix.Testing/Aw.BugFix.Testing.csproj" />
     <Project Path="tests/Aw.Sindri.Tests/Aw.Sindri.Tests.csproj" />
     <Project Path="tests/Aw.Sindri.Testing/Aw.Sindri.Testing.csproj" />
+    <Project Path="tests/Aw.Context.Testing/Aw.Context.Testing.csproj" />
+    <Project Path="tests/Aw.Context.Testing.Tests/Aw.Context.Testing.Tests.csproj" />
   </Folder>
 </Solution>

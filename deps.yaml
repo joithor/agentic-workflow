@@ -387,6 +387,14 @@ edges:
     kind: project
     status: current
     note: "the aw-readiness host starts Kernel telemetry in Compose (§4b.4)"
+  # Context's tier-0 edges (context spec §4: Aw.Kernel, Aw.Kernel.Data, Redaction). Stage S-FX declares the Kernel one,
+  # which its test support (tests/Aw.Context.Testing, AwJson for the fixture files) already needs; S-1A flips it to
+  # current with the package's own projects and adds the other two.
+  - from: Context
+    to: Kernel
+    kind: project
+    status: planned
+    note: "Result, AwJson, IService; Aw.Context.Testing reads the fixture's history and probes through AwJson"
   - from: Scorer
     to: Kernel
     kind: project
