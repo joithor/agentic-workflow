@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sindri Lanes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#010102;
+  --s1:#0f1011; --s2:#141516; --s3:#18191a; --s4:#191a1b;
+  --line:#23252a; --line2:#34343a; --line3:#3e3e44;
+  --ink:#f7f8f8; --ink-muted:#d0d6e0; --ink-subtle:#8a8f98; --ink-tertiary:#62666d;
+  --brand:#5e6ad2; --brand-hover:#828fff; --focus:rgba(94,106,210,.5);
+  --ok:#27a644;
+  --attn:#eb5757; --attn-soft:rgba(235,87,87,.14); --attn-faint:rgba(235,87,87,.45);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--canvas);color:var(--ink);font:400 13px/1.45 var(--sans);-webkit-font-smoothing:antialiased;font-feature-settings:"cv01","ss03"}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.mono{font-family:var(--mono);font-size:12px;letter-spacing:-.1px}
+kbd{font:500 10.5px/1 var(--mono);color:var(--ink-subtle);background:var(--s3);border:1px solid var(--line2);border-bottom-color:var(--line3);border-radius:4px;padding:2px 4px;min-width:16px;text-align:center;display:inline-block}
+svg{flex:none}
+
+/* ---------- window ---------- */
+.app{display:grid;grid-template-columns:56px minmax(0,1fr);height:100vh;min-height:800px;min-width:1280px}
+
+/* ---------- rail ---------- */
+.rail{background:var(--s1);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px}
+.mark{width:28px;height:28px;border-radius:8px;background:var(--brand);display:grid;place-items:center;font:600 14px/1 var(--sans);color:#fff;margin-bottom:14px;letter-spacing:-.3px}
+.rail-btn{position:relative;width:36px;height:36px;border-radius:8px;display:grid;place-items:center;color:var(--ink-subtle)}
+.rail-btn:hover{background:var(--s3);color:var(--ink-muted)}
+.rail-btn[aria-current="page"]{background:rgba(94,106,210,.16);color:var(--ink)}
+.rail-btn[aria-current="page"]::before{content:"";position:absolute;left:-10px;top:9px;bottom:9px;width:2px;border-radius:2px;background:var(--brand)}
+.rail-btn .count{position:absolute;top:3px;right:2px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--attn);color:#fff;font:600 10px/15px var(--sans);text-align:center;box-shadow:0 0 0 2px var(--s1)}
+.tip{position:absolute;left:46px;top:50%;transform:translateY(-50%);white-space:nowrap;background:var(--s4);border:1px solid var(--line2);border-radius:6px;padding:5px 8px;font:500 12px/1 var(--sans);color:var(--ink);display:flex;gap:8px;align-items:center;opacity:0;pointer-events:none;transition:opacity .12s;z-index:20}
+.rail-btn:hover .tip,.rail-btn:focus-visible .tip{opacity:1}
+.rail-sep{width:20px;height:1px;background:var(--line);margin:8px 0}
+.rail-spacer{flex:1}
+.health{position:relative;width:36px;height:36px;display:grid;place-items:center;border-radius:8px}
+.health:hover{background:var(--s3)}
+.health .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(39,166,68,.18)}
+.health .warnpip{position:absolute;right:8px;top:8px;width:6px;height:6px;border-radius:1px;transform:rotate(45deg);background:var(--ink-subtle);box-shadow:0 0 0 2px var(--s1)}
+.health:hover .tip,.health:focus-visible .tip{opacity:1}
+
+/* ---------- main ---------- */
+.main{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:48px auto minmax(0,1fr) 28px;min-width:0;min-height:0;overflow:hidden;background:var(--canvas)}
+.top{display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--line)}
+.top h1{font:600 20px/1 var(--sans);letter-spacing:-.4px}
+.top .sub{color:var(--ink-subtle);font-size:12px;display:flex;align-items:center;gap:6px}
+.top .sub .live{width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.top .grow{flex:1}
+.cmd{display:flex;align-items:center;gap:8px;height:30px;padding:0 8px 0 10px;border:1px solid var(--line2);border-radius:8px;background:var(--s1);color:var(--ink-subtle);font-size:13px;width:260px}
+.cmd:hover{border-color:var(--line3)}
+.cmd span{flex:1;text-align:left}
+.ghost{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line2);color:var(--ink-muted);display:inline-flex;align-items:center;gap:6px;font:500 13px/1 var(--sans)}
+.ghost:hover{background:var(--s3)}
+
+/* ---------- needs-you band ---------- */
+.band{border-bottom:1px solid var(--line);background:linear-gradient(var(--attn-soft),var(--attn-soft)) top/100% 2px no-repeat, var(--s1);padding:12px 0 14px}
+.band-head{display:flex;align-items:center;gap:10px;padding:0 20px 10px}
+.eyebrow{font:500 11.5px/1 var(--sans);letter-spacing:.4px;text-transform:uppercase;color:var(--ink-muted);display:flex;align-items:center;gap:8px}
+.eyebrow .n{font:600 11px/1 var(--sans);color:#fff;background:var(--attn);border-radius:4px;padding:3px 6px;letter-spacing:0}
+.band-head .order{color:var(--ink-subtle);font-size:12px}
+.band-head .grow{flex:1}
+.band-head .hint{display:flex;align-items:center;gap:4px;color:var(--ink-subtle);font-size:12px}
+.strip{display:flex;gap:12px;overflow-x:auto;padding:0 20px 4px;scroll-snap-type:x proximity;scroll-padding:0 20px;scrollbar-width:thin;scrollbar-color:var(--line3) transparent}
+.strip::-webkit-scrollbar{height:6px}.strip::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+
+.ny{position:relative;flex:0 0 300px;scroll-snap-align:start;background:var(--s2);border:1px solid var(--line);border-radius:12px;padding:12px 12px 12px 18px;display:flex;flex-direction:column;gap:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);min-height:204px}
+.ny:hover{border-color:var(--line2)}
+.ny::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--attn)}
+.ny.pulse::before{animation:pulse 1.8s ease-in-out infinite}
+.ny.calm::before{width:2px;background:var(--attn-faint)}
+@keyframes pulse{
+  0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(235,87,87,.55)}
+  50%{opacity:.55;box-shadow:0 0 0 4px rgba(235,87,87,0)}
+}
+@media (prefers-reduced-motion:reduce){
+  .ny.pulse::before{animation:none}
+  .ny.pulse{outline:2px solid var(--attn);outline-offset:-1px}
+  *{transition:none!important}
+}
+.ny-top{display:flex;align-items:center;gap:6px}
+.kind{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 6px;border-radius:4px;border:1px solid var(--line2);font:500 11.5px/1 var(--sans);color:var(--ink-muted)}
+.kind.attn{border-color:rgba(235,87,87,.4);color:#f39a9a}
+.ny-top .since{margin-left:auto;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
+.ny-title{font:500 13px/1.35 var(--sans);color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ny-title .mono{color:var(--ink-subtle);margin-right:4px}
+.ny-why{color:var(--ink-subtle);font-size:12px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ny-why b{color:var(--ink-muted);font-weight:500}
+.ny-actions{margin-top:auto;display:flex;flex-direction:column;gap:6px}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+
+.term{display:flex;align-items:center;gap:6px;height:30px;border:1px solid var(--line2);border-radius:8px;background:var(--s1);padding:0 4px 0 8px;min-width:0}
+.term .lbl{font:500 12px/1 var(--sans);color:var(--ink-muted);white-space:nowrap}
+.term code{flex:1;min-width:0;font:400 11.5px/1 var(--mono);color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.copy{height:22px;padding:0 7px;border-radius:6px;background:var(--s3);border:1px solid var(--line2);font:500 11.5px/1 var(--sans);color:var(--ink-muted);display:inline-flex;align-items:center;gap:4px}
+.copy:hover{background:var(--s4);color:var(--ink);border-color:var(--line3)}
+.copy.done{color:var(--ink)}
+.act-label{display:flex;align-items:center;gap:6px;font:500 12px/1 var(--sans);color:var(--ink)}
+.act-label .lock{color:var(--ink-subtle)}
+
+.btn{height:28px;padding:0 10px;border-radius:8px;font:500 13px/1 var(--sans);display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);color:var(--ink-muted);background:var(--s3);white-space:nowrap}
+.btn:hover{background:var(--s4);color:var(--ink);border-color:var(--line3)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.btn.quiet{background:transparent;border-color:transparent;color:var(--ink-subtle)}
+.btn.quiet:hover{background:var(--s3);color:var(--ink-muted)}
+.btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.btn kbd{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:inherit;opacity:.8}
+
+.split{display:inline-flex;align-items:stretch;height:28px;border-radius:8px;border:1px solid var(--line2);background:var(--s3);position:relative}
+.split > button{display:inline-flex;align-items:center;gap:6px;padding:0 9px;font:500 12.5px/1 var(--sans);color:var(--ink-muted);white-space:nowrap}
+.split > button:first-child{border-radius:7px 0 0 7px}
+.split > button:last-child{border-left:1px solid var(--line2);padding:0 6px;border-radius:0 7px 7px 0}
+.split > button:hover{background:var(--s4);color:var(--ink)}
+.warp{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:3px;background:var(--s1);border:1px solid var(--line3);color:var(--ink-muted)}
+
+.pending{font-size:11.5px;color:var(--ink-subtle);display:flex;align-items:center;gap:6px}
+.pending code{font:400 11px/1 var(--mono);color:var(--ink-muted)}
+.badge{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:6px;border:1px dashed var(--line3);color:var(--ink-subtle);font:500 11px/1 var(--sans);white-space:nowrap}
+
+/* ---------- lanes ---------- */
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:14px 20px 12px;min-height:0;overflow:hidden}
+.lane{display:flex;flex-direction:column;min-height:0;background:var(--s1);border:1px solid var(--line);border-radius:12px}
+.lane-head{flex:none;display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-bottom:1px solid var(--line)}
+.lane-head .name{font:500 13px/1 var(--sans);color:var(--ink)}
+.lane-head .ct{font:500 12px/1 var(--sans);color:var(--ink-subtle)}
+.lane-head .grow{flex:1}
+.lane-head .note{color:var(--ink-subtle);font-size:11.5px}
+.lane-body{display:flex;flex-direction:column;gap:8px;padding:8px;overflow:auto;min-height:0}
+.card{position:relative;background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:10px 10px 10px;display:flex;flex-direction:column;gap:6px;outline:none}
+.card:hover,.card:focus-within,.card.is-hover{background:var(--s3);border-color:var(--line2)}
+.card-top{display:flex;align-items:center;gap:6px}
+.card-top .mono{color:var(--ink-subtle)}
+.state{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font:500 11.5px/1 var(--sans);color:var(--ink-muted)}
+.card-title{font:500 13px/1.35 var(--sans);color:var(--ink)}
+.meta{display:flex;align-items:center;gap:6px;color:var(--ink-subtle);font-size:12px;flex-wrap:wrap}
+.meta .sep{width:2px;height:2px;border-radius:50%;background:var(--ink-tertiary)}
+.tag{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:6px;background:var(--s3);border:1px solid var(--line);color:var(--ink-muted);font:500 11px/1 var(--sans)}
+.card:hover .tag,.card.is-hover .tag{background:var(--s4)}
+.ny-link{white-space:nowrap;display:inline-flex;align-items:center;gap:5px;font:500 11.5px/1 var(--sans);color:#f39a9a}
+.ny-link::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--attn)}
+.foot{display:flex;align-items:center;gap:8px;min-height:28px}
+.foot .meta{flex-wrap:nowrap;white-space:nowrap;min-width:0;overflow:hidden}
+.foot .age{white-space:nowrap;color:var(--ink-subtle);font-size:12px}
+.reveal{margin-left:auto;opacity:0;transform:translateY(2px);transition:opacity .12s,transform .12s}
+.card:hover .reveal,.card:focus-within .reveal,.card.is-hover .reveal{opacity:1;transform:none}
+.lane-q .reveal{position:absolute;right:10px;bottom:10px}
+.budget{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-subtle)}
+.bar{width:64px;height:4px;border-radius:2px;background:var(--line2);overflow:hidden}
+.bar i{display:block;height:100%;width:42%;background:var(--ink-muted)}
+.takeover{font-size:11.5px;color:var(--ink-subtle);display:flex;align-items:center;gap:6px;padding-top:6px;border-top:1px solid var(--line)}
+.with-you .attached{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-muted)}
+
+.menu{position:absolute;right:0;top:34px;width:236px;background:var(--s4);border:1px solid var(--line2);border-radius:8px;padding:4px;z-index:30;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.menu .mi{display:flex;align-items:center;gap:8px;width:100%;height:30px;padding:0 8px;border-radius:6px;color:var(--ink-muted);font:500 13px/1 var(--sans);text-align:left}
+.menu .mi:hover,.menu .mi.cur{background:var(--s3);color:var(--ink)}
+.menu .mi .k{margin-left:auto}
+.menu .mi .chk{margin-left:auto;color:var(--brand-hover)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+.menu .cap{padding:6px 8px 4px;font:500 11px/1 var(--sans);letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle)}
+
+/* ---------- footer ---------- */
+.status{display:flex;align-items:center;gap:14px;padding:0 20px;border-top:1px solid var(--line);background:var(--s1);color:var(--ink-subtle);font-size:12px;white-space:nowrap;overflow:hidden}
+.status .ok{display:inline-flex;align-items:center;gap:6px;color:var(--ink-muted)}
+.status .ok::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.status .warn{display:inline-flex;align-items:center;gap:6px;color:var(--ink-muted)}
+.status .warn::before{content:"";width:6px;height:6px;transform:rotate(45deg);border-radius:1px;background:var(--ink-subtle)}
+.status .div{width:1px;height:12px;background:var(--line2)}
+
+.caption{position:fixed;right:10px;bottom:34px;z-index:50;font:500 11px/1 var(--sans);color:var(--ink-subtle);background:var(--s2);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== icon rail ===== -->
+  <nav class="rail" aria-label="Primary">
+    <div class="mark" aria-label="Sindri">S</div>
+
+    <button class="rail-btn" aria-current="page" aria-label="Home">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M3 8l6-5 6 5v7H11v-4H7v4H3z"/></svg>
+      <span class="tip">Home <kbd>G</kbd><kbd>H</kbd></span>
+    </button>
+    <button class="rail-btn" aria-label="Needs you, 5 items">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 10.5h3.5l1.2 2h3.6l1.2-2h3.5M3.5 4.5h11l1 6v4h-13v-4z"/></svg>
+      <span class="count">5</span>
+      <span class="tip">Needs you · 5 <kbd>G</kbd><kbd>N</kbd></span>
+    </button>
+    <button class="rail-btn" aria-label="Queue">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2.5" y="3" width="3.5" height="12" rx="1"/><rect x="7.25" y="3" width="3.5" height="8" rx="1"/><rect x="12" y="3" width="3.5" height="10" rx="1"/></svg>
+      <span class="tip">Queue <kbd>G</kbd><kbd>Q</kbd></span>
+    </button>
+    <button class="rail-btn" aria-label="Decisions">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5v13M9 6l-5 2.5 1.5 3h-3M9 6l5 2.5-1.5 3h3M6 15.5h6"/></svg>
+      <span class="tip">Decisions <kbd>G</kbd><kbd>D</kbd></span>
+    </button>
+    <button class="rail-btn" aria-label="Services">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3" width="13" height="5" rx="1.5"/><rect x="2.5" y="10" width="13" height="5" rx="1.5"/><path d="M5 5.5h.01M5 12.5h.01" stroke-linecap="round" stroke-width="2"/></svg>
+      <span class="tip">Services · 1 failed <kbd>G</kbd><kbd>S</kbd></span>
+    </button>
+
+    <div class="rail-spacer"></div>
+    <button class="rail-btn" aria-label="Settings">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="2.25"/><path d="M9 2v2M9 14v2M2 9h2M14 9h2M4.05 4.05l1.4 1.4M12.55 12.55l1.4 1.4M4.05 13.95l1.4-1.4M12.55 5.45l1.4-1.4" stroke-linecap="round"/></svg>
+      <span class="tip">Settings <kbd>G</kbd><kbd>,</kbd></span>
+    </button>
+    <div class="rail-sep"></div>
+    <button class="health" aria-label="Sindri running, 1 service failed">
+      <span class="dot"></span><span class="warnpip"></span>
+      <span class="tip">Sindri running · 1 of 6 services failed</span>
+    </button>
+  </nav>
+
+  <!-- ===== main ===== -->
+  <main class="main">
+
+    <header class="top">
+      <h1>Home</h1>
+      <div class="sub"><span class="live"></span>Views updated 2s ago</div>
+      <div class="grow"></div>
+      <button class="ghost" aria-label="Filter repositories">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 3.5h10M4 7h6M6 10.5h2"/></svg>
+        All repos
+      </button>
+      <button class="cmd" aria-label="Command palette">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6" cy="6" r="4"/><path d="M9 9l3 3" stroke-linecap="round"/></svg>
+        <span>Search or run a command</span><kbd>⌘K</kbd>
+      </button>
+      <button class="ghost" aria-label="Keyboard shortcuts"><kbd>?</kbd></button>
+    </header>
+
+    <!-- ===== Needs you band ===== -->
+    <section class="band" aria-labelledby="ny-h">
+      <div class="band-head">
+        <h2 class="eyebrow" id="ny-h">Needs you <span class="n">5</span></h2>
+        <span class="order">Most urgent first, then oldest</span>
+        <div class="grow"></div>
+        <span class="hint"><kbd>G</kbd><kbd>N</kbd> focus · <kbd>J</kbd><kbd>K</kbd> move · <kbd>O</kbd> open · <kbd>A</kbd> accept</span>
+      </div>
+
+      <div class="strip" role="list">
+
+        <!-- 1 park / pulse -->
+        <article class="ny pulse" role="listitem" tabindex="0" aria-label="Parked, needs you: ITM-01JC8">
+          <div class="ny-top">
+            <span class="kind attn">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor"><rect x="2.5" y="2" width="2.5" height="8" rx=".6"/><rect x="7" y="2" width="2.5" height="8" rx=".6"/></svg>
+              Parked · no progress
+            </span>
+            <span class="since">since 11:54 · 12m</span>
+          </div>
+          <div class="ny-title"><span class="mono">ITM-01JC8</span>Retry storm in outbox dispatcher</div>
+          <div class="ny-why"><b>agentic-workflow</b> · “checks failed twice with the same findings”</div>
+          <div class="ny-actions">
+            <div class="act-label">
+              <svg class="lock" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="5.5" width="8" height="5" rx="1"/><path d="M4 5.5V4a2 2 0 014 0v1.5"/></svg>
+              Grant rounds — at a terminal
+            </div>
+            <div class="term">
+              <code>sindri workflow answer ITM-01JC8 --grant 1</code>
+              <button class="copy" data-copy="sindri workflow answer ITM-01JC8 --grant 1">Copy</button>
+            </div>
+            <div class="row">
+              <div class="split">
+                <button><span class="warp" title="Opens in Warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Open in Claude Code</button>
+                <button aria-label="Choose agent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg></button>
+              </div>
+              <button class="btn quiet">Cancel</button>
+            </div>
+          </div>
+        </article>
+
+        <!-- 2 decision / pulse -->
+        <article class="ny pulse" role="listitem" tabindex="0" aria-label="Decision, needs you">
+          <div class="ny-top">
+            <span class="kind attn">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M6 1.5l4.5 4.5L6 10.5 1.5 6z"/></svg>
+              Decision
+            </span>
+            <span class="badge">recorded only</span>
+            <span class="since">since 11:40 · 26m</span>
+          </div>
+          <div class="ny-title">Re-scope <span class="mono" style="margin:0">ITM-01JD2</span>: drop the iOS head from this item</div>
+          <div class="ny-why"><b>sindri-app</b> · request filed by a session</div>
+          <div class="ny-actions">
+            <div class="row">
+              <button class="btn primary">Accept <kbd>A</kbd></button>
+              <button class="btn">Decline <kbd>D</kbd></button>
+              <button class="btn quiet" style="margin-left:auto">Details</button>
+            </div>
+          </div>
+        </article>
+
+        <!-- 3 park escalated gate / pulse -->
+        <article class="ny pulse" role="listitem" tabindex="0" aria-label="Parked at gate, needs you: ITM-01JB4">
+          <div class="ny-top">
+            <span class="kind attn">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 10.5V2M2 2.5h7l-1.5 2 1.5 2H2"/></svg>
+              Parked · gate
+            </span>
+            <span class="since">since 09:10 · 2h 56m</span>
+          </div>
+          <div class="ny-title"><span class="mono">ITM-01JB4</span>Context map review for tabs.layout</div>
+          <div class="ny-why"><b class="mono" style="font-size:11.5px">gate.verify.judge</b> scored 0.62, below 0.80</div>
+          <div class="ny-actions">
+            <div class="act-label">
+              <svg class="lock" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="5.5" width="8" height="5" rx="1"/><path d="M4 5.5V4a2 2 0 014 0v1.5"/></svg>
+              Accept — at a terminal
+            </div>
+            <div class="term">
+              <code>sindri workflow answer ITM-01JB4 --accept</code>
+              <button class="copy" data-copy="sindri workflow answer ITM-01JB4 --accept">Copy</button>
+            </div>
+            <div class="row">
+              <button class="btn">Reject</button>
+              <div class="split">
+                <button><span class="warp" title="Opens in Warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Open in Codex</button>
+                <button aria-label="Choose agent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 4 failure / colour, no motion -->
+        <article class="ny" role="listitem" tabindex="0" aria-label="Service failure, needs you: index">
+          <div class="ny-top">
+            <span class="kind attn">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3l6 6M9 3l-6 6"/></svg>
+              Failed
+            </span>
+            <span class="since">since 03:02 · 9h</span>
+          </div>
+          <div class="ny-title">Service <span class="mono" style="margin:0 2px">index</span> — Nightly index build failed</div>
+          <div class="ny-why"><b class="mono" style="font-size:11.5px">SND-INDEX-012</b> graphify timed out</div>
+          <div class="ny-actions">
+            <div class="row">
+              <button class="btn" aria-disabled="true" title="Available with API P6 · sindri services run index">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M10 6a4 4 0 11-1.2-2.85M10 1.8v2.4H7.6"/></svg>
+                Run again
+              </button>
+              <span class="badge">pending · API P6</span>
+            </div>
+            <div class="term">
+              <span class="lbl">Until then</span>
+              <code>sindri services run index</code>
+              <button class="copy" data-copy="sindri services run index">Copy</button>
+            </div>
+            <div class="pending">Available with API P6</div>
+          </div>
+        </article>
+
+        <!-- 5 profile / calm -->
+        <article class="ny calm" role="listitem" tabindex="0" aria-label="Profile change, needs you">
+          <div class="ny-top">
+            <span class="kind">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="4" r="2"/><path d="M2 10.5c.6-2 2.1-3 4-3s3.4 1 4 3"/></svg>
+              Profile
+            </span>
+            <span class="since">since 10:15</span>
+          </div>
+          <div class="ny-title">Profile changed since approval — 2 keys</div>
+          <div class="ny-why"><span class="mono" style="font-size:11.5px;color:var(--ink-muted)">services.index.every</span>, <span class="mono" style="font-size:11.5px;color:var(--ink-muted)">context.maxBudget</span></div>
+          <div class="ny-actions">
+            <div class="act-label">
+              <svg class="lock" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="5.5" width="8" height="5" rx="1"/><path d="M4 5.5V4a2 2 0 014 0v1.5"/></svg>
+              Approve at a terminal
+            </div>
+            <div class="term">
+              <code>sindri profile approve 3f1c09</code>
+              <button class="copy" data-copy="sindri profile approve 3f1c09">Copy</button>
+            </div>
+            <div class="row"><button class="btn quiet">View diff</button></div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ===== Lanes ===== -->
+    <section class="board" aria-label="Queue by state">
+
+      <!-- With you -->
+      <div class="lane with-you">
+        <div class="lane-head">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--ink-muted)" stroke-width="1.4"><circle cx="7" cy="5" r="2.25"/><path d="M2.5 12c.7-2.2 2.4-3.4 4.5-3.4s3.8 1.2 4.5 3.4"/></svg>
+          <span class="name">With you</span><span class="ct">1</span>
+          <div class="grow"></div><span class="note">automation paused</span>
+        </div>
+        <div class="lane-body">
+          <div class="card" tabindex="0">
+            <div class="card-top">
+              <span class="mono">ITM-01JA1</span>
+              <span class="state">
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 6h6M6 3l3 3-3 3"/></svg>
+                Taken over
+              </span>
+            </div>
+            <div class="card-title">Onyx adapter secret pointers</div>
+            <div class="meta"><span>sindri-app</span><span class="sep"></span><span>with you since 12:01 · 25m</span></div>
+            <div class="attached">
+              <span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>
+              Attached in Warp · Claude Code
+            </div>
+            <div class="foot">
+              <button class="btn">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M10 6H3M5.5 3.5L3 6l2.5 2.5"/></svg>
+                Hand back
+              </button>
+              <span class="foot age" style="margin-left:auto">resumes automation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parked -->
+      <div class="lane">
+        <div class="lane-head">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="var(--ink-muted)"><rect x="3" y="2.5" width="2.75" height="9" rx=".7"/><rect x="8.25" y="2.5" width="2.75" height="9" rx=".7"/></svg>
+          <span class="name">Parked</span><span class="ct">2</span>
+        </div>
+        <div class="lane-body">
+          <div class="card" tabindex="0">
+            <div class="card-top">
+              <span class="mono">ITM-01JC8</span>
+              <span class="state">Parked · no progress</span>
+            </div>
+            <div class="card-title">Retry storm in outbox dispatcher</div>
+            <div class="meta"><span>agentic-workflow</span><span class="sep"></span><span>checks</span><span class="sep"></span><span>Claude Code</span></div>
+            <div class="foot">
+              <span class="ny-link">Needs you</span>
+              <span class="age">· 12m</span>
+              <div class="split reveal">
+                <button><span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Open in Claude Code</button>
+                <button aria-label="Choose agent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg></button>
+              </div>
+            </div>
+          </div>
+          <div class="card" tabindex="0">
+            <div class="card-top">
+              <span class="mono">ITM-01JB4</span>
+              <span class="state">Parked · gate</span>
+            </div>
+            <div class="card-title">Context map review for tabs.layout</div>
+            <div class="meta"><span>agentic-workflow</span><span class="sep"></span><span class="mono" style="font-size:11px">gate.verify.judge</span><span class="sep"></span><span>Codex</span></div>
+            <div class="foot">
+              <span class="ny-link">Needs you</span>
+              <span class="age">· 2h 56m</span>
+              <div class="split reveal">
+                <button><span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Open in Codex</button>
+                <button aria-label="Choose agent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Running -->
+      <div class="lane">
+        <div class="lane-head">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--ok)" stroke-width="1.5"><circle cx="7" cy="7" r="4.75" stroke-dasharray="22 8"/></svg>
+          <span class="name">Running</span><span class="ct">2</span>
+        </div>
+        <div class="lane-body" style="overflow:visible">
+          <!-- shown in hover state, menu open -->
+          <div class="card is-hover" tabindex="0" style="z-index:5">
+            <div class="card-top">
+              <span class="mono">ITM-01JE7</span>
+              <span class="state">
+                <svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="3" fill="var(--ok)"/></svg>
+                Live · produce 2/3
+              </span>
+            </div>
+            <div class="card-title">Add needs-you ack route</div>
+            <div class="meta"><span>agentic-workflow</span><span class="sep"></span><span class="mono" style="font-size:11px">workflow.step</span><span class="sep"></span><span>Claude Code</span></div>
+            <div class="budget"><div class="bar"><i></i></div>84k / 200k tokens · 6m</div>
+            <div class="foot">
+              <span class="tag"><svg width="9" height="9" viewBox="0 0 10 10"><circle cx="5" cy="5" r="3" fill="var(--ok)"/></svg>session live</span>
+              <div class="split reveal">
+                <button><span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Attach <kbd style="margin-left:2px">O</kbd></button>
+                <button aria-label="Choose agent" aria-expanded="true" style="background:var(--s4);color:var(--ink)"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg></button>
+                <div class="menu" role="menu">
+                  <div class="cap">Open with</div>
+                  <button class="mi cur" role="menuitem"><span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Claude Code<span class="chk">✓</span></button>
+                  <button class="mi" role="menuitem"><span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Codex<kbd class="k">2</kbd></button>
+                  <button class="mi" role="menuitem"><span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Cursor<kbd class="k">3</kbd></button>
+                  <hr>
+                  <button class="mi" role="menuitem">Set as default for this repo</button>
+                </div>
+              </div>
+            </div>
+            <div class="takeover">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="6" r="4.5"/><path d="M6 3.75V6.5M6 8.25v.01" stroke-linecap="round"/></svg>
+              Attaching pauses automation — a takeover
+            </div>
+          </div>
+
+          <div class="card" tabindex="0">
+            <div class="card-top">
+              <span class="mono">ITM-01JE9</span>
+              <span class="state">
+                <svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="3" fill="var(--ok)"/></svg>
+                Live · checks
+              </span>
+            </div>
+            <div class="card-title">Tester: decision race integration test</div>
+            <div class="meta"><span>agentic-workflow</span><span class="sep"></span><span>checks</span><span class="sep"></span><span>Codex</span></div>
+            <div class="foot">
+              <span class="age">since 12:24 · 2m</span>
+              <div class="split reveal">
+                <button><span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Attach</button>
+                <button aria-label="Choose agent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Queued -->
+      <div class="lane lane-q">
+        <div class="lane-head">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--ink-subtle)" stroke-width="1.4" stroke-dasharray="2 2"><circle cx="7" cy="7" r="4.75"/></svg>
+          <span class="name">Queued</span><span class="ct">4</span>
+        </div>
+        <div class="lane-body">
+          <div class="card" tabindex="0">
+            <div class="card-top"><span class="mono">ITM-01JF0</span><span class="state">Queued</span></div>
+            <div class="card-title">Stream limits 429 fallback</div>
+            <div class="foot"><span class="meta"><span>agentic-workflow</span><span class="sep"></span><span>queued 1h</span></span>
+              <div class="split reveal"><button><span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Open</button><button aria-label="Choose agent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg></button></div>
+            </div>
+          </div>
+          <div class="card" tabindex="0">
+            <div class="card-top"><span class="mono">ITM-01JF3</span><span class="state">Queued</span></div>
+            <div class="card-title">doctor views line</div>
+            <div class="foot"><span class="meta"><span>agentic-workflow</span><span class="sep"></span><span>queued 1h</span></span>
+              <div class="split reveal"><button><span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Open</button><button aria-label="Choose agent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg></button></div>
+            </div>
+          </div>
+          <div class="card" tabindex="0">
+            <div class="card-top"><span class="mono">ITM-01JF4</span><span class="state">Queued</span></div>
+            <div class="card-title">Tray badge on Linux</div>
+            <div class="foot"><span class="meta"><span>sindri-app</span><span class="sep"></span><span>queued 48m</span></span>
+              <div class="split reveal"><button><span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Open</button><button aria-label="Choose agent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg></button></div>
+            </div>
+          </div>
+          <div class="card" tabindex="0">
+            <div class="card-top"><span class="mono">ITM-01JF8</span><span class="state">Queued</span></div>
+            <div class="card-title">Receipt verify route</div>
+            <div class="foot"><span class="meta"><span>sindri-app</span><span class="sep"></span><span>queued 22m</span></span>
+              <div class="split reveal"><button><span class="warp"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 2l2 2-2 2M4.5 6h2"/></svg></span>Open</button><button aria-label="Choose agent"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 4l2.5 2.5L7.5 4"/></svg></button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== footer: health in words ===== -->
+    <footer class="status" aria-label="Sindri health">
+      <span class="ok">Sindri running</span>
+      <span class="mono" style="font-size:11.5px">pid 48211 · epoch 7</span>
+      <span class="div"></span>
+      <span>API v1</span>
+      <span class="div"></span>
+      <span>Host lease held</span>
+      <span class="div"></span>
+      <span class="warn">6 services — 5 ok, 1 failed (index)</span>
+      <span class="div"></span>
+      <span class="warn">Profile changed since approval</span>
+      <span class="div"></span>
+      <span>Views updated 2s ago</span>
+    </footer>
+  </main>
+</div>
+
+<div class="caption">Variant 3 — Lanes · design reference, not implementation</div>
+
+<script>
+document.querySelectorAll('.copy').forEach(function(b){
+  b.addEventListener('click',function(e){
+    e.stopPropagation();
+    var t=b.getAttribute('data-copy');
+    try{navigator.clipboard&&navigator.clipboard.writeText(t)}catch(_){}
+    b.textContent='Copied';b.classList.add('done');
+    setTimeout(function(){b.textContent='Copy';b.classList.remove('done')},1400);
+  });
+});
+</script>
+</body>
+</html>
