@@ -51,6 +51,18 @@ public sealed class CommandExitTests : IDisposable
     }
 
     [Fact]
+    public async Task An_unexpected_exception_exits_4_with_a_one_line_error_not_a_crash()
+    {
+        _browser.PageFor = static _ => new FakePage { ScreenshotThrows = new InvalidOperationException("the browser crashed\nat frame 3") };
+
+        var (exit, output, error) = await Run("run", Script(), _root.Combine("run-1"));
+
+        Assert.Equal((CommandOutput.RunErrored, ""), (exit, output));
+        Assert.Equal("ui-evidence: AW-EVIDENCE-015 the run failed unexpectedly: the browser crashed\n", error.Replace("\r\n", "\n", StringComparison.Ordinal));
+        Assert.False(_locks.IsHeld(LockKind.QaStack));
+    }
+
+    [Fact]
     public async Task A_busy_lock_exits_75()
     {
         _ = _locks.AlwaysBusy.Add(LockKind.HeavyJob);
