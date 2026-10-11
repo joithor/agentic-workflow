@@ -1970,7 +1970,7 @@ A tool with no branching that needs an agent or a gate stays a block. Wrapping i
 6. Workflow generation (§17.7) switches from emitting a Step graph to emitting a recipe, so each deliverable's
    workflow is generated from blocks and validated before it is frozen.
 
-### 17.28.7 Port order: Sindri first, then the tools as blocks (proposed 2026-10-11, the owner decides)
+### 17.28.7 Port order: Sindri first, then the tools as blocks (decided 2026-10-11)
 
 The readiness design's R2 order (§4a step 2) ports every tool as a standalone CLI before Sindri: `judge` →
 `scorer`, `ui-evidence` and the `bugfix-state` CLI → `sindri`. The table above shows the cost. Each standalone port
@@ -1978,7 +1978,8 @@ carries a workflow half (its own state file, phases, `next` hints and exit-code 
 once the tool is plugged into a recipe. `bugfix-state` (#155) is the example: about half of it is phase machinery
 that becomes `workflow.bugfix`.
 
-**Proposal:** port Sindri's core first, then port the remaining tools straight into Sindri as blocks.
+**Decision (owner, 2026-10-11):** port Sindri's core first, then bring the remaining tools in as blocks. The readiness
+design's §4a step 2 and §10 R2 row carry the new order.
 1. Keep the ports already merged: `Redaction`, `Packets`, `Readiness`, `BugFix` (#155). BugFix's rules become the
    bug-fix gate blocks; its phase machinery is retired when `workflow.bugfix` replaces it.
 2. Finish `judge`. Sindri's decision ladder needs it (rung 2), and it is a tool, not a workflow.
@@ -1998,11 +1999,15 @@ that becomes `workflow.bugfix`.
   `ui-browser` and `design-parity` blocks need anyway. Either land it and later swap its CLI shell for block
   registration, or pause it until step 4.
 - `scorer`: deferred to step 4 under this proposal.
-- The readiness design's §4a step 2 and §10 R2 order change in their own PR once this is decided.
+- **Desk use:** the skills keep calling a CLI. A tool ported as blocks still ships a thin CLI over the same blocks
+  for desk skills (§17.11: "also callable from skills through a CLI"), so the switch can retire its TS version.
 
 ## 17.17 Decisions
 
 **Decided by the human (2026-10-11):**
+- **Q7:** port order (§17.28.7). After `judge`, port Sindri's core (profile, ledger and host) and build the engine,
+  then bring the remaining tools in as blocks; no tool is ported as a standalone CLI first any more. The merged ports
+  (`Redaction`, `Packets`, `Readiness`, `BugFix`) stay; `BugFix`'s phase machinery is retired by `workflow.bugfix`.
 - **Q6:** one workflow state machine, built in Sindri (§17.28). Every Sindri machine is a declarative recipe (config,
   not code) interpreted by one engine and built from registered blocks. Recipes can be generated per deliverable
   and evolved like other artifacts.
