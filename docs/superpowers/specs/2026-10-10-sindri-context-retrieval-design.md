@@ -66,7 +66,8 @@ that graph plus rank fusion across adapters.
 | D14 | Profile-supplied extra scrub patterns go **into `Aw.Redaction`** | One scrubber for the whole build |
 | D15 | **Trust follows provenance, not node type**: anything a model wrote from untrusted text stays untrusted and fenced until a human accepts it | Otherwise a prompt injection in a ticket returns to a session in Sindri's own voice (§14 S-H3) |
 | D16 | One **canonical record key** across adapters, deduplicated before fusion. Linear records key on Linear's immutable UUID (`linear:issue/<uuid>`); the human identifier (`ENG-482`) is an alias, because it changes when an issue moves team | The same issue arrives through Onyx and through the native adapter (§14 A-F5) |
-| D17 | Phase order: **native Linear before Onyx** | The owner's PRDs and TDDs are Linear Documents, which only the native adapter reads, and Onyx waits on company-OAuth sign-off (§14 P-2). The owner confirmed the earlier order; this change is flagged for approval in the PR |
+| D17 | Phase order: **Onyx (Phase 5) before native Linear (Phase 6)** | Owner's decision (2026-10-11), reversing a review suggestion (§14 P-2). It works cleanly because Onyx's Linear connector uses Linear's issue UUID as its document id and indexes each issue's comments, so Phase 5 already has stable record keys and decisions; Phase 6 adds what Onyx doesn't index (projects, Linear Documents with the PRDs and TDDs, project updates, issue↔PR attachments) |
+| D18 | **Linear is read with hand-written GraphQL**, not Linear's MCP server and not a generated client | Linear's API is GraphQL only (no OpenAPI spec to generate from). Its hosted MCP server (`mcp.linear.app`) is a remote, OAuth-authenticated tool surface whose tool names and fields can change at runtime, and the MCP C# SDK client is untested under NativeAOT here. A GraphQL generator (StrawberryShake) has no stated NativeAOT support and adds a framework dependency. Phase 6 needs about five read operations; each is a `.graphql` file embedded in Infrastructure with response records in the package's JSON context, over `HttpClient` (the TS `linear.ts` reads the same way) |
 
 ## 3. Constraints and operating rules
 
@@ -150,12 +151,10 @@ tests/
 public sealed record SourceRef(SourceId Source, ExternalId Id, SourceVersion Version, Uri? Permalink, RecordKey Canonical);
 // Version: blob sha (repo docs) | commit sha (code) | updatedAt (Onyx doc, Linear doc and issue) | map version (graph).
 // Canonical: one key per real-world record across adapters, e.g. linear:issue/<uuid> (alias ENG-482), linear:doc/<uuid>,
-// slack:<channel>/<ts>, repo:<repo>/<path>. Each adapter maps its own ids to it. Onyx's Linear documents carry the
-// mutable identifier (ENG-482), so the Onyx adapter resolves it through the alias table to the UUID key; an identifier
-// with no alias yet is keyed `linear:pending/ENG-482` and merged into the UUID key when the native sync resolves it.
-// The identifier is taken only from the structured metadata of Onyx documents whose source is Linear (never from text),
-// must match `^[A-Z][A-Z0-9]+-[0-9]+$` with a team key from the profile, and decisions are never extracted from a
-// pending record (they come from the native adapter's comments), so a merge never changes a decision key.
+// slack:<channel>/<ts>, repo:<repo>/<path>. Each adapter maps its own ids to it. Onyx's Linear connector uses the
+// issue's UUID as its document id, so Onyx's Linear records key directly on linear:issue/<uuid>; the identifier
+// (ENG-482) from the document's structured metadata (never from text, matching `^[A-Z][A-Z0-9]+-[0-9]+$` with a team
+// key from the profile) is written as an alias. Decision keys use the UUID key, so they never change.
 
 public interface IContextSource
 {
@@ -197,8 +196,8 @@ public sealed record ChangePage(IReadOnlyList<SourceRef> Changed, IReadOnlyList<
 | Adapter | Kind | Search | Fetch / version | Change feed | Phase |
 |---|---|---|---|---|---|
 | `repo-docs` | Doc | Lexical: SQLite FTS5 over **scrubbed** doc chunks at HEAD of the profile repos' doc globs | `git cat-file` at the blob sha; line spans | Commits touching the globs, run by a scheduled service (every 5 min by default) and on `context sources sync` | 1 |
-| `linear` (native) | Intent | Title and key lookup only (Onyx searches issue text) | Projects, Linear Documents, project updates, issues **with their comments**, issue↔PR attachments; version `updatedAt`. Writes identifier → UUID aliases on every fetch and search hit; re-resolves `linear:pending/…` keys through Linear's issue lookup, which answers old identifiers after a team move | `updatedAt` filter, by the profile's teams | 5 |
-| `onyx` | Intent | Onyx search (HTTP search API preferred; MCP `search` only if it exposes `updatedAt` and the federated lane), several sub-queries, top-k candidates | Onyx document by id; version `updatedAt` | Document listing by updated time (verified in Phase 6) | 6 |
+| `linear` (native) | Intent | Title and key lookup only (Onyx searches issue text) | Projects, Linear Documents, project updates, issues **with their comments**, issue↔PR attachments; version `updatedAt`. Writes identifier → UUID aliases on every fetch and search hit; hand-written GraphQL (D18) | `updatedAt` filter, by the profile's teams || 6 |
+| `onyx` | Intent | Onyx search (HTTP search API preferred; MCP `search` only if it exposes `updatedAt` and the federated lane), several sub-queries, top-k candidates | Onyx document by id; version `updatedAt` | Document listing by updated time (verified in Phase 5) || 5 |
 | `code` | Code | Index lookup: symbol name, path, embedding neighbors | Symbol at a commit sha | Index rebuilds | 9 |
 
 Files are a code-layer source from Phase 4 without the index block: the extractor reads them from git at a commit
@@ -419,7 +418,7 @@ All of them call `IContextEngine`; they differ only in transport.
 **Telling sessions to use it:** Phase 1 ships an agent-rules snippet in `docs/sindri/context.md` for the work repo's
 own agent file ("before planning a change, call `context_query` for the feature or ticket; cite its `[Cn]`"), added
 by hand, once S-1M's owner check shows the work repo returns useful results (if repo docs are thin there, hold the
-snippet until S-5B brings the Linear documents); `context sources status` prints the registration and snippet status, and the number of MCP queries in the
+snippet until S-6 brings the Linear documents); `context sources status` prints the registration and snippet status, and the number of MCP queries in the
 last 7 days (counts from `query_log`, client `mcp`), so it's visible whether sessions actually use it.
 
 ### 8.6 Exit codes and errors
@@ -445,7 +444,7 @@ can't open); **75** the heavy-job lock stayed busy (`map build`, `eval`). Long j
 | `SND-CONTEXT-042` | Labeling disabled or over its token cap | Enable `context.labeling` or raise `maxTokens` |
 | `SND-CONTEXT-043` | No entry in the review file matches the latest draft | `map review --export` again |
 | `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
-| `SND-CONTEXT-070` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
+| `SND-CONTEXT-055` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
 
 The full list, with HTTP status and MCP mapping, is kept in `docs/sindri/errors.md` (C# section) as phases add codes.
 
@@ -510,7 +509,7 @@ Defaults are what's shown; `profile validate` reports any `context.*` error with
 linear -a work-read -w`; `context sources status` checks it can read projects, documents and issues of the listed
 teams.
 
-**Onyx setup (Phase 6 deliverable, `docs/sindri/onyx.md`):** a pinned Onyx release (the tag, not `latest`, recorded in
+**Onyx setup (Phase 5 deliverable, `docs/sindri/onyx.md`):** a pinned Onyx release (the tag, not `latest`, recorded in
 the profile and checked by doctor); the compose file's published ports bound to `127.0.0.1`; the local embedding model
 server, with no cloud LLM or embedding provider configured; Onyx telemetry off; connectors scoped (Linear from a start
 date covering the backtest projects; Slack federated or the product's channels; docs connectors limited to the
@@ -538,7 +537,7 @@ in comments, and the PRs that shipped them.
   model calls for maps; cached by commit sha and extractor version), plus only the overrides dated before the cut. Hand-authored imports count as
   overrides with their import date. Repo docs at the cut commit's blobs. Linear and Onyx records created after the cut
   are dropped; ones edited after it are kept and labeled `leaky`. Whether Linear's API exposes document content history
-  is checked in Phase 5; without it, PRD text is labeled leaky.
+  is checked in Phase 6; without it, PRD text is labeled leaky.
 - The corpus stores refs and versions only and re-fetches text on each run; reports live under
   `$AW_SINDRI_HOME/context/eval/` with a 90-day TTL and `context eval purge`.
 - The adjudicator (two runs in reversed order, agreeing answers only) labels surfaces no PR touched, behind
@@ -559,8 +558,8 @@ in comments, and the PRs that shipped them.
 - A layer or ranker stage is enabled only when its arm improves recall without dropping precision below the bar (or,
   below 30 samples, by the owner's recorded decision). **The product graph itself is never gated off:** its backtest
   arm sees only unreviewed deterministic maps at each cut (the owner's review comes later), so its number is a floor,
-  reported for tracking; a `graph+reviewed` arm, labeled leaky, shows the ceiling. The `onyx` arms rerun once S-6
-  merges, without blocking S-7B. Swapping an adapter is an evolve proposal judged on the same arms.
+  reported for tracking; a `graph+reviewed` arm, labeled leaky, shows the ceiling. The `onyx` arms are part of S-7B (Onyx
+  lands first, in S-5A). Swapping an adapter is an evolve proposal judged on the same arms.
 
 ### 9.4 Pass bars (starting values; re-set after the first real runs, recorded in the ledger)
 
@@ -605,15 +604,15 @@ fake passes `ContextSourceContract<TSource>`. Tests never touch work data or the
 | Model runner | 4, 7 | `claude` CLI adapter in Phase 4; Judge's runner once #156 lands |
 | Code index block (§17.29.4 step 4) | 9 | Its own spec |
 | Workflow engine (§17.29.4 step 2) | 10 | Its own spec |
-| Onyx running, pinned, scoped, loopback-bound, with company OAuth signed off by the owner | 6 | Owner, at setup (§8.8) |
+| Onyx running, pinned, scoped, loopback-bound, with company OAuth signed off by the owner | 5 | Owner, at setup (§8.8) |
 
 ## 12. Open items (each owned by the named phase)
 
-- Whether Onyx's HTTP search returns `updatedAt` and the federated Slack lane (Phase 6; fall back to Onyx's MCP
+- Whether Onyx's HTTP search returns `updatedAt` and the federated Slack lane (Phase 5; fall back to Onyx's MCP
   `search` only if it does both).
-- An Onyx change feed by updated time (Phase 6); without one, links are re-derived from search hits and the gap is
+- An Onyx change feed by updated time (Phase 5); without one, links are re-derived from search hits and the gap is
   reported by `context sources status`.
-- Linear document content history for as-of cuts (Phase 5).
+- Linear document content history for as-of cuts (Phase 6).
 - Feature weights (Phase 8), starting equal.
 - Where this engine meets TS `sindri scope` before the switch: none. `sindri scope` keeps running as it is; the scoping
   workflow (§17.29.4 step 5) is rebuilt on this engine later.
@@ -649,7 +648,7 @@ Every HIGH finding is fixed in this revision; MEDIUM and LOW findings are fixed 
 | S-H1 | User-wide MCP registration exposed work context to personal sessions | §3: per-repo `--scope local`, doctor `context:mcp-scope` |
 | S-H2 | Routes didn't state their Host/Origin checks | §3: S1's `LoopbackGuard` on every route and `/mcp`, with tests. No bearer token: S1's threat model (honest mistakes), and the Host and Origin checks already stop rebinding and cross-site posts |
 | S-H3 | Model-written text from untrusted sources became trusted | D15, §7 trust table, unit test |
-| S-H4 | Onyx's own exposure (bind, providers, telemetry) | §8.8 Onyx setup, doctor `context:onyx`, `SND-CONTEXT-070` |
+| S-H4 | Onyx's own exposure (bind, providers, telemetry) | §8.8 Onyx setup, doctor `context:onyx`, `SND-CONTEXT-055` |
 | D-1 | No CLI-runnable path before the switch | §3 `$SINDRI` |
 | D-2 | State dir collided with the TS sindri | §3 `$AW_SINDRI_HOME/context/` |
 | D-3 | No error catalogue | §8.6 |
@@ -768,6 +767,10 @@ record keys in examples (arch R5-6); code-text attributes fenced unless identifi
 LOWs (MCP-disabled as a transport 403, `map status` output, empty states for `neighbors`/`path`) are left for the
 stages that build those verbs.
 
+**Owner decisions after round 5 (2026-10-11):** Onyx comes before native Linear (D17, reversing the round-1 swap),
+and Linear is read with hand-written GraphQL (D18). Composition through the `IContextEngine` facade plus the `compose`
+edge kind (§4) is approved. The round notes above use the stage ids of their time, when Linear was S-5 and Onyx S-6.
+
 ## Parallel delivery with an agent team
 
 The phases below are delivered by `/specToProvenPR`, run by an **agent team** so that agents are always working on
@@ -791,47 +794,46 @@ stacks on that branch).
 | **S-1M** | Phase 1b: the `/mcp` host, `context_query` and `context_sources`, doctor checks, per-repo registration docs | S-1A | 2 |
 | **S-2W** | Wiring `context.scrub.extraPatterns` into `Aw.Context` (XS) | S-1A · S-2R | 2 |
 | **S-3** | Phase 3 without its MCP tools: graph store, overrides, cascade, `node`/`neighbors`/`path`, probe runner | S-1A | 2 |
-| **S-5A** | Phase 5, first half: `linear` adapter (fetch, search, canonical keys, contract tests against the fake) and secret-pointer resolution | S-1A · S-2R; **merges after S-2W** | 2 |
+| **S-5A** | Phase 5, first half: `onyx` adapter (search, fetch, UUID canonical keys and identifier aliases, contract tests against `FakeOnyxServer`), secret-pointer resolution, Onyx setup doc and doctor `context:onyx` | S-1A · S-2R · S-FX; **merges after S-2W** | 2 |
 | **S-3M** | Phase 3's MCP tools `context_node`, `context_neighbors` (XS) | S-1M · S-3 | 3 |
 | **S-4** | Phase 4: extractor, file-level `implements`, map review | S-3 | 3 |
-| **S-5B** | Phase 5, second half: sync, rules-first linking, decisions, intent-vs-intent conflicts, the `item` shape | S-3 · S-5A | 3 |
-| **S-6** | Phase 6: Onyx adapter, dedup with Linear, Onyx setup doc and doctor | S-3 · S-5A · S-FX | 3 |
+| **S-5B** | Phase 5, second half: sync, rules-first linking, decisions from issue and comment records, intent-vs-intent conflicts, the `item` shape | S-3 · S-5A | 3 |
+| **S-6** | Phase 6: native `linear` adapter (hand-written GraphQL, D18): projects, Linear Documents, project updates, issue↔PR attachments; dedup with Onyx's records; links and decisions from documents through S-5B's linker | S-5B | 4 |
 | **S-7A** | Phase 7, harness: corpus builder, per-sample as-of maps (from the extractor), arms runner, reports, on the fixture corpus | S-3 · S-4 · S-FX | 4 |
 | **S-CF** | Intent-vs-file conflicts: a decision citing a file the map says implements something else (S) | S-4 · S-5B | 4 |
-| **S-7B** | Phase 7 on the owner's corpus: eligible-sample count, the real backtest and probes. **Owner-run** (below) | S-4 · S-5B · S-7A | 5 |
+| **S-7B** | Phase 7 on the owner's corpus: eligible-sample count, the real backtest and probes. **Owner-run** (below) | S-4 · S-6 · S-7A | 5 |
 | **S-8** | Phase 8: ranker features and the rerank arm (code on fixtures; the arm decision from an owner-run backtest) | S-7B | 6 |
 | **S-9** | Phase 9: code adapter and symbol-level links | the code index block | blocked |
 | **S-10** | Phase 10: the `context.retrieve` block | the workflow engine | blocked |
 
-Critical path: S-1A → S-3 → S-4 → S-7A → S-7B → S-8.
+Critical path: S-1A → S-3 → S-5B → S-6 → S-7B → S-8 (S-4 → S-7A runs beside it).
 
 ```mermaid
 flowchart LR
   S1[S1 merged] --> S1A
   S1C[S-1C compose edge] --> S1A
   SFX[S-FX fixture app] --> S1A
-  SFX --> S6
+  SFX --> S5A
   SFX --> S7A
   S2R[S-2R Redaction patterns] --> S2W
   S2R --> S5A
   S1A[S-1A engine + CLI/HTTP] --> S1M[S-1M MCP]
   S1A --> S2W[S-2W scrub wiring]
   S1A --> S3[S-3 graph]
-  S1A --> S5A[S-5A Linear adapter]
+  S1A --> S5A[S-5A Onyx adapter]
   S2W -. merges before .-> S5A
   S1M --> S3M[S-3M MCP graph tools]
   S3 --> S3M
   S3 --> S4[S-4 extractor]
   S3 --> S5B[S-5B links + decisions]
   S5A --> S5B
-  S3 --> S6[S-6 Onyx]
-  S5A --> S6
+  S5B --> S6[S-6 native Linear]
   S3 --> S7A[S-7A eval harness]
   S4 --> S7A
   S4 --> SCF[S-CF intent-vs-file]
   S5B --> SCF
   S4 --> S7B[S-7B owner corpus]
-  S5B --> S7B
+  S6 --> S7B
   S7A --> S7B
   S7B --> S8[S-8 ranker]
 ```
@@ -935,7 +937,7 @@ team ever reads work data:
 |---|---|
 | `context.db` migrations | **Named, not pre-numbered.** A stage's migration file is `NNNN_<stage>_<name>.sql` (the loader's form: four digits, letters, digits and
 `_` only, e.g. `0003_s5a_linear_cursor.sql`) with `NNNN` set to the next free number **on the branch it sits on**, and renumbered when it rebases onto a new base (a stage's migrations stay contiguous on top of its base, as `Aw.Kernel.Data`'s gap check requires). Number and content freeze at merge. Only throwaway homes ever ran an unmerged migration, so renumbering never touches a real `context.db` |
-| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3/S-3M `030–039`, S-4 `040–049`, S-5A/B `050–069`, S-6 `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`. §8.6 follows these ranges |
+| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3/S-3M `030–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`. §8.6 follows these ranges |
 | `deps.yaml`, `Directory.Packages.props`, `AgenticWorkflow.slnx`, `.env.example` | Append-only edits within the stage's own block; the later PR's rebase resolves conflicts |
 | `PublicAPI.Unshipped.txt`, Sindri's `EndpointTable`, `CommandTable`, JSON context, MCP tool list | One line or one block per slice; the later rebase keeps both |
 | `docs/sindri/context.md`, `docs/sindri/errors.md` | One section per stage, headed by the stage id |
@@ -944,7 +946,7 @@ team ever reads work data:
 ### Gates that stay sequential
 
 - **Human merges.** Every stage stops at its merge gate; agents never merge.
-- **Owner checks and the owner's own steps:** company-OAuth sign-off and Onyx setup (before S-6's owner check);
+- **Owner checks and the owner's own steps:** company-OAuth sign-off and Onyx setup (before S-5A's owner check);
   `profile approve` of the real profile for each new `context:` key; map review on the real map; probe-set
   confirmation; S-7B and S-8's work-data runs.
 
@@ -1030,30 +1032,35 @@ on the fixture app.
   `$SINDRI context map review` bulk-accepts deterministic ones and accepts or rejects model ones; a second build keeps
   every decision and re-proposes no rejected node; `--symbol src/layout/SplitPane.ts` resolves to its feature.
 
-### Phase 5: native Linear adapter, secret pointers, sync, decisions, the `item` shape
+### Phase 5: Onyx adapter, secret pointers, sync, links, decisions, the `item` shape
 
-- **Goal:** the owner's projects, PRDs, TDDs, issues and PR links enter the graph; decisions appear with quotes.
-- **Files:** `linear` adapter (read-only GraphQL, team filter, canonical keys), secret pointer resolution in Sindri
-  Host `Composition`, `SyncSource` and its scheduled service, the rules-first linker (§13), `Decision` extraction
-  (labeling switch, `maxTokensPerSync`, queue), `supersedes`, intent-vs-intent conflicts, the `item` shape, the as-of
-  check of document history (§12), the recorded Linear fake.
-- **Size:** M, as two stages: **S-5A** (adapter, canonical keys, secret pointers, contract tests; wave 2, beside
-  S-3) and **S-5B** (sync, linking, decisions, conflicts, `item`; wave 3).
+- **Goal:** intent joins the graph through Onyx: Linear issues with their comments and Slack threads link to nodes,
+  decisions appear with quotes, and intent-vs-intent conflicts show.
+- **Files:** `onyx` adapter (HTTP search; §12 items resolved), UUID canonical keys and identifier aliases from
+  Onyx's Linear documents, secret pointer resolution in Sindri Host `Composition`, `FakeOnyxServer`, doctor
+  `context:onyx`, `docs/sindri/onyx.md` (§8.8); `SyncSource` and its scheduled service, the rules-first linker (§13),
+  `Decision` extraction (labeling switch, `maxTokensPerSync`, queue), `supersedes`, intent-vs-intent conflicts, the
+  `item` shape.
+- **Size:** M, as two stages: **S-5A** (adapter, keys, secret pointers, setup doc and doctor; wave 2, beside S-3) and
+  **S-5B** (sync, linking, decisions, conflicts, `item`; wave 3).
 - **S1:** `IScheduledService`.
-- **Signal:** `$SINDRI context query --item ENG-482 --json` returns the issue's project PRD and TDD (`linear:doc/…`
-  citations with `updatedAt`), the nodes it touches, its decisions quoting their source, and the PRs that shipped it.
+- **Signal:** with Onyx scoped and loopback-bound, `$SINDRI context query --item ENG-482 --json` returns the issue,
+  the nodes it touches, its decisions quoting their source and related Slack threads, all with `onyx:` citations
+  carrying `updatedAt`; stopping Onyx gives `degraded: onyx` while graph results still return.
 
-### Phase 6: Onyx adapter
+### Phase 6: native Linear adapter
 
-- **Goal:** semantic recall over issue and comment text and Slack joins the candidates, deduplicated with the native
-  Linear records.
-- **Files:** `onyx` adapter (HTTP search; §12 items resolved), canonical-key mapping from Onyx document links,
-  `FakeOnyxServer`, doctor `context:onyx`, `docs/sindri/onyx.md` (§8.8).
-- **Size:** S–M.
+- **Goal:** what Onyx doesn't index enters the graph: projects, Linear Documents (the PRDs and TDDs), project updates
+  and the issue↔PR links.
+- **Files:** `linear` adapter (D18: hand-written GraphQL operations as embedded `.graphql` files, response records in
+  the JSON context, team filter, `linear.url`), dedup with Onyx's records by UUID key, document version handling, the
+  as-of check of document history (§12), links and decisions from documents through S-5B's linker, the recorded
+  Linear fake.
+- **Size:** S–M (stage **S-6**, wave 4).
 - **S1:** secret pointers (Phase 5).
-- **Signal:** with Onyx scoped and loopback-bound, `$SINDRI context query --node <feature> --json` shows Slack threads
-  with `onyx:` citations and Linear issues cited once with both `linear` and `onyx` refs; stopping Onyx gives
-  `degraded: onyx` while graph and Linear results still return.
+- **Signal:** `$SINDRI context query --item ENG-482 --json` now also returns its project's PRD and TDD (`linear:doc/…`
+  citations with `updatedAt`) and the PRs that shipped it, with the issue cited once carrying both `onyx` and `linear`
+  refs.
 
 ### Phase 7: evaluation harness
 
