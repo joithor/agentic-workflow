@@ -187,7 +187,8 @@ packages:
     src: src/BugFix
     scan: [skills/bugFixOrchestrator/src]
     bins: [bugfix-state]
-    note: "bugfix-state CLI for /bugFixOrchestrator"
+    namespace: bugfix
+    note: "bugfix-state CLI for /bugFixOrchestrator; its state lives under the --state directory the skill passes, bugfix/<repo-slug>/<ticket-slug> after the switch (spec §4c)"
 
   # ---- tier 3 ----
   - id: Sindri
@@ -394,8 +395,13 @@ edges:
   - from: BugFix
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, IService, ports"
+  - from: BugFix
+    to: KernelTelemetry
+    kind: project
+    status: current
+    note: "the host starts Kernel telemetry in Compose (scaffolded by /new-package)"
   - from: Sindri
     to: Kernel
     kind: project

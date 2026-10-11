@@ -28,6 +28,10 @@
     <ProjectReference Include="../../src/Readiness/Aw.Readiness.Core/Aw.Readiness.Core.csproj" />
     <ProjectReference Include="../../src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj" />
     <ProjectReference Include="../../src/Redaction/Aw.Redaction/Aw.Redaction.csproj" />
+    <ProjectReference Include="../../src/BugFix/Aw.BugFix.Core/Aw.BugFix.Core.csproj" />
+    <ProjectReference Include="../../src/BugFix/Aw.BugFix.Features/Aw.BugFix.Features.csproj" />
+    <ProjectReference Include="../../src/BugFix/Aw.BugFix.Infrastructure/Aw.BugFix.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/BugFix/Aw.BugFix.Host/Aw.BugFix.Host.csproj" />
   </ItemGroup>
 
   <ItemGroup>
