@@ -1,27 +1,65 @@
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Evidence.Host.Commands;
 
-/// <summary>Command name → handler. Each handler binds its arguments, calls one service and maps the result to an exit code.</summary>
+/// <summary>
+/// Command name → handler. Each handler binds its arguments, calls one service and maps the result to an exit code.
+/// Ctrl-C and SIGTERM cancel the command, so its locks are released on the way out (exit 130).
+/// </summary>
 internal static class CommandTable
 {
-    internal static async Task<int> Run(string[] args, IServiceProvider provider, JsonSerializerOptions json)
+    private static readonly string _commands = string.Join(
+        '|',
+        RunScriptCommand.Name, ParityCommand.Name, ParityPlanCommand.Name, ParityCommentCommand.Name, ParityStaleCommand.Name,
+        ParityPutCommand.Name, PublishPlanCommand.Name, DoctorCommand.Name, CheckProvenanceCommand.Name, InstallBrowserCommand.Name);
+
+    internal static async Task<int> Run(string[] args, IServiceProvider provider)
     {
         if (args.Length == 0)
         {
-            return CommandOutput.Usage("ui-evidence <command> [arguments]");
+            return CommandOutput.Usage($"<{_commands}> [arguments]");
         }
 
+        using var cancel = new CancellationTokenSource();
+        using var term = PosixSignalRegistration.Create(PosixSignal.SIGTERM, context => Stop(context, cancel));
+        using var interrupt = PosixSignalRegistration.Create(PosixSignal.SIGINT, context => Stop(context, cancel));
+        var json = provider.GetRequiredService<JsonSerializerOptions>();   // the one Kernel JSON profile Composition registered
         var scope = provider.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {
-            var rest = args[1..];
-            return args[0] switch
+            try
             {
-                RunScriptCommand.Name => await RunScriptCommand.Run(rest, scope.ServiceProvider, json).ConfigureAwait(false),
-                _ => CommandOutput.Usage($"unknown command '{args[0]}'"),
-            };
+                return await Dispatch(args[0], args[1..], scope.ServiceProvider, json, cancel.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+            {
+                CommandOutput.Message("interrupted");
+                return CommandOutput.Interrupted;
+            }
         }
+    }
+
+    private static Task<int> Dispatch(string command, string[] rest, IServiceProvider services, JsonSerializerOptions json, CancellationToken cancellationToken) =>
+        command switch
+        {
+            RunScriptCommand.Name => RunScriptCommand.Run(rest, services, json, cancellationToken),
+            ParityCommand.Name => ParityCommand.Run(rest, services, json, cancellationToken),
+            ParityPlanCommand.Name => ParityPlanCommand.Run(rest, services, json, cancellationToken),
+            ParityCommentCommand.Name => ParityCommentCommand.Run(rest, services, cancellationToken),
+            ParityStaleCommand.Name => ParityStaleCommand.Run(rest, services, json, cancellationToken),
+            ParityPutCommand.Name => ParityPutCommand.Run(rest, services, json, cancellationToken),
+            PublishPlanCommand.Name => PublishPlanCommand.Run(rest, services, json, cancellationToken),
+            DoctorCommand.Name => DoctorCommand.Run(rest, services, json, cancellationToken),
+            CheckProvenanceCommand.Name => CheckProvenanceCommand.Run(rest, services, json, cancellationToken),
+            InstallBrowserCommand.Name => InstallBrowserCommand.Run(rest, services, json, cancellationToken),
+            _ => Task.FromResult(CommandOutput.Usage($"<{_commands}> [arguments] (unknown command '{command}')")),
+        };
+
+    private static void Stop(PosixSignalContext context, CancellationTokenSource cancel)
+    {
+        context.Cancel = true;   // let the command unwind and release its locks
+        cancel.Cancel();
     }
 }

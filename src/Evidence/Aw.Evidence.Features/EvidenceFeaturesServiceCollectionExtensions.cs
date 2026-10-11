@@ -1,3 +1,12 @@
+using Aw.Evidence.Features.CheckProvenance;
+using Aw.Evidence.Features.Doctor;
+using Aw.Evidence.Features.InstallBrowser;
+using Aw.Evidence.Features.Parity;
+using Aw.Evidence.Features.ParityComment;
+using Aw.Evidence.Features.ParityPlan;
+using Aw.Evidence.Features.ParityPut;
+using Aw.Evidence.Features.ParityStale;
+using Aw.Evidence.Features.PublishPlan;
 using Aw.Evidence.Features.RunScript;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,18 +16,85 @@ namespace Aw.Evidence.Features;
 /// <summary>Registers Aw.Evidence.Features's slices: each service, its validator and its decorators (outermost first).</summary>
 public static class EvidenceFeaturesServiceCollectionExtensions
 {
-    /// <summary>Adds every Evidence use case as an IService.</summary>
+    /// <summary>Adds every Evidence use case as an IService, with the helpers the browser slices use.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
-    public static IServiceCollection AddEvidenceFeatures(this IServiceCollection services)
-    {
-        _ = services
+    public static IServiceCollection AddEvidenceFeatures(this IServiceCollection services) =>
+        services.AddBrowserSlices().AddPublishSlices().AddStackSlices();
+
+    private static IServiceCollection AddBrowserSlices(this IServiceCollection services) =>
+        services
+            .AddScoped<ScriptFiles>()
+            .AddScoped<ScriptRun>()
+            .AddScoped<RunVerdict>()
+            .AddScoped<ParityFilesAccess>()
+            .AddScoped<ParityRun>()
+            .AddScoped<FrameCapture>()
+            .AddScoped<FrameComparison>()
             .AddScoped<RunScriptService>()
             .AddScoped<IValidator<RunScriptRequest>, RunScriptValidator>()
             .AddScoped<IService<RunScriptRequest, RunScriptResponse>>(static sp =>
                 new ValidatingService<RunScriptRequest, RunScriptResponse>(
                     sp.GetRequiredService<RunScriptService>(),
-                    sp.GetRequiredService<IValidator<RunScriptRequest>>()));
-        return services;
-    }
+                    sp.GetRequiredService<IValidator<RunScriptRequest>>()))
+            .AddScoped<ParityService>()
+            .AddScoped<IValidator<ParityRequest>, ParityValidator>()
+            .AddScoped<IService<ParityRequest, ParityResponse>>(static sp =>
+                new ValidatingService<ParityRequest, ParityResponse>(
+                    sp.GetRequiredService<ParityService>(),
+                    sp.GetRequiredService<IValidator<ParityRequest>>()));
+
+    private static IServiceCollection AddPublishSlices(this IServiceCollection services) =>
+        services
+            .AddScoped<ParityPlanService>()
+            .AddScoped<IValidator<ParityPlanRequest>, ParityPlanValidator>()
+            .AddScoped<IService<ParityPlanRequest, ParityPlanResponse>>(static sp =>
+                new ValidatingService<ParityPlanRequest, ParityPlanResponse>(
+                    sp.GetRequiredService<ParityPlanService>(),
+                    sp.GetRequiredService<IValidator<ParityPlanRequest>>()))
+            .AddScoped<ParityCommentService>()
+            .AddScoped<IValidator<ParityCommentRequest>, ParityCommentValidator>()
+            .AddScoped<IService<ParityCommentRequest, ParityCommentResponse>>(static sp =>
+                new ValidatingService<ParityCommentRequest, ParityCommentResponse>(
+                    sp.GetRequiredService<ParityCommentService>(),
+                    sp.GetRequiredService<IValidator<ParityCommentRequest>>()))
+            .AddScoped<ParityStaleService>()
+            .AddScoped<IValidator<ParityStaleRequest>, ParityStaleValidator>()
+            .AddScoped<IService<ParityStaleRequest, ParityStaleResponse>>(static sp =>
+                new ValidatingService<ParityStaleRequest, ParityStaleResponse>(
+                    sp.GetRequiredService<ParityStaleService>(),
+                    sp.GetRequiredService<IValidator<ParityStaleRequest>>()))
+            .AddScoped<ParityPutService>()
+            .AddScoped<IValidator<ParityPutRequest>, ParityPutValidator>()
+            .AddScoped<IService<ParityPutRequest, ParityPutResponse>>(static sp =>
+                new ValidatingService<ParityPutRequest, ParityPutResponse>(
+                    sp.GetRequiredService<ParityPutService>(),
+                    sp.GetRequiredService<IValidator<ParityPutRequest>>()))
+            .AddScoped<PublishPlanService>()
+            .AddScoped<IValidator<PublishPlanRequest>, PublishPlanValidator>()
+            .AddScoped<IService<PublishPlanRequest, PublishPlanResponse>>(static sp =>
+                new ValidatingService<PublishPlanRequest, PublishPlanResponse>(
+                    sp.GetRequiredService<PublishPlanService>(),
+                    sp.GetRequiredService<IValidator<PublishPlanRequest>>()));
+
+    private static IServiceCollection AddStackSlices(this IServiceCollection services) =>
+        services
+            .AddScoped<DoctorService>()
+            .AddScoped<IValidator<DoctorRequest>, DoctorValidator>()
+            .AddScoped<IService<DoctorRequest, DoctorResponse>>(static sp =>
+                new ValidatingService<DoctorRequest, DoctorResponse>(
+                    sp.GetRequiredService<DoctorService>(),
+                    sp.GetRequiredService<IValidator<DoctorRequest>>()))
+            .AddScoped<CheckProvenanceService>()
+            .AddScoped<IValidator<CheckProvenanceRequest>, CheckProvenanceValidator>()
+            .AddScoped<IService<CheckProvenanceRequest, CheckProvenanceResponse>>(static sp =>
+                new ValidatingService<CheckProvenanceRequest, CheckProvenanceResponse>(
+                    sp.GetRequiredService<CheckProvenanceService>(),
+                    sp.GetRequiredService<IValidator<CheckProvenanceRequest>>()))
+            .AddScoped<InstallBrowserService>()
+            .AddScoped<IValidator<InstallBrowserRequest>, InstallBrowserValidator>()
+            .AddScoped<IService<InstallBrowserRequest, InstallBrowserResponse>>(static sp =>
+                new ValidatingService<InstallBrowserRequest, InstallBrowserResponse>(
+                    sp.GetRequiredService<InstallBrowserService>(),
+                    sp.GetRequiredService<IValidator<InstallBrowserRequest>>()));
 }

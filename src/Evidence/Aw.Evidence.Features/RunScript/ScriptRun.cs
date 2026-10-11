@@ -1,0 +1,114 @@
+using System.Globalization;
+using Aw.Evidence.Core.Browser;
+using Aw.Evidence.Core.Files;
+using Aw.Evidence.Core.Guard;
+using Aw.Evidence.Core.Lint;
+using Aw.Evidence.Core.Runs;
+using Aw.Evidence.Core.Scripts;
+using Aw.Evidence.Core.Steps;
+using Aw.Evidence.Core.Usage;
+using Aw.Kernel;
+
+namespace Aw.Evidence.Features.RunScript;
+
+/// <summary>
+/// Drives every step of a script for real, viewport by viewport, in a recorded session: a screenshot after each step,
+/// a lint pass over each viewport's final page, then the trace and videos. A failed step never stops the run.
+/// </summary>
+internal sealed class ScriptRun(IBrowser browser, StepRunner runner, IRunFiles files, ISecretsSource settings)
+{
+    internal const string UserAgentVariable = "UI_EVIDENCE_USER_AGENT";
+
+    internal async ValueTask<Result<DrivenRun>> DriveAsync(UiScript script, ResolvedHost host, string runDirectory, InvocationLog log, CancellationToken cancellationToken)
+    {
+        var run = new Collected();
+        foreach (var viewport in script.Viewports)
+        {
+            var options = new BrowserSessionOptions(host, ScriptViewports.SizeOf(viewport), runDirectory, settings.Get(UserAgentVariable));
+            var opened = await browser.OpenAsync(options, cancellationToken).ConfigureAwait(false);
+            if (opened.IsError)
+            {
+                return opened.Error;
+            }
+
+            await using (opened.Value.ConfigureAwait(false))
+            {
+                var driven = await ViewportAsync(opened.Value, new(script, viewport, runDirectory, log), run, cancellationToken).ConfigureAwait(false);
+                if (driven.IsError)
+                {
+                    return driven.Error;
+                }
+            }
+        }
+
+        return new DrivenRun(run.Steps, run.Lint, new RunEvidence(run.Traces, run.Videos), run.BrowserVersion ?? string.Empty);
+    }
+
+    private async ValueTask<Result<Unit>> ViewportAsync(IBrowserSession session, Pass pass, Collected run, CancellationToken cancellationToken)
+    {
+        run.BrowserVersion ??= session.BrowserVersion;
+        var name = ScriptViewports.NameOf(pass.Viewport);
+        for (var i = 0; i < pass.Script.Steps.Count; i++)
+        {
+            var step = await StepAsync(session, pass, i + 1, cancellationToken).ConfigureAwait(false);
+            if (step.IsError)
+            {
+                return step.Error;
+            }
+
+            run.Steps.Add(step.Value);
+        }
+
+        var snapshot = await session.LintSnapshotAsync(cancellationToken).ConfigureAwait(false);
+        if (snapshot.IsError)
+        {
+            return snapshot.Error;
+        }
+
+        run.Lint.AddRange(PageLint.Check(snapshot.Value).Select(f => new RunLintFinding(pass.Viewport, f.Rule, f.Selector, f.Detail)));
+        var recording = await session.StopRecordingAsync(RunPath.Combine(pass.RunDirectory, $"{name}-trace.zip"), cancellationToken).ConfigureAwait(false);
+        if (recording.IsError)
+        {
+            return recording.Error;
+        }
+
+        if (recording.Value.Trace is { } trace)
+        {
+            run.Traces.Add(trace);
+        }
+
+        run.Videos.AddRange(recording.Value.Videos);
+        return Unit.Value;
+    }
+
+    private async ValueTask<Result<RunStep>> StepAsync(IBrowserSession session, Pass pass, int index, CancellationToken cancellationToken)
+    {
+        var step = pass.Script.Steps[index - 1];
+        var status = await runner.RunAsync(session, step, StepRunOptions.Run, pass.Log, cancellationToken).ConfigureAwait(false);
+        var shot = await session.ScreenshotAsync(cancellationToken).ConfigureAwait(false);
+        if (shot.IsError)
+        {
+            return shot.Error;
+        }
+
+        var name = string.Create(CultureInfo.InvariantCulture, $"{ScriptViewports.NameOf(pass.Viewport)}-{index}-{step.ActionName}.png");
+        var path = RunPath.Combine(pass.RunDirectory, name);
+        var written = await files.WriteAsync(path, shot.Value, cancellationToken).ConfigureAwait(false);
+        return written.Map(_ => new RunStep(pass.Viewport, index, step.Action, step.Target, status, path));
+    }
+
+    private sealed record Pass(UiScript Script, ViewportKind Viewport, string RunDirectory, InvocationLog Log);
+
+    private sealed class Collected
+    {
+        public List<RunStep> Steps { get; } = [];
+
+        public List<RunLintFinding> Lint { get; } = [];
+
+        public List<string> Traces { get; } = [];
+
+        public List<string> Videos { get; } = [];
+
+        public string? BrowserVersion { get; set; }
+    }
+}
