@@ -53,6 +53,21 @@ public static class SindriErrors
     /// <summary>SND-API-005: a handler failed with an unexpected exception (a bug); the control plane logged it.</summary>
     public static readonly ErrorDefinition ApiInternal = new("SND-API-005", ErrorKind.Unavailable, "Internal error in the control plane");
 
+    /// <summary>SND-API-007: an unknown X-Sindri-Caller value (or a malformed X-Sindri-Repo).</summary>
+    public static readonly ErrorDefinition CallerUnknown = new("SND-API-007", ErrorKind.Invalid, "The caller header isn't one Sindri knows");
+
+    /// <summary>SND-API-008: a command carried an Origin header (no first-party client sends one; a web page might).</summary>
+    public static readonly ErrorDefinition OriginRefused = new("SND-API-008", ErrorKind.Forbidden, "Commands refuse an Origin header");
+
+    /// <summary>SND-API-009: the command gate wasn't acquired within 5 s; another command is running.</summary>
+    public static readonly ErrorDefinition CommandBusy = new("SND-API-009", ErrorKind.Unavailable, "Sindri is busy with another command");
+
+    /// <summary>SND-AUTH-001: a human caller without the valid per-start token (missing or stale).</summary>
+    public static readonly ErrorDefinition AuthTokenRequired = new("SND-AUTH-001", ErrorKind.Forbidden, "A human caller needs the per-start token");
+
+    /// <summary>SND-AUTH-002: the caller may not run the command's action class.</summary>
+    public static readonly ErrorDefinition AuthRefused = new("SND-AUTH-002", ErrorKind.Forbidden, "This caller may not run the command");
+
     /// <summary>SND-CLI-001: an unknown verb or option.</summary>
     public static readonly ErrorDefinition UnknownVerb = new("SND-CLI-001", ErrorKind.Invalid, "Unknown command");
 
@@ -70,7 +85,7 @@ public static class SindriErrors
     [
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
-        UnknownVerb, StartFailed,
+        CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
         InvalidInput, ServiceFailed,
     ];
 }

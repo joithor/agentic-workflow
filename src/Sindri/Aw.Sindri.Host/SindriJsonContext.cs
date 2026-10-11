@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Aw.Kernel;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Profile;
@@ -22,6 +23,8 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ProcessStopped))]
 [JsonSerializable(typeof(ProfileApproved))]
 [JsonSerializable(typeof(Heartbeat))]
+[JsonSerializable(typeof(CommandHandled))]
+[JsonSerializable(typeof(CommandAccepted))]
 [JsonSerializable(typeof(GetStatusResponse))]
 [JsonSerializable(typeof(StopProcessResponse))]
 [JsonSerializable(typeof(ApproveProfileRequest))]

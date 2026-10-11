@@ -146,6 +146,23 @@ confirmation; in S1 that terminal check in the CLI is the only gate. There is no
 mistakes (`docs/csharp/bugfix.md`), and approval stays terminal-bound in the CLI. Device-bound approvals for the UI
 (passkeys, §17.21 D6) come with the UI's action forms.
 
+## Callers and auth
+
+Filled by API P1's units B (the headers, the per-start human token, the `Origin` refusal, `Sindri-Api-Version`) and D
+(how the CLI classes itself: the agent variables, the parent-process check, the no-start rule).
+
+## Command chain
+
+Filled by API P1's unit A (the decorators, outermost first, and what `command.handled` records).
+
+## Command catalog
+
+Filled by API P1's unit C (`GET /sindri/commands`, the rows and their UI status, the catalog checks).
+
+## Proving it
+
+Filled by API P1's unit E (`scripts/sindri-prove.sh`, the API goldens).
+
 ## Scheduler
 
 The control plane runs the services the **approved** profile names, on their cadence. It re-reads the approval once a
@@ -175,6 +192,11 @@ blocks.
 | `SND-API-003` | `sindri serve` can't listen on the API port: another program has it, it is refused, or the host failed to start listening (the stop is recorded and the lease released) |
 | `SND-API-004` | The API answered an error without a catalogue code (an unknown route, a wrong method or `Content-Type`; the HTTP status is named) |
 | `SND-API-005` | A handler failed with an unexpected exception; the control plane logged it |
+| `SND-API-007` | An unknown `X-Sindri-Caller` value, or a malformed `X-Sindri-Repo` (400; logged, not audited) |
+| `SND-API-008` | A command carried an `Origin` header (403; logged, not audited) |
+| `SND-API-009` | The command gate wasn't acquired within 5 s: another command is running (503) |
+| `SND-AUTH-001` | A `human` caller without the valid per-start token: missing or stale (403; restart the app or rerun the command) |
+| `SND-AUTH-002` | The caller may not run the command's action class (403; only the `command.handled` audit row is written) |
 | `SND-CLI-001` | Unknown command |
 | `SND-CLI-002` | `sindri serve` didn't come up after starting it |
 | `SND-CLI-003` | Bad input: a CLI argument or setting that is malformed (a profile hash that isn't 64 hex digits, an `AW_SINDRI_PORT` that isn't 0..65535), or an API request body or value the control plane refused (a 400) |

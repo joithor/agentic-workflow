@@ -2,7 +2,7 @@ using Aw.Sindri.Core.Ids;
 
 namespace Aw.Sindri.Core.Events;
 
-/// <summary>The event types S1 records.</summary>
+/// <summary>The event types Sindri records (each one is in EventCatalog).</summary>
 public static class EventTypes
 {
     /// <summary>The control plane took the lease and started.</summary>
@@ -13,6 +13,9 @@ public static class EventTypes
 
     /// <summary>A human approved a profile hash.</summary>
     public const string ProfileApproved = "profile.approved";
+
+    /// <summary>A command attempt reached the chain: its audit row (not public).</summary>
+    public const string CommandHandled = "command.handled";
 
     /// <summary>The event a background service records per run: 'service.&lt;name&gt;'.</summary>
     /// <param name="service">The service.</param>

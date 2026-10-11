@@ -25,4 +25,9 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Aw.Kernel.Testing.Golden.Match resolves golden files under this folder (the API goldens, P1 unit E). -->
+    <AssemblyMetadata Include="AwGoldenSourceRoot" Value="$(MSBuildProjectDirectory)" />
+  </ItemGroup>
 </Project>
