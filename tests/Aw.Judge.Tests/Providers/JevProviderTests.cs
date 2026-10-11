@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json.Nodes;
+using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Core.Questions;
 using Aw.Judge.Core.Secrets;
@@ -181,7 +182,7 @@ public sealed class JevProviderTests
     }
 
     // A key read that takes a while and stops when its token is cancelled, like the keychain's process runner.
-    private sealed class SlowSecretSource(TimeSpan delay) : Aw.Judge.Core.Ports.ISecretSource
+    private sealed class SlowSecretSource(TimeSpan delay) : ISecretSource
     {
         public async ValueTask<string?> Read(SecretName name, CancellationToken cancellationToken)
         {

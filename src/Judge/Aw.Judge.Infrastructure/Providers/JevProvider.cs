@@ -14,7 +14,7 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// the secret source; without one Jev is unavailable ('no-api-key'), which is not a failure. Everything taken from the
 /// input leaves the machine for a third party, so both the request's state and its instructions (the question's prompt,
 /// which embeds input fields word for word) are redacted, then capped like the stored input (InputCap). A non-success status is
-/// errored ('http-NNN'); past the budget it is unavailable ('timeout'); unreachable is unavailable ('network-error').
+/// errored ('http-NNN'); past the budget, the key read included, it is unavailable ('timeout'); unreachable is unavailable ('network-error').
 /// </summary>
 /// <param name="http">Sends the request (owned: disposed with the provider).</param>
 /// <param name="secrets">Reads the API key.</param>
@@ -47,15 +47,17 @@ internal sealed class JevProvider(HttpClient http, ISecretSource secrets, IInput
             return new ProviderErrored(ProviderReasons.TooManyOptions);
         }
 
-        if (await secrets.Read(SecretName.TypeSafeApiKey, cancellationToken).ConfigureAwait(false) is not { } key)
-        {
-            return new ProviderUnavailable(ProviderReasons.NoApiKey);
-        }
-
+        // The key read is inside the budget: with no key in the environment it asks the keychain, which can sit on its
+        // unlock prompt, and that wait must end at the budget like the call itself.
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(budget);
         try
         {
+            if (await secrets.Read(SecretName.TypeSafeApiKey, deadline.Token).ConfigureAwait(false) is not { } key)
+            {
+                return new ProviderUnavailable(ProviderReasons.NoApiKey);
+            }
+
             using var request = Request(question, State(input), Instructions(question.Prompt), key);
             using var response = await http.SendAsync(request, deadline.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
