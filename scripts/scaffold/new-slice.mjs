@@ -170,7 +170,8 @@ const sliceOwned = (s, rel) =>
   rel === `${s.dirs.testing}/A.cs` || rel === `${s.dirs.tests}/Ids/IdsJsonContext.cs` || (rel.startsWith(`src/${s.pkg}/`) && path.basename(rel) === "PublicAPI.Unshipped.txt");
 
 /** Writes the slice's files and edits (no checks). --slice-only skips the shared edits and refuses any other. */
-export function writeSlice(journal, s, { sliceOnly = false } = {}) {
+export function writeSlice(journal, resolved, { sliceOnly = false } = {}) {
+  const s = { ...resolved, sliceOnly };
   const d = s.dirs;
   if (sliceOnly) {
     if (needsRs0041(journal, s)) {
@@ -258,6 +259,7 @@ export function sharedLines(s) {
   }
   const hand = s.surface === "cli" ? [`${d.commands}/${s.slice}Command.cs`] : s.surface === "http" ? [`${d.endpoints}/${s.slice}Endpoint.cs`, ...(T.hasBody(s) ? [`${d.endpoints}/${s.slice}Body.cs`] : [])] : [];
   if (hand.length) out.push(`  Write by hand: ${hand.join(", ")} (the normal mode's templates are in scripts/scaffold/lib/slice-templates.mjs).`);
+  out.push(`  With the registration, remove the [SuppressMessage] for MA0182 from ${s.slice}Service and ${s.slice}Validator.`);
   out.push(`  For Sindri: mark ${s.slice}Request ICommand<${s.slice}Response> or IQuery<${s.slice}Response>, and register it with AddCommand or AddQuery in place of the block above (spec §12).`);
   return out.join("\n");
 }
