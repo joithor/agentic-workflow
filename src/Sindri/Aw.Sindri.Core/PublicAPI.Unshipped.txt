@@ -603,6 +603,26 @@ Aw.Sindri.Core.Auth.IHumanTokenStore
 Aw.Sindri.Core.Auth.IHumanTokenStore.Mint(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Auth.HumanToken!>!>
 Aw.Sindri.Core.Auth.IHumanTokenStore.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Auth.HumanToken?>!>
 Aw.Sindri.Core.Auth.IHumanTokenStore.Remove(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Commands.ActionClassifier
+Aw.Sindri.Core.Commands.Authorization
+Aw.Sindri.Core.Commands.AuthorizationDecision
+Aw.Sindri.Core.Commands.AuthorizationDecision.<Clone>$() -> Aw.Sindri.Core.Commands.AuthorizationDecision!
+Aw.Sindri.Core.Commands.AuthorizationDecision.Allowed.get -> bool
+Aw.Sindri.Core.Commands.AuthorizationDecision.AuthorizationDecision(string! Caller, Aw.Kernel.Error? Refusal) -> void
+Aw.Sindri.Core.Commands.AuthorizationDecision.Caller.get -> string!
+Aw.Sindri.Core.Commands.AuthorizationDecision.Caller.init -> void
+Aw.Sindri.Core.Commands.AuthorizationDecision.Deconstruct(out string! Caller, out Aw.Kernel.Error? Refusal) -> void
+Aw.Sindri.Core.Commands.AuthorizationDecision.Equals(Aw.Sindri.Core.Commands.AuthorizationDecision? other) -> bool
+Aw.Sindri.Core.Commands.AuthorizationDecision.Refusal.get -> Aw.Kernel.Error?
+Aw.Sindri.Core.Commands.AuthorizationDecision.Refusal.init -> void
+override Aw.Sindri.Core.Commands.AuthorizationDecision.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Commands.AuthorizationDecision.GetHashCode() -> int
+override Aw.Sindri.Core.Commands.AuthorizationDecision.ToString() -> string!
+static Aw.Sindri.Core.Commands.ActionClassifier.Classify(Aw.Sindri.Core.Commands.ICommandCatalog! catalog, object! command) -> Aw.Sindri.Core.Commands.CommandRow!
+static Aw.Sindri.Core.Commands.Authorization.CallersFor(Aw.Sindri.Core.Commands.ActionClass actionClass, System.Collections.Generic.IReadOnlyList<string!>! grants) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Commands.Authorization.Decide(Aw.Sindri.Core.Commands.ActionClass actionClass, Aw.Sindri.Core.Commands.CallerContext? caller, Aw.Sindri.Core.Commands.CommandRow! row) -> Aw.Sindri.Core.Commands.AuthorizationDecision!
+static Aw.Sindri.Core.Commands.AuthorizationDecision.operator !=(Aw.Sindri.Core.Commands.AuthorizationDecision? left, Aw.Sindri.Core.Commands.AuthorizationDecision? right) -> bool
+static Aw.Sindri.Core.Commands.AuthorizationDecision.operator ==(Aw.Sindri.Core.Commands.AuthorizationDecision? left, Aw.Sindri.Core.Commands.AuthorizationDecision? right) -> bool
 Aw.Sindri.Core.Commands.ActionClass
 Aw.Sindri.Core.Commands.ActionClass.Decision = 4 -> Aw.Sindri.Core.Commands.ActionClass
 Aw.Sindri.Core.Commands.ActionClass.Desk = 5 -> Aw.Sindri.Core.Commands.ActionClass
