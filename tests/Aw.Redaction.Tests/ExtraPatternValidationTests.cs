@@ -170,6 +170,15 @@ public sealed class ExtraPatternValidationTests
             result.Errors.Select(e => (e.Index, e.Field)));
     }
 
+    [Fact]
+    public void A_timeout_past_the_regex_maximum_is_capped_not_thrown()
+    {
+        var result = Redactor.Create([new("acme-customer-id", Good)], TimeSpan.FromDays(30), new FakeTimeProvider());
+
+        Assert.True(result.IsValid);
+        Assert.Equal("order [REDACTED:acme-customer-id] shipped", result.Redactor.Scrub("order ACME-123456 shipped").Text);
+    }
+
     private static ExtraPatternError AssertRefused(RedactorResult result, int index, ExtraPatternField field, string code)
     {
         Assert.False(result.IsValid);
