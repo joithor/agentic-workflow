@@ -40,6 +40,7 @@ internal static class CommandTable
         var ct = CancellationToken.None;
         return args switch
         {
+            // ---- verbs: one arm per verb ----
             [] => await Start(services, client, output, headless: false).ConfigureAwait(false),
             ["--headless"] => await Start(services, client, output, headless: true).ConfigureAwait(false),
             ["status", .. var rest] when Json(rest) is { } json => await verbs.Status(json, ct).ConfigureAwait(false),
