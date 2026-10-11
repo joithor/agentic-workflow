@@ -123,7 +123,7 @@ actions join it in later stages.
 ## Command layer and API
 
 Every action is a typed request handled by one `IService<TReq, TRes>` in `Features` (§17.27.1). The API, on
-`127.0.0.1:<port>` only (`LoopbackBinding`: no argument or environment can widen it; a foreign `Host` is a 400, a
+`127.0.0.1:<port>` only (`LoopbackBinding`: no argument or environment can widen it, and the host environment is always Production, so an inherited `ASPNETCORE_ENVIRONMENT=Development` can't turn bad input into a 500; a foreign `Host` is a 400, a
 foreign browser `Origin` a 403):
 
 | Route | Service |
