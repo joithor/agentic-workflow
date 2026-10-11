@@ -150,10 +150,17 @@ public sealed class ExtraPatternTests
     [Fact]
     public void The_whole_scan_budget_also_counts_rules_that_find_nothing()
     {
-        // No rule matches "abc", so no match is ever yielded; the readings before each rule pass 4 x 10 ms.
-        var redactor = Build(TimeSpan.FromMilliseconds(10), Stepping(), new ExtraPattern("never-one", "zzz1"), new ExtraPattern("never-two", "zzz2"));
+        // No rule matches "abc", so no match is ever yielded. A scan reads the clock (5 ms a reading) around the
+        // placeholder scan, before every rule and at the end; the budget, 4 x the timeout, is 5 ms x (built-ins + 10)
+        // readings: one never-matching extra stays under it, twenty go past it.
+        var builtIns = BuiltinRules.All.Count;
+        var timeout = TimeSpan.FromMilliseconds(5.0 * (builtIns + 10) / Redactor.ScanBudgetFactor);
+        static ExtraPattern[] Never(int count) =>
+            [.. Enumerable.Range(0, count).Select(i => new ExtraPattern("never-" + Letter(i), "zzz" + Letter(i)))];
+        static string Letter(int i) => ((char)('a' + i)).ToString();
 
-        Assert.Equal(ScrubOutcome.Blocked, redactor.Scrub("abc").Outcome);
+        Assert.Equal(ScrubOutcome.Clean, Build(timeout, Stepping(), Never(1)).Scrub("abc").Outcome);
+        Assert.Equal(ScrubOutcome.Blocked, Build(timeout, Stepping(), Never(20)).Scrub("abc").Outcome);
     }
 
     [Fact]

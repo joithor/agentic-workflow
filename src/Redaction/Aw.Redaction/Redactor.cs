@@ -65,7 +65,7 @@ public sealed class Redactor : IRedactor
         ArgumentNullException.ThrowIfNull(extraPatterns);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(matchTimeout, TimeSpan.Zero);
-        var errors = ExtraPatternRules.Check(extraPatterns, Default.RuleIds);
+        var errors = ExtraPatternRules.Check(extraPatterns, Default.RuleIds, matchTimeout);
         return errors.Count > 0
             ? RedactorResult.Invalid(errors)
             : RedactorResult.Valid(new Redactor([.. BuiltinRules.All, .. extraPatterns.Select(e => new RedactionRule(e.Id, e.Pattern))], matchTimeout, extraPatterns.Count > 0 ? clock : null));

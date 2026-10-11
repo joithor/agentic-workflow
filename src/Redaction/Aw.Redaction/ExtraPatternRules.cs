@@ -22,8 +22,9 @@ internal static partial class ExtraPatternRules
     /// <summary>Every refused field of <paramref name="extras"/>, in entry order (an entry's id before its pattern).</summary>
     /// <param name="extras">The configured patterns.</param>
     /// <param name="builtinIds">The built-in rule ids, which an extra pattern may not reuse.</param>
+    /// <param name="matchTimeout">The redactor's match timeout, for trying a pattern on an empty text.</param>
     /// <returns>The errors; empty when every entry is accepted.</returns>
-    public static List<ExtraPatternError> Check(IReadOnlyList<ExtraPattern> extras, IReadOnlyList<string> builtinIds)
+    public static List<ExtraPatternError> Check(IReadOnlyList<ExtraPattern> extras, IReadOnlyList<string> builtinIds, TimeSpan matchTimeout)
     {
         var errors = new List<ExtraPatternError>();
         var taken = new HashSet<string>(builtinIds.Concat(_reserved), StringComparer.Ordinal);
@@ -42,7 +43,7 @@ internal static partial class ExtraPatternRules
                 errors.Add(new ExtraPatternError(index, ExtraPatternField.Id, RedactionCodes.InvalidPatternId, idProblem));
             }
 
-            if (PatternProblem(pattern) is { } patternProblem)
+            if (PatternProblem(pattern, matchTimeout) is { } patternProblem)
             {
                 errors.Add(new ExtraPatternError(index, ExtraPatternField.Pattern, RedactionCodes.InvalidPattern, patternProblem));
             }
@@ -68,7 +69,7 @@ internal static partial class ExtraPatternRules
         return seen.Add(id) ? null : $"The id '{id}' is already used by an earlier extra pattern; give each pattern its own id.";
     }
 
-    private static string? PatternProblem(string? pattern)
+    private static string? PatternProblem(string? pattern, TimeSpan matchTimeout)
     {
         if (string.IsNullOrEmpty(pattern) || pattern.Length > MaxPatternLength)
         {
@@ -81,10 +82,16 @@ internal static partial class ExtraPatternRules
         {
             // Parsed and tried on an empty text here; the pattern is compiled per size tier, with the redactor's timeout,
             // when a scrub needs it.
-            if (new Regex(pattern, CompiledRules.Always, Redactor.DefaultMatchTimeout).IsMatch(string.Empty))
+            if (new Regex(pattern, CompiledRules.Always, matchTimeout).IsMatch(string.Empty))
             {
                 return "The pattern can match an empty text, so it would match at every position; make at least one part required.";
             }
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            // Refused, never thrown, so every refusal comes back as an error. No pattern found in review times out on an
+            // empty text (the engine cuts empty loop iterations), so this is a guard for one that would block every scrub.
+            return "The pattern backtracks so much that it timed out on an empty text; remove nested or overlapping repetition.";
         }
         catch (RegexParseException parse)
         {

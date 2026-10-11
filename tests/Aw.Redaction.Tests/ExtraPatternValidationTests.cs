@@ -103,6 +103,15 @@ public sealed class ExtraPatternValidationTests
     }
 
     [Fact]
+    public void A_lookaround_only_pattern_is_accepted_but_redacts_nothing()
+    {
+        var created = Redactor.Create([new("after-customer", "(?<=customer=)")], Redactor.DefaultMatchTimeout, new FakeTimeProvider());
+
+        Assert.True(created.IsValid);
+        Assert.Equal(ScrubOutcome.Clean, created.Redactor.Scrub("customer=123456").Outcome);
+    }
+
+    [Fact]
     public void An_id_and_a_pattern_at_their_length_limits_are_accepted()
     {
         var id = "a" + new string('b', 63);
