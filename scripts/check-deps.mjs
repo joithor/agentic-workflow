@@ -181,7 +181,9 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
     const measured = `${p.id} has ${targets.length} project edges (${targets.join(", ")})`;
     if (targets.length <= doc.limits.packageFanOut) { measure("DEPS-FANOUT-001", p.id, measured); continue; }
     const covers = (to) => targets.includes(to) && targets.length - 1 <= doc.limits.packageFanOut;
-    if (!excepted("DEPS-FANOUT-001", p.id, measured, covers)) fail("DEPS-FANOUT-001", "package fan-out over the limit", measured, `${doc.limits.packageFanOut} packages per package (limits.packageFanOut; test packages exempt)`, `split ${p.id}, or record a DEPS-FANOUT-001 exception with a reason and an expiry`);
+    if (excepted("DEPS-FANOUT-001", p.id, measured, covers)) continue;
+    measure("DEPS-FANOUT-001", p.id, `${measured}, more than an exception attached to one edge covers`);
+    fail("DEPS-FANOUT-001", "package fan-out over the limit", measured, `${doc.limits.packageFanOut} packages per package (limits.packageFanOut; test packages exempt; an exception attached to an edge covers that one edge)`, `split ${p.id}, or record a DEPS-FANOUT-001 exception with a reason and an expiry`);
   }
 
   // ---- cli/db/file edges in the source ----

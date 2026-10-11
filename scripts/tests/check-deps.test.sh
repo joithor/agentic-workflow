@@ -531,7 +531,7 @@ d="$(fixture fanout-attached-missing)"; perl -pi -e 's/packageFanOut: 4/packageF
 expect "an exception attached to an edge that isn't declared fails" 1 "DEPS-EXC-004" "Beta -> Delta (project)"
 
 d="$(fixture fanout-attached-wide)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned; edge "$d" Beta Delta project planned; exc "$d" Beta Alpha; run "$d"
-expect "an attached exception covers its one edge, not a wider fan-out" 1 "DEPS-FANOUT-001" "Beta has 3 project edges"
+expect "an attached exception covers its one edge, not a wider fan-out" 1 "DEPS-FANOUT-001" "Beta has 3 project edges" "DEPS-EXC-002" "Beta has 3 project edges (Alpha, Delta, Kernel), more than an exception attached to one edge covers"
 
 d="$(fixture fanout-attached-rule)"; perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-002\n    subject: Beta\n    edge: Alpha\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
 expect "only a DEPS-FANOUT-001 exception is attached to an edge" 1 "DEPS-SCHEMA-001" "/exceptions/0/rule: must be \"DEPS-FANOUT-001\""
