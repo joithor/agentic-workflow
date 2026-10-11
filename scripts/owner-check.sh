@@ -32,7 +32,8 @@
 set -uo pipefail
 
 ENGINE_SERVICES="context-docs-refresh context-sync context-rebuild context-purge"
-die()   { echo "owner-check: $*" >&2; exit "${CODE:-2}"; }
+die()   { echo "owner-check: $*" >&2; exit 2; }   # usage or a refused setup
+broke() { echo "owner-check: $*" >&2; exit 1; }   # a step failed
 usage() { echo "usage: scripts/owner-check.sh <stage> up [--seed] [--services a,b] [--labeling] [--session] [--repo NAME]" >&2
           echo "       scripts/owner-check.sh <stage> down" >&2; exit 2; }
 
@@ -127,7 +128,7 @@ down() {
     for i in $(seq 1 50); do listening || break; sleep 0.1; done
     ! listening || { kill -9 $(listeners) 2>/dev/null || true; sleep 0.2; }
   fi
-  ! listening || CODE=1 die "something still listens on port $port; stop it by hand"
+  ! listening || broke "something still listens on port $port; stop it by hand"
   case "$home" in */sindri-app-ownercheck-"$stage") rm -rf "$home" ;; *) die "refusing to delete $home" ;; esac
   case "$scratch" in */sindri-ownercheck-"$stage") rm -rf "$scratch" ;; *) die "refusing to delete $scratch" ;; esac
   echo "owner-check $stage down: stopped port $port; deleted $home and $scratch (build, MCP config)"
@@ -149,26 +150,26 @@ up() {
   [ -x "$smoke" ] || die "step 1 needs $smoke (S1's AOT smoke, #163) on the PR head"
 
   echo "== 1. build (src/Sindri/aot-smoke/run.sh)"
-  "$smoke" || CODE=1 die "step 1: the AOT build or its smoke failed"
+  "$smoke" || broke "step 1: the AOT build or its smoke failed"
   case "$scratch" in */sindri-ownercheck-"$stage") rm -rf "$scratch" ;; *) die "refusing to delete $scratch" ;; esac
   mkdir -p "$scratch" && chmod 700 "$scratch" && cp -R "$root/artifacts/aot-sindri-smoke/bin" "$scratch/bin" \
-    || CODE=1 die "step 1: can't copy the build into $scratch"
-  [ -x "$bin" ] || CODE=1 die "step 1: no sindri binary in the build output"
+    || broke "step 1: can't copy the build into $scratch"
+  [ -x "$bin" ] || broke "step 1: no sindri binary in the build output"
 
   echo "== 2. home $home (port $port)"
   case "$home" in */sindri-app-ownercheck-"$stage") rm -rf "$home" ;; *) die "refusing to delete $home" ;; esac
-  (umask 077 && mkdir -p "$home/profile") || CODE=1 die "step 2: can't create $home"
+  (umask 077 && mkdir -p "$home/profile") || broke "step 2: can't create $home"
   chmod 700 "$home"
 
   if [ "$seed" = 1 ]; then
     echo "== 3. seed export from the real home (merged build)"
     env -u AW_SINDRI_HOME -u AW_SINDRI_PORT -u AW_SINDRI_PROFILE "${main[@]}" context map export "$home/seed.json" \
-      || CODE=1 die "step 3: the export failed"
+      || broke "step 3: the export failed"
   fi
 
   echo "== 4. profile, start, approve"
   local p="$home/profile/profile.yaml" rc
-  (umask 077 && cp "$real_profile" "$p") || CODE=1 die "step 4: can't copy the profile"
+  (umask 077 && cp "$real_profile" "$p") || broke "step 4: can't copy the profile"
   drop_services "$p" $services 2>"$scratch/missing"; rc=$?
   [ "$rc" = 0 ] || [ "$rc" != 3 ] || die "step 4: services: is a flow mapping; rewrite it in block style in the real profile, then rerun"
   [ "$rc" = 0 ] || die "step 4: the check names $(tr '\n' ' ' <"$scratch/missing")but the real profile's services: has no such entry"
@@ -177,16 +178,16 @@ up() {
   yaml_set "$p" context labeling enabled "$([ "$labeling" = 1 ] && echo true || echo false)" "$labeling" \
     || die "step 4: can't set context.labeling.enabled in place (a flow mapping); rewrite context: in block style in the real profile"
   rc=0; bounded env AW_SINDRI_HOME="$home" AW_SINDRI_PORT="$port" "$bin" --headless || rc=$?
-  [ "$rc" -le 1 ] || CODE=1 die "step 4: the scratch instance didn't start (exit $rc); see $home/logs/serve.log"
+  [ "$rc" -le 1 ] || broke "step 4: the scratch instance didn't start (exit $rc); see $home/logs/serve.log"
   local hash
   hash="$({ bounded env AW_SINDRI_HOME="$home" AW_SINDRI_PORT="$port" "$bin" profile validate --json || true; } | sed -nE 's/.*"hash":"([0-9a-f]{64})".*/\1/p')"
-  [ -n "$hash" ] || CODE=1 die "step 4: profile validate gave no hash; run: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin profile validate"
+  [ -n "$hash" ] || broke "step 4: profile validate gave no hash; run: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin profile validate"
   echo "-- approve at this terminal: type the first 6 characters of the hash when asked"
-  scratch_env "$bin" profile approve "$hash" || CODE=1 die "step 4: approval failed; retry: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin profile approve $hash"
+  scratch_env "$bin" profile approve "$hash" || broke "step 4: approval failed; retry: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin profile approve $hash"
   if [ "$seed" = 1 ]; then
     echo "-- import the seed at this terminal"
     scratch_env "$bin" context map import "$home/seed.json" \
-      || CODE=1 die "step 4: import failed; retry: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin context map import $home/seed.json"
+      || broke "step 4: import failed; retry: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin context map import $home/seed.json"
   fi
 
   if [ "$session" = 1 ]; then
