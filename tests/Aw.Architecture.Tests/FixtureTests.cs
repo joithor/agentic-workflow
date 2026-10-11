@@ -215,4 +215,22 @@ public sealed class FixtureTests
     [InlineData("System.Console", "GetEnvironmentVariable(System.String)", false)]
     public void Only_environment_reads_and_writes_are_technology(string type, string member, bool expected) =>
         Assert.Equal(expected, Technology.IsEnvironmentAccess(type, member));
+
+    [Theory]
+    [InlineData("Aw.Sindri.Core.Lease", "Aw.Sindri")]
+    [InlineData("Aw.Sindri.Ui", null)]
+    [InlineData("Aw.Sindri.Ui.Views", null)]
+    [InlineData("Aw.Sindri.Ui.Desktop", null)]
+    [InlineData("Aw.Sindri.Uix.Core", "Aw.Sindri")]
+    public void An_unshaped_package_inside_a_shaped_root_belongs_to_no_package(string ns, string? root) =>
+        Assert.Equal(root, (Scope.Of(["Aw.Sindri"]) with { Unshaped = ["Aw.Sindri.Ui", "Aw.Sindri.Ui.Desktop"] }).RootOf(ns));
+
+    [Fact]
+    public void Unshaped_packages_are_the_registered_projects_with_no_layer_that_are_not_tier_zero() =>
+        Assert.Equal(["Aw.Sindri.Ui", "Aw.Sindri.Ui.Desktop"],
+            Production.UnshapedOf(["Aw.Kernel", "Aw.Kernel.Data", "Aw.Sindri.Core", "Aw.Sindri.Host", "Aw.Sindri.Ui", "Aw.Sindri.Ui.Desktop", "Aw.Packets.App"]));
+
+    [Fact]
+    public void The_real_ui_assemblies_are_unshaped_and_keep_the_global_rules() =>
+        Assert.Equal(["Aw.Sindri.Ui", "Aw.Sindri.Ui.Desktop"], Production.Scope.Unshaped);
 }

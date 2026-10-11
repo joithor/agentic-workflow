@@ -51,11 +51,24 @@ internal static class Production
     {
         List<(string Project, string Assembly)> list = [.. projects];
         var roots = RootsOf(list.Select(p => p.Project));
-        return Scope.Of(roots, list
+        var scope = Scope.Of(roots, list
             .Where(p => p.Project.EndsWith(".Host", StringComparison.Ordinal) || p.Project.EndsWith(".App", StringComparison.Ordinal))
             .Select(p => KeyValuePair.Create(p.Assembly, p.Project[..p.Project.LastIndexOf('.')]))
             .Where(p => roots.Contains(p.Value, StringComparer.Ordinal)));
+        return scope with { Unshaped = UnshapedOf(list.Select(p => p.Project)) };
     }
+
+    /// <summary>
+    /// The registered projects that are neither tier 0 nor a layer of a shaped package (Core, Features, Infrastructure,
+    /// Host, App): the Sindri UI (Aw.Sindri.Ui) and its platform heads (Aw.Sindri.Ui.Desktop).
+    /// </summary>
+    /// <param name="projectNames">Project names.</param>
+    /// <returns>Their names, sorted.</returns>
+    public static IReadOnlyList<string> UnshapedOf(IEnumerable<string> projectNames) =>
+        [.. projectNames
+            .Where(n => !TierZero.Contains(n) && !_layerProjects.Contains(n.Split('.')[^1], StringComparer.Ordinal))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)];
 
     /// <summary>Whether a registered project's assembly loaded.</summary>
     /// <param name="project">A Packages.cs line.</param>
