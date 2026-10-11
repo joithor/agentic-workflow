@@ -68,6 +68,23 @@ public sealed class PngCodecTests
         Assert.Equal(0xFFFFFFFFu, both.PixelAt(0, 1));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_chromium_screenshot_decodes()
+    {
+        // Captured with Playwright's Chromium (24x18 viewport): a red 20x12 block, a half-transparent blue 12x6 block below
+        // it, white elsewhere. Chromium writes 8-bit RGB (colour type 2) over two IDAT chunks.
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAABgAAAASCAIAAADOjonJAAAAMklEQVR4nOyTMQ4AAAQDEf/m54xGAzFIb25vaFINGhDVFloCIoh+itisf5t7G8HYl6IEAAD//52o/BgAAAAGSURBVAMAPF4GIAeJqIMAAAAASUVORK5CYII=");
+
+        var image = _codec.Decode(png).Value;
+
+        Assert.Equal((24, 18), (image.Width, image.Height));
+        Assert.Equal(0xFF0000FFu, image.PixelAt(0, 0));
+        Assert.Equal(0xFF0000FFu, image.PixelAt(19, 11));
+        Assert.InRange(image.PixelAt(0, 12) >> 24, 0x7Fu, 0x80u);
+        Assert.Equal(0xFFu, (image.PixelAt(0, 12) >> 8) & 0xFF);
+        Assert.Equal(0xFFFFFFFFu, image.PixelAt(23, 17));
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData((byte)16, (byte)0, "bit depth 16")]
     [InlineData((byte)8, (byte)1, "interlaced")]
