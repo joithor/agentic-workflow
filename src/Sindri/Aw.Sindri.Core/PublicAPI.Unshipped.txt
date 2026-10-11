@@ -452,7 +452,8 @@ Aw.Sindri.Core.Control.Ping.Ping(int Pid, long Epoch) -> void
 Aw.Sindri.Core.Doctor.DoctorRules
 Aw.Sindri.Core.Events.EventFactory
 Aw.Sindri.Core.Events.EventFactory.Entry<TPayload>(string! type, TPayload payload, string! key) -> Aw.Sindri.Core.Ledger.LedgerEntry!
-Aw.Sindri.Core.Events.EventFactory.EventFactory(Aw.Sindri.Core.Events.EventScope! scope, System.TimeProvider! clock, Aw.Kernel.Ids.IIdGenerator! ids, System.Text.Json.JsonSerializerOptions! json) -> void
+Aw.Sindri.Core.Events.EventFactory.EventFactory(Aw.Sindri.Core.Events.EventScope! scope, System.TimeProvider! clock, Aw.Kernel.Ids.IIdGenerator! ids, System.Text.Json.JsonSerializerOptions! json, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers) -> void
+Aw.Sindri.Core.Events.EventFactory.Entry<TPayload>(string! type, TPayload payload, string! key, string? item) -> Aw.Sindri.Core.Ledger.LedgerEntry!
 Aw.Sindri.Core.Events.EventScope
 Aw.Sindri.Core.Events.EventScope.<Clone>$() -> Aw.Sindri.Core.Events.EventScope!
 Aw.Sindri.Core.Events.EventScope.Actor.get -> string!

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
@@ -10,13 +11,15 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests;
 
-/// <summary>The in-memory ports a slice test needs: one store (lease and ledger), profiles, a probe, a clock and the event factory.</summary>
+/// <summary>The in-memory ports a slice test needs: one store (lease and ledger), profiles, a probe, a clock, the caller and the event factory.</summary>
 internal sealed class SliceHarness
 {
     public SliceHarness()
     {
         Store = new InMemorySindriStore(Clock, Probe);
-        Events = new EventFactory(EventScope.ControlPlane, Clock, new SequentialIdGenerator(), Json);
+        var ids = new SequentialIdGenerator();
+        Callers = new AsyncLocalCallerContextAccessor(ids);
+        Events = new EventFactory(EventScope.ControlPlane, Clock, ids, Json, Callers);
     }
 
     public static JsonSerializerOptions Json { get; } = AwJson.CreateOptions(SindriJsonContext.Default);
@@ -30,6 +33,9 @@ internal sealed class SliceHarness
     public InMemoryProfiles Profiles { get; } = new();
 
     public HeldLease Held { get; } = new();
+
+    /// <summary>The caller the events read (none unless a test enters one).</summary>
+    public ICallerContextAccessor Callers { get; }
 
     public EventFactory Events { get; }
 
