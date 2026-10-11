@@ -139,4 +139,20 @@ internal static class Labels
 
     /// <summary>The tray menu's quit item.</summary>
     internal const string TrayQuit = "Quit";
+
+    // Settings (§3.3 ⌘,, §11.4, §14.2).
+
+    /// <summary>The in-app switch that forces reduced motion.</summary>
+    internal const string ReduceMotion = "Reduce motion";
+
+    /// <summary>The note beside the switch while the OS reduces motion (the switch can't turn the OS setting off).</summary>
+    internal const string SystemReducesMotion = "On in your system settings";
+
+    /// <summary>The text size slider.</summary>
+    internal const string TextSize = "Text size";
+
+    /// <summary>A scale as a percentage ("110%").</summary>
+    /// <param name="scale">The scale (1.0 is 100%).</param>
+    /// <returns>The words.</returns>
+    internal static string Percent(double scale) => string.Create(CultureInfo.InvariantCulture, $"{Math.Round(scale * 100, MidpointRounding.AwayFromZero):0}%");
 }
