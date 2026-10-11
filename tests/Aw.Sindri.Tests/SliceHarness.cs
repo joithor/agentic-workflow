@@ -44,10 +44,13 @@ internal sealed class SliceHarness
     }
 
     /// <summary>A checked profile with a heartbeat at <paramref name="every"/>.</summary>
-    public static LoadedProfile Profile(string every = "30s", string user = "thor")
+    public static LoadedProfile Profile(string every = "30s", string user = "thor") => ProfileOf(user, ("heartbeat", every));
+
+    /// <summary>A checked profile naming <paramref name="services"/>, each with its cadence.</summary>
+    public static LoadedProfile ProfileOf(string user, params (string Name, string Every)[] services)
     {
         var profile = ProfileRules.Check(new SindriProfile(1, user,
-            Services: new Dictionary<string, ServiceSettings>(StringComparer.Ordinal) { ["heartbeat"] = new(every) })).Value;
+            Services: services.ToDictionary(s => s.Name, s => new ServiceSettings(s.Every), StringComparer.Ordinal))).Value;
         return new LoadedProfile(profile, ProfileHashing.Of(AwJson.Serialize(profile, Json)), "/home/profile.yaml");
     }
 }

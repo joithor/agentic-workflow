@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
@@ -8,7 +9,8 @@ namespace Aw.Sindri.Host.Server;
 /// <summary>
 /// Runs the background services the approved profile names, on their cadence (factory addendum §17.29.1). It re-reads
 /// the approval once a second, so an approval takes effect without a restart; a failed run is logged and the next slot
-/// still runs. Nothing runs while the process holds no lease.
+/// still runs, and an approval it can't read is logged once (SND-SCHED-001) while the current schedule keeps running.
+/// Nothing runs while the process holds no lease.
 /// </summary>
 internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprovals approvals, HeldLease held, TimeProvider clock, ILogger<SchedulerHost> log)
     : BackgroundService
@@ -16,26 +18,49 @@ internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprov
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
     private IReadOnlyList<ServiceSchedule> _schedules = [];
     private ProfileHash? _profile;
+    private string? _problem;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
             await Refresh(stoppingToken).ConfigureAwait(false);
-            if (held.Current is { } grant)
+            var grant = held.Current;
+            if (grant is not null)
             {
                 await RunDue(grant, stoppingToken).ConfigureAwait(false);
             }
 
-            var next = _schedules.Count == 0 ? _tick : _schedules.Min(s => s.NextSlot) - clock.GetUtcNow();
+            var next = grant is null || _schedules.Count == 0 ? _tick : _schedules.Min(s => s.NextSlot) - clock.GetUtcNow();
             await Delay(next < TimeSpan.Zero ? TimeSpan.Zero : next > _tick ? _tick : next, stoppingToken).ConfigureAwait(false);
         }
     }
 
     private async Task Refresh(CancellationToken ct)
     {
-        var approved = await approvals.Latest(ct).ConfigureAwait(false);
-        var profile = approved.IsSuccess ? approved.Value : null;
+        Result<LoadedProfile?> approved;
+        try
+        {
+            approved = await approvals.Latest(ct).ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)   // boundary: a broken read must not stop the schedule
+        {
+            approved = new Error(e.GetType().Name, ErrorKind.Unavailable, e.Message);
+        }
+
+        if (approved.IsError)
+        {
+            if (!string.Equals(_problem, approved.Error.Message, StringComparison.Ordinal))
+            {
+                _problem = approved.Error.Message;
+                LogRefreshFailed(log, approved.Error.Code, approved.Error.Message);
+            }
+
+            return;
+        }
+
+        _problem = null;
+        var profile = approved.Value;
         if (profile?.Hash != _profile)
         {
             _profile = profile?.Hash;
@@ -75,10 +100,17 @@ internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprov
                 return;
             }
 
-            var result = await service.Run(run, ct).ConfigureAwait(false);
-            if (result.IsError)
+            try
             {
-                LogServiceFailed(log, schedule.Name.Value, result.Error.Code, result.Error.Message);
+                var result = await service.Run(run, ct).ConfigureAwait(false);
+                if (result.IsError)
+                {
+                    LogServiceFailed(log, schedule.Name.Value, result.Error.Code, result.Error.Message);
+                }
+            }
+            catch (Exception e) when (e is not OperationCanceledException)   // boundary: one failed run must not stop later slots
+            {
+                LogServiceFailed(log, schedule.Name.Value, e.GetType().Name, e.Message);
             }
         }
     }
@@ -97,6 +129,9 @@ internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprov
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Schedule loaded from approved profile {Profile}: {Count} services")]
     private static partial void LogSchedule(ILogger logger, string profile, int count);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 the approved profile couldn't be read: {Code} {Detail}; keeping the current schedule")]
+    private static partial void LogRefreshFailed(ILogger logger, string code, string detail);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 the profile names service '{Service}', which this build doesn't have")]
     private static partial void LogUnknownService(ILogger logger, string service);
