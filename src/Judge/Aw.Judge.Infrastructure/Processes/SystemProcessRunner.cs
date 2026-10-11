@@ -101,6 +101,11 @@ internal sealed class SystemProcessRunner(Func<string, string?> environment) : I
             info.Environment[name] = value;
         }
 
+        foreach (var name in request.Unset)
+        {
+            _ = info.Environment.Remove(name);
+        }
+
         return info;
     }
 

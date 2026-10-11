@@ -7,7 +7,8 @@ namespace Aw.Judge.Infrastructure.Providers;
 
 /// <summary>
 /// An agent CLI run headless on a small fast model: each question gets a fresh empty temp directory (deleted
-/// afterwards) and the recursion guard AW_JUDGE_CHILD=1, which makes every aw:* hook in the child exit at once. The
+/// afterwards) and the recursion guard AW_JUDGE_CHILD=1, which makes every aw:* hook in the child exit at once; the
+/// judge's own TYPESAFE_API_KEY is removed from the environment the child inherits. The
 /// model sees the question's prompt only, which carries the input's fields already capped; the raw input is never sent,
 /// and the prompt goes on standard input where the CLI reads it, so no input size can hit the system's argument limit.
 /// The subclass says how to call its CLI and how to read its output; the run's end maps the same way for all of them:
@@ -17,6 +18,9 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// <param name="cli">Which agent CLI this is.</param>
 internal abstract class AgentCliProvider(IProcessRunner runner, AgentCliName cli) : IModelProvider
 {
+    // The one secret the judge owns: a model reading untrusted text has no use for it.
+    private static readonly string[] _unset = ["TYPESAFE_API_KEY"];
+
     /// <inheritdoc />
     public ProviderName Name => AgentCliNames.Provider(cli);
 
@@ -85,6 +89,7 @@ internal abstract class AgentCliProvider(IProcessRunner runner, AgentCliName cli
         StandardInput = call.StandardInput,
         WorkingDirectory = call.WorkingDirectory,
         Environment = new Dictionary<string, string>(call.Environment, StringComparer.Ordinal) { ["AW_JUDGE_CHILD"] = "1" },
+        Unset = _unset,
         Timeout = budget,
     };
 }
