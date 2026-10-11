@@ -32,6 +32,19 @@ models. What it shows, its states, the needs-you signal and attach are unchanged
 - *the UI tests run under Avalonia's headless platform instead of Playwright (§9);*
 - *a native app is no longer out of scope by design: the mobile heads are a later step, not a rewrite.*
 
+*Amended 2026-10-11 by the factory addendum §17.29 (decision Q7): Sindri is one C# application, and this app is its
+UI, a **window onto the control plane** (the queue, status, decisions, receipts, metrics and "open in Warp"), not a
+chat (§17.29.3). What changes here:*
+- *the app is a client of the control-plane process's API (HTTP plus an event stream, §17.29.2), not of a separate
+  on-demand `sindri dashboard` server that shells out to `sindri … --json`; `sindri` starts the process and the app
+  together (§17.29.1);*
+- *the collector (§4) is a background service inside that process, written in C# as part of the app, not as the TS
+  `sindri/src/fleet/` listed in §3 (never built);*
+- *attach (§7) stays as designed, and gains "open in Warp" for an item with no live session: `sindri open <item>`
+  starts a Claude Code session in the human's terminal, seeded with the item's context, as a takeover until
+  `sindri handback` (§17.29.3);*
+- *agent work stays in Claude Code sessions in the human's terminal, so "no chat inside the dashboard" holds.*
+
 **Success looks like this:**
 - the builder can tell, without reading text, that a page has something that needs them;
 - every live agent on the machine appears within one poll;
@@ -77,6 +90,9 @@ never for live state. Observing every agent on the machine is therefore new grou
 - the `stuck` state, which T3 has no watchdog for.
 
 ## 3. Architecture
+
+*Amended 2026-10-11: under addendum §17.29 the server and collector below run inside the control-plane process, and the
+app reads its API and event stream (see the note at the top).*
 
 ```
 provider stores ─┐
@@ -314,6 +330,9 @@ untrusted text stay. The browser-only defences change:*
 - **Over an ssh tunnel:** attach shows the local command to run instead.
 
 ## 8. Profile and CLI
+
+*Amended 2026-10-11: `sindri` starts the control plane and this app (§17.29.1), so `sindri dashboard` and its port
+become part of that process's API settings; `sindri open <item>` is added (§17.29.3).*
 
 **Profile keys (new):**
 - `dashboard.port` (default 7190);
