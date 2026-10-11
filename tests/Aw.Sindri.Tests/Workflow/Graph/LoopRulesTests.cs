@@ -45,6 +45,50 @@ public sealed class LoopRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_cycle_of_step_transitions_with_no_looped_state_is_refused()
+    {
+        // workflow.step without 'loop: revisions': produce -> checks -> produce runs without a round cap.
+        var recipe = Of(
+            "produce",
+            [("produce", Active()), ("checks", Active()), ("done", Terminal())],
+            [Go("produce", "checks"), Go("checks", "produce"), Go("checks", "done")]);
+
+        Assert.Equal(
+            ["RCP-LOOP-001: the cycle through 'produce', 'checks' has no loop cap at r.yaml:1:1 (states.produce); add loop: <name> to one of its states and declare the loop under loops with a cap"],
+            Lines(recipe));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_state_that_retries_itself_on_failure_without_a_loop_is_refused()
+    {
+        var recipe = Of(
+            "produce",
+            [("produce", Active()), ("done", Terminal())],
+            [Go("produce", "done"), Go("produce", "produce", "step.failed")]);
+
+        Assert.Equal(
+            ["RCP-LOOP-001: the cycle through 'produce' has no loop cap at r.yaml:1:1 (states.produce); add loop: <name> to one of its states and declare the loop under loops with a cap"],
+            Lines(recipe));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_cycle_closed_by_a_command_or_through_a_looped_state_is_capped()
+    {
+        var byCommand = Of(
+            "produce",
+            [("produce", Active()), ("checks", Active()), ("done", Terminal())],
+            [Go("produce", "checks"), Go("checks", "produce", "command.retry"), Go("checks", "done")]);
+        var looped = Of(
+            "produce",
+            [("produce", Active(loop: "revisions")), ("checks", Active()), ("done", Terminal())],
+            [Go("produce", "checks"), Go("checks", "produce"), Go("checks", "done")],
+            _revisions);
+
+        Assert.Empty(Lines(byCommand));
+        Assert.Empty(Lines(looped));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_looped_state_that_is_not_on_a_cycle_is_refused()
     {
         // The recipe of invalid/RCP-LOOP-002.yaml: nothing leads back into 'produce'.

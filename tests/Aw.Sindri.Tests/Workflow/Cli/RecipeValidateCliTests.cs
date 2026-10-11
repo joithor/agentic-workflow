@@ -151,6 +151,15 @@ public sealed class RecipeValidateCliTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Cancellation_passes_through_the_tool_error_boundary()
+    {
+        var file = PutShipped("workflow.step");
+
+        _ = await Assert.ThrowsAsync<OperationCanceledException>(
+            () => RunWith(static services => services.AddSingleton<IRecipeReader, CancelledReader>(), "validate", file));
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Eval_says_it_arrives_with_P3_and_exits_2()
     {
         var run = await Run("eval", PutShipped("workflow.step"));
@@ -221,6 +230,11 @@ public sealed class RecipeValidateCliTests : IDisposable
     private sealed class ThrowingReader : IRecipeReader
     {
         public RecipeReading Read(string text, string file) => throw new InvalidOperationException("the reader broke");
+    }
+
+    private sealed class CancelledReader : IRecipeReader
+    {
+        public RecipeReading Read(string text, string file) => throw new OperationCanceledException("cancelled");
     }
 
     private sealed record CliRun(string Command, int Exit, string Stdout, string Stderr)

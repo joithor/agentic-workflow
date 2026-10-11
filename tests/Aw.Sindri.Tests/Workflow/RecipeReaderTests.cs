@@ -77,6 +77,11 @@ public sealed class RecipeReaderTests
         Assert.Equal(18446744073709551615d, with["b"].Literal!.Value.GetDouble());
         Assert.Equal(16, with["c"].Literal!.Value.GetInt32());
         Assert.Equal(15, with["d"].Literal!.Value.GetInt32());
+
+        var edge = Bind(Minimal.Replace("step: step.produce", "step: { use: step.produce, with: { a: 0x7FFFFFFFFFFFFFFF, b: 0x8000000000000000 } }", StringComparison.Ordinal))
+            .States["produce"].Step!.With;
+        Assert.Equal(long.MaxValue, edge["a"].Literal!.Value.GetInt64());
+        Assert.Equal(9223372036854775808d, edge["b"].Literal!.Value.GetDouble());
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -91,6 +96,52 @@ public sealed class RecipeReaderTests
         var lines = Lines(Minimal.Replace(from, to, StringComparison.Ordinal));
 
         Assert.Contains(line, lines, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_reader_finding_doesnt_hide_the_schema_errors_found_after_binding()
+    {
+        var yaml = Minimal
+            .Replace("    next: \"Produce the Step output.\"\n", string.Empty, StringComparison.Ordinal)
+            .Replace("to: done", "to: nowhere", StringComparison.Ordinal)
+            + "colour: blue\n";
+
+        var lines = Lines(yaml);
+
+        Assert.Equal(
+            [
+                "RCP-SCHEMA-001: 'colour' isn't a field of the recipe at test.yaml:15:1 (colour); remove it; the recipe has schema, id, version, description, base, inputs, initial, states, transitions, loops, budget, evals, hash",
+                "RCP-SCHEMA-001: active state 'produce' has no 'next' at test.yaml:6:3 (states.produce.next); an active state has step, timeout and next, and may have loop and budget",
+                "RCP-SCHEMA-002: transition to 'nowhere' names a state the recipe doesn't declare at test.yaml:14:32 (transitions[0].to); name one of the recipe's states: produce, done",
+            ],
+            lines);
+        Assert.Null(Reader.Read(yaml, "test.yaml").Document);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_refused_value_isnt_reported_again_as_missing_by_the_schema_rules()
+    {
+        var lines = Lines(Minimal.Replace("next: \"Produce the Step output.\"", "next: [a, b]", StringComparison.Ordinal) + "colour: blue\n");
+
+        Assert.Equal(2, lines.Count);
+        Assert.StartsWith("RCP-SCHEMA-002: 'next' is written as a list at test.yaml:10:5 (states.produce.next)", lines[0], StringComparison.Ordinal);
+        Assert.StartsWith("RCP-SCHEMA-001: 'colour' isn't a field of the recipe", lines[1], StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(".inf")]
+    [InlineData("-.inf")]
+    [InlineData(".nan")]
+    [InlineData("1e999")]
+    [InlineData("0x1FFFFFFFFFFFFFFFF")]
+    [InlineData("0o2000000000000000000000")]
+    public void A_number_JSON_cant_hold_is_RCP_SCHEMA_002_as_written(string number)
+    {
+        var lines = Lines(Minimal.Replace("step: step.produce", "step: { use: step.produce, with: { a: " + number + " } }", StringComparison.Ordinal));
+
+        Assert.Equal(
+            [$"RCP-SCHEMA-002: '{number}' is a number JSON can't hold at test.yaml:8:40 (states.produce.step.with.a); write a finite number, or quote it to make it text"],
+            lines);
     }
 
     [Fact, Trait("Lane", "unit")]
