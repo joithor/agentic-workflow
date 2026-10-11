@@ -478,6 +478,64 @@ csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" tests/Aw.KTest.Testing/A
 csproj "$d" tests/Aw.Beta.Tests/Aw.Beta.Tests.csproj ../Aw.KTest.Testing/Aw.KTest.Testing.csproj; run "$d"
 expect "a test-support package under tests/ makes its own edges current and is usable by any test code" 0 "deps: ok"
 
+# ---- the compose edge kind (context spec §4, stage S-1C): a Host calls a lower package's Add…() methods ----
+exc() { # exc <dir> <subject> [edge] — a DEPS-FANOUT-001 exception, attached to the project edge to <edge> when given
+  local extra=""; [ -z "${3:-}" ] || extra="\n    edge: $3"
+  perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: $2$extra\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$1/deps.yaml"
+}
+composed() { # composed <name> — Beta reaches Alpha by project (current) and compose (current); Alpha has every layer
+  local d; d="$(fixture "$1")"
+  perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"
+  edge "$d" Beta Alpha project current; edge "$d" Beta Alpha compose current
+  csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj
+  for p in Core Features Infrastructure; do csproj "$d" "src/Alpha/Aw.Alpha.$p/Aw.Alpha.$p.csproj"; done
+  csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj
+  csproj "$d" src/Beta/Aw.Beta.Host/Aw.Beta.Host.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj \
+    ../../Alpha/Aw.Alpha.Features/Aw.Alpha.Features.csproj ../../Alpha/Aw.Alpha.Infrastructure/Aw.Alpha.Infrastructure.csproj
+  echo "$d"
+}
+
+d="$(fixture compose-planned)"; edge "$d" Beta Alpha project planned; edge "$d" Beta Alpha compose planned; run "$d" --mermaid
+expect "a planned compose edge beside a project edge passes and is drawn" 0 "deps: ok" "Beta -->|compose| Alpha"
+
+d="$(fixture compose-alone)"; edge "$d" Beta Alpha compose planned; run "$d"
+expect "a compose edge without a project edge to the same package fails" 1 "DEPS-COMPOSE-001" "Beta -> Alpha (compose)" "no project edge" "fix:"
+
+d="$(fixture compose-up)"; edge "$d" Alpha Beta compose planned; run "$d"
+expect "a compose edge points down the tiers" 1 "DEPS-TIER-001" "compose edge does not point to a lower tier" "Alpha (tier 1) -> Beta (tier 2)"
+
+d="$(fixture compose-shell)"; edge "$d" Hooks Alpha compose planned; run "$d"
+expect "a compose edge from a shell node fails" 1 "DEPS-KIND-001" "Hooks -> Alpha (compose)"
+
+d="$(composed compose-good)"; run "$d"
+expect "a Host may reference a compose target's Features and Infrastructure" 0 "deps: ok"
+
+d="$(composed compose-undeclared)"; perl -0pi -e 's/  - from: Beta\n    to: Alpha\n    kind: compose\n    status: current\n    note: added by test\n//' "$d/deps.yaml"; run "$d"
+expect "a Host reference into another package's Features without a compose edge fails" 1 "DEPS-COMPOSE-001" "Aw.Beta.Host -> Aw.Alpha.Features" "Aw.Beta.Host -> Aw.Alpha.Infrastructure" "kind: compose"
+refuse "the Host's undeclared compose reference is not also DEPS-PROJ-007" "DEPS-PROJ-007"
+
+d="$(composed compose-features)"
+csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj ../../Alpha/Aw.Alpha.Features/Aw.Alpha.Features.csproj; run "$d"
+expect "the compose carve-out is for the Host only" 1 "DEPS-PROJ-007" "Aw.Beta.Features -> Aw.Alpha.Features"
+
+d="$(composed compose-stale)"; csproj "$d" src/Beta/Aw.Beta.Host/Aw.Beta.Host.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj; run "$d"
+expect "a current compose edge with no Host reference into Features or Infrastructure is stale" 1 "DEPS-STALE-001" "Beta -> Alpha (compose)"
+
+d="$(composed compose-early)"; perl -0pi -e 's/kind: compose\n    status: current/kind: compose\n    status: planned/' "$d/deps.yaml"; run "$d"
+expect "a planned compose edge the Host already uses fails" 1 "DEPS-STALE-002" "Beta -> Alpha (compose)"
+
+d="$(fixture fanout-attached)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned; exc "$d" Beta Alpha; run "$d"
+expect "a fan-out exception attached to the project edge that tips it over passes" 0 "deps: ok" "exception DEPS-FANOUT-001 Beta"
+
+d="$(fixture fanout-attached-missing)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned; exc "$d" Beta Delta; run "$d"
+expect "an exception attached to an edge that isn't declared fails" 1 "DEPS-EXC-004" "Beta -> Delta (project)"
+
+d="$(fixture fanout-attached-wide)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned; edge "$d" Beta Delta project planned; exc "$d" Beta Alpha; run "$d"
+expect "an attached exception covers its one edge, not a wider fan-out" 1 "DEPS-FANOUT-001" "Beta has 3 project edges"
+
+d="$(fixture fanout-attached-rule)"; perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-002\n    subject: Beta\n    edge: Alpha\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
+expect "only a DEPS-FANOUT-001 exception is attached to an edge" 1 "DEPS-SCHEMA-001" "edge"
+
 # ---- parser, validator and schema drift (node unit table) ----
 set +e; UNIT="$(node "$HERE/check-deps.unit.mjs" 2>&1)"; UCODE=$?; set -e
 if [ "$UCODE" = 0 ]; then ok "parser/validator unit table ($(printf '%s' "$UNIT" | tail -1))"; else fail "parser/validator unit table"; printf '%s\n' "$UNIT" | sed 's/^/       | /'; fi
