@@ -1,11 +1,13 @@
 using Aw.Evidence.Core.Files;
 using Aw.Evidence.Core.Guard;
+using Aw.Evidence.Core.Images;
 using Aw.Evidence.Core.Judging;
 using Aw.Evidence.Core.Locks;
 using Aw.Evidence.Core.Stack;
 using Aw.Evidence.Core.Visual;
 using Aw.Evidence.Infrastructure.Files;
 using Aw.Evidence.Infrastructure.Guard;
+using Aw.Evidence.Infrastructure.Images;
 using Aw.Evidence.Infrastructure.Judging;
 using Aw.Evidence.Infrastructure.Locks;
 using Aw.Evidence.Infrastructure.Stack;
@@ -33,6 +35,7 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
             .AddSingleton(settings)
             .AddSingleton<IMachineLocks>(static sp => new DirectoryLocks(sp.GetRequiredService<EvidenceSettings>(), sp.GetRequiredService<TimeProvider>(), Console.Error))
             .AddSingleton<IRunFiles, FileRunFiles>()
+            .AddSingleton<IImageCodec, PngCodec>()
             .AddSingleton<IVerdictCacheStore, FileVerdictCacheStore>()
             .AddSingleton<IStackProbe>(static _ => new ProcessStackProbe("docker"))
             .AddSingleton<IProvenanceQuery>(new DockerPsqlProvenance("docker"))
