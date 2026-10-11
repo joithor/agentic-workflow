@@ -106,7 +106,7 @@ empty one) gets the builder root written again, holding the new factory.
 ## `--slice-only`
 
 For slices scaffolded into one package in parallel branches (the Sindri API spec, C7 and §12). The generator writes
-only what belongs to the slice, plus the slice's own lines in three shared files:
+only what belongs to the slice:
 
 - the slice folder, the red test, the request builder;
 - new ids (`Core/Ids/<Id>.cs`, `<Id>Tests.cs`, `<Id>Holder.cs`) and a `<Id>RouteBindingTests.cs` for each route id that
@@ -116,7 +116,9 @@ only what belongs to the slice, plus the slice's own lines in three shared files
   and each project's `PublicAPI.Unshipped.txt` (from the build's `RS0016` output, as above).
 
 Parallel branches append at the same anchors in those three files, so merging them gives adjacent-line conflicts. The
-integrator resolves them by keeping both sides (the spec's "Parallel delivery").
+integrator resolves them by keeping both sides (the spec's "Parallel delivery"), deduplicating a line both branches
+added: two slices that declare the same new id each add its `[JsonSerializable]` and PublicAPI lines, and a duplicate
+PublicAPI line fails the build. An id more than one slice needs belongs in the contract unit.
 
 It leaves out the registration, the `CommandTable` arm or `EndpointTable` call, the `<Pkg>JsonContext` lines, and
 the surface files (`Endpoints/<Slice>Endpoint.cs`, `Endpoints/<Slice>Body.cs`, `Commands/<Slice>Command.cs`). After
@@ -129,10 +131,15 @@ unused internal type) is an error, so both carry a `[SuppressMessage]` for it wi
 remove it with the registration.
 
 `--slice-only` creates no shared file. A missing `A.cs`, or a missing `IdsJsonContext.cs` when the slice adds an id,
-is refused with `NS-SLICE-ONLY` (the normal mode writes them; with `--slice-only` the phase's contract unit owns
-them). Journal guards refuse any other edit to an existing file and any new file that isn't the slice's own, so a new
-code path can't slip one in. A new `Guid` or `int` id when `Core`'s csproj lacks the `RS0041` NoWarn is refused too.
-Fix: add it in the phase's contract unit, or run without `--slice-only`. Everything written is reverted.
+is refused with `NS-SLICE-ONLY`. Journal guards refuse any other edit to an existing file and any new file that isn't
+the slice's own, so a new code path can't slip one in. A new `Guid` or `int` id when `Core`'s csproj lacks the
+`RS0041` NoWarn is refused too. Fix: add it in the phase's contract unit, or run without `--slice-only`. Everything
+written is reverted.
+
+The normal mode writes a missing `A.cs` or `IdsJsonContext.cs`. With `--slice-only`, the phase's contract unit adds
+them instead. It writes `A.cs` from the builder-root template (a `public static class A` with an empty body,
+`internal` in the small shape). It writes an `IdsJsonContext.cs` with at least one `[JsonSerializable]` holder,
+because a context with none doesn't compile (`CS0534`). Running one slice in the normal mode also adds both.
 
 Without `--files-only` it runs the same checks as the normal mode, under the heavy-job lock. With it, it writes the
 files only (the unit tests).
