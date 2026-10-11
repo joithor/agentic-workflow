@@ -65,6 +65,17 @@ public sealed class SetConfigCliTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Config_set_refuses_a_mistyped_question_and_writes_nothing()
+    {
+        var run = await new JudgeCli(_state).Run("config", "set", "wake-gat", "enabled", "false");
+
+        Assert.Equal(1, run.ExitCode);
+        Assert.StartsWith("unknown question: wake-gat (known: ", run.Stderr, StringComparison.Ordinal);
+        Assert.Contains("wake-gate", run.Stderr, StringComparison.Ordinal);
+        Assert.False(File.Exists(ConfigFile));
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Config_set_refuses_a_threshold_outside_0_to_1()
     {
         var run = await new JudgeCli(_state).Run("config", "set", "wake-gate", "threshold", "1.5");

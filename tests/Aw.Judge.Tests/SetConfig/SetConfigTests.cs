@@ -66,10 +66,19 @@ public sealed class SetConfigTests
     {
         var validator = new SetConfigValidator();
 
-        Assert.True(validator.Validate(new SetConfigRequest("q", Enabled: true)).IsSuccess);
+        Assert.True(validator.Validate(new SetConfigRequest("wake-gate", Enabled: true)).IsSuccess);
         Assert.True(validator.Validate(new SetConfigRequest("", Enabled: true)).IsError);
-        Assert.True(validator.Validate(new SetConfigRequest("q")).IsError);
-        Assert.True(validator.Validate(new SetConfigRequest("q", Enabled: true, Threshold: 0.5)).IsError);
+        Assert.True(validator.Validate(new SetConfigRequest("wake-gate")).IsError);
+        Assert.True(validator.Validate(new SetConfigRequest("wake-gate", Enabled: true, Threshold: 0.5)).IsError);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_validator_refuses_a_question_the_judge_doesnt_have()
+    {
+        var result = new SetConfigValidator().Validate(new SetConfigRequest("wake-gat", Enabled: false));
+
+        Assert.Equal(JudgeErrors.Invalid.Code, result.Error.Code);
+        Assert.StartsWith("unknown question: wake-gat (known: ", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
