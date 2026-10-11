@@ -1540,3 +1540,7 @@ Aw.Evidence.Core.Scripts.KindFirstConverter
 Aw.Evidence.Core.Scripts.KindFirstConverter.KindFirstConverter() -> void
 override Aw.Evidence.Core.Scripts.KindFirstConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Evidence.Core.Scripts.ExpectedState?
 override Aw.Evidence.Core.Scripts.KindFirstConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Evidence.Core.Scripts.ExpectedState! value, System.Text.Json.JsonSerializerOptions! options) -> void
+Aw.Evidence.Core.Browser.IBrowserInstaller
+Aw.Evidence.Core.Browser.IBrowserInstaller.InstallAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+static readonly Aw.Evidence.Core.EvidenceErrors.RunFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Evidence.Core.EvidenceErrors.PublishRefused -> Aw.Kernel.ErrorDefinition!

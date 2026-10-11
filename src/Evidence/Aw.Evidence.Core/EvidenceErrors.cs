@@ -47,10 +47,16 @@ public static class EvidenceErrors
     /// <summary>AW-EVIDENCE-014: a stack probe failed (page, database or port).</summary>
     public static readonly ErrorDefinition ProbeFailed = new("AW-EVIDENCE-014", ErrorKind.Unavailable, "Stack probe failed");
 
+    /// <summary>AW-EVIDENCE-015: the run itself errored after it started (browser crash, anchor missing, region outside the viewport).</summary>
+    public static readonly ErrorDefinition RunFailed = new("AW-EVIDENCE-015", ErrorKind.Unavailable, "Run failed");
+
+    /// <summary>AW-EVIDENCE-016: publishing is refused (data provenance unknown: evidence stays local).</summary>
+    public static readonly ErrorDefinition PublishRefused = new("AW-EVIDENCE-016", ErrorKind.Forbidden, "Publish refused");
+
     /// <summary>Every Evidence error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         Invalid, ScriptInvalid, ManifestInvalid, HostRefused, StepsRefused, CredentialsMissing, RegionOutside,
-        SizeMismatch, LockBusy, FileNotFound, FileUnavailable, ImageInvalid, BrowserFailed, ProbeFailed,
+        SizeMismatch, LockBusy, FileNotFound, FileUnavailable, ImageInvalid, BrowserFailed, ProbeFailed, RunFailed, PublishRefused,
     ];
 }
