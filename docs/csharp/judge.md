@@ -50,8 +50,14 @@ Everything the judge reads or writes as JSON goes through the Kernel `AwJson` pr
 - stdin is deserialized into the command's input record (`BriefInput` for `brief save`); any failure, syntax, shape or
   an id past its 4,096-character cap, is exit 1 with one line `invalid input: <reason>`. A question's stdin is
   deserialized by the evaluator into the question's input record (Questions below); any failure, an object that
-  repeats a key, or a required text that is blank, is the `invalid-input` escalation, recorded like any other (text
-  that isn't well-formed JSON is stored as one JSON string);
+  repeats a key, an escape that isn't valid UTF-16 (a lone surrogate such as `\ud800`, in a value, an unknown field
+  or a key), or a required text that is blank, is the `invalid-input` escalation, recorded like any other (text that
+  can't be read and written back as JSON, `InputJson.TryParse`, is stored as one JSON string). The row of an
+  escalation that comes after the input validated (`below-threshold`, `no-provider-decided`, `rule-timeout`) stores
+  the input record, its declared fields only, as a decided row does; before that (`question-disabled`,
+  `invalid-input`) it stores what the caller sent. Either way the stored input is redacted: every string and key is
+  scrubbed, and a field whose name says it holds a secret (`IRedactor.IsSecretName`: `client_secret`, `apiKey`,
+  `password`) has its whole value replaced, then capped;
 - `config.json` is deserialized into `JudgeConfig` and then checked (`JudgeConfigParser`);
 - the JSON columns `decisions.skipped` (a list of `{provider, reason}`) and `decision_details.probabilities` (option
   → probability) are the typed values, serialized through the same options.
@@ -165,7 +171,7 @@ decides or escalates, and before its envelope is written, the judge prunes old d
 | `resolution-check` | `{brief, expected, actual, rootCause, checkKind, checkSummary, beforePassed, afterPassed, diffStat, diff?}`, `checkKind` `ui-evidence` or `test`; a blank `brief` is invalid input | `resolved`, `partial`, `unresolved` (+ `reasons`) | brief | 0.8 | 15 s | the check fails after the fix, or already passed before it → `unresolved` | none |
 | `turn-progress` | `{problem, turnDiff, acceptanceCriteria?, priorDiffStat?, signals?}` (the last three default to empty); a blank `problem` is invalid input | `progressing`, `stalled`, `regressing`, `off-target` | diff | 0.7 | 10 s | a blank `turnDiff` → `stalled` | none |
 | `ui-element-repair` | `{brokenSelector, step, candidates: [{index, role, accessibleName, testId, text}]}` (the four strings may be null) | `repaired` (+ `chosenIndex`), `no-good-candidate` | code | 0.6 | 10 s | no candidates → `no-good-candidate` | none |
-| `visual-critique` | `{afterScreenshot, evidenceDir, baselineScreenshot?}`; `evidenceDir` absolute and each screenshot a relative path that stays inside it (no `..`, no control character), else `invalid-input`; the prompt carries each path on one line, capped | `looks-right`, `looks-off`, `sloppy` (+ `reasons`) | image | 0.5 | 20 s | none: judging the screenshot is the question | none |
+| `visual-critique` | `{afterScreenshot, evidenceDir, baselineScreenshot?}`; `evidenceDir` absolute and each screenshot a relative path that stays inside it (no `..`), none with a control character or a line or paragraph separator (U+2028, U+2029), else `invalid-input`; the prompt carries each path on one line, capped | `looks-right`, `looks-off`, `sloppy` (+ `reasons`) | image | 0.5 | 20 s | none: judging the screenshot is the question | none |
 
 The input names of `wake-gate`, `brief-scope` and `ask-check` are hook contract; the other five are the C# judge's own
 design (their tier-2 callers are ported to this contract). Prompts carry untrusted text (a ticket, a diff, a problem
@@ -222,8 +228,10 @@ exits at once) and without the judge's own secrets' variables (`SecretNames.Vari
 deleted afterwards. The model sees the question's prompt and nothing else: every prompt already carries the input's
 fields (capped and with their delimiter tags defused, `UntrustedText`), so the raw input record is never sent. claude
 and codex read the prompt on standard input, so no input size can hit the system's argument limit; cursor-agent takes
-it as an argument, capped at 30,000 characters (under Linux's 128 KiB per argument; for an image question that
-includes the screenshot paths, which get at most 4,000). The answer schema is the question's outputs as the decision's enum, plus
+it as an argument (its `-p` has no documented standard-input mode, and the TS provider passed it the same way),
+redacted first like Jev's prompt (argv is readable by any local user through `ps` and `/proc/<pid>/cmdline`, and
+process auditing records it), then capped at 30,000 characters (under Linux's 128 KiB per argument; for an image
+question that includes the screenshot paths, each one line, which get at most 4,000). The answer schema is the question's outputs as the decision's enum, plus
 its extra properties. All three read images, so all three cover every content class.
 
 | Provider | Binary and model | Isolation | Schema and answer |
@@ -242,10 +250,12 @@ undeclared fields dropped.
 `POST https://api.typesafe.ai/v1/systemone` with `{state: <input, redacted and capped like the stored input>, model: "jev-1.13.0", questions: {decision:
 {type: "choice", instructions: <prompt, redacted and capped>, criteria: {<output>: <criterion or the output>}}}}` and
 `Authorization: Bearer <key>`; text classes only. The key comes from `ISecretSource` (`TYPESAFE_API_KEY`, else the
-keychain). Jev is the one provider that sends the input to a third party on the judge's own key, so `JevProvider`
+keychain), read inside the question's budget: a keychain that sits on its unlock prompt ends as `timeout`, not as
+latency added in front of the call. Jev is the one provider that sends the input to a third party on the judge's own key, so `JevProvider`
 redacts (then caps at `InputCap.MaxChars`) both the state and the prompt, which embeds input fields word for word
-(ask-check's transcript tail, a rule-check hunk, a brief's proof command). The agent CLIs get the prompt as built:
-they run on the user's own model logins, the same place the agent's session already sends that text.
+(ask-check's transcript tail, a rule-check hunk, a brief's proof command). claude and codex get the prompt as built,
+on standard input: they run on the user's own model logins, the same place the agent's session already sends that
+text. cursor-agent gets it redacted, because its prompt is an argument (The agent CLIs above).
 The answer's `choice`, `confidence` (1.0 when absent) and `probabilities` become the decision.
 
 ### Rules
@@ -292,8 +302,10 @@ cancellation it kills the whole process tree (`Process.Kill(entireProcessTree: t
 streams get a 2 s grace to finish, not the rest of the budget: a background child the program left holding its pipes
 can't turn a finished run into a timeout. That child isn't stopped (it left the program's tree when the program
 exited; reaping it would need its own process group). A program that isn't installed (not found, or the system says the file is
-gone, `ENOENT`) is `NotStarted`; any other refusal to start (`E2BIG`, `ENOEXEC`, `EACCES`) is `FailedToStart`, with
-the system's message as standard error. Neither is an exception.
+gone, `ENOENT`, and the file really is gone) is `NotStarted`; any other refusal to start (`E2BIG`, `ENOEXEC`, `EACCES`)
+is `FailedToStart`, with the system's message as standard error, and so is a working directory that doesn't exist (an
+image question's `evidenceDir` that isn't there): Unix reports that failed `chdir` as `ENOENT` too, but the program is
+installed, so it is a `spawn-failed` failure row, never `not-installed`. Neither is an exception.
 
 `KeychainSecretSource` reads a secret's variable; when it is unset or empty it runs `security find-generic-password
 -s agentic-workflow-typesafe -a TYPESAFE_API_KEY -w` (5 s timeout). A missing entry, a missing `security` (not macOS)
