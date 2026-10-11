@@ -29,7 +29,7 @@ public sealed class SchedulerHostTests
         await AdvanceUntil(() => Heartbeats() >= 3);   // 1 s steps: a step can land before the scheduler re-arms its delay
         await scheduler.StopAsync(Token);
 
-        var slots = _h.Store.Events.Where(e => e.Envelope.Type == EventTypes.Heartbeat)
+        var slots = _h.Store.Events.Where(e => e.Envelope.Type == EventTypes.ServiceRun(HeartbeatService.ServiceId))
             .Select(e => JsonDocument.Parse(e.Envelope.Payload).RootElement.GetProperty("slot").GetDateTimeOffset())
             .Take(3).ToList();
         var start = slots[0];
@@ -79,7 +79,7 @@ public sealed class SchedulerHostTests
         }
     }
 
-    private int Heartbeats() => _h.Store.Events.Count(e => e.Envelope.Type == EventTypes.Heartbeat);
+    private int Heartbeats() => _h.Store.Events.Count(e => e.Envelope.Type == EventTypes.ServiceRun(HeartbeatService.ServiceId));
 
     private ServiceProvider Services() => new ServiceCollection()
         .AddSingleton<ILedgerStore>(_h.Store)

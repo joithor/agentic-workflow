@@ -1,4 +1,3 @@
-using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.RecordHeartbeat;
@@ -52,6 +51,6 @@ public sealed class GetStatusTests
 
         Assert.True(status.Profile.ChangedSinceApproval);
         Assert.Equal("5s", Assert.Single(status.Services).Every);
-        Assert.Equal(EventTypes.Heartbeat, "service." + Assert.Single(status.Services).Name.Value);
+        Assert.Equal(HeartbeatService.ServiceId, Assert.Single(status.Services).Name);
     }
 }

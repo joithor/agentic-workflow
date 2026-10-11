@@ -2,9 +2,8 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Scheduling;
-using Aw.Sindri.Features.RecordHeartbeat;
 
-namespace Aw.Sindri.Host.Server;
+namespace Aw.Sindri.Features.RecordHeartbeat;
 
 /// <summary>The heartbeat: S1's one background service, proving the scheduler. It records 'service.heartbeat' per slot.</summary>
 internal sealed class HeartbeatService(IService<RecordHeartbeatRequest, RecordHeartbeatResponse> record) : IScheduledService

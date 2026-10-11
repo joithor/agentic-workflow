@@ -512,7 +512,6 @@ Aw.Sindri.Core.Lease.HeldLease.Clear() -> void
 Aw.Sindri.Core.Lease.HeldLease.Current.get -> Aw.Sindri.Core.Lease.LeaseGrant?
 Aw.Sindri.Core.Lease.HeldLease.HeldLease() -> void
 Aw.Sindri.Core.Lease.HeldLease.Hold(Aw.Sindri.Core.Lease.LeaseGrant! grant) -> void
-const Aw.Sindri.Core.Events.EventTypes.Heartbeat = "service.heartbeat" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ProcessStarted = "process.started" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ProcessStopped = "process.stopped" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ProfileApproved = "profile.approved" -> string!
@@ -555,3 +554,4 @@ static Aw.Sindri.Core.Events.ProfileApproved.operator ==(Aw.Sindri.Core.Events.P
 static readonly Aw.Sindri.Core.SindriErrors.PortInUse -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Events.EventFactory.Payload<TPayload>(Aw.Sindri.Core.Ledger.LedgerEvent! recorded) -> Aw.Kernel.Result<TPayload>!
 static readonly Aw.Sindri.Core.Lease.LeaseDecision.StartTolerance -> System.TimeSpan
+static Aw.Sindri.Core.Events.EventTypes.ServiceRun(Aw.Sindri.Core.Ids.ServiceName service) -> string!
