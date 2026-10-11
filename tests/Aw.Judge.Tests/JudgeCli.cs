@@ -2,7 +2,6 @@ using Aw.Judge.Core.Ports;
 using Aw.Judge.Host;
 using Aw.Judge.Host.Commands;
 using Aw.Judge.Testing;
-using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -39,7 +38,7 @@ public sealed class JudgeCli(TempStateDirectory state)
         await using (provider)
         {
             var capture = CommandOutput.Capture(stdin);
-            var code = await CommandTable.Run(args, provider, AwJson.CreateOptions(JudgeJsonContext.Default));
+            var code = await CommandTable.Run(args, provider);
             return new CliRun(code, capture.Stdout.ToString(), capture.Stderr.ToString());
         }
     }

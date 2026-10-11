@@ -18,8 +18,10 @@ internal static class CommandTable
     // The first words the switch routes; any other is a question.
     private static readonly FrozenSet<string> _routed = FrozenSet.Create(StringComparer.Ordinal, GetHealthCommand.Name, BriefCommands.Name, ExplainDecisionCommand.Name, UndoDecisionCommand.Name, ApproveDecisionCommand.Name, ConfigCommands.Name);
 
-    internal static async Task<int> Run(string[] argv, IServiceProvider provider, JsonSerializerOptions json)
+    // The commands use the one AwJson options instance Compose registers, the same the adapters get.
+    internal static async Task<int> Run(string[] argv, IServiceProvider provider)
     {
+        var json = provider.GetRequiredService<JsonSerializerOptions>();
         var (args, flag) = ProvidersFlag.Take(argv);
         if (args is null)
         {
