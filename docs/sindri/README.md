@@ -78,7 +78,7 @@ Not a module-by-module port of `sindri/` (A §17.29.4):
 
 ### Cross-spec reconciliation (settle before building further)
 
-Where the API (API), workflow engine (WF), context retrieval (CTX) and UI app design specs disagree. The UI spec (§13) recommends answers for X2, X5, X15 and X17 and adds X18–X25. Each row names the recommended answer and the spec that changes. Every row is the owner's call; none is decided by this list.
+Where the API (API), workflow engine (WF), context retrieval (CTX) and UI app design specs disagree. The UI spec (§13) recommends answers for X2, X5, X15 and X17 and adds X18–X26. Each row names the recommended answer and the spec that changes. Every row is the owner's call; none is decided by this list.
 
 | # | Where they differ | Recommended answer | Changes |
 |---|---|---|---|
@@ -107,6 +107,7 @@ Where the API (API), workflow engine (WF), context retrieval (CTX) and UI app de
 | X23 | **The engine's nonce mint is a POST that appends nothing**, against `ARCH-CQRS-001` | A tested carve-out, or a catalog row with the class of the command it serves | WF §5.4; API §2.5 |
 | X24 | **The dashboard's "every agent" goal is deferred** by the UI spec | Agents is the first view after the collector spec | API §11; DB §1 |
 | X25 | **API §5.1 and WF §6.2 still describe the old UI role** (the app notifying; a read-only `ui` actor) | Per X2 and X5 as settled in the UI spec §13 | API §5.1; WF §6.2 |
+| X26 | **Golden JSON for the UI's contract tests.** The UI spec's E-17 needs every API phase to write per-route, per-scenario goldens; the API spec's §12 doesn't say so | Add E-17 to API §12 before P1's contract unit; U1 back-fills merged phases | API §12 |
 
 ## Today: the TypeScript reference (`sindri/`)
 

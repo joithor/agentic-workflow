@@ -1,8 +1,8 @@
 # Sindri UI app design: the control plane's views, actions and launching sessions
 
 Status:
-- Draft, 2026-10-11; revision 4 after three `/autoplan` passes (pass 1: five lenses NEEDS_WORK, no CRITICAL; pass 2:
-  product, design and devex PASS, one shared HIGH fixed; pass 3: all five PASS). §17 lists
+- Draft, 2026-10-11; revision 5 after four `/autoplan` passes (pass 1: five lenses NEEDS_WORK, no CRITICAL; pass 2:
+  product, design and devex PASS, one shared HIGH fixed; passes 3 and 4: all five PASS). §17 lists
   every finding and its resolution.
 - The two taste calls DESIGN.md and the specs don't settle were made by the owner on 2026-10-11 from three mocked
   variants (`shotgun/contact-sheet.html`): the **single-glance home** layout (§3.1) and the attention colour
@@ -63,7 +63,8 @@ the fixture ledger (§18.2), a fresh observer answers the four questions from on
 **How we know it works** (read from the ledger, so nothing new is collected): the launch success rate
 (`launch.started` over all launch outcomes), the median time from a needs-you row appearing to its clearing, and the
 share of decisions and answers made from the app (`human:ui`) versus the CLI (`human:cli`). Until a view owns them, the owner reads them
-from the ledger (`sindri ledger --type launch.*`); the **Today** view (§10.2, after the collector spec) is their home.
+from the ledger (`sindri ledger --type 'launch.*'` for launches; needs-you rows' `since` against their clearing events, and
+`decision.recorded` and engine answer events by actor, for the other two); the **Today** view (§10.2, after the collector spec) is their home.
 This spec adds no metric route.
 
 **Rules every screen follows:**
@@ -205,10 +206,10 @@ The default page (§3.2): four panels in a fixed order:
 2. **Running and With you:** one line each: id, title, step, agent, where it runs, since, budget, and its action
    (running rows: **Open ▾** and **Take over**; With-you rows: **Hand back**, and **Attach** once the engine runs).
    Running and Queued each show their own group's `empty` sentence when empty (E-18).
-3. **Queued:** the count and the next five, each with **Open**.
+3. **Queued:** the group's count and its next five items, each with **Open**.
 4. **Sindri health:** the health line (§4.8) as a strip; it opens **Health**.
 
-States: shared (§4.1). Each panel is empty with its own view's `empty` sentence.
+States: shared (§4.1). Each panel is empty with its own group's or view's `empty` sentence (E-18).
 
 ### 4.3 Needs you
 
@@ -324,7 +325,7 @@ and its decision id. **File a request** (`R`, from an item or globally): kind, i
 | Decisions / Requests | `empty` | as above | banner | inline (`SND-ITEM-409` "decided elsewhere" refreshes the row) | S1b panel | full panel |
 | Services / jobs | `empty` | as above | banner | inline (`SND-SVC-404`, `SND-JOB-404`) | S1b panel | full panel |
 | Health | — | as above | its own view shows the stall | — | S1b panel | full panel |
-| Launch flow | — | "Sending to Warp…" | — | §6.6 failure states | S1b panel | full panel |
+| Launch flow | — (no launch yet: **Open in <agent>**; after one: "Sent to Warp <age> ago" and **Open another session**) | "Sending to Warp…" | — | §6.6 failure states | S1b panel | full panel |
 | Context tab (later) | "No results" + `suggestedAnchors` | — | — | `SND-CONTEXT-*` detail; DEGRADED banner | S1b panel | full panel |
 
 ## 5. The needs-you pulse, urgency and badges
@@ -400,6 +401,7 @@ The item's `launch` block (§6.7 E-2) lists the modes the server allows; the app
 | Mode | When the server offers it | Button | What happens | Phase |
 |---|---|---|---|---|
 | **Open** | No launch is `requested` for the item, and the item isn't closed | **Open in <agent>** | A new session in a new Warp tab, in the item's repo (the path from the approved profile's repo entry), seeded with the item id only. The session pulls its state and context through the Sindri MCP server (`sindri_item`, `sindri_item_timeline`, `sindri_pending_decisions`, `sindri_context`). Once the engine runs, opening is a takeover (§6.4) | U6a (before S2, no takeover); U6b adds the takeover |
+| **Open another session** | Before the engine: the server sets `launch.confirm` because a launch for the item started and nothing has taken it over or handed it back | **Open another session** (asks `confirm.reason`) | As Open; the row and sheet show "Sent to Warp <age> ago · <agent> · tab `sindri ITM-…`" from `launch.lastStarted` | U6a |
 | **Attach** | The item is **with you** and a `launch.started` for it has no handback since | **Attach** | Brings Warp to the front and names the tab to look for (`sindri ITM-01JA1`). It starts no process: Sindri can't see inside Warp, so it never guesses that a session ended (never two processes on one session, DB §7). `OpenItem:attach` reaches the engine as a no-op takeover | U6b (needs the engine's `taken-over` state) |
 | **Resume** | A `launch.started` for the item carried a session id (Claude Code always; Codex and Cursor once their ids are known), **and the item was handed back since**. The handback is the human's signal that the session is finished | **Resume <agent> session** (next to **Open new**) | A new Warp tab running the target's resume command; like Open, it is a takeover once the engine runs | U6b (needs the engine's handback) |
 | **Take over** (a running step) | The item is `running` | **Take over** (labelled "pauses automation") | `ApplyCommand:takeover` (`pause`). In the engine phases that exist (WF P1–P7) steps run on the desk runtime, so there is no worker process to stop. When a later engine phase adds a headless worker runtime, it owns stopping the worker and recording `run.stopped`; only then does the server offer **Resume** on that worker's session (X20) | U6b |
@@ -428,14 +430,14 @@ Resume could follow the real session) are later; they need the collector or per-
 **The launcher's recipe (`WarpLauncher`):**
 1. **Build the file with a YAML serializer**, never by concatenation: `sindri-<launchId>.yaml` in Warp's
    launch-configuration folder, mode 0600. One tab, `title: "sindri <item>"`, `cwd: <repo path>` (the only place the
-   path appears). Every id is checked against its pattern (`ITM-…`, `LCH-…`, a UUID) before use.
+   path appears). Every id is checked against its pattern before use (`ITM-…`, `LCH-…`, a UUID for Claude Code session ids, and a per-target pattern in `launch.started`'s schema for Codex and Cursor ids); a non-matching session id drops Resume and falls back to Open.
 2. **One `exec` line, built from a shell-quoted argument list:**
    `AW_SINDRI_CHILD=1 AW_SINDRI_ITEM=<item> AW_SINDRI_LAUNCH=<launchId> <cli> <args…>`, preceded by the guard
    `command -v <cli> >/dev/null 2>&1 || { printf '%s\n' '<cli> not found (SND-LAUNCH-003): <fix>'; exit 127; }`.
    `AW_SINDRI_CHILD=1` is already on the CLI's agent-session list (API §6), so every agent Sindri launches, Codex and
    Cursor included, is a `session` caller whatever its own markers are.
 3. `open "warp://launch/sindri-<launchId>.yaml"` (macOS; `xdg-open` on Linux, `Start-Process` on Windows).
-4. **Cleanup:** delete the file after 60 s, and sweep any `sindri-*.yaml` older than 60 s when the launcher service
+4. **Cleanup:** delete the file 60 s after `launch.started` (U6a's spike records Warp's cold-start read latency and raises this if needed), and sweep any `sindri-*.yaml` older than 60 s when the launcher service
    starts, so an old launch can't be re-run from Warp's palette.
 5. **MCP for the session:** Claude Code gets `--mcp-config <AW_SINDRI_HOME>/launch/mcp-<launchId>.json` (0600,
    written per launch and swept with the YAML file; stdio or HTTP per X8; no token in v0). Codex gets the server through `-c mcp_servers.sindri.*` overrides. Cursor reads only
@@ -456,8 +458,8 @@ absolute path (unverified), from a `sindri` started in a terminal and from one s
   applies it as a trigger of a new kind, `open-request` (X18, §6.7 E-6): applied directly in `Commit` in any state where
   a takeover is allowed, keyed by the ledger fact, actor `service:engine`, causation the request. It's a no-op when the
   instance is already taken over (attach, or a second open). **The launcher opens Warp only after the engine has
-  recorded that takeover** (matched by causation), or at once when the item has no active instance. An instance started while a launch for its item is `requested`
-  or `started` (and not handed back) **starts taken over** (the engine reads the item's open launch in `StartInstance`'s
+  recorded that takeover** (matched by causation), or at once when the item has no active instance. An instance started while a launch for its item is still `requested` (in flight) **starts taken over**, with that
+  request as the takeover's causation (so the failed-launch fold below matches it) (the engine reads the item's open launch in `StartInstance`'s
   `Commit`), so automation never runs beside a session that's opening. If the engine refuses the takeover (the
   instance became terminal), the launch fails with the engine's code. So automation never runs beside the
   new session.
@@ -495,7 +497,7 @@ The launch block shows a failure as a word, the code, `detail` as it is, and one
 | The repo isn't on disk | Probe (the profile repo's path; `git -C <path> rev-parse`) | `SND-LAUNCH-004` | Yes | `git clone …` into the profile path, or fix the path and approve the profile |
 | Warp didn't accept the URI | `open` exit status | `SND-LAUNCH-001` | No | Retry; the CLI command to copy |
 | No session to resume or attach | The launch block | `SND-LAUNCH-006` | Yes: the mode falls back to Open | — |
-| The launch was interrupted (Sindri restarted mid-launch) | Launcher start-up | `SND-LAUNCH-007` | No | Open again (it is never retried on its own) |
+| The launch was interrupted (Sindri restarted mid-launch) | Launcher start-up | `SND-LAUNCH-007` | No | "A Warp tab may have opened: look for `sindri ITM-…` before opening again" (it is never retried on its own) |
 | A launch is already in progress for the item | `OpenItem` | `SND-LAUNCH-008` | Yes: the button reads "Sending to Warp…" | Wait |
 | The launcher never answered | `LaunchView` still `requested` after 15 s | — (app-owned text) | No | "Warp hasn't confirmed: run `sindri doctor`"; the launcher's timer expires the request at 30 s as `SND-LAUNCH-007`, so Warp never opens late |
 | The engine refused the takeover | `launch.failed` with the engine's code | `SND-WF-*` | No | The code's fix |
@@ -509,13 +511,13 @@ takeover.
 
 ### 6.7 The contract the UI needs from `ILauncher` and `OpenItem`, as numbered API edits
 
-`ILauncher` stays API P10's port. E-1…E-11 change API P10; E-12…E-16 are UI-driven edits elsewhere; E-17 (golden JSON for
-the UI's contract tests) is defined in §18.1, which also names the phase each edit lands in.
+`ILauncher` stays API P10's port. E-1…E-11 change API P10; E-12…E-19 are UI-driven edits elsewhere (E-17's detail is in §18.1, which also names the phase
+each edit lands in).
 
 | # | Edit | Why |
 |---|---|---|
-| **E-1** | `OpenItem` becomes asynchronous. Body `{ mode: open\|attach\|resume, target?: claude-code\|codex\|cursor, itemVersion }`; response `LaunchRequested(accepted, LaunchId)`, **replacing** P10's `ItemOpened(accepted, launchedIn)`; variants `OpenItem:open`, `:attach`, `:resume`, all `desk`, `ReadsViews`. The handler decides and appends `item.open-requested {launchId, item, mode, target, chosenBy}` (key `item.open-requested:<launchId>`); it refuses with `SND-LAUNCH-008` while the item has a launch in `requested`. An in-process **launcher hosted service** (caller `service:launcher`) reads the ledger from its own persisted `launcher_cursor`, acts on a request **only if it has no outcome and is under 30 s old**, waits for the engine's takeover when the item has an active instance (E-6) **within the same 30 s deadline**, **re-checks freshness immediately before `ILauncher.Launch`**, launches, and appends `launch.started {launchId, item, target, sessionId?, tabTitle}` or `launch.failed {launchId, code}`, **both under one fact key, `launch.outcome:<launchId>`**, so the first outcome written wins: the launcher writes `launch.started` only if it wins that key (it records the outcome before reporting success to anyone), and an expiry that loses the race to a started launch is dropped. A `FakeTimeProvider` test fires the expiry while `ILauncher.Launch` is running and asserts exactly one outcome. A timer (every 5 s) tries to append `launch.failed SND-LAUNCH-007` (same `launch.outcome` key) for every request with no outcome past its 30 s deadline; the launcher claims a request before calling `ILauncher.Launch` and doesn't call it after its deadline, and the same sweep runs at start-up; a request is never retried. `SND-LAUNCH-008` counts only requests still inside their deadline. All three events are public and in `EventCatalog`. New typed id `LaunchId` (`LCH-…`). A `launches` projection backs `GET /launches/{launchId}` → `LaunchView(state: requested\|started\|failed, target, chosenBy, code?, detail?, asOf)` | API §2.1: handlers never do slow work; a launch happens at most once and never without a fresh click |
-| **E-2** | `ItemView` gains `launch`: `{ modes: [open\|attach\|resume], defaultTarget, chosenBy: lastUsed\|profile\|builtIn, attach?: {target, tabTitle, since}, resumable?: {target, sessionId}, inFlight?: LaunchId, lastStarted?: {target, at, tabTitle}, repoPath, blockers: [{code, detail}] }`, computed in `Core` (`LaunchOptions.For(item, instance, launches, probe, profile)`, the instance state coming from the engine's item projection, X7) from projections only, by §6.2's rules | The app renders modes and the default; it decides neither |
+| **E-1** | `OpenItem` becomes asynchronous. Body `{ mode: open\|attach\|resume, target?: claude-code\|codex\|cursor, itemVersion }`; response `LaunchRequested(accepted, LaunchId)`, **replacing** P10's `ItemOpened(accepted, launchedIn)`; variants `OpenItem:open`, `:attach`, `:resume`, all `desk`, `ReadsViews`. The handler decides and appends `item.open-requested {launchId, item, mode, target, chosenBy}` (key `item.open-requested:<launchId>`); it refuses with `SND-LAUNCH-008` while the item has a launch in `requested`. An in-process **launcher hosted service** (caller `service:launcher`) reads the ledger from its own persisted `launcher_cursor`, acts on a request **only if it has no outcome and is under 30 s old**, waits for the engine's takeover when the item has an active instance that isn't already `taken-over` (E-6) **within the same 30 s deadline** (an instance already taken over, as for Attach or a second Open, needs no wait: the `open-request` trigger is a no-op there), **re-checks freshness immediately before `ILauncher.Launch`**, launches with a 10 s limit on `ILauncher.Launch` (past it, `launch.failed SND-LAUNCH-001`), and appends `launch.started {launchId, item, target, sessionId?, tabTitle}` or `launch.failed {launchId, code}`, **both under one fact key, `launch.outcome:<launchId>`**, so the first outcome written wins: the launcher writes `launch.started` only if it wins that key (it records the outcome before reporting success to anyone), and an expiry that loses the race to a started launch is dropped. A `FakeTimeProvider` test fires the expiry while `ILauncher.Launch` is running and asserts exactly one outcome, and that it is `launch.started`. A timer (every 5 s) tries to append `launch.failed SND-LAUNCH-007` (same `launch.outcome` key) for every request with no outcome past its 30 s deadline; the launcher **claims** a request by adding its id to an in-process claimed set (under the lock the timer takes) before calling `ILauncher.Launch`, the timer skips claimed ids, and nothing is claimed after its deadline; a claim lost to a crash is swept at start-up as `SND-LAUNCH-007`, and the same sweep runs at start-up; a request is never retried. `SND-LAUNCH-008` counts only requests still inside their deadline. All three events are public and in `EventCatalog`. `sindri doctor` gains a `launcher` line (the probe's age, requests past their deadline, the last failure code), so "run `sindri doctor`" in §6.6 leads somewhere. New typed id `LaunchId` (`LCH-…`). A `launches` projection backs `GET /launches/{launchId}` → `LaunchView(state: requested\|started\|failed, target, chosenBy, code?, detail?, asOf)` | API §2.1: handlers never do slow work; a launch happens at most once and never without a fresh click |
+| **E-2** | `ItemView` gains `launch`: `{ modes: [open\|attach\|resume], defaultTarget, chosenBy: lastUsed\|profile\|builtIn, attach?: {target, tabTitle, since}, resumable?: {target, sessionId}, inFlight?: LaunchId, lastStarted?: {target, at, tabTitle}, confirm?: {reason}, repoPath, blockers: [{code, detail}] }`, computed in `Core` (`LaunchOptions.For(item, instance, launches, probe, profile)`, the instance state coming from the engine's item projection, X7) from projections only, by §6.2's rules | The app renders modes and the default; it decides neither |
 | **E-3** | A `launch_targets` projection over `launch.probed {terminal: {id, present, version?, problem?}, targets: [{id, present, version?, limited?, problem?}], repos: [{repo, present}]}`, appended by the launcher service on start, after a failed launch, and every 10 min **only when the result changed**. `GET /launch/targets` → `LaunchTargets(terminal, targets, repos, asOf)`. A **Check again** control: `ProbeLaunchTargets` (`job` class) | Probing is slow I/O, so it's a service that records facts, not a query |
 | **E-4** | Profile keys `launch.default` and `launch.repos.<repo>.default` (each a target id), in S1's closed profile schema | The profile default (§6.1); changing it is a profile approval |
 | **E-5** | Codes `SND-LAUNCH-002` (no terminal: not installed, or no GUI session), `-003` (agent CLI not found), `-004` (repo not on disk), `-006` (no session to resume or attach), `-007` (interrupted; not retried), `-008` (a launch is already in progress), beside P10's `-001` | §6.6 |
@@ -525,12 +527,14 @@ the UI's contract tests) is defined in §18.1, which also names the phase each e
 | **E-9** | `CompleteStep` gets a catalog row with UI status `ready` once WF P4 lands; its route accepts output file contents (≤ 1 MiB each), as WF §6.1 says for the CLI. API §2.1's `ApplyCommand:complete` variant is dropped in favour of `CompleteStep` | The desk-task form (§4.4); one name |
 | **E-10** | P10 is split: **P10a** (`OpenItem`, the launcher service, `WarpLauncher`, E-1…E-5, E-11; depends on P3 + P8) ships before the engine, and **P10b** (E-6's wait for the takeover) depends on WF P5. P10a carries the spike unit (§6.3) | The headline ships early; takeover lands with the engine |
 | **E-11** | `sindri open <item> [--agent claude-code\|codex\|cursor] [--attach \| --resume]`; bare `sindri open` takes the mode the item's `launch` block puts first | One surface for the CLI and the app |
-| **E-12** | API §2.1 and §4.1 define the `ApplyCommand` variants the app calls: `answer-text`, `answer-resume`, `answer-reject` (all `desk`), beside `answer-grant` and `answer-accept` (`protected`), `takeover` (`pause`), `handback` and `cancel` (`desk`) | Without them the fail-closed rule makes Reject and Resume `protected` |
+| **E-12** | API §2.1 and §4.1 define the `ApplyCommand` variants the app calls: `answer-text`, `answer-resume`, `answer-reject` (all `desk`), beside `answer-grant` and `answer-accept` (`protected`), `takeover` (`pause`), `handback` and `cancel` (`desk`). The field rule is restated per variant: `grant` is valid only on `answer-grant` and `accept` only on `answer-accept`; either field on another variant is refused, and the request is still classified `protected` (fail-closed) | Without them the fail-closed rule makes Reject and Resume `protected` |
 | **E-13** | **WF edit (§6.3):** each `allowedCommands` entry on `GET /workflow/instances/{address}` is `{ actionId, cli }`, with ids filled and the class taken from the catalog; a parent mirroring a child lists the forwarded actions | The app intersects ids, never maps verbs |
 | **E-14** | `GET /status` gains `health: { word: healthy\|degraded\|stalled\|rebuilding, problems: [{code, text}] }`, computed by `Core`'s `HealthSummary.For(…)` | The health pill renders it verbatim |
 | **E-15** | Each `EventCatalog` entry gains `invalidates: [viewName]`, served by `GET /events/catalog` (a query, P5) | The app's refresh map comes from the server; an unknown type re-queries every visible view |
-| **E-18** | `QueueView.groups[]` each carry their own `empty` sentence from `EmptyText` ("Nothing running.", "Nothing queued."), and the view returns every group, empty ones included | Home's Running and Queued panels never need app-written empty text; the Queue page hides empty groups |
 | **E-16** | Every `cli` string the API serves (catalog rows, `NeedsYouRow.cli`, `allowedCommands`) is built from checked values only: ids matched to their patterns, recipe names and hashes to theirs; no free text | A copied command can't carry a newline or a second command |
+| **E-17** | Golden JSON per route and scenario from every API phase (defined in §18.1; X26) | The UI's contract tests |
+| **E-18** | `QueueView.groups[]` each carry their own `empty` sentence from `EmptyText` ("Nothing running.", "Nothing queued."), and the view returns every group, empty ones included | Home's Running and Queued panels never need app-written empty text; the Queue page hides empty groups |
+| **E-19** | **WF edit (`StartInstance`, §6.1):** `StartInstance` reads the item's launches (it is `ReadsViews`, so it waits for the head) and, when one is still `requested`, starts the instance taken over with that request as the causation (§6.4) | No automation beside a session that's opening |
 
 ## 7. Controls and the actions they call
 
@@ -778,10 +782,11 @@ sentences are the app's own, because no API exists at that moment or because the
 
 | Where | Sentences |
 |---|---|
+| Home's summary line (§4.2) | "N need you · N running · N with you · N queued", built from the panels' row counts |
 | Before the API answers (§4.1) | "Not running" and its reasons (S1b's `SND-UI-*`), "Connecting…", "Sindri and the app are different versions" (API §9's wording), "Sindri not responding: run `sindri doctor`", "stale", "updated Ns ago" |
 | Command lifecycle (§4.1) | "Sending…", "Copied", the accepted outcome ("Resumed ITM-…", built from the action's label and the subject id), "Cleared: …" |
 | Copy block (§7) | "Needs a typed confirmation at a terminal." |
-| Launch (§6.6) | "Sending to Warp…", "Sent to Warp · tab `sindri ITM-…`", "Warp hasn't confirmed: run `sindri doctor`", the menu's "last used in <repo>", "profile default" |
+| Launch (§6.6) | "Sending to Warp…", "Sent to Warp · tab `sindri ITM-…`", "Sent to Warp <age> ago · <agent>", "Open another session" (the confirm's question is the server's `confirm.reason`), "Warp hasn't confirmed: run `sindri doctor`", the menu's "last used in <repo>", "profile default" |
 | Urgency words (§5, §11.3) | "needs you now", "failed", "to look at", "new" |
 | Tray tooltips (§5) | The five tooltips |
 | Announcements | "N now need you", "<id> cleared" |
@@ -808,6 +813,7 @@ New rows for the README's table:
 | X22 | **DESIGN.md's focus ring and primary hover** fail WCAG (1.8:1 ring; white on `#828fff` 2.87:1), and it has no error colour | A 2 px `#828fff` ring at full opacity; hover darkens to `#535fc6`, pressed `#4c57be`; an `Error` token `#eb5757` from Linear's product palette, beside the attention colour as the two documented in-product exceptions (§11.1, §14.1) | `docs/sindri/DESIGN.md` |
 | X23 | **The engine's nonce mint is a POST that appends nothing.** WF §5.4: `POST /workflow/instances/{a}/nonce`. API: `ARCH-CQRS-001` says every POST is a command | Either a tested query-by-POST carve-out (like X9's), or a catalog row whose class is that of the command it's for. The app mints at click time either way (§9.1) | WF §5.4; API §2.5 |
 | X24 | **The dashboard's first goal is deferred.** DB §1: "see the progress of every agent … including agents that Sindri didn't start". This spec serves only Sindri's items until the collector exists | Recorded, not dropped: **Agents** is the first view after the collector spec (API §11), and its sessions join Needs you | API §11; DB §1 |
+| X26 | **Golden JSON from the API phases.** The UI's contract tests need every API phase to write per-route, per-scenario goldens (E-17); the API spec's §12 doesn't say so | Add E-17 to API §12 before P1's contract unit; U1 back-fills any merged phase | API §12 |
 | X25 | **Notifications and the UI actor in the other specs.** API §5.1 says the app "drives … OS notifications"; WF §6.2 keeps a read-only `ui` actor | API §5.1: the app drives the pulse and badges only; `notify.desk` notifies (X5). WF §6.2: drop the `ui` row (X2) | API §5.1; WF §6.2 |
 
 ## 14. Token plan: DESIGN.md → Avalonia resources
@@ -919,7 +925,7 @@ All in `2026-10-11-sindri-ui-design/`, self-contained HTML with the fixture data
 across every screen), each with a 1280-wide PNG beside it. They are design references, not the implementation. The
 `mockups/` files are the visual reference; `shotgun/variant-2.html` is a layout reference only (it predates the
 attention colour, the focus ring and the reduced-motion word). Where a mockup and this text differ, the text wins.
-Known differences: the `home`, `needs-you` and `queue` mockups put **Attach** on running rows, where the text gives running rows **Open ▾** and **Take over** (Attach is for With-you rows); the health pill in some mockups reads "Healthy" beside a failed service, where `health.word` is `degraded`; the mockups' kind chips show the short kind (`park`), where the app renders the API's `label`
+Known differences: no mockup shows **Open another session** (§6.2 and the prototype do); the `home`, `needs-you` and `queue` mockups put **Attach** on running rows, where the text gives running rows **Open ▾** and **Take over** (Attach is for With-you rows); the health pill in some mockups reads "Healthy" beside a failed service, where `health.word` is `degraded`; the mockups' kind chips show the short kind (`park`), where the app renders the API's `label`
 (`parked · no-progress`, E-7); the sheet mockups use a slightly different page shell from `home` and `queue`; and the
 Decisions count varies between files. The `/impeccable` critique (32/40) is in the review folder
 (`impeccable-critique.md`); its 16 fixes are in the files.
@@ -1020,6 +1026,17 @@ Verdicts: all five lenses PASS (no HIGH). The reviews are in `pass3/`.
 | E-17 isn't in the API spec; one golden per route can't drive states (devex) | E-17 is an edit to API §12, per route and scenario, fixed time and ids; U1 back-fills |
 | LOWs: cap text, success-number owner, a takeover with no session, `answer-text` in §4.4, per-launch `mcp.json`, E-2 inputs, Resume takes over, E-6 key, the pill word | Fixed in §3.2, §2, §6.4, §4.4, §6.3, E-2, §6.2, E-6, §3.2 |
 
+### Pass 4 → revision 5
+
+Verdicts: all five lenses PASS (no HIGH). The reviews are in `pass4/`.
+
+| Finding | Resolution |
+|---|---|
+| "Open another session" decided by the app; never clears; missing from §6.2, §4.9, §12.4 (product H1, design P4-1) | Served `launch.confirm` (set only while a started launch isn't taken over or handed back); rows in §6.2, §4.9, §12.4; noted in §16 |
+| The launcher's claim is undefined; no limit on `Launch`; Attach and a second Open wait 30 s for a no-op takeover; starts-taken-over has no E-number (security P4-1, arch A4-1…A4-3) | Claimed set; a 10 s `Launch` limit; no wait when already taken over; E-19 (§18.1) |
+| E-17 isn't where API-phase agents look (devex) | X26 in §13 and the README |
+| LOWs: success-number queries, starts-taken-over causation and window, session id patterns, file deletion timing, X23 in U5, doctor's launcher line, E-18 order and intro, "view" vs "group", Home's summary copy | Fixed |
+
 ## 18. Phases
 
 Each phase is one PR. It follows the slice recipe's spirit for the UI (a failing view-model test first, then the view,
@@ -1034,8 +1051,8 @@ approved.
 | **U2** | **Queue, item detail, timeline, Create and Close item** | `Views/Queue*`, `Views/Item*`, view models | M | U1 + API P3 | `sindri-prove.sh human item add` appears without a click within 1 s; Close with a stale version shows `SND-ITEM-409`'s detail; five-second test passes on the fixture |
 | **U3** | **Needs you, decisions, requests, Home, the pulse, Mark all seen, badges and the tray menu** | `Views/NeedsYou*`, `Views/Decisions*`, `Views/Home*`, `Platform/IDockBadge.cs`, tray | M | U2 + API P4 (+ E-7, E-16) | A session's `curl` request appears as one pulsing row; title `(1) Needs you · Sindri`; tray in the attention colour; Accept clears it everywhere; a CLI race shows "decided elsewhere"; reduced motion shows the outline; five-second test passes on `--large` |
 | **U4** | **Services, jobs, Health** | `Views/Services*`, `Views/Health*` | S | U1 + API P6 | Run now streams job lines and Cancel stops them; a failing service raises a `failed` row that Run again clears |
-| **U6a** | **Open in Warp.** The launch block and split button, the target menu with reasons and Check again, Open, "Sent to Warp", every §6.6 failure state. Before the engine, the item's row and sheet show "Sent to Warp 12m ago · Claude Code · tab `sindri ITM-…`" from `launch.lastStarted`, and the button reads **Open another session**, with an in-app confirm (Attach and Resume need the engine's states and come in U6b) | `Views/Launch*`, view models | M | U2 + API **P10a** (E-1…E-5, E-11) | One click opens a Warp tab titled `sindri ITM-…` running Claude Code in the repo; the row then shows "Sent to Warp … ago" and the button becomes **Open another session** with a confirm; the session's transcript shows its first `sindri_item` call; a profile repo pointing at a missing folder shows `SND-LAUNCH-004` before the click; the other failures in the integration lane with the recording `ILauncher` |
-| **U5** | **Engine surfaces.** §4.4's answers, mirrored child parks, Start, Complete, Take over, Hand back, idle-takeover rows | `Views/Park*`, `Views/Answer*`, view models | M | U3 + WF P4 and P5, the X7 projection (the first API phase after WF P4), E-9, E-12, E-13, and WF's §5.6/§6.3 edit (idle takeovers and desk tasks as `park` rows) | Each §4.4 row reproduced with a dev recipe: protected answers show only the CLI; desk answers resume the instance; Hand back returns the item to `running` |
+| **U6a** | **Open in Warp.** The launch block and split button, the target menu with reasons and Check again, Open, "Sent to Warp", every §6.6 failure state. Before the engine, the item's row and sheet show "Sent to Warp 12m ago · Claude Code · tab `sindri ITM-…`" from `launch.lastStarted`, and, while the server sets `launch.confirm` (a launch started for the item that hasn't since been taken over or handed back), the button reads **Open another session** and asks the server's `confirm.reason` before sending (Attach and Resume need the engine's states and come in U6b) | `Views/Launch*`, view models | M | U2 + API **P10a** (E-1…E-5, E-11) | One click opens a Warp tab titled `sindri ITM-…` running Claude Code in the repo; the row then shows "Sent to Warp … ago" and, from `launch.confirm`, the button becomes **Open another session** with a confirm; the session's transcript shows its first `sindri_item` call; a profile repo pointing at a missing folder shows `SND-LAUNCH-004` before the click; the other failures in the integration lane with the recording `ILauncher` |
+| **U5** | **Engine surfaces.** §4.4's answers, mirrored child parks, Start, Complete, Take over, Hand back, idle-takeover rows | `Views/Park*`, `Views/Answer*`, view models | M | U3 + WF P4 and P5, the X7 projection (the first API phase after WF P4), E-9, E-12, E-13, and WF's §5.6/§6.3 edit (idle takeovers and desk tasks as `park` rows), and X23 settled (the nonce POST's class) | Each §4.4 row reproduced with a dev recipe: protected answers show only the CLI; desk answers resume the instance; Hand back returns the item to `running` |
 | **U6b** | **Opening is a takeover; Attach and Resume** | the launch view models | S | U5 + U6a + API **P10b** and WF's E-6 trigger | Open on a running item pauses it before Warp opens (ledger order: takeover, then `launch.started`); Attach on a with-you item brings Warp forward and starts no process; after Hand back, **Resume Claude Code session** reopens the same session id (transcript continues) |
 | **U7** | **Context tab and map-review viewer** | `Views/Context*` | S | U2 + CTX P3/P4 + X9 (`GET /context`) | A degraded source shows the DEGRADED banner and the citation states; drafts read `(draft)` |
 | later | Agents, Repos, Automatic work, Today, receipts, session lifecycle | — | — | API §11 collector spec | — |
@@ -1051,7 +1068,8 @@ approved.
 | E-15 (`invalidates`, `GET /events/catalog`) | API P5 | U1 (optional until then) |
 | E-17 (golden JSON) | every API phase from P1, for its own routes | every U phase |
 | E-1…E-5, E-11 | API P10a | U6a |
-| E-6 (WF trigger), P10b | WF P5 edit, API P10b | U6b |
+| E-6 (WF trigger), E-19 (`StartInstance` starts taken over), P10b | WF P5 edit, API P10b | U6b |
+| X23 (the nonce POST's class) | WF P4 | U5 |
 | E-9, E-13, and E-12's engine rows | WF P4 | U5 |
 | E-10 | the API spec's phase table | — |
 
