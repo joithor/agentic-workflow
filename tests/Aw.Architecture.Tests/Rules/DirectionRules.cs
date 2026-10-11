@@ -34,12 +34,9 @@ public static class DirectionRules
     /// <param name="compose">The declared compose edges (deps.yaml).</param>
     /// <returns>One violation per offending edge.</returns>
     public static IEnumerable<Violation> Check(IEnumerable<Edge> edges, IReadOnlyCollection<ComposeEdge> compose) =>
-        compose.Count == 0 ? CheckAll(edges) : throw new NotSupportedException();
-
-    private static IEnumerable<Violation> CheckAll(IEnumerable<Edge> edges) =>
         edges.Select(e => e switch
         {
-            { From: { } from, To: { } to } => Judge(e, from, to),
+            { From: { } from, To: { } to } => ComposeRules.Covers(e, compose) ? null : Judge(e, from, to),
             { From.Layer: Layer.Core or Layer.Features, To: null } when IsOtherTierZero(e) => new Violation(TierZeroId,
                 $"{e.Text}: {e.From.Layer} uses {TypeNames.AssemblyOf(e.Target)}",
                 "Core and Features use Aw.Kernel only; reach Aw.Kernel.Data, Aw.Kernel.Telemetry or Redaction through a Core port that Infrastructure implements"),
