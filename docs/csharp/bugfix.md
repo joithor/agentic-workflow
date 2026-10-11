@@ -59,13 +59,17 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   realpath(3), links before `..`), a non-runner (`grep`, `cat`, `true`, …), a program that runs another one (`env`,
   `xargs`, `timeout`, `nice`, `nohup`, `sudo`, …), and inline code, by interpreter: shells and python `-c`, node/deno/bun
   `-e`/`-p`/`--eval`/`--print`, perl and ruby `-e`/`-E`, php `-r`, `deno eval` (anywhere in a short-flag cluster, so
-  `bash -xec` counts and `bash -e` doesn't; ruby and perl value flags such as `-Itest` don't). A package runner (`npx`,
+  `bash -xec` counts and `bash -e` doesn't; ruby and perl value flags such as `-Itest` don't). Only the interpreter's
+  own options count: they end at the script, at python's `-m` module, or at `--`, skipping option values (`-X dev`,
+  `-r ./x.js`, `-o pipefail`), so `python -m pytest -c pytest.ini` and `node t.js -e` are fine. A package runner (`npx`,
   `pnpx`, `bunx`, `uvx`, `npm exec|x`, `pnpm exec|dlx`, `yarn exec|dlx|node`, `bun x`, `uv run`, `uv tool run`,
   `poetry run`, `bundle exec`) is looked through: the first program past its verb and options is classified the same
   way, and every later argument is checked for an interpreter given inline code. Before the program (and before the
   verb) only these runner options may appear: `-y`, `--yes`, `--no`, `-q`, `--quiet`, `-s`, `--silent`, `--offline`,
   `--prefer-offline`, `--no-install`, `--bun`, `--frozen`, `--locked`, `--no-sync`, `--isolated`, `--all-extras`,
-  `--no-dev`, and with a value `-p`, `--package`, `--with`, `--python`, `--extra`, `--group`. Any other is refused: an
+  `--no-dev`, and with a value `-p`, `--package`, `--with`, `--python`, `--extra`, `--group`, the workspace options
+  `--filter`, `-F`, `--workspace`, `-w`, and `uv run`'s `-m`/`--module`. A runner that is itself an interpreter (`bun`)
+  has its inline flags refused before its verb (`bun -p` is print) but not after it (`bun x -p` is a package). Any other is refused: an
   unknown option could take the next argument as its value and hide the real program behind it, and some change what
   runs (`-c`/`--call`/`--shell-mode`, `--node-options`, `--env-file`, a different directory). A runner subcommand that
   isn't its runner verb or a script verb (`test`, `run`, `run-script`) is classified as the program it runs, so
@@ -73,8 +77,9 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
 - **The caller's environment can't steer it.** The check runs with only an allowlist of variables from bugfix-state's
   own environment. `PATH`, `HOME` and the names listed in `AW_BUGFIX_CHECK_ENV` (for a test that needs `DATABASE_URL`,
   `JAVA_HOME`, …) decide which code runs, so their values are frozen at the baseline and a later run with other values
-  is refused. State and run records keep each one as a digest (`sha256:` of the name, a NUL and the value), never the
-  value, since it may hold a credential; `status` shows the digests. A name listed in `AW_BUGFIX_CHECK_ENV` that also
+  is refused. State and run records keep each one as a keyed digest (`hmac-sha256:` of the name, a NUL and the value, keyed with
+  the bug fix's random `digest.key`, owner-only, beside `state.json` and never in it), never the value, since it may
+  hold a credential; `status` shows the digests. A name listed in `AW_BUGFIX_CHECK_ENV` that also
   passes through (`TZ`, `LANG`, …) is frozen; `USER`, `LOGNAME`, `SHELL`, `TMPDIR`, `TERM`, `CI`, `LANG`, `LANGUAGE`, `TZ` and `LC_ALL`, `LC_CTYPE`,
   `LC_MESSAGES`, `LC_COLLATE`, `LC_NUMERIC`, `LC_TIME`, `LC_MONETARY` pass through as they are. Everything else
   (`BASH_ENV`, `NODE_OPTIONS`, exported shell functions, `npm_config_*`, `PYTEST_ADDOPTS`, …) is dropped, and
@@ -85,8 +90,14 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
 - **A clean tree.** `run-test`, `run-ui`, `record-candidate` and `record-run` refuse a work tree with an uncommitted
   change, or with an untracked file (not ignored) that no registered run left behind: a new fixture or a module that
   shadows another could change what the check does while the commit stays the same. Each test run record keeps the
-  untracked files the run left (`leftovers`: `.coverage`, a junit report, with their SHA-256), and a later step accepts
-  exactly those while their content is unchanged; anything else is listed in the refusal (AW-BUGFIX-020).
+  work tree it ran in (`checkout`) and the untracked files that appeared or changed during the run (`leftovers`:
+  `.coverage`, a junit report, with their SHA-256). A later step accepts such a file only if a run **of the frozen check**
+  (same check file, command, directory and program) left it **in that same work tree**, it is unchanged since, and it is
+  no file that could change what runs (a protected file, a test or fixture path, or one a loader picks first; see
+  below). Before the check is frozen, leftovers of any test run in the same work tree count, with the same filter.
+  Anything else is listed in the refusal (AW-BUGFIX-020). Residual risk: a file the check would load that no rule
+  names (a conditionally sourced helper outside the test paths), written by the agent while a run of the frozen check
+  is going, is accepted as that run's output.
 - **Candidates are real changes on the baseline:** a clean worktree on the named branch, with commits on top of the
   baseline commit and a tree different from it, not already recorded. A fix that touches the check, its directory,
   tests, fixtures, snapshots, runner config, `package.json`, or a repository file the frozen command names (its runner
@@ -103,7 +114,8 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   shadows the standard library), compiled or native code anywhere (`.pyc`, `.pyo`, `.pyd`, `.so`, `.dylib`, `.node`,
   `.pth`), `sitecustomize.py`/`usercustomize.py`, and anything under `node_modules/`. A baseline command that names a positional path (written with `/` or a leading `.`, or with a script or
   config extension) or a script or config file in an option, that doesn't exist as a file or directory, is refused
-  (AW-BUGFIX-008): a fix could add it. Option values that aren't files (URLs, `/regexes/`, output files such as
+  (AW-BUGFIX-008): a fix could add it. A file the command names that is untracked when the check is frozen (the baseline run's own report,
+  `--junitxml=out/r.xml`) is its output, not a command file. Option values that aren't files (URLs, `/regexes/`, output files such as
   `--junitxml=out/r.xml`, names such as `--cov=app`) are neither required nor protected, and globs and package patterns
   (`./...`) aren't paths.
 - **Attempts.** Mode A one candidate, C one candidate (split by area, in sequence), B two candidates on different open
@@ -175,7 +187,7 @@ Everything lives under the `--state` directory; the C# build never reads TS-writ
   `worktree`, `commit`, `hypothesis`, `changedFiles`, `run`, `verdict`, `judgeAsked`), `runs` (`evidence`, `sha256`), `resolvedBy`,
   `history`.
 - `runs/<stamp>-<test|ui>-<n>.json`: a run record (`kind`, `outcome` passed, failed or broken, `commit`, `directory`,
-  `checkSha256`, `command`, `programSha256`, `environment` (digests), `exitCode`, `output`, `leftovers`); a ui run that produced nothing gives its slot back, with its `.log` (and, for ui, the ui-evidence run directory `<stem>/`).
+  `checkSha256`, `command`, `programSha256`, `environment` (keyed digests), `exitCode`, `output`, `leftovers`, `checkout`); a ui run that produced nothing gives its slot back, with its `.log` (and, for ui, the ui-evidence run directory `<stem>/`).
 - `judge-<candidate>.json`: the resolution-check input asked about the candidate.
 
 ## Ports and adapters

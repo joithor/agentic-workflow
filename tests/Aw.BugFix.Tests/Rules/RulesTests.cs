@@ -97,13 +97,24 @@ public sealed class RulesTests
     [InlineData("npm run test:unit t.js", null)]
     [InlineData("npm --node-options=--require=./x.js exec vitest t.js", "option `--node-options`")]
     [InlineData("uv run --env-file .env pytest t.py", "option `--env-file`")]
-    [InlineData("pnpm --filter x exec node -e 1 t.js", "option `--filter`")]
+    [InlineData("pnpm --filter x exec node -e 1 t.js", "inline code (`node -e`)")]
     [InlineData("uv run --index-url https://x python -c 1 t.py", "option `--index-url`")]
     [InlineData("npx playwright test tests/x.spec.ts", null)]
     [InlineData("pnpm exec vitest run t.test.ts", null)]
     [InlineData("npx -p vitest node -e 1 t.js", "inline code (`node -e`)")]
     [InlineData("uv run --with pytest python -c 1 t.py", "inline code (`python -c`)")]
     [InlineData("yarn node -e 1 t.js", "inline code (`node -e`)")]
+    [InlineData("python -m pytest -c pytest.ini t.py", null)]
+    [InlineData("python t.py -c x", null)]
+    [InlineData("python -X dev -c 1 t.py", "inline code (`python -c`)")]
+    [InlineData("bash -o pipefail -c true t.sh", "inline code (`bash -c`)")]
+    [InlineData("bash t.sh -c", null)]
+    [InlineData("node -r ./x.js -e 1 t.js", "inline code (`node -e`)")]
+    [InlineData("node t.js -e", null)]
+    [InlineData("pnpm --filter web test t.js", null)]
+    [InlineData("npm -w web test t.js", null)]
+    [InlineData("uv run -m pytest t.py", null)]
+    [InlineData("bun x -p vitest vitest t.ts", null)]
     public void The_check_command_rule_refuses_non_runners_and_inline_code(string command, string? reason)
     {
         var refusal = CheckCommandRule.Refusal(command.Split(' '));
@@ -131,7 +142,7 @@ public sealed class RulesTests
     {
         var env = new Dictionary<string, string>(StringComparer.Ordinal) { ["PATH"] = "/usr/bin", ["HOME"] = "/home/u" };
         var check = new FrozenCheck(CheckKind.Test, "tests/bug.sh", "sha", ["bash", "tests/bug.sh"], Directory: string.Empty, ProgramSha256: "bash", Environment: env, CommandFiles: []);
-        var run = new RunRecord(CheckKind.Test, RunOutcome.Passed, "c", Directory: string.Empty, "sha", ["bash", "tests/bug.sh"], ProgramSha256: "bash", Environment: env, 0, "/log", Leftovers: new Dictionary<string, string>(StringComparer.Ordinal));
+        var run = new RunRecord(CheckKind.Test, RunOutcome.Passed, "c", Directory: string.Empty, "sha", ["bash", "tests/bug.sh"], ProgramSha256: "bash", Environment: env, 0, "/log", Leftovers: new Dictionary<string, string>(StringComparer.Ordinal), Checkout: "/repo");
 
         _ = World.Ok(check.Accepts(run));
         _ = World.Refused(check.Accepts(run with { Directory = "lib" }), BugFixErrors.RunRefused);

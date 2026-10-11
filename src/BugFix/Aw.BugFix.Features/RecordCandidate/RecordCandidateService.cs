@@ -8,7 +8,7 @@ using Aw.Kernel.Services;
 
 namespace Aw.BugFix.Features.RecordCandidate;
 
-internal sealed class RecordCandidateService(IStateStore store, IRunLedger ledger, IGit git, IFiles files, TimeProvider clock) : IService<RecordCandidateRequest, RecordCandidateResponse>
+internal sealed class RecordCandidateService(IStateStore store, IGit git, WorkTree tree, TimeProvider clock) : IService<RecordCandidateRequest, RecordCandidateResponse>
 {
     public ValueTask<Result<RecordCandidateResponse>> Handle(RecordCandidateRequest request, CancellationToken cancellationToken) =>
         ValueTask.FromResult(store.Locked(request.StateDirectory, () => store.Load(request.StateDirectory).Bind(state => Record(request, state))));
@@ -24,8 +24,8 @@ internal sealed class RecordCandidateService(IStateStore store, IRunLedger ledge
 
         var (check, baseline) = state.Frozen;
         var commit = OnBranch(request)
-            .Bind(_ => TreeRule.Clean(new TreePorts(git, files, ledger), state, request.WorkingDirectory, "commit the fix first"))
-            .Bind(_ => git.Head(request.WorkingDirectory))
+            .Bind(_ => tree.Clean(state, request.WorkingDirectory, "commit the fix first"))
+            .Map(static checkout => checkout.Head)
             .Bind(head => OnBaseline(request.WorkingDirectory, baseline.Commit, head))
             .Bind(head => CandidateRule.CanRecord(state, head, request.Hypothesis).Map(_ => head));
         var added = commit.Bind(head => git.AddedFiles(request.WorkingDirectory, baseline.Commit, head));

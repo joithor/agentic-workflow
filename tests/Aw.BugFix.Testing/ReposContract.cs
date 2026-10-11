@@ -37,6 +37,11 @@ public abstract class ReposContract
         Write(root, "out/report.xml", "<r/>\n");
         Expect.That(Ok(Git.IsClean(root)), "an untracked file leaves the tracked files clean");
         Expect.That(Ok(Git.Untracked($"{root}/src")).SequenceEqual(["out/report.xml"], StringComparer.Ordinal), "Untracked lists the whole work tree, repository-relative");
+        Write(root, ".gitignore", "build/\n");
+        Write(root, "build/x.o", "o\n");
+        Expect.That(Ok(Git.Untracked(root)).SequenceEqual([".gitignore", "out/report.xml"], StringComparer.Ordinal), "an ignored file isn't untracked");
+        Delete(root, ".gitignore");
+        Delete(root, "build/x.o");
         Write(root, "src/a.txt", "changed\n");
 
         Expect.That(!Ok(Git.IsClean(root)), "False(Ok(Git.IsClean(root)))");
@@ -119,6 +124,11 @@ public abstract class ReposContract
     /// <param name="link">The link's repository-relative path.</param>
     /// <param name="target">The target, relative to the link's directory.</param>
     protected abstract void Link(string root, string link, string target);
+
+    /// <summary>Removes a file from the work tree.</summary>
+    /// <param name="root">The work tree.</param>
+    /// <param name="path">The repository-relative path.</param>
+    protected abstract void Delete(string root, string path);
 
     /// <summary>Creates a repository on main with src/a.txt ("a\n") and tests/t.sh committed.</summary>
     /// <returns>The work tree's real path and its commit.</returns>

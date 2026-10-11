@@ -57,7 +57,7 @@ public sealed class ScriptedCheckRunner : ICheckRunner
     }
 
     /// <inheritdoc/>
-    public CheckExit Run(IReadOnlyList<string> command, string directory, string log)
+    public CheckExit Run(IReadOnlyList<string> command, string directory, string log, string digestKey)
     {
         Runs.Add((command, directory));
         WhileRunning?.Invoke(directory);

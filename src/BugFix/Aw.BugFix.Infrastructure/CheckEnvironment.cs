@@ -39,14 +39,21 @@ internal static class CheckEnvironment
         && !_deniedNames.Contains(name, StringComparer.Ordinal)
         && !_deniedPrefixes.Any(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>The variables as digests of their values: what state and run records keep, since a value may hold a credential (DATABASE_URL).</summary>
+    /// <summary>
+    /// The variables as keyed digests of their values: what state and run records keep, since a value may hold a
+    /// credential (DATABASE_URL). Keyed per bug fix, so a digest can't be checked against guesses without digest.key.
+    /// </summary>
     /// <param name="variables">The variables and their values.</param>
-    /// <returns>Name → "sha256:" and the hex SHA-256 of the name, a NUL and the value.</returns>
-    internal static Dictionary<string, string> Digests(IReadOnlyDictionary<string, string> variables) =>
-        variables.ToDictionary(
+    /// <param name="key">The key (hex).</param>
+    /// <returns>Name → "hmac-sha256:" and the hex HMAC-SHA-256 of the name, a NUL and the value.</returns>
+    internal static Dictionary<string, string> Digests(IReadOnlyDictionary<string, string> variables, string key)
+    {
+        var mac = Convert.FromHexString(key);
+        return variables.ToDictionary(
             static kv => kv.Key,
-            static kv => "sha256:" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes($"{kv.Key}\0{kv.Value}"))),
+            kv => "hmac-sha256:" + Convert.ToHexStringLower(HMACSHA256.HashData(mac, Encoding.UTF8.GetBytes($"{kv.Key}\0{kv.Value}"))),
             StringComparer.Ordinal);
+    }
 
     /// <summary>Replaces a process's environment with the given variables.</summary>
     /// <param name="environment">The process's environment.</param>

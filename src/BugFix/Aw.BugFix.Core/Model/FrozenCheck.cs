@@ -32,6 +32,13 @@ public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IRe
         return Kind == CheckKind.Test ? SameTestRun(record) : record;
     }
 
+    /// <summary>Whether <paramref name="record"/> ran this check: a test run of the same file, command, directory and program.</summary>
+    /// <param name="record">The run.</param>
+    /// <returns>True when it did.</returns>
+    public bool Ran(RunRecord record) =>
+        Kind == CheckKind.Test && record.Kind == CheckKind.Test && record.CheckSha256 == Sha256 && record.Directory == Directory
+        && record.ProgramSha256 == ProgramSha256 && (record.Command ?? []).SequenceEqual(Command ?? [], StringComparer.Ordinal);
+
     private Result<RunRecord> SameTestRun(RunRecord record) =>
          (record.Command ?? []).SequenceEqual(Command ?? [], StringComparer.Ordinal) && record.Directory == Directory
             ? SameProgram(record)

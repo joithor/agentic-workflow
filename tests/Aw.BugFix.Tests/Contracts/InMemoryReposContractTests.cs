@@ -29,5 +29,7 @@ public sealed class InMemoryReposContractTests : ReposContract
 
     protected override void Link(string root, string link, string target) => _repos.Link($"{root}/{link}", target);
 
+    protected override void Delete(string root, string path) => _repos.Delete($"{root}/{path}");
+
     internal static Dictionary<string, string> Base => new(StringComparer.Ordinal) { ["src/a.txt"] = "a\n", ["tests/t.sh"] = "exit 0\n" };
 }

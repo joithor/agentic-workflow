@@ -14,7 +14,8 @@ namespace Aw.BugFix.Core.Model;
 /// <param name="Environment">The variables that decide which code the test command ran (PATH, HOME, …), each as a digest of its value; empty for ui-evidence.</param>
 /// <param name="ExitCode">The test command's or ui-evidence's exit code.</param>
 /// <param name="Output">The run's log (test) or ui-evidence run directory.</param>
-/// <param name="Leftovers">The untracked files in the work tree after the run (repository-relative path → SHA-256): what it left behind (.coverage, a junit report), which a later step accepts while unchanged.</param>
+/// <param name="Leftovers">The untracked files in the work tree after the run (repository-relative path → SHA-256): what it left behind (.coverage, a junit report), which a later step in the same checkout accepts while unchanged, if the run was of the frozen check and the file is no protected or shadowing file.</param>
+/// <param name="Checkout">The root of the work tree (checkout) the run executed in.</param>
 public sealed record RunRecord(
     CheckKind Kind,
     RunOutcome Outcome,
@@ -26,7 +27,8 @@ public sealed record RunRecord(
     IReadOnlyDictionary<string, string> Environment,
     int ExitCode,
     string Output,
-    IReadOnlyDictionary<string, string> Leftovers)
+    IReadOnlyDictionary<string, string> Leftovers,
+    string Checkout)
 {
     /// <summary>Accepts this run as the baseline: it must fail. A check that passes can never prove a fix, and a broken run (it didn't start, timed out, or only had broken ui steps) is not a reproduction.</summary>
     /// <returns>The run, or AW-BUGFIX-007.</returns>

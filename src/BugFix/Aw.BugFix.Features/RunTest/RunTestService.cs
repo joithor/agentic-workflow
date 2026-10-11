@@ -7,7 +7,7 @@ using Aw.Kernel.Services;
 
 namespace Aw.BugFix.Features.RunTest;
 
-internal sealed class RunTestService(IStateStore store, IRunLedger ledger, IGit git, IFiles files, CheckLocator locator, ICheckRunner runner, TimeProvider clock)
+internal sealed class RunTestService(IStateStore store, IRunLedger ledger, IFiles files, CheckLocator locator, WorkTree tree, ICheckRunner runner, TimeProvider clock)
     : IService<RunTestRequest, RunTestResponse>
 {
     public ValueTask<Result<RunTestResponse>> Handle(RunTestRequest request, CancellationToken cancellationToken) =>
@@ -15,29 +15,28 @@ internal sealed class RunTestService(IStateStore store, IRunLedger ledger, IGit 
 
     private Result<RunTestResponse> Run(RunTestRequest request, BugFixState state)
     {
-        var tree = new TreePorts(git, files, ledger);
-        var check = TreeRule.Clean(tree, state, request.WorkingDirectory, "commit before running the check so the result maps to a commit")
-            .Bind(_ => locator.Locate(request.WorkingDirectory, request.Check))
+        var checkout = tree.Clean(state, request.WorkingDirectory, "commit before running the check so the result maps to a commit");
+        var check = checkout.Bind(_ => locator.Locate(request.WorkingDirectory, request.Check))
             .Bind(file => Executes(request, file));
         var sha = check.Bind(file => files.Sha256(file.FullPath));
-        var commit = sha.Bind(_ => git.Head(request.WorkingDirectory));
-        var directory = commit.Bind(_ => git.RelativeDirectory(request.WorkingDirectory));
-        if (directory.IsError)
+        if (sha.IsError)
         {
-            return directory.Error;
+            return sha.Error;
         }
 
-        var slot = ledger.Reserve(request.StateDirectory, clock.GetUtcNow(), CheckKind.Test);
-        var exit = runner.Run(request.Command, request.WorkingDirectory, slot.Log);
-        var leftovers = TreeRule.Leftovers(tree, request.WorkingDirectory).Match(static l => l, static _ => new Dictionary<string, string>(StringComparer.Ordinal));
-        var record = new RunRecord(CheckKind.Test, exit.Outcome, commit.Value, directory.Value, sha.Value, request.Command, exit.ProgramSha256, exit.Environment, exit.Code, slot.Log, leftovers);
+        var (before, slot) = (checkout.Value, ledger.Reserve(request.StateDirectory, clock.GetUtcNow(), CheckKind.Test));
+        var exit = runner.Run(request.Command, request.WorkingDirectory, slot.Log, slot.DigestKey);
+        var after = tree.Snapshot(request.WorkingDirectory).Match(static c => c.Untracked, static _ => new Dictionary<string, string>(StringComparer.Ordinal));
+        var record = new RunRecord(
+            CheckKind.Test, exit.Outcome, before.Head, before.Directory, sha.Value, request.Command, exit.ProgramSha256, exit.Environment, exit.Code, slot.Log,
+            LeftoverRule.Left(before.Untracked, after), before.Root);
         var recordSha = ledger.Write(slot, record);
 
         // Registered under the lock, onto the current state: the run may have taken minutes.
         return store.Locked(request.StateDirectory, () => store.Load(request.StateDirectory).Map(fresh =>
         {
             store.Save(request.StateDirectory, fresh.Register(new RegisteredRun(slot.Record, recordSha)));
-            return new RunTestResponse(slot.Record, record.Outcome, exit.Code, commit.Value);
+            return new RunTestResponse(slot.Record, record.Outcome, exit.Code, before.Head);
         }));
     }
 

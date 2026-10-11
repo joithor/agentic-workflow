@@ -6,7 +6,7 @@ using Aw.Kernel.Services;
 
 namespace Aw.BugFix.Features.RunUi;
 
-internal sealed class RunUiService(IStateStore store, IRunLedger ledger, IGit git, IFiles files, CheckLocator locator, IUiEvidence ui, TimeProvider clock)
+internal sealed class RunUiService(IStateStore store, IRunLedger ledger, WorkTree tree, CheckLocator locator, IUiEvidence ui, TimeProvider clock)
     : IService<RunUiRequest, RunUiResponse>
 {
     public ValueTask<Result<RunUiResponse>> Handle(RunUiRequest request, CancellationToken cancellationToken) =>
@@ -14,30 +14,29 @@ internal sealed class RunUiService(IStateStore store, IRunLedger ledger, IGit gi
 
     private Result<RunUiResponse> Run(RunUiRequest request, BugFixState state)
     {
-        var script = TreeRule.Clean(new TreePorts(git, files, ledger), state, request.WorkingDirectory, "commit before running the check so the result maps to a commit")
-            .Bind(_ => locator.Locate(request.WorkingDirectory, request.Check));
-        var commit = script.Bind(_ => git.Head(request.WorkingDirectory));
-        var directory = commit.Bind(_ => git.RelativeDirectory(request.WorkingDirectory));
-        if (directory.IsError)
+        var checkout = tree.Clean(state, request.WorkingDirectory, "commit before running the check so the result maps to a commit");
+        var script = checkout.Bind(_ => locator.Locate(request.WorkingDirectory, request.Check));
+        if (script.IsError)
         {
-            return directory.Error;
+            return script.Error;
         }
 
+        var (commit, directory) = (checkout.Value.Head, checkout.Value.Directory);
         // The served app must be rebuilt from this checkout; the helper can label the run, not check what the server runs.
         var slot = ledger.Reserve(request.StateDirectory, clock.GetUtcNow(), CheckKind.Ui);
-        var run = ui.Run(new UiRunRequest(script.Value.FullPath, slot.Output, commit.Value, request.WorkingDirectory, slot.Log));
+        var run = ui.Run(new UiRunRequest(script.Value.FullPath, slot.Output, commit, request.WorkingDirectory, slot.Log));
         if (run.IsError)
         {
             ledger.Release(slot);
             return run.Error;
         }
 
-        var record = new RunRecord(CheckKind.Ui, run.Value.Outcome, commit.Value, directory.Value, run.Value.ScriptSha256, Command: null, ProgramSha256: string.Empty, Environment: new Dictionary<string, string>(StringComparer.Ordinal), run.Value.ExitCode, slot.Output, Leftovers: new Dictionary<string, string>(StringComparer.Ordinal));
+        var record = new RunRecord(CheckKind.Ui, run.Value.Outcome, commit, directory, run.Value.ScriptSha256, Command: null, ProgramSha256: string.Empty, Environment: new Dictionary<string, string>(StringComparer.Ordinal), run.Value.ExitCode, slot.Output, Leftovers: new Dictionary<string, string>(StringComparer.Ordinal), checkout.Value.Root);
         var recordSha = ledger.Write(slot, record);
         return store.Locked(request.StateDirectory, () => store.Load(request.StateDirectory).Map(fresh =>
         {
             store.Save(request.StateDirectory, fresh.Register(new RegisteredRun(slot.Record, recordSha)));
-            return new RunUiResponse(slot.Record, record.Outcome, record.ExitCode, commit.Value);
+            return new RunUiResponse(slot.Record, record.Outcome, record.ExitCode, commit);
         }));
     }
 }

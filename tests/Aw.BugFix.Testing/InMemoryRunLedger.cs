@@ -30,7 +30,7 @@ public sealed class InMemoryRunLedger : IRunLedger
     public RunSlot Reserve(string directory, DateTimeOffset at, CheckKind kind)
     {
         var stem = string.Create(CultureInfo.InvariantCulture, $"{directory.TrimEnd('/')}/runs/{++_slots:D3}-{(kind == CheckKind.Test ? "test" : "ui")}");
-        return new RunSlot(kind == CheckKind.Test ? $"{stem}.log" : stem, $"{stem}.log", $"{stem}.json");
+        return new RunSlot(kind == CheckKind.Test ? $"{stem}.log" : stem, $"{stem}.log", $"{stem}.json", DigestKey: new string('7', 64));
     }
 
     /// <inheritdoc/>

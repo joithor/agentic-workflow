@@ -7,7 +7,7 @@ using Aw.Kernel.Services;
 
 namespace Aw.BugFix.Features.RecordRun;
 
-internal sealed class RecordRunService(IStateStore store, IRunLedger ledger, IGit git, IFiles files, TimeProvider clock)
+internal sealed class RecordRunService(IStateStore store, IRunLedger ledger, IFiles files, WorkTree tree, TimeProvider clock)
     : IService<RecordRunRequest, RecordRunResponse>
 {
     public ValueTask<Result<RecordRunResponse>> Handle(RecordRunRequest request, CancellationToken cancellationToken) =>
@@ -48,19 +48,19 @@ internal sealed class RecordRunService(IStateStore store, IRunLedger ledger, IGi
             return BugFixErrors.RunRefused.With($"the evidence ran against {record.Commit}, not {candidate.Id.Value}'s commit {candidate.Commit}");
         }
 
-        var head = git.Head(candidate.Worktree);
-        if (head.IsError || head.Value != candidate.Commit)
+        var worktree = tree.Clean(state, candidate.Worktree, "the candidate's worktree must stay as recorded");
+        if (worktree.IsSuccess && worktree.Value.Head != candidate.Commit)
         {
-            return head.IsError ? head.Error : BugFixErrors.RunRefused.With($"{candidate.Id.Value}'s branch moved to {head.Value} after record-candidate; record a new candidate");
+            return BugFixErrors.RunRefused.With($"{candidate.Id.Value}'s branch moved to {worktree.Value.Head} after record-candidate; record a new candidate");
         }
 
-        return TreeRule.Clean(new TreePorts(git, files, ledger), state, candidate.Worktree, "the candidate's worktree must stay as recorded").Map(_ => record);
+        return worktree.Map(_ => record);
     }
 
     // The frozen-check rule: a fix must not weaken the check, neither the file nor what the run executed.
     private Result<RunRecord> Frozen(FrozenCheck check, Candidate candidate, RunRecord record)
     {
-        var current = git.Root(candidate.Worktree).Bind(root => files.Sha256(files.FullPath(root, check.Path)));
+        var current = tree.Snapshot(candidate.Worktree).Bind(worktree => files.Sha256(files.FullPath(worktree.Root, check.Path)));
         if (current.IsError && current.Error.Code != BugFixErrors.FileUnreadable.Code)
         {
             return current.Error;

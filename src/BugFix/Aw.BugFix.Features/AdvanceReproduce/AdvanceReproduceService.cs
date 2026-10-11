@@ -57,24 +57,37 @@ internal sealed class AdvanceReproduceService(IStateStore store, IRunLedger ledg
     private Result<IReadOnlyList<string>> CommandFiles(RunRecord record, string root, CheckFile check)
     {
         var directory = record.Directory.Length == 0 ? root : $"{root}/{record.Directory}";
+        var untracked = git.Untracked(root);
         var found = new List<string>();
-        foreach (var (path, required, specifier) in CommandFilesRule.Paths(record.Command ?? []))
+        foreach (var named in untracked.IsError ? [] : CommandFilesRule.Paths(record.Command ?? []))
         {
-            // A specifier is protected through every file the loader could open for it, whether or not it exists yet: a
-            // fix that adds one the loader tries first (lib/setup before lib/setup.js) changes what runs.
-            var candidates = (specifier ? CommandFilesRule.LoaderCandidates(path) : [path]).Select(c => files.FullPath(directory, c)).ToList();
-            var existing = candidates.Select(files.RealPath).OfType<string>().ToList();
-            if (existing.Count == 0 && required && !files.Exists(files.FullPath(directory, path)))
+            // An untracked file the command names is the run's output (--junitxml=out/r.xml), not code a fix could change.
+            var protect = Protected(named, directory);
+            if (protect.IsError)
             {
-                return BugFixErrors.CheckNotFrozen.With($"the baseline command names {path}, which doesn't exist; a fix could add it, so name only files that exist");
+                return protect.Error;
             }
 
-            var protect = specifier ? existing.Concat(candidates.Select(Path.GetFullPath)) : existing;
-            found.AddRange(protect
+            found.AddRange(protect.Value
                 .Where(f => f.StartsWith(root + "/", StringComparison.Ordinal) && f != check.FullPath)
-                .Select(f => f[(root.Length + 1)..]));
+                .Select(f => f[(root.Length + 1)..])
+                .Where(f => named.Specifier || !untracked.Value.Contains(f, StringComparer.Ordinal)));
         }
 
-        return Results.Success<IReadOnlyList<string>>([.. found.Distinct(StringComparer.Ordinal)]);
+        return untracked.Map(_ => (IReadOnlyList<string>)[.. found.Distinct(StringComparer.Ordinal)]);
+    }
+
+    // A specifier is protected through every file the loader could open for it, whether or not it exists yet: a fix
+    // that adds one the loader tries first (lib/setup before lib/setup.js) changes what runs.
+    private Result<IEnumerable<string>> Protected((string Path, bool Required, bool Specifier) named, string directory)
+    {
+        var candidates = (named.Specifier ? CommandFilesRule.LoaderCandidates(named.Path) : [named.Path]).Select(c => files.FullPath(directory, c)).ToList();
+        var existing = candidates.Select(files.RealPath).OfType<string>().ToList();
+        if (existing.Count == 0 && named.Required && !files.Exists(files.FullPath(directory, named.Path)))
+        {
+            return BugFixErrors.CheckNotFrozen.With($"the baseline command names {named.Path}, which doesn't exist; a fix could add it, so name only files that exist");
+        }
+
+        return Results.Success(named.Specifier ? existing.Concat(candidates.Select(Path.GetFullPath)) : existing);
     }
 }

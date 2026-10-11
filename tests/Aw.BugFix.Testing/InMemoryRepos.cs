@@ -118,7 +118,14 @@ public sealed class InMemoryRepos : IGit, IFiles
 
     /// <inheritdoc/>
     public Result<IReadOnlyList<string>> Untracked(string directory) =>
-        Tree(directory).Map(t => (IReadOnlyList<string>)[.. Working(t.Root).Keys.Where(f => !_commits[t.Head].Files.ContainsKey(f)).Order(StringComparer.Ordinal)]);
+        Tree(directory).Map(t =>
+        {
+            var working = Working(t.Root);
+            var ignored = (working.GetValueOrDefault(".gitignore") ?? string.Empty).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return (IReadOnlyList<string>)[.. working.Keys
+                .Where(f => !_commits[t.Head].Files.ContainsKey(f) && !Array.Exists(ignored, i => i.EndsWith('/') ? f.StartsWith(i, StringComparison.Ordinal) : f == i))
+                .Order(StringComparer.Ordinal)];
+        });
 
     /// <summary>Removes a file from the work tree (rm).</summary>
     /// <param name="path">The full path.</param>

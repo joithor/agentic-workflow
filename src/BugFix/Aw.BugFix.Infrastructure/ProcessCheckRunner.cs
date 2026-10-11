@@ -11,19 +11,19 @@ namespace Aw.BugFix.Infrastructure;
 /// </summary>
 internal sealed class ProcessCheckRunner(BugFixSettings settings, IFiles files) : ICheckRunner
 {
-    public CheckExit Run(IReadOnlyList<string> command, string directory, string log)
+    public CheckExit Run(IReadOnlyList<string> command, string directory, string log, string digestKey)
     {
         var environment = settings.FrozenVariables.Concat(settings.PassedVariables).ToDictionary(static kv => kv.Key, static kv => kv.Value, StringComparer.Ordinal);
         if (Found(command[0], directory) is not { } found || files.RealPath(found) is not { } real)
         {
             File.WriteAllText(log, $"bugfix-state: {command[0]} isn't a file in {directory} or on PATH; it can't start\n");
-            return new CheckExit(Processes.CouldNotStart, Ran: false, string.Empty, CheckEnvironment.Digests(settings.FrozenVariables));
+            return new CheckExit(Processes.CouldNotStart, Ran: false, string.Empty, CheckEnvironment.Digests(settings.FrozenVariables, digestKey));
         }
 
         var start = Processes.Start(found, command.Skip(1), directory);
         CheckEnvironment.Only(start.Environment, environment);
         var (code, ran) = Processes.ToLog(start, settings.CheckTimeout, log);
-        return new CheckExit(code, ran, files.Sha256(real).Match(static s => s, static _ => string.Empty), CheckEnvironment.Digests(settings.FrozenVariables));
+        return new CheckExit(code, ran, files.Sha256(real).Match(static s => s, static _ => string.Empty), CheckEnvironment.Digests(settings.FrozenVariables, digestKey));
     }
 
     // The path argv[0] names, as the OS would look it up from the run's directory, links not followed: relative to the

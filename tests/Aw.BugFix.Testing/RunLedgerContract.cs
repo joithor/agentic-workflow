@@ -12,7 +12,7 @@ public abstract class RunLedgerContract
     private static readonly DateTimeOffset _at = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
 
     private static readonly RunRecord _record = new(CheckKind.Test, RunOutcome.Failed, new string('a', 40), "tests", new string('b', 64), ["bash", "t.sh"], new string('c', 64), new Dictionary<string, string>(StringComparer.Ordinal) { ["PATH"] = "sha256:" + new string('d', 64) }, 1, "/log",
-        new Dictionary<string, string>(StringComparer.Ordinal) { [".coverage"] = new string('e', 64) });
+        new Dictionary<string, string>(StringComparer.Ordinal) { [".coverage"] = new string('e', 64) }, "/repo");
 
     /// <summary>Gets the ledger under test.</summary>
     protected abstract IRunLedger Ledger { get; }
@@ -48,6 +48,16 @@ public abstract class RunLedgerContract
         Expect.That((stored.Record.Command ?? []).SequenceEqual(_record.Command ?? [], StringComparer.Ordinal), "the command round-trips");
         Expect.That(stored.Record.Environment.OrderBy(static kv => kv.Key, StringComparer.Ordinal).SequenceEqual(_record.Environment), "the environment digests round-trip");
         Expect.That(stored.Record.Leftovers.OrderBy(static kv => kv.Key, StringComparer.Ordinal).SequenceEqual(_record.Leftovers), "the leftovers round-trip");
+    }
+
+    /// <summary>Every run of a bug fix gets the same digest key, and another bug fix gets another one.</summary>
+    [Fact]
+    public void Runs_of_a_bug_fix_share_one_digest_key()
+    {
+        var first = Ledger.Reserve(Directory, _at, CheckKind.Test).DigestKey;
+
+        Expect.Equal(first, Ledger.Reserve(Directory, _at, CheckKind.Ui).DigestKey, "the same key for every run of the bug fix");
+        Expect.That(first.Length >= 32 && Convert.FromHexString(first).Length >= 16, "a hex key of at least 128 bits");
     }
 
     /// <summary>An edited record reads back with a different hash.</summary>

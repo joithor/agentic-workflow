@@ -29,6 +29,8 @@ public sealed class GitReposContractTests : ReposContract, IDisposable
 
     protected override void Write(string root, string path, string text) => TempDirectory.Write(root, path, text);
 
+    protected override void Delete(string root, string path) => File.Delete(Path.Combine(root, path));
+
     protected override void Link(string root, string link, string target) =>
         _ = File.CreateSymbolicLink(Path.Combine(root, link), target);
 

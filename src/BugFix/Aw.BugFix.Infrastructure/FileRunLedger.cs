@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Aw.BugFix.Core.Errors;
 using Aw.BugFix.Core.Ids;
@@ -33,8 +34,34 @@ internal sealed class FileRunLedger(JsonSerializerOptions json) : IRunLedger
                 continue;
             }
 
-            return new RunSlot(kind == CheckKind.Test ? $"{stem}.log" : stem, $"{stem}.log", $"{stem}.json");
+            return new RunSlot(kind == CheckKind.Test ? $"{stem}.log" : stem, $"{stem}.log", $"{stem}.json", DigestKey(directory));
         }
+    }
+
+    // A random key per bug fix in digest.key (owner-only), made on first use; two runs racing to make it read the winner's.
+    private static string DigestKey(string directory)
+    {
+        var path = Path.Combine(directory, "digest.key");
+        if (!File.Exists(path))
+        {
+            try
+            {
+                var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write };
+                if (!OperatingSystem.IsWindows())
+                {
+                    options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+                }
+
+                using var stream = new FileStream(path, options);
+                stream.Write(Encoding.ASCII.GetBytes(Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32))));
+            }
+            catch (IOException) when (File.Exists(path))
+            {
+                // another run made it first
+            }
+        }
+
+        return File.ReadAllText(path).Trim();
     }
 
     public string Write(RunSlot slot, RunRecord record) => WriteFile(slot.Record, AwJson.Serialize(record, json));

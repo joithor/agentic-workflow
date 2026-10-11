@@ -47,6 +47,55 @@ public sealed class LeftoversAndShadowingTests : IDisposable
         Assert.Contains("argparse.py", World.Refused(await _w.TestRun(World.Worktree), BugFixErrors.DirtyTree).Message, StringComparison.Ordinal);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_report_the_frozen_command_names_is_output_not_a_protected_file()
+    {
+        string[] command = ["bash", World.Check, "--junitxml=out/r.xml"];
+        await _w.Investigated();
+        _w.Runner.WhileRunning = dir => _w.Repos.Write($"{dir}/out/r.xml", $"<r n='{_w.Runner.Runs.Count}'/>\n");
+        var baseline = World.Ok(await _w.Run<RunTestRequest, RunTestResponse>(new RunTestRequest(World.State, World.Check, World.Repo, command)));
+        _ = World.Ok(await _w.Run<AdvanceReproduceRequest, AdvanceReproduceResponse>(new AdvanceReproduceRequest(World.State, baseline.Evidence, World.Check, World.Repo)));
+        Assert.DoesNotContain("out/r.xml", _w.Now.Check?.CommandFiles ?? [], StringComparer.Ordinal);
+
+        _ = World.Ok(await _w.Start());
+        _ = _w.Fix();
+        var c1 = World.Ok(await _w.Record()).Candidate;
+        _ = _w.Runner.Exits("bash", 0);
+        var run = World.Ok(await _w.Run<RunTestRequest, RunTestResponse>(new RunTestRequest(World.State, World.Check, World.Worktree, command)));
+
+        Assert.True(World.Ok(await RecordRun(c1, run.Evidence)).Passed);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task What_a_run_of_another_check_left_behind_is_not_allowed()
+    {
+        _w.Repos.Write($"{World.Repo}/tools/mk.sh", "planter\n");
+        _ = _w.Repos.Commit(World.Repo);
+        var c1 = await _w.Candidate();
+        _ = _w.Runner.Exits("bash", 0);
+        _w.Runner.WhileRunning = dir => _w.Repos.Write($"{dir}/notes.txt", "planted\n");
+        _ = World.Ok(await _w.Run<RunTestRequest, RunTestResponse>(new RunTestRequest(World.State, "tools/mk.sh", World.Worktree, ["bash", "tools/mk.sh"])));
+        _w.Runner.WhileRunning = null;
+
+        Assert.Contains("notes.txt", World.Refused(await _w.TestRun(World.Worktree), BugFixErrors.DirtyTree).Message, StringComparison.Ordinal);
+        Assert.Null(_w.Now.Candidates.Single(c => c.Id == c1).Run);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("argparse.py")]
+    [InlineData("tests/helper.sh")]
+    [InlineData("sitecustomize.py")]
+    public async Task A_file_that_changes_what_runs_is_never_a_leftover_even_from_the_frozen_check(string written)
+    {
+        var c1 = await _w.Candidate();
+        _ = _w.Runner.Exits("bash", 0);
+        _w.Runner.WhileRunning = dir => _w.Repos.Write($"{dir}/{written}", "exit 0\n");
+        var run = World.Ok(await _w.TestRun(World.Worktree));
+        _w.Runner.WhileRunning = null;
+
+        Assert.Contains(written, World.Refused(await RecordRun(c1, run.Evidence), BugFixErrors.DirtyTree).Message, StringComparison.Ordinal);
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("argparse.py")]
     [InlineData("unittest.pyc")]
