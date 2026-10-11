@@ -120,7 +120,7 @@ public sealed class FixTests : IDisposable
         Assert.Contains("no commits since the baseline", Refused(await _w.Record()), StringComparison.Ordinal);
 
         _w.Repos.Write($"{World.Worktree}/src/app.ts", "fixed\n");
-        Assert.Contains("uncommitted or untracked", World.Refused(await _w.Record(), BugFixErrors.DirtyTree).Message, StringComparison.Ordinal);
+        Assert.Contains("uncommitted changes", World.Refused(await _w.Record(), BugFixErrors.DirtyTree).Message, StringComparison.Ordinal);
 
         _ = _w.Repos.Commit(World.Worktree);
         Assert.Contains("is on branch bugfix/eng-1-a1, not other", Refused(await _w.Record(branch: "other")), StringComparison.Ordinal);

@@ -11,11 +11,12 @@ internal sealed class RunTestService(IStateStore store, IRunLedger ledger, IGit 
     : IService<RunTestRequest, RunTestResponse>
 {
     public ValueTask<Result<RunTestResponse>> Handle(RunTestRequest request, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(store.Load(request.StateDirectory).Bind(_ => Run(request)));
+        ValueTask.FromResult(store.Load(request.StateDirectory).Bind(state => Run(request, state)));
 
-    private Result<RunTestResponse> Run(RunTestRequest request)
+    private Result<RunTestResponse> Run(RunTestRequest request, BugFixState state)
     {
-        var check = TreeRule.Clean(git, request.WorkingDirectory, "commit before running the check so the result maps to a commit")
+        var tree = new TreePorts(git, files, ledger);
+        var check = TreeRule.Clean(tree, state, request.WorkingDirectory, "commit before running the check so the result maps to a commit")
             .Bind(_ => locator.Locate(request.WorkingDirectory, request.Check))
             .Bind(file => Executes(request, file));
         var sha = check.Bind(file => files.Sha256(file.FullPath));
@@ -28,7 +29,8 @@ internal sealed class RunTestService(IStateStore store, IRunLedger ledger, IGit 
 
         var slot = ledger.Reserve(request.StateDirectory, clock.GetUtcNow(), CheckKind.Test);
         var exit = runner.Run(request.Command, request.WorkingDirectory, slot.Log);
-        var record = new RunRecord(CheckKind.Test, exit.Outcome, commit.Value, directory.Value, sha.Value, request.Command, exit.ProgramSha256, exit.Environment, exit.Code, slot.Log);
+        var leftovers = TreeRule.Leftovers(tree, request.WorkingDirectory).Match(static l => l, static _ => new Dictionary<string, string>(StringComparer.Ordinal));
+        var record = new RunRecord(CheckKind.Test, exit.Outcome, commit.Value, directory.Value, sha.Value, request.Command, exit.ProgramSha256, exit.Environment, exit.Code, slot.Log, leftovers);
         var recordSha = ledger.Write(slot, record);
 
         // Registered under the lock, onto the current state: the run may have taken minutes.

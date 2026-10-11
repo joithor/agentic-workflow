@@ -60,31 +60,48 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   `xargs`, `timeout`, `nice`, `nohup`, `sudo`, …), and inline code, by interpreter: shells and python `-c`, node/deno/bun
   `-e`/`-p`/`--eval`/`--print`, perl and ruby `-e`/`-E`, php `-r`, `deno eval` (anywhere in a short-flag cluster, so
   `bash -xec` counts and `bash -e` doesn't; ruby and perl value flags such as `-Itest` don't). A package runner (`npx`,
-  `npm exec`, `pnpm exec|dlx`, `yarn exec|dlx|node`, `bun x`, `uv run`, `poetry run`, `bundle exec`) is looked through:
-  the first program past its verb and options is classified the same way, and every later argument is checked for an
-  interpreter given inline code, so an option value can't hide it.
+  `pnpx`, `bunx`, `uvx`, `npm exec|x`, `pnpm exec|dlx`, `yarn exec|dlx|node`, `bun x`, `uv run`, `uv tool run`,
+  `poetry run`, `bundle exec`) is looked through: the first program past its verb and options is classified the same
+  way, and every later argument is checked for an interpreter given inline code. Before the program (and before the
+  verb) only these runner options may appear: `-y`, `--yes`, `--no`, `-q`, `--quiet`, `-s`, `--silent`, `--offline`,
+  `--prefer-offline`, `--no-install`, `--bun`, `--frozen`, `--locked`, `--no-sync`, `--isolated`, `--all-extras`,
+  `--no-dev`, and with a value `-p`, `--package`, `--with`, `--python`, `--extra`, `--group`. Any other is refused: an
+  unknown option could take the next argument as its value and hide the real program behind it, and some change what
+  runs (`-c`/`--call`/`--shell-mode`, `--node-options`, `--env-file`, a different directory). A runner subcommand that
+  isn't its runner verb or a script verb (`test`, `run`, `run-script`) is classified as the program it runs, so
+  `pnpm grep …` is a non-runner.
 - **The caller's environment can't steer it.** The check runs with only an allowlist of variables from bugfix-state's
   own environment. `PATH`, `HOME` and the names listed in `AW_BUGFIX_CHECK_ENV` (for a test that needs `DATABASE_URL`,
   `JAVA_HOME`, …) decide which code runs, so their values are frozen at the baseline and a later run with other values
-  is refused; `USER`, `LOGNAME`, `SHELL`, `TMPDIR`, `TERM`, `CI`, `LANG`, `LANGUAGE`, `TZ` and `LC_ALL`, `LC_CTYPE`,
+  is refused. State and run records keep each one as a digest (`sha256:` of the name, a NUL and the value), never the
+  value, since it may hold a credential; `status` shows the digests. A name listed in `AW_BUGFIX_CHECK_ENV` that also
+  passes through (`TZ`, `LANG`, …) is frozen; `USER`, `LOGNAME`, `SHELL`, `TMPDIR`, `TERM`, `CI`, `LANG`, `LANGUAGE`, `TZ` and `LC_ALL`, `LC_CTYPE`,
   `LC_MESSAGES`, `LC_COLLATE`, `LC_NUMERIC`, `LC_TIME`, `LC_MONETARY` pass through as they are. Everything else
   (`BASH_ENV`, `NODE_OPTIONS`, exported shell functions, `npm_config_*`, `PYTEST_ADDOPTS`, …) is dropped, and
   `AW_BUGFIX_CHECK_ENV` can't add those. Git runs without `GIT_*` variables, and bugfix-state refuses to change state
   while `DOTNET_SYSTEM_IO_DISABLEFILELOCKING` is set. Residual risk: what lives outside the repository isn't frozen
   beyond that: installed tools other than the check's own program, files under `HOME` (`~/.npmrc`, shell startup
   files), and dependencies in gitignored directories (`node_modules`, `.venv`).
+- **A clean tree.** `run-test`, `run-ui`, `record-candidate` and `record-run` refuse a work tree with an uncommitted
+  change, or with an untracked file (not ignored) that no registered run left behind: a new fixture or a module that
+  shadows another could change what the check does while the commit stays the same. Each test run record keeps the
+  untracked files the run left (`leftovers`: `.coverage`, a junit report, with their SHA-256), and a later step accepts
+  exactly those while their content is unchanged; anything else is listed in the refusal (AW-BUGFIX-020).
 - **Candidates are real changes on the baseline:** a clean worktree on the named branch, with commits on top of the
   baseline commit and a tree different from it, not already recorded. A fix that touches the check, its directory,
   tests, fixtures, snapshots, runner config, `package.json`, or a repository file the frozen command names (its runner
   or wrapper script; a script or config file named in an option, `--config=vt.ts`), every file a loader would try for a
   module specifier (`--require=`, `-r`, `--import=`, `--loader=`, `--setupFiles=` values and positional `./x`: the path
-  itself, then `.js`, `.py`, `/index.js`, `/__init__.py`, …, whether or not it exists yet, so `lib/setup` added ahead of
-  `lib/setup.js` counts), every file Python could import for a `-m`/`-p` module from the run's directory (each dotted
+  itself, then `.js`, `.json`, `.node`, `.py`, `/package.json`, `/index.js`, `/index.node`, `/__init__.py`, …, whether or
+  not it exists yet, so `lib/setup` or `lib/setup.node` added ahead of `lib/setup.js` counts), every file Python could import for a `-m`/`-p` module from the run's directory (each dotted
   prefix's `.py`, `/__init__.py`, `/__main__.py`), or a runner file the command reads without naming it (`Makefile`,
   `*.mk`, `justfile`, `Rakefile`, `Taskfile.yml`, `noxfile.py`, `pytest.ini`, `.pytest.ini`, `pytest.toml`, `.rspec`,
   `.npmrc`, `.yarnrc*`, `bunfig.toml`, `deno.json`, `pom.xml`, `build.gradle`, `Cargo.toml`, `.cargo/config.toml`,
   `Gemfile`, `go.mod`, `go.work`, `global.json`, `Directory.Build.*`, …) needs `--allow-test-changes` (the user's
-  approval). A baseline command that names a positional path (written with `/` or a leading `.`, or with a script or
+  approval). So does adding a file a loader picks ahead of existing code: a Python module (`x.py`, `x/__init__.py`)
+  directly in the run's directory or the check's directory (both come first on `sys.path`, so a new `argparse.py`
+  shadows the standard library), compiled or native code anywhere (`.pyc`, `.pyo`, `.pyd`, `.so`, `.dylib`, `.node`,
+  `.pth`), `sitecustomize.py`/`usercustomize.py`, and anything under `node_modules/`. A baseline command that names a positional path (written with `/` or a leading `.`, or with a script or
   config extension) or a script or config file in an option, that doesn't exist as a file or directory, is refused
   (AW-BUGFIX-008): a fix could add it. Option values that aren't files (URLs, `/regexes/`, output files such as
   `--junitxml=out/r.xml`, names such as `--cov=app`) are neither required nor protected, and globs and package patterns
@@ -98,7 +115,8 @@ against `--cwd` (the checkout the check lives in). The argv after `--` is kept a
   description of the frozen check, the diff stat and the diff without lock files (`package-lock.json`, `*.lock`,
   `pnpm-lock.yaml`, `packages.lock.json`) and `dist/` output, capped at 200,000 characters), writes it to
   `judge-<candidate>.json`, marks the candidate as asked, asks judge about that file without holding the lock, and
-  records the answer only when it names that file's SHA-256 and the bug fix is still in `evaluate`. It never asks
+  records the answer only when it names that file's SHA-256, the bug fix is still in `evaluate`, and the candidate
+  belongs to the current attempt (a call that outlives an `--abandon-judge` records nothing). It never asks
   again: a call interrupted after asking leaves the mark and the next `judge` is refused. `resume` then says to ask
   the user, who may leave it behind with `start-attempt --mode <A|B|C> --abandon-judge` (recorded in the history) or
   report unresolved; without that flag the candidate isn't evaluated, so a call still running isn't overtaken. If judge gives
@@ -143,7 +161,7 @@ Everything else is one line on stderr ending with the catalogue code, and nothin
 | AW-BUGFIX-017 | unavailable | ui-evidence produced no usable run; nothing registered |
 | AW-BUGFIX-018 | invalid | A git command failed (not a repository, unknown revision) |
 | AW-BUGFIX-019 | conflict | The report step isn't allowed (already reported, candidate not eligible) |
-| AW-BUGFIX-020 | conflict | A working tree has uncommitted or untracked changes |
+| AW-BUGFIX-020 | conflict | A working tree has uncommitted changes, or an untracked file no registered run left behind |
 | AW-BUGFIX-021 | conflict | Another bugfix-state call holds the state directory; retry when it finishes |
 | AW-BUGFIX-022 | unavailable | A state, run or log file can't be written or read |
 
@@ -153,11 +171,11 @@ Everything lives under the `--state` directory; the C# build never reads TS-writ
 
 - `state.json`: the state (`schemaVersion` 1), written to a temporary file and renamed, under `state.lock`. Fields: `ticket`, `phase`,
   `status`, `attempt`, `mode`, `investigation` (`handoff`, `rootCause`, `hypotheses`), `check` (`kind` test or ui,
-  `path`, `sha256`, `command`, `directory`, `programSha256`, `environment`, `commandFiles`), `baseline` (`evidence`, `commit`), `candidates` (`id`, `attempt`, `mode`, `branch`,
+  `path`, `sha256`, `command`, `directory`, `programSha256`, `environment` (digests), `commandFiles`), `baseline` (`evidence`, `commit`), `candidates` (`id`, `attempt`, `mode`, `branch`,
   `worktree`, `commit`, `hypothesis`, `changedFiles`, `run`, `verdict`, `judgeAsked`), `runs` (`evidence`, `sha256`), `resolvedBy`,
   `history`.
 - `runs/<stamp>-<test|ui>-<n>.json`: a run record (`kind`, `outcome` passed, failed or broken, `commit`, `directory`,
-  `checkSha256`, `command`, `programSha256`, `environment`, `exitCode`, `output`); a ui run that produced nothing gives its slot back, with its `.log` (and, for ui, the ui-evidence run directory `<stem>/`).
+  `checkSha256`, `command`, `programSha256`, `environment` (digests), `exitCode`, `output`, `leftovers`); a ui run that produced nothing gives its slot back, with its `.log` (and, for ui, the ui-evidence run directory `<stem>/`).
 - `judge-<candidate>.json`: the resolution-check input asked about the candidate.
 
 ## Ports and adapters

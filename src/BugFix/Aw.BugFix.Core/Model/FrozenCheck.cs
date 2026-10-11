@@ -10,7 +10,7 @@ namespace Aw.BugFix.Core.Model;
 /// <param name="Command">The test command (argv) of the baseline run; null for a ui-evidence check.</param>
 /// <param name="Directory">The working directory of the baseline run, relative to the repository root ("" for the root).</param>
 /// <param name="ProgramSha256">The SHA-256 of the program the baseline command ran: a later run must run the same program.</param>
-/// <param name="Environment">The variables that decided which code the baseline ran (PATH, HOME, …): a later run must run with the same values.</param>
+/// <param name="Environment">The variables that decided which code the baseline ran (PATH, HOME, …): each as a digest of its value: a later run must run with the same values.</param>
 /// <param name="CommandFiles">Repository files the baseline command names besides the check (its runner, wrapper scripts): a fix may not change them without approval.</param>
 public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IReadOnlyList<string>? Command, string Directory, string ProgramSha256, IReadOnlyDictionary<string, string> Environment, IReadOnlyList<string> CommandFiles)
 {
@@ -51,6 +51,6 @@ public sealed record FrozenCheck(CheckKind Kind, string Path, string Sha256, IRe
             .ToList();
         return differ.Count == 0
             ? record
-            : BugFixErrors.RunRefused.With($"the test command ran with a different {string.Join(", ", differ)} than the baseline; run it with the baseline's values (state.json check.environment)");
+            : BugFixErrors.RunRefused.With($"the test command ran with a different {string.Join(", ", differ)} than the baseline; run it with the baseline's values (state.json check.environment has their digests)");
     }
 }

@@ -17,13 +17,13 @@ internal sealed class ProcessCheckRunner(BugFixSettings settings, IFiles files) 
         if (Found(command[0], directory) is not { } found || files.RealPath(found) is not { } real)
         {
             File.WriteAllText(log, $"bugfix-state: {command[0]} isn't a file in {directory} or on PATH; it can't start\n");
-            return new CheckExit(Processes.CouldNotStart, Ran: false, string.Empty, settings.FrozenVariables);
+            return new CheckExit(Processes.CouldNotStart, Ran: false, string.Empty, CheckEnvironment.Digests(settings.FrozenVariables));
         }
 
         var start = Processes.Start(found, command.Skip(1), directory);
         CheckEnvironment.Only(start.Environment, environment);
         var (code, ran) = Processes.ToLog(start, settings.CheckTimeout, log);
-        return new CheckExit(code, ran, files.Sha256(real).Match(static s => s, static _ => string.Empty), settings.FrozenVariables);
+        return new CheckExit(code, ran, files.Sha256(real).Match(static s => s, static _ => string.Empty), CheckEnvironment.Digests(settings.FrozenVariables));
     }
 
     // The path argv[0] names, as the OS would look it up from the run's directory, links not followed: relative to the

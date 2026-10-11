@@ -8,7 +8,7 @@ using Aw.Kernel.Services;
 
 namespace Aw.BugFix.Features.RecordCandidate;
 
-internal sealed class RecordCandidateService(IStateStore store, IGit git, TimeProvider clock) : IService<RecordCandidateRequest, RecordCandidateResponse>
+internal sealed class RecordCandidateService(IStateStore store, IRunLedger ledger, IGit git, IFiles files, TimeProvider clock) : IService<RecordCandidateRequest, RecordCandidateResponse>
 {
     public ValueTask<Result<RecordCandidateResponse>> Handle(RecordCandidateRequest request, CancellationToken cancellationToken) =>
         ValueTask.FromResult(store.Locked(request.StateDirectory, () => store.Load(request.StateDirectory).Bind(state => Record(request, state))));
@@ -24,12 +24,13 @@ internal sealed class RecordCandidateService(IStateStore store, IGit git, TimePr
 
         var (check, baseline) = state.Frozen;
         var commit = OnBranch(request)
-            .Bind(_ => TreeRule.Clean(git, request.WorkingDirectory, "commit the fix first"))
+            .Bind(_ => TreeRule.Clean(new TreePorts(git, files, ledger), state, request.WorkingDirectory, "commit the fix first"))
             .Bind(_ => git.Head(request.WorkingDirectory))
             .Bind(head => OnBaseline(request.WorkingDirectory, baseline.Commit, head))
             .Bind(head => CandidateRule.CanRecord(state, head, request.Hypothesis).Map(_ => head));
-        var changed = commit.Bind(head => git.ChangedFiles(request.WorkingDirectory, baseline.Commit, head))
-            .Bind(files => Untouched(files, check, request.AllowTestChanges));
+        var added = commit.Bind(head => git.AddedFiles(request.WorkingDirectory, baseline.Commit, head));
+        var changed = added.Bind(_ => git.ChangedFiles(request.WorkingDirectory, baseline.Commit, commit.Value))
+            .Bind(paths => Untouched(paths, added.Value, check, request.AllowTestChanges));
         if (changed.IsError)
         {
             return changed.Error;
@@ -68,11 +69,14 @@ internal sealed class RecordCandidateService(IStateStore store, IGit git, TimePr
     }
 
     // Weakening what the check exercises (fixtures, helpers, its runner, config) is as bad as editing the check itself.
-    private static Result<IReadOnlyList<string>> Untouched(IReadOnlyList<string> files, FrozenCheck check, bool approved)
+    // So is adding a file a loader picks ahead of existing code (a module that shadows another).
+    private static Result<IReadOnlyList<string>> Untouched(IReadOnlyList<string> changed, IReadOnlyList<string> added, FrozenCheck check, bool approved)
     {
-        var touched = ProtectedPaths.Touched(files, check.Path, check.CommandFiles);
+        var touched = ProtectedPaths.Touched(changed, check.Path, check.CommandFiles)
+            .Union(ProtectedPaths.Shadowing(added, check.Directory, check.Path), StringComparer.Ordinal)
+            .ToList();
         return touched.Count == 0 || approved
-            ? Results.Success(files)
-            : BugFixErrors.CandidateRefused.With($"the fix touches test/fixture/config files ({string.Join(", ", touched)}); ask the user, and pass --allow-test-changes only if they approve");
+            ? Results.Success(changed)
+            : BugFixErrors.CandidateRefused.With($"the fix touches test/fixture/config files or adds a file a loader picks first ({string.Join(", ", touched)}); ask the user, and pass --allow-test-changes only if they approve");
     }
 }

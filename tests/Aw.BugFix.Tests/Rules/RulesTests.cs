@@ -77,6 +77,9 @@ public sealed class RulesTests
     [InlineData("python -E t.py", null)]
     [InlineData("bash -xec true t.sh", "inline code (`bash -xec`)")]
     [InlineData("bun -e 1 t.ts", "inline code (`bun -e`)")]
+    [InlineData("bun -e 1 t.ts x", "inline code (`bun -e`)")]
+    [InlineData("bun -p 0 x t.ts", "inline code (`bun -p`)")]
+    [InlineData("bun t.ts x", null)]
     [InlineData("bun test t.test.ts", null)]
     [InlineData("ruby -Itest t_test.rb", null)]
     [InlineData("perl -Ilib t.t", null)]
@@ -85,9 +88,17 @@ public sealed class RulesTests
     [InlineData("perl -We 1 t.t", "inline code (`perl -We`)")]
     [InlineData("perl -le 1 t.t", "inline code (`perl -le`)")]
     [InlineData("perl -Mstrict t.t", null)]
-    [InlineData("npx --registry https://r node -e 1 t.js", "inline code (`node -e`)")]
-    [InlineData("pnpm --filter x exec node -e 1 t.js", "inline code (`node -e`)")]
-    [InlineData("uv run --index-url https://x python -c 1 t.py", "inline code (`python -c`)")]
+    [InlineData("npx --registry https://r node -e 1 t.js", "option `--registry`")]
+    [InlineData("npx -p pkg -c true t.js", "inline code (`npx -c`)")]
+    [InlineData("npx -p pkg grep -q keep t.js", "not `grep`")]
+    [InlineData("pnpm grep -q keep t.js", "not `grep`")]
+    [InlineData("uv tool run grep t.py", "not `grep`")]
+    [InlineData("uvx grep t.py", "not `grep`")]
+    [InlineData("npm run test:unit t.js", null)]
+    [InlineData("npm --node-options=--require=./x.js exec vitest t.js", "option `--node-options`")]
+    [InlineData("uv run --env-file .env pytest t.py", "option `--env-file`")]
+    [InlineData("pnpm --filter x exec node -e 1 t.js", "option `--filter`")]
+    [InlineData("uv run --index-url https://x python -c 1 t.py", "option `--index-url`")]
     [InlineData("npx playwright test tests/x.spec.ts", null)]
     [InlineData("pnpm exec vitest run t.test.ts", null)]
     [InlineData("npx -p vitest node -e 1 t.js", "inline code (`node -e`)")]
@@ -120,7 +131,7 @@ public sealed class RulesTests
     {
         var env = new Dictionary<string, string>(StringComparer.Ordinal) { ["PATH"] = "/usr/bin", ["HOME"] = "/home/u" };
         var check = new FrozenCheck(CheckKind.Test, "tests/bug.sh", "sha", ["bash", "tests/bug.sh"], Directory: string.Empty, ProgramSha256: "bash", Environment: env, CommandFiles: []);
-        var run = new RunRecord(CheckKind.Test, RunOutcome.Passed, "c", Directory: string.Empty, "sha", ["bash", "tests/bug.sh"], ProgramSha256: "bash", Environment: env, 0, "/log");
+        var run = new RunRecord(CheckKind.Test, RunOutcome.Passed, "c", Directory: string.Empty, "sha", ["bash", "tests/bug.sh"], ProgramSha256: "bash", Environment: env, 0, "/log", Leftovers: new Dictionary<string, string>(StringComparer.Ordinal));
 
         _ = World.Ok(check.Accepts(run));
         _ = World.Refused(check.Accepts(run with { Directory = "lib" }), BugFixErrors.RunRefused);

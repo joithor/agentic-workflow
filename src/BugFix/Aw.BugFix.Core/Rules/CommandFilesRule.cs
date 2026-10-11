@@ -23,10 +23,12 @@ public static class CommandFilesRule
         ".yaml", ".yml", ".ini", ".cfg",
     ];
 
-    // What a module loader tries for a specifier without an extension (node, python, ruby), after the path itself.
+    // What a module loader tries for a specifier without an extension (node, python, ruby), after the path itself:
+    // node tries X.js, X.json, X.node, then X/package.json's main and X/index.*.
     private static readonly string[] _resolverSuffixes =
     [
-        ".js", ".cjs", ".mjs", ".ts", ".cts", ".mts", ".json", ".py", ".rb", "/index.js", "/index.cjs", "/index.mjs", "/index.ts", "/__init__.py",
+        ".js", ".cjs", ".mjs", ".ts", ".cts", ".mts", ".json", ".node", ".py", ".rb", ".so", "/package.json", "/index.js", "/index.cjs",
+        "/index.mjs", "/index.ts", "/index.json", "/index.node", "/__init__.py",
     ];
 
     /// <summary>Every path the command's arguments name (relative to the run's directory or full).</summary>

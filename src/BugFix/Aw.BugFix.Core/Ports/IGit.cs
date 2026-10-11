@@ -16,10 +16,15 @@ public interface IGit
     /// <returns>The branch name.</returns>
     public Result<string> Branch(string directory);
 
-    /// <summary>Whether the work tree has no uncommitted or untracked change.</summary>
+    /// <summary>Whether the work tree has no uncommitted change to a tracked file (untracked files are <see cref="Untracked"/>).</summary>
     /// <param name="directory">A directory inside a work tree.</param>
     /// <returns>True when clean.</returns>
     public Result<bool> IsClean(string directory);
+
+    /// <summary>The untracked files of the whole work tree, not ignored ones, repository-relative with '/'.</summary>
+    /// <param name="directory">A directory inside a work tree.</param>
+    /// <returns>The paths.</returns>
+    public Result<IReadOnlyList<string>> Untracked(string directory);
 
     /// <summary>The repository root (real path) of <paramref name="directory"/>.</summary>
     /// <param name="directory">A directory inside a work tree.</param>
@@ -57,6 +62,13 @@ public interface IGit
     /// <param name="to">The candidate commit.</param>
     /// <returns>The changed paths.</returns>
     public Result<IReadOnlyList<string>> ChangedFiles(string directory, string from, string to);
+
+    /// <summary>The files added between two commits (not there at <paramref name="from"/>), paths raw with '/'.</summary>
+    /// <param name="directory">A directory inside the repository.</param>
+    /// <param name="from">The base commit.</param>
+    /// <param name="to">The candidate commit.</param>
+    /// <returns>The added paths.</returns>
+    public Result<IReadOnlyList<string>> AddedFiles(string directory, string from, string to);
 
     /// <summary>The change between two commits, as git diff --stat and as the full diff without lock files and build output.</summary>
     /// <param name="directory">A directory inside the repository.</param>

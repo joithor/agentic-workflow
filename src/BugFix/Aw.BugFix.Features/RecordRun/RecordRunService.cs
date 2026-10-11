@@ -25,7 +25,7 @@ internal sealed class RecordRunService(IStateStore store, IRunLedger ledger, IGi
         var run = ledger.Read(request.Evidence)
             .Bind(stored => EvidenceRule.Accept(state, stored))
             .Bind(check.Accepts)
-            .Bind(record => Against(candidate.Value, record))
+            .Bind(record => Against(state, candidate.Value, record))
             .Bind(record => Frozen(check, candidate.Value, record));
         if (run.IsError)
         {
@@ -41,7 +41,7 @@ internal sealed class RecordRunService(IStateStore store, IRunLedger ledger, IGi
     private static Result<Candidate> Unrun(Candidate candidate) =>
         candidate.Run is null ? candidate : BugFixErrors.RunRefused.With($"a run is already recorded for {candidate.Id.Value}");
 
-    private Result<RunRecord> Against(Candidate candidate, RunRecord record)
+    private Result<RunRecord> Against(BugFixState state, Candidate candidate, RunRecord record)
     {
         if (record.Commit != candidate.Commit)
         {
@@ -54,7 +54,7 @@ internal sealed class RecordRunService(IStateStore store, IRunLedger ledger, IGi
             return head.IsError ? head.Error : BugFixErrors.RunRefused.With($"{candidate.Id.Value}'s branch moved to {head.Value} after record-candidate; record a new candidate");
         }
 
-        return TreeRule.Clean(git, candidate.Worktree, "the candidate's worktree must stay as recorded").Map(_ => record);
+        return TreeRule.Clean(new TreePorts(git, files, ledger), state, candidate.Worktree, "the candidate's worktree must stay as recorded").Map(_ => record);
     }
 
     // The frozen-check rule: a fix must not weaken the check, neither the file nor what the run executed.

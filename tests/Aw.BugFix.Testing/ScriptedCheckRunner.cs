@@ -11,6 +11,9 @@ public sealed class ScriptedCheckRunner : ICheckRunner
     private readonly Dictionary<string, string> _resolves = new(StringComparer.Ordinal);
     private Dictionary<string, string> _environment = new(StringComparer.Ordinal) { ["PATH"] = "/usr/bin:/bin" };
 
+    /// <summary>Gets or sets what the command does to its directory while it runs (writes a report, say).</summary>
+    public Action<string>? WhileRunning { get; set; }
+
     /// <summary>Gets every command run, with its directory.</summary>
     public IList<(IReadOnlyList<string> Command, string Directory)> Runs { get; } = [];
 
@@ -57,6 +60,7 @@ public sealed class ScriptedCheckRunner : ICheckRunner
     public CheckExit Run(IReadOnlyList<string> command, string directory, string log)
     {
         Runs.Add((command, directory));
+        WhileRunning?.Invoke(directory);
         var program = _resolves.GetValueOrDefault(command[0], $"sha-of-{command[0]}");
         if (_hanging.Contains(command[0]))
         {

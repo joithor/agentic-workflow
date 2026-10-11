@@ -110,7 +110,19 @@ public sealed class InMemoryRepos : IGit, IFiles
 
     /// <inheritdoc/>
     public Result<bool> IsClean(string directory) =>
-        Tree(directory).Map(t => Same(Working(t.Root), _commits[t.Head].Files));
+        Tree(directory).Map(t =>
+        {
+            var working = Working(t.Root);
+            return _commits[t.Head].Files.All(kv => working.TryGetValue(kv.Key, out var text) && string.Equals(text, kv.Value, StringComparison.Ordinal));
+        });
+
+    /// <inheritdoc/>
+    public Result<IReadOnlyList<string>> Untracked(string directory) =>
+        Tree(directory).Map(t => (IReadOnlyList<string>)[.. Working(t.Root).Keys.Where(f => !_commits[t.Head].Files.ContainsKey(f)).Order(StringComparer.Ordinal)]);
+
+    /// <summary>Removes a file from the work tree (rm).</summary>
+    /// <param name="path">The full path.</param>
+    public void Delete(string path) => _files.Remove(path);
 
     /// <inheritdoc/>
     public Result<string> Root(string directory) => Tree(directory).Map(static t => t.Root);
@@ -147,6 +159,10 @@ public sealed class InMemoryRepos : IGit, IFiles
             .Where(f => !a.TryGetValue(f, out var x) || !b.TryGetValue(f, out var y) || !string.Equals(x, y, StringComparison.Ordinal))
             .Order(StringComparer.Ordinal)]);
     }
+
+    /// <inheritdoc/>
+    public Result<IReadOnlyList<string>> AddedFiles(string directory, string from, string to) =>
+        Results.Success<IReadOnlyList<string>>([.. _commits[to].Files.Keys.Where(f => !_commits[from].Files.ContainsKey(f)).Order(StringComparer.Ordinal)]);
 
     /// <inheritdoc/>
     public Result<CommitDiff> Diff(string directory, string from, string to) =>

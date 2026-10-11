@@ -328,7 +328,7 @@ Aw.BugFix.Core.Model.RunRecord.Command.get -> System.Collections.Generic.IReadOn
 Aw.BugFix.Core.Model.RunRecord.Command.init -> void
 Aw.BugFix.Core.Model.RunRecord.Commit.get -> string!
 Aw.BugFix.Core.Model.RunRecord.Commit.init -> void
-Aw.BugFix.Core.Model.RunRecord.Deconstruct(out Aw.BugFix.Core.Model.CheckKind Kind, out Aw.BugFix.Core.Model.RunOutcome Outcome, out string! Commit, out string! Directory, out string! CheckSha256, out System.Collections.Generic.IReadOnlyList<string!>? Command, out string! ProgramSha256, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, out int ExitCode, out string! Output) -> void
+Aw.BugFix.Core.Model.RunRecord.Deconstruct(out Aw.BugFix.Core.Model.CheckKind Kind, out Aw.BugFix.Core.Model.RunOutcome Outcome, out string! Commit, out string! Directory, out string! CheckSha256, out System.Collections.Generic.IReadOnlyList<string!>? Command, out string! ProgramSha256, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, out int ExitCode, out string! Output, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Leftovers) -> void
 Aw.BugFix.Core.Model.RunRecord.Directory.get -> string!
 Aw.BugFix.Core.Model.RunRecord.Directory.init -> void
 Aw.BugFix.Core.Model.RunRecord.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
@@ -338,13 +338,15 @@ Aw.BugFix.Core.Model.RunRecord.ExitCode.get -> int
 Aw.BugFix.Core.Model.RunRecord.ExitCode.init -> void
 Aw.BugFix.Core.Model.RunRecord.Kind.get -> Aw.BugFix.Core.Model.CheckKind
 Aw.BugFix.Core.Model.RunRecord.Kind.init -> void
+Aw.BugFix.Core.Model.RunRecord.Leftovers.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.BugFix.Core.Model.RunRecord.Leftovers.init -> void
 Aw.BugFix.Core.Model.RunRecord.Outcome.get -> Aw.BugFix.Core.Model.RunOutcome
 Aw.BugFix.Core.Model.RunRecord.Outcome.init -> void
 Aw.BugFix.Core.Model.RunRecord.Output.get -> string!
 Aw.BugFix.Core.Model.RunRecord.Output.init -> void
 Aw.BugFix.Core.Model.RunRecord.ProgramSha256.get -> string!
 Aw.BugFix.Core.Model.RunRecord.ProgramSha256.init -> void
-Aw.BugFix.Core.Model.RunRecord.RunRecord(Aw.BugFix.Core.Model.CheckKind Kind, Aw.BugFix.Core.Model.RunOutcome Outcome, string! Commit, string! Directory, string! CheckSha256, System.Collections.Generic.IReadOnlyList<string!>? Command, string! ProgramSha256, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, int ExitCode, string! Output) -> void
+Aw.BugFix.Core.Model.RunRecord.RunRecord(Aw.BugFix.Core.Model.CheckKind Kind, Aw.BugFix.Core.Model.RunOutcome Outcome, string! Commit, string! Directory, string! CheckSha256, System.Collections.Generic.IReadOnlyList<string!>? Command, string! ProgramSha256, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, int ExitCode, string! Output, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Leftovers) -> void
 Aw.BugFix.Core.Model.RunSlot
 Aw.BugFix.Core.Model.RunSlot.<Clone>$() -> Aw.BugFix.Core.Model.RunSlot!
 Aw.BugFix.Core.Model.RunSlot.Deconstruct(out string! Output, out string! Log, out string! Record) -> void
@@ -423,6 +425,7 @@ Aw.BugFix.Core.Ports.IFiles.ReadText(string! path) -> Aw.Kernel.Result<string!>!
 Aw.BugFix.Core.Ports.IFiles.RealPath(string! path) -> string?
 Aw.BugFix.Core.Ports.IFiles.Sha256(string! path) -> Aw.Kernel.Result<string!>!
 Aw.BugFix.Core.Ports.IGit
+Aw.BugFix.Core.Ports.IGit.AddedFiles(string! directory, string! from, string! to) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
 Aw.BugFix.Core.Ports.IGit.Branch(string! directory) -> Aw.Kernel.Result<string!>!
 Aw.BugFix.Core.Ports.IGit.ChangedFiles(string! directory, string! from, string! to) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
 Aw.BugFix.Core.Ports.IGit.Diff(string! directory, string! from, string! to) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.CommitDiff!>!
@@ -433,6 +436,7 @@ Aw.BugFix.Core.Ports.IGit.IsCommittedUnchanged(string! root, string! file) -> Aw
 Aw.BugFix.Core.Ports.IGit.RelativeDirectory(string! directory) -> Aw.Kernel.Result<string!>!
 Aw.BugFix.Core.Ports.IGit.Root(string! directory) -> Aw.Kernel.Result<string!>!
 Aw.BugFix.Core.Ports.IGit.SameTree(string! directory, string! first, string! second) -> Aw.Kernel.Result<bool>!
+Aw.BugFix.Core.Ports.IGit.Untracked(string! directory) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
 Aw.BugFix.Core.Ports.IJudge
 Aw.BugFix.Core.Ports.IJudge.ResolutionCheck(Aw.BugFix.Core.Model.JudgeQuestion! question) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.JudgeAnswer!>!
 Aw.BugFix.Core.Ports.IRunLedger
@@ -449,6 +453,17 @@ Aw.BugFix.Core.Ports.IStateStore.StateFile(string! directory) -> string!
 Aw.BugFix.Core.Ports.IUiEvidence
 Aw.BugFix.Core.Ports.IUiEvidence.Run(Aw.BugFix.Core.Model.UiRunRequest! request) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.UiRun!>!
 Aw.BugFix.Core.Ports.StateStoreExtensions
+Aw.BugFix.Core.Ports.TreePorts
+Aw.BugFix.Core.Ports.TreePorts.<Clone>$() -> Aw.BugFix.Core.Ports.TreePorts!
+Aw.BugFix.Core.Ports.TreePorts.Deconstruct(out Aw.BugFix.Core.Ports.IGit! Git, out Aw.BugFix.Core.Ports.IFiles! Files, out Aw.BugFix.Core.Ports.IRunLedger! Ledger) -> void
+Aw.BugFix.Core.Ports.TreePorts.Equals(Aw.BugFix.Core.Ports.TreePorts? other) -> bool
+Aw.BugFix.Core.Ports.TreePorts.Files.get -> Aw.BugFix.Core.Ports.IFiles!
+Aw.BugFix.Core.Ports.TreePorts.Files.init -> void
+Aw.BugFix.Core.Ports.TreePorts.Git.get -> Aw.BugFix.Core.Ports.IGit!
+Aw.BugFix.Core.Ports.TreePorts.Git.init -> void
+Aw.BugFix.Core.Ports.TreePorts.Ledger.get -> Aw.BugFix.Core.Ports.IRunLedger!
+Aw.BugFix.Core.Ports.TreePorts.Ledger.init -> void
+Aw.BugFix.Core.Ports.TreePorts.TreePorts(Aw.BugFix.Core.Ports.IGit! Git, Aw.BugFix.Core.Ports.IFiles! Files, Aw.BugFix.Core.Ports.IRunLedger! Ledger) -> void
 Aw.BugFix.Core.Rules.AttemptRule
 Aw.BugFix.Core.Rules.CandidateRule
 Aw.BugFix.Core.Rules.CheckCommandRule
@@ -539,6 +554,9 @@ override Aw.BugFix.Core.Model.UiRun.ToString() -> string!
 override Aw.BugFix.Core.Model.UiRunRequest.Equals(object? obj) -> bool
 override Aw.BugFix.Core.Model.UiRunRequest.GetHashCode() -> int
 override Aw.BugFix.Core.Model.UiRunRequest.ToString() -> string!
+override Aw.BugFix.Core.Ports.TreePorts.Equals(object? obj) -> bool
+override Aw.BugFix.Core.Ports.TreePorts.GetHashCode() -> int
+override Aw.BugFix.Core.Ports.TreePorts.ToString() -> string!
 static Aw.BugFix.Core.BugFixCoreServiceCollectionExtensions.AddBugFixCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.BugFix.Core.Errors.BugFixErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.BugFix.Core.Ids.CandidateId.From(string! value) -> Aw.BugFix.Core.Ids.CandidateId
@@ -606,6 +624,8 @@ static Aw.BugFix.Core.Model.UiRun.operator ==(Aw.BugFix.Core.Model.UiRun? left, 
 static Aw.BugFix.Core.Model.UiRunRequest.operator !=(Aw.BugFix.Core.Model.UiRunRequest? left, Aw.BugFix.Core.Model.UiRunRequest? right) -> bool
 static Aw.BugFix.Core.Model.UiRunRequest.operator ==(Aw.BugFix.Core.Model.UiRunRequest? left, Aw.BugFix.Core.Model.UiRunRequest? right) -> bool
 static Aw.BugFix.Core.Ports.StateStoreExtensions.Locked<T>(this Aw.BugFix.Core.Ports.IStateStore! store, string! directory, System.Func<Aw.Kernel.Result<T>!>! work, bool create = false) -> Aw.Kernel.Result<T>!
+static Aw.BugFix.Core.Ports.TreePorts.operator !=(Aw.BugFix.Core.Ports.TreePorts? left, Aw.BugFix.Core.Ports.TreePorts? right) -> bool
+static Aw.BugFix.Core.Ports.TreePorts.operator ==(Aw.BugFix.Core.Ports.TreePorts? left, Aw.BugFix.Core.Ports.TreePorts? right) -> bool
 static Aw.BugFix.Core.Rules.AttemptRule.Candidates(Aw.BugFix.Core.Model.FixMode? mode) -> int
 static Aw.BugFix.Core.Rules.AttemptRule.CanStart(Aw.BugFix.Core.Model.BugFixState! state, Aw.BugFix.Core.Model.FixMode mode, bool abandonJudge = false) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 static Aw.BugFix.Core.Rules.CandidateRule.CanRecord(Aw.BugFix.Core.Model.BugFixState! state, string! commit, int? hypothesis) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
@@ -615,8 +635,10 @@ static Aw.BugFix.Core.Rules.CommandFilesRule.Paths(System.Collections.Generic.IR
 static Aw.BugFix.Core.Rules.EvidenceRule.Accept(Aw.BugFix.Core.Model.BugFixState! state, Aw.BugFix.Core.Model.StoredRun! run) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.RunRecord!>!
 static Aw.BugFix.Core.Rules.HandoffParser.Parse(string! markdown) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.Handoff!>!
 static Aw.BugFix.Core.Rules.NextStep.For(Aw.BugFix.Core.Model.BugFixState! state) -> string!
+static Aw.BugFix.Core.Rules.ProtectedPaths.Shadowing(System.Collections.Generic.IEnumerable<string!>! addedFiles, string! runDirectory, string! checkPath) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.BugFix.Core.Rules.ProtectedPaths.Touched(System.Collections.Generic.IEnumerable<string!>! changedFiles, string! checkPath, System.Collections.Generic.IReadOnlyCollection<string!>! commandFiles) -> System.Collections.Generic.IReadOnlyList<string!>!
-static Aw.BugFix.Core.Rules.TreeRule.Clean(Aw.BugFix.Core.Ports.IGit! git, string! directory, string! what) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.BugFix.Core.Rules.TreeRule.Clean(Aw.BugFix.Core.Ports.TreePorts! ports, Aw.BugFix.Core.Model.BugFixState! state, string! directory, string! what) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+static Aw.BugFix.Core.Rules.TreeRule.Leftovers(Aw.BugFix.Core.Ports.TreePorts! ports, string! directory) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, string!>!>!
 static readonly Aw.BugFix.Core.Errors.BugFixErrors.AttemptRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.BugFix.Core.Errors.BugFixErrors.CandidateRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.BugFix.Core.Errors.BugFixErrors.CheckNotFrozen -> Aw.Kernel.ErrorDefinition!

@@ -29,14 +29,20 @@ public abstract class ReposContract
         Expect.That(Ok(Git.IsClean(root)), "True(Ok(Git.IsClean(root)))");
     }
 
-    /// <summary>A changed or untracked file makes the tree dirty and the file uncommitted.</summary>
+    /// <summary>A changed tracked file makes the tree dirty and the file uncommitted; an untracked one is listed from the root.</summary>
     [Fact]
-    public void Changed_and_untracked_files_are_not_clean()
+    public void Changed_files_are_not_clean_and_untracked_files_are_listed()
     {
-        var (root, _) = NewRepo();
+        var (root, first) = NewRepo();
+        Write(root, "out/report.xml", "<r/>\n");
+        Expect.That(Ok(Git.IsClean(root)), "an untracked file leaves the tracked files clean");
+        Expect.That(Ok(Git.Untracked($"{root}/src")).SequenceEqual(["out/report.xml"], StringComparer.Ordinal), "Untracked lists the whole work tree, repository-relative");
         Write(root, "src/a.txt", "changed\n");
 
         Expect.That(!Ok(Git.IsClean(root)), "False(Ok(Git.IsClean(root)))");
+        var second = Commit(root);
+        Expect.That(Ok(Git.AddedFiles(root, first, second)).SequenceEqual(["out/report.xml"], StringComparer.Ordinal), "AddedFiles lists only files new since the base");
+        Write(root, "src/a.txt", "changed again\n");
         Expect.That(!Ok(Git.IsCommittedUnchanged(root, "src/a.txt")), "False(Ok(Git.IsCommittedUnchanged(root, 'src/a.txt')))");
         Expect.That(Ok(Git.IsCommittedUnchanged(root, "tests/t.sh")), "True(Ok(Git.IsCommittedUnchanged(root, 'tests/t.sh')))");
         Write(root, "new.txt", "x\n");

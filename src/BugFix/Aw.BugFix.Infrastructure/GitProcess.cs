@@ -15,9 +15,12 @@ internal sealed class GitProcess : IGit
 
     public Result<string> Branch(string directory) => Value(directory, "rev-parse", "--abbrev-ref", "HEAD");
 
-    // Untracked files count: a new fixture or helper can change what a test does while the commit stays the same.
     public Result<bool> IsClean(string directory) =>
-        Value(directory, "status", "--porcelain", "--untracked-files=all").Map(static s => s.Length == 0);
+        Value(directory, "status", "--porcelain", "--untracked-files=no").Map(static s => s.Length == 0);
+
+    // From the root, so the whole work tree counts (ls-files lists only below the directory it runs in).
+    public Result<IReadOnlyList<string>> Untracked(string directory) =>
+        Root(directory).Bind(root => Paths(root, "ls-files", "--others", "--exclude-standard", "-z"));
 
     public Result<string> Root(string directory) => Value(directory, "rev-parse", "--show-toplevel");
 
@@ -50,13 +53,11 @@ internal sealed class GitProcess : IGit
         Value(directory, "rev-parse", $"{first}^{{tree}}").Bind(a => Value(directory, "rev-parse", $"{second}^{{tree}}").Map(b => a == b));
 
     // -z: raw (unquoted) paths; --no-renames: a moved test reports its old path too.
-    public Result<IReadOnlyList<string>> ChangedFiles(string directory, string from, string to)
-    {
-        var run = Run(directory, "diff", "--name-only", "--no-renames", "-z", from, to);
-        return run.ExitCode == 0
-            ? Results.Success<IReadOnlyList<string>>(run.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries))
-            : Failed(run, "diff");
-    }
+    public Result<IReadOnlyList<string>> ChangedFiles(string directory, string from, string to) =>
+        Paths(directory, "diff", "--name-only", "--no-renames", "-z", from, to);
+
+    public Result<IReadOnlyList<string>> AddedFiles(string directory, string from, string to) =>
+        Paths(directory, "diff", "--name-only", "--no-renames", "--diff-filter=A", "-z", from, to);
 
     // Lock files and build output are noise to judge; without the full diff judge still has the stat.
     public Result<CommitDiff> Diff(string directory, string from, string to) =>
@@ -65,6 +66,14 @@ internal sealed class GitProcess : IGit
             var full = Run(directory, "diff", from, to, "--", ".", ":(glob,exclude)**/package-lock.json", ":(glob,exclude)**/*.lock", ":(glob,exclude)**/pnpm-lock.yaml", ":(glob,exclude)**/packages.lock.json", ":(glob,exclude)**/dist/**");
             return new CommitDiff(stat, full.ExitCode == 0 ? full.Output : null);
         });
+
+    private static Result<IReadOnlyList<string>> Paths(string directory, params string[] args)
+    {
+        var run = Run(directory, args);
+        return run.ExitCode == 0
+            ? Results.Success<IReadOnlyList<string>>(run.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries))
+            : Failed(run, args[0]);
+    }
 
     private static Result<string> Value(string directory, params string[] args)
     {

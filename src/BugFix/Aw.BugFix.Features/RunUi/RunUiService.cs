@@ -6,15 +6,15 @@ using Aw.Kernel.Services;
 
 namespace Aw.BugFix.Features.RunUi;
 
-internal sealed class RunUiService(IStateStore store, IRunLedger ledger, IGit git, CheckLocator locator, IUiEvidence ui, TimeProvider clock)
+internal sealed class RunUiService(IStateStore store, IRunLedger ledger, IGit git, IFiles files, CheckLocator locator, IUiEvidence ui, TimeProvider clock)
     : IService<RunUiRequest, RunUiResponse>
 {
     public ValueTask<Result<RunUiResponse>> Handle(RunUiRequest request, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(store.Load(request.StateDirectory).Bind(_ => Run(request)));
+        ValueTask.FromResult(store.Load(request.StateDirectory).Bind(state => Run(request, state)));
 
-    private Result<RunUiResponse> Run(RunUiRequest request)
+    private Result<RunUiResponse> Run(RunUiRequest request, BugFixState state)
     {
-        var script = TreeRule.Clean(git, request.WorkingDirectory, "commit before running the check so the result maps to a commit")
+        var script = TreeRule.Clean(new TreePorts(git, files, ledger), state, request.WorkingDirectory, "commit before running the check so the result maps to a commit")
             .Bind(_ => locator.Locate(request.WorkingDirectory, request.Check));
         var commit = script.Bind(_ => git.Head(request.WorkingDirectory));
         var directory = commit.Bind(_ => git.RelativeDirectory(request.WorkingDirectory));
@@ -32,7 +32,7 @@ internal sealed class RunUiService(IStateStore store, IRunLedger ledger, IGit gi
             return run.Error;
         }
 
-        var record = new RunRecord(CheckKind.Ui, run.Value.Outcome, commit.Value, directory.Value, run.Value.ScriptSha256, Command: null, ProgramSha256: string.Empty, Environment: new Dictionary<string, string>(StringComparer.Ordinal), run.Value.ExitCode, slot.Output);
+        var record = new RunRecord(CheckKind.Ui, run.Value.Outcome, commit.Value, directory.Value, run.Value.ScriptSha256, Command: null, ProgramSha256: string.Empty, Environment: new Dictionary<string, string>(StringComparer.Ordinal), run.Value.ExitCode, slot.Output, Leftovers: new Dictionary<string, string>(StringComparer.Ordinal));
         var recordSha = ledger.Write(slot, record);
         return store.Locked(request.StateDirectory, () => store.Load(request.StateDirectory).Map(fresh =>
         {

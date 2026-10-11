@@ -100,6 +100,11 @@ internal sealed class JudgeCandidateService(IStateStore store, IRunLedger ledger
             return BugFixErrors.JudgeRefused.With($"{request.Candidate.Value} was judged or asked by another call meanwhile; that call's outcome stands");
         }
 
+        if (candidate.Value.Attempt != fresh.Value.Attempt)
+        {
+            return BugFixErrors.JudgeRefused.With($"{request.Candidate.Value} was left behind (start-attempt --abandon-judge) while judge was deciding; its verdict is not recorded");
+        }
+
         var status = answer.Decision switch
         {
             JudgeDecision.Escalated => BugFixStatus.NeedsHuman,

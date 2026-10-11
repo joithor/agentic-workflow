@@ -11,7 +11,8 @@ public abstract class RunLedgerContract
 {
     private static readonly DateTimeOffset _at = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
 
-    private static readonly RunRecord _record = new(CheckKind.Test, RunOutcome.Failed, new string('a', 40), "tests", new string('b', 64), ["bash", "t.sh"], new string('c', 64), new Dictionary<string, string>(StringComparer.Ordinal) { ["PATH"] = "/bin" }, 1, "/log");
+    private static readonly RunRecord _record = new(CheckKind.Test, RunOutcome.Failed, new string('a', 40), "tests", new string('b', 64), ["bash", "t.sh"], new string('c', 64), new Dictionary<string, string>(StringComparer.Ordinal) { ["PATH"] = "sha256:" + new string('d', 64) }, 1, "/log",
+        new Dictionary<string, string>(StringComparer.Ordinal) { [".coverage"] = new string('e', 64) });
 
     /// <summary>Gets the ledger under test.</summary>
     protected abstract IRunLedger Ledger { get; }
@@ -40,8 +41,13 @@ public abstract class RunLedgerContract
         var stored = Ledger.Read(slot.Record).Value;
 
         Expect.Equal((slot.Record, sha), (stored.Path, stored.Sha256), "Equal((slot.Record, sha), (stored.Path, stored.Sha256))");
-        Expect.Equal(_record with { Command = null, Environment = stored.Record.Environment }, stored.Record with { Command = null }, "Equal(_record with { Command = null }, stored.Record with { Command = null })");
+        Expect.Equal(
+            _record with { Command = null, Environment = stored.Record.Environment, Leftovers = stored.Record.Leftovers },
+            stored.Record with { Command = null },
+            "the scalar fields round-trip");
         Expect.That((stored.Record.Command ?? []).SequenceEqual(_record.Command ?? [], StringComparer.Ordinal), "the command round-trips");
+        Expect.That(stored.Record.Environment.OrderBy(static kv => kv.Key, StringComparer.Ordinal).SequenceEqual(_record.Environment), "the environment digests round-trip");
+        Expect.That(stored.Record.Leftovers.OrderBy(static kv => kv.Key, StringComparer.Ordinal).SequenceEqual(_record.Leftovers), "the leftovers round-trip");
     }
 
     /// <summary>An edited record reads back with a different hash.</summary>

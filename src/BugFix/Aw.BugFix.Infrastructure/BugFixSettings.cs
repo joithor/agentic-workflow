@@ -20,11 +20,12 @@ internal sealed record BugFixSettings(
         var kept = (environment("AW_BUGFIX_CHECK_ENV") ?? string.Empty)
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(CheckEnvironment.MayKeep);
+        var frozen = CheckEnvironment.Frozen.Concat(kept).ToHashSet(StringComparer.Ordinal);
         return new(
             Seconds(environment("AW_BUGFIX_CHECK_TIMEOUT_SECONDS")) ?? TimeSpan.FromMinutes(30),
             Seconds(environment("AW_BUGFIX_LOCK_WAIT_SECONDS")) ?? TimeSpan.FromSeconds(30),
-            Values(environment, CheckEnvironment.Frozen.Concat(kept)),
-            Values(environment, CheckEnvironment.PassedThrough),
+            Values(environment, frozen),
+            Values(environment, CheckEnvironment.PassedThrough.Where(name => !frozen.Contains(name))),   // a name frozen and passed through is frozen
             Enabled(environment("DOTNET_SYSTEM_IO_DISABLEFILELOCKING")));
     }
 

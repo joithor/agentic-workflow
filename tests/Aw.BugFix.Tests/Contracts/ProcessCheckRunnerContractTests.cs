@@ -48,12 +48,30 @@ public sealed class ProcessCheckRunnerContractTests : CheckRunnerContract, IDisp
     public void Only_the_allowed_variables_reach_the_check()
     {
         var log = Path.Combine(_temp.Path, "env.log");
+        string[] shellOwn = ["PATH", "HOME", "PWD", "OLDPWD", "SHLVL", "_"];
+        var inherited = Environment.GetEnvironmentVariables().Keys.Cast<string>().Order(StringComparer.Ordinal).First(n => !shellOwn.Contains(n, StringComparer.Ordinal));
 
-        // SHLVL and PWD are in every shell's environment, so this process has them too; neither is on the allowlist.
-        var exit = Runner.Run(["sh", "-c", "echo \"${OLDPWD:-unset} ${SHLVL_PARENT:-unset} ${HOME:+home}\""], Directory, log);
+        // A variable this process has and the settings don't allow: the check must not see it.
+        var exit = Runner.Run(["sh", "-c", "printenv \"$1\" || echo unset; echo \"${HOME:+home}\"", "sh", inherited], Directory, log);
 
         Assert.True(exit.Ran);
-        Assert.Equal("unset unset home", File.ReadAllText(log).Trim());
+        Assert.Equal(["unset", "home"], File.ReadAllLines(log), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void The_frozen_variables_are_kept_as_digests_never_as_values()
+    {
+        var path = Environment.GetEnvironmentVariable("PATH") ?? "/usr/bin:/bin";
+        var runner = new ProcessCheckRunner(
+            BugFixSettings.Read(name => name switch { "PATH" => path, "TZ" => "UTC", "DATABASE_URL" => "postgres://u:secret@db/x", "AW_BUGFIX_CHECK_ENV" => "TZ,DATABASE_URL", _ => null }),
+            new LocalFiles());
+
+        var exit = runner.Run(["sh", "-c", "echo \"$TZ $DATABASE_URL\""], Directory, Path.Combine(_temp.Path, "digest.log"));   // TZ is passed through and frozen: no duplicate
+
+        Assert.Equal("UTC postgres://u:secret@db/x", File.ReadAllText(Path.Combine(_temp.Path, "digest.log")).Trim());
+        Assert.Equal(["DATABASE_URL", "PATH", "TZ"], exit.Environment.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.All(exit.Environment.Values, v => Assert.Matches("^sha256:[0-9a-f]{64}$", v));
+        Assert.DoesNotContain(exit.Environment.Values, v => v.Contains("secret", StringComparison.Ordinal));
     }
 
     [Fact]
