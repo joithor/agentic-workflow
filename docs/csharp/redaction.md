@@ -61,11 +61,16 @@ else
   ones, aren't reviewed to stay linear: a pattern that is slow on every match would never time out and only stall.
   So a redactor with at least one extra pattern also gives each scrub a budget of `Redactor.ScanBudgetFactor` (4)
   times its size tier's match timeout, read from the `TimeProvider` passed to `Create` (Redaction reads no clock of
-  its own) and checked before every rule's scan and after every match, so two checks are at most one match call
-  apart and a scrub ends within the budget plus one match timeout; past it, the scrub blocks with `AW-REDACT-001`
-  like a match timeout. Pass the host's real `TimeProvider`: a fake that doesn't advance turns the budget off.
+  its own) and checked around the placeholder scan, before every rule's scan and after every match. The regex work
+  between two checks is one match call or the built-in, linear placeholder scan, so a scrub's regex work ends within
+  about the budget plus one match timeout (the fold, merge and replace are linear and outside it); past it, the scrub
+  blocks with `AW-REDACT-001` like a match timeout. The budget pays for every rule's scan in both passes, the
+  built-in ones too, so keep `matchTimeout` at the default unless the inputs are small. Pass the host's real
+  `TimeProvider`: a fake that doesn't advance turns the budget off.
   `Redactor.Default`, `Create(TimeSpan)` and `Create([], …)` have no deadline and keep the per-match timeout only.
-- **Writing a pattern.** Give it boundaries the way the built-in rules do, for example
+- **Writing a pattern.** Only non-empty matches (or a non-empty `v` group) are redacted, so a pattern made only of
+  lookarounds (`(?<=customer=)`) is accepted but redacts nothing: put the value inside it (`customer=(?<v>[0-9]{6})`).
+  Give it boundaries the way the built-in rules do, for example
   `(?<![A-Za-z0-9_])ACME-[0-9]{6}(?![0-9])`: without them `ACME-[0-9]{6}` also matches inside `XACME-1234567` and
   leaves the 7. Avoid unbounded runs that can restart at every position of a long run (`[A-Z]+-[0-9]+`): a slow
   pattern blocks the text (it never leaks it), so an ordinary large input could be withheld.
@@ -73,7 +78,8 @@ else
   builds the redactor and maps the refusals in `Infrastructure` (or `Host`): the same list builds the `IRedactor`
   and is checked at profile validation, and `Core` and `Features` see only the mapped Kernel `Error`. The result is
   `RedactorResult`, not Kernel's `Result<T>`, because Redaction sits beside `Aw.Kernel` at tier 0 and can't
-  reference it.
+  reference it. The host registers that one redactor as the `IRedactor` singleton and passes the same instance to
+  `TelemetryOptions.Redactor`, so log lines and spans are scrubbed with the extra patterns too (D14: one scrubber).
 - **Refusals.** `Create` checks every entry and returns every refused field, in entry order, as an
   `ExtraPatternError(Index, Field, Code, Message)`; no redactor is built while one is refused. The message says how to
   fix the entry and never quotes the pattern. A caller reports the key path itself (Sindri: `SND-CONTEXT-001` at
@@ -83,7 +89,7 @@ else
 | Code | Field | Refused when |
 |---|---|---|
 | `AW-REDACT-002` | `Id` | an empty (null) entry, or an id that is null, not lowercase ASCII letters, digits and single hyphens starting with a letter, or over 64 characters (no `/`, `_`, spaces or `]`: the id sits in the placeholder); a built-in rule id, `blocked` or `secret-field`; the same id as an earlier entry |
-| `AW-REDACT-003` | `Pattern` | null, empty or over 1024 characters; not a valid .NET regex (the message gives the parse error and offset); matches the empty text (`[A-Z]*`, `(…)?`: it would match at every position); uses `\d`, `\w`, `\s`, `\b` or their negations, which are Unicode-aware in .NET, or a Unicode category `\p{…}`/`\P{…}` (the message gives the offset and the ASCII class to write instead). The check is lexical: an escaped backslash (`\\d`) is a backslash and a `d` and is accepted, while such an escape inside a class (`[\b]`, a backspace there) or an `(?x)` comment is refused too |
+| `AW-REDACT-003` | `Pattern` | null, empty or over 1024 characters; not a valid .NET regex (the message gives the parse error and offset); matches the empty text (`[A-Z]*`, `(…)?`: it would match at every position) or times out trying to; uses `\d`, `\w`, `\s`, `\b` or their negations, which are Unicode-aware in .NET, or a Unicode category `\p{…}`/`\P{…}` (the message gives the offset and the ASCII class to write instead). The check is lexical: an escaped backslash (`\\d`) is a backslash and a `d` and is accepted, while such an escape inside a class (`[\b]`, a backspace there) or an `(?x)` comment is refused too |
 
 A null list or clock, or a timeout that isn't positive, is a bug and throws (`ArgumentNullException`,
 `ArgumentOutOfRangeException`). The list's length isn't capped: every entry runs on every scrub, so keep it to the
