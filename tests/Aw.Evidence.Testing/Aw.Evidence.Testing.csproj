@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/Evidence/Aw.Evidence.Core/Aw.Evidence.Core.csproj" />
     <ProjectReference Include="../../src/Evidence/Aw.Evidence.Features/Aw.Evidence.Features.csproj" />
     <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
