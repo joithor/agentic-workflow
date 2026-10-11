@@ -1,0 +1,68 @@
+using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
+using Aw.Evidence.Core;
+using Aw.Evidence.Infrastructure.Stack;
+using Aw.Kernel.Testing;
+
+namespace Aw.Evidence.Tests.Infrastructure;
+
+[Lane(TestLane.Integration)]
+public sealed class StackProbeTests : IDisposable
+{
+    private readonly TempDirectory _root = new();
+
+    [Fact]
+    public async Task A_page_title_is_read_and_decoded()
+    {
+        using var server = new LocalHttpServer(new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["/login"] = "<html><head><TITLE lang=\"en\">\n Vitalize &amp; Co </TITLE></head></html>",
+            ["/bare"] = "<html><body>no title</body></html>",
+        });
+        using var probe = new ProcessStackProbe("docker");
+
+        Assert.Equal("Vitalize & Co", (await probe.PageTitleAsync(new Uri(server.Origin + "/login"), TestContext.Current.CancellationToken)).Value);
+        Assert.Equal(EvidenceErrors.ProbeFailed.Code, (await probe.PageTitleAsync(new Uri(server.Origin + "/bare"), TestContext.Current.CancellationToken)).Error.Code);
+        Assert.Equal(EvidenceErrors.ProbeFailed.Code, (await probe.PageTitleAsync(new Uri(server.Origin + "/missing"), TestContext.Current.CancellationToken)).Error.Code);
+    }
+
+    [Fact]
+    public async Task A_page_nobody_serves_is_a_probe_failure()
+    {
+        using var probe = new ProcessStackProbe("docker");
+
+        var title = await probe.PageTitleAsync(new Uri("http://127.0.0.1:" + LocalHttpServer.FreePort().ToString(CultureInfo.InvariantCulture) + "/"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(EvidenceErrors.ProbeFailed.Code, title.Error.Code);
+    }
+
+    [Fact]
+    public async Task A_port_is_open_only_while_something_listens()
+    {
+        using var probe = new ProcessStackProbe("docker");
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+
+        Assert.True((await probe.PortOpenAsync("127.0.0.1", port, TestContext.Current.CancellationToken)).IsSuccess);
+        listener.Stop();
+        Assert.Equal(EvidenceErrors.ProbeFailed.Code, (await probe.PortOpenAsync("127.0.0.1", port, TestContext.Current.CancellationToken)).Error.Code);
+    }
+
+    [Fact]
+    public async Task The_database_is_ready_when_pg_isready_in_the_container_says_so()
+    {
+        var args = _root.Combine("args");
+        using var ready = new ProcessStackProbe(StubCommand.Write(_root, "docker-ok", $"printf '%s\\n' \"$@\" > '{args}'; exit 0"));
+        using var down = new ProcessStackProbe(StubCommand.Write(_root, "docker-down", "echo 'no response' >&2; exit 2"));
+        using var absent = new ProcessStackProbe(_root.Combine("no-such-docker"));
+
+        Assert.True((await ready.DatabaseReadyAsync(TestContext.Current.CancellationToken)).IsSuccess);
+        Assert.Equal(["exec", "postgres_container", "pg_isready", "-U", "postgres"], await File.ReadAllLinesAsync(args, TestContext.Current.CancellationToken));
+        Assert.Contains("no response", (await down.DatabaseReadyAsync(TestContext.Current.CancellationToken)).Error.Message, StringComparison.Ordinal);
+        Assert.Equal(EvidenceErrors.ProbeFailed.Code, (await absent.DatabaseReadyAsync(TestContext.Current.CancellationToken)).Error.Code);
+    }
+
+    public void Dispose() => _root.Dispose();
+}

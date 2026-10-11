@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.BugFix.Tests (scaffolded by /new-package): by feature, one Lane trait per test (spec §4b.5). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Aw.BugFix.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/BugFix/Aw.BugFix.Core/Aw.BugFix.Core.csproj" />
+    <ProjectReference Include="../../src/BugFix/Aw.BugFix.Features/Aw.BugFix.Features.csproj" />
+    <ProjectReference Include="../../src/BugFix/Aw.BugFix.Infrastructure/Aw.BugFix.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/BugFix/Aw.BugFix.Host/Aw.BugFix.Host.csproj" />
+    <ProjectReference Include="../Aw.BugFix.Testing/Aw.BugFix.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

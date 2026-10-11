@@ -20,5 +20,13 @@ internal static class Packages
         "Aw.Readiness.Core",
         "Aw.Readiness.App",
         "Aw.Redaction",
+        "Aw.Evidence.Core",
+        "Aw.Evidence.Features",
+        "Aw.Evidence.Infrastructure",
+        "Aw.Evidence.Host",
+        "Aw.BugFix.Core",
+        "Aw.BugFix.Features",
+        "Aw.BugFix.Infrastructure",
+        "Aw.BugFix.Host",
     ];
 }
