@@ -15,7 +15,7 @@ Each part of the app has its own design spec under `docs/superpowers/specs/`. Th
 |---|---|---|---|
 | App shell: process, CLI, lease, ledger, profile, scheduler, doctor | `docs/csharp/sindri.md` (on `feat/sindri-s1-app-shell` until it merges) | 1 | S1 |
 | API surface: commands, queries, projections, the event stream, auth v0, the MCP server, `sindri open` | `2026-10-10-sindri-api-surface-design.md` | 1 (the command layer and API) | API P0–P10 |
-| **UI app design** (Avalonia, Linear design language): the control plane's views, actions and launching sessions | *Slot: `<date>-sindri-ui-design.md`, not written yet. It comes next, before any more building* | 1 (the UI app) | S1b |
+| **UI app design** (Avalonia, Linear design language): the control plane's views, actions and launching sessions | `2026-10-11-sindri-ui-design.md` (mockups in `2026-10-11-sindri-ui-design/`). It settles X2, X5, X15 and X17 for the UI and adds X18–X22 | 1 (the UI app) | S1b |
 | Workflow engine: recipes, blocks, validator, instances, timers, approval | `2026-10-10-sindri-workflow-engine-design.md` | 2 | S2 (P1–P7) |
 | Context retrieval engine: the product graph, adapters, planner, evals | `2026-10-10-sindri-context-retrieval-design.md` | 3 | S3 (Phases 1–10) |
 | What the UI shows (input to the UI design) | `2026-10-09-sindri-dashboard-design.md` | — | — |
@@ -36,7 +36,7 @@ One process per host, started by `sindri`, with a UI app as its client. It provi
 
 ### What it is not
 
-It doesn't replace your terminal or your agent tool. Agent work, yours and the factory's, happens in Claude Code sessions in your terminal (Warp today). Sindri starts those sessions, feeds them context and tracks their work. It has no chat surface. The UI app is a window onto the control plane (the queue, status, decisions, receipts, metrics and "open in Warp"), not a chat (A §17.29.3). Its design is the UI app design spec (the slot in "Design specs for the application" above).
+It doesn't replace your terminal or your agent tool. Agent work, yours and the factory's, happens in Claude Code sessions in your terminal (Warp today). Sindri starts those sessions, feeds them context and tracks their work. It has no chat surface. The UI app is a window onto the control plane (the queue, status, decisions, receipts, metrics and "open in Warp"), not a chat (A §17.29.3). Its design is the UI app design spec (`2026-10-11-sindri-ui-design.md`, listed in "Design specs for the application" above).
 
 ### Starting it
 
@@ -78,7 +78,7 @@ Not a module-by-module port of `sindri/` (A §17.29.4):
 
 ### Cross-spec reconciliation (settle before building further)
 
-Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disagree. Each row names the recommended answer and the spec that changes. Every row is the owner's call; none is decided by this list.
+Where the API (API), workflow engine (WF), context retrieval (CTX) and UI app design specs disagree. The UI spec (§13) recommends answers for X2, X5, X15 and X17 and adds X18–X25. Each row names the recommended answer and the spec that changes. Every row is the owner's call; none is decided by this list.
 
 | # | Where they differ | Recommended answer | Changes |
 |---|---|---|---|
@@ -99,6 +99,14 @@ Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disa
 | X15 | **Launching sessions.** API P10: `OpenItem` and `ILauncher`, Warp only. WF §7.2: `ILauncher` is "the next engine design". README: Claude Code only | API P10 owns `ILauncher`. The UI design defines the launch targets: Warp plus Claude Code, Codex or Cursor, chosen per item or by profile default, and "attach" for a live session | API P10, §3.5; WF §7.2; UI design |
 | X16 | **Two timelines.** API `GET /items/{id}/timeline`; WF `workflow events <address>` | The item timeline includes its instances' events; `workflow events` is the instance-level filter of the same read | API §3.1; WF §6.3 |
 | X17 | **Build order versus what's built.** Every spec has its later phases wait for S1 to merge. S2 (#167), S3 (#166), S4a (#169) and the UI shell S1b (#168) are already built on S1, ahead of API P1 (the authorization spine), so they bring their own surfaces outside it | Merge S1, then API P0–P2, then rebase S2 and S3 onto the chain. Keep S1b in draft until the UI design spec is approved | Plan, not a spec |
+| X18 | **Opening is a takeover.** API P10: "the engine marks the takeover once S2 runs", with no mechanism | A WF trigger kind `open-request` applied in `Commit` (actor `service:engine`); the launcher opens Warp only after it lands (UI spec E-6) | WF §5.4, §5.7; API P10b |
+| X19 | **Launching is I/O inside a command.** API P10's `OpenItem` returns `launchedIn` | `OpenItem` records the request; a launcher service performs it once, fresh, and records the outcome (UI spec E-1) | API P10a, §3.2, §3.4 |
+| X20 | **Taking over a running Step.** WF says nothing about a worker that is mid-run | The engine phase that adds a headless worker runtime owns stopping it (`run.stopped`); until then Take over only pauses | WF (a later phase) |
+| X21 | **Secondary actions and labels on needs-you rows.** API §3.6 has one `primaryAction` and a four-value `kind` | `NeedsYouRow.actions` and `label` (UI spec E-7) | API §3.6 |
+| X22 | **DESIGN.md fails WCAG** in its focus ring (1.8:1) and primary hover (2.87:1), and has no error colour | Ring 2 px `#828fff`; hover `#535fc6`; `Error` `#eb5757` (UI spec §11.1, §14.1) | `docs/sindri/DESIGN.md` |
+| X23 | **The engine's nonce mint is a POST that appends nothing**, against `ARCH-CQRS-001` | A tested carve-out, or a catalog row with the class of the command it serves | WF §5.4; API §2.5 |
+| X24 | **The dashboard's "every agent" goal is deferred** by the UI spec | Agents is the first view after the collector spec | API §11; DB §1 |
+| X25 | **API §5.1 and WF §6.2 still describe the old UI role** (the app notifying; a read-only `ui` actor) | Per X2 and X5 as settled in the UI spec §13 | API §5.1; WF §6.2 |
 
 ## Today: the TypeScript reference (`sindri/`)
 
