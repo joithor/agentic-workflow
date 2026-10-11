@@ -316,3 +316,24 @@ static Aw.Judge.Features.AskQuestion.AskQuestionRequest.operator !=(Aw.Judge.Fea
 static Aw.Judge.Features.AskQuestion.AskQuestionRequest.operator ==(Aw.Judge.Features.AskQuestion.AskQuestionRequest? left, Aw.Judge.Features.AskQuestion.AskQuestionRequest? right) -> bool
 static Aw.Judge.Features.AskQuestion.AskQuestionResponse.operator !=(Aw.Judge.Features.AskQuestion.AskQuestionResponse? left, Aw.Judge.Features.AskQuestion.AskQuestionResponse? right) -> bool
 static Aw.Judge.Features.AskQuestion.AskQuestionResponse.operator ==(Aw.Judge.Features.AskQuestion.AskQuestionResponse? left, Aw.Judge.Features.AskQuestion.AskQuestionResponse? right) -> bool
+Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest
+Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest.<Clone>$() -> Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest!
+Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest.Equals(Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest? other) -> bool
+Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest.PruneDecisionDetailsRequest() -> void
+Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse
+Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse.<Clone>$() -> Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse!
+Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse.Deconstruct(out int Pruned) -> void
+Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse.Equals(Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse? other) -> bool
+Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse.PruneDecisionDetailsResponse(int Pruned) -> void
+Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse.Pruned.get -> int
+Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse.Pruned.init -> void
+override Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest.GetHashCode() -> int
+override Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest.ToString() -> string!
+override Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse.GetHashCode() -> int
+override Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse.ToString() -> string!
+static Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest.operator !=(Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest? left, Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest? right) -> bool
+static Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest.operator ==(Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest? left, Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsRequest? right) -> bool
+static Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse.operator !=(Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse? left, Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse? right) -> bool
+static Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse.operator ==(Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse? left, Aw.Judge.Features.PruneDecisionDetails.PruneDecisionDetailsResponse? right) -> bool
