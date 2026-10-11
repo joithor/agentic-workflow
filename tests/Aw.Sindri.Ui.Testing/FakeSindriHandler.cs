@@ -13,11 +13,26 @@ namespace Aw.Sindri.Ui.Testing;
 /// <param name="server">The model.</param>
 internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandler
 {
+    /// <summary>The requests seen, in order: the path and the headers the app's identity rests on (API §6).</summary>
+    public IReadOnlyList<SeenRequest> Requests => [.. _requests];
+
+    private readonly List<SeenRequest> _requests = [];
+
     /// <summary>When set, every route answers this status with this body instead.</summary>
     public (HttpStatusCode Code, string Body)? Override { get; set; }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        lock (_requests)
+        {
+            _requests.Add(new SeenRequest(
+                request.RequestUri?.AbsolutePath ?? string.Empty,
+                Header(request, "X-Sindri-Caller"),
+                Header(request, "X-Sindri-Client"),
+                Header(request, "X-Sindri-Terminal"),
+                Header(request, "Origin")));
+        }
+
         if (server.Down)
         {
             throw new HttpRequestException("Connection refused (127.0.0.1)");
@@ -37,6 +52,9 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
     }
+
+    private static string? Header(HttpRequestMessage request, string name) =>
+        request.Headers.TryGetValues(name, out var values) ? string.Join(',', values) : null;
 
     private static long After(Uri uri) =>
         uri.Query.TrimStart('?').Split('&').Select(p => p.Split('=')).Where(p => p is ["after", _]).Select(p => long.Parse(p[1], CultureInfo.InvariantCulture)).FirstOrDefault();
@@ -63,7 +81,10 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
         $$"""{"sequence":{{e.Sequence}},"type":"{{e.Type}}","occurredAt":"{{Time(e.OccurredAt)}}","actor":"sindri","tenant":"local","ring":0,"epoch":7,"payload":"{}"}""");
 
     private static string Status(StatusView s) => string.Create(CultureInfo.InvariantCulture,
-        $$"""{"running":{{Bool(s.Running)}},"pid":{{s.Pid}},"epoch":{{s.Epoch}},"leaseExpiresAt":{{Quoted(s.LeaseExpiresAt)}},"profile":{"approved":{{Quoted(s.Profile.Approved)}},"live":{{Quoted(s.Profile.Live)}},"changedSinceApproval":{{Bool(s.Profile.ChangedSinceApproval)}},"problem":{{Quoted(s.Profile.Problem)}},"source":{{Quoted(s.Profile.Source)}},"needsApproval":{{Bool(s.Profile.NeedsApproval)}}},"services":[{{string.Join(',', s.Services.Select(Service))}}]}""");
+        $$"""{"running":{{Bool(s.Running)}},"pid":{{s.Pid}},"epoch":{{s.Epoch}},"leaseExpiresAt":{{Quoted(s.LeaseExpiresAt)}},"profile":{"approved":{{Quoted(s.Profile.Approved)}},"live":{{Quoted(s.Profile.Live)}},"changedSinceApproval":{{Bool(s.Profile.ChangedSinceApproval)}},"problem":{{Quoted(s.Profile.Problem)}},"source":{{Quoted(s.Profile.Source)}},"needsApproval":{{Bool(s.Profile.NeedsApproval)}}},"services":[{{string.Join(',', s.Services.Select(Service))}}]{{ApiVersion(s.ApiVersion)}}}""");
+
+    // Absent before API P1 (the field doesn't exist on S1's status), so the app must read a status without it.
+    private static string ApiVersion(int? version) => version is { } v ? string.Create(CultureInfo.InvariantCulture, $",\"apiVersion\":{v}") : string.Empty;
 
     private static string Service(ServiceView v) => $$"""{"name":"{{v.Name}}","every":"{{v.Every}}","lastRun":{{Quoted(v.LastRun)}}}""";
 

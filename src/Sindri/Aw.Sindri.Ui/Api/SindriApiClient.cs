@@ -14,6 +14,12 @@ namespace Aw.Sindri.Ui.Api;
 /// <param name="http">The HTTP client, with no timeout of its own (the app's, or one over a canned handler in tests).</param>
 internal sealed class SindriApiClient(HttpClient http) : ISindriApi
 {
+    /// <summary>
+    /// The version of Sindri's API this build speaks (API spec "Versioning": the status reports apiVersion from P1). A
+    /// status that reports another one is the Version mismatch state (UI spec §4.1); one that reports none (S1) is not.
+    /// </summary>
+    internal const int AppApiVersion = 1;
+
     private static readonly TimeSpan _callTimeout = TimeSpan.FromSeconds(2);
 
     /// <summary>The app's JSON options (the AwJson profile over the app's context).</summary>

@@ -2,8 +2,129 @@
 Aw.Sindri.Ui.Platform.IEndpointRecordSource
 Aw.Sindri.Ui.Platform.IEndpointRecordSource.Location.get -> string!
 Aw.Sindri.Ui.Platform.IEndpointRecordSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<byte[]?>
+Aw.Sindri.Ui.Platform.IMotionPreference
+Aw.Sindri.Ui.Platform.IMotionPreference.Changed -> System.EventHandler?
+Aw.Sindri.Ui.Platform.IMotionPreference.ReduceMotion.get -> bool
+Aw.Sindri.Ui.Platform.IPreferencesStore
+Aw.Sindri.Ui.Platform.IPreferencesStore.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Ui.Platform.UiPreferences!>
+Aw.Sindri.Ui.Platform.IPreferencesStore.Write(Aw.Sindri.Ui.Platform.UiPreferences! preferences, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Aw.Sindri.Ui.Platform.ISingleInstance
+Aw.Sindri.Ui.Platform.ISingleInstance.Messages(System.Threading.CancellationToken cancellationToken) -> System.Collections.Generic.IAsyncEnumerable<string!>!
+Aw.Sindri.Ui.Platform.ISingleInstance.Send(string! message, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Ui.Platform.ISingleInstance.TryClaim(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Ui.Platform.ITray
+Aw.Sindri.Ui.Platform.ITray.OpenRequested -> System.EventHandler?
+Aw.Sindri.Ui.Platform.ITray.QuitRequested -> System.EventHandler?
+Aw.Sindri.Ui.Platform.ITray.Show(Aw.Sindri.Ui.Platform.TrayView! view) -> void
+Aw.Sindri.Ui.Platform.ITray.Shown.get -> Aw.Sindri.Ui.Platform.TrayView?
+Aw.Sindri.Ui.Platform.InstanceMessages
+Aw.Sindri.Ui.Platform.SindriPlatform
+Aw.Sindri.Ui.Platform.SindriPlatform.<Clone>$() -> Aw.Sindri.Ui.Platform.SindriPlatform!
+Aw.Sindri.Ui.Platform.SindriPlatform.Deconstruct(out Aw.Sindri.Ui.Platform.IEndpointRecordSource! Records, out Aw.Sindri.Ui.Platform.IPreferencesStore! Preferences, out Aw.Sindri.Ui.Platform.IMotionPreference! Motion, out Aw.Sindri.Ui.Platform.ISingleInstance! Instance, out Aw.Sindri.Ui.Platform.ITray! Tray) -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Equals(Aw.Sindri.Ui.Platform.SindriPlatform? other) -> bool
+Aw.Sindri.Ui.Platform.SindriPlatform.Instance.get -> Aw.Sindri.Ui.Platform.ISingleInstance!
+Aw.Sindri.Ui.Platform.SindriPlatform.Instance.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Motion.get -> Aw.Sindri.Ui.Platform.IMotionPreference!
+Aw.Sindri.Ui.Platform.SindriPlatform.Motion.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Preferences.get -> Aw.Sindri.Ui.Platform.IPreferencesStore!
+Aw.Sindri.Ui.Platform.SindriPlatform.Preferences.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Records.get -> Aw.Sindri.Ui.Platform.IEndpointRecordSource!
+Aw.Sindri.Ui.Platform.SindriPlatform.Records.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.SindriPlatform(Aw.Sindri.Ui.Platform.IEndpointRecordSource! Records, Aw.Sindri.Ui.Platform.IPreferencesStore! Preferences, Aw.Sindri.Ui.Platform.IMotionPreference! Motion, Aw.Sindri.Ui.Platform.ISingleInstance! Instance, Aw.Sindri.Ui.Platform.ITray! Tray) -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Tray.get -> Aw.Sindri.Ui.Platform.ITray!
+Aw.Sindri.Ui.Platform.SindriPlatform.Tray.init -> void
+Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayState.Neutral = 0 -> Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayState.NotRunning = 1 -> Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayState.Stale = 2 -> Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayView
+Aw.Sindri.Ui.Platform.TrayView.<Clone>$() -> Aw.Sindri.Ui.Platform.TrayView!
+Aw.Sindri.Ui.Platform.TrayView.Deconstruct(out Aw.Sindri.Ui.Platform.TrayState State, out string! Tooltip, out string! OpenLabel, out string! QuitLabel) -> void
+Aw.Sindri.Ui.Platform.TrayView.Equals(Aw.Sindri.Ui.Platform.TrayView? other) -> bool
+Aw.Sindri.Ui.Platform.TrayView.OpenLabel.get -> string!
+Aw.Sindri.Ui.Platform.TrayView.OpenLabel.init -> void
+Aw.Sindri.Ui.Platform.TrayView.QuitLabel.get -> string!
+Aw.Sindri.Ui.Platform.TrayView.QuitLabel.init -> void
+Aw.Sindri.Ui.Platform.TrayView.State.get -> Aw.Sindri.Ui.Platform.TrayState
+Aw.Sindri.Ui.Platform.TrayView.State.init -> void
+Aw.Sindri.Ui.Platform.TrayView.Tooltip.get -> string!
+Aw.Sindri.Ui.Platform.TrayView.Tooltip.init -> void
+Aw.Sindri.Ui.Platform.TrayView.TrayView(Aw.Sindri.Ui.Platform.TrayState State, string! Tooltip, string! OpenLabel, string! QuitLabel) -> void
+Aw.Sindri.Ui.Platform.UiPreferences
+Aw.Sindri.Ui.Platform.UiPreferences.<Clone>$() -> Aw.Sindri.Ui.Platform.UiPreferences!
+Aw.Sindri.Ui.Platform.UiPreferences.Clamp() -> Aw.Sindri.Ui.Platform.UiPreferences!
+Aw.Sindri.Ui.Platform.UiPreferences.Deconstruct(out int Version, out Aw.Sindri.Ui.Platform.WindowBounds? Window, out double SheetWidth, out string! LastPage, out System.Collections.Generic.IReadOnlyList<string!>! SeenIds, out System.Collections.Generic.IReadOnlyList<string!>! PaletteHistory, out double TextScale, out bool ReduceMotion) -> void
+Aw.Sindri.Ui.Platform.UiPreferences.Equals(Aw.Sindri.Ui.Platform.UiPreferences? other) -> bool
+Aw.Sindri.Ui.Platform.UiPreferences.LastPage.get -> string!
+Aw.Sindri.Ui.Platform.UiPreferences.LastPage.init -> void
+Aw.Sindri.Ui.Platform.UiPreferences.PaletteHistory.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Ui.Platform.UiPreferences.PaletteHistory.init -> void
+Aw.Sindri.Ui.Platform.UiPreferences.ReduceMotion.get -> bool
+Aw.Sindri.Ui.Platform.UiPreferences.ReduceMotion.init -> void
+Aw.Sindri.Ui.Platform.UiPreferences.SeenIds.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Ui.Platform.UiPreferences.SeenIds.init -> void
+Aw.Sindri.Ui.Platform.UiPreferences.SheetWidth.get -> double
+Aw.Sindri.Ui.Platform.UiPreferences.SheetWidth.init -> void
+Aw.Sindri.Ui.Platform.UiPreferences.TextScale.get -> double
+Aw.Sindri.Ui.Platform.UiPreferences.TextScale.init -> void
+Aw.Sindri.Ui.Platform.UiPreferences.ToJson() -> byte[]!
+Aw.Sindri.Ui.Platform.UiPreferences.UiPreferences(int Version, Aw.Sindri.Ui.Platform.WindowBounds? Window, double SheetWidth, string! LastPage, System.Collections.Generic.IReadOnlyList<string!>! SeenIds, System.Collections.Generic.IReadOnlyList<string!>! PaletteHistory, double TextScale, bool ReduceMotion) -> void
+Aw.Sindri.Ui.Platform.UiPreferences.Version.get -> int
+Aw.Sindri.Ui.Platform.UiPreferences.Version.init -> void
+Aw.Sindri.Ui.Platform.UiPreferences.Window.get -> Aw.Sindri.Ui.Platform.WindowBounds?
+Aw.Sindri.Ui.Platform.UiPreferences.Window.init -> void
+Aw.Sindri.Ui.Platform.WindowBounds
+Aw.Sindri.Ui.Platform.WindowBounds.<Clone>$() -> Aw.Sindri.Ui.Platform.WindowBounds!
+Aw.Sindri.Ui.Platform.WindowBounds.Deconstruct(out double X, out double Y, out double Width, out double Height) -> void
+Aw.Sindri.Ui.Platform.WindowBounds.Equals(Aw.Sindri.Ui.Platform.WindowBounds? other) -> bool
+Aw.Sindri.Ui.Platform.WindowBounds.Height.get -> double
+Aw.Sindri.Ui.Platform.WindowBounds.Height.init -> void
+Aw.Sindri.Ui.Platform.WindowBounds.Width.get -> double
+Aw.Sindri.Ui.Platform.WindowBounds.Width.init -> void
+Aw.Sindri.Ui.Platform.WindowBounds.WindowBounds(double X, double Y, double Width, double Height) -> void
+Aw.Sindri.Ui.Platform.WindowBounds.X.get -> double
+Aw.Sindri.Ui.Platform.WindowBounds.X.init -> void
+Aw.Sindri.Ui.Platform.WindowBounds.Y.get -> double
+Aw.Sindri.Ui.Platform.WindowBounds.Y.init -> void
 Aw.Sindri.Ui.Views.SindriApp
 Aw.Sindri.Ui.Views.SindriApp.SindriApp() -> void
+const Aw.Sindri.Ui.Platform.InstanceMessages.Focus = "focus" -> string!
+const Aw.Sindri.Ui.Platform.InstanceMessages.MaxLength = 512 -> int
+const Aw.Sindri.Ui.Platform.UiPreferences.CurrentVersion = 1 -> int
+const Aw.Sindri.Ui.Platform.UiPreferences.DefaultPage = "Home" -> string!
+const Aw.Sindri.Ui.Platform.UiPreferences.DefaultSheetWidth = 520 -> double
+const Aw.Sindri.Ui.Platform.UiPreferences.MaxPaletteHistory = 20 -> int
+const Aw.Sindri.Ui.Platform.UiPreferences.MaxSeenIds = 500 -> int
+const Aw.Sindri.Ui.Platform.UiPreferences.MaxSheetWidth = 760 -> double
+const Aw.Sindri.Ui.Platform.UiPreferences.MaxTextScale = 1.3 -> double
+const Aw.Sindri.Ui.Platform.UiPreferences.MinHeight = 600 -> double
+const Aw.Sindri.Ui.Platform.UiPreferences.MinSheetWidth = 420 -> double
+const Aw.Sindri.Ui.Platform.UiPreferences.MinTextScale = 0.9 -> double
+const Aw.Sindri.Ui.Platform.UiPreferences.MinWidth = 900 -> double
+override Aw.Sindri.Ui.Platform.SindriPlatform.Equals(object? obj) -> bool
+override Aw.Sindri.Ui.Platform.SindriPlatform.GetHashCode() -> int
+override Aw.Sindri.Ui.Platform.SindriPlatform.ToString() -> string!
+override Aw.Sindri.Ui.Platform.TrayView.Equals(object? obj) -> bool
+override Aw.Sindri.Ui.Platform.TrayView.GetHashCode() -> int
+override Aw.Sindri.Ui.Platform.TrayView.ToString() -> string!
+override Aw.Sindri.Ui.Platform.UiPreferences.Equals(object? obj) -> bool
+override Aw.Sindri.Ui.Platform.UiPreferences.GetHashCode() -> int
+override Aw.Sindri.Ui.Platform.UiPreferences.ToString() -> string!
+override Aw.Sindri.Ui.Platform.WindowBounds.Equals(object? obj) -> bool
+override Aw.Sindri.Ui.Platform.WindowBounds.GetHashCode() -> int
+override Aw.Sindri.Ui.Platform.WindowBounds.ToString() -> string!
 override Aw.Sindri.Ui.Views.SindriApp.Initialize() -> void
 override Aw.Sindri.Ui.Views.SindriApp.OnFrameworkInitializationCompleted() -> void
+static Aw.Sindri.Ui.Platform.SindriPlatform.operator !=(Aw.Sindri.Ui.Platform.SindriPlatform? left, Aw.Sindri.Ui.Platform.SindriPlatform? right) -> bool
+static Aw.Sindri.Ui.Platform.SindriPlatform.operator ==(Aw.Sindri.Ui.Platform.SindriPlatform? left, Aw.Sindri.Ui.Platform.SindriPlatform? right) -> bool
+static Aw.Sindri.Ui.Platform.TrayView.operator !=(Aw.Sindri.Ui.Platform.TrayView? left, Aw.Sindri.Ui.Platform.TrayView? right) -> bool
+static Aw.Sindri.Ui.Platform.TrayView.operator ==(Aw.Sindri.Ui.Platform.TrayView? left, Aw.Sindri.Ui.Platform.TrayView? right) -> bool
+static Aw.Sindri.Ui.Platform.UiPreferences.Defaults.get -> Aw.Sindri.Ui.Platform.UiPreferences!
+static Aw.Sindri.Ui.Platform.UiPreferences.FromJson(System.ReadOnlySpan<byte> json) -> Aw.Sindri.Ui.Platform.UiPreferences!
+static Aw.Sindri.Ui.Platform.UiPreferences.Pages.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Ui.Platform.UiPreferences.operator !=(Aw.Sindri.Ui.Platform.UiPreferences? left, Aw.Sindri.Ui.Platform.UiPreferences? right) -> bool
+static Aw.Sindri.Ui.Platform.UiPreferences.operator ==(Aw.Sindri.Ui.Platform.UiPreferences? left, Aw.Sindri.Ui.Platform.UiPreferences? right) -> bool
+static Aw.Sindri.Ui.Platform.WindowBounds.operator !=(Aw.Sindri.Ui.Platform.WindowBounds? left, Aw.Sindri.Ui.Platform.WindowBounds? right) -> bool
+static Aw.Sindri.Ui.Platform.WindowBounds.operator ==(Aw.Sindri.Ui.Platform.WindowBounds? left, Aw.Sindri.Ui.Platform.WindowBounds? right) -> bool
 static Aw.Sindri.Ui.Views.SindriApp.Create(Aw.Sindri.Ui.Platform.IEndpointRecordSource! records, System.TimeProvider! clock) -> Aw.Sindri.Ui.Views.SindriApp!
+static Aw.Sindri.Ui.Views.SindriApp.Create(Aw.Sindri.Ui.Platform.SindriPlatform! platform, System.TimeProvider! clock) -> Aw.Sindri.Ui.Views.SindriApp!

@@ -42,4 +42,25 @@ public sealed class SindriApiClientTests
 
         Assert.Empty(events);
     }
+
+    // UI spec §9.1, U2: the app is a human with no terminal: X-Sindri-Caller human and X-Sindri-Client ui on every request,
+    // never X-Sindri-Terminal and never Origin.
+    [Fact]
+    public async Task Every_request_says_human_from_the_ui_and_never_terminal_or_origin()
+    {
+        var server = new FakeSindriApi();
+        server.Push(A.Event(1));
+        var handler = new FakeSindriHandler(server);
+        var client = new SindriApiClient(new HttpClient(handler));
+
+        _ = await client.Ping(_api, Token);
+        _ = await client.Status(_api, Token);
+        await foreach (var _ in client.Events(_api, 0, Token))
+        {
+            server.Drop();
+        }
+
+        Assert.Equal(["/sindri/ping", "/sindri/status", "/sindri/events"], handler.Requests.Select(r => r.Path), StringComparer.Ordinal);
+        Assert.All(handler.Requests, r => Assert.Equal(new SeenRequest(r.Path, "human", "ui", Terminal: null, Origin: null), r));
+    }
 }

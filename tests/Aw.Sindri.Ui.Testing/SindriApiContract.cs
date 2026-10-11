@@ -36,6 +36,19 @@ public abstract class SindriApiContract
         Expect.Sequence([A.Heartbeat(A.Noon, "7s")], status.Services);
     }
 
+    // API spec "Versioning": P1 adds apiVersion to the status; S1's status has none, which the app reads as no mismatch.
+    [Fact]
+    public async Task Status_carries_the_api_version_when_sindri_reports_one()
+    {
+        var server = new FakeSindriApi { Current = A.Status() with { ApiVersion = 2 } };
+        var api = Reach(server);
+
+        Expect.Equal(2, (await api.Status(_api, Token)).Value.ApiVersion);
+
+        server.Current = A.Status();
+        Expect.Equal(expected: null, (await api.Status(_api, Token)).Value.ApiVersion);
+    }
+
     [Fact]
     public async Task Events_after_a_cursor_come_in_order_and_end_with_the_connection()
     {

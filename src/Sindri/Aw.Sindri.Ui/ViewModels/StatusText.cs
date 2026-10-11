@@ -9,7 +9,6 @@ namespace Aw.Sindri.Ui.ViewModels;
 /// </summary>
 internal static class StatusText
 {
-    internal const string StartFix = "sindri";
     internal const string ApproveFix = "sindri profile approve";
 
     internal static string Lease(StatusView s) => string.Create(CultureInfo.InvariantCulture, $"pid {s.Pid} · epoch {s.Epoch}");

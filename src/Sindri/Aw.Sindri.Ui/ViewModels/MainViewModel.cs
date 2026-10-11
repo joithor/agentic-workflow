@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Threading.Channels;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
@@ -31,7 +30,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
     public string Reason { get; private set => Set(ref field, value); } = "looking for Sindri's control plane";
 
     /// <summary>The command that fixes "not running".</summary>
-    public string Fix { get; } = StatusText.StartFix;
+    public string Fix { get; } = Labels.StartFix;
 
     /// <summary>True while a control plane answers.</summary>
     public bool IsRunning { get; private set => Set(ref field, value); }
@@ -116,7 +115,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
     // The platform couldn't read the record (a directory, no permission): say so, and keep trying.
     private bool Unreadable(Exception e)
     {
-        _ = NotRunning($"the endpoint record at {records.Location} can't be read: {e.Message}");
+        _ = NotRunning(Labels.RecordUnreadable(records.Location, e.Message));
         return true;
     }
 
@@ -140,13 +139,13 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
         var bytes = await records.Read(cancellationToken).ConfigureAwait(true);
         if (bytes is null)
         {
-            return NotRunning($"no endpoint record at {records.Location}: Sindri hasn't started, or it stopped");
+            return NotRunning(Labels.NoRecord(records.Location));
         }
 
         var record = ControlRecord.Usable(bytes, SindriApiClient.Json);
         if (record is null)
         {
-            return NotRunning($"the endpoint record at {records.Location} can't be read");
+            return NotRunning(Labels.RecordUnreadable(records.Location));
         }
 
         var ping = await api.Ping(record.Url, cancellationToken).ConfigureAwait(true);
@@ -157,8 +156,7 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
 
         if (ping.Value.Pid != record.Pid || ping.Value.Epoch != record.Epoch)
         {
-            return NotRunning(string.Create(CultureInfo.InvariantCulture,
-                $"the endpoint record is stale: it names pid {record.Pid} at epoch {record.Epoch}, but pid {ping.Value.Pid} at epoch {ping.Value.Epoch} answers"));
+            return NotRunning(Labels.StaleRecord(record.Pid, record.Epoch, ping.Value.Pid, ping.Value.Epoch));
         }
 
         _record = bytes;
@@ -277,15 +275,15 @@ internal sealed class MainViewModel(IEndpointRecordSource records, ISindriApi ap
         ProfileDetail = StatusText.ProfileDetail(status.Profile);
         ProfileFix = StatusText.ProfileFix(status.Profile);
         Services = [.. status.Services.Select(StatusText.Service)];
-        Headline = status.Running ? "Running" : "Not running";
-        Reason = status.Running ? string.Empty : "the control plane answers but holds no lease";
+        Headline = status.Running ? Labels.Running : Labels.NotRunning;
+        Reason = status.Running ? string.Empty : Labels.NoLease;
         IsRunning = status.Running;
         IsNotRunning = !status.Running;
     }
 
     private Uri? NotRunning(string reason)
     {
-        Headline = "Not running";
+        Headline = Labels.NotRunning;
         Reason = reason;
         IsRunning = false;
         IsNotRunning = true;

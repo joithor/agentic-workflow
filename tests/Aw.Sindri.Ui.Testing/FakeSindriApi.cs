@@ -30,6 +30,9 @@ internal sealed class FakeSindriApi : ISindriApi
     /// <summary>When true, status calls fail as unreachable while pings and open streams carry on (a stopping process).</summary>
     public bool FailStatus { get; set; }
 
+    /// <summary>When true, status calls answer SND-UI-003 (an answer this build can't read) while pings carry on.</summary>
+    public bool UnreadableStatus { get; set; }
+
     /// <summary>How many status calls were made.</summary>
     public int StatusCalls { get; private set; }
 
@@ -85,7 +88,10 @@ internal sealed class FakeSindriApi : ISindriApi
     public Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken)
     {
         StatusCalls++;
-        return Task.FromResult(Down || FailStatus ? Unreachable<StatusView>(api) : Current);
+        return Task.FromResult(
+            Down || FailStatus ? Unreachable<StatusView>(api)
+            : UnreadableStatus ? SindriUiErrors.BadAnswer.With("/sindri/status answered 500")
+            : Current);
     }
 
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
