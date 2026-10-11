@@ -6,7 +6,8 @@ namespace Aw.Judge.Testing;
 
 /// <summary>
 /// The IProcessRunner fake: runs <see cref="FakeProgram"/>s by file name, instantly (a program that runs past the
-/// request's timeout is reported timed out without waiting); an unknown name isn't started, and one marked FailsToStart fails to start. Passes ProcessRunnerContract.
+/// request's timeout is reported timed out without waiting); an unknown name isn't started, and one marked FailsToStart, or asked to run in a working directory that doesn't
+/// exist, fails to start. Passes ProcessRunnerContract.
 /// </summary>
 public sealed class FakeProcessRunner : IProcessRunner
 {
@@ -46,14 +47,9 @@ public sealed class FakeProcessRunner : IProcessRunner
         }
 
         var program = install(request);
-        if (program.FailsToStart)
+        if (Ended(program, request) is { } ended)
         {
-            return ValueTask.FromResult(ProcessResult.FailedToStart("Exec format error"));
-        }
-
-        if (program.Runs >= request.Timeout)
-        {
-            return ValueTask.FromResult(ProcessResult.TimedOutAfter("", ""));
+            return ValueTask.FromResult(ended);
         }
 
         var stdout = new StringBuilder();
@@ -76,6 +72,14 @@ public sealed class FakeProcessRunner : IProcessRunner
         stdout.Append(padding).Append(program.StandardOutput);
         return ValueTask.FromResult(ProcessResult.Exited(program.ExitCode, Kept(stdout.ToString(), request), Kept(padding + program.StandardError, request)));
     }
+
+    // A run that ends before the program writes anything: a missing working directory or a refused start (not started),
+    // or a program past its timeout.
+    private static ProcessResult? Ended(FakeProgram program, ProcessRequest request) =>
+        request.WorkingDirectory is { Length: > 0 } directory && !Directory.Exists(directory) ? ProcessResult.FailedToStart($"working directory not found: {directory}")
+        : program.FailsToStart ? ProcessResult.FailedToStart("Exec format error")
+        : program.Runs >= request.Timeout ? ProcessResult.TimedOutAfter("", "")
+        : null;
 
     private static string Kept(string text, ProcessRequest request) => text.Length <= request.OutputLimit ? text : text[..request.OutputLimit];
 

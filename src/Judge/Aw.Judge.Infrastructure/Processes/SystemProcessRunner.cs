@@ -16,7 +16,8 @@ namespace Aw.Judge.Infrastructure.Processes;
 /// <param name="environment">Reads PATH, to find a program given by bare name.</param>
 internal sealed class SystemProcessRunner(Func<string, string?> environment) : IProcessRunner
 {
-    // ENOENT on Unix and ERROR_FILE_NOT_FOUND on Windows: the program vanished between the lookup and the start.
+    // ENOENT on Unix and ERROR_FILE_NOT_FOUND on Windows: the program vanished between the lookup and the start (or the
+    // working directory did).
     private const int NoSuchFile = 2;
 
     // After a kill, how long to wait for the pipes to drain before giving up on the rest of the output.
@@ -33,7 +34,7 @@ internal sealed class SystemProcessRunner(Func<string, string?> environment) : I
         }
 
         using var process = new Process { StartInfo = StartInfo(file, request) };
-        if (Start(process) is { } refused)
+        if (Start(process, file) is { } refused)
         {
             return refused;
         }
@@ -60,14 +61,22 @@ internal sealed class SystemProcessRunner(Func<string, string?> environment) : I
         return ProcessResult.Exited(process.ExitCode, stdout.Text, stderr.Text);
     }
 
-    // Null once it runs; otherwise why it didn't.
-    private static ProcessResult? Start(Process process)
+    // Null once it runs; otherwise why it didn't. ENOENT is a missing program only when the file itself is gone (the
+    // working directory can vanish between the check above and the start, and is reported the same way).
+    private static ProcessResult? Start(Process process, string file)
     {
+        // The program is there; a working directory that isn't is the caller's bad path, not a missing program. (Unix
+        // reports a failed chdir in the child as ENOENT too, which would otherwise read as 'not installed'.)
+        if (process.StartInfo.WorkingDirectory is { Length: > 0 } directory && !Directory.Exists(directory))
+        {
+            return ProcessResult.FailedToStart($"working directory not found: {directory}");
+        }
+
         try
         {
             return process.Start() ? null : ProcessResult.NotStarted();
         }
-        catch (Win32Exception exception) when (exception.NativeErrorCode == NoSuchFile)
+        catch (Win32Exception exception) when (exception.NativeErrorCode == NoSuchFile && !File.Exists(file))
         {
             return ProcessResult.NotStarted();
         }
