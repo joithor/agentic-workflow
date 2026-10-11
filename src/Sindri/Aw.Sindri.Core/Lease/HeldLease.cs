@@ -12,6 +12,15 @@ public sealed class HeldLease
     /// <param name="grant">The grant.</param>
     public void Hold(LeaseGrant grant) => Volatile.Write(ref _grant, grant);
 
+    /// <summary>
+    /// Holds <paramref name="next"/> only if the current grant is still <paramref name="expected"/>, so a renewal that
+    /// finishes after a stop cleared the grant doesn't bring it back.
+    /// </summary>
+    /// <param name="expected">The grant the caller read.</param>
+    /// <param name="next">The grant to hold instead.</param>
+    /// <returns>True when it was replaced.</returns>
+    public bool Replace(LeaseGrant expected, LeaseGrant next) => ReferenceEquals(Interlocked.CompareExchange(ref _grant, next, expected), expected);
+
     /// <summary>Forgets the grant (released or lost).</summary>
     public void Clear() => Volatile.Write(ref _grant, null);
 }

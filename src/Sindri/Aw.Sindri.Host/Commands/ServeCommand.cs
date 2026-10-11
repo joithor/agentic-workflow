@@ -81,7 +81,7 @@ internal static class ServeCommand
 
         _ = await endpoints.Remove(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);
         await app.StopAsync(CancellationToken.None).ConfigureAwait(false);
-        return Environment.ExitCode;
+        return app.Services.GetRequiredService<IExitCode>().Code;
     }
 
     private static async Task<Kernel.Result<TRes>> Call<TReq, TRes>(WebApplication app, TReq request)

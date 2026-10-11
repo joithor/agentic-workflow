@@ -5,4 +5,7 @@ public interface IShutdown
 {
     /// <summary>Requests a graceful stop; returns at once.</summary>
     public void Request();
+
+    /// <summary>Cancelled once a stop is requested.</summary>
+    public CancellationToken Stopping { get; }
 }

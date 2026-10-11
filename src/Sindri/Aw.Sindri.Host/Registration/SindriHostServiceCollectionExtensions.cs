@@ -12,4 +12,5 @@ internal static class SindriHostServiceCollectionExtensions
     internal static IServiceCollection AddSindriHost(this IServiceCollection services) => services
         .AddSingleton<ProcessShutdown>()
         .AddSingleton<IShutdown>(static sp => sp.GetRequiredService<ProcessShutdown>())
+        .AddSingleton<IExitCode, ProcessExitCode>();
 }

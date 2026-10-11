@@ -554,4 +554,6 @@ static Aw.Sindri.Core.Events.ProfileApproved.operator ==(Aw.Sindri.Core.Events.P
 static readonly Aw.Sindri.Core.SindriErrors.PortInUse -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Events.EventFactory.Payload<TPayload>(Aw.Sindri.Core.Ledger.LedgerEvent! recorded) -> Aw.Kernel.Result<TPayload>!
 static readonly Aw.Sindri.Core.Lease.LeaseDecision.StartTolerance -> System.TimeSpan
+Aw.Sindri.Core.Control.IShutdown.Stopping.get -> System.Threading.CancellationToken
+Aw.Sindri.Core.Lease.HeldLease.Replace(Aw.Sindri.Core.Lease.LeaseGrant! expected, Aw.Sindri.Core.Lease.LeaseGrant! next) -> bool
 static Aw.Sindri.Core.Events.EventTypes.ServiceRun(Aw.Sindri.Core.Ids.ServiceName service) -> string!
