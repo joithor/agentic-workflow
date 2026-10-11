@@ -10,7 +10,10 @@
       index,
       role: el.getAttribute("role") ?? el.tagName.toLowerCase(),
       // A submit input or an icon button has no text: its value or title is what it says (the repair write check reads this).
-      accessibleName: el.getAttribute("aria-label") ?? (text || null) ?? el.getAttribute("title") ?? (el instanceof HTMLInputElement ? el.value || null : null) ?? text,
+      // An empty aria-label names nothing, and only a button-like input's value is a label: a text or password field's
+      // value is what was typed into it, which must never reach the judge.
+      accessibleName: (el.getAttribute("aria-label") || null) ?? (text || null) ?? el.getAttribute("title")
+        ?? (el instanceof HTMLInputElement && ["submit", "button", "reset"].includes(el.type) ? el.value || null : null) ?? text,
       testId: el.getAttribute("data-testid"),
       text,
     });

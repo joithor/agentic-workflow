@@ -1,5 +1,6 @@
 using Aw.Evidence.Core;
 using Aw.Evidence.Core.Browser;
+using Aw.Evidence.Core.Guard;
 using Aw.Evidence.Core.Ids;
 using Aw.Evidence.Core.Scripts;
 using Aw.Evidence.Core.Steps;
@@ -83,6 +84,31 @@ public sealed class BrowserActionTests(BrowserFixture fixture)
 
         Assert.Equal("Delete account", Assert.Single(candidates, c => c.TestId?.Value == "submit-input").AccessibleName);
         Assert.Equal("Delete", Assert.Single(candidates, c => c.TestId?.Value == "icon").AccessibleName);
+    }
+
+    [Fact]
+    public async Task An_empty_aria_label_falls_through_to_the_value_so_a_preview_run_refuses_the_candidate()
+    {
+        await using var session = await fixture.OpenAsync();
+        _ = await session.GotoAsync("/controls", _wait, Token);
+
+        var candidates = (await session.VisibleCandidatesAsync(Token)).Value;
+
+        var blank = Assert.Single(candidates, c => c.TestId?.Value == "blank-label");
+        Assert.Equal("Delete", blank.AccessibleName);
+        Assert.True(StepGuard.LabelLooksLikeWrite(blank.AccessibleName), "the repair write check refuses it under a host override");
+    }
+
+    [Fact]
+    public async Task A_text_or_password_field_is_never_named_by_what_was_typed_into_it()
+    {
+        await using var session = await fixture.OpenAsync();
+        _ = await session.GotoAsync("/controls", _wait, Token);
+
+        var candidates = (await session.VisibleCandidatesAsync(Token)).Value;
+
+        Assert.True(string.IsNullOrEmpty(Assert.Single(candidates, c => c.TestId?.Value == "typed").AccessibleName));
+        Assert.True(string.IsNullOrEmpty(Assert.Single(candidates, c => c.TestId?.Value == "secret").AccessibleName));
     }
 
     [Fact]
