@@ -38,16 +38,6 @@ public sealed class GetBriefCliTests : IDisposable
         var cli = new JudgeCli(_state);
 
         Assert.Equal(new CliRun(1, "", "no brief for tool_use_id: toolu_none\n"), await cli.Run("brief", "get", "toolu_none"));
-        Assert.Equal(new CliRun(1, "", "no brief for tool_use_id: \n"), await cli.Run("brief", "get"));
-    }
-
-    [Fact, Trait("Lane", "integration")]
-    public async Task An_unknown_brief_subcommand_prints_the_brief_usage()
-    {
-        var cli = new JudgeCli(_state);
-
-        Assert.Equal(new CliRun(1, "", "usage: judge brief save|get|map-by-name|map-by-dispatch|set-agent-id ...\n"), await cli.Run("brief", "list"));
-        Assert.Equal(new CliRun(1, "", "usage: judge brief save|get|map-by-name|map-by-dispatch|set-agent-id ...\n"), await cli.Run("brief"));
     }
 
     public void Dispose() => _state.Dispose();

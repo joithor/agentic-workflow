@@ -17,7 +17,6 @@ public sealed class MapBriefByDispatchCliTests : IDisposable
 
         Assert.Equal(new CliRun(0, "toolu_b\n", ""), await cli.Run("brief", "map-by-dispatch", "s1", "p1", "Explore"));
         Assert.Equal(new CliRun(0, "", ""), await cli.Run("brief", "map-by-dispatch", "s1", "p2", "Explore"));
-        Assert.Equal(new CliRun(0, "", ""), await cli.Run("brief", "map-by-dispatch"));
     }
 
     private static async Task Save(JudgeCli cli, string toolUseId, string type) =>

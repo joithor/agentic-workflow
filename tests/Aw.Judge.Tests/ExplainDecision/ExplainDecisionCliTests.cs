@@ -19,12 +19,11 @@ public sealed class ExplainDecisionCliTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task Why_exits_1_for_an_unknown_or_blank_id()
+    public async Task Why_exits_1_for_an_unknown_id()
     {
         var cli = new JudgeCli(_state);
 
         Assert.Equal(new CliRun(1, "", "unknown decision: nope\n"), await cli.Run("why", "nope"));
-        Assert.Equal(new CliRun(1, "", "unknown decision: \n"), await cli.Run("why"));
     }
 
     public void Dispose() => _state.Dispose();

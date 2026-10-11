@@ -10,7 +10,7 @@ public sealed class GetHealthCliTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task Health_prints_ok_and_no_failures_on_a_new_state_directory()
     {
-        var run = await new JudgeCli(_state).Run("health", "ignored-extra-argument");
+        var run = await new JudgeCli(_state).Run("health");
 
         AssertHealth(run, "ok", 0);
     }

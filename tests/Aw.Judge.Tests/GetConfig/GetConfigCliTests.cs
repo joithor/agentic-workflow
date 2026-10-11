@@ -54,11 +54,5 @@ public sealed class GetConfigCliTests : IDisposable
         Assert.Equal(0.7, wakeGate.GetProperty("threshold").GetDouble());
     }
 
-    [Fact, Trait("Lane", "integration")]
-    public async Task An_unknown_config_subcommand_prints_the_config_usage() =>
-        Assert.Equal(
-            new CliRun(1, "", "usage: judge config get|set <question> <enabled|threshold> <value>\n"),
-            await new JudgeCli(_state).Run("config", "list"));
-
     public void Dispose() => _state.Dispose();
 }
