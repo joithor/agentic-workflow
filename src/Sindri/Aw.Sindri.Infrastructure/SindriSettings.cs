@@ -1,3 +1,5 @@
+using Aw.Sindri.Infrastructure.Auth;
+
 namespace Aw.Sindri.Infrastructure;
 
 /// <summary>Sindri's infrastructure settings, read from the environment (SettingsFromEnvironment).</summary>
@@ -13,4 +15,16 @@ internal sealed record SindriSettings(string Home, string ProfilePath)
 
     /// <summary>The control plane's endpoint record.</summary>
     public string EndpointPath => Path.Combine(Home, "control.json");
+
+    /// <summary>The per-start human token (0600, in an 'auth' folder that is 0700).</summary>
+    public string TokenPath => Path.Combine(Home, "auth", "human.token");
+
+    /// <summary>The temp directory ($TMPDIR, else the platform's), for the prover rule.</summary>
+    public string TempDirectory { get; init; } = Path.GetTempPath();
+
+    /// <summary>The state root ($AW_STATE_DIR, else ~/.agentic-workflow), whose '&lt;slug&gt;/proof/' folders the prover rule accepts.</summary>
+    public string StateDirectory { get; init; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agentic-workflow");
+
+    /// <summary>Whether this home honours X-Sindri-Client: prover (API spec §6, plan G4): it lies inside the temp directory or a proof folder.</summary>
+    public bool ProverLabelAllowed => ProverHome.Allows(Home, TempDirectory, StateDirectory);
 }
