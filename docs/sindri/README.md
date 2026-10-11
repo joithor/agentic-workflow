@@ -7,6 +7,21 @@ Sindri is a local, always-on harness that picks up work, sizes it, starts agent 
 
 Specs: the core design `docs/superpowers/specs/2026-10-07-sindri-design.md`, and the factory addendum `docs/superpowers/specs/2026-10-09-sindri-factory-addendum.md` (A below), whose §17.28 (the workflow engine) and §17.29 (Sindri as an application) define the app. Decisions Q6 and Q7 are in A §17.17.
 
+### Design specs for the application
+
+Each part of the app has its own design spec under `docs/superpowers/specs/`. They refine A §17.27–§17.29 and win over it for their part. The stage names match `docs/csharp/sindri.md`.
+
+| Part | Spec | Build step (A §17.29.4) | Stage |
+|---|---|---|---|
+| App shell: process, CLI, lease, ledger, profile, scheduler, doctor | `docs/csharp/sindri.md` (on `feat/sindri-s1-app-shell` until it merges) | 1 | S1 |
+| API surface: commands, queries, projections, the event stream, auth v0, the MCP server, `sindri open` | `2026-10-10-sindri-api-surface-design.md` | 1 (the command layer and API) | API P0–P10 |
+| **UI app design** (Avalonia, Linear design language): the control plane's views, actions and launching sessions | *Slot: `<date>-sindri-ui-design.md`, not written yet. It comes next, before any more building* | 1 (the UI app) | S1b |
+| Workflow engine: recipes, blocks, validator, instances, timers, approval | `2026-10-10-sindri-workflow-engine-design.md` | 2 | S2 (P1–P7) |
+| Context retrieval engine: the product graph, adapters, planner, evals | `2026-10-10-sindri-context-retrieval-design.md` | 3 | S3 (Phases 1–10) |
+| What the UI shows (input to the UI design) | `2026-10-09-sindri-dashboard-design.md` | — | — |
+
+The specs were written in parallel and don't fully agree yet. "Cross-spec reconciliation" below lists where they differ, and which spec each fix belongs to. Settle those before the next phase of any of them is built.
+
 ## The application
 
 ### What it is
@@ -21,7 +36,7 @@ One process per host, started by `sindri`, with a UI app as its client. It provi
 
 ### What it is not
 
-It doesn't replace your terminal or your agent tool. Agent work, yours and the factory's, happens in Claude Code sessions in your terminal (Warp today). Sindri starts those sessions, feeds them context and tracks their work. It has no chat surface. The UI app is a window onto the control plane (the queue, status, decisions, receipts, metrics and "open in Warp"), not a chat (A §17.29.3).
+It doesn't replace your terminal or your agent tool. Agent work, yours and the factory's, happens in Claude Code sessions in your terminal (Warp today). Sindri starts those sessions, feeds them context and tracks their work. It has no chat surface. The UI app is a window onto the control plane (the queue, status, decisions, receipts, metrics and "open in Warp"), not a chat (A §17.29.3). Its design is the UI app design spec (the slot in "Design specs for the application" above).
 
 ### Starting it
 
@@ -60,6 +75,30 @@ Not a module-by-module port of `sindri/` (A §17.29.4):
 4. blocks, each when the first recipe needs it (the code index, scorer, scoping and evolve are rebuilt from their TS reference);
 5. workflows down the factory line, intake first;
 6. the switch, once every desk tool has its C# form.
+
+### Cross-spec reconciliation (settle before building further)
+
+Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disagree. Each row names the recommended answer and the spec that changes. Every row is the owner's call; none is decided by this list.
+
+| # | Where they differ | Recommended answer | Changes |
+|---|---|---|---|
+| X1 | **Who may do what.** API §4/§6: caller class (`human`, `session`, `service`) plus a terminal flag, action classes, `SND-AUTH-002`, the `X-Sindri-*` headers. WF §6.2: actor classes `session`, `human`, `script`, `ui`, `human-terminal`, `system`, `SND-WF-007` | API's model is the one model. WF keeps its server challenge (§4.2) as *how* a `protected` action is confirmed, replacing S1's `confirmed` flag, and its harness probe (P2) becomes the source of API §6's agent-variable list | WF §1 W22, §6.2, §6.3, §8, §10 |
+| X2 | **What the UI may do.** WF §6.2: the UI is read-only "until the UI's own design adds its forms". API §4.2: the app is `human` without a terminal: decisions, desk, job, request and pause; `protected` shows the CLI to copy | API's table. The UI design spec confirms it screen by screen | WF §6.2; UI design |
+| X3 | **Takeover.** API: `pause`, open to sessions (the hook detects it inside the session). WF: a `human` verb | API's answer: a session may take over, never hand back | WF §6.3 |
+| X4 | **One write path.** API §2.1: every command runs through `CommandGate` (5 s), audit and authorization, decides without slow work, and appends one domain event. WF §5.3: `Commit` writes its own tables and events, `--accept` re-evaluates gates (which may call a model), and WF says one event per `Commit` (§5.2) but one per row changed (W13) | Engine commands are handlers behind API's chain. Gates that call a model run before the gate is taken (WF already stores gate answers in their own transaction); the handler only decides. WF picks one of "one event per `Commit`" or "one per row" | WF §1 W13, §5.2, §5.3; API §2.1 note |
+| X5 | **One needs-you list, one notifier.** WF: `workflow list --needs-me` and `notify.desk` OS notifications. API: `GET /needs-you`, and the app drives OS notifications and the tray badge from the stream | `GET /needs-you` is the list; `--needs-me` reads it. `notify.desk` is the only source of OS notifications; the app shows its badge and in-app pulse but doesn't notify on its own, so nothing fires twice | WF §6.3; API §5.1 |
+| X6 | **Item identity.** API: `ItemId` is `ITM-…` or a tracker key (`ENG-142`). CTX D16: a Linear key changes when an issue moves team, so records key on Linear's UUID | `ItemId` is always `ITM-…`; tracker keys are aliases and linked records (`linear:issue/<uuid>`). WF's `fact:item.id` and addresses (`T-3/item/1`) use `ItemId` | API §3; WF §12 |
+| X7 | **Item state from the engine.** API §3.6: once S2 runs, `needs-answer`, `parked`, `running`, `queued` and `taken-over` "come from the engine's item projection". Nobody owns that projection | WF P4 emits the events; API owns the projection, in the first API phase after WF P4 | API §3.6, Phases |
+| X8 | **One MCP server.** API §8: `sindri mcp`, stdio, `sindri_*` tools, repo from the working directory. CTX §8.5: Streamable HTTP at `/mcp`, `context_*` tools, registered per work repo | One server with both tool sets, stamped `session`, repo-scoped the same way. Recommended transport: HTTP on the API port (it survives a restart, and S3 is building toward it), with the repo carried by the per-repo registration | API §8; CTX §3, §8.5 |
+| X9 | **Context routes and CQRS.** CTX: `POST /sindri/context/query` (a query on a POST), and map import, build, promote and review as routes with their own terminal rule. API: `ARCH-CQRS-001` (every POST is a command), the action classes, and `GET /context?q=` in §11. S3 (#166) already maps the POST | Query by `GET /context` (or an explicit, tested carve-out for query-by-POST). Map `build` is `job`, `import` and `promote` are `desk`, `review --apply` is `protected`. Every route gets a catalog row | CTX §8.5; API §3, §11 |
+| X10 | **State home.** S1 and API: `$AW_SINDRI_HOME` (default `$AW_STATE_DIR/sindri-app`). WF §6.1 and §6.3: `AW_STATE_DIR=$(mktemp -d)` and `$AW_STATE_DIR/sindri/notifications.jsonl`, which is the TS Sindri's folder | Everything under `$AW_SINDRI_HOME`; WF's dev loop uses API §12's `scripts/sindri-prove.sh` | WF §6.1, §6.3, Phases |
+| X11 | **Where the C# docs and error codes live.** API: `docs/csharp/sindri.md`. WF: `docs/csharp/sindri-workflow.md`. CTX: `docs/sindri/context.md` and `docs/sindri/errors.md` (which is generated from the TS build) | Contracts and codes in `docs/csharp/sindri*.md` (add `sindri-context.md`); `docs/sindri/` stays the human overview | CTX §8.4–§8.6, Phases |
+| X12 | **Exit codes.** S1, API and WF: 0, 1, 2. CTX adds 75 for a busy heavy-job lock | Adopt 75 app-wide for "lock busy" (Evidence already uses it) and add it to S1's table | `docs/csharp/sindri.md`; API §9 |
+| X13 | **The heavy-job lock.** WF: `waitFor: { resource: heavy }` has no allocator. CTX: `IHeavyJobLock`, supplied by Sindri over the two-slot lock | One Sindri lock port is both the engine's `heavy` allocator and CTX's `IHeavyJobLock` | WF §3.4; CTX §4 |
+| X14 | **The `context.retrieve` block** (CTX Phase 10) fills a Step's injection plan. WF's block kinds are gate, evidence provider, Step and effect, and none of them is "input to a Step" | WF adds a Step-input kind (or a documented use of `IEvidenceProvider`) before CTX Phase 10 | WF §2; CTX Phase 10 |
+| X15 | **Launching sessions.** API P10: `OpenItem` and `ILauncher`, Warp only. WF §7.2: `ILauncher` is "the next engine design". README: Claude Code only | API P10 owns `ILauncher`. The UI design defines the launch targets: Warp plus Claude Code, Codex or Cursor, chosen per item or by profile default, and "attach" for a live session | API P10, §3.5; WF §7.2; UI design |
+| X16 | **Two timelines.** API `GET /items/{id}/timeline`; WF `workflow events <address>` | The item timeline includes its instances' events; `workflow events` is the instance-level filter of the same read | API §3.1; WF §6.3 |
+| X17 | **Build order versus what's built.** Every spec has its later phases wait for S1 to merge. S2 (#167), S3 (#166), S4a (#169) and the UI shell S1b (#168) are already built on S1, ahead of API P1 (the authorization spine), so they bring their own surfaces outside it | Merge S1, then API P0–P2, then rebase S2 and S3 onto the chain. Keep S1b in draft until the UI design spec is approved | Plan, not a spec |
 
 ## Today: the TypeScript reference (`sindri/`)
 
