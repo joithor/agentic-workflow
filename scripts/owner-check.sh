@@ -11,17 +11,19 @@
 #         $AW_STATE_DIR/sindri-ownercheck-<stage>/bin.
 #      2. Home: AW_SINDRI_HOME=$AW_STATE_DIR/sindri-app-ownercheck-<stage>, deleted first and created fresh (0700),
 #         with AW_SINDRI_PORT=7480, so it never takes the real instance's home or port.
-#      3. Seed (--seed): the merged build ($SINDRI_MAIN) exports the map from the real home (the one the profile
-#         comes from, AW_SINDRI_PORT unset) into <scratch home>/seed.json, so teardown deletes it. Never copies
-#         context.db.
+#      3. Seed (--seed): the merged build ($SINDRI_MAIN) exports the map from the real home (AW_SINDRI_HOME,
+#         else $AW_STATE_DIR/sindri-app; AW_SINDRI_PORT unset) into <scratch home>/seed.json, so teardown deletes
+#         it. Never copies context.db.
 #      4. Profile: the real profile (AW_SINDRI_PROFILE, else <real home>/profile/profile.yaml) copied in and edited:
 #         the engine's services (context-docs-refresh, context-sync, context-rebuild, context-purge) kept only when
 #         --services names them; context.labeling.enabled true with --labeling, else false where set;
-#         context.sessions.enabled true with --session, else false where set. Then starts the instance
+#         context.sessions.enabled true with --session, else false where set. The edits are tried on a temp
+#         copy before step 1, so a profile they can't edit stops before anything is built. Then starts the instance
 #         (sindri --headless), and stops for the terminal steps: `sindri profile approve <hash>` (you type the
 #         hash's first 6 characters) and, with --seed, `sindri context map import <seed>`.
 #      With --session it writes the MCP config for step 5 (only `sindri-ownercheck`, on this port, with the
-#      X-Sindri-Repo header: --repo, else the current git repo's directory name) and prints the claude command.
+#      X-Sindri-Repo header: --repo, else the directory name of the current repo's main checkout, also from a
+#      linked worktree) and prints the claude command.
 # down 7. Teardown: `sindri stop`, then stops anything still listening on 7480 (an aborted check), and deletes the
 #         MCP config, the scratch home and the build.
 #
@@ -123,6 +125,18 @@ drop_services() {
   mv "$f.new" "$f"
 }
 
+# edit_profile <file> — step 4's edits, refusing (exit 2) a profile they can't edit in place.
+edit_profile() {
+  local p="$1" rc missing
+  missing="$(drop_services "$p" $services 2>&1 >/dev/null)"; rc=$?
+  [ "$rc" = 0 ] || [ "$rc" != 3 ] || die "step 4: services: is a flow mapping; rewrite it in block style in the real profile, then rerun"
+  [ "$rc" = 0 ] || die "step 4: the check names $(echo $missing) but the real profile's services: has no such entry"
+  yaml_set "$p" context sessions enabled "$([ "$session" = 1 ] && echo true || echo false)" "$session" \
+    || die "step 4: can't set context.sessions.enabled in place (a flow mapping); rewrite context: in block style in the real profile"
+  yaml_set "$p" context labeling enabled "$([ "$labeling" = 1 ] && echo true || echo false)" "$labeling" \
+    || die "step 4: can't set context.labeling.enabled in place (a flow mapping); rewrite context: in block style in the real profile"
+}
+
 down() {
   [ ! -x "$bin" ] || bounded "${in_scratch[@]}" "$bin" stop >/dev/null 2>&1 || true
   local pids i
@@ -147,12 +161,18 @@ up() {
     read -ra main <<<"$SINDRI_MAIN"
   fi
   if [ "$session" = 1 ] && [ -z "$repo" ]; then
-    repo="$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)"
+    # The main checkout's directory, also from a linked worktree (whose own directory name isn't the repo's).
+    repo="$(basename "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)")" 2>/dev/null)"
     [ -n "$repo" ] && [ "$repo" != . ] || die "--session needs --repo NAME outside a git repo (the X-Sindri-Repo header)"
   fi
   [ -f "$real_profile" ] && [ -r "$real_profile" ] || die "the real profile isn't readable: $real_profile"
   local smoke="$root/src/Sindri/aot-smoke/run.sh"
   [ -x "$smoke" ] || die "step 1 needs $smoke (S1's AOT smoke, #163) on the PR head"
+  # Step 4's profile edits, tried first on a temp copy: a profile they can't edit stops here, before the build and export.
+  edited="$(mktemp "${TMPDIR:-/tmp}/owner-check-profile.XXXXXX")" || die "can't make a temp file"
+  trap 'rm -f "$edited" "$edited.new"' EXIT
+  cp "$real_profile" "$edited" && chmod 600 "$edited" || die "can't copy the real profile: $real_profile"
+  edit_profile "$edited"
 
   echo "== 1. build (src/Sindri/aot-smoke/run.sh)"
   env -u AW_SINDRI_PROFILE -u AW_SINDRI_HOME -u AW_SINDRI_PORT "$smoke" || broke "step 1: the AOT build or its smoke failed"
@@ -174,16 +194,10 @@ up() {
 
   echo "== 4. profile, start, approve"
   local p="$home/profile/profile.yaml" rc
-  (umask 077 && cp "$real_profile" "$p") || broke "step 4: can't copy the profile"
-  drop_services "$p" $services 2>"$scratch/missing"; rc=$?
-  [ "$rc" = 0 ] || [ "$rc" != 3 ] || die "step 4: services: is a flow mapping; rewrite it in block style in the real profile, then rerun"
-  [ "$rc" = 0 ] || die "step 4: the check names $(tr '\n' ' ' <"$scratch/missing")but the real profile's services: has no such entry"
-  yaml_set "$p" context sessions enabled "$([ "$session" = 1 ] && echo true || echo false)" "$session" \
-    || die "step 4: can't set context.sessions.enabled in place (a flow mapping); rewrite context: in block style in the real profile"
-  yaml_set "$p" context labeling enabled "$([ "$labeling" = 1 ] && echo true || echo false)" "$labeling" \
-    || die "step 4: can't set context.labeling.enabled in place (a flow mapping); rewrite context: in block style in the real profile"
+  (umask 077 && cp "$edited" "$p") || broke "step 4: can't copy the edited profile into $home"
   rc=0; bounded "${in_scratch[@]}" "$bin" --headless || rc=$?
-  [ "$rc" -le 1 ] || broke "step 4: the scratch instance didn't start (exit $rc); see $home/logs/serve.log"
+  # Exit 1 is "needs approval" or "went away before its status answered" (S1); only a listener tells them apart.
+  [ "$rc" -le 1 ] && listening || broke "step 4: the scratch instance isn't running on port $port (exit $rc); see $home/logs/serve.log, then scripts/owner-check.sh $stage down"
   local hash
   hash="$({ bounded "${in_scratch[@]}" "$bin" profile validate --json || true; } | sed -nE 's/.*"hash":"([0-9a-f]{64})".*/\1/p')"
   [ -n "$hash" ] || broke "step 4: profile validate gave no hash; run: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin profile validate"

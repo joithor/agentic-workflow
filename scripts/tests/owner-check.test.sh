@@ -48,6 +48,7 @@ cat > "$T/stub-sindri" <<'STUB'
 echo "home=${AW_SINDRI_HOME:-unset} port=${AW_SINDRI_PORT:-unset} args=$*" >> "$OWNER_CHECK_TEST_LOG"
 case "$*" in
   --headless)
+    [ -z "${OWNER_CHECK_TEST_NOLISTEN:-}" ] || { echo "control plane went away"; exit 1; }
     python3 -c 'import socket,sys,time
 s=socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.bind(("127.0.0.1", int(sys.argv[1]))); s.listen(); time.sleep(600)' "$AW_SINDRI_PORT" >/dev/null 2>&1 &
     echo "$!" > "$OWNER_CHECK_TEST_PID"
@@ -184,8 +185,20 @@ expect "down runs from a shell that exported the owner-check home" 0 "unset SIND
 check "  ... and tears it down" '! listening "$PORT" && [ ! -e "$OC_HOME" ]'
 
 printf 'schemaVersion: 1\nuser: owner\nservices: { context-sync: { every: 1m } }\n' > "$T/flowsvc.yaml"
+: > "$T/calls.log"
 AW_SINDRI_PROFILE="$T/flowsvc.yaml" run s-x up --services context-sync
 expect "a flow-style services: is named as the reason, even with --services" 2 "flow mapping"
+check "  ... before anything is built, exported or started" '[ ! -s "$T/calls.log" ] && [ ! -e "$OC_SCRATCH" ] && [ ! -e "$OC_HOME" ]'
+run s-x down
+
+OWNER_CHECK_TEST_NOLISTEN=1 run s-x up
+expect "a start that exits 1 without a listener is a failed start, not a pending approval" 1 "isn't running on port $PORT" "owner-check.sh s-x down"
+run s-x down
+
+git init -q "$T/work-repo" && git -C "$T/work-repo" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+git -C "$T/work-repo" worktree add -q "$T/wt-feature" 2>/dev/null
+set +e; OUT="$(cd "$T/wt-feature" && bash "$REPO/scripts/owner-check.sh" s-x up --session </dev/null 2>&1)"; CODE=$?; set -e
+check "without --repo the header is the main checkout's name, also from a linked worktree" '[ "$CODE" = 0 ] && grep -q "\"X-Sindri-Repo\": \"work-repo\"" "$OC_SCRATCH/mcp.json"'
 run s-x down
 
 printf 'schemaVersion: 1\nuser: owner\n' > "$T/bare.yaml"
