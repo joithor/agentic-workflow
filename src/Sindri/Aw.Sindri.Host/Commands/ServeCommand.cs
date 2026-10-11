@@ -15,12 +15,14 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri serve': the control plane in the foreground (what bare 'sindri' starts detached, and what launchd will keep
-/// alive). Lease first, so a second serve is refused before it touches the port; then listen, record the endpoint, and
-/// run until a stop request, SIGTERM/SIGINT or a lost lease. SIGHUP is ignored so closing the terminal doesn't stop it.
+/// alive). It chooses the port and checks its loopback listener is configured (nothing is bound yet), then takes the
+/// lease, so a second serve is refused before it binds the port; then it listens, records the endpoint, and runs until a
+/// stop request, SIGTERM/SIGINT or a lost lease. A failure to listen records the stop and releases the lease. SIGHUP is
+/// ignored so closing the terminal doesn't stop it.
 /// </summary>
 internal static class ServeCommand
 {
-    internal static async Task<int> Run(Func<string, string?> environment, TimeProvider clock, TextWriter error)
+    internal static async Task<int> Run(Func<string, string?> environment, TimeProvider clock, TextWriter error, Action<IServiceCollection>? configure = null)
     {
         using var hangup = PosixSignalRegistration.Create(PosixSignal.SIGHUP, static c => c.Cancel = true);
         if (environment(LoopbackBinding.PortVariable) is { Length: > 0 } asked && !IsPort(asked))
@@ -30,11 +32,23 @@ internal static class ServeCommand
             return 2;
         }
 
-        var app = LoopbackBinding.Build([], environment, clock, static services => services.AddSindriServe());
+        var app = LoopbackBinding.Build([], environment, clock, services =>
+        {
+            _ = services.AddSindriServe();
+            configure?.Invoke(services);   // tests only: Program passes nothing
+        });
         await using (app.ConfigureAwait(false))
         {
             _ = Pipeline.Configure(app);
-            _ = await app.Services.GetRequiredService<ServePort>().Listen(environment(LoopbackBinding.PortVariable), CancellationToken.None).ConfigureAwait(false);
+            var port = app.Services.GetRequiredService<ServePort>();
+            _ = await port.Listen(environment(LoopbackBinding.PortVariable), CancellationToken.None).ConfigureAwait(false);
+            if (port.Chosen is null)   // checked before the lease is taken; ServeListenerCheck is the backstop at start
+            {
+                await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} serve chose no port, so it has no loopback listener and won't start "
+                    + "(fix: report it; it is a bug)").ConfigureAwait(false);
+                return 2;
+            }
+
             var started = await Call<StartProcessRequest, StartProcessResponse>(app, new StartProcessRequest()).ConfigureAwait(false);
             if (started.IsError)
             {
@@ -62,6 +76,12 @@ internal static class ServeCommand
         {
             _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.PortInUse)).ConfigureAwait(false);
             await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} {e.Message} (fix: free the port, or set AW_SINDRI_PORT)").ConfigureAwait(false);
+            return false;
+        }
+        catch (Exception e)   // a hosted service refused to start (ServeListenerCheck among them): never leave the lease held
+        {
+            _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.ListenFailed)).ConfigureAwait(false);
+            await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} serve couldn't start listening: {e.Message} (fix: see the log above; run sindri doctor)").ConfigureAwait(false);
             return false;
         }
     }

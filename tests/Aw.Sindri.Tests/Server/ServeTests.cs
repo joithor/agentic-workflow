@@ -4,12 +4,14 @@ using System.Net.Http.Json;
 using System.Net.Sockets;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Host.Server;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -109,6 +111,23 @@ public sealed class ServeTests : IDisposable
 
         Assert.Equal(2, code);
         Assert.StartsWith("SND-API-003 ", error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = Deadline), Trait("Lane", "integration")]
+    public async Task A_host_that_fails_to_start_after_the_lease_records_the_stop_releases_the_lease_and_exits_2()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var error = new StringWriter();
+
+        var code = await ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => "0", _ => null }, TimeProvider.System, error,
+            static services => services.AddHostedService<FailsToStart>()).WaitAsync(ct);
+
+        Assert.Equal(2, code);
+        Assert.StartsWith("SND-API-003 serve couldn't start listening: ", error.ToString(), StringComparison.Ordinal);
+        var stores = SqliteStores.Create(_home.Path, TimeProvider.System, new FakeProcessProbe());
+        Assert.True((await stores.Lease.Read(ct)).Value!.Released);   // why: serve took the lease before it started the host
+        var stopped = (await stores.Ledger.Latest(EventTypes.ProcessStopped, ct)).Value;
+        Assert.Contains("\"reason\":\"listen-failed\"", stopped!.Envelope.Payload, StringComparison.Ordinal);   // why: the stop is recorded
     }
 
     [Theory(Timeout = Deadline), Trait("Lane", "integration")]

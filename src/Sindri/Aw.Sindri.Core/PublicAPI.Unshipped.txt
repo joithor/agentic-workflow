@@ -557,6 +557,7 @@ Aw.Sindri.Core.Events.ProcessStopped.ProcessStopped(int Pid, long Epoch, Aw.Sind
 Aw.Sindri.Core.Events.ProcessStopped.Reason.get -> Aw.Sindri.Core.Events.StopReason
 Aw.Sindri.Core.Events.StopReason
 Aw.Sindri.Core.Events.StopReason.PortInUse = 2 -> Aw.Sindri.Core.Events.StopReason
+Aw.Sindri.Core.Events.StopReason.ListenFailed = 3 -> Aw.Sindri.Core.Events.StopReason
 Aw.Sindri.Core.Events.StopReason.Signal = 1 -> Aw.Sindri.Core.Events.StopReason
 Aw.Sindri.Core.Events.StopReason.Stop = 0 -> Aw.Sindri.Core.Events.StopReason
 Aw.Sindri.Core.Lease.HeldLease.Replace(Aw.Sindri.Core.Lease.LeaseGrant! expected, Aw.Sindri.Core.Lease.LeaseGrant! next) -> bool

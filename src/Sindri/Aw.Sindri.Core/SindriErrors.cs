@@ -44,7 +44,7 @@ public static class SindriErrors
     /// <summary>SND-API-002: the control-plane process didn't answer in time (the ping within 2 s, or the call itself within 10 s).</summary>
     public static readonly ErrorDefinition ApiTimeout = new("SND-API-002", ErrorKind.Timeout, "Sindri didn't answer in time");
 
-    /// <summary>SND-API-003: the API's port is taken by another program.</summary>
+    /// <summary>SND-API-003: serve can't listen on the API port: another program has it, it is refused, or the host failed to start listening.</summary>
     public static readonly ErrorDefinition PortInUse = new("SND-API-003", ErrorKind.Unavailable, "The API port is in use");
 
     /// <summary>SND-API-004: the API answered an error without a catalogue code (a route or method it doesn't serve, a body it couldn't read).</summary>

@@ -17,7 +17,7 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 |---|---|---|
 | `sindri` | Prints the banner, starts the control plane if it isn't running (detached in its own session, so a Ctrl-C or a kill of the terminal's process group doesn't reach it; `sindri serve`, output in `<home>/logs/serve.log`), then prints the startup summary. It starts one only when nothing runs (`SND-API-001`); one that answers late (`SND-API-002`) is reported as it is. A started child that exits with `SND-LEASE-001` lost the lease to a concurrent start, so it waits up to 10 s for the winner to answer; past that the error ends with the line the child exited with. Only lines the started child wrote count, not an earlier run's | 0; 1 when the profile needs approval; 2 when it can't start (`SND-CLI-002`) or the running one answers late |
 | `sindri --headless` | The same without the UI line (the UI is S1b) | as above |
-| `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later | 0 on a clean stop; 1 when another process holds the lease (`SND-LEASE-001`) or the lease was lost; 2 when the port is taken or refused (`SND-API-003`), or `AW_SINDRI_PORT` isn't a port number 0..65535 (`SND-CLI-003`, checked before the lease is taken), or the ledger can't be opened |
+| `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later | 0 on a clean stop; 1 when another process holds the lease (`SND-LEASE-001`) or the lease was lost; 2 when the port is taken or refused, or the host fails to start listening (`SND-API-003`; the stop is recorded and the lease released), or `AW_SINDRI_PORT` isn't a port number 0..65535 (`SND-CLI-003`, checked before the lease is taken), or the ledger can't be opened |
 | `sindri status [--json]` | The running control plane's status, through the API | 0; 1 when it isn't running (`SND-API-001`) or the profile needs approval (`profile.needsApproval` in the response); 2 when it didn't answer in time (`SND-API-002`), answered an error without a code (`SND-API-004`) or failed inside (`SND-API-005`) |
 | `sindri stop` | Stops it: records the stop, releases the lease, shuts down | 0; 1 when it isn't running; 2 when it didn't answer in time (`SND-API-002`), answered an error without a code (`SND-API-004`) or failed inside (`SND-API-005`) |
 | `sindri profile validate [--json]` | Checks the live profile file and prints its hash | 0 valid and approved (it is the saved approval and the latest recorded `profile.approved` event names it, the rule every surface uses); 1 valid, not approved; 2 invalid (`SND-PROFILE-001/002`), or the ledger can't be read (`SND-LEDGER-002`): a ledger read error is never "not approved" |
@@ -169,7 +169,7 @@ blocks.
 | `SND-LEDGER-002` | The ledger can't be opened or written |
 | `SND-API-001` | The control plane isn't running (no endpoint record, or nothing answers at it) |
 | `SND-API-002` | It didn't answer the ping within 2 s, or the call itself within 10 s |
-| `SND-API-003` | The API port is taken by another program |
+| `SND-API-003` | `sindri serve` can't listen on the API port: another program has it, it is refused, or the host failed to start listening (the stop is recorded and the lease released) |
 | `SND-API-004` | The API answered an error without a catalogue code (HTTP status named) |
 | `SND-API-005` | A handler failed with an unexpected exception; the control plane logged it |
 | `SND-CLI-001` | Unknown command |
