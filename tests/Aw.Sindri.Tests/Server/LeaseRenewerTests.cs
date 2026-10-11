@@ -1,6 +1,7 @@
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Host.Server;
+using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Server;
 
