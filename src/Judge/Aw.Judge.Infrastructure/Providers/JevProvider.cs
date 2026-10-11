@@ -11,8 +11,9 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// <summary>
 /// Jev, the TypeSafe API (POST https://api.typesafe.ai/v1/systemone), for the text classes: one 'choice' question per
 /// call whose options are the question's outputs, each with its criterion (or its own name). The API key comes from
-/// the secret source; without one Jev is unavailable ('no-api-key'), which is not a failure. The request's state is the
-/// input redacted and capped like the stored input (InputCap), since it leaves the machine for a third party. A non-success status is
+/// the secret source; without one Jev is unavailable ('no-api-key'), which is not a failure. Everything taken from the
+/// input leaves the machine for a third party, so both the request's state and its instructions (the question's prompt,
+/// which embeds input fields word for word) are redacted, then capped like the stored input (InputCap). A non-success status is
 /// errored ('http-NNN'); past the budget it is unavailable ('timeout'); unreachable is unavailable ('network-error').
 /// </summary>
 /// <param name="http">Sends the request (owned: disposed with the provider).</param>
@@ -55,7 +56,7 @@ internal sealed class JevProvider(HttpClient http, ISecretSource secrets, IInput
         deadline.CancelAfter(budget);
         try
         {
-            using var request = Request(question, State(input), key);
+            using var request = Request(question, State(input), Instructions(question.Prompt), key);
             using var response = await http.SendAsync(request, deadline.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
@@ -81,7 +82,11 @@ internal sealed class JevProvider(HttpClient http, ISecretSource secrets, IInput
     // Jev is a third party: it gets what decision_details would store, the redacted input capped the same way.
     private JsonNode? State(JsonNode? input) => JsonNode.Parse(InputCap.Write(redactor.Redact(input), InputCap.MaxChars, WireJson.Options));
 
-    private static HttpRequestMessage Request(QuestionRef question, JsonNode? input, string key)
+    // The prompt carries the input's text too (ask-check's transcript tail, a rule-check hunk): redacted, then capped.
+    private string Instructions(string prompt) =>
+        InputCap.Truncate(redactor.Redact(JsonValue.Create(prompt))?.GetValue<string>() ?? "", InputCap.MaxChars);
+
+    private static HttpRequestMessage Request(QuestionRef question, JsonNode? input, string instructions, string key)
     {
         var criteria = question.Outputs.ToDictionary(
             option => option,
@@ -90,7 +95,7 @@ internal sealed class JevProvider(HttpClient http, ISecretSource secrets, IInput
         var body = new JevRequest(
             input,
             Model,
-            new Dictionary<string, JevChoiceQuestion>(StringComparer.Ordinal) { [QuestionId] = new("choice", question.Prompt, criteria) });
+            new Dictionary<string, JevChoiceQuestion>(StringComparer.Ordinal) { [QuestionId] = new("choice", instructions, criteria) });
         var content = new ByteArrayContent(AwJson.Serialize(body, WireJson.Options));
         content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         var request = new HttpRequestMessage(HttpMethod.Post, _endpoint) { Content = content };

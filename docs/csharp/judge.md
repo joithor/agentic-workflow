@@ -230,8 +230,12 @@ undeclared fields dropped.
 ### Jev
 
 `POST https://api.typesafe.ai/v1/systemone` with `{state: <input, redacted and capped like the stored input>, model: "jev-1.13.0", questions: {decision:
-{type: "choice", instructions: <prompt>, criteria: {<output>: <criterion or the output>}}}}` and `Authorization:
-Bearer <key>`; text classes only. The key comes from `ISecretSource` (`TYPESAFE_API_KEY`, else the keychain).
+{type: "choice", instructions: <prompt, redacted and capped>, criteria: {<output>: <criterion or the output>}}}}` and
+`Authorization: Bearer <key>`; text classes only. The key comes from `ISecretSource` (`TYPESAFE_API_KEY`, else the
+keychain). Jev is the one provider that sends the input to a third party on the judge's own key, so `JevProvider`
+redacts (then caps at `InputCap.MaxChars`) both the state and the prompt, which embeds input fields word for word
+(ask-check's transcript tail, a rule-check hunk, a brief's proof command). The agent CLIs get the prompt as built:
+they run on the user's own model logins, the same place the agent's session already sends that text.
 The answer's `choice`, `confidence` (1.0 when absent) and `probabilities` become the decision.
 
 ### Rules
