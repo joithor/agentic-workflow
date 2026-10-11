@@ -85,6 +85,17 @@ public sealed class ParityTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Parity_names_the_manifest_file_and_the_json_location_of_a_bad_manifest()
+    {
+        var harness = new ParityHarness();
+        _ = harness.Files.With(ParityHarness.ManifestPath, """{"route":"/","frames":[],"zoom":2}"""u8.ToArray());
+
+        var result = await harness.Run(ParityHarness.Request());
+
+        Assert.Equal((EvidenceErrors.ManifestInvalid.Code, "manifest /work/manifest.json: $.zoom: unknown property"), (result.Error.Code, result.Error.Message));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Parity_refuses_a_write_looking_frame_step_before_taking_a_lock()
     {
         var frame = ManifestBuilder.Frame() with { Steps = [ScriptBuilder.Click("submit-form")] };

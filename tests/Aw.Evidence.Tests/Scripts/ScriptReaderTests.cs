@@ -55,6 +55,23 @@ public sealed class ScriptReaderTests
     public void A_malformed_script_is_one_clear_script_error(string json) =>
         Assert.Equal(EvidenceErrors.ScriptInvalid.Code, Read(json).Error.Code);
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/"}]}""", "$.steps[0]: missing required property \"expectedState\"")]
+    [InlineData("""{"route":"/","role":"intern","viewports":["desktop"],"steps":[]}""", "$.role: \"intern\" is not a valid value")]
+    [InlineData("""{"route":"/","role":7,"viewports":["desktop"],"steps":[]}""", "$.role: 7 is not a valid value")]
+    [InlineData("""{"route":null,"role":"manager","viewports":["desktop"],"steps":[]}""", "$.route: must not be null")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"kind":"url-path"}}]}""", "$.steps[0].expectedState: missing required property \"path\"")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"path":"/"}}]}""", "$.steps[0].expectedState: missing required property \"kind\"")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"kind":"looks-nice"}}]}""", "$.steps[0].expectedState.kind: \"looks-nice\" is not a known kind (text-visible, text-absent, testid-visible, url-path, input-value)")]
+    [InlineData("""{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/","expectedState":{"kind":"testid-visible","testId":""}}]}""", "$.steps[0].expectedState.testId: \"\" is not a valid value")]
+    [InlineData("not json", "$: not valid JSON (line 1, column 2)")]
+    public void A_malformed_script_is_described_by_its_json_location_in_its_own_terms(string json, string message)
+    {
+        var error = Read(json).Error;
+
+        Assert.Equal((EvidenceErrors.ScriptInvalid.Code, message), (error.Code, error.Message));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Missing_planning_usage_stays_unknown_rather_than_zero()
     {

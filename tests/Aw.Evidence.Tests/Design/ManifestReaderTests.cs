@@ -51,6 +51,14 @@ public sealed class ManifestReaderTests
         Assert.Equal(EvidenceErrors.ManifestInvalid.Code, Read(Manifest(extra)).Error.Code);
 
     [Fact, Trait("Lane", "unit")]
+    public void A_misspelt_key_is_named_by_its_json_location()
+    {
+        var frame = Frame.Replace("}}", ""","zoom":2}""", StringComparison.Ordinal);
+
+        Assert.Equal("$.frames[0].zoom: unknown property", Read(Manifest(frame: frame)).Error.Message);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_misspelt_key_inside_a_frame_is_refused()
     {
         var frame = Frame.Replace("}}", """},"expectBox":[{"target":{"testId":"a"},"expected":{"w":1}}]}""", StringComparison.Ordinal);

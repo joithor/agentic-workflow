@@ -49,6 +49,17 @@ public sealed class RunScriptRefusalTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task RunScript_names_the_script_file_and_the_json_location_of_a_bad_script()
+    {
+        var harness = new RunScriptHarness();
+        _ = harness.Files.With(RunScriptRequestBuilder.ScriptPath, """{"route":"/","role":"manager","viewports":["desktop"],"steps":[{"action":"goto","target":"/"}]}"""u8.ToArray());
+
+        var result = await harness.Run(A.RunScriptRequest().Build());
+
+        Assert.Equal("script /work/script.json: $.steps[0]: missing required property \"expectedState\"", result.Error.Message);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task RunScript_refuses_a_malformed_script_before_taking_a_lock()
     {
         var harness = new RunScriptHarness();
