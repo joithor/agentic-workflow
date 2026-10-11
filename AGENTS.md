@@ -150,6 +150,7 @@ bash config/hooks/tests/probe-log.test.sh
 bash config/hooks/tests/judge-health.test.sh
 bash config/hooks/tests/sindri-nudge.test.sh
 bash config/hooks/tests/failopen.test.sh
+bash config/lib/tests/judge-cs-hook-surface.test.sh  # the hook contract: real hooks vs the C# judge (and the TS judge when judge/dist is built); needs dotnet
 for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers
 
 # Levers and probe (default provider: claude)
