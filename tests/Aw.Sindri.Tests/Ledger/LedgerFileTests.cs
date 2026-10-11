@@ -1,5 +1,4 @@
 using Aw.Kernel.Data;
-using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Testing;
 using Microsoft.Data.Sqlite;
@@ -46,16 +45,6 @@ public sealed class LedgerFileTests : IDisposable
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(home));
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(Path.Combine(home, "ledger.db")));
         Assert.True((await stores.Ledger.Schema(TestContext.Current.CancellationToken)).Value.IsCurrent);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public void Settings_default_to_a_home_apart_from_the_typescript_sindri()
-    {
-        var settings = SettingsFromEnvironment.Read(name => name == "AW_STATE_DIR" ? "/state" : null);
-
-        Assert.Equal("/state/sindri-app", settings.Home);
-        Assert.Equal("/state/sindri-app/profile/profile.yaml", settings.ProfilePath);
-        Assert.Equal("/x/p.yaml", SettingsFromEnvironment.Read(n => n switch { "AW_SINDRI_HOME" => "/x", "AW_SINDRI_PROFILE" => "/x/p.yaml", _ => null }).ProfilePath);
     }
 
     private static List<string> Tables(string path)

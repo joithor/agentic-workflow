@@ -29,9 +29,10 @@ public sealed class ServeTests : IDisposable
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = Deadline), Trait("Lane", "integration")]
     public async Task The_api_serves_status_ping_events_and_stop_under_the_lease()
     {
+        var ct = TestContext.Current.CancellationToken;
         await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
         _ = Pipeline.Configure(app);
         await using (var scope = app.Services.CreateAsyncScope())
@@ -41,7 +42,7 @@ public sealed class ServeTests : IDisposable
         }
 
         await app.StartAsync(Token);
-        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
+        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };
 
         var status = await http.GetFromJsonAsync("/sindri/status", HttpJson.Info<GetStatusResponse>(), Token);
         var ping = await http.GetFromJsonAsync("/sindri/ping", HttpJson.Info<Ping>(), Token);
@@ -55,23 +56,24 @@ public sealed class ServeTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, stop.StatusCode);
         Assert.Null(app.Services.GetRequiredService<HeldLease>().Current);
         Assert.True(app.Services.GetRequiredService<ProcessShutdown>().Stopping.IsCancellationRequested);
-        await app.StopAsync(Token);
+        await app.StopAsync(ct);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = Deadline), Trait("Lane", "integration")]
     public async Task A_bad_approve_body_is_a_400_problem_with_no_stack_trace()
     {
+        var ct = TestContext.Current.CancellationToken;
         await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
         _ = Pipeline.Configure(app);
         await app.StartAsync(Token);
-        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
+        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };
 
         using var body = new StringContent("""{"hash":"nope","confirmed":true}""", System.Text.Encoding.UTF8, "application/json");
         var answer = await http.PostAsync(new Uri("/sindri/profile/approve", UriKind.Relative), body, Token);
 
         Assert.Equal(HttpStatusCode.BadRequest, answer.StatusCode);
         Assert.DoesNotContain("   at ", await answer.Content.ReadAsStringAsync(Token), StringComparison.Ordinal);
-        await app.StopAsync(Token);
+        await app.StopAsync(ct);
     }
 
     private static async Task<string> FirstEventLines(HttpClient http)

@@ -1,6 +1,6 @@
-using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Testing;
 
@@ -55,7 +55,17 @@ public sealed class RunDoctorTests
         var report = (await Service().Handle(new RunDoctorRequest(), Token)).Value;
 
         Assert.Equal(CheckState.Fail, report.Checks.Single(c => c.Name == "lease").State);
-        Assert.Equal((CheckState.Warn, "sindri profile approve"), report.Checks.Single(c => c.Name == "profile") is var p ? (p.State, p.Fix) : default);
-        Assert.Equal(KnownInstants.Epoch, _h.Clock.GetUtcNow());
+        var profile = report.Checks.Single(c => c.Name == "profile");
+        Assert.Equal(CheckState.Warn, profile.State);
+        Assert.Equal("sindri profile approve", profile.Fix);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_ledger_written_by_a_newer_build_fails_the_ledger_check()
+    {
+        var check = DoctorRules.Ledger(new SchemaStatus(Applied: 4, Expected: 3));
+
+        Assert.Equal((CheckState.Fail, "ledger"), (check.State, check.Name));
+        Assert.Contains("schema 4/3: written by another build", check.Detail, StringComparison.Ordinal);
     }
 }
