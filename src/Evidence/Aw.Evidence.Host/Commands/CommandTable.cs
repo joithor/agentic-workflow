@@ -42,9 +42,10 @@ internal static class CommandTable
                 CommandOutput.Message("interrupted");
                 return CommandOutput.Interrupted;
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex)
             {
-                // A bug or a failure outside a Result: still one line and a documented exit (the locks are already released).
+                // A bug or a failure outside a Result (a cancellation no signal caused among them): still one line and a
+                // documented exit (the locks are already released).
                 return CommandOutput.Error(EvidenceErrors.RunFailed.With($"the run failed unexpectedly: {FirstLine(ex.Message)}"));
             }
         }

@@ -63,6 +63,17 @@ public sealed class CommandExitTests : IDisposable
     }
 
     [Fact]
+    public async Task A_cancellation_no_signal_caused_exits_4_with_a_one_line_error_not_a_crash()
+    {
+        _browser.PageFor = static _ => new FakePage { ScreenshotThrows = new TaskCanceledException("a library timed out") };
+
+        var (exit, output, error) = await Run("run", Script(), _root.Combine("run-1"));
+
+        Assert.Equal((CommandOutput.RunErrored, ""), (exit, output));
+        Assert.Equal("ui-evidence: AW-EVIDENCE-015 the run failed unexpectedly: a library timed out\n", error.Replace("\r\n", "\n", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task A_busy_lock_exits_75()
     {
         _ = _locks.AlwaysBusy.Add(LockKind.HeavyJob);
