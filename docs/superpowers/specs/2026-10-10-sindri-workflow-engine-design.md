@@ -448,9 +448,75 @@ The `claim.created` and `claimExists` events reach the instance as the waited-fo
 
 ## Phases
 
-Each phase is one PR. Phase 1 is stacked on `feat/sindri-s1-app-shell`; later phases stack on the one before
-until S1 merges, then target `main`. Sizes are a rough guide: S is a few files, M one subsystem slice, L a store
-or several slices with migrations.
+Each phase is one PR. Phase 1 is stacked on `feat/sindri-s1-app-shell`. Each later phase stacks on the phases it
+depends on (the graph below) until S1 merges, then targets `main`. Sizes are a rough guide: S is a few files, M is
+one subsystem slice, L is a store or several slices with migrations.
+
+### Parallel execution with an agent team
+
+`/specToProvenPR` runs these phases with an agent team, and keeps every agent busy by working from the graph below.
+It doesn't run the phases in number order. The phases are cut so that independent ones run at the same time,
+and so that the units inside a phase write to disjoint files.
+
+**Phase graph** (an arrow means "needs"):
+
+```
+P1 model + validator ──┬──► P2 registry + approval ─────────────────────────────┐
+                       └──► P3 pure engine + evals ──► P4 store, start, apply ──┼──► P5 timers, takeover ──┐
+                                                         (S1-D2, D6, D7)        │                          ├──► P7 children + item
+                                                                                └──► P6 effects (S1-D3) ───┘
+```
+
+| Wave | Runs in parallel | Starts when |
+|---|---|---|
+| 1 | P1 | S1's branch has the Sindri package skeleton (now) |
+| 2 | P2 ∥ P3 | P1's red commit is pushed (the units below depend on P1's model types, not on P1 being reviewed) |
+| 3 | P4 (P2 continues if it hasn't finished) | P3's `TransitionDecision` signature is committed, and S1-D2, D6 and D7 have landed |
+| 4 | P5 ∥ P6 | P4's `Commit` and `WorkflowStoreContract` are green. P6 also needs P2 (approvals are rechecked at dispatch) and S1-D3 |
+| 5 | P7 | P5 and P6 are merged |
+
+**Units inside a phase.** Each phase is split into units with disjoint write scopes, one implementer each. A
+phase's first unit is always the **contract unit**: the records, ports and stubs everything else compiles
+against, committed red. It runs alone, and the other units fan out after it.
+
+| Phase | Contract unit (alone, first) | Then in parallel |
+|---|---|---|
+| P1 | Recipe records, typed ids, `BlockDescriptor`, `BlockCatalog`, `RecipeValidator` shell with an `IRecipeRule` list | (a) schema rules `RCP-SCHEMA/STATE/INIT/DUR` and the generated JSON Schema · (b) graph rules `RCP-REACH/EXIT/LOOP/WHEN-002` · (c) wiring and block rules `RCP-WIRE/BLOCK/EVID/WHEN-001/CHILD/TRIG/THRESH/NEXT` · (d) `RecipeHash` with `RCP-HASH`, plus `YamlRecipeReader` · (e) the CLI verb, endpoint and golden files. Each rule family is its own folder and fixture set |
+| P2 | `IRecipeStore`, `IRecipeApprovals`, their fakes and contract bases | (a) SQLite adapters and migrations · (b) slices `Register`/`List` · (c) slices `Approve`/`Revoke` with the terminal confirmation · (d) `RCP-CAP-001…004` over the snapshot |
+| P3 | `TransitionDecision`, `TimerDecision` and `ChildPropagation` signatures, plus the instance record | (a) transition and gate application · (b) `LoopRules` and `BudgetRules` · (c) `TimerDecision` · (d) `ChildPropagation` · (e) `EvalRecipe`, `recipe eval` and the eval logs · (f) the seeded property harness |
+| P4 | `IWorkflowStore` with its fake and `WorkflowStoreContract` | (a) `SqliteWorkflowStore` and migrations · (b) `StartInstance` · (c) `ApplyTrigger` · (d) `GetInstance` and the `workflow` verbs |
+| P5 | The deadline model on the instance | (a) the `workflow.timers` service and the sleep shift · (b) takeover and handback |
+| P6 | The `IEffectKind` runtime | (a) outbox writes in `Commit` · (b) the allowlist and the dispatch recheck · (c) `effect.claim.ref` and `effect.fixture.echo` |
+| P7 | The inbox schema | (a) `DrainInbox` and propagation · (b) the router and slot stubs plus the two gates · (c) `workflow.item.yaml` and its evals |
+
+**Files that would conflict, and who owns each.** Units never edit these directly. Each unit writes a fragment
+in its own unit file, and the phase's integrator merges the fragments in one commit at the end of the phase:
+
+| Hotspot | Rule |
+|---|---|
+| `PublicAPI.Unshipped.txt` (Core, Features, Infrastructure) | The integrator regenerates it from the build's `RS0016` lines |
+| `SindriErrors.cs` and `docs/sindri/errors.md` | Code ranges are reserved per phase: P1 `SND-RECIPE-001`, P2 `002`–`005`, P3 and P4 `SND-WF-001`–`004`, P6 and P7 `SND-WF-010`–`019`. Units add only codes from their own range |
+| `Add…()` registration methods and `SindriJsonContext` | Each unit adds one `Add<Unit>()` private method or one partial-context file; the integrator adds the calls |
+| Migrations | Numbers are reserved per phase: P2 `W0xx`, P4 `W1xx`, P5 `W2xx`, P6 `W3xx`, P7 `W4xx` |
+| The Host command and endpoint tables | Owned by the integrator; units add their command class only |
+
+**Team roles** (per `/specToProvenPR`):
+
+| Role | Count | Does |
+|---|---|---|
+| **Orchestrator** | 1, the `/specToProvenPR` session | Holds the graph and the queue of ready units. It dispatches the next ready unit the moment an implementer frees up, rebases stacked branches when S1 or a parent phase moves, and never writes product code. It doesn't wait for a whole wave if a later unit is already ready |
+| **Implementer** | One per ready unit, each in its own worktree (`isolation: worktree`) off its phase branch | Writes one unit red-first (the C# slice recipe) and reports its commit. It never touches a hotspot file |
+| **Integrator** | One per phase, started when the phase's last unit lands | Merges the hotspot fragments, runs the full gate (build with zero warnings, unit and integration lanes within budget, `dotnet format`, `check-deps`, `check-rules`), and opens the draft PR |
+| **Prover** | One per phase PR | Runs the phase's **Signal** in the running app and records the evidence. Green tests aren't proof |
+| **Reviewers** | Per `/review`, on each phase PR | Review loop until no blocking and no issue findings remain. Their fixes go back to implementers as new units |
+
+**Throughput limits:**
+- **Builds and tests:** both run through the heavy-job lock, which has two slots by default. The orchestrator
+  keeps at most two units building at once and lets the others write code meanwhile, rather than queuing agents
+  that sit idle.
+- **Model quota:** the orchestrator also respects the session cap.
+- **Reviews:** a phase's review loop runs while the next wave's contract units are being written. Review is
+  never skipped to free a slot.
 
 ### Phase 1: the recipe model and validator
 
