@@ -15,7 +15,9 @@ internal sealed class ParityFilesAccess(IRunFiles files, JsonSerializerOptions j
     internal async ValueTask<Result<DesignManifest>> ReadManifestAsync(string path, CancellationToken cancellationToken)
     {
         var bytes = await files.ReadAsync(path, cancellationToken).ConfigureAwait(false);
-        return bytes.Bind(b => ManifestReader.Read(b, json));
+        return bytes.Bind(b => ManifestReader.Read(b, json).Match<Result<DesignManifest>>(
+            static manifest => manifest,
+            error => error with { Message = $"manifest {path}: {error.Message}" }));
     }
 
     // A failed run must not leave an earlier run's summary for parity-plan to publish.

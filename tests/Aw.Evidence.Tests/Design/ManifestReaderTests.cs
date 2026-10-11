@@ -53,7 +53,7 @@ public sealed class ManifestReaderTests
     [Fact, Trait("Lane", "unit")]
     public void A_misspelt_key_is_named_by_its_json_location()
     {
-        var frame = Frame.Replace("}}", ""","zoom":2}""", StringComparison.Ordinal);
+        var frame = Frame.Replace("}}", """},"zoom":2}""", StringComparison.Ordinal);
 
         Assert.Equal("$.frames[0].zoom: unknown property", Read(Manifest(frame: frame)).Error.Message);
     }

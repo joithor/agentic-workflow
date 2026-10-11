@@ -54,7 +54,9 @@ The mapping is by error kind: `timeout` → 75, `unavailable` → 4, anything el
 
 stdout carries exactly one JSON document, written through the Kernel `AwJson` profile (camelCase, UTC `O` timestamps,
 nulls written), or markdown for `parity-comment`. stderr carries one-line messages prefixed `ui-evidence: `:
-`ui-evidence: <code> <message>` for an error, the `geometry:` and `doctor:` lines above, `ui-evidence: waiting on lock:
+`ui-evidence: <code> <message>` for an error (an invalid script or manifest names the file, the JSON location and
+the problem in the input's own terms: `ui-evidence: AW-EVIDENCE-002 script /work/script.json: $.steps[0]: missing
+required property "expectedState"`; "Inputs" below), the `geometry:` and `doctor:` lines above, `ui-evidence: waiting on lock:
 <dir>` (once, while a lock is busy), and the Kernel telemetry's JSON lines at `AW_LOG_LEVEL`. No message carries a
 sign-in credential: a parity failure's text is scrubbed of the email and password before it leaves the use case.
 

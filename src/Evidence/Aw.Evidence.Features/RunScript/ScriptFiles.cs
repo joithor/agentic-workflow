@@ -16,7 +16,9 @@ internal sealed class ScriptFiles(IRunFiles files, JsonSerializerOptions json)
     internal async ValueTask<Result<LoadedScript>> ReadAsync(string path, CancellationToken cancellationToken)
     {
         var bytes = await files.ReadAsync(path, cancellationToken).ConfigureAwait(false);
-        return bytes.Bind(b => ScriptReader.Read(b, json).Map(script => new LoadedScript(script, ContentHash.Sha256Hex(b))));
+        return bytes.Bind(b => ScriptReader.Read(b, json).Match<Result<LoadedScript>>(
+            script => new LoadedScript(script, ContentHash.Sha256Hex(b)),
+            error => error with { Message = $"script {path}: {error.Message}" }));
     }
 
     internal ValueTask<Result<Unit>> CreateRunDirectoryAsync(string runDirectory, CancellationToken cancellationToken) =>
