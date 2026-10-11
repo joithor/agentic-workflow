@@ -1,6 +1,6 @@
 using Aw.Kernel;
 
-namespace Aw.BugFix.Core;
+namespace Aw.BugFix.Core.Errors;
 
 /// <summary>
 /// The BugFix error catalogue (codes AW-BUGFIX-NNN). The CLI maps <see cref="ErrorKind.Invalid"/> and

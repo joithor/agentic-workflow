@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Aw.BugFix.Core.Errors;
 using Aw.BugFix.Core.Model;
 using Aw.Kernel;
 

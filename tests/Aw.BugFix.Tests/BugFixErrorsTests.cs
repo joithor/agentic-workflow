@@ -1,4 +1,4 @@
-using Aw.BugFix.Core;
+using Aw.BugFix.Core.Errors;
 using Aw.Kernel;
 
 namespace Aw.BugFix.Tests;

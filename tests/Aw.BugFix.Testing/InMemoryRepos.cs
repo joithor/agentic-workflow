@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using Aw.BugFix.Core;
+using Aw.BugFix.Core.Errors;
 using Aw.BugFix.Core.Model;
 using Aw.BugFix.Core.Ports;
 using Aw.Kernel;

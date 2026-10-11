@@ -1,6 +1,6 @@
 #nullable enable
 Aw.BugFix.Core.BugFixCoreServiceCollectionExtensions
-Aw.BugFix.Core.BugFixErrors
+Aw.BugFix.Core.Errors.BugFixErrors
 Aw.BugFix.Core.Ids.CandidateId
 Aw.BugFix.Core.Ids.CandidateId.CandidateId() -> void
 Aw.BugFix.Core.Ids.CandidateId.Equals(Aw.BugFix.Core.Ids.CandidateId other, System.Collections.Generic.IEqualityComparer<Aw.BugFix.Core.Ids.CandidateId>! comparer) -> bool
@@ -474,7 +474,7 @@ override Aw.BugFix.Core.Model.UiRunRequest.Equals(object? obj) -> bool
 override Aw.BugFix.Core.Model.UiRunRequest.GetHashCode() -> int
 override Aw.BugFix.Core.Model.UiRunRequest.ToString() -> string!
 static Aw.BugFix.Core.BugFixCoreServiceCollectionExtensions.AddBugFixCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Aw.BugFix.Core.BugFixErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.BugFix.Core.Errors.BugFixErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.BugFix.Core.Ids.CandidateId.From(string! value) -> Aw.BugFix.Core.Ids.CandidateId
 static Aw.BugFix.Core.Ids.CandidateId.Numbered(int number) -> Aw.BugFix.Core.Ids.CandidateId
 static Aw.BugFix.Core.Ids.CandidateId.operator !=(Aw.BugFix.Core.Ids.CandidateId left, Aw.BugFix.Core.Ids.CandidateId right) -> bool
@@ -538,23 +538,23 @@ static Aw.BugFix.Core.Rules.EvidenceRule.Accept(Aw.BugFix.Core.Model.BugFixState
 static Aw.BugFix.Core.Rules.HandoffParser.Parse(string! markdown) -> Aw.Kernel.Result<Aw.BugFix.Core.Model.Handoff!>!
 static Aw.BugFix.Core.Rules.NextStep.For(Aw.BugFix.Core.Model.BugFixState! state) -> string!
 static Aw.BugFix.Core.Rules.ProtectedPaths.Touched(System.Collections.Generic.IEnumerable<string!>! changedFiles, string! checkPath) -> System.Collections.Generic.IReadOnlyList<string!>!
-static readonly Aw.BugFix.Core.BugFixErrors.AttemptRefused -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.CandidateRefused -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.CheckNotFrozen -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.CommandRefused -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.DirtyTree -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.EvidenceRefused -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.FileUnreadable -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.GitFailed -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.HandoffRefused -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.Invalid -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.JudgeRefused -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.JudgeUnavailable -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.NotReproduced -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.ReportRefused -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.RunRefused -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.StateCorrupt -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.StateMissing -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.UiEvidenceUnavailable -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.UnknownCandidate -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.BugFix.Core.BugFixErrors.WrongPhase -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.AttemptRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.CandidateRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.CheckNotFrozen -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.CommandRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.DirtyTree -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.EvidenceRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.FileUnreadable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.GitFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.HandoffRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.JudgeRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.JudgeUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.NotReproduced -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.ReportRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.RunRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.StateCorrupt -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.StateMissing -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.UiEvidenceUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.UnknownCandidate -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.BugFix.Core.Errors.BugFixErrors.WrongPhase -> Aw.Kernel.ErrorDefinition!

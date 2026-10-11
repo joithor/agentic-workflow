@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using Aw.BugFix.Core;
+using Aw.BugFix.Core.Errors;
 using Aw.BugFix.Core.Ports;
 using Aw.Kernel;
 
