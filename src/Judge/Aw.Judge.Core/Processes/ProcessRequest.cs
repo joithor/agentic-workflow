@@ -18,6 +18,9 @@ public sealed record ProcessRequest
     /// <summary>Variables added to (or replacing in) the inherited environment.</summary>
     public IReadOnlyDictionary<string, string> Environment { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
+    /// <summary>Inherited variables the program must not see (applied after <see cref="Environment"/>).</summary>
+    public IReadOnlyCollection<string> Unset { get; init; } = [];
+
     /// <summary>
     /// How many characters of each output stream are kept; the rest is read and dropped, so a program that floods its
     /// output can't grow the caller's memory without bound.

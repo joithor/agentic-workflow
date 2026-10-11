@@ -45,6 +45,21 @@ public sealed class SystemProcessRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task An_unset_variable_is_not_inherited()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "the program is an sh script");
+        const string Variable = "AW_JUDGE_UNSET_PROBE";
+        Environment.SetEnvironmentVariable(Variable, "inherited");
+        _ = _bin.InstallScript("printer", $"printf '[%s]' \"${Variable}\"\n");
+
+        var result = await new SystemProcessRunner(_bin.Environment).Run(
+            new ProcessRequest { FileName = "printer", Unset = [Variable], Timeout = TimeSpan.FromSeconds(10) }, TestContext.Current.CancellationToken);
+
+        Environment.SetEnvironmentVariable(Variable, value: null);
+        Assert.Equal(ProcessResult.Exited(0, "[]", ""), result);
+    }
+
+    [Fact]
     public async Task A_path_is_run_as_is_without_a_search()
     {
         Assert.SkipWhen(OperatingSystem.IsWindows(), "the program is an sh script");

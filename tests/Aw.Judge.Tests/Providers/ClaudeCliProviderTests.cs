@@ -42,6 +42,7 @@ public sealed class ClaudeCliProviderTests
         Assert.Equal("""["send","batch","drop"]""", schema["properties"]!["decision"]!["enum"]!.ToJsonString());   // why: the lax schema always has the decision enum
         Assert.Equal("1", request.Environment["AW_JUDGE_CHILD"]);
         Assert.Equal("0", request.Environment["MAX_THINKING_TOKENS"]);
+        Assert.Contains("TYPESAFE_API_KEY", request.Unset, StringComparer.Ordinal);
         Assert.Empty(Assert.IsType<IReadOnlyList<string>>(call.WorkingDirectoryFiles, exactMatch: false));
         Assert.False(Directory.Exists(request.WorkingDirectory), "the workspace is deleted afterwards");
     }
