@@ -197,7 +197,7 @@ public sealed record ChangePage(IReadOnlyList<SourceRef> Changed, IReadOnlyList<
 | Adapter | Kind | Search | Fetch / version | Change feed | Phase |
 |---|---|---|---|---|---|
 | `repo-docs` | Doc | Lexical: SQLite FTS5 over **scrubbed** doc chunks at HEAD of the profile repos' doc globs | `git cat-file` at the blob sha; line spans | Commits touching the globs, run by a scheduled service (every 5 min by default) and on `context sources sync` | 1 |
-| `linear` (native) | Intent | Title and key lookup only (Onyx searches issue text) | Projects, Linear Documents, project updates, issues **with their comments**, issue↔PR attachments; version `updatedAt`. Writes identifier → UUID aliases on every fetch | `updatedAt` filter, by the profile's teams | 5 |
+| `linear` (native) | Intent | Title and key lookup only (Onyx searches issue text) | Projects, Linear Documents, project updates, issues **with their comments**, issue↔PR attachments; version `updatedAt`. Writes identifier → UUID aliases on every fetch and search hit; re-resolves `linear:pending/…` keys through Linear's issue lookup, which answers old identifiers after a team move | `updatedAt` filter, by the profile's teams | 5 |
 | `onyx` | Intent | Onyx search (HTTP search API preferred; MCP `search` only if it exposes `updatedAt` and the federated lane), several sub-queries, top-k candidates | Onyx document by id; version `updatedAt` | Document listing by updated time (verified in Phase 6) | 6 |
 | `code` | Code | Index lookup: symbol name, path, embedding neighbors | Symbol at a commit sha | Index rebuilds | 9 |
 
@@ -219,7 +219,7 @@ all source refs listed under one citation.
 | `Thing` | State or data the actions read and write, with its states | `thing:pane-layout` |
 | `Flow` | An ordered path through surfaces and actions | `flow:open-tab-split-resize` |
 | `Decision` | A decision in Sindri's own wording, citing a verbatim quote | `decision:<sha256(canonical record key ‖ quote span text)>` |
-| `Record` (ref) | Pointer to an intent record, by canonical key | `record:linear:issue/ENG-482` |
+| `Record` (ref) | Pointer to an intent record, by canonical key | `record:linear:issue/<uuid>` (shown as `ENG-482`) |
 | `CodeUnit` (ref) | Pointer to a file (from Phase 4) or symbol (from Phase 9) | `code:src/layout/SplitPane.ts` · `code:src/layout/SplitPane.ts#setOrientation` |
 
 | Edge | From → to |
@@ -315,7 +315,7 @@ available in the bundled `e_sqlite3` before Phase 1 relies on it.
 | Content | Trust |
 |---|---|
 | Record text, titles, authors; code text | `untrusted` |
-| Graph nodes and edges from deterministic extraction (registries, routes, paths); labels taken from code text are limited to identifier characters (`[A-Za-z0-9_.:/-]`), otherwise they are fenced like code text | `trusted` |
+| Graph nodes and edges from deterministic extraction (registries, routes, paths); labels and attribute values taken from code text are limited to identifier characters (`[A-Za-z0-9_.:/-]`); anything else (a setting's description) is stored as untrusted and fenced like code text | `trusted` |
 | Anything a model wrote from untrusted input (decision wording, labels, proposed aliases) | `untrusted` until a human accepts it, then `trusted` |
 | Human overrides | `trusted` |
 
@@ -412,7 +412,7 @@ All of them call `IContextEngine`; they differ only in transport.
 | Surface | Shape | Phase |
 |---|---|---|
 | **HTTP** | `POST /sindri/context/query`; `GET /sindri/context/node?key=`; `GET /sindri/context/neighbors?key=&depth=`; `GET /sindri/context/path?from=&to=`; `POST /sindri/context/map/import`; `GET /sindri/context/map/export`; `POST /sindri/context/map/build`; `GET /sindri/context/map`; `GET /sindri/context/map/review`; `POST /sindri/context/map/review` (CLI-confirmed, §3); `GET /sindri/context/sources`; `POST /sindri/context/sources/sync`. Keys travel in query strings or bodies, never in the path (they hold `/` and `#`). Errors are ProblemDetails with the `SND-CONTEXT-*` code as `title` | 1 (query, sources), 3–4 (the rest) |
-| **CLI** | `$SINDRI context query "<q>" [--node K \| --item ENG-1 \| --symbol S] [--depth N] [--budget N] [--json]`; `context show <key>`, `neighbors <key> [--depth N]`, `path <a> <b>`, `map import <file> \| export <file> \| build \| status \| promote \| review [--export F \| --apply F \| --history \| --undo ID]`, `sources status \| sync`, `eval backtest \| probes \| map` | as HTTP |
+| **CLI** | `$SINDRI context query "<q>" [--draft] [--node K \| --item ENG-1 \| --symbol S] [--depth N] [--budget N] [--json]`; `context show <key>`, `neighbors <key> [--depth N]`, `path <a> <b>`, `map import <file> \| export <file> \| build \| status \| promote \| review [--export F \| --apply F \| --history \| --undo ID]`, `sources status \| sync`, `eval backtest \| probes \| map` | as HTTP |
 | **MCP** | Streamable HTTP at `/mcp` on the API port, **stateless mode** (so a Sindri restart doesn't break a session), behind the API guard. Read-only tools: `context_query {q, node?, item?, symbol?, depth?, budget?}`, `context_node {key}`, `context_neighbors {key, depth?}`, `context_sources {}`. Results: `structuredContent` with the result JSON, and a short text summary (anchors, counts, conflicts, degraded; not the full text a second time). Errors map to tool errors carrying the `SND-CONTEXT-*` code and fix. Off when `context.mcp.enabled` is false | 1 (`context_query`, `context_sources`), 3 (the rest) |
 | **Workflow block** | `context.retrieve`: fills injection-plan sections for a recipe Step | 10 |
 
@@ -443,7 +443,7 @@ can't open); **75** the heavy-job lock stayed busy (`map build`, `eval`). Long j
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy | Retry; the message names the holder |
 | `SND-CONTEXT-041` | Map review needs an interactive terminal | Run it at a terminal, or `--apply` a reviewed file there |
 | `SND-CONTEXT-042` | Labeling disabled or over its token cap | Enable `context.labeling` or raise `maxTokens` |
-| `SND-CONTEXT-043` | Review file is from an older map version | `map review --export` again |
+| `SND-CONTEXT-043` | No entry in the review file matches the latest draft | `map review --export` again |
 | `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
 | `SND-CONTEXT-070` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
 
@@ -460,12 +460,14 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
  model (15), by impact (nodes they would link):
   1/15  feature:layout.split-pane.orientation  "Orientation"  0.82   evidence: src/layout/SplitPane.ts, linear:doc/…
         [a]ccept  [r]eject  [e]dit name  [m]ove under…  [s]kip  [q]uit
- orphaned (3): link record:linear:issue/ENG-301 → feature:layout.drag (key vanished)
+ orphaned (3): link record:linear:issue/… (ENG-301) → feature:layout.drag (key vanished)
         [r]epoint  [d]rop  [s]kip
 ```
 
 - **Map version lifecycle:** `map build` writes a `draft`; queries read the `current` version (`--draft` reads the draft);
-  `map review` works on the latest draft; `map promote` (or emptying the review queue) makes it `current`, and the old
+  `map review` works on the latest draft; `map promote` (or emptying the review queue, or a build whose queue is empty from the start) makes it `current`;
+  `map import` writes `current` directly; doctor `context:map` warns with the draft's age and how many commits `current`
+  is behind HEAD; and the old
   one `retained`. `--apply` works on the latest draft only; entries whose targets still match are applied and the rest
   listed as skipped (`SND-CONTEXT-043` only when nothing matches). `map review --history` lists overrides with their ids
   for `--undo`.
@@ -474,8 +476,7 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
 - **Non-interactive form:** `map review --export review.yaml` writes the queue outside repos; the owner edits it;
   `map review --apply review.yaml` applies it **at an interactive terminal** (it prints the counts and asks for
   confirmation).
-- `--apply` refuses a file exported from a map version that is no longer current (`SND-CONTEXT-043`, fix: export
-  again); quitting mid-queue keeps every decision made so far, and the next `map review` resumes the rest.
+- Quitting mid-queue keeps every decision made so far, and the next `map review` resumes the rest.
 - `map review --undo <override-id>` reverses one decision (a reject included), itself recorded as an override.
 - Rename, merge, move, add and delete are also available as `map review` subcommands for nodes outside the queue.
 
@@ -496,6 +497,11 @@ context:
     linear: { token: "keychain:linear/work-read", teams: [ENG, APP] }   # url: Linear's API host (or loopback, tests)
     onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-read", version: "<pinned tag>" }
   eval: { adjudicator: false }
+services:                                 # S1's map; the engine's services run only when named here
+  context-docs-refresh: { every: 5m }
+  context-sync: { every: 15m }
+  context-rebuild: { every: 24h }
+  context-purge: { every: 24h }
 ```
 
 Defaults are what's shown; `profile validate` reports any `context.*` error with its key path.
@@ -575,7 +581,7 @@ in comments, and the PRs that shipped them.
 | Lane | What |
 |---|---|
 | `unit` | Domain types and keys (`EntryKey` golden snapshot, key migrations writing aliases, alias resolution); cascade fixtures (Orientation → layout restore at depth 1; sibling exclusion; cycles; depth cap); per-source then cross-source RRF; canonical dedup; feature scoring; packing (section order, refs-only overflow, conflicts and degraded outside the budget, never cutting a graph fact); citation states (`stale`, `unstable`, `unchecked`); `IngestSanitizer` cases (the TS fixtures rewritten as behavior examples); fence and attribute escaping (titles, authors, permalinks, aliases); permalink allowlist; trust by provenance; per-field egress scrub with a `Blocked` field; argument validation (leading `-`, ref syntax, FTS phrase quoting); exit-code mapping; result JSON round-trips through `AwJson`; typed ids |
-| `integration` | `context.db` migrations on copies of the previous schema; FTS5 present in the bundled `e_sqlite3`; file modes of db, WAL and SHM; override layer surviving a rebuild and a key-version migration; rejection identity across a doc edit; batched build and flip; adapter contract base against every adapter and fake (`repo-docs` on a temp git repo; `linear` against a recorded GraphQL fake; `onyx` against `FakeOnyxServer`); HTTP routes through `WebApplicationFactory`, including the foreign-`Host` 400 and foreign-`Origin` 403 on `/mcp` and every POST; the MCP endpoint through the MCP SDK client (tool list, a `context_query` round trip, a planted secret scrubbed, a planted injection fenced); CLI verbs against a running test host; map review `--apply` refused without a terminal; logs carry no planted text; the eval harness on the fixture app with a fake model |
+| `integration` | `context.db` migrations on copies of the previous schema; FTS5 present in the bundled `e_sqlite3`; file modes of db, WAL and SHM; override layer surviving a rebuild and a key-version migration; rejection identity across a doc edit; batched build writing a draft, and promotion; adapter contract base against every adapter and fake (`repo-docs` on a temp git repo; `linear` against a recorded GraphQL fake; `onyx` against `FakeOnyxServer`); HTTP routes through `WebApplicationFactory`, including the foreign-`Host` 400 and foreign-`Origin` 403 on `/mcp` and every POST; the MCP endpoint through the MCP SDK client (tool list, a `context_query` round trip, a planted secret scrubbed, a planted injection fenced); CLI verbs against a running test host; map review `--apply` refused without a terminal; logs carry no planted text; the eval harness on the fixture app with a fake model |
 | `heavy` | Map extraction on the fixture app with graphify; the full backtest on the fixture corpus; AOT publish of the Sindri host with the MCP endpoint (stateless mode) |
 | manual | Phase signals in the running app; the real backtest and probes over work data, with evidence written outside repos |
 
@@ -748,6 +754,20 @@ intro matches the one-parent rule; the agent-rules snippet waits for useful resu
 isn't sized beyond the "Gates that stay sequential" list; `confirmed` means a node or edge has `human` provenance or
 was accepted in review.
 
+**Round 5** (final, `…/round5/`): all five lenses PASS (no CRITICAL or HIGH). Their MEDIUM findings were applied
+without a further review: `map import` recomputes trust and restores `human` rows only at an interactive terminal,
+the HTTP route imports them as `model` (security R5-1, arch R5-2); exports live under the app home at 0600 with a
+14-day purge and carry decisions and edge evidence (security R5-2, arch R5-3); export schema versions, key migration
+on import, imported map is `current` (devex 4); the owner-check flow exports first from the real home, names the
+engine's services under `services:`, allows labeling when needed, isolates the session with `--strict-mcp-config` and
+confirms the answering build (devex 1–3, design M2, arch R5-4), with `scripts/owner-check.sh`; a build with an empty
+queue becomes current and doctor reports a stale `current` (product M1); the stale `--apply` sentence removed (design
+M1); a planned Sindri → Context `project` edge carries the fan-out exception (arch R5-1); the §8.8 example lists the
+engine's services (arch R5-7); aliases on search hits and pending keys re-resolved after team moves (arch R5-5); UUID
+record keys in examples (arch R5-6); code-text attributes fenced unless identifier-shaped (security R5-3). Remaining
+LOWs (MCP-disabled as a transport 403, `map status` output, empty states for `neighbors`/`path`) are left for the
+stages that build those verbs.
+
 ## Parallel delivery with an agent team
 
 The phases below are delivered by `/specToProvenPR`, run by an **agent team** so that agents are always working on
@@ -764,7 +784,7 @@ stacks on that branch).
 
 | Stage | What | Depends on | Wave |
 |---|---|---|---|
-| **S-1C** | The `compose` edge kind: `deps.yaml` schema, `check-deps.mjs` (`DEPS-COMPOSE-001`), the ArchUnitNET rule (`ARCH-COMPOSE-001`), the `DEPS-PROJ-007` and ARCH-DIR-004 carve-outs for `compose` targets' `Add…()` calls, rule records, the fan-out exception (declared with the planned Sindri → Context `compose` edge in the same PR, so it suppresses a real edge), `scripts/denylist-check.sh` | — (no S1 needed) | 0 |
+| **S-1C** | The `compose` edge kind: `deps.yaml` schema, `check-deps.mjs` (`DEPS-COMPOSE-001`), the ArchUnitNET rule (`ARCH-COMPOSE-001`), the `DEPS-PROJ-007` and ARCH-DIR-004 carve-outs for `compose` targets' `Add…()` calls, rule records, a Sindri → Context `project` edge declared `planned` (Sindri's Host and Features reference `Aw.Context.Core`; S-1A flips it to `current`), the fan-out exception attached to that `project` edge (`DEPS-FANOUT-001` counts project edges only), and the `compose` edge with its own tier and staleness checks, `scripts/denylist-check.sh` | — (no S1 needed) | 0 |
 | **S-2R** | `Aw.Redaction` extra patterns from configuration, validated and compiled with the match timeout | — | 0 |
 | **S-FX** | The fixture app and its recorded sources (§10), all **synthetic**, never captured from a real workspace: repo, Linear and Onyx recordings, merged-PR history, probe file, fake Linear and Onyx servers that replay them | — | 0 |
 | **S-1A** | Phase 1a: `Aw.Context` package, facade, contract, sanitizer, egress scrubber, repo-docs, planner skeleton, HTTP and CLI | S1 merged · S-1C · S-FX | 1 |
@@ -860,17 +880,26 @@ team ever reads work data:
   ready and before merging, from the stage's `owner-check.md`. It runs the PR's build against an **owner-check home**, never the real home, because the
   PR may carry a migration not yet numbered for `main`, and the real `context.db` (with the owner's review decisions)
   must only ever run merged migrations. `owner-check.md` follows one outline:
-  1. **Build** the PR head with `src/Sindri/aot-smoke/run.sh` into a scratch dir.
+  0. **One owner check at a time** (they share port 7480).
+  1. **Build** the PR head with `src/Sindri/aot-smoke/run.sh` and copy its whole output directory
+     (`artifacts/aot-sindri-smoke/bin/`, the binary with its SQLite library) into a scratch dir.
   2. **Home:** `AW_SINDRI_HOME=${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri-app-ownercheck-<stage>`, created fresh
      (deleted first if present), with `AW_SINDRI_PORT=7480` so it never takes the real instance's port.
-  3. **Profile:** the real profile copied in, then edited per the template: labeling off, scheduled services off
-     except the ones the check names; approved in the scratch home at a terminal.
-  4. **Seed** prior state, when needed, with `$SINDRI context map import` of a `context map export` taken from the real
-     home (never a copy of `context.db`).
-  5. **MCP**, when the check uses a session: register `sindri-ownercheck` (`--scope local`, port 7480) in the work repo,
-     and remove it at the end.
+  3. **Seed export first**, when prior state is needed: from the real build, with the real home
+     (`env -u AW_SINDRI_HOME -u AW_SINDRI_PORT $SINDRI_MAIN context map export <scratch home>/seed.json`), so the
+     export lands in the scratch home and teardown deletes it. Never copy `context.db`.
+  4. **Profile:** the real profile copied in, then edited per the template: the engine's services under `services:`
+     (`context-docs-refresh`, `context-sync`, `context-rebuild`, `context-purge`) kept only when the check names them;
+     labeling on only when the check names it (S-5B and S-CF need decisions); `context.mcp.enabled: true` when the check
+     uses a session. Start `$SINDRI serve --headless`, approve at a terminal, then `$SINDRI context map import
+     <scratch home>/seed.json` at the terminal.
+  5. **MCP**, when the check uses a session: start it with `claude --strict-mcp-config --mcp-config <file>` naming only
+     `sindri-ownercheck` (port 7480), so the real `sindri` server can't answer; the first step calls `context_sources`
+     and checks the reported build and port are the scratch instance's.
   6. **Steps and pass criteria**, then **record** pass/fail and counts.
-  7. **Teardown:** stop the process, remove the MCP registration, delete the scratch home and build.
+  7. **Teardown:** stop the process (and anything still listening on 7480 from an aborted check), delete the MCP
+     config file, the scratch home and the build. `scripts/owner-check.sh <stage> up|down` (in S-1C) runs steps 1–4
+     and 7, stopping only for the terminal approvals.
   Stage owners never read or write an owner-check home. Its record in the PR is pass/fail and counts only
   (results, citations, sources), never text, titles, issue keys or project names.
 - S-7B and S-8's arm decision are owner-run in full: the human runs the backtest and probes; agents get the aggregate
@@ -975,7 +1004,7 @@ on the fixture app.
 - **Goal:** the product graph exists and answers cascade questions, from a hand-authored map first; probes guard
   every later phase.
 - **Files:** its `context.db` migration (graph, overrides, decisions, retention); `EntryKey`, aliases, key migration
-  scaffolding; `ImportMap` and `ExportMap` (versioned schema, all-or-nothing, outside worktrees; an export holds nodes, edges, aliases, overrides and rejections **with their original timestamps and provenance**, and importing an export restores both, so `human` stays `human` and the backtest's as-of filter sees the real decision dates; round-trip test); `ShowNode`, `Neighbors`, `Path`;
+  scaffolding; `ImportMap` and `ExportMap` (versioned schema with `schemaVersion` and `kind: export | authored`; an export holds nodes, edges with their evidence, aliases, decisions, overrides and rejections **with their original timestamps and provenance**; import accepts the current and the previous schema version and runs the key migration on older keys, and the imported map becomes `current`. Trust is always recomputed from provenance, never read from the file. Rows with `human` provenance, overrides and rejections are restored only by the CLI at an interactive terminal (`SND-CONTEXT-041` otherwise); the HTTP route imports them as `model` provenance (untrusted, unconfirmed). Exports are written only under `$AW_SINDRI_HOME/context/exports/` or an owner-check home, by temp file and rename at 0600, and purged after 14 days. Tests: round trip, a golden export from the previous build, and the terminal gate); `ShowNode`, `Neighbors`, `Path`;
   the cascade (§6.1) with fixtures; `node` shape, `graph` and `affects` sections; anchor resolution for `text`;
   routes, verbs, MCP `context_node` and `context_neighbors` (these two tools are stage S-3M, after S-1M); doctor `context:map` and `context:retention`; the probe
   runner (`eval probes`) and probe file format.
@@ -991,7 +1020,7 @@ on the fixture app.
   survive rebuilds.
 - **Files:** extractor (deterministic anchors: command and keybinding registries, settings keys, routes, UI component
   names and test ids, each with the files that define it, as deterministic file-level `implements`; graphify clusters
-  as candidate features; a labeling pass behind `context.labeling.enabled`); `BuildMap` (batched, draft then flip) and
+  as candidate features; a labeling pass behind `context.labeling.enabled`); `BuildMap` (batched; writes a `draft`, promoted per §8.7) and
   `ReviewMap` (§8.7, interactive and `--export`/`--apply`); the `symbol` shape in its file-path form (`--symbol
   <path>`, MCP `symbol`); `IHeavyJobLock`; `ILabeler` with the `claude` CLI
   adapter; a scheduled rebuild. (The intent-vs-file conflict check is stage S-CF, §14 A-F13.)
