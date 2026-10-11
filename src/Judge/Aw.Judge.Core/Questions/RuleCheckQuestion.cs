@@ -32,6 +32,7 @@ public static class RuleCheckQuestion
         Threshold = 0.6,
         TimeBudget = TimeSpan.FromSeconds(10),
         Prompt = Prompt,
+        PreRules = PreRule,
     };
 
     internal static string? PreRule(RuleCheckInput input) => string.IsNullOrWhiteSpace(input.Hunk) ? NotApplicable : null;

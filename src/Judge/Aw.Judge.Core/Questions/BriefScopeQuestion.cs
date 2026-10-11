@@ -41,6 +41,7 @@ public static class BriefScopeQuestion
         Threshold = 0.6,
         TimeBudget = TimeSpan.FromSeconds(10),
         Prompt = Prompt,
+        PreRules = PreRule,
     };
 
     internal static string? PreRule(BriefScopeInput input)

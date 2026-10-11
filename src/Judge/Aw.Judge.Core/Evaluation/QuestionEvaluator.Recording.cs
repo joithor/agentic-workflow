@@ -32,9 +32,20 @@ public sealed partial class QuestionEvaluator
         var decision = settlement.Decision!;
         // why: a settlement that decides always names who decided.
         var model = settlement.Provider!.Value;
-        return new DecidedOutcome(decision, settlement.Confidence, model, settlement.ReasonCode, run.Id) { Extra = extra };
+        return new DecidedOutcome(decision, settlement.Confidence, model, settlement.ReasonCode, run.Id) { Extra = Declared(extra, question.ExtraProperties) };
     }
 
+    // Only the fields the question declares ride back to the caller; anything else a provider sent is dropped.
+    private static JsonObject? Declared(JsonObject? extra, IReadOnlyDictionary<string, JsonObject>? declared)
+    {
+        if (extra is null || declared is null)
+        {
+            return null;
+        }
+
+        var kept = new JsonObject(extra.Where(pair => declared.ContainsKey(pair.Key)).Select(pair => KeyValuePair.Create(pair.Key, pair.Value?.DeepClone())));
+        return kept.Count == 0 ? null : kept;
+    }
 
     // Storage fails open: the outcome stands whatever happens here, and a failed write is itself a judge failure.
     private async ValueTask Record<TInput>(

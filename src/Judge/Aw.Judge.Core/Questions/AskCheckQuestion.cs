@@ -33,6 +33,8 @@ public static partial class AskCheckQuestion
         Threshold = 0.6,
         TimeBudget = TimeSpan.FromSeconds(10),
         Prompt = Prompt,
+        PreRules = PreRule,
+        FallbackRules = static _ => Ask,
     };
 
     internal static string? PreRule(AskCheckInput input) => DenyList.IsMatch(input.TranscriptTail) ? Ask : null;

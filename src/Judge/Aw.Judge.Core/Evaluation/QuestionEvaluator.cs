@@ -46,7 +46,7 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
         }
 
         var parsed = AwJson.Deserialize<TInput>(Encoding.UTF8.GetBytes(rawInput), json);
-        if (parsed.IsError)
+        if (parsed.IsError || question.InputProblem?.Invoke(parsed.Value) is not null)
         {
             return await Escalate(question, run, EvaluationReasons.InvalidInput, DecisionOutcome.Escalated, cancellationToken).ConfigureAwait(false);
         }

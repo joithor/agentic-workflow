@@ -40,6 +40,8 @@ public static class TurnProgressQuestion
         Threshold = 0.7,
         TimeBudget = TimeSpan.FromSeconds(10),
         Prompt = Prompt,
+        InputProblem = InputProblem,
+        PreRules = PreRule,
     };
 
     internal static string? InputProblem(TurnProgressInput input) => string.IsNullOrWhiteSpace(input.Problem) ? "problem is empty" : null;

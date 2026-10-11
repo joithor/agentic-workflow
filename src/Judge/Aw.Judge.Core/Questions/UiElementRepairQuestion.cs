@@ -37,6 +37,7 @@ public static class UiElementRepairQuestion
         TimeBudget = TimeSpan.FromSeconds(10),
         ExtraProperties = new Dictionary<string, JsonObject>(StringComparer.Ordinal) { [ChosenIndex] = new() { ["type"] = "integer" } },
         Prompt = Prompt,
+        PreRules = PreRule,
     };
 
     internal static string? PreRule(UiElementRepairInput input) => input.Candidates.Count == 0 ? NoGoodCandidate : null;

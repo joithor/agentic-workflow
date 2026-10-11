@@ -42,6 +42,8 @@ public static class ResolutionCheckQuestion
         TimeBudget = TimeSpan.FromSeconds(15),
         ExtraProperties = new Dictionary<string, JsonObject>(StringComparer.Ordinal) { [Reasons] = StringList() },
         Prompt = Prompt,
+        InputProblem = InputProblem,
+        PreRules = PreRule,
     };
 
     /// <summary>The JSON Schema of a list of strings.</summary>

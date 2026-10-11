@@ -39,6 +39,8 @@ public static partial class WakeGateQuestion
         Threshold = 0.7,
         TimeBudget = TimeSpan.FromSeconds(10),
         Prompt = Prompt,
+        PreRules = PreRule,
+        FallbackRules = static _ => Send,
     };
 
     internal static string? PreRule(WakeGateInput input)
