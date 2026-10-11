@@ -37,7 +37,7 @@ node scripts/scaffold/new-slice.mjs --package <Pkg> --slice <Slice> --behavior <
   [--command <cmd> | --route "<METHOD> /path/{fooId}"] [--ids FooId:string] [--ports IFooStore]
 ```
 
-It takes the heavy-job lock itself, writes the files, records the public API lines (every `RS0016` symbol the
+It takes a slot of the heavy-job lock itself, writes the files, records the public API lines (every `RS0016` symbol the
 build reports for `Core` and `Features`, Vogen's generated id members included), then runs `dotnet build -warnaserror`, the unit lane (exactly one
 failure: the new test) and `dotnet format --verify-no-changes`. Any other failure reverts every file it wrote.
 

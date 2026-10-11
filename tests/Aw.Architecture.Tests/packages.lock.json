@@ -412,6 +412,32 @@
           "Microsoft.Playwright": "[1.63.0, 1.63.0]"
         }
       },
+      "aw.judge.core": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Vogen": "[8.0.7, 8.0.7]"
+        }
+      },
+      "aw.judge.features": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Judge.Core": "[1.0.0, )",
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
+        }
+      },
+      "aw.judge.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Judge.Core": "[1.0.0, )",
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Data": "[1.0.0, )",
+          "Aw.Redaction": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
+        }
+      },
       "aw.kernel": {
         "type": "Project"
       },
@@ -481,6 +507,17 @@
           "Aw.BugFix.Core": "[1.0.0, )",
           "Aw.BugFix.Features": "[1.0.0, )",
           "Aw.BugFix.Infrastructure": "[1.0.0, )",
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Telemetry": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection": "[10.0.12, 10.0.12]"
+        }
+      },
+      "judge": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Judge.Core": "[1.0.0, )",
+          "Aw.Judge.Features": "[1.0.0, )",
+          "Aw.Judge.Infrastructure": "[1.0.0, )",
           "Aw.Kernel": "[1.0.0, )",
           "Aw.Kernel.Telemetry": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection": "[10.0.12, 10.0.12]"
