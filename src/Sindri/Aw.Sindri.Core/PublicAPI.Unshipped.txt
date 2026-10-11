@@ -1574,3 +1574,9 @@ static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.RecipeVersionTaken -> Aw.
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.StaleRunToken -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.TriggerNotAllowed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.WorkflowChallengeStale -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Workflow.CanonicalJson
+static Aw.Sindri.Core.Workflow.CanonicalJson.Of(System.Text.Json.Nodes.JsonNode? node) -> byte[]!
+Aw.Sindri.Core.Workflow.IRecipeFiles
+Aw.Sindri.Core.Workflow.IRecipeFiles.Read(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Workflow.RecipeHashing
+static Aw.Sindri.Core.Workflow.RecipeHashing.Of(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.Text.Json.JsonSerializerOptions! options) -> Aw.Sindri.Core.Workflow.Ids.RecipeHash

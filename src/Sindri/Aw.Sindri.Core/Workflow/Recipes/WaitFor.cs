@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Recipes;
@@ -11,4 +12,5 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="Answer">A human's answer, recorded as 'fact:answer'.</param>
 /// <param name="Resource">A heavy-job slot or a session slot.</param>
 /// <param name="Child">A child instance of another recipe.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record WaitFor(EventKind? Event, AnswerWait? Answer, ResourceKind? Resource, ChildWait? Child);

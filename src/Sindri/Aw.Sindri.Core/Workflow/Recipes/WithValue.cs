@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Recipes;
@@ -11,4 +12,5 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="Literal">The literal value.</param>
 /// <param name="Fact">A fact the engine reads when the block runs.</param>
 /// <param name="Profile">A profile key path the engine reads when the block runs.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record WithValue(JsonElement? Literal, FactKey? Fact, string? Profile);

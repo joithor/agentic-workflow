@@ -1,10 +1,96 @@
+using System.Globalization;
+using Aw.Sindri.Core.Workflow.Recipes;
+
 namespace Aw.Sindri.Core.Workflow.Validation;
 
 /// <summary>
-/// The schema rules that need the bound long form (spec §9.1 "Schema", "Hash"): RCP-STATE-001, RCP-INIT-001, RCP-DUR-001 and RCP-HASH-001. RCP-SCHEMA-001–003 come from the reader (IRecipeReader), before binding.
-/// Owned by P1 unit (a); a stub that reports nothing until that unit lands.
+/// The schema rules that need the bound long form (spec §3.2–§3.4, §9.1 "Schema", "Hash"): RCP-SCHEMA-001/002 for what
+/// typed binding can't see (the per-kind fields of a state, exactly one form of a waitFor, a when or a with value, the
+/// schema version, a terminal outcome, a token count), RCP-STATE-001, RCP-INIT-001, RCP-DUR-001 and RCP-HASH-001.
+/// The reader reports RCP-SCHEMA-001–003 and RCP-DUR-001 on the file as written, before binding.
 /// </summary>
 internal sealed class SchemaRules : IRecipeRules
 {
-    public IEnumerable<RecipeFinding> Check(RecipeDocument document, ValidationContext context) => [];
+    /// <summary>The engine-owned state names a recipe can't use (spec §3.2).</summary>
+    internal static IReadOnlySet<string> ReservedStates { get; } =
+        new HashSet<string>(["cancelled", "escalated", "parked", "taken-over"], StringComparer.Ordinal);
+
+    public IEnumerable<RecipeFinding> Check(RecipeDocument document, ValidationContext context)
+    {
+        var recipe = document.Recipe;
+        var source = document.Source;
+        return
+        [
+            .. Top(recipe, source),
+            .. StateNames(recipe, source),
+            .. Initial(recipe, source),
+            .. StateFieldRules.Check(recipe, source),
+            .. ValueShapeRules.Check(recipe, source),
+            .. Hash(document),
+        ];
+    }
+
+    private static IEnumerable<RecipeFinding> Top(Recipe recipe, RecipeSource source)
+    {
+        if (recipe.Schema != 1)
+        {
+            yield return source.Finding("RCP-SCHEMA-002", "schema",
+                string.Create(CultureInfo.InvariantCulture, $"schema is {recipe.Schema}, but this build reads schema 1"), "set schema: 1");
+        }
+
+        if (recipe.Version < 1)
+        {
+            yield return source.Finding("RCP-SCHEMA-002", "version",
+                string.Create(CultureInfo.InvariantCulture, $"version is {recipe.Version}"), "set version to a whole number of at least 1");
+        }
+
+        if (recipe.Budget is { Tokens: < 1 } budget)
+        {
+            yield return StateFieldRules.TooFewTokens(source, "budget.tokens", budget.Tokens);
+        }
+    }
+
+    private static IEnumerable<RecipeFinding> StateNames(Recipe recipe, RecipeSource source)
+    {
+        foreach (var name in recipe.States.Keys.Where(ReservedStates.Contains))
+        {
+            yield return source.Finding("RCP-STATE-001", "states." + name, $"state name '{name}' is reserved for the engine",
+                "rename it; cancelled, escalated, parked and taken-over are engine-owned states");
+        }
+
+        if (!recipe.States.Values.Any(static s => s.Kind is StateKind.Active or StateKind.Wait))
+        {
+            yield return source.Finding("RCP-STATE-001", "states", "the recipe has no active or wait state",
+                "add a state with kind: active or kind: wait");
+        }
+
+        if (!recipe.States.Values.Any(static s => s.Kind == StateKind.Terminal))
+        {
+            yield return source.Finding("RCP-STATE-001", "states", "the recipe has no terminal state",
+                "add a state with kind: terminal and an outcome");
+        }
+    }
+
+    private static IEnumerable<RecipeFinding> Initial(Recipe recipe, RecipeSource source)
+    {
+        const string Fix = "set initial to an active or wait state";
+        if (!recipe.States.TryGetValue(recipe.Initial, out var state))
+        {
+            yield return source.Finding("RCP-INIT-001", "initial", $"initial state '{recipe.Initial}' isn't one of the recipe's states", Fix);
+        }
+        else if (state.Kind == StateKind.Terminal)
+        {
+            yield return source.Finding("RCP-INIT-001", "initial", $"initial state '{recipe.Initial}' is a terminal state", Fix);
+        }
+    }
+
+    private static IEnumerable<RecipeFinding> Hash(RecipeDocument document)
+    {
+        if (document.Recipe.Hash is { } stated && !stated.Equals(document.Hash))
+        {
+            yield return document.Source.Finding("RCP-HASH-001", "hash",
+                $"hash {stated.Display} doesn't match the recipe's content, whose hash is {document.Hash.Display}",
+                $"set hash to {document.Hash.Value}, or remove it");
+        }
+    }
 }

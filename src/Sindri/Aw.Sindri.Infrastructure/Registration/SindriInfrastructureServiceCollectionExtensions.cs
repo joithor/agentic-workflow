@@ -34,5 +34,6 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IEndpointFile, FileEndpoint>()
             .AddSingleton<IControlPlaneProbe, HttpControlPlaneProbe>()
             .AddSingleton<IControlPlaneLauncher, ServeLauncher>()
-            .AddSingleton<IRecipeReader, YamlRecipeReader>();
+            .AddSingleton<IRecipeReader, YamlRecipeReader>()
+            .AddSingleton<IRecipeFiles, FileRecipeFiles>();
 }
