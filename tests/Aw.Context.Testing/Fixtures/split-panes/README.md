@@ -40,7 +40,10 @@ files over the working tree, so the files a step lists are exactly the files its
 `FixtureRepo.Build()` makes the app a git repo in a temp directory: the initial commit, then per pull request one
 commit `SPL-1NN: <title>` on branch `spl-1NN-…` and a `--no-ff` merge `Merge pull request #N from fixture-labs/<branch>`.
 Author, committer and dates come from `history.json`, and git runs with no user, system or hook configuration and none
-of the caller's `GIT_*` variables, so the shas are the same on every machine (`FixtureRepoTests`).
+of the caller's `GIT_*` variables, and `tests/Aw.Context.Testing/.gitattributes` keeps checkouts from converting
+the fixture's line endings, so the shas are the same on every machine: `FixtureRepoTests` pins the head
+(`GoldenHead`); change it only in a reviewed change to the app files, `history.json` or the builder.
+`Build(parent)` creates `parent/aw-split-panes` and refuses one that already exists.
 `FixtureRepo.PullRequests` lists, per merge, the issue key, branch, merge sha, merge date and the files it changed: the
 backtest's file truth (§9.1).
 
@@ -66,6 +69,9 @@ Recorded GraphQL responses, one per root field, each a full envelope
 | `project-updates.json` | Two updates (`…0031` on track, `…0032` at risk, naming the width conflict) | project updates (D18) |
 | `issues.json` | SPL-101…106 (`…0101`…`…0106`) with comments, state, team, project and GitHub PR attachments | issues with comments and issue↔PR links (D18); keys `linear:issue/<uuid>`, alias `SPL-1NN` (D16) |
 
+SPL-103 gets a follow-up comment on 2026-07-23, after SPL-104 merged, so ordering issues by `createdAt` and by
+`updatedAt` gives different orders (101, 102, 103, 104 … vs 101, 102, 104, 103 …).
+
 The decisions live in issue comments:
 
 | Decision | Where | Status |
@@ -81,7 +87,7 @@ B is dated after PR #5 merged, so SPL-105 is also the `leaky` case for an as-of 
 The same six issues as Onyx's Linear connector would index them: `document_id` is the issue UUID, the identifier is
 in `metadata.identifier` (structured metadata, never parsed from text; §5.1), `updated_at` equals the issue's
 `updatedAt`, `source_type` is `linear`, and the chunks are the description then each comment. One Slack thread
-(`C0FIXTURE01__1721900000.000100`, canonical key `slack:C0FIXTURE01/1721900000.000100`) adds a second source type.
+(`C0FIXTURE01__1784972400.000100`, canonical key `slack:C0FIXTURE01/1784972400.000100`) adds a second source type.
 Each entry is `{"search_doc": <SearchDoc as Onyx returns it>, "chunks": [...]}`. Onyx has no PRD: its Linear connector
 doesn't read Linear Documents (D4).
 
@@ -94,10 +100,12 @@ map, not one a stage has built yet; the stage that builds the map (S-3, S-4) che
 
 ## The fakes
 
-Both run on `127.0.0.1` and an ephemeral port, start in a few milliseconds and stop on `DisposeAsync`. Neither
-records or logs a header: `Requests` holds method, path, operation and status; `Log` holds the request lines and every
-line the web host itself logged (at trace level, in memory, never printed). The tokens are fixture values passed by
-`FakeServerOptions` (spec §14 S-L2: a loopback `linear.url` takes an `env:` or `file:` pointer, never the keychain).
+Both run on `127.0.0.1` and an ephemeral port (`Url` is the address Kestrel bound), start in well under a second and
+stop on `DisposeAsync`. Neither records or logs a header: `Requests` holds method, path, operation and status; `Log`
+holds the request lines and every line the web host itself logged (at trace level, in memory, never printed). The
+tokens are fixture values passed by `FakeServerOptions` (spec §14 S-L2: a loopback `linear.url` takes an `env:` or
+`file:` pointer, never the keychain). A request the fake can't answer truthfully is refused with a 4xx that says what
+to change; an exception it didn't anticipate becomes a recorded JSON 500 naming it, never Kestrel's empty one.
 
 `FakeLinearServer` (`Url` = `…/graphql`, `Token`, default `fixture-linear`; accepts `Authorization: <token>` or
 `Bearer <token>`):
@@ -108,19 +116,30 @@ line the web host itself logged (at trace level, in memory, never printed). The 
   `after` (a node id from `endCursor`), `orderBy` (`createdAt` default, or `updatedAt`; ascending), `pageInfo`.
 - `project(id)`, `document(id)`, `issue(id)` (an issue also by identifier); a missing one is a GraphQL error with
   `data.<field> = null`, status 200.
-- Whole recorded nodes come back whatever the selection set asks for. Object and list arguments must be variables.
-- An unknown root field, argument, mutation, fragment spread at the root, or a date compared with a non-date (`P1W`)
-  is a 400 that says what to change. No or a wrong token is a 401.
+- **Replies follow the selection set**: only the selected fields come back, under their aliases. A field the
+  recordings don't have, an object field without subfields, or a scalar with subfields is a 400, so a hand-written
+  query (D18) that selects the wrong thing fails here. A nested connection takes `first`; other nested arguments are
+  refused.
+- One `query` operation with variable definitions; defaults (`$first: Int = 2`) apply when the request leaves a
+  variable out, and an undeclared `$variable` is a 400. Object and list arguments must be variables (inline scalars and
+  enums are fine). Mutations, fragments, directives, block strings and invalid string escapes are 400s.
+- Filters: an unknown filter field, a field filter straight on a connection (without `some`/`every`), `null` with a
+  non-Boolean, or a date compared with a non-date (`P1W`) is a 400. A null field or relation fails every comparator
+  except `neq`, `nin` and `null: true`; the fake doesn't model Linear's joins beyond that.
+- No or a wrong token is a 401.
 
 `FakeOnyxServer` (`Url` = base, `Token`, default `fixture-onyx`, `Authorization` = `Bearer <token>`):
 
-- `POST /api/query/document-search` with Onyx's DocumentSearchRequest fields `message` and
+- `POST /api/query/document-search` reads exactly `message` and
   `retrieval_options.{filters.{source_type,time_cutoff},limit,offset}`; `time_cutoff` keeps documents updated at or
-  after it. The reply is `{"top_documents": [SearchDoc + score, chunk_ind, match_highlights], "llm_indices": []}`,
-  ranked by a deterministic term match (not Onyx's ranking; Sindri ranks, D3).
+  after it. **Any other field** (`search_type`, `run_search`, `real_time`, `enable_auto_detect_filters`, `tags`,
+  `document_set`, …), a missing `message`, or a badly typed value (a `source_type` that isn't a list of strings, a
+  non-string `time_cutoff`, a non-integer `limit`) is a 422 in Onyx's validation shape (`detail: [{loc, msg, type}]`),
+  so a client never relies on a knob the fake would ignore. The reply is
+  `{"top_documents": [SearchDoc + score, chunk_ind, match_highlights], "llm_indices": []}`, ranked by a deterministic
+  term match (not Onyx's ranking; Sindri ranks, D3).
 - `GET /api/document/chunk-info?document_id=&chunk_id=` returns `{"content", "num_tokens"}`, 404 for an unknown one.
-- Any other route is a 404 naming the two it serves; a field it doesn't read (`tags`, `document_set`, …) or a missing
-  `message` is a 422 in Onyx's validation shape (`detail: [{loc, msg, type}]`).
+- Any other route is a 404 naming the two it serves.
 - The exact HTTP routes and the change feed by updated time are open items of Phase 5 (§12). S-5A pins them against
   the Onyx release it sets up and, if they differ, changes this fake and these recordings in its own PR.
 
@@ -130,3 +149,7 @@ line the web host itself logged (at trace level, in memory, never printed). The 
   `FixtureRepo` and wraps these fakes. Nothing here references `Aw.Context.Core`.
 - **S-5A**: the `onyx` adapter against `FakeOnyxServer`. **S-6**: the native `linear` adapter's `.graphql` files against
   `FakeLinearServer`. **S-3 / S-7A**: the cascade fixtures, the probe runner and the backtest over this app.
+- **Not here yet, added by the stage that needs it:** fault and latency injection (`Unavailable`, deadlines,
+  `Probe` health), records that change between calls (change feeds, cursor replay, removals) and an Onyx
+  fetch-by-id carrying `updated_at` (`Versions`). `FakeServerOptions` is the place to grow them without breaking
+  callers.
