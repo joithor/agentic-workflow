@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json.Serialization;
 using Aw.Judge.Core.Errors;
 using Aw.Kernel;
@@ -24,31 +23,26 @@ public sealed record JudgeConfig(
     public static JudgeConfig Default { get; } = new(
         new Dictionary<string, QuestionConfig>(StringComparer.Ordinal) { [WakeGate] = DefaultQuestion });
 
-    /// <summary>'judge config set': sets one question's enabled flag ("true" is true, anything else false) or, for any
-    /// other field, its threshold; the providers and promptSort blocks are kept.</summary>
+    /// <summary>Sets one question's enabled flag; a question the config doesn't name starts from the defaults. The
+    /// providers and promptSort blocks are kept.</summary>
     /// <param name="question">The question name.</param>
-    /// <param name="field">"enabled", or the threshold for anything else (as the TS judge reads it).</param>
-    /// <param name="value">The value as typed.</param>
-    /// <returns>The new config, or AW-JUDGE-006 when a threshold isn't a finite number.</returns>
-    public Result<JudgeConfig> Set(string question, string field, string value)
+    /// <param name="enabled">The flag.</param>
+    /// <returns>The new config.</returns>
+    public JudgeConfig SetEnabled(string question, bool enabled) => With(question, q => q with { Enabled = enabled });
+
+    /// <summary>Sets one question's threshold, as <see cref="SetEnabled"/> does its flag.</summary>
+    /// <param name="question">The question name.</param>
+    /// <param name="threshold">The threshold, 0 to 1.</param>
+    /// <returns>The new config, or AW-JUDGE-001 when the threshold is outside 0 to 1.</returns>
+    public Result<JudgeConfig> SetThreshold(string question, double threshold) =>
+        JudgeConfigParser.ThresholdProblem(threshold) is { } problem
+            ? JudgeErrors.Invalid.With(problem)
+            : With(question, q => q with { Threshold = threshold });
+
+    private JudgeConfig With(string question, Func<QuestionConfig, QuestionConfig> change)
     {
         ArgumentNullException.ThrowIfNull(question);
-        ArgumentNullException.ThrowIfNull(value);
         var existing = Questions.TryGetValue(question, out var current) ? current : DefaultQuestion;
-        QuestionConfig updated;
-        if (string.Equals(field, "enabled", StringComparison.Ordinal))
-        {
-            updated = existing with { Enabled = string.Equals(value, "true", StringComparison.Ordinal) };
-        }
-        else if (double.TryParse(value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var threshold) && double.IsFinite(threshold))
-        {
-            updated = existing with { Threshold = threshold };
-        }
-        else
-        {
-            return JudgeErrors.NotANumber.With($"not a number: {value}");
-        }
-
-        return this with { Questions = new Dictionary<string, QuestionConfig>(Questions, StringComparer.Ordinal) { [question] = updated } };
+        return this with { Questions = new Dictionary<string, QuestionConfig>(Questions, StringComparer.Ordinal) { [question] = change(existing) } };
     }
 }

@@ -254,15 +254,9 @@ static Aw.Judge.Features.GetConfig.GetConfigResponse.operator !=(Aw.Judge.Featur
 static Aw.Judge.Features.GetConfig.GetConfigResponse.operator ==(Aw.Judge.Features.GetConfig.GetConfigResponse? left, Aw.Judge.Features.GetConfig.GetConfigResponse? right) -> bool
 Aw.Judge.Features.SetConfig.SetConfigRequest
 Aw.Judge.Features.SetConfig.SetConfigRequest.<Clone>$() -> Aw.Judge.Features.SetConfig.SetConfigRequest!
-Aw.Judge.Features.SetConfig.SetConfigRequest.Deconstruct(out string! Question, out string! Field, out string! Value) -> void
 Aw.Judge.Features.SetConfig.SetConfigRequest.Equals(Aw.Judge.Features.SetConfig.SetConfigRequest? other) -> bool
-Aw.Judge.Features.SetConfig.SetConfigRequest.Field.get -> string!
-Aw.Judge.Features.SetConfig.SetConfigRequest.Field.init -> void
 Aw.Judge.Features.SetConfig.SetConfigRequest.Question.get -> string!
 Aw.Judge.Features.SetConfig.SetConfigRequest.Question.init -> void
-Aw.Judge.Features.SetConfig.SetConfigRequest.SetConfigRequest(string! Question, string! Field, string! Value) -> void
-Aw.Judge.Features.SetConfig.SetConfigRequest.Value.get -> string!
-Aw.Judge.Features.SetConfig.SetConfigRequest.Value.init -> void
 Aw.Judge.Features.SetConfig.SetConfigResponse
 Aw.Judge.Features.SetConfig.SetConfigResponse.<Clone>$() -> Aw.Judge.Features.SetConfig.SetConfigResponse!
 Aw.Judge.Features.SetConfig.SetConfigResponse.Config.get -> Aw.Judge.Core.Config.JudgeConfig!
@@ -284,3 +278,9 @@ Aw.Judge.Features.GetConfig.GetConfigResponse.Deconstruct(out Aw.Judge.Core.Conf
 Aw.Judge.Features.GetConfig.GetConfigResponse.GetConfigResponse(Aw.Judge.Core.Config.JudgeConfig! Config, string? Warning) -> void
 Aw.Judge.Features.GetConfig.GetConfigResponse.Warning.get -> string?
 Aw.Judge.Features.GetConfig.GetConfigResponse.Warning.init -> void
+Aw.Judge.Features.SetConfig.SetConfigRequest.Deconstruct(out string! Question, out bool? Enabled, out double? Threshold) -> void
+Aw.Judge.Features.SetConfig.SetConfigRequest.Enabled.get -> bool?
+Aw.Judge.Features.SetConfig.SetConfigRequest.Enabled.init -> void
+Aw.Judge.Features.SetConfig.SetConfigRequest.SetConfigRequest(string! Question, bool? Enabled = null, double? Threshold = null) -> void
+Aw.Judge.Features.SetConfig.SetConfigRequest.Threshold.get -> double?
+Aw.Judge.Features.SetConfig.SetConfigRequest.Threshold.init -> void

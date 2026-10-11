@@ -11,10 +11,7 @@ internal static class ConfigCommands
         (args.Count > 0 ? args[0] : null) switch
         {
             GetConfigCommand.Name => await GetConfigCommand.Run(services, json).ConfigureAwait(false),
-            SetConfigCommand.Name => await SetConfigCommand.Run(Argument(args, 1), Argument(args, 2), Argument(args, 3), services, json).ConfigureAwait(false),
+            SetConfigCommand.Name => await SetConfigCommand.Run([.. args.Skip(1)], services, json).ConfigureAwait(false),
             _ => CommandOutput.Emit(1, "", "usage: judge config get|set <question> <enabled|threshold> <value>"),
         };
-
-    // TS reads a missing argument as "" (rest[n] ?? "").
-    private static string Argument(IReadOnlyList<string> args, int index) => index < args.Count ? args[index] : "";
 }

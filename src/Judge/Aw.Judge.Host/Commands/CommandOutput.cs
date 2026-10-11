@@ -55,8 +55,14 @@ internal static class CommandOutput
             ? Emit(1, "", Encoding.UTF8.GetString(AwJson.Serialize(result.Error, json)))
             : Emit(0, Encoding.UTF8.GetString(AwJson.Serialize(result.Value, json)));
 
-    /// <summary>The scaffold's usage error (/new-slice generates calls to it).</summary>
-    internal static int Usage(string message) => Emit(2, "", $"usage: {message}");
+    /// <summary>A usage error: exit 64 and one stderr line, 'usage: judge &lt;synopsis&gt;' and the problem in parentheses.</summary>
+    /// <param name="synopsis">The command's synopsis after 'judge ', e.g. 'why &lt;decision-id&gt;'.</param>
+    /// <param name="problem">What was wrong with the arguments, or null.</param>
+    internal static int Usage(string synopsis, string? problem = null) =>
+        Emit(UsageExit, "", problem is null ? $"usage: judge {synopsis}" : $"usage: judge {synopsis} ({OneLine(problem)})");
+
+    /// <summary>The usage exit code (BSD sysexits EX_USAGE).</summary>
+    internal const int UsageExit = 64;
 
     // Error text is one stderr line: any line break inside it becomes a space.
     private static string OneLine(string text) => text.ReplaceLineEndings(" ");

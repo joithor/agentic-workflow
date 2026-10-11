@@ -485,7 +485,6 @@ Aw.Judge.Core.Config.JudgeConfig.Providers.get -> Aw.Judge.Core.Config.Providers
 Aw.Judge.Core.Config.JudgeConfig.Providers.init -> void
 Aw.Judge.Core.Config.JudgeConfig.Questions.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Judge.Core.Config.QuestionConfig!>!
 Aw.Judge.Core.Config.JudgeConfig.Questions.init -> void
-Aw.Judge.Core.Config.JudgeConfig.Set(string! question, string! field, string! value) -> Aw.Kernel.Result<Aw.Judge.Core.Config.JudgeConfig!>!
 Aw.Judge.Core.Config.JudgeConfigParser
 Aw.Judge.Core.Config.PromptSortConfig
 Aw.Judge.Core.Config.PromptSortConfig.<Clone>$() -> Aw.Judge.Core.Config.PromptSortConfig!
@@ -543,7 +542,6 @@ static Aw.Judge.Core.Config.ProvidersConfig.operator !=(Aw.Judge.Core.Config.Pro
 static Aw.Judge.Core.Config.ProvidersConfig.operator ==(Aw.Judge.Core.Config.ProvidersConfig? left, Aw.Judge.Core.Config.ProvidersConfig? right) -> bool
 static Aw.Judge.Core.Config.QuestionConfig.operator !=(Aw.Judge.Core.Config.QuestionConfig? left, Aw.Judge.Core.Config.QuestionConfig? right) -> bool
 static Aw.Judge.Core.Config.QuestionConfig.operator ==(Aw.Judge.Core.Config.QuestionConfig? left, Aw.Judge.Core.Config.QuestionConfig? right) -> bool
-static readonly Aw.Judge.Core.Errors.JudgeErrors.NotANumber -> Aw.Kernel.ErrorDefinition!
 Aw.Judge.Core.Config.ProviderNames
 static Aw.Judge.Core.Config.ProviderNames.AgentClis.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Judge.Core.Config.ProviderNames.All.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -633,3 +631,5 @@ static readonly Aw.Judge.Core.Errors.JudgeErrors.ConfigMalformed -> Aw.Kernel.Er
 Aw.Judge.Core.Decisions.DecisionRecord.ApprovedAt.get -> System.DateTimeOffset?
 Aw.Judge.Core.Decisions.DecisionRecord.ApprovedAt.init -> void
 Aw.Judge.Core.Ports.IDecisionLog.MarkApproved(Aw.Judge.Core.Ids.DecisionId id, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Judge.Core.Config.JudgeConfig.SetEnabled(string! question, bool enabled) -> Aw.Judge.Core.Config.JudgeConfig!
+Aw.Judge.Core.Config.JudgeConfig.SetThreshold(string! question, double threshold) -> Aw.Kernel.Result<Aw.Judge.Core.Config.JudgeConfig!>!

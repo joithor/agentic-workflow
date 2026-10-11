@@ -17,7 +17,9 @@ internal sealed class SetConfigService(IJudgeConfigStore configs) : IService<Set
                 : loaded.Error;
         }
 
-        var next = loaded.Value.Set(request.Question, request.Field, request.Value);
+        var next = request.Enabled is { } enabled
+            ? loaded.Value.SetEnabled(request.Question, enabled)
+            : loaded.Value.SetThreshold(request.Question, request.Threshold ?? double.NaN);
         if (next.IsError)
         {
             return next.Error;

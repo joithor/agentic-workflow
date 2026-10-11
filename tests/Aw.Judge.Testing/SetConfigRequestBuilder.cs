@@ -5,16 +5,25 @@ namespace Aw.Judge.Testing;
 /// <summary>Builds a SetConfigRequest with deterministic defaults: wake-gate's threshold to 0.85.</summary>
 public sealed class SetConfigRequestBuilder
 {
-    private SetConfigRequest _request = new("wake-gate", "threshold", "0.85");
+    private SetConfigRequest _request = new("wake-gate", Threshold: 0.85);
 
-    /// <summary>Sets the question, field and value.</summary>
+    /// <summary>Sets a question's threshold.</summary>
     /// <param name="question">The question.</param>
-    /// <param name="field">The field.</param>
-    /// <param name="value">The value.</param>
+    /// <param name="threshold">The threshold.</param>
     /// <returns>This builder.</returns>
-    public SetConfigRequestBuilder Setting(string question, string field, string value)
+    public SetConfigRequestBuilder Threshold(string question, double threshold)
     {
-        _request = new SetConfigRequest(question, field, value);
+        _request = new SetConfigRequest(question, Threshold: threshold);
+        return this;
+    }
+
+    /// <summary>Sets a question's enabled flag.</summary>
+    /// <param name="question">The question.</param>
+    /// <param name="enabled">The flag.</param>
+    /// <returns>This builder.</returns>
+    public SetConfigRequestBuilder Enabled(string question, bool enabled)
+    {
+        _request = new SetConfigRequest(question, Enabled: enabled);
         return this;
     }
 
