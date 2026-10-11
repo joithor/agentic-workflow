@@ -1,6 +1,8 @@
 using System.Globalization;
 using Aw.Evidence.Core;
 using Aw.Evidence.Core.Locks;
+using Aw.Evidence.Infrastructure;
+using Aw.Evidence.Infrastructure.Locks;
 using Aw.Kernel.Testing;
 
 namespace Aw.Evidence.Tests.Infrastructure;
@@ -124,6 +126,33 @@ public sealed class DirectoryLocksTests : IDisposable
 
         Assert.Equal(EvidenceErrors.LockBusy.Code, busy.Error.Code);
         Assert.False(Directory.Exists(LockTestEnvironment.Settings(_root).QaStack + ".2"));
+    }
+
+    [Fact]
+    public async Task A_lock_path_with_a_trailing_separator_is_taken_and_released_and_slot_two_sits_beside_it()
+    {
+        var qa = Path.Combine(_root.Path, "locks", "qa.lock");
+        var heavy = Path.Combine(_root.Path, "locks", "h.lock");
+        var settings = SettingsFromEnvironment.Read(name => name switch
+        {
+            "AW_QA_STACK_LOCK" => qa + Path.DirectorySeparatorChar,
+            "AW_HEAVY_JOB_LOCK" => heavy + Path.DirectorySeparatorChar,
+            "AW_HEAVY_LOCK_HELD" => "0",
+            "AW_HEAVY_SLOTS" => "2",
+            _ => null,
+        }).Locks;
+        var locks = new DirectoryLocks(settings, TimeProvider.System, TextWriter.Null);
+
+        var stack = (await locks.AcquireAsync(LockKind.QaStack, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
+        var first = (await locks.AcquireAsync(LockKind.HeavyJob, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
+        var second = (await locks.AcquireAsync(LockKind.HeavyJob, TimeSpan.Zero, TestContext.Current.CancellationToken)).Value;
+
+        Assert.True(File.Exists(Path.Combine(qa, "owner")), "the qa-stack lock is the path itself");
+        Assert.True(File.Exists(Path.Combine(heavy + ".2", "owner")), "slot 2 is <lock>.2 beside slot 1");
+        await stack.DisposeAsync();
+        await first.DisposeAsync();
+        await second.DisposeAsync();
+        Assert.Empty(Directory.GetFileSystemEntries(Path.Combine(_root.Path, "locks")));
     }
 
     public void Dispose() => _root.Dispose();

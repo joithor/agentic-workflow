@@ -19,8 +19,8 @@ internal static class SettingsFromEnvironment
         var locks = Path.Combine(root, "locks");
         return new(
             Locks: new(
-                QaStack: Set(environment("AW_QA_STACK_LOCK")) ?? Path.Combine(locks, "qa-stack.lock"),
-                HeavyJob: Set(environment("AW_HEAVY_JOB_LOCK")) ?? Path.Combine(locks, "heavy-job.lock"),
+                QaStack: LockPath(environment("AW_QA_STACK_LOCK")) ?? Path.Combine(locks, "qa-stack.lock"),
+                HeavyJob: LockPath(environment("AW_HEAVY_JOB_LOCK")) ?? Path.Combine(locks, "heavy-job.lock"),
                 HeavyJobHeld: string.Equals(environment("AW_HEAVY_LOCK_HELD"), "1", StringComparison.Ordinal),
                 HeavyJobSlots: slotCount ?? DefaultHeavyJobSlots,
                 IgnoredHeavyJobSlots: slots is not null && slotCount is null ? slots : null));
@@ -28,6 +28,9 @@ internal static class SettingsFromEnvironment
 
     private static int? HeavyJobSlots(string? value) =>
         value is not null && int.TryParse(value.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var slots) && slots >= 1 ? slots : null;
+
+    // why: '/x/qa.lock/' would make the lock its own parent and put slot 2 inside slot 1 ('/x/qa.lock/.2').
+    private static string? LockPath(string? value) => Set(value) is { } path ? Path.TrimEndingDirectorySeparator(path) : null;
 
     private static string? Set(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 }
