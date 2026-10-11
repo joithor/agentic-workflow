@@ -26,8 +26,8 @@ internal sealed class CompiledRules
 
     /// <summary>Every rule's hits in <paramref name="text"/>, outside existing placeholders; unsorted, may overlap.</summary>
     /// <param name="text">The text to scan.</param>
-    /// <param name="deadline">The whole-scrub budget, checked before every rule's scan and after
-    /// every match; null when the rules are all built in.</param>
+    /// <param name="deadline">The whole-scrub budget, checked around the placeholder scan, before every
+    /// rule's scan and after every match; null when the rules are all built in.</param>
     /// <exception cref="RegexMatchTimeoutException">A pattern ran past the match timeout, or the scan past the deadline.</exception>
     public List<RawHit> Find(string text, ScanDeadline? deadline)
     {
