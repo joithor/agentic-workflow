@@ -38,6 +38,16 @@ every measurement is pinned to it, not to the branch. The clock runs while the a
 because the baseline counted that time too. Time spent waiting for the human to merge, and the switch itself
 (§10 R2), are not part of a packet and are not in these numbers.
 
+## Re-plan 2026-10-11: build the Sindri app, stop porting
+
+The owner re-planned R2 (readiness design §4a step 2 and §10, factory addendum §17.29, decision Q7):
+- `BugFix` is done (#155: 3.9 h against 2.0 h expected, under its 4.1 h review point). `Judge` (#156) and `Evidence`
+  (#158) finish against their estimates above.
+- `Scorer` and `Sindri` are no longer ported, so their rows here stop applying. Sindri is built as a new C#
+  application (app shell → workflow engine → context retrieval → blocks → workflows); scorer comes back as a block.
+- New Sindri work is new code, not a port, so this baseline doesn't size it. Each build plan gets its own estimate,
+  measured the same way (agent hours from the verification plan's `created` line), using the throughput below.
+
 ## The baseline: what R1b measured
 
 Three packages were built from the template in R1b. Readiness (T7) and Packets (T8) are the two §10 names, and
