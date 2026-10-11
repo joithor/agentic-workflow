@@ -142,6 +142,20 @@ public sealed class JevProviderTests
     }
 
     [Fact]
+    public async Task A_slow_key_read_counts_against_the_budget()
+    {
+        // With no key in the environment the source asks the keychain, which can sit on its unlock prompt: that wait is
+        // inside Jev's budget, not added in front of it.
+        using var provider = new JevProvider(new HttpClient(FakeHttpHandler.Answering(HttpStatusCode.OK, Answer)), new SlowSecretSource(TimeSpan.FromSeconds(3)), new FakeInputRedactor());
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = await provider.Decide(Questions.Text, Questions.Input, TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
+
+        Assert.Equal(new ProviderUnavailable(ProviderUnavailable.Timeout), result);
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(2), $"the read stopped at the budget, took {clock.Elapsed}");
+    }
+
+    [Fact]
     public async Task An_unreachable_api_is_unavailable() =>
         Assert.Equal(
             new ProviderUnavailable("network-error"),
@@ -164,6 +178,16 @@ public sealed class JevProviderTests
         using var provider = new JevProvider(new HttpClient(), Secrets(), new FakeInputRedactor());
 
         Assert.Equal(ContentClasses.Text.Order(), provider.Classes.Order());
+    }
+
+    // A key read that takes a while and stops when its token is cancelled, like the keychain's process runner.
+    private sealed class SlowSecretSource(TimeSpan delay) : Aw.Judge.Core.Ports.ISecretSource
+    {
+        public async ValueTask<string?> Read(SecretName name, CancellationToken cancellationToken)
+        {
+            await Task.Delay(delay, cancellationToken);
+            return Key;
+        }
     }
 
     private static FakeSecretSource Secrets() => new(new Dictionary<SecretName, string> { [SecretName.TypeSafeApiKey] = Key });
