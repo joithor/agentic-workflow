@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Host.Commands;
@@ -13,7 +14,7 @@ public sealed class StartCommandTests : IDisposable
 {
     private static readonly (ControlEndpoint, Ping) _found = (new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 42, 3), new Ping(42, 3));
     private readonly ScriptedProbe _probe = new();
-    private readonly SteppedClock _clock = new(new FakeTimeProvider(Aw.Kernel.Testing.KnownInstants.Epoch));
+    private readonly SteppedClock _clock = new(new FakeTimeProvider(KnownInstants.Epoch));
     private readonly ControlPlaneClient _client;
 
     public StartCommandTests()
