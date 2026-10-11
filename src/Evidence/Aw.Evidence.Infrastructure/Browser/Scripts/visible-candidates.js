@@ -9,7 +9,8 @@
     out.push({
       index,
       role: el.getAttribute("role") ?? el.tagName.toLowerCase(),
-      accessibleName: el.getAttribute("aria-label") ?? text,
+      // A submit input or an icon button has no text: its value or title is what it says (the repair write check reads this).
+      accessibleName: el.getAttribute("aria-label") ?? (text || null) ?? el.getAttribute("title") ?? (el instanceof HTMLInputElement ? el.value || null : null) ?? text,
       testId: el.getAttribute("data-testid"),
       text,
     });

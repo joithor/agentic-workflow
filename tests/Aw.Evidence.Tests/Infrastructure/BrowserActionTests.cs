@@ -74,6 +74,18 @@ public sealed class BrowserActionTests(BrowserFixture fixture)
     }
 
     [Fact]
+    public async Task A_candidate_without_text_is_named_by_its_value_or_title()
+    {
+        await using var session = await fixture.OpenAsync();
+        _ = await session.GotoAsync("/controls", _wait, Token);
+
+        var candidates = (await session.VisibleCandidatesAsync(Token)).Value;
+
+        Assert.Equal("Delete account", Assert.Single(candidates, c => c.TestId?.Value == "submit-input").AccessibleName);
+        Assert.Equal("Delete", Assert.Single(candidates, c => c.TestId?.Value == "icon").AccessibleName);
+    }
+
+    [Fact]
     public async Task Navigation_off_the_host_is_aborted()
     {
         await using var session = await fixture.OpenAsync();

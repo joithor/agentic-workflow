@@ -7,6 +7,11 @@ internal static class FixtureSite
     {
         ["/"] = Home(elsewhere),
         ["/next"] = "<!doctype html><html><head><title>Next</title></head><body><h1>Next page</h1></body></html>",
+        ["/controls"] = Lines(
+            "<!doctype html><html><head><title>Controls</title></head><body>",
+            "<form><input type=\"submit\" data-testid=\"submit-input\" value=\"Delete account\"></form>",
+            "<button data-testid=\"icon\" title=\"Delete\"><svg width=\"16\" height=\"16\"></svg></button>",
+            "</body></html>"),
         ["/tall"] = Lines(
             "<!doctype html><html><head><title>Tall</title></head><body>",
             "<div data-testid=\"top\">Top</div><div style=\"height: 3000px\"></div>",
