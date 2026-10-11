@@ -127,7 +127,7 @@ foreign browser `Origin` a 403):
 | `GET /sindri/ping` | `PingProcess`: `{pid, epoch}` |
 | `POST /sindri/stop` | `StopProcess` |
 | `POST /sindri/profile/approve` | `ApproveProfile` (`{hash, confirmed}`) |
-| `GET /sindri/events?after=N` | `StreamEvents` as server-sent events: one event per ledger row, `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second |
+| `GET /sindri/events?after=N` | `StreamEvents` as server-sent events: one event per ledger row, `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second; ends when the client goes away or a stop is requested, so a stop doesn't wait out Kestrel's 30 s graceful shutdown |
 
 A service's error is ProblemDetails with the `SND-*` code as `title`. The loopback guard's 400 and 403 and an unknown
 route's 404 carry no ProblemDetails body. The approve route's `confirmed` is the CLI's claim that the human typed the
