@@ -111,7 +111,7 @@ Sindri's UI is an [Avalonia UI](https://avaloniaui.net/) app, its own package `S
 
 ## JSON (§4b.3)
 
-- System.Text.Json with **one source-generated `JsonSerializerContext` per package**. No reflection-based serialization. Check: trim/AOT analyzers (`IL2026`, `IL3050`) via `IsAotCompatible=true`.
+- System.Text.Json with **one source-generated `JsonSerializerContext` per package**. One exception: an `Infrastructure` project may keep one `internal` context of its own for third-party wire formats whose records are `internal` (the host's context can't name them), used only through `AwJson.CreateOptions` (e.g. Judge's `ProviderWireJsonContext`). No reflection-based serialization. Check: trim/AOT analyzers (`IL2026`, `IL3050`) via `IsAotCompatible=true`.
 - Use the shared **`AwJson` profile** from `Aw.Kernel.Json`: `AwJson.CreateOptions(<Name>JsonContext.Default)` once per host, then `AwJson.Serialize`/`Deserialize` with those options (camelCase, relaxed escaping, UTC `O` timestamps, `RespectNullableAnnotations`, `RespectRequiredConstructorParameters`). Never construct `JsonSerializerOptions` yourself or serialize through a context's `.Default` options directly. HTTP hosts register the same resolver and options in `ConfigureHttpJsonOptions`.
 
 ## Logging and telemetry (§4b.1, §4d)
