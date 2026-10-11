@@ -1,5 +1,9 @@
 using Aw.Evidence.Core;
+using Aw.Evidence.Core.Browser;
+using Aw.Evidence.Core.Ids;
+using Aw.Evidence.Core.Judging;
 using Aw.Evidence.Core.Locks;
+using Aw.Evidence.Core.Steps;
 using Aw.Evidence.Testing;
 using Aw.Kernel;
 
@@ -35,6 +39,20 @@ public sealed class RunScriptRefusalTests
         var result = await harness.Run(A.RunScriptRequest().OnHost("https://pr-12.vitalize.build", allowWrites: true).Build());
 
         Assert.Equal("https://pr-12.vitalize.build", result.Value.Summary.Host);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task RunScript_never_repairs_a_broken_click_onto_a_write_control_on_a_preview_host()
+    {
+        var harness = new RunScriptHarness { Judge = new FakeJudge().Repairs(new SelectorRepair(RepairDecision.Repaired, 0, Usage: null), new SelectorRepair(RepairDecision.Repaired, 0, Usage: null)) };
+        _ = harness.WithScript(A.Script().WithStep(ScriptBuilder.Click("open-menu")).Build());
+        harness.Page.Candidates.Add(new Candidate(0, "button", "Delete account", TestId.From("delete-account"), "Delete account"));
+        harness.Page.OnClick["candidate:0"] = static page => page.Texts.Add("Done");
+
+        var result = await harness.Run(A.RunScriptRequest().OnHost("https://pr-12.vitalize.build").Build());
+
+        Assert.Equal(StepStatus.Broken, Assert.Single(result.Value.Summary.Steps).Status);
+        Assert.DoesNotContain(harness.Browser.Sessions.SelectMany(static s => s.Calls), static c => c.StartsWith("click candidate", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]

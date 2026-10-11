@@ -6,6 +6,12 @@ namespace Aw.Evidence.Core.Steps;
 /// <param name="AllowRepair">Whether a broken click or fill may ask the judge for a replacement.</param>
 public sealed record StepRunOptions(TimeSpan ActionTimeout, TimeSpan ExpectationTimeout, bool AllowRepair)
 {
+    /// <summary>
+    /// Whether writes are refused on this host (a preview host without --allow-writes): a repair candidate whose test id,
+    /// accessible name or text reads like a write is then never acted on.
+    /// </summary>
+    public bool RefuseWrites { get; init; }
+
     /// <summary>A scripted run: 5 s actions, 3 s expectations, repair allowed.</summary>
     public static StepRunOptions Run { get; } = new(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(3), AllowRepair: true);
 

@@ -906,6 +906,8 @@ Aw.Evidence.Core.Steps.StepRunOptions.Deconstruct(out System.TimeSpan ActionTime
 Aw.Evidence.Core.Steps.StepRunOptions.Equals(Aw.Evidence.Core.Steps.StepRunOptions? other) -> bool
 Aw.Evidence.Core.Steps.StepRunOptions.ExpectationTimeout.get -> System.TimeSpan
 Aw.Evidence.Core.Steps.StepRunOptions.ExpectationTimeout.init -> void
+Aw.Evidence.Core.Steps.StepRunOptions.RefuseWrites.get -> bool
+Aw.Evidence.Core.Steps.StepRunOptions.RefuseWrites.init -> void
 Aw.Evidence.Core.Steps.StepRunOptions.StepRunOptions(System.TimeSpan ActionTimeout, System.TimeSpan ExpectationTimeout, bool AllowRepair) -> void
 Aw.Evidence.Core.Steps.StepStatus
 Aw.Evidence.Core.Steps.StepStatus.Broken = 2 -> Aw.Evidence.Core.Steps.StepStatus

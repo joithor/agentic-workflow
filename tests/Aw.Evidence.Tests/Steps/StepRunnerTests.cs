@@ -151,6 +151,40 @@ public sealed class StepRunnerTests
     }
 
     [Theory, Trait("Lane", "unit")]
+    [InlineData("delete-btn", "Delete account", "Delete account")]
+    [InlineData("menu-item", "Save changes", "Save")]
+    [InlineData(null, "Menu", "Submit")]
+    public async Task A_write_looking_repair_candidate_is_never_clicked_when_writes_are_refused(string? testId, string name, string text)
+    {
+        var judge = new FakeJudge().Repairs(Choose(0), Choose(0));
+        var session = Session(p =>
+        {
+            p.Candidates.Add(new Candidate(0, "button", name, testId is null ? null : TestId.From(testId), text));
+            p.OnClick["candidate:0"] = static page => page.Texts.Add("Done");
+        });
+
+        var (status, _) = await Run(session, ScriptBuilder.Click("open-menu"), judge, StepRunOptions.Run with { RefuseWrites = true });
+
+        Assert.Equal(StepStatus.Broken, status);
+        Assert.DoesNotContain(session.Calls, static c => c.StartsWith("click candidate", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_write_looking_repair_candidate_may_be_clicked_where_writes_are_allowed()
+    {
+        var judge = new FakeJudge().Repairs(Choose(0));
+        var session = Session(p =>
+        {
+            p.Candidates.Add(new Candidate(0, "button", "Save", TestId.From("save-btn"), "Save"));
+            p.OnClick["candidate:0"] = static page => page.Texts.Add("Done");
+        });
+
+        var (status, _) = await Run(session, ScriptBuilder.Click("open-menu"), judge);
+
+        Assert.Equal(StepStatus.Passed, status);
+    }
+
+    [Theory, Trait("Lane", "unit")]
     [InlineData(StepAction.ExpectVisible, "Missing")]
     [InlineData(StepAction.Goto, "//evil.example")]
     public async Task Only_click_and_fill_are_ever_repaired(StepAction action, string target)
