@@ -171,4 +171,15 @@ public sealed class ParityTests
         Assert.Equal(["acquire QaStack", "acquire HeavyJob", "release HeavyJob", "release QaStack"], harness.Locks.Events);
         Assert.False(harness.Locks.IsHeld(LockKind.HeavyJob));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Parity_refuses_a_write_looking_route_before_taking_a_lock()
+    {
+        var harness = new ParityHarness().WithManifest(ParityHarness.Manifest() with { Route = "/invites/accept?token=abc" });
+
+        var result = await harness.Run(ParityHarness.Request());
+
+        Assert.Equal(EvidenceErrors.StepsRefused.Code, result.Error.Code);
+        Assert.Empty(harness.Locks.Events);
+    }
 }
