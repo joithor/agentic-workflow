@@ -1,6 +1,7 @@
 # Sindri UI app design: the control plane's views, actions and launching sessions
 
 Status:
+- **Approved by the owner on 2026-10-11** (revision 6).
 - Draft, 2026-10-11; revision 6 after five `/autoplan` passes (pass 1: five lenses NEEDS_WORK, no CRITICAL; pass 2:
   product, design and devex PASS, one shared HIGH fixed; passes 3, 4 and 5: all five PASS). §17 lists
   every finding and its resolution.
