@@ -20,4 +20,15 @@ public sealed class ValidateProfileTests
 
         Assert.Equal(ReadFailingLedger.Failure, validated.Error);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ValidateProfile_returns_the_error_when_the_saved_approval_cant_be_read()
+    {
+        _h.Profiles.Live = SliceHarness.Profile("5s");
+        var service = new ValidateProfileService(_h.Profiles, new ReadFailingApprovals(_h.Profiles), _h.Store, _h.Events);
+
+        var validated = await service.Handle(new ValidateProfileRequest(), Token);
+
+        Assert.Equal(ReadFailingApprovals.Failure, validated.Error);   // never "not approved"
+    }
 }

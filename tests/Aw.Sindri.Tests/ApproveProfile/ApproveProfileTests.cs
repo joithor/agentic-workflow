@@ -2,11 +2,11 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
-using Aw.Sindri.Core.Control;
-using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.RunDoctor;
@@ -92,6 +92,23 @@ public sealed class ApproveProfileTests
         Assert.Equal(SindriErrors.LeaseStale.Code, refused.Error.Code);
         Assert.Null((await _h.Profiles.Latest(Token)).Value);
         Assert.Empty(_h.Store.Events);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApproveProfile_preview_returns_the_error_when_the_saved_approval_cant_be_read_but_approving_repairs_it()
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.HoldLease();
+        var approvals = new ReadFailingApprovals(_h.Profiles);
+        var service = new ApproveProfileService(_h.Profiles, approvals, _h.Held, _h.Store, _h.Events);
+
+        var preview = await service.Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), Token);
+        var approved = await service.Handle(new ApproveProfileRequest(live.Hash, Confirmed: true), Token);
+
+        Assert.Equal(ReadFailingApprovals.Failure, preview.Error);
+        Assert.True(approved.Value.Approved);
+        Assert.Equal(live.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);   // why: the save above succeeded
     }
 
     [Theory, Trait("Lane", "unit")]

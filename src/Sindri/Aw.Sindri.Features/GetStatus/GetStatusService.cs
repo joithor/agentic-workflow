@@ -18,26 +18,25 @@ internal sealed class GetStatusService(HeldLease held, IApprovals approvals, IPr
         var approvedProfile = approved.IsSuccess ? approved.Value : null;
         var services = await Services(approvedProfile, cancellationToken).ConfigureAwait(false);
         var recorded = RecordedApproval.From(await ledger.Latest(EventTypes.ProfileApproved, cancellationToken).ConfigureAwait(false), events);
+        if (approved.IsError || recorded.IsError)
+        {
+            // like validate, the approve preview and doctor: an approval or a ledger that can't be read isn't "needs approval"
+            return approved.IsError ? approved.Error : recorded.Error;
+        }
+
         var grant = held.Current;
         return new GetStatusResponse(grant is not null, grant?.Holder.Pid ?? 0, grant?.Epoch ?? 0, grant?.ExpiresAt,
-            Profile(approved, recorded, loaded), services);
+            Profile(approvedProfile, recorded.Value, loaded), services);
     }
 
-    private static ProfileStatus Profile(Result<LoadedProfile?> approved, Result<RecordedApproval?> recorded, Result<LoadedProfile> loaded)
+    private static ProfileStatus Profile(LoadedProfile? approved, RecordedApproval? recorded, Result<LoadedProfile> loaded)
     {
-        var approvedHash = approved.IsSuccess ? approved.Value?.Hash : null;
+        var approvedHash = approved?.Hash;
         var liveHash = loaded.IsSuccess ? loaded.Value.Hash : (Core.Ids.ProfileHash?)null;
         var changed = approvedHash is not null && liveHash is not null && liveHash != approvedHash;
-        return new ProfileStatus(approvedHash, liveHash, changed, Problem(loaded, approved, recorded), loaded.IsSuccess ? loaded.Value.Source : null,
-            ProfileRules.NeedsApproval(approvedHash, recorded.IsSuccess ? recorded.Value?.Hash : null, liveHash));
+        return new ProfileStatus(approvedHash, liveHash, changed, loaded.IsError ? loaded.Error.Message : null, loaded.IsSuccess ? loaded.Value.Source : null,
+            ProfileRules.NeedsApproval(approvedHash, recorded?.Hash, liveHash));
     }
-
-    /// <summary>Why the live file, the saved approval or the ledger's record of it can't be read, first match wins.</summary>
-    private static string? Problem(Result<LoadedProfile> loaded, Result<LoadedProfile?> approved, Result<RecordedApproval?> recorded) =>
-        loaded.IsError ? loaded.Error.Message
-        : approved.IsError ? approved.Error.Message
-        : recorded.IsError ? recorded.Error.Message
-        : null;
 
     private async ValueTask<IReadOnlyList<ServiceStatus>> Services(LoadedProfile? approved, CancellationToken cancellationToken)
     {

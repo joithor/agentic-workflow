@@ -6,7 +6,7 @@ namespace Aw.Sindri.Features.GetStatus;
 /// <param name="Approved">The approved hash the process runs with, if any.</param>
 /// <param name="Live">The live file's hash, when it loads.</param>
 /// <param name="ChangedSinceApproval">True when the live file differs from the saved approval.</param>
-/// <param name="Problem">Why the live file, the saved approval or the ledger's record of it can't be read, if one can't.</param>
+/// <param name="Problem">Why the live profile file doesn't load, if it doesn't (an unreadable approval or ledger is the answer's error instead).</param>
 /// <param name="Source">The live profile file, when it loads.</param>
 /// <param name="NeedsApproval">
 /// True when the live profile isn't approved by <see cref="Core.Profile.ProfileRules.IsApproved"/>: nothing is saved, the
