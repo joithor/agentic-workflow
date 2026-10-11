@@ -71,7 +71,7 @@ The approval hash is SHA-256 over the canonical JSON (the checked record, repos 
 key order don't change it. An approval snapshot whose content no longer matches its hash isn't trusted.
 
 Approving appends the `profile.approved` event first and saves the snapshot second. A failed append changes nothing;
-a retry after a failed save finds the event already recorded (same key) and saves. "Already approved" means saved
+a retry after a failed save finds the latest recorded approval already naming that hash, appends nothing and only saves. "Already approved" means saved
 and recorded, so a saved approval whose event is missing is shown as not approved and approving again records it.
 
 ## Host lease
@@ -109,8 +109,8 @@ in-memory store and the SQLite adapter). Append-only, idempotent and fenced.
 | `payload_json` | the payload record, through AwJson |
 
 S1 events and their keys: `process.started` (`process.started:<epoch>`), `process.stopped` (`process.stopped:<epoch>`),
-`profile.approved` (`profile.approved:<hash>:<previous approved hash, or none>`, so approving A, then B, then A
-again records three events), `service.heartbeat` (`service.heartbeat:<epoch>:<slot>`). A service's
+`profile.approved` (`profile.approved:<hash>:after:<seq of the latest profile.approved event, or 0>`, so each
+approval is recorded: approving A, B, A, B, A records five events), `service.heartbeat` (`service.heartbeat:<epoch>:<slot>`). A service's
 run event is `service.<name>`. `outbox_commands` is Kernel.Data's outbox table (migration 3), empty in S1: outward
 actions join it in later stages.
 

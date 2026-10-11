@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -11,7 +12,9 @@ namespace Aw.Sindri.Features.ApproveProfile;
 
 /// <summary>
 /// Shows or records an approval. The 'profile.approved' event is appended first and the snapshot saved second, so a
-/// failed append changes nothing and a retry after a failed save finds the event already recorded and saves.
+/// failed append changes nothing and a retry after a failed save finds the event already recorded and only saves. Each
+/// approval's key names the event it follows ('profile.approved:&lt;hash&gt;:after:&lt;seq&gt;'), so approving A, B,
+/// A, B records every step and a retry computes the same key.
 /// </summary>
 internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events)
     : IService<ApproveProfileRequest, ApproveProfileResponse>
@@ -24,7 +27,7 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
             return loaded.Error;
         }
 
-        var (shown, replaced) = await Show(loaded.Value, cancellationToken).ConfigureAwait(false);
+        var (shown, recorded) = await Show(loaded.Value, cancellationToken).ConfigureAwait(false);
         if (request.Hash is not { } asked || shown.Approved)
         {
             return shown;
@@ -40,29 +43,44 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
             return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
         }
 
-        var entry = events.Entry(EventTypes.ProfileApproved, new ProfileApproved(asked, shown.Changes),
-            $"{EventTypes.ProfileApproved}:{asked.Value}:{replaced?.Value ?? "none"}");
-        var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
+        var appended = await Record(asked, shown.Changes, recorded, grant, cancellationToken).ConfigureAwait(false);
         var saved = appended.IsError ? appended.Error : await approvals.Save(loaded.Value, cancellationToken).ConfigureAwait(false);
         return saved.IsError ? saved.Error : shown with { Approved = true };
     }
 
     /// <summary>
-    /// What to show, and the approval a new one follows. Approved means saved and recorded: a saved approval whose
-    /// event is missing from the ledger is shown as not approved, so approving again records it.
+    /// Appends the approval of <paramref name="asked"/> unless the latest recorded approval already names it (the
+    /// event exists and only the save failed), keyed by the event it follows.
     /// </summary>
-    private async ValueTask<(ApproveProfileResponse Shown, ProfileHash? Replaced)> Show(LoadedProfile loaded, CancellationToken cancellationToken)
+    private async ValueTask<Result<Unit>> Record(ProfileHash asked, IReadOnlyList<string> changes, (ProfileHash Hash, long Sequence)? recorded,
+        LeaseGrant grant, CancellationToken cancellationToken)
+    {
+        if (recorded?.Hash == asked)
+        {
+            return Unit.Value;
+        }
+
+        var entry = events.Entry(EventTypes.ProfileApproved, new ProfileApproved(asked, changes),
+            string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ProfileApproved}:{asked.Value}:after:{recorded?.Sequence ?? 0}"));
+        var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
+        return appended.IsError ? appended.Error : Unit.Value;
+    }
+
+    /// <summary>
+    /// What to show, and the latest recorded approval. Approved means saved and recorded: a saved approval whose event
+    /// is missing from the ledger (or isn't the latest one) is shown as not approved, so approving again records it.
+    /// </summary>
+    private async ValueTask<(ApproveProfileResponse Shown, (ProfileHash Hash, long Sequence)? Recorded)> Show(LoadedProfile loaded, CancellationToken cancellationToken)
     {
         var latest = await approvals.Latest(cancellationToken).ConfigureAwait(false);
         var previous = latest.IsSuccess ? latest.Value : null;
         var recorded = await LatestRecorded(cancellationToken).ConfigureAwait(false);
-        var saved = previous?.Hash == loaded.Hash;
-        var shown = new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), Approved: saved && recorded == loaded.Hash);
-        return (shown, saved ? recorded : previous?.Hash);
+        var approved = previous?.Hash == loaded.Hash && recorded?.Hash == loaded.Hash;
+        return (new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), approved), recorded);
     }
 
-    /// <summary>The hash of the latest 'profile.approved' event in the ledger, or null.</summary>
-    private async ValueTask<ProfileHash?> LatestRecorded(CancellationToken cancellationToken)
+    /// <summary>The hash and position of the latest 'profile.approved' event in the ledger, or null.</summary>
+    private async ValueTask<(ProfileHash Hash, long Sequence)?> LatestRecorded(CancellationToken cancellationToken)
     {
         var latest = await ledger.Latest(EventTypes.ProfileApproved, cancellationToken).ConfigureAwait(false);
         if (latest.IsError || latest.Value is not { } recorded)
@@ -71,7 +89,7 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
         }
 
         var payload = events.Payload<ProfileApproved>(recorded);
-        return payload.IsSuccess ? payload.Value.Hash : null;
+        return payload.IsSuccess ? (payload.Value.Hash, recorded.Sequence) : null;
     }
 
     private static Error? Refusal(ProfileHash asked, LoadedProfile live, bool confirmed) => true switch
