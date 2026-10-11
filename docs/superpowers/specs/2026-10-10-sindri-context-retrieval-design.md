@@ -123,7 +123,9 @@ tests/
   serves later blocks (Judge, Evidence).
 - **Fan-out:** Sindri's package fan-out is at its limit of 4. The `compose` edge to `Context` carries a recorded
   `deps.yaml` exception: the context engine is one of Sindri's three engines by definition (§17.29.2), not a
-  dependency of convenience.
+  dependency of convenience. Like every exception it carries the schema's review date (`exceptionMaxDays`) and is
+  renewed on review. S-1C also adds the `DEPS-PROJ-007` carve-out that lets a Host reference a `compose` target's
+  Features and Infrastructure projects (for the `Add…()` calls only).
 - **Profile key:** `SindriProfile` gains `Context: JsonElement?` (Sindri Core can't type it). Sindri validates it by
   calling `IContextEngine.CheckSettings`, so `profile validate` reports `context.*` errors with their key paths.
 - **Secrets:** Sindri Host resolves the profile's secret pointers (`keychain:`, `env:`, `op:`, `file:` 0600) in
@@ -146,7 +148,9 @@ tests/
 public sealed record SourceRef(SourceId Source, ExternalId Id, SourceVersion Version, Uri? Permalink, RecordKey Canonical);
 // Version: blob sha (repo docs) | commit sha (code) | updatedAt (Onyx doc, Linear doc and issue) | map version (graph).
 // Canonical: one key per real-world record across adapters, e.g. linear:issue/<uuid> (alias ENG-482), linear:doc/<uuid>,
-// slack:<channel>/<ts>, repo:<repo>/<path>. Each adapter maps its own ids to it (Onyx: from its document link).
+// slack:<channel>/<ts>, repo:<repo>/<path>. Each adapter maps its own ids to it. Onyx's Linear documents carry the
+// mutable identifier (ENG-482), so the Onyx adapter resolves it through the alias table to the UUID key; an identifier
+// with no alias yet is keyed `linear:pending/ENG-482` and merged into the UUID key when the native sync resolves it.
 
 public interface IContextSource
 {
@@ -306,7 +310,7 @@ available in the bundled `e_sqlite3` before Phase 1 relies on it.
 | Content | Trust |
 |---|---|
 | Record text, titles, authors; code text | `untrusted` |
-| Graph nodes and edges from deterministic extraction (registries, routes, paths) | `trusted` |
+| Graph nodes and edges from deterministic extraction (registries, routes, paths); labels taken from code text are limited to identifier characters (`[A-Za-z0-9_.:/-]`), otherwise they are fenced like code text | `trusted` |
 | Anything a model wrote from untrusted input (decision wording, labels, proposed aliases) | `untrusted` until a human accepts it, then `trusted` |
 | Human overrides | `trusted` |
 
@@ -477,7 +481,7 @@ context:
   labeling: { enabled: false, maxTokens: 400000, maxTokensPerSync: 50000 }
   mcp: { enabled: false }                # off until approved (§3)
   sources:
-    linear: { token: "keychain:linear/work-read", teams: [ENG, APP] }
+    linear: { token: "keychain:linear/work-read", teams: [ENG, APP] }   # url: Linear's API host (or loopback, tests)
     onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-read", version: "<pinned tag>" }
   eval: { adjudicator: false }
 ```
@@ -652,8 +656,9 @@ D17).
   conflicts only (two current decisions on the same node that disagree, model-checked under the labeling budget).
   Intent-vs-behavior conflicts arrive with code: file level in stage S-CF (after both S-4's file links and S-5B's
   decisions exist) for "a decision cites a file the map says implements something else", and symbol level in Phase 9.
-- **S-L2** (outbound targets): the only outbound calls are to Linear's API host and the loopback Onyx URL, both from
-  the profile; no URL from record text is ever fetched.
+- **S-L2** (outbound targets): the only outbound calls are to the Linear API URL and the Onyx URL from the profile.
+  `linear.url` defaults to Linear's API host and accepts only that host or a loopback URL (the fixture's fake server);
+  `onyx.url` accepts only loopback. No URL from record text is ever fetched.
 - **S-L3** (pathological profile patterns): `Aw.Redaction` compiles extra patterns with its match timeout and
   rejects patterns that break its pattern rules at `profile validate`; a timeout fails closed (`Blocked`).
 - **S-L4** (map import input): `map import` validates against a versioned schema, is all-or-nothing, and refuses a
@@ -684,8 +689,26 @@ budget per stage; S-2W as its own stage, merging before S-5A; `context.mcp.enabl
 counts in `sources status` (P-4); every-source-down is exit 2 (`SND-CONTEXT-011`); `scrub-blocked` as a citation state;
 stale review files refused (`SND-CONTEXT-043`), resume after quit, `--undo`; cascade behaviour after ascend; truth
 mapped through the sample's as-of map; as-of maps deterministic-only and cached; Linear canonical keys on the UUID; the
-`symbol` shape's phases; fixtures stated synthetic. **Answered:** the fan-out exception has no expiry, because the
-engine is part of Sindri by definition; S-1A's size is measured at its plan step, and it splits if over M.
+`symbol` shape's phases; fixtures stated synthetic. **Answered:** the fan-out exception follows the schema's review date like any
+exception (round 3 corrected an earlier answer here); S-1A's size is measured at its plan step, and it splits if over M.
+
+**Round 3** (final, `…/round3/`): product, devex and security PASS; architecture NEEDS_WORK on one HIGH, fixed:
+
+| Id | Finding | Fix |
+|---|---|---|
+| R3-1 (arch) | Owner checks would run a PR's unmerged migration against the real `context.db`, whose review decisions can't be rebuilt | Owner checks run in a scratch owner-check home with the real profile copied in; prior state seeded by `map import`, never by copying `context.db` |
+
+Also fixed in round 3: the fan-out exception carries the schema's review date and S-1C adds the `DEPS-PROJ-007`
+carve-out (R3-2, correcting the round-2 answer); stack on at most one unmerged dependency (R3-3); Onyx's Linear
+records resolved to the UUID key through aliases (R3-4); the loader's migration file form (devex); `linear.url`
+limited to Linear's host or loopback, fixture tokens by `env:`/`file:` (devex); escalations go to the lead, restart
+resume source (devex); the AOT-smoke publish path and clearing throwaway state on renumber (devex); a denylist file for
+the PR identifier check (security N4); code-text labels limited to identifier characters (security L-a); the stale
+phase text (S-2W, wave numbers, migration names, Phase 4's `symbol` shape). **Accepted as LOW, not changed:** the
+`context:onyx` doctor check can't read Onyx's provider and telemetry settings with a search-only key, so §8.8's setup
+doc lists them as a manual check on each Onyx version change; node truth excludes files a PR created (they have no
+node at the cut, and recall is measured on what could have been anticipated); evidence for CI-only stages (S-1C,
+S-FX) is their test and check output; as-of map caches are purged with old map versions by the retention service.
 
 ## Parallel delivery with an agent team
 
@@ -775,12 +798,19 @@ defaults:
 3. Hand tests run in **your isolated environment only**: `AW_SINDRI_HOME=<scratch>/home-<id>`,
    `AW_SINDRI_PORT=<port>` (assigned by the lead from 7491 up), a profile built from the fixture app with
    repo-docs on the fixture repo and the fake Linear and Onyx servers, approved at a pseudo-terminal with `expect` in
-   that throwaway home (the S1 hand-test pattern). `$SINDRI` is the stage's published binary, rebuilt after each
-   rebase. Never point anything at the owner's home, port, profile, work repo, Linear or Onyx.
+   that throwaway home (the S1 hand-test pattern). Source tokens in that profile are `env:` or `file:` pointers to
+   fixture values, never the owner's keychain, and the profile names only the sources its base branch supports.
+   `$SINDRI` is the stage's binary published with `src/Sindri/aot-smoke/run.sh` (it publishes from a copy, so the
+   worktree's lock files don't change), rebuilt after each rebase; a rebase that renumbers a migration also deletes the
+   throwaway `context/` directory. Never point anything at the owner's home, port, profile, work repo, Linear or Onyx.
 4. The phase signal is proven on the fixture app. The parts that need the work product, real Linear, real Onyx or a
    Claude Code session in the work repo are the **owner check** (below): write `owner-check.md` with the exact steps and
    what counts as a pass, and leave it to the human.
-5. After step 9, report "ready" to the lead and stop. Don't start another stage. Stay assigned until the PR merges.
+5. Every place the skill would ask the user or write `stages.md` goes to the lead by message instead: the review
+   loop's cap of 5, a finding that sends the stage back to step 3, and step 9's status update. The lead decides or
+   asks the human.
+6. After step 9, report "ready" to the lead and stop. Don't start another stage. Stay assigned until the PR merges.
+   After a restart, resume from your stage's row in `stages.md` and your `$STAGE_DIR` files.
 
 ### Work data stays with the owner
 
@@ -788,12 +818,18 @@ Stage owners run in the toolkit repo, which is a personal repo (Prism registered
 team ever reads work data:
 
 - Every signal part that needs real sources is an **owner check**, run by the human in the work repo after the PR is
-  ready and before merging, from the stage's `owner-check.md`. Its record in the PR is pass/fail and counts only
+  ready and before merging, from the stage's `owner-check.md`. It runs the PR's build against an **owner-check home**
+  (`$AW_SINDRI_HOME/../sindri-app-ownercheck/`): a scratch home with the real profile copied in and an empty
+  `context.db`, never the real home, because the PR may carry a migration not yet numbered for `main`, and the real
+  `context.db` (with the owner's review decisions) must only ever run merged migrations. A check that needs prior
+  real state (a reviewed map) seeds the scratch home by `map import` of an export, not by copying `context.db`. Its record in the PR is pass/fail and counts only
   (results, citations, sources), never text, titles, issue keys or project names.
 - S-7B and S-8's arm decision are owner-run in full: the human runs the backtest and probes; agents get the aggregate
   report (numbers only) if they need it.
-- Before marking a PR ready, the stage owner checks the PR body, `evidence.md` and `owner-check.md` for the profile's
-  Linear team keys, the Slack workspace domain and `linear.app/<workspace>`, and removes any hit.
+- Before marking a PR ready, the stage owner checks the PR body, `evidence.md` and `owner-check.md` against a
+  **denylist file** the owner writes once outside every repo (team keys, the Slack workspace domain,
+  `linear.app/<workspace>`, project names); the lead passes its path to each owner. A hit is removed; a missing
+  denylist file fails the check.
 
 ### Keeping agents busy
 
@@ -802,7 +838,8 @@ team ever reads work data:
   unmerged**, and stacks at most **2 deep**. At either of the last two caps the lead starts no new building stage;
   owners do prep only.
 - **A freed slot is filled at once** with the next ready stage: critical path first, then whichever unblocks the most.
-- **Stacking:** a stage on an unmerged dependency branches from it and bases its PR on it. When the dependency merges,
+- **Stacking:** a stage on an unmerged dependency branches from it and bases its PR on it. A stage stacks on **at most
+  one** unmerged dependency; with two or more open, it waits until all but one have merged. When the dependency merges,
   the lead tells the owner, who rebases onto `main`, retargets the PR and redoes the step 9 re-check. A stage never
   stacks on a dependency with blocking findings.
 - **Prep while blocked:** verification plans for upcoming stages, fixture and probe assets, `owner-check.md` drafts,
@@ -816,7 +853,8 @@ team ever reads work data:
 
 | Shared thing | Rule |
 |---|---|
-| `context.db` migrations | **Named, not pre-numbered.** A stage's migration file is `NNN_<stage>_<name>.sql` with `NNN` set to the next free number **on the branch it sits on**, and renumbered when it rebases onto a new base (a stage's migrations stay contiguous on top of its base, as `Aw.Kernel.Data`'s gap check requires). Number and content freeze at merge. Only throwaway homes ever ran an unmerged migration, so renumbering never touches a real `context.db` |
+| `context.db` migrations | **Named, not pre-numbered.** A stage's migration file is `NNNN_<stage>_<name>.sql` (the loader's form: four digits, letters, digits and
+`_` only, e.g. `0003_s5a_linear_cursor.sql`) with `NNNN` set to the next free number **on the branch it sits on**, and renumbered when it rebases onto a new base (a stage's migrations stay contiguous on top of its base, as `Aw.Kernel.Data`'s gap check requires). Number and content freeze at merge. Only throwaway homes ever ran an unmerged migration, so renumbering never touches a real `context.db` |
 | `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3/S-3M `030–039`, S-4 `040–049`, S-5A/B `050–069`, S-6 `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`. §8.6 follows these ranges |
 | `deps.yaml`, `Directory.Packages.props`, `AgenticWorkflow.slnx`, `.env.example` | Append-only edits within the stage's own block; the later PR's rebase resolves conflicts |
 | `PublicAPI.Unshipped.txt`, Sindri's `EndpointTable`, `CommandTable`, JSON context, MCP tool list | One line or one block per slice; the later rebase keeps both |
@@ -851,7 +889,7 @@ on the fixture app.
   versioned, scrubbed results from the repos' PRDs and plans.
 - **Files:** `src/Context/Aw.Context.{Core,Features,Infrastructure}` (facade, contract §5.1, `SourceRef` with
   `Canonical`, result types, `IngestSanitizer`, egress scrubber, RRF, packing, citations, `QueryContext` and
-  `SourcesStatus` slices, `repo-docs` adapter with scrubbed FTS5 and its refresh service, `context.db` migration 1);
+  `SourcesStatus` slices, `repo-docs` adapter with scrubbed FTS5 and its refresh service, its `context.db` migration);
   `tests/Aw.Context.{Tests,Testing}` (contract base, fakes, fixture app skeleton); Sindri: `Context: JsonElement?`
   in the profile, routes, `context query` and `context sources status|sync` verbs, the `/mcp` endpoint (stateless,
   behind the guard) with `context_query` and `context_sources`, doctor `context:sources` and `context:mcp-scope`;
@@ -873,8 +911,9 @@ on the fixture app.
 - **Files:** `src/Redaction/Aw.Redaction` (extra `RedactionRule`s from configuration, validated against the pattern
   rules, compiled with the match timeout), PublicAPI files, `docs/csharp/redaction.md`; `Aw.Context` wiring from
   `context.scrub.extraPatterns`.
-- **Size:** S. Stage **S-2R** (the `Aw.Redaction` part, wave 0); the `Aw.Context` wiring rides in S-1A, or in a
-  one-line follow-up if S-2R merges after S-1A.
+- **Size:** S, as two stages: **S-2R** (the `Aw.Redaction` part, wave 0) and **S-2W** (the `Aw.Context` wiring, XS,
+  wave 2). S-5A's owner check runs only once its base includes S-2W, so real Linear text is always scrubbed with the
+  extra patterns.
 - **S1:** none new.
 - **Signal:** with `{id: acme-customer-id, pattern: "ACME-[0-9]{6}"}` approved, `$SINDRI context query` shows
   `[REDACTED:acme-customer-id]` where a doc held `ACME-123456`; an invalid pattern fails `profile validate` with
@@ -884,7 +923,7 @@ on the fixture app.
 
 - **Goal:** the product graph exists and answers cascade questions, from a hand-authored map first; probes guard
   every later phase.
-- **Files:** `context.db` migration 2 (graph, overrides, decisions, retention); `EntryKey`, aliases, key migration
+- **Files:** its `context.db` migration (graph, overrides, decisions, retention); `EntryKey`, aliases, key migration
   scaffolding; `ImportMap` (versioned schema, all-or-nothing, outside worktrees); `ShowNode`, `Neighbors`, `Path`;
   the cascade (§6.1) with fixtures; `node` shape, `graph` and `affects` sections; anchor resolution for `text`;
   routes, verbs, MCP `context_node` and `context_neighbors` (these two tools are stage S-3M, after S-1M); doctor `context:map` and `context:retention`; the probe
@@ -902,7 +941,8 @@ on the fixture app.
 - **Files:** extractor (deterministic anchors: command and keybinding registries, settings keys, routes, UI component
   names and test ids, each with the files that define it, as deterministic file-level `implements`; graphify clusters
   as candidate features; a labeling pass behind `context.labeling.enabled`); `BuildMap` (batched, draft then flip) and
-  `ReviewMap` (§8.7, interactive and `--export`/`--apply`); `IHeavyJobLock`; `ILabeler` with the `claude` CLI
+  `ReviewMap` (§8.7, interactive and `--export`/`--apply`); the `symbol` shape in its file-path form (`--symbol
+  <path>`, MCP `symbol`); `IHeavyJobLock`; `ILabeler` with the `claude` CLI
   adapter; a scheduled rebuild. (The intent-vs-file conflict check is stage S-CF, §14 A-F13.)
 - **Size:** M (split extraction and labeling into two PRs if over).
 - **S1:** `IScheduledService`.
@@ -941,8 +981,8 @@ on the fixture app.
 - **Files:** corpus builder (issue samples, file truth from git, per-sample as-of maps, leaky labels), arms runner,
   adjudicator through `ILabeler`, report writer, `eval backtest | map | purge`; the eligible-sample count recorded
   first.
-- **Size:** M, as two stages: **S-7A** (the harness on the fixture corpus; wave 3) and **S-7B** (the owner's corpus;
-  wave 4, run alone).
+- **Size:** M, as two stages: **S-7A** (the harness on the fixture corpus; wave 4) and **S-7B** (the owner's corpus;
+  wave 5, run alone).
 - **S1:** heavy-job lock (Phase 4).
 - **Signal:** `$SINDRI context eval backtest --arms all` prints per-arm node recall and precision, file recall@20 and
   the pass line for the owner's three projects, with sample count and leaky share.
