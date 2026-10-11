@@ -423,7 +423,7 @@ t("--slice-only http: a new string route id adds its files and one IdsJsonContex
     "tests/Aw.Demohttp.Tests/Ids/JobIdRouteBindingTests.cs",
     "tests/Aw.Demohttp.Tests/Ids/JobIdTests.cs",
   ]);
-  assert.equal(insertedOnly(ctxBefore, read(d, ctx)), "\n[JsonSerializable(typeof(JobIdHolder))]");
+  assert.equal(insertedOnly(ctxBefore, read(d, ctx)).trim(), "[JsonSerializable(typeof(JobIdHolder))]");
   assert.ok(!exists(d, "src/Demohttp/Aw.Demohttp.Host/Endpoints/GetJobEndpoint.cs"), "--slice-only wrote the endpoint");
   assert.match(r.out, /^Shared lines to add in your branch/m);
   assert.match(r.out, /\.MapGetJob\(\)/);

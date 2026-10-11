@@ -104,6 +104,8 @@ export class Journal {
     this.created = [];
     this.createdDirs = [];
     this.edited = new Map();
+    /** Called with each existing file before an edit (files this run created are exempt); throws to refuse it. */
+    this.editGuard = null;
   }
 
   abs(rel) {
@@ -129,6 +131,7 @@ export class Journal {
 
   /** Rewrites an existing file through fn(text) -> text, keeping the original for revert. */
   edit(rel, fn) {
+    if (this.editGuard && !this.created.includes(rel)) this.editGuard(rel);
     const before = this.read(rel);
     const after = fn(before);
     if (after === before) return;

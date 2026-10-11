@@ -3,13 +3,17 @@
 //
 //   node scripts/scaffold/new-slice.mjs --package <Pkg> --slice <Slice> --behavior <snake_case> --surface cli|http|none
 //        [--command <name>] [--route "<METHOD> /path/{id}"] [--ids Name:string,Other:Guid] [--ports IItemStore,...]
-//        [--root DIR] [--files-only]
+//        [--root DIR] [--slice-only] [--files-only]
 //
 // Adds one use case to an existing package, red: the failing test that names the behavior, the request and response
 // records, a parameterless service stub that throws NotSupportedException, the validator, the registration, the CLI
 // command or endpoint, ids and ports with their fakes and contract bases. Then runs the checks (under the heavy-job
 // lock) and reverts every file it wrote if one fails. --files-only writes the files and skips the checks (the
 // generator's own unit tests use it; never use it on a real package).
+// --slice-only is for slices scaffolded into one package in parallel branches: it writes the slice's own files, ids
+// and ports, and edits only its own lines in A.cs, IdsJsonContext and PublicAPI.Unshipped.txt. It leaves out the
+// registration, the command-table arm or endpoint-table call, the JSON context lines and the command or endpoint file,
+// and prints them for the implementer to add by hand. Any other shared edit is refused (NS-SLICE-ONLY).
 // Exit codes: 0 done (the new test is red, everything else green), 1 refused or a check failed, 2 usage error.
 
 import fs from "node:fs";
@@ -152,21 +156,45 @@ export function addUsings(text, add) {
   return `${usingsBlock(merged)}\n\n${rest.join("\n")}`;
 }
 
-/** Writes the slice's files and edits (no checks). */
-export function writeSlice(journal, s) {
+/** The slice's [JsonSerializable] types and the usings they need in the package's JSON context. */
+const jsonEntries = (s) => ({
+  types: [`${s.slice}Request`, `${s.slice}Response`, ...(s.surface === "http" && T.hasBody(s) ? [`${s.slice}Body`] : [])],
+  usings: [s.featuresNs, ...(s.surface === "http" && T.hasBody(s) ? [`Aw.${s.pkg}.Host.Endpoints`] : [])],
+});
+
+/** A new Guid or int id needs the RS0041 NoWarn in Core's csproj (see writeSlice). */
+const needsRs0041 = (journal, s) => s.ids.some((i) => i.isNew && i.prim !== "string") && !journal.read(s.dirs.coreProject).includes("RS0041");
+
+/** --slice-only: the shared files the slice may still edit (its own lines only): A.cs, IdsJsonContext, PublicAPI. */
+const sliceOwned = (s, rel) =>
+  rel === `${s.dirs.testing}/A.cs` || rel === `${s.dirs.tests}/Ids/IdsJsonContext.cs` || (rel.startsWith(`src/${s.pkg}/`) && path.basename(rel) === "PublicAPI.Unshipped.txt");
+
+/** Writes the slice's files and edits (no checks). --slice-only skips the shared edits and refuses any other. */
+export function writeSlice(journal, s, { sliceOnly = false } = {}) {
   const d = s.dirs;
+  if (sliceOnly) {
+    if (needsRs0041(journal, s)) {
+      const id = s.ids.find((i) => i.isNew && i.prim !== "string");
+      throw new ScaffoldError("NS-SLICE-ONLY", `the new ${id.prim} id ${id.name} needs the RS0041 NoWarn in ${d.coreProject}, a shared file --slice-only doesn't edit`, "add the NoWarn in the phase's contract unit (docs/csharp/typed-ids.md), or run without --slice-only");
+    }
+    journal.editGuard = (rel) => {
+      if (!sliceOwned(s, rel)) throw new ScaffoldError("NS-SLICE-ONLY", `${rel} is a shared file --slice-only doesn't edit`, "add that line by hand in your branch, or run without --slice-only");
+    };
+  }
   journal.create(`${d.features}/${s.slice}Request.cs`, T.request(s));
   journal.create(`${d.features}/${s.slice}Response.cs`, T.response(s));
   journal.create(`${d.features}/${s.slice}Service.cs`, T.service(s));
   journal.create(`${d.features}/${s.slice}Validator.cs`, T.validator(s));
 
-  journal.insert(d.registration, /^ {8}return services;$/m, `${T.registration(s)}        return services;`, "NS-EDIT", `the ${s.slice} registration (before 'return services;')`);
-  journal.edit(d.registration, (text) => addUsings(text, ["Aw.Kernel.Services", s.featuresNs]));
+  if (!sliceOnly) {
+    journal.insert(d.registration, /^ {8}return services;$/m, `${T.registration(s)}        return services;`, "NS-EDIT", `the ${s.slice} registration (before 'return services;')`);
+    journal.edit(d.registration, (text) => addUsings(text, ["Aw.Kernel.Services", s.featuresNs]));
+  }
 
   // Vogen wraps a Guid or int id's generated ToString(string, IFormatProvider) in #nullable disable: RS0041 on Core,
   // with nothing to fix in user code and no .editorconfig reach into generated files (docs/csharp/typed-ids.md).
   const coreProject = d.coreProject;
-  if (s.ids.some((i) => i.isNew && i.prim !== "string") && !journal.read(coreProject).includes("RS0041")) {
+  if (needsRs0041(journal, s)) {
     journal.insert(coreProject, /(<RootNamespace>[^<]*<\/RootNamespace>\n)/, `$1${T.rs0041NoWarn}`, "NS-EDIT", "the RS0041 NoWarn (after RootNamespace)");
   }
   for (const id of s.ids.filter((i) => i.isNew)) {
@@ -183,28 +211,25 @@ export function writeSlice(journal, s) {
     journal.create(`${d.testing}/${port.slice(1)}Contract.cs`, T.contract(s, port));
   }
 
-  const jsonTypes = [`${s.slice}Request`, `${s.slice}Response`];
-  const jsonUsings = [s.featuresNs];
-  if (s.surface === "cli") {
+  if (s.surface === "cli" && !sliceOnly) {
     journal.create(`${d.commands}/${s.slice}Command.cs`, T.command(s));
     journal.insert(`${d.commands}/CommandTable.cs`, /^(\s*_ => CommandOutput\.Usage)/m, `${T.commandArm(s)}$1`, "NS-EDIT", `the '${s.command}' arm (above '_ => CommandOutput.Usage')`);
   }
   if (s.surface === "http") {
-    journal.create(`${d.endpoints}/${s.slice}Endpoint.cs`, T.endpoint(s));
-    if (T.hasBody(s)) {
-      journal.create(`${d.endpoints}/${s.slice}Body.cs`, T.body(s));
-      jsonTypes.push(`${s.slice}Body`);
-      jsonUsings.push(`Aw.${s.pkg}.Host.Endpoints`);
+    if (!sliceOnly) {
+      journal.create(`${d.endpoints}/${s.slice}Endpoint.cs`, T.endpoint(s));
+      if (T.hasBody(s)) journal.create(`${d.endpoints}/${s.slice}Body.cs`, T.body(s));
+      journal.insert(`${d.endpoints}/EndpointTable.cs`, /(_ = app\.MapGroup\("[^"]*"\)[^;]*);/, `$1${T.endpointCall(s)};`, "NS-EDIT", `Map${s.slice}() (on the '_ = app.MapGroup(...)' chain)`);
     }
-    journal.insert(`${d.endpoints}/EndpointTable.cs`, /(_ = app\.MapGroup\("[^"]*"\)[^;]*);/, `$1${T.endpointCall(s)};`, "NS-EDIT", `Map${s.slice}() (on the '_ = app.MapGroup(...)' chain)`);
     for (const id of s.routeIds) {
       const rel = `${d.tests}/Ids/${id}RouteBindingTests.cs`;
       if (!journal.exists(rel)) journal.create(rel, T.routeBindingTests(s, { name: id, prim: s.requestIds.find((r) => r.name === id).prim }));
     }
   }
-  if (s.surface !== "none") {
-    journal.insert(d.json, /(\n(?:internal|public) sealed partial class)/, `\n${jsonTypes.map((t) => `[JsonSerializable(typeof(${t}))]`).join("\n")}$1`, "NS-EDIT", "the slice's [JsonSerializable] lines (above the context class)");
-    journal.edit(d.json, (text) => addUsings(text, jsonUsings));
+  if (s.surface !== "none" && !sliceOnly) {
+    const { types, usings } = jsonEntries(s);
+    journal.insert(d.json, /(\n(?:internal|public) sealed partial class)/, `\n${types.map((t) => `[JsonSerializable(typeof(${t}))]`).join("\n")}$1`, "NS-EDIT", "the slice's [JsonSerializable] lines (above the context class)");
+    journal.edit(d.json, (text) => addUsings(text, usings));
   }
 
   journal.create(`${d.tests}/${s.slice}/${s.slice}Tests.cs`, T.redTest(s));
@@ -216,6 +241,23 @@ export function writeSlice(journal, s) {
 async function sliceApi(journal, s, log) {
   if (s.ids.some((i) => i.isNew) || s.newPorts.length > 0) await declarePublicApi(journal, s.dirs.coreProject, log);
   if (s.dirs.featuresProject) await declarePublicApi(journal, s.dirs.featuresProject, log);
+}
+
+/** --slice-only: the lines the normal mode would have added at each shared anchor, for the implementer's branch. */
+export function sharedLines(s) {
+  const d = s.dirs;
+  const out = ["Shared lines to add in your branch (--slice-only left these files alone):"];
+  out.push(`  ${d.registration}, before 'return services;' (usings Aw.Kernel.Services, ${s.featuresNs}):`, T.registration(s).trimEnd());
+  if (s.surface === "cli") out.push(`  ${d.commands}/CommandTable.cs, above '_ => CommandOutput.Usage':`, T.commandArm(s).trimEnd());
+  if (s.surface === "http") out.push(`  ${d.endpoints}/EndpointTable.cs, on the '_ = app.MapGroup(...)' chain:`, `        ${T.endpointCall(s)}`);
+  if (s.surface !== "none") {
+    const { types, usings } = jsonEntries(s);
+    out.push(`  ${d.json}, above the context class (usings ${usings.join(", ")}):`, ...types.map((t) => `[JsonSerializable(typeof(${t}))]`));
+  }
+  const hand = s.surface === "cli" ? [`${d.commands}/${s.slice}Command.cs`] : s.surface === "http" ? [`${d.endpoints}/${s.slice}Endpoint.cs`, ...(T.hasBody(s) ? [`${d.endpoints}/${s.slice}Body.cs`] : [])] : [];
+  if (hand.length) out.push(`  Write by hand: ${hand.join(", ")} (the normal mode's templates are in scripts/scaffold/lib/slice-templates.mjs).`);
+  out.push(`  For Sindri: mark ${s.slice}Request ICommand<${s.slice}Response> or IQuery<${s.slice}Response>, and register it with AddCommand or AddQuery in place of the block above (spec §12).`);
+  return out.join("\n");
 }
 
 export const nextSteps = (s) =>
@@ -231,7 +273,7 @@ export const nextSteps = (s) =>
 async function main(argv) {
   let input;
   try {
-    input = parseArgs(argv, KNOWN, ["filesOnly"]);
+    input = parseArgs(argv, KNOWN, ["filesOnly", "sliceOnly"]);
   } catch (e) {
     if (e instanceof UsageError) {
       console.error(`new-slice: ${e.message}`);
@@ -246,7 +288,7 @@ async function main(argv) {
   const untrap = trapSignals(log);
   try {
     const s = resolveSlice(journal, input);
-    writeSlice(journal, s);
+    writeSlice(journal, s, { sliceOnly: input.sliceOnly === true });
     if (!input.filesOnly) {
       await withHeavyLock(async () => {
         await sliceApi(journal, s, log);
@@ -258,6 +300,7 @@ async function main(argv) {
     }
     console.log(`new-slice: wrote ${journal.touched().length} files for ${s.pkg}.${s.slice}`);
     for (const f of journal.touched()) console.log(`  ${f}`);
+    if (input.sliceOnly) console.log(sharedLines(s));
     console.log(`Commit: test: red ${s.slice} test (${s.behavior})`);
     console.log(nextSteps(s));
     return 0;
