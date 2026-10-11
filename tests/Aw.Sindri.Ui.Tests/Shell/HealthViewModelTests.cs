@@ -1,22 +1,23 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Shell;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Aw.Sindri.Ui.Tests.Main;
+namespace Aw.Sindri.Ui.Tests.Shell;
 
 [Lane(TestLane.Unit)]
-public sealed class MainViewModelTests : IDisposable
+public sealed class HealthViewModelTests : IDisposable
 {
     private readonly InMemoryEndpointRecords _records = new();
     private readonly FakeSindriApi _server = new();
     private readonly FakeTimeProvider _clock = new(A.Noon);
     private readonly CancellationTokenSource _stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-    private readonly MainViewModel _vm;
+    private readonly HealthViewModel _vm;
 
-    public MainViewModelTests()
+    public HealthViewModelTests()
     {
-        _vm = new MainViewModel(_records, _server, _clock);
+        _vm = new HealthViewModel(_records, _server, _clock);
     }
 
     private Task _run = Task.CompletedTask;
@@ -156,7 +157,7 @@ public sealed class MainViewModelTests : IDisposable
         _records.Write(A.Record(epoch: 8));
         await Eventually(() =>
         {
-            _clock.Advance(MainViewModel.RetryEvery);
+            _clock.Advance(HealthViewModel.RetryEvery);
             return _vm.Lease == "pid 4242 · epoch 8";
         }, "reconnected");
         Assert.Equal(30, _server.StreamCursors[^1]);
@@ -176,7 +177,7 @@ public sealed class MainViewModelTests : IDisposable
 
         await Eventually(() =>
         {
-            _clock.Advance(MainViewModel.RetryEvery);
+            _clock.Advance(HealthViewModel.RetryEvery);
             return _vm.Lease == "pid 5151 · epoch 8";
         }, "followed the new endpoint");
         Assert.Equal("127.0.0.1:7493", _vm.Api);
@@ -198,7 +199,7 @@ public sealed class MainViewModelTests : IDisposable
 
         await Eventually(() =>
         {
-            _clock.Advance(MainViewModel.RetryEvery);
+            _clock.Advance(HealthViewModel.RetryEvery);
             return _server.StreamCursors.Count > streams && _vm.Headline == "Running";
         }, "reopened the stream");
     }
@@ -245,7 +246,7 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Contains("Access to the path is denied.", _vm.Reason, StringComparison.Ordinal);
         await Eventually(() =>
         {
-            _clock.Advance(MainViewModel.RetryEvery);
+            _clock.Advance(HealthViewModel.RetryEvery);
             return _vm.Headline == "Running";
         }, "recovered on the next try");
     }
@@ -263,7 +264,7 @@ public sealed class MainViewModelTests : IDisposable
         _server.Current = A.Status(epoch: 1);
         await Eventually(() =>
         {
-            _clock.Advance(MainViewModel.RetryEvery);
+            _clock.Advance(HealthViewModel.RetryEvery);
             return _vm.Lease == "pid 4242 · epoch 1";
         }, "reconnected to the new ledger");
         Assert.Equal(0, _server.StreamCursors[^1]);
@@ -282,7 +283,7 @@ public sealed class MainViewModelTests : IDisposable
 
         await Eventually(() =>
         {
-            _clock.Advance(MainViewModel.RetryEvery);
+            _clock.Advance(HealthViewModel.RetryEvery);
             return _server.StreamCursors.Count >= 2;
         }, "reconnected once the wait ended");
     }
@@ -312,7 +313,7 @@ public sealed class MainViewModelTests : IDisposable
         _records.Write(A.Record(pid: 5151, epoch: 1));
         await Eventually(() =>
         {
-            _clock.Advance(MainViewModel.RetryEvery);
+            _clock.Advance(HealthViewModel.RetryEvery);
             return _vm.Lease == "pid 5151 · epoch 1";
         }, "followed the new process");
         Assert.Equal(0, _server.StreamCursors[^1]);
@@ -352,7 +353,7 @@ public sealed class MainViewModelTests : IDisposable
         _records.FailNextRead(new UnauthorizedAccessException("Access to the path is denied."));
         await Eventually(() =>
         {
-            _clock.Advance(MainViewModel.RetryEvery);
+            _clock.Advance(HealthViewModel.RetryEvery);
             return _vm.Headline == "Running" && _server.StreamCursors.Count >= 2;
         }, "the watcher ended the follow and the app reconnected");
     }

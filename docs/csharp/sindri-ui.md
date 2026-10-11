@@ -10,7 +10,7 @@ Sindri's handlers (factory addendum §17.27.1). Nothing installs it before the s
 
 | Project | Holds |
 |---|---|
-| `src/Sindri/Aw.Sindri.Ui` | The views (`SindriApp`, `MainWindow`), the view model, the typed client of Sindri's HTTP API, and the ports for platform services |
+| `src/Sindri/Aw.Sindri.Ui` | The views (`SindriApp`, the shell under `Views/Shell`), the view models, the typed client of Sindri's HTTP API, and the ports for platform services |
 | `src/Sindri/Aw.Sindri.Ui.Desktop` | The thin desktop head: `Main`, the composition and one adapter per port. NativeAOT binary `sindri-ui`. No views or view models |
 
 - **No Sindri project reference.** The app reaches Sindri only through its HTTP contract (`docs/csharp/sindri.md`
@@ -22,9 +22,9 @@ Sindri's handlers (factory addendum §17.27.1). Nothing installs it before the s
 - **Compiled bindings only.** `AvaloniaUseCompiledBindingsByDefault=true`, `x:DataType` on the window and every
   template, no `ReflectionBinding`, so the head publishes under NativeAOT.
 - **View models carry no Avalonia types** (plain C#, `INotifyPropertyChanged`), so they test in the unit lane.
-- **Hand composition, no container.** The app has one view model and one client; the head builds its adapter and hands it to
-  `SindriApp.Create(records, clock)`, which builds the view model and the API client (a loopback `HttpClient` that never
-  uses a proxy). A service locator outside a Host would fail `ARCH-DI-001`.
+- **Hand composition, no container.** The app has a handful of view models and one client; the head builds its adapters
+  and hands them to `SindriApp.Create(platform, clock)`, which builds the shell view model and the API client (a loopback
+  `HttpClient` that never uses a proxy). A service locator outside a Host would fail `ARCH-DI-001`.
 - **Packages.** MIT Avalonia packages only, all `[12.1.3]`: `Avalonia`, `Avalonia.Themes.Fluent`, `Avalonia.Fonts.Inter`
   (the library), `Avalonia.Desktop` (the head), `Avalonia.Headless` and `Avalonia.Skia` (tests).
 
@@ -70,10 +70,29 @@ defaults.
 **The caller headers** `X-Sindri-Caller: human` and `X-Sindri-Client: ui` go on every request (§9.1), and the status
 carries `apiVersion` from API P1 (`SindriApiClient.AppApiVersion` is 1; absent means no mismatch).
 
-**The shell** (`ViewModels/Shell/ShellViewModel`: navigation, Later ▾, pages, `ShellState` for §4.1's pre-API states,
-the health pill, the sheet and its edge tab, the attention band) is a stub with red tests in
-`tests/Aw.Sindri.Ui.Tests/Shell/ShellViewModelTests.cs`. They are `Explicit` (xUnit1004 forbids `Skip`) until Unit A
-implements the shell; `dotnet test --project tests/Aw.Sindri.Ui.Tests --explicit only` runs them.
+**The shell** (UI spec §3.2, §4.1; `Views/Shell/ShellWindow` over `ViewModels/Shell/ShellViewModel`) replaces S1b's
+window. `SindriApp.Create(SindriPlatform, TimeProvider)` builds the view model over the head's endpoint record and
+preferences store, restores the preferences (window bounds, sheet width, last page), then shows the window and follows
+the control plane; the platform wiring (tray, single instance, close-to-tray) receives the window through the partial
+`ShellOpened` hook. S1b's `Create(records, clock)` stays for the head until it passes its `SindriPlatform`, with
+preferences kept for the run only.
+
+| Part | What it shows |
+|---|---|
+| Top bar (48 px) | Brand; Home · Queue · Decisions · Services (counts empty until their routes); Later ▾ (Agents, Repos, Today, Automatic work, each "not served yet"); the ⌘K field, inert until U1; the health pill, which opens Health |
+| Home | The page title and four frames (Needs you, Running · With you, Queued, Sindri health), each "not served yet" |
+| Queue, Decisions, Services, Settings | The title and "not served yet"; Settings is the slot `Views/Settings*` fills (⌘, opens it) |
+| Health | S1b's status card (`HealthViewModel`: lease, API, profile, services, last event) |
+| Detail sheet | A deep link's subject over the page at the right, 520 px (420–760, dragged by its left edge and remembered); Esc closes it and leaves an edge tab that reopens it; below 1100 px it covers the page with a Back button and focus moves to its heading |
+
+The pre-API states (`ShellState`, highest first): **version mismatch** (the status's `apiVersion` differs from
+`AppApiVersion`: a full-window panel with both versions and "quit both and run sindri", no top bar), **not running**
+(S1b's panel and reasons), **connecting** (skeleton rows, first load only), **unreadable** (`SND-UI-003`: a banner with
+the code and `sindri doctor`; the page keeps its last data and the pill reads "Unreadable · stale"), **stale** (30 s
+without an event or a status, on the injected clock: the pill reads "Running · stale"; otherwise "Running · updated Ns
+ago", re-worded every second). The view models carry no Avalonia types; views bind the app's copy through
+`ShellText` (compiled bindings resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar,
+page and sheet; the window's minimum is 900 × 600.
 
 ## How it finds the control plane
 
@@ -88,11 +107,11 @@ implements the shell; `dotnet test --project tests/Aw.Sindri.Ui.Tests --explicit
    control plane can hold its stream open), the app looks again, every 2 s while nothing answers. A record the
    platform can't read, or one with a relative `url`, reads as "can't be read" with the reason, and the app keeps trying.
 
-## What the window shows
+## What the Health page shows
 
 | Part | From the status record | Words |
 |---|---|---|
-| State pill | `running` | `Running`, `Not running` (with the reason and `sindri` as the fix), `Connecting` |
+| State pill | `running` | `Running`, `Not running` (with the reason and `sindri` as the fix), `Connecting…` |
 | Lease | `pid`, `epoch` | `pid 4242 · epoch 7`, and the API's `127.0.0.1:<port>` |
 | Profile | `profile.approved`, `live`, `changedSinceApproval`, `problem`, `source` | `approved` · `changed since approval` · `not approved` · `unreadable`, with the hash and file |
 | Profile fix | `profile.needsApproval` (Sindri's verdict; the app doesn't derive it) | `sindri profile approve` when set |
@@ -133,7 +152,7 @@ The app shows each as words in the window, never a dialog or a crash.
 | Lane | What |
 |---|---|
 | unit | The view model against the in-memory API and endpoint record; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; the control.json path; the theme (tokens, contrast, Fluent values, no hex outside `Theme/`); the port contracts over their fakes; preferences, deep links, labels |
-| integration | The window under Avalonia's headless platform (Skia rendering; frames saved under the test output's `frames/`); the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the control.json adapter against a temp directory (the endpoint-record contract) |
+| integration | The shell window under Avalonia's headless platform (Skia rendering), one key frame per pre-API state plus Health, the sheet, its edge tab and its covering form, saved as `frames/shell-*.png` under the test output (`artifacts/bin/Aw.Sindri.Ui.Tests/debug/frames/`); F6, Esc and ⌘,; the remembered bounds; the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the control.json adapter against a temp directory (the endpoint-record contract) |
 
 `Avalonia.Headless.XUnit` 12.1.3 is compiled against xUnit v3 3.2.2 and fails discovery under the repo's xUnit v3 4.0.1
 (`MissingMethodException` in `TestIntrospectionHelper.GetTestCaseDetails`). The view tests are plain xUnit v3 facts that

@@ -50,6 +50,65 @@ internal static class Labels
     /// <summary>The ⌘K field's placeholder (functional from U1).</summary>
     internal const string Search = "Search or run a command";
 
+    // The shell's chrome (§3.2; U0 Unit A). Eyebrows are written in capitals (Avalonia has no text-transform).
+
+    /// <summary>The brand mark's name.</summary>
+    internal const string Sindri = "Sindri";
+
+    /// <summary>The ⌘K field's key chip.</summary>
+    internal const string SearchKey = "⌘K";
+
+    /// <summary>Home's Needs you panel.</summary>
+    internal const string NeedsYouPanel = "NEEDS YOU";
+
+    /// <summary>Home's Running and With you panel.</summary>
+    internal const string RunningPanel = "RUNNING · WITH YOU";
+
+    /// <summary>Home's Queued panel.</summary>
+    internal const string QueuedPanel = "QUEUED";
+
+    /// <summary>Home's health strip.</summary>
+    internal const string HealthPanel = "SINDRI HEALTH";
+
+    /// <summary>The Health page's process card.</summary>
+    internal const string ControlPlaneCard = "CONTROL PLANE";
+
+    /// <summary>The Health page's lease card.</summary>
+    internal const string LeaseCard = "LEASE";
+
+    /// <summary>The Health page's profile card.</summary>
+    internal const string ProfileCard = "PROFILE";
+
+    /// <summary>The Health page's services card.</summary>
+    internal const string ServicesCard = "SERVICES";
+
+    /// <summary>The Health page's last-event card.</summary>
+    internal const string LastEventCard = "LAST EVENT";
+
+    /// <summary>The services card with none scheduled.</summary>
+    internal const string NoServices = "none scheduled (the approved profile names no services)";
+
+    /// <summary>The not-running panel's fix prompt.</summary>
+    internal const string StartIt = "Start it:";
+
+    /// <summary>The unreadable banner's fix prompt.</summary>
+    internal const string CheckIt = "Check it:";
+
+    /// <summary>The detail sheet's close button.</summary>
+    internal const string CloseSheet = "Close";
+
+    /// <summary>The detail sheet's back button, when it covers the page (below 1100 px).</summary>
+    internal const string Back = "Back";
+
+    /// <summary>The closed sheet's edge tab, before its subject.</summary>
+    internal const string Reopen = "Reopen";
+
+    /// <summary>The detail sheet's resize grip.</summary>
+    internal const string Sheet = "Detail sheet width";
+
+    /// <summary>The top bar's navigation.</summary>
+    internal const string Pages = "Pages";
+
     // The states before the API answers (§4.1).
 
     /// <summary>First load, before /status answers.</summary>
@@ -78,6 +137,9 @@ internal static class Labels
 
     /// <summary>The freshness word after 30 s with no event or ping.</summary>
     internal const string Stale = "stale";
+
+    /// <summary>The health pill's word for SND-UI-003, an answer this build can't read (§4.1 Unreadable).</summary>
+    internal const string Unreadable = "Unreadable";
 
     /// <summary>The control plane answers but holds no lease.</summary>
     internal const string NoLease = "the control plane answers but holds no lease";
