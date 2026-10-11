@@ -330,22 +330,22 @@ edges:
   - from: Judge
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, IService, ports"
   - from: Judge
     to: KernelData
     kind: project
-    status: planned
+    status: current
     note: "decisions.sqlite"
   - from: Judge
     to: KernelTelemetry
     kind: project
-    status: planned
+    status: current
     note: "logging"
   - from: Judge
     to: Redaction
     kind: project
-    status: planned
+    status: current
     note: "replaces judge's copy of the scrubbing patterns"
   - from: Packets
     to: Kernel
