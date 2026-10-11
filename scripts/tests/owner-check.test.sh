@@ -201,6 +201,14 @@ set +e; OUT="$(cd "$T/wt-feature" && bash "$REPO/scripts/owner-check.sh" s-x up 
 check "without --repo the header is the main checkout's name, also from a linked worktree" '[ "$CODE" = 0 ] && grep -q "\"X-Sindri-Repo\": \"work-repo\"" "$OC_SCRATCH/mcp.json"'
 run s-x down
 
+tr -d '\r' < "$T/profile.orig" | sed 's/$/\r/' > "$T/crlf.yaml"
+AW_SINDRI_PROFILE="$T/crlf.yaml" run s-x up
+check "a CRLF profile is edited too (labeling turned off)" '[ "$CODE" = 0 ] && ! grep -q $'"'"'\r'"'"' "$P" && awk "/^  labeling:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | grep -qx false'
+run s-x down
+
+AW_SINDRI_HOME="$STATE/sindri-app-ownercheck-s-other" run s-x up
+expect "another stage's owner-check home is never taken for the real one" 2 "an owner-check home"
+
 printf 'schemaVersion: 1\nuser: owner\n' > "$T/bare.yaml"
 AW_SINDRI_PROFILE="$T/bare.yaml" run s-x up --session --services context-sync --repo work-repo
 expect "a service the check names but the profile lacks is refused" 2 "context-sync"

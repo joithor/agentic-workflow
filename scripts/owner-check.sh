@@ -71,7 +71,10 @@ scratch="$state/sindri-ownercheck-$stage"
 bin="$scratch/bin/sindri"
 # up reads the real home; AW_SINDRI_HOME set to the owner-check home (the export line up prints) would make it read the
 # scratch one. down never reads the real home, so it runs from that shell too.
-[ "$action" = down ] || [ "$home" != "$real_home" ] || die "AW_SINDRI_HOME points at the owner-check home $home; unset it (the real home is read, never used)"
+if [ "$action" = up ]; then
+  case "$real_home/" in */sindri-app-ownercheck-*/*) die "AW_SINDRI_HOME points at an owner-check home ($real_home); unset it (the real home is read, never used)" ;; esac
+  case "$real_profile" in */sindri-app-ownercheck-*/*) die "AW_SINDRI_PROFILE points into an owner-check home ($real_profile); unset it" ;; esac
+fi
 
 bounded() { perl -e 'alarm shift; exec @ARGV or die "exec $ARGV[0]: $!"' 30 "$@"; }   # SIGALRM after 30 s
 listening() { (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; }
@@ -171,7 +174,8 @@ up() {
   # Step 4's profile edits, tried first on a temp copy: a profile they can't edit stops here, before the build and export.
   edited="$(mktemp "${TMPDIR:-/tmp}/owner-check-profile.XXXXXX")" || die "can't make a temp file"
   trap 'rm -f "$edited" "$edited.new"' EXIT
-  cp "$real_profile" "$edited" && chmod 600 "$edited" || die "can't copy the real profile: $real_profile"
+  # CRLF stripped: the edits match keys line by line, and a key ending in \r would slip past them.
+  tr -d '\r' <"$real_profile" >"$edited" && chmod 600 "$edited" || die "can't copy the real profile: $real_profile"
   edit_profile "$edited"
 
   echo "== 1. build (src/Sindri/aot-smoke/run.sh)"
@@ -189,7 +193,7 @@ up() {
   if [ "$seed" = 1 ]; then
     echo "== 3. seed export from the real home (merged build)"
     env -u AW_SINDRI_PORT AW_SINDRI_HOME="$real_home" "${main[@]}" context map export "$home/seed.json" \
-      || broke "step 3: the export failed"
+      || { rm -f "$home/seed.json"; broke "step 3: the export failed; then scripts/owner-check.sh $stage down"; }
   fi
 
   echo "== 4. profile, start, approve"
@@ -202,11 +206,11 @@ up() {
   hash="$({ bounded "${in_scratch[@]}" "$bin" profile validate --json || true; } | sed -nE 's/.*"hash":"([0-9a-f]{64})".*/\1/p')"
   [ -n "$hash" ] || broke "step 4: profile validate gave no hash; run: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin profile validate"
   echo "-- approve at this terminal: type the first 6 characters of the hash when asked"
-  "${in_scratch[@]}" "$bin" profile approve "$hash" || broke "step 4: approval failed; retry: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin profile approve $hash"
+  "${in_scratch[@]}" "$bin" profile approve "$hash" || broke "step 4: approval failed; retry: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin profile approve $hash, or scripts/owner-check.sh $stage down"
   if [ "$seed" = 1 ]; then
     echo "-- import the seed at this terminal"
     "${in_scratch[@]}" "$bin" context map import "$home/seed.json" \
-      || broke "step 4: import failed; retry: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin context map import $home/seed.json"
+      || broke "step 4: import failed; retry: AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $bin context map import $home/seed.json, or scripts/owner-check.sh $stage down"
   fi
 
   if [ "$session" = 1 ]; then
