@@ -58,6 +58,26 @@ takes the ring, the darker primary hover and pressed fills, and `semantic-error`
 A head hands its adapters to `SindriApp.Create(SindriPlatform, TimeProvider)` (`SindriPlatform` bundles them, so a
 new port doesn't change the signature).
 
+**The desktop adapters** (`Aw.Sindri.Ui.Desktop`, Unit B) keep the app's own files in a `ui/` directory of Sindri's home
+(the directory `ControlFilePath` resolves; `UiStatePaths`), created 0700, every file in it 0600 (`OwnerOnly`; on
+Windows the profile's ACLs do it):
+
+| Adapter | How |
+|---|---|
+| `FilePreferencesStore` | `ui/preferences.json`; a write goes to a new 0600 temp file beside it, flushed to disk, then renamed over it |
+| `SocketSingleInstance` | The claim is an exclusive lock on `ui/instance.lock` (the OS drops it when the process dies, so a crash leaves no claim); its holder removes a crashed instance's `ui/instance.sock` and listens there (a Unix domain socket, 0600; AF_UNIX on Windows 10 and later too; when the path won't fit sun_path's 104 bytes, as in a deep temp home, the socket goes to `$TMPDIR/sindri-ui-<hash of the path>/`, 0700). A later launch writes one UTF-8 message and reads one byte back (1 taken, 0 refused); the listener refuses an empty message, one over 512 characters or one that isn't UTF-8, and gives a sender 2 s |
+| `SingleLaunch` | `Program` claims before Avalonia starts; a later launch sends `focus` (or its one argument when it is a deep link, `sindri://` optional) and exits 0, or 1 when the holder doesn't answer |
+| `AvaloniaTray` | Avalonia's `TrayIcon`, created on the first `Show` and registered with the app; `TrayMarks` draws Sindri's mark in the theme's Ink, filled (Neutral), hollow (Stale) and hollow struck through (NotRunning), as macOS template images; menu labels double each `_` |
+| `PolledMotionPreference` | The OS reader at start and every 2 s on the injected `TimeProvider`: macOS `NSWorkspace.accessibilityDisplayShouldReduceMotion` through `objc_msgSend` (`MacMotion`), Windows `SPI_GETCLIENTAREAANIMATION` (`WindowsMotion`), GNOME `gsettings get org.gnome.desktop.interface enable-animations` (`GnomeMotion`; no gsettings, a failure or a hang past 1 s reads as off) |
+
+`Views/AppLifetime` (in the app, so every desktop head shares it) is the window's life around these: closing the
+window hides it (the app stays in the tray; an OS or app shutdown still closes it), the tray's Open brings it
+forward and Quit ends the app (`ShutdownMode.OnExplicitShutdown`), the tray follows `ShellState` (Normal: Neutral,
+"Sindri · running"; NotRunning: NotRunning; every other state: Stale, "Sindri not responding"), and an instance message
+is either `focus` (bring forward) or a `DeepLink` (bring forward, then the shell's `Navigate`); anything else is ignored,
+and no message runs an action. `AppLifetime.Start(desktop, window, platform, shell)` wires it in `SindriApp` once the
+shell exists.
+
 **Preferences** (§12.3) are `UiPreferences`: `version` (1), `window` (x, y, width, height), `sheetWidth`, `lastPage`,
 `seenIds`, `paletteHistory`, `textScale`, `reduceMotion`, camelCase JSON. A head's store only moves bytes; the app's
 `ViewModels/Preferences` (`Load`, `Save`) parses and writes them through `Api/PreferencesJson`, so clamping is the same
@@ -129,7 +149,7 @@ the one `AW_SINDRI_UI` names, started detached (`exec nohup`, no pipes to the te
 what happened: `opened (sindri-ui, pid N)`, or `not found at <path>` with the fix. `sindri --headless` opens nothing and
 prints no `ui` line. A relative `AW_SINDRI_UI` is resolved against the working directory before it is checked, and a file
 without an execute bit reads `not executable at <path>` with the fix. Opening the app never changes `sindri`'s exit
-code. Each bare `sindri` opens a window; the app is not single-instance yet.
+code. A second `sindri-ui` hands over to the running one (`focus`) and exits, so a bare `sindri` while the app runs brings its window forward.
 
 **Not a declared edge (owner question, PR #168).** Starting `sindri-ui` from `sindri` is a `Sindri -> SindriUi` cli
 dependency by `deps.yaml`'s definition, but declaring it would close a cycle with the `SindriUi -> Sindri` http edge
@@ -152,7 +172,7 @@ The app shows each as words in the window, never a dialog or a crash.
 | Lane | What |
 |---|---|
 | unit | The view model against the in-memory API and endpoint record; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; the control.json path; the theme (tokens, contrast, Fluent values, no hex outside `Theme/`); the port contracts over their fakes; preferences, deep links, labels |
-| integration | The shell window under Avalonia's headless platform (Skia rendering), one key frame per pre-API state plus Health, the sheet, its edge tab and its covering form, saved as `frames/shell-*.png` under the test output (`artifacts/bin/Aw.Sindri.Ui.Tests/debug/frames/`); F6, Esc and ⌘,; the remembered bounds; the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the control.json adapter against a temp directory (the endpoint-record contract) |
+| integration | The shell window under Avalonia's headless platform (Skia rendering), one key frame per pre-API state plus Health, the sheet, its edge tab and its covering form, saved as `frames/shell-*.png` under the test output (`artifacts/bin/Aw.Sindri.Ui.Tests/debug/frames/`); F6, Esc and ⌘,; the remembered bounds; the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the head's adapters against temp directories (the endpoint-record, preferences, single-instance and tray contracts, owner-only modes, a crashed instance's socket, the listener's checks), the OS motion readers read-only (GNOME over a stand-in gsettings, macOS against `defaults read com.apple.universalaccess reduceMotion`), and `AppLifetime` on a headless window |
 
 `Avalonia.Headless.XUnit` 12.1.3 is compiled against xUnit v3 3.2.2 and fails discovery under the repo's xUnit v3 4.0.1
 (`MissingMethodException` in `TestIntrospectionHelper.GetTestCaseDetails`). The view tests are plain xUnit v3 facts that
