@@ -1,6 +1,7 @@
 using Aw.Judge.Core.Decisions;
 using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Core.Providers;
+using Aw.Judge.Infrastructure.Providers;
 using Aw.Judge.Testing;
 using Aw.Kernel.Testing;
 using static Aw.Judge.Tests.Evaluation.EvaluatorHarness;
@@ -105,7 +106,8 @@ public sealed class QuestionEvaluatorTests
     {
         var harness = new EvaluatorHarness();
 
-        var outcome = await harness.Run(A.Question().Build(), Text("hmm"), Jev().Throws(), Cli().Decides("send", 1));
+        // The boundary decorator the catalog puts around each adapter turns the throw into a result.
+        var outcome = await harness.Run(A.Question().Build(), Text("hmm"), new FailOpenModelProvider(Jev().Throws()), Cli().Decides("send", 1));
 
         Assert.Equal(new DecidedOutcome("send", 1, ProviderName.ClaudeCli, "model", FirstId), outcome);
         Assert.Equal([new SkippedProvider("jev", SkipReason.Failed)], harness.Row.Skipped);

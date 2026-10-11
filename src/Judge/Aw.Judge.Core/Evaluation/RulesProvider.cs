@@ -23,6 +23,9 @@ public sealed class RulesProvider : IModelProvider
     public IReadOnlySet<ContentClass> Classes { get; } = new HashSet<ContentClass>(ContentClasses.All);
 
     /// <inheritdoc />
-    public ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<ProviderResult>(_unavailable);
+    public ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult<ProviderResult>(_unavailable);
+    }
 }

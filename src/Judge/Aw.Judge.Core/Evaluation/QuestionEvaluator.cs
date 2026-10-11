@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -179,14 +178,7 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
         {
             var provider = candidates[i];
             var start = clock.GetTimestamp();
-            var result = await Ask(provider, reference, run.Input, question.TimeBudget, cancellationToken).ConfigureAwait(false);
-            if (result is null)
-            {
-                await Fail(question.Name, provider.Name, EvaluationReasons.ProviderThrew, cancellationToken).ConfigureAwait(false);
-                run.Skip(provider.Name, SkipReason.Failed);
-                continue;
-            }
-
+            var result = await provider.Decide(reference, run.Input, question.TimeBudget, cancellationToken).ConfigureAwait(false);
             var latencyMs = (long)clock.GetElapsedTime(start).TotalMilliseconds;
             var answer = new ProviderAnswer(provider.Name, i, latencyMs, result);
             var settlement = await Step(question, input, run, answer, cancellationToken).ConfigureAwait(false);
@@ -254,19 +246,5 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
             RulesOpinion = opinion,
             Agreement = agreement,
         };
-    }
-
-    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "A provider that throws is a recorded 'provider-threw' failure and the chain moves on (TS evaluate); cancellation still propagates.")]
-    private static async ValueTask<ProviderResult?> Ask(
-        IModelProvider provider, QuestionRef reference, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await provider.Decide(reference, input, budget, cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception) when (!cancellationToken.IsCancellationRequested)
-        {
-            return null;
-        }
     }
 }

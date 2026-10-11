@@ -24,9 +24,6 @@ public static class EvaluationReasons
     /// <summary>A question rule (input check, pre-rule, prompt or fallback) hit its regex match timeout; failure row and escalation.</summary>
     public const string RuleTimeout = "rule-timeout";
 
-    /// <summary>Failure row: the provider threw.</summary>
-    public const string ProviderThrew = "provider-threw";
-
     /// <summary>Failure row: the provider answered outside the question's outputs.</summary>
     public const string OutOfEnum = "out-of-enum";
 

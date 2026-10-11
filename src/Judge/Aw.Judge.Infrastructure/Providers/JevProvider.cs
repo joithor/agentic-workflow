@@ -37,6 +37,7 @@ internal sealed class JevProvider(HttpClient http, ISecretSource secrets) : IMod
     public async ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(question);
+        cancellationToken.ThrowIfCancellationRequested();
         if (question.Outputs.Count > MaxOptions)
         {
             return new ProviderErrored(ProviderReasons.TooManyOptions);

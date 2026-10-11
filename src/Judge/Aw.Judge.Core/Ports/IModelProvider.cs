@@ -13,9 +13,11 @@ public interface IModelProvider
     public IReadOnlySet<ContentClass> Classes { get; }
 
     /// <summary>
-    /// Asks the question. A provider that runs past <paramref name="budget"/> stops and returns
-    /// <see cref="ProviderUnavailable"/> with reason <see cref="ProviderUnavailable.Timeout"/>; a throw is recorded as
-    /// 'provider-threw' and the chain moves on.
+    /// Asks the question. Every outcome is a result: an answer within the question's outputs is
+    /// <see cref="ProviderDecided"/>, one outside them is <see cref="ProviderErrored"/> ('out-of-enum'), a backend that fails
+    /// is errored or <see cref="ProviderUnavailable"/>, and a provider that runs past <paramref name="budget"/> stops
+    /// and is unavailable with reason <see cref="ProviderUnavailable.Timeout"/>. It never throws, except
+    /// OperationCanceledException for <paramref name="cancellationToken"/> (ModelProviderContract).
     /// </summary>
     /// <param name="question">The question, with the prompt built for this input.</param>
     /// <param name="input">The validated input (JSON null as null).</param>

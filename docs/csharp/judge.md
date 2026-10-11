@@ -33,7 +33,7 @@ the root holds only `AddJudgeCore()`.
 | `IJudgeConfigStore` | `FileJudgeConfigStore` (`config.json`) | `InMemoryJudgeConfigStore`, `JudgeConfigStoreContract` |
 | `IInputRedactor` | `AwInputRedactor` (over `Aw.Redaction`) | `FakeInputRedactor`, `InputRedactorContract` |
 | `IExecutableLocator` | `PathExecutableLocator` (`PATH` lookup for the agent CLIs) | `FakeExecutableLocator`, `ExecutableLocatorContract` |
-| `IModelProvider` | `ClaudeCliProvider`, `CodexCliProvider`, `CursorCliProvider`, `JevProvider` (Providers below); rules is the engine's own `RulesProvider` | `ScriptedProvider` |
+| `IModelProvider` | `ClaudeCliProvider`, `CodexCliProvider`, `CursorCliProvider`, `JevProvider` (Providers below); rules is the engine's own `RulesProvider` | `ScriptedProvider`, `ModelProviderContract` (all five adapters and the fake) |
 | `IProviderCatalog` | `ProviderCatalog` (the lineup from `config.json`, `AW_PROVIDER` and `PATH`) | `FakeProviderCatalog`, `ProviderCatalogContract` |
 | `IProcessRunner` | `SystemProcessRunner` (`System.Diagnostics.Process`) | `FakeProcessRunner` (runs `FakeProgram`s), `ProcessRunnerContract` |
 | `ISecretSource` | `KeychainSecretSource` (the variable, then the macOS keychain) | `FakeSecretSource`, `SecretSourceContract` |
@@ -190,8 +190,14 @@ The providers live in `Aw.Judge.Infrastructure/Providers/`; Composition reaches 
 2. Jev, unless `providers.jev` is false;
 3. the chain: text classes get Jev, the agent CLIs, then rules; image gets the agent CLIs, then rules
    (`ChainSpec.Build`); then the `--providers` / `AW_JUDGE_PROVIDERS` allowlist, which always keeps rules;
-4. the providers: one instance of each model provider the chain names, then the `rules` provider the caller passes
-   (the engine's own, which `AddJudgeCore` registers; the catalog doesn't make one).
+4. the providers: one instance of each model provider the chain names, each wrapped in `FailOpenModelProvider`, then
+   the `rules` provider the caller passes (the engine's own, which `AddJudgeCore` registers; the catalog doesn't make
+   one).
+
+`IModelProvider.Decide` never throws except `OperationCanceledException` for the caller's token: every outcome is a
+result (`ModelProviderContract`). The evaluator in Core relies on that and catches nothing; `FailOpenModelProvider` is
+the backstop at the boundary, so an adapter bug that throws anyway becomes errored `provider-threw` (a failure row)
+and the chain moves on.
 
 `AddJudgeInfrastructure` registers it (its `AddModelProviders` part) over one instance of each model provider: Jev
 (with its own `HttpClient`) and the three agent CLIs (over `IProcessRunner`). `AskQuestionService` calls it once per
@@ -250,6 +256,7 @@ failure row with the code.
 | unavailable | `network-error` | Jev | the API can't be reached (offline, DNS, refused) |
 | errored | `spawn-failed` | agent CLIs | the binary is there but the system refused to start it (argument list too long, not a program, no permission) |
 | errored | `exit-N` | agent CLIs | the CLI exited non-zero |
+| errored | `provider-threw` | any (the catalog's `FailOpenModelProvider`) | the adapter threw despite its contract (a bug) |
 | errored | `unparseable-output` | agent CLIs | stdout isn't the CLI's envelope (or event lines) |
 | errored | `unparseable-answer` | all | no JSON answer object with a string decision |
 | errored | `out-of-enum` | all | the decision isn't one of the outputs |

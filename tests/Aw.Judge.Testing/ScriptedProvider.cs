@@ -4,7 +4,11 @@ using Aw.Judge.Core.Providers;
 
 namespace Aw.Judge.Testing;
 
-/// <summary>The IModelProvider fake: answers from a script (a result or a throw per call; the last step repeats).</summary>
+/// <summary>
+/// The IModelProvider fake: answers from a script (a result or a throw per call; the last step repeats). Passes
+/// ModelProviderContract: a scripted decision outside the question's outputs comes back errored 'out-of-enum'. A
+/// scripted throw breaks the contract on purpose, for FailOpenModelProvider's tests.
+/// </summary>
 /// <param name="name">Which provider it plays.</param>
 /// <param name="classes">The classes it covers (message-meta when none are given).</param>
 public sealed class ScriptedProvider(ProviderName name, params ContentClass[] classes) : IModelProvider
@@ -49,6 +53,8 @@ public sealed class ScriptedProvider(ProviderName name, params ContentClass[] cl
     /// <inheritdoc />
     public ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(question);
+        cancellationToken.ThrowIfCancellationRequested();
         _calls.Add(new ProviderCall(question, input, budget));
         var step = _script.Count switch
         {
@@ -56,6 +62,10 @@ public sealed class ScriptedProvider(ProviderName name, params ContentClass[] cl
             1 => _script.Peek(),
             _ => _script.Dequeue(),
         };
-        return ValueTask.FromResult(step());
+        var result = step();
+        // Like every adapter (ModelProviderContract), a decision outside the outputs is errored, never decided.
+        return ValueTask.FromResult<ProviderResult>(result is ProviderDecided decided && !question.Outputs.Contains(decided.Decision, StringComparer.Ordinal)
+            ? new ProviderErrored("out-of-enum")
+            : result);
     }
 }

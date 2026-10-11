@@ -11,6 +11,9 @@ internal static class ProviderReasons
     /// <summary>Unavailable: the agent CLI's binary isn't installed.</summary>
     public const string NotInstalled = "not-installed";
 
+    /// <summary>Errored: the adapter threw (a bug in it; FailOpenModelProvider records it so the chain moves on).</summary>
+    public const string ProviderThrew = "provider-threw";
+
     /// <summary>Errored: the agent CLI is installed but the system refused to start it (argument limit, not a program, permissions).</summary>
     public const string SpawnFailed = "spawn-failed";
 

@@ -339,7 +339,6 @@ const Aw.Judge.Core.Evaluation.EvaluationReasons.NoProvider = "none" -> string!
 const Aw.Judge.Core.Evaluation.EvaluationReasons.NoProviderDecided = "no-provider-decided" -> string!
 const Aw.Judge.Core.Evaluation.EvaluationReasons.OutOfEnum = "out-of-enum" -> string!
 const Aw.Judge.Core.Evaluation.EvaluationReasons.PreRule = "pre-rule" -> string!
-const Aw.Judge.Core.Evaluation.EvaluationReasons.ProviderThrew = "provider-threw" -> string!
 const Aw.Judge.Core.Evaluation.EvaluationReasons.QuestionDisabled = "question-disabled" -> string!
 const Aw.Judge.Core.Evaluation.InputCap.MaxChars = 16000 -> int
 const Aw.Judge.Core.Evaluation.InputCap.StringLimit = 1000 -> int

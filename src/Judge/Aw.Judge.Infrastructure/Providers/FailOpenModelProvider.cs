@@ -1,10 +1,15 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 
 namespace Aw.Judge.Infrastructure.Providers;
 
-/// <summary>Stub: the boundary backstop around one adapter.</summary>
+/// <summary>
+/// The boundary backstop the catalog puts around each adapter: IModelProvider's contract says Decide never throws
+/// except for the caller's cancellation, so a throw that gets through anyway is an adapter bug, answered as errored
+/// ('provider-threw', a failure row) so the chain moves on and the hook still gets an answer.
+/// </summary>
 /// <param name="inner">The adapter.</param>
 internal sealed class FailOpenModelProvider(IModelProvider inner) : IModelProvider
 {
@@ -18,6 +23,16 @@ internal sealed class FailOpenModelProvider(IModelProvider inner) : IModelProvid
     public IReadOnlySet<ContentClass> Classes => Inner.Classes;
 
     /// <inheritdoc />
-    public ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken) =>
-        Inner.Decide(question, input, budget, cancellationToken);
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "The boundary backstop: any adapter bug becomes a recorded 'provider-threw' failure; the caller's cancellation still propagates.")]
+    public async ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await Inner.Decide(question, input, budget, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            return new ProviderErrored(ProviderReasons.ProviderThrew);
+        }
+    }
 }
