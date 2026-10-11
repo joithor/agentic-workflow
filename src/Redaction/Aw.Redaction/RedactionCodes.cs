@@ -11,7 +11,7 @@ public static class RedactionCodes
     /// repeated.</summary>
     public const string InvalidPatternId = "AW-REDACT-002";
 
-    /// <summary>A configured extra pattern is empty, too long, not a valid regex, or uses a Unicode-aware shorthand
-    /// (\d, \w, \s, \b) instead of an explicit ASCII class.</summary>
+    /// <summary>A configured extra pattern is empty, too long, not a valid regex, can match an empty text, or uses a
+    /// Unicode-aware shorthand (\d, \w, \s, \b, or a Unicode category \p{…}) instead of an explicit ASCII class.</summary>
     public const string InvalidPattern = "AW-REDACT-003";
 }

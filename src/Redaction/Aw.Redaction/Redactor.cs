@@ -21,9 +21,9 @@ public sealed class Redactor : IRedactor
     /// <paramref name="clock"/>, a whole scrub also gets a deadline (<see cref="ScanBudgetFactor"/>).</summary>
     internal Redactor(IReadOnlyList<RedactionRule> rules, TimeSpan matchTimeout, TimeProvider? clock = null)
     {
-        _clock = clock;
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(matchTimeout, TimeSpan.Zero);
         _rules = rules;
+        _clock = clock;
         _matchTimeout = Cap(matchTimeout.TotalMilliseconds);
         RuleIds = [.. rules.Select(r => r.Id).Distinct(StringComparer.Ordinal)];
         _secretName = new Regex(
@@ -52,8 +52,9 @@ public sealed class Redactor : IRedactor
     /// <summary>
     /// Creates a redactor over the built-in rules and <paramref name="extraPatterns"/> from configuration, each
     /// validated against Redaction's pattern rules and compiled with <paramref name="matchTimeout"/>; a match that
-    /// runs past it blocks, like a built-in rule's. Configured patterns aren't reviewed to stay linear, so a whole scrub
-    /// also blocks once it runs past <see cref="ScanBudgetFactor"/> times its match timeout on <paramref name="clock"/>.
+    /// runs past it blocks, like a built-in rule's. Configured patterns aren't reviewed to stay linear, so with at least
+    /// one of them a whole scrub also blocks once it runs past <see cref="ScanBudgetFactor"/> times its match timeout
+    /// on <paramref name="clock"/>.
     /// </summary>
     /// <param name="extraPatterns">The configured patterns, after the built-ins in priority order.</param>
     /// <param name="matchTimeout">The timeout for each pattern; must be positive.</param>
@@ -67,7 +68,7 @@ public sealed class Redactor : IRedactor
         var errors = ExtraPatternRules.Check(extraPatterns, Default.RuleIds);
         return errors.Count > 0
             ? RedactorResult.Invalid(errors)
-            : RedactorResult.Valid(new Redactor([.. BuiltinRules.All, .. extraPatterns.Select(e => new RedactionRule(e.Id, e.Pattern))], matchTimeout, clock));
+            : RedactorResult.Valid(new Redactor([.. BuiltinRules.All, .. extraPatterns.Select(e => new RedactionRule(e.Id, e.Pattern))], matchTimeout, extraPatterns.Count > 0 ? clock : null));
     }
 
     /// <inheritdoc/>

@@ -79,8 +79,12 @@ internal static partial class ExtraPatternRules
 
         try
         {
-            // Parsing only: the pattern is compiled per size tier, with the redactor's timeout, when a scrub needs it.
-            _ = new Regex(pattern, CompiledRules.Always, Redactor.DefaultMatchTimeout);
+            // Parsed and tried on an empty text here; the pattern is compiled per size tier, with the redactor's timeout,
+            // when a scrub needs it.
+            if (new Regex(pattern, CompiledRules.Always, Redactor.DefaultMatchTimeout).IsMatch(string.Empty))
+            {
+                return "The pattern can match an empty text, so it would match at every position; make at least one part required.";
+            }
         }
         catch (RegexParseException parse)
         {

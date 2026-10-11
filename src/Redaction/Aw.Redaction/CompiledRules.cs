@@ -30,11 +30,15 @@ internal sealed class CompiledRules
     /// <exception cref="RegexMatchTimeoutException">A pattern ran past the match timeout, or the scan past the deadline.</exception>
     public List<RawHit> Find(string text, ScanDeadline? deadline)
     {
+        // The deadline is checked before every scan and after every match, so the time between two checks is at most
+        // one match call (bounded by the match timeout), whether a rule matches or not.
+        deadline?.Check();
         var placeholders = new Placeholders(_placeholder.Matches(text));
         var raw = new List<RawHit>();
         for (var order = 0; order < _rules.Length; order++)
         {
             var (id, regex) = _rules[order];
+            deadline?.Check();
             foreach (Match match in regex.Matches(text))
             {
                 deadline?.Check();
@@ -48,6 +52,7 @@ internal sealed class CompiledRules
             }
         }
 
+        deadline?.Check();
         return raw;
     }
 }

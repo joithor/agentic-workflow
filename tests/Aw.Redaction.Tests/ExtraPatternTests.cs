@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Time.Testing;
+
 namespace Aw.Redaction.Tests;
 
 /// <summary>Extra patterns from configuration (context spec D14, Phase 2): they scrub like built-in rules.</summary>
@@ -124,12 +126,12 @@ public sealed class ExtraPatternTests
     [Fact]
     public void A_scrub_with_many_matches_blocks_once_it_runs_past_its_whole_scan_budget()
     {
-        // Each match is fast, so no match times out; the clock steps 5 ms per reading and the budget is 4 x 10 ms.
-        var clock = new SteppingClock(TimeSpan.FromMilliseconds(5));
-        var created = Redactor.Create([new ExtraPattern("letter-a", "a")], TimeSpan.FromMilliseconds(10), clock);
-        Assert.True(created.IsValid);
+        // Each match is fast, so no match times out; the clock steps 5 ms per reading, the budget is 4 x 100 ms, and
+        // the deadline is read before every rule and after every match: 100 matches pass it.
+        Assert.Equal(4, Redactor.ScanBudgetFactor);
+        var redactor = Build(TimeSpan.FromMilliseconds(100), Stepping(), new ExtraPattern("letter-a", "a"));
 
-        var result = created.Redactor.Scrub(new string('a', 20));
+        var result = redactor.Scrub(new string('a', 100));
 
         Assert.Equal(ScrubOutcome.Blocked, result.Outcome);
         Assert.Equal(ScrubResult.BlockedText, result.Text);
@@ -139,17 +141,34 @@ public sealed class ExtraPatternTests
     [Fact]
     public void A_scrub_within_its_whole_scan_budget_is_not_blocked()
     {
-        var clock = new SteppingClock(TimeSpan.FromMilliseconds(5));
-        var created = Redactor.Create([new ExtraPattern("letter-a", "a")], TimeSpan.FromMilliseconds(10), clock);
+        // About 30 readings (one per rule, one per match) x 5 ms stay under 4 x 100 ms.
+        var redactor = Build(TimeSpan.FromMilliseconds(100), Stepping(), new ExtraPattern("letter-a", "a"));
+
+        Assert.Equal("x [REDACTED:letter-a] y [REDACTED:letter-a]", redactor.Scrub("x a y a").Text);
+    }
+
+    [Fact]
+    public void The_whole_scan_budget_also_counts_rules_that_find_nothing()
+    {
+        // No rule matches "abc", so no match is ever yielded; the readings before each rule pass 4 x 10 ms.
+        var redactor = Build(TimeSpan.FromMilliseconds(10), Stepping(), new ExtraPattern("never-one", "zzz1"), new ExtraPattern("never-two", "zzz2"));
+
+        Assert.Equal(ScrubOutcome.Blocked, redactor.Scrub("abc").Outcome);
+    }
+
+    [Fact]
+    public void Without_extra_patterns_there_is_no_whole_scan_deadline()
+    {
+        var created = Redactor.Create([], TimeSpan.FromMilliseconds(10), Stepping());
         Assert.True(created.IsValid);
 
-        Assert.Equal("x [REDACTED:letter-a] y [REDACTED:letter-a]", created.Redactor.Scrub("x a y a").Text);
+        Assert.Equal(ScrubOutcome.Clean, created.Redactor.Scrub("abc").Outcome);
     }
 
     [Fact]
     public void No_extra_patterns_gives_the_built_in_rules()
     {
-        var result = Redactor.Create([], Redactor.DefaultMatchTimeout, TimeProvider.System);
+        var result = Redactor.Create([], Redactor.DefaultMatchTimeout, new FakeTimeProvider());
 
         Assert.True(result.IsValid);
         Assert.Empty(result.Errors);
@@ -158,12 +177,12 @@ public sealed class ExtraPatternTests
 
     [Fact]
     public void Create_with_extra_patterns_refuses_a_timeout_that_is_not_positive() =>
-        Assert.Throws<ArgumentOutOfRangeException>(() => Redactor.Create([Acme], TimeSpan.Zero, TimeProvider.System));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Redactor.Create([Acme], TimeSpan.Zero, new FakeTimeProvider()));
 
     // why: the null-forgiving operator passes null on purpose, to prove the guard.
     [Fact]
     public void A_null_pattern_list_is_a_bug() =>
-        Assert.Throws<ArgumentNullException>(() => Redactor.Create(null!, Redactor.DefaultMatchTimeout, TimeProvider.System));
+        Assert.Throws<ArgumentNullException>(() => Redactor.Create(null!, Redactor.DefaultMatchTimeout, new FakeTimeProvider()));
 
     // why: the null-forgiving operator passes null on purpose, to prove the guard.
     [Fact]
@@ -172,9 +191,15 @@ public sealed class ExtraPatternTests
 
     private static Redactor Build(params ExtraPattern[] extras) => Build(Redactor.DefaultMatchTimeout, extras);
 
-    private static Redactor Build(TimeSpan matchTimeout, params ExtraPattern[] extras)
+    // A frozen clock: the whole-scan deadline never passes, so only the match timeout can block.
+    private static Redactor Build(TimeSpan matchTimeout, params ExtraPattern[] extras) =>
+        Build(matchTimeout, new FakeTimeProvider(), extras);
+
+    private static FakeTimeProvider Stepping() => new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(5) };
+
+    private static Redactor Build(TimeSpan matchTimeout, TimeProvider clock, params ExtraPattern[] extras)
     {
-        var result = Redactor.Create(extras, matchTimeout, TimeProvider.System);
+        var result = Redactor.Create(extras, matchTimeout, clock);
         Assert.True(result.IsValid, string.Join("; ", result.Errors));
         return result.Redactor;
     }
