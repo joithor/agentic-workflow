@@ -4,7 +4,7 @@ namespace Aw.Evidence.Core.Locks;
 
 /// <summary>
 /// The lock order a browser run uses: the QA stack first (the wider lock), then the heavy-job lock. Failing to take the
-/// second releases the first, so a partial failure never leaves a lock held.
+/// second, by error or by exception, releases the first, so a partial failure never leaves a lock held.
 /// </summary>
 public static class StackLocks
 {
@@ -26,8 +26,9 @@ public static class StackLocks
         {
             heavy = await locks.AcquireAsync(LockKind.HeavyJob, timeout, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
+        catch
         {
+            // Any exception (a cancelled wait, an adapter failing outside its Result) releases the lock already taken.
             await stack.Value.DisposeAsync().ConfigureAwait(false);
             throw;
         }
