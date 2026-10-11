@@ -1580,3 +1580,5 @@ Aw.Sindri.Core.Workflow.IRecipeFiles
 Aw.Sindri.Core.Workflow.IRecipeFiles.Read(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Workflow.RecipeHashing
 static Aw.Sindri.Core.Workflow.RecipeHashing.Of(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.Text.Json.JsonSerializerOptions! options) -> Aw.Sindri.Core.Workflow.Ids.RecipeHash
+Aw.Sindri.Core.Workflow.Blocks.GateContext.TokensLeft.get -> int?
+Aw.Sindri.Core.Workflow.Blocks.GateContext.TokensLeft.init -> void
