@@ -178,7 +178,7 @@ packages:
     binPaths: [ui-evidence/dist/bin.js]
     files: [ui-evidence/runs, locks/heavy-job.lock, locks/qa-stack.lock]
     namespace: ui-evidence
-    note: "Playwright UI evidence; owns the box-wide heavy-job and QA-stack locks today (config/lib/locks.sh primitive). A tier-0 or tier-1 package can't take those locks (that would be an upward file edge, DEPS-TIER-002), so the locks move to the Kernel Lease port before one needs them"
+    note: "Playwright UI evidence; owns the box-wide heavy-job lock (AW_HEAVY_SLOTS slots, default 2: locks/heavy-job.lock and .2) and the one-slot QA-stack lock today (config/lib/locks.sh primitive). A tier-0 or tier-1 package can't take those locks (that would be an upward file edge, DEPS-TIER-002), so the locks move to the Kernel Lease port before one needs them"
   - id: BugFix
     kind: package
     tier: 2
@@ -258,7 +258,7 @@ edges:
     to: Evidence
     kind: file
     status: current
-    note: "sindri index builds take the box-wide heavy-job lock; moves to the Kernel Lease port at the port"
+    note: "sindri index builds take a slot of the box-wide heavy-job lock; moves to the Kernel Lease port at the port"
   - from: Hooks
     to: Judge
     kind: cli
