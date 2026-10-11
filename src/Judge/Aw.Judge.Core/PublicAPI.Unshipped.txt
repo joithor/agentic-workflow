@@ -937,3 +937,6 @@ Aw.Judge.Core.Config.QuestionConfig.Threshold.get -> double?
 const Aw.Judge.Core.Evaluation.EvaluationReasons.RuleTimeout = "rule-timeout" -> string!
 static Aw.Judge.Core.Providers.ProviderNames.ParseList(string! raw) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>!>!
 static Aw.Judge.Core.Evaluation.EvaluationReasons.BeforeChain.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Judge.Core.Secrets.SecretNames
+static Aw.Judge.Core.Secrets.SecretNames.Variable(Aw.Judge.Core.Secrets.SecretName name) -> string!
+static Aw.Judge.Core.Secrets.SecretNames.Variables.get -> System.Collections.Generic.IReadOnlyList<string!>!

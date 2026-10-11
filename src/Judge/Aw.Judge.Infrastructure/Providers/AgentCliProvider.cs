@@ -2,14 +2,14 @@ using System.Text.Json.Nodes;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Processes;
 using Aw.Judge.Core.Providers;
-using Aw.Judge.Infrastructure.Secrets;
+using Aw.Judge.Core.Secrets;
 
 namespace Aw.Judge.Infrastructure.Providers;
 
 /// <summary>
 /// An agent CLI run headless on a small fast model: each question gets a fresh empty temp directory (deleted
 /// afterwards) and the recursion guard AW_JUDGE_CHILD=1, which makes every aw:* hook in the child exit at once; the
-/// judge's own secrets (KeychainSecretSource.Variables: a model reading untrusted text has no use for them) are removed
+/// judge's own secrets (SecretNames.Variables: a model reading untrusted text has no use for them) are removed
 /// from the environment the child inherits. The model sees the question's prompt only, which carries the input's fields
 /// already capped; the raw input is never sent. The subclass decides how the prompt reaches its CLI: claude and codex
 /// read it on standard input, so no input size can hit the system's argument limit; cursor takes it as an argument,
@@ -93,7 +93,7 @@ internal abstract class AgentCliProvider(IProcessRunner runner, AgentCliName cli
         StandardInput = call.StandardInput,
         WorkingDirectory = call.WorkingDirectory,
         Environment = new Dictionary<string, string>(call.Environment, StringComparer.Ordinal) { ["AW_JUDGE_CHILD"] = "1" },
-        Unset = KeychainSecretSource.Variables,
+        Unset = SecretNames.Variables,
         Timeout = budget,
     };
 }

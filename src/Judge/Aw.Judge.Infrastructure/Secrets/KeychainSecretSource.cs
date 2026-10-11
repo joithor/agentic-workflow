@@ -5,7 +5,7 @@ using Aw.Judge.Core.Secrets;
 namespace Aw.Judge.Infrastructure.Secrets;
 
 /// <summary>
-/// ISecretSource over the environment, then the macOS keychain: a secret's variable wins when it is set and non-empty;
+/// ISecretSource over the environment, then the macOS keychain: a secret's variable (SecretNames) wins when it is set and non-empty;
 /// otherwise `security find-generic-password -s &lt;service&gt; -a &lt;variable&gt; -w` prints it. A keychain without
 /// the entry, a keychain tool that isn't there (not macOS) or one that hangs past its timeout all read as unset.
 /// </summary>
@@ -15,9 +15,6 @@ internal sealed class KeychainSecretSource(Func<string, string?> environment, IP
 {
     // The keychain tool answers in milliseconds; a locked keychain's prompt must not hold the judge.
     private static readonly TimeSpan _keychainTimeout = TimeSpan.FromSeconds(5);
-
-    /// <summary>The environment variable of every secret the judge owns (what an agent CLI child must not inherit).</summary>
-    internal static IReadOnlyList<string> Variables { get; } = [.. Enum.GetValues<SecretName>().Select(static name => Entry(name).Variable)];
 
     /// <inheritdoc />
     public async ValueTask<string?> Read(SecretName name, CancellationToken cancellationToken)
@@ -40,10 +37,10 @@ internal sealed class KeychainSecretSource(Func<string, string?> environment, IP
         return secret.Length > 0 ? secret : null;
     }
 
-    // The variable, which is also the keychain account, and the keychain service of each secret.
-    private static (string Variable, string Service) Entry(SecretName name) => name switch
+    // The variable (SecretNames), which is also the keychain account, and the keychain service of each secret.
+    private static (string Variable, string Service) Entry(SecretName name) => (SecretNames.Variable(name), name switch
     {
-        SecretName.TypeSafeApiKey => ("TYPESAFE_API_KEY", "agentic-workflow-typesafe"),
+        SecretName.TypeSafeApiKey => "agentic-workflow-typesafe",
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "unknown secret"),
-    };
+    });
 }

@@ -212,7 +212,7 @@ in the chain is asked.
 ### The agent CLIs
 
 Each runs headless on a small fast model, with the recursion guard `AW_JUDGE_CHILD=1` (every `aw:*` hook in the child
-exits at once) and without the judge's own `TYPESAFE_API_KEY` in the environment it inherits, the question's time budget as its timeout, and a fresh empty temp directory as its working directory,
+exits at once) and without the judge's own secrets' variables (`SecretNames.Variables` in Core: `TYPESAFE_API_KEY`) in the environment it inherits, the question's time budget as its timeout, and a fresh empty temp directory as its working directory,
 deleted afterwards. The model sees the question's prompt and nothing else: every prompt already carries the input's
 fields (capped and with their delimiter tags defused, `UntrustedText`), so the raw input record is never sent. claude
 and codex read the prompt on standard input, so no input size can hit the system's argument limit; cursor-agent takes
