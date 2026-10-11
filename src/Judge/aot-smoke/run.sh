@@ -41,7 +41,9 @@ state="$work/state"
 mkdir -p "$state"
 
 # Each call gets only these variables: offline, deterministic, the default log level.
-judge() { env -i HOME="$work" PATH=/usr/bin:/bin AW_STATE_DIR="$state" AW_JUDGE_PROVIDERS="${SMOKE_PROVIDERS:-rules}" AW_SESSION_ID=smoke "$bin" "$@"; }
+# judge_with <providers> args...: the binary with AW_JUDGE_PROVIDERS=<providers>; judge: with rules
+judge_with() { local providers="$1"; shift; env -i HOME="$work" PATH=/usr/bin:/bin AW_STATE_DIR="$state" AW_JUDGE_PROVIDERS="$providers" AW_SESSION_ID=smoke "$bin" "$@"; }
+judge() { judge_with rules "$@"; }
 brief='{"toolUseId":"toolu_1","sessionId":"s1","promptId":"p1","dispatchName":"builder-a","subagentType":"general-purpose","goal":"g","acceptanceCriteria":"the tests pass","proofCommand":"make test"}'
 {
   echo "## health"
@@ -67,7 +69,7 @@ brief='{"toolUseId":"toolu_1","sessionId":"s1","promptId":"p1","dispatchName":"b
   echo "## bad allowlist"
   printf '%s' '{"text":"ok","senderKind":"teammate"}' | judge --providers bogus wake-gate || echo "exit $?"
   echo "## bad AW_JUDGE_PROVIDERS under health"
-  SMOKE_PROVIDERS=bogus judge health || echo "exit $?"
+  judge_with bogus health || echo "exit $?"
   echo "## health after"
   judge health || echo "exit $?"
   echo "## state files"
