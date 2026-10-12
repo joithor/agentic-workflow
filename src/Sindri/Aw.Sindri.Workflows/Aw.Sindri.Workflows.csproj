@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Sindri.Workflows: the Temporal adapter of the Sindri workflow engine (engine spec rev 8 §0 "Operations", §5;
+       README X53, X54). Infrastructure tier: the RecipeWorkflow interpreter, its activities (RunStep, RecordEvent,
+       LoadRecipe), the worker and the dev server that 'sindri serve' keeps beside itself. Its namespace is
+       Aw.Sindri.Infrastructure.Workflows, so the architecture rules treat it as Sindri's Infrastructure layer, and like
+       Aw.Sindri.Infrastructure its types stay internal (ARCH-INFRA-001).
+       AwAotCompatible=false: the Temporal .NET SDK has no trimming or NativeAOT support (temporalio/sdk-dotnet#286),
+       so this one project opts out; every other Sindri library keeps IsAotCompatible=true, and the host that references
+       it publishes framework-dependent (.agents/rules/csharp.md "AOT scope"). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Aw.Sindri.Infrastructure.Workflows</RootNamespace>
+    <AwAotCompatible>false</AwAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Temporalio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Aw.Sindri.Core/Aw.Sindri.Core.csproj" />
+    <ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aw.Sindri.Tests" />
+    <InternalsVisibleTo Include="Aw.Sindri.Testing" />
+  </ItemGroup>
+</Project>

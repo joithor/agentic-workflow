@@ -3426,3 +3426,136 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger.PrintMembers(System.Text
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? other) -> bool
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Aw.Sindri.Core.Control.ControlEndpoint.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint?
+Aw.Sindri.Core.Control.ControlEndpoint.Temporal.init -> void
+Aw.Sindri.Core.Control.ITemporalServer
+Aw.Sindri.Core.Control.ITemporalServer.Ensure(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Control.TemporalEndpoint!>!>
+Aw.Sindri.Core.Control.ITemporalServer.Inspect(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Control.TemporalFacts!>
+Aw.Sindri.Core.Control.ITemporalServer.Stop(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Control.TemporalEndpoint
+Aw.Sindri.Core.Control.TemporalEndpoint.<Clone>$() -> Aw.Sindri.Core.Control.TemporalEndpoint!
+Aw.Sindri.Core.Control.TemporalEndpoint.Deconstruct(out int Pid, out int Port, out int UiPort) -> void
+Aw.Sindri.Core.Control.TemporalEndpoint.Equals(Aw.Sindri.Core.Control.TemporalEndpoint? other) -> bool
+Aw.Sindri.Core.Control.TemporalEndpoint.Pid.get -> int
+Aw.Sindri.Core.Control.TemporalEndpoint.Pid.init -> void
+Aw.Sindri.Core.Control.TemporalEndpoint.Port.get -> int
+Aw.Sindri.Core.Control.TemporalEndpoint.Port.init -> void
+Aw.Sindri.Core.Control.TemporalEndpoint.TemporalEndpoint(int Pid, int Port, int UiPort) -> void
+Aw.Sindri.Core.Control.TemporalEndpoint.UiPort.get -> int
+Aw.Sindri.Core.Control.TemporalEndpoint.UiPort.init -> void
+Aw.Sindri.Core.Control.TemporalFacts
+Aw.Sindri.Core.Control.TemporalFacts.<Clone>$() -> Aw.Sindri.Core.Control.TemporalFacts!
+Aw.Sindri.Core.Control.TemporalFacts.Deconstruct(out Aw.Sindri.Core.Control.TemporalEndpoint? Running, out string! Pinned, out string? Version, out bool Reachable, out bool NamespacePresent, out string? Problem) -> void
+Aw.Sindri.Core.Control.TemporalFacts.Equals(Aw.Sindri.Core.Control.TemporalFacts? other) -> bool
+Aw.Sindri.Core.Control.TemporalFacts.NamespacePresent.get -> bool
+Aw.Sindri.Core.Control.TemporalFacts.NamespacePresent.init -> void
+Aw.Sindri.Core.Control.TemporalFacts.Pinned.get -> string!
+Aw.Sindri.Core.Control.TemporalFacts.Pinned.init -> void
+Aw.Sindri.Core.Control.TemporalFacts.Problem.get -> string?
+Aw.Sindri.Core.Control.TemporalFacts.Problem.init -> void
+Aw.Sindri.Core.Control.TemporalFacts.Reachable.get -> bool
+Aw.Sindri.Core.Control.TemporalFacts.Reachable.init -> void
+Aw.Sindri.Core.Control.TemporalFacts.Running.get -> Aw.Sindri.Core.Control.TemporalEndpoint?
+Aw.Sindri.Core.Control.TemporalFacts.Running.init -> void
+Aw.Sindri.Core.Control.TemporalFacts.TemporalFacts(Aw.Sindri.Core.Control.TemporalEndpoint? Running, string! Pinned, string? Version, bool Reachable, bool NamespacePresent, string? Problem) -> void
+Aw.Sindri.Core.Control.TemporalFacts.Version.get -> string?
+Aw.Sindri.Core.Control.TemporalFacts.Version.init -> void
+override Aw.Sindri.Core.Control.TemporalEndpoint.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Control.TemporalEndpoint.GetHashCode() -> int
+override Aw.Sindri.Core.Control.TemporalEndpoint.ToString() -> string!
+override Aw.Sindri.Core.Control.TemporalFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Control.TemporalFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Control.TemporalFacts.ToString() -> string!
+static Aw.Sindri.Core.Control.TemporalEndpoint.operator !=(Aw.Sindri.Core.Control.TemporalEndpoint? left, Aw.Sindri.Core.Control.TemporalEndpoint? right) -> bool
+static Aw.Sindri.Core.Control.TemporalEndpoint.operator ==(Aw.Sindri.Core.Control.TemporalEndpoint? left, Aw.Sindri.Core.Control.TemporalEndpoint? right) -> bool
+static Aw.Sindri.Core.Control.TemporalFacts.operator !=(Aw.Sindri.Core.Control.TemporalFacts? left, Aw.Sindri.Core.Control.TemporalFacts? right) -> bool
+static Aw.Sindri.Core.Control.TemporalFacts.operator ==(Aw.Sindri.Core.Control.TemporalFacts? left, Aw.Sindri.Core.Control.TemporalFacts? right) -> bool
+static Aw.Sindri.Core.Doctor.DoctorRules.Temporal(Aw.Sindri.Core.Control.TemporalFacts! facts) -> Aw.Sindri.Core.Doctor.DoctorCheck!
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome!
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.Deconstruct(out string? State, out Aw.Sindri.Core.Workflow.Engine.RunToken? Run) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.DeskOutcome(string? State, Aw.Sindri.Core.Workflow.Engine.RunToken? Run) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.Equals(Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.Run.get -> Aw.Sindri.Core.Workflow.Engine.RunToken?
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.Run.init -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.State.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.State.init -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport!
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Address.init -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>! Outputs, out string? Temporal, out bool Wait) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.DeskReport(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>! Outputs, string? Temporal, bool Wait) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Equals(Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Outcome.init -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Outputs.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>!
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Outputs.init -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Run.get -> Aw.Sindri.Core.Workflow.Engine.RunToken
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Run.init -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Temporal.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Temporal.init -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Wait.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Wait.init -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.IDeskSteps
+Aw.Sindri.Core.Workflow.Engine.Desk.IDeskSteps.Complete(Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport! report, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome!>!>
+override Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.operator !=(Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome? left, Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.operator ==(Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome? left, Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.operator !=(Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport? left, Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.operator ==(Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport? left, Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport? right) -> bool
+Aw.Sindri.Core.Control.ITemporalWorker
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.NeedsYou.get -> bool
+override Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.ToString() -> string!
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.NeedsYou.init -> void
+static Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.operator !=(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow? left, Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.operator ==(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow? left, Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow? right) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.GetHashCode() -> int
+Aw.Sindri.Core.Workflow.Engine.Desk.IWorkflowInstances
+override Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Equals(object? obj) -> bool
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.State.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Equals(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Address.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.State.init -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Deconstruct(out string! Address, out string? State, out bool NeedsYou) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Address.init -> void
+Aw.Sindri.Core.Control.ITemporalWorker.Run(Aw.Sindri.Core.Control.TemporalEndpoint! endpoint, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Aw.Sindri.Core.Workflow.Engine.Desk.IWorkflowInstances.List(string? query, string? temporal, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>!>!>
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.InstanceRow(string! Address, string? State, bool NeedsYou) -> void
+Aw.Sindri.Core.Control.TemporalRuntime
+Aw.Sindri.Core.Control.TemporalRuntime.Stop(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Control.TemporalRuntime.TemporalRuntime(Aw.Sindri.Core.Control.ITemporalServer! server, System.TimeProvider! clock) -> void
+Aw.Sindri.Core.Control.TemporalRuntime.Track(System.Threading.Tasks.Task! worker) -> void
+static Aw.Sindri.Core.Control.TemporalRuntime.WorkerStopWait.get -> System.TimeSpan
+Aw.Sindri.Core.Control.TemporalRuntime.WaitForWorker(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+const Aw.Sindri.Core.Events.EventTypes.WorkflowStarted = "workflow.started" -> string!
+const Aw.Sindri.Core.Events.EventTypes.WorkflowTransition = "workflow.transition" -> string!
+Aw.Sindri.Core.Events.WorkflowEventPayload.<Clone>$() -> Aw.Sindri.Core.Events.WorkflowEventPayload!
+Aw.Sindri.Core.Events.WorkflowEventPayload.Deconstruct(out string! Instance, out string! From, out string! To, out string! Trigger, out string? Outcome, out string? Run) -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Equals(Aw.Sindri.Core.Events.WorkflowEventPayload? other) -> bool
+Aw.Sindri.Core.Events.WorkflowEventPayload.From.get -> string!
+Aw.Sindri.Core.Events.WorkflowEventPayload.From.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Instance.get -> string!
+Aw.Sindri.Core.Events.WorkflowEventPayload.Instance.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Outcome.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventPayload.Outcome.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Run.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventPayload.Run.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.To.get -> string!
+Aw.Sindri.Core.Events.WorkflowEventPayload.To.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Trigger.get -> string!
+Aw.Sindri.Core.Events.WorkflowEventPayload.Trigger.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.WorkflowEventPayload(string! Instance, string! From, string! To, string! Trigger, string? Outcome, string? Run) -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload
+override Aw.Sindri.Core.Events.WorkflowEventPayload.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.WorkflowEventPayload.GetHashCode() -> int
+override Aw.Sindri.Core.Events.WorkflowEventPayload.ToString() -> string!
+static Aw.Sindri.Core.Events.WorkflowEventPayload.operator !=(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
+static Aw.Sindri.Core.Events.WorkflowEventPayload.operator ==(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
