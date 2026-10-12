@@ -8,5 +8,5 @@ namespace Aw.Sindri.Ui.Tests.Api;
 [Lane(TestLane.Unit)]
 public sealed class SindriApiClientContractTests : SindriApiContract
 {
-    private protected override ISindriApi Reach(FakeSindriApi server) => new SindriApiClient(new HttpClient(new FakeSindriHandler(server)), TimeProvider.System);
+    private protected override ISindriApi Reach(FakeSindriApi server) => new SindriApiClient(new HttpClient(new FakeSindriHandler(server)), new InMemoryHumanToken(A.HumanToken), TimeProvider.System);
 }

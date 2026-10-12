@@ -50,7 +50,7 @@ public sealed partial class SindriApp : Application
     {
         // One writer of the preferences for the whole app: the shell and Settings share it, so their writes queue.
         var preferences = new Preferences(platform.Preferences);
-        return new(new ShellViewModel(platform.Records, new SindriApiClient(Loopback(), clock, platform.Log), clock, preferences), preferences, platform, clock);
+        return new(new ShellViewModel(platform.Records, new SindriApiClient(Loopback(), platform.Token, clock, platform.Log), clock, preferences), preferences, platform, clock);
     }
 
     /// <summary>The head's adapters, or null for the theme-only app.</summary>

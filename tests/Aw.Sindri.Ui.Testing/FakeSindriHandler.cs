@@ -30,7 +30,8 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
                 Header(request, "X-Sindri-Caller"),
                 Header(request, "X-Sindri-Client"),
                 Header(request, "X-Sindri-Terminal"),
-                Header(request, "Origin")));
+                Header(request, "Origin"),
+                Header(request, "X-Sindri-Token")));
         }
 
         if (server.Down)

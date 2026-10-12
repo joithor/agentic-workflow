@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
+using Aw.Sindri.Ui.Platform;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -14,9 +15,10 @@ namespace Aw.Sindri.Ui.Api;
 /// answer within 2 s is unreachable, like the CLI's; the event stream has no timeout and ends with its connection.
 /// </summary>
 /// <param name="http">The HTTP client, with no timeout of its own (the app's, or one over a canned handler in tests).</param>
+/// <param name="token">The control plane's per-start human token, read at each call (API spec §6).</param>
 /// <param name="clock">The clock the 2 s deadline runs on (the app's, so tests drive it with a fake one).</param>
 /// <param name="log">The app's log, where an unreadable body's parser detail goes (never the window); none by default.</param>
-internal sealed class SindriApiClient(HttpClient http, TimeProvider clock, ILogger? log = null) : ISindriApi
+internal sealed class SindriApiClient(HttpClient http, IHumanTokenSource token, TimeProvider clock, ILogger? log = null) : ISindriApi
 {
     private readonly ILogger _log = log ?? NullLogger.Instance;
 
@@ -73,7 +75,7 @@ internal sealed class SindriApiClient(HttpClient http, TimeProvider clock, ILogg
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
-            using var request = Request(new Uri(api, path));
+            using var request = await Request(new Uri(api, path), deadline.Token).ConfigureAwait(false);
             using var response = await http.SendAsync(request, deadline.Token).ConfigureAwait(false);
             var body = await response.Content.ReadAsByteArrayAsync(deadline.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
@@ -103,23 +105,44 @@ internal sealed class SindriApiClient(HttpClient http, TimeProvider clock, ILogg
         }
     }
 
-    // Every request says who the app is to the API (UI spec §9.1, API §6): a human, from the UI. Never X-Sindri-Terminal
-    // (the app is no terminal, so protected actions stay at the CLI) and never Origin (commands refuse it).
-    private static HttpRequestMessage Request(Uri url)
+    // Every request says who the app is to the API (UI spec §9.1, API §6): a human, from the UI, with this start's token
+    // (read at each call, like the CLI's, so a restarted control plane's new one is sent with no app restart). Never
+    // X-Sindri-Terminal (the app is no terminal, so protected actions stay at the CLI) and never Origin (commands refuse
+    // it). With no token, or one the platform can't read, the call goes without it and Sindri's SND-AUTH-001 says why.
+    // The token goes only into this header: never into an error, the log or the window.
+    private async ValueTask<HttpRequestMessage> Request(Uri url, CancellationToken cancellationToken)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Add("X-Sindri-Caller", "human");
         request.Headers.Add("X-Sindri-Client", "ui");
+        if (await HumanToken(cancellationToken).ConfigureAwait(false) is { } value)
+        {
+            request.Headers.Add("X-Sindri-Token", value);
+        }
+
         return request;
+    }
+
+    private async ValueTask<string?> HumanToken(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await token.Read(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            SindriApiLog.TokenUnreadable(_log, token.Location, e.GetType().Name);
+            return null;
+        }
     }
 
     // The open event-stream response (owned by the caller), or null when it didn't answer 2xx or nothing answered.
     private async Task<HttpResponseMessage?> Open(Uri url, CancellationToken cancellationToken)
     {
-        using var request = Request(url);
-        request.Headers.Accept.ParseAdd("text/event-stream");
         try
         {
+            using var request = await Request(url, cancellationToken).ConfigureAwait(false);
+            request.Headers.Accept.ParseAdd("text/event-stream");
             var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {

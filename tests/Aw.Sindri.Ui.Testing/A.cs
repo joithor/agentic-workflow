@@ -12,6 +12,9 @@ internal static class A
 
     internal static readonly DateTimeOffset Noon = new(2026, 10, 11, 12, 0, 0, TimeSpan.Zero);
 
+    /// <summary>A per-start human token, as the file holds it once trimmed (a stand-in; serve mints base64url).</summary>
+    internal const string HumanToken = "this-start-human-token";
+
     internal static ControlRecord Record(int pid = 4242, long epoch = 7, int port = 7410) => new(new Uri(string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}/")), pid, epoch);
 
     internal static ProfileView Approved(string source = "/home/profile.yaml") => new(Hash, Hash, ChangedSinceApproval: false, Problem: null, source, NeedsApproval: false);
