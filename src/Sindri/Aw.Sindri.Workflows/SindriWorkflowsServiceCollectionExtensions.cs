@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +38,9 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IFactStore, HomeFactStore>()               // engine P4 unit (c): facts stored 0600 before the report
             .AddSingleton<ICommandNonces, HomeCommandNonces>()
             .AddSingleton<TemporalDeskReports>()                     // engine P4 unit (c): Send's 'complete' path
+            .AddSingleton<EventBridgeCursor>()                         // engine P4 unit (d): the bridge's cursor file
+            .AddScoped<IScheduledService, EventBridge>()               // engine P4 unit (d): the ledger-to-Temporal bridge
+            .AddSingleton(EventBridge.BuiltIn)                         // engine P4 unit (d): runs without a profile entry (S1-D8)
             .AddSingleton(new DeskSettings(DeskTimeouts.DefaultFloor));   // engine P4 unit (c): 'workflow.deskTimeout' until S1-D11 (unit (e))      // engine P4 unit (c): the nonce table (stand-in until API's IssueNonce)
     }
 }

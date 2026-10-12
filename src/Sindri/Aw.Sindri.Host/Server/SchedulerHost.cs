@@ -13,7 +13,7 @@ namespace Aw.Sindri.Host.Server;
 /// still runs, and an approval it can't read is logged once (SND-SCHED-001) while the current schedule keeps running.
 /// Nothing runs while the process holds no lease.
 /// </summary>
-internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprovals approvals, HeldLease held, TimeProvider clock, ILogger<SchedulerHost> log)
+internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprovals approvals, HeldLease held, IEnumerable<BuiltInService> builtIns, TimeProvider clock, ILogger<SchedulerHost> log)
     : BackgroundService
 {
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
@@ -65,9 +65,17 @@ internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprov
         if (profile?.Hash != _profile)
         {
             _profile = profile?.Hash;
-            _schedules = profile is null ? [] : ServiceSchedule.From(profile.Profile, clock.GetUtcNow());
+            _schedules = Schedules(profile);
             LogSchedule(log, _profile?.Abbreviated ?? "none", _schedules.Count);
         }
+    }
+
+    /// <summary>Engine P4 unit (d) red: S1-D8 and S1-D10 are not built yet.</summary>
+    private IReadOnlyList<ServiceSchedule> Schedules(LoadedProfile? profile)
+    {
+        var builtIn = builtIns.ToList();
+        return builtIn.Count > 0 ? ServiceSchedule.From(profile?.Profile, builtIn, clock.GetUtcNow())
+            : profile is null ? [] : ServiceSchedule.From(profile.Profile, clock.GetUtcNow());
     }
 
     private async Task RunDue(LeaseGrant grant, CancellationToken ct)
