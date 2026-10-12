@@ -1,7 +1,13 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Aw.Sindri.Ui.Views.SindriApp"
+             Name="Sindri"
              RequestedThemeVariant="Dark">
+  <!-- macOS titles the app from Name (the menu bar's app menu, "Hide Sindri"). The app menu is the app's own, so
+       Avalonia.Native adds only the standard items (Services, Hide, Show All, Quit) and no "About Avalonia". -->
+  <NativeMenu.Menu>
+    <NativeMenu />
+  </NativeMenu.Menu>
   <!-- docs/sindri/DESIGN.md (Linear's look) through the UI spec's token plan (§14): the tokens, the Fluent theme mapped to
        them, and the type ramp. No colour value is written outside Theme/; styles here bind the Brush.* tokens. -->
   <Application.Resources>
