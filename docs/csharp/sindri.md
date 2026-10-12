@@ -11,7 +11,7 @@ the switch: `setup.sh`, the providers and launchd don't point at it.
 
 ## The binary
 
-One NativeAOT binary, `sindri`, is both the control plane and its CLI.
+One binary, `sindri`, is both the control plane and its CLI. It publishes framework-dependent, not NativeAOT: the Temporal .NET SDK its worker runs has no trimming support (temporalio/sdk-dotnet#286; `.agents/rules/csharp.md` "AOT scope").
 
 | Command | What it does | Exit |
 |---|---|---|
@@ -26,6 +26,8 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 | `sindri doctor [--json]` | One line per check, in order: `lease`, `ledger`, `profile`, `api`, `temporal` (the dev server on this home's `temporal.db`: reachable, its CLI version equal to the `binaries.lock` pin, namespace `sindri` present; `fail` with a fix otherwise), each `ok` / `warn` / `fail` with a fix. `profile` is `ok` only when approved by the one rule (see Profile); changed since the saved approval, or saved but not the latest recorded one, is a `warn` | 0 all ok, 1 any warn, 2 any fail |
 | `sindri recipe validate <file> [--json]` | Validates a recipe in this process against the build's block catalog, never contacting the control plane: one line per finding (errors first; information and skipped findings labelled), then the recipe's hash. `--json` adds each finding's fields and the normalized long form. Reference: `docs/csharp/sindri-workflow.md` | 0 no errors; 1 any `RCP-*` error; 2 a usage error (no file, `SND-CLI-003`; an unknown `recipe` verb or extra arguments, `SND-CLI-001`), an unreadable file (`SND-RECIPE-010`) or a bug inside sindri (`SND-API-005`) |
 | `sindri recipe eval <file> [--json]` · `--scaffold <file>` · `--record <address> --out <file>` | Runs the recipe's eval cases in this process over the pure engine (P3): one line per case, `<case> pass` or `<case> fail at <file>:<line>: <detail>`, or `no evals declared`. `--scaffold` prints a passing happy-path case; `--record` needs the server (P4). Reference: `docs/csharp/sindri-workflow.md` | 0 every case passes or none declared; 1 a case fails; 2 a usage error (`SND-CLI-003`, `SND-CLI-001`, `--record` until P4), an unreadable or unbound recipe (`SND-RECIPE-010`, `SND-RECIPE-001`), a missing or unreadable eval file (`SND-RECIPE-008`) or a bug inside sindri (`SND-API-005`) |
+| `sindri workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--temporal <host:port>] [--no-wait]` | P4a (engine spec rev 8.1 "Phase 4a"; P4 moves it behind the API's `CompleteStep`): completes the open desk run `<token>` of the instance with the outcome and output files (each stored 0600 under `<home>/workflow/facts/` by its SHA-256), talking to the Temporal frontend that `control.json`'s `temporal` field records (`--temporal` overrides it). It prints `<address> run <token>: <outcome> -> <next state>`, or `-> sent; the instance moves on when a worker runs` with `--no-wait` or when no worker answers within 10 s | 0; 1 when no dev server is recorded or it doesn't answer, or Temporal refuses the call (`SND-API-001`); 2 on any other error (e.g. a bad address or option `SND-CLI-003`, a run that isn't open `SND-WF-005`, an output file missing or over 1 MiB `SND-WF-008`) |
+| `sindri workflow list [--query <visibility query>] [--temporal <host:port>]` | P4a: the open `RecipeWorkflow` instances, by a visibility query on their search attributes (`Item`, `Recipe`, `State`, `NeedsYou`, …), one a line: `<address>  <state>[  needs-you]` | 0; 1 when no dev server is recorded or it doesn't answer (`SND-API-001`); 2 on any other error (e.g. a query Temporal refuses or a bad option, `SND-CLI-003`) |
 
 Output: state is always a word, never colour; there is no colour at all, so `NO_COLOR` and redirected output need
 nothing special. Errors go to stderr as `SND-<AREA>-NNN message`, with `(fix: …)` where there is one, or `(usage: …)` for a usage error. `--json` prints
@@ -234,5 +236,6 @@ app must provide what that hook reads before it replaces the TS one.
 ```bash
 dotnet test --project tests/Aw.Sindri.Tests --filter-trait "Lane=unit"          # domain, slices, CLI text
 dotnet test --project tests/Aw.Sindri.Tests --filter-trait "Lane=integration"   # SQLite contracts, YAML files, the API on loopback, the scheduler
-bash src/Sindri/aot-smoke/run.sh                                                # publish NativeAOT and drive the native binary (expected.txt)
+scripts/binaries-lock.sh fetch temporal && scripts/binaries-lock.sh fetch temporal-test-server   # the Temporal tests and the smoke run these pins
+bash src/Sindri/aot-smoke/run.sh                                                # publish framework-dependent and drive the published apphost (expected.txt)
 ```
