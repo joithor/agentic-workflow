@@ -4,17 +4,167 @@ using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Host.Server;
 
-/// <summary>Folds the ledger into views.db (API spec §2.3).</summary>
-internal sealed class Projector
+/// <summary>
+/// Folds the ledger into views.db (API spec §2.3), one pass at a time under one gate, as the caller 'service:projector'.
+/// A pass opens the store (rebuilding when views.db was just created, its schema version is old, or a rebuild was
+/// requested), reads the head, publishes it, then applies pages of 100 until the cursor reaches that head. A failing
+/// event stalls it (SND-VIEW-001, logged); a stalled projector retries 30 s later, or at once on a rebuild.
+/// </summary>
+internal sealed partial class Projector(
+    ILedgerReader ledger, IViewStore store, IEnumerable<IProjection> projections, IProjectorFeed feed, ICallerContextAccessor callers,
+    TimeProvider clock, ILogger<Projector> log) : IDisposable
 {
-    public Projector(ILedgerReader ledger, IViewStore store, IEnumerable<IProjection> projections, IProjectorFeed feed, ICallerContextAccessor callers,
-        TimeProvider clock, ILogger<Projector> log)
-    {
-        _ = (ledger, store, projections, feed, callers, clock, log);
-    }
+    internal const int PageSize = 100;
+    internal static readonly TimeSpan StallRetry = TimeSpan.FromSeconds(30);
 
-    /// <summary>One pass.</summary>
+    private readonly IReadOnlyList<IProjection> _projections = [.. projections];
+    private readonly SemaphoreSlim _gate = new(1, 1);
+    private DateTimeOffset? _stalledSince;
+    private string? _problem;
+
+    /// <inheritdoc/>
+    public void Dispose() => _gate.Dispose();
+
+    /// <summary>One pass: rebuild if needed, then fold up to the ledger head.</summary>
     /// <param name="cancellationToken">Cancels the pass.</param>
     /// <returns>How it ended.</returns>
-    public ValueTask<ProjectorPass> CatchUp(CancellationToken cancellationToken) => throw new NotSupportedException("red: unit B");
+    public async ValueTask<ProjectorPass> CatchUp(CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            using var caller = callers.EnterService("projector");
+            return await Pass(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _ = _gate.Release();
+        }
+    }
+
+    private async ValueTask<ProjectorPass> Pass(CancellationToken ct)
+    {
+        var rebuild = feed.TakeRebuildRequest();
+        if (!rebuild && _stalledSince is { } since && clock.GetUtcNow() - since < StallRetry)
+        {
+            return ProjectorPass.Stalled;
+        }
+
+        var head = await ledger.Head(ct).ConfigureAwait(false);
+        var opened = head.IsError ? head.Error : await Prepare(rebuild, head.Value, ct).ConfigureAwait(false);
+        if (opened.IsError)
+        {
+            return Failed(opened.Error.Code, opened.Error.Message);
+        }
+
+        return await Fold(opened.Value, head.Value, ct).ConfigureAwait(false);
+    }
+
+    private async ValueTask<Kernel.Result<ProjectorState>> Prepare(bool requested, long head, CancellationToken ct)
+    {
+        var opened = await store.Open(ViewSchema.Version, ct).ConfigureAwait(false);
+        if (opened.IsError)
+        {
+            return opened;
+        }
+
+        var state = opened.Value;
+        var reason = requested ? "requested" : state.Fresh ? "views.db created" : state.SchemaVersion != ViewSchema.Version ? "schema version changed" : null;
+        if (reason is null)
+        {
+            return state;
+        }
+
+        LogRebuilding(log, reason, state.SchemaVersion, ViewSchema.Version, head);
+        _stalledSince = null;
+        IReadOnlyList<string> views = [.. ViewNames.All.Concat(_projections.SelectMany(p => p.Views)).Distinct(StringComparer.Ordinal)];
+        return await store.Reset(views, ViewSchema.Version, clock.GetUtcNow(), ct).ConfigureAwait(false);
+    }
+
+    private async ValueTask<ProjectorPass> Fold(ProjectorState state, long head, CancellationToken ct)
+    {
+        Publish(state, head);
+        while (state.Cursor < head)
+        {
+            var page = await ledger.ReadAfter(state.Cursor, PageSize, ct).ConfigureAwait(false);
+            var applied = page.IsError ? page.Error
+                : page.Value.Count == 0 ? new PageApplied(state, Stall: null)
+                : await store.Apply(page.Value, _projections, clock.GetUtcNow(), ct).ConfigureAwait(false);
+            if (applied.IsError)
+            {
+                return Failed(applied.Error.Code, applied.Error.Message);
+            }
+
+            state = applied.Value.State;
+            if (applied.Value.Stall is { } stall)
+            {
+                return Stalled(state, head, stall);
+            }
+
+            Publish(state, head);
+            if (page.Value.Count == 0)
+            {
+                break;
+            }
+        }
+
+        return await Finish(state, head, ct).ConfigureAwait(false);
+    }
+
+    private async ValueTask<ProjectorPass> Finish(ProjectorState state, long head, CancellationToken ct)
+    {
+        if (state.Rebuilding)
+        {
+            var finished = await store.FinishRebuild(ct).ConfigureAwait(false);
+            if (finished.IsError)
+            {
+                return Failed(finished.Error.Code, finished.Error.Message);
+            }
+
+            state = state with { Rebuilding = false };
+        }
+
+        _stalledSince = null;
+        _problem = null;
+        Publish(state, head);
+        return ProjectorPass.CaughtUp;
+    }
+
+    private ProjectorPass Stalled(ProjectorState state, long head, ViewStall stall)
+    {
+        if (_stalledSince is null)
+        {
+            LogStalled(log, stall.Sequence, stall.Type, stall.Code, stall.Detail);
+        }
+
+        _stalledSince = clock.GetUtcNow();
+        Publish(state, head);
+        return ProjectorPass.Stalled;
+    }
+
+    private ProjectorPass Failed(string code, string detail)
+    {
+        if (!string.Equals(_problem, detail, StringComparison.Ordinal))
+        {
+            _problem = detail;
+            LogFailed(log, code, detail);
+        }
+
+        return ProjectorPass.Failed;
+    }
+
+    private void Publish(ProjectorState state, long head)
+    {
+        feed.Publish(new ViewsStatus(state.Cursor, head, state.ProjectedAt, state.Rebuilding, state.StalledAt is not null, state.StalledAt, state.StalledType));
+        ProjectorTelemetry.Lag.Record(Math.Max(head - state.Cursor, 0));
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Views rebuilding ({Reason}; schema {From} -> {To}) up to ledger head {Head}")]
+    private static partial void LogRebuilding(ILogger logger, string reason, int from, int to, long head);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "SND-VIEW-001 {Sequence} {Type}: the projector stalled: {Code} {Detail}; it retries every 30 s, or run sindri views rebuild")]
+    private static partial void LogStalled(ILogger logger, long sequence, string type, string code, string detail);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The projector couldn't run: {Code} {Detail}")]
+    private static partial void LogFailed(ILogger logger, string code, string detail);
 }

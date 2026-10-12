@@ -51,7 +51,7 @@ public sealed class ProjectorFileTests : IDisposable
         var progress = new ProjectorProgress(_clock);
         var projector = new Projector(new SqliteLedgerReader(ledger), views.Store, [new ToggleProjection()], progress, new AsyncLocalCallerContextAccessor(_ids),
             _clock, new ListLogger<Projector>());
-        using var host = new ProjectorHost(projector, _clock);
+        using var host = new ProjectorHost(projector, _clock, new ListLogger<ProjectorHost>());
 
         await host.StartAsync(Token);
         await Until(() => progress.Current.Cursor == 2);
