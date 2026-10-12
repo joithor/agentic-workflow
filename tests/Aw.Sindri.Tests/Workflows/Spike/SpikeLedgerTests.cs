@@ -30,8 +30,12 @@ public sealed class SpikeLedgerTests(LocalServer server) : IClassFixture<LocalSe
 
     public void Dispose() => _home.Dispose();
 
+    /// <summary>
+    /// Engine spec rev 8.1 §5.6: the key is 'workflow:{workflow id}:{run id}:{activity id}', the RecordEvent local
+    /// activity's own deterministic ActivityInfo.ActivityId (the same on every replay), not a workflow-side counter.
+    /// </summary>
     [Fact(Timeout = 30_000)]
-    public async Task Replay_leaves_one_ledger_row_per_transition()
+    public async Task Replay_leaves_one_ledger_row_per_transition_keyed_by_the_activity_id()
     {
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(KnownInstants.Epoch);
@@ -50,7 +54,9 @@ public sealed class SpikeLedgerTests(LocalServer server) : IClassFixture<LocalSe
         var history = await handle.FetchHistoryAsync();
         var replayed = await new WorkflowReplayer(new WorkflowReplayerOptions().AddWorkflow<SpikeStepWorkflow>()).ReplayWorkflowAsync(history, throwOnReplayFailure: false, ct);
         var runId = history.Events.First().WorkflowExecutionStartedEventAttributes.OriginalExecutionRunId;
-        var retried = await ledger.Recorder.RecordAsync(new WorkflowEventRecord(Id, runId, 2, "workflow.transition", "LEDGER-1", "produce", "checks", "step.completed", "done", "1.1"));
+        var recorded = ledger.Recorder.Log.Where(l => l.EndsWith(":new", StringComparison.Ordinal)).Select(l => l[..^":new".Length]).ToList();
+        var again = new ActivityEnvironment { Info = ActivityEnvironment.DefaultInfo with { WorkflowId = Id, WorkflowRunId = runId, ActivityId = recorded[1], IsLocal = true } };
+        var retried = await again.RunAsync(() => ledger.Recorder.RecordAsync(new WorkflowEventRecord(Id, runId, 2, "workflow.transition", "LEDGER-1", "produce", "checks", "step.completed", "done", "1.1")));
 
         var transitions = await ledger.Read("workflow.transition", ct);
         var started = await ledger.Read("workflow.started", ct);
@@ -63,10 +69,10 @@ public sealed class SpikeLedgerTests(LocalServer server) : IClassFixture<LocalSe
         Assert.Null(replayed.ReplayFailure);
         Assert.True(retried.AlreadyRecorded, line);
         Assert.Equal((2, 3, 1, 4), (before, transitions.Count, started.Count, markers));
-        Assert.Equal(["1:new", "2:new", "3:new", "4:new"], [.. ledger.Recorder.Log.Where(l => l.EndsWith(":new", StringComparison.Ordinal))]);
+        Assert.Equal(4, recorded.Distinct(StringComparer.Ordinal).Count());
         Assert.Equal(["produce>checks", "checks>verify", "verify>done"], [.. transitions.Select(t => Payload(t.Envelope.Payload))]);
         Assert.Equal(
-            [.. Enumerable.Range(2, 3).Select(n => string.Create(CultureInfo.InvariantCulture, $"workflow:{Id}:{runId}:{n}"))],
+            [.. recorded.Skip(1).Select(activityId => $"workflow:{Id}:{runId}:{activityId}")],
             [.. transitions.Select(t => t.IdempotencyKey)]);
     }
 

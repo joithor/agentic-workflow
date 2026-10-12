@@ -11,7 +11,7 @@ internal sealed class CountingRecorder(RecordEventActivities inner)
     private readonly Lock _gate = new();
     private readonly List<string> _log = [];
 
-    /// <summary>Each execution: '{sequence}:{new|again}', in order (a re-execution shows as 'again').</summary>
+    /// <summary>Each execution: '{activity id}:{new|again}', in order (a re-execution shows as 'again').</summary>
     public IReadOnlyList<string> Log
     {
         get
@@ -36,7 +36,7 @@ internal sealed class CountingRecorder(RecordEventActivities inner)
         var appended = await inner.RecordAsync(record);
         lock (_gate)
         {
-            _log.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{record.Sequence}:{(appended.AlreadyRecorded ? "again" : "new")}"));
+            _log.Add($"{ActivityExecutionContext.Current.Info.ActivityId}:{(appended.AlreadyRecorded ? "again" : "new")}");
         }
 
         return appended;
