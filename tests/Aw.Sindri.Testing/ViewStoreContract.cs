@@ -1,4 +1,5 @@
 using Aw.Kernel.Events;
+using Aw.Sindri.Core;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
@@ -16,6 +17,7 @@ public abstract class ViewStoreContract
 {
     private const string Put = "fixture.put";
     private const string Fail = "fixture.fail";
+    private const string Throw = "fixture.throw";
     private readonly SequentialIdGenerator _ids = new();
 
     /// <summary>The contract's clock.</summary>
@@ -113,6 +115,21 @@ public abstract class ViewStoreContract
         Expect.True((await reader.Get<ServiceRow>(ViewNames.Services, "missing", Token)).Value is null);
     }
 
+    /// <summary>A projection that throws stalls the page like one that returns an error (API spec §2.3).</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_throwing_projection_stalls_like_a_failing_one()
+    {
+        var (store, reader) = Create();
+        _ = await store.Open(ViewSchema.Version, Token);
+
+        var applied = (await store.Apply([Event(1, Put, "alpha"), Event(2, Throw, "boom")], [.. Projections(), new Throwing()], Clock.GetUtcNow(), Token)).Value;
+
+        Expect.Equal(2L, applied.Stall?.Sequence);
+        Expect.Equal(SindriErrors.ViewsStalled.Code, applied.Stall?.Code);
+        Expect.True((await reader.State(Token)).Value is { Cursor: 1, StalledAt: 2 });
+    }
+
     private static IReadOnlyList<IProjection> Projections() =>
         [new FixtureProjection(ViewNames.Services, Put), new FixtureProjection(ViewNames.Profile, Put), new FixtureProjection(ViewNames.Services, Fail, fails: true)];
 
@@ -121,5 +138,15 @@ public abstract class ViewStoreContract
         var context = EventContext.Create("host:sindri", "local", 0, _ids.NewId()).Value;
         Clock.Advance(TimeSpan.FromMilliseconds(1));
         return new LedgerEvent(sequence, 1, context.Envelope(type, """{"n":1}""", Clock, _ids), key, Item: null);
+    }
+
+    private sealed class Throwing : IProjection
+    {
+        public IReadOnlyList<string> Views => [ViewNames.Services];
+
+        public bool Handles(string eventType) => string.Equals(eventType, Throw, StringComparison.Ordinal);
+
+        public ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>> Apply(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("fixture: the fold threw");
     }
 }
