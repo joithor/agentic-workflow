@@ -42,7 +42,7 @@ public sealed partial class SindriApp : Application
     /// <param name="clock">The clock for every timing rule.</param>
     /// <returns>The app.</returns>
     public static SindriApp Create(SindriPlatform platform, TimeProvider clock) =>
-        new(new ShellViewModel(platform.Records, new SindriApiClient(Loopback()), clock, platform.Preferences), platform);
+        new(new ShellViewModel(platform.Records, new SindriApiClient(Loopback(), clock), clock, platform.Preferences), platform);
 
     /// <summary>The head's adapters, or null for the theme-only app.</summary>
     internal SindriPlatform? Platform { get; }

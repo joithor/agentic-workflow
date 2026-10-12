@@ -2,6 +2,7 @@ using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Api;
 
@@ -17,7 +18,7 @@ public sealed class SindriApiClientTests
     {
         var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.InternalServerError, """{"title":"SND-LEDGER-002"}""") };
 
-        var status = await new SindriApiClient(new HttpClient(handler)).Status(_api, Token);
+        var status = await new SindriApiClient(new HttpClient(handler), TimeProvider.System).Status(_api, Token);
 
         Assert.Equal("SND-UI-003", status.Error.Code);
         Assert.Contains("500", status.Error.Message, StringComparison.Ordinal);
@@ -28,7 +29,7 @@ public sealed class SindriApiClientTests
     {
         var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.OK, "<html>not sindri</html>") };
 
-        var ping = await new SindriApiClient(new HttpClient(handler)).Ping(_api, Token);
+        var ping = await new SindriApiClient(new HttpClient(handler), TimeProvider.System).Ping(_api, Token);
 
         Assert.Equal("SND-UI-003", ping.Error.Code);
     }
@@ -40,7 +41,7 @@ public sealed class SindriApiClientTests
         var server = new FakeSindriApi();
         server.GoDown();
 
-        var ping = await new SindriApiClient(new HttpClient(new FakeSindriHandler(server))).Ping(_api, Token);
+        var ping = await new SindriApiClient(new HttpClient(new FakeSindriHandler(server)), TimeProvider.System).Ping(_api, Token);
 
         Assert.Equal("SND-UI-002", ping.Error.Code);
         Assert.DoesNotContain("Connection refused", ping.Error.Message, StringComparison.Ordinal);
@@ -51,7 +52,7 @@ public sealed class SindriApiClientTests
     {
         var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.NotFound, "{}") };
 
-        var events = await new SindriApiClient(new HttpClient(handler)).Events(_api, 0, Token).ToListAsync(Token);
+        var events = await new SindriApiClient(new HttpClient(handler), TimeProvider.System).Events(_api, 0, Token).ToListAsync(Token);
 
         Assert.Empty(events);
     }
@@ -64,7 +65,7 @@ public sealed class SindriApiClientTests
         var server = new FakeSindriApi();
         server.Push(A.Event(1));
         var handler = new FakeSindriHandler(server);
-        var client = new SindriApiClient(new HttpClient(handler));
+        var client = new SindriApiClient(new HttpClient(handler), TimeProvider.System);
 
         _ = await client.Ping(_api, Token);
         _ = await client.Status(_api, Token);
@@ -75,5 +76,33 @@ public sealed class SindriApiClientTests
 
         Assert.Equal(["/sindri/ping", "/sindri/status", "/sindri/events"], handler.Requests.Select(r => r.Path), StringComparer.Ordinal);
         Assert.All(handler.Requests, r => Assert.Equal(new SeenRequest(r.Path, "human", "ui", Terminal: null, Origin: null), r));
+    }
+
+    // SND-UI-002's 2 s rule runs on the app's clock, like every other timing rule: a call that hangs is unreachable
+    // once the clock passes 2 s, with no real wait.
+    [Fact]
+    public async Task A_call_that_doesnt_answer_within_2_s_on_the_apps_clock_is_unreachable()
+    {
+        var clock = new FakeTimeProvider(A.Noon);
+        using var http = new HttpClient(new SilentHandler());
+        var ping = new SindriApiClient(http, clock).Ping(_api, Token);
+
+        clock.Advance(TimeSpan.FromSeconds(2) - TimeSpan.FromTicks(1));
+        Assert.False(ping.IsCompleted);
+        clock.Advance(TimeSpan.FromTicks(1));
+        var result = await ping.WaitAsync(TimeSpan.FromSeconds(1), TimeProvider.System, Token);
+
+        Assert.Equal("SND-UI-002", result.Error.Code);
+        Assert.Contains("didn't answer within 2 s", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    // A server that accepts the request and never answers.
+    private sealed class SilentHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            throw new InvalidOperationException("unreachable");
+        }
     }
 }

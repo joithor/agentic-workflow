@@ -72,7 +72,9 @@
 #           holding another package's files/db path in one literal ("sindri-app/control.json") or every segment
 #           as literals ("sindri-app", "control.json"). Whole-line // comments are skipped (/* */ blocks are not).
 #           Not seen: a route after a base ($"{url}/sindri/x", an absolute
-#           URL), paths from computed pieces, and cli edges (a C# Process start is not scanned).
+#           URL), a path under another package's `namespace` that isn't in its files or db (namespace
+#           names double as log and label strings in C#, so the C# scan doesn't match them), paths from
+#           computed pieces, and cli edges (a C# Process start is not scanned).
 #
 # YAML subset (parsed without a library, so the check needs no install step): block mappings and
 # sequences, plain, 'single' or "double" quoted scalars, [flow, lists] of scalars, and # comments.
