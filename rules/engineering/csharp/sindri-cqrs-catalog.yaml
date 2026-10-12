@@ -2,7 +2,7 @@ schemaVersion: 1
 id: engineering.csharp.sindri-cqrs-catalog
 kind: engineering
 section: "4b.2"
-text: "Every Sindri ICommand and IIssue type has a command catalog row: a plain command exactly one row without a variant, a classified command (IClassifiedCommand) one row per variant ('<Command>:<variant>')."
+text: "Every Sindri ICommand and IIssue type has a command catalog row: a plain command exactly one row without a variant, a classified command (IClassifiedCommand) at least one row, each with a variant ('<Command>:<variant>'); a variant without a row is classified protected."
 why: "The chain classifies and authorizes every attempt by its catalog row, and the app renders its controls from the catalog; a command without a row would be refused as protected and never shown."
 select:
   languages: [csharp]
