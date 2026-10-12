@@ -13,8 +13,8 @@ internal static partial class Labels
         $"its address {authority} isn't on this machine (the app follows only 127.0.0.1, ::1 or localhost)";
 
     /// <summary>Why the platform refused to read control.json: no permission (the app's words, never the platform's message, which names the path).</summary>
-    internal const string RecordNoPermission = "red: not worded yet";
+    internal const string RecordNoPermission = "this user has no permission to read it";
 
     /// <summary>Why the platform couldn't read control.json otherwise (a directory in its place, an I/O error).</summary>
-    internal const string RecordIoError = "red: not worded yet";
+    internal const string RecordIoError = "the platform couldn't read it (is something else, such as a directory, in its place?)";
 }

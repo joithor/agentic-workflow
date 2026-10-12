@@ -213,7 +213,7 @@ internal static partial class Labels
     internal const string RecordUnreadable = "The endpoint record can't be read";
 
     /// <summary>Not running: the platform couldn't read control.json (a directory, no permission).</summary>
-    /// <param name="why">The platform's reason.</param>
+    /// <param name="why">Why, in the app's words (never the platform's message, which names the path).</param>
     /// <returns>The reason; the record's path follows on its own line.</returns>
     internal static string RecordUnreadableBecause(string why) => $"{RecordUnreadable}: {why}";
 

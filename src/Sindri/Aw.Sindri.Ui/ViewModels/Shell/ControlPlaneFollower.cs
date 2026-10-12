@@ -57,10 +57,13 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         }
     }
 
-    // The platform couldn't read the record (a directory, no permission): say so, and keep trying.
+    // The platform couldn't read the record (a directory, no permission): say so in the app's words, and keep trying. The
+    // platform's message names the record's full path, so it stays out of the window; the path shows shortened on its own
+    // line, as everywhere else (review run 3, security-sentinel-0).
     private bool RecordUnreadable(Exception e)
     {
-        _ = health.NotRunning(Labels.RecordUnreadableBecause(e.Message), StatusText.ShortPath(records.Location));
+        var why = e is UnauthorizedAccessException ? Labels.RecordNoPermission : Labels.RecordIoError;
+        _ = health.NotRunning(Labels.RecordUnreadableBecause(why), StatusText.ShortPath(records.Location));
         return true;
     }
 
