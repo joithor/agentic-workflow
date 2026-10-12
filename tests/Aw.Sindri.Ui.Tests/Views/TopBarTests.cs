@@ -3,9 +3,11 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Theme;
 using Aw.Sindri.Ui.ViewModels;
@@ -153,4 +155,29 @@ public sealed class TopBarTests : IDisposable
         await Until(() => shell.State == ShellState.Stale);
         Settle(window);
     }
+
+    // accessibility-tester-1 (states.html "Not running": the pill is the state, not a link): while Sindri isn't running the
+    // Not running card is the health state and the Health page has nothing to show, so the pill takes no click, no Enter
+    // and no Tab stop (disabled, like the navigation beside it). It still says the state to assistive tech, its word keeps
+    // its ink (not dimmed), and nothing changes the page or the remembered last page.
+    [Fact]
+    public Task While_not_running_the_health_pill_is_the_state_and_opens_nothing() => OnUi(async () =>
+    {
+        var (window, shell) = await Show(s => s.State == ShellState.NotRunning);
+        var pill = Named<Button>(window, "HealthPill");
+        var writes = _preferences.Writes;
+
+        Assert.False(pill.IsEffectivelyEnabled);
+        Assert.Equal(shell.Pill.Text, AutomationProperties.GetName(pill));
+        Assert.Equal(Colour("Color.Ink"), ((ISolidColorBrush)Named<TextBlock>(window, "HealthPillText").Foreground!).Color);
+
+        pill.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+        Assert.Equal(writes, _preferences.Writes);
+    });
+
+    private static Color Colour(string key) =>
+        Application.Current!.TryGetResource(key, theme: null, out var v) && v is Color c ? c : default;
 }
