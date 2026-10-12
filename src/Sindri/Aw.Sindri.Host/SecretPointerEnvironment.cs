@@ -13,5 +13,7 @@ internal static class SecretPointerEnvironment
     /// <param name="secrets">Resolves pointers.</param>
     /// <returns>A pointer's value, or null when it doesn't parse or resolve (never the real environment's value for that name); otherwise <paramref name="environment"/>'s.</returns>
     internal static Func<string, string?> Over(Func<string, string?> environment, ISecretPointers secrets)
-        => throw new NotSupportedException($"red: wrap ({environment.Method.Name}, {secrets.GetType().Name})");
+        => name => !SecretPointer.IsPointer(name)
+            ? environment(name)
+            : SecretPointer.Parse(name).Bind(secrets.Resolve).Match<string?>(static value => value, static _ => null);
 }
