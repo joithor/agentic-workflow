@@ -68,6 +68,21 @@ public sealed class EvalRecipeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Scaffold_answers_an_answer_wait_with_a_text_line_that_then_passes()
+    {
+        const string recipe = "dev/workflow.ask.yaml";
+        _ = _files.With(recipe, AnswerWaitTests.Yaml + "evals: [evals/workflow.ask/happy.jsonl]\n");
+
+        var scaffold = Assert.IsType<string>((await Eval(recipe, EvalMode.Scaffold)).Scaffold);
+
+        var printed = scaffold.TrimEnd('\n').Split('\n');
+        Assert.Equal(2, printed.Length);
+        Assert.Contains("\"variant\":\"text\"", printed[1], StringComparison.Ordinal);
+        _ = _files.With("dev/evals/workflow.ask/happy.jsonl", scaffold);
+        Assert.Equal(["happy pass"], (await Eval(recipe)).Cases.Select(c => c.ToLine()), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_wait_satisfied_line_on_an_answer_wait_says_to_answer_with_text()
     {
         const string recipe = "dev/workflow.ask.yaml";
