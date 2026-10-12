@@ -15,7 +15,7 @@ tree="$out/tree"
 [ ! -d "$tree" ] || find "$tree" -delete
 mkdir -p "$tree"
 git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' BannedSymbols.txt CodeMetricsConfig.txt \
-  src/Aw.Kernel src/Aw.Analyzers src/Sindri/Aw.Sindri.Ui src/Sindri/Aw.Sindri.Ui.Desktop | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
+  src/Aw.Kernel src/Aw.Kernel.Telemetry src/Redaction/Aw.Redaction src/Aw.Analyzers src/Sindri/Aw.Sindri.Ui src/Sindri/Aw.Sindri.Ui.Desktop | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
 rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
 dotnet publish "$tree/src/Sindri/Aw.Sindri.Ui.Desktop/Aw.Sindri.Ui.Desktop.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false \
   -o "$out/bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }
