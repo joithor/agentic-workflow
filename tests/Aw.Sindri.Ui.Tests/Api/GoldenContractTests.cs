@@ -61,7 +61,7 @@ public sealed class GoldenContractTests
         var catalog = AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", "catalog")), SindriApiClient.Json).Value;
 
         var rebuild = Assert.Single(catalog.Rows, r => r.Action == "RebuildViews");
-        Assert.Equal(("desk", "pending:P2", "sindri views rebuild", false, false), (rebuild.Class, rebuild.Ui, rebuild.Cli, rebuild.Destructive, rebuild.ReadsViews));
+        Assert.Equal(("desk", "ready", "sindri views rebuild", false, false), (rebuild.Class, rebuild.Ui, rebuild.Cli, rebuild.Destructive, rebuild.ReadsViews));
         var stop = Assert.Single(catalog.Rows, r => r.Action == "StopProcess");
         Assert.Equal(("ready", true), (stop.Ui, stop.Destructive));
         Assert.Equal("cli-only:typed-confirmation", Assert.Single(catalog.Rows, r => r.Action == "ApproveProfile").Ui);

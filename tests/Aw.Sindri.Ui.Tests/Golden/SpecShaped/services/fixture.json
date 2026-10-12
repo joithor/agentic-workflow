@@ -2,17 +2,18 @@
   "services": [
     {
       "name": "heartbeat",
-      "cadence": "5s",
+      "every": "5s",
       "paused": false,
       "lastRun": {
         "slot": "2026-01-01T00:00:55.0000000Z",
         "outcome": "ok",
-        "code": null
+        "code": null,
+        "ranAt": "2026-01-01T00:00:55.0000000Z"
       },
       "nextSlot": "2026-01-01T00:01:00.0000000Z"
     }
   ],
-  "empty": "No services are scheduled.",
+  "empty": null,
   "asOf": {
     "cursor": 41,
     "ledgerHead": 41,

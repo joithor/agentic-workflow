@@ -36,7 +36,7 @@ internal sealed class ViewsBanner : ObservableObject
         IsStalled = view?.AsOf.Stalled == true;
         IsRebuilding = !IsStalled && view?.AsOf.Rebuilding == true;
         IsShown = IsStalled || IsRebuilding;
-        Text = IsShown ? view!.Empty : string.Empty; // why: IsShown implies a view
+        Text = IsShown ? view?.Empty ?? string.Empty : string.Empty;
         Rebuild = IsStalled ? rebuild : null;
         HasRebuild = Rebuild is not null;
     }

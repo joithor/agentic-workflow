@@ -87,19 +87,20 @@ public sealed class FreshnessTests : IDisposable
     [Fact]
     public async Task Stalled_views_show_the_views_sentence_and_rebuild_views()
     {
-        _server.Catalog = RouteAnswer.SpecShaped("commands", "catalog-p2");
         _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
 
         await Connected(() => _vm.Banner.IsShown);
 
-        Assert.Equal((true, false, "Views are stalled at 42: run sindri views rebuild"), (_vm.Banner.IsStalled, _vm.Banner.IsRebuilding, _vm.Banner.Text));
+        Assert.Equal((true, false, "Views are stalled at 42: run `sindri views rebuild`"), (_vm.Banner.IsStalled, _vm.Banner.IsRebuilding, _vm.Banner.Text));
         Assert.Equal(("RebuildViews", true), (_vm.Banner.Rebuild?.Action, _vm.Banner.Rebuild?.CanRun));
     }
 
-    // With P1's catalog RebuildViews is pending:P2: the banner's control is disabled with its focusable line.
+    // A catalog that still has RebuildViews pending (P1's, before P2): the banner's control is disabled with its focusable line.
     [Fact]
     public async Task With_rebuild_still_pending_the_banners_control_is_drawn_pending()
     {
+        var p2 = RouteAnswer.Api("commands", "catalog");
+        _server.Catalog = p2 with { Body = p2.Body.Replace("\"cli\": \"sindri views rebuild\",\n      \"ui\": \"ready\"", "\"cli\": \"sindri views rebuild\",\n      \"ui\": \"pending:P2\"", StringComparison.Ordinal) };
         _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
 
         await Connected(() => _vm.Banner.IsShown);
@@ -125,8 +126,8 @@ public sealed class FreshnessTests : IDisposable
 
         Assert.Equal(1, _server.CatalogCalls);
         Assert.Equal(18, _vm.Catalog.Controls.Count);
-        Assert.Equal("14 actions arrive in later phases", _vm.Catalog.PendingSummary);
-        Assert.Equal(["arrives in P6", "arrives in P3", "arrives in P4", "arrives in P10a", "arrives in P2"], _vm.Catalog.Pending.Select(p => p.Heading), StringComparer.Ordinal);
+        Assert.Equal("13 actions arrive in later phases", _vm.Catalog.PendingSummary);
+        Assert.Equal(["arrives in P6", "arrives in P3", "arrives in P4", "arrives in P10a"], _vm.Catalog.Pending.Select(p => p.Heading), StringComparer.Ordinal);
         Assert.Equal(3, _vm.Catalog.CliOnly.Count);
     }
 

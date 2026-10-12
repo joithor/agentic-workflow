@@ -101,7 +101,7 @@ public abstract class SindriApiContract
         var catalog = (await Reach(new FakeSindriApi()).Commands(_api, Token)).Value;
 
         Expect.Equal(18, catalog.Rows.Count);
-        Expect.Equal("pending:P2", catalog.Rows.Single(r => r.Action == "RebuildViews").Ui);
+        Expect.Equal("ready", catalog.Rows.Single(r => r.Action == "RebuildViews").Ui);
         Expect.Equal("sindri profile approve [<hash>]", catalog.Rows.Single(r => r.Action == "ApproveProfile").Cli);
     }
 
@@ -113,7 +113,7 @@ public abstract class SindriApiContract
 
         var view = (await Reach(server).Services(_api, Token)).Value;
 
-        Expect.Equal("Views are stalled at 42: run sindri views rebuild", view.Empty);
+        Expect.Equal("Views are stalled at 42: run `sindri views rebuild`", view.Empty);
         Expect.Equal((41L, 42L, true, false), (view.AsOf.Cursor, view.AsOf.LedgerHead, view.AsOf.Stalled, view.AsOf.Rebuilding));
     }
 
