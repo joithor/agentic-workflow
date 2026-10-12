@@ -31,7 +31,7 @@ public abstract class RepoLocatorContract
 
         var repo = await Create().Locate(inWorktree, [new RepoEntry("demo", main)], Token);
 
-        Expect.Equal<RepoName?>(RepoName.From("demo"), repo);
+        Expect.Equal(RepoName.From("demo"), repo);
     }
 
     /// <summary>When several entries contain the checkout, the longest path wins.</summary>
@@ -44,7 +44,7 @@ public abstract class RepoLocatorContract
 
         var repo = await Create().Locate(inWorktree, [new RepoEntry("outer", parent), new RepoEntry("inner", main), new RepoEntry("other", main + "-other")], Token);
 
-        Expect.Equal<RepoName?>(RepoName.From("inner"), repo);
+        Expect.Equal(RepoName.From("inner"), repo);
     }
 
     /// <summary>A checkout no entry contains, and a directory outside git, have no repo.</summary>
@@ -58,7 +58,7 @@ public abstract class RepoLocatorContract
         var elsewhere = await locator.Locate(inWorktree, [new RepoEntry("other", main + "-other")], Token);
         var outside = await locator.Locate(await OutsideGit(), [new RepoEntry("demo", main)], Token);
 
-        Expect.Equal<RepoName?>(expected: null, elsewhere);
-        Expect.Equal<RepoName?>(expected: null, outside);
+        Expect.Equal(expected: null, elsewhere);
+        Expect.Equal(expected: null, outside);
     }
 }

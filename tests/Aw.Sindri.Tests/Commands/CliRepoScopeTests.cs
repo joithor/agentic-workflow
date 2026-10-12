@@ -29,6 +29,6 @@ public sealed class CliRepoScopeTests
     {
         var repo = RepoScope.Longest("/work/demo", [new RepoEntry("outer", "/work"), new RepoEntry("bad name", "/work/demo")]);
 
-        Assert.Equal<RepoName?>(RepoName.From("outer"), repo);
+        Assert.Equal(RepoName.From("outer"), repo);
     }
 }
