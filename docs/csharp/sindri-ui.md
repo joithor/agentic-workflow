@@ -65,22 +65,28 @@ Windows the profile's ACLs do it):
 | Adapter | How |
 |---|---|
 | `FilePreferencesStore` | `ui/preferences.json`; a write goes to a new 0600 temp file beside it, flushed to disk, then renamed over it |
-| `SocketSingleInstance` | The claim is an exclusive lock on `ui/instance.lock` (the OS drops it when the process dies, so a crash leaves no claim); its holder removes a crashed instance's `ui/instance.sock` and listens there (a Unix domain socket, 0600; AF_UNIX on Windows 10 and later too; when the path won't fit sun_path's 104 bytes, as in a deep temp home, the socket goes to `$TMPDIR/sindri-ui-<hash of the path>/`, 0700). The holder records its process id in `ui/instance.pid` (0600; removed on exit). A later launch writes one UTF-8 message ending in a newline, keeps its side open and reads one byte back: 1 once the holder's reader has handled the message (`AppLifetime.Listen` handles each on the UI thread before reading the next), 0 refused. The listener refuses an empty message, one over 512 characters, one that isn't UTF-8 or one without its newline; it waits 1.5 s from a message's arrival for the handling and the sender waits 2 s, so a holder that doesn't handle it (a failed start-up, a wedged app) gives no answer. A message nothing handled in time, or whose sender has gone, is dropped |
+| `SocketSingleInstance` | The claim is an exclusive lock on `ui/instance.lock` (the OS drops it when the process dies, so a crash leaves no claim); its holder records its process id in `ui/instance.pid` (0600; removed on exit), then removes a crashed instance's `ui/instance.sock` and listens there (a Unix domain socket, 0600; AF_UNIX on Windows 10 and later too; when the path is longer than 100 bytes (under sun_path's 104 on macOS and 108 on Linux), as in a deep temp home, the socket goes to `$TMPDIR/sindri-ui-<hash of the path>/`, 0700). A later launch writes one UTF-8 message ending in a newline, keeps its side open and reads one byte back: 1 once the holder's reader has handled the message (`Views/InstanceListener` reads from the app's framework start-up on: before the window shows it answers `focus` at once and keeps the latest deep link; after, `AppLifetime.Receive` handles each on the UI thread before the next is read), 0 refused. The listener refuses an empty message, one over 512 characters, one that isn't UTF-8 or one without its newline; it waits 1.5 s from a message's arrival for the handling and the sender waits 2 s, so a holder that doesn't handle it (an app whose framework start-up failed or hangs, or a wedged one) gives no answer. A message nothing handled in time, or whose sender has gone, is dropped |
 | `SingleLaunch` | `Program` claims before Avalonia starts; a later launch sends `focus` (or its one argument when it is a deep link, `sindri://` optional) and exits 0 once the running app handled it. With no answer it claims again: if the holder ended meanwhile, this launch runs the app; otherwise it exits 1 with `sindri-ui: Sindri app is running but not answering (pid N): quit it or kill it` on standard error. Exit codes: 0 handed over (or the app quit), 1 a holder that doesn't answer, 2 the app failed (SND-UI-004) |
 | `AvaloniaTray` | Avalonia's `TrayIcon`, created on the first `Show` and registered with the app through `Views/AppTrayIcons` (Avalonia makes the native icon only for an icon in the Application's `TrayIcon.Icons`); `TrayMarks` draws Sindri's mark in the theme's Ink, filled (Neutral), hollow (Stale) and hollow struck through (NotRunning), as macOS template images; menu labels double each `_` |
 | `PolledMotionPreference` | The OS reader at start and every 2 s on the injected `TimeProvider`: macOS `NSWorkspace.accessibilityDisplayShouldReduceMotion` through `objc_msgSend` (`MacMotion`), Windows `SPI_GETCLIENTAREAANIMATION` (`WindowsMotion`), GNOME `gsettings get org.gnome.desktop.interface enable-animations` (`GnomeMotion`; no gsettings, a failure or a hang past 3 s reads as off) |
 
 `Views/AppLifetime` (in the app, so every desktop head shares it) is the window's life around these: closing the
 window hides it (the app stays in the tray; an OS or app shutdown still closes it), the tray's Open brings it
-forward and Quit ends the app (`ShutdownMode.OnExplicitShutdown`), the tray follows `ShellState` (Normal: Neutral,
+forward and Quit ends the app (`ShutdownMode.OnExplicitShutdown`) once the window's bounds are recorded and the
+preferences queue is written (at most `AppLifetime.SettleWithin`, 1 s on the injected clock); when the OS ends the app
+(⌘Q, the Dock, logging out) `ShutdownRequested` isn't cancelled, which would hold up a logout, but the bounds are
+recorded and the UI thread waits up to the same second for the write. The tray follows `ShellState` (Normal: Neutral,
 "Sindri · running"; NotRunning: NotRunning; every other state: Stale, "Sindri not responding"), and an instance message
 is either `focus` (bring forward) or a `DeepLink` (bring forward, then the shell's `Navigate`); anything else is ignored,
-and no message runs an action. `SindriApp`'s `ShellOpened` (`Views/SindriApp.Lifetime.cs`) calls
-`AppLifetime.Start(desktop, window, platform, shell)` once the shell window shows, and disposes it on exit.
+and no message runs an action. `SindriApp` starts `Views/InstanceListener` in `OnFrameworkInitializationCompleted`; its
+`ShellOpened` (`Views/SindriApp.Lifetime.cs`) builds the `AppLifetime` over the window, the tray, the shell's `Navigate`,
+the shutdown and the settle step once the shell window shows, calls its `Start(desktop, shell)`, hands it the listener's messages (`Deliver`, which first applies a deep link kept from
+start-up), and disposes it on exit.
 
 **Preferences** (§12.3) are `UiPreferences`: `version` (1), `window` (x, y, width, height), `sheetWidth`, `lastPage`,
 `seenIds`, `paletteHistory`, `textScale`, `reduceMotion`, camelCase JSON. A head's store only moves bytes; the app's
-`ViewModels/Preferences` (`Load`, `Save`) parses and writes them through `Api/PreferencesJson`, so clamping is the same
+`ViewModels/Preferences` (`Load`, `Update`, `Flush`; one instance, built in `SindriApp.Create` and shared by the shell
+and Settings, queues every read-change-write behind the one before) parses and writes them through `Api/PreferencesJson`, so clamping is the same
 on every head: the window grows to 900 × 600 (bounds that
 aren't finite are dropped), the sheet is 420–760, the scale 0.9–1.3, an unknown page reads as Home, and the id lists
 drop blanks and repeats and keep their newest 500 and 20. A malformed file, or one of another version, reads as the
@@ -142,7 +148,7 @@ the top bar, the page region in the page (`ShellWindow.KeepFocus`, `TopBar.KeepR
 
 `Views/SettingsView` over `ViewModels/Settings/SettingsViewModel`: the in-app **Reduce motion** switch and **Text size**
 (a slider, 90–130 % in 10 % steps, clamped by `UiPreferences.Clamp`). Both are kept in the preferences: a change is
-written over whatever else the file holds (read, replace the two fields, write; one write after another), and a write
+written over whatever else the file holds (read, replace the two fields, write, through the app's one preferences queue, shared with the shell), and a write
 the platform refuses leaves the change applied for the session. Motion is reduced when the OS asks
 (`IMotionPreference`, re-read on `Changed`, posted back to the UI thread) **or** the switch is on; while the OS asks, the
 page says "On in your system settings" and the switch can't turn it off. Settings is local preferences, so it stays
@@ -151,10 +157,10 @@ reachable while Sindri is not running: ⌘, shows it over the Not running card, 
 The theme is changed in one place each: `Theme/Motion.Apply(resources, reduce)` sets every `Motion.*` duration to 0, or
 back to its token value, and `Theme/TextScale.Apply` scales the ramp. `Views/SettingsTheme.For(resources)` is the view
 model's apply callback over both. **At start-up** `SindriApp` builds
-`new SettingsViewModel(new Preferences(platform.Preferences), platform.Motion, SettingsTheme.For(Resources))` on the UI
+`new SettingsViewModel(preferences, platform.Motion, SettingsTheme.For(Resources))` (the shared `Preferences` the shell also has) on the UI
 thread, awaits `Load` once before the window shows (the stored scale and motion apply before the first frame; an
 unreadable preferences file leaves the defaults), puts `new SettingsView { DataContext = settings }` in the shell's
-`SettingsSlot`, and disposes it on exit. The shell and Settings each write only their own fields over the stored file. Stock Fluent controls'
+`SettingsSlot`, and disposes it on exit. The shell and Settings each write only their own fields, through the one queue, so neither writes back what it read before the other's change. Stock Fluent controls'
 own transitions don't read the `Motion.*` tokens: `SettingsTheme.Follow(window, settings)` keeps the window's
 `reduce-motion` class in step with `IsMotionReduced`, and `Theme/FluentOverrides.axaml` turns those transitions off
 under it (today the ToggleSwitch knob); another stock control with its own transitions gets its line there.
