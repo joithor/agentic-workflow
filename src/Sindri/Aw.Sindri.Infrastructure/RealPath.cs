@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Infrastructure.Auth;
+namespace Aw.Sindri.Infrastructure;
 
 /// <summary>
 /// Resolves every symbolic link along a path, like realpath(3), so a home reached through a link (macOS's /var is

@@ -1,5 +1,3 @@
-using Aw.Sindri.Infrastructure.Auth;
-
 namespace Aw.Sindri.Infrastructure;
 
 /// <summary>Sindri's infrastructure settings, read from the environment (SettingsFromEnvironment).</summary>

@@ -1,4 +1,5 @@
 using Aw.Sindri.Core;
+using Aw.Sindri.Host.Endpoints;
 
 namespace Aw.Sindri.Host;
 

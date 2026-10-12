@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Infrastructure.Auth;
+namespace Aw.Sindri.Infrastructure;
 
 /// <summary>
 /// Whether a home may honour the prover label (API spec §6, plan G4): its real path is inside the temp directory or

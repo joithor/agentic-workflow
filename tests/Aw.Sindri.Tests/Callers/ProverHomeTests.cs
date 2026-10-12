@@ -1,4 +1,4 @@
-using Aw.Sindri.Infrastructure.Auth;
+using Aw.Sindri.Infrastructure;
 
 namespace Aw.Sindri.Tests.Callers;
 
