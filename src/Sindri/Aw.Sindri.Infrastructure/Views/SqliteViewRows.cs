@@ -30,7 +30,12 @@ internal sealed class SqliteViewRows(ISqliteSession session, long sequence, Json
         }
 
         var row = AwJson.Deserialize<TRow>(Encoding.UTF8.GetBytes(rows.Value[0]), options);
-        return row.IsError ? Results.Failure<TRow?>(row.Error) : Results.Success<TRow?>(row.Value);
+        if (row.IsError)
+        {
+            return row.Error;
+        }
+
+        return Found(row.Value);
     }
 
     /// <summary>Every row of <paramref name="view"/>, ordered by key.</summary>
@@ -87,6 +92,9 @@ internal sealed class SqliteViewRows(ISqliteSession session, long sequence, Json
         var written = await SqliteQueries.Execute(session, statement(table), cancellationToken).ConfigureAwait(false);
         return written.IsError ? ViewsDatabase.Translate(written.Error) : Unit.Value;
     }
+
+    private static Result<TRow?> Found<TRow>(TRow? row)
+        where TRow : class => row;
 
     private static Error Unknown(string view) => SindriErrors.InvalidInput.With($"'{view}' isn't a view");
 }
