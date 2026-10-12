@@ -14,6 +14,7 @@ internal static class EndpointTable
 
         // ---- queries: one line per slice, sorted ----
         _ = queries.MapGetStatus();
+        _ = queries.MapListCommands();
         _ = queries.MapPingProcess();
         _ = queries.MapStreamEvents();
 

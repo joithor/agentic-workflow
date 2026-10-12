@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.Commands;
 using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RunDoctor;
@@ -40,6 +41,7 @@ public static class SindriFeaturesServiceCollectionExtensions
 
         // ---- queries (one line per slice) ----
         _ = services.AddScoped<IValidator<GetStatusRequest>, AcceptAllValidator<GetStatusRequest>>().AddQuery<GetStatusRequest, GetStatusResponse, GetStatusService>();
+        _ = services.AddScoped<IValidator<ListCommandsRequest>, AcceptAllValidator<ListCommandsRequest>>().AddQuery<ListCommandsRequest, ListCommandsResponse, ListCommandsService>();
         _ = services.AddScoped<IValidator<PingProcessRequest>, AcceptAllValidator<PingProcessRequest>>().AddQuery<PingProcessRequest, Ping, PingProcessService>();
         _ = services.AddScoped<IValidator<StreamEventsRequest>, AcceptAllValidator<StreamEventsRequest>>().AddQuery<StreamEventsRequest, StreamEventsResponse, StreamEventsService>();
         return services;
