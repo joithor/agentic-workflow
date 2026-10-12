@@ -87,17 +87,20 @@ internal static class ContextText
         _ = text.AppendLine().AppendLine("sources:");
         foreach (var (marker, cite) in cites.OrderBy(c => int.Parse(c.Key.AsSpan(1), CultureInfo.InvariantCulture)))
         {
+            var key = cite.Aliases.Count > 0 ? $"{cite.Key.Value} ({cite.Aliases[0]})" : cite.Key.Value;   // the first alias only; --json has them all
             foreach (var reference in cite.Refs)
             {
                 var current = reference.Current is { } now ? " → " + Short(now) : string.Empty;
-                _ = text.AppendLine(Invariant($"  [{marker}] {cite.Key.Value}  {reference.Source.Value} {reference.Id.Value}  version {Short(reference.Version)}{current}  {Word(cite.State)}"));
+                _ = text.AppendLine(Invariant($"  [{marker}] {key}  {reference.Source.Value} {reference.Id.Value}  version {Short(reference.Version)}{current}  {Word(cite.State)}"));
             }
         }
     }
 
     private static string Markers(IReadOnlyList<string> markers) => string.Join(' ', markers.Select(m => "[" + m + "]"));
 
-    private static string Short(SourceVersion version) => version.Value.Length > 12 ? version.Value[..12] : version.Value;
+    /// <summary>A git object id (hex, longer than 12) cut to 12 characters; any other version, such as an Onyx 'updated_at' timestamp, in full.</summary>
+    private static string Short(SourceVersion version) =>
+        version.Value.Length > 12 && version.Value.All(char.IsAsciiHexDigitLower) ? version.Value[..12] : version.Value;
 
     private static string Word(CitationState state) => state switch
     {
