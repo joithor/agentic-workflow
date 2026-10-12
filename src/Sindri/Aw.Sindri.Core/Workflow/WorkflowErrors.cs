@@ -38,9 +38,6 @@ public static class WorkflowErrors
     /// <summary>SND-WF-001: no such instance.</summary>
     public static readonly ErrorDefinition InstanceNotFound = new("SND-WF-001", ErrorKind.NotFound, "No such instance");
 
-    /// <summary>SND-WF-002: the instance changed (a stale version).</summary>
-    public static readonly ErrorDefinition InstanceChanged = new("SND-WF-002", ErrorKind.Conflict, "The instance changed");
-
     /// <summary>SND-WF-003: the trigger isn't allowed in the instance's state.</summary>
     public static readonly ErrorDefinition TriggerNotAllowed = new("SND-WF-003", ErrorKind.Conflict, "The trigger isn't allowed here");
 
@@ -79,13 +76,14 @@ public static class WorkflowErrors
     [
         RecipeInvalid, RecipeNotFound, RecipeNotApproved, RecipeRevoked, RecipePinDrift, RecipeVersionTaken, RecipeEvalsFailing,
         RecipeChallengeStale, RecipeUnreadable,
-        InstanceNotFound, InstanceChanged, TriggerNotAllowed, GateRefused, StaleRunToken, AmbiguousAddress, MalformedReport,
+        InstanceNotFound, TriggerNotAllowed, GateRefused, StaleRunToken, AmbiguousAddress, MalformedReport,
         NonceRefused, NoRuntime, EffectNotAllowed, EarlierAttemptLive, WorkflowChallengeStale, ItemMismatch,
     ];
 
     /// <summary>
     /// Retired codes (spec §8), reserved so they are never reused: SND-RECIPE-004 (a caller without a terminal now
-    /// gets the API's SND-AUTH-002) and SND-WF-007 (authorization is the API's SND-AUTH-002).
+    /// gets the API's SND-AUTH-002), SND-WF-002 (rev 8: Updates serialize per workflow, so there is no version
+    /// conflict) and SND-WF-007 (authorization is the API's SND-AUTH-002).
     /// </summary>
-    public static IReadOnlyList<string> Retired { get; } = ["SND-RECIPE-004", "SND-WF-007"];
+    public static IReadOnlyList<string> Retired { get; } = ["SND-RECIPE-004", "SND-WF-002", "SND-WF-007"];
 }

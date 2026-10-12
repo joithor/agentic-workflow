@@ -160,12 +160,12 @@ public sealed class RecipeValidateCliTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task Eval_says_it_arrives_with_P3_and_exits_2()
+    public async Task Eval_without_a_file_is_a_usage_error()
     {
-        var run = await Run("eval", PutShipped("workflow.step"));
+        var run = await Run("eval");
 
         Assert.Equal((2, string.Empty), (run.Exit, run.Stdout));
-        Match(run, "eval-not-yet.txt");
+        Match(run, "eval-no-file.txt");
     }
 
     private static int Kind(string line) =>
