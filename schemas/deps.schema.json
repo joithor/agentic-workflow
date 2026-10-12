@@ -19,17 +19,11 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "packageFanOut",
         "projectFanOut",
         "thirdPartyFanOut",
         "exceptionMaxDays"
       ],
       "properties": {
-        "packageFanOut": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "Max packages one package declares project edges to (test packages exempt). The declared-graph view of fan-out; DEPS-FANOUT-001."
-        },
         "projectFanOut": {
           "type": "integer",
           "minimum": 1,
@@ -335,7 +329,6 @@
       "properties": {
         "rule": {
           "enum": [
-            "DEPS-FANOUT-001",
             "DEPS-FANOUT-002",
             "DEPS-FANOUT-003"
           ],
@@ -343,11 +336,7 @@
         },
         "subject": {
           "$ref": "#/$defs/id",
-          "description": "The package the exception covers (for DEPS-FANOUT-002/003: every project of that package)."
-        },
-        "edge": {
-          "$ref": "#/$defs/id",
-          "description": "DEPS-FANOUT-001 only: the package of the declared project edge (subject -> edge) this exception is attached to. It then covers that one edge: the fan-out without it must be within the limit. DEPS-EXC-004 when no such edge is declared or it points into a test-support package (fan-out never counts those)."
+          "description": "The package the exception covers: every project of that package."
         },
         "reason": {
           "type": "string",
@@ -359,23 +348,7 @@
         "expires": {
           "$ref": "#/$defs/date"
         }
-      },
-      "allOf": [
-        {
-          "if": {
-            "required": [
-              "edge"
-            ]
-          },
-          "then": {
-            "properties": {
-              "rule": {
-                "const": "DEPS-FANOUT-001"
-              }
-            }
-          }
-        }
-      ]
+      }
     }
   }
 }
