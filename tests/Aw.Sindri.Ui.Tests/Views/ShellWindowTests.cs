@@ -622,6 +622,37 @@ public sealed class ShellWindowTests : IDisposable
         Assert.True(after is { IsEffectivelyVisible: true }, "focus went nowhere");
     });
 
+    // Review run 2 (julik-0): a sheet open when Sindri stops is hidden, not closed. One Esc on Settings over the card
+    // returns to the card (it never spends the keypress on the hidden sheet), and Esc on the bare card keeps the hidden
+    // sheet, so it is back when Sindri is.
+    [Fact]
+    public Task Esc_while_not_running_leaves_Settings_in_one_press_and_keeps_a_hidden_sheet() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        _records.Remove();
+        _server.GoDown();
+        _clock.Advance(HealthViewModel.PingEvery);
+        await Until(() => shell.State == ShellState.NotRunning);
+        window.SettingsSlot.Content = new SettingsView { DataContext = new SettingsViewModel(new Preferences(_preferences), new FakeMotionPreference(), _ => { }) };
+        var command = OperatingSystem.IsMacOS() ? RawInputModifiers.Meta : RawInputModifiers.Control;
+        window.KeyPress(Key.OemComma, command, PhysicalKey.Comma, keySymbol: ",");
+        Settle(window);
+        Assert.True(Visible(window, "SettingsSlot"));
+
+        window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, keySymbol: null);
+        Settle(window);
+        Assert.True(shell.IsNotRunningPanel);
+        Assert.True(Visible(window, "NotRunningPanel"));
+
+        window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, keySymbol: null);
+        Settle(window);
+        Assert.True(shell.IsSheetOpen);
+        Assert.False(Visible(window, "Sheet"));
+    });
+
     [Fact]
     public Task A_version_mismatch_takes_the_whole_window() => OnUi(async () =>
     {
