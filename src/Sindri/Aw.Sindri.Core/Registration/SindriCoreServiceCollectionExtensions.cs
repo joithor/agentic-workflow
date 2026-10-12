@@ -27,5 +27,6 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<BlockCatalog>()
             .AddSingleton<ProjectorProgress>()
             .AddSingleton<IProjectorStatus>(static sp => sp.GetRequiredService<ProjectorProgress>())
-            .AddSingleton<IProjectorControl>(static sp => sp.GetRequiredService<ProjectorProgress>());
+            .AddSingleton<IProjectorControl>(static sp => sp.GetRequiredService<ProjectorProgress>())
+            .AddSingleton<IProjectorFeed>(static sp => sp.GetRequiredService<ProjectorProgress>());
 }

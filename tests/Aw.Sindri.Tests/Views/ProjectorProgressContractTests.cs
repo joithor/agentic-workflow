@@ -9,7 +9,7 @@ public sealed class ProjectorProgressContractTests : ProjectorStatusContract
 {
     protected override ProjectorSubject Create(TimeProvider clock)
     {
-        var progress = new ProjectorProgress();
+        var progress = new ProjectorProgress(clock);
         return new ProjectorSubject(progress, progress, progress.Publish);
     }
 }
