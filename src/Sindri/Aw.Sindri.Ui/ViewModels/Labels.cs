@@ -132,6 +132,9 @@ internal static partial class Labels
     /// <summary>The version-mismatch panel's fix.</summary>
     internal const string VersionMismatchFix = "quit both and run sindri";
 
+    /// <summary>The version-mismatch fix's words before its <see cref="StartFix"/> chip.</summary>
+    internal const string VersionMismatchFixLead = "quit both and run";
+
     /// <summary>After three failed refreshes while the process still answers ping (§4.1 Stale, DB §5).</summary>
     internal const string NotResponding = "Sindri not responding: run sindri doctor";
 

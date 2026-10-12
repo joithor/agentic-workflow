@@ -251,6 +251,15 @@ public sealed class ShellWindowTests : IDisposable
             var quiet = panel.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == Labels.NotServedYet);
             Assert.Contains("caption", quiet.Classes, StringComparer.Ordinal);
             Assert.Equal(Colour("Color.InkSubtle"), Ink(quiet));
+
+            // I3: the caption sits centred in the panel's body, across and down (states.html .empty).
+            var box = Box(window, name);
+            var at = quiet.TranslatePoint(new Point(0, 0), window) ?? default;
+            var ink = quiet.TextLayout.HitTestTextPosition(0);
+            var inkCentreX = at.X + quiet.Padding.Left + ink.X + (quiet.TextLayout.Width / 2);
+            var headBottom = (head.TranslatePoint(new Point(0, 0), window) ?? default).Y + head.Bounds.Height;
+            Assert.InRange(inkCentreX - box.Center.X, -1, 1);
+            Assert.InRange(at.Y + (quiet.Bounds.Height / 2) - ((headBottom + box.Bottom) / 2), -1, 1);
         }
 
         Assert.Equal(new Thickness(24), Named<Panel>(window, "PageContent").Margin);
@@ -394,11 +403,16 @@ public sealed class ShellWindowTests : IDisposable
 
         Assert.True(Visible(window, "VersionMismatchPanel"));
         Assert.False(Visible(window, "TopBar"));
-        // N4 (states.html): the two versions as labelled rows, and the fix as a sentence, not in the command chip.
+        // N4 (states.html): the two versions as labelled rows, and the fix as a sentence around sindri in the mono
+        // command chip; the line is named by the whole sentence.
         var rows = Named<ItemsControl>(window, "VersionRows").GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
         Assert.Equal(["This app", "API v1", "Sindri", "API v2"], rows);
-        Assert.Null(window.Get<TextBlock>("VersionFixText").FindAncestorOfType<Border>() is { } b && b.Classes.Contains("command") ? b : null);
-        Assert.Equal(Labels.VersionMismatchFix, Text(window, "VersionFixText"));
+        Assert.Equal(Labels.VersionMismatchFixLead, Text(window, "VersionFixText"));
+        var command = window.Get<TextBlock>("VersionFixCommand");
+        Assert.Equal(Labels.StartFix, command.Text);
+        Assert.Contains("mono", command.Classes, StringComparer.Ordinal);
+        Assert.Contains("command", command.FindAncestorOfType<Border>()!.Classes, StringComparer.Ordinal);
+        Assert.Equal(Labels.VersionMismatchFix, AutomationProperties.GetName(window.Get<Control>("VersionFix")));
         Frame(window, "version-mismatch");
     });
 
