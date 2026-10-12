@@ -15,7 +15,9 @@ namespace Aw.Sindri.Ui.Desktop;
 internal static class SingleLaunch
 {
     private const string Scheme = "sindri://";
-    private const string FailedLine = "sindri-ui: couldn't start (SND-UI-004); the log line above names the cause";
+
+    // A failure inside the app: the app's log names the cause, which AW_LOG_LEVEL=none hides.
+    private const string FailedInApp = "sindri-ui: couldn't start (SND-UI-004); the log names the cause unless AW_LOG_LEVEL is none";
 
     /// <summary>Runs the app, or hands over to the running one.</summary>
     /// <param name="instance">This launch's instance port.</param>
@@ -34,7 +36,8 @@ internal static class SingleLaunch
         {
             // The message and stack can carry the home's path: the code and the type only.
             DesktopLog.FailedBeforeStart(log, e.GetType().Name);
-            errors.WriteLine(FailedLine);
+            // The line names the cause itself (the type only), so it holds when AW_LOG_LEVEL=none printed no log line.
+            errors.WriteLine($"sindri-ui: couldn't start (SND-UI-004: {e.GetType().Name})");
             return SindriApp.FailedExitCode;
         }
     }
@@ -85,7 +88,8 @@ internal static class SingleLaunch
         var exit = runApp();
         if (exit == SindriApp.FailedExitCode)
         {
-            errors.WriteLine(FailedLine);
+            // The app logged the cause itself; the line stays true when AW_LOG_LEVEL=none printed nothing.
+            errors.WriteLine(FailedInApp);
         }
 
         return exit;

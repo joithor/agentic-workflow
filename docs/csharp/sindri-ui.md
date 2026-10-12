@@ -104,10 +104,10 @@ desktop lifetime).
 the app logs `SND-UI-004` through `SindriPlatform.Log` (an `ILogger`; the desktop head's is `Aw.Kernel.Telemetry`'s,
 JSON lines on standard error, `AW_LOG_LEVEL`) with the exception's type only (no message, no stack: they can carry paths
 and payloads), then ends with exit code 2 (`SindriApp.FailedExitCode`) instead of staying up without a window or tray.
-`SingleLaunch` then writes `sindri-ui: couldn't start (SND-UI-004); the log line above names the cause` on standard
-error. `SingleLaunch` is also the head's boundary: anything that throws before or around the app (claiming the
+`SingleLaunch` then writes `sindri-ui: couldn't start (SND-UI-004); the log names the cause unless AW_LOG_LEVEL is none`
+on standard error. `SingleLaunch` is also the head's boundary: anything that throws before or around the app (claiming the
 instance when `ui/` can't be made, a hand-over socket it can't use) is logged the same way (`SND-UI-004`, the type
-only, never the message, which can name the home), with the same line, and exit 2; never an unhandled exception.
+only, never the message, which can name the home), with a line that names the exception's type (`sindri-ui: couldn't start (SND-UI-004: IOException)`), and exit 2; never an unhandled exception.
 
 | Part | What it shows |
 |---|---|
