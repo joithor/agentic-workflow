@@ -223,9 +223,9 @@ public sealed class CommandPaletteTests : IDisposable
     public Task The_palette_opens_and_refilters_at_the_top_and_only_the_arrows_scroll() => OnUi(async () =>
     {
         var (window, shell) = await Connected();
-        var scroll = Named<ScrollViewer>(window, "PaletteScroll");
 
         Press(window, Key.K, PhysicalKey.K, _command, "k");
+        var scroll = Named<ScrollViewer>(window, "PaletteScroll");
 
         Assert.Equal(("ApproveProfile", 0d), (shell.Palette.Selected?.Id, scroll.Offset.Y));
         var heading = Named<ItemsControl>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "Actions");
@@ -258,7 +258,7 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.True(shell.Palette.IsOpen);
         var entry = EntryButton(window, "Rebuild views");
         Assert.Equal(("Rebuild views, Sending…", false), (AutomationProperties.GetName(entry), entry.IsEnabled));
-        Assert.True(entry.GetVisualDescendants().OfType<Control>().First(c => c.Name == "EntrySpinner").IsEffectivelyVisible);
+        Assert.True(entry.GetVisualDescendants().OfType<Control>().First(c => c.Classes.Contains("entry-spinner")).IsEffectivelyVisible);
         Frame(window, "palette-sending");
 
         _server.RebuildGate.SetResult();
@@ -285,7 +285,7 @@ public sealed class CommandPaletteTests : IDisposable
         await Until(window, () => shell.Palette.Selected?.IsFailed == true, "refused");
 
         Assert.True(shell.Palette.IsOpen);
-        var detail = Named<Control>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>().First(t => t.Name == "EntryErrorDetail");
+        var detail = Named<Control>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>().First(t => t.Classes.Contains("entry-error-detail"));
         Assert.True(detail.IsEffectivelyVisible);
         Assert.Equal("POST /sindri/views/rebuild failed with NotSupportedException; the control plane logged it", detail.Text);
         Assert.StartsWith("Rebuild views, SND-API-005: ", AutomationProperties.GetName(EntryButton(window, "Rebuild views")), StringComparison.Ordinal);

@@ -74,10 +74,15 @@ internal sealed partial class CommandPalette : UserControl
 
     private void OnScrim(object? sender, PointerPressedEventArgs e) => Palette?.Close();
 
-    // The selection stays in view as the arrows move it (after the list has laid out its new entries).
+    // Opened or refiltered, the list starts at the top with its first heading in view (U1 F1); the selection stays in
+    // view as the arrows move it. Both after the list has laid out its new entries.
     private void OnPaletteChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(CommandPaletteViewModel.Selected))
+        if (e.PropertyName == nameof(CommandPaletteViewModel.Sections))
+        {
+            Dispatcher.UIThread.Post(() => PaletteScroll.Offset = default, DispatcherPriority.Loaded);
+        }
+        else if (e.PropertyName == nameof(CommandPaletteViewModel.Selected) && _palette?.FollowsSelection == true)
         {
             Dispatcher.UIThread.Post(
                 () => PaletteSections.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.DataContext == _palette?.Selected)?.BringIntoView(),

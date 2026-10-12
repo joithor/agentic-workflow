@@ -116,12 +116,15 @@ internal sealed class CommandPaletteViewModel : ObservableObject
         }
 
         var at = Selected is { } selected ? runs.IndexOf(selected) : -1;
+        FollowsSelection = true;
         Selected = runs[Math.Clamp(at + by, 0, runs.Count - 1)];
     }
 
     /// <summary>
-    /// Runs an entry (Enter, or a click): a page is shown, Stop Sindri goes to Health, a ready row is sent once, and a
-    /// cli-only row is copied ("Copied", the palette stays open). A pending entry does nothing. What ran is remembered.
+    /// Runs an entry (Enter, or a click): a page is shown, Stop Sindri goes to Health, a ready row is sent once as
+    /// <see cref="RunPolicy"/> says (by default the palette stays open and the entry shows §4.1's lifecycle; Esc still
+    /// closes it and the command keeps running), and a cli-only row is copied ("Copied", the palette stays open). A
+    /// pending entry, or one already sending, does nothing. What ran is remembered.
     /// </summary>
     /// <param name="entry">The entry.</param>
     /// <param name="cancellationToken">Cancels a send or a copy.</param>
@@ -148,7 +151,11 @@ internal sealed class CommandPaletteViewModel : ObservableObject
                 _goTo(PageId.Health);
                 break;
             default:
-                Close();
+                if (RunPolicy == PaletteRunPolicy.CloseFirst)
+                {
+                    Close();
+                }
+
                 await entry.Control!.Run(cancellationToken).ConfigureAwait(true);   // why: an enabled entry without a page has a control
                 break;
         }
@@ -178,6 +185,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
         Sections = [.. _all.Select(s => s with { Entries = [.. s.Entries.Where(e => e.Matches(query))] }).Where(s => s.Entries.Count > 0)];
         Entries = [.. Sections.SelectMany(s => s.Entries)];
         OnChanged(nameof(IsEmpty));
+        FollowsSelection = false;
         Selected = Entries.FirstOrDefault(e => e.IsEnabled);
     }
 

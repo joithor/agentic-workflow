@@ -269,6 +269,13 @@ Home G H, Queue G Q, Decisions G D, Services G S, Health G ., Settings ⌘,. **S
 appears once. Typing filters by a fuzzy match (the query's letters in order, spaces ignored) on labels and ids; ↑/↓
 move between entries that do something, Enter runs one, Esc or a click on the scrim closes it, and focus returns to
 what had it (the ⌘K field when that is gone). Each entry run is remembered in `paletteHistory`, newest last.
+It opens, and each refilter shows, at the top with the first heading in view and the first entry that does something
+selected; only ↑/↓ scroll the list to follow the selection (`FollowsSelection`; U1 finding F1). Enter on a ready
+command (Rebuild views) follows `CommandPaletteViewModel.RunPolicy`, the one place that decision lives (U1 finding F2,
+provisional until the owner decides): by default (`StayOpen`) the palette stays open and the entry shows §4.1's
+lifecycle in place, a spinner beside its kept label and "Sending…" (disabled, a second Enter does nothing), then
+"<label>: done" for 2 s, or Sindri's code as its status with the detail as served under it. Esc closes the palette at
+any point and the command keeps running. `CloseFirst` closes, then sends.
 
 **The `?` sheet.** `?` (not while typing in a field, nor over the palette) opens §8's keys plus each catalog row's own
 `shortcut` (none yet); it takes focus, Tab cycles inside it, Esc closes it and returns focus. The sheet lists §8's
@@ -295,7 +302,7 @@ scripts/sindri-ui-fixture.sh down
 (the pill, the banners, the catalog on connect, the 250 ms re-read), `Api/*` (headers, token, ProblemDetails, and
 `GoldenContractTests`, which deserializes every golden through `SindriUiJsonContext`). Integration lane:
 `Views/CommandPaletteTests` (⌘K, the field's click, arrows, Enter, Esc returning focus, `?` never while typing; frames
-`palette`, `palette-filtered`, `shortcuts`) and `Views/CatalogFramesTests` (frames `u1-banner-stalled`,
+`palette`, `palette-filtered`, `palette-top`, `palette-sending`, `palette-done`, `palette-refused`, `shortcuts`) and `Views/CatalogFramesTests` (frames `u1-banner-stalled`,
 `u1-banner-rebuilding`, `u1-control-sending`, `u1-control-accepted`, `u1-health-controls`). The fake serves P1's and
 P2's goldens (`tests/Aw.Sindri.Tests/Golden/Api/**`) and U1's spec-shaped ones (`tests/Aw.Sindri.Ui.Tests/Golden/SpecShaped/**`, to be replaced by P2's as they land).
 
