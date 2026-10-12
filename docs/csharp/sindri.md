@@ -119,7 +119,8 @@ in-memory store and the SQLite adapter). Append-only, idempotent and fenced.
 
 S1 events and their keys: `process.started` (`process.started:<epoch>`), `process.stopped` (`process.stopped:<epoch>`),
 `profile.approved` (`profile.approved:<hash>:after:<seq of the latest profile.approved event, or 0>`, so each
-approval is recorded: approving A, B, A, B, A records five events), `service.heartbeat` (`service.heartbeat:<epoch>:<slot>`). A service's
+approval is recorded: approving A, B, A, B, A records five events), `service.heartbeat` (`service.heartbeat:<epoch>:<slot>`), and from API P1
+`command.handled` (`command.handled:<commandId>`; the command chain's audit row, not public: see Command chain). A service's
 run event is `service.<name>`. `outbox_commands` is Kernel.Data's outbox table (migration 3), empty in S1: outward
 actions join it in later stages.
 
@@ -144,9 +145,10 @@ binding refuses (JSON that doesn't read as the request, a malformed hash or id) 
 text naming the method and path (a framework's message is logged, never answered). The loopback guard's 400 and 403, an
 unknown route's 404, a wrong method's 405 and a wrong `Content-Type`'s 415 carry no ProblemDetails body; the CLI
 reports an error answer without a code as `SND-API-004`, never as "not running". The approve route's `confirmed` is the CLI's claim that the human typed the
-confirmation; in S1 that terminal check in the CLI is the only gate. There is no API token in S1: the threat model guards honest
-mistakes (`docs/csharp/bugfix.md`), and approval stays terminal-bound in the CLI. Device-bound approvals for the UI
-(passkeys, §17.21 D6) come with the UI's action forms.
+confirmation. Since API P1 every request is classed from its caller headers and every command runs through the command
+chain (Callers and auth, Command chain, below): approving is a `protected` action, so only a `human` caller at a
+terminal with this start's token gets past the chain. The threat model guards honest mistakes (`docs/csharp/bugfix.md`).
+Device-bound approvals for the UI (passkeys, §17.21 D6) come with the UI's action forms.
 
 ## Callers and auth
 
