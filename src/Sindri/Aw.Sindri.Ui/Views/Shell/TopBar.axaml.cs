@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -27,9 +29,16 @@ internal sealed partial class TopBar : UserControl
     private double _brandWordWidth;
     private double _compactSearch = 60;
 
+    // Refresh had focus when it was disabled (in flight) or hidden (recovered); see KeepRefreshFocus.
+    private bool _refreshHeldFocus;
+    private NavigationMethod _refreshMethod = NavigationMethod.Tab;
+
     public TopBar()
     {
         InitializeComponent();
+        RefreshButton.GotFocus += OnRefreshGotFocus;
+        RefreshButton.LostFocus += OnRefreshLostFocus;
+        RefreshButton.PropertyChanged += OnRefreshChanged;
     }
 
     // How far the bar has stepped down.
@@ -123,6 +132,46 @@ internal sealed partial class TopBar : UserControl
         if (_fit != Fit.Full && SearchField.DesiredSize.Width > 0)
         {
             _compactSearch = SearchField.DesiredSize.Width;
+        }
+    }
+
+    private void OnRefreshGotFocus(object? sender, FocusChangedEventArgs e)
+    {
+        _refreshHeldFocus = true;
+        _refreshMethod = e.NavigationMethod;
+    }
+
+    // Focus that leaves a usable Refresh went somewhere on purpose; focus taken by disabling or hiding it comes back.
+    private void OnRefreshLostFocus(object? sender, FocusChangedEventArgs e) =>
+        _refreshHeldFocus &= !(RefreshButton.IsEffectivelyVisible && RefreshButton.IsEffectivelyEnabled);
+
+    private void OnRefreshChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (_refreshHeldFocus && (e.Property == IsVisibleProperty || e.Property == IsEnabledProperty))
+        {
+            Dispatcher.UIThread.Post(KeepRefreshFocus, DispatcherPriority.Loaded);
+        }
+    }
+
+    // §4.1, §11.2: a refresh that fails leaves focus on Refresh (it was only disabled while in flight); one that
+    // recovers hides Refresh, and focus moves to its neighbour, the pill. Focus the user moved elsewhere stays there.
+    private void KeepRefreshFocus()
+    {
+        var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() as Control;
+        if (!_refreshHeldFocus || (focused is { IsEffectivelyVisible: true } && focused != RefreshButton))
+        {
+            _refreshHeldFocus = false;
+            return;
+        }
+
+        if (!RefreshButton.IsEffectivelyVisible)
+        {
+            _refreshHeldFocus = false;
+            _ = HealthPill.Focus(_refreshMethod);
+        }
+        else if (RefreshButton.IsEffectivelyEnabled && focused != RefreshButton)
+        {
+            _ = RefreshButton.Focus(_refreshMethod);
         }
     }
 
