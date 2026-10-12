@@ -85,10 +85,14 @@ public sealed class SpikeEvalTests(TimeSkippingServer server) : IClassFixture<Ti
     public async Task Four_hour_timeout_does_not_skip_while_the_desk_activity_is_open()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (spike, options) = await Worker("timeout-activity", ct);
+
+        // why: a server of its own. The activity this test leaves open keeps time skipping off for the server's life
+        // (finding F1), so on the shared fixture it would stall the Update-timeout test whenever that runs after it.
+        await using var env = await TemporalServerFixture.Start(ServerKind.TimeSkipping);
+        var (spike, options) = await Worker(env.Client, "timeout-activity", ct);
         const string id = "TIMEOUT-A/workflow.step/1";
 
-        await SpikeWorker.Run(_env.Client, options, async () =>
+        await SpikeWorker.Run(env.Client, options, async () =>
         {
             var handle = await spike.Start(id, options.TaskQueue!, new SpikeRun("TIMEOUT-A", SpikeEvals.WorkflowStep));
             await spike.Opened(id, "1.1", ct);
@@ -103,11 +107,13 @@ public sealed class SpikeEvalTests(TimeSkippingServer server) : IClassFixture<Ti
         }, ct);
     }
 
-    private async Task<(SpikeDesk Spike, Temporalio.Worker.TemporalWorkerOptions Options)> Worker(string queue, CancellationToken ct)
+    private Task<(SpikeDesk Spike, Temporalio.Worker.TemporalWorkerOptions Options)> Worker(string queue, CancellationToken ct) => Worker(_env.Client, queue, ct);
+
+    private static async Task<(SpikeDesk Spike, Temporalio.Worker.TemporalWorkerOptions Options)> Worker(Temporalio.Client.ITemporalClient client, string queue, CancellationToken ct)
     {
         var desk = new DeskTasks();
         var ledger = await SpikeLedger.InMemory(ct);
-        return (new SpikeDesk(_env.Client, desk), SpikeWorker.Options(queue, desk, ledger));
+        return (new SpikeDesk(client, desk), SpikeWorker.Options(queue, desk, ledger));
     }
 
     private static async Task RunCase(SpikeDesk spike, string name, bool deskByUpdate)
