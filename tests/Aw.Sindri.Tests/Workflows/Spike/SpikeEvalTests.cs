@@ -109,7 +109,7 @@ public sealed class SpikeEvalTests(TimeSkippingServer server) : IClassFixture<Ti
 
     private Task<(SpikeDesk Spike, Temporalio.Worker.TemporalWorkerOptions Options)> Worker(string queue, CancellationToken ct) => Worker(_env.Client, queue, ct);
 
-    private static async Task<(SpikeDesk Spike, Temporalio.Worker.TemporalWorkerOptions Options)> Worker(Temporalio.Client.ITemporalClient client, string queue, CancellationToken ct)
+    private static async Task<(SpikeDesk Spike, Temporalio.Worker.TemporalWorkerOptions Options)> Worker(ITemporalClient client, string queue, CancellationToken ct)
     {
         var desk = new DeskTasks();
         var ledger = await SpikeLedger.InMemory(ct);
