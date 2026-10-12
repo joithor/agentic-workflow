@@ -151,10 +151,20 @@
           "xunit.v3.runner.common": "[4.0.1]"
         }
       },
+      "aw.context.core": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Vogen": "[8.0.7, 8.0.7]"
+        }
+      },
       "aw.context.testing": {
         "type": "Project",
         "dependencies": {
-          "Aw.Kernel": "[1.0.0, )"
+          "Aw.Context.Core": "[1.0.0, )",
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Testing": "[1.0.0, )"
         }
       },
       "aw.kernel": {
@@ -166,6 +176,18 @@
           "Aw.Kernel": "[1.0.0, )",
           "xunit.v3.extensibility.core": "[4.0.1, 4.0.1]"
         }
+      },
+      "Microsoft.Extensions.DependencyInjection.Abstractions": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.12, 10.0.12]",
+        "resolved": "10.0.12",
+        "contentHash": "9/qymSh7hVDMGTGwrLz8MRp5zRyXy9adGDOs4HwRdnLil3oZGYuWeZjbmHgCQ9BL1qBroVfgUK3U/nb61617Cw=="
+      },
+      "Vogen": {
+        "type": "CentralTransitive",
+        "requested": "[8.0.7, 8.0.7]",
+        "resolved": "8.0.7",
+        "contentHash": "0DrJ2ZPEGoJlzwqhum2LaZJ2FzJzgy5HP0km+XYL2MC/hS4Sn5/C35oRyob146Yjlf5xit2tmPx5xhI2BXkhLw=="
       },
       "xunit.v3.extensibility.core": {
         "type": "CentralTransitive",

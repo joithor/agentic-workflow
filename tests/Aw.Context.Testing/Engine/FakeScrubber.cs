@@ -5,7 +5,7 @@ namespace Aw.Context.Testing.Engine;
 /// <summary>
 /// The in-memory scrubber for both ports: it replaces <see cref="Secret"/> with '[REDACTED:fake]', withholds any field
 /// holding <see cref="BlockMe"/>, drops '&lt;!-- … --&gt;' comments, and collapses single-line fields. It passes
-/// <see cref="ScrubberContract{TScrubber}"/>.
+/// <see cref="ScrubberContract"/>.
 /// </summary>
 public sealed class FakeScrubber : IEgressScrubber, IIngestFilter
 {
