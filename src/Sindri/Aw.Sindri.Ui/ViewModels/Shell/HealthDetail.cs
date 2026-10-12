@@ -20,6 +20,13 @@ internal sealed class HealthDetail : ObservableObject
     /// <summary>The Health page's profile rows: approved, live (when it differs), file.</summary>
     public IReadOnlyList<HealthCell> Profile { get; private set => Set(ref field, value); } = [];
 
+    /// <summary>A version mismatch's two versions as labelled rows (states.html): this app's, then Sindri's.</summary>
+    public IReadOnlyList<HealthCell> Versions { get; private set => Set(ref field, value); } = [];
+
+    /// <summary>Shows a version mismatch.</summary>
+    /// <param name="sindri">The API version Sindri reports.</param>
+    internal void Mismatch(int sindri) => Versions = [new(nameof(sindri), sindri.ToString(System.Globalization.CultureInfo.InvariantCulture))];
+
     /// <summary>Shows a status.</summary>
     /// <param name="url">Where the API answered.</param>
     /// <param name="status">The status.</param>

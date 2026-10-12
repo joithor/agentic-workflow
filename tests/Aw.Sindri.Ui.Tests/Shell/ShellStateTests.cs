@@ -67,6 +67,7 @@ public sealed class ShellStateTests
 
         Assert.Equal((true, false, false, false, false, false), Shown(shell));
         Assert.Equal(Labels.VersionMismatch, shell.Pill.Text);
+        Assert.Equal([new HealthCell("This app", "API v1"), new HealthCell("Sindri", "API v2")], shell.Health.Detail.Versions);
     }
 
     [Fact]

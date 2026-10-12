@@ -238,6 +238,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
         lock (_gate)
         {
             Reason = Labels.Versions(version, SindriApiClient.AppApiVersion);
+            Detail.Mismatch(version);
             HealthLine = Labels.VersionMismatch;
             State = ShellState.VersionMismatch;
             Word();
