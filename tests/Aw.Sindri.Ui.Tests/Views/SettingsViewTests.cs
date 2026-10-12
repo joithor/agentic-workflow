@@ -22,8 +22,14 @@ public sealed class SettingsViewTests
 {
     private static readonly string[] _motionKeys = ["Motion.Fast", "Motion.Base", "Motion.Pulse"];
     private readonly InMemoryPreferencesStore _store = new();
+    private readonly Preferences _preferences;
     private readonly FakeMotionPreference _os = new();
     private readonly List<Window> _windows = [];
+
+    public SettingsViewTests()
+    {
+        _preferences = new Preferences(_store);
+    }
 
     private async Task OnUi(Func<Task> body) =>
         _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(SettingsViewTests).Assembly)
@@ -52,7 +58,7 @@ public sealed class SettingsViewTests
 
     private async Task<(Window Window, SettingsViewModel Settings)> Show()
     {
-        var settings = new SettingsViewModel(new Preferences(_store), _os, SettingsTheme.For(Resources));
+        var settings = new SettingsViewModel(_preferences, _os, SettingsTheme.For(Resources));
         await settings.Load(TestContext.Current.CancellationToken);
         var window = new Window { Width = 900, Height = 600, Content = new SettingsView { DataContext = settings } };
         _windows.Add(window);
@@ -95,7 +101,7 @@ public sealed class SettingsViewTests
 
             toggle.IsChecked = true;
             Settle(window);
-            await settings.Saving;
+            await _preferences.Flush();
 
             Assert.True(settings.ReduceMotion);
             Assert.Empty(toggle.KnobTransitions ?? []);
@@ -131,7 +137,7 @@ public sealed class SettingsViewTests
     [Fact]
     public Task Reduced_motion_stops_stock_controls_own_transitions_anywhere_in_the_window() => OnUi(async () =>
     {
-        var settings = new SettingsViewModel(new Preferences(_store), _os, SettingsTheme.For(Resources));
+        var settings = new SettingsViewModel(_preferences, _os, SettingsTheme.For(Resources));
         using (settings)
         {
             await settings.Load(TestContext.Current.CancellationToken);
@@ -145,7 +151,7 @@ public sealed class SettingsViewTests
 
             settings.ReduceMotion = true;
             Settle(window);
-            await settings.Saving;
+            await _preferences.Flush();
 
             Assert.Empty(elsewhere.KnobTransitions ?? []);
 

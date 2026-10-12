@@ -66,7 +66,7 @@ public sealed class ShellWindowTests : IDisposable
 
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Show(Func<ShellViewModel, bool> ready, bool run = true)
     {
-        var shell = new ShellViewModel(_records, _server, _clock, _preferences);
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell };
         _windows.Add(window);
@@ -397,7 +397,7 @@ public sealed class ShellWindowTests : IDisposable
     [InlineData(1.3)]
     public Task The_strip_shows_its_keycaps_and_whole_values_at_900_px(double scale) => OnUi(async () =>
     {
-        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 900, 600) }, Token);
+        await new Preferences(_preferences).Update(_ => UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 900, 600) });
         _records.Write(A.Record(pid: 1234567));
         _server.Current = A.Status(pid: 1234567) with { ApiVersion = 1 };
         _server.Pong = new(1234567, 7);
@@ -465,7 +465,7 @@ public sealed class ShellWindowTests : IDisposable
     public Task The_edge_tab_keeps_a_gap_from_the_panels() => OnUi(async () =>
     {
         _records.Write(A.Record());
-        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 1000, 700) }, Token);
+        await new Preferences(_preferences).Update(_ => UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 1000, 700) });
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
         Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
         shell.Navigate(link);
@@ -888,7 +888,7 @@ public sealed class ShellWindowTests : IDisposable
     public Task Esc_on_a_deep_linked_sheet_returns_focus_to_the_page_region(int width) => OnUi(async () =>
     {
         _records.Write(A.Record());
-        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(0, 0, width, 700) }, Token);
+        await new Preferences(_preferences).Update(_ => UiPreferences.Defaults with { Window = new WindowBounds(0, 0, width, 700) });
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
         Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
         shell.Navigate(link);
@@ -1045,7 +1045,7 @@ public sealed class ShellWindowTests : IDisposable
     public Task Below_1100_px_the_sheet_covers_the_page() => OnUi(async () =>
     {
         _records.Write(A.Record());
-        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 1000, 700) }, Token);
+        await new Preferences(_preferences).Update(_ => UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 1000, 700) });
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
         Assert.True(DeepLink.TryParse("decision/DEC-7", out var link));
 
@@ -1107,7 +1107,7 @@ public sealed class ShellWindowTests : IDisposable
     [MemberData(nameof(MinimumWidthStates))]
     public Task At_the_900_px_minimum_the_top_bar_fits_in_every_pill_state(BarState state, double scale) => OnUi(async () =>
     {
-        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 900, 600) }, Token);
+        await new Preferences(_preferences).Update(_ => UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 900, 600) });
         var window = await ShowIn(state);
         var resources = Application.Current!.Resources;
         TextScale.Apply(resources, scale);
@@ -1408,7 +1408,7 @@ public sealed class ShellWindowTests : IDisposable
     [Fact]
     public Task Closing_remembers_the_window_and_reopening_restores_it() => OnUi(async () =>
     {
-        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(40, 50, 1100, 720) }, Token);
+        await new Preferences(_preferences).Update(_ => UiPreferences.Defaults with { Window = new WindowBounds(40, 50, 1100, 720) });
         var (window, _) = await Show(s => s.State == ShellState.Connecting, run: false);
         Assert.Equal((1100d, 720d), (window.Width, window.Height));
 

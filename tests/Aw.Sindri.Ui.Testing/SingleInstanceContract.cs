@@ -59,8 +59,10 @@ public abstract class SingleInstanceContract
         Expect.Sequence([InstanceMessages.Focus, "item/ITM-01JC8"], await reader.Take(2));
     }
 
-    // The instance holds the claim but nothing reads its messages (a start-up that failed, a wedged app): the send isn't
-    // acknowledged, and the message isn't handed over later either.
+    // The instance holds the claim but nothing iterates its Messages (the app's reader never started: a framework start-up
+    // that failed or hangs, or one that stopped reading): the send isn't acknowledged, and the message isn't handed over
+    // later either. Once a reader runs, the next send is handled. The clock moves only while the unread send waits; the
+    // handled send runs with the clock still, so no timeout can race the reader.
     [Fact]
     public async Task A_message_the_running_instance_never_reads_is_not_acknowledged_or_delivered_later()
     {
@@ -71,7 +73,7 @@ public abstract class SingleInstanceContract
         Expect.True(!await SendWhileTimePasses(second, "item/ITM-STALE"));
 
         await using var reader = new InstanceReader(first, Token);
-        Expect.True(await SendWhileTimePasses(second, InstanceMessages.Focus));
+        Expect.True(await second.Send(InstanceMessages.Focus, Token));
         Expect.Sequence([InstanceMessages.Focus], await reader.Take(1));
     }
 

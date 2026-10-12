@@ -70,9 +70,15 @@ internal sealed partial class ShellWindow : Window
     /// <inheritdoc />
     protected override void OnClosing(WindowClosingEventArgs e)
     {
+        RememberBounds();
+        base.OnClosing(e);
+    }
+
+    /// <summary>Hands the window's bounds to the view model to remember (on closing, and before the app ends).</summary>
+    internal void RememberBounds()
+    {
         var at = Position.ToPoint(DesktopScaling);
         Shell?.RememberWindow(new WindowBounds(at.X, at.Y, ClientSize.Width, ClientSize.Height));
-        base.OnClosing(e);
     }
 
     /// <inheritdoc />

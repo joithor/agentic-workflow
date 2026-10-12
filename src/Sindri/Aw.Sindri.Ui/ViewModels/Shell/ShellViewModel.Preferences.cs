@@ -14,9 +14,15 @@ internal sealed partial class ShellViewModel
         OnChanged(nameof(SheetWidth));
     }
 
-    /// <summary>Remembers the window's bounds (grown to 900 × 600 when they're next read).</summary>
+    /// <summary>Remembers the window's bounds (grown to 900 × 600 when they're next read); bounds already remembered aren't written again.</summary>
     /// <param name="bounds">Where the window is.</param>
-    internal void RememberWindow(WindowBounds bounds) => Remember(p => p with { Window = bounds });
+    internal void RememberWindow(WindowBounds bounds)
+    {
+        if ((_preferences with { Window = bounds }).Clamp().Window != _preferences.Window)
+        {
+            Remember(p => p with { Window = bounds });
+        }
+    }
 
     /// <summary>Reads the stored preferences: the last page, the window's bounds and the sheet's width (the defaults when they can't be read).</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -37,26 +43,11 @@ internal sealed partial class ShellViewModel
         Changed(nameof(Window), nameof(SheetWidth));
     }
 
-    // The shell's fields are written over whatever the file holds now (Settings writes its own), whole and in order (each
-    // write waits for the one before); a failed write keeps the old file, since they are a convenience and never change
-    // what the API decides.
+    // The shell's fields are written over whatever the file holds by then, through the app's one write queue (shared with
+    // Settings, so neither writes back what it read before the other's change).
     private void Remember(Func<UiPreferences, UiPreferences> change)
     {
         _preferences = change(_preferences).Clamp();
-        _saving = SaveAfter(_saving, change);
-    }
-
-    private async Task SaveAfter(Task previous, Func<UiPreferences, UiPreferences> change)
-    {
-        await previous.ConfigureAwait(true);
-        try
-        {
-            var stored = await _store.Load(CancellationToken.None).ConfigureAwait(true);
-            await _store.Save(change(stored), CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            // Kept in memory for this run; the next change tries again.
-        }
+        _ = _store.Update(change);
     }
 }

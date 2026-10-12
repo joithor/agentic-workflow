@@ -3,6 +3,7 @@ using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Settings;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Microsoft.Extensions.Time.Testing;
 
@@ -18,7 +19,7 @@ public sealed class ShellPreferencesTests
 
     private async Task<ShellViewModel> Shell()
     {
-        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), _store);
+        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), new Preferences(_store));
         await shell.Restore(Token);
         return shell;
     }
@@ -74,12 +75,33 @@ public sealed class ShellPreferencesTests
     public async Task A_shell_write_keeps_what_Settings_wrote_since_start_up()
     {
         var shell = await Shell();
-        await new Preferences(_store).Save(UiPreferences.Defaults with { TextScale = 1.2, ReduceMotion = true }, Token);
+        await new Preferences(_store).Update(_ => UiPreferences.Defaults with { TextScale = 1.2, ReduceMotion = true });
 
         shell.ResizeSheet(600);
 
         var stored = await Stored();
         Assert.Equal((1.2, true, 600d), (stored.TextScale, stored.ReduceMotion, stored.SheetWidth));
+    }
+
+    // Settings and the shell write through one queue: each reads the file only after the other's write, so neither
+    // writes back what it read before the other changed it.
+    [Fact]
+    public async Task A_Settings_change_and_a_shell_change_made_together_both_land()
+    {
+        var store = new GatedPreferencesStore();
+        var preferences = new Preferences(store);
+        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), preferences);
+        await shell.Restore(Token);
+        using var settings = new SettingsViewModel(preferences, new FakeMotionPreference(), _ => { });
+        store.HoldReads();
+
+        settings.ReduceMotion = true;
+        shell.ResizeSheet(600);
+        store.ReleaseReads();
+        await preferences.Flush();
+
+        var stored = await preferences.Load(Token);
+        Assert.Equal((true, 600d), (stored.ReduceMotion, stored.SheetWidth));
     }
 
     [Fact]

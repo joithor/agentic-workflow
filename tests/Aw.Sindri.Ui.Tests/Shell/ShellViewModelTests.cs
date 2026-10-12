@@ -25,7 +25,7 @@ public sealed class ShellViewModelTests
     // The shell as the app starts it: built over the ports, then restored from the stored preferences.
     private async Task<ShellViewModel> Shell()
     {
-        var shell = new ShellViewModel(_records, _server, _clock, _preferences);
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
         await shell.Restore(Token);
         return shell;
     }

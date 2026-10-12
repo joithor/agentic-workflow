@@ -16,12 +16,18 @@ public sealed class SettingsViewModelTests
     private readonly InMemoryPreferencesStore _store = new();
     private readonly FakeMotionPreference _os = new();
     private readonly List<AppearanceSettings> _applied = [];
+    private readonly Preferences _preferences;
+
+    public SettingsViewModelTests()
+    {
+        _preferences = new Preferences(_store);
+    }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private SettingsViewModel Settings() => new(new Preferences(_store), _os, _applied.Add);
+    private SettingsViewModel Settings() => new(_preferences, _os, _applied.Add);
 
-    private Task Store(UiPreferences preferences) => new Preferences(_store).Save(preferences, Token).AsTask();
+    private Task Store(UiPreferences preferences) => _preferences.Update(_ => preferences);
 
     private Task<UiPreferences> Stored() => new Preferences(_store).Load(Token).AsTask();
 
@@ -77,7 +83,7 @@ public sealed class SettingsViewModelTests
         await settings.Load(Token);
 
         settings.ReduceMotion = true;
-        await settings.Saving;
+        await _preferences.Flush();
 
         Assert.True(settings.IsMotionReduced);
         Assert.Equal(new AppearanceSettings(1.0, ReduceMotion: true), _applied[^1]);
@@ -98,7 +104,7 @@ public sealed class SettingsViewModelTests
         await settings.Load(Token);
 
         settings.ReduceMotion = false;
-        await settings.Saving;
+        await _preferences.Flush();
 
         Assert.True(settings.IsMotionReduced);
         Assert.False((await Stored()).ReduceMotion);
@@ -113,7 +119,7 @@ public sealed class SettingsViewModelTests
         await settings.Load(Token);
 
         settings.TextScale = 1.1;
-        await settings.Saving;
+        await _preferences.Flush();
 
         Assert.Equal("110%", settings.TextScaleText);
         Assert.Equal(new AppearanceSettings(1.1, ReduceMotion: false), _applied[^1]);
@@ -129,7 +135,7 @@ public sealed class SettingsViewModelTests
         await settings.Load(Token);
 
         settings.TextScale = asked;
-        await settings.Saving;
+        await _preferences.Flush();
 
         Assert.Equal(shown, settings.TextScale);
         Assert.Equal(shown, _applied[^1].TextScale);
@@ -145,7 +151,7 @@ public sealed class SettingsViewModelTests
 
         settings.TextScale = 1.0;
         settings.ReduceMotion = false;
-        await settings.Saving;
+        await _preferences.Flush();
 
         Assert.Equal(writes, _store.Writes);
     }

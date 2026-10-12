@@ -33,7 +33,7 @@ public sealed class PreferencesTests
     {
         var preferences = new Preferences(_store);
 
-        await preferences.Save(Sample, Token);
+        await preferences.Update(_ => Sample);
 
         Assert.Equal(Sample, await preferences.Load(Token));
     }
@@ -43,7 +43,7 @@ public sealed class PreferencesTests
     {
         var preferences = new Preferences(_store);
 
-        await preferences.Save(Sample with { Window = new WindowBounds(0, 0, 300, 200), SheetWidth = 2000, TextScale = 9, LastPage = "Nowhere" }, Token);
+        await preferences.Update(_ => Sample with { Window = new WindowBounds(0, 0, 300, 200), SheetWidth = 2000, TextScale = 9, LastPage = "Nowhere" });
 
         var read = await preferences.Load(Token);
         Assert.Equal(new WindowBounds(0, 0, UiPreferences.MinWidth, UiPreferences.MinHeight), read.Window);
