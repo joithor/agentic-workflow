@@ -167,7 +167,7 @@ doesn't have, the answer still returns with repo-docs' results and a `degraded` 
 "SND-CONTEXT-010", … }` (the cause, such as `050` or `051`, in its message). Only when every source is down is the
 answer `SND-CONTEXT-011`. A query doesn't check Onyx's version: version drift is doctor's and `sources status`'s check
 (`055`, naming both versions), and a query keeps using an Onyx that reports another version as long as its replies
-read; a reply that doesn't degrades onyx with `051`.
+read; a reply that doesn't degrades onyx (`010`, cause `051`).
 
 Agent sessions don't read the onyx source yet: a session sees intent records only from the Linear teams the profile
 maps to its repo (`context.repoTeams`, a later stage), so until then onyx answers humans and services only. A caller

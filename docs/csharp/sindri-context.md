@@ -182,7 +182,7 @@ environment a pointer that fails resolves to nothing, which the onyx client repo
 the pointer's scheme and pointing to `sindri doctor`. Doctor's `OnyxDoctor` resolves the pointer through
 `ISecretPointers` before the probe and fails with that `SND-SECRET-00x` code and message. A query never checks the
 version (§8.8 makes it a doctor check; §5.1's errors are Unavailable, NotFound and Fatal): `055` shows in doctor and
-the row, and a reply the pinned shape can't read degrades with `051`.
+the row, and a reply the pinned shape can't read degrades onyx (`010` with cause `051`).
 
 ### Tests
 
