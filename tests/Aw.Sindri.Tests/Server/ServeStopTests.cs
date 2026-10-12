@@ -17,7 +17,8 @@ public sealed class ServeStopTests : IDisposable
     public async Task A_stop_ends_every_event_stream_and_serve_exits_promptly()
     {
         var ct = TestContext.Current.CancellationToken;
-        var serve = ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => "0", _ => null }, TimeProvider.System, TextWriter.Null);
+        var serve = ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => "0", _ => null }, TimeProvider.System, TextWriter.Null,
+            InterimCallers.Configure);
         var url = await Endpoint(ct);
         using var http = new HttpClient { BaseAddress = url, Timeout = Timeout.InfiniteTimeSpan };
         using var events = await http.GetAsync(new Uri("/sindri/events", UriKind.Relative), HttpCompletionOption.ResponseHeadersRead, ct);
