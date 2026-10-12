@@ -232,7 +232,7 @@ packages:
     scan: [sindri/src]
     bins: [sindri]
     db: [sindri/ledger.db, sindri-app/ledger.db]
-    files: [sindri-app/control.json]
+    files: [sindri-app/control.json, sindri-app/auth/human.token]
     namespace: sindri
     routes: [/sindri/]
     note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; reaches lower tiers only through Core contracts or CLIs"
@@ -521,7 +521,7 @@ edges:
     to: Sindri
     kind: file
     status: current
-    note: "the app reads the endpoint record (control.json under AW_SINDRI_HOME) to find the API and check it against /sindri/ping; read-only"
+    note: "the app reads two files under AW_SINDRI_HOME, read-only: the endpoint record (control.json) to find the API and check it against /sindri/ping, and the per-start human token (auth/human.token, API spec §6), read at each call and sent as X-Sindri-Token beside X-Sindri-Caller: human. One entry covers both (one edge per from, to and kind)"
   - from: SindriUi
     to: Sindri
     kind: http

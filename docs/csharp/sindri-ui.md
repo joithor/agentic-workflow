@@ -14,11 +14,13 @@ Sindri's handlers (factory addendum §17.27.1). Nothing installs it before the s
 | `src/Sindri/Aw.Sindri.Ui.Desktop` | The thin desktop head: `Main`, the composition and one adapter per port. NativeAOT binary `sindri-ui`. No views or view models |
 
 - **No Sindri project reference.** The app reaches Sindri only through its HTTP contract (`docs/csharp/sindri.md`
-  "Command layer and API": `GET /sindri/ping`, `GET /sindri/status` and `GET /sindri/events`) and the endpoint
-  record it finds the API by (`control.json`, "Files"). `deps.yaml` declares them as the `SindriUi -> Sindri`
-  **http** and **file** edges; `node scripts/check-deps.mjs` finds them in the app's C# projects (a literal starting
-  with Sindri's route prefix `/sindri/`; the literals `"sindri-app"` and `"control.json"`) and fails on an undeclared
-  or stale one. The head's path rule (`ControlFilePath`) follows the documented one in `docs/csharp/sindri.md` "Files".
+  "Command layer and API": `GET /sindri/ping`, `GET /sindri/status` and `GET /sindri/events`) and two files under
+  Sindri's home ("Files"): the endpoint record it finds the API by (`control.json`) and the per-start human token
+  (`auth/human.token`, API spec §6) it sends as `X-Sindri-Token`. `deps.yaml` declares them as the `SindriUi -> Sindri`
+  **http** and **file** edges (one file edge covers both files); `node scripts/check-deps.mjs` finds them in the app's
+  C# projects (a literal starting with Sindri's route prefix `/sindri/`; the literals `"sindri-app"` with
+  `"control.json"`, and with `"auth"` and `"human.token"`) and fails on an undeclared or stale one. The head's path
+  rule (`ControlFilePath.From` and `.TokenFrom`) follows the documented one in `docs/csharp/sindri.md` "Files".
 - **Compiled bindings only.** `AvaloniaUseCompiledBindingsByDefault=true`, `x:DataType` on the window and every
   template, no `ReflectionBinding`, so the head publishes under NativeAOT.
 - **View models carry no Avalonia types** (plain C#, `INotifyPropertyChanged`), so they test in the unit lane.
@@ -93,7 +95,13 @@ drop blanks and repeats and keep their newest 500 and 20. A malformed file, or o
 defaults.
 
 **Copy** the app owns (§12.4) lives in `ViewModels/Labels.cs`. **Deep links** (§3.3) are `Navigation/DeepLink`.
-**The caller headers** `X-Sindri-Caller: human` and `X-Sindri-Client: ui` go on every request (§9.1), and the status
+**The caller headers** `X-Sindri-Caller: human`, `X-Sindri-Client: ui` and `X-Sindri-Token: <the per-start token>`
+go on every request (§9.1, API spec §6); never `X-Sindri-Terminal` and never `Origin`. The token comes from the
+`IHumanTokenSource` port (the desktop adapter `FileHumanToken` reads `auth/human.token` under the same home as
+`control.json`), read at each call like the CLI's, so a restarted control plane's new token is sent with no app
+restart. With no token file, or one the platform can't read, the call goes without it (the unreadable file is logged
+with its path and the exception's type), and Sindri's 403 says why. The token goes only into its header: never into an
+error, the log or the window. The status
 carries `apiVersion` from API P1 (`SindriApiClient.AppApiVersion` is 1; absent means no mismatch).
 
 **The shell** (UI spec §3.2, §4.1; `Views/Shell/ShellWindow` over `ViewModels/Shell/ShellViewModel`) replaces S1b's
@@ -215,6 +223,13 @@ the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `
 
 ## How it finds the control plane
 
+Every call carries this start's human token (`IHumanTokenSource`, read at each call; see the caller headers
+above). A call Sindri refuses (403 with its ProblemDetails, `SND-AUTH-001` for a missing or stale token) reads as
+"Not running" with Sindri's code and `detail` as they are ("SND-AUTH-001: A human caller needs this start's token in
+X-Sindri-Token (fix: restart the app or rerun the command)") and the address on its own line; the app keeps looking
+every 2 s and recovers on its own once the token is good. A ping refused while following ends the follow, so the
+window names the refusal within one ping beat (10 s).
+
 1. The endpoint-record port (`IEndpointRecordSource`) reads `control.json`. The desktop adapter reads it from
    `AW_SINDRI_HOME`, else `$AW_STATE_DIR/sindri-app`, else `~/.agentic-workflow/sindri-app`, the same place the control
    plane writes it. No record means "Not running". A record whose URL isn't on this machine (loopback: 127.0.0.1, ::1
@@ -279,21 +294,23 @@ scan C# for cli edges (a current edge its scan can't find fails `DEPS-STALE-001`
 
 ## Errors
 
-The app shows the first three as words in the window, never a dialog or a crash.
+The app shows the first three as words in the window, never a dialog or a crash. A call Sindri refuses (a 403 with
+its ProblemDetails, such as `SND-AUTH-001`) is none of these: the window shows Sindri's own code and detail as they are
+(API spec §3.6), as the Not running reason.
 
 | Code | When |
 |---|---|
 | `SND-UI-001` | No usable endpoint record, or it names a process that isn't the one answering |
 | `SND-UI-002` | Nothing answered at the recorded endpoint, or not within 2 s |
-| `SND-UI-003` | The API answered, but not with the record this build reads (an error status, or another body). The banner says it in words ("SND-UI-003: /sindri/status answered with something this build can't read", or "… answered 500"); a body's parser detail (record, JSON path, byte position) goes only to the log, as a `SND-UI-003` warning |
+| `SND-UI-003` | The API answered, but not with the record this build reads (an error status other than a 403 with Sindri's ProblemDetails, or another body). The banner says it in words ("SND-UI-003: /sindri/status answered with something this build can't read", or "… answered 500"); a body's parser detail (record, JSON path, byte position) goes only to the log, as a `SND-UI-003` warning |
 | `SND-UI-004` | The app's start-up, its following of the control plane, or the launch before it (claiming the single instance, handing over) threw: logged (code and exception type) and the app exits 2. Not shown in a window: there may be none |
 
 ## Tests
 
 | Lane | What |
 |---|---|
-| unit | The view models (the shell, Health, and Settings against the in-memory preferences and a fake OS setting) against the in-memory API and endpoint record; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; the control.json path; the theme (tokens, contrast, Fluent values, no hex outside `Theme/`); the port contracts over their fakes; preferences, deep links, labels |
-| integration | The shell window under Avalonia's headless platform (Skia rendering), one key frame per pre-API state plus Health, the sheet, its edge tab and its covering form, saved as `frames/shell-*.png` under the test output (`artifacts/bin/Aw.Sindri.Ui.Tests/debug/frames/`); F6, Esc and ⌘,; the remembered bounds; Settings (frames `settings-motion-off`, `-on`, `settings-system-reduces-motion`, `settings-text-120`); `Motion.Apply` over a token dictionary; the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the head's adapters against temp directories (the endpoint-record, preferences, single-instance and tray contracts, owner-only modes, a crashed instance's socket, the listener's checks), the OS motion readers read-only (GNOME over a stand-in gsettings, macOS against `defaults read com.apple.universalaccess reduceMotion`), and `AppLifetime` on a headless window |
+| unit | The view models (the shell, Health, and Settings against the in-memory preferences and a fake OS setting) against the in-memory API, endpoint record and human token; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; the control.json path; the theme (tokens, contrast, Fluent values, no hex outside `Theme/`); the port contracts over their fakes; preferences, deep links, labels |
+| integration | The shell window under Avalonia's headless platform (Skia rendering), one key frame per pre-API state plus Health, the sheet, its edge tab and its covering form, saved as `frames/shell-*.png` under the test output (`artifacts/bin/Aw.Sindri.Ui.Tests/debug/frames/`); F6, Esc and ⌘,; the remembered bounds; Settings (frames `settings-motion-off`, `-on`, `settings-system-reduces-motion`, `settings-text-120`); `Motion.Apply` over a token dictionary; the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the head's adapters against temp directories (the endpoint-record, human-token, preferences, single-instance and tray contracts, owner-only modes, a crashed instance's socket, the listener's checks), the OS motion readers read-only (GNOME over a stand-in gsettings, macOS against `defaults read com.apple.universalaccess reduceMotion`), and `AppLifetime` on a headless window |
 
 `Avalonia.Headless.XUnit` 12.1.3 is compiled against xUnit v3 3.2.2 and fails discovery under the repo's xUnit v3 4.0.1
 (`MissingMethodException` in `TestIntrospectionHelper.GetTestCaseDetails`). The view tests are plain xUnit v3 facts that
