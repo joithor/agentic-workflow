@@ -4,8 +4,8 @@ namespace Aw.Context.Core;
 
 /// <summary>
 /// The context engine's error catalogue (spec §8.6), codes SND-CONTEXT-NNN. Stage S-1A owns 001–019 and defines 020
-/// (the session gate, spec §3); later stages add theirs in their ranges. HTTP status follows the kind; the CLI exit
-/// code is 1 for attention (003, 005, 006, 020) and 2 for a tool error.
+/// (the session gate, spec §3); S-3a adds 030–034 (the map file and its store); later stages add theirs in their ranges. HTTP status follows the kind; the CLI exit
+/// code is 1 for attention (003, 005, 006, 020, 030–034) and 2 for a tool error.
 /// </summary>
 public static class ContextErrors
 {
@@ -36,7 +36,23 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-020: session reads are off ('context.sessions.enabled: false'), on every transport.</summary>
     public static readonly ErrorDefinition SessionsDisabled = new("SND-CONTEXT-020", ErrorKind.Forbidden, "Context reads from sessions are off");
 
+    /// <summary>SND-CONTEXT-030: no map yet (fix: context map import, or context map build).</summary>
+    public static readonly ErrorDefinition NoMap = new("SND-CONTEXT-030", ErrorKind.NotFound, "No map yet");
+
+    /// <summary>SND-CONTEXT-031: the map file is invalid (schema version, shape, an unknown kind or a disallowed edge); the message names the key path and nothing was written.</summary>
+    public static readonly ErrorDefinition MapFileInvalid = new("SND-CONTEXT-031", ErrorKind.Invalid, "The map file is invalid");
+
+    /// <summary>SND-CONTEXT-032: the map file refers to a node it doesn't define (an edge end, an alias target, a decided node); nothing was written.</summary>
+    public static readonly ErrorDefinition MapNodeUndefined = new("SND-CONTEXT-032", ErrorKind.Invalid, "The map file refers to an undefined node");
+
+    /// <summary>SND-CONTEXT-033: an export path outside $AW_SINDRI_HOME/context/exports/ (a worktree path is SND-CONTEXT-005).</summary>
+    public static readonly ErrorDefinition ExportOutsideHome = new("SND-CONTEXT-033", ErrorKind.Invalid, "Export path outside the exports folder");
+
+    /// <summary>SND-CONTEXT-034: the map file changed since its content hash was confirmed; nothing was written.</summary>
+    public static readonly ErrorDefinition MapFileChanged = new("SND-CONTEXT-034", ErrorKind.Conflict, "The map file changed since its hash was confirmed");
+
     /// <summary>Every Context error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
-        [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled];
+        [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled,
+         NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged];
 }

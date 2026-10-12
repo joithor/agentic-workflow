@@ -393,6 +393,11 @@ edges:
     kind: project
     status: current
     note: "Result, AwJson, IService; Aw.Context.Testing reads the fixture's history and probes through AwJson"
+  - from: Context
+    to: KernelData
+    kind: project
+    status: current
+    note: "context.db (stage S-3a: the graph store, migrations through MigrationRunner, connections through SqliteConnectionFactory)"
   - from: Scorer
     to: Kernel
     kind: project
