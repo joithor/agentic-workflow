@@ -3,6 +3,7 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -10,7 +11,7 @@ namespace Aw.Sindri.Features.StartInstance;
 
 /// <summary>
 /// 'workflow start' (engine spec rev 8 §5.1, §6.1, §6.3): resolves the item (<see cref="IItems"/>) and the approved
-/// recipe (the latest, or 'id@hash'), checks that 'fact:item' names the same item (SND-WF-014) and that every input the
+/// recipe (the latest, or 'id@hash') and its approval (RCP-CAP-003), checks that 'fact:item' names the same item (SND-WF-014) and that every input the
 /// recipe declares is given, picks the attempt, stores the facts owner-only, and starts the workflow whose id is the
 /// address. Without '--attempt' the attempt is the latest one, or 1: a live one is returned as it is, an ended one is
 /// shown with the hint to start the next. '--attempt next' is the one after the latest, refused while that one is
@@ -101,15 +102,29 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
         }
 
         var recipe = await Recipe(request.Recipe, cancellationToken).ConfigureAwait(false);
-        if (recipe.IsError)
+        var approval = recipe.IsError ? recipe.Error : await recipes.Check(recipe.Value.Version, cancellationToken).ConfigureAwait(false);
+        if (approval.IsError)
         {
-            return recipe.Error;
+            return approval.Error;
+        }
+
+        if (Refusal(recipe.Value.Version, approval.Value) is { } refused)
+        {
+            return refused;
         }
 
         return recipe.Value.Recipe.Inputs.FirstOrDefault(i => !request.Facts.ContainsKey(i.Key)) is { } missing
             ? SindriErrors.InvalidInput.With($"{recipe.Value.Version.Id.Value} needs input {missing.Key.Value} (fix: --fact {missing.Key.Value}=<file>)")
             : (item.Value, recipe.Value);
     }
+
+    /// <summary>RCP-CAP-003 at start: a pinned hash that was revoked is SND-RECIPE-005, pins that drifted from this build SND-RECIPE-006.</summary>
+    private static Error? Refusal(RecipeVersion recipe, ApprovalCheck check) => check switch
+    {
+        ApprovalCheck.Revoked => WorkflowErrors.RecipeRevoked.With($"{recipe.Id.Value}@{recipe.Hash.Display} was revoked; nothing was started (fix: start the approved version: sindri recipe list)"),
+        ApprovalCheck.Drifted => WorkflowErrors.RecipePinDrift.With($"a block {recipe.Id.Value}@{recipe.Hash.Display} pins changed since approval; nothing was started (fix: re-approve it, see sindri recipe list --stale)"),
+        ApprovalCheck.Holds or _ => null,
+    };
 
     /// <summary>'fact:item' is '{ id, repo, spec }' (spec §12); its 'id' must be the item '--item' named (SND-WF-014).</summary>
     private static Error? SameItem(StartInstanceRequest request, ResolvedItem item)

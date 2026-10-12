@@ -154,7 +154,7 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
     /// <summary>Composes Sindri over the test's home with both recipes, holds the lease, names the dev server in control.json and runs the worker around <paramref name="body"/>.</summary>
     private async Task Serve(Func<ServiceProvider, Task> body)
     {
-        BridgeRecipes.WriteTo(_harness.Home);
+        BridgeRecipes.WriteTo(_harness);
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, Token);
         var temporal = await WorkflowsHarness.AsServe(sindri, server.Environment, Token);

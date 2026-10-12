@@ -6,9 +6,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 /// <summary>
 /// The approved recipes, read-only, as the interpreter and the start and command slices need them (port; engine spec rev
-/// 8 §4, §5.1 'LoadRecipe', §5.2 the approval check). Engine P4's minimal read port: P2's registry (IRecipeStore,
-/// IRecipeApprovals) is not on main yet, so P4 reads through this and P2's adapter implements it when it lands; until
-/// then a stub reads the recipe files under the Sindri home and treats each as approved.
+/// 8 §4, §5.1 'LoadRecipe', §5.2 the approval check). Engine P4's read port over P2's registry (IRecipeStore,
+/// IRecipeApprovals): RegistryApprovedRecipes implements it.
 /// </summary>
 public interface IApprovedRecipes
 {

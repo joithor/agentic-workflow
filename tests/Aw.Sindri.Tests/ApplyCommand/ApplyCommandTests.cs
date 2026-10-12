@@ -2,7 +2,6 @@ using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Tests.CompleteStep;
@@ -123,7 +122,7 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
     public async Task Command_fires_the_recipe_command_and_an_unknown_verb_is_SND_WF_003()
     {
         await using var served = await Served.Start(_harness.Home, server.Environment);
-        WriteSkip();
+        _ = WriteSkip();
         _ = await served.Cli("start", "workflow.skip", "--item", "T-16", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         _ = await served.Until("T-16/skip/1", static v => v.Task is not null);
 
@@ -141,11 +140,11 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
     [Fact]
     public async Task On_a_revoked_recipe_a_command_is_SND_RECIPE_005_but_cancel_is_exempt()
     {
-        WriteSkip();
-        await using var served = await Served.Start(_harness.Home, server.Environment, static services => services.AddSingleton<IApprovedRecipes>(
-            sp => new RevokedRecipes(ActivatorUtilities.CreateInstance<Infrastructure.Workflows.HomeApprovedRecipes>(sp))));
+        var recipe = WriteSkip();
+        await using var served = await Served.Start(_harness.Home, server.Environment);
         _ = await served.Cli("start", "workflow.skip", "--item", "T-17", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         _ = await served.Until("T-17/skip/1", static v => v.Task is not null);
+        _harness.Revoke(recipe);   // revoked while its instance runs (W11)
 
         var skip = await served.Cli("command", "T-17/skip/1", "skip");
         var events = await served.Events("T-17/skip/1");
@@ -162,7 +161,7 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
     [Fact]
     public async Task A_bare_item_with_roots_of_two_recipes_is_SND_WF_006_listing_them()
     {
-        WriteSkip();
+        _ = WriteSkip();
         await using var served = await Served.Start(_harness.Home, server.Environment);
         var spec = "fact:spec=" + _harness.File("spec.md", "the spec");
         _ = await served.Cli("start", "workflow.step", "--item", "T-18", "--fact", spec);
@@ -176,8 +175,8 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         Assert.Equal(["workflow.started"], await served.Events("T-18/step/1"));
     }
 
-    /// <summary>Puts 'workflow.skip' (a desk Step and a 'command.skip' transition) under the home's recipes.</summary>
-    private void WriteSkip() => File.WriteAllText(Path.Combine(_harness.Home, "recipes", "workflow.skip.yaml"), _skipRecipe);
+    /// <summary>Registers and approves 'workflow.skip' (a desk Step and a 'command.skip' transition) in the home's ledger.</summary>
+    private Core.Workflow.Registry.RegisteredRecipe WriteSkip() => _harness.Approve(_skipRecipe);
 
     private static async Task<Kernel.Result<ApplyCommandResponse>> Apply(Served served, ApplyCommandRequest request)
     {

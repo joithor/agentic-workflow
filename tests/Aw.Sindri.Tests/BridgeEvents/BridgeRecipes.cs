@@ -48,11 +48,10 @@ internal static class BridgeRecipes
         "  - { from: second, to: dropped, on: wait.satisfied, when: { outcome: notStartable } }",
     ]);
 
-    /// <summary>Writes both recipes under <paramref name="home"/>'s recipes directory, where the stub approvals read them.</summary>
-    public static void WriteTo(string home)
+    /// <summary>Registers and approves both recipes in <paramref name="harness"/>'s home.</summary>
+    public static void WriteTo(Workflows.WorkflowsHarness harness)
     {
-        var recipes = Directory.CreateDirectory(Path.Combine(home, "recipes")).FullName;
-        File.WriteAllText(Path.Combine(recipes, "workflow.relay.yaml"), Relay);
-        File.WriteAllText(Path.Combine(recipes, "workflow.twice.yaml"), Twice);
+        harness.Recipe("workflow.relay", Relay);
+        harness.Recipe("workflow.twice", Twice);
     }
 }

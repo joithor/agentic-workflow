@@ -1,8 +1,8 @@
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
-/// Where the adapter keeps its files under the Sindri home: the facts a start or a desk report stored, and the recipes
-/// the stub <see cref="HomeApprovedRecipes"/> reads until P2's registry replaces the directory.
+/// Where the adapter keeps its files under the Sindri home: the facts a start or a desk report stored, the nonces, and
+/// the event bridge's cursor.
 /// </summary>
 /// <param name="Home">The Sindri home, as <see cref="TemporalSettings"/> reads it.</param>
 internal sealed record WorkflowsHome(string Home)
@@ -15,7 +15,4 @@ internal sealed record WorkflowsHome(string Home)
 
     /// <summary>The event bridge's cursor: the last ledger sequence it delivered (engine P4 unit (d)).</summary>
     public string EventsCursorFile => Path.Combine(Home, "workflow", "events.cursor");
-
-    /// <summary>The recipe files, '&lt;id&gt;.yaml'.</summary>
-    public string RecipesDirectory => Path.Combine(Home, "recipes");
 }

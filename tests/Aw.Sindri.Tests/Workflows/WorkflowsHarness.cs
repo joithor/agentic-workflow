@@ -19,8 +19,8 @@ using Temporalio.Testing;
 namespace Aw.Sindri.Tests.Workflows;
 
 /// <summary>
-/// What the engine's integration tests share (engine spec rev 8 §11): a Sindri home with 'workflow.step' under its
-/// recipes, the composed host, the pinned dev server with the search attributes serve registers, the lease, and the
+/// What the engine's integration tests share (engine spec rev 8 §11): a Sindri home with 'workflow.step' registered and
+/// approved, the composed host, the pinned dev server with the search attributes serve registers, the lease, and the
 /// 'workflow' verb group run in process.
 /// </summary>
 internal sealed class WorkflowsHarness : IDisposable
@@ -31,8 +31,6 @@ internal sealed class WorkflowsHarness : IDisposable
 
     public WorkflowsHarness()
     {
-        var recipes = Directory.CreateDirectory(Path.Combine(_home.Path, "recipes")).FullName;
-        System.IO.File.Copy(Path.Combine(RepoRoot(), "recipes", "sindri", "workflow.step.yaml"), Path.Combine(recipes, "workflow.step.yaml"));
         _ = Approve(Shipped("sindri/workflow.step.yaml"));
     }
 
@@ -87,8 +85,8 @@ internal sealed class WorkflowsHarness : IDisposable
         return temporal;
     }
 
-    /// <summary>Writes <paramref name="yaml"/> as the recipe '&lt;home&gt;/recipes/&lt;id&gt;.yaml' the stub approvals read.</summary>
-    public void Recipe(string id, string yaml) => System.IO.File.WriteAllText(Path.Combine(_home.Path, "recipes", id + ".yaml"), yaml);
+    /// <summary>Registers and approves <paramref name="yaml"/> (the recipe <paramref name="id"/>) in the home's ledger.</summary>
+    public void Recipe(string id, string yaml) => Assert.Equal(id, Approve(yaml).Id.Value);
 
     /// <summary>
     /// Registers <paramref name="yaml"/> in the home's ledger as 'recipe register' keeps it (its normalized long form by
