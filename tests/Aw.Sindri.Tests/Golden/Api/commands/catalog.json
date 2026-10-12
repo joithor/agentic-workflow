@@ -286,7 +286,7 @@
       "method": "POST",
       "route": "/sindri/context/sources/sync",
       "cli": "sindri context sources sync",
-      "ui": "pending:P6",
+      "ui": "pending:S-5B",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
