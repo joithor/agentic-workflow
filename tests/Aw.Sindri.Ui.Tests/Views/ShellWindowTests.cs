@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -286,6 +287,35 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(window.Get<Border>("Sheet").Bounds.Width, window.ClientSize.Width, precision: 0);
         Frame(window, "sheet-covers");
     });
+
+    // §3.2: window minimum 900 × 600, and the top bar still fits there: the ⌘K field gives way, the pill stays whole
+    // (with room for its focus ring), and nothing in the bar overlaps.
+    [Fact]
+    public Task At_the_900_px_minimum_the_top_bar_fits_with_the_pill_whole() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 900, 600) }, Token);
+        var (window, _) = await Show(s => s.State == ShellState.Normal);
+
+        Assert.Equal(900, window.ClientSize.Width);
+        var bar = _topBarControls.Select(n => Box(window, n)).ToList();
+        var pill = bar[^1];
+        Assert.True(pill.Right <= window.ClientSize.Width - 4, string.Create(CultureInfo.InvariantCulture, $"the pill ends at {pill.Right}, past the window's {window.ClientSize.Width} less its ring"));
+        for (var i = 1; i < bar.Count; i++)
+        {
+            Assert.True(bar[i - 1].Right <= bar[i].Left, $"{bar[i - 1]} overlaps {bar[i]}");
+        }
+
+        Frame(window, "min-width-top-bar");
+    });
+
+    private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "HealthPill"];
+
+    private static Rect Box(Window window, string name)
+    {
+        var control = window.GetVisualDescendants().OfType<Control>().First(c => c.Name == name);
+        return new Rect(control.TranslatePoint(new Point(0, 0), window) ?? default, control.Bounds.Size);
+    }
 
     [Fact]
     public Task F6_cycles_top_bar_page_and_sheet() => OnUi(async () =>
