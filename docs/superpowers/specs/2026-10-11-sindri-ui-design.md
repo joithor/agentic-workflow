@@ -1,8 +1,10 @@
 # Sindri UI app design: the control plane's views, actions and launching sessions
 
 Status:
-- **Revision 7 amendment (owner, 2026-10-12; PR #197):** §12.4 lists the destructive confirm's copy (§8, E-8): the
-  question "<label> <id>?" with **Confirm** and **Keep**. Nothing else changes.
+- **Revision 7 amendment (owner, 2026-10-12; PR #197):** §4.5's queue has API §3.6's four groups (`waitingOnYou`,
+  `withYou`, `running`, `queued`), and a parked item shows in Waiting on you with a "parked" badge from its state; §4.6's
+  item detail shows the item's `body` (scrubbed) and `link` from `GET /items/{itemId}`; §12.4 lists the destructive
+  confirm's copy (§8, E-8): "<label> <id>?" with **Confirm** and **Keep**. Nothing else changes.
 - **Revision 7 amendment (owner, 2026-10-12; PR #193):** §4.1's command lifecycle also covers the palette's rows: a
   ready command run from the palette keeps the palette open and its row shows the lifecycle.
 - **Revision 7 amendment (owner, 2026-10-12; PR #184):** §12.4 lists two more app-owned sentences, "On in your system
@@ -282,8 +284,9 @@ Mockups: `mockups/park-grant.html` (protected answer), `mockups/park-needs-answe
 
 ### 4.5 Queue, Running, With you
 
-- **Queue:** the five groups in the API's order (`waitingOnYou`, `withYou`, `parked`, `running`, `queued`), each a
-  collapsible section with its count; items within a group in the API's order. Each row: id, title, repo, state as a
+- **Queue:** the four groups in the API's order (`waitingOnYou`, `withYou`, `running`, `queued`; API §3.6), each a
+  collapsible section with its count; items within a group in the API's order. There is no parked group: a parked item
+  sits in Waiting on you and carries a "parked" badge, from its `state`. Each row: id, title, repo, state as a
   word, step, agent (once launched), since, and the row's primary action from `actions`.
 - **Running** (Home's left panel, and the Queue page filtered by `G R`): the `running` group, with the step (`produce round 2/3`), the agent and where it runs ("Claude Code in
   Warp", "factory worker"), the budget line as text plus a thin `ink-subtle` bar, **Open ▾** and **Take over** (§6.2). **Attach** belongs to With-you rows
@@ -297,7 +300,8 @@ Empty: each group hides when empty; the view shows its `empty` sentence when all
 
 ### 4.6 Item detail
 
-The full item: header (id, title, repo, state as a word, version, since), the engine instance header and `next` once
+The full item: header (id, title, repo, state as a word, version, since), its `body` (scrubbed, plain text) and its
+`link` (the tracker record key) as `GET /items/{itemId}` serves them, the engine instance header and `next` once
 S2 runs (WF §6.4, rendered line for line, ASCII as the API sends it), what it's waiting on, the answer block (§4.4),
 the launch block (§6), pending decisions for the item, requests filed against it, and the timeline
 (`GET /items/{id}/timeline`, paged by `next`, each entry: time, type, actor, one scrubbed line).
