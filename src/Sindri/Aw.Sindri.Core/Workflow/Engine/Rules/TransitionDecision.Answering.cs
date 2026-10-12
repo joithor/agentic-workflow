@@ -45,7 +45,8 @@ public static partial class TransitionDecision
         var resumed = popped.Pending is { } pending
             ? d.Commit(d.Rules.Suspend(popped.Instance, new SuspendOutcome(pending.Suspension, pending.Resume), d.Now))
             : Resume(d, popped.Instance, fit.Value);
-        return Recorded(resumed, answer, fit.Value);
+        // The grant was applied before the pop, so both branches record it; an override exists only when the resume ran (§5.1).
+        return Recorded(resumed, answer, popped.Pending is null ? fit.Value : fit.Value with { Gate = null });
     }
 
     /// <summary>The answer's own event carries the grant or the override it made (§5.2).</summary>
