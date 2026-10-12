@@ -148,4 +148,33 @@ public sealed class FreshnessTests : IDisposable
         Assert.True(_vm.Banner.IsStalled);
         Assert.True(_server.StatusCalls > status && _server.ServicesCalls > services);
     }
+    // §9.2: a burst re-reads each view at most once per 250 ms. The first event re-reads at once; the events in the next
+    // 250 ms collapse into one more re-read when the window ends.
+    [Fact]
+    public async Task A_burst_of_events_re_reads_each_view_once_per_250_ms()
+    {
+        await Connected(() => _server.ServicesCalls > 0);
+        var (status, services) = (_server.StatusCalls, _server.ServicesCalls);
+
+        _server.Push(A.Event(1, "service.ran"));
+        await Until(() => _server.ServicesCalls == services + 1);
+        _server.Push(A.Event(2, "service.ran"), A.Event(3, "service.ran"), A.Event(4, "service.ran"));
+        await Task.Delay(150, TestContext.Current.CancellationToken);
+
+        Assert.Equal((status + 1, services + 1), (_server.StatusCalls, _server.ServicesCalls));
+
+        _clock.Advance(HealthViewModel.RefreshEvery);
+        await Until(() => _server.ServicesCalls == services + 2);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+
+        Assert.Equal((status + 2, services + 2), (_server.StatusCalls, _server.ServicesCalls));
+    }
+
+    private static async Task Until(Func<bool> condition)
+    {
+        for (var i = 0; i < 200 && !condition(); i++)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+    }
 }

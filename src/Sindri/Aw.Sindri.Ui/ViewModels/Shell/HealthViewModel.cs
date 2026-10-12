@@ -30,6 +30,9 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>How often the follow pings the control plane it follows, well inside <see cref="StaleAfter"/>.</summary>
     internal static readonly TimeSpan PingEvery = TimeSpan.FromSeconds(10);
 
+    /// <summary>The shortest time between two re-reads of a view after events (§9.2: one refresh per view per 250 ms).</summary>
+    internal static readonly TimeSpan RefreshEvery = TimeSpan.FromMilliseconds(250);
+
     // How often "updated Ns ago" is re-worded.
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
 
