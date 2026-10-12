@@ -8,18 +8,37 @@ namespace Aw.Sindri.Tests.Workflows.Spike;
 /// <param name="inner">The real activity.</param>
 internal sealed class CountingRecorder(RecordEventActivities inner)
 {
-    private int _executions;
+    private readonly Lock _gate = new();
+    private readonly List<string> _log = [];
 
-    /// <summary>How many times a worker executed RecordEvent (a replay that re-executed it would raise this).</summary>
-    public int Executions => Volatile.Read(ref _executions);
+    /// <summary>Each execution: '{sequence}:{new|again}', in order (a re-execution shows as 'again').</summary>
+    public IReadOnlyList<string> Log
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return [.. _log];
+            }
+        }
+    }
+
+    /// <summary>How many times a worker executed RecordEvent.</summary>
+    public int Executions => Log.Count;
 
     /// <summary>Counts, then runs the real activity.</summary>
     /// <param name="record">The event.</param>
     /// <returns>The ledger append.</returns>
     [Activity("RecordEvent")]
-    public Task<LedgerAppend> RecordAsync(WorkflowEventRecord record)
+    public async Task<LedgerAppend> RecordAsync(WorkflowEventRecord record)
     {
-        _ = Interlocked.Increment(ref _executions);
-        return inner.RecordAsync(record);
+        ArgumentNullException.ThrowIfNull(record);
+        var appended = await inner.RecordAsync(record);
+        lock (_gate)
+        {
+            _log.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{record.Sequence}:{(appended.AlreadyRecorded ? "again" : "new")}"));
+        }
+
+        return appended;
     }
 }

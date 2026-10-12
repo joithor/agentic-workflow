@@ -32,8 +32,10 @@ internal sealed class DeskTasks
     /// <summary>Waits until <paramref name="token"/>'s task is recorded.</summary>
     /// <param name="token">The run token.</param>
     /// <param name="cancellationToken">Cancels the wait.</param>
+    /// <param name="within">How long to wait (20 s by default) before a TimeoutException.</param>
     /// <returns>Its task token.</returns>
-    public Task<byte[]> WaitFor(string token, CancellationToken cancellationToken) => Slot(token).Task.WaitAsync(TimeSpan.FromSeconds(20), cancellationToken);
+    public Task<byte[]> WaitFor(string token, CancellationToken cancellationToken, TimeSpan? within = null) =>
+        Slot(token).Task.WaitAsync(within ?? TimeSpan.FromSeconds(20), cancellationToken);
 
     private TaskCompletionSource<byte[]> Slot(string token) =>
         _tasks.GetOrAdd(token, static _ => new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously));

@@ -119,7 +119,7 @@ public abstract class TemporalProbes(TemporalServerFixture server)
                 Assert.True(wall.Elapsed >= delay - TimeSpan.FromMilliseconds(50), $"a {delay} timer took only {wall.Elapsed} of wall time");
             }
 
-            TestContext.Current.SendDiagnosticMessage(string.Create(CultureInfo.InvariantCulture, $"{server.Kind}: DelayAsync({delay}) took {wall.Elapsed.TotalMilliseconds:F0} ms wall"));
+            SpikeLog.Write(string.Create(CultureInfo.InvariantCulture, $"{server.Kind}: DelayAsync({delay}) took {wall.Elapsed.TotalMilliseconds:F0} ms wall"));
         });
     }
 
@@ -127,36 +127,68 @@ public abstract class TemporalProbes(TemporalServerFixture server)
     public async Task Worker_restart_mid_step_resumes_with_the_same_run_token()
     {
         var ct = TestContext.Current.CancellationToken;
-        var queue = Queue("resume");
+
+        var (resumed, desk, handle, view) = await RestartMidStep("resume", stickyFirstWorker: false, TimeSpan.FromSeconds(20), ct);
+
+        var history = await handle.FetchHistoryAsync();
+        var scheduled = history.Events.Where(e => e.EventType == EventType.ActivityTaskScheduled)
+            .Select(e => e.ActivityTaskScheduledEventAttributes.ActivityId).ToList();
+        Assert.True(resumed);
+        Assert.Equal(["1.1", "2.1"], scheduled);
+        Assert.Equal(2, desk.Opened);
+        Assert.Equal(("checks", "2.1"), (view?.State, view?.Run));
+    }
+
+    /// <summary>
+    /// A worker that exits with the instance in its sticky cache: the dev server moves the next task to the new worker;
+    /// the time-skipping server keeps it on the dead sticky queue (no fallback, measured 20 s with a 1 s sticky timeout),
+    /// so restart tests there run the first worker with MaxCachedWorkflows = 0 or use StartLocalAsync.
+    /// </summary>
+    [Fact(Timeout = 30_000)]
+    public async Task Worker_restart_from_a_sticky_cache_resumes_only_on_the_dev_server()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        var (resumed, _, _, _) = await RestartMidStep("sticky", stickyFirstWorker: true, TimeSpan.FromSeconds(3), ct);
+
+        Assert.Equal(server.Kind == ServerKind.Local, resumed);
+    }
+
+    /// <summary>Worker A starts an instance and exits mid-Step; worker B completes run 1.1 and waits for run 2.1.</summary>
+    private async Task<(bool Resumed, DeskTasks Desk, WorkflowHandle<SpikeStepWorkflow, SpikeView> Handle, SpikeView? View)> RestartMidStep(
+        string name, bool stickyFirstWorker, TimeSpan within, CancellationToken ct)
+    {
+        var queue = Queue(name);
         var desk = new DeskTasks();
         var ledger = await SpikeLedger.InMemory(ct);
         var spike = new SpikeDesk(_env.Client, desk);
-        var id = $"RESUME-1/workflow.step/1-{server.Kind}";
+        var id = $"RESUME-{name}/workflow.step/1-{server.Kind}";
         WorkflowHandle<SpikeStepWorkflow, SpikeView>? handle = null;
-        await SpikeWorker.Run(_env.Client, SpikeWorker.Options(queue, desk, ledger), async () =>
+        await SpikeWorker.Run(_env.Client, SpikeWorker.Options(queue, desk, ledger, stickyFirstWorker ? 1000 : 0), async () =>
         {
             handle = await spike.Start(id, queue, new SpikeRun("RESUME-1", SpikeEvals.WorkflowStep));
             await spike.Opened(id, "1.1", ct);
         }, ct);
 
-        // Worker A is gone, its sticky cache with it; a new worker picks the instance up from history.
-        var resumed = Stopwatch.StartNew();
+        var resumed = true;
+        SpikeView? view = null;
+        var wall = Stopwatch.StartNew();
         await SpikeWorker.Run(_env.Client, SpikeWorker.Options(queue, desk, ledger), async () =>
         {
             await spike.Complete(id, "1.1", new SpikeReport("done", new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:output"] = "o" }), ct);
-            await spike.Opened(id, "2.1", ct);
-            resumed.Stop();
-            var view = await handle!.QueryAsync(w => w.View);
-            Assert.Equal(("checks", "2.1"), (view.State, view.Run));
+            try
+            {
+                await spike.Opened(id, "2.1", ct, within);
+                view = await handle!.QueryAsync(w => w.View);
+            }
+            catch (TimeoutException)
+            {
+                resumed = false;
+            }
         }, ct);
-
-        var history = await handle!.FetchHistoryAsync();
-        var scheduled = history.Events.Where(e => e.EventType == EventType.ActivityTaskScheduled)
-            .Select(e => e.ActivityTaskScheduledEventAttributes.ActivityId).ToList();
-        Assert.Equal(["1.1", "2.1"], scheduled);
-        Assert.Equal(2, desk.Opened);
-        TestContext.Current.SendDiagnosticMessage(string.Create(CultureInfo.InvariantCulture,
-            $"{server.Kind}: restart to next run opened {resumed.Elapsed.TotalMilliseconds:F0} ms"));
+        SpikeLog.Write(string.Create(CultureInfo.InvariantCulture,
+            $"{server.Kind}: restart (sticky first worker: {stickyFirstWorker}) -> run 2.1 opened: {resumed} after {wall.Elapsed.TotalMilliseconds:F0} ms"));
+        return (resumed, desk, handle!, view);
     }
 
     private string Queue(string probe) => $"probe-{probe}-{server.Kind}";

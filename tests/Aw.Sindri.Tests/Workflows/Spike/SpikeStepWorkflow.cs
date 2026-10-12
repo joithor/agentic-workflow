@@ -18,6 +18,7 @@ internal sealed class SpikeStepWorkflow
     private readonly Dictionary<string, int> _rounds = new(StringComparer.Ordinal);
     private string? _findings;
     private int _sequence;
+    private SpikeReport? _reported;
 
     /// <summary>The instance as the query shows it.</summary>
     [WorkflowQuery]
@@ -42,7 +43,7 @@ internal sealed class SpikeStepWorkflow
             var entry = View.Entry + 1;
             var token = string.Create(CultureInfo.InvariantCulture, $"{entry}.1");
             View = View with { Entry = entry, Run = token };
-            var report = await RunStep(state, token);
+            var report = run.DeskByUpdate ? await AwaitReport(state, token) : await RunStep(state, token);
             if (report is null)
             {
                 await Mirror(run, "workflow.transition", state.Name, state.Name, "timeout", outcome: null, park: "timeout");
@@ -74,6 +75,40 @@ internal sealed class SpikeStepWorkflow
         scope.Cancel();
 #pragma warning restore MA0042
         return first == step ? await step : null;
+    }
+
+    /// <summary>The desk's 'complete --run' as an Update (rev 8 §5.2): the report for the open run.</summary>
+    /// <param name="token">The run token.</param>
+    /// <param name="report">The report.</param>
+    /// <returns>The run token it completed.</returns>
+    [WorkflowUpdate("complete")]
+    public Task<string> CompleteAsync(string token, SpikeReport report)
+    {
+        _reported = report;
+        return Task.FromResult(token);
+    }
+
+    /// <summary>Rejects a report for any run but the open one, recording nothing (SND-WF-005).</summary>
+    /// <param name="token">The run token.</param>
+    /// <param name="report">The report.</param>
+    [WorkflowUpdateValidator(nameof(CompleteAsync))]
+    public void ValidateComplete(string token, SpikeReport report)
+    {
+        ArgumentNullException.ThrowIfNull(report);
+        if (_reported is not null || token != View.Run)
+        {
+            throw new ArgumentException($"SND-WF-005: run {token} is not the open run ({View.Run})");
+        }
+    }
+
+    private async Task<SpikeReport?> AwaitReport(SpikeState state, string token)
+    {
+        _reported = null;
+        await Wf.ExecuteActivityAsync(
+            (SpikeDeskActivities a) => a.OpenDesk(new SpikeStepRun(Wf.Info.WorkflowId, state.Name, token)),
+            new ActivityOptions { ActivityId = token, StartToCloseTimeout = TimeSpan.FromSeconds(10) });
+        var reported = await Wf.WaitConditionAsync(() => _reported is not null, state.Timeout);
+        return reported ? _reported : null;
     }
 
     private async Task Mirror(SpikeRun run, string type, string from, string to, string trigger, string? outcome, string? park)

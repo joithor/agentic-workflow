@@ -15,4 +15,9 @@ internal sealed class SpikeDeskActivities(DeskTasks desk)
         desk.Open(DeskTasks.Key(run.Address, run.Token), ActivityExecutionContext.Current.Info.TaskToken);
         throw new CompleteAsyncException();
     }
+
+    /// <summary>Records the desk task and returns at once; the report comes as the workflow's 'complete' Update.</summary>
+    /// <param name="run">The run.</param>
+    [Activity("SpikeOpenDesk")]
+    public void OpenDesk(SpikeStepRun run) => desk.Open(DeskTasks.Key(run.Address, run.Token), []);
 }

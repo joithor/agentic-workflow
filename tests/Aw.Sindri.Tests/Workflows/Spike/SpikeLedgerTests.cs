@@ -16,9 +16,9 @@ namespace Aw.Sindri.Tests.Workflows.Spike;
 /// a new worker with no sticky cache (every workflow task replays the whole history), the SDK's WorkflowReplayer over
 /// the fetched history, and a direct re-execution of a recorded event (the at-least-once retry a crash can cause).
 /// </summary>
-/// <param name="server">The time-skipping server.</param>
+/// <param name="server">The dev server (the time-skipping server keeps a task on a dead worker's sticky queue, see TemporalProbes).</param>
 [Lane(TestLane.Integration)]
-public sealed class SpikeLedgerTests(TimeSkippingServer server) : IClassFixture<TimeSkippingServer>, IDisposable
+public sealed class SpikeLedgerTests(LocalServer server) : IClassFixture<LocalServer>, IDisposable
 {
     private const string Queue = "spike-ledger";
     private const string Id = "LEDGER-1/workflow.step/1";
@@ -56,13 +56,14 @@ public sealed class SpikeLedgerTests(TimeSkippingServer server) : IClassFixture<
         var started = await ledger.Read("workflow.started", ct);
         var markers = history.Events.Count(e => e.EventType == EventType.MarkerRecorded);
         var line = string.Create(CultureInfo.InvariantCulture,
-            $"ledger: transitions before replay {before}, after {transitions.Count}; started {started.Count}; RecordEvent executions {ledger.Recorder.Executions}; local-activity markers in history {markers}; db {_home.Path}");
-        TestContext.Current.SendDiagnosticMessage(line);
+            $"ledger: transitions before replay {before}, after {transitions.Count}; started {started.Count}; RecordEvent executions {ledger.Recorder.Executions} [{string.Join(' ', ledger.Recorder.Log)}]; local-activity markers in history {markers}; db {_home.Path}");
+        SpikeLog.Write(line);
         Keep();
 
         Assert.Null(replayed.ReplayFailure);
         Assert.True(retried.AlreadyRecorded, line);
-        Assert.Equal((2, 3, 1, 4, 4), (before, transitions.Count, started.Count, ledger.Recorder.Executions, markers));
+        Assert.Equal((2, 3, 1, 4), (before, transitions.Count, started.Count, markers));
+        Assert.Equal(["1:new", "2:new", "3:new", "4:new"], [.. ledger.Recorder.Log.Where(l => l.EndsWith(":new", StringComparison.Ordinal))]);
         Assert.Equal(["produce>checks", "checks>verify", "verify>done"], [.. transitions.Select(t => Payload(t.Envelope.Payload))]);
         Assert.Equal(
             [.. Enumerable.Range(2, 3).Select(n => string.Create(CultureInfo.InvariantCulture, $"workflow:{Id}:{runId}:{n}"))],
