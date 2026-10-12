@@ -17,6 +17,9 @@ internal sealed class HealthDetail : ObservableObject
     /// <summary>The Health page's profile head: its glyph and state word.</summary>
     public string ProfileHead { get; private set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>The profile head's glyph (§11.3).</summary>
+    public StateGlyph ProfileGlyph { get; private set => Set(ref field, value); }
+
     /// <summary>The Health page's profile rows: approved, live (when it differs), file.</summary>
     public IReadOnlyList<HealthCell> Profile { get; private set => Set(ref field, value); } = [];
 

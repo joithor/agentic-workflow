@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:shell="using:Aw.Sindri.Ui.ViewModels.Shell"
+             xmlns:views="using:Aw.Sindri.Ui.Views"
              x:Class="Aw.Sindri.Ui.Views.Shell.TopBar"
              x:DataType="shell:ShellViewModel">
   <!-- The top bar (UI spec §3.2): brand, the segmented navigation with its counts, Later ▾, the ⌘K field (a placeholder
@@ -111,9 +112,7 @@
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Ellipse x:Name="PillDot" Classes="pill-dot" Classes.ok="{Binding Pill.IsHealthy}"
                      Classes.stale="{Binding Pill.IsStale}" Classes.down="{Binding Pill.IsDown}" VerticalAlignment="Center" />
-            <TextBlock x:Name="PillGlyph" Classes="caption pill-glyph" Classes.ok="{Binding Pill.IsHealthy}"
-                       Classes.down="{Binding Pill.IsDown}" Text="{Binding Pill.Glyph}" VerticalAlignment="Center"
-                       AutomationProperties.AccessibilityView="Raw" />
+            <views:StateIcon x:Name="PillGlyph" Glyph="{Binding Pill.Glyph}" VerticalAlignment="Center" />
             <TextBlock x:Name="HealthPillText" Classes="body-strong" Text="{Binding Pill.Word}" VerticalAlignment="Center" />
             <Panel x:Name="PillAge" VerticalAlignment="Center">
               <TextBlock x:Name="PillAgeText" Classes="caption subtle" Text="{Binding Pill.Age}" IsVisible="{Binding Pill.HasAge}"

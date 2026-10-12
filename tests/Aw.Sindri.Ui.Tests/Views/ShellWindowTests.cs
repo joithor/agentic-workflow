@@ -99,6 +99,9 @@ public sealed class ShellWindowTests : IDisposable
     private static T Named<T>(Window window, string name)
         where T : Control => window.GetVisualDescendants().OfType<T>().First(c => c.Name == name);
 
+    // A state icon's glyph (§11.3), by the icon's name.
+    private static StateGlyph Glyph(Window window, string name) => Named<StateIcon>(window, name).Glyph;
+
     private static bool Visible(Window window, string name) => window.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Name == name)?.IsEffectivelyVisible == true;
 
     private static void Frame(Window window, string name)
@@ -308,7 +311,7 @@ public sealed class ShellWindowTests : IDisposable
         shell.Navigate(link);
         Settle(window);
 
-        Assert.Contains(window.Get<Button>("SheetClose").GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "✕");
+        Assert.Contains(window.Get<Button>("SheetClose").GetVisualDescendants().OfType<StateIcon>(), i => i.Icon == "Close");
         var title = Box(window, "SheetTitle");
         var close = Box(window, "SheetClose");
         Assert.True(close.Left - title.Right >= 8, string.Create(CultureInfo.InvariantCulture, $"{close.Left - title.Right} px between the heading and Close"));
@@ -389,7 +392,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(Labels.NoRecord(_records.Location), Text(window, "ReasonText"));
         Assert.Equal("sindri", Text(window, "FixText"));
         Assert.Equal(Labels.NotRunning, Text(window, "HealthPillText"));
-        Assert.Equal(Labels.GlyphDown, Text(window, "PillGlyph"));
+        Assert.Equal(StateGlyph.Down, Glyph(window, "PillGlyph"));
         EveryControlIsNamed(window);
         Frame(window, "not-running");
     });
@@ -428,7 +431,7 @@ public sealed class ShellWindowTests : IDisposable
             Assert.True(Visible(window, panel), panel);
         }
 
-        Assert.Equal((Labels.GlyphOk, Labels.Running, "updated 0s ago"), (Text(window, "PillGlyph"), Text(window, "HealthPillText"), Text(window, "PillAgeText")));
+        Assert.Equal((StateGlyph.Ok, Labels.Running, "updated 0s ago"), (Glyph(window, "PillGlyph"), Text(window, "HealthPillText"), Text(window, "PillAgeText")));
         Assert.Equal("Running · updated 0s ago", AutomationProperties.GetName(Named<Button>(window, "HealthPill")));
         Assert.False(Visible(window, "AttentionBand"));
         Assert.Equal(1280, window.Width);
@@ -462,7 +465,7 @@ public sealed class ShellWindowTests : IDisposable
         await Until(() => shell.State == ShellState.Stale);
 
         Assert.Equal(ShellState.Stale, shell.State);
-        Assert.Equal((Labels.GlyphStale, Labels.Stale), (Text(window, "PillGlyph"), Text(window, "HealthPillText")));
+        Assert.Equal((StateGlyph.Stale, Labels.Stale), (Glyph(window, "PillGlyph"), Text(window, "HealthPillText")));
         Assert.Equal(Labels.UpdatedAgo(ShellViewModel.StaleAfter), Text(window, "PillAgeText"));
         Assert.True(Visible(window, "RefreshButton"));
         Assert.True(Visible(window, "PillDot"));
@@ -474,7 +477,54 @@ public sealed class ShellWindowTests : IDisposable
         await Until(() => shell.State == ShellState.Normal);
         Assert.Equal(before + 1, _server.StatusCalls);
         Assert.False(Visible(window, "RefreshButton"));
-        Assert.Equal((Labels.GlyphOk, Labels.Running), (Text(window, "PillGlyph"), Text(window, "HealthPillText")));
+        Assert.Equal((StateGlyph.Ok, Labels.Running), (Glyph(window, "PillGlyph"), Text(window, "HealthPillText")));
+    });
+
+    // R1 (§11.3): every glyph the shell draws is a vector icon from Theme/Icons.axaml at the icon size (16 px, the Body
+    // line, scaled with the text), never a font glyph that falls back to another face at half height; each sits beside
+    // its word.
+    private static readonly string[] _glyphCharacters = ["✓", "✕", "◆", "◇", "⌛", "⟳", "⌘"];
+
+    [Theory]
+    [InlineData(1.0)]
+    [InlineData(1.3)]
+    public Task State_glyphs_are_vector_icons_sized_to_the_text(double scale) => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        _server.FailPing = true;
+        _clock.Advance(ShellViewModel.StaleAfter);
+        await Until(() => shell.State == ShellState.Stale);
+        var resources = Application.Current!.Resources;
+        TextScale.Apply(resources, scale);
+        try
+        {
+            Settle(window);
+            var size = 16 * scale;
+            foreach (var name in (string[])["PillGlyph", "RefreshIcon", "BrandMark"])
+            {
+                var icon = Named<StateIcon>(window, name);
+                Assert.True(icon.IsEffectivelyVisible, name + " is hidden");
+                Assert.NotNull(icon.Geometry);
+                Assert.Equal(size, icon.Bounds.Width, 3);
+                Assert.Equal(size, icon.Bounds.Height, 3);
+            }
+
+            Assert.Equal(StateGlyph.Stale, Glyph(window, "PillGlyph"));
+            Assert.Equal("Refresh", Named<StateIcon>(window, "RefreshIcon").Icon);
+            Assert.All(window.GetVisualDescendants().OfType<StateIcon>().Where(i => i.IsEffectivelyVisible), i => Assert.NotNull(i.Geometry));
+            var fontGlyphs = window.GetVisualDescendants().OfType<TextBlock>()
+                .Where(t => t.IsEffectivelyVisible && t.Text is { } text && _glyphCharacters.Any(g => text.Contains(g, StringComparison.Ordinal)))
+                .Select(t => t.Name + ":" + t.Text)
+                .ToList();
+            Assert.True(fontGlyphs.Count == 0, "font glyphs: " + string.Join(", ", fontGlyphs));
+            Frame(window, string.Create(CultureInfo.InvariantCulture, $"icons-{scale * 100:0}"));
+        }
+        finally
+        {
+            TextScale.Apply(resources, 1.0);
+            Settle(window);
+        }
     });
 
     // §4.1 "sending" (§12.4): while a refresh is in flight Refresh is disabled and keeps its label, "Sending…" shows beside
@@ -636,7 +686,7 @@ public sealed class ShellWindowTests : IDisposable
         await Until(() => shell.State == ShellState.Stale);
         Settle(window);
 
-        Assert.Equal((Labels.GlyphStale, Labels.Stale), (Text(window, "ProcessGlyph"), Text(window, "ProcessWord")));
+        Assert.Equal((StateGlyph.Stale, Labels.Stale), (Glyph(window, "ProcessGlyph"), Text(window, "ProcessWord")));
         Frame(window, "health-stale");
     });
 
@@ -658,8 +708,8 @@ public sealed class ShellWindowTests : IDisposable
         // glyph and word; no display-size values and no badge repeating the pill.
         List<string?> Rows(string name) => [.. Named<ItemsControl>(window, name).GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text)];
         Assert.Equal(["pid · epoch", "4242 · 7", "Host lease", "held · expires " + A.Noon.AddSeconds(60).ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture), "API", "127.0.0.1:7410"], Rows("ProcessRows"));
-        Assert.Equal((Labels.GlyphOk, Labels.Running), (Text(window, "ProcessGlyph"), Text(window, "ProcessWord")));
-        Assert.Equal("◇ changed since approval", Text(window, "ProfileHeadText"));
+        Assert.Equal((StateGlyph.Ok, Labels.Running), (Glyph(window, "ProcessGlyph"), Text(window, "ProcessWord")));
+        Assert.Equal(("changed since approval", StateGlyph.Profile), (Text(window, "ProfileHeadText"), Glyph(window, "ProfileHeadGlyph")));
         Assert.Equal(["approved", "ab12cd", "live", "ff00ee", "file", "/home/profile.yaml"], Rows("ProfileRows"));
         Assert.Equal("sindri profile approve", Text(window, "ProfileFixText"));
         Assert.False(Visible(window, "HeadlineText"));
@@ -679,7 +729,8 @@ public sealed class ShellWindowTests : IDisposable
         // I4 (home.html): labelled cells, the G . hint and a trailing ›; still one button named by the health line.
         var cells = Named<ItemsControl>(window, "HealthCells");
         var texts = cells.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
-        Assert.Equal(["Process", "Running · pid 4242", "Epoch · lease", "7 · held", "Services", "1 service", "Profile", "✓ approved"], texts);
+        Assert.Equal(["Process", "Running · pid 4242", "Epoch · lease", "7 · held", "Services", "1 service", "Profile", "approved"], texts);
+        Assert.Equal([StateGlyph.Ok], cells.GetVisualDescendants().OfType<StateIcon>().Where(i => i.IsEffectivelyVisible).Select(i => i.Glyph));
         Assert.True(Visible(window, "HealthChevron"));
         Assert.True(Visible(window, "HealthKeys"));
         var strip = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "HealthStrip");

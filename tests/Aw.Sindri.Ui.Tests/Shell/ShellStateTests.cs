@@ -188,7 +188,7 @@ public sealed class ShellStateTests
     {
         var shell = await Stale();
 
-        Assert.Equal(("⌛", Labels.Stale, Labels.UpdatedAgo(ShellViewModel.StaleAfter)), (shell.Pill.Glyph, shell.Pill.Word, shell.Pill.Age));
+        Assert.Equal((StateGlyph.Stale, Labels.Stale, Labels.UpdatedAgo(ShellViewModel.StaleAfter)), (shell.Pill.Glyph, shell.Pill.Word, shell.Pill.Age));
         Assert.Equal(Labels.Stale + " · " + Labels.UpdatedAgo(ShellViewModel.StaleAfter), shell.Pill.Text);
         Assert.True(shell.Pill.IsRefreshShown);
         Assert.True(shell.Pill.IsStale);
@@ -204,7 +204,7 @@ public sealed class ShellStateTests
 
         Assert.Equal(before + 1, _server.StatusCalls);
         Assert.Equal(ShellState.Normal, shell.State);
-        Assert.Equal(("✓", Labels.Running, Labels.UpdatedAgo(TimeSpan.Zero)), (shell.Pill.Glyph, shell.Pill.Word, shell.Pill.Age));
+        Assert.Equal((StateGlyph.Ok, Labels.Running, Labels.UpdatedAgo(TimeSpan.Zero)), (shell.Pill.Glyph, shell.Pill.Word, shell.Pill.Age));
         Assert.False(shell.Pill.IsRefreshShown);
     }
 
@@ -270,7 +270,7 @@ public sealed class ShellStateTests
 
         Assert.Equal(ShellState.Stale, shell.State);
         Assert.True(shell.IsNotRespondingBanner);
-        Assert.Equal(("⌛", Labels.Stale), (shell.Pill.Glyph, shell.Pill.Word));
+        Assert.Equal((StateGlyph.Stale, Labels.Stale), (shell.Pill.Glyph, shell.Pill.Word));
         Assert.True(shell.Pill.IsRefreshShown);
         _clock.Advance(TimeSpan.FromSeconds(1));
         Assert.True(shell.IsNotRespondingBanner);
@@ -300,21 +300,21 @@ public sealed class ShellStateTests
     public async Task Each_state_puts_its_glyph_before_its_word()
     {
         var connecting = new ShellViewModel(_records, _server, _clock, _preferences);
-        Assert.Equal((string.Empty, Labels.Connecting, string.Empty), (connecting.Pill.Glyph, connecting.Pill.Word, connecting.Pill.Age));
+        Assert.Equal((StateGlyph.None, Labels.Connecting, string.Empty), (connecting.Pill.Glyph, connecting.Pill.Word, connecting.Pill.Age));
 
         var down = await Running(ShellState.NotRunning);
-        Assert.Equal(("✕", Labels.NotRunning, string.Empty), (down.Pill.Glyph, down.Pill.Word, down.Pill.Age));
+        Assert.Equal((StateGlyph.Down, Labels.NotRunning, string.Empty), (down.Pill.Glyph, down.Pill.Word, down.Pill.Age));
         Assert.True(down.Pill.IsDown);
 
         _records.Write(A.Record());
         _server.UnreadableStatus = true;
         var unreadable = await Running(ShellState.Unreadable);
-        Assert.Equal(("✕", Labels.Unreadable, Labels.Stale), (unreadable.Pill.Glyph, unreadable.Pill.Word, unreadable.Pill.Age));
+        Assert.Equal((StateGlyph.Down, Labels.Unreadable, Labels.Stale), (unreadable.Pill.Glyph, unreadable.Pill.Word, unreadable.Pill.Age));
         Assert.True(unreadable.Pill.IsDown);
 
         _server.UnreadableStatus = false;
         var healthy = await Running(ShellState.Normal);
-        Assert.Equal(("✓", Labels.Running), (healthy.Pill.Glyph, healthy.Pill.Word));
+        Assert.Equal((StateGlyph.Ok, Labels.Running), (healthy.Pill.Glyph, healthy.Pill.Word));
         Assert.True(healthy.Pill.IsHealthy);
     }
 

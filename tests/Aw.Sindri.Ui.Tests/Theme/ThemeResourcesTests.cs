@@ -64,6 +64,8 @@ public sealed class ThemeResourcesTests
             Assert.Equal(13 * 1.2, (double)Resource("Type.Body.Size")!, 6); // why: set just above
             Assert.Equal(24 * 1.2, (double)Resource("Type.PageTitle.LineHeight")!, 6); // why: set just above
 
+            Assert.Equal(16 * 1.2, (double)Resource("Size.Icon")!, 6); // why: set just above; R1, icons scale with the text
+
             TextScale.Apply(Application.Current!.Resources, 3); // why: as above
             Assert.Equal(1.3, Resource("Type.Scale"));
             Assert.Equal(13 * 1.3, (double)Resource("Type.Body.Size")!, 6); // why: set just above
@@ -72,5 +74,17 @@ public sealed class ThemeResourcesTests
         {
             TextScale.Apply(Application.Current!.Resources, 1); // why: as above
         }
+    });
+
+    // R1 (§11.3): the state glyphs and the shell's marks are vector geometries in Theme/Icons.axaml, merged into the app.
+    [Fact]
+    public Task Every_icon_is_a_geometry_resource() => OnUi(() =>
+    {
+        foreach (var name in (string[])["Ok", "Down", "Stale", "Profile", "Brand", "Refresh", "Spinner", "Command", "Close"])
+        {
+            _ = Assert.IsType<Geometry>(Resource("Icon." + name), exactMatch: false);
+        }
+
+        Assert.Equal(16d, Resource("Size.Icon"));
     });
 }

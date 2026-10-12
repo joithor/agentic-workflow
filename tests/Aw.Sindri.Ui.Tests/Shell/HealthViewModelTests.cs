@@ -483,7 +483,7 @@ public sealed class HealthViewModelTests : IDisposable
                 new HealthCell("Epoch · lease", "7 · held"),
                 new HealthCell("API", "v1"),
                 new HealthCell("Services", "1 service"),
-                new HealthCell("Profile", "◇ changed since approval"),
+                new HealthCell("Profile", "changed since approval", StateGlyph.Profile),
             ],
             _vm.Detail.Strip);
     }
@@ -496,7 +496,7 @@ public sealed class HealthViewModelTests : IDisposable
 
         await Eventually(() => _vm.Headline == "Running", "headline");
         Assert.DoesNotContain(_vm.Detail.Strip, c => c.Label == "API");
-        Assert.Equal(new HealthCell("Profile", "✓ approved"), _vm.Detail.Strip[^1]);
+        Assert.Equal(new HealthCell("Profile", "approved", StateGlyph.Ok), _vm.Detail.Strip[^1]);
     }
 
     // I5 (§4.8): the Health page is label/value rows; times are local, and the home directory is ~.
@@ -517,7 +517,7 @@ public sealed class HealthViewModelTests : IDisposable
                 new HealthCell("API", "127.0.0.1:7410 · v1"),
             ],
             _vm.Detail.Process);
-        Assert.Equal("◇ changed since approval", _vm.Detail.ProfileHead);
+        Assert.Equal(("changed since approval", StateGlyph.Profile), (_vm.Detail.ProfileHead, _vm.Detail.ProfileGlyph));
         Assert.Equal(
             [
                 new HealthCell("approved", "ab12cd"),
