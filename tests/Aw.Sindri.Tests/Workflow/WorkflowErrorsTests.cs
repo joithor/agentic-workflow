@@ -25,8 +25,8 @@ public sealed class WorkflowErrorsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_retired_codes_are_the_two_the_spec_retires() =>
-        Assert.Equal(["SND-RECIPE-004", "SND-WF-007"], WorkflowErrors.Retired, StringComparer.Ordinal);
+    public void The_retired_codes_are_the_three_the_spec_retires() =>
+        Assert.Equal(["SND-RECIPE-004", "SND-WF-002", "SND-WF-007"], WorkflowErrors.Retired, StringComparer.Ordinal);
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("SND-RECIPE-001", ErrorKind.Invalid)]
