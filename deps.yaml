@@ -74,7 +74,8 @@
 #           Not seen: a route after a base ($"{url}/sindri/x", an absolute
 #           URL), a path under another package's `namespace` that isn't in its files or db (namespace
 #           names double as log and label strings in C#, so the C# scan doesn't match them), paths from
-#           computed pieces, and cli edges (a C# Process start is not scanned).
+#           computed pieces, cli edges (a C# Process start is not scanned), and http calls from
+#           TypeScript or shell (only C# is scanned for routes).
 #
 # YAML subset (parsed without a library, so the check needs no install step): block mappings and
 # sequences, plain, 'single' or "double" quoted scalars, [flow, lists] of scalars, and # comments.
@@ -244,7 +245,7 @@ packages:
     src: src/Sindri/Aw.Sindri.Ui
     bins: [sindri-ui]
     files: [sindri-app/ui/preferences.json, sindri-app/ui/instance.sock, sindri-app/ui/instance.lock, sindri-app/ui/instance.pid]
-    note: "the Avalonia desktop app (readiness spec §4a UI): Aw.Sindri.Ui (views, view models, the typed API client, platform ports) and the thin Aw.Sindri.Ui.Desktop head (NativeAOT, binary sindri-ui). It references no Sindri project and holds no logic: Sindri's HTTP API and its endpoint record (control.json) are its only contract (docs/csharp/sindri-ui.md). It owns its own files in a ui/ directory (0700) of Sindri's home: the local preferences and the single-instance lock and socket. Bare `sindri` starts sindri-ui; that Sindri -> SindriUi launch is NOT declared as a cli edge, because it would close a cycle with the http edge (DEPS-CYCLE-001) and check-deps does not scan C# for cli edges. Open owner question (PR #168): invert the launch, or record a reasoned cycle exception"
+    note: "the Avalonia desktop app (readiness spec §4a UI): Aw.Sindri.Ui (views, view models, the typed API client, platform ports) and the thin Aw.Sindri.Ui.Desktop head (NativeAOT, binary sindri-ui). It references no Sindri project and holds no logic: Sindri's HTTP API and its endpoint record (control.json) are its only contract (docs/csharp/sindri-ui.md). It owns its own files in a ui/ directory (0700) of Sindri's home: the local preferences and the single-instance lock and socket (instance.sock falls back to an owner-only temp directory when its path is too long for sun_path). Bare `sindri` starts sindri-ui; that Sindri -> SindriUi launch is NOT declared as a cli edge, because it would close a cycle with the http edge (DEPS-CYCLE-001) and check-deps does not scan C# for cli edges. Open owner question (PR #168): invert the launch, or record a reasoned cycle exception"
 
   # ---- outside the tiers: code that stays bash or TypeScript and calls the CLIs (§4a) ----
   - id: Hooks
