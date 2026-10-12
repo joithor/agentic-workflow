@@ -125,7 +125,9 @@ in-memory store and the SQLite adapter). Append-only, idempotent and fenced.
 S1 events and their keys: `process.started` (`process.started:<epoch>`), `process.stopped` (`process.stopped:<epoch>`),
 `profile.approved` (`profile.approved:<hash>:after:<seq of the latest profile.approved event, or 0>`, so each
 approval is recorded: approving A, B, A, B, A records five events), `service.heartbeat` (`service.heartbeat:<epoch>:<slot>`), and from API P1
-`command.handled` (`command.handled:<commandId>`; the command chain's audit row, not public: see Command chain). A service's
+`command.handled` (`command.handled:<commandId>`; the command chain's audit row, see Command chain). It is flagged
+non-public in `EventCatalog`, but `GET /sindri/events` still streams it, like every ledger row, until P5 filters the
+stream by that flag (API spec, Phases: P5's signal "`command.handled` never appears"). A service's
 run event is `service.<name>`. `outbox_commands` is Kernel.Data's outbox table (migration 3), empty in S1: outward
 actions join it in later stages.
 
@@ -319,7 +321,7 @@ letters, digits, `.`, `_`, `:` and `-`, starting with a letter or digit.
 **Checks** (`tests/Aw.Sindri.Tests/Catalog/`, `Cqrs/`): every row's CLI parses; no `shortcut` uses a reserved key
 (`G J K O A T B Y C R / ?`); `cli-only` only on terminal-bound or `local` rows; no `pending:<phase>` names a shipped
 phase (`CatalogRules.ShippedPhases`, which each phase extends); every non-pending row's route is mapped; every event type
-is in `EventCatalog`, and `command.handled` isn't public. The architecture rules (API spec §2.5) run in `Aw.Sindri.Tests`
+is in `EventCatalog`, and `command.handled` is flagged non-public there (the stream filters on it from P5). The architecture rules (API spec §2.5) run in `Aw.Sindri.Tests`
 because they need Host internals: `ARCH-CQRS-001` (every GET serves an `IQuery`, every POST an `ICommand`, or an `IIssue`
 on the four carve-out routes with `issue` rows; over the endpoint data source), `ARCH-CQRS-002` (no query handler takes
 `ILedgerStore`, `ILease` or `IApprovals`; `GetStatusService` and `StreamEventsService` are allowlisted until P2's
