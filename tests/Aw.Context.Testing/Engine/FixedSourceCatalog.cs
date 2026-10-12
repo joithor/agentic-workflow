@@ -4,7 +4,7 @@ using Aw.Context.Core.Sources;
 
 namespace Aw.Context.Testing.Engine;
 
-/// <summary>An <see cref="ISourceCatalog"/> that returns the same sources for any scope, and records the repos it was asked for.</summary>
+/// <summary>An <see cref="ISourceCatalog"/> that returns its sources for any scope with a repo in it (none for an empty scope), and records the repos it was asked for. It passes <see cref="SourceCatalogContract{TCatalog}"/>.</summary>
 /// <param name="sources">The sources.</param>
 public sealed class FixedSourceCatalog(params IContextSource[] sources) : ISourceCatalog
 {
@@ -15,6 +15,6 @@ public sealed class FixedSourceCatalog(params IContextSource[] sources) : ISourc
     public IReadOnlyList<IContextSource> For(ContextSettings settings, IReadOnlyList<ContextRepo> repos)
     {
         LastRepos = repos;
-        return sources;
+        return repos.Count == 0 ? [] : sources;
     }
 }

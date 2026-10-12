@@ -17,7 +17,7 @@ public sealed class FileMapFileReaderContractTests : MapFileReaderContract, IDis
     protected override string Place(string name, string repo)
     {
         var path = Path.Combine(_home.Root, name);
-        File.WriteAllBytes(path, AwJson.Serialize(new MapDocument(1, MapDocumentKind.Authored, repo, []), FixtureMap.Json));
+        File.WriteAllBytes(path, AwJson.Serialize(new MapDocument(1, MapDocumentKind.Authored, Context.Core.Engine.ContextRepoName.From(repo), []), FixtureMap.Json));
         return path;
     }
 

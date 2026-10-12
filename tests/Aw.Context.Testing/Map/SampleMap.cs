@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
@@ -39,6 +40,6 @@ public static class SampleMap
             new(decision.ToKey(), NodeKey.From($"record:{record.Value}"), EdgeType.Quotes, Provenance.Deterministic),
         ];
         var graph = new GraphSnapshot(nodes, edges, [new NodeAlias(NodeKey.From("feature:layout.splits"), feature)], [decision]);
-        return new MapImport("aw-split-panes", "a41b07d", graph, [new MapOverride(OverrideAction.Reject, NodeKey.From("feature:layout.guess"), "avery", At)]);
+        return new MapImport(ContextRepoName.From("aw-split-panes"), "a41b07d", graph, [new MapOverride(OverrideAction.Reject, NodeKey.From("feature:layout.guess"), "avery", At)]);
     }
 }

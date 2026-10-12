@@ -8,10 +8,10 @@ public sealed class ContextFacadeBoundaryTests
 {
     private static readonly Assembly[] _sindri =
     [
-        typeof(Aw.Sindri.Core.SindriErrors).Assembly,
-        typeof(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest).Assembly,
-        typeof(Aw.Sindri.Infrastructure.Registration.SindriInfrastructureServiceCollectionExtensions).Assembly,
-        typeof(Aw.Sindri.Host.SindriHeaders).Assembly,
+        typeof(Core.SindriErrors).Assembly,
+        typeof(Features.ContextCalls.ImportContextMapRequest).Assembly,
+        typeof(Infrastructure.Registration.SindriInfrastructureServiceCollectionExtensions).Assembly,
+        typeof(Host.SindriHeaders).Assembly,
     ];
 
     [Fact, Trait("Lane", "unit")]

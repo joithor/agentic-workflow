@@ -44,14 +44,14 @@ internal sealed class MapWorld : IDisposable
 
     public IContextMap Map => _scope.ServiceProvider.GetRequiredService<IContextMap>();
 
-    public static IReadOnlyList<ContextRepo> Repos { get; } = [new(FixtureMap.Repo, "/work/aw-split-panes"), new("other", "/work/other")];
+    public static IReadOnlyList<ContextRepo> Repos { get; } = [new(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes"), new(ContextRepoName.From("other"), "/work/other")];
 
     public static ContextScope Human { get; } = new(Settings: null, Repos, new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
 
     public static ContextScope Session(string? repo, bool enabled = true)
     {
         using var section = System.Text.Json.JsonDocument.Parse(enabled ? """{"sessions":{"enabled":true}}""" : """{"sessions":{"enabled":false}}""");
-        return new(section.RootElement.Clone(), Repos, new ContextCaller(ContextCallerKind.Session, repo, ContextClient.Http));
+        return new(section.RootElement.Clone(), Repos, new ContextCaller(ContextCallerKind.Session, repo is null ? null : ContextRepoName.From(repo), ContextClient.Http));
     }
 
     public static CancellationToken None => TestContext.Current.CancellationToken;

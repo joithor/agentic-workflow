@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Xunit;
 
@@ -8,7 +9,7 @@ public abstract class ExportStoreContract
 {
     private static CancellationToken None => TestContext.Current.CancellationToken;
 
-    private static MapDocument Document => new(1, MapDocumentKind.Export, "aw-split-panes", []);
+    private static MapDocument Document => new(1, MapDocumentKind.Export, ContextRepoName.From("aw-split-panes"), []);
 
     /// <summary>With no path the default name lands in the folder; a relative name too.</summary>
     /// <returns>The test.</returns>

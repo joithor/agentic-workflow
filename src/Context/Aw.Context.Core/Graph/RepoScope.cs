@@ -10,10 +10,10 @@ public static class RepoScope
     /// <param name="graph">The graph.</param>
     /// <param name="repo">The repo's short name.</param>
     /// <returns>The node keys (ordinal), empty when it implements nothing.</returns>
-    public static IReadOnlySet<string> NodesFor(GraphSnapshot graph, string repo)
+    public static IReadOnlySet<string> NodesFor(GraphSnapshot graph, Engine.ContextRepoName repo)
     {
         ArgumentNullException.ThrowIfNull(graph);
-        var prefix = $"repo:{repo}/";
+        var prefix = $"repo:{repo.Value}/";
         return graph.Edges
             .Where(e => e.Type == EdgeType.Implements && e.EvidenceOrEmpty.Any(r => r.Key.Value.StartsWith(prefix, StringComparison.Ordinal)))
             .Select(e => e.To.Value)

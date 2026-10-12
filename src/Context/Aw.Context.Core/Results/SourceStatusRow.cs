@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Sources;
 
 namespace Aw.Context.Core.Results;
@@ -11,5 +12,5 @@ namespace Aw.Context.Core.Results;
 /// <param name="Code">The problem's catalogue code, or null.</param>
 /// <param name="LastSync">When it was last brought up to date, or null when never.</param>
 /// <param name="Records">How many records (repo-docs: chunks) it holds or reaches.</param>
-public sealed record SourceStatusRow(SourceId Source, SourceKind Kind, string? Repo, SourceState State, string Detail, string? Code,
+public sealed record SourceStatusRow(SourceId Source, SourceKind Kind, ContextRepoName? Repo, SourceState State, string Detail, string? Code,
     DateTimeOffset? LastSync, int Records);

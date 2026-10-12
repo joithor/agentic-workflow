@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Kernel;
@@ -46,6 +47,15 @@ public sealed class IdTests
         Assert.True(read.IsError);
         Assert.Equal(KernelErrors.Invalid.Code, read.Error.Code);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("split-panes", true)]
+    [InlineData("work.app_2", true)]
+    [InlineData("-x", false)]
+    [InlineData("a/b", false)]
+    [InlineData("", false)]
+    public void A_repo_name_is_letters_digits_and_dot_underscore_dash(string name, bool valid) =>
+        Assert.Equal(valid, ContextRepoName.TryFrom(name, out _));
 
     [Fact, Trait("Lane", "unit")]
     public void Ids_refuse_text_over_their_length()

@@ -16,7 +16,7 @@ public sealed class SourcesStatusTests
         var view = await Engines.Over(new FixedSourceCatalog()).Sources(Engines.Human(), CancellationToken.None);
 
         var row = view.Value.Sources[0];
-        Assert.Equal(("repo-docs", "split-panes", SourceState.Degraded), (row.Source.Value, row.Repo, row.State));
+        Assert.Equal(("repo-docs", "split-panes", SourceState.Degraded), (row.Source.Value, row.Repo?.Value, row.State));
         Assert.Contains("context-docs-refresh", row.Detail, StringComparison.Ordinal);
         Assert.False(view.Value.SessionsEnabled);
     }
@@ -27,7 +27,7 @@ public sealed class SourcesStatusTests
         using var repo = FixtureRepo.Build();
         var index = new FakeDocIndex(new FakeTimeProvider());
         var engine = Engines.Over(new FixedSourceCatalog(), index);
-        var scope = Engines.Human() with { Repos = [new ContextRepo("split-panes", repo.Path)] };
+        var scope = Engines.Human() with { Repos = [new ContextRepo(ContextRepoName.From("split-panes"), repo.Path)] };
 
         var report = await engine.Refresh(scope, CancellationToken.None);
         var view = await engine.Sources(scope, CancellationToken.None);

@@ -21,6 +21,7 @@ public sealed class MapFileTests : IDisposable
     [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: A}\n  - {key: \"feature:b\", label: B}\nedges:\n  - {from: \"feature:a\", to: \"feature:b\", type: 5}\n", "type")]
     [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: A, provenance: 7}\n", "provenance")]
     [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: A}\nedgse: []\n", "edgse")]
+    [InlineData("schemaVersion: 1\nkind: authored\nrepo: \"a b!\"\nnodes: []\n", "ContextRepoName")]
     public async Task A_number_for_a_name_or_an_unknown_member_is_SND_CONTEXT_031(string yaml, string mentioned)
     {
         var path = Path.Combine(_home.Root, "map.yaml");
@@ -59,7 +60,7 @@ public sealed class MapFileTests : IDisposable
         var linked = Path.Combine(_home.Root, "linked-map.yaml");
         _ = File.CreateSymbolicLink(linked, map);
 
-        var written = await new FileExportStore(settings, FixtureMap.Json).Write(path: null, "x.json", new MapDocument(1, MapDocumentKind.Export, "r", []), Ct);
+        var written = await new FileExportStore(settings, FixtureMap.Json).Write(path: null, "x.json", new MapDocument(1, MapDocumentKind.Export, Context.Core.Engine.ContextRepoName.From("r"), []), Ct);
         var read = await new MapFileReader(FixtureMap.Json).Read(linked, Ct);
 
         Assert.Equal("SND-CONTEXT-005", written.Error.Code);

@@ -26,7 +26,7 @@ public sealed record GraphSnapshot(
     /// <summary>What a session scoped to <paramref name="repo"/> may see (spec §3): <see cref="RepoScope"/>'s nodes and the edges, aliases and decisions among them.</summary>
     /// <param name="repo">The session's X-Sindri-Repo.</param>
     /// <returns>The scoped graph (empty when the repo implements nothing).</returns>
-    public GraphSnapshot ScopedTo(string repo)
+    public GraphSnapshot ScopedTo(Engine.ContextRepoName repo)
     {
         var keys = RepoScope.NodesFor(this, repo);
         return new GraphSnapshot(

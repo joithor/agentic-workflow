@@ -49,7 +49,7 @@ internal sealed class ImportContextMapService(ContextScopes scopes, IContextEngi
         }
 
         var v = imported.Value;
-        var payload = new ContextMapImported(v.Version.Number, v.Version.Repo, v.Hash, v.Counts.Nodes, v.Counts.Edges, v.Counts.Overrides);
+        var payload = new ContextMapImported(v.Version.Number, v.Version.Repo.Value, v.Hash, v.Counts.Nodes, v.Counts.Edges, v.Counts.Overrides);
         var key = string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ContextMapImported}:{v.Hash}:v{v.Version.Number}");
         var appended = await ledger.Append(events.Entry(EventTypes.ContextMapImported, payload, key), grant, cancellationToken).ConfigureAwait(false);
         return appended.IsError ? appended.Error : new ImportContextMapResponse(preview.Value, v, appended.Value.Sequence);

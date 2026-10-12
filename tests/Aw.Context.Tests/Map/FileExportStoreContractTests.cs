@@ -15,7 +15,7 @@ public sealed class FileExportStoreContractTests : ExportStoreContract, IDisposa
         _ = Directory.CreateDirectory(Path.Combine(_home.Root, "repo", ".git"));
     }
 
-    protected override string Folder => Path.Combine(Aw.Context.Infrastructure.Map.RealPath.Of(_home.Root)!, "context", "exports");   // why: the temp root exists, so it resolves
+    protected override string Folder => Path.Combine(RealPath.Of(_home.Root)!, "context", "exports");   // why: the temp root exists, so it resolves
 
     protected override string Worktree => Path.Combine(_home.Root, "repo");
 

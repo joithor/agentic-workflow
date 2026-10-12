@@ -10,15 +10,15 @@ internal static class ContextMapText
     internal static string Counts(MapCounts c) => string.Create(CultureInfo.InvariantCulture,
         $"{c.Nodes} nodes, {c.Edges} edges, {c.Aliases} aliases, {c.Decisions} decisions, {c.Overrides} overrides");
 
-    internal static string Preview(MapFilePreview p) => $"map file {p.Path}\nrepo {p.Repo}, {Kind(p.Kind)}: {Counts(p.Counts)}\nhash {p.Hash}\n";
+    internal static string Preview(MapFilePreview p) => $"map file {p.Path}\nrepo {p.Repo.Value}, {Kind(p.Kind)}: {Counts(p.Counts)}\nhash {p.Hash}\n";
 
     internal static string Imported(ImportContextMapResponse r) => r.Imported is not { } i
         ? Preview(r.Preview)
         : string.Create(CultureInfo.InvariantCulture,
-            $"Imported map v{i.Version.Number} (current) for {i.Version.Repo}: {Counts(i.Counts)}\nhash {i.Hash}; recorded as event {r.Sequence}\n");
+            $"Imported map v{i.Version.Number} (current) for {i.Version.Repo.Value}: {Counts(i.Counts)}\nhash {i.Hash}; recorded as event {r.Sequence}\n");
 
     internal static string Status(MapStatusView s) => string.Create(CultureInfo.InvariantCulture,
-        $"map v{s.Version.Number} {Word(s.Version.Status)} · {s.Version.Repo} · created {s.Version.Created:O}{(s.ScopedTo is { } repo ? $" · scoped to {repo}" : string.Empty)}\n"
+        $"map v{s.Version.Number} {Word(s.Version.Status)} · {s.Version.Repo.Value} · created {s.Version.Created:O}{(s.ScopedTo is { } repo ? $" · scoped to {repo.Value}" : string.Empty)}\n"
         + $"{Counts(s.Counts)}; {s.Orphaned} orphaned overrides; {s.Retained} retained versions\n");
 
     internal static string Exported(MapExported e) => string.Create(CultureInfo.InvariantCulture,

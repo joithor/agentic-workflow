@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Aw.Context.Core;
 using Aw.Context.Core.Docs;
@@ -42,7 +43,7 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
         {
             var rows = await SqliteQueries.List(read.Value, new SqlStatement(DocSql.Search, c => c
                     .Bind("@match", string.Join(" OR ", query.Terms.Select(DocSql.Phrase)))
-                    .Bind("@repos", "[" + string.Join(',', repos.Select(r => "\"" + r.Name.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"")) + "]")
+                    .Bind("@repos", RepoList())
                     .Bind("@limit", Math.Clamp(query.Limit, 1, 200))), DocMappers.Hit, cancellationToken)
                 .ConfigureAwait(false);
             var now = clock.GetUtcNow();
@@ -85,7 +86,7 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
                 continue;
             }
 
-            if (!trees.TryGetValue(at.Repo.Name, out var tree))
+            if (!trees.TryGetValue(at.Repo.Name.Value, out var tree))
             {
                 var head = await git.Head(at.Repo.Path, cancellationToken).ConfigureAwait(false);
                 var listed = head.IsError ? head.Error : await git.Tree(at.Repo.Path, head.Value, cancellationToken).ConfigureAwait(false);
@@ -94,7 +95,7 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
                     return listed.Error;
                 }
 
-                trees[at.Repo.Name] = tree = listed.Value;
+                trees[at.Repo.Name.Value] = tree = listed.Value;
             }
 
             versions.Add(tree.TryGetValue(at.Path, out var blob) ? SourceVersion.From(blob) : null);
@@ -115,7 +116,7 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
         {
             if ((await git.Head(repo.Path, cancellationToken).ConfigureAwait(false)).IsError)
             {
-                return new SourceHealth(SourceState.Unavailable, $"git can't read repo '{repo.Name}'", ContextErrors.SourceUnavailable.Code);
+                return new SourceHealth(SourceState.Unavailable, $"git can't read repo '{repo.Name.Value}'", ContextErrors.SourceUnavailable.Code);
             }
         }
 
@@ -124,15 +125,33 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
 
     private static SourceRef Ref(HitRow row) => new(RepoDocs.Id,
         ExternalId.From(string.Create(CultureInfo.InvariantCulture, $"{row.Repo}/{row.Path}#L{row.LineStart}-L{row.LineEnd}")),
-        SourceVersion.From(row.Blob), Permalink: null, RepoDocs.Key(row.Repo, row.Path));
+        SourceVersion.From(row.Blob), Permalink: null, RepoDocs.Key(ContextRepoName.From(row.Repo), row.Path));
 
     private (ContextRepo Repo, string Path, int Start, int End)? Parse(ExternalId id)
     {
         var match = ChunkId.Match(id.Value);
-        var repo = match.Success ? repos.FirstOrDefault(r => string.Equals(r.Name, match.Groups["repo"].Value, StringComparison.Ordinal)) : null;
+        var repo = match.Success ? repos.FirstOrDefault(r => string.Equals(r.Name.Value, match.Groups["repo"].Value, StringComparison.Ordinal)) : null;
         return repo is null
             ? null
             : (repo, match.Groups["path"].Value, int.Parse(match.Groups["a"].Value, CultureInfo.InvariantCulture), int.Parse(match.Groups["b"].Value, CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>The repos in scope as a JSON array of names, for json_each (written by the JSON writer, so any name is escaped correctly).</summary>
+    private string RepoList()
+    {
+        using var buffer = new MemoryStream();
+        using (var json = new Utf8JsonWriter(buffer))
+        {
+            json.WriteStartArray();
+            foreach (var repo in repos)
+            {
+                json.WriteStringValue(repo.Name.Value);
+            }
+
+            json.WriteEndArray();
+        }
+
+        return System.Text.Encoding.UTF8.GetString(buffer.ToArray());
     }
 
     private static Error Unavailable(Error error) => ContextErrors.SourceUnavailable.With($"repo-docs can't read its index ({error.Code})");

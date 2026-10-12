@@ -21,7 +21,7 @@ public abstract class MapFileReaderContract
         _ = Place("map.json", "second");
         var second = Expect.Ok(await reader.Read(path, None), test);
 
-        Expect.That(first.Document.Repo == "first" && second.Document.Repo == "second", test, "the document isn't the file's");
+        Expect.That(first.Document.Repo.Value == "first" && second.Document.Repo.Value == "second", test, "the document isn't the file's");
         Expect.That(first.Hash.Length == 64 && first.Hash != second.Hash, test, "the hash doesn't follow the content");
     }
 

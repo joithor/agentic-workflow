@@ -18,7 +18,7 @@ public abstract class DocIndexContract<TIndex> : IDisposable
     private readonly FixtureRepo _repo = FixtureRepo.Build();
 
     /// <summary>The fixture repo as a profile repo.</summary>
-    protected ContextRepo Repo => new("split-panes", _repo.Path);
+    protected ContextRepo Repo => new(ContextRepoName.From("split-panes"), _repo.Path);
 
     /// <summary>A fresh index with nothing in it.</summary>
     /// <returns>The index.</returns>

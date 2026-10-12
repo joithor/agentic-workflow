@@ -67,7 +67,6 @@ public sealed class MapDocumentTests
     [InlineData(Header + "nodes: [~]\n", "nodes[0]: an entry is required")]
     [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: A}\naliases:\n  - {alias: \"feature:old\", target: \"feature:a\"}\n  - {alias: \"feature:Old\", target: \"feature:a\"}\n", "aliases[1].alias: 'feature:old' is defined twice")]
     [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: A}\nedges:\n  - {from: \"feature:a\", to: \"feature:a\", type: depends-on}\n", "edges[0].type: 'feature:a' can't be joined to itself")]
-    [InlineData("schemaVersion: 1\nkind: authored\nrepo: \"a\\u001bb\"\nnodes: []\n", "repo: the repo's short name is required")]
     [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: A}\naliases:\n  - {alias: \"feature:a\", target: \"feature:a\"}\n", "aliases[0].alias: 'feature:a' is a node's own key")]
     public void A_bad_map_is_SND_CONTEXT_031_with_the_key_path(string yaml, string message)
     {

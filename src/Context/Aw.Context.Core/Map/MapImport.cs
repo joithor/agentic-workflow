@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
 
@@ -8,7 +9,7 @@ namespace Aw.Context.Core.Map;
 /// <param name="Commit">Its commit, or null.</param>
 /// <param name="Graph">The graph.</param>
 /// <param name="Overrides">The overrides it carries.</param>
-public sealed record MapImport(string Repo, string? Commit, GraphSnapshot Graph, IReadOnlyList<MapOverride> Overrides)
+public sealed record MapImport(ContextRepoName Repo, string? Commit, GraphSnapshot Graph, IReadOnlyList<MapOverride> Overrides)
 {
     /// <summary>Its counts.</summary>
     public MapCounts Counts => MapCounts.Of(Graph, Overrides.Count);

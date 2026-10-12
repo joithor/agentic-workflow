@@ -17,7 +17,7 @@ public sealed class ImportMapTests : IDisposable
         var preview = await _world.Map.PreviewMap(MapWorld.MapPath, MapWorld.Human, MapWorld.None);
 
         Assert.Equal(new MapCounts(19, 19, 1, 1, 2), preview.Value.Counts);
-        Assert.Equal((FixtureMap.Repo, MapDocumentKind.Authored), (preview.Value.Repo, preview.Value.Kind));
+        Assert.Equal((FixtureMap.Repo, MapDocumentKind.Authored), (preview.Value.Repo.Value, preview.Value.Kind));
         Assert.Matches("^[0-9a-f]{64}$", preview.Value.Hash);
         Assert.Empty((await _world.Store.Versions(MapWorld.None)).Value);
     }
@@ -27,7 +27,7 @@ public sealed class ImportMapTests : IDisposable
     {
         var imported = await _world.ImportFixture();
 
-        Assert.Equal((1, MapVersionStatus.Current, FixtureMap.Repo), (imported.Version.Number, imported.Version.Status, imported.Version.Repo));
+        Assert.Equal((1, MapVersionStatus.Current, FixtureMap.Repo), (imported.Version.Number, imported.Version.Status, imported.Version.Repo.Value));
         Assert.Equal(new MapCounts(19, 19, 1, 1, 2), imported.Counts);
         Assert.Equal(_world.Clock.GetUtcNow(), imported.Version.Created);
         Assert.Equal(Canonical.Of(Maps.Checked(Maps.Fixture()).Graph), Canonical.Of((await _world.Store.Read(1, MapWorld.None)).Value));
@@ -99,7 +99,7 @@ public sealed class ImportMapTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task A_map_for_a_repo_the_profile_doesnt_map_is_SND_CONTEXT_031_on_repo()
     {
-        _world.Reader.Put("/maps/elsewhere.yaml", Maps.Fixture() with { Repo = "elsewhere" }, "elsewhere");
+        _world.Reader.Put("/maps/elsewhere.yaml", Maps.Fixture() with { Repo = Context.Core.Engine.ContextRepoName.From("elsewhere") }, "elsewhere");
 
         var preview = await _world.Map.PreviewMap("/maps/elsewhere.yaml", MapWorld.Human, MapWorld.None);
         var imported = await _world.Map.ImportMap("/maps/elsewhere.yaml", new string('0', 64), MapWorld.Human, MapWorld.None);

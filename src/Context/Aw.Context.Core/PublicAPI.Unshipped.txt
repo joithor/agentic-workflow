@@ -829,13 +829,39 @@ Aw.Context.Core.Trust.Permalinks
 static Aw.Context.Core.Docs.RepoDocs.Id.get -> Aw.Context.Core.Sources.SourceId
 static Aw.Context.Core.Engine.SettingsReader.Read(System.Text.Json.JsonElement? section) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ContextSettings!>!
 static Aw.Context.Core.Trust.Permalinks.Allowed(System.Uri? link) -> System.Uri?
-Aw.Context.Core.Engine.ContextCaller.ContextCaller(Aw.Context.Core.Engine.ContextCallerKind Kind, string? Repo, Aw.Context.Core.Engine.ContextClient Client) -> void
-Aw.Context.Core.Engine.ContextCaller.Deconstruct(out Aw.Context.Core.Engine.ContextCallerKind Kind, out string? Repo, out Aw.Context.Core.Engine.ContextClient Client) -> void
-Aw.Context.Core.Engine.ContextCaller.Repo.get -> string?
-Aw.Context.Core.Engine.ContextRepo.ContextRepo(string! Name, string! Path) -> void
-Aw.Context.Core.Engine.ContextRepo.Deconstruct(out string! Name, out string! Path) -> void
-Aw.Context.Core.Engine.ContextRepo.Name.get -> string!
-Aw.Context.Core.Engine.ContextSettings.Repos.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Context.Core.Engine.ContextCaller.ContextCaller(Aw.Context.Core.Engine.ContextCallerKind Kind, Aw.Context.Core.Engine.ContextRepoName? Repo, Aw.Context.Core.Engine.ContextClient Client) -> void
+Aw.Context.Core.Engine.ContextCaller.Deconstruct(out Aw.Context.Core.Engine.ContextCallerKind Kind, out Aw.Context.Core.Engine.ContextRepoName? Repo, out Aw.Context.Core.Engine.ContextClient Client) -> void
+Aw.Context.Core.Engine.ContextCaller.Repo.get -> Aw.Context.Core.Engine.ContextRepoName?
+Aw.Context.Core.Engine.ContextRepo.ContextRepo(Aw.Context.Core.Engine.ContextRepoName Name, string! Path) -> void
+Aw.Context.Core.Engine.ContextRepo.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Name, out string! Path) -> void
+Aw.Context.Core.Engine.ContextRepo.Name.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Engine.ContextRepoName.ContextRepoName() -> void
+Aw.Context.Core.Engine.ContextRepoName.Equals(Aw.Context.Core.Engine.ContextRepoName other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Engine.ContextRepoName>! comparer) -> bool
+Aw.Context.Core.Engine.ContextRepoName.Equals(Aw.Context.Core.Engine.ContextRepoName other) -> bool
+Aw.Context.Core.Engine.ContextRepoName.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Engine.ContextRepoName.IsInitialized() -> bool
+Aw.Context.Core.Engine.ContextRepoName.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Engine.ContextRepoName.Value.get -> string!
+Aw.Context.Core.Engine.ContextSettings.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepoName>?
+Aw.Context.Core.Results.RepoRefresh.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out Aw.Context.Core.Sources.SourceVersion? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code) -> void
+Aw.Context.Core.Results.RepoRefresh.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Results.RepoRefresh.RepoRefresh(Aw.Context.Core.Engine.ContextRepoName Repo, Aw.Context.Core.Sources.SourceVersion? Head, int Added, int Removed, int Kept, int Blocked, string? Code) -> void
+Aw.Context.Core.Results.RepoRefresh.Skipped.get -> int
+Aw.Context.Core.Results.RepoRefresh.Skipped.init -> void
+Aw.Context.Core.Results.SourceStatusRow.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out Aw.Context.Core.Sources.SourceKind Kind, out Aw.Context.Core.Engine.ContextRepoName? Repo, out Aw.Context.Core.Sources.SourceState State, out string! Detail, out string? Code, out System.DateTimeOffset? LastSync, out int Records) -> void
+Aw.Context.Core.Results.SourceStatusRow.Repo.get -> Aw.Context.Core.Engine.ContextRepoName?
+Aw.Context.Core.Results.SourceStatusRow.SourceStatusRow(Aw.Context.Core.Sources.SourceId Source, Aw.Context.Core.Sources.SourceKind Kind, Aw.Context.Core.Engine.ContextRepoName? Repo, Aw.Context.Core.Sources.SourceState State, string! Detail, string? Code, System.DateTimeOffset? LastSync, int Records) -> void
+override Aw.Context.Core.Engine.ContextRepoName.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.ContextRepoName.GetHashCode() -> int
+override Aw.Context.Core.Engine.ContextRepoName.ToString() -> string!
+static Aw.Context.Core.Docs.RepoDocs.Key(Aw.Context.Core.Engine.ContextRepoName repo, string! path) -> Aw.Context.Core.Sources.RecordKey
+static Aw.Context.Core.Engine.ContextRepoName.From(string! value) -> Aw.Context.Core.Engine.ContextRepoName
+static Aw.Context.Core.Engine.ContextRepoName.operator !=(Aw.Context.Core.Engine.ContextRepoName left, Aw.Context.Core.Engine.ContextRepoName right) -> bool
+static Aw.Context.Core.Engine.ContextRepoName.operator ==(Aw.Context.Core.Engine.ContextRepoName left, Aw.Context.Core.Engine.ContextRepoName right) -> bool
+static Aw.Context.Core.Engine.ContextRepoName.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Engine.ContextRepoName
+static Aw.Context.Core.Engine.ContextRepoName.TryFrom(string? value, out Aw.Context.Core.Engine.ContextRepoName vo) -> bool
+static Aw.Context.Core.Engine.ContextRepoName.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Engine.ContextRepoName result) -> bool
 Aw.Context.Core.Facade.IContextMap
 Aw.Context.Core.Facade.IContextMap.CheckMap(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapHealth!>!>
 Aw.Context.Core.Facade.IContextMap.CheckRetention(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapHealth!>!>
@@ -942,7 +968,7 @@ Aw.Context.Core.Graph.GraphSnapshot.GraphSnapshot(System.Collections.Generic.IRe
 Aw.Context.Core.Graph.GraphSnapshot.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>!
 Aw.Context.Core.Graph.GraphSnapshot.Nodes.init -> void
 Aw.Context.Core.Graph.GraphSnapshot.Resolve(Aw.Context.Core.Graph.NodeKey key) -> Aw.Context.Core.Graph.GraphNode?
-Aw.Context.Core.Graph.GraphSnapshot.ScopedTo(string! repo) -> Aw.Context.Core.Graph.GraphSnapshot!
+Aw.Context.Core.Graph.GraphSnapshot.ScopedTo(Aw.Context.Core.Engine.ContextRepoName repo) -> Aw.Context.Core.Graph.GraphSnapshot!
 Aw.Context.Core.Graph.IKeyMigration
 Aw.Context.Core.Graph.IKeyMigration.From.get -> int
 Aw.Context.Core.Graph.IKeyMigration.Migrate(Aw.Context.Core.Graph.NodeKey key) -> Aw.Context.Core.Graph.NodeKey
@@ -1025,7 +1051,7 @@ Aw.Context.Core.Map.MapDocument.Commit.get -> string?
 Aw.Context.Core.Map.MapDocument.Commit.init -> void
 Aw.Context.Core.Map.MapDocument.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>?
 Aw.Context.Core.Map.MapDocument.Decisions.init -> void
-Aw.Context.Core.Map.MapDocument.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Map.MapDocumentKind Kind, out string! Repo, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides, out int KeyVersion, out string? Commit, out int? MapVersion, out System.DateTimeOffset? ExportedAt, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>? Orphaned) -> void
+Aw.Context.Core.Map.MapDocument.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Map.MapDocumentKind Kind, out Aw.Context.Core.Engine.ContextRepoName Repo, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides, out int KeyVersion, out string? Commit, out int? MapVersion, out System.DateTimeOffset? ExportedAt, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>? Orphaned) -> void
 Aw.Context.Core.Map.MapDocument.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>?
 Aw.Context.Core.Map.MapDocument.Edges.init -> void
 Aw.Context.Core.Map.MapDocument.Equals(Aw.Context.Core.Map.MapDocument? other) -> bool
@@ -1035,7 +1061,7 @@ Aw.Context.Core.Map.MapDocument.KeyVersion.get -> int
 Aw.Context.Core.Map.MapDocument.KeyVersion.init -> void
 Aw.Context.Core.Map.MapDocument.Kind.get -> Aw.Context.Core.Map.MapDocumentKind
 Aw.Context.Core.Map.MapDocument.Kind.init -> void
-Aw.Context.Core.Map.MapDocument.MapDocument(int SchemaVersion, Aw.Context.Core.Map.MapDocumentKind Kind, string! Repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides = null, int KeyVersion = 1, string? Commit = null, int? MapVersion = null, System.DateTimeOffset? ExportedAt = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>? Orphaned = null) -> void
+Aw.Context.Core.Map.MapDocument.MapDocument(int SchemaVersion, Aw.Context.Core.Map.MapDocumentKind Kind, Aw.Context.Core.Engine.ContextRepoName Repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides = null, int KeyVersion = 1, string? Commit = null, int? MapVersion = null, System.DateTimeOffset? ExportedAt = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>? Orphaned = null) -> void
 Aw.Context.Core.Map.MapDocument.MapVersion.get -> int?
 Aw.Context.Core.Map.MapDocument.MapVersion.init -> void
 Aw.Context.Core.Map.MapDocument.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>!
@@ -1044,7 +1070,7 @@ Aw.Context.Core.Map.MapDocument.Orphaned.get -> System.Collections.Generic.IRead
 Aw.Context.Core.Map.MapDocument.Orphaned.init -> void
 Aw.Context.Core.Map.MapDocument.Overrides.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>?
 Aw.Context.Core.Map.MapDocument.Overrides.init -> void
-Aw.Context.Core.Map.MapDocument.Repo.get -> string!
+Aw.Context.Core.Map.MapDocument.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
 Aw.Context.Core.Map.MapDocument.Repo.init -> void
 Aw.Context.Core.Map.MapDocument.SchemaVersion.get -> int
 Aw.Context.Core.Map.MapDocument.SchemaVersion.init -> void
@@ -1076,16 +1102,16 @@ Aw.Context.Core.Map.MapFilePreview
 Aw.Context.Core.Map.MapFilePreview.<Clone>$() -> Aw.Context.Core.Map.MapFilePreview!
 Aw.Context.Core.Map.MapFilePreview.Counts.get -> Aw.Context.Core.Map.MapCounts!
 Aw.Context.Core.Map.MapFilePreview.Counts.init -> void
-Aw.Context.Core.Map.MapFilePreview.Deconstruct(out string! Path, out string! Repo, out Aw.Context.Core.Map.MapDocumentKind Kind, out string! Hash, out Aw.Context.Core.Map.MapCounts! Counts) -> void
+Aw.Context.Core.Map.MapFilePreview.Deconstruct(out string! Path, out Aw.Context.Core.Engine.ContextRepoName Repo, out Aw.Context.Core.Map.MapDocumentKind Kind, out string! Hash, out Aw.Context.Core.Map.MapCounts! Counts) -> void
 Aw.Context.Core.Map.MapFilePreview.Equals(Aw.Context.Core.Map.MapFilePreview? other) -> bool
 Aw.Context.Core.Map.MapFilePreview.Hash.get -> string!
 Aw.Context.Core.Map.MapFilePreview.Hash.init -> void
 Aw.Context.Core.Map.MapFilePreview.Kind.get -> Aw.Context.Core.Map.MapDocumentKind
 Aw.Context.Core.Map.MapFilePreview.Kind.init -> void
-Aw.Context.Core.Map.MapFilePreview.MapFilePreview(string! Path, string! Repo, Aw.Context.Core.Map.MapDocumentKind Kind, string! Hash, Aw.Context.Core.Map.MapCounts! Counts) -> void
+Aw.Context.Core.Map.MapFilePreview.MapFilePreview(string! Path, Aw.Context.Core.Engine.ContextRepoName Repo, Aw.Context.Core.Map.MapDocumentKind Kind, string! Hash, Aw.Context.Core.Map.MapCounts! Counts) -> void
 Aw.Context.Core.Map.MapFilePreview.Path.get -> string!
 Aw.Context.Core.Map.MapFilePreview.Path.init -> void
-Aw.Context.Core.Map.MapFilePreview.Repo.get -> string!
+Aw.Context.Core.Map.MapFilePreview.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
 Aw.Context.Core.Map.MapFilePreview.Repo.init -> void
 Aw.Context.Core.Map.MapHealth
 Aw.Context.Core.Map.MapHealth.<Clone>$() -> Aw.Context.Core.Map.MapHealth!
@@ -1109,14 +1135,14 @@ Aw.Context.Core.Map.MapImport.<Clone>$() -> Aw.Context.Core.Map.MapImport!
 Aw.Context.Core.Map.MapImport.Commit.get -> string?
 Aw.Context.Core.Map.MapImport.Commit.init -> void
 Aw.Context.Core.Map.MapImport.Counts.get -> Aw.Context.Core.Map.MapCounts!
-Aw.Context.Core.Map.MapImport.Deconstruct(out string! Repo, out string? Commit, out Aw.Context.Core.Graph.GraphSnapshot! Graph, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides) -> void
+Aw.Context.Core.Map.MapImport.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string? Commit, out Aw.Context.Core.Graph.GraphSnapshot! Graph, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides) -> void
 Aw.Context.Core.Map.MapImport.Equals(Aw.Context.Core.Map.MapImport? other) -> bool
 Aw.Context.Core.Map.MapImport.Graph.get -> Aw.Context.Core.Graph.GraphSnapshot!
 Aw.Context.Core.Map.MapImport.Graph.init -> void
-Aw.Context.Core.Map.MapImport.MapImport(string! Repo, string? Commit, Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides) -> void
+Aw.Context.Core.Map.MapImport.MapImport(Aw.Context.Core.Engine.ContextRepoName Repo, string? Commit, Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides) -> void
 Aw.Context.Core.Map.MapImport.Overrides.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!
 Aw.Context.Core.Map.MapImport.Overrides.init -> void
-Aw.Context.Core.Map.MapImport.Repo.get -> string!
+Aw.Context.Core.Map.MapImport.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
 Aw.Context.Core.Map.MapImport.Repo.init -> void
 Aw.Context.Core.Map.MapImported
 Aw.Context.Core.Map.MapImported.<Clone>$() -> Aw.Context.Core.Map.MapImported!
@@ -1134,14 +1160,14 @@ Aw.Context.Core.Map.MapStatusView
 Aw.Context.Core.Map.MapStatusView.<Clone>$() -> Aw.Context.Core.Map.MapStatusView!
 Aw.Context.Core.Map.MapStatusView.Counts.get -> Aw.Context.Core.Map.MapCounts!
 Aw.Context.Core.Map.MapStatusView.Counts.init -> void
-Aw.Context.Core.Map.MapStatusView.Deconstruct(out Aw.Context.Core.Map.MapVersion! Version, out Aw.Context.Core.Map.MapCounts! Counts, out int Orphaned, out int Retained, out string? ScopedTo) -> void
+Aw.Context.Core.Map.MapStatusView.Deconstruct(out Aw.Context.Core.Map.MapVersion! Version, out Aw.Context.Core.Map.MapCounts! Counts, out int Orphaned, out int Retained, out Aw.Context.Core.Engine.ContextRepoName? ScopedTo) -> void
 Aw.Context.Core.Map.MapStatusView.Equals(Aw.Context.Core.Map.MapStatusView? other) -> bool
-Aw.Context.Core.Map.MapStatusView.MapStatusView(Aw.Context.Core.Map.MapVersion! Version, Aw.Context.Core.Map.MapCounts! Counts, int Orphaned, int Retained, string? ScopedTo) -> void
+Aw.Context.Core.Map.MapStatusView.MapStatusView(Aw.Context.Core.Map.MapVersion! Version, Aw.Context.Core.Map.MapCounts! Counts, int Orphaned, int Retained, Aw.Context.Core.Engine.ContextRepoName? ScopedTo) -> void
 Aw.Context.Core.Map.MapStatusView.Orphaned.get -> int
 Aw.Context.Core.Map.MapStatusView.Orphaned.init -> void
 Aw.Context.Core.Map.MapStatusView.Retained.get -> int
 Aw.Context.Core.Map.MapStatusView.Retained.init -> void
-Aw.Context.Core.Map.MapStatusView.ScopedTo.get -> string?
+Aw.Context.Core.Map.MapStatusView.ScopedTo.get -> Aw.Context.Core.Engine.ContextRepoName?
 Aw.Context.Core.Map.MapStatusView.ScopedTo.init -> void
 Aw.Context.Core.Map.MapStatusView.Version.get -> Aw.Context.Core.Map.MapVersion!
 Aw.Context.Core.Map.MapStatusView.Version.init -> void
@@ -1151,14 +1177,14 @@ Aw.Context.Core.Map.MapVersion.Commit.get -> string?
 Aw.Context.Core.Map.MapVersion.Commit.init -> void
 Aw.Context.Core.Map.MapVersion.Created.get -> System.DateTimeOffset
 Aw.Context.Core.Map.MapVersion.Created.init -> void
-Aw.Context.Core.Map.MapVersion.Deconstruct(out int Number, out string! Repo, out string? Commit, out int KeyVersion, out System.DateTimeOffset Created, out Aw.Context.Core.Map.MapVersionStatus Status) -> void
+Aw.Context.Core.Map.MapVersion.Deconstruct(out int Number, out Aw.Context.Core.Engine.ContextRepoName Repo, out string? Commit, out int KeyVersion, out System.DateTimeOffset Created, out Aw.Context.Core.Map.MapVersionStatus Status) -> void
 Aw.Context.Core.Map.MapVersion.Equals(Aw.Context.Core.Map.MapVersion? other) -> bool
 Aw.Context.Core.Map.MapVersion.KeyVersion.get -> int
 Aw.Context.Core.Map.MapVersion.KeyVersion.init -> void
-Aw.Context.Core.Map.MapVersion.MapVersion(int Number, string! Repo, string? Commit, int KeyVersion, System.DateTimeOffset Created, Aw.Context.Core.Map.MapVersionStatus Status) -> void
+Aw.Context.Core.Map.MapVersion.MapVersion(int Number, Aw.Context.Core.Engine.ContextRepoName Repo, string? Commit, int KeyVersion, System.DateTimeOffset Created, Aw.Context.Core.Map.MapVersionStatus Status) -> void
 Aw.Context.Core.Map.MapVersion.Number.get -> int
 Aw.Context.Core.Map.MapVersion.Number.init -> void
-Aw.Context.Core.Map.MapVersion.Repo.get -> string!
+Aw.Context.Core.Map.MapVersion.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
 Aw.Context.Core.Map.MapVersion.Repo.init -> void
 Aw.Context.Core.Map.MapVersion.Status.get -> Aw.Context.Core.Map.MapVersionStatus
 Aw.Context.Core.Map.MapVersion.Status.init -> void
@@ -1225,12 +1251,6 @@ Aw.Context.Core.Overrides.OverrideId.OverrideId() -> void
 Aw.Context.Core.Overrides.OverrideId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Context.Core.Overrides.OverrideId.Value.get -> string!
 Aw.Context.Core.Overrides.RejectionIdentity
-Aw.Context.Core.Results.RepoRefresh.Deconstruct(out string! Repo, out Aw.Context.Core.Sources.SourceVersion? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code) -> void
-Aw.Context.Core.Results.RepoRefresh.Repo.get -> string!
-Aw.Context.Core.Results.RepoRefresh.RepoRefresh(string! Repo, Aw.Context.Core.Sources.SourceVersion? Head, int Added, int Removed, int Kept, int Blocked, string? Code) -> void
-Aw.Context.Core.Results.SourceStatusRow.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out Aw.Context.Core.Sources.SourceKind Kind, out string? Repo, out Aw.Context.Core.Sources.SourceState State, out string! Detail, out string? Code, out System.DateTimeOffset? LastSync, out int Records) -> void
-Aw.Context.Core.Results.SourceStatusRow.Repo.get -> string?
-Aw.Context.Core.Results.SourceStatusRow.SourceStatusRow(Aw.Context.Core.Sources.SourceId Source, Aw.Context.Core.Sources.SourceKind Kind, string? Repo, Aw.Context.Core.Sources.SourceState State, string! Detail, string? Code, System.DateTimeOffset? LastSync, int Records) -> void
 Aw.Context.Core.StrictEnumConverter<TEnum>
 Aw.Context.Core.StrictEnumConverter<TEnum>.StrictEnumConverter() -> void
 const Aw.Context.Core.Graph.EntryKey.Version = 1 -> int
@@ -1301,7 +1321,6 @@ override Aw.Context.Core.Overrides.MapOverride.ToString() -> string!
 override Aw.Context.Core.Overrides.OverrideId.Equals(object? obj) -> bool
 override Aw.Context.Core.Overrides.OverrideId.GetHashCode() -> int
 override Aw.Context.Core.Overrides.OverrideId.ToString() -> string!
-static Aw.Context.Core.Docs.RepoDocs.Key(string! repo, string! path) -> Aw.Context.Core.Sources.RecordKey
 static Aw.Context.Core.Graph.DecisionRow.KeyFor(Aw.Context.Core.Sources.RecordKey record, string! quote) -> Aw.Context.Core.Graph.NodeKey
 static Aw.Context.Core.Graph.DecisionRow.operator !=(Aw.Context.Core.Graph.DecisionRow? left, Aw.Context.Core.Graph.DecisionRow? right) -> bool
 static Aw.Context.Core.Graph.DecisionRow.operator ==(Aw.Context.Core.Graph.DecisionRow? left, Aw.Context.Core.Graph.DecisionRow? right) -> bool
@@ -1330,13 +1349,13 @@ static Aw.Context.Core.Graph.NodeKey.operator ==(Aw.Context.Core.Graph.NodeKey l
 static Aw.Context.Core.Graph.NodeKinds.FromScheme(string! scheme) -> Aw.Context.Core.Graph.NodeKind
 static Aw.Context.Core.Graph.NodeKinds.HasValidSurfaceKind(Aw.Context.Core.Graph.NodeKey key) -> bool
 static Aw.Context.Core.Graph.NodeKinds.SurfaceKinds.get -> System.Collections.Generic.IReadOnlySet<string!>!
-static Aw.Context.Core.Graph.RepoScope.NodesFor(Aw.Context.Core.Graph.GraphSnapshot! graph, string! repo) -> System.Collections.Generic.IReadOnlySet<string!>!
+static Aw.Context.Core.Graph.RepoScope.NodesFor(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Engine.ContextRepoName repo) -> System.Collections.Generic.IReadOnlySet<string!>!
 static Aw.Context.Core.Graph.TrustPolicy.For(Aw.Context.Core.Results.Provenance provenance, bool accepted) -> Aw.Context.Core.Results.Trust
 static Aw.Context.Core.Map.ExportedFile.operator !=(Aw.Context.Core.Map.ExportedFile? left, Aw.Context.Core.Map.ExportedFile? right) -> bool
 static Aw.Context.Core.Map.ExportedFile.operator ==(Aw.Context.Core.Map.ExportedFile? left, Aw.Context.Core.Map.ExportedFile? right) -> bool
 static Aw.Context.Core.Map.MapAccess.Export(Aw.Context.Core.Map.MapVersion! version, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.DateTimeOffset exportedAt) -> Aw.Context.Core.Map.MapDocument!
 static Aw.Context.Core.Map.MapAccess.Gate(Aw.Context.Core.Engine.ContextScope! scope) -> Aw.Kernel.Error?
-static Aw.Context.Core.Map.MapAccess.Maps(string! repo, Aw.Context.Core.Engine.ContextScope! scope) -> Aw.Kernel.Error?
+static Aw.Context.Core.Map.MapAccess.Maps(Aw.Context.Core.Engine.ContextRepoName repo, Aw.Context.Core.Engine.ContextScope! scope) -> Aw.Kernel.Error?
 static Aw.Context.Core.Map.MapAccess.Visible(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, Aw.Context.Core.Engine.ContextCaller! caller) -> Aw.Kernel.Result<(Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides)>!
 static Aw.Context.Core.Map.MapCounts.Of(Aw.Context.Core.Graph.GraphSnapshot! graph, int overrides) -> Aw.Context.Core.Map.MapCounts!
 static Aw.Context.Core.Map.MapCounts.operator !=(Aw.Context.Core.Map.MapCounts? left, Aw.Context.Core.Map.MapCounts? right) -> bool

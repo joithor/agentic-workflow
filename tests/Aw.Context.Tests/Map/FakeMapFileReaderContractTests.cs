@@ -13,7 +13,7 @@ public sealed class FakeMapFileReaderContractTests : MapFileReaderContract
     protected override string Place(string name, string repo)
     {
         var path = "/maps/" + name;
-        _reader.Put(path, new MapDocument(1, MapDocumentKind.Authored, repo, []), repo);
+        _reader.Put(path, new MapDocument(1, MapDocumentKind.Authored, Context.Core.Engine.ContextRepoName.From(repo), []), repo);
         return path;
     }
 

@@ -52,11 +52,6 @@ public static class MapDocumentValidator
             problems.Invalid("schemaVersion", Fmt($"{document.SchemaVersion} isn't supported (this build reads {string.Join(", ", SchemaVersions)})"));
         }
 
-        if (string.IsNullOrWhiteSpace(document.Repo) || document.Repo.Length > 100 || document.Repo.Any(char.IsControl))
-        {
-            problems.Invalid("repo", "the repo's short name is required: 1 to 100 characters, no control characters");
-        }
-
         if (document.MapVersion is <= 0)
         {
             problems.Invalid("mapVersion", Fmt($"{document.MapVersion} isn't a map version (1 or more)"));

@@ -27,8 +27,7 @@ public static class MapAccess
             return (graph, overrides);
         }
 
-        var repo = caller.Repo ?? string.Empty;
-        var scoped = graph.ScopedTo(repo);
+        var scoped = caller.Repo is { } repo ? graph.ScopedTo(repo) : GraphSnapshot.Empty;
         if (scoped.Nodes.Count == 0)
         {
             return ContextErrors.UnknownAnchor.With("no map nodes are implemented in this session's repo (X-Sindri-Repo)");
@@ -60,7 +59,7 @@ public static class MapAccess
     /// <param name="repo">The file's 'repo'.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <returns>Null when mapped, otherwise SND-CONTEXT-001 (an invalid section) or SND-CONTEXT-031 on 'repo'.</returns>
-    public static Error? Maps(string repo, ContextScope scope)
+    public static Error? Maps(ContextRepoName repo, ContextScope scope)
     {
         ArgumentNullException.ThrowIfNull(scope);
         var settings = SettingsReader.Read(scope.Settings);
@@ -70,10 +69,10 @@ public static class MapAccess
         }
 
         var mapped = ScopeRules.Resolve(settings.Value, scope.Repos, scope.Caller with { Kind = ContextCallerKind.Human });
-        return mapped.IsError || mapped.Value.Any(r => string.Equals(r.Name, repo, StringComparison.Ordinal))
+        return mapped.IsError || mapped.Value.Any(r => string.Equals(r.Name.Value, repo.Value, StringComparison.Ordinal))
             ? (mapped.IsError ? mapped.Error : null)
             : ContextErrors.MapFileInvalid.With(
-                $"repo: '{repo}' isn't a repo the approved profile maps ({string.Join(", ", mapped.Value.Select(r => r.Name))}); nothing was written (fix: name one of them, or add the repo to the profile and approve it)");
+                $"repo: '{repo.Value}' isn't a repo the approved profile maps ({string.Join(", ", mapped.Value.Select(r => r.Name.Value))}); nothing was written (fix: name one of them, or add the repo to the profile and approve it)");
     }
 
     /// <summary>The export document for a version's visible graph: decision nodes and 'quotes' edges are left to the decisions, which imply them.</summary>

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
 
@@ -26,7 +27,7 @@ namespace Aw.Context.Core.Map;
 public sealed record MapDocument(
     int SchemaVersion,
     MapDocumentKind Kind,
-    string Repo,
+    ContextRepoName Repo,
     IReadOnlyList<GraphNode> Nodes,
     IReadOnlyList<GraphEdge>? Edges = null,
     IReadOnlyList<NodeAlias>? Aliases = null,
