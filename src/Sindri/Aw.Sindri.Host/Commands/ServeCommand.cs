@@ -116,6 +116,7 @@ internal static class ServeCommand
             _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.Signal)).ConfigureAwait(false);
         }
 
+        // StopProcess removes the record before releasing the lease; this catches the rest: a lost lease, a stop with no grant, or a stop whose removal failed
         _ = await endpoints.Remove(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);
         await app.StopAsync(CancellationToken.None).ConfigureAwait(false);
         return app.Services.GetRequiredService<IExitCode>().Code;
