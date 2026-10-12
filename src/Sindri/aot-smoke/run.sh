@@ -37,7 +37,18 @@ git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json n
 alarm=(perl -e 'alarm shift; exec @ARGV or die "exec $ARGV[0]: $!"' 30)   # SIGALRM after 30 s; a command, so with_tty can run it
 bounded() { "${alarm[@]}" "$@"; }
 bin="$out/bin/sindri"
-cleanup() { if [ -x "$bin" ]; then bounded "$bin" stop >/dev/null 2>&1 || true; fi; find "$scratch" -delete; }
+# On any exit, a server this run started is stopped before its home is deleted: only once this run's home is exported
+# (never the owner's default home), as the human at a terminal (a session's stop is refused, SND-AUTH-002), and, should
+# that fail, by signalling the pid control.json still names.
+cleanup() {
+  local control="$work/home/control.json" pid
+  if [ -x "$bin" ] && [ "${AW_SINDRI_HOME:-}" = "$work/home" ] && [ -f "$control" ]; then
+    with_tty "${alarm[@]}" "$bin" stop </dev/null >/dev/null 2>&1 || true
+    pid="$(jq -r '.pid // empty' "$control" 2>/dev/null || true)"
+    if [ -n "$pid" ]; then kill "$pid" 2>/dev/null || true; fi
+  fi
+  find "$scratch" -delete
+}
 trap cleanup EXIT
 rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
 dotnet publish "$tree/src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false \
