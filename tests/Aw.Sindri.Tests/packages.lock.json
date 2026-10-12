@@ -67,6 +67,11 @@
           "xunit.v3.mtp-v2": "[4.0.1]"
         }
       },
+      "Google.Protobuf": {
+        "type": "Transitive",
+        "resolved": "3.26.1",
+        "contentHash": "CHZX8zXqhF/fdUtd+AYzew8T2HFkAoe5c7lbGxZY/qryAlQXckDvM5BfOJjXlMS7kyICqQTMszj4w1bX5uBJ/w=="
+      },
       "Microsoft.ApplicationInsights": {
         "type": "Transitive",
         "resolved": "2.23.0",
@@ -388,6 +393,11 @@
         "resolved": "5.0.0",
         "contentHash": "dDoKi0PnDz31yAyETfRntsLArTlVAVzUzCIvvEDsDsucrl33Dl8pIJG06ePTJTI3tGpeyHS9Cq7Foc/s4EeKcg=="
       },
+      "NexusRpc": {
+        "type": "Transitive",
+        "resolved": "0.4.0",
+        "contentHash": "2cdRtmwT/vskWqJvojODvR7CpRhLWAnCeVT5Z8sPdRDX8P/Ywpw48T2lqgqhxM8JROfoflHzhSiXo4h1ln3/MQ=="
+      },
       "OpenTelemetry.Api": {
         "type": "Transitive",
         "resolved": "1.19.1",
@@ -563,6 +573,15 @@
           "Microsoft.Extensions.TimeProvider.Testing": "[10.10.0, 10.10.0]"
         }
       },
+      "aw.sindri.workflows": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Sindri.Core": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Temporalio": "[1.19.0, 1.19.0]"
+        }
+      },
       "sindri": {
         "type": "Project",
         "dependencies": {
@@ -570,7 +589,8 @@
           "Aw.Kernel.Telemetry": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Aw.Sindri.Features": "[1.0.0, )",
-          "Aw.Sindri.Infrastructure": "[1.0.0, )"
+          "Aw.Sindri.Infrastructure": "[1.0.0, )",
+          "Aw.Sindri.Workflows": "[1.0.0, )"
         }
       },
       "Microsoft.Data.Sqlite": {
@@ -609,6 +629,17 @@
           "Microsoft.Extensions.Diagnostics.Abstractions": "10.0.0",
           "Microsoft.Extensions.Logging.Configuration": "10.0.0",
           "OpenTelemetry.Api.ProviderBuilderExtensions": "1.19.1"
+        }
+      },
+      "Temporalio": {
+        "type": "CentralTransitive",
+        "requested": "[1.19.0, 1.19.0]",
+        "resolved": "1.19.0",
+        "contentHash": "CFgsWowors/CMedl3fb5ld5Hna3pB4KsXhURH8USgW6gCS2/48U0XGiuk0L7j0/f0/WvdZrOP8/+TqeVJ7DwLw==",
+        "dependencies": {
+          "Google.Protobuf": "3.26.1",
+          "Microsoft.Extensions.Logging.Abstractions": "2.2.0",
+          "NexusRpc": "0.4.0"
         }
       },
       "Vogen": {

@@ -3,6 +3,7 @@ ok    lease    free (never held)
 warn  ledger   no ledger yet (fix: sindri)
 fail  profile  not approved (fix: sindri profile approve)
 fail  api      unreachable: no control plane is recorded (fix: sindri)
+fail  temporal not running: no dev server on this home's temporal.db (fix: sindri)
 exit 2
 ## sindri --headless (human, terminal)
       _           _      _ 
@@ -55,6 +56,7 @@ ok    lease    free (last epoch 1)
 ok    ledger   schema 3/3
 ok    profile  approved, hash HASH6
 fail  api      unreachable: no control plane is recorded (fix: sindri)
+fail  temporal not running: no dev server on this home's temporal.db (fix: sindri)
 exit 2
 ## sindri recipe validate ROOT/recipes/sindri/workflow.step.yaml
 hash sha256:HASH

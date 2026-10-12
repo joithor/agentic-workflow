@@ -64,5 +64,11 @@
          .NET has no NativeAOT or trimming support). Only Aw.Evidence.Infrastructure references it. 1.63.0 published
          2026-09-23; its browsers are installed by `ui-evidence install-browser`, never at build time. -->
     <PackageVersion Include="Microsoft.Playwright" Version="[1.63.0]" />
+    <!-- Durable execution for the Sindri workflow engine (engine spec rev 8 §0, README X53/X54): the Temporal .NET SDK,
+         referenced by Aw.Sindri.Workflows only. It has no trimming or NativeAOT support (temporalio/sdk-dotnet#286), so
+         that project opts out of IsAotCompatible and the Sindri host publishes framework-dependent. Its Rust core ships
+         as a native library inside the package (osx-arm64, osx-x64, linux-x64, linux-arm64). 1.19.0 published
+         2026-09-14, MIT. -->
+    <PackageVersion Include="Temporalio" Version="[1.19.0]" />
   </ItemGroup>
 </Project>

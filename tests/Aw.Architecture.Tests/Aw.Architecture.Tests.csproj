@@ -44,6 +44,7 @@
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Features/Aw.Sindri.Features.csproj" />
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Infrastructure/Aw.Sindri.Infrastructure.csproj" />
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" />
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Workflows/Aw.Sindri.Workflows.csproj" />
   </ItemGroup>
 
   <ItemGroup>
