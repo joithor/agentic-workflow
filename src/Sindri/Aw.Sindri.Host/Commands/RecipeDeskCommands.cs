@@ -92,14 +92,20 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
         }
 
         var issued = await Issue(action, ct).ConfigureAwait(false);
-        if (file is null || issued.IsSuccess || issued.Error.Code != WorkflowErrors.RecipeNotFound.Code)
+        if (file is null || issued.IsSuccess)
         {
             return issued;
         }
 
+        // Registering the file names the real reason when its id and version hold other content (SND-RECIPE-007), even
+        // where the server refused the registered content first (already approved, revoked); a file it doesn't know yet is
+        // registered and asked for again.
         var registered = await desk.Client.Post<RegisterRecipeRequest, RegisterRecipeResponse>("/sindri/workflow/recipes",
             new RegisterRecipeRequest(file.Text, file.File), ct).ConfigureAwait(false);
-        return registered.IsError ? registered.Error : await Issue(action, ct).ConfigureAwait(false);
+        return registered.IsError && registered.Error.Code == WorkflowErrors.RecipeVersionTaken.Code ? registered.Error
+            : issued.Error.Code != WorkflowErrors.RecipeNotFound.Code ? issued
+            : registered.IsError ? registered.Error
+            : await Issue(action, ct).ConfigureAwait(false);
     }
 
     /// <summary>
