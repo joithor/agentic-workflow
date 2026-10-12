@@ -4,6 +4,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -109,51 +110,71 @@ public static class EvalRecorder
     }
 
     /// <summary>
-    /// An answer's option, from what it answered (the row before it) and what its event recorded: with nothing suspended,
-    /// the answer to an answer wait ('text', its text from the row after it when the delta leaves out a repeated
-    /// answer); on a needs-answer (wait), timeout or SND-WF-010 park, or a timeout escalation, 'resume' (with any text it
-    /// gave); on a gate escalation, 'accept' when it overrode the gate and 'reject' when it was refused; otherwise a
-    /// grant, an override, a refusal, the text it left, or a plain resume.
+    /// An answer's option (spec §9.2), derived from the engine's own fit table (<see cref="AnswerFit"/>) for what it
+    /// answered, so the two can't drift: with nothing suspended, the answer to an answer wait ('text'); otherwise the
+    /// option of the suspension's row that the event shows. A text answer's text comes from the facts its trigger
+    /// reported, or from the instance after it when the delta leaves out a text repeated unchanged.
     /// </summary>
     private static Result<EvalTrigger> Answer(Recorded step, Dictionary<FactKey, JsonElement> facts, IReadOnlyDictionary<string, JsonElement> contents)
     {
-        var (recorded, before, after, _) = step;
-        var text = facts.TryGetValue(_answer, out var given) ? new Dictionary<FactKey, JsonElement> { [_answer] = given } : null;
-        if (before.Suspension is null)
+        var (recorded, before, after, number) = step;
+        var chosen = Chosen(before, recorded, number);
+        if (chosen.IsError)
         {
-            if (text is null && after.Facts.TryGetValue(_answer, out var kept))
-            {
-                if (!contents.TryGetValue(kept.Ref, out var content))
-                {
-                    return KernelErrors.Invalid.With($"no stored content for {_answer.Value} ({kept.Ref}) (fix: record while the instance's facts are kept)");
-                }
-
-                text = new Dictionary<FactKey, JsonElement> { [_answer] = content };
-            }
-
-            return new EvalTrigger(TriggerNames.Answer, Outcome: null, text, Park: null, EvalVariant.Text);
+            return chosen.Error;
         }
 
-        var (variant, amount) = Fitted(before.Suspension, recorded) ?? recorded switch
+        var (variant, amount) = chosen.Value;
+        var text = facts.TryGetValue(_answer, out var given) ? new Dictionary<FactKey, JsonElement> { [_answer] = given } : null;
+        if (text is null && variant == EvalVariant.Text && after.Facts.TryGetValue(_answer, out var kept))
         {
-            { Grant.Rounds: { } rounds } => (EvalVariant.Grant, rounds),
-            { Grant.Tokens: { } tokens } => (EvalVariant.GrantTokens, tokens),
-            { Override: not null } => (EvalVariant.Accept, null),
-            { Type: WorkflowEventType.Refused } => (EvalVariant.Reject, null),
-            _ when text is not null => (EvalVariant.Text, null),
-            _ => (EvalVariant.Resume, null),
-        };
+            if (!contents.TryGetValue(kept.Ref, out var content))
+            {
+                return KernelErrors.Invalid.With($"no stored content for {_answer.Value} ({kept.Ref}) (fix: record while the instance's facts are kept)");
+            }
+
+            text = new Dictionary<FactKey, JsonElement> { [_answer] = content };
+        }
+
         return new EvalTrigger(TriggerNames.Answer, Outcome: null, text, Park: null, variant, amount);
     }
 
-    /// <summary>The option a suspension takes whatever its event shows: resume on a wait's needs-answer, a timeout or SND-WF-010; accept or reject on a gate escalation.</summary>
-    private static (EvalVariant Variant, int? Amount)? Fitted(Suspension suspension, WorkflowEvent recorded) => suspension switch
+    /// <summary>
+    /// The option that fitted <paramref name="before"/>'s suspension: of the variants its §3.8 row lets fit, a grant the
+    /// event recorded, an override ('accept'), a refusal ('reject'), or else the first that takes no amount. A gate
+    /// escalation whose pending park took effect records neither an override nor a refusal; both of its options end it
+    /// the same way, so 'accept' replays it.
+    /// </summary>
+    private static Result<(EvalVariant Variant, int? Amount)> Chosen(WorkflowInstance before, WorkflowEvent recorded, int number)
     {
-        { Reason: ParkReason.NeedsAnswer, ParkKind: ParkKind.Wait } or { Reason: ParkReason.Timeout or ParkReason.NoRuntime }
-            or { Escalation: EscalationKind.Timeout } => (EvalVariant.Resume, null),
-        { Escalation: EscalationKind.Gate } when recorded.Override is not null => (EvalVariant.Accept, null),
-        { Escalation: EscalationKind.Gate } when recorded.Type == WorkflowEventType.Refused => (EvalVariant.Reject, null),
-        _ => null,
+        if (before.Suspension is not { } suspension)
+        {
+            return (EvalVariant.Text, null);
+        }
+
+        var fits = suspension.Mirrors is null ? AnswerFit.Variants(suspension, before.Address, before.Recipe) : [];
+        (AnswerVariant Variant, int? Amount)? chosen = recorded switch
+        {
+            { Grant.Rounds: { } rounds } when fits.Contains(AnswerVariant.Grant) => (AnswerVariant.Grant, rounds),
+            { Grant.Tokens: { } tokens } when fits.Contains(AnswerVariant.GrantTokens) => (AnswerVariant.GrantTokens, tokens),
+            { Override: not null } when fits.Contains(AnswerVariant.Accept) => (AnswerVariant.Accept, null),
+            { Type: WorkflowEventType.Refused } when fits.Contains(AnswerVariant.Reject) => (AnswerVariant.Reject, null),
+            _ => fits.Where(static v => v is not (AnswerVariant.Grant or AnswerVariant.GrantTokens)).Select(static v => ((AnswerVariant, int?)?)(v, null)).FirstOrDefault(),
+        };
+        return chosen is var (variant, amount)
+            ? (Of(variant), amount)
+            : KernelErrors.Invalid.With(
+                $"the answer at event {Text(number)} answered a suspension no answer variant fits (fix: record a history whose answers fit what they answered)");
+    }
+
+    private static EvalVariant Of(AnswerVariant variant) => variant switch
+    {
+        AnswerVariant.Text => EvalVariant.Text,
+        AnswerVariant.Grant => EvalVariant.Grant,
+        AnswerVariant.GrantTokens => EvalVariant.GrantTokens,
+        AnswerVariant.Accept => EvalVariant.Accept,
+        AnswerVariant.Reject => EvalVariant.Reject,
+        AnswerVariant.Resume or _ => EvalVariant.Resume,
     };
 
     /// <summary>One event of the history with the instance before and after it, and its place in the history (from 1).</summary>
