@@ -55,7 +55,9 @@ public sealed class SindriApiClientHeaderTests
         var again = await client.Status(_api, Token);
 
         Assert.Equal("SND-AUTH-001", status.Error.Code);
-        Assert.Equal("A human caller needs this start's token in X-Sindri-Token (fix: restart the app or rerun the command)", status.Error.Message);
+        // The detail is the API's, as served (keyed off the golden, never a copy of its sentence, which P2 rewords).
+        var served = System.Text.Json.JsonDocument.Parse(GoldenFiles.Api("status", "human-no-token")).RootElement.GetProperty("detail").GetString();
+        Assert.Equal(served, status.Error.Message);
         Assert.Equal("SND-AUTH-001", again.Error.Code);
         Assert.All(handler.Requests, r => Assert.Null(r.Token));
     }
