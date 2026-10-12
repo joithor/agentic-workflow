@@ -201,7 +201,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-RECIPE-009` | conflict | A recipe challenge expired, or its subject changed since the preview |
 | `SND-RECIPE-010` | notFound | The recipe file can't be read |
 | `SND-WF-001` | notFound | No such instance (`sindri workflow list`) |
-| `SND-WF-002` | conflict | The instance changed; re-read and retry |
+| `SND-WF-002` | — | Retired (engine spec rev 8): Updates serialize per workflow, so there is no version conflict |
 | `SND-WF-003` | conflict | The trigger isn't allowed here (`allowedCommands` in `status`) |
 | `SND-WF-004` | conflict | A gate refused; act on the reasons |
 | `SND-WF-005` | conflict | A stale run token; use the token in `status` |

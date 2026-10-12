@@ -3057,7 +3057,6 @@ static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.AmbiguousAddress -> Aw.Ke
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.EarlierAttemptLive -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.EffectNotAllowed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.GateRefused -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.InstanceChanged -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.InstanceNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.ItemMismatch -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.MalformedReport -> Aw.Kernel.ErrorDefinition!
