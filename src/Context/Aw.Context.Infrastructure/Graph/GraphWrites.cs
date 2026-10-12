@@ -60,8 +60,17 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
             }
         }
 
-        SqlStatement[] flip = [new(GraphSql.RetireCurrent), new(GraphSql.MakeCurrent, c => c.Bind("$v", version)), .. map.Overrides.Select(GraphStatements.Override)];
-        return await Run(flip, returnsId: false, cancellationToken).ConfigureAwait(false);
+        SqlStatement[] flip = [new(GraphSql.RetireCurrent, c => c.Bind("$v", version)), new(GraphSql.MakeCurrent, c => c.Bind("$v", version)), .. map.Overrides.Select(GraphStatements.Override)];
+        var flipped = await Run(flip, returnsId: false, cancellationToken).ConfigureAwait(false);
+        if (flipped.IsError)
+        {
+            return flipped;
+        }
+
+        var current = await Run([new SqlStatement(GraphSql.IsCurrent, c => c.Bind("$v", version))], returnsId: true, cancellationToken).ConfigureAwait(false);
+        return current.IsError || current.Value == 1
+            ? current
+            : ContextErrors.StoreUnavailable.With("another import removed this one before it became current; nothing changed (fix: import again)");
     }
 
     /// <summary>Removes a version that didn't become current, whatever the caller's token says; reports both failures if that fails too.</summary>
