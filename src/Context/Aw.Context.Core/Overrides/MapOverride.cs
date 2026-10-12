@@ -21,14 +21,11 @@ public sealed record MapOverride(
     NodeKey? Other = null,
     string? Rejection = null)
 {
-    /// <summary>The id: a hash of the content, so the same decision imported twice is one row.</summary>
-    public OverrideId Id
+    /// <summary>The id: a hash of the content, so the same decision imported twice is one row (a method: it is never read from a file).</summary>
+    /// <returns>The id.</returns>
+    public OverrideId ToId()
     {
-        get
-        {
-            var text =
-                $"{Action}\n{Target.Value}\n{Who}\n{At.ToUniversalTime():O}\n{Label}\n{Other?.Value}\n{Rejection}";
-            return OverrideId.From("ovr_" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)))[..16]);
-        }
+        var text = $"{Action}\n{Target.Value}\n{Who}\n{At.ToUniversalTime():O}\n{Label}\n{Other?.Value}\n{Rejection}";
+        return OverrideId.From("ovr_" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)))[..16]);
     }
 }

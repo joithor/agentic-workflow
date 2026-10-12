@@ -34,14 +34,14 @@ internal static class GraphStatements
 
         foreach (var d in graph.Decisions)
         {
-            yield return new SqlStatement(GraphSql.InsertDecision, c => c.Bind("$v", version).Bind("$key", d.Key.Value).Bind("$quote", d.Quote)
+            yield return new SqlStatement(GraphSql.InsertDecision, c => c.Bind("$v", version).Bind("$key", d.ToKey().Value).Bind("$quote", d.Quote)
                 .Bind("$wording", d.Wording).Bind("$provenance", GraphText.Of(d.Provenance))
                 .Bind("$trust", GraphText.Of(TrustPolicy.For(d.Provenance, accepted: false))).Bind("$at", GraphText.Time(d.At)));
         }
     }
 
     public static SqlStatement Override(MapOverride o) => new(GraphSql.InsertOverride, c => c
-        .Bind("$id", o.Id.Value).Bind("$action", GraphText.Of(o.Action)).Bind("$target", o.Target.Value).Bind("$label", o.Label)
+        .Bind("$id", o.ToId().Value).Bind("$action", GraphText.Of(o.Action)).Bind("$target", o.Target.Value).Bind("$label", o.Label)
         .Bind("$other", o.Other?.Value).Bind("$who", o.Who).Bind("$at", GraphText.Time(o.At)).Bind("$rejection", o.Rejection));
 
     private static SqlStatement Node(long version, GraphNode node) => new(GraphSql.InsertNode, c => c

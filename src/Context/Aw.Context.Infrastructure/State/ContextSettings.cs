@@ -1,4 +1,4 @@
-namespace Aw.Context.Infrastructure;
+namespace Aw.Context.Infrastructure.State;
 
 /// <summary>Context's infrastructure settings, read from the environment (SettingsFromEnvironment).</summary>
 /// <param name="StateDirectory">Where Context keeps its state: $AW_SINDRI_HOME/context (spec §3).</param>

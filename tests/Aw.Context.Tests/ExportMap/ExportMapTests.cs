@@ -1,7 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Map;
-using Aw.Context.Tests.Map;
 using Aw.Context.Testing.Map;
+using Aw.Context.Tests.Map;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 
@@ -81,7 +81,7 @@ public sealed class ExportMapTests : IDisposable
         _world.Reader.Put("/maps/export.json", document, "export");
         var again = await _world.Map.ImportMap("/maps/export.json", (await _world.Map.PreviewMap("/maps/export.json", MapWorld.None)).Value.Hash, MapWorld.None);
 
-        Assert.Equal("feature:gone", document.Overrides!.Single(o => o.Id == Assert.Single(document.Orphaned!)).Target.Value);
+        Assert.Equal("feature:gone", Assert.Single(document.Orphaned!).Value);
         Assert.True(again.IsSuccess);
         Assert.Equal(3, (await _world.Store.Overrides(MapWorld.None)).Value.Count);
         Assert.Equal(1, (await _world.Map.MapStatus(MapWorld.Human, MapWorld.None)).Value.Orphaned);

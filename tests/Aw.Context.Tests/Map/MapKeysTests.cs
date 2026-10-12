@@ -59,12 +59,12 @@ public sealed class MapKeysTests
     [Fact, Trait("Lane", "unit")]
     public void A_decision_key_hashes_its_record_and_quote_not_its_wording()
     {
-        var record = Aw.Context.Core.Sources.RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000103");
+        var record = Core.Sources.RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000103");
         var first = new DecisionRow(record, "keeps the focused pane first", "Focus stays first.");
         var reworded = first with { Wording = "The first pane keeps focus." };
 
-        Assert.Equal(first.Key, reworded.Key);
-        Assert.NotEqual(first.Key, (first with { Quote = "keeps the focused pane last" }).Key);
-        Assert.Matches("^decision:[0-9a-f]{64}$", first.Key.Value);
+        Assert.Equal(first.ToKey(), reworded.ToKey());
+        Assert.NotEqual(first.ToKey(), (first with { Quote = "keeps the focused pane last" }).ToKey());
+        Assert.Matches("^decision:[0-9a-f]{64}$", first.ToKey().Value);
     }
 }

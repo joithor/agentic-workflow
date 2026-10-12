@@ -28,7 +28,7 @@ public sealed class FakeGraphStore : IGraphStore
 
     /// <inheritdoc/>
     public ValueTask<Result<IReadOnlyList<MapOverride>>> Overrides(CancellationToken cancellationToken) =>
-        Done(() => Results.Success<IReadOnlyList<MapOverride>>([.. _overrides.OrderBy(o => o.At).ThenBy(o => o.Id.Value, StringComparer.Ordinal)]));
+        Done(() => Results.Success<IReadOnlyList<MapOverride>>([.. _overrides.OrderBy(o => o.At).ThenBy(o => o.ToId().Value, StringComparer.Ordinal)]));
 
     /// <inheritdoc/>
     public ValueTask<Result<MapVersion>> SaveCurrent(MapImport map, DateTimeOffset created, CancellationToken cancellationToken) => Done(() =>
@@ -44,7 +44,7 @@ public sealed class FakeGraphStore : IGraphStore
 
         var version = new MapVersion(_versions.Count == 0 ? 1 : _versions.Max(v => v.Version.Number) + 1, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Current);
         _versions.Add((version, map.Graph));
-        _overrides.AddRange(map.Overrides.Where(o => !_overrides.Exists(e => e.Id == o.Id)));
+        _overrides.AddRange(map.Overrides.Where(o => !_overrides.Exists(e => e.ToId() == o.ToId())));
         return Results.Success(version);
     });
 

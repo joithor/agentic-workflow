@@ -1,4 +1,4 @@
-namespace Aw.Context.Infrastructure;
+namespace Aw.Context.Infrastructure.State;
 
 /// <summary>Owner-only permissions for Context's state (context spec §3): directories 0700, files 0600.</summary>
 internal static class OwnerOnly

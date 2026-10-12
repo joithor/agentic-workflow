@@ -29,14 +29,14 @@ public static class SampleMap
             new(feature, "Split pane" + suffix, Provenance.Human, 1.0, [new EvidenceRef(RecordKey.From("repo:aw-split-panes/docs/architecture.md"), "L1-L4")], attributes.RootElement.Clone(), At),
             new(code, "SplitPane.ts", Provenance.Deterministic),
             new(NodeKey.From("feature:layout.guess"), "Guess", Provenance.Model, 0.4),
-            new(decision.Key, decision.Wording, Provenance.Human, Evidence: [new EvidenceRef(record)], At: At),
+            new(decision.ToKey(), decision.Wording, Provenance.Human, Evidence: [new EvidenceRef(record)], At: At),
             new(NodeKey.From($"record:{record.Value}"), record.Value, Provenance.Deterministic),
         ];
         GraphEdge[] edges =
         [
             new(code, feature, EdgeType.Implements, Provenance.Deterministic, 1.0, [new EvidenceRef(RecordKey.From("repo:aw-split-panes/src/layout/SplitPane.ts"))]),
             new(NodeKey.From("feature:layout.guess"), feature, EdgeType.PartOf, Provenance.Model, 0.4),
-            new(decision.Key, NodeKey.From($"record:{record.Value}"), EdgeType.Quotes, Provenance.Deterministic),
+            new(decision.ToKey(), NodeKey.From($"record:{record.Value}"), EdgeType.Quotes, Provenance.Deterministic),
         ];
         var graph = new GraphSnapshot(nodes, edges, [new NodeAlias(NodeKey.From("feature:layout.splits"), feature)], [decision]);
         return new MapImport("aw-split-panes", "a41b07d", graph, [new MapOverride(OverrideAction.Reject, NodeKey.From("feature:layout.guess"), "avery", At)]);

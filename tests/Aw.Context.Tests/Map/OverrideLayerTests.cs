@@ -90,8 +90,8 @@ public sealed class OverrideLayerTests
     [Fact, Trait("Lane", "unit")]
     public void The_same_override_has_the_same_id()
     {
-        Assert.Equal(Make(OverrideAction.Delete, "feature:a").Id, Make(OverrideAction.Delete, "feature:a").Id);
-        Assert.NotEqual(Make(OverrideAction.Delete, "feature:a").Id, Make(OverrideAction.Delete, "feature:b").Id);
-        Assert.Matches("^ovr_[0-9a-f]{16}$", Make(OverrideAction.Delete, "feature:a").Id.Value);
+        Assert.Equal(Make(OverrideAction.Delete, "feature:a").ToId(), Make(OverrideAction.Delete, "feature:a").ToId());
+        Assert.NotEqual(Make(OverrideAction.Delete, "feature:a").ToId(), Make(OverrideAction.Delete, "feature:b").ToId());
+        Assert.Matches("^ovr_[0-9a-f]{16}$", Make(OverrideAction.Delete, "feature:a").ToId().Value);
     }
 }

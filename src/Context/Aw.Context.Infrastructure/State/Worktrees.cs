@@ -1,4 +1,4 @@
-namespace Aw.Context.Infrastructure;
+namespace Aw.Context.Infrastructure.State;
 
 /// <summary>Finds the git worktree a path is in (spec §3: nothing Context writes or reads as a map lands in one; SND-CONTEXT-005).</summary>
 internal static class Worktrees

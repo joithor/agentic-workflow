@@ -1,4 +1,4 @@
-namespace Aw.Context.Infrastructure;
+namespace Aw.Context.Infrastructure.State;
 
 /// <summary>Reads this package's settings from the environment that Composition passes in.</summary>
 internal static class SettingsFromEnvironment

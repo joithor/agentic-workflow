@@ -15,7 +15,7 @@ public sealed class MapDocumentTests
         var map = Maps.Checked(Maps.Fixture());
 
         Assert.Equal(new MapCounts(Nodes: 19, Edges: 19, Aliases: 1, Decisions: 1, Overrides: 2), map.Counts);
-        var decision = map.Graph.Decisions[0].Key;
+        var decision = map.Graph.Decisions[0].ToKey();
         Assert.Contains(map.Graph.Edges, e => e.From == decision && e.Type == EdgeType.Quotes
             && e.To.Value == "record:linear:issue/0e5a1b00-0000-4000-8000-000000000103");
         Assert.Equal("feature:layout.split-pane.orientation", map.Graph.Resolve(Maps.Key("feature:layout.orientation"))?.Key.Value);

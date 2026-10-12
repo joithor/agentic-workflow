@@ -93,13 +93,13 @@ public static class MapDocumentValidator
         foreach (var d in graph.Decisions)
         {
             var record = NodeKey.From($"record:{d.Record.Value}");
-            nodes.Add(new GraphNode(d.Key, d.Wording, d.Provenance, Evidence: [new EvidenceRef(d.Record)], At: d.At));
+            nodes.Add(new GraphNode(d.ToKey(), d.Wording, d.Provenance, Evidence: [new EvidenceRef(d.Record)], At: d.At));
             if (!nodes.Exists(n => n.Key.Value == record.Value))
             {
                 nodes.Add(new GraphNode(record, d.Record.Value, Provenance.Deterministic, At: d.At));
             }
 
-            edges.Add(new GraphEdge(d.Key, record, EdgeType.Quotes, Provenance.Deterministic, At: d.At));
+            edges.Add(new GraphEdge(d.ToKey(), record, EdgeType.Quotes, Provenance.Deterministic, At: d.At));
         }
 
         return graph with { Nodes = nodes, Edges = edges };

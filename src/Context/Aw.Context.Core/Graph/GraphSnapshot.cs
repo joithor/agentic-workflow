@@ -33,6 +33,6 @@ public sealed record GraphSnapshot(
             [.. Nodes.Where(n => keys.Contains(n.Key.Value))],
             [.. Edges.Where(e => keys.Contains(e.From.Value) && keys.Contains(e.To.Value))],
             [.. Aliases.Where(a => keys.Contains(a.Target.Value))],
-            [.. Decisions.Where(d => keys.Contains(d.Key.Value))]);
+            [.. Decisions.Where(d => keys.Contains(d.ToKey().Value))]);
     }
 }

@@ -13,6 +13,6 @@ internal static class Expect
         }
     }
 
-    public static T Ok<T>(Aw.Kernel.Result<T> result, string test) =>
+    public static T Ok<T>(Kernel.Result<T> result, string test) =>
         result.IsError ? throw new ContractViolationException($"{test}: {result.Error.Code} {result.Error.Message}") : result.Value;
 }

@@ -20,7 +20,7 @@ public static class Canonical
             .Concat(graph.Edges.Select(e => string.Create(CultureInfo.InvariantCulture,
                 $"edge {e.From.Value} {e.Type} {e.To.Value} {e.Provenance} {e.Confidence} [{Evidence(e.EvidenceOrEmpty)}] {e.Order} {Time(e.At)}")))
             .Concat(graph.Aliases.Select(a => $"alias {a.Alias.Value} {a.Target.Value}"))
-            .Concat(graph.Decisions.Select(d => $"decision {d.Key.Value} {d.Record.Value} '{d.Quote}' '{d.Wording}' {d.Provenance} {Time(d.At)}"))
+            .Concat(graph.Decisions.Select(d => $"decision {d.ToKey().Value} {d.Record.Value} '{d.Quote}' '{d.Wording}' {d.Provenance} {Time(d.At)}"))
             .Order(StringComparer.Ordinal);
         return new StringBuilder().AppendJoin('\n', lines).ToString();
     }

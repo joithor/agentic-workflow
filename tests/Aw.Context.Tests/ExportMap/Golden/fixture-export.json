@@ -390,8 +390,7 @@
       "quote": "toggling orientation keeps the focused pane first, so the cursor never jumps",
       "wording": "Toggling orientation keeps focus on the first pane.",
       "provenance": "human",
-      "at": "2026-07-15T10:00:00.0000000Z",
-      "key": "decision:de8ec8057fd7b024638d5ba27464ca3b66158bb2423fc32f48411ad638a1a149"
+      "at": "2026-07-15T10:00:00.0000000Z"
     }
   ],
   "overrides": [
@@ -402,8 +401,7 @@
       "at": "2026-07-30T09:00:00.0000000Z",
       "label": null,
       "other": null,
-      "rejection": null,
-      "id": "ovr_da69675871360c0e"
+      "rejection": null
     },
     {
       "action": "rename",
@@ -412,8 +410,7 @@
       "at": "2026-07-30T09:05:00.0000000Z",
       "label": "Tabs",
       "other": null,
-      "rejection": null,
-      "id": "ovr_a0ddbafee91412d8"
+      "rejection": null
     }
   ],
   "keyVersion": 1,

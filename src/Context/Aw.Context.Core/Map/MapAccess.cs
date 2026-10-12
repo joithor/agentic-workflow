@@ -79,6 +79,6 @@ public static class MapAccess
             [.. graph.Nodes.Where(n => n.Key.Kind != NodeKind.Decision)],
             [.. graph.Edges.Where(e => e.Type != EdgeType.Quotes)],
             graph.Aliases, graph.Decisions, overrides, version.KeyVersion, version.Commit, version.Number, exportedAt,
-            [.. orphaned.Select(o => o.Id)]);
+            [.. orphaned.Select(o => o.Target).DistinctBy(k => k.Value, StringComparer.Ordinal)]);
     }
 }

@@ -15,7 +15,7 @@ public static class OverrideApplier
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(overrides);
         var orphaned = new List<MapOverride>();
-        foreach (var o in overrides.OrderBy(o => o.At).ThenBy(o => o.Id.Value, StringComparer.Ordinal))
+        foreach (var o in overrides.OrderBy(o => o.At).ThenBy(o => o.ToId().Value, StringComparer.Ordinal))
         {
             var next = ApplyOne(graph, o);
             if (next is null)

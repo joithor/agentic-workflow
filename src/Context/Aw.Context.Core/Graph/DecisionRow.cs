@@ -16,8 +16,9 @@ namespace Aw.Context.Core.Graph;
 /// <param name="At">When it was written; an import keeps the file's value.</param>
 public sealed record DecisionRow(RecordKey Record, string Quote, string Wording, Provenance Provenance = Provenance.Human, DateTimeOffset? At = null)
 {
-    /// <summary>The decision's node key: 'decision:' and the SHA-256 of the record key, a newline and the quote.</summary>
-    public NodeKey Key => KeyFor(Record, Quote);
+    /// <summary>The decision's node key: 'decision:' and the SHA-256 of the record key, a newline and the quote (a method, not a property: it is never read from a file).</summary>
+    /// <returns>The key.</returns>
+    public NodeKey ToKey() => KeyFor(Record, Quote);
 
     /// <summary>The key a decision quoting <paramref name="quote"/> from <paramref name="record"/> gets.</summary>
     /// <param name="record">The record.</param>

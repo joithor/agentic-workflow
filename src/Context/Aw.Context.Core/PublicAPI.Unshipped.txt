@@ -116,13 +116,13 @@ Aw.Context.Core.Graph.DecisionRow.At.init -> void
 Aw.Context.Core.Graph.DecisionRow.DecisionRow(Aw.Context.Core.Sources.RecordKey Record, string! Quote, string! Wording, Aw.Context.Core.Results.Provenance Provenance = Aw.Context.Core.Results.Provenance.Human, System.DateTimeOffset? At = null) -> void
 Aw.Context.Core.Graph.DecisionRow.Deconstruct(out Aw.Context.Core.Sources.RecordKey Record, out string! Quote, out string! Wording, out Aw.Context.Core.Results.Provenance Provenance, out System.DateTimeOffset? At) -> void
 Aw.Context.Core.Graph.DecisionRow.Equals(Aw.Context.Core.Graph.DecisionRow? other) -> bool
-Aw.Context.Core.Graph.DecisionRow.Key.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Graph.DecisionRow.Provenance.get -> Aw.Context.Core.Results.Provenance
 Aw.Context.Core.Graph.DecisionRow.Provenance.init -> void
 Aw.Context.Core.Graph.DecisionRow.Quote.get -> string!
 Aw.Context.Core.Graph.DecisionRow.Quote.init -> void
 Aw.Context.Core.Graph.DecisionRow.Record.get -> Aw.Context.Core.Sources.RecordKey
 Aw.Context.Core.Graph.DecisionRow.Record.init -> void
+Aw.Context.Core.Graph.DecisionRow.ToKey() -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Graph.DecisionRow.Wording.get -> string!
 Aw.Context.Core.Graph.DecisionRow.Wording.init -> void
 Aw.Context.Core.Graph.EdgeRules
@@ -290,7 +290,7 @@ Aw.Context.Core.Map.MapDocument.Commit.get -> string?
 Aw.Context.Core.Map.MapDocument.Commit.init -> void
 Aw.Context.Core.Map.MapDocument.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>?
 Aw.Context.Core.Map.MapDocument.Decisions.init -> void
-Aw.Context.Core.Map.MapDocument.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Map.MapDocumentKind Kind, out string! Repo, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides, out int KeyVersion, out string? Commit, out int? MapVersion, out System.DateTimeOffset? ExportedAt, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Orphaned) -> void
+Aw.Context.Core.Map.MapDocument.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Map.MapDocumentKind Kind, out string! Repo, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides, out int KeyVersion, out string? Commit, out int? MapVersion, out System.DateTimeOffset? ExportedAt, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>? Orphaned) -> void
 Aw.Context.Core.Map.MapDocument.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>?
 Aw.Context.Core.Map.MapDocument.Edges.init -> void
 Aw.Context.Core.Map.MapDocument.Equals(Aw.Context.Core.Map.MapDocument? other) -> bool
@@ -300,12 +300,12 @@ Aw.Context.Core.Map.MapDocument.KeyVersion.get -> int
 Aw.Context.Core.Map.MapDocument.KeyVersion.init -> void
 Aw.Context.Core.Map.MapDocument.Kind.get -> Aw.Context.Core.Map.MapDocumentKind
 Aw.Context.Core.Map.MapDocument.Kind.init -> void
-Aw.Context.Core.Map.MapDocument.MapDocument(int SchemaVersion, Aw.Context.Core.Map.MapDocumentKind Kind, string! Repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides = null, int KeyVersion = 1, string? Commit = null, int? MapVersion = null, System.DateTimeOffset? ExportedAt = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Orphaned = null) -> void
+Aw.Context.Core.Map.MapDocument.MapDocument(int SchemaVersion, Aw.Context.Core.Map.MapDocumentKind Kind, string! Repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides = null, int KeyVersion = 1, string? Commit = null, int? MapVersion = null, System.DateTimeOffset? ExportedAt = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>? Orphaned = null) -> void
 Aw.Context.Core.Map.MapDocument.MapVersion.get -> int?
 Aw.Context.Core.Map.MapDocument.MapVersion.init -> void
 Aw.Context.Core.Map.MapDocument.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>!
 Aw.Context.Core.Map.MapDocument.Nodes.init -> void
-Aw.Context.Core.Map.MapDocument.Orphaned.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>?
+Aw.Context.Core.Map.MapDocument.Orphaned.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>?
 Aw.Context.Core.Map.MapDocument.Orphaned.init -> void
 Aw.Context.Core.Map.MapDocument.Overrides.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>?
 Aw.Context.Core.Map.MapDocument.Overrides.init -> void
@@ -498,7 +498,6 @@ Aw.Context.Core.Overrides.MapOverride.At.get -> System.DateTimeOffset
 Aw.Context.Core.Overrides.MapOverride.At.init -> void
 Aw.Context.Core.Overrides.MapOverride.Deconstruct(out Aw.Context.Core.Overrides.OverrideAction Action, out Aw.Context.Core.Graph.NodeKey Target, out string! Who, out System.DateTimeOffset At, out string? Label, out Aw.Context.Core.Graph.NodeKey? Other, out string? Rejection) -> void
 Aw.Context.Core.Overrides.MapOverride.Equals(Aw.Context.Core.Overrides.MapOverride? other) -> bool
-Aw.Context.Core.Overrides.MapOverride.Id.get -> Aw.Context.Core.Overrides.OverrideId
 Aw.Context.Core.Overrides.MapOverride.Label.get -> string?
 Aw.Context.Core.Overrides.MapOverride.Label.init -> void
 Aw.Context.Core.Overrides.MapOverride.MapOverride(Aw.Context.Core.Overrides.OverrideAction Action, Aw.Context.Core.Graph.NodeKey Target, string! Who, System.DateTimeOffset At, string? Label = null, Aw.Context.Core.Graph.NodeKey? Other = null, string? Rejection = null) -> void
@@ -508,6 +507,7 @@ Aw.Context.Core.Overrides.MapOverride.Rejection.get -> string?
 Aw.Context.Core.Overrides.MapOverride.Rejection.init -> void
 Aw.Context.Core.Overrides.MapOverride.Target.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Overrides.MapOverride.Target.init -> void
+Aw.Context.Core.Overrides.MapOverride.ToId() -> Aw.Context.Core.Overrides.OverrideId
 Aw.Context.Core.Overrides.MapOverride.Who.get -> string!
 Aw.Context.Core.Overrides.MapOverride.Who.init -> void
 Aw.Context.Core.Overrides.OverrideAction
