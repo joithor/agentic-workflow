@@ -13,5 +13,7 @@ internal static class Usage
         "       sindri doctor [--json]        lease, ledger, profile and api checks; runs without the control plane",
         "       sindri recipe validate <file> [--json]   validate a recipe in-process (exit 0 pass, 1 fail, 2 error)",
         "       sindri recipe eval <file> [--json]       run a recipe's eval cases in-process (exit 0 pass, 1 fail, 2 error)",
+        "       sindri recipe eval --scaffold <file>     print a happy-path eval case for the recipe",
+        "       sindri recipe eval --record <address> --out <file>   an instance's history as an eval case (needs the server, P4)",
         "exit codes: 0 ok, 1 attention needed, 2 error");
 }

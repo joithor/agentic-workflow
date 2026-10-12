@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Evals;
@@ -11,18 +13,24 @@ public static class EvalFacts
     /// <summary>The stored reference for <paramref name="content"/>.</summary>
     /// <param name="content">The content as the eval line writes it.</param>
     /// <returns>The fact value.</returns>
-    public static FactValue Value(JsonElement content) =>
-        throw new NotSupportedException("P3 unit (f): EvalFacts.Value");
+    public static FactValue Value(JsonElement content)
+    {
+        var digest = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(Text(content))));
+        return new FactValue("blob:" + digest, digest, HeadSha: null);
+    }
 
     /// <summary>The content's text: a JSON string's value, otherwise the JSON itself.</summary>
     /// <param name="content">The content.</param>
     /// <returns>The text.</returns>
     public static string Text(JsonElement content) =>
-        throw new NotSupportedException("P3 unit (f): EvalFacts.Text");
+        content.ValueKind == JsonValueKind.String ? content.GetString() ?? string.Empty : content.GetRawText();
 
     /// <summary>A JSON string holding <paramref name="text"/>.</summary>
     /// <param name="text">The text.</param>
     /// <returns>The element.</returns>
-    public static JsonElement OfText(string text) =>
-        throw new NotSupportedException("P3 unit (f): EvalFacts.OfText");
+    public static JsonElement OfText(string text)
+    {
+        using var document = JsonDocument.Parse("\"" + JsonEncodedText.Encode(text).Value + "\"");
+        return document.RootElement.Clone();
+    }
 }

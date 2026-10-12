@@ -8,7 +8,8 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// The 'recipe' verb group's table (spec §6.3; its text is Recipe/RecipeText). 'validate' and 'eval' are local: they run in this process against
-/// the build's catalog and never route to serve. Checker exit codes (W27): 0 pass, 1 fail, 2 usage or tool error.
+/// the build's catalog and never route to serve; 'eval --record' is a query against serve and refuses until P4.
+/// Checker exit codes (W27): 0 pass, 1 fail, 2 usage or tool error.
 /// </summary>
 internal static class RecipeCommandTable
 {
@@ -16,10 +17,27 @@ internal static class RecipeCommandTable
     {
         ["validate", var file] => Validate(file, json: false, services, output, ct),
         ["validate", var file, "--json"] => Validate(file, json: true, services, output, ct),
-        ["eval", var file] => Eval(file, json: false, services, output, ct),
-        ["eval", var file, "--json"] => Eval(file, json: true, services, output, ct),
+        ["eval", "--record", _, "--out", _] => output.Error(SindriErrors.UnknownVerb.With(
+            "recipe eval --record needs the server (P4): it reads a live instance's history from serve, which arrives with P4 (fix: write the case by hand, or start from sindri recipe eval --scaffold <file>)")),
+        ["eval", "--record", ..] => output.Error(SindriErrors.UnknownVerb.With($"recipe eval --record needs an address and --out <file> ({EvalUsage})")),
+        ["eval", "--scaffold", var file] => Scaffold(file, services, output, ct),
+        ["eval", "--json", var file] when !file.StartsWith("--", StringComparison.Ordinal) => Eval(file, json: true, services, output, ct),
+        ["eval", var file, "--json"] when !file.StartsWith("--", StringComparison.Ordinal) => Eval(file, json: true, services, output, ct),
+        ["eval", var file] when !file.StartsWith("--", StringComparison.Ordinal) => Eval(file, json: false, services, output, ct),
+        ["eval", ..] => output.Error(SindriErrors.UnknownVerb.With($"'recipe {string.Join(' ', args)}' is not a sindri command ({EvalUsage})")),
         _ => UnknownVerb(args, output),
     };
+
+    private const string EvalUsage = "usage: sindri recipe eval <file> [--json] | --scaffold <file> | --record <address> --out <file>";
+
+    private static async Task<int> Scaffold(string file, IServiceProvider services, Output output, CancellationToken ct)
+    {
+        var result = await services.GetRequiredService<IService<EvalRecipeRequest, EvalRecipeResponse>>()
+            .Handle(new EvalRecipeRequest(file, EvalMode.Scaffold), ct).ConfigureAwait(false);
+        return result.IsError
+            ? await output.Error(result.Error).ConfigureAwait(false)
+            : await output.Text(result.Value.Scaffold ?? string.Empty, 0).ConfigureAwait(false);
+    }
 
     private static async Task<int> Validate(string file, bool json, IServiceProvider services, Output output, CancellationToken ct)
     {
