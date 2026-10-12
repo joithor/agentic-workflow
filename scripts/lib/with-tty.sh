@@ -63,15 +63,15 @@ _with_tty_clean() {
 _with_tty_stop_feeder() {
   local tries=0 pid=""
   while [ -z "$pid" ] && [ "$tries" -lt 20 ]; do
-    pid="$(cat "$1/pid" 2>/dev/null)"
+    pid="$(cat "$1/pid" 2>/dev/null)" || true
     if [ -z "$pid" ]; then
       sleep 0.05
       tries=$((tries + 1))
     fi
   done
   if [ -n "$pid" ]; then
-    pkill -P "$pid" 2>/dev/null
-    kill "$pid" 2>/dev/null
+    pkill -P "$pid" 2>/dev/null || true   # the feeder may be gone already; a caller's set -e must not see that
+    kill "$pid" 2>/dev/null || true
   fi
   return 0
 }
