@@ -192,6 +192,26 @@ public sealed class ShellViewModelTests
         Assert.Equal(ShellState.Normal, shell.State);
     }
 
+    // §11.2: the page region is read with the page it shows, not always "Home".
+    [Theory]
+    [InlineData(PageId.Home, Labels.Home)]
+    [InlineData(PageId.Queue, Labels.Queue)]
+    [InlineData(PageId.Decisions, Labels.Decisions)]
+    [InlineData(PageId.Services, Labels.Services)]
+    [InlineData(PageId.Health, Labels.Health)]
+    [InlineData(PageId.Settings, Labels.Settings)]
+    internal async Task The_page_region_is_named_after_the_page_shown(PageId page, string name)
+    {
+        var shell = await Shell();
+        var changed = new List<string?>();
+        shell.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        shell.GoTo(page);
+
+        Assert.Equal(name, shell.PageName);
+        Assert.True(page == PageId.Home || changed.Contains(nameof(ShellViewModel.PageName)), "PageName change raised");
+    }
+
     [Fact]
     public async Task The_last_page_is_remembered_and_reopened()
     {

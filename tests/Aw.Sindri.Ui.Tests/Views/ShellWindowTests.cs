@@ -320,6 +320,22 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(window.ClientSize.Width - 16, Box(window, "HealthPill").Right, precision: 0);
     });
 
+    // §11.2: the page region's accessible name follows the page (it read "Home" on every page).
+    [Fact]
+    public Task The_page_region_is_named_after_the_page_shown() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+        Assert.Equal(Labels.Queue, AutomationProperties.GetName(window.Get<Border>("Page")));
+
+        shell.GoTo(PageId.Settings);
+        Settle(window);
+        Assert.Equal(Labels.Settings, AutomationProperties.GetName(window.Get<Border>("Page")));
+    });
+
     private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "HealthPill"];
 
     private static Rect Box(Window window, string name)

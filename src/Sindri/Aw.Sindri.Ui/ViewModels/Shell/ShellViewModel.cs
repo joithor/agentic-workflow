@@ -87,6 +87,9 @@ internal sealed class ShellViewModel : ObservableObject
         }
     }
 
+    /// <summary>The page region's accessible name: the page shown, in words.</summary>
+    public string PageName { get; } = Labels.Home;
+
     /// <summary>True on Home.</summary>
     public bool IsHome => CurrentPage == PageId.Home;
 
