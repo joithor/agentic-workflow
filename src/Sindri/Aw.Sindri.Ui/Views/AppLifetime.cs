@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Threading;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels;
@@ -20,7 +19,6 @@ internal sealed class AppLifetime : IDisposable
 
     private readonly Window _window;
     private readonly ITray _tray;
-    private readonly ISingleInstance _instance;
     private readonly Action<DeepLink> _navigate;
     private readonly Action _shutdown;
     private readonly Func<Task> _settle;
@@ -28,17 +26,16 @@ internal sealed class AppLifetime : IDisposable
     private IClassicDesktopStyleApplicationLifetime? _desktop;
     private bool _quitting;
 
-    /// <summary>Wires the window, the tray and the instance's messages.</summary>
+    /// <summary>Wires the window and the tray.</summary>
     /// <param name="window">The main window.</param>
     /// <param name="tray">The tray icon.</param>
-    /// <param name="instance">The claimed instance whose messages arrive here.</param>
     /// <param name="navigate">Goes where a deep link points (the shell's Navigate).</param>
     /// <param name="shutdown">Ends the app (the lifetime's Shutdown).</param>
     /// <param name="settle">Records the window's bounds and returns the preferences writes still pending; the app ends once they are done, or after <see cref="SettleWithin"/>.</param>
     /// <param name="clock">The clock <see cref="SettleWithin"/> runs on.</param>
-    internal AppLifetime(Window window, ITray tray, ISingleInstance instance, Action<DeepLink> navigate, Action shutdown, Func<Task> settle, TimeProvider clock)
+    internal AppLifetime(Window window, ITray tray, Action<DeepLink> navigate, Action shutdown, Func<Task> settle, TimeProvider clock)
     {
-        (_window, _tray, _instance, _navigate, _shutdown, _settle, _clock) = (window, tray, instance, navigate, shutdown, settle, clock);
+        (_window, _tray, _navigate, _shutdown, _settle, _clock) = (window, tray, navigate, shutdown, settle, clock);
         _window.Closing += OnClosing;
         _tray.OpenRequested += OnOpen;
         _tray.QuitRequested += OnQuit;
@@ -46,7 +43,7 @@ internal sealed class AppLifetime : IDisposable
 
     /// <summary>
     /// Starts the app's life on a desktop: the app ends only on Quit or when the OS ends it (each first writing the
-    /// preferences), the tray follows the shell's state, and the instance's messages arrive until the app ends.
+    /// preferences), and the tray follows the shell's state.
     /// </summary>
     /// <param name="desktop">The desktop lifetime.</param>
     /// <param name="shell">The shell the window shows.</param>
@@ -63,7 +60,6 @@ internal sealed class AppLifetime : IDisposable
                 ShowState(shell.State);
             }
         };
-        _ = Listen(CancellationToken.None);
     }
 
     /// <summary>What the tray shows for a shell state: "running" only once connected and fresh; hollow until then.</summary>
@@ -83,7 +79,7 @@ internal sealed class AppLifetime : IDisposable
     /// <param name="state">The state.</param>
     internal void ShowState(ShellState state) => _tray.Show(TrayViewFor(state));
 
-    /// <summary>Handles one message from a later launch (on the UI thread): focus, or a deep link; nothing else.</summary>
+    /// <summary>Handles one message from a later launch (on the UI thread; <see cref="InstanceListener"/> hands them over): focus, or a deep link; nothing else.</summary>
     /// <param name="message">The message's text, unparsed.</param>
     internal void Receive(string message)
     {
@@ -95,25 +91,6 @@ internal sealed class AppLifetime : IDisposable
         {
             BringForward();
             _navigate(link);
-        }
-    }
-
-    /// <summary>Reads the instance's messages until cancelled, handling each on the UI thread before reading the next.</summary>
-    /// <param name="cancellationToken">Stops listening.</param>
-    /// <returns>A task that ends when cancelled or the instance ends.</returns>
-    internal async Task Listen(CancellationToken cancellationToken)
-    {
-        try
-        {
-            // Handled on the UI thread before the next is read, so the sender's answer means the app acted on it.
-            await foreach (var message in _instance.Messages(cancellationToken).ConfigureAwait(false))
-            {
-                await Dispatcher.UIThread.InvokeAsync(() => Receive(message)).GetTask().ConfigureAwait(false);
-            }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            // Stopped.
         }
     }
 

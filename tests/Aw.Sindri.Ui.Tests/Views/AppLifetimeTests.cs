@@ -45,7 +45,7 @@ public sealed class AppLifetimeTests
         var window = new Window();
         window.Show();
         var instance = new FakeSingleInstance(_channel);
-        return (window, new AppLifetime(window, _tray, instance, _navigated.Add, () => _shutdowns++, Settle, _clock), instance);
+        return (window, new AppLifetime(window, _tray, _navigated.Add, () => _shutdowns++, Settle, _clock), instance);
     }
 
     private Task Settle()
@@ -164,7 +164,7 @@ public sealed class AppLifetimeTests
             window.RememberBounds();
             return preferences.Flush();
         };
-        using var lifetime = new AppLifetime(window, _tray, new FakeSingleInstance(_channel), _navigated.Add, () => _shutdowns++, Settle, _clock);
+        using var lifetime = new AppLifetime(window, _tray, _navigated.Add, () => _shutdowns++, Settle, _clock);
         store.HoldWrites();
 
         _tray.ClickQuit();
@@ -236,8 +236,10 @@ public sealed class AppLifetimeTests
         using (lifetime)
         {
             Assert.True(await instance.TryClaim(TestContext.Current.CancellationToken));
+            var listener = new InstanceListener(instance);
             using var stop = new CancellationTokenSource();
-            var listening = lifetime.Listen(stop.Token);
+            var listening = listener.Listen(stop.Token);
+            listener.Deliver(lifetime.Receive);
             window.Close();
 
             Assert.True(await new FakeSingleInstance(_channel).Send("service/heartbeat", TestContext.Current.CancellationToken));
@@ -246,6 +248,36 @@ public sealed class AppLifetimeTests
                 await Task.Delay(5, TestContext.Current.CancellationToken);
                 Dispatcher.UIThread.RunJobs();
             }
+
+            Assert.Equal([new DeepLink(DeepLinkKind.Service, "heartbeat")], _navigated);
+            Assert.True(window.IsVisible);
+            await stop.CancelAsync();
+            await listening;
+        }
+    });
+
+    // A later launch while this one is still starting (no window yet) is answered at once: "focus" needs nothing, since
+    // the window is about to show, and the latest deep link waits for the window, which then goes there.
+    [Fact]
+    public Task A_message_before_the_window_shows_is_answered_and_its_link_applied_once_it_shows() => OnUi(async () =>
+    {
+        var instance = new FakeSingleInstance(_channel);
+        Assert.True(await instance.TryClaim(TestContext.Current.CancellationToken));
+        var listener = new InstanceListener(instance);
+        using var stop = new CancellationTokenSource();
+        var listening = listener.Listen(stop.Token);
+        var later = new FakeSingleInstance(_channel);
+
+        Assert.True(await later.Send(InstanceMessages.Focus, TestContext.Current.CancellationToken));
+        Assert.True(await later.Send("item/ITM-OLD", TestContext.Current.CancellationToken));
+        Assert.True(await later.Send("service/heartbeat", TestContext.Current.CancellationToken));
+        Assert.Empty(_navigated);
+
+        var (window, lifetime, _) = Start();
+        using (lifetime)
+        {
+            window.Hide();
+            listener.Deliver(lifetime.Receive);
 
             Assert.Equal([new DeepLink(DeepLinkKind.Service, "heartbeat")], _navigated);
             Assert.True(window.IsVisible);

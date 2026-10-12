@@ -21,6 +21,7 @@ public sealed partial class SindriApp : Application
     private readonly ShellViewModel? _shell;
     private readonly Preferences? _preferences;
     private readonly TimeProvider? _clock;
+    private InstanceListener? _listener;
 
     /// <summary>
     /// The exit code when the app failed (SND-UI-004): its start-up, or its following of the control plane, threw. The app
@@ -74,6 +75,11 @@ public sealed partial class SindriApp : Application
     {
         if (_shell is not null && _preferences is not null && Platform is { } platform && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // A later launch is answered from now on, while the window is still being built (ShellOpened hands the
+            // messages to the window's lifetime); reading ends when the head disposes the instance.
+            _listener = new InstanceListener(platform.Instance);
+            _ = _listener.Listen(CancellationToken.None);
+
             // Started on the UI thread, so the view models' awaits come back to it. Its failure is observed there: logged,
             // then the app ends with FailedExitCode.
             _ = Open(desktop, _shell, _preferences, platform).ContinueWith(
