@@ -8,7 +8,7 @@
   <Border Classes="topbar" Focusable="True" AutomationProperties.Name="{Binding Text.Sindri}">
     <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" VerticalAlignment="Center">
       <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,20,0">
-        <Border Classes="brand" />
+        <TextBlock Classes="brand" Text="◆" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
         <TextBlock Classes="body-strong" Text="{Binding Text.Sindri}" VerticalAlignment="Center"
                    AutomationProperties.Name="{Binding Text.Sindri}" />
       </StackPanel>
