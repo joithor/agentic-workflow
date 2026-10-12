@@ -358,6 +358,22 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal((Labels.GlyphOk, Labels.Running), (Text(window, "PillGlyph"), Text(window, "HealthPillText")));
     });
 
+    // B2 on the Health page: stale reads ⌛ stale at the process section's head.
+    [Fact]
+    public Task Stale_says_so_on_the_Health_page() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        shell.GoTo(PageId.Health);
+        _server.FailPing = true;
+        _clock.Advance(ShellViewModel.StaleAfter);
+        await Until(() => shell.State == ShellState.Stale);
+        Settle(window);
+
+        Assert.Equal((Labels.GlyphStale, Labels.Stale), (Text(window, "ProcessGlyph"), Text(window, "ProcessWord")));
+        Frame(window, "health-stale");
+    });
+
     [Fact]
     public Task The_health_pill_opens_Health_with_S1bs_status_card() => OnUi(async () =>
     {
@@ -371,9 +387,18 @@ public sealed class ShellWindowTests : IDisposable
 
         Assert.Equal(PageId.Health, shell.CurrentPage);
         Assert.True(Visible(window, "HealthPage"));
-        Assert.Equal("pid 4242 · epoch 7", Text(window, "LeaseText"));
-        Assert.Equal("changed since approval", Text(window, "ProfileStateText"));
+
+        // I5 (services-health.html HEALTH): label/value rows at Body size under section heads that carry the state's
+        // glyph and word; no display-size values and no badge repeating the pill.
+        List<string?> Rows(string name) => [.. Named<ItemsControl>(window, name).GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text)];
+        Assert.Equal(["pid · epoch", "4242 · 7", "Host lease", "held · expires " + A.Noon.AddSeconds(60).ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture), "API", "127.0.0.1:7410"], Rows("ProcessRows"));
+        Assert.Equal((Labels.GlyphOk, Labels.Running), (Text(window, "ProcessGlyph"), Text(window, "ProcessWord")));
+        Assert.Equal("◇ changed since approval", Text(window, "ProfileHeadText"));
+        Assert.Equal(["approved", "ab12cd", "live", "ff00ee", "file", "/home/profile.yaml"], Rows("ProfileRows"));
         Assert.Equal("sindri profile approve", Text(window, "ProfileFixText"));
+        Assert.False(Visible(window, "HeadlineText"));
+        var page = Named<Control>(window, "HealthPage");
+        Assert.DoesNotContain(page.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.FontSize > 13 && !t.Classes.Contains("page-title"));
         Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "last run " + A.Noon.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture));
         EveryControlIsNamed(window);
         Frame(window, "health");
