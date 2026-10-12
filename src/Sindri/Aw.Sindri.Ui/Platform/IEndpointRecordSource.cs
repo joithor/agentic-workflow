@@ -12,5 +12,6 @@ public interface IEndpointRecordSource
     /// <summary>Reads the record's bytes.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The record's JSON bytes, or null when there is none.</returns>
+    /// <exception cref="EndpointRecordUnreadableException">A record is there but the platform can't read it, with why.</exception>
     public ValueTask<byte[]?> Read(CancellationToken cancellationToken);
 }

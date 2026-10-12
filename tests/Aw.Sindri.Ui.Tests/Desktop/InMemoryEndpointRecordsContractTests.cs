@@ -18,4 +18,12 @@ public sealed class InMemoryEndpointRecordsContractTests : EndpointRecordSourceC
 
         return records;
     }
+
+    protected override IEndpointRecordSource? Unreadable(EndpointRecordFailure why)
+    {
+        var records = new InMemoryEndpointRecords();
+        records.WriteText("{}");
+        records.FailNextRead(why);
+        return records;
+    }
 }

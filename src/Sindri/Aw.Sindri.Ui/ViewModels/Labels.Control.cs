@@ -15,6 +15,9 @@ internal static partial class Labels
     /// <summary>Why the platform refused to read control.json: no permission (the app's words, never the platform's message, which names the path).</summary>
     internal const string RecordNoPermission = "this user has no permission to read it";
 
-    /// <summary>Why the platform couldn't read control.json otherwise (a directory in its place, an I/O error).</summary>
-    internal const string RecordIoError = "the platform couldn't read it (is something else, such as a directory, in its place?)";
+    /// <summary>Why control.json can't be read when it isn't a file (a directory in its place).</summary>
+    internal const string RecordNotAFile = "it isn't a file (something else, such as a directory, is in its place)";
+
+    /// <summary>Why the platform couldn't read control.json otherwise (an I/O error it doesn't name further).</summary>
+    internal const string RecordIoError = "the platform couldn't read it";
 }

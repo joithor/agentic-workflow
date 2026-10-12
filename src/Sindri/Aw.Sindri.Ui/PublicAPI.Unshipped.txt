@@ -84,3 +84,13 @@ const Aw.Sindri.Ui.Views.SindriApp.FailedExitCode = 2 -> int
 Aw.Sindri.Ui.Views.AppTrayIcons
 static Aw.Sindri.Ui.Views.AppTrayIcons.Add(Avalonia.Controls.TrayIcon! icon) -> void
 static Aw.Sindri.Ui.Views.AppTrayIcons.Remove(Avalonia.Controls.TrayIcon! icon) -> void
+Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordFailure.NoPermission = 1 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordFailure.NotAFile = 2 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordFailure.Unreadable = 0 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException() -> void
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(Aw.Sindri.Ui.Platform.EndpointRecordFailure reason, System.Exception? innerException) -> void
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(string! message) -> void
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(string! message, System.Exception! innerException) -> void
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.Reason.get -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
