@@ -1,9 +1,12 @@
 using System.Text.Json;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Infrastructure.Workflows;
@@ -30,6 +33,7 @@ internal sealed class WorkflowsHarness : IDisposable
     {
         var recipes = Directory.CreateDirectory(Path.Combine(_home.Path, "recipes")).FullName;
         System.IO.File.Copy(Path.Combine(RepoRoot(), "recipes", "sindri", "workflow.step.yaml"), Path.Combine(recipes, "workflow.step.yaml"));
+        _ = Approve(Shipped("sindri/workflow.step.yaml"));
     }
 
     public string Home => _home.Path;
@@ -85,6 +89,49 @@ internal sealed class WorkflowsHarness : IDisposable
 
     /// <summary>Writes <paramref name="yaml"/> as the recipe '&lt;home&gt;/recipes/&lt;id&gt;.yaml' the stub approvals read.</summary>
     public void Recipe(string id, string yaml) => System.IO.File.WriteAllText(Path.Combine(_home.Path, "recipes", id + ".yaml"), yaml);
+
+    /// <summary>
+    /// Registers <paramref name="yaml"/> in the home's ledger as 'recipe register' keeps it (its normalized long form by
+    /// hash), approved by nobody.
+    /// </summary>
+    public RegisteredRecipe Register(string yaml) => Registry(yaml, approve: false);
+
+    /// <summary>Registers and approves <paramref name="yaml"/> in the home's ledger, as 'recipe register' and 'recipe approve' leave it.</summary>
+    public RegisteredRecipe Approve(string yaml) => Registry(yaml, approve: true);
+
+    /// <summary>Revokes <paramref name="recipe"/> in the home's ledger, as 'recipe revoke' leaves it.</summary>
+    public void Revoke(RegisteredRecipe recipe)
+    {
+        using var sindri = Sindri();
+        var revoked = sindri.GetRequiredService<IRecipeApprovals>()
+            .Revoke(new RecipeRevocation(recipe.Id, recipe.Version, recipe.Hash, "human:test", DateTimeOffset.UtcNow, CascadedFrom: null), TestContext.Current.CancellationToken).AsTask().GetAwaiter().GetResult();
+        Assert.False(revoked.IsError, revoked.IsError ? revoked.Error.Message : null);
+    }
+
+    private RegisteredRecipe Registry(string yaml, bool approve)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var sindri = Sindri();
+        var json = sindri.GetRequiredService<JsonSerializerOptions>();
+        var document = sindri.GetRequiredService<IRecipeReader>().Read(yaml, "recipe.yaml").Document;
+        Assert.NotNull(document);
+        var recipe = document.Recipe with { Hash = null };
+        var text = System.Text.Encoding.UTF8.GetString(Aw.Kernel.Json.AwJson.Serialize(recipe, json));
+        var added = sindri.GetRequiredService<IRecipeStore>()
+            .Add(new RegisteredRecipe(recipe.Id, recipe.Version, document.Hash, text, recipe.Base, DateTimeOffset.UtcNow), ct).AsTask().GetAwaiter().GetResult();
+        Assert.False(added.IsError, added.IsError ? added.Error.Message : null);
+        if (approve)
+        {
+            var approvals = sindri.GetRequiredService<IRecipeApprovals>();
+            var current = approvals.Current(ct).AsTask().GetAwaiter().GetResult().Value;
+            var pins = PinRules.Pins(recipe, sindri.GetRequiredService<BlockCatalog>(), current, json);
+            var approved = approvals.Approve(new RecipeApproval(recipe.Id, recipe.Version, document.Hash, "human:test", DateTimeOffset.UtcNow,
+                ApprovalVia.Desk, recipe.Base, pins), ct).AsTask().GetAwaiter().GetResult();
+            Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);
+        }
+
+        return added.Value.Recipe;
+    }
 
     /// <summary>The text of the shipped recipe at <paramref name="path"/> (relative to recipes/).</summary>
     public static string Shipped(string path) => System.IO.File.ReadAllText(Path.Combine(RepoRoot(), "recipes", path));

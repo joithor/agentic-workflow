@@ -32,6 +32,33 @@ public sealed class StartInstanceTests(DevServer server) : IClassFixture<DevServ
     }
 
     [Fact]
+    public async Task Starting_a_registered_recipe_nobody_approved_is_SND_RECIPE_003_and_starts_nothing()
+    {
+        _ = _harness.Register(WorkflowsHarness.Shipped("sindri/workflow.item.yaml"));
+        await using var served = await Served.Start(_harness.Home, server.Environment);
+
+        var started = await served.Cli("start", "workflow.item", "--item", "T-6", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
+
+        Assert.Equal(2, started.Exit);
+        Assert.StartsWith("SND-RECIPE-003 ", started.Stderr, StringComparison.Ordinal);
+        Assert.Empty(await served.Events("T-6/item/1"));
+    }
+
+    [Fact]
+    public async Task Starting_a_recipe_whose_approval_was_revoked_is_SND_RECIPE_003_and_starts_nothing()
+    {
+        _harness.Revoke(_harness.Approve(WorkflowsHarness.Shipped("sindri/workflow.item.yaml")));
+        await using var served = await Served.Start(_harness.Home, server.Environment);
+
+        var started = await served.Cli("start", "workflow.item", "--item", "T-7", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
+
+        Assert.Equal(2, started.Exit);
+        Assert.StartsWith("SND-RECIPE-003 ", started.Stderr, StringComparison.Ordinal);
+        Assert.Contains("revoked", started.Stderr, StringComparison.Ordinal);
+        Assert.Empty(await served.Events("T-7/item/1"));
+    }
+
+    [Fact]
     public async Task Starting_the_same_recipe_item_and_attempt_again_returns_that_instance()
     {
         await using var served = await Served.Start(_harness.Home, server.Environment);
