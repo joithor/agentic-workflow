@@ -527,4 +527,17 @@ public sealed class HealthViewModelTests : IDisposable
             _vm.Detail.Profile);
         Assert.Equal([new ServiceRow("heartbeat", "every 5s", "last run " + Local(A.Noon))], _vm.Services);
     }
+
+    // I5: a long profile path is shortened in the middle, keeping its file name (~ for home first).
+    [Fact]
+    public async Task A_long_profile_path_is_shortened_in_the_middle()
+    {
+        var source = "/srv/agentic/workspaces/team-alpha/projects/sindri-control-plane/profiles/default/profile.yaml";
+        _records.Write(A.Record());
+        _server.Current = A.Status(profile: A.ChangedProfile(source));
+        Start();
+
+        await Eventually(() => _vm.Headline == "Running", "headline");
+        Assert.Equal(new HealthCell("file", "/srv/…/profiles/default/profile.yaml"), _vm.Detail.Profile[^1]);
+    }
 }

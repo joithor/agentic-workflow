@@ -200,10 +200,13 @@ internal static partial class Labels
     /// <summary>The control plane answers but holds no lease.</summary>
     internal const string NoLease = "the control plane answers but holds no lease";
 
+    /// <summary>Not running: no control.json (stub).</summary>
+    internal const string NoRecord = "no endpoint record at";
+
     /// <summary>Not running: no control.json.</summary>
     /// <param name="location">Where the record is read from.</param>
     /// <returns>The reason.</returns>
-    internal static string NoRecord(string location) => $"no endpoint record at {location}: Sindri hasn't started, or it stopped";
+    internal static string NoRecordAt(string location) => $"no endpoint record at {location}: Sindri hasn't started, or it stopped";
 
     /// <summary>Not running: control.json doesn't parse, or its url isn't absolute http(s).</summary>
     /// <param name="location">Where the record is read from.</param>

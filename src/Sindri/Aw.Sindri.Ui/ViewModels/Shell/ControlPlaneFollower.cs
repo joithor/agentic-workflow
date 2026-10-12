@@ -83,7 +83,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         var bytes = await records.Read(cancellationToken).ConfigureAwait(true);
         if (bytes is null)
         {
-            return health.NotRunning(Labels.NoRecord(records.Location));
+            return health.NotRunning(Labels.NoRecordAt(records.Location));
         }
 
         var record = ControlRecord.Usable(bytes, SindriApiClient.Json);

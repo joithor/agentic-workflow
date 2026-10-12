@@ -6,6 +6,7 @@ using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
@@ -200,14 +201,14 @@ public sealed class ShellWindowTests : IDisposable
 
         var title = window.Get<TextBlock>("SheetTitle");
         Assert.Equal(18, title.FontSize);
-        Assert.Equal(Avalonia.Media.FontWeight.Medium, title.FontWeight);
+        Assert.Equal(FontWeight.Medium, title.FontWeight);
         Assert.Contains("JetBrains Mono", title.FontFamily.ToString(), StringComparison.Ordinal);
     });
 
-    private static Avalonia.Media.Color Ink(TextBlock t) => ((Avalonia.Media.ISolidColorBrush)t.Foreground!).Color;
+    private static Color Ink(TextBlock t) => ((ISolidColorBrush)t.Foreground!).Color;
 
-    private static Avalonia.Media.Color Colour(string key) =>
-        Application.Current!.TryGetResource(key, theme: null, out var v) && v is Avalonia.Media.Color c ? c : default;
+    private static Color Colour(string key) =>
+        Application.Current!.TryGetResource(key, theme: null, out var v) && v is Color c ? c : default;
 
     // I1 (home.html .seg): one group; unselected labels muted, the selected one in PrimaryHover with the Primary dot;
     // Later ▾ a flat segment of the same group; the whole group disabled while not running.
@@ -282,6 +283,39 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(page.Center.Y, card.Center.Y, precision: 0);
         Assert.True(Visible(window, "NotRunningMark"));
         Assert.Contains("detail-title", window.Get<TextBlock>("NotRunningText").Classes, StringComparer.Ordinal);
+    });
+
+    // I7 (§4.1, §12.4): the card leads with the reason's words, and the record's path, shortened (~ for home, a middle
+    // ellipsis), sits on its own line in mono, whole: never wrapped mid-path, at text scale 1.0 and 1.3.
+    [Theory]
+    [InlineData(1.0)]
+    [InlineData(1.3)]
+    public Task Not_running_leads_with_the_reason_and_shows_the_path_shortened_on_its_own_line(double scale) => OnUi(async () =>
+    {
+        _records.Location = "/var/folders/07/k3x9q2m1n8b7v6c5x4z3/T/aw-sindri-home-1234567890/sindri/ui/control.json";
+        var (window, _) = await Show(s => s.State == ShellState.NotRunning);
+        var resources = Application.Current!.Resources;
+        TextScale.Apply(resources, scale);
+        try
+        {
+            Settle(window);
+            var reason = Named<TextBlock>(window, "ReasonText");
+            var path = Named<TextBlock>(window, "ReasonPathText");
+            Assert.StartsWith("Sindri", reason.Text, StringComparison.Ordinal);
+            Assert.DoesNotContain("/", reason.Text, StringComparison.Ordinal);
+            Assert.Equal("/var/…/aw-sindri-home-1234567890/sindri/ui/control.json", path.Text);
+            Assert.Contains("mono", path.Classes, StringComparer.Ordinal);
+            Assert.Equal(TextWrapping.NoWrap, path.TextWrapping);
+            Assert.True(path.Bounds.Height < path.LineHeight * 1.5, string.Create(CultureInfo.InvariantCulture, $"the path takes {path.Bounds.Height} px"));
+            Assert.True(Box(window, "ReasonPathText").Top >= Box(window, "ReasonText").Bottom, "the path isn't on its own line");
+            Assert.True(path.TextLayout.WidthIncludingTrailingWhitespace <= path.Bounds.Width + 0.5, "the path is clipped");
+            Frame(window, string.Create(CultureInfo.InvariantCulture, $"not-running-path-{scale * 100:0}"));
+        }
+        finally
+        {
+            TextScale.Apply(resources, 1.0);
+            Settle(window);
+        }
     });
 
     // I8 (states.html Connecting): Home's frame (title, the Needs-you panel's header, two half panels) with left-aligned
@@ -389,7 +423,7 @@ public sealed class ShellWindowTests : IDisposable
 
         Assert.True(Visible(window, "NotRunningPanel"));
         Assert.False(Visible(window, "Pages"));
-        Assert.Equal(Labels.NoRecord(_records.Location), Text(window, "ReasonText"));
+        Assert.Equal(Labels.NoRecord, Text(window, "ReasonText"));
         Assert.Equal("sindri", Text(window, "FixText"));
         Assert.Equal(Labels.NotRunning, Text(window, "HealthPillText"));
         Assert.Equal(StateGlyph.Down, Glyph(window, "PillGlyph"));

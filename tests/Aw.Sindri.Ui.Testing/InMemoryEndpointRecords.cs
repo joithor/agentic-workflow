@@ -11,7 +11,8 @@ internal sealed class InMemoryEndpointRecords : IEndpointRecordSource
     private byte[]? _bytes;
     private Exception? _fail;
 
-    public string Location => "memory:control.json";
+    /// <summary>Gets or sets where the record is said to live (a long temp path in the Not running card's test).</summary>
+    public string Location { get; set; } = "memory:control.json";
 
     /// <summary>Writes a record the way the control plane does (camelCase JSON).</summary>
     /// <param name="record">The record.</param>

@@ -137,7 +137,9 @@ public sealed class ShellViewModelTests
     {
         var shell = await Running(ShellState.NotRunning);
 
-        Assert.Equal(Labels.NoRecord(_records.Location), shell.Reason);
+        // I7: the reason's words lead; the record's path is its own value, shortened.
+        Assert.Equal(Labels.NoRecord, shell.Reason);
+        Assert.Equal(StatusText.ShortPath(_records.Location), shell.ReasonPath);
         Assert.Equal(Labels.NotRunning, shell.Pill.Text);
     }
 

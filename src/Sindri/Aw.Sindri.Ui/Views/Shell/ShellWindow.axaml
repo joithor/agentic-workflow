@@ -133,6 +133,8 @@
                 </StackPanel>
                 <TextBlock x:Name="ReasonText" Classes="body muted" Text="{Binding Reason}" TextWrapping="Wrap"
                            AutomationProperties.Name="{Binding Reason}" />
+                <TextBlock x:Name="ReasonPathText" Classes="mono subtle" Text="{Binding ReasonPath}" TextWrapping="Wrap"
+                           AutomationProperties.Name="{Binding ReasonPath}" />
                 <StackPanel Orientation="Horizontal" Spacing="10">
                   <TextBlock Classes="body subtle" Text="{Binding Text.StartIt}" AutomationProperties.Name="{Binding Text.StartIt}" VerticalAlignment="Center" />
                   <Border Classes="command">
