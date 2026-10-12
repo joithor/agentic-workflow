@@ -4,8 +4,8 @@ namespace Aw.Context.Core;
 
 /// <summary>
 /// The context engine's error catalogue (spec §8.6), codes SND-CONTEXT-NNN. Stage S-1A owns 001–019 and defines 020
-/// (the session gate, spec §3); later stages add theirs in their ranges. HTTP status follows the kind; the CLI exit
-/// code is 1 for attention (003, 005, 006, 020) and 2 for a tool error.
+/// (the session gate, spec §3); later stages add theirs in their ranges (S-5A/B, Onyx: 050–069). HTTP status follows
+/// the kind; the CLI exit code is 1 for attention (003, 005, 006, 020) and 2 for a tool error.
 /// </summary>
 public static class ContextErrors
 {
@@ -36,7 +36,13 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-020: session reads are off ('context.sessions.enabled: false'), on every transport.</summary>
     public static readonly ErrorDefinition SessionsDisabled = new("SND-CONTEXT-020", ErrorKind.Forbidden, "Context reads from sessions are off");
 
+    /// <summary>
+    /// SND-CONTEXT-055: Onyx isn't on a loopback address, or its version differs from the pinned one (spec §8.8). The
+    /// message names the key path ('context.sources.onyx.url' or '.version') and the fix, never the token.
+    /// </summary>
+    public static readonly ErrorDefinition OnyxNotPinnedOrLoopback = new("SND-CONTEXT-055", ErrorKind.Invalid, "Onyx isn't on a loopback address, or its version differs from the pinned one");
+
     /// <summary>Every Context error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
-        [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled];
+        [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled, OnyxNotPinnedOrLoopback];
 }

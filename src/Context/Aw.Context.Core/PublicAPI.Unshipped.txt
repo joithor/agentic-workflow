@@ -132,6 +132,13 @@ Aw.Context.Core.Models.ModelRequest.Prompt.get -> string!
 Aw.Context.Core.Models.ModelRequest.Prompt.init -> void
 Aw.Context.Core.Models.ModelRequest.Purpose.get -> Aw.Context.Core.Models.ModelPurpose
 Aw.Context.Core.Models.ModelRequest.Purpose.init -> void
+Aw.Context.Core.Onyx.OnyxSettings
+Aw.Context.Core.Onyx.OnyxSettings.<Clone>$() -> Aw.Context.Core.Onyx.OnyxSettings!
+Aw.Context.Core.Onyx.OnyxSettings.CheckVersion(string! reported) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Context.Core.Onyx.OnyxSettings.Equals(Aw.Context.Core.Onyx.OnyxSettings? other) -> bool
+Aw.Context.Core.Onyx.OnyxSettings.Token.get -> string!
+Aw.Context.Core.Onyx.OnyxSettings.Url.get -> System.Uri!
+Aw.Context.Core.Onyx.OnyxSettings.Version.get -> string!
 Aw.Context.Core.Results.BudgetUse
 Aw.Context.Core.Results.BudgetUse.<Clone>$() -> Aw.Context.Core.Results.BudgetUse!
 Aw.Context.Core.Results.BudgetUse.Asked.get -> int
@@ -554,6 +561,9 @@ override Aw.Context.Core.Models.ModelAnswer.ToString() -> string!
 override Aw.Context.Core.Models.ModelRequest.Equals(object? obj) -> bool
 override Aw.Context.Core.Models.ModelRequest.GetHashCode() -> int
 override Aw.Context.Core.Models.ModelRequest.ToString() -> string!
+override Aw.Context.Core.Onyx.OnyxSettings.Equals(object? obj) -> bool
+override Aw.Context.Core.Onyx.OnyxSettings.GetHashCode() -> int
+override Aw.Context.Core.Onyx.OnyxSettings.ToString() -> string!
 override Aw.Context.Core.Results.BudgetUse.Equals(object? obj) -> bool
 override Aw.Context.Core.Results.BudgetUse.GetHashCode() -> int
 override Aw.Context.Core.Results.BudgetUse.ToString() -> string!
@@ -651,6 +661,9 @@ static Aw.Context.Core.Models.ModelAnswer.operator !=(Aw.Context.Core.Models.Mod
 static Aw.Context.Core.Models.ModelAnswer.operator ==(Aw.Context.Core.Models.ModelAnswer? left, Aw.Context.Core.Models.ModelAnswer? right) -> bool
 static Aw.Context.Core.Models.ModelRequest.operator !=(Aw.Context.Core.Models.ModelRequest? left, Aw.Context.Core.Models.ModelRequest? right) -> bool
 static Aw.Context.Core.Models.ModelRequest.operator ==(Aw.Context.Core.Models.ModelRequest? left, Aw.Context.Core.Models.ModelRequest? right) -> bool
+static Aw.Context.Core.Onyx.OnyxSettings.Create(string? url, string? token, string? version) -> Aw.Kernel.Result<Aw.Context.Core.Onyx.OnyxSettings!>!
+static Aw.Context.Core.Onyx.OnyxSettings.operator !=(Aw.Context.Core.Onyx.OnyxSettings? left, Aw.Context.Core.Onyx.OnyxSettings? right) -> bool
+static Aw.Context.Core.Onyx.OnyxSettings.operator ==(Aw.Context.Core.Onyx.OnyxSettings? left, Aw.Context.Core.Onyx.OnyxSettings? right) -> bool
 static Aw.Context.Core.Results.BudgetUse.operator !=(Aw.Context.Core.Results.BudgetUse? left, Aw.Context.Core.Results.BudgetUse? right) -> bool
 static Aw.Context.Core.Results.BudgetUse.operator ==(Aw.Context.Core.Results.BudgetUse? left, Aw.Context.Core.Results.BudgetUse? right) -> bool
 static Aw.Context.Core.Results.Citation.operator !=(Aw.Context.Core.Results.Citation? left, Aw.Context.Core.Results.Citation? right) -> bool
@@ -729,6 +742,7 @@ static Aw.Context.Core.Sources.SourceVersion.TryParse(string? s, System.IFormatP
 static Aw.Context.Core.Trust.ScrubbedField.operator !=(Aw.Context.Core.Trust.ScrubbedField? left, Aw.Context.Core.Trust.ScrubbedField? right) -> bool
 static Aw.Context.Core.Trust.ScrubbedField.operator ==(Aw.Context.Core.Trust.ScrubbedField? left, Aw.Context.Core.Trust.ScrubbedField? right) -> bool
 static readonly Aw.Context.Core.ContextErrors.AllSourcesUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.OnyxNotPinnedOrLoopback -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.PathInWorktree -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.QueryInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.SessionsDisabled -> Aw.Kernel.ErrorDefinition!
