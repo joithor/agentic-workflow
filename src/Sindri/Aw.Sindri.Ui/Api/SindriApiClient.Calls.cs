@@ -15,16 +15,21 @@ internal sealed partial class SindriApiClient
     private Task<Result<T>> Get<T>(Uri api, string path, CancellationToken cancellationToken) =>
         Call<T>(api, HttpMethod.Get, path, cancellationToken);
 
-    private async Task<Result<T>> Call<T>(Uri api, HttpMethod method, string path, CancellationToken cancellationToken)
+    private async Task<Result<T>> Call<T>(Uri api, HttpMethod method, string path, CancellationToken cancellationToken, byte[]? body = null)
     {
         using var timeout = new CancellationTokenSource(_callTimeout, clock);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
             using var request = await Request(method, new Uri(api, path), query: method == HttpMethod.Get, deadline.Token).ConfigureAwait(false);
+            if (body is not null)
+            {
+                request.Content = new ByteArrayContent(body) { Headers = { ContentType = new("application/json") } };
+            }
+
             using var response = await http.SendAsync(request, deadline.Token).ConfigureAwait(false);
-            var body = await response.Content.ReadAsByteArrayAsync(deadline.Token).ConfigureAwait(false);
-            return response.IsSuccessStatusCode ? Read<T>(path, body) : Refused<T>(path, response.StatusCode, body);
+            var answer = await response.Content.ReadAsByteArrayAsync(deadline.Token).ConfigureAwait(false);
+            return response.IsSuccessStatusCode ? Read<T>(path, answer) : Refused<T>(path, response.StatusCode, answer);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -48,9 +53,10 @@ internal sealed partial class SindriApiClient
             return SindriUiErrors.BadAnswer.With($"{path} answered with something this build can't read");
         }
 
-        if (value.Value is CommandAcceptedView accepted)
+        // An accepted command (CreateItem nests it) is waited for by the next query.
+        if ((object?)value.Value switch { CommandAcceptedView a => a.Sequence, ItemCreatedView c => c.Accepted.Sequence, _ => (long?)null } is { } sequence)
         {
-            _ = Interlocked.Exchange(ref _after, accepted.Sequence);
+            _ = Interlocked.Exchange(ref _after, sequence);
         }
 
         return value;
