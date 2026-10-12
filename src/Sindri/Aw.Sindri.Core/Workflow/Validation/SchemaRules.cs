@@ -6,7 +6,7 @@ namespace Aw.Sindri.Core.Workflow.Validation;
 /// <summary>
 /// The schema rules that need the bound long form (spec §3.2–§3.4, §9.1 "Schema", "Hash"): RCP-SCHEMA-001/002 for what
 /// typed binding can't see (the per-kind fields of a state, exactly one form of a waitFor, a when or a with value, the
-/// schema version, a token count, a transition's 'from' or 'to' naming an undeclared state), RCP-STATE-001, RCP-INIT-001, RCP-DUR-001 and RCP-HASH-001.
+/// schema version, a token count, a transition's 'from' or 'to' naming an undeclared state), RCP-STATE-001, RCP-NAME-001, RCP-INIT-001, RCP-DUR-001 and RCP-HASH-001.
 /// The reader reports RCP-SCHEMA-001–003 and RCP-DUR-001 on the file as written, before binding.
 /// </summary>
 internal sealed class SchemaRules : IRecipeRules
@@ -23,6 +23,7 @@ internal sealed class SchemaRules : IRecipeRules
     [
         .. Top(recipe, source),
         .. StateNames(recipe, source),
+        .. NameRules.Check(recipe, source),
         .. Initial(recipe, source),
         .. TransitionStates(recipe, source),
         .. StateFieldRules.Check(recipe, source),
