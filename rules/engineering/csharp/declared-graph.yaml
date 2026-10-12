@@ -2,7 +2,7 @@ schemaVersion: 1
 id: engineering.csharp.declared-graph
 kind: engineering
 section: "4b.1a"
-text: "Declare every package edge in deps.yaml with its kind (project, cli, db, file, http); an undeclared or stale edge fails."
+text: "Declare every package edge in deps.yaml with its kind (project, compose, cli, db, file, http); an undeclared or stale edge fails."
 why: "The graph is reviewed as a declaration, so a new dependency is a decision, not an accident."
 select:
   languages: [csharp]

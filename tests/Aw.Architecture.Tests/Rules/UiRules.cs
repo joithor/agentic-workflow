@@ -32,7 +32,7 @@ public static class UiRules
             .Where(e => In(e, root) && e.Target.FullName.StartsWith(server + ".", StringComparison.Ordinal)
                 && !e.Target.FullName.StartsWith(root + ".", StringComparison.Ordinal))
             .Select(e => new Violation(Id, $"{TypeNames.Qualified(e.Origin)} uses {e.Target.FullName}",
-                "the UI reaches Sindri only through its HTTP contract and endpoint record; mirror the record in Aw.Sindri.Ui.Api"));
+                "the UI reaches Sindri only through its HTTP contract and the files control.json and auth/human.token; mirror the record in Aw.Sindri.Ui.Api"));
 
     private static IEnumerable<Violation> Shape(IEnumerable<Edge> edges, string root) =>
         edges

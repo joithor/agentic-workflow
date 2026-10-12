@@ -202,4 +202,93 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.False(shell.Shortcuts.IsOpen);
         Assert.Equal("?", shell.Palette.Query);
     });
+
+    private static async Task Until(Window window, Func<bool> condition, string what)
+    {
+        for (var i = 0; i < 200 && !condition(); i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Assert.True(condition(), what);
+    }
+
+    private static Button EntryButton(Window window, string name) =>
+        Named<Control>(window, "PaletteSections").GetVisualDescendants().OfType<Button>().First(b => AutomationProperties.GetName(b)?.StartsWith(name, StringComparison.Ordinal) == true);
+
+    // F1: the palette opens, and each refilter shows, at the top with its first heading in view and the first entry
+    // that runs selected; only ↑/↓ scroll the list to follow the selection.
+    [Fact]
+    public Task The_palette_opens_and_refilters_at_the_top_and_only_the_arrows_scroll() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        var scroll = Named<ScrollViewer>(window, "PaletteScroll");
+
+        Assert.Equal(("ApproveProfile", 0d), (shell.Palette.Selected?.Id, scroll.Offset.Y));
+        var heading = Named<ItemsControl>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "Actions");
+        Assert.True(heading.TranslatePoint(default, scroll) is { Y: >= 0 } at && at.Y < scroll.Viewport.Height, "the Actions heading is in view");
+        Frame(window, "palette-top");
+
+        Press(window, Key.Down, PhysicalKey.ArrowDown);
+        Press(window, Key.Down, PhysicalKey.ArrowDown);
+        Assert.True(scroll.Offset.Y > 0, "the arrows bring the selection into view");
+
+        window.KeyTextInput("o");
+        Settle(window);
+        Assert.Equal(0d, scroll.Offset.Y);
+        Assert.Same(shell.Palette.Entries.First(e => e.IsEnabled), shell.Palette.Selected);
+    });
+
+    // F2 (provisional default): Enter on a ready entry keeps the palette open; the entry shows sending (disabled, the
+    // label kept, a spinner), then done; Esc still closes it.
+    [Fact]
+    public Task A_ready_entry_shows_sending_then_done_in_the_open_palette() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        _server.RebuildGate = new TaskCompletionSource();
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        window.KeyTextInput("rebuild");
+        Settle(window);
+
+        Press(window, Key.Enter, PhysicalKey.Enter);
+
+        Assert.True(shell.Palette.IsOpen);
+        var entry = EntryButton(window, "Rebuild views");
+        Assert.Equal(("Rebuild views, Sending…", false), (AutomationProperties.GetName(entry), entry.IsEnabled));
+        Assert.True(entry.GetVisualDescendants().OfType<Control>().First(c => c.Classes.Contains("entry-spinner")).IsEffectivelyVisible);
+        Frame(window, "palette-sending");
+
+        _server.RebuildGate.SetResult();
+        await Until(window, () => AutomationProperties.GetName(EntryButton(window, "Rebuild views")) == "Rebuild views, Rebuild views: done", "done");
+        Assert.True(shell.Palette.IsOpen);
+        Frame(window, "palette-done");
+
+        Press(window, Key.Escape, PhysicalKey.Escape);
+        Assert.False(shell.Palette.IsOpen);
+    });
+
+    // F2: a refusal shows Sindri's code as the entry's status and the detail as served under it; the palette stays open.
+    [Fact]
+    public Task A_refused_entry_shows_sindris_code_and_detail_in_the_open_palette() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005",
+            "POST /sindri/views/rebuild failed with NotSupportedException; the control plane logged it");
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        window.KeyTextInput("rebuild");
+        Settle(window);
+
+        Press(window, Key.Enter, PhysicalKey.Enter);
+        await Until(window, () => shell.Palette.Selected?.IsFailed == true, "refused");
+
+        Assert.True(shell.Palette.IsOpen);
+        var detail = Named<Control>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>().First(t => t.Classes.Contains("entry-error-detail"));
+        Assert.True(detail.IsEffectivelyVisible);
+        Assert.Equal("POST /sindri/views/rebuild failed with NotSupportedException; the control plane logged it", detail.Text);
+        Assert.StartsWith("Rebuild views, SND-API-005: ", AutomationProperties.GetName(EntryButton(window, "Rebuild views")), StringComparison.Ordinal);
+        Frame(window, "palette-refused");
+    });
 }

@@ -41,7 +41,7 @@ public sealed class StartupTests : IDisposable
     private int? _exitCode;
 
     private SindriPlatform Platform(FakeSingleInstance instance) =>
-        new(new InMemoryEndpointRecords(), new InMemoryHumanTokens(), new InMemoryPreferencesStore(), new FakeMotionPreference(), instance, _tray) { Log = _log };
+        new(new InMemoryEndpointRecords(), new InMemoryHumanToken(), new InMemoryPreferencesStore(), new FakeMotionPreference(), instance, _tray) { Log = _log };
 
     // The app as the head starts it: created over the ports, initialized, then the framework's initialization completes.
     // The lifetime's real Shutdown also stops the dispatcher the session shares, so the test records the exit code instead.

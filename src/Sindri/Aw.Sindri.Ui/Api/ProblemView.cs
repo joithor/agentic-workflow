@@ -1,7 +1,9 @@
 namespace Aw.Sindri.Ui.Api;
 
-/// <summary>An API refusal (ProblemDetails, API spec §9): 'title' is the SND code and 'detail' the message with its fix, shown as is.</summary>
+/// <summary>
+/// The fields of Sindri's ProblemDetails the app reads (API spec §3.6, D8): title is the SND code, detail the sentence
+/// with its "(fix: …)", which the window shows as it is.
+/// </summary>
 /// <param name="Title">The SND code.</param>
-/// <param name="Status">The HTTP status.</param>
-/// <param name="Detail">The message, with its '(fix: …)'.</param>
-internal sealed record ProblemView(string Title, int Status, string Detail);
+/// <param name="Detail">What happened and the fix.</param>
+internal sealed record ProblemView(string? Title, string? Detail);

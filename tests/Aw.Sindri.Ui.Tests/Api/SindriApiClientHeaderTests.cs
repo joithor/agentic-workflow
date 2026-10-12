@@ -1,3 +1,5 @@
+using System.Net;
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
@@ -16,9 +18,8 @@ public sealed class SindriApiClientHeaderTests
     [Fact]
     public async Task Every_call_carries_this_starts_human_token_and_the_api_lets_it_in()
     {
-        var server = new FakeSindriApi { HumanToken = "tok-1" };
-        var handler = new FakeSindriHandler(server);
-        var client = new SindriApiClient(new HttpClient(handler), TimeProvider.System, new InMemoryHumanTokens { Text = "tok-1\n" });
+        var handler = new FakeSindriHandler(new FakeSindriApi()) { RequiredToken = "tok-1" };
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1\n"), TimeProvider.System);
 
         Assert.True((await client.Ping(_api, Token)).IsSuccess);
         Assert.True((await client.Commands(_api, Token)).IsSuccess);
@@ -31,12 +32,12 @@ public sealed class SindriApiClientHeaderTests
     [Fact]
     public async Task A_new_token_is_used_from_the_next_call()
     {
-        var tokens = new InMemoryHumanTokens { Text = "tok-1" };
+        var tokens = new InMemoryHumanToken("tok-1");
         var handler = new FakeSindriHandler(new FakeSindriApi());
-        var client = new SindriApiClient(new HttpClient(handler), TimeProvider.System, tokens);
+        var client = new SindriApiClient(new HttpClient(handler), tokens, TimeProvider.System);
 
         _ = await client.Ping(_api, Token);
-        tokens.Text = "tok-2";
+        tokens.Write("tok-2");
         _ = await client.Ping(_api, Token);
 
         Assert.Equal(["tok-1", "tok-2"], handler.Requests.Select(r => r.Token), StringComparer.Ordinal);
@@ -46,12 +47,12 @@ public sealed class SindriApiClientHeaderTests
     [Fact]
     public async Task Without_a_token_the_refusal_is_the_apis_SND_AUTH_001_and_its_fix()
     {
-        var tokens = new InMemoryHumanTokens { Text = null };
-        var handler = new FakeSindriHandler(new FakeSindriApi { HumanToken = "tok-1" });
-        var client = new SindriApiClient(new HttpClient(handler), TimeProvider.System, tokens);
+        var tokens = new InMemoryHumanToken();
+        var handler = new FakeSindriHandler(new FakeSindriApi()) { RequiredToken = "tok-1" };
+        var client = new SindriApiClient(new HttpClient(handler), tokens, TimeProvider.System);
 
         var status = await client.Status(_api, Token);
-        tokens.FailNextRead(new IOException("denied"));
+        tokens.FailReads(new IOException("denied"));
         var again = await client.Status(_api, Token);
 
         Assert.Equal("SND-AUTH-001", status.Error.Code);
@@ -68,7 +69,7 @@ public sealed class SindriApiClientHeaderTests
     {
         var server = new FakeSindriApi { StreamsEndAtOnce = true };
         var handler = new FakeSindriHandler(server);
-        var client = new SindriApiClient(new HttpClient(handler), TimeProvider.System, new InMemoryHumanTokens { Text = "tok-1" });
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
 
         _ = await client.Status(_api, Token);
         _ = await client.RebuildViews(_api, Token);
@@ -86,7 +87,7 @@ public sealed class SindriApiClientHeaderTests
     public async Task The_query_after_a_created_item_waits_for_its_sequence()
     {
         var handler = new FakeSindriHandler(new FakeSindriApi());
-        var client = new SindriApiClient(new HttpClient(handler), TimeProvider.System, new InMemoryHumanTokens { Text = "tok-1" });
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
 
         _ = await client.CreateItem(_api, new CreateItemRequest("A title", Repo: null, Body: null, Link: null), Token);
         _ = await client.Queue(_api, Token);
@@ -103,10 +104,27 @@ public sealed class SindriApiClientHeaderTests
     public async Task A_command_says_human_from_the_ui_and_never_terminal_or_origin()
     {
         var handler = new FakeSindriHandler(new FakeSindriApi());
-        var client = new SindriApiClient(new HttpClient(handler), TimeProvider.System, new InMemoryHumanTokens { Text = "tok-1" });
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
 
         _ = await client.RebuildViews(_api, Token);
 
         Assert.Equal(new SeenRequest("/sindri/views/rebuild", "human", "ui", Terminal: null, Origin: null, Token: "tok-1", After: null, Method: "POST"), Assert.Single(handler.Requests));
+    }
+
+    // UI spec §4.1 Error, API §3.6: a command Sindri refuses (here 409 SND-API-010 while views rebuild) is Sindri's code
+    // and its detail as served, so the control shows them inline; only SND-AUTH-001 is retried, keyed off the code.
+    [Fact]
+    public async Task A_refused_command_is_sindris_code_and_detail_and_isnt_retried()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi())
+        {
+            Override = (HttpStatusCode.Conflict, RouteAnswer.Problem(HttpStatusCode.Conflict, "SND-API-010", "Views are rebuilding (fix: retry after the rebuild)").Body),
+        };
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+
+        var rebuild = await client.RebuildViews(_api, Token);
+
+        Assert.Equal(new Error("SND-API-010", ErrorKind.Conflict, "Views are rebuilding (fix: retry after the rebuild)"), rebuild.Error);
+        _ = Assert.Single(handler.Requests);
     }
 }

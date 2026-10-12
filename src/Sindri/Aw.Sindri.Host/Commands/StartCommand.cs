@@ -7,10 +7,9 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// Bare 'sindri' and 'sindri --headless' (factory addendum §17.29.1): start the control plane if it isn't running
-/// (detached, through the launcher), open the app unless headless (<paramref name="openUi"/> says how; null opens
-/// nothing), then print the banner and the summary. Exit 1 when the profile needs approval, so a script sees the
-/// attention; the app never changes the exit code. The start wait runs on the injected clock: up to
-/// <see cref="Budget"/>, probing every <see cref="Poll"/>.
+/// (detached, through the launcher; never from an agent session, <paramref name="session"/>), open the app unless headless (<paramref name="openUi"/> is null), then print the
+/// banner and the summary. Exit 1 when the profile needs approval, so a script sees the attention; the app never changes
+/// the exit code. The start wait runs on the injected clock: up to <see cref="Budget"/>, probing every <see cref="Poll"/>.
 /// </summary>
 internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLauncher launcher, ControlPlaneClient client, Output output, TimeProvider clock,
     AgentSession? session = null, Func<string>? openUi = null)
@@ -21,7 +20,7 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
     /// <summary>How often the start wait probes.</summary>
     internal static readonly TimeSpan Poll = TimeSpan.FromMilliseconds(200);
 
-    internal async Task<int> Run(bool headless, CancellationToken ct)
+    internal async Task<int> Run(CancellationToken ct)
     {
         await output.Out.WriteLineAsync(Banner.Text).ConfigureAwait(false);
         var found = await FindOrLaunch(ct).ConfigureAwait(false);
@@ -31,15 +30,18 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
         }
 
         var status = await client.Get<GetStatusResponse>("/sindri/status", ct).ConfigureAwait(false);
-        return status.IsError
-            ? await output.Error(status.Error).ConfigureAwait(false)
-            : await Report(status.Value.Value, found.Value.Endpoint, headless).ConfigureAwait(false);
+        if (status.IsError)
+        {
+            return await output.Error(status.Error).ConfigureAwait(false);
+        }
+
+        return await Report(status.Value.Value, found.Value.Endpoint).ConfigureAwait(false);
     }
 
     /// <summary>Opens the app (unless headless) and prints the summary; the exit code follows only the profile.</summary>
-    internal Task<int> Report(GetStatusResponse status, ControlEndpoint endpoint, bool headless = false)
+    internal Task<int> Report(GetStatusResponse status, ControlEndpoint endpoint)
     {
-        var ui = headless ? null : openUi?.Invoke();
+        var ui = openUi?.Invoke();
         return output.Text(SummaryText.Render(status, endpoint, ui), status.Profile.NeedsApproval ? 1 : 0);
     }
 

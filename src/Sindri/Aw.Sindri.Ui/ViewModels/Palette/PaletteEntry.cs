@@ -10,9 +10,16 @@ namespace Aw.Sindri.Ui.ViewModels.Palette;
 /// </summary>
 internal sealed class PaletteEntry : ObservableObject
 {
+    // Control properties that change what the entry shows.
+    private static readonly string[] _shown =
+    [
+        nameof(ControlViewModel.CopyLabel), nameof(ControlViewModel.Phase), nameof(ControlViewModel.Outcome),
+        nameof(ControlViewModel.ErrorCode), nameof(ControlViewModel.ErrorDetail),
+    ];
+
     private PaletteEntry(string id, string label, string key, bool enabled, ControlViewModel? control, PageId? page)
     {
-        (Id, Label, Key, IsEnabled, Control, Page) = (id, label, key, enabled, control, page);
+        (Id, Label, Key, Runs, Control, Page) = (id, label, key, enabled, control, page);
         control?.PropertyChanged += OnControlChanged;
     }
 
@@ -32,23 +39,38 @@ internal sealed class PaletteEntry : ObservableObject
     public string Status => Control switch
     {
         null => string.Empty,
+        { IsSending: true } => Labels.Sending,
+        { IsAccepted: true } => Control.Outcome,
+        { IsFailed: true } => Control.ErrorCode,
         { IsReady: true } => Labels.Ready,
         { IsPending: true } => Labels.Arrives(Control.Stage),
         { CopyLabel: Labels.Copied } => Labels.Copied,
         _ => Labels.CopyCli(Control.Cli),
     };
 
+    /// <summary>True while its command is being sent (the spinner; the label stays).</summary>
+    public bool IsSending => Control?.IsSending == true;
+
+    /// <summary>True after Sindri refused or failed its command: the code is its status and the detail shows under it.</summary>
+    public bool IsFailed => Control?.IsFailed == true;
+
+    /// <summary>The refusal's detail as served, or empty.</summary>
+    public string ErrorDetail => Control?.ErrorDetail ?? string.Empty;
+
+    // True when Enter does something with it at all (a pending row never does).
+    private bool Runs { get; }
+
     /// <summary>True when it has a status.</summary>
     public bool HasStatus => Control is not null;
 
     /// <summary>Its accessible name: its label and its status.</summary>
-    public string Name => HasStatus ? Label + ", " + Status : Label;
+    public string Name => IsFailed ? $"{Label}, {Status}: {ErrorDetail}" : HasStatus ? Label + ", " + Status : Label;
 
     /// <summary>True for a catalog row.</summary>
     public bool IsAction => Control is not null;
 
-    /// <summary>True when Enter does something (a pending row never does).</summary>
-    public bool IsEnabled { get; }
+    /// <summary>True when Enter does something (a pending row never does, nor a command already sending).</summary>
+    public bool IsEnabled => Runs && !IsSending;
 
     /// <summary>True while it is the palette's selection.</summary>
     public bool IsSelected { get; internal set => Set(ref field, value); }
@@ -92,10 +114,14 @@ internal sealed class PaletteEntry : ObservableObject
 
     private void OnControlChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ControlViewModel.CopyLabel))
+        if (_shown.Contains(e.PropertyName, StringComparer.Ordinal))
         {
             OnChanged(nameof(Status));
             OnChanged(nameof(Name));
+            OnChanged(nameof(IsSending));
+            OnChanged(nameof(IsFailed));
+            OnChanged(nameof(ErrorDetail));
+            OnChanged(nameof(IsEnabled));
         }
     }
 }

@@ -2,9 +2,9 @@ using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.Desktop;
 
-/// <summary>The desktop adapter of <see cref="IHumanTokenSource"/>: '&lt;home&gt;/auth/human.token', which each 'sindri serve' mints (0600).</summary>
+/// <summary>The desktop adapter of <see cref="IHumanTokenSource"/>: auth/human.token on the local disk, read at each call.</summary>
 /// <param name="path">The file.</param>
-internal sealed class FileHumanTokens(string path) : IHumanTokenSource
+internal sealed class FileHumanToken(string path) : IHumanTokenSource
 {
     public string Location => path;
 

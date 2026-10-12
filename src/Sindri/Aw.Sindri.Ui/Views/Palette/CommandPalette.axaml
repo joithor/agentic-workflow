@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:palette="using:Aw.Sindri.Ui.ViewModels.Palette"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
              x:Class="Aw.Sindri.Ui.Views.Palette.CommandPalette"
              x:DataType="palette:CommandPaletteViewModel">
   <!-- The command palette (UI spec §8, prototype.html): a scrim over the window and a Surface3 card with the query field
@@ -52,6 +53,13 @@
     <Style Selector="Button.palette-entry TextBlock.entry-status">
       <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
     </Style>
+    <Style Selector="Button.palette-entry TextBlock.entry-status.error">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+    </Style>
+    <!-- Sending: the button is disabled, but its label is kept and its status is information, not disabled ink. -->
+    <Style Selector="Button.palette-entry:disabled TextBlock.entry-status">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+    </Style>
   </UserControl.Styles>
 
   <Panel>
@@ -77,14 +85,24 @@
                       <DataTemplate x:DataType="palette:PaletteEntry">
                         <Button Classes="palette-entry" Classes.selected="{Binding IsSelected}" IsEnabled="{Binding IsEnabled}"
                                 Focusable="False" Click="OnEntry" AutomationProperties.Name="{Binding Name}">
-                          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{StaticResource Space.SM}">
-                            <TextBlock Classes="body entry-label" Text="{Binding Label}" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Classes="caption entry-status" Text="{Binding Status}" IsVisible="{Binding HasStatus}"
-                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="300" />
-                            <Border Grid.Column="2" Classes="kbd" IsVisible="{Binding HasKey}" VerticalAlignment="Center">
-                              <TextBlock Classes="kbd" Text="{Binding Key}" />
-                            </Border>
-                          </Grid>
+                          <!-- A ready command run from here shows §4.1's lifecycle in place (U1 F2): a spinner beside the
+                               kept label while sending, the outcome or Sindri's code as the status, the detail under it. -->
+                          <StackPanel>
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{StaticResource Space.SM}" MinHeight="{StaticResource Size.Row}">
+                              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <icons:StateIcon Classes="entry-spinner" Icon="Spinner" IsVisible="{Binding IsSending}" Spins="{Binding IsSending}"
+                                                 VerticalAlignment="Center" />
+                                <TextBlock Classes="body entry-label" Text="{Binding Label}" VerticalAlignment="Center" />
+                              </StackPanel>
+                              <TextBlock Grid.Column="1" Classes="caption entry-status" Classes.error="{Binding IsFailed}" Text="{Binding Status}"
+                                         IsVisible="{Binding HasStatus}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="300" />
+                              <Border Grid.Column="2" Classes="kbd" IsVisible="{Binding HasKey}" VerticalAlignment="Center">
+                                <TextBlock Classes="kbd" Text="{Binding Key}" />
+                              </Border>
+                            </Grid>
+                            <TextBlock Classes="caption entry-error-detail" Text="{Binding ErrorDetail}" IsVisible="{Binding IsFailed}"
+                                       TextWrapping="Wrap" Margin="0,0,0,8" AutomationProperties.Name="{Binding ErrorDetail}" />
+                          </StackPanel>
                         </Button>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>

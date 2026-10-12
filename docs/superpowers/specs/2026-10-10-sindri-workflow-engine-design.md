@@ -696,7 +696,7 @@ process it found, so a human in an IDE terminal knows why. The table is honest-m
 - **Empty states:** `nothing needs you` (`--needs-me`), `no instances match` (other filters), `no events`, `no
   commands`, and `no evals declared` (eval).
 
-**Routes** (under S1's `/sindri` group; each is one slice through API's chain, with a catalog row):
+**Routes** (under S1's `/sindri` group; each is one slice through API's chain; commands and issuing routes have a catalog row, queries don't (API ARCH-CQRS-003; UI spec rev 7 amendment, 2026-10-12)):
 
 | Route | Slice | Class |
 |---|---|---|

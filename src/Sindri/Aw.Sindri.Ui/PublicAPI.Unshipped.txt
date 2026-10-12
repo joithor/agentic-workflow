@@ -27,7 +27,7 @@ Aw.Sindri.Ui.Platform.ITray.Shown.get -> Aw.Sindri.Ui.Platform.TrayView?
 Aw.Sindri.Ui.Platform.InstanceMessages
 Aw.Sindri.Ui.Platform.SindriPlatform
 Aw.Sindri.Ui.Platform.SindriPlatform.<Clone>$() -> Aw.Sindri.Ui.Platform.SindriPlatform!
-Aw.Sindri.Ui.Platform.SindriPlatform.Deconstruct(out Aw.Sindri.Ui.Platform.IEndpointRecordSource! Records, out Aw.Sindri.Ui.Platform.IHumanTokenSource! Tokens, out Aw.Sindri.Ui.Platform.IPreferencesStore! Preferences, out Aw.Sindri.Ui.Platform.IMotionPreference! Motion, out Aw.Sindri.Ui.Platform.ISingleInstance! Instance, out Aw.Sindri.Ui.Platform.ITray! Tray) -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Deconstruct(out Aw.Sindri.Ui.Platform.IEndpointRecordSource! Records, out Aw.Sindri.Ui.Platform.IHumanTokenSource! Token, out Aw.Sindri.Ui.Platform.IPreferencesStore! Preferences, out Aw.Sindri.Ui.Platform.IMotionPreference! Motion, out Aw.Sindri.Ui.Platform.ISingleInstance! Instance, out Aw.Sindri.Ui.Platform.ITray! Tray) -> void
 Aw.Sindri.Ui.Platform.SindriPlatform.Equals(Aw.Sindri.Ui.Platform.SindriPlatform? other) -> bool
 Aw.Sindri.Ui.Platform.SindriPlatform.Instance.get -> Aw.Sindri.Ui.Platform.ISingleInstance!
 Aw.Sindri.Ui.Platform.SindriPlatform.Instance.init -> void
@@ -39,9 +39,9 @@ Aw.Sindri.Ui.Platform.SindriPlatform.Preferences.get -> Aw.Sindri.Ui.Platform.IP
 Aw.Sindri.Ui.Platform.SindriPlatform.Preferences.init -> void
 Aw.Sindri.Ui.Platform.SindriPlatform.Records.get -> Aw.Sindri.Ui.Platform.IEndpointRecordSource!
 Aw.Sindri.Ui.Platform.SindriPlatform.Records.init -> void
-Aw.Sindri.Ui.Platform.SindriPlatform.SindriPlatform(Aw.Sindri.Ui.Platform.IEndpointRecordSource! Records, Aw.Sindri.Ui.Platform.IHumanTokenSource! Tokens, Aw.Sindri.Ui.Platform.IPreferencesStore! Preferences, Aw.Sindri.Ui.Platform.IMotionPreference! Motion, Aw.Sindri.Ui.Platform.ISingleInstance! Instance, Aw.Sindri.Ui.Platform.ITray! Tray) -> void
-Aw.Sindri.Ui.Platform.SindriPlatform.Tokens.get -> Aw.Sindri.Ui.Platform.IHumanTokenSource!
-Aw.Sindri.Ui.Platform.SindriPlatform.Tokens.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.SindriPlatform(Aw.Sindri.Ui.Platform.IEndpointRecordSource! Records, Aw.Sindri.Ui.Platform.IHumanTokenSource! Token, Aw.Sindri.Ui.Platform.IPreferencesStore! Preferences, Aw.Sindri.Ui.Platform.IMotionPreference! Motion, Aw.Sindri.Ui.Platform.ISingleInstance! Instance, Aw.Sindri.Ui.Platform.ITray! Tray) -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Token.get -> Aw.Sindri.Ui.Platform.IHumanTokenSource!
+Aw.Sindri.Ui.Platform.SindriPlatform.Token.init -> void
 Aw.Sindri.Ui.Platform.SindriPlatform.Tray.get -> Aw.Sindri.Ui.Platform.ITray!
 Aw.Sindri.Ui.Platform.SindriPlatform.Tray.init -> void
 Aw.Sindri.Ui.Platform.TrayState

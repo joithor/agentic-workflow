@@ -1,9 +1,16 @@
 # Sindri UI app design: the control plane's views, actions and launching sessions
 
 Status:
+- **Revision 7 amendment (owner, 2026-10-12; PR #193):** §4.1's command lifecycle also covers the palette's rows: a
+  ready command run from the palette keeps the palette open and its row shows the lifecycle.
 - **Revision 7 amendment (owner, 2026-10-12; PR #184):** §12.4 lists two more app-owned sentences, "On in your system
   settings" (Settings, while the OS reduces motion) and "Looks again every 2 s" (the Not running card); §15's deps cycle
-  row is decided (a `DEPS-CYCLE-001` exception). Nothing else changes.
+  row is decided (a `DEPS-CYCLE-001` exception). Lane decisions relayed by the orchestrator (2026-10-12): §7 and §18.1
+  say WF P2 registers every engine catalog row, the desk and pause rows pending until WF P4/P5 flip them to ready and the
+  protected rows (`answer-grant`, `answer-grant-tokens`, `answer-accept`, `ApproveRecipe`) `cli-only:typed-confirmation`
+  from the start, never app buttons, and the engine's queries stay off the
+  catalog; §4.4, §7 and E-12 name `answer-grant-tokens` beside `answer-grant` (API §2.1, X30); §4.1's Unreadable row also
+  covers a Sindri refusal after one token re-read and retry. Nothing else changes.
 - **Revision 7 note (owner, 2026-10-11; README X55):** tmux owns every agent session and Warp attaches to it, so
   **Attach joins the live agent** and the human can type into whatever Step is running; the earlier "Sindri can't see
   inside Warp" limit in §6.2 and §6.6 no longer applies, and the `process` target kind is retired (API §8.1 rev 8).
@@ -180,7 +187,7 @@ Every view is in exactly one of these states, taken from the API, in this priori
 | **Version mismatch** | `Sindri-Api-Version` (or `/status.apiVersion`) differs from the app's | A full-window panel: "Sindri and the app are different versions" (API §9), both versions, and the fix "quit both and run `sindri`". No data views, no actions |
 | **Not running** | No usable `control.json`, or ping fails (S1b's `SND-UI-001/002`) | The S1b panel: "Not running", the reason, and `sindri` to copy. The app keeps looking every 2 s (S1b) |
 | **Connecting** | First load, before `/status` answers | The window chrome and skeleton rows (first load only, never on refresh) |
-| **Unreadable** | `SND-UI-003`: the API answered with something this build doesn't read | A banner with the code and `sindri doctor` to copy; the last good data stays, marked stale |
+| **Unreadable** | `SND-UI-003`: the API answered with something this build doesn't read; or Sindri refused the call (a 403 with its own code, such as `SND-AUTH-001` after the app re-read the token and retried once) | A banner with the code and `sindri doctor` to copy (for a refusal, Sindri's code and detail as they are); the last good data stays, marked stale |
 | **Stalled** | `asOf.stalled = true` | An error banner across the list: the view's `empty` sentence ("Views are stalled at N: run `sindri views rebuild`") and a **Rebuild views** button (`RebuildViews`, desk, §7). Rows still show, marked stale |
 | **Rebuilding** | `asOf.rebuilding = true` | A progress banner with the `empty` sentence ("Rebuilding views (cursor N of M)…"); rows show as they come back; actions that read views are disabled with "retry after the rebuild" (`SND-API-010`) |
 | **Stale** | No event or ping for 30 s, or a refresh failed while the process still answers ping | "updated Ns ago" turns into a word: **stale**, with a refresh button. After 3 failed refreshes: "Sindri not responding: run `sindri doctor`" (DB §5) |
@@ -199,6 +206,10 @@ Every view is in exactly one of these states, taken from the API, in this priori
 
 A second click while `sending` does nothing. The engine's nonce is minted at click time (§9.1), never when a form
 renders.
+
+**The palette's rows follow the same lifecycle** (owner, 2026-10-12; PR #193): running a `ready` command from the
+palette (§8) keeps the palette open, and that row shows `sending`, then `accepted` or Sindri's code and detail as
+`refused` / `failed`. Esc closes the palette at any point; the command keeps running.
 
 **A subject that clears while its sheet is open** (a decision decided at the CLI, an instance resumed): the sheet keeps
 the subject, shows "Cleared: <the timeline line that cleared it>" with **Close**, and disables any form while keeping
@@ -249,7 +260,7 @@ is what that intersection produces, so the mockups and tests can check it:
 | State (WF §3.8) | The one useful answer | In the app |
 |---|---|---|
 | `parked: rounds` / `no-progress` | Grant rounds | **Copy** `sindri workflow answer <a> --grant 1` (`ApplyCommand:answer-grant`, protected, `cli-only:typed-confirmation`). On `no-progress`, also **Answer** with text (desk, a form) |
-| `parked: budget` | Grant tokens | **Copy** `… --grant-tokens <n>` (protected) |
+| `parked: budget` | Grant tokens | **Copy** `… --grant-tokens <n>` (`ApplyCommand:answer-grant-tokens`, protected, `cli-only:typed-confirmation`) |
 | `parked: needs-answer` | Answer with text | **Answer** form: a plain-text box (≤ 1 MiB) → `ApplyCommand:answer-text` (desk, E-12) |
 | `parked: timeout` | Resume | **Resume** button → `ApplyCommand:answer-resume` (desk) |
 | `parked: spec-conflict` (revoked) | Cancel | **Cancel** (`ApplyCommand:cancel`, desk, confirm) |
@@ -536,7 +547,7 @@ each edit lands in).
 | **E-9** | `CompleteStep` gets a catalog row with UI status `ready` once WF P4 lands; its route accepts output file contents (≤ 1 MiB each), as WF §6.1 says for the CLI. API §2.1's `ApplyCommand:complete` variant is dropped in favour of `CompleteStep` | The desk-task form (§4.4); one name |
 | **E-10** | P10 is split: **P10a** (`OpenItem`, the launcher service, `WarpLauncher`, E-1…E-5, E-11; depends on P3 + P8) ships before the engine, and **P10b** (E-6's wait for the takeover) depends on WF P5. P10a carries the spike unit (§6.3) | The headline ships early; takeover lands with the engine |
 | **E-11** | `sindri open <item> [--agent claude-code\|codex\|cursor] [--attach \| --resume]`; bare `sindri open` takes the mode the item's `launch` block puts first | One surface for the CLI and the app |
-| **E-12** | API §2.1 and §4.1 define the `ApplyCommand` variants the app calls: `answer-text`, `answer-resume`, `answer-reject` (all `desk`), beside `answer-grant` and `answer-accept` (`protected`), `takeover` (`pause`), `handback` and `cancel` (`desk`). The field rule is restated per variant: `grant` is valid only on `answer-grant` and `accept` only on `answer-accept`; either field on another variant is refused, and the request is still classified `protected` (fail-closed) | Without them the fail-closed rule makes Reject and Resume `protected` |
+| **E-12** | API §2.1 and §4.1 define the `ApplyCommand` variants the app calls: `answer-text`, `answer-resume`, `answer-reject` (all `desk`), beside `answer-grant`, `answer-grant-tokens` and `answer-accept` (`protected`), `takeover` (`pause`), `handback` and `cancel` (`desk`). The field rule is restated per variant: `grant` is valid only on `answer-grant`, `grantTokens` only on `answer-grant-tokens` and `accept` only on `answer-accept`; any of these fields on another variant is refused, and the request is still classified `protected` (fail-closed) | Without them the fail-closed rule makes Reject and Resume `protected` |
 | **E-13** | **WF edit (§6.3):** each `allowedCommands` entry on `GET /workflow/instances/{address}` is `{ actionId, cli }`, with ids filled and the class taken from the catalog; a parent mirroring a child lists the forwarded actions | The app intersects ids, never maps verbs |
 | **E-14** | `GET /status` gains `health: { word: healthy\|degraded\|stalled\|rebuilding, problems: [{code, text}] }`, computed by `Core`'s `HealthSummary.For(…)` | The health pill renders it verbatim |
 | **E-15** | Each `EventCatalog` entry gains `invalidates: [viewName]`, served by `GET /events/catalog` (a query, P5) | The app's refresh map comes from the server; an unknown type re-queries every visible view |
@@ -565,7 +576,8 @@ renders a button once that phase ships; until then the catalog says `pending:<ph
 | Answer (text) | Park `needs-answer`, `no-progress` | `ApplyCommand:answer-text` (E-12) | desk | `pending:WF-P4` → ready |
 | Resume | Park `timeout`, drift, dispatch, `SND-WF-010`; escalated timeout | `ApplyCommand:answer-resume` | desk | `pending:WF-P4` → ready |
 | Reject | Escalated gate | `ApplyCommand:answer-reject` | desk (destructive) | `pending:WF-P4` → ready |
-| Grant rounds / Grant tokens | Park `rounds`, `no-progress`, `budget` | `ApplyCommand:answer-grant` | protected | `cli-only:typed-confirmation` |
+| Grant rounds | Park `rounds`, `no-progress` | `ApplyCommand:answer-grant` | protected | `cli-only:typed-confirmation` |
+| Grant tokens | Park `budget` | `ApplyCommand:answer-grant-tokens` (X30) | protected | `cli-only:typed-confirmation` |
 | Accept (gate) | Escalated gate | `ApplyCommand:answer-accept` | protected | `cli-only:typed-confirmation` |
 | Cancel instance | Park, item | `ApplyCommand:cancel` | desk (destructive) | `pending:WF-P4` → ready |
 | Complete (desk task) | Item, park (task) | `CompleteStep` | desk | `pending:WF-P4` → ready (E-9); the file picks show the files' names and sizes and ask once before sending |
@@ -580,7 +592,10 @@ renders a button once that phase ships; until then the catalog says `pending:<ph
 | Copy CLI, Refresh, navigation, palette | everywhere | — (local) | — | ready |
 
 `answer-resume`, `answer-reject` and `answer-text` are defined by E-12; until then the fail-closed rule would make them
-`protected`, so their catalog rows must land with WF-P4.
+`protected`. WF P2 registers every engine catalog row: the desk and pause rows as `pending:WF-P4` or `pending:WF-P5`, which WF
+P4 and P5 flip to ready, and the protected rows (`answer-grant`, `answer-grant-tokens`, `answer-accept`,
+`ApproveRecipe`) as `cli-only:typed-confirmation` from the start; they never become app buttons. The engine's queries (`ShowRecipe`, `ListRecipes`, `GetInstance` and the rest) have no catalog rows: the
+app reads them as plain GETs, with no catalog gating.
 
 Before the engine (S2) the app shows no engine controls: parks don't exist, and launching takes nothing over.
 
@@ -1092,7 +1107,7 @@ approved.
 | E-1…E-5, E-11 | API P10a | U6a |
 | E-6 (WF trigger), E-19 (`StartInstance` starts taken over), P10b | WF P5 edit, API P10b | U6b |
 | X23 (the nonce POST's class) | WF P4 | U5 |
-| E-9, E-13, and E-12's engine rows | WF P4 | U5 |
+| E-9, E-13, and E-12's engine rows | WF P2 registers every engine catalog row: desk and pause rows pending, which WF P4 and P5 flip to ready; the protected rows `cli-only:typed-confirmation` from the start | U5 |
 | E-10 | the API spec's phase table | — |
 
 **E-17.** Each API phase's integration tests write response bodies as golden JSON under

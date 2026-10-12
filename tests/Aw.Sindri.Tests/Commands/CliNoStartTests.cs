@@ -37,7 +37,7 @@ public sealed class CliNoStartTests : IDisposable
         var launcher = new FakeControlPlaneLauncher();
         using var client = new ControlPlaneClient(_probe, SliceHarness.Json, handler: new CliStubApi(HttpStatusCode.OK, "{}"));
 
-        var code = await Start(launcher, client, InAgent).Run(headless: true, TestContext.Current.CancellationToken);
+        var code = await Start(launcher, client, InAgent).Run(TestContext.Current.CancellationToken);
 
         Assert.Equal((1, 0), (code, launcher.Launches));
         Assert.Equal("SND-API-001 Sindri isn't running; ask the human to run 'sindri' (an agent session never starts it: CLAUDECODE is set)\n",

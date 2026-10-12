@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
 
@@ -140,7 +141,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var refresher = RefreshOnSignal(url, dirty.Reader, stop);
         var watcher = WatchRecord(stop);
-        var pinger = PingWhileFollowing(url, stop.Token);
+        var pinger = PingWhileFollowing(url, stop);
         try
         {
             await foreach (var e in api.Events(url, _cursor, stop.Token).ConfigureAwait(true))
@@ -217,18 +218,23 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
 
     // Pings on its own beat while the follow lasts. An answer from the process and epoch this follow connected to is
     // heard; a failed ping or another process's answer isn't, so 30 s of them reads as stale. Ending the follow stays
-    // with the stream, the refresh and the record watch.
-    private async Task PingWhileFollowing(Uri url, CancellationToken stop)
+    // with the stream, the refresh and the record watch, except for a refusal (Sindri's 403, e.g. SND-AUTH-001 once the
+    // token is removed or replaced): a definite answer, so it ends the follow and the next connect says why.
+    private async Task PingWhileFollowing(Uri url, CancellationTokenSource stop)
     {
         using var beat = new PeriodicTimer(HealthViewModel.PingEvery, clock);
         try
         {
-            while (await beat.WaitForNextTickAsync(stop).ConfigureAwait(true))
+            while (await beat.WaitForNextTickAsync(stop.Token).ConfigureAwait(true))
             {
-                var ping = await api.Ping(url, stop).ConfigureAwait(true);
+                var ping = await api.Ping(url, stop.Token).ConfigureAwait(true);
                 if (ping.IsSuccess && ping.Value.Pid == _pid && ping.Value.Epoch == _epoch)
                 {
                     health.Answered();
+                }
+                else if (ping.IsError && ping.Error.Kind == ErrorKind.Forbidden)
+                {
+                    await stop.CancelAsync().ConfigureAwait(true);
                 }
             }
         }

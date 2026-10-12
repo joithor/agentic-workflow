@@ -174,14 +174,19 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     internal void ShowViews(ServiceList? view) => Banner.Show(view, Catalog.For("RebuildViews"));
 
     /// <summary>
-    /// A failed call: SND-UI-003 is an answer this build can't read (Unreadable, the last data kept); anything else is
-    /// Not running, led by SND-UI-002's sentence with the address on its own line (I7).
+    /// A failed call: SND-UI-002 (nothing answered) is Not running, led by its sentence with the address on its own line
+    /// (I7). Anything else answered: SND-UI-003 is an answer this build can't read, and a refusal (Sindri's code after the
+    /// client's one retry, e.g. SND-AUTH-001 for a missing or stale token) is Sindri's code and detail as they are (API
+    /// §3.6); both are the Unreadable banner, the last data kept (orchestrator decision, PR #184). The decision keys off
+    /// the code, never the detail sentence. The app keeps looking every 2 s either way.
     /// </summary>
     /// <param name="error">The call's error.</param>
     /// <param name="api">The API the call went to.</param>
     /// <returns>Null: no API to follow.</returns>
     internal Uri? Failed(Error error, Uri api) =>
-        string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal) ? Unreadable(error) : NotRunning(Labels.NothingAnswered, api.Authority);
+        string.Equals(error.Code, SindriUiErrors.Unreachable.Code, StringComparison.Ordinal)
+            ? NotRunning(Labels.NothingAnswered, api.Authority)
+            : Unreadable(error);
 
     /// <summary>Not running, and why.</summary>
     /// <param name="reason">The reason in words.</param>
