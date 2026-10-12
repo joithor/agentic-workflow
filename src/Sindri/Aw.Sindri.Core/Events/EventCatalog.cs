@@ -13,5 +13,7 @@ public static class EventCatalog
         new("service.heartbeat", Public: true, typeof(Heartbeat), "service.heartbeat:<epoch>:<slot>"),
         new(EventTypes.ContextSourcesSynced, Public: true, typeof(ContextSourcesSynced), "context.sources.synced:<epoch>:<slot>"),
         new(EventTypes.CommandHandled, Public: false, PublicPayload: null, "command.handled:<commandId>"),
+        new(EventTypes.WorkflowStarted, Public: true, typeof(WorkflowEventPayload), "workflow:<workflow id>:<run id>:<activity id>"),
+        new(EventTypes.WorkflowTransition, Public: true, typeof(WorkflowEventPayload), "workflow:<workflow id>:<run id>:<activity id>"),
     ];
 }

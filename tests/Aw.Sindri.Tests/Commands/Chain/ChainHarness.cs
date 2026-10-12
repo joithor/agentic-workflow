@@ -42,6 +42,7 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton(H.Callers)
             .AddSingleton<IShutdown>(H.Shutdown)
             .AddSingleton(endpoints ?? new InMemoryEndpointFile())
+            .AddSingleton(new TemporalRuntime(new FakeTemporalServer(), H.Clock))   // the stop's Temporal side, with no server running
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddSingleton<IApprovals>(H.Profiles)
             .AddSingleton<IContextEngine>(FakeContextEngine.Instance)

@@ -65,6 +65,11 @@
         "resolved": "2.0.0",
         "contentHash": "iQb2Nm9WqPseGCxPcdeU5qMbWkxtSr1bmnliC7slitx7GOG8cKO2pKZUQ2Yl+DQQZQ7c8qIXe3k+zYE0f96dIA=="
       },
+      "Google.Protobuf": {
+        "type": "Transitive",
+        "resolved": "3.26.1",
+        "contentHash": "CHZX8zXqhF/fdUtd+AYzew8T2HFkAoe5c7lbGxZY/qryAlQXckDvM5BfOJjXlMS7kyICqQTMszj4w1bX5uBJ/w=="
+      },
       "JetBrains.Annotations": {
         "type": "Transitive",
         "resolved": "2026.2.0",
@@ -227,6 +232,11 @@
         "type": "Transitive",
         "resolved": "13.0.4",
         "contentHash": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A=="
+      },
+      "NexusRpc": {
+        "type": "Transitive",
+        "resolved": "0.4.0",
+        "contentHash": "2cdRtmwT/vskWqJvojODvR7CpRhLWAnCeVT5Z8sPdRDX8P/Ywpw48T2lqgqhxM8JROfoflHzhSiXo4h1ln3/MQ=="
       },
       "OpenTelemetry.Api": {
         "type": "Transitive",
@@ -529,6 +539,15 @@
           "YamlDotNet": "[18.1.0, 18.1.0]"
         }
       },
+      "aw.sindri.workflows": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Sindri.Core": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Temporalio": "[1.19.0, 1.19.0]"
+        }
+      },
       "bugfix-state": {
         "type": "Project",
         "dependencies": {
@@ -561,7 +580,8 @@
           "Aw.Kernel.Telemetry": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Aw.Sindri.Features": "[1.0.0, )",
-          "Aw.Sindri.Infrastructure": "[1.0.0, )"
+          "Aw.Sindri.Infrastructure": "[1.0.0, )",
+          "Aw.Sindri.Workflows": "[1.0.0, )"
         }
       },
       "ui-evidence": {
@@ -630,6 +650,17 @@
           "Microsoft.Extensions.Diagnostics.Abstractions": "10.0.0",
           "Microsoft.Extensions.Logging.Configuration": "10.0.0",
           "OpenTelemetry.Api.ProviderBuilderExtensions": "1.19.1"
+        }
+      },
+      "Temporalio": {
+        "type": "CentralTransitive",
+        "requested": "[1.19.0, 1.19.0]",
+        "resolved": "1.19.0",
+        "contentHash": "CFgsWowors/CMedl3fb5ld5Hna3pB4KsXhURH8USgW6gCS2/48U0XGiuk0L7j0/f0/WvdZrOP8/+TqeVJ7DwLw==",
+        "dependencies": {
+          "Google.Protobuf": "3.26.1",
+          "Microsoft.Extensions.Logging.Abstractions": "2.2.0",
+          "NexusRpc": "0.4.0"
         }
       },
       "xunit.v3.extensibility.core": {

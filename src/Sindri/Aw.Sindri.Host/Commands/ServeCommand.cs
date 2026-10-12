@@ -65,7 +65,7 @@ internal static class ServeCommand
                 return 2;
             }
 
-            return await RunUntilStopped(app, started.Value.Grant).ConfigureAwait(false);
+            return await RunUntilStopped(app, started.Value).ConfigureAwait(false);
         }
     }
 
@@ -107,13 +107,24 @@ internal static class ServeCommand
         }
     }
 
-    private static async Task<int> RunUntilStopped(WebApplication app, LeaseGrant grant)
+    private static async Task<int> RunUntilStopped(WebApplication app, StartProcessResponse started)
     {
-        var endpoints = app.Services.GetRequiredService<IEndpointFile>();
-        var url = new Uri(app.Urls.First());
-        _ = await endpoints.Write(new ControlEndpoint(url, grant.Holder.Pid, grant.Epoch), CancellationToken.None).ConfigureAwait(false);
+        var grant = started.Grant;
         var shutdown = app.Services.GetRequiredService<ProcessShutdown>();
         using var either = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Stopping, app.Lifetime.ApplicationStopping);
+
+        // the Temporal worker polls the dev server until serve stops, and stops before the lease goes
+        var worker = started.Temporal is { } temporal
+            ? app.Services.GetRequiredService<ITemporalWorker>().Run(temporal, either.Token)
+            : Task.CompletedTask;
+        var runtime = app.Services.GetRequiredService<TemporalRuntime>();
+        runtime.Track(worker);   // StopProcess waits for it before it stops the dev server
+
+        // written once the worker is tracked: a client that finds control.json can stop serve, and that stop waits for it
+        var endpoints = app.Services.GetRequiredService<IEndpointFile>();
+        var url = new Uri(app.Urls.First());
+        var endpoint = new ControlEndpoint(url, grant.Holder.Pid, grant.Epoch) { Temporal = started.Temporal };   // the dev server's pid and ports
+        _ = await endpoints.Write(endpoint, CancellationToken.None).ConfigureAwait(false);
         try
         {
             await Task.Delay(Timeout.Infinite, either.Token).ConfigureAwait(false);
@@ -122,6 +133,8 @@ internal static class ServeCommand
         {
             // a stop request, a signal or a lost lease
         }
+
+        await runtime.WaitForWorker(CancellationToken.None).ConfigureAwait(false);   // bounded, and a worker fault is the worker's to log
 
         if (app.Services.GetRequiredService<HeldLease>().Current is not null)
         {

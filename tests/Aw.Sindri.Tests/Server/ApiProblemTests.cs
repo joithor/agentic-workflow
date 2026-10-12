@@ -78,7 +78,7 @@ public sealed class ApiProblemTests : IDisposable
     /// <summary>A started control plane on a free loopback port, holding the lease, with its endpoint recorded.</summary>
     private async Task<WebApplication> Running(Action<IServiceCollection>? configure, CancellationToken ct)
     {
-        var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, configure);
+        var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, NoTemporal.And(configure));
         _ = Pipeline.Configure(app);
         await using (var scope = app.Services.CreateAsyncScope())
         {

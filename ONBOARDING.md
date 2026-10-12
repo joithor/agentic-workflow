@@ -270,6 +270,18 @@ Agents hand off through Prism handoffs (`session_save_handoff` / `session_load_c
 
 A profile turns off skills that don't apply to a repo (for example, the iOS design skills in a web app). Profiles: `web-app`, `ios`, `personal`. The changes go to that repo's `.claude/settings.local.json`.
 
+### Try Sindri *(opt-in)*
+
+```bash
+./setup.sh --with-sindri          # build and install the sindri CLI, plus its SessionStart nudge
+sindri profile init               # scaffold your profile (shadow mode: records only, starts nothing)
+sindri repo onboard .             # add this repo, approve the profile at a terminal, install the hook, build the index
+sindri doctor                     # expect every line ok
+sindri observe                    # the backlog, with sizes
+```
+
+This is the TypeScript `sindri` that runs today: backlog sizing, scoping, the code index and offline self-evolution. The new C# Sindri app (control plane, workflow engine, context engine and a desktop UI) is being built in `src/Sindri` and isn't installed until the switch. See [`docs/sindri/README.md`](docs/sindri/README.md), or open `docs/sindri.html` for the visual walkthrough.
+
 ### Tune the judge
 
 `/judge` lets you inspect, tune, and undo the decisions `judge` made for hooks in the current session: `config get/set`, `why`, `undo`, and `health`.
