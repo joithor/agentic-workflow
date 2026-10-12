@@ -220,7 +220,7 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`). A loop must be declared (`R
   **P3 limit:** the pure engine sees a round's `fact:findings` only as a reference and its SHA-256, and a Step report
   carries no diff, so it implements part of A §17.23.13. `findings` fires only when a round's findings are identical to
   the last round's (a superset, keyed by file, check and normalized message, isn't detected), `sameFailure` when a
-  `step.failed` repeats its reason, and `emptyDiff` never fires. A loop that names only `emptyDiff` therefore never parks
+  `step.failed`, or a gate refusal, repeats its reason, and `emptyDiff` never fires. A loop that names only `emptyDiff` therefore never parks
   early, and the validator doesn't say so. The rest waits on the report carrying finding keys and a diff signal.
 - **Budgets:** `budget: { tokens }` on an active state and on the recipe. Exhausting one parks the instance with `budget`.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
