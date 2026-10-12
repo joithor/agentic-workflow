@@ -45,6 +45,9 @@ internal static class SindriTemporal
     /// <summary>The 'NeedsYou' search attribute: a desk run waits on a human.</summary>
     public static SearchAttributeKey<bool> NeedsYouKey { get; } = SearchAttributeKey.CreateBool("NeedsYou");
 
+    /// <summary>The 'Repo' search attribute: the repo 'fact:item' names; unset on an instance without one.</summary>
+    public static SearchAttributeKey<string> RepoKey { get; } = SearchAttributeKey.CreateKeyword("Repo");
+
     /// <summary>The 'Tenant' search attribute: the instance's tenant key.</summary>
     public static SearchAttributeKey<string> TenantKey { get; } = SearchAttributeKey.CreateKeyword("Tenant");
 

@@ -271,7 +271,9 @@ internal sealed class RecipeWorkflow
             Parent: null,
             start.Inputs.ToDictionary(static i => i.Key, static i => i.Value.Value),
             Desk,
-            TakenOver: false);
+            TakenOver: false,
+            start.Tenant,
+            start.Ring);
     }
 
     private static WorkflowInstance Started(Decision decision) => decision switch

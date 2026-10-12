@@ -843,7 +843,7 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Address.get -> Aw.Sindri.C
 Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Address.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Attempt.get -> int
 Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Attempt.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe! Recipe, out Aw.Sindri.Core.Workflow.Engine.ItemKey Item, out int Attempt, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId? Parent, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Inputs, out string! Actor, out bool TakenOver) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe! Recipe, out Aw.Sindri.Core.Workflow.Engine.ItemKey Item, out int Attempt, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId? Parent, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Inputs, out string! Actor, out bool TakenOver, out string! Tenant, out int Ring) -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Equals(Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Id.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
 Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Id.init -> void
@@ -857,9 +857,13 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Parent.get -> Aw.Sindri.Co
 Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Parent.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Recipe.get -> Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe!
 Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Recipe.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.StartRequest(Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe! Recipe, Aw.Sindri.Core.Workflow.Engine.ItemKey Item, int Attempt, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId? Parent, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Inputs, string! Actor, bool TakenOver) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.StartRequest(Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe! Recipe, Aw.Sindri.Core.Workflow.Engine.ItemKey Item, int Attempt, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId? Parent, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Inputs, string! Actor, bool TakenOver, string! Tenant, int Ring) -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.TakenOver.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.TakenOver.init -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Tenant.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Tenant.init -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Ring.get -> int
+Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest.Ring.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.TransitionMatch
 Aw.Sindri.Core.Workflow.Engine.Decisions.TransitionMatch.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Decisions.TransitionMatch!
 Aw.Sindri.Core.Workflow.Engine.Decisions.TransitionMatch.Deconstruct(out int? Transition, out Aw.Sindri.Core.Workflow.Engine.Decisions.MatchMiss Miss) -> void

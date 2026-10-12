@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
@@ -54,7 +55,9 @@ internal sealed record EvalSimulation(
             Parent: null,
             evalCase.Start.Start.Inputs.ToDictionary(static i => i.Key, static i => EvalFacts.Value(i.Value)),
             Person,
-            TakenOver: false);
+            TakenOver: false,
+            SindriProfile.DefaultTenant,
+            Ring: 0);
         return TransitionDecision.Start(request, recipe, Context(catalog, children)) switch
         {
             Applied applied => new EvalSimulation(recipe, catalog, children, applied.Changes[0].After, [applied.Changes[0]]),
