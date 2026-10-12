@@ -19,14 +19,7 @@ public sealed class SessionApproveTests : IDisposable
 
     public void Dispose() => _home.Dispose();
 
-    /// <summary>
-    /// Pending Unit B: its caller middleware (Aw.Sindri.Host.CallerContextMiddleware) turns X-Sindri-Caller into the caller
-    /// context. Until it is in the Host the request has no caller, so the test skips itself; it runs once B is merged.
-    /// </summary>
-    public static bool CallerMiddlewareLanded => typeof(Pipeline).Assembly.GetType("Aw.Sindri.Host.CallerContextMiddleware") is not null;
-
-    [Fact(Timeout = 30_000, SkipUnless = nameof(CallerMiddlewareLanded), Skip = "pending Unit B's caller middleware (headers to caller context)"),
-     Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task Session_approve_is_403_and_only_command_handled_is_written()
     {
         var ct = TestContext.Current.CancellationToken;
