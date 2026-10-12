@@ -256,6 +256,58 @@ public sealed class ShellStateTests
         Assert.Equal(ShellState.Normal, shell.State);
     }
 
+    // Review run 3 (julik-frontend-races-reviewer-1): a Refresh's answer that comes after the follow has decided a state
+    // of its own (here: the record is gone, so Not running) is dropped. It never shows Running over Not running.
+    [Fact]
+    public async Task A_refresh_answered_after_the_follow_found_sindri_gone_is_dropped()
+    {
+        var shell = await Stale();
+        _server.StatusGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var refresh = shell.Health.Refresh(Token);
+
+        _records.Remove();
+        _clock.Advance(HealthViewModel.RetryEvery);
+        await Eventually(() => shell.State == ShellState.NotRunning);
+        _server.StatusGate.SetResult();
+        await refresh;
+
+        Assert.Equal(ShellState.NotRunning, shell.State);
+        Assert.True(shell.Health.CanRefresh);
+    }
+
+    // The same with Unreadable: the follow saw a refusal while the Refresh was in flight; the Refresh's later success
+    // doesn't take the banner down.
+    [Fact]
+    public async Task A_refresh_answered_after_the_follow_saw_a_refusal_is_dropped()
+    {
+        var shell = await Stale();
+        _server.StatusGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var refresh = shell.Health.Refresh(Token);
+
+        _server.Refusal = A.NoTokenRefusal;
+        _server.FailPing = false;
+        _clock.Advance(HealthViewModel.PingEvery);
+        await Eventually(() => shell.State == ShellState.Unreadable);
+        _server.Refusal = null;
+        _server.StatusGate.SetResult();
+        await refresh;
+
+        Assert.Equal(ShellState.Unreadable, shell.State);
+    }
+
+    // A Refresh answered by another process or epoch than the one the follow checked (a restart on the same port) isn't
+    // the followed control plane: like a ping from someone else, it is dropped and the views stay stale.
+    [Fact]
+    public async Task A_refresh_answered_by_another_process_is_dropped()
+    {
+        var shell = await Stale();
+        _server.Current = A.Status(pid: 5151, epoch: 9);
+
+        await shell.Health.Refresh(Token);
+
+        Assert.Equal(ShellState.Stale, shell.State);
+    }
+
     // accessibility-tester-0 (docs/csharp/sindri-ui.md "LiveSetting on macOS"): the live region's text is never "" (Avalonia
     // #22312 crashes on a live element's name set to ""), it becomes "Sending…" only once IsSending (the view's live gate)
     // is on, and goes back to its resting text only once the gate is off, so the resting text is never spoken. Two cycles,
