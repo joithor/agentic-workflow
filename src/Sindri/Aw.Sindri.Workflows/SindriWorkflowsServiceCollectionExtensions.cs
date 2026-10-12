@@ -1,16 +1,18 @@
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
-/// <summary>Registers the Temporal adapter (engine spec rev 8 §0): the dev server, the RunStep activities, the worker options and the desk completion port.</summary>
+/// <summary>Registers the Temporal adapter (engine spec rev 8 §0): the dev server, the activities, the worker options, the instance runtime and the stub item and approval ports.</summary>
 public static class SindriWorkflowsServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the dev server (the <see cref="ITemporalServer"/> port 'sindri serve' starts and stops), the activities, the
-    /// worker's options and the desk completion port ('sindri workflow complete'; engine P4a), all under the one
-    /// Sindri home <see cref="TemporalSettings"/> reads.
+    /// worker's options, the <see cref="IInstanceRuntime"/> the workflow verbs use, and engine P4's stub
+    /// <see cref="IApprovedRecipes"/> (until P2) and <see cref="IItems"/> (until API P3), all under the one Sindri home
+    /// <see cref="TemporalSettings"/> reads.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable (the Sindri home and the state root).</param>
@@ -26,9 +28,10 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<RunStepActivities>()
             .AddSingleton<RecordEventActivities>()
             .AddSingleton(provider => SindriWorker.Options(provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>()))
-            .AddSingleton<TaskTokens>()
             .AddSingleton<TemporalFrontend>()
-            .AddSingleton<IDeskSteps, TemporalDeskSteps>()
+            .AddSingleton<IApprovedRecipes, HomeApprovedRecipes>()   // stub until P2's registry
+            .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items
+            .AddSingleton<IInstanceRuntime, TemporalInstanceRuntime>()
             .AddSingleton<IWorkflowInstances, TemporalWorkflowInstances>()
             .AddSingleton<ITemporalWorker, SindriWorkerHost>();
     }

@@ -1,5 +1,5 @@
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Temporalio.Activities;
 using Temporalio.Exceptions;
@@ -7,47 +7,45 @@ using Temporalio.Exceptions;
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
-/// The interpreter's activities (engine spec rev 8 §5.1, §5.3). 'LoadRecipe' (a local activity) reads and normalizes the
-/// recipe. 'RunStep' is the activity an 'active' state starts: in the desk runtime it records the desk task's task
-/// token under its run token and returns pending (async completion); 'sindri workflow complete --run &lt;token&gt;'
-/// completes it through that task token. Engine P4a: recipes come from the home's recipes directory.
+/// The interpreter's activities (engine spec rev 8 §5.1, rev 8.1 §5.3). 'LoadRecipe' (a local activity) reads the
+/// approved recipe the workflow input pins, through <see cref="IApprovedRecipes"/>. 'RunStep' is the short activity an
+/// 'active' state starts with the run token in its id: in the desk runtime it records the open desk task and returns,
+/// and the workflow then waits for the 'complete' Update.
 /// </summary>
-/// <param name="reader">The recipe reader.</param>
+/// <param name="approvals">The approved recipes.</param>
 /// <param name="catalog">The build's block catalog.</param>
-/// <param name="home">Where the recipes and task tokens are.</param>
-/// <param name="tokens">The run-token-to-task-token map.</param>
-internal sealed class RunStepActivities(IRecipeReader reader, BlockCatalog catalog, WorkflowsHome home, TaskTokens tokens)
+internal sealed class RunStepActivities(IApprovedRecipes approvals, BlockCatalog catalog)
 {
-    /// <summary>Reads 'workflow.&lt;name&gt;.yaml' and returns its long form and the descriptors of its blocks.</summary>
-    /// <param name="recipeId">The recipe id.</param>
+    /// <summary>Reads the approved recipe and the descriptors of its blocks.</summary>
+    /// <param name="recipe">The recipe the instance is pinned to.</param>
     /// <returns>The loaded recipe.</returns>
     [Activity("LoadRecipe")]
-    public async Task<LoadedRecipe> LoadRecipeAsync(string recipeId)
+    public async Task<LoadedRecipe> LoadRecipeAsync(RecipeVersion recipe)
     {
-        var file = Path.Combine(home.RecipesDirectory, recipeId + ".yaml");
-        var text = await File.ReadAllTextAsync(file, ActivityExecutionContext.Current.CancellationToken).ConfigureAwait(false);
-        var reading = reader.Read(text, Path.GetFileName(file));
-        if (reading.Document is not { } document)
+        ArgumentNullException.ThrowIfNull(recipe);
+        var found = await approvals.Find(recipe.Id, recipe.Hash, ActivityExecutionContext.Current.CancellationToken).ConfigureAwait(false);
+        if (found.IsError)
         {
-            var first = reading.Findings.Count > 0 ? reading.Findings[0].ToLine() : "it doesn't bind";
-            throw new ApplicationFailureException($"{file} doesn't read: {first}", nonRetryable: true);
+            throw new ApplicationFailureException($"{found.Error.Message}", errorType: found.Error.Code, nonRetryable: true);
         }
 
-        var recipe = document.Recipe with { Hash = document.Hash };
-        var used = recipe.States.Values.Select(static s => s.Step?.Use)
-            .Concat(recipe.Transitions.SelectMany(static t => t.Gates.Select(static g => (BlockId?)g.Use).Concat(t.Effects.Select(static e => (BlockId?)e.Use))))
+        var definition = found.Value.Recipe;
+        var used = definition.States.Values.Select(static s => s.Step?.Use)
+            .Concat(definition.Transitions.SelectMany(static t => t.Gates.Select(static g => (BlockId?)g.Use).Concat(t.Effects.Select(static e => (BlockId?)e.Use))))
             .OfType<BlockId>().ToHashSet();
-        return new LoadedRecipe(recipe, [.. catalog.Blocks.Where(b => used.Contains(b.Id))]);
+        return new LoadedRecipe(found.Value.Version, definition, [.. catalog.Blocks.Where(b => used.Contains(b.Id))]);
     }
 
-    /// <summary>Starts the Step and leaves the activity open for its report.</summary>
+    /// <summary>
+    /// Records the open desk task and returns (rev 8.1 §5.3). Engine P4 contract: it records nothing yet; unit (c) writes
+    /// the task (and the first-desk-task notification is P6's).
+    /// </summary>
     /// <param name="run">The run.</param>
-    /// <returns>The report the human or the session completed it with.</returns>
+    /// <returns>Done.</returns>
     [Activity("RunStep")]
-    public Task<StepReport> RunStepAsync(StepRun run)
+    public static Task RunStepAsync(StepRun run)
     {
         ArgumentNullException.ThrowIfNull(run);
-        tokens.Save(run.Address, run.Token, ActivityExecutionContext.Current.Info.TaskToken);
-        throw new CompleteAsyncException();
+        return Task.CompletedTask;
     }
 }

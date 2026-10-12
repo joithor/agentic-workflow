@@ -445,3 +445,26 @@ idempotency_key having c > 1` (no rows). Wall times are `Stopwatch` around the a
 `p0-c/ledger-sqlite3.txt`, `p0-c/ctrf-final/`).
 
 **Verdict: pass.** All five pass lines hold on the merged build, line 4 in both physical footprint and RSS. Temporal stays the substrate (rev 8); P4 starts from rev 8.1: desk Steps wait for the `complete` Update (F1), the ledger key is the RecordEvent activity id, and time-skipping tests follow F1–F3 (spec §11).
+
+## The interpreter's interface (engine P4)
+
+Engine spec rev 8.1 §5.1–§5.6, "Phase 4". The P4 contract fixes the interface; the units fill in the bodies.
+
+| Part | Shape | Where |
+|---|---|---|
+| Workflow input | `InstanceStart`: the recipe `RecipeVersion (id, version, hash)`, the item, the attempt, the input facts (`InputFact`: the file name status shows, and the stored `FactValue`), the tenant and the ring | `Aw.Sindri.Core/Workflow/Engine/Runtime` |
+| Workflow id | The address, `InstanceStart.WorkflowId()` (`{item}/{recipe-name}/{attempt}`) | same |
+| `GetInstance` Query | `InstanceView`: the state, its detail and since, `next`, `allowedCommands` as `AllowedCommand` (`{ actionId, cli }`, UI E-13), the open `OpenQuestion` or `DeskTask` (the Step's declared outcomes and outputs, the inputs, when the timeout fires), the run token, the children and the outcome. `InstanceViews.Of` builds it, and it is pure | same |
+| Updates (§5.2) | `complete(StepCompleted)`, `answer(AnswerGiven)`, `command(CommandFired)`, `cancel(CancelRequested)`, `takeover(TakeoverRequested)`, `handback(HandbackRequested)`. Each has a `[WorkflowUpdateValidator]` and returns `CommandResult` (the view after the command, and what happened). The update id is the nonce | `RecipeWorkflow` |
+| Desk Step (rev 8.1 §5.3) | `RunStep` is a short activity with id `run:{token}:{n}`. The workflow then waits for the `complete` Update, bounded by the state's timeout | `RecipeWorkflow.RunStep`, `RunStepActivities` |
+| Events (§5.4) | The `event` signal carries a `WaitSatisfied` | `RecipeWorkflow.EventAsync` |
+| Ledger mirror (§5.6) | `RecordEvent`, a local activity keyed `workflow:{workflow id}:{run id}:{activity id}` | `RecordEventActivities` |
+| Client port | `IInstanceRuntime`: `Start` (UseExisting), `Get` (the Query), `Send` (the Update the trigger names, with the nonce as its id), `Signal` (the bridge) | Core port; `TemporalInstanceRuntime` |
+| Items | `IItems.Resolve` (an ItemId or a tracker alias). The stub `SelfItems` stands in until API P3 lands | Core port; `Aw.Sindri.Workflows` |
+| Approved recipes | `IApprovedRecipes` (`Latest`, `Find`, `Check`) is a minimal read port, used because P2's `IRecipeApprovals` isn't on main yet. The stub `HomeApprovedRecipes` reads `<home>/recipes/<id>.yaml` and treats each file as approved | same |
+
+At the contract, the bodies of the Updates and validators, the `IInstanceRuntime` methods, and the `workflow` verbs
+other than `list` are stubs that throw `NotSupportedException`. A rejected Update records nothing. `RecipeWorkflowTests`
+pins the interface that works at the contract: the desk task 1.1 with its declared outcomes through the Query,
+`allowedCommands`, the ledger key, and replay. `PhaseFourSignalTests` is phase 4 signal 1, and it is red until units
+(b) and (e) land.
