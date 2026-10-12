@@ -88,16 +88,37 @@ public sealed class TransitionDecisionTests
         var parked = Assert.IsType<Applied>(Decide(At(recipe, "produce"), recipe, Completed(1, "done", ("fact:output", "x")), rules: real)).Changes[0].After;
         var resume = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), Sha("resume")), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
 
-        var restarted = Assert.IsType<Applied>(Decide(parked, recipe, resume, context: Context("step.test.agent"), rules: real));
+        var later = Context("step.test.agent") with { Now = Now.AddHours(1) };
+
+        var restarted = Assert.IsType<Applied>(Decide(parked, recipe, resume, context: later, rules: real));
         var still = Assert.IsType<Applied>(Decide(parked, recipe, resume, rules: real)).Changes[0].After;
 
         var after = restarted.Changes[0].After;
         Assert.Equal(("review", 2, RunToken.For(2, 1), StepRuntime.Agent), (after.State, after.Frame.Entry, after.Frame.Run?.Token, after.Frame.Run?.Runtime));
+        Assert.Equal(later.Now + recipe.States["review"].Timeout!.After.Span, StateDue(after));
         Assert.Empty(after.Suspended);
         var start = Assert.Single(restarted.FollowUps);
         Assert.Equal((FollowUpKind.StartRun, RunToken.For(2, 1), BlockId.From("step.test.agent")), (start.Kind, start.Run!.Value, start.Step!.Value));
         Assert.Equal((EngineStates.Parked, ParkReason.NoRuntime, ResumeKind.Restart), (still.State, still.Park, still.Suspended[^1].Resume.Kind));
         Assert.Equal(("review", 2), (still.Suspended[^1].Frame.State, still.Suspended[^1].Frame.Entry));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Answer_SND_WF_010_restarts_on_the_desk_in_a_build_where_the_step_became_desk_capable()
+    {
+        var recipe = WithAgentReview();
+        var real = EngineRules.Default;
+        var parked = Assert.IsType<Applied>(Decide(At(recipe, "produce"), recipe, Completed(1, "done", ("fact:output", "x")), rules: real)).Changes[0].After;
+        var resume = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), Sha("resume")), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
+        var deskCatalog = new BlockCatalog([.. Catalog.Blocks.Select(b => b.Id.Value == "step.test.agent" ? b with { DeskCapable = true } : b)], Catalog.Events);
+        var later = Context() with { Now = Now.AddHours(1), Catalog = deskCatalog };
+
+        var restarted = Assert.IsType<Applied>(Decide(parked, recipe, resume, context: later, rules: real));
+
+        var after = restarted.Changes[0].After;
+        Assert.Equal(("review", RunToken.For(2, 1), StepRuntime.Desk), (after.State, after.Frame.Run?.Token, after.Frame.Run?.Runtime));
+        Assert.Equal(later.Now + EngineTimings.Default.DeskTimeout, StateDue(after));
+        Assert.Equal(FollowUpKind.StartRun, Assert.Single(restarted.FollowUps).Kind);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -191,6 +212,9 @@ public sealed class TransitionDecisionTests
         var top = applied.Changes[0].After.Suspended[^1];
         Assert.Equal((ParkReason.SpecConflict, ParkKind.Drift, ResumeKind.Rearm), (top.Suspension.Reason, top.Suspension.ParkKind, top.Resume.Kind));
     }
+
+    private static DateTimeOffset? StateDue(WorkflowInstance instance) =>
+        Assert.Single(instance.Frame.Deadlines, d => d.Id.Kind == DeadlineKind.State).Due;
 
     private static WaitSatisfied Slot(long grant) =>
         new("service:workflow.inbox", new ResourceWaitSource(ResourceKind.Slot, grant), Outcome: null, new Dictionary<FactKey, FactValue>());
