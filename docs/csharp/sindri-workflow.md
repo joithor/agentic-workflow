@@ -31,8 +31,8 @@ reads the file and its child recipes, and writes nothing.
 - **Child recipes** resolve from the recipe file's directory (`<child id>.yaml`), so `recipes/sindri/workflow.item.yaml`
   finds `workflow.step.yaml`. Once the registry exists (P2), a served validation resolves them from the registered recipes.
 - **Hand-written only:** `recipe validate` passes no base recipe, so it checks every recipe as hand-written: a `base`
-  field is `RCP-CAP-004`, and the generated-recipe rules (`RCP-CAP-001`, `-002`, `-005`, `-006`) don't run. Those run
-  when Sindri's generator checks a generated recipe against its base (the packet freeze, W9).
+  field is `RCP-CAP-004`, and the generated-recipe rules (`RCP-CAP-001`, `-002`, `-005`, `-006`) don't run. Those will run
+  when Sindri's generator checks a generated recipe against its base (the packet freeze, W9); no command runs them in this build.
 - **The profile:** there is no effect allowlist in the profile yet (`workflow.effects`, P6), so `RCP-EFFECT-001` is
   reported as `skipped`.
 
@@ -70,7 +70,10 @@ JSON Schemas: `schemas/recipes/recipe.schema.json` is the long form, generated f
 - **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, a file over 256 KiB,
   or nesting deeper than 32.
 - **Scalars** follow the YAML 1.2 core schema, so `on` stays a string.
-- **All schema errors** are reported with their line and column, not just the first.
+- **All schema errors** are reported with their line and column, not just the first. When the reader refuses a field
+  (unknown, or the wrong type), the schema rules still run on the rest of the recipe, so a typo doesn't hide a missing
+  `next` or an undeclared state. They don't after refused YAML (`RCP-SCHEMA-003`), a refused list item, or a missing
+  required field; then the recipe has no hash and the other rule groups wait until those are fixed.
 - **Short forms become long forms** before typed binding, which refuses unknown fields (`RCP-SCHEMA-001`). A short form
   and its long form bind to the same record and hash the same. `tests/Aw.Sindri.Testing/Workflow/Recipes/valid/` has
   `short-forms.yaml` and the same recipe written out as `long-forms.yaml`.
@@ -103,7 +106,7 @@ the file is checked (`RCP-HASH-001`). Listings show the first 12 hex digits.
 | `states` | yes | At least one non-terminal and one terminal state. `cancelled`, `escalated`, `parked` and `taken-over` are reserved (`RCP-STATE-001`) |
 | `transitions` | yes | |
 | `loops`, `budget` | no | |
-| `evals` | to approve (P2) | Paths of eval files, relative to the recipe's directory (`evals/<id>/<case>.jsonl`, spec §9.2) |
+| `evals` | to approve (P2) | Paths of eval files, relative to the recipe's directory (`evals/<id>/<case>.jsonl`, spec §9.2). The paths' form isn't checked yet |
 | `hash` | no | Checked when present |
 
 ### Value grammars
@@ -143,7 +146,7 @@ re-arms the deadline in the same frame and re-sends the entering transition's ef
 |---|---|---|
 | `from` | yes | A non-terminal state, or a list of them. A name that isn't a state of the recipe is `RCP-SCHEMA-002` |
 | `to` | yes | A state of the recipe; any other name is `RCP-SCHEMA-002` |
-| `on` | yes | `step.completed` or `step.failed` from an active state; `wait.satisfied` from a wait state; `command.<verb>` from any non-terminal state (`RCP-TRIG-001`). Verbs match `[a-z][a-z-]{1,31}` and may not be one of `sindri workflow`'s own (`RCP-TRIG-002`) |
+| `on` | yes | `step.completed` or `step.failed` from an active state; `wait.satisfied` from a wait state; `command.<verb>` from any non-terminal state (`RCP-TRIG-001`). Verbs match `[a-z][a-z-]{1,31}` (`RCP-TRIG-001`) and may not be one of `sindri workflow`'s own (`RCP-TRIG-002`) |
 | `when` | no | Below |
 | `gates` | no | `{ use, threshold?, with? }`, run in order. A judge or model gate needs a threshold above 0 and at most 1; a deterministic gate takes none (`RCP-THRESH-001`/`-002`) |
 | `evidence` | no | `{ kind, at, expect: pass \| fail }` |
@@ -193,7 +196,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-BLOCK-001` | Every block a recipe names is registered | Name a registered block, or fix the id |
 | `RCP-BLOCK-002` | A block is used where its kind fits (gates under `gates`, Steps under `step`, …) | Name a block of the right kind |
 | `RCP-BLOCK-003` | `with` names only the block's parameters, with the right types, and every required one | Remove, retype or add the parameter |
-| `RCP-EVID-001` | An evidence kind has a registered provider, `at` is `base` or `head`, and `expect` is `pass` or `fail` | Name a provided kind, or register the provider |
+| `RCP-EVID-001` | An evidence kind has a registered provider (a bad `at` or `expect` is `RCP-SCHEMA-002`) | Name a provided kind, or register the provider |
 | `RCP-EVENT-001` | A waited-for event is registered | Wait for a registered event |
 | `RCP-WIRE-001` | A block's inputs are produced on every path into its state, or are recipe inputs | Produce it on every path, or add it to `inputs` |
 | `RCP-WIRE-002` | `produces` lists only what the trigger's source records | List only its outputs |
@@ -214,10 +217,10 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-EXIT-001` | Every non-terminal state has a path to a terminal state | Add a transition towards a terminal state |
 | `RCP-TIME-001` | Every active and wait state has a timeout | Add `timeout: { after, then }` |
 | `RCP-TIME-002` | A child wait doesn't `retry` | Use `park` or `escalate` |
-| `RCP-LOOP-001` | A state's `loop` is declared, and every loop's `cap` is at least 1 | Declare it under `loops` |
+| `RCP-LOOP-001` | A state's `loop` is declared, every loop's `cap` is at least 1, and every cycle of step and wait transitions passes through a state with a `loop` (a cycle closed by a `command.<verb>` is a human's, and a cycle with no way out is `RCP-EXIT-001`'s) | Declare it under `loops`, or add `loop` to a state on the cycle |
 | `RCP-LOOP-002` | A looped state has a transition back into it | Add it, or remove `loop` |
 | `RCP-LOOP-003` | `noProgress` isn't empty | Name a signal, or leave it out |
-| `RCP-TRIG-001` | `on` fits the `from` state's kind | Use the trigger the message lists |
+| `RCP-TRIG-001` | `on` is a known trigger, a command verb matches the pattern, and `on` fits the `from` state's kind | Use the trigger the message lists |
 | `RCP-TRIG-002` | A `command.<verb>` isn't a reserved verb | Choose another verb |
 | `RCP-THRESH-001` | A judge or model gate has a threshold | Add `threshold` in (0, 1] |
 | `RCP-THRESH-002` | A threshold is in (0, 1], and a deterministic gate has none | Fix or remove it |
