@@ -1,7 +1,8 @@
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Validation;
 
-namespace Aw.Sindri.Core.Workflow.Validation;
+namespace Aw.Sindri.Core.Workflow;
 
 /// <summary>
 /// The child recipes beside a recipe file (spec §9.1: not served, 'workflow.item.yaml' finds 'workflow.step.yaml'):

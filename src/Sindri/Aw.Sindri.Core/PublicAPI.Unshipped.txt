@@ -3344,11 +3344,11 @@ static Aw.Sindri.Core.Workflow.Engine.Evals.EvalLines.Write(Aw.Sindri.Core.Workf
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.operator !=(Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? left, Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.operator ==(Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? left, Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalScaffold.Generate(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! children) -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase!
-Aw.Sindri.Core.Workflow.Validation.SameDirectoryChildren
-Aw.Sindri.Core.Workflow.Validation.SameDirectoryChildren.Resolve(Aw.Sindri.Core.Workflow.Ids.RecipeId id) -> Aw.Sindri.Core.Workflow.Validation.ChildRecipe?
-static Aw.Sindri.Core.Workflow.Validation.SameDirectoryChildren.Beside(string! path, string! file) -> string!
-static Aw.Sindri.Core.Workflow.Validation.SameDirectoryChildren.Load(string! path, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.IRecipeReader! reader, Aw.Sindri.Core.Workflow.IRecipeFiles! files, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Workflow.Validation.SameDirectoryChildren!>
-static Aw.Sindri.Core.Workflow.Validation.SameDirectoryChildren.None.get -> Aw.Sindri.Core.Workflow.Validation.SameDirectoryChildren!
+Aw.Sindri.Core.Workflow.SameDirectoryChildren
+Aw.Sindri.Core.Workflow.SameDirectoryChildren.Resolve(Aw.Sindri.Core.Workflow.Ids.RecipeId id) -> Aw.Sindri.Core.Workflow.Validation.ChildRecipe?
+static Aw.Sindri.Core.Workflow.SameDirectoryChildren.Beside(string! path, string! file) -> string!
+static Aw.Sindri.Core.Workflow.SameDirectoryChildren.Load(string! path, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.IRecipeReader! reader, Aw.Sindri.Core.Workflow.IRecipeFiles! files, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Workflow.SameDirectoryChildren!>
+static Aw.Sindri.Core.Workflow.SameDirectoryChildren.None.get -> Aw.Sindri.Core.Workflow.SameDirectoryChildren!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation.EvalExpectation(string! State, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park = null, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine.EvalStartLine(Aw.Sindri.Core.Workflow.Engine.Evals.EvalStart! Start, bool? Scaffold = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger! Trigger, out Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation! Expect, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Blocks.GateVerdict>? Gates) -> void
