@@ -1,18 +1,21 @@
 using System.Globalization;
 using Aw.Sindri.Ui.Platform;
-using Microsoft.Extensions.Logging;
 using Aw.Sindri.Ui.Views;
+using Microsoft.Extensions.Logging;
 
 namespace Aw.Sindri.Ui.Desktop;
 
 /// <summary>
 /// One app per user (UI spec §15): the first launch claims the instance and runs the app; a later one hands its message
 /// ("focus", or the deep link it was started with) to the running instance and exits. The running instance only
-/// navigates on it.
+/// navigates on it. It is the head's boundary: anything that throws before or while the app runs (an unusable 'ui'
+/// directory, a socket it can't use) ends the launch with SND-UI-004 and exit 2, logging the code and the exception's
+/// type only.
 /// </summary>
 internal static class SingleLaunch
 {
     private const string Scheme = "sindri://";
+    private const string FailedLine = "sindri-ui: couldn't start (SND-UI-004); the log line above names the cause";
 
     /// <summary>Runs the app, or hands over to the running one.</summary>
     /// <param name="instance">This launch's instance port.</param>
@@ -23,8 +26,21 @@ internal static class SingleLaunch
     /// <returns>The exit code: the app's (2 when it failed), 0 when the running instance handled the message, 1 when it holds the claim but doesn't answer.</returns>
     internal static int Run(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors, ILogger log)
     {
-        ArgumentNullException.ThrowIfNull(log);
+        try
+        {
+            return Launch(instance, args, runApp, errors);
+        }
+        catch (Exception e)
+        {
+            // The message and stack can carry the home's path: the code and the type only.
+            DesktopLog.FailedBeforeStart(log, e.GetType().Name);
+            errors.WriteLine(FailedLine);
+            return SindriApp.FailedExitCode;
+        }
+    }
 
+    private static int Launch(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors)
+    {
         // Before the UI starts, on the main thread with no synchronization context: blocking here deadlocks nothing.
         if (Claim(instance))
         {
@@ -69,7 +85,7 @@ internal static class SingleLaunch
         var exit = runApp();
         if (exit == SindriApp.FailedExitCode)
         {
-            errors.WriteLine("sindri-ui: couldn't start (SND-UI-004); the log line above names the cause");
+            errors.WriteLine(FailedLine);
         }
 
         return exit;

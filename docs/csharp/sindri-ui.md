@@ -105,7 +105,9 @@ the app logs `SND-UI-004` through `SindriPlatform.Log` (an `ILogger`; the deskto
 JSON lines on standard error, `AW_LOG_LEVEL`) with the exception's type only (no message, no stack: they can carry paths
 and payloads), then ends with exit code 2 (`SindriApp.FailedExitCode`) instead of staying up without a window or tray.
 `SingleLaunch` then writes `sindri-ui: couldn't start (SND-UI-004); the log line above names the cause` on standard
-error.
+error. `SingleLaunch` is also the head's boundary: anything that throws before or around the app (claiming the
+instance when `ui/` can't be made, a hand-over socket it can't use) is logged the same way (`SND-UI-004`, the type
+only, never the message, which can name the home), with the same line, and exit 2; never an unhandled exception.
 
 | Part | What it shows |
 |---|---|
@@ -246,7 +248,7 @@ The app shows the first three as words in the window, never a dialog or a crash.
 | `SND-UI-001` | No usable endpoint record, or it names a process that isn't the one answering |
 | `SND-UI-002` | Nothing answered at the recorded endpoint, or not within 2 s |
 | `SND-UI-003` | The API answered, but not with the record this build reads (an error status, or another body) |
-| `SND-UI-004` | The app's start-up, or its following of the control plane, threw: logged (code and exception type) and the app exits 2. Not shown in a window: there may be none |
+| `SND-UI-004` | The app's start-up, its following of the control plane, or the launch before it (claiming the single instance, handing over) threw: logged (code and exception type) and the app exits 2. Not shown in a window: there may be none |
 
 ## Tests
 
