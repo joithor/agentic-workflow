@@ -72,7 +72,7 @@ internal static partial class CallerContextMiddleware
         }
 
         return caller.Client == ClientLabel.Prover && !services.GetRequiredService<ProverLabel>().Allowed
-            ? "The prover label is honoured only for a temp or proof home (fix: run scripts/sindri-prove.sh against a home under $TMPDIR)"
+            ? "The prover label is honoured only for a temp or proof home (fix: run scripts/sindri-prove.sh against a home under $TMPDIR or a proof folder)"
             : null;
     }
 
