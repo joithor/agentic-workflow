@@ -36,6 +36,36 @@ public static class PinRules
         throw new NotSupportedException(Pending);
     }
 
+    /// <summary>
+    /// The child pins of <paramref name="recipe"/> (spec §4.1): each child recipe it waits on, with the hash of that
+    /// child's latest approved version in <paramref name="current"/>, sorted by id. A child with no current approval has
+    /// no pin.
+    /// </summary>
+    /// <param name="recipe">The recipe.</param>
+    /// <param name="current">The latest approval of every key that isn't revoked (IRecipeApprovals.Current).</param>
+    /// <returns>The pins.</returns>
+    public static IReadOnlyList<ChildPin> Children(Recipe recipe, IEnumerable<RecipeApproval> current)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        ArgumentNullException.ThrowIfNull(current);
+        throw new NotSupportedException(Pending);
+    }
+
+    /// <summary>What an approval of <paramref name="recipe"/> pins against this build: its block pins and its child pins.</summary>
+    /// <param name="recipe">The recipe.</param>
+    /// <param name="catalog">This build's block catalog.</param>
+    /// <param name="current">The latest approval of every key that isn't revoked.</param>
+    /// <param name="options">The package's AwJson options.</param>
+    /// <returns>The pins.</returns>
+    public static RecipePins Pins(Recipe recipe, BlockCatalog catalog, IEnumerable<RecipeApproval> current, JsonSerializerOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(current);
+        ArgumentNullException.ThrowIfNull(options);
+        throw new NotSupportedException(Pending);
+    }
+
     /// <summary>The digest a drift approval's challenge binds (spec §4.2): SHA-256 over the canonical JSON of <paramref name="pins"/>.</summary>
     /// <param name="pins">The pins the approval will record.</param>
     /// <param name="options">The package's AwJson options.</param>

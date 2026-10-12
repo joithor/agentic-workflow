@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Features.ValidateRecipe;
 using Aw.Sindri.Host;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Testing.Workflow.Registry;
 using Aw.Sindri.Tests.Workflow.Capabilities;
 using Aw.Sindri.Tests.Workflow.Wiring;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,9 +16,10 @@ namespace Aw.Sindri.Tests.Workflow.InvalidFixtures;
 
 /// <summary>
 /// Runs an invalid fixture end to end: the composition's reader and catalog, and recipe validate's service over an
-/// in-memory directory that holds the fixture beside the child recipes the fixtures name. The service takes no base
-/// and no profile yet (the registry picks a base in P2, the profile's workflow.effects comes in P6), so a fixture that
-/// needs one runs the same steps the service runs (read, load the same-directory children, validate) with it added.
+/// in-memory directory that holds the fixture beside the child recipes the fixtures name. The service takes no base,
+/// no registry and no profile yet (the freeze picks a base, register supplies the registry, the profile's
+/// workflow.effects comes in P6), so a fixture that needs one runs the same steps the service runs (read, load the
+/// same-directory children, validate) with it added.
 /// </summary>
 internal static class InvalidFixtureRun
 {
@@ -39,8 +41,10 @@ internal static class InvalidFixtureRun
             FixtureSetup.Shipped => await Service(reader, files, provider.GetRequiredService<BlockCatalog>(), path, cancellationToken),
             FixtureSetup.Wiring => await Service(reader, files, WiringCatalog.WithTestBlocks, path, cancellationToken),
             FixtureSetup.Capability => await Service(reader, files, CapabilityRecipe.Catalog, path, cancellationToken),
-            FixtureSetup.CapabilityWithBase => await WithContext(reader, files, path, CapabilityRecipe.Catalog, RecipeProfileFacts.None, Base(reader), cancellationToken),
-            FixtureSetup.EffectAllowlist => await WithContext(reader, files, path, WiringCatalog.WithTestBlocks, ClaimOnly, baseRecipe: null, cancellationToken),
+            FixtureSetup.CapabilityWithBase => await WithContext(reader, files, path, CapabilityRecipe.Catalog, RecipeProfileFacts.None, Base(reader), registry: null, cancellationToken),
+            FixtureSetup.EffectAllowlist => await WithContext(reader, files, path, WiringCatalog.WithTestBlocks, ClaimOnly, baseRecipe: null, registry: null, cancellationToken),
+            FixtureSetup.Registry => await WithContext(reader, files, path, provider.GetRequiredService<BlockCatalog>(), RecipeProfileFacts.None, baseRecipe: null, Registry, cancellationToken),
+            FixtureSetup.CapabilityWithUnapprovedBase => await WithContext(reader, files, path, CapabilityRecipe.Catalog, RecipeProfileFacts.None, Base(reader), Registry, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(setup), setup, "Not a fixture setup."),
         };
         return [.. findings.Select(Line)];
@@ -52,6 +56,19 @@ internal static class InvalidFixtureRun
             ?? throw new InvalidOperationException("The base fixture doesn't bind.");
 
     private static RecipeProfileFacts ClaimOnly { get; } = new(new HashSet<BlockId> { BlockId.From("effect.claim.ref") });
+
+    /// <summary>
+    /// The registry the registry fixtures are validated against: workflow.version-taken 1 and workflow.version-behind 1
+    /// and 3, each with a hash no fixture has, and the capability base registered at version 1 but never approved.
+    /// </summary>
+    internal static RecipeRegistryView Registry { get; } = new(
+        [
+            new(RecipeId.From("workflow.version-taken"), 1, RegistryData.Hash("workflow.version-taken@1")),
+            new(RecipeId.From("workflow.version-behind"), 1, RegistryData.Hash("workflow.version-behind@1")),
+            new(RecipeId.From("workflow.version-behind"), 3, RegistryData.Hash("workflow.version-behind@3")),
+            new(RecipeId.From("workflow.cap-base"), 1, CapabilityRecipe.BaseHash),
+        ],
+        new Dictionary<RecipeHash, RegistryApproval>());
 
     private static async Task<IReadOnlyList<RecipeFinding>> Service(IRecipeReader reader, InMemoryRecipeFiles files, BlockCatalog catalog, string path, CancellationToken cancellationToken)
     {
@@ -66,12 +83,13 @@ internal static class InvalidFixtureRun
         BlockCatalog catalog,
         RecipeProfileFacts profile,
         RecipeDocument? baseRecipe,
+        RecipeRegistryView? registry,
         CancellationToken cancellationToken)
     {
         var reading = reader.Read((await files.Read(path, cancellationToken)).Value, Path.GetFileName(path));
         var document = reading.Document ?? throw new InvalidOperationException($"{path} doesn't bind.");
         var children = await SameDirectoryChildren.Load(path, document.Recipe, reader, files, cancellationToken);
-        return [.. reading.Findings, .. RecipeValidator.Validate(document, new ValidationContext(catalog, profile, children, baseRecipe?.Recipe))];
+        return [.. reading.Findings, .. RecipeValidator.Validate(document, new ValidationContext(catalog, profile, children, baseRecipe?.Recipe) { Registry = registry })];
     }
 
     private static string Line(RecipeFinding finding) =>

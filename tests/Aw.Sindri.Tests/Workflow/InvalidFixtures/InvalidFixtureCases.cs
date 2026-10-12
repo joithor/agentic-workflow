@@ -34,6 +34,12 @@ internal static class InvalidFixtureCases
             [
                 "RCP-EFFECT-001: effect 'effect.repo.push' wasn't checked against an effect allowlist, since the profile has no workflow.effects at RCP-CAP-002.yaml:47:9 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time [Skipped]",
             ]),
+        ["RCP-CAP-003"] = new(
+            FixtureSetup.CapabilityWithUnapprovedBase,
+            "RCP-CAP-003: base workflow.cap-base@5aa84cb58a5a is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@5aa84cb58a5a), or generate the recipe from an approved base",
+            [
+                "RCP-EFFECT-001: effect 'effect.repo.push' wasn't checked against an effect allowlist, since the profile has no workflow.effects at RCP-CAP-003.yaml:47:9 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time [Skipped]",
+            ]),
         ["RCP-CAP-004"] = new(
             FixtureSetup.Capability,
             "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@5aa84cb58a5a at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
@@ -171,6 +177,14 @@ internal static class InvalidFixtureCases
         ["RCP-TRIG-002"] = new(
             FixtureSetup.Shipped,
             "RCP-TRIG-002: verb 'cancel' is reserved for sindri workflow's own commands at RCP-TRIG-002.yaml:16:32 (transitions[1].on); choose another verb",
+            []),
+        ["RCP-VERSION-001"] = new(
+            FixtureSetup.Registry,
+            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is OWNHASH at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
+            []),
+        ["RCP-VERSION-002"] = new(
+            FixtureSetup.Registry,
+            "RCP-VERSION-002: workflow.version-behind version 2 isn't registered and is below version 3, the highest registered at RCP-VERSION-002.yaml:3:1 (version); raise version to 4, one above the highest registered",
             []),
         ["RCP-WHEN-001"] = new(
             FixtureSetup.Shipped,

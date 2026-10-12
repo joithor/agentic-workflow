@@ -12,7 +12,7 @@ public static class SindriCoreServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the Sindri domain services: the control plane's event scope and factory, the caller of the code running now,
-    /// and the lease and human token this process holds.
+    /// the lease and human token this process holds, and the registry's event appender.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
@@ -23,5 +23,6 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<ICallerContextAccessor, AsyncLocalCallerContextAccessor>()
             .AddSingleton<HeldLease>()
             .AddSingleton<HeldHumanToken>()
-            .AddSingleton<BlockCatalog>();
+            .AddSingleton<BlockCatalog>()
+            .AddSingleton<RecipeEvents>();
 }
