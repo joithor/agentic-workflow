@@ -72,11 +72,16 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>Refresh takes a click: false while one is in flight (§4.1 "sending": disabled, its label kept; a second click does nothing).</summary>
     public bool CanRefresh { get; private set => Set(ref field, value); } = true;
 
-    /// <summary>A refresh has been in flight for 300 ms: "Sending…" shows beside Refresh and is announced politely (§4.1).</summary>
-    public bool IsSending { get; private set => Set(ref field, value); }
-
-    /// <summary>The polite announcement while a refresh is in flight (§4.1 "sending"): "Sending…" after 300 ms, else empty.</summary>
-    public string SendingAnnouncement { get; private set => Set(ref field, value); } = string.Empty;
+    /// <summary>A refresh has been in flight for 300 ms: "Sending…" is announced politely (§4.1).</summary>
+    public bool IsSending
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            SendingAnnouncement = value ? Labels.Sending : string.Empty;
+        }
+    }
 
     /// <summary>The newest event seen on the stream.</summary>
     public string LastEvent { get; private set => Set(ref field, value); } = "none yet";

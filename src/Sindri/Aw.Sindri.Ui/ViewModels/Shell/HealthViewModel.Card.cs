@@ -3,6 +3,9 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// <summary>The Health page's status card (<see cref="HealthViewModel"/>, continued): the lease, the API, the profile, the services.</summary>
 internal sealed partial class HealthViewModel
 {
+    /// <summary>The polite announcement while a refresh is in flight (§4.1 "sending"): "Sending…" after 300 ms, else empty.</summary>
+    public string SendingAnnouncement { get; private set => Set(ref field, value); } = string.Empty;
+
     /// <summary>Running: the lease line.</summary>
     public string Lease { get; private set => Set(ref field, value); } = string.Empty;
 

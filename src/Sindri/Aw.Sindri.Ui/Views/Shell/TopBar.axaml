@@ -98,16 +98,21 @@
 
       <!-- The health pill (§3.2, §11.3): a dot and a glyph before the state's word, then the age; it opens Health.
            While stale, Refresh sits beside it (§4.1). -->
+      <!-- After 300 ms in flight, "Sending…" is announced through this polite live region (§4.1); it takes no room in the
+           bar, so the brand word never drops for the in-flight moment. -->
+      <Border x:Name="RefreshSending" Grid.Column="5" Width="0" HorizontalAlignment="Left"
+              AutomationProperties.Name="{Binding Health.SendingAnnouncement}" AutomationProperties.LiveSetting="Polite" />
       <StackPanel x:Name="PillGroup" Grid.Column="5" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <!-- §4.1 "sending": while a refresh is in flight Refresh is disabled with its label kept, and after 300 ms
-             "Sending…" shows beside it, announced politely. -->
-        <TextBlock x:Name="RefreshSending" Classes="caption subtle" Text="{Binding Text.Sending}" IsVisible="{Binding Health.IsSending}"
-                   VerticalAlignment="Center" AutomationProperties.Name="{Binding Text.Sending}"
-                   AutomationProperties.LiveSetting="Polite" />
         <Button x:Name="RefreshButton" Classes="refresh" IsVisible="{Binding Pill.IsRefreshShown}" IsEnabled="{Binding Health.CanRefresh}"
                 Click="OnRefresh" AutomationProperties.Name="{Binding Text.Refresh}">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <views:StateIcon x:Name="RefreshIcon" Icon="Refresh" VerticalAlignment="Center" />
+            <!-- §4.1 "sending" (R2): in flight, Refresh is disabled with its label kept and a spinner in the icon's place
+                 (still under reduced motion); its width never changes, so the bar doesn't move. -->
+            <Panel VerticalAlignment="Center">
+              <views:StateIcon x:Name="RefreshIcon" Icon="Refresh" IsVisible="{Binding Health.CanRefresh}" />
+              <views:StateIcon x:Name="RefreshSpinner" Icon="Spinner" IsVisible="{Binding !Health.CanRefresh}"
+                               Spins="{Binding !Health.CanRefresh}" />
+            </Panel>
             <TextBlock Classes="caption" Text="{Binding Text.Refresh}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>

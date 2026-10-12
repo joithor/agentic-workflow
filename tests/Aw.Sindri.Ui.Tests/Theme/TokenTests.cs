@@ -112,6 +112,7 @@ public sealed class TokenTests
     [InlineData("Motion.Fast", "0:0:0.120")]
     [InlineData("Motion.Base", "0:0:0.180")]
     [InlineData("Motion.Pulse", "0:0:1.600")]
+    [InlineData("Motion.Spin", "0:0:0.900")]
     public void Each_radius_thickness_and_duration_has_its_value(string key, string value) =>
         Assert.Equal(value, _tokens.Resources[key].Value.Trim());
 
