@@ -65,9 +65,8 @@ internal sealed class SindriApiClient(HttpClient http, TimeProvider clock) : ISi
 
     private async Task<Result<T>> Get<T>(Uri api, string path, CancellationToken cancellationToken)
     {
-        _ = clock; // Red: the deadline doesn't run on the clock yet.
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(_callTimeout);
+        using var timeout = new CancellationTokenSource(_callTimeout, clock);
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
             using var request = Request(new Uri(api, path));
