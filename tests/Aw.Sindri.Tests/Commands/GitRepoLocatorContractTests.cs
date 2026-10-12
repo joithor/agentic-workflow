@@ -8,8 +8,9 @@ using Aw.Sindri.Tests.Ledger;
 namespace Aw.Sindri.Tests.Commands;
 
 /// <summary>
-/// The git adapter against a real temp repository with a linked worktree (git worktree add). The temp directory is
-/// named through its unresolved path (on macOS /var is a link to /private/var), so the match runs on real paths.
+/// The git adapter against a real temp repository with a linked worktree (git worktree add) beside the main checkout, not
+/// inside it, so no path-prefix or show-toplevel shortcut can pass. The temp directory is named through its unresolved
+/// path (on macOS /var is a link to /private/var), so the match runs on real paths.
 /// </summary>
 [Lane(TestLane.Integration)]
 public sealed class GitRepoLocatorContractTests : RepoLocatorContract, IDisposable
@@ -23,7 +24,7 @@ public sealed class GitRepoLocatorContractTests : RepoLocatorContract, IDisposab
     protected override async ValueTask<(string MainCheckout, string InWorktree)> RepoWithWorktree()
     {
         var main = Path.Combine(_temp.Path, "main");
-        var worktree = Path.Combine(main, ".claude", "worktrees", "x");
+        var worktree = Path.Combine(_temp.Path, "wt-x");   // outside the main checkout: only the common dir can name 'main'
         _ = Directory.CreateDirectory(main);
         await Git(main, "init", "-q");
         await Git(main, "-c", "user.email=test@example.invalid", "-c", "user.name=test", "commit", "-q", "--allow-empty", "-m", "init");

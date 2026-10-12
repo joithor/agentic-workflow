@@ -13,8 +13,8 @@ public sealed class FakeRepoLocatorContractTests : RepoLocatorContract
 
     protected override ValueTask<(string MainCheckout, string InWorktree)> RepoWithWorktree()
     {
-        _ = _locator.In("/work/demo/.claude/worktrees/x/src", "/work/demo");
-        return ValueTask.FromResult(("/work/demo", "/work/demo/.claude/worktrees/x/src"));
+        _ = _locator.In("/work/wt-x/src", "/work/demo");
+        return ValueTask.FromResult(("/work/demo", "/work/wt-x/src"));
     }
 
     protected override ValueTask<string> OutsideGit() => ValueTask.FromResult("/elsewhere");
