@@ -73,7 +73,8 @@ A case file is JSON lines, LF or CRLF:
 (`child.parked` with `park`, `child.resumed`, `child.escalated`; a child's end is `wait.satisfied` with its outcome),
 or an engine trigger: `answer` with a `variant` (`grant`, `grant-tokens`, `accept`, `reject`, `resume`, `text`; the
 grants take `amount`, a `text` answer's text is `outputs` `fact:answer`), `takeover`, `handback`, `cancel` and
-`deadline`. A `deadline` line fails until timers land (P5).
+`deadline`. An answer wait is satisfied by an `answer` line with `variant` `text` (outcome `answered`), not by
+`wait.satisfied`. A `deadline` line fails until timers land (P5).
 
 Output, one line per case:
 
@@ -91,7 +92,7 @@ rounds pass
 A line the engine rejects (an answer that doesn't fit the park, a grant of 0 or above the loop's cap, an undeclared
 outcome) or one out of the format (not JSON, an unknown `kind`, a `variant` that doesn't go with its kind) fails its case
 at that line, saying why. A recipe without `evals:` prints `no evals declared` and exits 0: nothing failed. Approval will refuse
-such a recipe (`SND-RECIPE-008`) once the registry lands (P2); this build has no approve path yet. `--json` prints `{"cases":[{"case","passed","line","detail"}],"scaffold":null,"passed"}`.
+such a recipe (`SND-RECIPE-008`) once the registry lands (P2); this build has no approve path yet. `--json` prints `{"cases":[{"case","passed","line","detail"}],"scaffold":null,"passed"}`, where `"case"` is the eval file's path as `evals:` lists it (`evals/workflow.step/happy.jsonl`); the text output shows the bare name (`happy`).
 The same eval run twice prints the same output.
 
 `--scaffold <file>` prints a happy-path case for the recipe on stdout, marked `"scaffold": true` on line 1: the start

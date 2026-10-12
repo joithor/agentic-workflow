@@ -6,8 +6,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>
 /// The engine triggers this unit routes to the frame and child rules (spec §3.8, §5.7): cancel, takeover, handback
-/// and a child's park, resume or escalation. Deadlines, shifts, recipe wakes, outbox
-/// refusals and open-requests come with the phases that own them (P4–P6).
+/// and a child's park, resume or escalation, and answers. Deadlines and shifts come with P5, recipe wakes and outbox
+/// refusals with P2 and P6, and open-requests with UI E-6.
 /// </summary>
 public static partial class TransitionDecision
 {
