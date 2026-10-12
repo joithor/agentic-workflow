@@ -1,6 +1,8 @@
 # Sindri UI app design: the control plane's views, actions and launching sessions
 
 Status:
+- **Revision 7 amendment (owner, 2026-10-12; PR #197):** §12.4 lists the destructive confirm's copy (§8, E-8): the
+  question "<label> <id>?" with **Confirm** and **Keep**. Nothing else changes.
 - **Revision 7 amendment (owner, 2026-10-12; PR #193):** §4.1's command lifecycle also covers the palette's rows: a
   ready command run from the palette keeps the palette open and its row shows the lifecycle.
 - **Revision 7 amendment (owner, 2026-10-12; PR #184):** §12.4 lists two more app-owned sentences, "On in your system
@@ -809,6 +811,7 @@ sentences are the app's own, because no API exists at that moment or because the
 | Home's summary line and panel headers (§4.2) | "N need you · N running · N with you · N queued" and the headers "NEEDS YOU N", "RUNNING N · WITH YOU N", "QUEUED N", built from the panels' row counts |
 | Before the API answers (§4.1) | "Not running" and its reasons (S1b's `SND-UI-*`), "Looks again every 2 s" (the Not running card), "Connecting…", "Sindri and the app are different versions" (API §9's wording), "Sindri not responding: run `sindri doctor`", "stale", "updated Ns ago" |
 | Command lifecycle (§4.1) | "Sending…", "Copied", the accepted outcome ("Resumed ITM-…", built from the action's label and the subject id), "Cleared: …" |
+| Destructive confirm (§8, E-8) | The question "<label> <id>?" (for example "Close as cancelled ITM-…?"), with **Confirm** and **Keep** |
 | Copy block (§7) | "Needs a typed confirmation at a terminal." |
 | Launch (§6.6) | "Sending to Warp…", "Sent to Warp · tab `sindri ITM-…`", "Sent to Warp <age> ago · <agent>", "Open another session" (the confirm's question is the server's `confirm.reason`), "Warp hasn't confirmed: run `sindri doctor`", the menu's "last used in <repo>", "profile default" |
 | Urgency words (§5, §11.3) | "needs you now", "failed", "to look at", "new" |
