@@ -104,9 +104,8 @@ public static partial class TransitionDecision
             return creating.Error;
         }
 
-        var request = creating.Value;
-        var child = scope.Context.Children.Resolve(wait.Recipe)!; // why: CreateChild returns a start only for a child the resolver has
-        return Start(request, child.Recipe, scope.Context, scope.Rules) switch
+        var (request, recipe) = creating.Value;
+        return Start(request, recipe, scope.Context, scope.Rules) switch
         {
             Applied started => new Entered(
                 entered with { Frame = entered.Frame with { Child = request.Id } }, entry, started.Changes, started.Outbox, started.FollowUps),

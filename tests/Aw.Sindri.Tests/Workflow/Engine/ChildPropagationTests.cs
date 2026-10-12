@@ -21,7 +21,7 @@ public sealed class ChildPropagationTests
     [Fact, Trait("Lane", "unit")]
     public void Create_derives_the_child_from_the_parent_pin_address_and_key()
     {
-        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value;
+        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Request;
 
         Assert.Equal(EnteringKey, start.Key);
         Assert.Equal(InstanceAddress.From("T-3/item/1/step.4"), start.Address);
@@ -34,20 +34,21 @@ public sealed class ChildPropagationTests
         Assert.Equal(ParentId, start.Parent);
         Assert.Equal(Terminal, start.Actor);
         Assert.False(start.TakenOver);
+        Assert.Same(StepRecipe, ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Recipe);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Create_hashes_the_parent_key_into_a_version_8_id()
     {
-        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value;
+        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Request;
 
         var digest = SHA256.HashData(Encoding.UTF8.GetBytes(EnteringKey.Value));
         var hex = start.Id.Value["WFI-".Length..];
         Assert.Equal(Convert.ToHexStringLower(digest)[..12], hex[..12]);
         Assert.Equal('8', hex[12]);
         Assert.Contains(hex[16], "89ab");
-        Assert.Equal(start.Id, ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Id);
-        Assert.NotEqual(start.Id, ChildPropagation.Create(Waiting, Wait, Pinned, TriggerKey.For(ParentId, "event:43"), Terminal).Value.Id);
+        Assert.Equal(start.Id, ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Request.Id);
+        Assert.NotEqual(start.Id, ChildPropagation.Create(Waiting, Wait, Pinned, TriggerKey.For(ParentId, "event:43"), Terminal).Value.Request.Id);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -73,7 +74,7 @@ public sealed class ChildPropagationTests
     [Fact, Trait("Lane", "unit")]
     public void Create_copies_a_fact_input_from_the_parent()
     {
-        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value;
+        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Request;
 
         Assert.Equal(StepSpecValue, Assert.Single(start.Inputs, i => i.Key == Spec).Value);
     }
@@ -92,7 +93,7 @@ public sealed class ChildPropagationTests
             },
         };
 
-        var start = ChildPropagation.Create(Waiting, wait, Pinned, EnteringKey, Terminal).Value;
+        var start = ChildPropagation.Create(Waiting, wait, Pinned, EnteringKey, Terminal).Value.Request;
 
         var value = Assert.Single(start.Inputs).Value;
         Assert.Equal("literal:{\"rounds\":3}", value.Ref);

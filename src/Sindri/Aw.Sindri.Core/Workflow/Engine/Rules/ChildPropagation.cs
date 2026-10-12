@@ -24,10 +24,10 @@ internal static class ChildPropagation
     /// <param name="parent">The parent, in the frame that entered the wait.</param>
     /// <param name="wait">The child wait.</param>
     /// <param name="pinned">The pinned child recipes.</param>
-    /// <param name="key">The parent's trigger key.</param>
+    /// <param name="key">The creating trigger's key (for a grandchild, the child's own start key).</param>
     /// <param name="actor">The parent trigger's actor.</param>
-    /// <returns>The child's start, or SND-RECIPE-002 when the child isn't resolved, isn't in the parent's pins, or resolves to another hash.</returns>
-    public static Result<StartRequest> Create(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor)
+    /// <returns>The child's start with the recipe it starts, or SND-RECIPE-002 when the child isn't resolved, isn't in the parent's pins, or resolves to another hash.</returns>
+    public static Result<ChildStart> Create(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor)
     {
         ArgumentNullException.ThrowIfNull(parent);
         ArgumentNullException.ThrowIfNull(wait);
@@ -45,7 +45,7 @@ internal static class ChildPropagation
         }
 
         var address = parent.Address.Child(wait.Recipe, parent.Frame.Entry);
-        return new StartRequest(
+        var request = new StartRequest(
             key,
             ChildInputs.IdFor(key),
             address,
@@ -56,6 +56,7 @@ internal static class ChildPropagation
             ChildInputs.From(parent, wait),
             actor,
             TakenOver: false);
+        return new ChildStart(request, child.Recipe);
     }
 
     /// <summary>

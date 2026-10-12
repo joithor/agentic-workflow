@@ -104,17 +104,26 @@ internal sealed class FakeEngineRules : IEngineRules
             : null);
     }
 
-    public Result<StartRequest> CreateChild(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor) => new StartRequest(
-        key,
-        EngineFixture.ChildId,
-        parent.Address.Child(wait.Recipe, parent.Frame.Entry),
-        new PinnedRecipe(wait.Recipe, 1, parent.Recipe.Children[wait.Recipe], new Dictionary<RecipeId, RecipeHash>()),
-        parent.Item,
-        parent.Attempt,
-        parent.Id,
-        new Dictionary<FactKey, FactValue>(),
-        actor,
-        TakenOver: false);
+    public Result<ChildStart> CreateChild(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor)
+    {
+        if (pinned.Resolve(wait.Recipe) is not { } child)
+        {
+            return WorkflowErrors.RecipeNotFound.With($"no {wait.Recipe.Value} in the test's resolver");
+        }
+
+        var request = new StartRequest(
+            key,
+            EngineFixture.ChildId,
+            parent.Address.Child(wait.Recipe, parent.Frame.Entry),
+            new PinnedRecipe(wait.Recipe, 1, parent.Recipe.Children[wait.Recipe], new Dictionary<RecipeId, RecipeHash>()),
+            parent.Item,
+            parent.Attempt,
+            parent.Id,
+            new Dictionary<FactKey, FactValue>(),
+            actor,
+            TakenOver: false);
+        return new ChildStart(request, child.Recipe);
+    }
 
     public ParentEffect ToParent(WorkflowInstance parent, Recipe recipe, ChildChanged change) => change.Change switch
     {

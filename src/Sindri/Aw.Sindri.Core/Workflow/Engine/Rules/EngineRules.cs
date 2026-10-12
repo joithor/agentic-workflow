@@ -51,7 +51,7 @@ internal sealed class EngineRules : IEngineRules
     public BudgetVerdict Spend(WorkflowInstance instance, Recipe recipe, int tokens) => BudgetRules.Spend(instance, recipe, tokens);
 
     /// <inheritdoc/>
-    public Result<StartRequest> CreateChild(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor) =>
+    public Result<ChildStart> CreateChild(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor) =>
         ChildPropagation.Create(parent, wait, pinned, key, actor);
 
     /// <inheritdoc/>
