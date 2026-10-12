@@ -18,6 +18,9 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
 
     private readonly List<SeenRequest> _requests = [];
 
+    /// <summary>When set, the token Sindri holds: a request without it is refused with 403 SND-AUTH-001, as Sindri's caller check does.</summary>
+    public string? RequiredToken { get; set; }
+
     /// <summary>When set, every route answers this status with this body instead.</summary>
     public (HttpStatusCode Code, string Body)? Override { get; set; }
 
@@ -29,15 +32,17 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             throw new HttpRequestException("Connection refused (127.0.0.1)");
         }
 
+        if (Refused(request) is { } refused)
+        {
+            return Task.FromResult(refused);
+        }
+
         if (Override is { } o)
         {
             return Task.FromResult(Text(o.Code, o.Body, "application/json"));
         }
 
-        // API P1 (§6): a human call without this start's token is refused, ping, status and the stream included.
-        return server.HumanToken is { } token && Header(request, "X-Sindri-Caller") == "human" && Header(request, "X-Sindri-Token") != token
-            ? Task.FromResult(Answer(new RouteAnswer(HttpStatusCode.Forbidden, GoldenFiles.Api("status", "human-no-token"))))
-            : Route(request, cancellationToken);
+        return Route(request, cancellationToken);
     }
 
     private void Record(HttpRequestMessage request)
@@ -74,6 +79,19 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/views/rebuild" when request.Method == HttpMethod.Post => Answer(Counted(await server.RebuildViews(uri, cancellationToken), server.Rebuild)),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
+    }
+
+    // Sindri's caller check (API P1 §6: a human without this start's token, ping, status and the stream included), then the model's own refusal: 403 with ProblemDetails.
+    private HttpResponseMessage? Refused(HttpRequestMessage request)
+    {
+        var sent = Header(request, "X-Sindri-Token");
+        if (RequiredToken is { } held && !string.Equals(held, sent, StringComparison.Ordinal))
+        {
+            // API P1's own answers (E-17): its goldens, as served, for no token and for another start's token.
+            return Text(HttpStatusCode.Forbidden, GoldenFiles.Api("status", sent is null ? "human-no-token" : "human-stale-token"), "application/problem+json");
+        }
+
+        return server.Refusal is { } refusal ? Text(HttpStatusCode.Forbidden, Problem(refusal.Code, refusal.Detail, 403), "application/problem+json") : null;
     }
 
     // The route's golden text as served; the call above went through the model so its counts and gates hold.
@@ -122,6 +140,10 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
         $$""","health":{"word":"{{h.Word}}","problems":[{{string.Join(',', h.Problems.Select(p => $$"""{"code":"{{p.Code}}","text":"{{p.Text}}"}"""))}}]}""";
 
     private static string Service(ServiceView v) => $$"""{"name":"{{v.Name}}","every":"{{v.Every}}","lastRun":{{Quoted(v.LastRun)}}}""";
+
+    // ASP.NET Core's ProblemDetails as Sindri's ApiProblems writes it: title = the SND code, detail = the sentence with its fix.
+    private static string Problem(string code, string detail, int status) => string.Create(CultureInfo.InvariantCulture,
+        $$"""{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.4","title":"{{code}}","status":{{status}},"detail":"{{detail}}"}""");
 
     private static string Bool(bool b) => b ? "true" : "false";
 

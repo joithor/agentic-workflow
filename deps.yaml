@@ -521,7 +521,7 @@ edges:
     to: Sindri
     kind: file
     status: current
-    note: "the app reads the endpoint record (control.json under AW_SINDRI_HOME) to find the API and check it against /sindri/ping, and auth/human.token (this start's human token, re-read before each request) to send X-Sindri-Token; read-only. Its tests read Sindri's API goldens (tests/Aw.Sindri.Tests/Golden/Api/**, UI spec E-17) as the fake's wire, through Aw.Sindri.Ui.Testing's GoldenFiles: a wire change fails the UI's unit lane"
+    note: "the app reads two files under AW_SINDRI_HOME, read-only: the endpoint record (control.json) to find the API and check it against /sindri/ping, and the per-start human token (auth/human.token, API spec §6), read at each call and sent as X-Sindri-Token beside X-Sindri-Caller: human (re-read and retried once on SND-AUTH-001). One entry covers both (one edge per from, to and kind). Its tests read Sindri's API goldens (tests/Aw.Sindri.Tests/Golden/Api/**, UI spec E-17) as the fake's wire, through Aw.Sindri.Ui.Testing's GoldenFiles: a wire change fails the UI's unit lane"
   - from: SindriUi
     to: Sindri
     kind: http

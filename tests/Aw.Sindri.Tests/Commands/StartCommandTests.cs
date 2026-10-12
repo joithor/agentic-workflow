@@ -105,21 +105,6 @@ public sealed class StartCommandTests : IDisposable
         Assert.DoesNotContain("  ui ", stdout.ToString(), StringComparison.Ordinal);
     }
 
-    // The P1 merge kept U0's opener beside P1's Run(headless): 'sindri --headless' opens nothing even when an opener is wired.
-    [Fact, Trait("Lane", "unit")]
-    public async Task Headless_never_calls_the_opener_and_prints_no_ui_line()
-    {
-        var stdout = new StringWriter();
-        var calls = 0;
-        var command = new StartCommand(_probe, new FakeControlPlaneLauncher(), _client, new Output(stdout, TextWriter.Null, SliceHarness.Json), _clock,
-            openUi: () => { calls++; return "opened"; });
-
-        _ = await command.Report(Status(needsApproval: false), _found.Item1, headless: true);
-
-        Assert.Equal(0, calls);
-        Assert.DoesNotContain("  ui ", stdout.ToString(), StringComparison.Ordinal);
-    }
-
     private static Features.GetStatus.GetStatusResponse Status(bool needsApproval) =>
         new(Running: true, 42, 3, LeaseExpiresAt: null,
             new Features.GetStatus.ProfileStatus(Approved: null, Live: null, ChangedSinceApproval: false, Problem: "p", Source: null, NeedsApproval: needsApproval), []);

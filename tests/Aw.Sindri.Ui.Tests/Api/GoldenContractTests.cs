@@ -38,9 +38,9 @@ public sealed class GoldenContractTests
         foreach (var (kind, slug, scenario, body) in goldens)
         {
             var bytes = Encoding.UTF8.GetBytes(body);
-            if (Problem(bytes) is { } problem)
+            if (Problem(bytes) is { } code)
             {
-                Assert.True(problem.Title.StartsWith("SND-", StringComparison.Ordinal), $"{kind}/{slug}/{scenario}: {problem.Title}");
+                Assert.True(code.StartsWith("SND-", StringComparison.Ordinal), $"{kind}/{slug}/{scenario}: {code}");
                 continue;
             }
 
@@ -67,11 +67,9 @@ public sealed class GoldenContractTests
         Assert.Equal("cli-only:typed-confirmation", Assert.Single(catalog.Rows, r => r.Action == "ApproveProfile").Ui);
     }
 
-    private static ProblemView? Problem(byte[] body)
-    {
-        var problem = AwJson.Deserialize<ProblemView>(body, SindriApiClient.Json);
-        return problem.IsSuccess ? problem.Value : null;
-    }
+    // A refusal's ProblemDetails names its SND code in title; any other body has none.
+    private static string? Problem(byte[] body) =>
+        AwJson.Deserialize<ProblemView>(body, SindriApiClient.Json) is { IsSuccess: true, Value.Title: { Length: > 0 } code } ? code : null;
 
     private static Result<object> As<T>(byte[] body)
         where T : class

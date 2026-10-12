@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
@@ -50,6 +51,51 @@ public sealed class HealthViewModelTests : IDisposable
         Assert.Equal("sindri", _vm.Fix);
         Assert.Equal(("memory:control.json", Labels.NoRecord), (_vm.ReasonDetail, _vm.Reason));
         Assert.False(_vm.IsRunning);
+    }
+
+    // API §6, §3.6 and the orchestrator's decision (PR #184): a call refused even after its one retry (SND-AUTH-001, a
+    // missing or stale token) is the Unreadable banner with Sindri's code and detail as they are, never "nothing
+    // answered"; the app keeps looking every 2 s, reading the token again, so it recovers with no restart.
+    [Fact]
+    public async Task A_refused_call_shows_sindris_detail_as_is_and_recovers_on_its_own()
+    {
+        _records.Write(A.Record());
+        _server.Refusal = A.NoTokenRefusal;
+        Start();
+
+        await Eventually(() => _vm.State == ShellState.Unreadable, "the refusal");
+        Assert.Equal($"{A.NoTokenRefusal.Code}: {A.NoTokenRefusal.Detail}", _vm.Reason);
+
+        _server.Refusal = null;
+        _clock.Advance(HealthViewModel.RetryEvery);
+        await Eventually(() => _vm.IsRunning, "running again");
+        Assert.Equal(ShellState.Normal, _vm.State);
+    }
+
+    // The merge of #184 with U1: any answer Sindri explains with its own code (not only a 403) is the Unreadable banner
+    // with that code and detail; only SND-UI-002 (nothing answered) is Not running. The decision keys off the code.
+    [Fact]
+    public void A_refusal_that_isnt_a_403_is_unreadable_with_sindris_code_not_nothing_answered()
+    {
+        _ = _vm.Failed(new Error("SND-LEDGER-002", ErrorKind.Unavailable, "The ledger can't be read (fix: sindri doctor)"), new Uri("http://127.0.0.1:7410/"));
+
+        Assert.Equal((ShellState.Unreadable, "SND-LEDGER-002: The ledger can't be read (fix: sindri doctor)"), (_vm.State, _vm.Reason));
+    }
+
+    // A token removed or replaced while the app follows: the next ping's refusal ends the follow (a definite answer, not
+    // silence), so the window says why within one ping beat instead of only going stale.
+    [Fact]
+    public async Task A_ping_refused_while_following_shows_the_refusal()
+    {
+        _records.Write(A.Record());
+        Start();
+        await Eventually(() => _vm.IsRunning, "running");
+
+        _server.Refusal = A.NoTokenRefusal;
+        _clock.Advance(HealthViewModel.PingEvery);
+
+        await Eventually(() => _vm.State == ShellState.Unreadable, "the refusal");
+        Assert.Equal($"{A.NoTokenRefusal.Code}: {A.NoTokenRefusal.Detail}", _vm.Reason);
     }
 
     // I7 (§4.1, §12.4): SND-UI-001's sentence leads; the record and the answer are one detail line under it.

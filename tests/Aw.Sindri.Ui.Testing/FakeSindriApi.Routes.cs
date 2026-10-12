@@ -12,9 +12,6 @@ internal sealed partial class FakeSindriApi
     private int _servicesCalls;
     private int _rebuildCalls;
 
-    /// <summary>When set, a human caller must send this as X-Sindri-Token, as API P1 requires (the handler answers SND-AUTH-001 otherwise).</summary>
-    public string? HumanToken { get; set; }
-
     /// <summary>GET /sindri/commands's answer: P1's golden catalog by default.</summary>
     public RouteAnswer Catalog { get; set; } = RouteAnswer.Api("commands", "catalog");
 
@@ -73,8 +70,8 @@ internal sealed partial class FakeSindriApi
         }
 
         var problem = AwJson.Deserialize<ProblemView>(System.Text.Encoding.UTF8.GetBytes(answer.Body), SindriApiClient.Json);
-        return problem.IsSuccess
-            ? new Error(problem.Value.Title, KindOf(answer.Status), problem.Value.Detail)
+        return problem is { IsSuccess: true, Value: { Title: { Length: > 0 } code, Detail: { Length: > 0 } detail } }
+            ? new Error(code, KindOf(answer.Status), detail)
             : SindriUiErrors.BadAnswer.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{api.AbsolutePath} answered {(int)answer.Status}"));
     }
 

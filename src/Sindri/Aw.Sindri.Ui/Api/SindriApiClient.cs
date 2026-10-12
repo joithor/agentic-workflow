@@ -15,10 +15,10 @@ namespace Aw.Sindri.Ui.Api;
 /// answer within 2 s is unreachable, like the CLI's; the event stream has no timeout and ends with its connection.
 /// </summary>
 /// <param name="http">The HTTP client, with no timeout of its own (the app's, or one over a canned handler in tests).</param>
+/// <param name="token">The control plane's per-start human token, read at each call (API spec §6).</param>
 /// <param name="clock">The clock the 2 s deadline runs on (the app's, so tests drive it with a fake one).</param>
-/// <param name="tokens">The control plane's per-start human token, read before each request (API spec §6).</param>
 /// <param name="log">The app's log, where an unreadable body's parser detail goes (never the window); none by default.</param>
-internal sealed partial class SindriApiClient(HttpClient http, TimeProvider clock, IHumanTokenSource tokens, ILogger? log = null) : ISindriApi
+internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource token, TimeProvider clock, ILogger? log = null) : ISindriApi
 {
     private readonly ILogger _log = log ?? NullLogger.Instance;
 
@@ -79,18 +79,27 @@ internal sealed partial class SindriApiClient(HttpClient http, TimeProvider cloc
     // The open event-stream response (owned by the caller), or null when it didn't answer 2xx or nothing answered.
     private async Task<HttpResponseMessage?> Open(Uri url, CancellationToken cancellationToken)
     {
-        using var request = await Request(HttpMethod.Get, url, query: false, cancellationToken).ConfigureAwait(false);
-        request.Headers.Accept.ParseAdd("text/event-stream");
         try
         {
-            var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-            if (response.IsSuccessStatusCode)
+            for (var attempt = 1; ; attempt++)
             {
-                return response;
-            }
+                using var request = await Request(HttpMethod.Get, url, query: false, cancellationToken).ConfigureAwait(false);
+                request.Headers.Accept.ParseAdd("text/event-stream");
+                var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                if (response.IsSuccessStatusCode)
+                {
+                    return response;
+                }
 
-            response.Dispose();
-            return null;
+                // A stale token is retried once with the token read again, as Get's calls are; anything else ends the stream.
+                using (response)
+                {
+                    if (attempt > 1 || !StaleToken(response.StatusCode, await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false)))
+                    {
+                        return null;
+                    }
+                }
+            }
         }
         catch (HttpRequestException)
         {

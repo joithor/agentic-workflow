@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Ui.Testing;
 
-/// <summary>A request the canned handler saw: its method, path and the caller headers (null when absent).</summary>
+/// <summary>A request the canned handler saw: its method, path, the caller headers and the token (null when absent).</summary>
 /// <param name="Path">The URL path.</param>
 /// <param name="Caller">X-Sindri-Caller.</param>
 /// <param name="Client">X-Sindri-Client.</param>
