@@ -28,7 +28,7 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 | `sindri recipe eval <file>` | Arrives with the engine's evals (P3); until then it refuses | 2 (`SND-CLI-001`) |
 
 Output: state is always a word, never colour; there is no colour at all, so `NO_COLOR` and redirected output need
-nothing special. Errors go to stderr as `SND-<AREA>-NNN message`, with `(fix: …)` where there is one. `--json` prints
+nothing special. Errors go to stderr as `SND-<AREA>-NNN message`, with `(fix: …)` where there is one, or `(usage: …)` for a usage error. `--json` prints
 the response record through AwJson.
 
 **Which verbs are API clients.** `status`, `stop` and `profile approve` call the running process's API (the CLI is a
