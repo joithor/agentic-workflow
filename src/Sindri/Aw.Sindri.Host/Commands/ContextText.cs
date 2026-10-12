@@ -49,7 +49,7 @@ internal static class ContextText
         foreach (var row in view.Sources)
         {
             var sync = row.LastSync is { } at ? Invariant($", last sync {at:O}") : string.Empty;
-            _ = text.AppendLine(Invariant($"{row.Source.Value,-10} {row.Repo ?? "-",-16} {Word(row.State),-11} {row.Detail}{sync}"));
+            _ = text.AppendLine(Invariant($"{row.Source.Value,-10} {row.Repo?.Value ?? "-",-16} {Word(row.State),-11} {row.Detail}{sync}"));
         }
 
         return view.Sources.Count == 0 ? text.AppendLine("no sources: the profile maps no repo").ToString() : text.ToString();

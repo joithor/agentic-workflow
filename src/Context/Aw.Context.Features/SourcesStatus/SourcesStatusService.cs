@@ -47,7 +47,7 @@ internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catal
         return new SourcesView(rows, settings.Value.SessionsEnabled, clock.GetUtcNow());
     }
 
-    private static SourceStatusRow Row(string repo, DocIndexStatus status)
+    private static SourceStatusRow Row(ContextRepoName repo, DocIndexStatus status)
     {
         var head = status.Head is { } h ? h.Value[..Math.Min(7, h.Value.Length)] : "none";
         var (state, detail) = (status.LastSync, status.Code) switch

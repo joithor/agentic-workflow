@@ -5,20 +5,20 @@ namespace Aw.Context.Tests.Core;
 
 public sealed class ScopeRulesTests
 {
-    private static readonly ContextRepo[] _repos = [new("split-panes", "/r/a"), new("other", "/r/b")];
+    private static readonly ContextRepo[] _repos = [new(ContextRepoName.From("split-panes"), "/r/a"), new(ContextRepoName.From("other"), "/r/b")];
 
     [Fact, Trait("Lane", "unit")]
     public void A_human_reads_every_mapped_repo()
     {
-        var scoped = ScopeRules.Resolve(new ContextSettings { Repos = ["other"] }, _repos, new(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
+        var scoped = ScopeRules.Resolve(new ContextSettings { Repos = [ContextRepoName.From("other")] }, _repos, new(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
 
-        Assert.Equal(["other"], scoped.Value.Select(r => r.Name), StringComparer.Ordinal);
+        Assert.Equal(["other"], scoped.Value.Select(r => r.Name.Value), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void A_session_is_refused_with_020_while_sessions_are_off()
     {
-        var scoped = ScopeRules.Resolve(new ContextSettings(), _repos, new(ContextCallerKind.Session, "split-panes", ContextClient.Http));
+        var scoped = ScopeRules.Resolve(new ContextSettings(), _repos, new(ContextCallerKind.Session, ContextRepoName.From("split-panes"), ContextClient.Http));
 
         Assert.Equal(ContextErrors.SessionsDisabled.Code, scoped.Error.Code);
     }
@@ -29,9 +29,9 @@ public sealed class ScopeRulesTests
     [InlineData("other")]
     public void A_session_outside_its_mapped_repo_gets_003_the_same_way(string? repo)
     {
-        var settings = new ContextSettings { SessionsEnabled = true, Repos = ["split-panes"] };
+        var settings = new ContextSettings { SessionsEnabled = true, Repos = [ContextRepoName.From("split-panes")] };
 
-        var scoped = ScopeRules.Resolve(settings, _repos, new(ContextCallerKind.Session, repo, ContextClient.Mcp));
+        var scoped = ScopeRules.Resolve(settings, _repos, new(ContextCallerKind.Session, repo is null ? null : ContextRepoName.From(repo), ContextClient.Mcp));
 
         Assert.Equal(ContextErrors.UnknownAnchor.Code, scoped.Error.Code);
         Assert.Equal("no context is mapped for this session's repo (X-Sindri-Repo)", scoped.Error.Message);
@@ -40,8 +40,8 @@ public sealed class ScopeRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_session_sees_only_its_own_repo()
     {
-        var scoped = ScopeRules.Resolve(new ContextSettings { SessionsEnabled = true }, _repos, new(ContextCallerKind.Session, "split-panes", ContextClient.Http));
+        var scoped = ScopeRules.Resolve(new ContextSettings { SessionsEnabled = true }, _repos, new(ContextCallerKind.Session, ContextRepoName.From("split-panes"), ContextClient.Http));
 
-        Assert.Equal(["split-panes"], scoped.Value.Select(r => r.Name), StringComparer.Ordinal);
+        Assert.Equal(["split-panes"], scoped.Value.Select(r => r.Name.Value), StringComparer.Ordinal);
     }
 }

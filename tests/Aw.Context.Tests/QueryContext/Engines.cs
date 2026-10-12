@@ -15,7 +15,7 @@ namespace Aw.Context.Tests.QueryContext;
 /// <summary>The facade over fakes, and the scopes the tests ask in.</summary>
 internal static class Engines
 {
-    internal static readonly ContextRepo[] Repos = [new("split-panes", "/repos/split-panes"), new("other", "/repos/other")];
+    internal static readonly ContextRepo[] Repos = [new(ContextRepoName.From("split-panes"), "/repos/split-panes"), new(ContextRepoName.From("other"), "/repos/other")];
 
     internal static IContextEngine Over(FixedSourceCatalog catalog, FakeDocIndex? index = null)
     {
@@ -32,7 +32,7 @@ internal static class Engines
         new(Settings(settingsJson), Repos, new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
 
     internal static ContextScope Session(string? repo, string? settingsJson = null) =>
-        new(Settings(settingsJson), Repos, new ContextCaller(ContextCallerKind.Session, repo, ContextClient.Http));
+        new(Settings(settingsJson), Repos, new ContextCaller(ContextCallerKind.Session, repo is null ? null : ContextRepoName.From(repo), ContextClient.Http));
 
     private static JsonElement? Settings(string? json) => json is null ? null : JsonDocument.Parse(json).RootElement.Clone();
 }

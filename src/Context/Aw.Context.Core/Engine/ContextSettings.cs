@@ -12,7 +12,7 @@ public sealed record ContextSettings
     public static IReadOnlyList<string> DefaultDocGlobs { get; } = ["docs/**/*.md", "**/PRD*.md", "**/TDD*.md"];
 
     /// <summary>The profile repos the engine maps, or null for all of them.</summary>
-    public IReadOnlyList<string>? Repos { get; init; }
+    public IReadOnlyList<ContextRepoName>? Repos { get; init; }
 
     /// <summary>The repo-relative globs whose files the repo-docs source indexes.</summary>
     public IReadOnlyList<string> DocGlobs { get; init; } = DefaultDocGlobs;

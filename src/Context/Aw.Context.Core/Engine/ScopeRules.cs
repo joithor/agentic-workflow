@@ -21,7 +21,7 @@ public static class ScopeRules
         ArgumentNullException.ThrowIfNull(repos);
         ArgumentNullException.ThrowIfNull(caller);
         var mapped = settings.Repos is { } names
-            ? repos.Where(r => names.Contains(r.Name, StringComparer.Ordinal)).ToList()
+            ? repos.Where(r => names.Contains(r.Name)).ToList()
             : [.. repos];
         if (caller.Kind != ContextCallerKind.Session)
         {
@@ -34,7 +34,7 @@ public static class ScopeRules
                 "context reads from agent sessions are off (context.sessions.enabled: false); ask the human to enable them in the profile and approve it");
         }
 
-        var own = mapped.Where(r => string.Equals(r.Name, caller.Repo, StringComparison.Ordinal)).ToList();
+        var own = mapped.Where(r => r.Name == caller.Repo).ToList();
         return own.Count == 1
             ? own
             : ContextErrors.UnknownAnchor.With("no context is mapped for this session's repo (X-Sindri-Repo)");

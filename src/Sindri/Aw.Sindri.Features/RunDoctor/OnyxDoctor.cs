@@ -45,7 +45,13 @@ internal sealed class OnyxDoctor(IContextEngine engine)
             return new DoctorCheck(Name, CheckState.Ok, "not configured (the approved profile names no context.sources.onyx)", Fix: null);
         }
 
-        var repos = (approved.Profile.Repos ?? []).Select(r => new ContextRepo(r.Name, r.Path)).ToList();
+        var repos = (approved.Profile.Repos ?? []).Where(r => ContextRepoName.TryFrom(r.Name, out _))
+            .Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path)).ToList();
+        if (repos.Count == 0 || (settings.Value.Repos is { } named && !repos.Exists(r => named.Contains(r.Name))))
+        {
+            return new DoctorCheck(Name, CheckState.Warn, "the approved profile maps no repo, so no context source runs, onyx included", "map a repo in the profile's repos and context.repos");
+        }
+
         var scope = new ContextScope(approved.Profile.Context, repos, new ContextCaller(ContextCallerKind.Service, Repo: null, ContextClient.Service));
         var view = await engine.Sources(scope, cancellationToken).ConfigureAwait(false);
         return view.IsError

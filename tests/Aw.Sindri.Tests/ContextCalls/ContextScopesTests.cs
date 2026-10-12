@@ -25,7 +25,7 @@ public sealed class ContextScopesTests
         var mapped = ContextScopes.Caller(context);
 
         Assert.Equal((kind, transport), (mapped.Kind, mapped.Client));
-        Assert.Equal(caller == CallerClass.Session ? "split-panes" : null, mapped.Repo);
+        Assert.Equal(caller == CallerClass.Session ? "split-panes" : null, mapped.Repo?.Value);
     }
 
     [Fact, Trait("Lane", "unit")]

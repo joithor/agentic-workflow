@@ -78,7 +78,7 @@ public sealed class SourcesSettingsTests
     {
         var onyx = new SourceDescriptor(SourceId.From("onyx"), SourceKind.Intent, SourceFreshness.Live, SupportsAsOf: false);
         var docs = new SourceDescriptor(SourceId.From("repo-docs"), SourceKind.Doc, SourceFreshness.Snapshot, SupportsAsOf: false);
-        var session = new ContextCaller(ContextCallerKind.Session, "split-panes", ContextClient.Mcp);
+        var session = new ContextCaller(ContextCallerKind.Session, ContextRepoName.From("split-panes"), ContextClient.Mcp);
         var human = new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli);
 
         Assert.Equal((false, true, true, true),

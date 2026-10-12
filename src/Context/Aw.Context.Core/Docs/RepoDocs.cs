@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Sources;
 
 namespace Aw.Context.Core.Docs;
@@ -12,5 +13,5 @@ public static class RepoDocs
     /// <param name="repo">The repo name.</param>
     /// <param name="path">The repo-relative path, '/'-separated.</param>
     /// <returns>The key.</returns>
-    public static RecordKey Key(string repo, string path) => RecordKey.From($"repo:{repo}/{path}");
+    public static RecordKey Key(ContextRepoName repo, string path) => RecordKey.From($"repo:{repo.Value}/{path}");
 }

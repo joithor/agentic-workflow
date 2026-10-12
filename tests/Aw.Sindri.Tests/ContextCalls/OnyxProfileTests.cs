@@ -59,6 +59,16 @@ public sealed class OnyxProfileTests
         Assert.Equal((CheckState.Ok, "not configured (no profile is approved)"), (check.State, check.Detail));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task Doctor_warns_when_onyx_is_named_but_no_repo_is_mapped_so_no_source_runs()
+    {
+        var approved = With("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"env:ONYX_KEY","version":"v4.9.0"}}}""");
+
+        var check = await new OnyxDoctor(SettingsOnlyContextEngine.Instance).Check(approved, Token);
+
+        Assert.Equal((CheckState.Warn, "the approved profile maps no repo, so no context source runs, onyx included"), (check.State, check.Detail));
+    }
+
     private static LoadedProfile With(string context)
     {
         var json = SliceHarness.Json;
