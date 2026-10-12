@@ -20,6 +20,7 @@ public sealed partial class SindriApp : Application
 {
     private readonly ShellViewModel? _shell;
     private readonly Preferences? _preferences;
+    private readonly TimeProvider? _clock;
 
     /// <summary>
     /// The exit code when the app failed (SND-UI-004): its start-up, or its following of the control plane, threw. The app
@@ -32,10 +33,11 @@ public sealed partial class SindriApp : Application
     {
     }
 
-    private SindriApp(ShellViewModel shell, Preferences preferences, SindriPlatform platform)
+    private SindriApp(ShellViewModel shell, Preferences preferences, SindriPlatform platform, TimeProvider clock)
     {
         _shell = shell;
         _preferences = preferences;
+        _clock = clock;
         Platform = platform;
     }
 
@@ -47,7 +49,7 @@ public sealed partial class SindriApp : Application
     {
         // One writer of the preferences for the whole app: the shell and Settings share it, so their writes queue.
         var preferences = new Preferences(platform.Preferences);
-        return new(new ShellViewModel(platform.Records, new SindriApiClient(Loopback()), clock, preferences), preferences, platform);
+        return new(new ShellViewModel(platform.Records, new SindriApiClient(Loopback()), clock, preferences), preferences, platform, clock);
     }
 
     /// <summary>The head's adapters, or null for the theme-only app.</summary>

@@ -15,11 +15,17 @@ namespace Aw.Sindri.Ui.Views;
 /// </summary>
 internal sealed class AppLifetime : IDisposable
 {
+    /// <summary>How long Quit, or the OS ending the app, waits for the preferences to be written before the app ends.</summary>
+    internal static readonly TimeSpan SettleWithin = TimeSpan.FromSeconds(1);
+
     private readonly Window _window;
     private readonly ITray _tray;
     private readonly ISingleInstance _instance;
     private readonly Action<DeepLink> _navigate;
     private readonly Action _shutdown;
+    private readonly Func<Task> _settle;
+    private readonly TimeProvider _clock;
+    private IClassicDesktopStyleApplicationLifetime? _desktop;
     private bool _quitting;
 
     /// <summary>Wires the window, the tray and the instance's messages.</summary>
@@ -28,38 +34,36 @@ internal sealed class AppLifetime : IDisposable
     /// <param name="instance">The claimed instance whose messages arrive here.</param>
     /// <param name="navigate">Goes where a deep link points (the shell's Navigate).</param>
     /// <param name="shutdown">Ends the app (the lifetime's Shutdown).</param>
-    internal AppLifetime(Window window, ITray tray, ISingleInstance instance, Action<DeepLink> navigate, Action shutdown)
+    /// <param name="settle">Records the window's bounds and returns the preferences writes still pending; the app ends once they are done, or after <see cref="SettleWithin"/>.</param>
+    /// <param name="clock">The clock <see cref="SettleWithin"/> runs on.</param>
+    internal AppLifetime(Window window, ITray tray, ISingleInstance instance, Action<DeepLink> navigate, Action shutdown, Func<Task> settle, TimeProvider clock)
     {
-        (_window, _tray, _instance, _navigate, _shutdown) = (window, tray, instance, navigate, shutdown);
+        (_window, _tray, _instance, _navigate, _shutdown, _settle, _clock) = (window, tray, instance, navigate, shutdown, settle, clock);
         _window.Closing += OnClosing;
         _tray.OpenRequested += OnOpen;
         _tray.QuitRequested += OnQuit;
     }
 
     /// <summary>
-    /// Starts the app's life on a desktop: the app ends only on Quit, the tray follows the shell's state, and the
-    /// instance's messages arrive until the app ends.
+    /// Starts the app's life on a desktop: the app ends only on Quit or when the OS ends it (each first writing the
+    /// preferences), the tray follows the shell's state, and the instance's messages arrive until the app ends.
     /// </summary>
     /// <param name="desktop">The desktop lifetime.</param>
-    /// <param name="window">The main window.</param>
-    /// <param name="platform">The head's adapters.</param>
     /// <param name="shell">The shell the window shows.</param>
-    /// <param name="shutdown">Ends the app (the lifetime's Shutdown, exit code 0).</param>
-    /// <returns>The lifetime (it lives as long as the app).</returns>
-    internal static AppLifetime Start(IClassicDesktopStyleApplicationLifetime desktop, Window window, SindriPlatform platform, ShellViewModel shell, Action shutdown)
+    internal void Start(IClassicDesktopStyleApplicationLifetime desktop, ShellViewModel shell)
     {
         desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        var lifetime = new AppLifetime(window, platform.Tray, platform.Instance, shell.Navigate, shutdown);
-        lifetime.ShowState(shell.State);
+        _desktop = desktop;
+        desktop.ShutdownRequested += OnShutdownRequested;
+        ShowState(shell.State);
         shell.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ShellViewModel.State))
             {
-                lifetime.ShowState(shell.State);
+                ShowState(shell.State);
             }
         };
-        _ = lifetime.Listen(CancellationToken.None);
-        return lifetime;
+        _ = Listen(CancellationToken.None);
     }
 
     /// <summary>What the tray shows for a shell state: "running" only once connected and fresh; hollow until then.</summary>
@@ -116,6 +120,7 @@ internal sealed class AppLifetime : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        _desktop?.ShutdownRequested -= OnShutdownRequested;
         _window.Closing -= OnClosing;
         _tray.OpenRequested -= OnOpen;
         _tray.QuitRequested -= OnQuit;
@@ -146,9 +151,32 @@ internal sealed class AppLifetime : IDisposable
 
     private void OnOpen(object? sender, EventArgs e) => BringForward();
 
-    private void OnQuit(object? sender, EventArgs e)
+    private void OnQuit(object? sender, EventArgs e) => _ = Quit();
+
+    /// <summary>Quit (the tray's): records the window's bounds and waits for the preferences to be written, then ends the app.</summary>
+    /// <returns>A task that completes once the app is told to end.</returns>
+    internal async Task Quit()
     {
+        if (_quitting)
+        {
+            return;
+        }
+
         _quitting = true;
+        _ = _settle().WaitAsync(SettleWithin, _clock); // red: not awaited yet
+        await Task.CompletedTask.ConfigureAwait(true);
         _shutdown();
+    }
+
+    /// <summary>
+    /// The OS ends the app (⌘Q, the Dock's Quit, logging out). Not cancelled, since that would hold up a logout: the
+    /// window's bounds are recorded while it is still open, and the UI thread waits up to <see cref="SettleWithin"/> for
+    /// the write, which runs off it.
+    /// </summary>
+    /// <param name="sender">The lifetime.</param>
+    /// <param name="e">The request.</param>
+    internal void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
+    {
+        // red: nothing recorded yet
     }
 }

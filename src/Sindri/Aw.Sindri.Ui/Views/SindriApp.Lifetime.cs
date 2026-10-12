@@ -1,4 +1,5 @@
 using Avalonia.Controls.ApplicationLifetimes;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Shell;
 
@@ -9,12 +10,21 @@ public sealed partial class SindriApp
 {
     partial void ShellOpened(IClassicDesktopStyleApplicationLifetime desktop, ShellWindow window, ShellViewModel shell)
     {
-        if (Platform is not { } platform)
+        if (Platform is not { } platform || _preferences is not { } preferences || _clock is not { } clock)
         {
             return;
         }
 
-        var lifetime = AppLifetime.Start(desktop, window, platform, shell, () => End(desktop, 0));
+        var lifetime = new AppLifetime(window, platform.Tray, platform.Instance, shell.Navigate, () => End(desktop, 0), () => Settle(window, preferences), clock);
+        lifetime.Start(desktop, shell);
         desktop.Exit += (_, _) => lifetime.Dispose();
+    }
+
+    // Before the app ends: the window's bounds go into the preferences while the window is still open, and the writes
+    // still queued (Settings' too) are what the app waits for.
+    private static Task Settle(ShellWindow window, Preferences preferences)
+    {
+        window.RememberBounds();
+        return preferences.Flush();
     }
 }
