@@ -61,7 +61,7 @@ public sealed class SindriApiClientTests
     [Fact]
     public async Task A_refusal_names_no_token_in_its_error_or_the_log()
     {
-        var handler = new FakeSindriHandler(new FakeSindriApi { Refusal = ("SND-AUTH-001", "X-Sindri-Token isn't this start's token (fix: restart the app or rerun the command)") });
+        var handler = new FakeSindriHandler(new FakeSindriApi { Refusal = A.StaleTokenRefusal });
         var log = new RecordingLogger();
 
         var status = await new SindriApiClient(new HttpClient(handler), _token, TimeProvider.System, log).Status(_api, Token);
@@ -98,7 +98,7 @@ public sealed class SindriApiClientTests
         var ping = await client.Ping(_api, Token);
         var events = await client.Events(_api, 0, Token).ToListAsync(Token);
 
-        Assert.Equal(new Error("SND-AUTH-001", ErrorKind.Forbidden, "X-Sindri-Token isn't this start's token (fix: restart the app or rerun the command)"), ping.Error);
+        Assert.Equal(new Error("SND-AUTH-001", ErrorKind.Forbidden, A.StaleTokenRefusal.Detail), ping.Error);
         Assert.Empty(events);
         Assert.Equal(["/sindri/ping", "/sindri/ping", "/sindri/events", "/sindri/events"], handler.Requests.Select(r => r.Path), StringComparer.Ordinal);
         Assert.Equal(4, _token.Reads);

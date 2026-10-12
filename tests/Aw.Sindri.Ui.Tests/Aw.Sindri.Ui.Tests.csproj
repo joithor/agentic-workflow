@@ -24,4 +24,11 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
+  <!-- The API goldens the fake serves (UI spec E-17): Sindri's own, recorded by its tests, and the spec-shaped stand-ins
+       for routes whose API phase isn't built yet (Golden/SpecShaped). -->
+  <ItemGroup>
+    <None Include="../Aw.Sindri.Tests/Golden/Api/**/*.json" Link="Golden/Api/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Golden/SpecShaped/**/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

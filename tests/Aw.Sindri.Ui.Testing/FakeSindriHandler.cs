@@ -8,7 +8,9 @@ namespace Aw.Sindri.Ui.Testing;
 /// <summary>
 /// Serves a <see cref="FakeSindriApi"/> over HTTP the way Sindri's API writes it (docs/csharp/sindri.md: camelCase JSON,
 /// server-sent events with id = sequence and event = type), so the real client runs against the same model as the fake.
-/// The JSON is written by hand here, not by the app's own context, so a field-name mistake in the app shows.
+/// The JSON is written by hand here, not by the app's own context, so a field-name mistake in the app shows; the
+/// refusals are Sindri's own goldens served verbatim, and GoldenContractTests holds the hand-written bodies to the
+/// goldens' shape (UI spec E-17).
 /// </summary>
 /// <param name="server">The model.</param>
 internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandler
@@ -60,7 +62,7 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
 
         return uri.AbsolutePath switch
         {
-            "/sindri/ping" => Text(HttpStatusCode.OK, string.Create(CultureInfo.InvariantCulture, $$"""{"pid":{{server.Pong.Pid}},"epoch":{{server.Pong.Epoch}}}"""), "application/json"),
+            "/sindri/ping" => Text(HttpStatusCode.OK, Ping(server.Pong), "application/json"),
             "/sindri/status" => Text(HttpStatusCode.OK, Status((await server.Status(uri, cancellationToken)).Value), "application/json"),
             "/sindri/events" => Events(After(uri), cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
@@ -73,14 +75,13 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
         var sent = Header(request, "X-Sindri-Token");
         if (RequiredToken is { } held && !string.Equals(held, sent, StringComparison.Ordinal))
         {
-            var detail = sent is null
-                ? "A human caller needs this start's token in X-Sindri-Token (fix: restart the app or rerun the command)"
-                : "X-Sindri-Token isn't this start's token (fix: restart the app or rerun the command)";
-            return Text(HttpStatusCode.Forbidden, Problem("SND-AUTH-001", detail, 403), "application/problem+json");
+            return Answer(new RouteAnswer(HttpStatusCode.Forbidden, GoldenFiles.Api("status", sent is null ? "human-no-token" : "human-stale-token")));
         }
 
-        return server.Refusal is { } refusal ? Text(HttpStatusCode.Forbidden, Problem(refusal.Code, refusal.Detail, 403), "application/problem+json") : null;
+        return server.Refusal is { } refusal ? Answer(RouteAnswer.Problem(HttpStatusCode.Forbidden, refusal.Code, refusal.Detail)) : null;
     }
+
+    private static HttpResponseMessage Answer(RouteAnswer answer) => Text(answer.Status, answer.Body, "application/problem+json");
 
     private static string? Header(HttpRequestMessage request, string name) =>
         request.Headers.TryGetValues(name, out var values) ? string.Join(',', values) : null;
@@ -106,20 +107,21 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     private static HttpResponseMessage Text(HttpStatusCode code, string body, string type) =>
         new(code) { Content = new StringContent(body, Encoding.UTF8, type) };
 
-    private static string Event(EventView e) => string.Create(CultureInfo.InvariantCulture,
+    /// <summary>A ping body as this handler writes it.</summary>
+    internal static string Ping(PingView p) => string.Create(CultureInfo.InvariantCulture, $$"""{"pid":{{p.Pid}},"epoch":{{p.Epoch}}}""");
+
+    /// <summary>An event's data line as this handler writes it.</summary>
+    internal static string Event(EventView e) => string.Create(CultureInfo.InvariantCulture,
         $$"""{"sequence":{{e.Sequence}},"type":"{{e.Type}}","occurredAt":"{{Time(e.OccurredAt)}}","actor":"sindri","tenant":"local","ring":0,"epoch":7,"payload":"{}"}""");
 
-    private static string Status(StatusView s) => string.Create(CultureInfo.InvariantCulture,
+    /// <summary>A status body as this handler writes it.</summary>
+    internal static string Status(StatusView s) => string.Create(CultureInfo.InvariantCulture,
         $$"""{"running":{{Bool(s.Running)}},"pid":{{s.Pid}},"epoch":{{s.Epoch}},"leaseExpiresAt":{{Quoted(s.LeaseExpiresAt)}},"profile":{"approved":{{Quoted(s.Profile.Approved)}},"live":{{Quoted(s.Profile.Live)}},"changedSinceApproval":{{Bool(s.Profile.ChangedSinceApproval)}},"problem":{{Quoted(s.Profile.Problem)}},"source":{{Quoted(s.Profile.Source)}},"needsApproval":{{Bool(s.Profile.NeedsApproval)}}},"services":[{{string.Join(',', s.Services.Select(Service))}}]{{ApiVersion(s.ApiVersion)}}}""");
 
     // Absent before API P1 (the field doesn't exist on S1's status), so the app must read a status without it.
     private static string ApiVersion(int? version) => version is { } v ? string.Create(CultureInfo.InvariantCulture, $",\"apiVersion\":{v}") : string.Empty;
 
     private static string Service(ServiceView v) => $$"""{"name":"{{v.Name}}","every":"{{v.Every}}","lastRun":{{Quoted(v.LastRun)}}}""";
-
-    // ASP.NET Core's ProblemDetails as Sindri's ApiProblems writes it: title = the SND code, detail = the sentence with its fix.
-    private static string Problem(string code, string detail, int status) => string.Create(CultureInfo.InvariantCulture,
-        $$"""{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.4","title":"{{code}}","status":{{status}},"detail":"{{detail}}"}""");
 
     private static string Bool(bool b) => b ? "true" : "false";
 
