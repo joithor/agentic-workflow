@@ -1,11 +1,16 @@
+using Aw.Context.Core.Facade;
 using Aw.Context.Core.Map;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
 namespace Aw.Sindri.Features.ContextCalls;
 
-/// <summary>ExportContextMap (S-3a).</summary>
-internal sealed class ExportContextMapService : IService<ExportContextMapRequest, MapExported>
+/// <summary>Writes the current map to the exports folder, through the engine (a session's export holds its repo's scope only).</summary>
+internal sealed class ExportContextMapService(ContextScopes scopes, IContextEngine engine) : IService<ExportContextMapRequest, MapExported>
 {
-    public ValueTask<Result<MapExported>> Handle(ExportContextMapRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public async ValueTask<Result<MapExported>> Handle(ExportContextMapRequest request, CancellationToken cancellationToken)
+    {
+        var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
+        return scope.IsError ? scope.Error : await engine.ExportMap(request.Path, scope.Value, cancellationToken).ConfigureAwait(false);
+    }
 }

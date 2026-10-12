@@ -51,7 +51,7 @@ public sealed class ContextMapApiTests
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Import_is_protected_a_session_a_human_without_a_terminal_and_a_foreign_origin_are_refused()
+    public async Task Import_is_protected_a_session_a_human_without_a_terminal_and_a_foreign_origin_are_refused_and_nothing_is_written()
     {
         await using var host = await Approved(sessions: true, TestContext.Current.CancellationToken);
         var file = FixtureMap.WriteTo(host.Home);
@@ -64,7 +64,7 @@ public sealed class ContextMapApiTests
 
         Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
         Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (noTerminal.Status, noTerminal.Code));
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-API-008"), (origin.Status, origin.Code));
+        Assert.Equal(HttpStatusCode.Forbidden, origin.Status);   // the loopback guard refuses a foreign browser Origin before the command chain
         Assert.Equal("SND-CONTEXT-030", status.Code);
     }
 

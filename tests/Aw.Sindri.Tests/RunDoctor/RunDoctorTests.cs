@@ -15,7 +15,7 @@ public sealed class RunDoctorTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private RunDoctorService Service(ILedgerStore? ledger = null) =>
-        new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events), _api, _h.Clock);
+        new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events), _api, _h.Clock, SettingsOnlyContextEngine.Instance);
 
     [Fact, Trait("Lane", "unit")]
     public async Task RunDoctor_is_green_when_running_approved_and_answering()
@@ -28,9 +28,10 @@ public sealed class RunDoctorTests
 
         var report = (await Service().Handle(new RunDoctorRequest(), Token)).Value;
 
-        Assert.Equal("lease,ledger,profile,api", string.Join(',', report.Checks.Select(c => c.Name)));
-        Assert.All(report.Checks, c => Assert.Equal(CheckState.Ok, c.State));
-        Assert.Equal(0, report.ExitCode);
+        Assert.Equal("lease,ledger,profile,api,context:map,context:retention", string.Join(',', report.Checks.Select(c => c.Name)));
+        Assert.All(report.Checks.Where(c => !c.Name.StartsWith("context:", StringComparison.Ordinal)), c => Assert.Equal(CheckState.Ok, c.State));
+        Assert.Equal((CheckState.Warn, "no map yet"), (report.Checks[4].State, report.Checks[4].Detail));
+        Assert.Equal(1, report.ExitCode);   // the test engine has no map, so context:map warns (S-3a); everything else is green
     }
 
     [Fact, Trait("Lane", "unit")]
