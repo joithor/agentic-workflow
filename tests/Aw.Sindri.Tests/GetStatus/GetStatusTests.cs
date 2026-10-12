@@ -26,6 +26,10 @@ public sealed class GetStatusTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task GetStatus_reports_api_version_1() =>
+        Assert.Equal(1, (await Service().Handle(new GetStatusRequest(), Token)).Value.ApiVersion);
+
+    [Fact, Trait("Lane", "unit")]
     public async Task GetStatus_reports_epoch_services_and_the_last_heartbeat()
     {
         var approved = SliceHarness.Profile("5s");

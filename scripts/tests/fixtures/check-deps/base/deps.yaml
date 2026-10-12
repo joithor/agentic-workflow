@@ -1,7 +1,6 @@
 # Fixture graph for scripts/tests/check-deps.test.sh
 version: 1
 limits:
-  packageFanOut: 4
   projectFanOut: 4
   thirdPartyFanOut: 6
   exceptionMaxDays: 183

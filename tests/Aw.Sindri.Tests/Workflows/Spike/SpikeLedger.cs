@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -23,7 +24,7 @@ internal sealed record SpikeLedger(ILedgerStore Ledger, CountingRecorder Recorde
     {
         var held = new HeldLease();
         held.Hold((await stores.Lease.Acquire(probe.Self(), cancellationToken)).Value);
-        var activities = new RecordEventActivities(stores.Ledger, held, new EventFactory(EventScope.ControlPlane, clock, new SequentialIdGenerator(), SliceHarness.Json));
+        var activities = new RecordEventActivities(stores.Ledger, held, EventsFor(clock));
         return new SpikeLedger(stores.Ledger, new CountingRecorder(activities));
     }
 
@@ -44,4 +45,11 @@ internal sealed record SpikeLedger(ILedgerStore Ledger, CountingRecorder Recorde
     /// <returns>The events, oldest first.</returns>
     public async Task<IReadOnlyList<LedgerEvent>> Read(string type, CancellationToken cancellationToken) =>
         [.. (await Ledger.ReadAfter(0, 10_000, cancellationToken)).Value.Where(e => e.Envelope.Type == type)];
+
+    /// <summary>The control plane's event factory over <paramref name="clock"/>, with the process as the caller.</summary>
+    private static EventFactory EventsFor(TimeProvider clock)
+    {
+        var ids = new SequentialIdGenerator();
+        return new EventFactory(EventScope.ControlPlane, clock, ids, SliceHarness.Json, new AsyncLocalCallerContextAccessor(ids));
+    }
 }

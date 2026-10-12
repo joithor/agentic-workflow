@@ -1,0 +1,291 @@
+{
+  "rows": [
+    {
+      "action": "ApproveProfile",
+      "class": "protected",
+      "allowedCallers": [
+        "human+terminal"
+      ],
+      "terminal": true,
+      "method": "POST",
+      "route": "/sindri/profile/approve",
+      "cli": "sindri profile approve [<hash>]",
+      "ui": "cli-only:typed-confirmation",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "CancelJob",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/jobs/{jobId}/cancel",
+      "cli": "sindri jobs cancel <jobId>",
+      "ui": "pending:P6",
+      "destructive": false,
+      "readsViews": true,
+      "shortcut": null
+    },
+    {
+      "action": "CloseItem:cancelled",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/items/{itemId}/close",
+      "cli": "sindri item close <itemId> --cancelled",
+      "ui": "pending:P3",
+      "destructive": true,
+      "readsViews": true,
+      "shortcut": null
+    },
+    {
+      "action": "CloseItem:done",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/items/{itemId}/close",
+      "cli": "sindri item close <itemId>",
+      "ui": "pending:P3",
+      "destructive": false,
+      "readsViews": true,
+      "shortcut": null
+    },
+    {
+      "action": "CreateItem",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/items",
+      "cli": "sindri item add <title> [--repo <repo>]",
+      "ui": "pending:P3",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "Decide",
+      "class": "decision",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/decisions/{decisionId}",
+      "cli": "sindri decide <decisionId> <choice> [--note <note>]",
+      "ui": "pending:P4",
+      "destructive": false,
+      "readsViews": true,
+      "shortcut": null
+    },
+    {
+      "action": "FileRequest",
+      "class": "request",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "session",
+        "service"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/requests",
+      "cli": "sindri request <kind> [--item <itemId>] <text>",
+      "ui": "pending:P4",
+      "destructive": false,
+      "readsViews": true,
+      "shortcut": null
+    },
+    {
+      "action": "OpenItem:attach",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/items/{itemId}/open",
+      "cli": "sindri open <itemId> --attach [--agent <agent>]",
+      "ui": "pending:P10a",
+      "destructive": false,
+      "readsViews": true,
+      "shortcut": null
+    },
+    {
+      "action": "OpenItem:open",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/items/{itemId}/open",
+      "cli": "sindri open <itemId> [--agent <agent>]",
+      "ui": "pending:P10a",
+      "destructive": false,
+      "readsViews": true,
+      "shortcut": null
+    },
+    {
+      "action": "OpenItem:resume",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/items/{itemId}/open",
+      "cli": "sindri open <itemId> --resume [--agent <agent>]",
+      "ui": "pending:P10a",
+      "destructive": false,
+      "readsViews": true,
+      "shortcut": null
+    },
+    {
+      "action": "PauseService",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/services/{name}/pause",
+      "cli": "sindri services pause <name>",
+      "ui": "pending:P6",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "ProbeLaunchTargets",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/launch/targets/probe",
+      "cli": "sindri launch probe",
+      "ui": "pending:P10a",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "RebuildViews",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/views/rebuild",
+      "cli": "sindri views rebuild",
+      "ui": "pending:P2",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "ResumeService",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/services/{name}/resume",
+      "cli": "sindri services resume <name>",
+      "ui": "pending:P6",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "RunDoctor",
+      "class": "local",
+      "allowedCallers": [],
+      "terminal": false,
+      "method": null,
+      "route": null,
+      "cli": "sindri doctor",
+      "ui": "cli-only:local",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "RunService",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/services/{name}/run",
+      "cli": "sindri services run <name>",
+      "ui": "pending:P6",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "StopProcess",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service:host"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/stop",
+      "cli": "sindri stop",
+      "ui": "ready",
+      "destructive": true,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "ValidateProfile",
+      "class": "local",
+      "allowedCallers": [],
+      "terminal": false,
+      "method": null,
+      "route": null,
+      "cli": "sindri profile validate",
+      "ui": "cli-only:local",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    }
+  ]
+}

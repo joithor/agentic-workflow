@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+  "title": "SND-AUTH-001",
+  "status": 403,
+  "detail": "A human caller needs this start's token in X-Sindri-Token (fix: restart the app or rerun the command)",
+  "traceId": "<trace>"
+}
