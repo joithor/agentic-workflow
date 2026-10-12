@@ -41,8 +41,13 @@ internal sealed class WorkflowsHarness : IDisposable
     }
 
     /// <summary>The host composed over this home, as every 'sindri' verb composes it.</summary>
+    /// <remarks>
+    /// The clock starts at the Temporal server's time, which is the wall clock (the time-skipping server starts there too):
+    /// the ledger stamps the events the bridge delivers with it, and the interpreter measures 'workflow.eventHold' from
+    /// that stamp against workflow time, so a clock in 2000 would make every delivered event 26 years old.
+    /// </remarks>
     public ServiceProvider Sindri() =>
-        Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider()).BuildServiceProvider();
+        Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider(DateTimeOffset.UtcNow)).BuildServiceProvider();
 
     /// <summary>The 'temporal' dev server pinned in binaries.lock, with Sindri's namespace and search attributes.</summary>
     public static Task<WorkflowEnvironment> StartDevServer() =>

@@ -187,7 +187,8 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
     {
         var n = Interlocked.Increment(ref _events);
         var id = Guid.Parse(string.Create(CultureInfo.InvariantCulture, $"00000000-0000-7000-8000-{n:D12}"));
-        var envelope = new EventEnvelope<string>(id, type, 1, KnownInstants.Epoch, actor, "local", 0, id, causation, TraceId: null, payload);
+        // why: stamped with the host's clock, which follows the Temporal server's (WorkflowsHarness.Sindri), so the event is fresh for 'workflow.eventHold'
+        var envelope = new EventEnvelope<string>(id, type, 1, sindri.GetRequiredService<TimeProvider>().GetUtcNow(), actor, "local", 0, id, causation, TraceId: null, payload);
         var grant = sindri.GetRequiredService<HeldLease>().Current ?? throw new InvalidOperationException("the test holds no lease");
         var appended = await sindri.GetRequiredService<ILedgerStore>().Append(new LedgerEntry(envelope, "test:" + id.ToString("N"), item), grant, Token);
         Assert.False(appended.IsError, appended.IsError ? appended.Error.Message : null);
