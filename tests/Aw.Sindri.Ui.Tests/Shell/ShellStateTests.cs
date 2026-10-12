@@ -256,6 +256,48 @@ public sealed class ShellStateTests
         Assert.Equal(ShellState.Normal, shell.State);
     }
 
+    // accessibility-tester-0 (docs/csharp/sindri-ui.md "LiveSetting on macOS"): the live region's text is never "" (Avalonia
+    // #22312 crashes on a live element's name set to ""), it becomes "Sending…" only once IsSending (the view's live gate)
+    // is on, and goes back to its resting text only once the gate is off, so the resting text is never spoken. Two cycles,
+    // so the second "Sending…" is a change again.
+    [Fact]
+    public async Task The_sending_announcement_is_never_empty_and_changes_only_inside_the_live_gate()
+    {
+        var shell = await Stale();
+        var seen = new List<(string Text, bool Live)>();
+        var refreshable = new List<bool>();
+        shell.Health.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(HealthViewModel.SendingAnnouncement))
+            {
+                seen.Add((shell.Health.SendingAnnouncement, shell.Health.IsSending));
+            }
+            else if (e.PropertyName == nameof(HealthViewModel.CanRefresh))
+            {
+                refreshable.Add(shell.Health.CanRefresh);
+            }
+        };
+        var resting = shell.Health.SendingAnnouncement;
+
+        for (var cycle = 0; cycle < 2; cycle++)
+        {
+            _server.FailPing = true;
+            _clock.Advance(ShellViewModel.StaleAfter);
+            await Eventually(() => shell.State == ShellState.Stale);
+            _server.StatusGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var refresh = shell.Health.Refresh(Token);
+            _clock.Advance(HealthViewModel.SendingAfter);
+            await Eventually(() => shell.Health.IsSending);
+            _server.StatusGate.SetResult();
+            await refresh;
+        }
+
+        Assert.False(string.IsNullOrEmpty(resting));
+        Assert.NotEqual(Labels.Sending, resting, StringComparer.Ordinal);
+        Assert.Equal([(Labels.Sending, true), (resting, false), (Labels.Sending, true), (resting, false)], seen);
+        Assert.Equal([false, true, false, true], refreshable);
+    }
+
     [Fact]
     public async Task A_failed_refresh_takes_a_click_again_and_a_quick_one_never_says_Sending()
     {
