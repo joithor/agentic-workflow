@@ -25,7 +25,7 @@ public sealed class SessionApproveTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
         await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), "schemaVersion: 1\nuser: thor\n", ct);
-        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
+        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, NoTemporal.Use);   // the Temporal side is faked: these tests are about the API
         _ = Pipeline.Configure(app);
         await using (var scope = app.Services.CreateAsyncScope())
         {

@@ -1,0 +1,38 @@
+# binaries.lock — external executables the C# build runs but doesn't build, pinned by version and sha256
+# (engine spec rev 8 §0 "Operations" and Phases "The Temporal dev server in tests").
+#
+# Format: one row per (name, platform), whitespace-separated, six fields:
+#   name  version  platform  sha256  url  path
+#     name      the binary's lock name, [a-z0-9-]+
+#     version   x.y.z, one version per name
+#     platform  darwin-arm64 | darwin-x64 | linux-x64 | linux-arm64; every name has all four
+#     sha256    64 lowercase hex digits of the archive at url
+#     url       https://github.com/... release asset (a .tar.gz) whose name carries the version
+#     path      the executable's path inside the archive (relative, no '..')
+# '#' starts a comment line; blank lines are ignored.
+#
+# Check:  scripts/binaries-lock.sh check            (scripts/tests/binaries-lock.test.sh)
+# Fetch:  scripts/binaries-lock.sh fetch <name>     downloads this platform's row, verifies the sha256 and installs it
+#         as ${AW_STATE_DIR:-~/.agentic-workflow}/cache/bin/<name>-<version>/<basename of path>; prints that path.
+# Pins follow the package policy (Directory.Packages.props): an exact version at least 14 days old when pinned.
+# Changing a row is a reviewed change; take the sha256 from the release's own checksums (GitHub's asset digest, and
+# checksums.txt where the release publishes one).
+
+# temporal: the Temporal CLI; `temporal server start-dev` is the server `sindri serve` keeps beside itself, and the
+# binary WorkflowEnvironment.StartLocalAsync runs (DevServerOptions.ExistingPath). v1.9.1 published 2026-09-14, MIT;
+# the same version temporal.download resolves as "default" for Temporalio 1.19.0. Checksums: the asset digests of
+# github.com/temporalio/cli/releases/tag/v1.9.1, equal to that release's checksums.txt.
+temporal  1.9.1  darwin-arm64  41e0425378fcb4fb5766340b97435e20fe47bbff2d7bf644ec2d51f7662b7c56  https://github.com/temporalio/cli/releases/download/v1.9.1/temporal_cli_1.9.1_darwin_arm64.tar.gz  temporal
+temporal  1.9.1  darwin-x64    48cdd6c84c56e27ae8e4d9a47052b89289a9c552dee029b49dd312c6fb72873f  https://github.com/temporalio/cli/releases/download/v1.9.1/temporal_cli_1.9.1_darwin_amd64.tar.gz  temporal
+temporal  1.9.1  linux-x64     09a0326a51db84d02735e53542b9ebd8c4758daf47482a9ab0abce15844e60d5  https://github.com/temporalio/cli/releases/download/v1.9.1/temporal_cli_1.9.1_linux_amd64.tar.gz   temporal
+temporal  1.9.1  linux-arm64   6c57c352d52fc3df34412376fd9ba6f74b7e3ace8e426e6cba8600156d36a145  https://github.com/temporalio/cli/releases/download/v1.9.1/temporal_cli_1.9.1_linux_arm64.tar.gz   temporal
+
+# temporal-test-server: the time-skipping test server WorkflowEnvironment.StartTimeSkippingAsync runs
+# (TestServerOptions.ExistingPath), shipped with the Java SDK. v1.39.0 published 2026-09-14 (the release beside
+# Temporalio 1.19.0; temporal.download's "default" has since moved to 1.40.0, published 2026-09-29, under 14 days old),
+# MIT. Checksums: the asset digests of github.com/temporalio/sdk-java/releases/tag/v1.39.0 (that release publishes no
+# checksums file).
+temporal-test-server  1.39.0  darwin-arm64  9a9395257fb8d585a4eb06b14d26f5d59a516bc1f860fec82381bb30b505f0a7  https://github.com/temporalio/sdk-java/releases/download/v1.39.0/temporal-test-server_1.39.0_macOS_arm64.tar.gz  temporal-test-server_1.39.0_macOS_arm64/temporal-test-server
+temporal-test-server  1.39.0  darwin-x64    276472e67f73357db8117fec4c13bafd192f80cb427ce7a63cadbbf8be5f03de  https://github.com/temporalio/sdk-java/releases/download/v1.39.0/temporal-test-server_1.39.0_macOS_amd64.tar.gz  temporal-test-server_1.39.0_macOS_amd64/temporal-test-server
+temporal-test-server  1.39.0  linux-x64     ecd629dceccfbf49d422894bf72fb691a6062b558e72bd2722450dadf7d0c749  https://github.com/temporalio/sdk-java/releases/download/v1.39.0/temporal-test-server_1.39.0_linux_amd64.tar.gz   temporal-test-server_1.39.0_linux_amd64/temporal-test-server
+temporal-test-server  1.39.0  linux-arm64   0c09117c4f7474e8893aa798538fdd0534d78c0168d472da55f86f5c05d123e2  https://github.com/temporalio/sdk-java/releases/download/v1.39.0/temporal-test-server_1.39.0_linux_arm64.tar.gz   temporal-test-server_1.39.0_linux_arm64/temporal-test-server

@@ -49,6 +49,9 @@ classify_changes() {
     esac
     case "$file" in
       scripts/dotnet-verify-packages.sh) dotnet=true ;;  # the .NET job runs it; its bash test runs below
+      # the .NET job fetches the pins (sha256 check) and its Temporal tests and the Sindri host smoke run them
+      binaries.lock) dotnet=true; bash=true ;;
+      scripts/binaries-lock.sh) dotnet=true ;;  # the .NET job fetches with it; its bash test runs below
       # global.json also pins the devcontainer's base image, which a bash suite checks (repo-templates).
       global.json|docs/devcontainer.md) bash=true ;;
     esac

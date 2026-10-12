@@ -11,6 +11,12 @@ public static class EventTypes
     /// <summary>The control plane released the lease and stopped.</summary>
     public const string ProcessStopped = "process.stopped";
 
+    /// <summary>A recipe instance started (mirrored from its RecipeWorkflow; engine spec rev 8.1 §5.6).</summary>
+    public const string WorkflowStarted = "workflow.started";
+
+    /// <summary>A recipe instance moved from one state to another (mirrored from its RecipeWorkflow).</summary>
+    public const string WorkflowTransition = "workflow.transition";
+
     /// <summary>A human approved a profile hash.</summary>
     public const string ProfileApproved = "profile.approved";
 
