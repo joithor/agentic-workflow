@@ -18,7 +18,10 @@ public enum RefusalFollow
     [JsonStringEnumMemberName("escalate")]
     Escalate = 3,
 
-    /// <summary>A command was refused with SND-WF-004, recorded once under its nonce.</summary>
+    /// <summary>
+    /// A command was refused with SND-WF-004, recorded once under its nonce. Refused outright it changes no row; refused
+    /// on an answer's resume ('--reject', or '--accept' with another check refusing), the answer's pop commits with it.
+    /// </summary>
     [JsonStringEnumMemberName("command-refused")]
     CommandRefused = 4,
 }
