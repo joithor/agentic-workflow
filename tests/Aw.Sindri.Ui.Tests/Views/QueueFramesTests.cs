@@ -125,7 +125,7 @@ public sealed class QueueFramesTests : IDisposable
         var page = Named<Control>(window, "QueuePage");
         var headers = page.GetVisualDescendants().OfType<ToggleButton>().Where(t => t.Name == "GroupHeader" && t.IsEffectivelyVisible).Select(AutomationProperties.GetName).ToList();
         Assert.Equal(["Waiting on you 1", "Queued 4"], headers, StringComparer.Ordinal);
-        var rows = page.GetVisualDescendants().OfType<Aw.Sindri.Ui.Views.Queue.ItemRow>().Where(r => r.IsEffectivelyVisible).Select(r => r.ItemId).ToList();
+        var rows = page.GetVisualDescendants().OfType<Ui.Views.Queue.ItemRow>().Where(r => r.IsEffectivelyVisible).Select(r => r.ItemId).ToList();
         Assert.Equal(5, rows.Count);
         Assert.Equal(A.NewItem, rows[^1]);
         Assert.Equal("5", shell.Navigation[1].Count);
@@ -167,7 +167,7 @@ public sealed class QueueFramesTests : IDisposable
         _server.QueueView = RouteAnswer.SpecShaped("queue", "running");
         var (window, _) = await Connected(s => !s.Queue.IsLoading);
 
-        var running = Named<Control>(window, "RunningRows").GetVisualDescendants().OfType<Aw.Sindri.Ui.Views.Queue.ItemRow>().ToList();
+        var running = Named<Control>(window, "RunningRows").GetVisualDescendants().OfType<Ui.Views.Queue.CompactItemRow>().ToList();
         Assert.Equal(5, running.Count);
         Assert.Equal("Show all 7 in Queue", AutomationProperties.GetName(Named<Button>(window, "RunningShowAll")));
         Assert.True(Visible(window, "RunningShowAll"));
@@ -196,7 +196,7 @@ public sealed class QueueFramesTests : IDisposable
     public Task Close_as_cancelled_asks_before_it_sends() => OnUi(async () =>
     {
         var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
-        var cancel = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Aw.Sindri.Ui.Views.Controls.CommandControl>().ElementAt(1);
+        var cancel = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Ui.Views.Controls.CommandControl>().ElementAt(1);
 
         Named<Button>(cancel, "RunButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Settle(window);

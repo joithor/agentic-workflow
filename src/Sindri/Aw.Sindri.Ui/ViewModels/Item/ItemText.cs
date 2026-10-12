@@ -1,6 +1,6 @@
-namespace Aw.Sindri.Ui.ViewModels.Shell;
+namespace Aw.Sindri.Ui.ViewModels.Item;
 
-/// <summary>The queue's and the item sheet's own copy (<see cref="Labels"/>) as the views bind it (§12.4); see <see cref="ShellText"/>.</summary>
+/// <summary>The queue's and the item sheet's own copy (<see cref="Labels"/>) as the views bind it (§12.4); see Shell.ShellText.</summary>
 internal sealed class ItemText
 {
     /// <summary>The one instance.</summary>

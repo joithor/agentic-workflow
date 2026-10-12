@@ -49,7 +49,7 @@ internal sealed partial class ShellWindow
     }
 
     // Esc's U2 layers, above the sheet (§8 "the topmost layer"): the create form, then a destructive control's question.
-    private static bool EscapeItemLayer(Aw.Sindri.Ui.ViewModels.Shell.ShellViewModel shell)
+    private static bool EscapeItemLayer(ViewModels.Shell.ShellViewModel shell)
     {
         if (shell.Create.IsOpen)
         {

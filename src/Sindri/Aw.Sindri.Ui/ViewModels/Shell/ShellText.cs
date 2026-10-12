@@ -10,7 +10,7 @@ internal sealed class ShellText
     internal static ShellText Instance { get; } = new();
 
     /// <summary>U2's copy: the queue and the item sheet.</summary>
-    public ItemText Items { get; } = ItemText.Instance;
+    public Item.ItemText Items { get; } = Item.ItemText.Instance;
 
     /// <summary><see cref="Labels.ActionsCard"/>.</summary>
     public string ActionsCard { get; } = Labels.ActionsCard;

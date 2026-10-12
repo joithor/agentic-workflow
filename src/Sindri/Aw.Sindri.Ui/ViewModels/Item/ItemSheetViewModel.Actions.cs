@@ -50,7 +50,7 @@ internal sealed partial class ItemSheetViewModel
     {
         if (_url is not { } url)
         {
-            return Aw.Sindri.Ui.Api.SindriUiErrors.NotRunning.With("no API to send to");
+            return SindriUiErrors.NotRunning.With("no API to send to");
         }
 
         Problem(string.Empty, string.Empty);

@@ -12,6 +12,9 @@ namespace Aw.Sindri.Ui.ViewModels.Item;
 /// </summary>
 internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> url, ISindriApi api) : ObservableObject
 {
+    /// <summary>The app's copy for the form.</summary>
+    public ItemText Text { get; } = ItemText.Instance;
+
     /// <summary>True while the form is shown.</summary>
     public bool IsOpen { get; private set => Set(ref field, value); }
 

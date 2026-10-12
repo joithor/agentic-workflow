@@ -98,7 +98,7 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     private static async Task<T> Body<T>(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var bytes = await request.Content!.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false); // why: the client always sends a body on these POSTs
-        return Aw.Kernel.Json.AwJson.Deserialize<T>(bytes, SindriApiClient.Json).Value;
+        return Kernel.Json.AwJson.Deserialize<T>(bytes, SindriApiClient.Json).Value;
     }
 
     // The route's golden text as served; the call above went through the model so its counts and gates hold.

@@ -37,7 +37,7 @@
           <ItemsControl VerticalAlignment="Top" x:Name="RunningRows" ItemsSource="{Binding Queue.RunningRows}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="queue:ItemRowViewModel">
-                <rows:ItemRow Compact="True" />
+                <rows:CompactItemRow />
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -61,7 +61,7 @@
           <ItemsControl VerticalAlignment="Top" x:Name="QueuedRows" ItemsSource="{Binding Queue.QueuedRows}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="queue:ItemRowViewModel">
-                <rows:ItemRow Compact="True" />
+                <rows:CompactItemRow />
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>

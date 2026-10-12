@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:queue="using:Aw.Sindri.Ui.ViewModels.Queue"
+             x:Class="Aw.Sindri.Ui.Views.Queue.CompactItemRow"
+             x:DataType="queue:ItemRowViewModel">
+  <!-- An item row in Home's half-width panels (home.html): id, title, the state as a word, and the age. A title click
+       opens the sheet, as on the Queue page. -->
+  <Border x:Name="RowFrame" Classes="item-row" Classes.selected="{Binding IsSelected}" Focusable="True"
+          AutomationProperties.Name="{Binding Name}">
+    <Grid x:Name="CompactRow" ColumnDefinitions="120,*,Auto,50" VerticalAlignment="Center">
+      <TextBlock Classes="mono subtle" Text="{Binding Id}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" AutomationProperties.Name="{Binding Id}" />
+      <Button x:Name="CompactTitle" Grid.Column="1" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding Name}">
+        <TextBlock Classes="body-strong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Title}" />
+      </Button>
+      <TextBlock Grid.Column="2" Classes="caption subtle" Text="{Binding StateWord}" Margin="8,0" VerticalAlignment="Center" AutomationProperties.Name="{Binding StateWord}" />
+      <TextBlock Grid.Column="3" Classes="caption subtle" Text="{Binding Age}" VerticalAlignment="Center" TextAlignment="Right" AutomationProperties.Name="{Binding Age}" />
+    </Grid>
+  </Border>
+</UserControl>

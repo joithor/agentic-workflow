@@ -79,7 +79,7 @@ public sealed class ItemSheetViewModelTests
         _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
         await sheet.Refresh(_api, Token);
 
-        Assert.Equal([(A.NewItem, new Aw.Sindri.Ui.Api.CloseItemRequest("done", 1))], _server.Closed);
+        Assert.Equal([(A.NewItem, new Ui.Api.CloseItemRequest("done", 1))], _server.Closed);
         Assert.Equal(("Done", "version 2", 0), (sheet.StateWord, sheet.VersionText, sheet.Actions.Count));
     }
 
@@ -97,7 +97,7 @@ public sealed class ItemSheetViewModelTests
         Assert.True(cancel.IsConfirming);
         await cancel.Confirm(Token);
 
-        Assert.Equal([(A.NewItem, new Aw.Sindri.Ui.Api.CloseItemRequest("cancelled", 1))], _server.Closed);
+        Assert.Equal([(A.NewItem, new Ui.Api.CloseItemRequest("cancelled", 1))], _server.Closed);
         Assert.Equal(("SND-ITEM-409", A.Detail("items-id-close", "stale-version"), true), (sheet.ProblemCode, sheet.ProblemDetail, sheet.HasProblem));
         Assert.Equal(("Done", "version 2"), (sheet.StateWord, sheet.VersionText));
         Assert.Equal(2, _server.ItemCalls);

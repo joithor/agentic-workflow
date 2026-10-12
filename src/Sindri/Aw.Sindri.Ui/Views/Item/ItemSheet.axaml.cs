@@ -1,7 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Item;
-using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.Views.Item;
 
@@ -12,9 +11,6 @@ internal sealed partial class ItemSheet : UserControl
     {
         InitializeComponent();
     }
-
-    /// <summary>The app's copy for the sheet's headings and buttons.</summary>
-    public ItemText Text { get; } = ItemText.Instance;
 
     private void OnLoadMore(object? sender, RoutedEventArgs e)
     {

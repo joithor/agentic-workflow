@@ -20,6 +20,9 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private long _version;
     private int _pages;
 
+    /// <summary>The app's copy for the sheet's headings and buttons.</summary>
+    public ItemText Text { get; } = ItemText.Instance;
+
     /// <summary>The item's id ('ITM-…'), or empty before one is opened.</summary>
     public string ItemId { get; private set => Set(ref field, value); } = string.Empty;
 

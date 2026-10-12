@@ -4,7 +4,6 @@
              xmlns:vmc="using:Aw.Sindri.Ui.ViewModels.Controls"
              xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
-             xmlns:views="using:Aw.Sindri.Ui.Views.Item"
              x:Class="Aw.Sindri.Ui.Views.Item.ItemSheet"
              x:DataType="item:ItemSheetViewModel">
   <!-- The item detail (UI spec §4.6, item-detail.html), inside the shell's sheet: the header (title, repo, the state as a
@@ -35,21 +34,21 @@
           <TextBlock x:Name="ItemAge" Classes="caption subtle" Text="{Binding Age}" AutomationProperties.Name="{Binding Age}" />
         </WrapPanel>
         <Grid Classes="row" ColumnDefinitions="110,*">
-          <TextBlock Classes="caption subtle row-label" Text="{Binding $parent[views:ItemSheet].Text.CreatedBy}" />
+          <TextBlock Classes="caption subtle row-label" Text="{Binding Text.CreatedBy}" />
           <TextBlock x:Name="ItemCreatedBy" Grid.Column="1" Classes="mono" Text="{Binding CreatedBy}" AutomationProperties.Name="{Binding CreatedBy}" />
         </Grid>
         <Grid Classes="row" ColumnDefinitions="110,*" IsVisible="{Binding HasWaitingOn}">
-          <TextBlock Classes="caption subtle row-label" Text="{Binding $parent[views:ItemSheet].Text.WaitingOn}" />
+          <TextBlock Classes="caption subtle row-label" Text="{Binding Text.WaitingOn}" />
           <TextBlock x:Name="ItemWaitingOn" Grid.Column="1" Classes="mono" Text="{Binding WaitingOn}" AutomationProperties.Name="{Binding WaitingOn}" />
         </Grid>
         <Grid Classes="row" ColumnDefinitions="110,*" IsVisible="{Binding HasInstance}">
-          <TextBlock Classes="caption subtle row-label" Text="{Binding $parent[views:ItemSheet].Text.InstanceLabel}" />
+          <TextBlock Classes="caption subtle row-label" Text="{Binding Text.InstanceLabel}" />
           <TextBlock x:Name="ItemInstance" Grid.Column="1" Classes="mono" Text="{Binding Instance}" AutomationProperties.Name="{Binding Instance}" />
         </Grid>
       </StackPanel>
 
       <StackPanel x:Name="ItemActions" Spacing="6" IsVisible="{Binding HasActions}">
-        <TextBlock Classes="eyebrow" Text="{Binding $parent[views:ItemSheet].Text.Actions}" />
+        <TextBlock Classes="eyebrow" Text="{Binding Text.Actions}" />
         <ItemsControl x:Name="ItemActionList" ItemsSource="{Binding Actions}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
@@ -63,7 +62,7 @@
       </StackPanel>
 
       <StackPanel x:Name="ItemTimeline" Spacing="6">
-        <TextBlock Classes="eyebrow" Text="{Binding $parent[views:ItemSheet].Text.Timeline}" />
+        <TextBlock Classes="eyebrow" Text="{Binding Text.Timeline}" />
         <ItemsControl x:Name="TimelineList" ItemsSource="{Binding Timeline}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="item:TimelineRow">
@@ -83,8 +82,8 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
         <Button x:Name="LoadMoreButton" Classes="copy" Click="OnLoadMore" IsVisible="{Binding HasMore}"
-                AutomationProperties.Name="{Binding $parent[views:ItemSheet].Text.LoadMore}">
-          <TextBlock Classes="caption" Text="{Binding $parent[views:ItemSheet].Text.LoadMore}" />
+                AutomationProperties.Name="{Binding Text.LoadMore}">
+          <TextBlock Classes="caption" Text="{Binding Text.LoadMore}" />
         </Button>
       </StackPanel>
     </StackPanel>

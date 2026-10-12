@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Item;
-using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.Views.Item;
 
@@ -13,9 +12,6 @@ internal sealed partial class CreateItemDialog : UserControl
     {
         InitializeComponent();
     }
-
-    /// <summary>The app's copy for the form.</summary>
-    public ItemText Text { get; } = ItemText.Instance;
 
     /// <summary>Moves focus into the title field (the form just opened).</summary>
     internal void FocusTitle() => this.Get<TextBox>("TitleField").Focus(NavigationMethod.Tab);

@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:item="using:Aw.Sindri.Ui.ViewModels.Item"
-             xmlns:views="using:Aw.Sindri.Ui.Views.Item"
              xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
              x:Class="Aw.Sindri.Ui.Views.Item.CreateItemDialog"
              x:DataType="item:CreateItemViewModel">
@@ -24,24 +23,24 @@
   <Panel>
     <Border Classes="scrim" PointerPressed="OnScrim" />
     <Border x:Name="CreateCard" Classes="dialog" Width="520" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,96,0,0"
-            AutomationProperties.Name="{Binding $parent[views:CreateItemDialog].Text.CreateItem}">
+            AutomationProperties.Name="{Binding Text.CreateItem}">
       <StackPanel Spacing="10">
-        <TextBlock Classes="detail-title" Text="{Binding $parent[views:CreateItemDialog].Text.CreateItem}" />
-        <TextBlock Classes="caption subtle" Text="{Binding $parent[views:CreateItemDialog].Text.Title}" />
-        <TextBox x:Name="TitleField" Text="{Binding Title}" AutomationProperties.Name="{Binding $parent[views:CreateItemDialog].Text.Title}" />
-        <TextBlock Classes="caption subtle" Text="{Binding $parent[views:CreateItemDialog].Text.Repo}" />
-        <TextBox x:Name="RepoField" Text="{Binding Repo}" AutomationProperties.Name="{Binding $parent[views:CreateItemDialog].Text.Repo}" />
-        <TextBlock Classes="caption subtle" Text="{Binding $parent[views:CreateItemDialog].Text.Body}" />
+        <TextBlock Classes="detail-title" Text="{Binding Text.CreateItem}" />
+        <TextBlock Classes="caption subtle" Text="{Binding Text.Title}" />
+        <TextBox x:Name="TitleField" Text="{Binding Title}" AutomationProperties.Name="{Binding Text.Title}" />
+        <TextBlock Classes="caption subtle" Text="{Binding Text.Repo}" />
+        <TextBox x:Name="RepoField" Text="{Binding Repo}" AutomationProperties.Name="{Binding Text.Repo}" />
+        <TextBlock Classes="caption subtle" Text="{Binding Text.Body}" />
         <TextBox x:Name="BodyField" Text="{Binding Body}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72"
-                 AutomationProperties.Name="{Binding $parent[views:CreateItemDialog].Text.Body}" />
+                 AutomationProperties.Name="{Binding Text.Body}" />
         <Grid ColumnDefinitions="*,Auto">
           <!-- Enabled while the title isn't blank; the control keeps its own lifecycle and pending state. -->
           <Panel x:Name="CreateGate" IsEnabled="{Binding IsGateOpen}">
             <controls:CommandControl x:Name="CreateControl" DataContext="{Binding Control}" />
           </Panel>
           <Button x:Name="CancelCreate" Grid.Column="1" Classes="copy" Click="OnCancel" VerticalAlignment="Top"
-                  AutomationProperties.Name="{Binding $parent[views:CreateItemDialog].Text.Cancel}">
-            <TextBlock Classes="caption" Text="{Binding $parent[views:CreateItemDialog].Text.Cancel}" />
+                  AutomationProperties.Name="{Binding Text.Cancel}">
+            <TextBlock Classes="caption" Text="{Binding Text.Cancel}" />
           </Button>
         </Grid>
       </StackPanel>

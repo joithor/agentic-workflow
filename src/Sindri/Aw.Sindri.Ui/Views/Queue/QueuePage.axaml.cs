@@ -15,10 +15,10 @@ internal sealed partial class QueuePage : UserControl
 
     private void OnOpen(object? sender, RoutedEventArgs e)
     {
-        if (e.Source is ItemRow { ItemId.Length: > 0 } row && DataContext is ShellViewModel shell)
+        if (ItemRow.ItemIdOf(e) is { Length: > 0 } id && DataContext is ShellViewModel shell)
         {
-            shell.Queue.Select(row.ItemId);
-            shell.OpenItem(row.ItemId);
+            shell.Queue.Select(id);
+            shell.OpenItem(id);
         }
     }
 
