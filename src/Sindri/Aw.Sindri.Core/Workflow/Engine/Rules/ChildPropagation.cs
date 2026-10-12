@@ -18,15 +18,15 @@ internal static class ChildPropagation
     /// under the parent's pinned hash; its own pins (its child waits' recipes, as <paramref name="pinned"/> resolves
     /// them), so a child that waits on a grandchild creates it the same way (RCP-CHILD-003 allows depth 4); its inputs
     /// from the wait's '{ fact }' and literals; its address '{parent}/{recipe name}.{parent entry}'; its id derived
-    /// from the parent's trigger key and that address (§5.4), so each level gets an id of its own; and the parent
-    /// trigger's actor.
+    /// from the creating trigger's key (§5.4); and the parent trigger's actor. A resolved child whose hash isn't the
+    /// one the parent pinned is refused (§4.1: a child is created from the hash its parent pinned).
     /// </summary>
     /// <param name="parent">The parent, in the frame that entered the wait.</param>
     /// <param name="wait">The child wait.</param>
     /// <param name="pinned">The pinned child recipes.</param>
     /// <param name="key">The parent's trigger key.</param>
     /// <param name="actor">The parent trigger's actor.</param>
-    /// <returns>The child's start, or SND-RECIPE-002 when the child isn't resolved or isn't in the parent's pins.</returns>
+    /// <returns>The child's start, or SND-RECIPE-002 when the child isn't resolved, isn't in the parent's pins, or resolves to another hash.</returns>
     public static Result<StartRequest> Create(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor)
     {
         ArgumentNullException.ThrowIfNull(parent);
@@ -38,10 +38,16 @@ internal static class ChildPropagation
                 $"child recipe {wait.Recipe.Value} isn't pinned for {parent.Recipe.Id.Value} (fix: re-approve {parent.Recipe.Id.Value})");
         }
 
+        if (!child.Hash.Equals(hash))
+        {
+            return WorkflowErrors.RecipeNotFound.With(
+                $"child recipe {wait.Recipe.Value} resolves to {child.Hash.Value}, not {hash.Value}, the hash {parent.Recipe.Id.Value} pinned (fix: re-approve {parent.Recipe.Id.Value})");
+        }
+
         var address = parent.Address.Child(wait.Recipe, parent.Frame.Entry);
         return new StartRequest(
             key,
-            ChildInputs.IdFor(key, address),
+            ChildInputs.IdFor(key),
             address,
             new PinnedRecipe(wait.Recipe, child.Recipe.Version, hash, ChildInputs.Pins(child.Recipe, pinned)),
             parent.Item,

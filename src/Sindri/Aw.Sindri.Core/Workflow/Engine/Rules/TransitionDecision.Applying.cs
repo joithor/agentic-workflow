@@ -95,14 +95,9 @@ public static partial class TransitionDecision
         return new Entered(entered, entry, [], [], start);
     }
 
+    /// <summary>The child the wait creates (ChildPropagation.Create resolves and checks it against the pin), started in this Commit.</summary>
     private static Result<Entered> WithChild(Scope scope, WorkflowInstance entered, ChildWait wait, int entry)
     {
-        if (scope.Context.Children.Resolve(wait.Recipe) is not { } child)
-        {
-            return WorkflowErrors.RecipeNotFound.With(
-                $"child recipe {wait.Recipe.Value} isn't pinned for {scope.Recipe.Id.Value} (fix: re-approve {scope.Recipe.Id.Value})");
-        }
-
         var creating = scope.Rules.CreateChild(entered, wait, scope.Context.Children, scope.Key, scope.Actor);
         if (creating.IsError)
         {
@@ -110,6 +105,7 @@ public static partial class TransitionDecision
         }
 
         var request = creating.Value;
+        var child = scope.Context.Children.Resolve(wait.Recipe)!; // why: CreateChild returns a start only for a child the resolver has
         return Start(request, child.Recipe, scope.Context, scope.Rules) switch
         {
             Applied started => new Entered(
