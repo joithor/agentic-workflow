@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Events;
 
-/// <summary>What followed a refusal (spec §5.5, W14): every refusal consumes its trigger, and one of these follows.</summary>
+/// <summary>What followed a refusal (spec §5.8, W14): every refusal consumes its trigger, and one of these follows.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<RefusalFollow>))]
 public enum RefusalFollow
 {
@@ -20,7 +20,7 @@ public enum RefusalFollow
 
     /// <summary>
     /// A command was refused with SND-WF-004, recorded once under its nonce. Refused outright it changes no row; refused
-    /// on an answer's resume ('--reject', or '--accept' with another check refusing), the answer's pop commits with it.
+    /// on an answer's resume ('--reject', or '--accept' with another check refusing), the answer's suspension ends with it.
     /// </summary>
     [JsonStringEnumMemberName("command-refused")]
     CommandRefused = 4,

@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
-/// <summary>What a child's change does to its parent (spec §5.7).</summary>
+/// <summary>What a child's change does to its parent (spec §5.8).</summary>
 public enum ParentEffectKind
 {
     /// <summary>Nothing (a park with 'onParked: ignore').</summary>
@@ -15,6 +15,6 @@ public enum ParentEffectKind
     /// <summary>Pop the frame mirroring that child, back to its wait (the same frame and child).</summary>
     Release = 3,
 
-    /// <summary>The parent is busy: the row stays pending until the parent can take it.</summary>
+    /// <summary>The parent is busy: the change waits (the interpreter keeps the child's signal) until the parent can take it.</summary>
     Hold = 4,
 }

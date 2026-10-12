@@ -36,10 +36,9 @@ internal static class EngineFixture
     /// <summary>The shipped catalog plus a deterministic 'gate.test.check', a top-rung 'gate.test.model' and 'step.test.agent', which isn't desk-capable.</summary>
     public static BlockCatalog Catalog { get; } = WithTestGates();
 
-    /// <summary>A context at <see cref="Now"/>, the recipe approved, no runtimes but those given.</summary>
+    /// <summary>A context with the recipe approved and no runtimes but those given.</summary>
     public static DecisionContext Context(params string[] runtimes) => new(
-        Now, Epoch: 7, ApprovalCheck.Holds, Catalog, runtimes.Select(BlockId.From).ToHashSet(),
-        new InMemoryChildRecipes().With(_step.Value), EngineTimings.Default);
+        ApprovalCheck.Holds, Catalog, runtimes.Select(BlockId.From).ToHashSet(), new InMemoryChildRecipes().With(_step.Value));
 
     /// <summary>An instance of <paramref name="recipe"/> in <paramref name="state"/> at entry <paramref name="entry"/>, its Step on run '{entry}.{run}'.</summary>
     public static WorkflowInstance At(Recipe recipe, string state, int entry = 1, int run = 1)
@@ -56,8 +55,8 @@ internal static class EngineFixture
             Id, InstanceAddress.Root(ItemKey.From("T-3"), recipe.Id, 1), SindriProfile.DefaultTenant, Ring: 0,
             new PinnedRecipe(recipe.Id, recipe.Version, recipe.Hash ?? RecipeHash.From("sha256:" + new string('0', 64)), children),
             ItemKey.From("T-3"), Attempt: 1, Parent: null,
-            new Frame(state, entry, open, Child: null, Deadlines: [], Now),
-            Suspended: [], loops, TokenSpend.None, new Dictionary<FactKey, FactValue>(), Version: 4, Outcome: null);
+            new Frame(state, entry, open, Child: null),
+            Suspension: null, PendingPark: null, loops, TokenSpend.None, new Dictionary<FactKey, FactValue>(), Outcome: null);
     }
 
     /// <summary>A Step report for run '{entry}.{run}'.</summary>

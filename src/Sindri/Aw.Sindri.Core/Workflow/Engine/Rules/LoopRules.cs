@@ -14,7 +14,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// failure reason only. The agent runtime (P8) adds finding keys and a diff signal to Step reports, and with them the
 /// findings superset and the empty diff of A §17.23.13.
 /// A round is counted on the transition back into the looped state (<see cref="Reenter"/>) and on a re-run after a
-/// refusal (the decision bumps it, §5.5); popping a frame never counts one (§5.1). A park this class decides carries
+/// refusal (the decision bumps it, §5.5); ending a suspension never counts one (§5.8). A park this class decides carries
 /// no actor and no withheld trigger: the decision that matched the trigger sets both.
 /// </remarks>
 internal static partial class LoopRules
@@ -153,8 +153,8 @@ internal static partial class LoopRules
     };
 
     /// <summary>A loop park (kind loop): its grant performs the withheld transition back into the looped state (§5.8).</summary>
-    private static SuspendOutcome LoopPark(ParkReason reason, string question) => new(
-        new Suspension(SuspensionKind.Park, reason, ParkKind.Loop, Escalation: null, question, Actor: string.Empty, Mirrors: null),
+    private static Suspension LoopPark(ParkReason reason, string question) => new(
+        SuspensionKind.Park, reason, ParkKind.Loop, Escalation: null, question, Actor: string.Empty, Mirrors: null,
         new ResumeAction(ResumeKind.Transition, Withheld: null, Gate: null, Effect: null));
 
     private static string Text(int value) => value.ToString(CultureInfo.InvariantCulture);

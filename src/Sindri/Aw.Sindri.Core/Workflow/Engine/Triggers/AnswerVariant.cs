@@ -22,7 +22,7 @@ public enum AnswerVariant
     [JsonStringEnumMemberName("accept")]
     Accept = 4,
 
-    /// <summary>'--reject': the escalated gate's refusal stands (the §5.5 path).</summary>
+    /// <summary>'--reject': the escalated gate's refusal stands (the §5.8 refusal path).</summary>
     [JsonStringEnumMemberName("reject")]
     Reject = 5,
 

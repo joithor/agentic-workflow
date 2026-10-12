@@ -68,10 +68,7 @@ public sealed class AnswerRoundCapTests
     public void A_pending_park_that_takes_effect_records_the_grant_on_its_event()
     {
         var rounds = Parked(In("produce", new LoopState(3, 3, Last: null)), ParkReason.Rounds, ParkKind.Refusal, ResumeKind.Rerun);
-        var budget = new PendingPark(
-            new Suspension(SuspensionKind.Park, ParkReason.Budget, ParkKind.Step, Escalation: null, "budget spent", "service:test", Mirrors: null),
-            new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effect: null));
-        var pending = rounds with { Suspended = [rounds.Suspended[^1] with { Pending = budget }] };
+        var pending = rounds with { PendingPark = BudgetPark };
 
         var applied = Assert.IsType<Applied>(Decide(pending, Answer(AnswerVariant.Grant, amount: 2)));
 
@@ -86,20 +83,12 @@ public sealed class AnswerRoundCapTests
     {
         var producing = In("produce", new LoopState(2, 3, Last: null));
         var gate = BlockId.From("gate.test.model");
-        var budget = new PendingPark(
-            new Suspension(SuspensionKind.Park, ParkReason.Budget, ParkKind.Step, Escalation: null, "budget spent", "service:test", Mirrors: null),
-            new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effect: null));
         var escalated = producing with
         {
-            Suspended =
-            [
-                new SuspendedFrame(
-                    producing.Frame,
-                    new Suspension(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Gate, "gate.test.model scored 0.5", "service:desk", Mirrors: null),
-                    new ResumeAction(ResumeKind.Override, new WithheldTrigger(0, Failed()), gate, Effect: null),
-                    budget),
-            ],
-            Frame = new Frame(EngineStates.Escalated, producing.Frame.Entry, Run: null, Child: null, [], T0.AddMinutes(30)),
+            Suspension = new Suspension(
+                SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Gate, "gate.test.model scored 0.5", "service:desk", Mirrors: null,
+                new ResumeAction(ResumeKind.Override, new WithheldTrigger(0, Failed()), gate, Effect: null)),
+            PendingPark = BudgetPark,
         };
 
         var applied = Assert.IsType<Applied>(Decide(escalated, Answer(AnswerVariant.Accept)));
@@ -109,13 +98,18 @@ public sealed class AnswerRoundCapTests
         Assert.Null(change.Event.Override);
     }
 
+    /// <summary>A budget park, as BudgetRules decides one from a Step report.</summary>
+    internal static Suspension BudgetPark { get; } = new(
+        SuspensionKind.Park, ParkReason.Budget, ParkKind.Step, Escalation: null, "budget spent", "service:test", Mirrors: null,
+        new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effect: null));
+
     private static void AssertParkedAtCap(Applied applied, WithheldTrigger withheld)
     {
         var after = applied.Changes[0].After;
         Assert.Equal((EngineStates.Parked, ParkReason.Rounds), (after.State, after.Park));
-        var top = after.Suspended[^1];
-        Assert.Equal((ParkKind.Refusal, ResumeKind.Rerun, withheld), (top.Suspension.ParkKind!.Value, top.Resume.Kind, top.Resume.Withheld));
-        Assert.Equal(("produce", RunToken.For(3, 1)), (top.Frame.State, top.Frame.Run!.Token));
+        var top = after.Suspension!; // why: parked, asserted just above
+        Assert.Equal((ParkKind.Refusal, ResumeKind.Rerun, withheld), (top.ParkKind!.Value, top.Resume.Kind, top.Resume.Withheld));
+        Assert.Equal(("produce", RunToken.For(3, 1)), (after.Frame.State, after.Frame.Run!.Token));
         Assert.Equal(3, after.Loops[Revisions].Round);
         Assert.Empty(applied.FollowUps);
     }

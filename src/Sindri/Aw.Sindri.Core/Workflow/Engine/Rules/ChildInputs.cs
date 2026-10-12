@@ -9,20 +9,19 @@ using Aw.Sindri.Core.Workflow.Validation;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
-/// <summary>The id and the input facts of a child a 'waitFor: { child }' creates (spec §5.7).</summary>
+/// <summary>The id and the input facts of a child a 'waitFor: { child }' creates (spec §5.1, §5.8).</summary>
 internal static class ChildInputs
 {
     /// <summary>
-    /// The child's id (spec §5.4): a UUIDv8 over SHA-256 of the key of the trigger that creates it, so a replayed Commit
-    /// creates the same child. A child's own start is its trigger 'wf:{child}:start', so a grandchild created while the
-    /// child starts gets an id of its own.
+    /// The child's opaque id (spec §5.1): a UUIDv8 over SHA-256 of its address, which is its workflow id, so the same
+    /// child always has the same id and a grandchild, at an address of its own, has an id of its own.
     /// </summary>
-    /// <param name="key">The creating trigger's key.</param>
+    /// <param name="address">The child's address.</param>
     /// <returns>The child's id.</returns>
-    public static WorkflowInstanceId IdFor(TriggerKey key)
+    public static WorkflowInstanceId IdFor(InstanceAddress address)
     {
         Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
-        _ = SHA256.HashData(Encoding.UTF8.GetBytes(key.Value), digest);
+        _ = SHA256.HashData(Encoding.UTF8.GetBytes(address.Value), digest);
         var bytes = digest[..16];
         bytes[6] = (byte)((bytes[6] & 0x0F) | 0x80);
         bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);

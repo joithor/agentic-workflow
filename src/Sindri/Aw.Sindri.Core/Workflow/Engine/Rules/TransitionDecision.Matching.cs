@@ -6,7 +6,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
-/// <summary>Matching (spec §3.5, §3.6, §5.3 step 4): the run token, the trigger allowed in the state, and the first transition whose closed 'when' holds.</summary>
+/// <summary>Matching (spec §3.5, §3.6, §5.2): the run token, the trigger allowed in the state, and the first transition whose closed 'when' holds.</summary>
 public static partial class TransitionDecision
 {
     private static readonly Dictionary<FactKey, FactValue> _noOutputs = [];
@@ -47,35 +47,20 @@ public static partial class TransitionDecision
 
         if (Run(trigger) is { } token && instance.Frame.Run?.Token != token)
         {
-            return instance.Suspended.Any(s => s.Frame.Run?.Token == token) ? MatchMiss.NotAllowed : MatchMiss.StaleRun;
+            return MatchMiss.StaleRun;
         }
 
         return recipe.States.TryGetValue(instance.State, out var state) && Allowed(instance, recipe, state, trigger) ? MatchMiss.None : MatchMiss.NotAllowed;
     }
 
     /// <summary>
-    /// The instance as a child's row sees it (§5.7): a frame that mirrors the child is popped before the row applies,
-    /// so the match reads the frame under it. A takeover above the mirror stays (the row is held until the handback).
+    /// The instance as a child's end sees it (§5.8): a suspension that mirrors the child ends before the change applies,
+    /// so the match reads the recipe frame. A takeover over the mirror stays (the change is held until the handback).
     /// </summary>
-    private static WorkflowInstance Unmirrored(WorkflowInstance instance, Trigger trigger)
-    {
-        if (trigger is not WaitSatisfied { Source: ChildWaitSource child })
-        {
-            return instance;
-        }
-
-        for (var i = 0; i < instance.Suspended.Count; i++)
-        {
-            if (instance.Suspended[i].Suspension.Mirrors == child.Child)
-            {
-                return i == instance.Suspended.Count - 1
-                    ? instance with { Frame = instance.Suspended[i].Frame, Suspended = [.. instance.Suspended.Take(i)] }
-                    : instance;
-            }
-        }
-
-        return instance;
-    }
+    private static WorkflowInstance Unmirrored(WorkflowInstance instance, Trigger trigger) =>
+        trigger is WaitSatisfied { Source: ChildWaitSource child } && instance.Suspension?.Mirrors == child.Child
+            ? instance with { Suspension = null, PendingPark = null }
+            : instance;
 
     /// <summary>Step reports from an active state, a satisfied wait of the kind the wait names, a command a transition from here takes.</summary>
     private static bool Allowed(WorkflowInstance instance, Recipe recipe, RecipeState state, Trigger trigger) => trigger switch

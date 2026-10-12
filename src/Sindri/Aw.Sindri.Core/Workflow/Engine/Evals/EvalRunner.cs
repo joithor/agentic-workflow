@@ -1,5 +1,5 @@
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Engine.Events;
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
 
@@ -8,7 +8,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Evals;
 /// <summary>
 /// 'recipe eval' (spec §9.2): folds the engine's decisions over a case's triggers, with the line's gate verdicts as
 /// the gate answers and every block treated as having a runtime, and reports the first line that diverges. Pure: it
-/// runs 'TransitionDecision' in memory, and each event it writes carries the post-state 'EventFold' rebuilds.
+/// runs 'TransitionDecision' in memory (spec Phase 3); from P4 the interpreter on the time-skipping server runs the
+/// same cases, and the two must agree.
 /// </summary>
 public static class EvalRunner
 {
@@ -22,10 +23,10 @@ public static class EvalRunner
         Replay(evalCase, recipe, catalog, children).Verdict;
 
     /// <summary>
-    /// <see cref="Run"/>, with the events the instance recorded up to the line that diverged (the format
+    /// <see cref="Run"/>, with the instance's history up to the line that diverged (the history
     /// <see cref="EvalRecorder"/> turns back into a case).
     /// </summary>
-    internal static (EvalVerdict Verdict, IReadOnlyList<WorkflowEvent> Events) Replay(EvalCase evalCase, Recipe recipe, BlockCatalog catalog, IChildRecipeResolver children)
+    internal static (EvalVerdict Verdict, IReadOnlyList<InstanceChange> History) Replay(EvalCase evalCase, Recipe recipe, BlockCatalog catalog, IChildRecipeResolver children)
     {
         ArgumentNullException.ThrowIfNull(evalCase);
         ArgumentNullException.ThrowIfNull(recipe);
@@ -44,16 +45,16 @@ public static class EvalRunner
             var step = simulation.Step(evalCase.Steps[i], line);
             if (step.IsError)
             {
-                return (new EvalVerdict(Passed: false, line, step.Error.Message), simulation.Events);
+                return (new EvalVerdict(Passed: false, line, step.Error.Message), simulation.History);
             }
 
             simulation = step.Value.Next;
             if (simulation.Diverges(evalCase.Steps[i].Expect) is { } detail)
             {
-                return (new EvalVerdict(Passed: false, line, detail), simulation.Events);
+                return (new EvalVerdict(Passed: false, line, detail), simulation.History);
             }
         }
 
-        return (new EvalVerdict(Passed: true, Line: null, Detail: null), simulation.Events);
+        return (new EvalVerdict(Passed: true, Line: null, Detail: null), simulation.History);
     }
 }

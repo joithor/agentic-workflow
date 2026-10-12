@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Instances;
 
-/// <summary>What the answer that pops a suspended frame does (spec §5.8). A pop counts no round; a re-run it starts counts one.</summary>
+/// <summary>What the answer that ends a suspension does (spec §5.8). Ending it counts no round; a re-run it starts counts one.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<ResumeKind>))]
 public enum ResumeKind
 {
@@ -22,7 +22,7 @@ public enum ResumeKind
     [JsonStringEnumMemberName("rewait")]
     Rewait = 4,
 
-    /// <summary>Back to the frame (the same run, the same desk task) with a fresh deadline; for drift, a frame parked by a Step trigger also re-evaluates it.</summary>
+    /// <summary>Back to the frame (the same run, the same desk task); the interpreter arms the state's timer afresh. For drift, a frame parked by a Step trigger also re-evaluates it.</summary>
     [JsonStringEnumMemberName("rearm")]
     Rearm = 5,
 
@@ -38,11 +38,11 @@ public enum ResumeKind
     [JsonStringEnumMemberName("override")]
     Override = 8,
 
-    /// <summary>A frame mirroring a child: its answers are forwarded to the child (§5.7), and the child's own rows pop it.</summary>
+    /// <summary>A suspension mirroring a child: its answers are forwarded to the child (§5.8), and the child's own changes end it.</summary>
     [JsonStringEnumMemberName("forward")]
     Forward = 9,
 
-    /// <summary>A takeover's handback: back to whatever it covered, the paused deadlines re-armed from what remained.</summary>
+    /// <summary>A takeover's handback: back to whatever it covered; the interpreter re-arms the paused timer with what remained.</summary>
     [JsonStringEnumMemberName("return")]
     Return = 10,
 

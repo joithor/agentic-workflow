@@ -7,64 +7,85 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>
-/// Which answer fits which suspension (spec §3.8, §5.8, §6.4, W7): each row's answer variants, the fix that names
-/// them, and the bounds on a grant. An answer that fits runs the suspended frame's resume action; '--reject' runs the
-/// refusal path instead. A frame mirroring a child forwards every answer to the child, which checks the fit (§5.7).
+/// Which answer fits which suspension (spec §3.8, §5.2, §5.8, §6.4, W7): each row's answer variants, the fix that
+/// names them, and the bounds on a grant. The interpreter's Update validator calls it before accepting an answer; an
+/// answer that fits runs the suspension's resume action, and '--reject' runs the refusal path instead. A suspension
+/// mirroring a child forwards every answer to the child, which checks the fit (§5.8). The recorder reads the same table
+/// to name an answer's variant (§9.2), so the two can't drift.
 /// </summary>
 internal static class AnswerFit
 {
-    /// <summary>See <see cref="FrameRules.Fits(WorkflowInstance, Recipe, AnswerGiven)"/>.</summary>
+    /// <summary>
+    /// Whether <paramref name="answer"/> fits the instance's suspension: '--grant' on rounds or no-progress,
+    /// '--grant-tokens' on budget, '--text' on needs-answer (from a Step) or no-progress, '--resume [--text]' on a wait's
+    /// needs-answer, a timeout, SND-WF-010 or a dispatch refusal, '--accept' or '--reject' on a gate escalation.
+    /// '--grant n' is within 1 to the loop's cap and '--grant-tokens n' at most the original budget when the recipe is given.
+    /// </summary>
     /// <param name="instance">The instance.</param>
     /// <param name="recipe">Its recipe, for the bounds; null skips the upper bounds.</param>
     /// <param name="answer">The answer.</param>
-    /// <returns>The resume action, or SND-WF-003.</returns>
+    /// <returns>The resume action, or SND-WF-003 whose fix names the answer that fits.</returns>
     public static Result<ResumeAction> Check(WorkflowInstance instance, Recipe? recipe, AnswerGiven answer)
     {
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(answer);
         var address = instance.Address.Value;
         if (Unanswerable(instance, address) is { } refused)
         {
             return refused;
         }
 
-        var top = instance.Suspended[^1];
-        if (top.Suspension.Mirrors is not null)
+        var suspension = instance.Suspension!; // why: Unanswerable refuses an instance with no suspension
+        if (suspension.Mirrors is not null)
         {
-            return top.Resume;
+            return suspension.Resume;
         }
 
-        var row = FitRow.For(top.Suspension, address, instance.Recipe);
+        var row = FitRow.For(suspension, address, instance.Recipe);
         if (!row.Variants.Contains(answer.Variant))
         {
-            return FrameRefusals.Refuse($"{Spelled(answer.Variant)} doesn't fit {address}, {row.Shown}", row.Fix);
+            return FitRefusals.Refuse($"{Spelled(answer.Variant)} doesn't fit {address}, {row.Shown}", row.Fix);
         }
 
-        if (OutOfBounds(top, recipe, answer, address) is { } bounded)
+        if (OutOfBounds(instance.Frame, suspension, recipe, answer, address) is { } bounded)
         {
             return bounded;
         }
 
-        return answer.Variant == AnswerVariant.Reject ? top.Resume with { Kind = ResumeKind.Refuse } : top.Resume;
+        return answer.Variant == AnswerVariant.Reject ? suspension.Resume with { Kind = ResumeKind.Refuse } : suspension.Resume;
+    }
+
+    /// <summary>The answer variants that fit <paramref name="suspension"/>, in the order §3.8 lists them; empty when only cancel or an approval ends it.</summary>
+    /// <param name="suspension">A park or escalation that mirrors no child.</param>
+    /// <param name="address">The instance's address.</param>
+    /// <param name="recipe">The recipe it runs.</param>
+    /// <returns>The variants.</returns>
+    public static IReadOnlyList<AnswerVariant> Variants(Suspension suspension, InstanceAddress address, PinnedRecipe recipe)
+    {
+        ArgumentNullException.ThrowIfNull(suspension);
+        ArgumentNullException.ThrowIfNull(recipe);
+        return FitRow.For(suspension, address.Value, recipe).Variants;
     }
 
     private static Error? Unanswerable(WorkflowInstance instance, string address)
     {
         if (instance.Ended)
         {
-            return FrameRefusals.Refuse($"{address} has ended", FrameRefusals.Status(address));
+            return FitRefusals.Refuse($"{address} has ended", FitRefusals.Status(address));
         }
 
         if (instance.State == EngineStates.TakenOver)
         {
-            return FrameRefusals.Refuse($"{address} is taken over; no answer fits until it is handed back", $"sindri workflow handback {address}");
+            return FitRefusals.Refuse($"{address} is taken over; no answer fits until it is handed back", $"sindri workflow handback {address}");
         }
 
-        return instance.Suspended.Count == 0
-            ? FrameRefusals.Refuse($"{address} is in {instance.State}; nothing there waits for an answer", FrameRefusals.Status(address))
+        return instance.Suspension is null
+            ? FitRefusals.Refuse($"{address} is in {instance.State}; nothing there waits for an answer", FitRefusals.Status(address))
             : null;
     }
 
-    // W7: '--grant n' is 1 to the loop's cap; '--grant-tokens n' is 1 to the original budget. Once per park holds because the grant pops the park.
-    private static Error? OutOfBounds(SuspendedFrame top, Recipe? recipe, AnswerGiven answer, string address)
+    // W7: '--grant n' is 1 to the loop's cap; '--grant-tokens n' is 1 to the original budget. Once per park holds because the grant ends the park.
+    private static Error? OutOfBounds(Frame frame, Suspension suspension, Recipe? recipe, AnswerGiven answer, string address)
     {
         if (answer.Variant is not (AnswerVariant.Grant or AnswerVariant.GrantTokens))
         {
@@ -72,31 +93,31 @@ internal static class AnswerFit
         }
 
         var rounds = answer.Variant == AnswerVariant.Grant;
-        var upper = recipe is null ? int.MaxValue : rounds ? LoopCap(top, recipe) : Budget(top, recipe);
+        var upper = recipe is null ? int.MaxValue : rounds ? LoopCap(frame, suspension, recipe) : Budget(frame, recipe);
         if (answer.Amount is { } n && n >= 1 && n <= upper)
         {
             return null;
         }
 
         var limit = upper == int.MaxValue ? "a whole number from 1" : "from 1 to " + upper.ToString(CultureInfo.InvariantCulture);
-        return FrameRefusals.Refuse(
+        return FitRefusals.Refuse(
             $"{Spelled(answer.Variant)} needs {(rounds ? "rounds" : "tokens")} {limit}",
-            FrameRefusals.Answer(address, rounds ? "--grant 1" : "--grant-tokens <n>"));
+            FitRefusals.Answer(address, rounds ? "--grant 1" : "--grant-tokens <n>"));
     }
 
     // The loop a grant raises (the same rule LoopRules.Grant applies): for kind loop, the looped state the withheld transition goes back into; for kind refusal, the active state's own.
-    private static int LoopCap(SuspendedFrame top, Recipe recipe)
+    private static int LoopCap(Frame frame, Suspension suspension, Recipe recipe)
     {
-        var looped = LoopRules.LoopedState(recipe, top);
+        var looped = LoopRules.LoopedState(recipe, frame, suspension);
         return recipe.States.TryGetValue(looped, out var state) && state.Loop is { } name && recipe.Loops.TryGetValue(name, out var loop)
             ? loop.Cap
             : int.MaxValue;
     }
 
     // The original budget: the parked state's own, else the recipe's.
-    private static int Budget(SuspendedFrame top, Recipe recipe)
+    private static int Budget(Frame frame, Recipe recipe)
     {
-        var own = recipe.States.TryGetValue(top.Frame.State, out var state) ? state.Budget?.Tokens : null;
+        var own = recipe.States.TryGetValue(frame.State, out var state) ? state.Budget?.Tokens : null;
         return own ?? recipe.Budget?.Tokens ?? int.MaxValue;
     }
 

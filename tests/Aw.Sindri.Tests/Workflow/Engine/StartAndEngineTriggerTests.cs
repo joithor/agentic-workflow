@@ -20,10 +20,10 @@ public sealed class StartAndEngineTriggerTests
         var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request(), Step, Context(), new FakeEngineRules()));
 
         var (row, started) = (applied.Changes[0].After, applied.Changes[0].Event);
-        Assert.Equal(("produce", 1, 1L, RunToken.For(1, 1)), (row.State, row.Frame.Entry, row.Version, row.Frame.Run!.Token));
+        Assert.Equal(("produce", 1, RunToken.For(1, 1)), (row.State, row.Frame.Entry, row.Frame.Run!.Token));
         Assert.Equal(new LoopState(1, 3, Last: null), row.Loops["revisions"]);
         Assert.Equal(Fact("Add a --version flag."), row.Facts[FactKey.From("fact:spec")]);
-        Assert.Equal((WorkflowEventType.Started, 0L, 1L), (started.Type, started.FromVersion, started.ToVersion));
+        Assert.Equal(WorkflowEventType.Started, started.Type);
         Assert.Same(row, started.Started);
         var start = Assert.Single(applied.FollowUps);
         Assert.Equal((FollowUpKind.StartRun, BlockId.From("step.produce")), (start.Kind, start.Step!.Value));
@@ -43,7 +43,7 @@ public sealed class StartAndEngineTriggerTests
         var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request() with { TakenOver = true }, Step, Context(), new FakeEngineRules()));
 
         var row = applied.Changes[0].After;
-        Assert.Equal((EngineStates.TakenOver, "produce"), (row.State, row.Suspended[^1].Frame.State));
+        Assert.Equal((EngineStates.TakenOver, "produce"), (row.State, row.Frame.State));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -82,9 +82,11 @@ public sealed class StartAndEngineTriggerTests
         Assert.Equal(3, applied.Changes.Count);
         var (root, child, grandchild) = (applied.Changes[0].After, applied.Changes[1].After, applied.Changes[2].After);
         Assert.Equal(3, new[] { root.Id, child.Id, grandchild.Id }.Distinct().Count());
-        Assert.Equal(ChildIdFor(NestedRequest(outer, middle).Key), child.Id);
-        Assert.Equal(ChildIdFor(TriggerKey.For(child.Id, "start")), grandchild.Id);
-        Assert.Equal(TriggerKey.For(child.Id, "start"), applied.Changes[2].Event.Trigger.Key);
+        // §5.1: each child's workflow id is its address, and its opaque id is derived from that address.
+        Assert.Equal(root.Address.Child(middle.Recipe.Id, 1), child.Address);
+        Assert.Equal(child.Address.Child(Step.Id, 1), grandchild.Address);
+        Assert.Equal((IdFor(child.Address), IdFor(grandchild.Address)), (child.Id, grandchild.Id));
+        Assert.Equal(TriggerKey.For(grandchild.Id, "start"), applied.Changes[2].Event.Trigger.Key);
         Assert.Equal((child.Id, root.Id), (root.Frame.Child, child.Parent));
         Assert.Equal((grandchild.Id, child.Id), (child.Frame.Child, grandchild.Parent));
         Assert.Equal(Step.Hash, child.Recipe.Children[Step.Id]);
@@ -120,9 +122,9 @@ public sealed class StartAndEngineTriggerTests
     }
 
     /// <summary>A child's id as spec §5.4 derives it: a UUIDv8 over SHA-256 of the creating trigger's key.</summary>
-    private static WorkflowInstanceId ChildIdFor(TriggerKey key)
+    private static WorkflowInstanceId IdFor(InstanceAddress address)
     {
-        var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key.Value))[..16];
+        var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(address.Value))[..16];
         bytes[6] = (byte)((bytes[6] & 0x0F) | 0x80);
         bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
         return WorkflowInstanceId.For(new Guid(bytes, bigEndian: true));

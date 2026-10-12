@@ -10,8 +10,8 @@ namespace Aw.Sindri.Tests.Workflow.Engine;
 /// <summary>
 /// The loop and budget tests' recipe and instances. The recipe has the shape of the shipped 'workflow.step' (spec §12):
 /// 'produce' (loop 'revisions', cap 3, a 200k budget) goes to 'checks', which goes to 'verify' on 'passed' and back to
-/// 'produce' on 'failed'; 'verify' goes to 'done' or back to 'produce'. The recipe budget is 400k. Suspended frames are
-/// built here by hand, so these tests don't depend on the frame rules.
+/// 'produce' on 'failed'; 'verify' goes to 'done' or back to 'produce'. The recipe budget is 400k. Parks are
+/// built here by hand, so these tests don't depend on the suspension rules.
 /// </summary>
 internal static class LoopFixture
 {
@@ -54,46 +54,35 @@ internal static class LoopFixture
         ItemKey.From("T-1"),
         Attempt: 1,
         Parent: null,
-        new Frame(state, 3, new OpenRun(RunToken.For(3, 1), StepRuntime.Desk, Launch: null, Task: null), Child: null, [], T0),
-        [],
+        new Frame(state, 3, new OpenRun(RunToken.For(3, 1), StepRuntime.Desk, Launch: null, Task: null), Child: null),
+        Suspension: null,
+        PendingPark: null,
         loop is null
             ? new Dictionary<string, LoopState>(StringComparer.Ordinal)
             : new Dictionary<string, LoopState>(StringComparer.Ordinal) { [Revisions] = loop },
         spent ?? TokenSpend.None,
         new Dictionary<FactKey, FactValue>(),
-        Version: 5,
         Outcome: null);
 
     /// <summary>A spend of <paramref name="total"/> in all, <paramref name="produce"/> of it in 'produce'.</summary>
     public static TokenSpend Spent(int total, int produce, int granted = 0) =>
         new(total, new Dictionary<string, int>(StringComparer.Ordinal) { ["produce"] = produce }, granted);
 
-    /// <summary><paramref name="instance"/> parked as a rule decided (pushed by hand: the frame rules aren't under test here).</summary>
+    /// <summary><paramref name="instance"/> parked as a rule decided (set by hand: the suspension rules aren't under test here).</summary>
     public static WorkflowInstance Parked(WorkflowInstance instance, ParkReason reason, ParkKind kind, ResumeKind resume, WithheldTrigger? withheld = null) =>
         instance with
         {
-            Suspended =
-            [
-                .. instance.Suspended,
-                new SuspendedFrame(
-                    instance.Frame,
-                    new Suspension(SuspensionKind.Park, reason, kind, Escalation: null, "parked by the test", "service:desk", Mirrors: null),
-                    new ResumeAction(resume, withheld, Gate: null, Effect: null),
-                    Pending: null),
-            ],
-            Frame = new Frame(EngineStates.Parked, instance.Frame.Entry, Run: null, Child: null, [], T0.AddMinutes(30)),
+            Suspension = new Suspension(
+                SuspensionKind.Park, reason, kind, Escalation: null, "parked by the test", "service:desk", Mirrors: null,
+                new ResumeAction(resume, withheld, Gate: null, Effect: null)),
         };
 
     /// <summary>A loop park on the transition back into 'produce' (kind loop): the instance was in 'checks', and 'checks -> produce' is withheld.</summary>
     public static WorkflowInstance LoopParked(ParkReason reason, LoopState loop) =>
         Parked(In("checks", loop), reason, ParkKind.Loop, ResumeKind.Transition, ChecksFailedTrigger());
 
-    /// <summary><paramref name="parked"/> after its answer popped the park (by hand): the frame it suspended is back.</summary>
-    public static WorkflowInstance Popped(WorkflowInstance parked) => parked with
-    {
-        Frame = parked.Suspended[^1].Frame,
-        Suspended = [.. parked.Suspended.Take(parked.Suspended.Count - 1)],
-    };
+    /// <summary><paramref name="parked"/> after its answer ended the park (by hand): a pending park takes its place.</summary>
+    public static WorkflowInstance Popped(WorkflowInstance parked) => parked with { Suspension = parked.PendingPark, PendingPark = null };
 
     /// <summary>'checks' reported 'failed' (the withheld loop transition's trigger).</summary>
     public static WithheldTrigger ChecksFailedTrigger() => new(ChecksFailed, new StepCompleted(

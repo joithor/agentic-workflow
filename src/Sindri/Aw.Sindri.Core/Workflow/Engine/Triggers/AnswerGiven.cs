@@ -1,8 +1,8 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 /// <summary>
-/// 'workflow answer' (spec §5.8): pops the suspended frame its variant fits and runs that frame's resume action,
-/// under this answer's own key. An answer that doesn't fit the reason is SND-WF-003, whose fix names the right one.
+/// 'workflow answer' (spec §5.2, §5.8): an Update that ends the suspension its variant fits and runs that
+/// suspension's resume action, under this answer's own key. An answer that doesn't fit the reason is SND-WF-003, whose fix names the right one.
 /// </summary>
 /// <param name="Actor">The caller (a terminal-class human for the protected variants).</param>
 /// <param name="Stamp">The nonce and argument digest.</param>

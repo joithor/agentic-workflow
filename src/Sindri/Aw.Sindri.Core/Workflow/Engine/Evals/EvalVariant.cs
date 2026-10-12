@@ -45,7 +45,7 @@ public enum EvalVariant
     [JsonStringEnumMemberName("cancel")]
     Cancel = 9,
 
-    /// <summary>The current frame's next deadline fires (kind 'deadline').</summary>
+    /// <summary>The running timer fires (kind 'deadline'): the takeover's idle reminder, or the state's timeout.</summary>
     [JsonStringEnumMemberName("deadline")]
     Deadline = 10,
 

@@ -19,7 +19,7 @@ public sealed class RoundGrantTests
         var granted = LoopRules.Grant(parked, StepRecipe, 2).Value;
 
         Assert.Equal(new LoopState(3, 5, Last: null), granted.Loops[Revisions]);
-        Assert.Equal(parked.Suspended, granted.Suspended);
+        Assert.Equal(parked.Suspension, granted.Suspension);
         Assert.Equal(parked.Frame, granted.Frame);
         Assert.Equal("SND-WF-003", LoopRules.Grant(parked, StepRecipe, 0).Error.Code);
         Assert.Equal("SND-WF-003", LoopRules.Grant(parked, StepRecipe, -1).Error.Code);
@@ -41,7 +41,7 @@ public sealed class RoundGrantTests
         Assert.Equal(new LoopState(5, 5, Findings("D")), fifth.Next);
         var sixth = LoopRules.Reenter(granted with { Loops = With(fifth.Next!) }, StepRecipe, "produce", Findings("E")); // why: asserted just above
 
-        Assert.Equal(ParkReason.Rounds, sixth.Park?.Suspension.Reason);
+        Assert.Equal(ParkReason.Rounds, sixth.Park?.Reason);
     }
 
     [Fact, Trait("Lane", "unit")]

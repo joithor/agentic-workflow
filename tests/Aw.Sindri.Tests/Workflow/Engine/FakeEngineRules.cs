@@ -13,8 +13,8 @@ using Aw.Sindri.Core.Workflow.Validation;
 namespace Aw.Sindri.Tests.Workflow.Engine;
 
 /// <summary>
-/// A small stand-in for the frame, loop, budget, child and fold rules (P3 units b to e), so the decision is tested on
-/// its own: it does what each rule's summary says, in the simplest way.
+/// A small stand-in for the entry, suspension, loop, budget, child and delta rules, so the decision is tested on its
+/// own: it does what each rule's summary says, in the simplest way.
 /// </summary>
 internal sealed class FakeEngineRules : IEngineRules
 {
@@ -30,46 +30,28 @@ internal sealed class FakeEngineRules : IEngineRules
             : null;
         return instance with
         {
-            Frame = new Frame(state, entry, run, Child: null, Deadlines: [], context.Now),
+            Frame = new Frame(state, entry, run, Child: null),
             Outcome = target.Kind == StateKind.Terminal ? target.Outcome : null,
         };
     }
 
-    public WorkflowInstance Suspend(WorkflowInstance instance, SuspendOutcome outcome, DateTimeOffset now)
+    public WorkflowInstance Suspend(WorkflowInstance instance, Suspension suspension) => instance.Suspension is null
+        ? instance with { Suspension = suspension }
+        : instance with { Suspension = suspension, PendingPark = instance.Suspension };
+
+    public Result<Ended> End(WorkflowInstance instance, WorkflowInstanceId? child) => instance.Suspension is { } suspension
+        ? new Ended(instance with { Suspension = instance.PendingPark, PendingPark = null }, suspension, instance.PendingPark is not null)
+        : WorkflowErrors.TriggerNotAllowed.With("nothing to end (fix: none)");
+
+    public Result<WorkflowInstance> TakeOver(WorkflowInstance instance, string actor) => Suspend(instance, new Suspension(
+        SuspensionKind.Takeover, Reason: null, ParkKind: null, Escalation: null, "taken over", actor, Mirrors: null,
+        new ResumeAction(ResumeKind.Return, Withheld: null, Gate: null, Effect: null)));
+
+    public WorkflowInstance Cancel(WorkflowInstance instance) => instance with
     {
-        var state = outcome.Suspension.Kind switch
-        {
-            SuspensionKind.Escalation => EngineStates.Escalated,
-            SuspensionKind.Takeover => EngineStates.TakenOver,
-            SuspensionKind.Park or _ => EngineStates.Parked,
-        };
-        return instance with
-        {
-            Suspended = [.. instance.Suspended, new SuspendedFrame(instance.Frame, outcome.Suspension, outcome.Resume, Pending: null)],
-            Frame = new Frame(state, instance.Frame.Entry, Run: null, outcome.Suspension.Mirrors, Deadlines: [], now),
-        };
-    }
-
-    public Result<PopResult> Pop(WorkflowInstance instance, Recipe recipe, WorkflowInstanceId? child, DecisionContext context)
-    {
-        if (instance.Suspended.Count == 0)
-        {
-            return WorkflowErrors.TriggerNotAllowed.With("nothing to pop (fix: none)");
-        }
-
-        var top = instance.Suspended[^1];
-        return new PopResult(instance with { Frame = top.Frame, Suspended = [.. instance.Suspended.Take(instance.Suspended.Count - 1)] }, top.Resume, top.Pending);
-    }
-
-    public Result<WorkflowInstance> TakeOver(WorkflowInstance instance, string actor, DecisionContext context) =>
-        Suspend(instance, new SuspendOutcome(
-            new Suspension(SuspensionKind.Takeover, Reason: null, ParkKind: null, Escalation: null, "taken over", actor, Mirrors: null),
-            new ResumeAction(ResumeKind.Return, Withheld: null, Gate: null, Effect: null)), context.Now);
-
-    public WorkflowInstance Cancel(WorkflowInstance instance, DateTimeOffset now) => instance with
-    {
-        Frame = new Frame(EngineStates.Cancelled, instance.Frame.Entry, Run: null, Child: null, Deadlines: [], now),
-        Suspended = [],
+        Frame = new Frame(EngineStates.Cancelled, instance.Frame.Entry, Run: null, Child: null),
+        Suspension = null,
+        PendingPark = null,
         Outcome = OutcomeName.From("cancelled"),
     };
 
@@ -98,13 +80,13 @@ internal sealed class FakeEngineRules : IEngineRules
     {
         var spent = instance.Spent with { Total = instance.Spent.Total + tokens };
         return new BudgetVerdict(spent, BudgetExhausted
-            ? new SuspendOutcome(
-                new Suspension(SuspensionKind.Park, ParkReason.Budget, ParkKind.Step, Escalation: null, "budget spent", "service:test", Mirrors: null),
+            ? new Suspension(
+                SuspensionKind.Park, ParkReason.Budget, ParkKind.Step, Escalation: null, "budget spent", "service:test", Mirrors: null,
                 new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effect: null))
             : null);
     }
 
-    public Result<ChildStart> CreateChild(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor)
+    public Result<ChildStart> CreateChild(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, string actor)
     {
         if (pinned.Resolve(wait.Recipe) is not { } child)
         {
@@ -112,7 +94,7 @@ internal sealed class FakeEngineRules : IEngineRules
         }
 
         var request = new StartRequest(
-            key,
+            TriggerKey.For(EngineFixture.ChildId, "start"),
             EngineFixture.ChildId,
             parent.Address.Child(wait.Recipe, parent.Frame.Entry),
             new PinnedRecipe(wait.Recipe, 1, parent.Recipe.Children[wait.Recipe], new Dictionary<RecipeId, RecipeHash>()),
@@ -127,22 +109,20 @@ internal sealed class FakeEngineRules : IEngineRules
 
     public ParentEffect ToParent(WorkflowInstance parent, Recipe recipe, ChildChanged change) => change.Change switch
     {
-        ChildChange.Parked => new ParentEffect(ParentEffectKind.MirrorPark, new SuspendOutcome(
-            new Suspension(SuspensionKind.Park, change.Reason, ParkKind: null, Escalation: null, change.Question ?? string.Empty, change.Actor, change.Child),
+        ChildChange.Parked => new ParentEffect(ParentEffectKind.MirrorPark, new Suspension(
+            SuspensionKind.Park, change.Reason, ParkKind: null, Escalation: null, change.Question ?? string.Empty, change.Actor, change.Child,
             new ResumeAction(ResumeKind.Forward, Withheld: null, Gate: null, Effect: null))),
         ChildChange.Resumed => new ParentEffect(ParentEffectKind.Release, Suspend: null),
         ChildChange.Escalated or _ => new ParentEffect(ParentEffectKind.Ignore, Suspend: null),
     };
 
-    public WorkflowInstance Release(WorkflowInstance parent, Recipe recipe, WorkflowInstanceId child, DateTimeOffset now) =>
-        parent.Suspended.Count > 0 && parent.Suspended[^1].Suspension.Mirrors == child
-            ? parent with { Frame = parent.Suspended[^1].Frame, Suspended = [.. parent.Suspended.Take(parent.Suspended.Count - 1)] }
-            : parent;
+    public WorkflowInstance Release(WorkflowInstance parent, WorkflowInstanceId child) =>
+        parent.Suspension?.Mirrors == child ? parent with { Suspension = parent.PendingPark, PendingPark = null } : parent;
 
     public InstanceDelta Delta(WorkflowInstance? before, WorkflowInstance after) =>
-        new(after.Version, after.Frame, after.Suspended, after.Loops, after.Spent, after.Facts, after.Outcome);
+        new(after.Frame, after.Suspension, after.PendingPark, after.Loops, after.Spent, after.Facts, after.Outcome);
 
-    private static SuspendOutcome LoopPark(ParkReason reason) => new(
-        new Suspension(SuspensionKind.Park, reason, ParkKind.Loop, Escalation: null, "loop", "service:test", Mirrors: null),
+    private static Suspension LoopPark(ParkReason reason) => new(
+        SuspensionKind.Park, reason, ParkKind.Loop, Escalation: null, "loop", "service:test", Mirrors: null,
         new ResumeAction(ResumeKind.Transition, Withheld: null, Gate: null, Effect: null));
 }

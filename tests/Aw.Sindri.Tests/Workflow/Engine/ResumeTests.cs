@@ -15,12 +15,12 @@ public sealed class ResumeTests
     {
         var parked = Suspended(Park(ParkReason.Rounds, ParkKind.Loop, ResumeKind.Transition, CheckFailed()));
 
-        Assert.True(FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Grant, amount: 1)).IsSuccess);
-        Assert.True(FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Grant, amount: 3)).IsSuccess);
-        Assert.Equal("SND-WF-003", FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Grant, amount: 0)).Error.Code);
-        Assert.Equal("SND-WF-003", FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Grant, amount: 4)).Error.Code);
-        Assert.Equal("SND-WF-003", FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Grant)).Error.Code);
-        var popped = FrameRules.Pop(parked, Recipe, child: null, T0.AddHours(1)).Value.Instance;
+        Assert.True(AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.Grant, amount: 1)).IsSuccess);
+        Assert.True(AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.Grant, amount: 3)).IsSuccess);
+        Assert.Equal("SND-WF-003", AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.Grant, amount: 0)).Error.Code);
+        Assert.Equal("SND-WF-003", AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.Grant, amount: 4)).Error.Code);
+        Assert.Equal("SND-WF-003", AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.Grant)).Error.Code);
+        var popped = Suspensions.End(parked, child: null).Value.Instance;
         Assert.Equal(parked.Loops, popped.Loops);
     }
 
@@ -29,8 +29,8 @@ public sealed class ResumeTests
     {
         var parked = Suspended(Park(ParkReason.Rounds, ParkKind.Refusal, ResumeKind.Rerun));
 
-        Assert.True(FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Grant, amount: 3)).IsSuccess);
-        Assert.Equal("SND-WF-003", FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Grant, amount: 4)).Error.Code);
+        Assert.True(AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.Grant, amount: 3)).IsSuccess);
+        Assert.Equal("SND-WF-003", AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.Grant, amount: 4)).Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -39,11 +39,11 @@ public sealed class ResumeTests
         var parked = Suspended(Park(ParkReason.Budget, ParkKind.Step, ResumeKind.Rerun));
         var grant = Answer(AnswerVariant.GrantTokens, amount: 200_000);
 
-        Assert.Equal(ResumeKind.Rerun, FrameRules.Fits(parked, Recipe, grant).Value.Kind);
-        Assert.Equal("SND-WF-003", FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.GrantTokens, amount: 200_001)).Error.Code);
-        Assert.Equal("SND-WF-003", FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.GrantTokens, amount: 0)).Error.Code);
-        var popped = FrameRules.Pop(parked, Recipe, child: null, T0.AddHours(1)).Value.Instance;
-        Assert.Equal("SND-WF-003", FrameRules.Fits(popped, Recipe, grant).Error.Code);
+        Assert.Equal(ResumeKind.Rerun, AnswerFit.Check(parked, Recipe, grant).Value.Kind);
+        Assert.Equal("SND-WF-003", AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.GrantTokens, amount: 200_001)).Error.Code);
+        Assert.Equal("SND-WF-003", AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.GrantTokens, amount: 0)).Error.Code);
+        var popped = Suspensions.End(parked, child: null).Value.Instance;
+        Assert.Equal("SND-WF-003", AnswerFit.Check(popped, Recipe, grant).Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -52,8 +52,8 @@ public sealed class ResumeTests
         var checking = Instance(Producing().Frame with { State = "checks" });
         var parked = Suspended(Park(ParkReason.Budget, ParkKind.Step, ResumeKind.Rerun), checking);
 
-        Assert.True(FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.GrantTokens, amount: 400_000)).IsSuccess);
-        Assert.Equal("SND-WF-003", FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.GrantTokens, amount: 400_001)).Error.Code);
+        Assert.True(AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.GrantTokens, amount: 400_000)).IsSuccess);
+        Assert.Equal("SND-WF-003", AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.GrantTokens, amount: 400_001)).Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -61,8 +61,8 @@ public sealed class ResumeTests
     {
         var parked = Suspended(Park(ParkReason.Rounds, ParkKind.Refusal, ResumeKind.Rerun));
 
-        var resume = FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Grant, amount: 1)).Value;
-        var popped = FrameRules.Pop(parked, Recipe, child: null, T0.AddHours(1)).Value;
+        var resume = AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.Grant, amount: 1)).Value;
+        var popped = Suspensions.End(parked, child: null).Value;
 
         Assert.Equal(ResumeKind.Rerun, resume.Kind);
         Assert.Null(resume.Withheld);
@@ -73,10 +73,10 @@ public sealed class ResumeTests
     [Fact, Trait("Lane", "unit")]
     public void Grant_performs_the_withheld_loop_transition()
     {
-        var checking = Instance(new Frame("checks", 4, new OpenRun(RunToken.For(4, 1), StepRuntime.Desk, Launch: null, "Check."), Child: null, [], T0));
+        var checking = Instance(new Frame("checks", 4, new OpenRun(RunToken.For(4, 1), StepRuntime.Desk, Launch: null, "Check."), Child: null));
         var parked = Suspended(Park(ParkReason.Rounds, ParkKind.Loop, ResumeKind.Transition, CheckFailed()), checking);
 
-        var resume = FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Grant, amount: 2)).Value;
+        var resume = AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.Grant, amount: 2)).Value;
 
         Assert.Equal(ResumeKind.Transition, resume.Kind);
         Assert.Equal(LoopBack, resume.Withheld?.Transition);
@@ -86,11 +86,11 @@ public sealed class ResumeTests
     [Fact, Trait("Lane", "unit")]
     public void Resume_reevaluates_gates_under_the_answer_key()
     {
-        var waiting = Instance(new Frame("await", 7, Run: null, Child: null, [], T0));
+        var waiting = Instance(new Frame("await", 7, Run: null, Child: null));
         var parked = Suspended(Park(ParkReason.NeedsAnswer, ParkKind.Wait, ResumeKind.Reevaluate, CiFinished()), waiting);
         var answer = Answer(AnswerVariant.Resume, "CI is green now");
 
-        var resume = FrameRules.Fits(parked, Recipe, answer).Value;
+        var resume = AnswerFit.Check(parked, Recipe, answer).Value;
 
         Assert.Equal(ResumeKind.Reevaluate, resume.Kind);
         Assert.Equal(CiFinished(), resume.Withheld);
@@ -101,11 +101,11 @@ public sealed class ResumeTests
     [Fact, Trait("Lane", "unit")]
     public void Resource_wait_resume_rewaits()
     {
-        var slot = Instance(new Frame("await", 7, Run: null, Child: null, [], T0));
+        var slot = Instance(new Frame("await", 7, Run: null, Child: null));
         var parked = Suspended(Park(ParkReason.NeedsAnswer, ParkKind.Wait, ResumeKind.Rewait), slot);
 
-        var resume = FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Resume)).Value;
-        var popped = FrameRules.Pop(parked, Recipe, child: null, T0.AddHours(1)).Value;
+        var resume = AnswerFit.Check(parked, Recipe, Answer(AnswerVariant.Resume)).Value;
+        var popped = Suspensions.End(parked, child: null).Value;
 
         Assert.Equal(ResumeKind.Rewait, resume.Kind);
         Assert.Null(resume.Withheld);
@@ -118,7 +118,7 @@ public sealed class ResumeTests
         var parked = Suspended(Park(ParkReason.Rounds, ParkKind.Loop, ResumeKind.Transition, CheckFailed()));
         var before = parked with { };
 
-        var refused = FrameRules.Fits(parked, Answer(AnswerVariant.Text, "try harder"));
+        var refused = AnswerFit.Check(parked, recipe: null, Answer(AnswerVariant.Text, "try harder"));
 
         Assert.Equal("SND-WF-003", refused.Error.Code);
         Assert.Equal(before, parked);
@@ -131,13 +131,13 @@ public sealed class ResumeTests
             new CommandStamp(CommandNonce.From(new string('e', 32)), new string('f', 64)), Sequence: null, Parent: null);
         var revoked = Suspended(Park(ParkReason.SpecConflict, ParkKind.Revoked, ResumeKind.None));
 
-        var cancelled = FrameRules.Cancel(revoked, T0.AddHours(1));
+        var cancelled = Suspensions.Cancel(revoked);
 
         Assert.True(cancel.ExemptFromApproval);
         Assert.True(new TakeoverRequested("human:cli", cancel.Stamp!).ExemptFromApproval);
         Assert.True(new HandbackRequested("human:cli", cancel.Stamp!).ExemptFromApproval);
         Assert.False(Answer(AnswerVariant.Resume).ExemptFromApproval);
         Assert.Equal(OutcomeName.From("cancelled"), cancelled.Outcome);
-        Assert.Empty(cancelled.Suspended);
+        Assert.Null(cancelled.Suspension);
     }
 }

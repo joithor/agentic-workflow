@@ -8,8 +8,8 @@ this page summarizes, the spec wins. The app shell (the `sindri` binary, its hom
 `docs/csharp/sindri.md`.
 
 This page covers reading, normalizing, hashing and validating recipes in-process (P1) and the pure engine's eval verb,
-`recipe eval` (P3). Registering and approving recipes (P2) and running instances (store and desk Steps, P4) come in
-later phases.
+`recipe eval` (P3). Registering and approving recipes (P2) and running instances on Temporal (the recipe interpreter,
+desk Steps and the bridge, P4; engine spec §0 and §5, revision 8) come in later phases.
 
 ## `sindri recipe validate`
 
@@ -62,7 +62,8 @@ them with `AW_GOLDEN_UPDATE=1 dotnet test --project tests/Aw.Sindri.Tests --filt
 
 `sindri recipe eval <file> [--json]` runs a recipe's eval cases (spec §9.2) in this process, never contacting the
 control plane. It reads the recipe and its child recipes beside it, then folds the pure engine's decisions (P3) over
-each case listed in `evals:`, in order, with a fake clock and fake gates. Each case's path is relative to the recipe
+each case listed in `evals:`, in order, with fake gates; the decisions read no clock. From P4 the same cases also run
+through the interpreter on Temporal's time-skipping test server, and the two must agree (spec Phase 3). Each case's path is relative to the recipe
 and stays inside its directory (`evals/<recipe id>/<case>.jsonl`).
 
 A case file is JSON lines, LF or CRLF:

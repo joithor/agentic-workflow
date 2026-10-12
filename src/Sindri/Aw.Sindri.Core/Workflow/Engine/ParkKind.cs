@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Core.Workflow.Engine;
 
-/// <summary>Which row of spec §3.8 a park is, where its reason has more than one: it decides the text and which answers pop it.</summary>
+/// <summary>Which row of spec §3.8 a park is, where its reason has more than one: it decides the text and which answers end it.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<ParkKind>))]
 public enum ParkKind
 {

@@ -107,9 +107,7 @@ internal static partial class RefusalRules
     private static RefusalOutcome Park(ParkReason reason, ParkKind kind, ResumeAction resume, Refusal refusal) => new(
         RefusalFollow.Park,
         Round: null,
-        new SuspendOutcome(
-            new Suspension(SuspensionKind.Park, reason, kind, Escalation: null, refusal.Detail, refusal.Input.Trigger.Actor, Mirrors: null),
-            resume),
+        new Suspension(SuspensionKind.Park, reason, kind, Escalation: null, refusal.Detail, refusal.Input.Trigger.Actor, Mirrors: null, resume),
         Error: null);
 
     private static RefusalOutcome Escalate(GateRecord gate, Refusal refusal)
@@ -118,8 +116,8 @@ internal static partial class RefusalRules
         return new RefusalOutcome(
             RefusalFollow.Escalate,
             Round: null,
-            new SuspendOutcome(
-                new Suspension(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Gate, question, refusal.Input.Trigger.Actor, Mirrors: null),
+            new Suspension(
+                SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Gate, question, refusal.Input.Trigger.Actor, Mirrors: null,
                 new ResumeAction(ResumeKind.Override, new WithheldTrigger(refusal.Input.Transition, refusal.Input.Trigger), gate.Gate, Effect: null)),
             Error: null);
     }

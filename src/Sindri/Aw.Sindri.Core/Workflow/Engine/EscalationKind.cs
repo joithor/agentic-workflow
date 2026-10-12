@@ -14,7 +14,7 @@ public enum EscalationKind
     [JsonStringEnumMemberName("timeout")]
     Timeout = 2,
 
-    /// <summary>The child escalated; its answers are forwarded to it (§5.7).</summary>
+    /// <summary>The child escalated; its answers are forwarded to it (§5.8).</summary>
     [JsonStringEnumMemberName("child")]
     Child = 3,
 }

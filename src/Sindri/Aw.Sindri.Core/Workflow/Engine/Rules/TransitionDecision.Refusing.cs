@@ -7,12 +7,12 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>
-/// The matched transition's gates and evidence (spec §5.3, W5), and a refusal's Commit (§5.5, W14): the trigger is
-/// consumed and a re-run, park, escalation or SND-WF-004 follows.
+/// The matched transition's gates and evidence (spec §5.2, W5), and a refusal (§5.8, W14): the trigger is consumed and a
+/// re-run, park, escalation or SND-WF-004 follows.
 /// </summary>
 public static partial class TransitionDecision
 {
-    /// <summary>Every gate in order and every evidence check, from the answers saved before the Commit; a missing answer had no runtime and refuses.</summary>
+    /// <summary>Every gate in order and every evidence check, from the answers the gate activities returned; a missing answer had no runtime and refuses.</summary>
     private static Records Check(Deciding d, RecipeTransition transition) => new(
         [.. transition.Gates.Select(use => d.Context.Catalog.Find(use.Use) is { } descriptor
             ? RefusalRules.Classify(use, d.Input.Answers.Gates.GetValueOrDefault(use.Use), descriptor)
@@ -33,23 +33,23 @@ public static partial class TransitionDecision
             return new Refused(d.Key, outcome, [], [], []);
         }
 
-        // A command refused on an answer's resume ('--reject', or '--accept' with another check refusing) still commits
-        // the answer's pop with its SND-WF-004 refusal, so the escalation never stays a dead end (§5.8, W14).
+        // A command refused on an answer's resume ('--reject', or '--accept' with another check refusing) still ends the
+        // answer's suspension with its SND-WF-004 refusal, so the escalation never stays a dead end (§5.8, W14).
         (WorkflowInstance After, IReadOnlyList<FollowUp> FollowUps) follows = outcome.Follow switch
         {
             RefusalFollow.Rerun => Rerun(d, instance, outcome.Round ?? 1, RefusalRules.Mark(input)),
             RefusalFollow.CommandRefused => (instance, []),
-            RefusalFollow.Park or RefusalFollow.Escalate or _ => (d.Rules.Suspend(instance, outcome.Suspend!, d.Now), []), // why: RefusalRules sets Suspend on every park and escalation
+            RefusalFollow.Park or RefusalFollow.Escalate or _ => (d.Rules.Suspend(instance, outcome.Suspend!), []), // why: RefusalRules sets Suspend on every park and escalation
         };
         var (after, followUps) = follows;
-        var suspension = outcome.Suspend?.Suspension;
+        var suspension = outcome.Suspend;
         var change = d.Change(after, WorkflowEventType.Refused, records);
         var refusal = new RefusalRecord(outcome.Follow, suspension?.Reason, suspension?.Escalation, outcome.Round, outcome.Error?.Code);
         return new Refused(d.Key, outcome, [change with { Event = change.Event with { Refusal = refusal } }], [], followUps);
     }
 
     /// <summary>
-    /// A re-run below the loop's cap (§5.5 step 3): a new run '{entry}.{n + 1}' in the same entry, one round, its
+    /// A re-run below the loop's cap (§5.8): a new run '{entry}.{n + 1}' in the same entry, one round, its
     /// mark kept for the next no-progress check.
     /// </summary>
     private static (WorkflowInstance After, IReadOnlyList<FollowUp> FollowUps) Rerun(Deciding d, WorkflowInstance instance, int round, ProgressMark mark)

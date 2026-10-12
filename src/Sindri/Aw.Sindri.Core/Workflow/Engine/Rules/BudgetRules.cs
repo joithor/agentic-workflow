@@ -24,7 +24,7 @@ internal static class BudgetRules
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(recipe);
         ArgumentOutOfRangeException.ThrowIfNegative(tokens);
-        var state = RecipeFrame.State(instance);
+        var state = Parks.RecipeState(instance);
         var spent = instance.Spent;
         var byState = new Dictionary<string, int>(spent.ByState, StringComparer.Ordinal);
         if (state is not null)
@@ -44,7 +44,7 @@ internal static class BudgetRules
     {
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(recipe);
-        var state = RecipeFrame.State(instance);
+        var state = Parks.RecipeState(instance);
         int? left = null;
         if (StateBudget(recipe, state) is { } budget)
         {
@@ -62,7 +62,7 @@ internal static class BudgetRules
 
     /// <summary>
     /// '--grant-tokens n' (W7): on a budget park only, at most the original budget (the parked state's, or the
-    /// recipe's when the state has none). The answer applies it to the parked instance and then pops the park, so it
+    /// recipe's when the state has none). The answer applies it to the parked instance and then ends the park, so it
     /// fits a park once. With no budget in the recipe (a 'gate.budget.*' refusal against the profile's budget) the
     /// caller checks the bound.
     /// </summary>
@@ -74,15 +74,14 @@ internal static class BudgetRules
     {
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(recipe);
-        var park = RecipeFrame.Park(instance);
-        if (park?.Suspension.Reason != ParkReason.Budget)
+        if (instance.Park != ParkReason.Budget)
         {
-            var shown = instance.Park is { } reason ? $"a {RecipeFrame.Name(reason)} park" : $"an instance in {instance.State}";
+            var shown = instance.Park is { } reason ? $"a {Parks.Name(reason)} park" : $"an instance in {instance.State}";
             return WorkflowErrors.TriggerNotAllowed.With(
                 $"--grant-tokens answers a budget park, not {shown} (fix: use an answer from allowedCommands in status)");
         }
 
-        var original = StateBudget(recipe, park.Frame.State) ?? recipe.Budget?.Tokens;
+        var original = StateBudget(recipe, instance.Frame.State) ?? recipe.Budget?.Tokens;
         if (tokens < 1 || tokens > original)
         {
             return WorkflowErrors.TriggerNotAllowed.With(original is { } o
@@ -116,8 +115,8 @@ internal static class BudgetRules
     private static int Remaining(int budget, int spent, int granted) => (int)Math.Max(0L, (long)budget + granted - spent);
 
     /// <summary>A budget park from a Step report (kind step): its answer re-runs the Step under the raised allowance (§5.8).</summary>
-    private static SuspendOutcome BudgetPark(string question) => new(
-        new Suspension(SuspensionKind.Park, ParkReason.Budget, ParkKind.Step, Escalation: null, question, Actor: string.Empty, Mirrors: null),
+    private static Suspension BudgetPark(string question) => new(
+        SuspensionKind.Park, ParkReason.Budget, ParkKind.Step, Escalation: null, question, Actor: string.Empty, Mirrors: null,
         new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effect: null));
 
     /// <summary>A token count as recipes write it: '200k', '1M', or the plain number.</summary>

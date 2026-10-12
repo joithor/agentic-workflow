@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
 /// <summary>
-/// A new instance (spec §5.1, §5.2): a root from 'workflow start', or a child created in its parent's Commit (W17).
+/// A new instance (spec §5.1): a root from 'workflow start', or a child created by its parent's transition (W17).
 /// It enters the recipe's initial state as entry 1. With <see cref="TakenOver"/> it starts taken over (UI E-19).
 /// </summary>
 /// <param name="Key">The key the start is decided under.</param>

@@ -40,13 +40,13 @@ public sealed class LoopRoundsTests
         var third = LoopRules.Reenter(In("checks", loop), StepRecipe, "produce", Findings("printed '0.0.0'"));
 
         Assert.Null(third.Next);
-        var park = Assert.IsType<SuspendOutcome>(third.Park);
-        Assert.Equal(SuspensionKind.Park, park.Suspension.Kind);
-        Assert.Equal(ParkReason.Rounds, park.Suspension.Reason);
-        Assert.Equal(ParkKind.Loop, park.Suspension.ParkKind);
+        var park = Assert.IsType<Suspension>(third.Park);
+        Assert.Equal(SuspensionKind.Park, park.Kind);
+        Assert.Equal(ParkReason.Rounds, park.Reason);
+        Assert.Equal(ParkKind.Loop, park.ParkKind);
         Assert.Equal(ResumeKind.Transition, park.Resume.Kind);
         Assert.Null(park.Resume.Withheld); // why: the decision stores the withheld transition it matched
-        Assert.Equal("revisions used all 3 rounds", park.Suspension.Question);
+        Assert.Equal("revisions used all 3 rounds", park.Question);
     }
 
     [Fact, Trait("Lane", "unit")]

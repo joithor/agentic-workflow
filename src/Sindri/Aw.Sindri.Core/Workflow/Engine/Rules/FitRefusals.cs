@@ -2,8 +2,8 @@ using Aw.Kernel;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
-/// <summary>The SND-WF-003 refusals of the frame rules: what is wrong, then '(fix: …)' naming what fits (spec §5.8, W27).</summary>
-internal static class FrameRefusals
+/// <summary>The SND-WF-003 refusals of the answer fit and the suspension rules: what is wrong, then '(fix: …)' naming what fits (spec §5.8, W27).</summary>
+internal static class FitRefusals
 {
     /// <summary>SND-WF-003 with its fix.</summary>
     /// <param name="problem">What is wrong.</param>

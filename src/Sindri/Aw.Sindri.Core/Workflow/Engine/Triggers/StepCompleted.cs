@@ -3,7 +3,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 /// <summary>
-/// A Step run reported an outcome (spec §3.5, §5.4): from the agent runtime, or a desk report ('workflow complete
+/// A Step run reported an outcome (spec §3.5, §5.3): from the agent runtime, or a desk report ('workflow complete
 /// --run'). Valid only for the open run's token (SND-WF-005); a malformed report is rejected first (SND-WF-008).
 /// </summary>
 /// <param name="Actor">Who reported it.</param>

@@ -5,7 +5,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
-/// <summary>A refused transition, for 'RefusalRules.Refuse' (spec §5.5).</summary>
+/// <summary>A refused transition, for 'RefusalRules.Refuse' (spec §5.8).</summary>
 /// <param name="Instance">The instance.</param>
 /// <param name="Recipe">Its recipe.</param>
 /// <param name="Trigger">The refused trigger.</param>

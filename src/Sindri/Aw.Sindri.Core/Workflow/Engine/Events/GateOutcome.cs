@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Events;
 
-/// <summary>What a gate's answer meant for the transition (spec §5.5).</summary>
+/// <summary>What a gate's answer meant for the transition (spec §5.8).</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<GateOutcome>))]
 public enum GateOutcome
 {

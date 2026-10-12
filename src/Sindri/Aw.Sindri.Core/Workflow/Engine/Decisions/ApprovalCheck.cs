@@ -1,9 +1,9 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
 /// <summary>
-/// The approval check's answer for the instance's recipe (spec §5.3 step 6, RCP-CAP-003), from a snapshot the
-/// registry events invalidate. A mismatch on a human trigger is SND-RECIPE-005 (revoked) or SND-RECIPE-006 (drift)
-/// and records nothing; on a system trigger it turns the commit into a spec-conflict park.
+/// The approval check's answer for the instance's recipe (spec §5.2, RCP-CAP-003), from a snapshot the registry
+/// events invalidate. A mismatch on a human trigger is SND-RECIPE-005 (revoked) or SND-RECIPE-006 (drift) and records
+/// nothing; on a system trigger it turns the decision into a spec-conflict park.
 /// </summary>
 public enum ApprovalCheck
 {

@@ -20,7 +20,7 @@ public sealed class AnswerDecisionTests
 
         var after = applied.Changes[0].After;
         Assert.Equal("produce", after.State);
-        Assert.Empty(after.Suspended);
+        Assert.Null(after.Suspension);
         Assert.Equal(3, after.Loops["revisions"].Round);
         Assert.Equal("answer", applied.Changes[0].Event.Trigger.Kind);
         Assert.Equal(1, applied.Changes[0].Event.Grant?.Rounds);

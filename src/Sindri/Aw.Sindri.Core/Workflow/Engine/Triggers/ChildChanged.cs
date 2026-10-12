@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 
-/// <summary>A child's park, resume or escalation, delivered to the parent through the inbox (spec §5.7); its id is the child event's key.</summary>
+/// <summary>A child's park, resume or escalation, signalled to the parent (spec §5.8); its id is the child event's key.</summary>
 /// <param name="Actor">'service:workflow.inbox'.</param>
 /// <param name="Child">The child.</param>
 /// <param name="Change">What changed.</param>

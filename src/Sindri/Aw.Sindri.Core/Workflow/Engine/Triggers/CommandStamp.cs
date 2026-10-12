@@ -1,10 +1,11 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 /// <summary>
-/// What makes a command a decision of its own (spec §5.3 step 2): its nonce and the SHA-256 of its arguments. Its key
-/// part is 'cmd:{nonce}:{verb}:{sha256}', so a different command with a used nonce fails the nonce check instead.
+/// What makes a command a decision of its own (spec §5.2): its nonce, which is the Update's id, and the SHA-256 of its
+/// arguments. Its key part is 'cmd:{nonce}:{verb}:{sha256}'; a different command with a used nonce fails the API's nonce
+/// check (SND-WF-009) before any Update is sent.
 /// </summary>
-/// <param name="Nonce">The nonce minted for the instance's current version.</param>
+/// <param name="Nonce">The nonce minted for the instance.</param>
 /// <param name="ArgumentsSha256">The SHA-256 of the command's canonical arguments, 64 lower-case hex digits.</param>
 public sealed record CommandStamp(CommandNonce Nonce, string ArgumentsSha256)
 {

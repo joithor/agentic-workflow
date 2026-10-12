@@ -2,7 +2,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Events;
 
-/// <summary>One evidence check as an event records it (spec §5.2).</summary>
+/// <summary>One evidence check as an event records it (spec §5.6).</summary>
 /// <param name="Kind">The evidence kind.</param>
 /// <param name="At">Base or head.</param>
 /// <param name="Expect">What the recipe expected.</param>

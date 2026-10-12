@@ -109,7 +109,7 @@ public sealed class RefusalRulesTests
 
         var top = AssertParked(refused, ParkReason.Budget, ParkKind.Wait, ResumeKind.Rewait);
         Assert.Null(top.Resume.Withheld);
-        Assert.Empty(refused.Outbox);
+        Assert.Empty(refused.Effects);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -122,8 +122,8 @@ public sealed class RefusalRulesTests
         Assert.Equal(RefusalFollow.Escalate, refused.Outcome.Follow);
         var after = refused.Changes[0].After;
         Assert.Equal(EngineStates.Escalated, after.State);
-        var top = after.Suspended[^1];
-        Assert.Equal((EscalationKind.Gate, ResumeKind.Override, BlockId.From("gate.test.model")), (top.Suspension.Escalation!.Value, top.Resume.Kind, top.Resume.Gate!.Value));
+        var top = after.Suspension!; // why: the instance is escalated, asserted just above
+        Assert.Equal((EscalationKind.Gate, ResumeKind.Override, BlockId.From("gate.test.model")), (top.Escalation!.Value, top.Resume.Kind, top.Resume.Gate!.Value));
         Assert.Equal(GateOutcome.Escalated, Assert.Single(refused.Changes[0].Event.Gates).Outcome);
     }
 
@@ -171,13 +171,13 @@ public sealed class RefusalRulesTests
         Assert.Equal((expected, verdict, score, 0.8), (record.Outcome, record.Verdict!.Value, record.Score, record.Threshold!.Value));
     }
 
-    private static SuspendedFrame AssertParked(Refused refused, ParkReason reason, ParkKind kind, ResumeKind resume)
+    private static Suspension AssertParked(Refused refused, ParkReason reason, ParkKind kind, ResumeKind resume)
     {
         Assert.Equal(RefusalFollow.Park, refused.Outcome.Follow);
         var after = refused.Changes[0].After;
         Assert.Equal((EngineStates.Parked, reason), (after.State, after.Park));
-        var top = after.Suspended[^1];
-        Assert.Equal((kind, resume), (top.Suspension.ParkKind!.Value, top.Resume.Kind));
+        var top = after.Suspension!; // why: the instance is parked, asserted just above
+        Assert.Equal((kind, resume), (top.ParkKind!.Value, top.Resume.Kind));
         Assert.Equal(reason, refused.Changes[0].Event.Refusal!.Park);
         return top;
     }

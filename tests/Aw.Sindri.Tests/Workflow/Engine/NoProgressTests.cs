@@ -79,10 +79,10 @@ public sealed class NoProgressTests
 
         Assert.Null(second.Next);
         var park = second.Park!; // why: the second identical failure parks; Assert.Equal below fails first if not
-        Assert.Equal(ParkReason.NoProgress, park.Suspension.Reason);
-        Assert.Equal(ParkKind.Loop, park.Suspension.ParkKind);
+        Assert.Equal(ParkReason.NoProgress, park.Reason);
+        Assert.Equal(ParkKind.Loop, park.ParkKind);
         Assert.Equal(ResumeKind.Transition, park.Resume.Kind);
-        Assert.Equal("round 2 of revisions made no progress over round 1 (the same findings twice)", park.Suspension.Question);
+        Assert.Equal("round 2 of revisions made no progress over round 1 (the same findings twice)", park.Question);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -90,8 +90,8 @@ public sealed class NoProgressTests
     {
         var verdict = LoopRules.Reenter(In("checks", new LoopState(2, 3, Findings("A"))), StepRecipe, "produce", EmptyDiff);
 
-        Assert.Equal(ParkReason.NoProgress, verdict.Park?.Suspension.Reason);
-        Assert.Equal("round 2 of revisions made no progress over round 1 (an empty diff)", verdict.Park?.Suspension.Question);
+        Assert.Equal(ParkReason.NoProgress, verdict.Park?.Reason);
+        Assert.Equal("round 2 of revisions made no progress over round 1 (an empty diff)", verdict.Park?.Question);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -99,7 +99,7 @@ public sealed class NoProgressTests
     {
         var verdict = LoopRules.Reenter(In("checks", new LoopState(3, 3, Failure("F"))), StepRecipe, "produce", Failure("F"));
 
-        Assert.Equal(ParkReason.NoProgress, verdict.Park?.Suspension.Reason);
-        Assert.Equal("round 3 of revisions made no progress over round 2 (the same failure twice)", verdict.Park?.Suspension.Question);
+        Assert.Equal(ParkReason.NoProgress, verdict.Park?.Reason);
+        Assert.Equal("round 3 of revisions made no progress over round 2 (the same failure twice)", verdict.Park?.Question);
     }
 }

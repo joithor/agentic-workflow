@@ -8,9 +8,9 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>
-/// 'workflow answer' (spec §5.8, §3.8, W7): the answer must fit the suspension (FrameRules.Fits), a grant is applied
-/// to the parked instance (LoopRules.Grant, LoopRules.AnswerText, BudgetRules.GrantTokens), the frame is popped under
-/// the profile's timings, and its resume action runs under the answer's own key. A pending park takes effect instead.
+/// 'workflow answer' (spec §5.8, §3.8, W7): the answer must fit the suspension (AnswerFit), a grant is applied to the
+/// parked instance (LoopRules.Grant, LoopRules.AnswerText, BudgetRules.GrantTokens), the suspension ends, and its
+/// resume action runs under the answer's own key. A pending park takes effect instead.
 /// </summary>
 public static partial class TransitionDecision
 {
@@ -18,7 +18,7 @@ public static partial class TransitionDecision
 
     private static Decision Answer(Deciding d, WorkflowInstance instance, AnswerGiven answer)
     {
-        var fit = FrameRules.Fits(instance, d.Recipe, answer);
+        var fit = AnswerFit.Check(instance, d.Recipe, answer);
         if (fit.IsError)
         {
             return new Rejected(d.Key, fit.Error);
@@ -26,7 +26,7 @@ public static partial class TransitionDecision
 
         if (fit.Value.Kind == ResumeKind.Forward)
         {
-            return new Absorbed(d.Key, $"the answer goes to the child the park mirrors, {instance.Suspended[^1].Suspension.Mirrors?.Value} (spec 5.7)");
+            return new Absorbed(d.Key, $"the answer goes to the child the park mirrors, {instance.Suspension?.Mirrors?.Value} (spec 5.8)");
         }
 
         var granted = Grant(d, instance, answer);
@@ -35,21 +35,19 @@ public static partial class TransitionDecision
             return new Rejected(d.Key, granted.Error);
         }
 
-        var popping = d.Rules.Pop(WithAnswer(granted.Value, answer), d.Recipe, child: null, d.Context);
-        if (popping.IsError)
+        var ending = d.Rules.End(WithAnswer(granted.Value, answer), child: null);
+        if (ending.IsError)
         {
-            return new Rejected(d.Key, popping.Error);
+            return new Rejected(d.Key, ending.Error);
         }
 
-        var popped = popping.Value;
-        var resumed = popped.Pending is { } pending
-            ? d.Commit(d.Rules.Suspend(popped.Instance, new SuspendOutcome(pending.Suspension, pending.Resume), d.Now))
-            : Resume(d, popped.Instance, fit.Value);
-        // The grant was applied before the pop, so both branches record it; an override exists only when the resume ran (§5.1).
-        return Recorded(resumed, answer, popped.Pending is null ? fit.Value : fit.Value with { Gate = null });
+        var ended = ending.Value;
+        var resumed = ended.PendingTookEffect ? d.Changed(ended.Instance) : Resume(d, ended.Instance, fit.Value);
+        // The grant was applied before the suspension ended, so both branches record it; an override exists only when the resume ran (§5.8).
+        return Recorded(resumed, answer, ended.PendingTookEffect ? fit.Value with { Gate = null } : fit.Value);
     }
 
-    /// <summary>The answer's own event carries the grant or the override it made (§5.2).</summary>
+    /// <summary>The answer's own event carries the grant or the override it made (§5.6).</summary>
     private static Decision Recorded(Decision decision, AnswerGiven answer, ResumeAction resume)
     {
         var grant = answer.Variant switch
@@ -75,7 +73,7 @@ public static partial class TransitionDecision
         };
     }
 
-    /// <summary>A grant raises the loop's or the budget's allowance on the parked instance, before the pop (W7); '--text' on no-progress works once per loop.</summary>
+    /// <summary>A grant raises the loop's or the budget's allowance on the parked instance, before the park ends (W7); '--text' on no-progress works once per loop.</summary>
     private static Result<WorkflowInstance> Grant(Deciding d, WorkflowInstance instance, AnswerGiven answer) => answer.Variant switch
     {
         AnswerVariant.Grant => LoopRules.Grant(instance, d.Recipe, answer.Amount ?? 0),
@@ -101,7 +99,7 @@ public static partial class TransitionDecision
         return new FactValue("blob:" + digest, digest, HeadSha: null);
     }
 
-    /// <summary>The popped frame's resume action (§5.8 table).</summary>
+    /// <summary>The ended suspension's resume action (§5.8 table).</summary>
     private static Decision Resume(Deciding d, WorkflowInstance instance, ResumeAction resume)
     {
         var withheld = resume.Withheld;
@@ -117,7 +115,7 @@ public static partial class TransitionDecision
                 $"nothing resumes {instance.Address.Value} (fix: cancel it with sindri workflow cancel {instance.Address.Value})")),
             ResumeKind.Reemit => throw new NotSupportedException("A reemit resume is decided by the outbox rules (P6)."),
             ResumeKind.Transition or ResumeKind.Reevaluate or ResumeKind.Override or ResumeKind.Refuse or ResumeKind.Rearm
-                or ResumeKind.Rewait or ResumeKind.Restart or ResumeKind.Return or ResumeKind.Forward or _ => d.Commit(instance),
+                or ResumeKind.Rewait or ResumeKind.Restart or ResumeKind.Return or ResumeKind.Forward or _ => d.Changed(instance),
         };
     }
 
@@ -144,13 +142,13 @@ public static partial class TransitionDecision
         var state = d.Recipe.States[instance.State];
         if (instance.Frame.Run is not { } run || state.Step is not { } step)
         {
-            return d.Commit(instance);
+            return d.Changed(instance);
         }
 
         var countsRound = resume.Kind == ResumeKind.Rerun;
         if (countsRound && state.Loop is { } capped && d.Rules.AtCap(instance, d.Recipe, instance.State))
         {
-            return d.Commit(d.Rules.Suspend(instance, AtCapPark(capped, step.Use, resume, d.Trigger.Actor), d.Now));
+            return d.Changed(d.Rules.Suspend(instance, AtCapPark(capped, step.Use, resume, d.Trigger.Actor)));
         }
 
         var next = run with { Token = RunToken.For(run.Token.Entry, run.Token.Number + 1), Launch = null };
@@ -158,37 +156,37 @@ public static partial class TransitionDecision
             ? With(instance.Loops, name, loop with { Round = loop.Round + 1 })
             : instance.Loops;
         var after = instance with { Frame = instance.Frame with { Run = next }, Loops = loops };
-        var applied = d.Commit(after);
+        var applied = d.Changed(after);
         return applied with { FollowUps = [new FollowUp(FollowUpKind.StartRun, instance.Id, next.Token, step.Use, Answer: null)] };
     }
 
-    private static SuspendOutcome AtCapPark(string loop, BlockId step, ResumeAction resume, string actor) => new(
-        new Suspension(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Refusal, Escalation: null,
-            $"{loop} used all its rounds; {step.Value} runs again only with more rounds", actor, Mirrors: null),
+    private static Suspension AtCapPark(string loop, BlockId step, ResumeAction resume, string actor) => new(
+        SuspensionKind.Park, ParkReason.Rounds, ParkKind.Refusal, Escalation: null,
+        $"{loop} used all its rounds; {step.Value} runs again only with more rounds", actor, Mirrors: null,
         new ResumeAction(ResumeKind.Rerun, resume.Withheld, Gate: null, Effect: null));
 
     /// <summary>
     /// An SND-WF-010 park's restart (§5.8): its frame never opened a run, so the Step's run opens now, as a real entry
-    /// would, and starts after the Commit; with no runtime still, it parks with SND-WF-010 again.
+    /// would, and starts once the decision is in history; with no runtime still, it parks with SND-WF-010 again.
     /// </summary>
     private static Applied Restart(Deciding d, WorkflowInstance instance)
     {
         if (d.Recipe.States[instance.State].Step is not { } step)
         {
-            return d.Commit(instance);
+            return d.Changed(instance);
         }
 
-        if (FrameRules.Restart(instance, d.Recipe, d.Context) is not { Frame.Run: { } run } restarted)
+        if (StateEntry.Restart(instance, d.Recipe, d.Context) is not { Frame.Run: { } run } restarted)
         {
-            return d.Commit(d.Rules.Suspend(instance, NoRuntime(step.Use, d.Trigger.Actor), d.Now));
+            return d.Changed(d.Rules.Suspend(instance, NoRuntime(step.Use, d.Trigger.Actor)));
         }
 
-        return d.Commit(restarted) with { FollowUps = [new FollowUp(FollowUpKind.StartRun, instance.Id, run.Token, step.Use, Answer: null)] };
+        return d.Changed(restarted) with { FollowUps = [new FollowUp(FollowUpKind.StartRun, instance.Id, run.Token, step.Use, Answer: null)] };
     }
 
     private sealed partial record Deciding
     {
-        /// <summary>The answer a resume commits under, recorded as the event's trigger while the withheld trigger is replayed.</summary>
+        /// <summary>The answer a resume is decided under, recorded as the event's trigger while the withheld trigger is replayed.</summary>
         public AnswerGiven? Answered { get; init; }
 
         /// <summary>This decision replaying <paramref name="withheld"/> under the answer's key.</summary>

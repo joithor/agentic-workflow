@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Engine.Events;
+using Aw.Sindri.Core.Workflow.Engine.Instances;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
@@ -8,4 +9,4 @@ namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 /// <param name="Round">The round a re-run starts.</param>
 /// <param name="Suspend">The park or escalation.</param>
 /// <param name="Error">SND-WF-004 for a refused command.</param>
-public sealed record RefusalOutcome(RefusalFollow Follow, int? Round, SuspendOutcome? Suspend, Error? Error);
+public sealed record RefusalOutcome(RefusalFollow Follow, int? Round, Suspension? Suspend, Error? Error);

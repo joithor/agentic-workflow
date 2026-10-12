@@ -20,22 +20,19 @@ internal sealed class EngineRules : IEngineRules
 
     /// <inheritdoc/>
     public WorkflowInstance Enter(WorkflowInstance instance, Recipe recipe, string state, DecisionContext context) =>
-        FrameRules.Enter(instance, recipe, state, context);
+        StateEntry.Enter(instance, recipe, state, context);
 
     /// <inheritdoc/>
-    public WorkflowInstance Suspend(WorkflowInstance instance, SuspendOutcome outcome, DateTimeOffset now) =>
-        FrameRules.Suspend(instance, outcome, now);
+    public WorkflowInstance Suspend(WorkflowInstance instance, Suspension suspension) => Suspensions.Suspend(instance, suspension);
 
     /// <inheritdoc/>
-    public Result<PopResult> Pop(WorkflowInstance instance, Recipe recipe, WorkflowInstanceId? child, DecisionContext context) =>
-        FrameRules.Pop(instance, recipe, child, context);
+    public Result<Ended> End(WorkflowInstance instance, WorkflowInstanceId? child) => Suspensions.End(instance, child);
 
     /// <inheritdoc/>
-    public Result<WorkflowInstance> TakeOver(WorkflowInstance instance, string actor, DecisionContext context) =>
-        FrameRules.TakeOver(instance, actor, context);
+    public Result<WorkflowInstance> TakeOver(WorkflowInstance instance, string actor) => Suspensions.TakeOver(instance, actor);
 
     /// <inheritdoc/>
-    public WorkflowInstance Cancel(WorkflowInstance instance, DateTimeOffset now) => FrameRules.Cancel(instance, now);
+    public WorkflowInstance Cancel(WorkflowInstance instance) => Suspensions.Cancel(instance);
 
     /// <inheritdoc/>
     public LoopVerdict Reenter(WorkflowInstance instance, Recipe recipe, string state, ProgressMark mark) =>
@@ -51,16 +48,15 @@ internal sealed class EngineRules : IEngineRules
     public BudgetVerdict Spend(WorkflowInstance instance, Recipe recipe, int tokens) => BudgetRules.Spend(instance, recipe, tokens);
 
     /// <inheritdoc/>
-    public Result<ChildStart> CreateChild(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor) =>
-        ChildPropagation.Create(parent, wait, pinned, key, actor);
+    public Result<ChildStart> CreateChild(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, string actor) =>
+        ChildPropagation.Create(parent, wait, pinned, actor);
 
     /// <inheritdoc/>
     public ParentEffect ToParent(WorkflowInstance parent, Recipe recipe, ChildChanged change) => ChildPropagation.ToParent(parent, recipe, change);
 
     /// <inheritdoc/>
-    public WorkflowInstance Release(WorkflowInstance parent, Recipe recipe, WorkflowInstanceId child, DateTimeOffset now) =>
-        ChildPropagation.Release(parent, recipe, child, now);
+    public WorkflowInstance Release(WorkflowInstance parent, WorkflowInstanceId child) => ChildPropagation.Release(parent, child);
 
     /// <inheritdoc/>
-    public InstanceDelta Delta(WorkflowInstance? before, WorkflowInstance after) => EventFold.Delta(before, after);
+    public InstanceDelta Delta(WorkflowInstance? before, WorkflowInstance after) => InstanceDeltas.Between(before, after);
 }

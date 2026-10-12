@@ -1,8 +1,8 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Instances;
 
 /// <summary>
-/// What suspended a frame, with what the human reads (spec §3.8, §5.1): the engine-owned state's 'next' text is
-/// rendered from it.
+/// A park, escalation or takeover (spec §3.8, §5.1, §5.8): what the human reads, and what the answer that ends it
+/// runs. The engine-owned state status shows ('parked', 'escalated', 'taken-over') is its kind.
 /// </summary>
 /// <param name="Kind">Park, escalation or takeover.</param>
 /// <param name="Reason">A park's reason.</param>
@@ -10,7 +10,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Instances;
 /// <param name="Escalation">An escalation's kind.</param>
 /// <param name="Question">The question or detail ('{question}', '{reasons}', '{childNext}' …), scrubbed.</param>
 /// <param name="Actor">Who caused it: the takeover's caller, or the trigger's actor for a park or escalation.</param>
-/// <param name="Mirrors">The child this suspension mirrors; such a frame is popped by that child's id, not from the top (§5.1).</param>
+/// <param name="Mirrors">The child it mirrors (§5.8): answers go to that child, and that child's own changes end it.</param>
+/// <param name="Resume">What the answer (or the handback) that ends it runs.</param>
 public sealed record Suspension(
     SuspensionKind Kind,
     ParkReason? Reason,
@@ -18,4 +19,14 @@ public sealed record Suspension(
     EscalationKind? Escalation,
     string Question,
     string Actor,
-    WorkflowInstanceId? Mirrors);
+    WorkflowInstanceId? Mirrors,
+    ResumeAction Resume)
+{
+    /// <summary>The engine-owned state this suspension shows (spec §3.8).</summary>
+    public string State => Kind switch
+    {
+        SuspensionKind.Escalation => EngineStates.Escalated,
+        SuspensionKind.Takeover => EngineStates.TakenOver,
+        SuspensionKind.Park or _ => EngineStates.Parked,
+    };
+}

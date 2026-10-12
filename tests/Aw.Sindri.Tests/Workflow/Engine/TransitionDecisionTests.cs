@@ -12,22 +12,9 @@ using static Aw.Sindri.Tests.Workflow.Engine.EngineFixture;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
 
-/// <summary>Deciding a recipe transition (spec §3.5, §5.3, W5, W12, W13, W20), over the shipped workflow.step and workflow.item.</summary>
+/// <summary>Deciding a recipe transition (spec §3.5, §5.1–§5.3, §5.7, W5, W20), over the shipped workflow.step and workflow.item.</summary>
 public sealed class TransitionDecisionTests
 {
-    [Fact, Trait("Lane", "unit")]
-    public void Same_trigger_twice_records_one_event()
-    {
-        var report = Completed(1, "done", ("fact:output", "Added --version."));
-        var first = Assert.IsType<Applied>(Decide(At(Step, "produce"), Step, report));
-        var replayed = Context() with { Recorded = new HashSet<TriggerKey> { first.Key } };
-
-        var second = Decide(first.Changes[0].After, Step, report, context: replayed);
-
-        _ = Assert.Single(first.Changes);
-        Assert.Equal(first.Key, Assert.IsType<Absorbed>(second).Key);
-    }
-
     [Fact, Trait("Lane", "unit")]
     public void Late_result_from_an_earlier_entry_is_dropped()
     {
@@ -75,8 +62,8 @@ public sealed class TransitionDecisionTests
         var after = applied.Changes[0].After;
         Assert.Equal(EngineStates.Parked, after.State);
         Assert.Equal(ParkReason.NoRuntime, after.Park);
-        Assert.Equal(("review", 2), (after.Suspended[^1].Frame.State, after.Suspended[^1].Frame.Entry));
-        Assert.Equal(ResumeKind.Restart, after.Suspended[^1].Resume.Kind);
+        Assert.Equal(("review", 2), (after.Frame.State, after.Frame.Entry));
+        Assert.Equal(ResumeKind.Restart, after.Suspension?.Resume.Kind);
         Assert.Empty(applied.FollowUps);
     }
 
@@ -88,19 +75,18 @@ public sealed class TransitionDecisionTests
         var parked = Assert.IsType<Applied>(Decide(At(recipe, "produce"), recipe, Completed(1, "done", ("fact:output", "x")), rules: real)).Changes[0].After;
         var resume = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), Sha("resume")), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
 
-        var later = Context("step.test.agent") with { Now = Now.AddHours(1) };
+        var later = Context("step.test.agent");
 
         var restarted = Assert.IsType<Applied>(Decide(parked, recipe, resume, context: later, rules: real));
         var still = Assert.IsType<Applied>(Decide(parked, recipe, resume, rules: real)).Changes[0].After;
 
         var after = restarted.Changes[0].After;
         Assert.Equal(("review", 2, RunToken.For(2, 1), StepRuntime.Agent), (after.State, after.Frame.Entry, after.Frame.Run?.Token, after.Frame.Run?.Runtime));
-        Assert.Equal(later.Now + recipe.States["review"].Timeout!.After.Span, StateDue(after));
-        Assert.Empty(after.Suspended);
+        Assert.Null(after.Suspension);
         var start = Assert.Single(restarted.FollowUps);
         Assert.Equal((FollowUpKind.StartRun, RunToken.For(2, 1), BlockId.From("step.test.agent")), (start.Kind, start.Run!.Value, start.Step!.Value));
-        Assert.Equal((EngineStates.Parked, ParkReason.NoRuntime, ResumeKind.Restart), (still.State, still.Park, still.Suspended[^1].Resume.Kind));
-        Assert.Equal(("review", 2), (still.Suspended[^1].Frame.State, still.Suspended[^1].Frame.Entry));
+        Assert.Equal((EngineStates.Parked, ParkReason.NoRuntime, ResumeKind.Restart), (still.State, still.Park, still.Suspension?.Resume.Kind));
+        Assert.Equal(("review", 2), (still.Frame.State, still.Frame.Entry));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -111,13 +97,12 @@ public sealed class TransitionDecisionTests
         var parked = Assert.IsType<Applied>(Decide(At(recipe, "produce"), recipe, Completed(1, "done", ("fact:output", "x")), rules: real)).Changes[0].After;
         var resume = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), Sha("resume")), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
         var deskCatalog = new BlockCatalog([.. Catalog.Blocks.Select(b => b.Id.Value == "step.test.agent" ? b with { DeskCapable = true } : b)], Catalog.Events);
-        var later = Context() with { Now = Now.AddHours(1), Catalog = deskCatalog };
+        var later = Context() with { Catalog = deskCatalog };
 
         var restarted = Assert.IsType<Applied>(Decide(parked, recipe, resume, context: later, rules: real));
 
         var after = restarted.Changes[0].After;
         Assert.Equal(("review", RunToken.For(2, 1), StepRuntime.Desk), (after.State, after.Frame.Run?.Token, after.Frame.Run?.Runtime));
-        Assert.Equal(later.Now + EngineTimings.Default.DeskTimeout, StateDue(after));
         Assert.Equal(FollowUpKind.StartRun, Assert.Single(restarted.FollowUps).Kind);
     }
 
@@ -133,7 +118,7 @@ public sealed class TransitionDecisionTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Applied_transition_records_one_event_with_the_version_step_and_its_produces()
+    public void Applied_transition_records_one_event_with_its_produces()
     {
         var triaged = At(Item, "triaged");
         var routed = Routed("startable", outputs: ("fact:stepSpec", "Add a --version flag."));
@@ -141,28 +126,28 @@ public sealed class TransitionDecisionTests
         var applied = Assert.IsType<Applied>(Decide(triaged, Item, routed, Gates(("gate.route.startable", GateVerdict.Pass, null))));
 
         var (after, recorded) = (applied.Changes[0].After, applied.Changes[0].Event);
-        Assert.Equal(("startable", 5L), (after.State, after.Version));
+        Assert.Equal("startable", after.State);
         Assert.Equal(Fact("Add a --version flag."), after.Facts[FactKey.From("fact:stepSpec")]);
-        Assert.Equal((WorkflowEventType.Transition, 4L, 5L, 7L), (recorded.Type, recorded.FromVersion, recorded.ToVersion, recorded.Epoch));
+        Assert.Equal((WorkflowEventType.Transition, triaged.Id), (recorded.Type, recorded.Instance));
+        Assert.Equal(Fact("Add a --version flag."), recorded.Delta.Facts?[FactKey.From("fact:stepSpec")]);
         Assert.Equal(("wait.satisfied", "startable"), (recorded.Trigger.Kind, recorded.Trigger.Outcome?.Value));
         Assert.Equal(GateOutcome.Passed, Assert.Single(recorded.Gates).Outcome);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Effects_get_command_ids_derived_from_the_trigger_key()
+    public void Effects_are_named_by_their_identity_in_the_entered_frame()
     {
         var startable = At(Item, "startable", entry: 2);
         var budget = Gates(("gate.budget.available", GateVerdict.Pass, null));
 
         var first = Assert.IsType<Applied>(Decide(startable, Item, Slot(3), budget));
-        var again = Assert.IsType<Applied>(Decide(startable, Item, Slot(3), budget));
         var other = Assert.IsType<Applied>(Decide(startable, Item, Slot(4), budget));
 
-        var command = Assert.Single(first.Outbox);
-        Assert.Equal((BlockId.From("effect.claim.ref"), CommandOrigin.Recipe, "WFI-0123456789abcdef0123456789abcdef:3:0"), (command.Effect, command.Origin, command.Identity.Text));
-        Assert.Equal(command.Id, Assert.Single(again.Outbox).Id);
-        Assert.NotEqual(command.Id, Assert.Single(other.Outbox).Id);
-        Assert.Equal([command.Id], first.Changes[0].Event.Outbox);
+        // §5.7: the identity is '{instance}:{entry}:{index}', so another grant into the same entry runs the same effect.
+        var effect = Assert.Single(first.Effects);
+        Assert.Equal((BlockId.From("effect.claim.ref"), CommandOrigin.Recipe, "WFI-0123456789abcdef0123456789abcdef:3:0"), (effect.Effect, effect.Origin, effect.Identity.Text));
+        Assert.Equal(effect.Identity, Assert.Single(other.Effects).Identity);
+        Assert.Equal([effect.Identity], first.Changes[0].Event.Effects);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -189,7 +174,7 @@ public sealed class TransitionDecisionTests
 
         var after = applied.Changes[0].After;
         Assert.Equal((EngineStates.Parked, ParkReason.NeedsAnswer), (after.State, after.Park));
-        Assert.Equal((ParkKind.Step, ResumeKind.Rerun), (after.Suspended[^1].Suspension.ParkKind, after.Suspended[^1].Resume.Kind));
+        Assert.Equal((ParkKind.Step, ResumeKind.Rerun), (after.Suspension?.ParkKind, after.Suspension?.Resume.Kind));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -209,12 +194,9 @@ public sealed class TransitionDecisionTests
 
         var applied = Assert.IsType<Applied>(Decide(At(Item, "triaged"), Item, Routed("startable"), context: drifted));
 
-        var top = applied.Changes[0].After.Suspended[^1];
-        Assert.Equal((ParkReason.SpecConflict, ParkKind.Drift, ResumeKind.Rearm), (top.Suspension.Reason, top.Suspension.ParkKind, top.Resume.Kind));
+        var top = applied.Changes[0].After.Suspension!; // why: a drift park, asserted next
+        Assert.Equal((ParkReason.SpecConflict, ParkKind.Drift, ResumeKind.Rearm), (top.Reason, top.ParkKind, top.Resume.Kind));
     }
-
-    private static DateTimeOffset? StateDue(WorkflowInstance instance) =>
-        Assert.Single(instance.Frame.Deadlines, d => d.Id.Kind == DeadlineKind.State).Due;
 
     private static WaitSatisfied Slot(long grant) =>
         new("service:workflow.inbox", new ResourceWaitSource(ResourceKind.Slot, grant), Outcome: null, new Dictionary<FactKey, FactValue>());

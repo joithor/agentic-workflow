@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
-/// <summary>Why a trigger matched no recipe transition (spec §3.5, §5.3 step 4).</summary>
+/// <summary>Why a trigger matched no recipe transition (spec §3.5, §5.2).</summary>
 public enum MatchMiss
 {
     /// <summary>It matched a transition.</summary>
@@ -15,6 +15,6 @@ public enum MatchMiss
     /// <summary>Allowed, but no transition's 'when' holds: a step.failed parks with needs-answer; other triggers are refused with SND-WF-003.</summary>
     NoTransition = 3,
 
-    /// <summary>An engine trigger (answer, takeover, handback, cancel, deadline, shift, wake, child change, open-request): the engine-owned rules decide it, not a recipe transition.</summary>
+    /// <summary>An engine trigger (answer, takeover, handback, cancel, timer, wake, child change, open-request): the engine-owned rules decide it, not a recipe transition.</summary>
     EngineTrigger = 4,
 }

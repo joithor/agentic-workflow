@@ -1,15 +1,15 @@
 namespace Aw.Sindri.Core.Workflow.Engine;
 
-/// <summary>The engine-owned states (spec §3.8), reserved in recipes (RCP-SCHEMA rules): a frame in one of them suspends a recipe frame.</summary>
+/// <summary>The engine-owned states (spec §3.8), reserved in recipes (RCP-SCHEMA rules): status shows one while a suspension is over the recipe frame, or once the instance was cancelled.</summary>
 public static class EngineStates
 {
-    /// <summary>A park: the frame below waits for an answer (or a re-approval) to resume.</summary>
+    /// <summary>A park: the recipe frame waits for an answer (or a re-approval) to resume.</summary>
     public const string Parked = "parked";
 
     /// <summary>An escalation: a human decides.</summary>
     public const string Escalated = "escalated";
 
-    /// <summary>A takeover: the human works the item; deadlines are paused.</summary>
+    /// <summary>A takeover: the human works the item; the interpreter pauses the state's timer.</summary>
     public const string TakenOver = "taken-over";
 
     /// <summary>The engine's terminal state, with outcome 'cancelled' (W6).</summary>

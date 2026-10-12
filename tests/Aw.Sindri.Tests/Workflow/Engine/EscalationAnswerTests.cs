@@ -31,7 +31,8 @@ public sealed class EscalationAnswerTests
         var applied = Assert.IsType<Applied>(Decide(escalated, recipe, Answer(AnswerVariant.Accept), _modelLow, rules: EngineRules.Default));
 
         var change = applied.Changes[0];
-        Assert.Equal(("done", 0), (change.After.State, change.After.Suspended.Count));
+        Assert.Equal("done", change.After.State);
+        Assert.Null(change.After.Suspension);
         Assert.Equal(GateOutcome.Overridden, Assert.Single(change.Event.Gates).Outcome);
         Assert.Equal(BlockId.From("gate.test.model"), change.Event.Override?.Gate);
         Assert.Equal("answer", change.Event.Trigger.Kind);
@@ -47,7 +48,8 @@ public sealed class EscalationAnswerTests
 
         Assert.Equal((RefusalFollow.Rerun, 2), (refused.Outcome.Follow, refused.Outcome.Round));
         var after = refused.Changes[0].After;
-        Assert.Equal(("produce", RunToken.For(1, 2), 0), (after.State, after.Frame.Run!.Token, after.Suspended.Count));
+        Assert.Equal(("produce", RunToken.For(1, 2)), (after.State, after.Frame.Run!.Token));
+        Assert.Null(after.Suspension);
         Assert.Equal(GateOutcome.Refused, Assert.Single(refused.Changes[0].Event.Gates).Outcome);
     }
 
@@ -61,7 +63,8 @@ public sealed class EscalationAnswerTests
 
         Assert.Equal((RefusalFollow.CommandRefused, "SND-WF-004"), (refused.Outcome.Follow, refused.Outcome.Error!.Code));
         var change = Assert.Single(refused.Changes);
-        Assert.Equal(("produce", 0, escalated.Version + 1), (change.After.State, change.After.Suspended.Count, change.After.Version));
+        Assert.Equal("produce", change.After.State);
+        Assert.Null(change.After.Suspension);
         Assert.Equal((WorkflowEventType.Refused, "answer"), (change.Event.Type, change.Event.Trigger.Kind));
         Assert.Equal((RefusalFollow.CommandRefused, "SND-WF-004"), (change.Event.Refusal!.Follow, change.Event.Refusal.Code));
     }
@@ -76,7 +79,8 @@ public sealed class EscalationAnswerTests
 
         Assert.Equal("SND-WF-004", refused.Outcome.Error!.Code);
         var change = Assert.Single(refused.Changes);
-        Assert.Equal(("produce", 0), (change.After.State, change.After.Suspended.Count));
+        Assert.Equal("produce", change.After.State);
+        Assert.Null(change.After.Suspension);
         Assert.Equal([GateOutcome.Overridden, GateOutcome.Refused], change.Event.Gates.Select(g => g.Outcome));
         Assert.Equal(BlockId.From("gate.test.model"), change.Event.Override?.Gate);
     }
@@ -89,7 +93,8 @@ public sealed class EscalationAnswerTests
 
         var applied = Assert.IsType<Applied>(Decide(escalated, recipe, Answer(AnswerVariant.Accept), _modelLow, rules: EngineRules.Default));
 
-        Assert.Equal(("done", 0), (applied.Changes[0].After.State, applied.Changes[0].After.Suspended.Count));
+        Assert.Equal("done", applied.Changes[0].After.State);
+        Assert.Null(applied.Changes[0].After.Suspension);
     }
 
     [Fact, Trait("Lane", "unit")]

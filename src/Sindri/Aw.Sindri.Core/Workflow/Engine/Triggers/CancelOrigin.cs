@@ -14,7 +14,7 @@ public enum CancelOrigin
     [JsonStringEnumMemberName("tracker")]
     Tracker = 2,
 
-    /// <summary>The parent was cancelled; every child is cancelled, whatever its state (§5.7).</summary>
+    /// <summary>The parent was cancelled; every child is cancelled, whatever its state (§5.8).</summary>
     [JsonStringEnumMemberName("parent")]
     Parent = 3,
 }

@@ -7,11 +7,11 @@ using Vogen;
 namespace Aw.Sindri.Core.Workflow.Engine;
 
 /// <summary>
-/// The key a trigger is decided under (spec W12, §5.3, §5.4): 'wf:{instance}:{trigger}'. Only decisions (applied, or
-/// refused by a gate or evidence) are recorded under it and replayed; a validation refusal records nothing. The
+/// A trigger's id on an instance (spec §5.6): 'wf:{instance}:{trigger}', which its ledger events carry as the
+/// trigger's id. Idempotency is Temporal's (an Update's id is its nonce, §5.2), so no decision is looked up by it. The
 /// trigger part is the trigger's own id: 'cmd:{nonce}:{verb}:{sha256 of its arguments}' for a command,
-/// 'run:{token}:{sha256 of the report}' for a Step report, '{entry}:{kind}:{arm}' for a deadline, 'shift:{tick}',
-/// 'event:{sequence}', 'child:{child event key}', 'recipe.revoked:{sequence}', 'open:{launch}' and so on.
+/// 'run:{token}:{sha256 of the report}' for a Step report, 'timer:{entry}:{kind}' for a timer, 'event:{sequence}',
+/// 'child:{child event key}', 'recipe.revoked:{sequence}', 'open:{launch}' and so on.
 /// At most 512 characters.
 /// </summary>
 [ValueObject<string>(comparison: ComparisonGeneration.Omit)]

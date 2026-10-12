@@ -3,9 +3,9 @@ using System.Text.Json.Serialization;
 namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
 /// <summary>
-/// What deciding one trigger produced (spec W12–W14): <see cref="Applied"/> and <see cref="Refused"/> are decisions,
-/// recorded under the key and replayed; <see cref="Absorbed"/> records the key without changing a row;
+/// What deciding one trigger produced (spec §5.1, §5.2): <see cref="Applied"/> and <see cref="Refused"/> change the
+/// instance and write its ledger events; <see cref="Absorbed"/> takes the trigger without changing it;
 /// <see cref="Rejected"/> is a validation refusal that records and consumes nothing.
 /// </summary>
-/// <param name="Key">The trigger's key.</param>
+/// <param name="Key">The trigger's key, the id its ledger events carry.</param>
 public abstract record Decision([property: JsonRequired] TriggerKey Key);

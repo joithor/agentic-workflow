@@ -8,95 +8,69 @@ using static Aw.Sindri.Tests.Workflow.Engine.ChildFixture;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
 
-/// <summary>A child's row releasing its parent, answers forwarded to the child, and a parent's cancel cascading (spec §5.7).</summary>
+/// <summary>A child's change releasing its parent, answers forwarded to the child, and a parent's cancel cascading (spec §5.8).</summary>
 public sealed class ChildReleaseTests
 {
-    private static readonly Deadline _rearmed = new(DeadlineId.For(Entry, DeadlineKind.State, 2), Later.AddDays(14), Remaining: null);
-
     private static AnswerGiven Answer => new(Terminal, Stamp('1'), AnswerVariant.Text, "use the cached build", Amount: null, Forwarded: null);
 
+    private static Suspension Timeout { get; } = new(
+        SuspensionKind.Park, ParkReason.Timeout, ParkKind: null, Escalation: null, "running timed out", "service:workflow.timers", Mirrors: null,
+        new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effect: null));
+
     [Fact, Trait("Lane", "unit")]
-    public void Release_restores_the_wait_with_a_fresh_state_deadline()
+    public void Release_returns_to_the_wait_on_the_same_child()
     {
         foreach (var mirroring in new[] { MirroringPark, MirroringEscalation })
         {
-            var released = ChildPropagation.Release(mirroring, Item, ChildId, Later);
+            var released = ChildPropagation.Release(mirroring, ChildId);
 
-            Assert.Empty(released.Suspended);
+            Assert.Null(released.Suspension);
             Assert.Equal("running", released.State);
-            Assert.Equal(Entry, released.Frame.Entry);
-            Assert.Equal(ChildId, released.Frame.Child);
-            Assert.Equal(Later, released.Frame.Since);
-            Assert.Equal([_rearmed], released.Frame.Deadlines);
+            Assert.Equal(Running, released.Frame);
         }
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Release_with_no_mirror_returns_the_same_instance()
     {
-        Assert.Same(Waiting, ChildPropagation.Release(Waiting, Item, ChildId, Later));
-        Assert.Same(MirroringPark, ChildPropagation.Release(MirroringPark, Item, OtherChildId, Later));
+        Assert.Same(Waiting, ChildPropagation.Release(Waiting, ChildId));
+        Assert.Same(MirroringPark, ChildPropagation.Release(MirroringPark, OtherChildId));
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Release_carries_the_takeover_idle_arm_of_the_mirror_frame()
-    {
-        var idle = new Deadline(DeadlineId.For(Entry, DeadlineKind.TakeoverIdle, 2), Due: null, Remaining: null);
-        var mirroring = MirroringPark with { Frame = MirroringPark.Frame with { Deadlines = [idle] } };
-
-        var released = ChildPropagation.Release(mirroring, Item, ChildId, Later);
-
-        Assert.Equal([_rearmed, idle], released.Frame.Deadlines);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public void Release_under_a_takeover_keeps_the_takeover_and_pauses_the_fresh_deadline()
+    public void Release_under_a_takeover_keeps_the_takeover_and_drops_the_covered_mirror()
     {
         var taken = TakenOver(MirroringPark);
 
-        var released = ChildPropagation.Release(taken, Item, ChildId, Later);
+        var released = ChildPropagation.Release(taken, ChildId);
 
         Assert.Equal(EngineStates.TakenOver, released.State);
-        var below = Assert.Single(released.Suspended);
-        Assert.Equal(SuspensionKind.Takeover, below.Suspension.Kind);
-        Assert.Equal("running", below.Frame.State);
-        Assert.Equal(ChildId, below.Frame.Child);
-        Assert.Equal([new Deadline(DeadlineId.For(Entry, DeadlineKind.State, 2), Due: null, TimeSpan.FromDays(14))], below.Frame.Deadlines);
+        Assert.Null(released.PendingPark);
+        Assert.Equal(Running, released.Frame);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_pending_park_on_the_mirrored_frame_takes_effect_instead_of_the_restore()
+    public void A_pending_park_behind_the_mirror_takes_effect_on_release()
     {
-        var timeout = new Suspension(SuspensionKind.Park, ParkReason.Timeout, ParkKind: null, Escalation: null, "running timed out", "service:workflow.clock", Mirrors: null);
-        var rearm = new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effect: null);
-        var mirroring = MirroringPark with { Suspended = [MirroringPark.Suspended[0] with { Pending = new PendingPark(timeout, rearm) }] };
+        var mirroring = MirroringPark with { PendingPark = Timeout };
 
-        var released = ChildPropagation.Release(mirroring, Item, ChildId, Later);
+        var released = ChildPropagation.Release(mirroring, ChildId);
 
         Assert.Equal(EngineStates.Parked, released.State);
-        Assert.Null(released.Frame.Child);
-        Assert.Equal(Later, released.Frame.Since);
-        var below = Assert.Single(released.Suspended);
-        Assert.Equal(timeout, below.Suspension);
-        Assert.Equal(rearm, below.Resume);
-        Assert.Null(below.Pending);
-        Assert.All(below.Frame.Deadlines, d => Assert.Null(d.Due));
+        Assert.Equal(Timeout, released.Suspension);
+        Assert.Null(released.PendingPark);
         Assert.Equal(ParkReason.Timeout, released.Park);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void A_pending_park_mirroring_the_child_is_cleared()
     {
-        var parked = Push(Waiting, new SuspendOutcome(
-            new Suspension(SuspensionKind.Park, ParkReason.Timeout, ParkKind: null, Escalation: null, "running timed out", "service:workflow.clock", Mirrors: null),
-            new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effect: null)));
-        var mirror = MirroringPark.Suspended[0];
-        var pending = parked with { Suspended = [parked.Suspended[0] with { Pending = new PendingPark(mirror.Suspension, mirror.Resume) }] };
+        var pending = Push(Waiting, Timeout) with { PendingPark = MirroringPark.Suspension };
 
-        var released = ChildPropagation.Release(pending, Item, ChildId, Later);
+        var released = ChildPropagation.Release(pending, ChildId);
 
-        Assert.Equal(EngineStates.Parked, released.State);
-        Assert.Null(Assert.Single(released.Suspended).Pending);
+        Assert.Equal(Timeout, released.Suspension);
+        Assert.Null(released.PendingPark);
         Assert.Equal(ParkReason.Timeout, released.Park);
     }
 
@@ -145,16 +119,16 @@ public sealed class ChildReleaseTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_cascaded_cancel_is_keyed_by_the_parent_and_its_version()
+    public void A_cascaded_cancel_is_keyed_by_the_parent()
     {
         var cancel = ChildPropagation.CancelFor(Waiting, Inbox);
 
         Assert.Equal(Inbox, cancel.Actor);
         Assert.Equal(CancelOrigin.Parent, cancel.Origin);
         Assert.Null(cancel.Stamp);
-        Assert.Equal(Waiting.Version, cancel.Sequence);
+        Assert.Null(cancel.Sequence);
         Assert.Equal(ParentId, cancel.Parent);
-        Assert.Equal($"cancel:parent:{ParentId.Value}:6", cancel.KeyPart);
+        Assert.Equal($"cancel:parent:{ParentId.Value}", cancel.KeyPart);
         Assert.True(cancel.ExemptFromApproval);
     }
 
@@ -164,13 +138,13 @@ public sealed class ChildReleaseTests
         // recipes/sindri/evals/workflow.item/child-parks.jsonl from 'running': child.parked, child.resumed, then the
         // child's terminal row, applied the way the engine applies a ParentEffect.
         var park = ChildPropagation.ToParent(Waiting, Item, Changed(ChildChange.Parked, ParkReason.NoProgress, "checks failed twice"));
-        var parked = Push(Waiting, Assert.IsType<SuspendOutcome>(park.Suspend));
+        var parked = Push(Waiting, Assert.IsType<Suspension>(park.Suspend));
         Assert.Equal((EngineStates.Parked, ParkReason.NoProgress), (parked.State, parked.Park));
 
         Assert.Equal(ParentEffectKind.Release, ChildPropagation.ToParent(parked, Item, Changed(ChildChange.Resumed)).Kind);
-        var resumed = ChildPropagation.Release(parked, Item, ChildId, Later);
+        var resumed = ChildPropagation.Release(parked, ChildId);
         Assert.Equal(("running", Entry, (WorkflowInstanceId?)ChildId), (resumed.State, resumed.Frame.Entry, resumed.Frame.Child));
 
-        Assert.Same(resumed, ChildPropagation.Release(resumed, Item, ChildId, Later));
+        Assert.Same(resumed, ChildPropagation.Release(resumed, ChildId));
     }
 }

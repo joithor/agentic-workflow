@@ -3,8 +3,8 @@ using System.Text.Json.Serialization;
 namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 /// <summary>
-/// Something that asks an instance to change (spec §5.4), decided under 'wf:{instance}:{<see cref="KeyPart"/>}'
-/// (W12). Commands come through the API's chain with a nonce; system triggers carry 'service:&lt;name&gt;' and their
+/// Something that asks an instance to change (spec §5.2, §5.4), identified as 'wf:{instance}:{<see cref="KeyPart"/>}'
+/// in its ledger events. Commands are Updates through the API's chain with a nonce; system triggers carry 'service:&lt;name&gt;' and their
 /// own ids. Every trigger kind is a sealed subtype.
 /// </summary>
 /// <param name="Actor">Who fired it: the caller of a command ('human:cli', 'session:…'), or 'service:&lt;name&gt;' for a system trigger.</param>
@@ -18,7 +18,6 @@ namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 [JsonDerivedType(typeof(HandbackRequested), "handback")]
 [JsonDerivedType(typeof(CancelRequested), "cancel")]
 [JsonDerivedType(typeof(DeadlineFired), "deadline")]
-[JsonDerivedType(typeof(ClockShifted), "shift")]
 [JsonDerivedType(typeof(RecipeWake), "recipe-wake")]
 [JsonDerivedType(typeof(OutboxRefused), "outbox-refused")]
 [JsonDerivedType(typeof(ChildChanged), "child")]
@@ -29,11 +28,11 @@ public abstract record Trigger(string Actor)
     [JsonIgnore]
     public abstract string Name { get; }
 
-    /// <summary>The trigger's own id, after 'wf:{instance}:' in its key (spec §5.3, §5.4).</summary>
+    /// <summary>The trigger's own id, after 'wf:{instance}:' in its key (spec §5.6).</summary>
     [JsonIgnore]
     public abstract string KeyPart { get; }
 
-    /// <summary>Whether the approval check (RCP-CAP-003, §5.3 step 6) skips it: cancel, takeover, handback, takeoverIdle and open-request (W11, UI E-6).</summary>
+    /// <summary>Whether the approval check (RCP-CAP-003, §5.2) skips it: cancel, takeover, handback, takeoverIdle and open-request (W11, UI E-6).</summary>
     [JsonIgnore]
     public virtual bool ExemptFromApproval => false;
 

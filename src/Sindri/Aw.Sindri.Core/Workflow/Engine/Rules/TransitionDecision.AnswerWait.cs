@@ -7,7 +7,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>
-/// An answer wait (spec §3.4, §5.8): with no frame suspended, 'workflow answer --text' in a state that waits for an
+/// An answer wait (spec §3.4, §5.8): with nothing suspended, 'workflow answer --text' in a state that waits for an
 /// answer is 'wait.satisfied' with outcome 'answered'. It records 'fact:answer' and is decided as a recipe trigger
 /// under the answer's own key, with the answer as the event's trigger; any other variant is SND-WF-003 naming '--text'.
 /// </summary>
@@ -17,7 +17,7 @@ public static partial class TransitionDecision
 
     /// <summary>The answer wait of the instance's current state, when nothing is suspended over it.</summary>
     private static AnswerWait? WaitingForAnswer(WorkflowInstance instance, Recipe recipe) =>
-        instance.Suspended.Count == 0 && !instance.Ended && recipe.States.TryGetValue(instance.State, out var state)
+        instance.Suspension is null && !instance.Ended && recipe.States.TryGetValue(instance.State, out var state)
             ? state.WaitFor?.Answer
             : null;
 

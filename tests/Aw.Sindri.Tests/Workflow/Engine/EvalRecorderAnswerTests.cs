@@ -83,14 +83,14 @@ public sealed class EvalRecorderAnswerTests
         Assert.Equal("Yes.", Text(recorded.Steps[1]));
     }
 
-    /// <summary>The original case replays; its history, recorded with only the events' deltas (no store report), replays too.</summary>
+    /// <summary>The original case replays; its history, recorded with only the events' deltas (no report saved for any trigger), replays too.</summary>
     private static EvalCase RoundTrip(Recipe recipe, params string[] lines)
     {
         var original = Assert.IsType<EvalCase>(EvalCaseReader.Read("case", string.Join('\n', [Start, .. lines]), EvalComposition.Options).Case);
-        var (verdict, events) = EvalRunner.Replay(original, recipe, EngineFixture.Catalog, InMemoryChildRecipes.None);
+        var (verdict, history) = EvalRunner.Replay(original, recipe, EngineFixture.Catalog, InMemoryChildRecipes.None);
         Assert.Null(verdict.Detail);
 
-        var recorded = EvalRecorder.Record("recorded", events, new Dictionary<TriggerKey, IReadOnlyDictionary<FactKey, FactValue>>(), Contents(original)).Value;
+        var recorded = EvalRecorder.Record("recorded", history, new Dictionary<TriggerKey, IReadOnlyDictionary<FactKey, FactValue>>(), Contents(original)).Value;
 
         Assert.Null(EvalRunner.Run(recorded, recipe, EngineFixture.Catalog, InMemoryChildRecipes.None).Detail);
         Assert.Equal(original.Steps.Select(s => s.Expect.State), recorded.Steps.Select(s => s.Expect.State), StringComparer.Ordinal);

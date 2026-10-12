@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Evals;
-using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Testing.Workflow;
 
@@ -32,10 +32,10 @@ public sealed class EvalRecorderTests
     public void A_recorded_history_replays_as_the_case_it_came_from()
     {
         var original = Case();
-        var (verdict, events) = EvalRunner.Replay(original, _step, _catalog, InMemoryChildRecipes.None);
+        var (verdict, history) = EvalRunner.Replay(original, _step, _catalog, InMemoryChildRecipes.None);
         Assert.Null(verdict.Detail);
 
-        var recorded = EvalRecorder.Record("recorded", events, Reported(original, events), Contents(original)).Value;
+        var recorded = EvalRecorder.Record("recorded", history, Reported(original, history), Contents(original)).Value;
 
         Assert.Null(EvalRunner.Run(recorded, _step, _catalog, InMemoryChildRecipes.None).Detail);
         Assert.Equal(original.Steps.Select(s => s.Trigger.Kind), recorded.Steps.Select(s => s.Trigger.Kind), StringComparer.Ordinal);
@@ -48,31 +48,33 @@ public sealed class EvalRecorderTests
     [Fact, Trait("Lane", "unit")]
     public void A_history_that_does_not_start_with_workflow_started_is_refused()
     {
-        var (_, events) = EvalRunner.Replay(Case(), _step, _catalog, InMemoryChildRecipes.None);
+        var (_, history) = EvalRunner.Replay(Case(), _step, _catalog, InMemoryChildRecipes.None);
 
-        var result = EvalRecorder.Record("recorded", [.. events.Skip(1)], Reported(Case(), events), Contents(Case()));
+        var result = EvalRecorder.Record("recorded", [.. history.Skip(1)], Reported(Case(), history), Contents(Case()));
 
         Assert.Contains("doesn't start with workflow.started", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_history_with_a_version_gap_is_broken()
+    public void A_history_with_another_instances_event_is_refused()
     {
-        var (_, events) = EvalRunner.Replay(Case(), _step, _catalog, InMemoryChildRecipes.None);
+        var (_, history) = EvalRunner.Replay(Case(), _step, _catalog, InMemoryChildRecipes.None);
+        var other = WorkflowInstanceId.From("WFI-" + new string('9', 32));
+        var stray = history[2] with { After = history[2].After with { Id = other }, Event = history[2].Event with { Instance = other } };
 
-        var result = EvalRecorder.Record("recorded", [events[0], .. events.Skip(2)], Reported(Case(), events), Contents(Case()));
+        var result = EvalRecorder.Record("recorded", [history[0], history[1], stray], Reported(Case(), history), Contents(Case()));
 
-        Assert.Contains("the history is broken", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("event 3 of the history is for " + other.Value, result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Fact_content_comes_from_the_store_and_a_missing_one_is_an_error()
+    public void Fact_content_comes_from_the_stored_facts_and_a_missing_one_is_an_error()
     {
-        var (_, events) = EvalRunner.Replay(Case(), _step, _catalog, InMemoryChildRecipes.None);
+        var (_, history) = EvalRunner.Replay(Case(), _step, _catalog, InMemoryChildRecipes.None);
 
-        var result = EvalRecorder.Record("recorded", events, Reported(Case(), events), new Dictionary<string, JsonElement>(StringComparer.Ordinal));
+        var result = EvalRecorder.Record("recorded", history, Reported(Case(), history), new Dictionary<string, JsonElement>(StringComparer.Ordinal));
 
-        Assert.Contains("the store has no content for fact:spec", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("no stored content for fact:spec", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -89,14 +91,14 @@ public sealed class EvalRecorderTests
 
     private static EvalCase Case() => Assert.IsType<EvalCase>(EvalCaseReader.Read("happy", string.Join('\n', _lines), Options()).Case);
 
-    /// <summary>What each line's trigger reported, as the store keeps it: event i + 1 is line i + 2's trigger.</summary>
-    private static Dictionary<TriggerKey, IReadOnlyDictionary<FactKey, FactValue>> Reported(EvalCase evalCase, IReadOnlyList<WorkflowEvent> events) =>
-        events.Skip(1).Zip(evalCase.Steps).ToDictionary(
-            static p => p.First.Trigger.Key,
+    /// <summary>What each line's trigger reported, as the interpreter saves it: event i + 1 is line i + 2's trigger.</summary>
+    private static Dictionary<TriggerKey, IReadOnlyDictionary<FactKey, FactValue>> Reported(EvalCase evalCase, IReadOnlyList<InstanceChange> history) =>
+        history.Skip(1).Zip(evalCase.Steps).ToDictionary(
+            static p => p.First.Event.Trigger.Key,
             static p => (IReadOnlyDictionary<FactKey, FactValue>)(p.Second.Trigger.Outputs ?? new Dictionary<FactKey, JsonElement>())
                 .ToDictionary(static o => o.Key, static o => EvalFacts.Value(o.Value)));
 
-    /// <summary>The store's content for every fact the case writes, by reference.</summary>
+    /// <summary>The stored content for every fact the case writes, by reference.</summary>
     private static Dictionary<string, JsonElement> Contents(EvalCase evalCase)
     {
         var all = evalCase.Start.Start.Inputs.Values.Concat(evalCase.Steps.SelectMany(s => s.Trigger.Outputs?.Values ?? []));

@@ -6,8 +6,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>
 /// The answers to a loop park (spec W7, §3.8, §5.1, §5.8): the arithmetic only. The answer applies it to the parked
-/// instance and then pops the park (the frame rules), so it fits a park once; the pop and the round the resume starts
-/// count as §5.1 says. Both clear the last round's mark, so the resumed round isn't compared with the parked one again.
+/// instance and then ends the park (the suspension rules), so it fits a park once; ending it counts no round, and the
+/// round the resume starts counts one (§5.8). Both clear the last round's mark, so the resumed round isn't compared with the parked one again.
 /// </summary>
 internal static partial class LoopRules
 {
@@ -72,22 +72,22 @@ internal static partial class LoopRules
     private static Result<(string Name, LoopSpec Spec, LoopState Loop)> Parked(
         WorkflowInstance instance, Recipe recipe, string answer, params ReadOnlySpan<ParkReason> reasons)
     {
-        var park = RecipeFrame.Park(instance);
-        if (park?.Suspension.Reason is not { } reason || !reasons.Contains(reason))
+        var park = instance.Suspension is { Kind: SuspensionKind.Park } parked ? parked : null;
+        if (park?.Reason is not { } reason || !reasons.Contains(reason))
         {
-            var fix = park?.Suspension.Reason == ParkReason.Rounds
+            var fix = park?.Reason == ParkReason.Rounds
                 ? "grant more rounds at a terminal with --grant n"
                 : "use an answer from allowedCommands in status";
             return WorkflowErrors.TriggerNotAllowed.With($"{answer} doesn't answer {Shown(instance)} (fix: {fix})");
         }
 
-        if (park.Suspension.Mirrors is { } child)
+        if (park.Mirrors is { } child)
         {
             return WorkflowErrors.TriggerNotAllowed.With(
                 $"the park mirrors child {child.Value} (fix: answer it at this address; the answer is forwarded to the child)");
         }
 
-        var state = LoopedState(recipe, park);
+        var state = LoopedState(recipe, instance.Frame, park);
         return Find(recipe, state) is var (name, spec)
             ? (name, spec, Counters(instance, name, spec))
             : WorkflowErrors.TriggerNotAllowed.With($"{state} has no loop to grant rounds to (fix: use an answer from allowedCommands in status)");
@@ -95,15 +95,16 @@ internal static partial class LoopRules
 
     /// <summary>The looped state a park stopped: kind loop the withheld transition's target, kind refusal the active state it suspended.</summary>
     /// <param name="recipe">The recipe.</param>
-    /// <param name="park">The suspended frame.</param>
+    /// <param name="frame">The recipe frame the park is over.</param>
+    /// <param name="park">The park.</param>
     /// <returns>The state whose loop a grant raises.</returns>
-    internal static string LoopedState(Recipe recipe, SuspendedFrame park) =>
-        park.Suspension.ParkKind == ParkKind.Loop && park.Resume.Withheld?.Transition is int index && index >= 0 && index < recipe.Transitions.Count
+    internal static string LoopedState(Recipe recipe, Frame frame, Suspension park) =>
+        park.ParkKind == ParkKind.Loop && park.Resume.Withheld?.Transition is int index && index >= 0 && index < recipe.Transitions.Count
             ? recipe.Transitions[index].To
-            : park.Frame.State;
+            : frame.State;
 
     private static string Shown(WorkflowInstance instance) =>
-        instance.Park is { } reason ? $"a {RecipeFrame.Name(reason)} park" : $"an instance in {instance.State}";
+        instance.Park is { } reason ? $"a {Parks.Name(reason)} park" : $"an instance in {instance.State}";
 
     private static WorkflowInstance With(WorkflowInstance instance, string name, LoopState loop) =>
         instance with { Loops = new Dictionary<string, LoopState>(instance.Loops, StringComparer.Ordinal) { [name] = loop } };

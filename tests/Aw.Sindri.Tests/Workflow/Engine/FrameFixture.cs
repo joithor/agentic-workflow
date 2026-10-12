@@ -11,13 +11,12 @@ using Aw.Sindri.Testing.Workflow;
 namespace Aw.Sindri.Tests.Workflow.Engine;
 
 /// <summary>
-/// The frame tests' recipe, instances, suspensions and answers. The recipe: 'produce' (an agent Step in loop 'fix',
+/// The suspension and answer tests' recipe, instances, suspensions and answers. The recipe: 'produce' (an agent Step in loop 'fix',
 /// cap 3, a 4h park timeout, a 200k budget) goes to 'checks' (a desk Step, 1h); 'checks' loops back to 'produce' on
 /// 'failed' and ends in 'done'; 'await' waits for 'ci.finished' (2h). The recipe budget is 400k.
 /// </summary>
 internal static class FrameFixture
 {
-    public static readonly DateTimeOffset T0 = new(2026, 10, 11, 9, 0, 0, TimeSpan.Zero);
 
     public static readonly WorkflowInstanceId Id = WorkflowInstanceId.From("WFI-" + new string('0', 30) + "a1");
 
@@ -37,33 +36,36 @@ internal static class FrameFixture
 
     public static Recipe Recipe { get; } = BuildRecipe();
 
-    public static DecisionContext Context(DateTimeOffset now) => new(
-        now, Epoch: 1, ApprovalCheck.Holds,
+    public static DecisionContext Context() => new(
+        ApprovalCheck.Holds,
         new BlockCatalog([TestBlocks.Step("step.produce"), TestBlocks.Step("step.check"), TestBlocks.Gate("gate.verify.judge")], []),
-        new HashSet<BlockId> { Produce }, InMemoryChildRecipes.None, EngineTimings.Default);
+        new HashSet<BlockId> { Produce }, InMemoryChildRecipes.None);
 
-    /// <summary>An instance at entry 3 in 'produce', run '3.1' on the agent, its state deadline armed at arm 1.</summary>
+    /// <summary>An instance at entry 3 in 'produce', run '3.1' on the agent.</summary>
     public static WorkflowInstance Producing() => Instance(new Frame(
-        "produce", 3, new OpenRun(RunToken.For(3, 1), StepRuntime.Agent, "LCH-1", Task: null), Child: null,
-        [new Deadline(DeadlineId.For(3, DeadlineKind.State, 1), T0.AddHours(4), Remaining: null)], T0));
+        "produce", 3, new OpenRun(RunToken.For(3, 1), StepRuntime.Agent, "LCH-1", Task: null), Child: null));
 
     public static WorkflowInstance Instance(Frame frame) => new(
         Id, InstanceAddress.Root(ItemKey.From("T-3"), Recipe.Id, 1), "local", Ring: 0,
         new PinnedRecipe(Recipe.Id, 1, RecipeHash.From("sha256:" + new string('a', 64)), new Dictionary<RecipeId, RecipeHash>()),
-        ItemKey.From("T-3"), Attempt: 1, Parent: null, frame, [], new Dictionary<string, LoopState>(StringComparer.Ordinal),
-        TokenSpend.None, new Dictionary<FactKey, FactValue>(), Version: 5, Outcome: null);
+        ItemKey.From("T-3"), Attempt: 1, Parent: null, frame, Suspension: null, PendingPark: null, new Dictionary<string, LoopState>(StringComparer.Ordinal),
+        TokenSpend.None, new Dictionary<FactKey, FactValue>(), Outcome: null);
 
-    public static SuspendOutcome Park(ParkReason reason, ParkKind? kind, ResumeKind resume, WithheldTrigger? withheld = null) => new(
-        new Suspension(SuspensionKind.Park, reason, kind, Escalation: null, "checks failed twice", "service:test", Mirrors: null),
+    public static Suspension Park(ParkReason reason, ParkKind? kind, ResumeKind resume, WithheldTrigger? withheld = null) => new(
+        SuspensionKind.Park, reason, kind, Escalation: null, "checks failed twice", "service:test", Mirrors: null,
         new ResumeAction(resume, withheld, Gate: null, Effect: null));
 
-    public static SuspendOutcome Escalate(EscalationKind kind, ResumeKind resume, WithheldTrigger? withheld = null, BlockId? gate = null) => new(
-        new Suspension(SuspensionKind.Escalation, Reason: null, ParkKind: null, kind, "gate.verify.judge scored 0.62", "service:test", Mirrors: null),
+    public static Suspension Escalate(EscalationKind kind, ResumeKind resume, WithheldTrigger? withheld = null, BlockId? gate = null) => new(
+        SuspensionKind.Escalation, Reason: null, ParkKind: null, kind, "gate.verify.judge scored 0.62", "service:test", Mirrors: null,
         new ResumeAction(resume, withheld, gate, Effect: null));
 
-    public static SuspendOutcome MirrorChild(ParkReason reason) => new(
-        new Suspension(SuspensionKind.Park, reason, ParkKind: null, Escalation: null, "child parked", "service:test", ChildId),
+    public static Suspension MirrorChild(ParkReason reason) => new(
+        SuspensionKind.Park, reason, ParkKind: null, Escalation: null, "child parked", "service:test", ChildId,
         new ResumeAction(ResumeKind.Forward, Withheld: null, Gate: null, Effect: null));
+
+    public static Suspension Takeover(string actor = "human:cli") => new(
+        SuspensionKind.Takeover, Reason: null, ParkKind: null, Escalation: null, string.Empty, actor, Mirrors: null,
+        new ResumeAction(ResumeKind.Return, Withheld: null, Gate: null, Effect: null));
 
     public static WithheldTrigger CheckFailed() => new(LoopBack, new StepCompleted(
         "service:desk", RunToken.For(4, 1), OutcomeName.From("failed"), NoOutputs, Tokens: 10, StepRuntime.Desk,
@@ -75,9 +77,9 @@ internal static class FrameFixture
     public static AnswerGiven Answer(AnswerVariant variant, string? text = null, int? amount = null) => new(
         "human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), new string('d', 64)), variant, text, amount, Forwarded: null);
 
-    /// <summary>The instance suspended by <paramref name="outcome"/> from <paramref name="from"/> (default: <see cref="Producing"/>).</summary>
-    public static WorkflowInstance Suspended(SuspendOutcome outcome, WorkflowInstance? from = null) =>
-        FrameRules.Suspend(from ?? Producing(), outcome, T0.AddMinutes(30));
+    /// <summary>The instance suspended by <paramref name="suspension"/> from <paramref name="from"/> (default: <see cref="Producing"/>).</summary>
+    public static WorkflowInstance Suspended(Suspension suspension, WorkflowInstance? from = null) =>
+        Suspensions.Suspend(from ?? Producing(), suspension);
 
     private static Recipe BuildRecipe()
     {

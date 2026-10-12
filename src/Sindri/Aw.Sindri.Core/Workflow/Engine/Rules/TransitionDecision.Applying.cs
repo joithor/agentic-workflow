@@ -9,14 +9,14 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>
-/// Applying a matched transition (spec §3.5, §3.7, §5.1, W5, W13, W20): the loop's round, the produced facts, the
+/// Applying a matched transition (spec §3.5, §3.7, §5.1, §5.7, W5, W20): the loop's round, the produced facts, the
 /// state entry, a child wait's child, the SND-WF-010 park, the effects and the Step's start.
 /// </summary>
 public static partial class TransitionDecision
 {
     private static readonly FactKey _findings = FactKey.From("fact:findings");
 
-    /// <summary>Gates and evidence first (§5.3): any refusal is a refusal of this transition, never a fall-through to the next.</summary>
+    /// <summary>Gates and evidence first (§5.2): any refusal is a refusal of this transition, never a fall-through to the next.</summary>
     private static Decision Transition(Deciding d, WorkflowInstance instance, int index)
     {
         var records = Check(d, d.Recipe.Transitions[index]);
@@ -29,7 +29,7 @@ public static partial class TransitionDecision
         var (looped, park) = Reenter(d, instance, transition.To, index);
         if (park is not null)
         {
-            return d.Commit(d.Rules.Suspend(instance, park, d.Now), records);
+            return d.Changed(d.Rules.Suspend(instance, park), records);
         }
 
         var produced = looped with { Facts = Produce(looped.Facts, transition, d.Trigger) };
@@ -40,17 +40,17 @@ public static partial class TransitionDecision
         }
 
         var entered = entering.Value;
-        var effects = Effects(d.Key, transition, instance.Id, entered.Entry);
+        var effects = Effects(transition, instance.Id, entered.Entry);
         var own = d.Change(entered.After, WorkflowEventType.Transition, records);
-        own = own with { Event = own.Event with { Outbox = [.. effects.Select(e => e.Id)] } };
-        return new Applied(d.Key, [own, .. entered.Children], [.. effects, .. entered.Outbox], entered.FollowUps);
+        own = own with { Event = own.Event with { Effects = [.. effects.Select(e => e.Identity)] } };
+        return new Applied(d.Key, [own, .. entered.Children], [.. effects, .. entered.Effects], entered.FollowUps);
     }
 
     /// <summary>
     /// Entering a looped state again (§3.7) is the next round, or a park with rounds or no-progress; the park keeps the
     /// withheld transition, so its grant performs it. A first entry starts round 1 (<see cref="FirstRound"/>).
     /// </summary>
-    private static (WorkflowInstance Instance, SuspendOutcome? Park) Reenter(Deciding d, WorkflowInstance instance, string state, int index)
+    private static (WorkflowInstance Instance, Suspension? Park) Reenter(Deciding d, WorkflowInstance instance, string state, int index)
     {
         if (d.Recipe.States[state].Loop is not { } name || !instance.Loops.ContainsKey(name))
         {
@@ -67,9 +67,9 @@ public static partial class TransitionDecision
     }
 
     /// <summary>
-    /// A real state entry (§5.1): the new frame from <see cref="FrameRules.Enter"/>; a child wait's child created in the
+    /// A real state entry (§5.1): the new frame from <see cref="StateEntry.Enter"/>; a child wait's child created in the
     /// same decision (W17); a Step with no runtime that isn't desk-capable parked with SND-WF-010 (W5); otherwise the
-    /// run started after the Commit (on the desk runtime when the Step has no runtime, W20).
+    /// run started once the entry is in history (on the desk runtime when the Step has no runtime, W20, §5.3).
     /// </summary>
     private static Result<Entered> Enter(Scope scope, WorkflowInstance instance, string state)
     {
@@ -88,17 +88,17 @@ public static partial class TransitionDecision
 
         if (!Runnable(scope.Context, step.Use))
         {
-            return new Entered(scope.Rules.Suspend(entered, NoRuntime(step.Use, scope.Actor), scope.Context.Now), entry, [], [], []);
+            return new Entered(scope.Rules.Suspend(entered, NoRuntime(step.Use, scope.Actor)), entry, [], [], []);
         }
 
         FollowUp[] start = entered.Frame.Run is { } run ? [new(FollowUpKind.StartRun, entered.Id, run.Token, step.Use, Answer: null)] : [];
         return new Entered(entered, entry, [], [], start);
     }
 
-    /// <summary>The child the wait creates (ChildPropagation.Create resolves and checks it against the pin), started in this Commit.</summary>
+    /// <summary>The child the wait creates (ChildPropagation.Create resolves and checks it against the pin), started by this decision.</summary>
     private static Result<Entered> WithChild(Scope scope, WorkflowInstance entered, ChildWait wait, int entry)
     {
-        var creating = scope.Rules.CreateChild(entered, wait, scope.Context.Children, scope.Key, scope.Actor);
+        var creating = scope.Rules.CreateChild(entered, wait, scope.Context.Children, scope.Actor);
         if (creating.IsError)
         {
             return creating.Error;
@@ -108,7 +108,7 @@ public static partial class TransitionDecision
         return Start(request, recipe, scope.Context, scope.Rules) switch
         {
             Applied started => new Entered(
-                entered with { Frame = entered.Frame with { Child = request.Id } }, entry, started.Changes, started.Outbox, started.FollowUps),
+                entered with { Frame = entered.Frame with { Child = request.Id } }, entry, started.Changes, started.Effects, started.FollowUps),
             Rejected rejected => rejected.Error,
             var other => throw new InvalidOperationException($"Starting a child decided {other.GetType().Name}; a start is applied or rejected."),
         };
@@ -124,9 +124,9 @@ public static partial class TransitionDecision
     private static bool Runnable(DecisionContext context, BlockId step) =>
         context.Runtimes.Contains(step) || context.Catalog.Find(step) is { DeskCapable: true };
 
-    private static SuspendOutcome NoRuntime(BlockId step, string actor) => new(
-        new Suspension(SuspensionKind.Park, ParkReason.NoRuntime, ParkKind: null, Escalation: null,
-            $"No runtime for {step.Value} in this build. Cancel, or resume in a build that has it.", actor, Mirrors: null),
+    private static Suspension NoRuntime(BlockId step, string actor) => new(
+        SuspensionKind.Park, ParkReason.NoRuntime, ParkKind: null, Escalation: null,
+        $"No runtime for {step.Value} in this build. Cancel, or resume in a build that has it.", actor, Mirrors: null,
         new ResumeAction(ResumeKind.Restart, Withheld: null, Gate: null, Effect: null));
 
     /// <summary>'produces' (§3.5): the facts the transition records from what its trigger's source reported.</summary>
@@ -159,15 +159,15 @@ public static partial class TransitionDecision
         new(loops, StringComparer.Ordinal) { [name] = state };
 
     /// <summary>A state entry's result.</summary>
-    /// <param name="After">The instance in the entered frame (or parked from it).</param>
-    /// <param name="Entry">The entered frame's entry, which effect identities use (§5.4).</param>
+    /// <param name="After">The instance in the entered frame (or parked in it).</param>
+    /// <param name="Entry">The entered frame's entry, which effect identities use (§5.7).</param>
     /// <param name="Children">A created child's change.</param>
-    /// <param name="Outbox">A created child's outbox commands.</param>
+    /// <param name="Effects">A created child's effects.</param>
     /// <param name="FollowUps">The runs to start.</param>
     private sealed record Entered(
         WorkflowInstance After,
         int Entry,
         IReadOnlyList<InstanceChange> Children,
-        IReadOnlyList<EffectCommand> Outbox,
+        IReadOnlyList<EffectCommand> Effects,
         IReadOnlyList<FollowUp> FollowUps);
 }

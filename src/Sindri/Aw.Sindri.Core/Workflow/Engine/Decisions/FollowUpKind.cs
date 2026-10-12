@@ -1,9 +1,9 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
-/// <summary>Work the post-commit loop does after a Commit (spec §2, §5.3); each is keyed so a re-run after a crash is a no-op.</summary>
+/// <summary>Work the interpreter does once a decision is in history (spec §2, §5.3); a replay never repeats it.</summary>
 public enum FollowUpKind
 {
-    /// <summary>Call IStep.Start for the run the Commit opened (keyed by the run token).</summary>
+    /// <summary>Start the run the decision opened, as the RunStep activity (its id carries the run token).</summary>
     StartRun = 1,
 
     /// <summary>Decide the withheld transition as a system trigger: the answer recorded, its gates and evidence evaluate afresh under the answer's key.</summary>

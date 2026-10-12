@@ -10,7 +10,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 internal sealed record FitRow(IReadOnlyList<AnswerVariant> Variants, string Shown, string Fix)
 {
     /// <summary>The row for <paramref name="suspension"/>.</summary>
-    /// <param name="suspension">What suspended the top frame (not a mirror).</param>
+    /// <param name="suspension">The park or escalation (not a mirror).</param>
     /// <param name="address">The instance's address.</param>
     /// <param name="recipe">The recipe it runs.</param>
     /// <returns>The row.</returns>
@@ -20,19 +20,19 @@ internal sealed record FitRow(IReadOnlyList<AnswerVariant> Variants, string Show
 
     private static FitRow Parked(Suspension suspension, string address, PinnedRecipe recipe) => suspension.Reason switch
     {
-        ParkReason.Rounds => new([AnswerVariant.Grant], "parked (rounds)", FrameRefusals.Answer(address, "--grant 1")),
-        ParkReason.NoProgress => new([AnswerVariant.Grant, AnswerVariant.Text], "parked (no-progress)", FrameRefusals.Answer(address, "--grant 1")),
-        ParkReason.Budget => new([AnswerVariant.GrantTokens], "parked (budget)", FrameRefusals.Answer(address, "--grant-tokens <n>")),
+        ParkReason.Rounds => new([AnswerVariant.Grant], "parked (rounds)", FitRefusals.Answer(address, "--grant 1")),
+        ParkReason.NoProgress => new([AnswerVariant.Grant, AnswerVariant.Text], "parked (no-progress)", FitRefusals.Answer(address, "--grant 1")),
+        ParkReason.Budget => new([AnswerVariant.GrantTokens], "parked (budget)", FitRefusals.Answer(address, "--grant-tokens <n>")),
         ParkReason.NeedsAnswer => NeedsAnswer(suspension, address),
-        ParkReason.Timeout => new([AnswerVariant.Resume], "parked (timeout)", FrameRefusals.Answer(address, "--resume")),
-        ParkReason.NoRuntime => new([AnswerVariant.Resume], "parked (SND-WF-010)", FrameRefusals.Answer(address, "--resume") + " in a build that has the runtime"),
+        ParkReason.Timeout => new([AnswerVariant.Resume], "parked (timeout)", FitRefusals.Answer(address, "--resume")),
+        ParkReason.NoRuntime => new([AnswerVariant.Resume], "parked (SND-WF-010)", FitRefusals.Answer(address, "--resume") + " in a build that has the runtime"),
         ParkReason.SpecConflict or _ => SpecConflict(suspension, address, recipe),
     };
 
     // From a Step, '--text' re-runs it with the answer; from a wait, '--resume [--text]' checks the gates again.
     private static FitRow NeedsAnswer(Suspension suspension, string address) => suspension.ParkKind == ParkKind.Wait
-        ? new([AnswerVariant.Resume], "parked (needs-answer)", FrameRefusals.Answer(address, "--resume [--text <answer>]"))
-        : new([AnswerVariant.Text], "parked (needs-answer)", FrameRefusals.Answer(address, "--text <answer>"));
+        ? new([AnswerVariant.Resume], "parked (needs-answer)", FitRefusals.Answer(address, "--resume [--text <answer>]"))
+        : new([AnswerVariant.Text], "parked (needs-answer)", FitRefusals.Answer(address, "--text <answer>"));
 
     private static FitRow SpecConflict(Suspension suspension, string address, PinnedRecipe recipe)
     {
@@ -40,7 +40,7 @@ internal sealed record FitRow(IReadOnlyList<AnswerVariant> Variants, string Show
         return suspension.ParkKind switch
         {
             ParkKind.Dispatch => new([AnswerVariant.Resume], "parked (spec-conflict: dispatch)",
-                "add the effect to the profile's allowlist and approve the profile, then " + FrameRefusals.Answer(address, "--resume")),
+                "add the effect to the profile's allowlist and approve the profile, then " + FitRefusals.Answer(address, "--resume")),
             ParkKind.Drift => new([], "parked (spec-conflict: drift)", approve + "; the approval resumes it"),
             ParkKind.ChildRevoked => new([], "parked (spec-conflict: child revoked)", approve + " so it pins an approved child; the approval resumes it"),
             ParkKind.Revoked or ParkKind.Loop or ParkKind.Refusal or ParkKind.Step or ParkKind.Wait or null or _ => new([], "parked (spec-conflict: revoked)", $"sindri workflow cancel {address}, then start a new attempt from an approved version"),
@@ -49,8 +49,8 @@ internal sealed record FitRow(IReadOnlyList<AnswerVariant> Variants, string Show
 
     private static FitRow Escalated(Suspension suspension, string address) => suspension.Escalation switch
     {
-        EscalationKind.Gate => new([AnswerVariant.Accept, AnswerVariant.Reject], "escalated (gate)", FrameRefusals.Answer(address, "--accept") + " or --reject"),
-        EscalationKind.Timeout => new([AnswerVariant.Resume], "escalated (timeout)", FrameRefusals.Answer(address, "--resume")),
-        EscalationKind.Child or null or _ => new([], "escalated", FrameRefusals.Status(address)),
+        EscalationKind.Gate => new([AnswerVariant.Accept, AnswerVariant.Reject], "escalated (gate)", FitRefusals.Answer(address, "--accept") + " or --reject"),
+        EscalationKind.Timeout => new([AnswerVariant.Resume], "escalated (timeout)", FitRefusals.Answer(address, "--resume")),
+        EscalationKind.Child or null or _ => new([], "escalated", FitRefusals.Status(address)),
     };
 }

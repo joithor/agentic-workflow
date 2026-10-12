@@ -8,8 +8,9 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>
-/// The §5.3 checks a decision can see: the run token and the state (step 4, SND-WF-005, SND-WF-003), a malformed
-/// report (SND-WF-008, §5.5) and the approval (step 6). A validation refusal records and consumes nothing (W12).
+/// The checks a decision can see (spec §5.2, the Update validator; §5.3): the run token and the state (SND-WF-005,
+/// SND-WF-003), a malformed report (SND-WF-008) and the approval (RCP-CAP-003). A validation refusal records and
+/// consumes nothing.
 /// </summary>
 public static partial class TransitionDecision
 {
@@ -24,7 +25,7 @@ public static partial class TransitionDecision
     private static Error NotAllowed(Trigger trigger, WorkflowInstance instance) => WorkflowErrors.TriggerNotAllowed.With(
         $"{trigger.Name} isn't allowed while {instance.Address.Value} is in '{instance.State}' (fix: see allowedCommands in status)");
 
-    /// <summary>A report with an undeclared outcome, a missing required output or an undeclared fact (§5.5): rejected before any decision, so no round is used.</summary>
+    /// <summary>A report with an undeclared outcome, a missing required output or an undeclared fact (§5.3): rejected before any decision, so no round is used.</summary>
     private static Error? Malformed(Deciding d, WorkflowInstance instance, StepCompleted report)
     {
         var use = d.Recipe.States[instance.State].Step?.Use;
@@ -54,9 +55,9 @@ public static partial class TransitionDecision
     }
 
     /// <summary>
-    /// The approval check (§5.3 step 6, W11): a human trigger on a revoked or drifted recipe is SND-RECIPE-005 or -006
-    /// and records nothing; a system trigger parks with spec-conflict instead. Cancel, takeover, handback and
-    /// takeoverIdle are exempt.
+    /// The approval check (§5.2, W11): a human trigger on a revoked or drifted recipe is SND-RECIPE-005 or -006 and
+    /// records nothing; a system trigger parks with spec-conflict instead. Cancel, takeover, handback and takeoverIdle
+    /// are exempt.
     /// </summary>
     private static Decision? Unapproved(Deciding d, WorkflowInstance instance, int? transition)
     {
@@ -76,17 +77,17 @@ public static partial class TransitionDecision
             ? $"{d.Recipe.Id.Value} was revoked. Cancel, then start a new attempt from an approved version."
             : $"A block pinned by {d.Recipe.Id.Value} changed since it was approved. Re-approve it; the approval resumes this instance.";
         var withheld = d.Trigger is StepCompleted or StepFailed or WaitSatisfied or CommandFired ? new WithheldTrigger(transition, d.Trigger) : null;
-        var park = new SuspendOutcome(
-            new Suspension(SuspensionKind.Park, ParkReason.SpecConflict, revoked ? ParkKind.Revoked : ParkKind.Drift, Escalation: null, question, d.Trigger.Actor, Mirrors: null),
+        var park = new Suspension(
+            SuspensionKind.Park, ParkReason.SpecConflict, revoked ? ParkKind.Revoked : ParkKind.Drift, Escalation: null, question, d.Trigger.Actor, Mirrors: null,
             new ResumeAction(revoked ? ResumeKind.None : ResumeKind.Rearm, revoked ? null : withheld, Gate: null, Effect: null));
-        return d.CommitOrAbsorb(d.Rules.Suspend(instance, park, d.Now), instance, "already parked for drift");
+        return d.ChangedOrAbsorbed(d.Rules.Suspend(instance, park), instance, "already parked for drift");
     }
 
     private static Error ApprovalError(ApprovalCheck approval, Recipe recipe) => approval == ApprovalCheck.Revoked
         ? WorkflowErrors.RecipeRevoked.With($"{recipe.Id.Value} version {recipe.Version.ToString(CultureInfo.InvariantCulture)} was revoked (fix: approve a new version)")
         : WorkflowErrors.RecipePinDrift.With($"a block pinned by {recipe.Id.Value} changed since it was approved (fix: re-approve it; sindri recipe list --stale)");
 
-    /// <summary>System triggers carry 'service:' or 'system:' actors (§5.3 step 1); everything else came from a person.</summary>
+    /// <summary>System triggers carry 'service:' or 'system:' actors (§5.2); everything else came from a person.</summary>
     private static bool IsSystem(string actor) =>
         actor.StartsWith("service:", StringComparison.Ordinal) || actor.StartsWith("system:", StringComparison.Ordinal);
 

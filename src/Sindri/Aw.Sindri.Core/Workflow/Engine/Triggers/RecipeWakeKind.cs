@@ -2,11 +2,11 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 
-/// <summary>Which registry change woke the instance (spec §4.1, §5.4).</summary>
+/// <summary>Which registry change woke the instance (spec §4.1, §5.8).</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<RecipeWakeKind>))]
 public enum RecipeWakeKind
 {
-    /// <summary>The instance's recipe, or the child hash it pins, was revoked: it parks at once (a revoke replaces the stack).</summary>
+    /// <summary>The instance's recipe, or the child hash it pins, was revoked: it parks at once (a revoke's park replaces any suspension).</summary>
     [JsonStringEnumMemberName("revoked")]
     Revoked = 1,
 

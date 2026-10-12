@@ -19,12 +19,12 @@ public sealed class ChildPropagationTests
     private static InMemoryChildRecipes Pinned => new InMemoryChildRecipes().With(new ChildRecipe(StepRecipe, StepPin));
 
     [Fact, Trait("Lane", "unit")]
-    public void Create_derives_the_child_from_the_parent_pin_address_and_key()
+    public void Create_derives_the_child_from_the_parent_pin_and_address()
     {
-        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Request;
+        var start = ChildPropagation.Create(Waiting, Wait, Pinned, Terminal).Value.Request;
 
-        Assert.Equal(EnteringKey, start.Key);
         Assert.Equal(InstanceAddress.From("T-3/item/1/step.4"), start.Address);
+        Assert.Equal(TriggerKey.For(start.Id, "start"), start.Key);
         Assert.Equal(Step, start.Recipe.Id);
         Assert.Equal(StepRecipe.Version, start.Recipe.Version);
         Assert.Equal(StepPin, start.Recipe.Hash);
@@ -34,21 +34,23 @@ public sealed class ChildPropagationTests
         Assert.Equal(ParentId, start.Parent);
         Assert.Equal(Terminal, start.Actor);
         Assert.False(start.TakenOver);
-        Assert.Same(StepRecipe, ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Recipe);
+        Assert.Same(StepRecipe, ChildPropagation.Create(Waiting, Wait, Pinned, Terminal).Value.Recipe);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Create_hashes_the_parent_key_into_a_version_8_id()
+    public void Create_hashes_the_child_address_into_a_version_8_id()
     {
-        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Request;
+        var start = ChildPropagation.Create(Waiting, Wait, Pinned, Terminal).Value.Request;
 
-        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(EnteringKey.Value));
+        // §5.1: the child's workflow id is its address; its opaque id is derived from it, so the same child gets the same id.
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes("T-3/item/1/step.4"));
         var hex = start.Id.Value["WFI-".Length..];
         Assert.Equal(Convert.ToHexStringLower(digest)[..12], hex[..12]);
         Assert.Equal('8', hex[12]);
         Assert.Contains(hex[16], "89ab");
-        Assert.Equal(start.Id, ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Request.Id);
-        Assert.NotEqual(start.Id, ChildPropagation.Create(Waiting, Wait, Pinned, TriggerKey.For(ParentId, "event:43"), Terminal).Value.Request.Id);
+        Assert.Equal(start.Id, ChildPropagation.Create(Waiting, Wait, Pinned, Terminal).Value.Request.Id);
+        var nextEntry = Waiting with { Frame = Waiting.Frame with { Entry = Entry + 1 } };
+        Assert.NotEqual(start.Id, ChildPropagation.Create(nextEntry, Wait, Pinned, Terminal).Value.Request.Id);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -56,8 +58,8 @@ public sealed class ChildPropagationTests
     {
         var unpinned = Waiting with { Recipe = Waiting.Recipe with { Children = new Dictionary<RecipeId, RecipeHash>() } };
 
-        Assert.Equal("SND-RECIPE-002", ChildPropagation.Create(unpinned, Wait, Pinned, EnteringKey, Terminal).Error.Code);
-        Assert.Equal("SND-RECIPE-002", ChildPropagation.Create(Waiting, Wait, InMemoryChildRecipes.None, EnteringKey, Terminal).Error.Code);
+        Assert.Equal("SND-RECIPE-002", ChildPropagation.Create(unpinned, Wait, Pinned, Terminal).Error.Code);
+        Assert.Equal("SND-RECIPE-002", ChildPropagation.Create(Waiting, Wait, InMemoryChildRecipes.None, Terminal).Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -65,7 +67,7 @@ public sealed class ChildPropagationTests
     {
         var other = new InMemoryChildRecipes().With(new ChildRecipe(StepRecipe, RecipeHash.From("sha256:" + new string('6', 64))));
 
-        var refused = ChildPropagation.Create(Waiting, Wait, other, EnteringKey, Terminal);
+        var refused = ChildPropagation.Create(Waiting, Wait, other, Terminal);
 
         Assert.Equal("SND-RECIPE-002", refused.Error.Code);
         Assert.Contains(StepPin.Value, refused.Error.Message, StringComparison.Ordinal);
@@ -74,7 +76,7 @@ public sealed class ChildPropagationTests
     [Fact, Trait("Lane", "unit")]
     public void Create_copies_a_fact_input_from_the_parent()
     {
-        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Request;
+        var start = ChildPropagation.Create(Waiting, Wait, Pinned, Terminal).Value.Request;
 
         Assert.Equal(StepSpecValue, Assert.Single(start.Inputs, i => i.Key == Spec).Value);
     }
@@ -93,7 +95,7 @@ public sealed class ChildPropagationTests
             },
         };
 
-        var start = ChildPropagation.Create(Waiting, wait, Pinned, EnteringKey, Terminal).Value.Request;
+        var start = ChildPropagation.Create(Waiting, wait, Pinned, Terminal).Value.Request;
 
         var value = Assert.Single(start.Inputs).Value;
         Assert.Equal("literal:{\"rounds\":3}", value.Ref);
@@ -108,12 +110,12 @@ public sealed class ChildPropagationTests
         var effect = ChildPropagation.ToParent(Waiting, Item, Changed(ChildChange.Parked, ParkReason.NoProgress, "checks failed twice"));
 
         Assert.Equal(ParentEffectKind.MirrorPark, effect.Kind);
-        var suspend = Assert.IsType<SuspendOutcome>(effect.Suspend);
-        Assert.Equal(SuspensionKind.Park, suspend.Suspension.Kind);
-        Assert.Equal(ParkReason.NoProgress, suspend.Suspension.Reason);
-        Assert.Null(suspend.Suspension.ParkKind);
-        Assert.Equal("checks failed twice", suspend.Suspension.Question);
-        Assert.Equal(ChildId, suspend.Suspension.Mirrors);
+        var suspend = Assert.IsType<Suspension>(effect.Suspend);
+        Assert.Equal(SuspensionKind.Park, suspend.Kind);
+        Assert.Equal(ParkReason.NoProgress, suspend.Reason);
+        Assert.Null(suspend.ParkKind);
+        Assert.Equal("checks failed twice", suspend.Question);
+        Assert.Equal(ChildId, suspend.Mirrors);
         Assert.Equal(ResumeKind.Forward, suspend.Resume.Kind);
     }
 
@@ -134,16 +136,16 @@ public sealed class ChildPropagationTests
         var effect = ChildPropagation.ToParent(Waiting, ItemWith(onParked), Changed(ChildChange.Escalated, question: "gate.verify.judge scored 0.62"));
 
         Assert.Equal(ParentEffectKind.Escalate, effect.Kind);
-        var suspend = Assert.IsType<SuspendOutcome>(effect.Suspend);
-        Assert.Equal(SuspensionKind.Escalation, suspend.Suspension.Kind);
-        Assert.Equal(EscalationKind.Child, suspend.Suspension.Escalation);
-        Assert.Equal("gate.verify.judge scored 0.62", suspend.Suspension.Question);
-        Assert.Equal(ChildId, suspend.Suspension.Mirrors);
+        var suspend = Assert.IsType<Suspension>(effect.Suspend);
+        Assert.Equal(SuspensionKind.Escalation, suspend.Kind);
+        Assert.Equal(EscalationKind.Child, suspend.Escalation);
+        Assert.Equal("gate.verify.judge scored 0.62", suspend.Question);
+        Assert.Equal(ChildId, suspend.Mirrors);
         Assert.Equal(ResumeKind.Forward, suspend.Resume.Kind);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_child_resume_releases_the_frame_mirroring_it()
+    public void A_child_resume_releases_the_suspension_mirroring_it()
     {
         Assert.Equal(ParentEffectKind.Release, ChildPropagation.ToParent(MirroringPark, Item, Changed(ChildChange.Resumed)).Kind);
         Assert.Equal(ParentEffectKind.Release, ChildPropagation.ToParent(MirroringEscalation, Item, Changed(ChildChange.Resumed)).Kind);
@@ -168,8 +170,8 @@ public sealed class ChildPropagationTests
     [Fact, Trait("Lane", "unit")]
     public void A_parent_parked_for_its_own_reason_holds_the_row()
     {
-        var parked = Push(Waiting, new SuspendOutcome(
-            new Suspension(SuspensionKind.Park, ParkReason.Timeout, ParkKind: null, Escalation: null, "running timed out", "service:workflow.clock", Mirrors: null),
+        var parked = Push(Waiting, new Suspension(
+            SuspensionKind.Park, ParkReason.Timeout, ParkKind: null, Escalation: null, "running timed out", "service:workflow.timers", Mirrors: null,
             new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effect: null)));
 
         Assert.Equal(ParentEffectKind.Hold, ChildPropagation.ToParent(parked, Item, Changed(ChildChange.Escalated, question: "q")).Kind);

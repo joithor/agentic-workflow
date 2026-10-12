@@ -3,8 +3,8 @@ using System.Globalization;
 namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
 /// <summary>
-/// An effect's stable identity (spec §5.4): '{instance}:{entry}:{index}' with the entered frame's entry, separate
-/// from its command id, so a retry or a re-emission is harmless to the effect's existence check. 'effect.claim.ref'
+/// An effect's stable identity (spec §5.7): '{instance}:{entry}:{index}' with the entered frame's entry, so an
+/// activity retry or a 'retry' re-emission is harmless to the effect's existence check. 'effect.claim.ref'
 /// keys its identity by item instead (P6).
 /// </summary>
 /// <param name="Instance">The instance.</param>

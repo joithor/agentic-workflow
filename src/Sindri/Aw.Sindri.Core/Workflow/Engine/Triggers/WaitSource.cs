@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 /// <summary>
-/// What satisfied a wait (spec §3.4, §5.4, §5.7): an event, a resource grant, a child's end, or an answer. An answer
+/// What satisfied a wait (spec §3.4, §5.4, §5.8): an event, a resource grant, a child's end, or an answer. An answer
 /// wait is satisfied by an <see cref="AnswerGiven"/> with text, which the decision reads as 'wait.satisfied' with
 /// outcome 'answered' from an <see cref="AnswerWaitSource"/>.
 /// </summary>

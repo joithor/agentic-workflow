@@ -5,7 +5,6 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
-using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
@@ -16,22 +15,22 @@ using Aw.Sindri.Core.Workflow.Validation;
 namespace Aw.Sindri.Core.Workflow.Engine.Evals;
 
 /// <summary>
-/// One eval case being folded (spec §9.2): the instance after each line and the events the decisions wrote. Each
-/// line's trigger has a key of its own (its line number is in the key), so no line replays another. Pure and
-/// immutable: each line gives the next simulation, so the scaffold can try a line and keep it only when it moves on.
-/// Every block has a runtime; a gate the line doesn't name passes; evidence holds.
+/// One eval case being folded (spec §9.2): the instance after each line, and its history (each ledger event with the
+/// instance after it). This is the eval's own test-harness state, threaded from line to line in memory; it is not a
+/// store, and the interpreter keeps its state in Temporal (§5.1). Each line's trigger has a key of its own (its line
+/// number is in the key). Pure and immutable: each line gives the next simulation, so the scaffold can try a line and
+/// keep it only when it moves on. Every block has a runtime; a gate the line doesn't name passes; evidence holds.
 /// </summary>
 internal sealed record EvalSimulation(
     Recipe Recipe,
     BlockCatalog Catalog,
     IChildRecipeResolver Children,
     WorkflowInstance Instance,
-    IReadOnlyList<WorkflowEvent> Events)
+    IReadOnlyList<InstanceChange> History)
 {
     private const string Person = "human:eval";
     private const string Inbox = "service:workflow.inbox";
     private const string Timers = "service:workflow.timers";
-    private static readonly DateTimeOffset _t0 = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly FactKey _answer = FactKey.From("fact:answer");
 
     /// <summary>The case's instance, started with the line-1 inputs.</summary>
@@ -53,10 +52,9 @@ internal sealed record EvalSimulation(
             evalCase.Start.Start.Inputs.ToDictionary(static i => i.Key, static i => EvalFacts.Value(i.Value)),
             Person,
             TakenOver: false);
-        var context = Context(catalog, children, line: 1);
-        return TransitionDecision.Start(request, recipe, context) switch
+        return TransitionDecision.Start(request, recipe, Context(catalog, children)) switch
         {
-            Applied applied => new EvalSimulation(recipe, catalog, children, applied.Changes[0].After, [applied.Changes[0].Event]),
+            Applied applied => new EvalSimulation(recipe, catalog, children, applied.Changes[0].After, [applied.Changes[0]]),
             Rejected rejected => KernelErrors.Invalid.With($"the start was rejected: {rejected.Error.Code} {rejected.Error.Message}"),
             var other => KernelErrors.Invalid.With($"the start was {other.GetType().Name}"),
         };
@@ -82,7 +80,7 @@ internal sealed record EvalSimulation(
             return answers.Error;
         }
 
-        var deciding = Decide(new DecisionInput(Instance, Recipe, trigger, answers.Value, Context(Catalog, Children, number)), line.Trigger.Kind);
+        var deciding = Decide(new DecisionInput(Instance, Recipe, trigger, answers.Value, Context(Catalog, Children)), line.Trigger.Kind);
         return deciding.IsError ? deciding.Error : Fold(deciding.Value, line.Trigger.Kind);
     }
 
@@ -98,7 +96,7 @@ internal sealed record EvalSimulation(
         }
     }
 
-    /// <summary>The decision's change to this instance, the key recorded and the event kept; a rejection is a line the engine refused.</summary>
+    /// <summary>The decision's change to this instance, kept in the history; a rejection is a line the engine refused.</summary>
     private Result<(EvalSimulation Next, Decision Decision)> Fold(Decision decision, string kind)
     {
         var changes = decision switch
@@ -118,7 +116,7 @@ internal sealed record EvalSimulation(
         var next = this with
         {
             Instance = own?.After ?? Instance,
-            Events = own is null ? Events : [.. Events, own.Event],
+            History = own is null ? History : [.. History, own],
         };
         return (next, decision);
     }
@@ -139,18 +137,7 @@ internal sealed record EvalSimulation(
     public EvalExpectation Shown => new(Instance.State, Instance.Park, Instance.Outcome);
 
     private static string Describe(string state, ParkReason? park, OutcomeName? outcome) =>
-        state + (park is { } p ? $" ({Spelled(p)})" : string.Empty) + (outcome is { } o ? $" (outcome {o.Value})" : string.Empty);
-
-    private static string Spelled(ParkReason reason) => reason switch
-    {
-        ParkReason.Rounds => "rounds",
-        ParkReason.NoProgress => "no-progress",
-        ParkReason.Budget => "budget",
-        ParkReason.NeedsAnswer => "needs-answer",
-        ParkReason.Timeout => "timeout",
-        ParkReason.SpecConflict => "spec-conflict",
-        ParkReason.NoRuntime or _ => "SND-WF-010",
-    };
+        state + (park is { } p ? $" ({Parks.Name(p)})" : string.Empty) + (outcome is { } o ? $" (outcome {o.Value})" : string.Empty);
 
     private Result<Trigger> Trigger(EvalTrigger line, int number)
     {
@@ -189,10 +176,10 @@ internal sealed record EvalSimulation(
         ? report(run.Token)
         : Missing($"'{Instance.State}' has no open Step run to report on");
 
-    /// <summary>The wait of the recipe frame (the bottom of the stack while a park mirrors a child) is satisfied by its own source.</summary>
+    /// <summary>The wait of the recipe frame (also while a park mirrors its child) is satisfied by its own source.</summary>
     private Result<Trigger> Satisfied(EvalTrigger line, IReadOnlyDictionary<FactKey, FactValue> outputs, int number)
     {
-        var frame = Instance.Suspended.Count > 0 ? Instance.Suspended[0].Frame : Instance.Frame;
+        var frame = Instance.Frame;
         if (!Recipe.States.TryGetValue(frame.State, out var state) || state.WaitFor is not { } wait)
         {
             return Missing($"'{frame.State}' doesn't wait for anything");
@@ -212,7 +199,7 @@ internal sealed record EvalSimulation(
 
     private Result<Trigger> Child(ChildChange change, ParkReason? reason, int number)
     {
-        var frame = Instance.Suspended.Count > 0 ? Instance.Suspended[0].Frame : Instance.Frame;
+        var frame = Instance.Frame;
         if (frame.Child is not { } child)
         {
             return Missing($"'{frame.State}' has no child");
@@ -226,10 +213,18 @@ internal sealed record EvalSimulation(
         return new ChildChanged(Inbox, child, change, reason, $"the child {change.ToString().ToLowerInvariant()} (eval line {Text(number)})", TriggerKey.For(child, "eval:" + Text(number)));
     }
 
-    /// <summary>The current frame's next running deadline fires.</summary>
-    private Result<Trigger> Deadline() => Instance.Frame.Deadlines.Where(static d => !d.Paused).OrderBy(static d => d.Due).FirstOrDefault() is { } next
-        ? new DeadlineFired(Timers, next.Id)
-        : Missing($"'{Instance.State}' has no running deadline");
+    /// <summary>
+    /// The running timer fires (§9.2): the takeover's idle reminder while taken over; otherwise the state's timeout while
+    /// nothing is suspended (a park or escalation stops it). A 'then: retry' second expiry is P5's, with the timers.
+    /// </summary>
+    private Result<Trigger> Deadline() => Instance switch
+    {
+        { Ended: true } => Missing($"'{Instance.State}' has ended; no timer runs"),
+        { Suspension.Kind: SuspensionKind.Takeover } => new DeadlineFired(Timers, Instance.Frame.Entry, DeadlineKind.TakeoverIdle),
+        { Suspension: null } when Recipe.States.TryGetValue(Instance.Frame.State, out var state) && state.Timeout is not null =>
+            new DeadlineFired(Timers, Instance.Frame.Entry, DeadlineKind.State),
+        _ => Missing($"'{Instance.State}' has no running timer"),
+    };
 
     /// <summary>The matched transition's gates answer as the line says (pass when it doesn't name them); its evidence holds.</summary>
     private Result<GateAnswers> Answers(Trigger trigger, EvalStepLine line, int number)
@@ -262,15 +257,15 @@ internal sealed record EvalSimulation(
         var index = trigger switch
         {
             StepCompleted or StepFailed or WaitSatisfied or CommandFired => TransitionDecision.Match(Instance, Recipe, trigger).Transition,
-            AnswerGiven when Instance.Suspended.Count > 0 => Instance.Suspended[^1].Resume.Withheld?.Transition,
+            AnswerGiven when Instance.Suspension is { } suspension => suspension.Resume.Withheld?.Transition,
             AnswerGiven => TransitionDecision.Match(Instance, Recipe, trigger).Transition,
             _ => null,
         };
         return index is { } i && i >= 0 && i < Recipe.Transitions.Count ? Recipe.Transitions[i] : null;
     }
 
-    private static DecisionContext Context(BlockCatalog catalog, IChildRecipeResolver children, int line) =>
-        new(_t0.AddMinutes(line), Epoch: 1, ApprovalCheck.Holds, catalog, catalog.Blocks.Select(static b => b.Id).ToHashSet(), children, EngineTimings.Default);
+    private static DecisionContext Context(BlockCatalog catalog, IChildRecipeResolver children) =>
+        new(ApprovalCheck.Holds, catalog, catalog.Blocks.Select(static b => b.Id).ToHashSet(), children);
 
     private static Error Missing(string detail) => KernelErrors.Invalid.With(detail);
 

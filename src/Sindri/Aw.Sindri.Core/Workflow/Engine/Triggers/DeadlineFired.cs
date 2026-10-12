@@ -1,19 +1,29 @@
+using System.Globalization;
+
 namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 /// <summary>
-/// A deadline fired (spec §5.4, §5.6): valid only while it is armed and not paused. A state or retry deadline runs
-/// the state's 'then'; a takeoverIdle deadline notifies the human once and clears (exempt from the approval check).
+/// A timer the interpreter armed fired (spec §5.5): the state's timeout, the one a 'then: retry' re-armed in the same
+/// entry, or the takeover's idle reminder. A state or retry timer runs the state's 'then'; a takeoverIdle timer
+/// notifies the human once (exempt from the approval check). The interpreter cancels a state's timer when the instance
+/// is suspended or leaves the entry, so one only fires for the entry it was armed in.
 /// </summary>
 /// <param name="Actor">'service:workflow.timers'.</param>
-/// <param name="Deadline">The deadline, which is also the trigger id.</param>
-public sealed record DeadlineFired(string Actor, DeadlineId Deadline) : Trigger(Actor)
+/// <param name="Entry">The frame entry the timer was armed in.</param>
+/// <param name="Kind">Which timer.</param>
+public sealed record DeadlineFired(string Actor, int Entry, DeadlineKind Kind) : Trigger(Actor)
 {
     /// <inheritdoc/>
-    public override string Name => Deadline.Kind == DeadlineKind.TakeoverIdle ? TriggerNames.TakeoverIdle : TriggerNames.Deadline;
+    public override string Name => Kind == DeadlineKind.TakeoverIdle ? TriggerNames.TakeoverIdle : TriggerNames.Deadline;
 
     /// <inheritdoc/>
-    public override string KeyPart => Deadline.Value;
+    public override string KeyPart => string.Create(CultureInfo.InvariantCulture, $"timer:{Entry}:{Kind switch
+    {
+        DeadlineKind.Retry => "retry",
+        DeadlineKind.TakeoverIdle => "takeoverIdle",
+        DeadlineKind.State or _ => "state",
+    }}");
 
     /// <inheritdoc/>
-    public override bool ExemptFromApproval => Deadline.Kind == DeadlineKind.TakeoverIdle;
+    public override bool ExemptFromApproval => Kind == DeadlineKind.TakeoverIdle;
 }

@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Events;
 
-/// <summary>A refusal as 'workflow.refused' records it (spec §5.2): what followed.</summary>
+/// <summary>A refusal as 'workflow.refused' records it (spec §5.6): what followed.</summary>
 /// <param name="Follow">What followed.</param>
 /// <param name="Park">The park's reason, when it parked.</param>
 /// <param name="Escalation">The escalation's kind, when it escalated.</param>

@@ -8,7 +8,7 @@ using Vogen;
 namespace Aw.Sindri.Core.Workflow.Engine;
 
 /// <summary>
-/// A Step run's token (spec §5.1, §5.4): '{entry}.{n}', the frame entry and the run's number within it. A public
+/// A Step run's token (spec §5.1, §5.3): '{entry}.{n}', the frame entry and the run's number within it. A public
 /// counter, never a credential; a report with any other token than the open run's is stale (SND-WF-005).
 /// </summary>
 [ValueObject<string>(comparison: ComparisonGeneration.Omit)]

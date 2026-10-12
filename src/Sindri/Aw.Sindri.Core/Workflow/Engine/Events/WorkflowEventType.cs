@@ -2,11 +2,11 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Events;
 
-/// <summary>The engine's ledger event types (spec §5.2, §5.4).</summary>
+/// <summary>The engine's ledger event types (spec §5.6).</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowEventType>))]
 public enum WorkflowEventType
 {
-    /// <summary>A root started, or a child was created in its parent's Commit.</summary>
+    /// <summary>A root started, or a child was created by its parent's transition.</summary>
     [JsonStringEnumMemberName("workflow.started")]
     Started = 1,
 
@@ -22,7 +22,7 @@ public enum WorkflowEventType
     [JsonStringEnumMemberName("workflow.shifted")]
     Shifted = 4,
 
-    /// <summary>A takeoverIdle deadline fired and notified the human.</summary>
+    /// <summary>A takeoverIdle timer fired and notified the human.</summary>
     [JsonStringEnumMemberName("workflow.notified")]
     Notified = 5,
 

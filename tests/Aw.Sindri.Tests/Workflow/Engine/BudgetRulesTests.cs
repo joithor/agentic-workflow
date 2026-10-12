@@ -40,11 +40,11 @@ public sealed class BudgetRulesTests
         var verdict = BudgetRules.Spend(In("produce", spent: Spent(150_000, 150_000)), StepRecipe, 50_000);
 
         var park = verdict.Park!; // why: the state's 200k is spent; Assert.Equal below fails first if not
-        Assert.Equal(SuspensionKind.Park, park.Suspension.Kind);
-        Assert.Equal(ParkReason.Budget, park.Suspension.Reason);
-        Assert.Equal(ParkKind.Step, park.Suspension.ParkKind);
+        Assert.Equal(SuspensionKind.Park, park.Kind);
+        Assert.Equal(ParkReason.Budget, park.Reason);
+        Assert.Equal(ParkKind.Step, park.ParkKind);
         Assert.Equal(ResumeKind.Rerun, park.Resume.Kind);
-        Assert.Equal("produce used 200k of 200k tokens", park.Suspension.Question);
+        Assert.Equal("produce used 200k of 200k tokens", park.Question);
         Assert.Equal(200_000, verdict.Spent.ByState["produce"]);
         Assert.Equal(0, BudgetRules.Left(In("produce", spent: verdict.Spent), StepRecipe));
     }
@@ -66,8 +66,8 @@ public sealed class BudgetRulesTests
     {
         var verdict = BudgetRules.Spend(In("checks", spent: Spent(390_000, 150_000)), StepRecipe, 15_000);
 
-        Assert.Equal(ParkReason.Budget, verdict.Park?.Suspension.Reason);
-        Assert.Equal("the instance used 405k of 400k tokens", verdict.Park?.Suspension.Question);
+        Assert.Equal(ParkReason.Budget, verdict.Park?.Reason);
+        Assert.Equal("the instance used 405k of 400k tokens", verdict.Park?.Question);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -98,7 +98,7 @@ public sealed class BudgetRulesTests
 
         Assert.Equal(100_000, granted.Spent.Granted);
         Assert.Equal(100_000, BudgetRules.Left(granted, StepRecipe));
-        Assert.Equal(parked.Suspended, granted.Suspended);
+        Assert.Equal(parked.Suspension, granted.Suspension);
         Assert.Equal("SND-WF-003", BudgetRules.GrantTokens(parked, StepRecipe, 200_001).Error.Code);
         Assert.Equal("SND-WF-003", BudgetRules.GrantTokens(parked, StepRecipe, 0).Error.Code);
         Assert.True(BudgetRules.GrantTokens(parked, StepRecipe, 200_000).IsSuccess);
@@ -107,7 +107,7 @@ public sealed class BudgetRulesTests
         var resumed = Popped(granted);
         Assert.Equal("SND-WF-003", BudgetRules.GrantTokens(resumed, StepRecipe, 100_000).Error.Code);
         var spentAgain = BudgetRules.Spend(resumed, StepRecipe, 100_000);
-        Assert.Equal(ParkReason.Budget, spentAgain.Park?.Suspension.Reason);
+        Assert.Equal(ParkReason.Budget, spentAgain.Park?.Reason);
         var parkedAgain = Parked(resumed with { Spent = spentAgain.Spent }, ParkReason.Budget, ParkKind.Step, ResumeKind.Rerun);
         Assert.Equal(200_000, BudgetRules.GrantTokens(parkedAgain, StepRecipe, 100_000).Value.Spent.Granted);
     }

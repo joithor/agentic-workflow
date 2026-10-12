@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
-/// <summary>Who an outbox command comes from (spec §5.4): the origin decides the exemption, not the kind.</summary>
+/// <summary>Who an effect comes from (spec §5.7): the origin decides the exemption, not the kind.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<CommandOrigin>))]
 public enum CommandOrigin
 {

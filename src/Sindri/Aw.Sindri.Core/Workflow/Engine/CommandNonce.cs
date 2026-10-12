@@ -7,9 +7,9 @@ using Vogen;
 namespace Aw.Sindri.Core.Workflow.Engine;
 
 /// <summary>
-/// A command's nonce (spec §5.4): 128 random bits as 32 lower-case hex digits, minted by
-/// 'POST /workflow/instances/{a}/nonce' for one instance version, alive for 10 minutes, and consumed by the Commit
-/// whether the command applies or is refused.
+/// A command's nonce (spec §5.2): 128 random bits as 32 lower-case hex digits, minted by
+/// 'POST /workflow/instances/{a}/nonce', alive for 10 minutes in the API's own table, and the Update's id, so Temporal
+/// returns the first outcome for a repeated one.
 /// </summary>
 [ValueObject<string>(comparison: ComparisonGeneration.Omit)]
 [JsonConverter(typeof(StringIdJsonConverter<CommandNonce>))]
