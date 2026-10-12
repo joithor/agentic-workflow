@@ -146,19 +146,28 @@ context:
 | `op:vault/item/field` | `op read op://vault/item/field` (1Password CLI) |
 
 Sindri resolves the pointer in its host (`Composition`), on each Onyx call; the context engine never reads the
-keychain or a file. A pointer that doesn't resolve shows as `SND-CONTEXT-002` in the onyx row and doctor, never with a
-value. Pointer errors themselves are `SND-SECRET-001`..`003` (`docs/csharp/sindri.md`).
+keychain or a file. `sindri profile validate` checks only the pointer's form, never resolves it (resolving can prompt
+the keychain or run `op`), so `env:NO_SUCH_VAR` passes validate. At run time a pointer that doesn't resolve shows as
+`SND-CONTEXT-002` in the onyx row and a query's `degraded` entry, naming the pointer's scheme only; `sindri doctor`
+resolves it first and shows the reason: `SND-SECRET-001` (malformed), `002` (doesn't resolve: names the variable, file
+or entry) or `003` (an unsafe `file:`: names the file and the `chmod 600` fix), never a value
+(`docs/csharp/sindri.md`).
 
 ### Asking, status and degraded answers
 
 `sindri context query` fuses Onyx's hits with repo-docs (reciprocal rank fusion). Onyx's Linear issues key on Linear's UUID
-(`linear:issue/<uuid>`, with its identifier alias, `ENG-482`, when its team is listed). Onyx v4.9.0 has no route that returns a
+(`linear:issue/<uuid>`, with its identifier alias, `ENG-482`, when its team is listed). The aliases are in the
+citation: `cites.<n>.aliases` in `--json` and HTTP (every alias of the record, merged across its refs, each scrubbed
+like a title), and the first one beside the key in the text form (`linear:issue/<uuid> (ENG-482)`). Onyx v4.9.0 has no route that returns a
 document's `updated_at` by id, so **onyx citations stay `unchecked`** (version unchecked) instead of `current` or
 `stale`.
 
-When Onyx doesn't answer, is the wrong version or refuses the key, the answer still returns with repo-docs' results and
-a `degraded` entry `{ "source": "onyx", "code": "SND-CONTEXT-010", … }`. Only when every source is down is the answer
-`SND-CONTEXT-011`.
+When Onyx doesn't answer, refuses the key, answers with an error status or replies in a shape the pinned release
+doesn't have, the answer still returns with repo-docs' results and a `degraded` entry `{ "source": "onyx", "code":
+"SND-CONTEXT-010", … }` (the cause, such as `050` or `051`, in its message). Only when every source is down is the
+answer `SND-CONTEXT-011`. A query doesn't check Onyx's version: version drift is doctor's and `sources status`'s check
+(`055`, naming both versions), and a query keeps using an Onyx that reports another version as long as its replies
+read; a reply that doesn't degrades onyx with `051`.
 
 Agent sessions don't read the onyx source yet: a session sees intent records only from the Linear teams the profile
 maps to its repo (`context.repoTeams`, a later stage), so until then onyx answers humans and services only. A caller
@@ -177,7 +186,7 @@ version, then `GET /api/me` with the key for its role and account type.
 |---|---|---|
 | `ok` | Onyx answers the pinned version and the key is an admin key of a service account; or the profile names no onyx (`not configured`) | — |
 | `warn` | the key is an admin key of a person's account (`053`); or onyx is named but no repo is mapped, so no source runs | create a service-account key; map a repo |
-| `fail` | Onyx is down (`010`), another version (`055`), the key lacks admin (`050`), the pointer doesn't resolve (`002`), the section is invalid | per the line; see `docs/sindri/onyx.md` |
+| `fail` | the key's pointer doesn't resolve (`SND-SECRET-001`..`003`, checked before Onyx is called), Onyx is down (`010`), another version (`055`, naming both), the key lacks admin (`050`), the section is invalid | per the line; see `docs/sindri/onyx.md` |
 
 Onyx's provider and telemetry settings can't be read with the key; `docs/sindri/onyx.md` lists them as a manual check
 on each Onyx version change.

@@ -92,7 +92,8 @@ context:
 
 Pointers Sindri accepts: `keychain:<service>/<account>`, `env:<VAR>`, `file:<absolute path>` (mode 0600, owned by you).
 A value without one of these schemes is refused (`SND-CONTEXT-002`). Then `$SINDRI profile validate` and
-`$SINDRI profile approve` at a terminal.
+`$SINDRI profile approve` at a terminal. Validate checks the pointer's form only; it doesn't resolve it, so an unset
+variable or a file at the wrong mode shows up in `$SINDRI doctor` (step 6) as `SND-SECRET-002` or `003` with the fix.
 
 ## 6. Check it
 

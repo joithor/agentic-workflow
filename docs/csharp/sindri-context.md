@@ -119,7 +119,10 @@ In `tests/Aw.Sindri.Tests/ContextCalls`:
 
 - `Aw.Context.Core.Onyx`: `OnyxSettings` (only `Create` makes one: loopback url, a secret-pointer token, a pinned
   release tag; `CheckVersion` compares a reported version), `OnyxRecordKeys` and `OnyxRecordIdentity` (canonical key
-  and alias). `SourceHit.Aliases` carries the aliases a hit adds.
+  and alias). `SourceHit.Aliases` carries the aliases a hit adds; `RankFusion` merges every hit's aliases into
+  `FusedItem.Aliases` (source by source, best first, each once); the query cleans each at ingest and `ResultAssembly`
+  egress-scrubs each on its own into `Citation.Aliases` (a blocked or empty one is dropped). JSON `cites.<n>.aliases`;
+  the text form shows the first beside the key.
 - `Aw.Context.Core.Engine`: `SourcesReader` reads `context.sources` (`onyx`, `linear.teams`) for `SettingsReader`;
   `ContextSettings.Onyx` and `ContextSettings.LinearTeams` hold the result. `ScopeRules.MayRead` keeps intent sources
   from session callers until `context.repoTeams` exists.
@@ -175,7 +178,11 @@ the same issue from Onyx and the native Linear adapter (S-5B) is one item.
 An onyx failure during a query is always the `degraded` entry `SND-CONTEXT-010` with the cause in its message; the
 answer's own error is `011` only when repo-docs is down too. The pointer errors are Sindri's: `SND-SECRET-001`
 (malformed), `002` (doesn't resolve) and `003` (unsafe `file:`), in `docs/csharp/sindri.md`; through the context
-environment a pointer that fails resolves to nothing, which the onyx client reports as `SND-CONTEXT-002`.
+environment a pointer that fails resolves to nothing, which the onyx client reports as `SND-CONTEXT-002` naming only
+the pointer's scheme and pointing to `sindri doctor`. Doctor's `OnyxDoctor` resolves the pointer through
+`ISecretPointers` before the probe and fails with that `SND-SECRET-00x` code and message. A query never checks the
+version (§8.8 makes it a doctor check; §5.1's errors are Unavailable, NotFound and Fatal): `055` shows in doctor and
+the row, and a reply the pinned shape can't read degrades with `051`.
 
 ### Tests
 
