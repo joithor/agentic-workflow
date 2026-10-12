@@ -20,7 +20,7 @@ internal static class SindriHostServiceCollectionExtensions
 
     /// <summary>
     /// Adds what only 'sindri serve' runs: the port it chooses before it binds (and the check that refuses to start without
-    /// it), the scheduler, the projector loop and the lease renewer.
+    /// it), the scheduler, the projector loop, the profile watch and the lease renewer.
     /// </summary>
     /// <param name="services">The service collection (already composed).</param>
     /// <returns>The same collection.</returns>
@@ -29,5 +29,6 @@ internal static class SindriHostServiceCollectionExtensions
         .AddHostedService<ServeListenerCheck>()
         .AddHostedService<SchedulerHost>()
         .AddHostedService<ProjectorHost>()
+        .AddHostedService<ProfileWatch>()
         .AddHostedService<LeaseRenewer>();
 }

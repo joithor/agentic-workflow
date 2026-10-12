@@ -3733,3 +3733,5 @@ override Aw.Sindri.Core.Health.HealthReport.ToString() -> string!
 static Aw.Sindri.Core.Health.HealthReport.operator !=(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
 static Aw.Sindri.Core.Health.HealthReport.operator ==(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
 static Aw.Sindri.Core.Health.HealthSummary.For(bool running, Aw.Sindri.Core.Views.ViewsStatus! views, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! services, bool profileNeedsApproval, bool profileChanged) -> Aw.Sindri.Core.Health.HealthReport!
+Aw.Sindri.Core.Profile.ProfileCheck
+static Aw.Sindri.Core.Profile.ProfileCheck.Decide(Aw.Sindri.Core.Events.ProfileChecked? previous, Aw.Sindri.Core.Profile.LoadedProfile? approved, Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>! live, Aw.Sindri.Core.Ids.CommandId commandId) -> Aw.Sindri.Core.Events.ProfileChecked?
