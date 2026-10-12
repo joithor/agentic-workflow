@@ -11,7 +11,8 @@ namespace Aw.Sindri.Features.StopProcess;
 /// <summary>
 /// Records the stop, then lets go in the order a client can trust: remove control.json while the grant is still held,
 /// forget the grant (from here ping answers epoch 0), request the shutdown, and only then release the lease. So no
-/// ping answers epoch 0 while control.json exists, and no client finds control.json once the lease is free.
+/// ping answers epoch 0 while control.json exists, and no client finds control.json once the lease is free (unless the
+/// removal failed: the stop returns that error, and serve removes the record again on its way out).
 /// </summary>
 internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerStore ledger, EventFactory events, IShutdown shutdown, IEndpointFile endpoints)
     : IService<StopProcessRequest, StopProcessResponse>
