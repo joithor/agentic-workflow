@@ -19,6 +19,13 @@ use (`ContextRepoName`): otherwise `SND-CONTEXT-001` at validate and approve (`I
 repos)`, through `SettingsReader.Check`); an unknown `context.repos` name is also 001 at query time. A profile without
 `context:` is never refused for this, and `ScopeRules.Usable` leaves an unusable name out of the scope.
 
+**Placement and limits (README X61).** `SourceDescriptor` carries two init properties so the source contract doesn't
+assume a local process: `Placement` (`SourcePlacement.Local` or `Shared`, default `Local`) and `Limits`
+(`SourceLimits`: requests per window and max concurrency, each optional; null means none). CTX D6's "no rate limiting"
+is a property of local sources, which declare no limits; it is not a global rule. Nothing enforces limits yet. The
+contract base checks that the placement is defined and that any declared limits are well formed (positive, a request
+count with its window). repo-docs is `Local` with no limits.
+
 `deps.yaml`: Context → Kernel, KernelData and Redaction (Infrastructure only) are `project` edges. Sindri → Context is a
 `project` edge (Sindri's Features and Host use Core) plus a `compose` edge (Sindri's Host calls `AddContextFeatures` and
 `AddContextInfrastructure` in `Composition`, nothing else: ARCH-COMPOSE-001).
