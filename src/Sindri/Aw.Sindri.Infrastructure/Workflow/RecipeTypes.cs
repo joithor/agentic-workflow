@@ -35,7 +35,7 @@ internal static class RecipeTypes
         [typeof(string)] = "text",
         [typeof(JsonElement)] = "a literal",
         [typeof(RecipeId)] = "a recipe id ('workflow.<name>', kebab-case)",
-        [typeof(BlockId)] = "a block id ('<gate|step|effect|evidence|input>.<area>.<name>')",
+        [typeof(BlockId)] = "a block id ('<gate|step|effect|evidence|input>.[<area>.]<name>')",
         [typeof(FactKey)] = "a fact key ('fact:<name>' or 'evidence:<kind>@<base|head>')",
         [typeof(EventKind)] = "an event kind ('<area>.<name>')",
         [typeof(OutcomeName)] = "an outcome name (a camelCase word)",

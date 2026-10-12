@@ -21,7 +21,7 @@ public readonly partial struct BlockId : ITypedId<BlockId, string>
     private static Vogen.Validation Validate(string value) =>
         Shape.IsMatch(value)
             ? Vogen.Validation.Ok
-            : Vogen.Validation.Invalid("A block id is '<gate|step|effect|evidence|input>.<area>.<name>' (the area is optional), kebab-case, at most 64 characters");
+            : Vogen.Validation.Invalid("A block id is '<gate|step|effect|evidence|input>.[<area>.]<name>', kebab-case, at most 64 characters");
 
     [GeneratedRegex("^(gate|step|effect|evidence|input)(\\.[a-z][a-z0-9]*(-[a-z0-9]+)*){1,2}\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Shape { get; }
