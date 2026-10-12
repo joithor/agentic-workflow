@@ -30,8 +30,11 @@ internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerSt
         var recorded = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         held.Clear();         // first, so a renewal finishing now can't hold the grant again
         shutdown.Request();   // before the release, so a renewal that runs after it sees a stop, not a lost lease
-        var removed = await endpoints.Remove(grant.Holder.Pid, cancellationToken).ConfigureAwait(false);   // before the release
-        var released = await lease.Release(grant, cancellationToken).ConfigureAwait(false);
+
+        // Past the point of no return: the process is stopping whatever the caller does, so a client that hangs up now
+        // must not cancel the removal or the release (the lease would stay held until it expires).
+        var removed = await endpoints.Remove(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);   // before the release
+        var released = await lease.Release(grant, CancellationToken.None).ConfigureAwait(false);
         return recorded.IsError ? recorded.Error
             : removed.IsError ? removed.Error
             : released.IsError ? released.Error
