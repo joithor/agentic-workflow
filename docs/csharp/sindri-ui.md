@@ -146,7 +146,9 @@ stale, and it came from the pid and epoch the follow checked with ping; otherwis
 shows Running over Not running or Unreadable. After three failed refreshes the pill keeps "stale" and a banner under
 the top bar reads "Sindri not responding: run `sindri doctor`" in full, since the sentence doesn't fit the pill at
 900 px. The view models carry no Avalonia types; views bind the app's copy through `ShellText` (compiled bindings
-resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar, page and sheet; the window's
+resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar, page and sheet (on macOS, with the default "Use F1, F2, etc. keys as standard function
+keys" off, F6 is the Focus key and reaches the app only with fn held: fn+F6 and fn+Shift+F6; a second binding that
+doesn't clash waits on the owner, since UI spec §8's key table lists the keys); the window's
 minimum is 900 × 600.
 
 **Focus never goes nowhere (§11.2).** When the focused control disappears, focus moves to a neighbour: Refresh keeps
