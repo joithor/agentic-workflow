@@ -15,6 +15,9 @@
     <ProjectReference Include="../Aw.Sindri.Core/Aw.Sindri.Core.csproj" />
     <ProjectReference Include="../Aw.Sindri.Features/Aw.Sindri.Features.csproj" />
     <ProjectReference Include="../Aw.Sindri.Infrastructure/Aw.Sindri.Infrastructure.csproj" />
+    <!-- Engine P0 spike (unit b): 'workflow complete' through the Temporal adapter. Unit (d) owns this reference and
+         the host's framework-dependent publish (Aw.Sindri.Workflows is AwAotCompatible=false). -->
+    <ProjectReference Include="../Aw.Sindri.Workflows/Aw.Sindri.Workflows.csproj" />
     <ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" />
     <ProjectReference Include="../../Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj" />
   </ItemGroup>
