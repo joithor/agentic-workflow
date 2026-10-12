@@ -26,6 +26,29 @@ export AW_SINDRI_PROVER=1
 out="$root/artifacts/aot-sindri-smoke"
 mkdir -p "$out"
 [ ! -d "$out/bin" ] || find "$out/bin" -delete
+alarm=(perl -e 'alarm shift; exec @ARGV or die "exec $ARGV[0]: $!"' 30)   # SIGALRM after 30 s; a command, so with_tty can run it
+bounded() { "${alarm[@]}" "$@"; }
+bin="$out/bin/sindri"
+scratch=""
+work=""
+# On any exit, a server this run started is stopped before its home is deleted: only once this run's home is exported
+# (never the owner's default home), as the human at a terminal (a session's stop is refused, SND-AUTH-002), and, should
+# that fail, by signalling the pid control.json still names, then waiting (bounded) for it to exit. The scratch tree is
+# deleted on any exit, so the trap is set before it is made.
+cleanup() {
+  [ -n "$scratch" ] || return 0
+  local control="$work/home/control.json" pid
+  if [ -x "$bin" ] && [ "${AW_SINDRI_HOME:-}" = "$work/home" ] && [ -f "$control" ]; then
+    with_tty "${alarm[@]}" "$bin" stop </dev/null >/dev/null 2>&1 || true
+    pid="$(jq -r '.pid // empty' "$control" 2>/dev/null || true)"
+    if [ -n "$pid" ]; then
+      kill "$pid" 2>/dev/null || true
+      for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$pid" 2>/dev/null || break; sleep 0.2; done
+    fi
+  fi
+  find "$scratch" -delete
+}
+trap cleanup EXIT
 # The physical path: macOS's $TMPDIR is under /var, a link to /private/var, and restore given both spellings of one
 # project writes its props twice ("…nuget.g.props already exists").
 scratch="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/aot-sindri-smoke.XXXXXX")" && pwd -P)"
@@ -34,22 +57,6 @@ work="$scratch/run"
 mkdir -p "$tree" "$work"
 git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' BannedSymbols.txt CodeMetricsConfig.txt \
   src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Sindri | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
-alarm=(perl -e 'alarm shift; exec @ARGV or die "exec $ARGV[0]: $!"' 30)   # SIGALRM after 30 s; a command, so with_tty can run it
-bounded() { "${alarm[@]}" "$@"; }
-bin="$out/bin/sindri"
-# On any exit, a server this run started is stopped before its home is deleted: only once this run's home is exported
-# (never the owner's default home), as the human at a terminal (a session's stop is refused, SND-AUTH-002), and, should
-# that fail, by signalling the pid control.json still names.
-cleanup() {
-  local control="$work/home/control.json" pid
-  if [ -x "$bin" ] && [ "${AW_SINDRI_HOME:-}" = "$work/home" ] && [ -f "$control" ]; then
-    with_tty "${alarm[@]}" "$bin" stop </dev/null >/dev/null 2>&1 || true
-    pid="$(jq -r '.pid // empty' "$control" 2>/dev/null || true)"
-    if [ -n "$pid" ]; then kill "$pid" 2>/dev/null || true; fi
-  fi
-  find "$scratch" -delete
-}
-trap cleanup EXIT
 rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
 dotnet publish "$tree/src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false \
   -o "$out/bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }
