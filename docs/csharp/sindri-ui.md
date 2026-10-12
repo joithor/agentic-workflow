@@ -242,7 +242,9 @@ code. A second `sindri-ui` hands over to the running one (`focus`) and exits, so
 rev 8). The Temporal .NET SDK can't be trimmed, so the Sindri host publishes framework-dependent once its Temporal
 adapter lands (the host project still sets `PublishAot` until then, and `src/Sindri/aot-smoke/run.sh` still runs).
 Either way `sindri` is the binary in a publish directory (framework-dependent: an apphost beside its assemblies), and
-`AppContext.BaseDirectory`, where the launcher looks for `sindri-ui`, is that directory. Copy the NativeAOT `sindri-ui` there (`bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh <dir>`), or point
+`AppContext.BaseDirectory`, where the launcher looks for `sindri-ui`, is that directory. Copy the NativeAOT `sindri-ui` there together with its native libraries (`libSkiaSharp`, `libHarfBuzzSharp`,
+`libAvaloniaNative`; without them it exits 2 with `SND-UI-004: TypeInitializationException`):
+`bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh <dir>` copies all of them. Or point
 `AW_SINDRI_UI` at it; under `dotnet run` the base directory is the host's build output, so set `AW_SINDRI_UI`. The app
 depends on nothing else about how `sindri` is built: it talks to the control plane only through `control.json` and the
 HTTP API.
