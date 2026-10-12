@@ -27,7 +27,7 @@ public sealed class RankFusionTests
             new SourceAnswer(SourceId.From("onyx"), [Hit("onyx", "a", 1) with { Aliases = ["SPL-103"] }, Hit("onyx", "a", 4, "#2") with { Aliases = ["SPL-9"] }]),
             new SourceAnswer(SourceId.From("linear"), [Hit("linear", "a", 2) with { Aliases = ["SPL-103", "SPL-7"] }])]);
 
-        Assert.Equal(["SPL-103", "SPL-9", "SPL-7"], fused.Single().Aliases, StringComparer.Ordinal);
+        Assert.Equal(["SPL-103", "SPL-7", "SPL-9"], fused.Single().Aliases, StringComparer.Ordinal);   // both rank 1: linear before onyx by source id
     }
 
     [Fact, Trait("Lane", "unit")]

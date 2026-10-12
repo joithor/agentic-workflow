@@ -107,7 +107,8 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
                 ? new ScrubbedField(string.Empty, Redacted: false, Blocked: true)
                 : ingest.Clean(record.Value.Text, singleLine: false);   // cleaned whole, then cut, so a cut never splits a secret
             var cut = text.Text.Length > MaxRecordText ? text with { Text = text.Text[..MaxRecordText] } : text;
-            fetched.Add(new FetchedRecord(item, source, ingest.Clean(record.Value.Title, singleLine: true), cut));
+            var aliases = item.Aliases.Select(a => ingest.Clean(a, singleLine: true)).ToList();   // record text too: cleaned like the title
+            fetched.Add(new FetchedRecord(item, source, ingest.Clean(record.Value.Title, singleLine: true), cut, aliases));
         }
 
         return fetched;

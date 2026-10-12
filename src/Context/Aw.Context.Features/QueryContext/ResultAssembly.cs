@@ -56,8 +56,19 @@ internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, Da
         }
 
         var best = record.Item.Hits[0];
-        return new Citation(RecordKey.From(Scrubbed(record.Item.Key.Value)), refs, Permalinks.Allowed(best.Ref.Permalink), Trust.Untrusted, Worst(states));
+        return new Citation(RecordKey.From(Scrubbed(record.Item.Key.Value)), refs, Permalinks.Allowed(best.Ref.Permalink), Trust.Untrusted, Worst(states))
+        {
+            Aliases = Aliases(record.Aliases),
+        };
     }
+
+    /// <summary>
+    /// Each alias scrubbed on its own, as a title is (§7: aliases are record text): a redacted one keeps its placeholder,
+    /// a blocked or empty one is left out (an alias that can't be shown names nothing), and repeats collapse.
+    /// </summary>
+    private List<string> Aliases(IReadOnlyList<ScrubbedField> cleaned) =>
+        [.. cleaned.Where(a => !a.Blocked).Select(a => egress.Scrub(a.Text)).Where(a => !a.Blocked && a.Text.Length > 0)
+            .Select(a => UntrustedFence.Cap(a.Text)).Distinct(StringComparer.Ordinal)];
 
     /// <summary>An id or key scrubbed like any other field; a blocked one keeps a fixed, valid placeholder.</summary>
     private string Scrubbed(string value) => egress.Scrub(value) is { Blocked: false } scrubbed ? scrubbed.Text : "scrub:blocked";
