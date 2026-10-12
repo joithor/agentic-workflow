@@ -1,0 +1,82 @@
+using Aw.Kernel.Events;
+using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
+using Microsoft.Extensions.Time.Testing;
+using Xunit;
+
+namespace Aw.Sindri.Testing;
+
+/// <summary>
+/// The contract every <see cref="ILedgerReader"/> honours (API spec C9): it reads back what the ledger's writer
+/// recorded, in order with the whole envelope, and on a ledger that was never written it is empty and creates nothing.
+/// </summary>
+public abstract class LedgerReaderContract
+{
+    private readonly SequentialIdGenerator _ids = new();
+
+    /// <summary>The contract's clock.</summary>
+    protected FakeTimeProvider Clock { get; } = new(KnownInstants.Epoch);
+
+    /// <summary>The probe; this process is pid 100.</summary>
+    protected FakeProcessProbe Probe { get; } = new();
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    /// <summary>The writer's stores over a fresh, empty file or memory.</summary>
+    /// <param name="clock">The only clock.</param>
+    /// <param name="probe">The process probe.</param>
+    /// <returns>The stores.</returns>
+    protected abstract ValueTask<SindriStores> Create(TimeProvider clock, IProcessProbe probe);
+
+    /// <summary>A reader over the same file or memory as the last <see cref="Create"/>.</summary>
+    /// <returns>The reader.</returns>
+    protected abstract ILedgerReader Reader();
+
+    /// <summary>True when the ledger's backing store (its file) exists; an in-memory ledger has none to create.</summary>
+    /// <returns>Whether it exists.</returns>
+    protected abstract bool LedgerExists();
+
+    /// <summary>A reader sees every event the writer recorded, oldest first, the newest of a type, and the head.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_reader_sees_what_the_store_wrote()
+    {
+        var (lease, ledger) = await Create(Clock, Probe);
+        var grant = (await lease.Acquire(Probe.Self(), Token)).Value;
+        var first = Entry("process.started", "k1");
+        _ = await ledger.Append(first, grant, Token);
+        _ = await ledger.Append(Entry("service.heartbeat", "k2"), grant, Token);
+        var last = (await ledger.Append(Entry("service.heartbeat", "k3"), grant, Token)).Value;
+        var reader = Reader();
+
+        var all = (await reader.ReadAfter(0, 10, Token)).Value;
+
+        Expect.Sequence(["k1", "k2", "k3"], all.Select(e => e.IdempotencyKey));
+        Expect.Equal(first.Envelope, all[0].Envelope);
+        Expect.Equal("k3", (await reader.Latest("service.heartbeat", Token)).Value?.IdempotencyKey);
+        Expect.Equal(last.Sequence, (await reader.Head(Token)).Value);
+        Expect.Sequence(["k2"], (await reader.ReadAfter(1, 1, Token)).Value.Select(e => e.IdempotencyKey));
+    }
+
+    /// <summary>On a ledger nothing was written to, a reader is empty with head 0 and creates no file.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_reader_on_a_missing_ledger_is_empty_and_creates_nothing()
+    {
+        _ = await Create(Clock, Probe);
+        var reader = Reader();
+
+        Expect.Equal(0, (await reader.ReadAfter(0, 10, Token)).Value.Count);
+        Expect.True((await reader.Latest("process.started", Token)).Value is null);
+        Expect.Equal(0L, (await reader.Head(Token)).Value);
+        Expect.True(!LedgerExists());
+    }
+
+    private LedgerEntry Entry(string type, string key)
+    {
+        var context = EventContext.Create("host:sindri", "local", 0, _ids.NewId()).Value;
+        Clock.Advance(TimeSpan.FromMilliseconds(1));
+        return new LedgerEntry(context.Envelope(type, """{"n":1}""", Clock, _ids), key, Item: null);
+    }
+}

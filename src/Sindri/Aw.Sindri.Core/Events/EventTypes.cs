@@ -17,6 +17,15 @@ public static class EventTypes
     /// <summary>A command attempt reached the chain: its audit row (not public).</summary>
     public const string CommandHandled = "command.handled";
 
+    /// <summary>A background service ran a slot, ok or failed (API spec C8).</summary>
+    public const string ServiceRan = "service.ran";
+
+    /// <summary>The profile watch saw the (approved, live) pair change (API spec C8).</summary>
+    public const string ProfileChecked = "profile.checked";
+
+    /// <summary>A human asked for the views to be rebuilt (not public).</summary>
+    public const string ViewsRebuilt = "views.rebuilt";
+
     /// <summary>The event a background service records per run: 'service.&lt;name&gt;'.</summary>
     /// <param name="service">The service.</param>
     /// <returns>The event type, for example 'service.heartbeat'.</returns>
