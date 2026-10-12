@@ -1,10 +1,12 @@
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -93,6 +95,7 @@ public sealed class CommandTableTests : IDisposable
         {
             await using var scope = provider.CreateAsyncScope();
             var services = scope.ServiceProvider;
+            using var human = services.GetRequiredService<ICallerContextAccessor>().Enter(A.Caller().AtTerminal().Client(ClientLabel.Cli).Build());   // approve is protected
             _ = await services.GetRequiredService<IService<StartProcessRequest, StartProcessResponse>>().Handle(new StartProcessRequest(), ct);
             var approve = services.GetRequiredService<IService<ApproveProfileRequest, ApproveProfileResponse>>();
             var hash = (await approve.Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), ct)).Value.Hash;

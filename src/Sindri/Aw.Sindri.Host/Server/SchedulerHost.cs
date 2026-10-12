@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
@@ -11,9 +12,11 @@ namespace Aw.Sindri.Host.Server;
 /// Runs the background services the approved profile names, on their cadence (factory addendum §17.29.1). It re-reads
 /// the approval once a second, so an approval takes effect without a restart; a failed run is logged and the next slot
 /// still runs, and an approval it can't read is logged once (SND-SCHED-001) while the current schedule keeps running.
-/// Nothing runs while the process holds no lease.
+/// Nothing runs while the process holds no lease. Each run is its own caller, 'service:&lt;name&gt;', so its events carry
+/// that actor (API spec §2.1).
 /// </summary>
-internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprovals approvals, HeldLease held, TimeProvider clock, ILogger<SchedulerHost> log)
+internal sealed partial class SchedulerHost(
+    IServiceScopeFactory scopes, IApprovals approvals, HeldLease held, ICallerContextAccessor callers, TimeProvider clock, ILogger<SchedulerHost> log)
     : BackgroundService
 {
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
@@ -91,6 +94,7 @@ internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprov
 
     private async Task RunOne(ServiceSchedule schedule, ScheduledRun run, CancellationToken ct)
     {
+        using var caller = callers.EnterService(schedule.Name.Value);
         var scope = scopes.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {

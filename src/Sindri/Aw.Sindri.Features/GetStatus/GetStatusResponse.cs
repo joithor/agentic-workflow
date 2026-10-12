@@ -13,4 +13,8 @@ public sealed record GetStatusResponse(
     long Epoch,
     DateTimeOffset? LeaseExpiresAt,
     ProfileStatus Profile,
-    IReadOnlyList<ServiceStatus> Services);
+    IReadOnlyList<ServiceStatus> Services)
+{
+    /// <summary>The API version this process serves (API spec §9); the app compares it with its own on connect.</summary>
+    public int ApiVersion { get; init; }
+}

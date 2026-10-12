@@ -37,6 +37,18 @@ public sealed class SchedulerHostTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Scheduled_runs_record_their_events_as_the_service()
+    {
+        _ = await _h.Profiles.Save(SliceHarness.Profile("5s"), Token);
+        _ = await _h.HoldLease();
+
+        await Run(new CountingApprovals(_h.Profiles), () => Heartbeats() >= 2);
+
+        Assert.All(_h.Store.Events.Where(e => e.Envelope.Type == HeartbeatType), e => Assert.Equal("service:heartbeat", e.Envelope.Actor));
+        Assert.Null(_h.Callers.Current);   // the run's caller ends with the run
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Nothing_runs_without_the_lease()
     {
         _ = await _h.Profiles.Save(SliceHarness.Profile("5s"), Token);   // approved, but no lease held
@@ -121,7 +133,7 @@ public sealed class SchedulerHostTests
             .AddScoped<IScheduledService, TimingOutService>()
             .BuildServiceProvider();
         var clock = new SteppedClock(_h.Clock);
-        using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), approvals, _h.Held, clock, _log);
+        using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), approvals, _h.Held, _h.Callers, clock, _log);
         await scheduler.StartAsync(Token);
         for (var step = 0; !done(); step++)
         {

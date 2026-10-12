@@ -86,7 +86,7 @@ public sealed class StartCommandTests : IDisposable
         var stdout = new StringWriter();
         var calls = 0;
         var command = new StartCommand(_probe, new FakeControlPlaneLauncher(), _client, new Output(stdout, TextWriter.Null, SliceHarness.Json), _clock,
-            () => { calls++; return "not found at /x (fix: …)"; });
+            openUi: () => { calls++; return "not found at /x (fix: …)"; });
 
         var exit = await command.Report(Status(needsApproval), _found.Item1);
 

@@ -6,4 +6,5 @@ namespace Aw.Sindri.Features.ApproveProfile;
 /// <param name="Hash">The live profile's hash.</param>
 /// <param name="Changes">Key paths changed since the latest approval (every path when there was none).</param>
 /// <param name="Approved">True when this hash is now (or already was) the approval.</param>
-public sealed record ApproveProfileResponse(ProfileHash Hash, IReadOnlyList<string> Changes, bool Approved);
+/// <param name="Sequence">The 'profile.approved' event's ledger sequence when this call approved it; null for a preview or an approval that already held.</param>
+public sealed record ApproveProfileResponse(ProfileHash Hash, IReadOnlyList<string> Changes, bool Approved, long? Sequence);
