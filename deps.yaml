@@ -391,7 +391,7 @@ edges:
   - from: Context
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, AwJson, IService; Aw.Context.Testing reads the fixture's history and probes through AwJson"
   - from: Scorer
     to: Kernel

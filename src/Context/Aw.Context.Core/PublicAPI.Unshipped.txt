@@ -1,0 +1,739 @@
+#nullable enable
+Aw.Context.Core.ContextCoreServiceCollectionExtensions
+Aw.Context.Core.ContextErrors
+Aw.Context.Core.Docs.DocIndexStatus
+Aw.Context.Core.Docs.DocIndexStatus.<Clone>$() -> Aw.Context.Core.Docs.DocIndexStatus!
+Aw.Context.Core.Docs.DocIndexStatus.Chunks.get -> int
+Aw.Context.Core.Docs.DocIndexStatus.Chunks.init -> void
+Aw.Context.Core.Docs.DocIndexStatus.Code.get -> string?
+Aw.Context.Core.Docs.DocIndexStatus.Code.init -> void
+Aw.Context.Core.Docs.DocIndexStatus.Deconstruct(out Aw.Context.Core.Sources.SourceVersion? Head, out System.DateTimeOffset? LastSync, out string? Code, out int Documents, out int Chunks) -> void
+Aw.Context.Core.Docs.DocIndexStatus.DocIndexStatus(Aw.Context.Core.Sources.SourceVersion? Head, System.DateTimeOffset? LastSync, string? Code, int Documents, int Chunks) -> void
+Aw.Context.Core.Docs.DocIndexStatus.Documents.get -> int
+Aw.Context.Core.Docs.DocIndexStatus.Documents.init -> void
+Aw.Context.Core.Docs.DocIndexStatus.Equals(Aw.Context.Core.Docs.DocIndexStatus? other) -> bool
+Aw.Context.Core.Docs.DocIndexStatus.Head.get -> Aw.Context.Core.Sources.SourceVersion?
+Aw.Context.Core.Docs.DocIndexStatus.Head.init -> void
+Aw.Context.Core.Docs.DocIndexStatus.LastSync.get -> System.DateTimeOffset?
+Aw.Context.Core.Docs.DocIndexStatus.LastSync.init -> void
+Aw.Context.Core.Docs.IDocIndex
+Aw.Context.Core.Docs.IDocIndex.Refresh(Aw.Context.Core.Engine.ContextRepo! repo, System.Collections.Generic.IReadOnlyList<string!>! globs, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.RepoRefresh!>!>
+Aw.Context.Core.Docs.IDocIndex.Status(Aw.Context.Core.Engine.ContextRepo! repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Docs.DocIndexStatus!>!>
+Aw.Context.Core.Docs.ISourceCatalog
+Aw.Context.Core.Docs.ISourceCatalog.For(Aw.Context.Core.Engine.ContextSettings! settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>!
+Aw.Context.Core.Engine.ContextCaller
+Aw.Context.Core.Engine.ContextCaller.<Clone>$() -> Aw.Context.Core.Engine.ContextCaller!
+Aw.Context.Core.Engine.ContextCaller.Client.get -> Aw.Context.Core.Engine.ContextClient
+Aw.Context.Core.Engine.ContextCaller.Client.init -> void
+Aw.Context.Core.Engine.ContextCaller.ContextCaller(Aw.Context.Core.Engine.ContextCallerKind Kind, string? Repo, Aw.Context.Core.Engine.ContextClient Client) -> void
+Aw.Context.Core.Engine.ContextCaller.Deconstruct(out Aw.Context.Core.Engine.ContextCallerKind Kind, out string? Repo, out Aw.Context.Core.Engine.ContextClient Client) -> void
+Aw.Context.Core.Engine.ContextCaller.Equals(Aw.Context.Core.Engine.ContextCaller? other) -> bool
+Aw.Context.Core.Engine.ContextCaller.Kind.get -> Aw.Context.Core.Engine.ContextCallerKind
+Aw.Context.Core.Engine.ContextCaller.Kind.init -> void
+Aw.Context.Core.Engine.ContextCaller.Repo.get -> string?
+Aw.Context.Core.Engine.ContextCaller.Repo.init -> void
+Aw.Context.Core.Engine.ContextCallerKind
+Aw.Context.Core.Engine.ContextCallerKind.Human = 0 -> Aw.Context.Core.Engine.ContextCallerKind
+Aw.Context.Core.Engine.ContextCallerKind.Service = 2 -> Aw.Context.Core.Engine.ContextCallerKind
+Aw.Context.Core.Engine.ContextCallerKind.Session = 1 -> Aw.Context.Core.Engine.ContextCallerKind
+Aw.Context.Core.Engine.ContextClient
+Aw.Context.Core.Engine.ContextClient.Cli = 0 -> Aw.Context.Core.Engine.ContextClient
+Aw.Context.Core.Engine.ContextClient.Http = 1 -> Aw.Context.Core.Engine.ContextClient
+Aw.Context.Core.Engine.ContextClient.Mcp = 2 -> Aw.Context.Core.Engine.ContextClient
+Aw.Context.Core.Engine.ContextClient.Service = 3 -> Aw.Context.Core.Engine.ContextClient
+Aw.Context.Core.Engine.ContextQuery
+Aw.Context.Core.Engine.ContextQuery.<Clone>$() -> Aw.Context.Core.Engine.ContextQuery!
+Aw.Context.Core.Engine.ContextQuery.Budget.get -> int?
+Aw.Context.Core.Engine.ContextQuery.Budget.init -> void
+Aw.Context.Core.Engine.ContextQuery.ContextQuery(string? Text, string? Node = null, string? Item = null, string? Symbol = null, int? Depth = null, int? Budget = null, bool Draft = false) -> void
+Aw.Context.Core.Engine.ContextQuery.Deconstruct(out string? Text, out string? Node, out string? Item, out string? Symbol, out int? Depth, out int? Budget, out bool Draft) -> void
+Aw.Context.Core.Engine.ContextQuery.Depth.get -> int?
+Aw.Context.Core.Engine.ContextQuery.Depth.init -> void
+Aw.Context.Core.Engine.ContextQuery.Draft.get -> bool
+Aw.Context.Core.Engine.ContextQuery.Draft.init -> void
+Aw.Context.Core.Engine.ContextQuery.Equals(Aw.Context.Core.Engine.ContextQuery? other) -> bool
+Aw.Context.Core.Engine.ContextQuery.Item.get -> string?
+Aw.Context.Core.Engine.ContextQuery.Item.init -> void
+Aw.Context.Core.Engine.ContextQuery.Node.get -> string?
+Aw.Context.Core.Engine.ContextQuery.Node.init -> void
+Aw.Context.Core.Engine.ContextQuery.Symbol.get -> string?
+Aw.Context.Core.Engine.ContextQuery.Symbol.init -> void
+Aw.Context.Core.Engine.ContextQuery.Text.get -> string?
+Aw.Context.Core.Engine.ContextQuery.Text.init -> void
+Aw.Context.Core.Engine.ContextRepo
+Aw.Context.Core.Engine.ContextRepo.<Clone>$() -> Aw.Context.Core.Engine.ContextRepo!
+Aw.Context.Core.Engine.ContextRepo.ContextRepo(string! Name, string! Path) -> void
+Aw.Context.Core.Engine.ContextRepo.Deconstruct(out string! Name, out string! Path) -> void
+Aw.Context.Core.Engine.ContextRepo.Equals(Aw.Context.Core.Engine.ContextRepo? other) -> bool
+Aw.Context.Core.Engine.ContextRepo.Name.get -> string!
+Aw.Context.Core.Engine.ContextRepo.Name.init -> void
+Aw.Context.Core.Engine.ContextRepo.Path.get -> string!
+Aw.Context.Core.Engine.ContextRepo.Path.init -> void
+Aw.Context.Core.Engine.ContextScope
+Aw.Context.Core.Engine.ContextScope.<Clone>$() -> Aw.Context.Core.Engine.ContextScope!
+Aw.Context.Core.Engine.ContextScope.Caller.get -> Aw.Context.Core.Engine.ContextCaller!
+Aw.Context.Core.Engine.ContextScope.Caller.init -> void
+Aw.Context.Core.Engine.ContextScope.ContextScope(System.Text.Json.JsonElement? Settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! Repos, Aw.Context.Core.Engine.ContextCaller! Caller) -> void
+Aw.Context.Core.Engine.ContextScope.Deconstruct(out System.Text.Json.JsonElement? Settings, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! Repos, out Aw.Context.Core.Engine.ContextCaller! Caller) -> void
+Aw.Context.Core.Engine.ContextScope.Equals(Aw.Context.Core.Engine.ContextScope? other) -> bool
+Aw.Context.Core.Engine.ContextScope.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
+Aw.Context.Core.Engine.ContextScope.Repos.init -> void
+Aw.Context.Core.Engine.ContextScope.Settings.get -> System.Text.Json.JsonElement?
+Aw.Context.Core.Engine.ContextScope.Settings.init -> void
+Aw.Context.Core.Engine.ContextSettings
+Aw.Context.Core.Engine.ContextSettings.<Clone>$() -> Aw.Context.Core.Engine.ContextSettings!
+Aw.Context.Core.Engine.ContextSettings.ContextSettings() -> void
+Aw.Context.Core.Engine.ContextSettings.Deadline.get -> System.TimeSpan
+Aw.Context.Core.Engine.ContextSettings.Deadline.init -> void
+Aw.Context.Core.Engine.ContextSettings.DocGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Engine.ContextSettings.DocGlobs.init -> void
+Aw.Context.Core.Engine.ContextSettings.Equals(Aw.Context.Core.Engine.ContextSettings? other) -> bool
+Aw.Context.Core.Engine.ContextSettings.MaxBudget.get -> int
+Aw.Context.Core.Engine.ContextSettings.MaxBudget.init -> void
+Aw.Context.Core.Engine.ContextSettings.MinHits.get -> int
+Aw.Context.Core.Engine.ContextSettings.MinHits.init -> void
+Aw.Context.Core.Engine.ContextSettings.Repos.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Context.Core.Engine.ContextSettings.Repos.init -> void
+Aw.Context.Core.Engine.ContextSettings.SessionsEnabled.get -> bool
+Aw.Context.Core.Engine.ContextSettings.SessionsEnabled.init -> void
+Aw.Context.Core.Facade.IContextEngine
+Aw.Context.Core.Facade.IContextEngine.CheckSettings(System.Text.Json.JsonElement? section) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ContextSettings!>!
+Aw.Context.Core.Facade.IContextEngine.Query(Aw.Context.Core.Engine.ContextQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>
+Aw.Context.Core.Facade.IContextEngine.Refresh(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.RefreshReport!>!>
+Aw.Context.Core.Facade.IContextEngine.Sources(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.SourcesView!>!>
+Aw.Context.Core.Models.IModelPort
+Aw.Context.Core.Models.IModelPort.Ask(Aw.Context.Core.Models.ModelRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Models.ModelAnswer!>!>
+Aw.Context.Core.Models.ModelAnswer
+Aw.Context.Core.Models.ModelAnswer.<Clone>$() -> Aw.Context.Core.Models.ModelAnswer!
+Aw.Context.Core.Models.ModelAnswer.Deconstruct(out string! Text, out int InputTokens, out int OutputTokens) -> void
+Aw.Context.Core.Models.ModelAnswer.Equals(Aw.Context.Core.Models.ModelAnswer? other) -> bool
+Aw.Context.Core.Models.ModelAnswer.InputTokens.get -> int
+Aw.Context.Core.Models.ModelAnswer.InputTokens.init -> void
+Aw.Context.Core.Models.ModelAnswer.ModelAnswer(string! Text, int InputTokens, int OutputTokens) -> void
+Aw.Context.Core.Models.ModelAnswer.OutputTokens.get -> int
+Aw.Context.Core.Models.ModelAnswer.OutputTokens.init -> void
+Aw.Context.Core.Models.ModelAnswer.Text.get -> string!
+Aw.Context.Core.Models.ModelAnswer.Text.init -> void
+Aw.Context.Core.Models.ModelPurpose
+Aw.Context.Core.Models.ModelPurpose.Adjudication = 3 -> Aw.Context.Core.Models.ModelPurpose
+Aw.Context.Core.Models.ModelPurpose.DecisionExtraction = 1 -> Aw.Context.Core.Models.ModelPurpose
+Aw.Context.Core.Models.ModelPurpose.Labeling = 0 -> Aw.Context.Core.Models.ModelPurpose
+Aw.Context.Core.Models.ModelPurpose.Rerank = 2 -> Aw.Context.Core.Models.ModelPurpose
+Aw.Context.Core.Models.ModelRequest
+Aw.Context.Core.Models.ModelRequest.<Clone>$() -> Aw.Context.Core.Models.ModelRequest!
+Aw.Context.Core.Models.ModelRequest.Budget.get -> System.TimeSpan
+Aw.Context.Core.Models.ModelRequest.Budget.init -> void
+Aw.Context.Core.Models.ModelRequest.Deconstruct(out Aw.Context.Core.Models.ModelPurpose Purpose, out string! Prompt, out int MaxTokens, out System.TimeSpan Budget) -> void
+Aw.Context.Core.Models.ModelRequest.Equals(Aw.Context.Core.Models.ModelRequest? other) -> bool
+Aw.Context.Core.Models.ModelRequest.MaxTokens.get -> int
+Aw.Context.Core.Models.ModelRequest.MaxTokens.init -> void
+Aw.Context.Core.Models.ModelRequest.ModelRequest(Aw.Context.Core.Models.ModelPurpose Purpose, string! Prompt, int MaxTokens, System.TimeSpan Budget) -> void
+Aw.Context.Core.Models.ModelRequest.Prompt.get -> string!
+Aw.Context.Core.Models.ModelRequest.Prompt.init -> void
+Aw.Context.Core.Models.ModelRequest.Purpose.get -> Aw.Context.Core.Models.ModelPurpose
+Aw.Context.Core.Models.ModelRequest.Purpose.init -> void
+Aw.Context.Core.Results.BudgetUse
+Aw.Context.Core.Results.BudgetUse.<Clone>$() -> Aw.Context.Core.Results.BudgetUse!
+Aw.Context.Core.Results.BudgetUse.Asked.get -> int
+Aw.Context.Core.Results.BudgetUse.Asked.init -> void
+Aw.Context.Core.Results.BudgetUse.BudgetUse(int Asked, int Used, bool Estimate) -> void
+Aw.Context.Core.Results.BudgetUse.Deconstruct(out int Asked, out int Used, out bool Estimate) -> void
+Aw.Context.Core.Results.BudgetUse.Equals(Aw.Context.Core.Results.BudgetUse? other) -> bool
+Aw.Context.Core.Results.BudgetUse.Estimate.get -> bool
+Aw.Context.Core.Results.BudgetUse.Estimate.init -> void
+Aw.Context.Core.Results.BudgetUse.Used.get -> int
+Aw.Context.Core.Results.BudgetUse.Used.init -> void
+Aw.Context.Core.Results.Citation
+Aw.Context.Core.Results.Citation.<Clone>$() -> Aw.Context.Core.Results.Citation!
+Aw.Context.Core.Results.Citation.Citation(Aw.Context.Core.Sources.RecordKey Key, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.CitationRef!>! Refs, System.Uri? Permalink, Aw.Context.Core.Results.Trust Trust, Aw.Context.Core.Results.CitationState State) -> void
+Aw.Context.Core.Results.Citation.Deconstruct(out Aw.Context.Core.Sources.RecordKey Key, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.CitationRef!>! Refs, out System.Uri? Permalink, out Aw.Context.Core.Results.Trust Trust, out Aw.Context.Core.Results.CitationState State) -> void
+Aw.Context.Core.Results.Citation.Equals(Aw.Context.Core.Results.Citation? other) -> bool
+Aw.Context.Core.Results.Citation.Key.get -> Aw.Context.Core.Sources.RecordKey
+Aw.Context.Core.Results.Citation.Key.init -> void
+Aw.Context.Core.Results.Citation.Permalink.get -> System.Uri?
+Aw.Context.Core.Results.Citation.Permalink.init -> void
+Aw.Context.Core.Results.Citation.Refs.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.CitationRef!>!
+Aw.Context.Core.Results.Citation.Refs.init -> void
+Aw.Context.Core.Results.Citation.State.get -> Aw.Context.Core.Results.CitationState
+Aw.Context.Core.Results.Citation.State.init -> void
+Aw.Context.Core.Results.Citation.Trust.get -> Aw.Context.Core.Results.Trust
+Aw.Context.Core.Results.Citation.Trust.init -> void
+Aw.Context.Core.Results.CitationRef
+Aw.Context.Core.Results.CitationRef.<Clone>$() -> Aw.Context.Core.Results.CitationRef!
+Aw.Context.Core.Results.CitationRef.CitationRef(Aw.Context.Core.Sources.SourceId Source, Aw.Context.Core.Sources.ExternalId Id, Aw.Context.Core.Sources.SourceVersion Version) -> void
+Aw.Context.Core.Results.CitationRef.Current.get -> Aw.Context.Core.Sources.SourceVersion?
+Aw.Context.Core.Results.CitationRef.Current.init -> void
+Aw.Context.Core.Results.CitationRef.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out Aw.Context.Core.Sources.ExternalId Id, out Aw.Context.Core.Sources.SourceVersion Version) -> void
+Aw.Context.Core.Results.CitationRef.Equals(Aw.Context.Core.Results.CitationRef? other) -> bool
+Aw.Context.Core.Results.CitationRef.Id.get -> Aw.Context.Core.Sources.ExternalId
+Aw.Context.Core.Results.CitationRef.Id.init -> void
+Aw.Context.Core.Results.CitationRef.Source.get -> Aw.Context.Core.Sources.SourceId
+Aw.Context.Core.Results.CitationRef.Source.init -> void
+Aw.Context.Core.Results.CitationRef.Version.get -> Aw.Context.Core.Sources.SourceVersion
+Aw.Context.Core.Results.CitationRef.Version.init -> void
+Aw.Context.Core.Results.CitationState
+Aw.Context.Core.Results.CitationState.Current = 0 -> Aw.Context.Core.Results.CitationState
+Aw.Context.Core.Results.CitationState.ScrubBlocked = 4 -> Aw.Context.Core.Results.CitationState
+Aw.Context.Core.Results.CitationState.Stale = 1 -> Aw.Context.Core.Results.CitationState
+Aw.Context.Core.Results.CitationState.Unchecked = 2 -> Aw.Context.Core.Results.CitationState
+Aw.Context.Core.Results.CitationState.Unstable = 3 -> Aw.Context.Core.Results.CitationState
+Aw.Context.Core.Results.ContextResult
+Aw.Context.Core.Results.ContextResult.<Clone>$() -> Aw.Context.Core.Results.ContextResult!
+Aw.Context.Core.Results.ContextResult.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Results.ContextResult.Anchors.init -> void
+Aw.Context.Core.Results.ContextResult.AsOf.get -> System.DateTimeOffset
+Aw.Context.Core.Results.ContextResult.AsOf.init -> void
+Aw.Context.Core.Results.ContextResult.Budget.get -> Aw.Context.Core.Results.BudgetUse!
+Aw.Context.Core.Results.ContextResult.Budget.init -> void
+Aw.Context.Core.Results.ContextResult.Cites.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>!
+Aw.Context.Core.Results.ContextResult.Cites.init -> void
+Aw.Context.Core.Results.ContextResult.Conflicts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>!
+Aw.Context.Core.Results.ContextResult.Conflicts.init -> void
+Aw.Context.Core.Results.ContextResult.ContextResult(int SchemaVersion, Aw.Context.Core.Results.QueryId QueryId, Aw.Context.Core.Engine.ContextQuery! Query, System.Collections.Generic.IReadOnlyList<string!>! Anchors, string? MapVersion, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, bool Truncated, Aw.Context.Core.Results.BudgetUse! Budget, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+Aw.Context.Core.Results.ContextResult.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Results.QueryId QueryId, out Aw.Context.Core.Engine.ContextQuery! Query, out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out string? MapVersion, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, out System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, out bool Truncated, out Aw.Context.Core.Results.BudgetUse! Budget, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+Aw.Context.Core.Results.ContextResult.Degraded.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>!
+Aw.Context.Core.Results.ContextResult.Degraded.init -> void
+Aw.Context.Core.Results.ContextResult.Equals(Aw.Context.Core.Results.ContextResult? other) -> bool
+Aw.Context.Core.Results.ContextResult.MapVersion.get -> string?
+Aw.Context.Core.Results.ContextResult.MapVersion.init -> void
+Aw.Context.Core.Results.ContextResult.Query.get -> Aw.Context.Core.Engine.ContextQuery!
+Aw.Context.Core.Results.ContextResult.Query.init -> void
+Aw.Context.Core.Results.ContextResult.QueryId.get -> Aw.Context.Core.Results.QueryId
+Aw.Context.Core.Results.ContextResult.QueryId.init -> void
+Aw.Context.Core.Results.ContextResult.SchemaVersion.get -> int
+Aw.Context.Core.Results.ContextResult.SchemaVersion.init -> void
+Aw.Context.Core.Results.ContextResult.Sections.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>!
+Aw.Context.Core.Results.ContextResult.Sections.init -> void
+Aw.Context.Core.Results.ContextResult.SuggestedAnchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Results.ContextResult.SuggestedAnchors.init -> void
+Aw.Context.Core.Results.ContextResult.Truncated.get -> bool
+Aw.Context.Core.Results.ContextResult.Truncated.init -> void
+Aw.Context.Core.Results.DegradedSource
+Aw.Context.Core.Results.DegradedSource.<Clone>$() -> Aw.Context.Core.Results.DegradedSource!
+Aw.Context.Core.Results.DegradedSource.Code.get -> string!
+Aw.Context.Core.Results.DegradedSource.Code.init -> void
+Aw.Context.Core.Results.DegradedSource.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out string! Code, out string! Message, out System.DateTimeOffset Since) -> void
+Aw.Context.Core.Results.DegradedSource.DegradedSource(Aw.Context.Core.Sources.SourceId Source, string! Code, string! Message, System.DateTimeOffset Since) -> void
+Aw.Context.Core.Results.DegradedSource.Equals(Aw.Context.Core.Results.DegradedSource? other) -> bool
+Aw.Context.Core.Results.DegradedSource.Message.get -> string!
+Aw.Context.Core.Results.DegradedSource.Message.init -> void
+Aw.Context.Core.Results.DegradedSource.Since.get -> System.DateTimeOffset
+Aw.Context.Core.Results.DegradedSource.Since.init -> void
+Aw.Context.Core.Results.DegradedSource.Source.get -> Aw.Context.Core.Sources.SourceId
+Aw.Context.Core.Results.DegradedSource.Source.init -> void
+Aw.Context.Core.Results.Provenance
+Aw.Context.Core.Results.Provenance.Deterministic = 0 -> Aw.Context.Core.Results.Provenance
+Aw.Context.Core.Results.Provenance.Human = 2 -> Aw.Context.Core.Results.Provenance
+Aw.Context.Core.Results.Provenance.Model = 1 -> Aw.Context.Core.Results.Provenance
+Aw.Context.Core.Results.QueryId
+Aw.Context.Core.Results.QueryId.Equals(Aw.Context.Core.Results.QueryId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Results.QueryId>! comparer) -> bool
+Aw.Context.Core.Results.QueryId.Equals(Aw.Context.Core.Results.QueryId other) -> bool
+Aw.Context.Core.Results.QueryId.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Results.QueryId.IsInitialized() -> bool
+Aw.Context.Core.Results.QueryId.QueryId() -> void
+Aw.Context.Core.Results.QueryId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Results.QueryId.Value.get -> string!
+Aw.Context.Core.Results.RefreshReport
+Aw.Context.Core.Results.RefreshReport.<Clone>$() -> Aw.Context.Core.Results.RefreshReport!
+Aw.Context.Core.Results.RefreshReport.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.RepoRefresh!>! Repos) -> void
+Aw.Context.Core.Results.RefreshReport.Equals(Aw.Context.Core.Results.RefreshReport? other) -> bool
+Aw.Context.Core.Results.RefreshReport.RefreshReport(Aw.Context.Core.Sources.SourceId Source, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.RepoRefresh!>! Repos) -> void
+Aw.Context.Core.Results.RefreshReport.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.RepoRefresh!>!
+Aw.Context.Core.Results.RefreshReport.Repos.init -> void
+Aw.Context.Core.Results.RefreshReport.Source.get -> Aw.Context.Core.Sources.SourceId
+Aw.Context.Core.Results.RefreshReport.Source.init -> void
+Aw.Context.Core.Results.RepoRefresh
+Aw.Context.Core.Results.RepoRefresh.<Clone>$() -> Aw.Context.Core.Results.RepoRefresh!
+Aw.Context.Core.Results.RepoRefresh.Added.get -> int
+Aw.Context.Core.Results.RepoRefresh.Added.init -> void
+Aw.Context.Core.Results.RepoRefresh.Blocked.get -> int
+Aw.Context.Core.Results.RepoRefresh.Blocked.init -> void
+Aw.Context.Core.Results.RepoRefresh.Code.get -> string?
+Aw.Context.Core.Results.RepoRefresh.Code.init -> void
+Aw.Context.Core.Results.RepoRefresh.Deconstruct(out string! Repo, out Aw.Context.Core.Sources.SourceVersion? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code) -> void
+Aw.Context.Core.Results.RepoRefresh.Equals(Aw.Context.Core.Results.RepoRefresh? other) -> bool
+Aw.Context.Core.Results.RepoRefresh.Head.get -> Aw.Context.Core.Sources.SourceVersion?
+Aw.Context.Core.Results.RepoRefresh.Head.init -> void
+Aw.Context.Core.Results.RepoRefresh.Kept.get -> int
+Aw.Context.Core.Results.RepoRefresh.Kept.init -> void
+Aw.Context.Core.Results.RepoRefresh.Removed.get -> int
+Aw.Context.Core.Results.RepoRefresh.Removed.init -> void
+Aw.Context.Core.Results.RepoRefresh.Repo.get -> string!
+Aw.Context.Core.Results.RepoRefresh.Repo.init -> void
+Aw.Context.Core.Results.RepoRefresh.RepoRefresh(string! Repo, Aw.Context.Core.Sources.SourceVersion? Head, int Added, int Removed, int Kept, int Blocked, string? Code) -> void
+Aw.Context.Core.Results.ResultConflict
+Aw.Context.Core.Results.ResultConflict.<Clone>$() -> Aw.Context.Core.Results.ResultConflict!
+Aw.Context.Core.Results.ResultConflict.Behavior.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Results.ResultConflict.Behavior.init -> void
+Aw.Context.Core.Results.ResultConflict.Deconstruct(out string! Node, out System.Collections.Generic.IReadOnlyList<string!>! Intent, out System.Collections.Generic.IReadOnlyList<string!>! Behavior, out string! Summary) -> void
+Aw.Context.Core.Results.ResultConflict.Equals(Aw.Context.Core.Results.ResultConflict? other) -> bool
+Aw.Context.Core.Results.ResultConflict.Intent.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Results.ResultConflict.Intent.init -> void
+Aw.Context.Core.Results.ResultConflict.Node.get -> string!
+Aw.Context.Core.Results.ResultConflict.Node.init -> void
+Aw.Context.Core.Results.ResultConflict.ResultConflict(string! Node, System.Collections.Generic.IReadOnlyList<string!>! Intent, System.Collections.Generic.IReadOnlyList<string!>! Behavior, string! Summary) -> void
+Aw.Context.Core.Results.ResultConflict.Summary.get -> string!
+Aw.Context.Core.Results.ResultConflict.Summary.init -> void
+Aw.Context.Core.Results.ResultItem
+Aw.Context.Core.Results.ResultItem.<Clone>$() -> Aw.Context.Core.Results.ResultItem!
+Aw.Context.Core.Results.ResultItem.Cites.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Results.ResultItem.Cites.init -> void
+Aw.Context.Core.Results.ResultItem.Confirmed.get -> bool
+Aw.Context.Core.Results.ResultItem.Confirmed.init -> void
+Aw.Context.Core.Results.ResultItem.Deconstruct(out string! Kind, out string? Node, out string? Title, out string? Text, out double? Score, out System.Collections.Generic.IReadOnlyList<string!>! Why, out Aw.Context.Core.Results.Provenance Provenance, out bool Confirmed, out Aw.Context.Core.Results.Trust Trust, out System.Collections.Generic.IReadOnlyList<string!>! Cites) -> void
+Aw.Context.Core.Results.ResultItem.Depth.get -> int?
+Aw.Context.Core.Results.ResultItem.Depth.init -> void
+Aw.Context.Core.Results.ResultItem.Equals(Aw.Context.Core.Results.ResultItem? other) -> bool
+Aw.Context.Core.Results.ResultItem.Kind.get -> string!
+Aw.Context.Core.Results.ResultItem.Kind.init -> void
+Aw.Context.Core.Results.ResultItem.Node.get -> string?
+Aw.Context.Core.Results.ResultItem.Node.init -> void
+Aw.Context.Core.Results.ResultItem.Path.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Context.Core.Results.ResultItem.Path.init -> void
+Aw.Context.Core.Results.ResultItem.Provenance.get -> Aw.Context.Core.Results.Provenance
+Aw.Context.Core.Results.ResultItem.Provenance.init -> void
+Aw.Context.Core.Results.ResultItem.ResultItem(string! Kind, string? Node, string? Title, string? Text, double? Score, System.Collections.Generic.IReadOnlyList<string!>! Why, Aw.Context.Core.Results.Provenance Provenance, bool Confirmed, Aw.Context.Core.Results.Trust Trust, System.Collections.Generic.IReadOnlyList<string!>! Cites) -> void
+Aw.Context.Core.Results.ResultItem.Score.get -> double?
+Aw.Context.Core.Results.ResultItem.Score.init -> void
+Aw.Context.Core.Results.ResultItem.Text.get -> string?
+Aw.Context.Core.Results.ResultItem.Text.init -> void
+Aw.Context.Core.Results.ResultItem.Title.get -> string?
+Aw.Context.Core.Results.ResultItem.Title.init -> void
+Aw.Context.Core.Results.ResultItem.Tokens.get -> int
+Aw.Context.Core.Results.ResultItem.Tokens.init -> void
+Aw.Context.Core.Results.ResultItem.Trust.get -> Aw.Context.Core.Results.Trust
+Aw.Context.Core.Results.ResultItem.Trust.init -> void
+Aw.Context.Core.Results.ResultItem.Why.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Results.ResultItem.Why.init -> void
+Aw.Context.Core.Results.ResultSection
+Aw.Context.Core.Results.ResultSection.<Clone>$() -> Aw.Context.Core.Results.ResultSection!
+Aw.Context.Core.Results.ResultSection.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultItem!>! Items, out System.Collections.Generic.IReadOnlyList<string!>! More) -> void
+Aw.Context.Core.Results.ResultSection.Equals(Aw.Context.Core.Results.ResultSection? other) -> bool
+Aw.Context.Core.Results.ResultSection.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultItem!>!
+Aw.Context.Core.Results.ResultSection.Items.init -> void
+Aw.Context.Core.Results.ResultSection.More.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Results.ResultSection.More.init -> void
+Aw.Context.Core.Results.ResultSection.Name.get -> string!
+Aw.Context.Core.Results.ResultSection.Name.init -> void
+Aw.Context.Core.Results.ResultSection.ResultSection(string! Name, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultItem!>! Items, System.Collections.Generic.IReadOnlyList<string!>! More) -> void
+Aw.Context.Core.Results.SourceStatusRow
+Aw.Context.Core.Results.SourceStatusRow.<Clone>$() -> Aw.Context.Core.Results.SourceStatusRow!
+Aw.Context.Core.Results.SourceStatusRow.Code.get -> string?
+Aw.Context.Core.Results.SourceStatusRow.Code.init -> void
+Aw.Context.Core.Results.SourceStatusRow.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out Aw.Context.Core.Sources.SourceKind Kind, out string? Repo, out Aw.Context.Core.Sources.SourceState State, out string! Detail, out string? Code, out System.DateTimeOffset? LastSync, out int Records) -> void
+Aw.Context.Core.Results.SourceStatusRow.Detail.get -> string!
+Aw.Context.Core.Results.SourceStatusRow.Detail.init -> void
+Aw.Context.Core.Results.SourceStatusRow.Equals(Aw.Context.Core.Results.SourceStatusRow? other) -> bool
+Aw.Context.Core.Results.SourceStatusRow.Kind.get -> Aw.Context.Core.Sources.SourceKind
+Aw.Context.Core.Results.SourceStatusRow.Kind.init -> void
+Aw.Context.Core.Results.SourceStatusRow.LastSync.get -> System.DateTimeOffset?
+Aw.Context.Core.Results.SourceStatusRow.LastSync.init -> void
+Aw.Context.Core.Results.SourceStatusRow.Records.get -> int
+Aw.Context.Core.Results.SourceStatusRow.Records.init -> void
+Aw.Context.Core.Results.SourceStatusRow.Repo.get -> string?
+Aw.Context.Core.Results.SourceStatusRow.Repo.init -> void
+Aw.Context.Core.Results.SourceStatusRow.Source.get -> Aw.Context.Core.Sources.SourceId
+Aw.Context.Core.Results.SourceStatusRow.Source.init -> void
+Aw.Context.Core.Results.SourceStatusRow.SourceStatusRow(Aw.Context.Core.Sources.SourceId Source, Aw.Context.Core.Sources.SourceKind Kind, string? Repo, Aw.Context.Core.Sources.SourceState State, string! Detail, string? Code, System.DateTimeOffset? LastSync, int Records) -> void
+Aw.Context.Core.Results.SourceStatusRow.State.get -> Aw.Context.Core.Sources.SourceState
+Aw.Context.Core.Results.SourceStatusRow.State.init -> void
+Aw.Context.Core.Results.SourcesView
+Aw.Context.Core.Results.SourcesView.<Clone>$() -> Aw.Context.Core.Results.SourcesView!
+Aw.Context.Core.Results.SourcesView.AsOf.get -> System.DateTimeOffset
+Aw.Context.Core.Results.SourcesView.AsOf.init -> void
+Aw.Context.Core.Results.SourcesView.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceStatusRow!>! Sources, out bool SessionsEnabled, out System.DateTimeOffset AsOf) -> void
+Aw.Context.Core.Results.SourcesView.Equals(Aw.Context.Core.Results.SourcesView? other) -> bool
+Aw.Context.Core.Results.SourcesView.SessionsEnabled.get -> bool
+Aw.Context.Core.Results.SourcesView.SessionsEnabled.init -> void
+Aw.Context.Core.Results.SourcesView.Sources.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceStatusRow!>!
+Aw.Context.Core.Results.SourcesView.Sources.init -> void
+Aw.Context.Core.Results.SourcesView.SourcesView(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceStatusRow!>! Sources, bool SessionsEnabled, System.DateTimeOffset AsOf) -> void
+Aw.Context.Core.Results.Trust
+Aw.Context.Core.Results.Trust.Trusted = 0 -> Aw.Context.Core.Results.Trust
+Aw.Context.Core.Results.Trust.Untrusted = 1 -> Aw.Context.Core.Results.Trust
+Aw.Context.Core.Sources.ChangePage
+Aw.Context.Core.Sources.ChangePage.<Clone>$() -> Aw.Context.Core.Sources.ChangePage!
+Aw.Context.Core.Sources.ChangePage.Changed.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>!
+Aw.Context.Core.Sources.ChangePage.Changed.init -> void
+Aw.Context.Core.Sources.ChangePage.ChangePage(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>! Changed, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.ExternalId>! Removed, Aw.Context.Core.Sources.SourceCursor Next) -> void
+Aw.Context.Core.Sources.ChangePage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>! Changed, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.ExternalId>! Removed, out Aw.Context.Core.Sources.SourceCursor Next) -> void
+Aw.Context.Core.Sources.ChangePage.Equals(Aw.Context.Core.Sources.ChangePage? other) -> bool
+Aw.Context.Core.Sources.ChangePage.Next.get -> Aw.Context.Core.Sources.SourceCursor
+Aw.Context.Core.Sources.ChangePage.Next.init -> void
+Aw.Context.Core.Sources.ChangePage.Removed.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.ExternalId>!
+Aw.Context.Core.Sources.ChangePage.Removed.init -> void
+Aw.Context.Core.Sources.ExternalId
+Aw.Context.Core.Sources.ExternalId.Equals(Aw.Context.Core.Sources.ExternalId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.ExternalId>! comparer) -> bool
+Aw.Context.Core.Sources.ExternalId.Equals(Aw.Context.Core.Sources.ExternalId other) -> bool
+Aw.Context.Core.Sources.ExternalId.ExternalId() -> void
+Aw.Context.Core.Sources.ExternalId.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Sources.ExternalId.IsInitialized() -> bool
+Aw.Context.Core.Sources.ExternalId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Sources.ExternalId.Value.get -> string!
+Aw.Context.Core.Sources.IChangeFeed
+Aw.Context.Core.Sources.IChangeFeed.Changes(Aw.Context.Core.Sources.SourceCursor? after, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Sources.ChangePage!>!>
+Aw.Context.Core.Sources.IContextSource
+Aw.Context.Core.Sources.IContextSource.Describe() -> Aw.Context.Core.Sources.SourceDescriptor!
+Aw.Context.Core.Sources.IContextSource.Fetch(Aw.Context.Core.Sources.SourceRef! reference, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Sources.SourceRecord!>!>
+Aw.Context.Core.Sources.IContextSource.Probe(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Context.Core.Sources.SourceHealth!>
+Aw.Context.Core.Sources.IContextSource.Search(Aw.Context.Core.Sources.SourceQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceHit!>!>!>
+Aw.Context.Core.Sources.IContextSource.Versions(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>! refs, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceVersion?>!>!>
+Aw.Context.Core.Sources.RecordKey
+Aw.Context.Core.Sources.RecordKey.Equals(Aw.Context.Core.Sources.RecordKey other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.RecordKey>! comparer) -> bool
+Aw.Context.Core.Sources.RecordKey.Equals(Aw.Context.Core.Sources.RecordKey other) -> bool
+Aw.Context.Core.Sources.RecordKey.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Sources.RecordKey.IsInitialized() -> bool
+Aw.Context.Core.Sources.RecordKey.RecordKey() -> void
+Aw.Context.Core.Sources.RecordKey.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Sources.RecordKey.Value.get -> string!
+Aw.Context.Core.Sources.RecordKind
+Aw.Context.Core.Sources.RecordKind.Code = 5 -> Aw.Context.Core.Sources.RecordKind
+Aw.Context.Core.Sources.RecordKind.Comment = 2 -> Aw.Context.Core.Sources.RecordKind
+Aw.Context.Core.Sources.RecordKind.Doc = 0 -> Aw.Context.Core.Sources.RecordKind
+Aw.Context.Core.Sources.RecordKind.Issue = 1 -> Aw.Context.Core.Sources.RecordKind
+Aw.Context.Core.Sources.RecordKind.Message = 4 -> Aw.Context.Core.Sources.RecordKind
+Aw.Context.Core.Sources.RecordKind.Project = 3 -> Aw.Context.Core.Sources.RecordKind
+Aw.Context.Core.Sources.SourceCursor
+Aw.Context.Core.Sources.SourceCursor.Equals(Aw.Context.Core.Sources.SourceCursor other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.SourceCursor>! comparer) -> bool
+Aw.Context.Core.Sources.SourceCursor.Equals(Aw.Context.Core.Sources.SourceCursor other) -> bool
+Aw.Context.Core.Sources.SourceCursor.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Sources.SourceCursor.IsInitialized() -> bool
+Aw.Context.Core.Sources.SourceCursor.SourceCursor() -> void
+Aw.Context.Core.Sources.SourceCursor.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Sources.SourceCursor.Value.get -> string!
+Aw.Context.Core.Sources.SourceDescriptor
+Aw.Context.Core.Sources.SourceDescriptor.<Clone>$() -> Aw.Context.Core.Sources.SourceDescriptor!
+Aw.Context.Core.Sources.SourceDescriptor.Deconstruct(out Aw.Context.Core.Sources.SourceId Id, out Aw.Context.Core.Sources.SourceKind Kind, out Aw.Context.Core.Sources.SourceFreshness Freshness, out bool SupportsAsOf) -> void
+Aw.Context.Core.Sources.SourceDescriptor.Equals(Aw.Context.Core.Sources.SourceDescriptor? other) -> bool
+Aw.Context.Core.Sources.SourceDescriptor.Freshness.get -> Aw.Context.Core.Sources.SourceFreshness
+Aw.Context.Core.Sources.SourceDescriptor.Freshness.init -> void
+Aw.Context.Core.Sources.SourceDescriptor.Id.get -> Aw.Context.Core.Sources.SourceId
+Aw.Context.Core.Sources.SourceDescriptor.Id.init -> void
+Aw.Context.Core.Sources.SourceDescriptor.Kind.get -> Aw.Context.Core.Sources.SourceKind
+Aw.Context.Core.Sources.SourceDescriptor.Kind.init -> void
+Aw.Context.Core.Sources.SourceDescriptor.SourceDescriptor(Aw.Context.Core.Sources.SourceId Id, Aw.Context.Core.Sources.SourceKind Kind, Aw.Context.Core.Sources.SourceFreshness Freshness, bool SupportsAsOf) -> void
+Aw.Context.Core.Sources.SourceDescriptor.SupportsAsOf.get -> bool
+Aw.Context.Core.Sources.SourceDescriptor.SupportsAsOf.init -> void
+Aw.Context.Core.Sources.SourceFreshness
+Aw.Context.Core.Sources.SourceFreshness.Live = 0 -> Aw.Context.Core.Sources.SourceFreshness
+Aw.Context.Core.Sources.SourceFreshness.Snapshot = 1 -> Aw.Context.Core.Sources.SourceFreshness
+Aw.Context.Core.Sources.SourceHealth
+Aw.Context.Core.Sources.SourceHealth.<Clone>$() -> Aw.Context.Core.Sources.SourceHealth!
+Aw.Context.Core.Sources.SourceHealth.Code.get -> string?
+Aw.Context.Core.Sources.SourceHealth.Code.init -> void
+Aw.Context.Core.Sources.SourceHealth.Deconstruct(out Aw.Context.Core.Sources.SourceState State, out string! Detail, out string? Code) -> void
+Aw.Context.Core.Sources.SourceHealth.Detail.get -> string!
+Aw.Context.Core.Sources.SourceHealth.Detail.init -> void
+Aw.Context.Core.Sources.SourceHealth.Equals(Aw.Context.Core.Sources.SourceHealth? other) -> bool
+Aw.Context.Core.Sources.SourceHealth.SourceHealth(Aw.Context.Core.Sources.SourceState State, string! Detail, string? Code) -> void
+Aw.Context.Core.Sources.SourceHealth.State.get -> Aw.Context.Core.Sources.SourceState
+Aw.Context.Core.Sources.SourceHealth.State.init -> void
+Aw.Context.Core.Sources.SourceHit
+Aw.Context.Core.Sources.SourceHit.<Clone>$() -> Aw.Context.Core.Sources.SourceHit!
+Aw.Context.Core.Sources.SourceHit.AsOf.get -> System.DateTimeOffset
+Aw.Context.Core.Sources.SourceHit.AsOf.init -> void
+Aw.Context.Core.Sources.SourceHit.Deconstruct(out Aw.Context.Core.Sources.SourceRef! Ref, out string! Title, out int Rank, out System.DateTimeOffset AsOf, out bool Leaky) -> void
+Aw.Context.Core.Sources.SourceHit.Equals(Aw.Context.Core.Sources.SourceHit? other) -> bool
+Aw.Context.Core.Sources.SourceHit.Leaky.get -> bool
+Aw.Context.Core.Sources.SourceHit.Leaky.init -> void
+Aw.Context.Core.Sources.SourceHit.Rank.get -> int
+Aw.Context.Core.Sources.SourceHit.Rank.init -> void
+Aw.Context.Core.Sources.SourceHit.Ref.get -> Aw.Context.Core.Sources.SourceRef!
+Aw.Context.Core.Sources.SourceHit.Ref.init -> void
+Aw.Context.Core.Sources.SourceHit.SourceHit(Aw.Context.Core.Sources.SourceRef! Ref, string! Title, int Rank, System.DateTimeOffset AsOf, bool Leaky) -> void
+Aw.Context.Core.Sources.SourceHit.Title.get -> string!
+Aw.Context.Core.Sources.SourceHit.Title.init -> void
+Aw.Context.Core.Sources.SourceId
+Aw.Context.Core.Sources.SourceId.Equals(Aw.Context.Core.Sources.SourceId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.SourceId>! comparer) -> bool
+Aw.Context.Core.Sources.SourceId.Equals(Aw.Context.Core.Sources.SourceId other) -> bool
+Aw.Context.Core.Sources.SourceId.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Sources.SourceId.IsInitialized() -> bool
+Aw.Context.Core.Sources.SourceId.SourceId() -> void
+Aw.Context.Core.Sources.SourceId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Sources.SourceId.Value.get -> string!
+Aw.Context.Core.Sources.SourceKind
+Aw.Context.Core.Sources.SourceKind.Code = 2 -> Aw.Context.Core.Sources.SourceKind
+Aw.Context.Core.Sources.SourceKind.Doc = 1 -> Aw.Context.Core.Sources.SourceKind
+Aw.Context.Core.Sources.SourceKind.Intent = 0 -> Aw.Context.Core.Sources.SourceKind
+Aw.Context.Core.Sources.SourceQuery
+Aw.Context.Core.Sources.SourceQuery.<Clone>$() -> Aw.Context.Core.Sources.SourceQuery!
+Aw.Context.Core.Sources.SourceQuery.AsOf.get -> System.DateTimeOffset?
+Aw.Context.Core.Sources.SourceQuery.AsOf.init -> void
+Aw.Context.Core.Sources.SourceQuery.Deadline.get -> System.TimeSpan
+Aw.Context.Core.Sources.SourceQuery.Deadline.init -> void
+Aw.Context.Core.Sources.SourceQuery.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Terms, out System.DateTimeOffset? AsOf, out int Limit, out System.TimeSpan Deadline) -> void
+Aw.Context.Core.Sources.SourceQuery.Equals(Aw.Context.Core.Sources.SourceQuery? other) -> bool
+Aw.Context.Core.Sources.SourceQuery.Limit.get -> int
+Aw.Context.Core.Sources.SourceQuery.Limit.init -> void
+Aw.Context.Core.Sources.SourceQuery.SourceQuery(System.Collections.Generic.IReadOnlyList<string!>! Terms, System.DateTimeOffset? AsOf, int Limit, System.TimeSpan Deadline) -> void
+Aw.Context.Core.Sources.SourceQuery.Terms.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Sources.SourceQuery.Terms.init -> void
+Aw.Context.Core.Sources.SourceRecord
+Aw.Context.Core.Sources.SourceRecord.<Clone>$() -> Aw.Context.Core.Sources.SourceRecord!
+Aw.Context.Core.Sources.SourceRecord.Author.get -> string?
+Aw.Context.Core.Sources.SourceRecord.Author.init -> void
+Aw.Context.Core.Sources.SourceRecord.CreatedAt.get -> System.DateTimeOffset?
+Aw.Context.Core.Sources.SourceRecord.CreatedAt.init -> void
+Aw.Context.Core.Sources.SourceRecord.Deconstruct(out Aw.Context.Core.Sources.SourceRef! Ref, out Aw.Context.Core.Sources.RecordKind Kind, out string! Title, out string! Text, out string? Author, out System.DateTimeOffset? CreatedAt, out System.DateTimeOffset? UpdatedAt) -> void
+Aw.Context.Core.Sources.SourceRecord.Equals(Aw.Context.Core.Sources.SourceRecord? other) -> bool
+Aw.Context.Core.Sources.SourceRecord.Kind.get -> Aw.Context.Core.Sources.RecordKind
+Aw.Context.Core.Sources.SourceRecord.Kind.init -> void
+Aw.Context.Core.Sources.SourceRecord.Ref.get -> Aw.Context.Core.Sources.SourceRef!
+Aw.Context.Core.Sources.SourceRecord.Ref.init -> void
+Aw.Context.Core.Sources.SourceRecord.SourceRecord(Aw.Context.Core.Sources.SourceRef! Ref, Aw.Context.Core.Sources.RecordKind Kind, string! Title, string! Text, string? Author, System.DateTimeOffset? CreatedAt, System.DateTimeOffset? UpdatedAt) -> void
+Aw.Context.Core.Sources.SourceRecord.Text.get -> string!
+Aw.Context.Core.Sources.SourceRecord.Text.init -> void
+Aw.Context.Core.Sources.SourceRecord.Title.get -> string!
+Aw.Context.Core.Sources.SourceRecord.Title.init -> void
+Aw.Context.Core.Sources.SourceRecord.UpdatedAt.get -> System.DateTimeOffset?
+Aw.Context.Core.Sources.SourceRecord.UpdatedAt.init -> void
+Aw.Context.Core.Sources.SourceRef
+Aw.Context.Core.Sources.SourceRef.<Clone>$() -> Aw.Context.Core.Sources.SourceRef!
+Aw.Context.Core.Sources.SourceRef.Canonical.get -> Aw.Context.Core.Sources.RecordKey
+Aw.Context.Core.Sources.SourceRef.Canonical.init -> void
+Aw.Context.Core.Sources.SourceRef.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out Aw.Context.Core.Sources.ExternalId Id, out Aw.Context.Core.Sources.SourceVersion Version, out System.Uri? Permalink, out Aw.Context.Core.Sources.RecordKey Canonical) -> void
+Aw.Context.Core.Sources.SourceRef.Equals(Aw.Context.Core.Sources.SourceRef? other) -> bool
+Aw.Context.Core.Sources.SourceRef.Id.get -> Aw.Context.Core.Sources.ExternalId
+Aw.Context.Core.Sources.SourceRef.Id.init -> void
+Aw.Context.Core.Sources.SourceRef.Permalink.get -> System.Uri?
+Aw.Context.Core.Sources.SourceRef.Permalink.init -> void
+Aw.Context.Core.Sources.SourceRef.Source.get -> Aw.Context.Core.Sources.SourceId
+Aw.Context.Core.Sources.SourceRef.Source.init -> void
+Aw.Context.Core.Sources.SourceRef.SourceRef(Aw.Context.Core.Sources.SourceId Source, Aw.Context.Core.Sources.ExternalId Id, Aw.Context.Core.Sources.SourceVersion Version, System.Uri? Permalink, Aw.Context.Core.Sources.RecordKey Canonical) -> void
+Aw.Context.Core.Sources.SourceRef.Version.get -> Aw.Context.Core.Sources.SourceVersion
+Aw.Context.Core.Sources.SourceRef.Version.init -> void
+Aw.Context.Core.Sources.SourceState
+Aw.Context.Core.Sources.SourceState.Degraded = 1 -> Aw.Context.Core.Sources.SourceState
+Aw.Context.Core.Sources.SourceState.Ok = 0 -> Aw.Context.Core.Sources.SourceState
+Aw.Context.Core.Sources.SourceState.Unavailable = 2 -> Aw.Context.Core.Sources.SourceState
+Aw.Context.Core.Sources.SourceVersion
+Aw.Context.Core.Sources.SourceVersion.Equals(Aw.Context.Core.Sources.SourceVersion other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.SourceVersion>! comparer) -> bool
+Aw.Context.Core.Sources.SourceVersion.Equals(Aw.Context.Core.Sources.SourceVersion other) -> bool
+Aw.Context.Core.Sources.SourceVersion.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Sources.SourceVersion.IsInitialized() -> bool
+Aw.Context.Core.Sources.SourceVersion.SourceVersion() -> void
+Aw.Context.Core.Sources.SourceVersion.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Sources.SourceVersion.Value.get -> string!
+Aw.Context.Core.Trust.IEgressScrubber
+Aw.Context.Core.Trust.IEgressScrubber.Scrub(string! value) -> Aw.Context.Core.Trust.ScrubbedField!
+Aw.Context.Core.Trust.IIngestFilter
+Aw.Context.Core.Trust.IIngestFilter.Clean(string! raw, bool singleLine) -> Aw.Context.Core.Trust.ScrubbedField!
+Aw.Context.Core.Trust.ScrubbedField
+Aw.Context.Core.Trust.ScrubbedField.<Clone>$() -> Aw.Context.Core.Trust.ScrubbedField!
+Aw.Context.Core.Trust.ScrubbedField.Blocked.get -> bool
+Aw.Context.Core.Trust.ScrubbedField.Blocked.init -> void
+Aw.Context.Core.Trust.ScrubbedField.Deconstruct(out string! Text, out bool Redacted, out bool Blocked) -> void
+Aw.Context.Core.Trust.ScrubbedField.Equals(Aw.Context.Core.Trust.ScrubbedField? other) -> bool
+Aw.Context.Core.Trust.ScrubbedField.Redacted.get -> bool
+Aw.Context.Core.Trust.ScrubbedField.Redacted.init -> void
+Aw.Context.Core.Trust.ScrubbedField.ScrubbedField(string! Text, bool Redacted, bool Blocked) -> void
+Aw.Context.Core.Trust.ScrubbedField.Text.get -> string!
+Aw.Context.Core.Trust.ScrubbedField.Text.init -> void
+const Aw.Context.Core.Results.ContextResult.CurrentSchemaVersion = 1 -> int
+override Aw.Context.Core.Docs.DocIndexStatus.Equals(object? obj) -> bool
+override Aw.Context.Core.Docs.DocIndexStatus.GetHashCode() -> int
+override Aw.Context.Core.Docs.DocIndexStatus.ToString() -> string!
+override Aw.Context.Core.Engine.ContextCaller.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.ContextCaller.GetHashCode() -> int
+override Aw.Context.Core.Engine.ContextCaller.ToString() -> string!
+override Aw.Context.Core.Engine.ContextQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.ContextQuery.GetHashCode() -> int
+override Aw.Context.Core.Engine.ContextQuery.ToString() -> string!
+override Aw.Context.Core.Engine.ContextRepo.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.ContextRepo.GetHashCode() -> int
+override Aw.Context.Core.Engine.ContextRepo.ToString() -> string!
+override Aw.Context.Core.Engine.ContextScope.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.ContextScope.GetHashCode() -> int
+override Aw.Context.Core.Engine.ContextScope.ToString() -> string!
+override Aw.Context.Core.Engine.ContextSettings.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.ContextSettings.GetHashCode() -> int
+override Aw.Context.Core.Engine.ContextSettings.ToString() -> string!
+override Aw.Context.Core.Models.ModelAnswer.Equals(object? obj) -> bool
+override Aw.Context.Core.Models.ModelAnswer.GetHashCode() -> int
+override Aw.Context.Core.Models.ModelAnswer.ToString() -> string!
+override Aw.Context.Core.Models.ModelRequest.Equals(object? obj) -> bool
+override Aw.Context.Core.Models.ModelRequest.GetHashCode() -> int
+override Aw.Context.Core.Models.ModelRequest.ToString() -> string!
+override Aw.Context.Core.Results.BudgetUse.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.BudgetUse.GetHashCode() -> int
+override Aw.Context.Core.Results.BudgetUse.ToString() -> string!
+override Aw.Context.Core.Results.Citation.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.Citation.GetHashCode() -> int
+override Aw.Context.Core.Results.Citation.ToString() -> string!
+override Aw.Context.Core.Results.CitationRef.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.CitationRef.GetHashCode() -> int
+override Aw.Context.Core.Results.CitationRef.ToString() -> string!
+override Aw.Context.Core.Results.ContextResult.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.ContextResult.GetHashCode() -> int
+override Aw.Context.Core.Results.ContextResult.ToString() -> string!
+override Aw.Context.Core.Results.DegradedSource.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.DegradedSource.GetHashCode() -> int
+override Aw.Context.Core.Results.DegradedSource.ToString() -> string!
+override Aw.Context.Core.Results.QueryId.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.QueryId.GetHashCode() -> int
+override Aw.Context.Core.Results.QueryId.ToString() -> string!
+override Aw.Context.Core.Results.RefreshReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.RefreshReport.GetHashCode() -> int
+override Aw.Context.Core.Results.RefreshReport.ToString() -> string!
+override Aw.Context.Core.Results.RepoRefresh.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.RepoRefresh.GetHashCode() -> int
+override Aw.Context.Core.Results.RepoRefresh.ToString() -> string!
+override Aw.Context.Core.Results.ResultConflict.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.ResultConflict.GetHashCode() -> int
+override Aw.Context.Core.Results.ResultConflict.ToString() -> string!
+override Aw.Context.Core.Results.ResultItem.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.ResultItem.GetHashCode() -> int
+override Aw.Context.Core.Results.ResultItem.ToString() -> string!
+override Aw.Context.Core.Results.ResultSection.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.ResultSection.GetHashCode() -> int
+override Aw.Context.Core.Results.ResultSection.ToString() -> string!
+override Aw.Context.Core.Results.SourceStatusRow.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.SourceStatusRow.GetHashCode() -> int
+override Aw.Context.Core.Results.SourceStatusRow.ToString() -> string!
+override Aw.Context.Core.Results.SourcesView.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.SourcesView.GetHashCode() -> int
+override Aw.Context.Core.Results.SourcesView.ToString() -> string!
+override Aw.Context.Core.Sources.ChangePage.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.ChangePage.GetHashCode() -> int
+override Aw.Context.Core.Sources.ChangePage.ToString() -> string!
+override Aw.Context.Core.Sources.ExternalId.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.ExternalId.GetHashCode() -> int
+override Aw.Context.Core.Sources.ExternalId.ToString() -> string!
+override Aw.Context.Core.Sources.RecordKey.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.RecordKey.GetHashCode() -> int
+override Aw.Context.Core.Sources.RecordKey.ToString() -> string!
+override Aw.Context.Core.Sources.SourceCursor.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.SourceCursor.GetHashCode() -> int
+override Aw.Context.Core.Sources.SourceCursor.ToString() -> string!
+override Aw.Context.Core.Sources.SourceDescriptor.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.SourceDescriptor.GetHashCode() -> int
+override Aw.Context.Core.Sources.SourceDescriptor.ToString() -> string!
+override Aw.Context.Core.Sources.SourceHealth.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.SourceHealth.GetHashCode() -> int
+override Aw.Context.Core.Sources.SourceHealth.ToString() -> string!
+override Aw.Context.Core.Sources.SourceHit.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.SourceHit.GetHashCode() -> int
+override Aw.Context.Core.Sources.SourceHit.ToString() -> string!
+override Aw.Context.Core.Sources.SourceId.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.SourceId.GetHashCode() -> int
+override Aw.Context.Core.Sources.SourceId.ToString() -> string!
+override Aw.Context.Core.Sources.SourceQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.SourceQuery.GetHashCode() -> int
+override Aw.Context.Core.Sources.SourceQuery.ToString() -> string!
+override Aw.Context.Core.Sources.SourceRecord.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.SourceRecord.GetHashCode() -> int
+override Aw.Context.Core.Sources.SourceRecord.ToString() -> string!
+override Aw.Context.Core.Sources.SourceRef.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.SourceRef.GetHashCode() -> int
+override Aw.Context.Core.Sources.SourceRef.ToString() -> string!
+override Aw.Context.Core.Sources.SourceVersion.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.SourceVersion.GetHashCode() -> int
+override Aw.Context.Core.Sources.SourceVersion.ToString() -> string!
+override Aw.Context.Core.Trust.ScrubbedField.Equals(object? obj) -> bool
+override Aw.Context.Core.Trust.ScrubbedField.GetHashCode() -> int
+override Aw.Context.Core.Trust.ScrubbedField.ToString() -> string!
+static Aw.Context.Core.ContextCoreServiceCollectionExtensions.AddContextCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Context.Core.ContextErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Context.Core.Docs.DocIndexStatus.operator !=(Aw.Context.Core.Docs.DocIndexStatus? left, Aw.Context.Core.Docs.DocIndexStatus? right) -> bool
+static Aw.Context.Core.Docs.DocIndexStatus.operator ==(Aw.Context.Core.Docs.DocIndexStatus? left, Aw.Context.Core.Docs.DocIndexStatus? right) -> bool
+static Aw.Context.Core.Engine.ContextCaller.operator !=(Aw.Context.Core.Engine.ContextCaller? left, Aw.Context.Core.Engine.ContextCaller? right) -> bool
+static Aw.Context.Core.Engine.ContextCaller.operator ==(Aw.Context.Core.Engine.ContextCaller? left, Aw.Context.Core.Engine.ContextCaller? right) -> bool
+static Aw.Context.Core.Engine.ContextQuery.operator !=(Aw.Context.Core.Engine.ContextQuery? left, Aw.Context.Core.Engine.ContextQuery? right) -> bool
+static Aw.Context.Core.Engine.ContextQuery.operator ==(Aw.Context.Core.Engine.ContextQuery? left, Aw.Context.Core.Engine.ContextQuery? right) -> bool
+static Aw.Context.Core.Engine.ContextRepo.operator !=(Aw.Context.Core.Engine.ContextRepo? left, Aw.Context.Core.Engine.ContextRepo? right) -> bool
+static Aw.Context.Core.Engine.ContextRepo.operator ==(Aw.Context.Core.Engine.ContextRepo? left, Aw.Context.Core.Engine.ContextRepo? right) -> bool
+static Aw.Context.Core.Engine.ContextScope.operator !=(Aw.Context.Core.Engine.ContextScope? left, Aw.Context.Core.Engine.ContextScope? right) -> bool
+static Aw.Context.Core.Engine.ContextScope.operator ==(Aw.Context.Core.Engine.ContextScope? left, Aw.Context.Core.Engine.ContextScope? right) -> bool
+static Aw.Context.Core.Engine.ContextSettings.DefaultDocGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Engine.ContextSettings.operator !=(Aw.Context.Core.Engine.ContextSettings? left, Aw.Context.Core.Engine.ContextSettings? right) -> bool
+static Aw.Context.Core.Engine.ContextSettings.operator ==(Aw.Context.Core.Engine.ContextSettings? left, Aw.Context.Core.Engine.ContextSettings? right) -> bool
+static Aw.Context.Core.Models.ModelAnswer.operator !=(Aw.Context.Core.Models.ModelAnswer? left, Aw.Context.Core.Models.ModelAnswer? right) -> bool
+static Aw.Context.Core.Models.ModelAnswer.operator ==(Aw.Context.Core.Models.ModelAnswer? left, Aw.Context.Core.Models.ModelAnswer? right) -> bool
+static Aw.Context.Core.Models.ModelRequest.operator !=(Aw.Context.Core.Models.ModelRequest? left, Aw.Context.Core.Models.ModelRequest? right) -> bool
+static Aw.Context.Core.Models.ModelRequest.operator ==(Aw.Context.Core.Models.ModelRequest? left, Aw.Context.Core.Models.ModelRequest? right) -> bool
+static Aw.Context.Core.Results.BudgetUse.operator !=(Aw.Context.Core.Results.BudgetUse? left, Aw.Context.Core.Results.BudgetUse? right) -> bool
+static Aw.Context.Core.Results.BudgetUse.operator ==(Aw.Context.Core.Results.BudgetUse? left, Aw.Context.Core.Results.BudgetUse? right) -> bool
+static Aw.Context.Core.Results.Citation.operator !=(Aw.Context.Core.Results.Citation? left, Aw.Context.Core.Results.Citation? right) -> bool
+static Aw.Context.Core.Results.Citation.operator ==(Aw.Context.Core.Results.Citation? left, Aw.Context.Core.Results.Citation? right) -> bool
+static Aw.Context.Core.Results.CitationRef.operator !=(Aw.Context.Core.Results.CitationRef? left, Aw.Context.Core.Results.CitationRef? right) -> bool
+static Aw.Context.Core.Results.CitationRef.operator ==(Aw.Context.Core.Results.CitationRef? left, Aw.Context.Core.Results.CitationRef? right) -> bool
+static Aw.Context.Core.Results.ContextResult.operator !=(Aw.Context.Core.Results.ContextResult? left, Aw.Context.Core.Results.ContextResult? right) -> bool
+static Aw.Context.Core.Results.ContextResult.operator ==(Aw.Context.Core.Results.ContextResult? left, Aw.Context.Core.Results.ContextResult? right) -> bool
+static Aw.Context.Core.Results.DegradedSource.operator !=(Aw.Context.Core.Results.DegradedSource? left, Aw.Context.Core.Results.DegradedSource? right) -> bool
+static Aw.Context.Core.Results.DegradedSource.operator ==(Aw.Context.Core.Results.DegradedSource? left, Aw.Context.Core.Results.DegradedSource? right) -> bool
+static Aw.Context.Core.Results.QueryId.From(string! value) -> Aw.Context.Core.Results.QueryId
+static Aw.Context.Core.Results.QueryId.operator !=(Aw.Context.Core.Results.QueryId left, Aw.Context.Core.Results.QueryId right) -> bool
+static Aw.Context.Core.Results.QueryId.operator ==(Aw.Context.Core.Results.QueryId left, Aw.Context.Core.Results.QueryId right) -> bool
+static Aw.Context.Core.Results.QueryId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Results.QueryId
+static Aw.Context.Core.Results.QueryId.TryFrom(string? value, out Aw.Context.Core.Results.QueryId vo) -> bool
+static Aw.Context.Core.Results.QueryId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Results.QueryId result) -> bool
+static Aw.Context.Core.Results.RefreshReport.operator !=(Aw.Context.Core.Results.RefreshReport? left, Aw.Context.Core.Results.RefreshReport? right) -> bool
+static Aw.Context.Core.Results.RefreshReport.operator ==(Aw.Context.Core.Results.RefreshReport? left, Aw.Context.Core.Results.RefreshReport? right) -> bool
+static Aw.Context.Core.Results.RepoRefresh.operator !=(Aw.Context.Core.Results.RepoRefresh? left, Aw.Context.Core.Results.RepoRefresh? right) -> bool
+static Aw.Context.Core.Results.RepoRefresh.operator ==(Aw.Context.Core.Results.RepoRefresh? left, Aw.Context.Core.Results.RepoRefresh? right) -> bool
+static Aw.Context.Core.Results.ResultConflict.operator !=(Aw.Context.Core.Results.ResultConflict? left, Aw.Context.Core.Results.ResultConflict? right) -> bool
+static Aw.Context.Core.Results.ResultConflict.operator ==(Aw.Context.Core.Results.ResultConflict? left, Aw.Context.Core.Results.ResultConflict? right) -> bool
+static Aw.Context.Core.Results.ResultItem.operator !=(Aw.Context.Core.Results.ResultItem? left, Aw.Context.Core.Results.ResultItem? right) -> bool
+static Aw.Context.Core.Results.ResultItem.operator ==(Aw.Context.Core.Results.ResultItem? left, Aw.Context.Core.Results.ResultItem? right) -> bool
+static Aw.Context.Core.Results.ResultSection.FillOrder.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Results.ResultSection.operator !=(Aw.Context.Core.Results.ResultSection? left, Aw.Context.Core.Results.ResultSection? right) -> bool
+static Aw.Context.Core.Results.ResultSection.operator ==(Aw.Context.Core.Results.ResultSection? left, Aw.Context.Core.Results.ResultSection? right) -> bool
+static Aw.Context.Core.Results.SourceStatusRow.operator !=(Aw.Context.Core.Results.SourceStatusRow? left, Aw.Context.Core.Results.SourceStatusRow? right) -> bool
+static Aw.Context.Core.Results.SourceStatusRow.operator ==(Aw.Context.Core.Results.SourceStatusRow? left, Aw.Context.Core.Results.SourceStatusRow? right) -> bool
+static Aw.Context.Core.Results.SourcesView.operator !=(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
+static Aw.Context.Core.Results.SourcesView.operator ==(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
+static Aw.Context.Core.Sources.ChangePage.operator !=(Aw.Context.Core.Sources.ChangePage? left, Aw.Context.Core.Sources.ChangePage? right) -> bool
+static Aw.Context.Core.Sources.ChangePage.operator ==(Aw.Context.Core.Sources.ChangePage? left, Aw.Context.Core.Sources.ChangePage? right) -> bool
+static Aw.Context.Core.Sources.ExternalId.From(string! value) -> Aw.Context.Core.Sources.ExternalId
+static Aw.Context.Core.Sources.ExternalId.operator !=(Aw.Context.Core.Sources.ExternalId left, Aw.Context.Core.Sources.ExternalId right) -> bool
+static Aw.Context.Core.Sources.ExternalId.operator ==(Aw.Context.Core.Sources.ExternalId left, Aw.Context.Core.Sources.ExternalId right) -> bool
+static Aw.Context.Core.Sources.ExternalId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.ExternalId
+static Aw.Context.Core.Sources.ExternalId.TryFrom(string? value, out Aw.Context.Core.Sources.ExternalId vo) -> bool
+static Aw.Context.Core.Sources.ExternalId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.ExternalId result) -> bool
+static Aw.Context.Core.Sources.RecordKey.From(string! value) -> Aw.Context.Core.Sources.RecordKey
+static Aw.Context.Core.Sources.RecordKey.operator !=(Aw.Context.Core.Sources.RecordKey left, Aw.Context.Core.Sources.RecordKey right) -> bool
+static Aw.Context.Core.Sources.RecordKey.operator ==(Aw.Context.Core.Sources.RecordKey left, Aw.Context.Core.Sources.RecordKey right) -> bool
+static Aw.Context.Core.Sources.RecordKey.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.RecordKey
+static Aw.Context.Core.Sources.RecordKey.TryFrom(string? value, out Aw.Context.Core.Sources.RecordKey vo) -> bool
+static Aw.Context.Core.Sources.RecordKey.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.RecordKey result) -> bool
+static Aw.Context.Core.Sources.SourceCursor.From(string! value) -> Aw.Context.Core.Sources.SourceCursor
+static Aw.Context.Core.Sources.SourceCursor.operator !=(Aw.Context.Core.Sources.SourceCursor left, Aw.Context.Core.Sources.SourceCursor right) -> bool
+static Aw.Context.Core.Sources.SourceCursor.operator ==(Aw.Context.Core.Sources.SourceCursor left, Aw.Context.Core.Sources.SourceCursor right) -> bool
+static Aw.Context.Core.Sources.SourceCursor.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.SourceCursor
+static Aw.Context.Core.Sources.SourceCursor.TryFrom(string? value, out Aw.Context.Core.Sources.SourceCursor vo) -> bool
+static Aw.Context.Core.Sources.SourceCursor.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.SourceCursor result) -> bool
+static Aw.Context.Core.Sources.SourceDescriptor.operator !=(Aw.Context.Core.Sources.SourceDescriptor? left, Aw.Context.Core.Sources.SourceDescriptor? right) -> bool
+static Aw.Context.Core.Sources.SourceDescriptor.operator ==(Aw.Context.Core.Sources.SourceDescriptor? left, Aw.Context.Core.Sources.SourceDescriptor? right) -> bool
+static Aw.Context.Core.Sources.SourceHealth.operator !=(Aw.Context.Core.Sources.SourceHealth? left, Aw.Context.Core.Sources.SourceHealth? right) -> bool
+static Aw.Context.Core.Sources.SourceHealth.operator ==(Aw.Context.Core.Sources.SourceHealth? left, Aw.Context.Core.Sources.SourceHealth? right) -> bool
+static Aw.Context.Core.Sources.SourceHit.operator !=(Aw.Context.Core.Sources.SourceHit? left, Aw.Context.Core.Sources.SourceHit? right) -> bool
+static Aw.Context.Core.Sources.SourceHit.operator ==(Aw.Context.Core.Sources.SourceHit? left, Aw.Context.Core.Sources.SourceHit? right) -> bool
+static Aw.Context.Core.Sources.SourceId.From(string! value) -> Aw.Context.Core.Sources.SourceId
+static Aw.Context.Core.Sources.SourceId.operator !=(Aw.Context.Core.Sources.SourceId left, Aw.Context.Core.Sources.SourceId right) -> bool
+static Aw.Context.Core.Sources.SourceId.operator ==(Aw.Context.Core.Sources.SourceId left, Aw.Context.Core.Sources.SourceId right) -> bool
+static Aw.Context.Core.Sources.SourceId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.SourceId
+static Aw.Context.Core.Sources.SourceId.TryFrom(string? value, out Aw.Context.Core.Sources.SourceId vo) -> bool
+static Aw.Context.Core.Sources.SourceId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.SourceId result) -> bool
+static Aw.Context.Core.Sources.SourceQuery.operator !=(Aw.Context.Core.Sources.SourceQuery? left, Aw.Context.Core.Sources.SourceQuery? right) -> bool
+static Aw.Context.Core.Sources.SourceQuery.operator ==(Aw.Context.Core.Sources.SourceQuery? left, Aw.Context.Core.Sources.SourceQuery? right) -> bool
+static Aw.Context.Core.Sources.SourceRecord.operator !=(Aw.Context.Core.Sources.SourceRecord? left, Aw.Context.Core.Sources.SourceRecord? right) -> bool
+static Aw.Context.Core.Sources.SourceRecord.operator ==(Aw.Context.Core.Sources.SourceRecord? left, Aw.Context.Core.Sources.SourceRecord? right) -> bool
+static Aw.Context.Core.Sources.SourceRef.operator !=(Aw.Context.Core.Sources.SourceRef? left, Aw.Context.Core.Sources.SourceRef? right) -> bool
+static Aw.Context.Core.Sources.SourceRef.operator ==(Aw.Context.Core.Sources.SourceRef? left, Aw.Context.Core.Sources.SourceRef? right) -> bool
+static Aw.Context.Core.Sources.SourceVersion.From(string! value) -> Aw.Context.Core.Sources.SourceVersion
+static Aw.Context.Core.Sources.SourceVersion.operator !=(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
+static Aw.Context.Core.Sources.SourceVersion.operator ==(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
+static Aw.Context.Core.Sources.SourceVersion.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.SourceVersion
+static Aw.Context.Core.Sources.SourceVersion.TryFrom(string? value, out Aw.Context.Core.Sources.SourceVersion vo) -> bool
+static Aw.Context.Core.Sources.SourceVersion.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.SourceVersion result) -> bool
+static Aw.Context.Core.Trust.ScrubbedField.operator !=(Aw.Context.Core.Trust.ScrubbedField? left, Aw.Context.Core.Trust.ScrubbedField? right) -> bool
+static Aw.Context.Core.Trust.ScrubbedField.operator ==(Aw.Context.Core.Trust.ScrubbedField? left, Aw.Context.Core.Trust.ScrubbedField? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.AllSourcesUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.PathInWorktree -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.QueryInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.SessionsDisabled -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.SettingsInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.SourceNotConfigured -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.SourceUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.StoreUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.UnknownAnchor -> Aw.Kernel.ErrorDefinition!
