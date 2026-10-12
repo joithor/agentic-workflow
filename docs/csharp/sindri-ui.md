@@ -68,7 +68,7 @@ Windows the profile's ACLs do it):
 | `SocketSingleInstance` | The claim is an exclusive lock on `ui/instance.lock` (the OS drops it when the process dies, so a crash leaves no claim); its holder removes a crashed instance's `ui/instance.sock` and listens there (a Unix domain socket, 0600; AF_UNIX on Windows 10 and later too; when the path won't fit sun_path's 104 bytes, as in a deep temp home, the socket goes to `$TMPDIR/sindri-ui-<hash of the path>/`, 0700). The holder records its process id in `ui/instance.pid` (0600; removed on exit). A later launch writes one UTF-8 message ending in a newline, keeps its side open and reads one byte back: 1 once the holder's reader has handled the message (`AppLifetime.Listen` handles each on the UI thread before reading the next), 0 refused. The listener refuses an empty message, one over 512 characters, one that isn't UTF-8 or one without its newline; it waits 1.5 s from a message's arrival for the handling and the sender waits 2 s, so a holder that doesn't handle it (a failed start-up, a wedged app) gives no answer. A message nothing handled in time, or whose sender has gone, is dropped |
 | `SingleLaunch` | `Program` claims before Avalonia starts; a later launch sends `focus` (or its one argument when it is a deep link, `sindri://` optional) and exits 0 once the running app handled it. With no answer it claims again: if the holder ended meanwhile, this launch runs the app; otherwise it exits 1 with `sindri-ui: Sindri app is running but not answering (pid N): quit it or kill it` on standard error. Exit codes: 0 handed over (or the app quit), 1 a holder that doesn't answer, 2 the app failed (SND-UI-004) |
 | `AvaloniaTray` | Avalonia's `TrayIcon`, created on the first `Show` and registered with the app through `Views/AppTrayIcons` (Avalonia makes the native icon only for an icon in the Application's `TrayIcon.Icons`); `TrayMarks` draws Sindri's mark in the theme's Ink, filled (Neutral), hollow (Stale) and hollow struck through (NotRunning), as macOS template images; menu labels double each `_` |
-| `PolledMotionPreference` | The OS reader at start and every 2 s on the injected `TimeProvider`: macOS `NSWorkspace.accessibilityDisplayShouldReduceMotion` through `objc_msgSend` (`MacMotion`), Windows `SPI_GETCLIENTAREAANIMATION` (`WindowsMotion`), GNOME `gsettings get org.gnome.desktop.interface enable-animations` (`GnomeMotion`; no gsettings, a failure or a hang past 1 s reads as off) |
+| `PolledMotionPreference` | The OS reader at start and every 2 s on the injected `TimeProvider`: macOS `NSWorkspace.accessibilityDisplayShouldReduceMotion` through `objc_msgSend` (`MacMotion`), Windows `SPI_GETCLIENTAREAANIMATION` (`WindowsMotion`), GNOME `gsettings get org.gnome.desktop.interface enable-animations` (`GnomeMotion`; no gsettings, a failure or a hang past 3 s reads as off) |
 
 `Views/AppLifetime` (in the app, so every desktop head shares it) is the window's life around these: closing the
 window hides it (the app stays in the tray; an OS or app shutdown still closes it), the tray's Open brings it
@@ -111,7 +111,7 @@ only, never the message, which can name the home), with a line that names the ex
 
 | Part | What it shows |
 |---|---|
-| Top bar (48 px) | Brand; Home · Queue · Decisions · Services (counts empty until their routes); Later ▾ (Agents, Repos, Today, Automatic work, each "not served yet"); the ⌘K field, inert until U1; the health pill, which opens Health. When they don't all fit (the 900 px minimum, text scale up to 1.3) the bar steps down in `TopBar.axaml.cs`: the ⌘K field folds to its magnifier, then the pill's age drops (the pill's accessible name keeps it), then the brand keeps its mark alone. The pill's word always shows |
+| Top bar (48 px) | Brand; Home · Queue · Decisions · Services (counts empty until their routes); Later ▾ (Agents, Repos, Today, Automatic work, each "not served yet"); the ⌘K field, inert until U1; the health pill, which opens Health (while Sindri isn't running it is only the state: disabled like the navigation, its word undimmed, since the Not running card is the health state and Health has nothing to show). When they don't all fit (the 900 px minimum, text scale up to 1.3) the bar steps down in `TopBar.axaml.cs`: the ⌘K field folds to its magnifier, then the pill's age drops (the pill's accessible name keeps it), then the brand keeps its mark alone. The pill's word always shows |
 | Home panels' bodies | "not served yet", centred in the panel |
 | Home | The page title, three frames (Needs you, Running · With you, Queued), each "not served yet", and the Sindri health strip: the health line (§4.8) over the fields the status carries today (`Running · pid · epoch · API v1 · N services · profile <state>`; "Not running" when it isn't), which opens Health on a click or Enter |
 | Queue, Decisions, Services, Settings | The title and "not served yet"; Settings is the slot `Views/Settings*` fills (⌘, opens it) |
@@ -124,8 +124,9 @@ The pre-API states (`ShellState`, highest first): **version mismatch** (the stat
 the code and `sindri doctor`; the page keeps its last data and the pill reads "Unreadable · stale"), **stale** (30 s
 without an event, a status or an answered ping, on the injected clock: the pill reads "⌛ stale · updated Ns ago" with
 **Refresh** beside it; otherwise "✓ Running · updated Ns ago", re-worded every second). Refresh follows §4.1's command
-lifecycle: while it is in flight it is disabled with its label kept, "Sending…" shows beside it after 300 ms (a polite
-live region), and a second click does nothing. After three failed refreshes the pill keeps "stale" and a banner under
+lifecycle: while it is in flight it is disabled with its label kept and a spinner in its icon's place (still under
+reduced motion), "Sending…" is announced after 300 ms through a polite live region (not shown), and a second click does
+nothing. After three failed refreshes the pill keeps "stale" and a banner under
 the top bar reads "Sindri not responding: run `sindri doctor`" in full, since the sentence doesn't fit the pill at
 900 px. The view models carry no Avalonia types; views bind the app's copy through `ShellText` (compiled bindings
 resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar, page and sheet; the window's
@@ -185,7 +186,13 @@ VoiceOver pass below confirms or refutes it.
 **Rules for later phases' announcements** ("N now need you", "<id> cleared", §12.4): a dedicated `TextBlock` with
 `LiveSetting="Polite"` whose `Text` changes; never set it to `""` (hide it instead); give it no separate
 `AutomationProperties.Name` (the peer announces the name, and a second binding may lag the text); only in a top-level
-window (popups aren't `AvnWindow`s). If the pass finds it silent, the fallback is a head adapter posting
+window (popups aren't `AvnWindow`s). Two more from the source: once assistive tech has read the element, every `Text`
+change is announced even while it is hidden, so a text that must not be spoken (a resting text, set so the next
+announcement is a change again) is set only while `LiveSetting` is Off; and a hidden element has no native element, so
+show it a moment before its text changes. Refresh's "Sending…" (`TopBar`'s `RefreshSending`) does both: the region is in
+the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `live` class) only while
+`Health.IsSending`, which turns on before the text becomes "Sending…" and off before it goes back to its resting
+"Refresh"; it is zero-width and transparent, so it takes no room and shows nothing. If the pass finds it silent, the fallback is a head adapter posting
 `NSAccessibilityAnnouncementRequestedNotification` through ObjC interop; no production seam is added before that.
 
 **The owner's VoiceOver pass** (a throwaway probe window: a polite `TextBlock` changing every 3 s, an assertive one, a

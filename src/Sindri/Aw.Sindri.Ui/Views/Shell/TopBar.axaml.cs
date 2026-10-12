@@ -175,7 +175,15 @@ internal sealed partial class TopBar : UserControl
         }
     }
 
-    private void OnHealthPill(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.GoTo(PageId.Health);
+    // The pill opens Health, except while Sindri isn't running: the pill is disabled then (the Not running card is the
+    // health state), and a click that still arrives opens nothing and remembers nothing.
+    private void OnHealthPill(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ShellViewModel { IsNavigationEnabled: true } shell)
+        {
+            shell.GoTo(PageId.Health);
+        }
+    }
 
     // Refresh re-reads the status (a query); the pill shows the answer when it comes.
     private void OnRefresh(object? sender, RoutedEventArgs e)

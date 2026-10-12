@@ -115,13 +115,15 @@ public sealed class ShellWindowTests : IDisposable
         frame?.Save(Path.Combine(dir, "shell-" + name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
     }
 
-    // Every visible control in the window carries an accessible name (§11.2).
+    // Every visible control in the window carries an accessible name (§11.2). A live region's text is its name (it carries
+    // no separate one: docs/csharp/sindri-ui.md "LiveSetting on macOS").
     private static void EveryControlIsNamed(Window window)
     {
         var unnamed = window.GetVisualDescendants().OfType<Control>()
             .Where(c => c.IsEffectivelyVisible
                 && (c is Button or ListBoxItem or TextBlock { Text.Length: > 1 })
                 && string.IsNullOrEmpty(AutomationProperties.GetName(c))
+                && !c.Classes.Contains("live-region")
                 && (c is not TextBlock || (c.FindAncestorOfType<Button>() is null && c.FindAncestorOfType<ListBoxItem>() is null)))
             .Select(c => c.GetType().Name + ":" + (c as TextBlock)?.Text)
             .ToList();
@@ -798,7 +800,9 @@ public sealed class ShellWindowTests : IDisposable
             _server.StatusGate.SetResult();
             await Until(() => shell.State == ShellState.Normal);
             Settle(window);
-            Assert.Equal(string.Empty, AutomationProperties.GetName(Named<Control>(window, "RefreshSending")) ?? string.Empty);
+            var live = Named<TextBlock>(window, "RefreshSending");
+            Assert.False(live.IsEffectivelyVisible);
+            Assert.Equal(AutomationLiveSetting.Off, AutomationProperties.GetLiveSetting(live));
             Assert.False(Named<StateIcon>(window, "RefreshSpinner").IsSpinning);
         }
         finally
@@ -818,12 +822,13 @@ public sealed class ShellWindowTests : IDisposable
         Assert.True(spinner.IsEffectivelyVisible, "no spinner while sending");
         Assert.False(Visible(window, "RefreshIcon"));
         Assert.Equal(!reduceMotion, spinner.IsSpinning);
-        var live = Named<Control>(window, "RefreshSending");
-        Assert.Equal(Labels.Sending, AutomationProperties.GetName(live));
+        var live = Named<TextBlock>(window, "RefreshSending");
+        Assert.Equal(Labels.Sending, live.Text);
         Assert.Equal(AutomationLiveSetting.Polite, AutomationProperties.GetLiveSetting(live));
         Assert.Equal(0, live.Bounds.Width);
+        Assert.Equal(0, live.Opacity);
         Assert.DoesNotContain(window.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Bounds.Width > 0 && t.Text == Labels.Sending);
-        Assert.Equal(stale, _topBarControls.Where(n => Visible(window, n)).Select(n => (n, Box(window, n))));
+        Assert.Equal(stale, stale.Select(c => (c.Item1, Box(window, c.Item1))));
     }
 
     private static IInputElement? Focused(Window window) => window.FocusManager?.GetFocusedElement();
@@ -1140,8 +1145,8 @@ public sealed class ShellWindowTests : IDisposable
             // R2: the spinner replaces ⟳ inside Refresh and "Sending…" is only announced, so the bar keeps the stale
             // state's layout: the brand word stays wherever the stale bar kept it.
             Assert.True(Visible(window, "RefreshSpinner"), "no spinner while sending");
-            Assert.Equal(Labels.Sending, AutomationProperties.GetName(Named<Control>(window, "RefreshSending")));
-            Assert.Equal(0, Named<Control>(window, "RefreshSending").Bounds.Width);
+            Assert.Equal(Labels.Sending, Named<TextBlock>(window, "RefreshSending").Text);
+            Assert.Equal(0, Named<TextBlock>(window, "RefreshSending").Bounds.Width);
             Assert.True(Visible(window, "BrandWord"), "the brand word dropped while sending");
         }
 
