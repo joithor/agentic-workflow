@@ -115,6 +115,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <param name="status">The status.</param>
     internal void Show(Uri url, StatusView status)
     {
+        _ = Interlocked.Increment(ref _decisions);
         if (status.ApiVersion is { } version && version != SindriApiClient.AppApiVersion)
         {
             Mismatch(version);
@@ -171,6 +172,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     {
         lock (_gate)
         {
+            _decisions++;
             Headline = Labels.NotRunning;
             HealthLine = Labels.NotRunning;
             ReasonDetail = detail ?? string.Empty;
@@ -187,6 +189,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     {
         lock (_gate)
         {
+            _decisions++;
             Become(ShellState.Unreadable, $"{error.Code}: {error.Message}");
             Word();
         }
@@ -198,6 +201,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     {
         lock (_gate)
         {
+            _decisions++;
             Detail.Mismatch(version);
             HealthLine = Labels.VersionMismatch;
             Become(ShellState.VersionMismatch, Labels.Versions(version, SindriApiClient.AppApiVersion));

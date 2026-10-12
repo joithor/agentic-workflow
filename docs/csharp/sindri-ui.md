@@ -141,7 +141,9 @@ without an event, a status or an answered ping, on the injected clock: the pill 
 **Refresh** beside it; otherwise "✓ Running · updated Ns ago", re-worded every second). Refresh follows §4.1's command
 lifecycle: while it is in flight it is disabled with its label kept and a spinner in its icon's place (still under
 reduced motion), "Sending…" is announced after 300 ms through a polite live region (not shown), and a second click does
-nothing. After three failed refreshes the pill keeps "stale" and a banner under
+nothing. Its answer counts only when the follow decided no state while it was in flight, the views are still normal or
+stale, and it came from the pid and epoch the follow checked with ping; otherwise it is dropped, so a late answer never
+shows Running over Not running or Unreadable. After three failed refreshes the pill keeps "stale" and a banner under
 the top bar reads "Sindri not responding: run `sindri doctor`" in full, since the sentence doesn't fit the pill at
 900 px. The view models carry no Avalonia types; views bind the app's copy through `ShellText` (compiled bindings
 resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar, page and sheet; the window's

@@ -126,6 +126,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         }
 
         (_epoch, _pid) = (ping.Epoch, ping.Pid);
+        health.Follows(ping.Pid, ping.Epoch);
     }
 
     private async Task<int> Follow(Uri url, CancellationToken cancellationToken)
