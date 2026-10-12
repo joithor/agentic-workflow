@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 
 namespace Aw.Sindri.Ui.Views;
 
@@ -8,6 +7,6 @@ internal sealed partial class SettingsView : UserControl
 {
     public SettingsView()
     {
-        AvaloniaXamlLoader.Load(this);
+        InitializeComponent();
     }
 }

@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Sindri.Ui.Navigation;
@@ -28,7 +27,7 @@ internal sealed partial class ShellWindow : Window
 
     public ShellWindow()
     {
-        AvaloniaXamlLoader.Load(this);
+        InitializeComponent();
     }
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;

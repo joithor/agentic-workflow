@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -11,7 +10,7 @@ internal sealed partial class TopBar : UserControl
 {
     public TopBar()
     {
-        AvaloniaXamlLoader.Load(this);
+        InitializeComponent();
     }
 
     private void OnHealthPill(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.GoTo(PageId.Health);

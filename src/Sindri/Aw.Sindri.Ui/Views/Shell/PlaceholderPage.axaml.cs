@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 
 namespace Aw.Sindri.Ui.Views.Shell;
 
@@ -12,7 +11,7 @@ internal sealed partial class PlaceholderPage : UserControl
 
     public PlaceholderPage()
     {
-        AvaloniaXamlLoader.Load(this);
+        InitializeComponent();
     }
 
     /// <summary>The page's title (a label).</summary>
