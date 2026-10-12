@@ -270,11 +270,11 @@ then exits 1 (a running app that doesn't answer) or 2 (a failed start-up), and N
 running app's. The UI package can't fix this: the line is `Aw.Sindri.Host`'s `UiLauncher`. Run `sindri-ui` directly to
 see its exit code and standard error.
 
-**Not a declared edge (owner question, PR #168).** Starting `sindri-ui` from `sindri` is a `Sindri -> SindriUi` cli
-dependency by `deps.yaml`'s definition, but declaring it would close a cycle with the `SindriUi -> Sindri` http edge
-(`DEPS-CYCLE-001`), and check-deps doesn't scan C# for cli edges. The two ways out are to invert the launch (the app
-starts `sindri --headless` itself) or to record a reasoned exception for this one cycle; the owner decides. Until then
-the launch is named in the `SindriUi` note in `deps.yaml`.
+**A declared edge with a cycle exception (owner decision, 2026-10-12).** Starting `sindri-ui` from `sindri` is the
+`Sindri -> SindriUi` cli edge in `deps.yaml`. It closes a cycle with the `SindriUi -> Sindri` http edge, so it carries a
+`DEPS-CYCLE-001` exception that names that edge: the launch only spawns a separate process, shares no code or data,
+and Sindri's HTTP API stays the app's only contract. The edge is `status: planned` only because check-deps doesn't
+scan C# for cli edges (a current edge its scan can't find fails `DEPS-STALE-001`).
 
 ## Errors
 

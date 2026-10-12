@@ -923,7 +923,7 @@ buttons and inputs, `FocusAdornerTemplate` drawing the §11.1 ring, `ScrollBar` 
 | `MainWindow` as one status card layout | **Replace** with §3.2's shell; its status card becomes the Health page, the health pill and Home's health strip |
 | `ISindriApi` (ping, status, events) | **Extend** with the headers (`X-Sindri-Caller: human`, `X-Sindri-Client: ui`), the `apiVersion` check, `X-Sindri-After`, and one method per route in §10.1 as its API phase lands |
 | Each bare `sindri` opens another window | **Change**: single instance (a second launch focuses the running one), and close-to-tray (§5) |
-| The deps cycle question (`Sindri -> SindriUi` cli edge) | Unchanged here; the owner's call on PR #168 stands |
+| The deps cycle question (`Sindri -> SindriUi` cli edge) | **Decided** (owner, 2026-10-12): declared, with a reasoned `DEPS-CYCLE-001` exception in `deps.yaml` |
 
 ## 16. Mockups
 

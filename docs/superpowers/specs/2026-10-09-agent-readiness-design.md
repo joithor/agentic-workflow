@@ -235,7 +235,9 @@ splits now is §9 R17.
 ### 4b.1a No cycles, no spider web
 
 The dependency graph is a **declared, layered, acyclic tree** at every level, and CI fails on any drift from the
-declaration.
+declaration. The one allowed exception is a package cycle closed by a `cli` or `http` edge, under a reviewed, dated
+`DEPS-CYCLE-001` exception in `deps.yaml` that names that edge and covers exactly that cycle (owner, 2026-10-12: bare
+`sindri` launching `sindri-ui`).
 
 **Package tiers** (a package takes `project` dependencies only on lower tiers; read-only `db` and `file` edges may also point across a tier, see the direction rule below):
 
