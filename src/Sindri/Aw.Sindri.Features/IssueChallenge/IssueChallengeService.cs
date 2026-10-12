@@ -1,11 +1,104 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core;
+using Aw.Sindri.Core.Challenges;
+using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Registry;
 
 namespace Aw.Sindri.Features.IssueChallenge;
 
-/// <summary>Red stub (engine spec Phase 2, unit (c)): the tests name the behavior; the service arrives next.</summary>
-internal sealed class IssueChallengeService : IService<IssueChallengeRequest, IssueChallengeResponse>
+/// <summary>
+/// Issues a challenge for one protected action (engine spec §4.2, S1-D5): parses the action text, plans the action so its
+/// subject and preview are the server's own, and returns the challenge with that preview. The chain lets only a human at
+/// a terminal reach it. Forms: 'approve &lt;id&gt; &lt;version&gt;' (or 'approve &lt;id&gt;@&lt;hash&gt;', issued as the
+/// former), 'revoke &lt;id&gt;@&lt;hash&gt;' and
+/// 'approve profile &lt;hash6&gt;' (the profile's preview is profile approve's own, so that one carries none).
+/// </summary>
+/// <param name="approvals">Plans a recipe approval.</param>
+/// <param name="revokes">Plans a revoke.</param>
+/// <param name="challenges">The server's challenges.</param>
+/// <param name="profiles">The live profile, for 'approve profile'.</param>
+internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approvals, RecipeRevokePlanner revokes, IChallenges challenges, IProfileSource profiles)
+    : IService<IssueChallengeRequest, IssueChallengeResponse>
 {
-    public ValueTask<Result<IssueChallengeResponse>> Handle(IssueChallengeRequest request, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("IssueChallenge arrives with engine P2 unit (c)");
+    private const string Forms = "'approve <recipe> <version>', 'revoke <recipe>@<hash>' or 'approve profile <hash6>'";
+
+    public async ValueTask<Result<IssueChallengeResponse>> Handle(IssueChallengeRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var text = request.Action.Trim();
+        return ProfileForm.Match(text) is { Success: true } profile ? await Profile(profile.Groups["hash"].Value, cancellationToken).ConfigureAwait(false)
+            : ApproveForm.Match(text) is { Success: true } approve ? await Approve(text, approve, cancellationToken).ConfigureAwait(false)
+            : ApproveByHashForm.Match(text) is { Success: true } byHash ? await ApproveByHash(text, byHash, cancellationToken).ConfigureAwait(false)
+            : RevokeForm.Match(text) is { Success: true } revoke ? await Revoke(text, revoke, cancellationToken).ConfigureAwait(false)
+            : Unknown(text);
+    }
+
+    private async ValueTask<Result<IssueChallengeResponse>> Approve(string text, Match form, CancellationToken cancellationToken)
+    {
+        if (!RecipeId.TryFrom(form.Groups["id"].Value, out var id)
+            || !int.TryParse(form.Groups["version"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var version))
+        {
+            return Unknown(text);
+        }
+
+        var plan = await approvals.Approve(id, version, cancellationToken).ConfigureAwait(false);
+        return plan.IsError ? plan.Error : Issued(challenges.Issue(plan.Value.Action, plan.Value.Subject), plan.Value.Preview, revoke: null);
+    }
+
+    private async ValueTask<Result<IssueChallengeResponse>> ApproveByHash(string text, Match form, CancellationToken cancellationToken)
+    {
+        if (!RecipeId.TryFrom(form.Groups["id"].Value, out var id))
+        {
+            return Unknown(text);
+        }
+
+        var plan = await approvals.Approve(id, form.Groups["hash"].Value, cancellationToken).ConfigureAwait(false);
+        return plan.IsError ? plan.Error : Issued(challenges.Issue(plan.Value.Action, plan.Value.Subject), plan.Value.Preview, revoke: null);
+    }
+
+    private async ValueTask<Result<IssueChallengeResponse>> Revoke(string text, Match form, CancellationToken cancellationToken)
+    {
+        if (!RecipeId.TryFrom(form.Groups["id"].Value, out var id))
+        {
+            return Unknown(text);
+        }
+
+        var plan = await revokes.Revoke(id, form.Groups["hash"].Value, cancellationToken).ConfigureAwait(false);
+        return plan.IsError ? plan.Error : Issued(challenges.Issue(plan.Value.Action, plan.Value.Subject), approve: null, plan.Value.Preview);
+    }
+
+    private static Error Unknown(string text) => SindriErrors.InvalidInput.With($"'{text}' isn't an action a challenge is issued for; use {Forms}");
+
+    private async ValueTask<Result<IssueChallengeResponse>> Profile(string hash6, CancellationToken cancellationToken)
+    {
+        var live = await profiles.Load(cancellationToken).ConfigureAwait(false);
+        if (live.IsError)
+        {
+            return live.Error;
+        }
+
+        var hash = live.Value.Hash;
+        return string.Equals(hash.Abbreviated, hash6, StringComparison.Ordinal)
+            ? Issued(challenges.Issue(ChallengeAction.ApproveProfile(hash), ChallengeSubject.ForProfile(hash)), approve: null, revoke: null)
+            : SindriErrors.ProfileHashMismatch.With($"{hash6} isn't the live profile's hash ({hash.Value}); run 'sindri profile approve' to see it and what changed");
+    }
+
+    private static IssueChallengeResponse Issued(IssuedChallenge issued, ApprovalPreview? approve, RevokePreview? revoke) =>
+        new(issued.Id, issued.Action.Text, issued.ExpiresAt, approve, revoke);
+
+    [GeneratedRegex(@"^approve profile (?<hash>[0-9a-f]{6})\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ProfileForm { get; }
+
+    [GeneratedRegex(@"^approve (?<id>\S+) (?<version>[0-9]{1,9})\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ApproveForm { get; }
+
+    [GeneratedRegex(@"^approve (?<id>[^@\s]+)@(?<hash>(sha256:)?[0-9a-f]{8,64})\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ApproveByHashForm { get; }
+
+    [GeneratedRegex(@"^revoke (?<id>[^@\s]+)@(?<hash>(sha256:)?[0-9a-f]{8,64})\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex RevokeForm { get; }
 }
