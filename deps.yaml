@@ -471,16 +471,16 @@ edges:
     kind: cli
     status: planned
     note: "scorer's labeler moves into scorer's Core; sindri calls it through scorer's CLI instead of copying it (§4b.1a)"
-  # ---- the context engine (context spec §4, stage S-1C; S-1A flips both to current) ----
+  # ---- the context engine (context spec §4, stage S-1C; current since S-1A) ----
   - from: Sindri
     to: Context
     kind: project
-    status: planned
+    status: current
     note: "Sindri's Features and Host use the IContextEngine facade and its records in Aw.Context.Core"
   - from: Sindri
     to: Context
     kind: compose
-    status: planned
+    status: current
     note: "Sindri's Host calls AddContextFeatures and AddContextInfrastructure (and nothing else from those projects) in Composition"
 
 exceptions: []

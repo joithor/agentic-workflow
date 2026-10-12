@@ -36,9 +36,12 @@ public sealed class GoldenHost : IAsyncDisposable
     private readonly TempHome? _elsewhere;
     private WebApplication? _app;
 
-    private GoldenHost(bool temporary)
+    private readonly string _profileYaml;
+
+    private GoldenHost(bool temporary, string profileYaml)
     {
         _elsewhere = temporary ? null : new TempHome();
+        _profileYaml = profileYaml;
     }
 
     /// <summary>The token the host holds.</summary>
@@ -56,10 +59,11 @@ public sealed class GoldenHost : IAsyncDisposable
     /// <summary>Starts a host. <paramref name="temporary"/> false points TMPDIR and AW_STATE_DIR away from its home, so the prover label is refused.</summary>
     /// <param name="temporary">Whether the home counts as temporary (honours the prover label).</param>
     /// <param name="ct">Cancellation.</param>
+    /// <param name="profileYaml">The live profile it starts with (<see cref="ProfileYaml"/> unless a test needs another).</param>
     /// <returns>The started host.</returns>
-    public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct)
+    public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct, string profileYaml = ProfileYaml)
     {
-        var host = new GoldenHost(temporary);
+        var host = new GoldenHost(temporary, profileYaml);
         try
         {
             await host.Run(ct);
@@ -94,7 +98,7 @@ public sealed class GoldenHost : IAsyncDisposable
     private async Task Run(CancellationToken ct)
     {
         _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
-        await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), ProfileYaml, ct);
+        await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), _profileYaml, ct);
         var app = LoopbackBinding.Build([], Environment, new FakeTimeProvider(KnownInstants.Epoch), static services =>
         {
             _ = services.Replace(ServiceDescriptor.Singleton<IIdGenerator>(new SequentialIdGenerator()));
