@@ -809,7 +809,8 @@ own worktree and its own throwaway Sindri home, coordinated by a lead.
 
 Phases split into stages where part of a phase has fewer dependencies than the rest. One stage = one PR. A stage may
 start once every dependency is merged, or all but one are merged and that one is open as a review-clean PR (it then
-stacks on that branch).
+stacks on that branch). A dependency marked *(job route only)* or *(linker only)* doesn't count toward this rule or
+the stacking limits: the stage starts without it and never branches from it (see the owner decisions below the table).
 
 | Stage | What | Depends on | Wave |
 |---|---|---|---|
@@ -819,12 +820,12 @@ stacks on that branch).
 | **S-1A** | Phase 1a: `Aw.Context` package, facade, contract, sanitizer, egress scrubber, repo-docs, planner skeleton, HTTP and CLI | S1 merged · API P1 merged (the chain) · S-1C · S-FX | 1 |
 | **S-1M** | Phase 1b: the `/sindri/mcp` host (shared with API P8), `context_query` and `context_sources`, doctor checks, per-repo registration docs | S-1A | 2 |
 | **S-2W** | Wiring `context.scrub.extraPatterns` into `Aw.Context` (XS) | S-1A · S-2R | 2 |
-| **S-3a** | Phase 3, first half: graph store, keys and aliases, overrides, `ImportMap`/`ExportMap` (protected), map status, doctor `context:map` and `context:retention`, purge (split from S-3 for size, 2026-10-12) | S-1A | 2 |
-| **S-3b** | Phase 3, second half: the cascade, `node`/`neighbors`/`path`, the `node` shape with `graph` and `affects`, `text` anchors, the probe runner; carries the Phase 3 signal | S-3a | 2 |
+| **S-3a** | Phase 3, first half: graph store and Phase 3's whole migration (graph, overrides, decisions, retention), keys, aliases and key-migration scaffolding, overrides, `ImportMap`/`ExportMap` (protected) with the 14-day export purge, the `map import`, `map export` and `map status` routes and verbs, doctor `context:map` and `context:retention`, the purge service (split from S-3 for size, 2026-10-12) | S-1A | 2 |
+| **S-3b** | Phase 3, second half: the cascade, `node`/`neighbors`/`path` with their routes and verbs and `query --node` in the planner, the `node` shape with `graph` and `affects`, `text` anchors, the probe runner; carries the Phase 3 signal except `context_node` from a session, which S-3M proves | S-3a | 2 (stacks on S-3a, split from one wave-2 stage) |
 | **S-5A** | Phase 5, first half: `onyx` adapter (search, fetch, UUID canonical keys and identifier aliases, contract tests against `FakeOnyxServer`), secret-pointer resolution, Onyx setup doc and doctor `context:onyx` | S-1A · S-2R · S-FX; **merges after S-2W** | 2 |
 | **S-3M** | Phase 3's MCP tools `context_node`, `context_neighbors` (XS) | S-1M · S-3b | 3 |
-| **S-4** | Phase 4: extractor, file-level `implements`, map review. Starts on S-3b; `map build` runs as an API P6 job, so its job route is added when P6 merges (owner, 2026-10-12) | S-3b · API P6 (job route only) | 3 |
-| **S-5B** | Phase 5, second half: sync, rules-first linking, decisions from issue and comment records, intent-vs-intent conflicts, the `item` shape. Starts on S-3b and S-5A; `sources sync` runs as an API P6 job, so its job route (and flipping S-1A's pending `SyncSources` row to ready) is added when P6 merges (owner, 2026-10-12) | S-3b · S-5A · API P6 (job route only) | 3 |
+| **S-4** | Phase 4: extractor, file-level `implements`, map review. Starts on S-3b; `map build` runs as an API P6 job, never inside the command gate, so its job route is added when P6 merges (owner, 2026-10-12) | S-3b · API P6 (job route only) | 3 |
+| **S-5B** | Phase 5, second half: sync, rules-first linking, decisions from issue and comment records, intent-vs-intent conflicts, the `item` shape. Starts on S-3b and S-5A (it stacks on at most one of them; the other has merged); `sources sync` runs as an API P6 job, never inside the command gate, so its job route (and flipping S-1A's pending `SyncSources` row to ready) is added when P6 merges (owner, 2026-10-12) | S-3b · S-5A · API P6 (job route only) | 3 |
 | **S-6** | Phase 6: native `linear` adapter (hand-written GraphQL, D18): projects, Linear Documents, project updates, issue↔PR attachments; dedup with Onyx's records. Starts on S-1A and S-5A; links and decisions from documents through S-5B's linker are added when S-5B merges (owner, 2026-10-12) | S-1A · S-5A · S-5B (linker only) | 3 |
 | **S-7A** | Phase 7, harness: corpus builder, per-sample as-of maps (from the extractor), arms runner, reports, on the fixture corpus | S-3b · S-4 · S-FX | 4 |
 | **S-CF** | Intent-vs-file conflicts: a decision citing a file the map says implements something else (S) | S-4 · S-5B | 4 |
@@ -833,9 +834,9 @@ stacks on that branch).
 | **S-9** | Phase 9: code adapter and symbol-level links | the code index block | blocked |
 | **S-10** | Phase 10: the `input.context.retrieve` block | engine P4 (the `StepInput` runtime) | after engine P4 |
 
-Critical path: S-1A → S-3a → S-3b → S-5B → S-7B → S-8 (S-4 → S-7A and S-6 run beside it).
+Critical path: S-1A → S-3a → S-3b → S-5B → S-6 (its linker part) → S-7B → S-8. S-6's adapter work starts earlier, on S-5A, and S-4 → S-7A runs beside it.
 
-**Owner decisions, 2026-10-12 (delivery only; no behaviour change):** each context stage ships as one PR even when it measures L, built from layered commits (Core → Infrastructure → Features → Host), each layer green on its own; only S-3 is split, into S-3a and S-3b. A stage may stack up to three deep while the goal is to finish this week (S-1A was stacked on API P1 before it merged). S-4, S-5B and S-6 start before their last dependency and add the dependent part (the P6 job routes, the linker link) when it merges.
+**Owner decisions, 2026-10-12 (delivery only; no behaviour change):** each context stage ships as one PR even when it measures L, built from layered commits (Core → Infrastructure → Features → Host), each layer green on its own; only S-3 is split, into S-3a and S-3b. A stage may stack up to three deep while the goal is to finish this week (S-1A was stacked on API P1 before it merged). S-4, S-5B and S-6 start before their last dependency and add the dependent part (the P6 job routes, the linker link) when it merges. That part lands in the same PR (one PR per stage): before it, the owner builds and tests the rest, including the service behind the job, through tests and fixtures; when the dependency merges, the owner rebases, adds the part, proves the full phase signal and redoes the step 9 re-check, and only then is the PR ready. `map build` and `sources sync` never run inside the command gate, even before P6.
 
 ```mermaid
 flowchart LR
@@ -878,12 +879,12 @@ flowchart LR
 | Role | Who | Does | Never does |
 |---|---|---|---|
 | **Lead** | The session that starts the epic (`/specToProvenPR` steps 0 and 0.5) | Is the **only writer** of `plans/<epic>/stages.md`: the table above, each stage's state, branch, base, port and home. Asks the autonomy question once (recommended: run continuously; stop only at merge gates). Starts a stage owner for every unblocked stage within the caps. Watches for merges and tells owners to rebase. Re-plans when a stage's scope changes. Reports to the human | Write product code or tests; merge; run anything against work data |
-| **Stage owner** | One named teammate per stage (`stage-3`, …), started by the lead with `isolation: worktree`, assigned **until its PR merges** | Runs `/specToProvenPR` steps 1–9 for its stage only, under the brief below. Rebases its own branch when told, resolves conflicts, and redoes step 9's re-check (the journey once; `/review` again if the resolution touched non-test source). Reports each step change to the lead by message | Touch another stage's worktree; write `stages.md`; use the owner's Sindri home, profile, port or any real source |
+| **Stage owner** | One named teammate per stage (`stage-3a`, …), started by the lead with `isolation: worktree`, assigned **until its PR merges** | Runs `/specToProvenPR` steps 1–9 for its stage only, under the brief below. Rebases its own branch when told, resolves conflicts, and redoes step 9's re-check (the journey once; `/review` again if the resolution touched non-test source). Reports each step change to the lead by message | Touch another stage's worktree; write `stages.md`; use the owner's Sindri home, profile, port or any real source |
 | **Implementers** | Subagents of a stage owner (superpowers:subagent-driven-development) | Independent tasks inside one stage in parallel, each red-green with its own tests | Work across stages |
 | **Reviewers** | `/review`'s own multi-agent fan-out, per PR | The review loop on each stage's PR | — |
 
 **Stage-owner brief.** `/specToProvenPR` as it exists runs a whole epic from one worktree. Until it takes a stage id
-(`--stage S-3`, a toolkit follow-up outside this spec), the lead gives each owner this brief, which overrides those
+(`--stage S-3a`, a toolkit follow-up outside this spec), the lead gives each owner this brief, which overrides those
 defaults:
 
 1. You own stage `<id>` only. The lead has done steps 0 and 0.5; don't create an epic worktree or ask the autonomy
@@ -952,11 +953,11 @@ team ever reads work data:
 
 - **Caps:** at most **3 stages building** at once (the heavy-job lock has two slots that integration and heavy lanes
   take, so the third waits briefly; the owner's review bandwidth is the other limit), at most **4 PRs ready and
-  unmerged**, and stacks at most **2 deep**. At either of the last two caps the lead starts no new building stage;
+  unmerged**, and stacks at most **2 deep** (**3 deep** while the goal is to finish this week; owner, 2026-10-12). At either of the last two caps the lead starts no new building stage;
   owners do prep only.
 - **A freed slot is filled at once** with the next ready stage: critical path first, then whichever unblocks the most.
 - **Stacking:** a stage on an unmerged dependency branches from it and bases its PR on it. A stage stacks on **at most
-  one** unmerged dependency; with two or more open, it waits until all but one have merged. When the dependency merges,
+  one** unmerged dependency (the partial dependencies marked in the table don't count); with two or more open, it waits until all but one have merged. When the dependency merges,
   the lead tells the owner, who rebases onto `main`, retargets the PR and redoes the step 9 re-check. A stage never
   stacks on a dependency with blocking findings.
 - **Prep while blocked:** verification plans for upcoming stages, fixture and probe assets, `owner-check.md` drafts,
@@ -972,7 +973,7 @@ team ever reads work data:
 |---|---|
 | `context.db` migrations | **Named, not pre-numbered.** A stage's migration file is `NNNN_<stage>_<name>.sql` (the loader's form: four digits, letters, digits and
 `_` only, e.g. `0003_s5a_linear_cursor.sql`) with `NNNN` set to the next free number **on the branch it sits on**, and renumbered when it rebases onto a new base (a stage's migrations stay contiguous on top of its base, as `Aw.Kernel.Data`'s gap check requires). Number and content freeze at merge. Only throwaway homes ever ran an unmerged migration, so renumbering never touches a real `context.db` |
-| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3a `030–034`, S-3b/S-3M `035–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`. §8.6 follows these ranges |
+| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3a `030–034` (030 "No map yet" is defined in S-3a; S-3b reuses it), S-3b/S-3M `035–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`. §8.6 follows these ranges |
 | `deps.yaml`, `Directory.Packages.props`, `AgenticWorkflow.slnx`, `.env.example` | Append-only edits within the stage's own block; the later PR's rebase resolves conflicts |
 | `PublicAPI.Unshipped.txt`, Sindri's `EndpointTable`, `CommandTable`, JSON context, MCP tool list | One line or one block per slice; the later rebase keeps both |
 | `docs/sindri/context.md`, `docs/csharp/sindri-context.md` | One section per stage, headed by the stage id |
@@ -988,14 +989,15 @@ team ever reads work data:
 ### What the lead reports
 
 One line per stage on every change, and on request:
-`S-3  building  step 4 (hand test)  branch …  base S-1A (#…, ready)  port 7493  tokens 0.8M  blockers: none`.
+`S-3a  building  step 4 (hand test)  branch …  base S-1A (#…, ready)  port 7493  tokens 0.8M  blockers: none`.
 `stages.md` is the single record, so `/specToProvenPR` resume mode works for the lead after a restart.
 
 ## Phases
 
 Each phase is one PR, or the stages the table above splits it into. Sizes: XS ≤ 80, S ≤ 250, M ≤ 600 changed lines
-of production code (tests excluded), L above (split before starting). Every phase ends with its signal shown in the
-running app, with evidence written outside repos, and from Phase 3 on its signal includes "`$SINDRI context eval
+of production code (tests excluded), L above. A stage that measures L still ships as one PR of layered commits (owner,
+2026-10-12; see Parallel delivery); only Phase 3 was split. Every phase ends with its signal shown in the
+running app, with evidence written outside repos, and from S-3b on its signal includes "`$SINDRI context eval
 probes` doesn't regress". Stage ids and waves are in "Parallel delivery" above. A signal step that needs the work
 repo, real Linear, real Onyx or a session in the work repo is an **owner check**; stage owners prove the same signal
 on the fixture app.
@@ -1045,8 +1047,12 @@ on the fixture app.
   the cascade (§6.1) with fixtures; `node` shape, `graph` and `affects` sections; anchor resolution for `text`;
   routes, verbs, MCP `context_node` and `context_neighbors` (these two tools are stage S-3M, after S-1M); doctor `context:map` and `context:retention`; the probe
   runner (`eval probes`) and probe file format.
-- **Size:** L as measured, so two stages (owner, 2026-10-12): **S-3a** (store, keys, overrides, import and export, map status, doctor, purge) and **S-3b** (cascade, `node`/`neighbors`/`path`, anchors, probe runner; carries the signal).
-- **S1:** `IScheduledService` (purge).
+- **Size:** L as measured, so two stages (owner, 2026-10-12): **S-3a** (store, keys, overrides, import and export, map status, doctor, purge) and **S-3b** (cascade, `node`/`neighbors`/`path`, anchors, probe runner; carries the signal below except `context_node` from a session, which is S-3M's).
+- **S-3a signal:** on the fixture app, `$SINDRI context map import <fixture map>`, then `context map status` prints
+  node, edge and alias counts; `context map export` and a re-import into a fresh throwaway home round-trip with the
+  original timestamps and provenance; importing `human` rows without the challenge is refused with `SND-AUTH-002`;
+  doctor `context:map` and `context:retention` report ok. The probe rule starts with S-3b.
+- **S1:** `IScheduledService` (purge, in S-3a).
 - **Signal:** after `$SINDRI context map import ~/…/product-map.yaml`, `$SINDRI context query --node
   feature:layout.split-pane.orientation --json` returns its subtree and an `affects` section with paths;
   `context_node` returns the same from a session; `$SINDRI context eval probes` prints precision@5 for the probe file.
@@ -1061,7 +1067,7 @@ on the fixture app.
   `ReviewMap` (§8.7, interactive and `--export`/`--apply`); the `symbol` shape in its file-path form (`--symbol
   <path>`, MCP `symbol`); `IHeavyJobLock`; `ILabeler` over the provider port (the `claude` CLI adapter until #156)
   adapter; a scheduled rebuild. (The intent-vs-file conflict check is stage S-CF, §14 A-F13.)
-- **Size:** M (split extraction and labeling into two PRs if over).
+- **Size:** M (stage **S-4**, wave 3; one PR even if it measures L, owner 2026-10-12).
 - **S1:** `IScheduledService`.
 - **Signal:** `$SINDRI context map build` prints proposed nodes with provenance, confidence and their files;
   `$SINDRI context map review` bulk-accepts deterministic ones and accepts or rejects model ones; a second build keeps
@@ -1076,8 +1082,9 @@ on the fixture app.
   `context:onyx`, `docs/sindri/onyx.md` (§8.8); `SyncSource` and its scheduled service, the rules-first linker (§13),
   `Decision` extraction (labeling switch, `maxTokensPerSync`, queue), `supersedes`, intent-vs-intent conflicts, the
   `item` shape.
-- **Size:** M, as two stages: **S-5A** (adapter, keys, secret pointers, setup doc and doctor; wave 2, beside S-3) and
-  **S-5B** (sync, linking, decisions, conflicts, `item`; wave 3).
+- **Size:** M, as two stages: **S-5A** (adapter, keys, secret pointers, setup doc and doctor; wave 2, beside S-3a and S-3b) and
+  **S-5B** (sync, linking, decisions, conflicts, `item`; wave 3; starts on S-3b, and its `sources sync` job route is
+  added when API P6 merges).
 - **S1:** `IScheduledService`.
 - **Signal:** with Onyx scoped and loopback-bound, `$SINDRI context query --item ENG-482 --json` returns the issue,
   the nodes it touches, its decisions quoting their source and related Slack threads, all with `onyx:` citations
@@ -1092,7 +1099,8 @@ on the fixture app.
   the JSON context, team filter, `linear.url`), dedup with Onyx's records by UUID key, document version handling, the
   as-of check of document history (§12), links and decisions from documents through S-5B's linker, the recorded
   Linear fake.
-- **Size:** S–M (stage **S-6**, wave 4).
+- **Size:** S–M (stage **S-6**, wave 3: starts on S-1A and S-5A; the links and decisions through S-5B's linker are
+  added in the same PR when S-5B merges, before it goes ready; owner 2026-10-12).
 - **S1:** secret pointers (Phase 5).
 - **Signal:** `$SINDRI context query --item ENG-482 --json` now also returns its project's PRD and TDD (`linear:doc/…`
   citations with `updatedAt`) and the PRs that shipped it, with the issue cited once carrying both `onyx` and `linear`
