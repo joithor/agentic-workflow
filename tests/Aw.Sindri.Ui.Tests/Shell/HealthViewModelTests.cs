@@ -536,7 +536,7 @@ public sealed class HealthViewModelTests : IDisposable
             [
                 new HealthCell("approved", "ab12cd"),
                 new HealthCell("live", "ff00ee"),
-                new HealthCell("file", "~/.sindri/profile.yaml"),
+                new HealthCell("file", "~/.sindri/profile.yaml", IsPath: true),
             ],
             _vm.Detail.Profile);
         Assert.Equal([new ServiceRow("heartbeat", "every 5s", "last run " + Local(A.Noon))], _vm.Services);
@@ -552,6 +552,6 @@ public sealed class HealthViewModelTests : IDisposable
         Start();
 
         await Eventually(() => _vm.Headline == "Running", "headline");
-        Assert.Equal(new HealthCell("file", "/srv/…/profiles/default/profile.yaml"), _vm.Detail.Profile[^1]);
+        Assert.Equal(new HealthCell("file", "/srv/…/profiles/default/profile.yaml", IsPath: true), _vm.Detail.Profile[^1]);
     }
 }

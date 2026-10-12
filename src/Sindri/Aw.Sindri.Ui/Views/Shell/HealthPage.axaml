@@ -70,8 +70,9 @@
                 <DataTemplate x:DataType="vm:HealthCell">
                   <Grid Classes="row" ColumnDefinitions="140,*" AutomationProperties.Name="{Binding Label}">
                     <TextBlock Classes="caption subtle row-label" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
-                    <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextTrimming="PrefixCharacterEllipsis"
-                               AutomationProperties.Name="{Binding Value}" ToolTip.Tip="{Binding Value}" />
+                    <!-- S3: a path (the profile's file) is mono, as the Not running card's path is; other values are Body. -->
+                    <TextBlock Grid.Column="1" Classes.body="{Binding !IsPath}" Classes.mono="{Binding IsPath}" Text="{Binding Value}"
+                               TextTrimming="PrefixCharacterEllipsis" AutomationProperties.Name="{Binding Value}" ToolTip.Tip="{Binding Value}" />
                   </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>

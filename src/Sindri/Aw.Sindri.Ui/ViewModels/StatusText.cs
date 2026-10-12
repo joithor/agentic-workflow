@@ -86,7 +86,7 @@ internal static class StatusText
 
         if (p.Source is { } source)
         {
-            yield return new(Labels.RowFile, ShortPath(source));
+            yield return new(Labels.RowFile, ShortPath(source), IsPath: true);
         }
     }
 
