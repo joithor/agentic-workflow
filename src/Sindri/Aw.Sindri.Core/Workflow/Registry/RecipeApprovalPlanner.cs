@@ -119,7 +119,7 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
     }
 
     /// <summary>
-    /// The plan for approving <paramref name="recipe"/>. Refused when its hash is revoked (SND-RECIPE-005), it declares no
+    /// The plan for approving <paramref name="recipe"/>. Refused when its hash or its base is revoked (SND-RECIPE-005), it declares no
     /// evals (SND-RECIPE-008), a child it starts has no approved hash to pin (SND-RECIPE-003), or it is already approved
     /// with the same pins (SND-CLI-003, nothing to do).
     /// </summary>
@@ -164,7 +164,9 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
         }
 
         var preview = ApprovalPreviews.Approve(standing.Parsed, recipe.Hash, pins, catalog, latest) with { Diff = diff.Value, Resumes = resumes.Value };
-        var subject = ChallengeSubject.ForRecipe(recipe.Hash, recipe.Version, latest is null ? null : PinRules.Digest(pins, json));
+        // The pins are bound on every approval, not only a drift one: a child approved while the human reads the preview
+        // would otherwise be pinned without being seen.
+        var subject = ChallengeSubject.ForRecipe(recipe.Hash, recipe.Version, PinRules.Digest(pins, json));
         return new ApprovalPlan(recipe, preview, latest, ChallengeAction.Approve(recipe.Id, recipe.Version), subject);
     }
 
@@ -177,6 +179,11 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
             return revoked.IsError ? revoked.Error : WorkflowErrors.RecipeRevoked.With($"{Name(recipe)} was revoked and can't be approved again; raise its version and approve that");
         }
 
+        if (await RevokedBase(recipe, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
         var parsed = AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(recipe.Text), json);
         if (parsed.IsError || parsed.Value.Evals.Count == 0)
         {
@@ -186,6 +193,21 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
 
         var current = await approvals.Current(cancellationToken).ConfigureAwait(false);
         return current.IsError ? current.Error : (parsed.Value, current.Value);
+    }
+
+    /// <summary>SND-RECIPE-005 when <paramref name="recipe"/> was generated from a base that has been revoked since it was registered.</summary>
+    private async ValueTask<Error?> RevokedBase(RegisteredRecipe recipe, CancellationToken cancellationToken)
+    {
+        if (recipe.Base is not { } from)
+        {
+            return null;
+        }
+
+        var revoked = await approvals.Revocation(from.Hash, cancellationToken).ConfigureAwait(false);
+        return revoked.IsError ? revoked.Error
+            : revoked.Value is null ? null
+            : WorkflowErrors.RecipeRevoked.With(
+                $"{Name(recipe)} was generated from base {from.Id.Value}@{from.Hash.Display}, which was revoked since; generate the recipe from an approved base");
     }
 
     /// <summary>

@@ -20,7 +20,7 @@ public sealed class RecipeRevokePlanner(IRecipeStore store, IRecipeApprovals app
     /// <param name="id">The recipe id.</param>
     /// <param name="hash">The hash or its prefix.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
-    /// <returns>The plan; SND-RECIPE-002 when no registered version of the id matches; SND-RECIPE-003 when it was never approved; SND-RECIPE-005 when it is already revoked.</returns>
+    /// <returns>The plan; SND-RECIPE-002 when no registered version of the id matches; SND-RECIPE-003 when it was never approved; SND-RECIPE-005 when it is already revoked and nothing approved from it is left to cascade to.</returns>
     public async ValueTask<Result<RevokePlan>> Revoke(RecipeId id, string hash, CancellationToken cancellationToken)
     {
         var versions = await store.Versions(id, cancellationToken).ConfigureAwait(false);
@@ -78,9 +78,19 @@ public sealed class RecipeRevokePlanner(IRecipeStore store, IRecipeApprovals app
     {
         var name = $"{recipe.Id.Value}@{recipe.Hash.Display}";
         var revoked = await approvals.Revocation(recipe.Hash, cancellationToken).ConfigureAwait(false);
-        if (revoked.IsError || revoked.Value is not null)
+        if (revoked.IsError)
         {
-            return revoked.IsError ? revoked.Error : WorkflowErrors.RecipeRevoked.With($"{name} is already revoked; nothing to do");
+            return revoked.Error;
+        }
+
+        if (revoked.Value is not null)
+        {
+            // A revoke whose cascade stopped partway (the hash stamped, some generated recipes not) is finished by running
+            // it again: every step is keyed by its hash, so the stamped ones record nothing new.
+            var rest = await Cascade(recipe.Hash, cancellationToken).ConfigureAwait(false);
+            return rest.IsError ? rest.Error
+                : rest.Value.Count == 0 ? WorkflowErrors.RecipeRevoked.With($"{name} is already revoked; nothing to do")
+                : null;
         }
 
         var latest = await approvals.Latest(recipe.Id, recipe.Version, recipe.Hash, cancellationToken).ConfigureAwait(false);
