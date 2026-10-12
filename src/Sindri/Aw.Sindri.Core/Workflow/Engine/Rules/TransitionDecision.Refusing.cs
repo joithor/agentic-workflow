@@ -28,14 +28,20 @@ public static partial class TransitionDecision
     {
         var input = new RefusalInput(instance, d.Recipe, d.Trigger, index, records.Gates, records.Evidence);
         var outcome = RefusalRules.Refuse(input, d.Rules);
-        if (outcome.Follow == RefusalFollow.CommandRefused)
+        if (outcome.Follow == RefusalFollow.CommandRefused && d.Answered is null)
         {
             return new Refused(d.Key, outcome, [], [], []);
         }
 
-        var (after, followUps) = outcome.Follow == RefusalFollow.Rerun
-            ? Rerun(d, instance, outcome.Round ?? 1, RefusalRules.Mark(input))
-            : (d.Rules.Suspend(instance, outcome.Suspend!, d.Now), []); // why: RefusalRules sets Suspend on every park and escalation
+        // A command refused on an answer's resume ('--reject', or '--accept' with another check refusing) still commits
+        // the answer's pop with its SND-WF-004 refusal, so the escalation never stays a dead end (§5.8, W14).
+        (WorkflowInstance After, IReadOnlyList<FollowUp> FollowUps) follows = outcome.Follow switch
+        {
+            RefusalFollow.Rerun => Rerun(d, instance, outcome.Round ?? 1, RefusalRules.Mark(input)),
+            RefusalFollow.CommandRefused => (instance, []),
+            RefusalFollow.Park or RefusalFollow.Escalate or _ => (d.Rules.Suspend(instance, outcome.Suspend!, d.Now), []), // why: RefusalRules sets Suspend on every park and escalation
+        };
+        var (after, followUps) = follows;
         var suspension = outcome.Suspend?.Suspension;
         var change = d.Change(after, WorkflowEventType.Refused, records);
         var refusal = new RefusalRecord(outcome.Follow, suspension?.Reason, suspension?.Escalation, outcome.Round, outcome.Error?.Code);
