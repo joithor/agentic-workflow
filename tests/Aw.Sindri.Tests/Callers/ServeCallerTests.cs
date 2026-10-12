@@ -1,0 +1,82 @@
+using System.Net;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Infrastructure;
+using Aw.Sindri.Infrastructure.Auth;
+using Aw.Sindri.Infrastructure.Control;
+using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Ledger;
+using Microsoft.Extensions.DependencyInjection;
+using static Aw.Sindri.Tests.Callers.CallerRequests;
+
+namespace Aw.Sindri.Tests.Callers;
+
+/// <summary>'sindri serve' as the CLI runs it: the token's lifetime, and the in-process caller 'service:host' (API spec §2.1, §6).</summary>
+public sealed class ServeCallerTests : IDisposable
+{
+    private static readonly TimeSpan _prompt = TimeSpan.FromSeconds(10);
+    private readonly TempHome _home = new();
+
+    public void Dispose() => _home.Dispose();
+
+    private SindriSettings Settings => new(_home.Path, Path.Combine(_home.Path, "profile", "profile.yaml"));
+
+    private Func<string, string?> Environment => n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => "0", _ => null };
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task Serve_mints_the_token_only_after_taking_the_lease()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var serve = ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null);
+        var url = await Endpoint(ct);
+        var token = (await new FileHumanToken(Settings).Read(ct)).Value;
+        Assert.NotNull(token);
+
+        var second = await ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null).WaitAsync(_prompt, ct);   // refused: the lease is held
+        var afterRefusal = (await new FileHumanToken(Settings).Read(ct)).Value;
+        using var http = new HttpClient { BaseAddress = url, Timeout = _prompt };
+        var status = await http.Ask(Get("/sindri/status", Human(token.Value)));
+        var stop = await http.Ask(Post("/sindri/stop", json: null, Human(token.Value)));
+        var code = await serve.WaitAsync(_prompt, ct);
+
+        Assert.Equal(1, second);
+        Assert.Equal(token, afterRefusal);
+        Assert.Equal((HttpStatusCode.OK, HttpStatusCode.OK), (status.Status, stop.Status));
+        Assert.Equal(0, code);
+        Assert.Null((await new FileHumanToken(Settings).Read(ct)).Value);   // removed with control.json
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task Ctrl_C_on_serve_records_process_stopped_as_service_host_and_releases_the_lease()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        var code = await ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null,
+            static services => services.AddHostedService<StopsAsIfInterrupted>()).WaitAsync(_prompt, ct);
+
+        var stores = SqliteStores.Create(_home.Path, TimeProvider.System, new FakeProcessProbe());
+        var started = (await stores.Ledger.Latest(EventTypes.ProcessStarted, ct)).Value;
+        var stopped = (await stores.Ledger.Latest(EventTypes.ProcessStopped, ct)).Value;
+        Assert.Equal(0, code);
+        Assert.Equal(("service:host", "service:host"), (started?.Envelope.Actor, stopped?.Envelope.Actor));
+        Assert.Contains("\"reason\":\"signal\"", stopped!.Envelope.Payload, StringComparison.Ordinal);   // why: asserted recorded just above
+        Assert.True((await stores.Lease.Read(ct)).Value!.Released);   // why: serve took the lease, so a row exists
+        Assert.False(File.Exists(Settings.TokenPath));
+    }
+
+    /// <summary>The endpoint serve recorded once it listens.</summary>
+    private async Task<Uri> Endpoint(CancellationToken ct)
+    {
+        var file = new FileEndpoint(Settings, SliceHarness.Json);
+        for (var waited = 0; ; waited += 50)
+        {
+            if ((await file.Read(ct)).Value is { } recorded)
+            {
+                return recorded.Url;
+            }
+
+            Assert.True(waited < 10_000, "serve didn't record its endpoint within 10 s");
+            await Task.Delay(50, ct);
+        }
+    }
+}

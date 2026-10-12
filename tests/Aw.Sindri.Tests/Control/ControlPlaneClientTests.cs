@@ -15,7 +15,7 @@ public sealed class ControlPlaneClientTests
         await using var silent = new PingServer(answer: null);
         var endpoint = new ControlEndpoint(silent.Url, 42, 3);
         var probe = FakeControlPlaneProbe.For(endpoint, new Ping(42, 3));
-        using var client = new ControlPlaneClient(probe, SliceHarness.Json, TimeSpan.FromSeconds(1));
+        using var client = new ControlPlaneClient(probe, SliceHarness.Json, timeout: TimeSpan.FromSeconds(1));
         var stderr = new StringWriter();
         var verbs = new Verbs(client, probe, new Output(new StringWriter(), stderr, SliceHarness.Json), new ServiceCollection().BuildServiceProvider());
 

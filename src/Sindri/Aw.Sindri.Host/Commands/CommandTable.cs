@@ -1,13 +1,16 @@
 using System.Text.Json;
 using Aw.Kernel.Telemetry;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Profile;
 
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// The verb table: 'serve' runs the control plane; every other verb runs as a client in a short-lived container built by
-/// the same Compose, so the CLI and the API share one composition.
+/// the same Compose, so the CLI and the API share one composition. The CLI classes itself first (API spec §6): that sets
+/// its caller headers and whether it may start the control plane (§7).
 /// </summary>
 internal static class CommandTable
 {
@@ -15,7 +18,7 @@ internal static class CommandTable
     {
         if (args is ["serve"])
         {
-            return await ServeCommand.Run(environment, clock, Console.Error).ConfigureAwait(false);
+            return await Serve(environment, clock).ConfigureAwait(false);
         }
 
         var provider = Composition.Compose(new ServiceCollection(), environment, clock).BuildServiceProvider();
@@ -25,28 +28,49 @@ internal static class CommandTable
             var scope = provider.CreateAsyncScope();
             await using (scope.ConfigureAwait(false))
             {
-                return await Dispatch(args, scope.ServiceProvider, environment).ConfigureAwait(false);
+                var session = AgentSession.Detect(environment, scope.ServiceProvider.GetRequiredService<IProcessAncestry>(), Interactive());
+                return await Dispatch(args, session, scope.ServiceProvider, environment).ConfigureAwait(false);
             }
         }
     }
 
-    private static async Task<int> Dispatch(string[] args, IServiceProvider services, Func<string, string?> environment)
+    /// <summary>'sindri serve', refused inside an agent session unless AW_SINDRI_PROVER=1 (P1 plan G6).</summary>
+    private static async Task<int> Serve(Func<string, string?> environment, TimeProvider clock)
+    {
+        Kernel.Error? refused;
+        Output output;
+        var provider = Composition.Compose(new ServiceCollection(), environment, clock).BuildServiceProvider();
+        await using (provider.ConfigureAwait(false))   // only to class the CLI: serve builds its own host
+        {
+            refused = StartCommand.ServeRefusal(AgentSession.Detect(environment, provider.GetRequiredService<IProcessAncestry>(), Interactive()));
+            output = new Output(Console.Out, Console.Error, provider.GetRequiredService<JsonSerializerOptions>());
+        }
+
+        return refused is null
+            ? await ServeCommand.Run(environment, clock, Console.Error).ConfigureAwait(false)
+            : await output.Error(refused).ConfigureAwait(false);
+    }
+
+    private static async Task<int> Dispatch(string[] args, AgentSession session, IServiceProvider services, Func<string, string?> environment)
     {
         var options = services.GetRequiredService<JsonSerializerOptions>();
         var probe = services.GetRequiredService<IControlPlaneProbe>();
         var output = new Output(Console.Out, Console.Error, options);
-        using var client = new ControlPlaneClient(probe, options);
+        using var client = new ControlPlaneClient(probe, options, Headers(session, services));
+        var start = new StartCommand(probe, services.GetRequiredService<IControlPlaneLauncher>(), client, output, services.GetRequiredService<TimeProvider>(), session,
+            UiOpener(headless: false, environment));
         var verbs = new Verbs(client, probe, output, services);
         var ct = CancellationToken.None;
         return args switch
         {
-            [] => await Start(services, client, output, UiOpener(headless: false, environment)).ConfigureAwait(false),
-            ["--headless"] => await Start(services, client, output, UiOpener(headless: true, environment)).ConfigureAwait(false),
+            // ---- verbs: one arm per verb ----
+            [] => await start.Run(headless: false, ct).ConfigureAwait(false),
+            ["--headless"] => await start.Run(headless: true, ct).ConfigureAwait(false),
             ["status", .. var rest] when Json(rest) is { } json => await verbs.Status(json, ct).ConfigureAwait(false),
             ["stop"] => await verbs.Stop(ct).ConfigureAwait(false),
             ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
-            ["profile", "approve"] => await verbs.Approve(hashText: null, Interactive(), Console.In, ct).ConfigureAwait(false),
-            ["profile", "approve", var hash] => await verbs.Approve(hash, Interactive(), Console.In, ct).ConfigureAwait(false),
+            ["profile", "approve", .. var rest] when Approval(rest) is { } a => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!a.NoStart, c))
+                .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
             ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
             ["help" or "--help" or "-h"] => await output.Text(Usage.Text + "\n", 0).ConfigureAwait(false),
@@ -54,9 +78,14 @@ internal static class CommandTable
         };
     }
 
-    private static Task<int> Start(IServiceProvider services, ControlPlaneClient client, Output output, Func<string>? openUi) =>
-        new StartCommand(services.GetRequiredService<IControlPlaneProbe>(), services.GetRequiredService<IControlPlaneLauncher>(), client, output,
-            services.GetRequiredService<TimeProvider>(), openUi).Run(CancellationToken.None);
+    /// <summary>
+    /// The caller headers. The token store is Infrastructure's (registered with it); a missing token file means a human
+    /// call carries no token and the API refuses it (SND-AUTH-001). The repo is looked up at the first call, from the
+    /// working directory.
+    /// </summary>
+    private static CallerHeaders Headers(AgentSession session, IServiceProvider services) =>
+        CallerHeaders.For(session, services.GetRequiredService<IHumanTokenStore>(),
+            ct => CallerHeaders.RepoOf(services.GetRequiredService<IApprovals>(), services.GetRequiredService<IRepoLocator>(), Environment.CurrentDirectory, ct));
 
     /// <summary>What bare 'sindri' does to open the app; 'sindri --headless' opens nothing.</summary>
     internal static Func<string>? UiOpener(bool headless, Func<string, string?> environment) =>
@@ -66,6 +95,17 @@ internal static class CommandTable
     {
         [] => false,
         ["--json"] => true,
+        _ => null,
+    };
+
+    /// <summary>'profile approve [--no-start] [&lt;hash&gt;]', the flag on either side of the hash.</summary>
+    private static (string? Hash, bool NoStart)? Approval(string[] rest) => rest switch
+    {
+        [] => (null, false),
+        ["--no-start"] => (null, true),
+        ["--no-start", var hash] => (hash, true),
+        [var hash, "--no-start"] => (hash, true),
+        [var hash] when !hash.StartsWith("--", StringComparison.Ordinal) => (hash, false),
         _ => null,
     };
 

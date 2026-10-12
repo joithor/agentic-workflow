@@ -7,11 +7,13 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// Bare 'sindri' and 'sindri --headless' (factory addendum §17.29.1): start the control plane if it isn't running
-/// (detached, through the launcher), open the app unless headless (<paramref name="openUi"/> is null), then print the
-/// banner and the summary. Exit 1 when the profile needs approval, so a script sees the attention; the app never changes
-/// the exit code. The start wait runs on the injected clock: up to <see cref="Budget"/>, probing every <see cref="Poll"/>.
+/// (detached, through the launcher), open the app unless headless (<paramref name="openUi"/> says how; null opens
+/// nothing), then print the banner and the summary. Exit 1 when the profile needs approval, so a script sees the
+/// attention; the app never changes the exit code. The start wait runs on the injected clock: up to
+/// <see cref="Budget"/>, probing every <see cref="Poll"/>.
 /// </summary>
-internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLauncher launcher, ControlPlaneClient client, Output output, TimeProvider clock, Func<string>? openUi = null)
+internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLauncher launcher, ControlPlaneClient client, Output output, TimeProvider clock,
+    AgentSession? session = null, Func<string>? openUi = null)
 {
     /// <summary>How long a start waits for the control plane to answer.</summary>
     internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(10);
@@ -19,7 +21,7 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
     /// <summary>How often the start wait probes.</summary>
     internal static readonly TimeSpan Poll = TimeSpan.FromMilliseconds(200);
 
-    internal async Task<int> Run(CancellationToken ct)
+    internal async Task<int> Run(bool headless, CancellationToken ct)
     {
         await output.Out.WriteLineAsync(Banner.Text).ConfigureAwait(false);
         var found = await FindOrLaunch(ct).ConfigureAwait(false);
@@ -29,30 +31,62 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
         }
 
         var status = await client.Get<GetStatusResponse>("/sindri/status", ct).ConfigureAwait(false);
-        if (status.IsError)
-        {
-            return await output.Error(status.Error).ConfigureAwait(false);
-        }
-
-        return await Report(status.Value, found.Value.Endpoint).ConfigureAwait(false);
+        return status.IsError
+            ? await output.Error(status.Error).ConfigureAwait(false)
+            : await Report(status.Value.Value, found.Value.Endpoint, headless).ConfigureAwait(false);
     }
 
     /// <summary>Opens the app (unless headless) and prints the summary; the exit code follows only the profile.</summary>
-    internal Task<int> Report(GetStatusResponse status, ControlEndpoint endpoint)
+    internal Task<int> Report(GetStatusResponse status, ControlEndpoint endpoint, bool headless = false)
     {
-        var ui = openUi?.Invoke();
+        var ui = headless ? null : openUi?.Invoke();
         return output.Text(SummaryText.Render(status, endpoint, ui), status.Profile.NeedsApproval ? 1 : 0);
     }
 
     /// <summary>
-    /// The running control plane, or the one this call starts. It launches only when nothing runs (SND-API-001); one that
-    /// answers late (SND-API-002) is reported as it is. A child that exits with SND-LEASE-001 lost the lease to a
-    /// concurrent start, so polling goes on until the deadline for the winner to answer.
+    /// The running control plane, or the one this call starts. It launches only when nothing runs (SND-API-001), and
+    /// never from an agent session (API spec §7: SND-API-001 asking for the human); one that answers late (SND-API-002)
+    /// is reported as it is. A child that exits with SND-LEASE-001 lost the lease to a concurrent start, so polling goes
+    /// on until the deadline for the winner to answer.
     /// </summary>
-    internal async Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> FindOrLaunch(CancellationToken ct)
+    internal Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> FindOrLaunch(CancellationToken ct) => Find(launch: true, ct);
+
+    /// <summary>
+    /// Before a command a human runs (API spec §7): null when the control plane runs, or once this call started it;
+    /// otherwise the error to print. Only a human CLI starts it, and only when <paramref name="launch"/> (no --no-start).
+    /// </summary>
+    /// <param name="launch">False for --no-start.</param>
+    /// <param name="ct">Cancels the wait.</param>
+    /// <returns>Null, or the error.</returns>
+    internal async Task<Error?> EnsureRunning(bool launch, CancellationToken ct)
+    {
+        var found = await Find(launch && (session?.Human ?? true), ct).ConfigureAwait(false);
+        return found.IsError ? found.Error : null;
+    }
+
+    /// <summary>Why 'sindri serve' won't run here: inside an agent session (API §7); null when it may. AW_SINDRI_PROVER=1 has
+    /// already dropped the parent-process signal in <see cref="AgentSession.Detect"/>, never a variable (API §6, P1 plan G6).</summary>
+    /// <param name="session">How the CLI classed itself.</param>
+    /// <returns>The refusal, or null.</returns>
+    internal static Error? ServeRefusal(AgentSession session) =>
+        session is { Signal: { } signal }
+            ? SindriErrors.NotRunning.With($"an agent session never starts Sindri ({signal}); ask the human to run 'sindri'")
+            : null;
+
+    private async Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> Find(bool launch, CancellationToken ct)
     {
         var found = await probe.Check(ct).ConfigureAwait(false);
-        return found.IsError && found.Error.Code == SindriErrors.NotRunning.Code ? await Launch(ct).ConfigureAwait(false) : found;
+        if (found.IsSuccess || found.Error.Code != SindriErrors.NotRunning.Code)
+        {
+            return found;
+        }
+
+        if (session is { Signal: { } signal })
+        {
+            return SindriErrors.NotRunning.With($"Sindri isn't running; ask the human to run 'sindri' (an agent session never starts it: {signal})");
+        }
+
+        return launch ? await Launch(ct).ConfigureAwait(false) : found;
     }
 
     private async Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> Launch(CancellationToken ct)

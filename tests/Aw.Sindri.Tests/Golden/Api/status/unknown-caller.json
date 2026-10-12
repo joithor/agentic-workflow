@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "SND-API-007",
+  "status": 400,
+  "detail": "X-Sindri-Caller 'admin' isn't 'human' or 'session' (fix: send one of them, or leave the header out to call as a session)",
+  "traceId": "<trace>"
+}
