@@ -4,14 +4,52 @@ using Aw.Sindri.Core.Ledger;
 
 namespace Aw.Sindri.Features.StreamEvents;
 
+/// <summary>
+/// Reads events after the cursor from the ledger. With a filter (S1-D6) it reads on, page by page, until it has
+/// <see cref="StreamEventsRequest.Max"/> matching events or reaches the head, and reports how far it read.
+/// </summary>
+/// <param name="ledger">The ledger.</param>
 internal sealed class StreamEventsService(ILedgerStore ledger) : IService<StreamEventsRequest, StreamEventsResponse>
 {
     public async ValueTask<Result<StreamEventsResponse>> Handle(StreamEventsRequest request, CancellationToken cancellationToken)
     {
-        var page = await ledger.ReadAfter(Math.Max(request.After, 0), Math.Clamp(request.Max, 1, 500), cancellationToken).ConfigureAwait(false);
-        return page.IsError
-            ? page.Error
-            : new StreamEventsResponse([.. page.Value.Select(e => new EventView(e.Sequence, e.Envelope.Type, e.Envelope.OccurredAt,
-                e.Envelope.Actor, e.Envelope.Tenant, e.Envelope.Ring, e.Epoch, e.Envelope.Payload))]);
+        ArgumentNullException.ThrowIfNull(request);
+        var max = Math.Clamp(request.Max, 1, 500);
+        var cursor = Math.Max(request.After, 0);
+        var kept = new List<EventView>();
+        long? scanned = null;
+        while (kept.Count < max)
+        {
+            var page = await ledger.ReadAfter(cursor, max, cancellationToken).ConfigureAwait(false);
+            if (page.IsError)
+            {
+                return page.Error;
+            }
+
+            foreach (var e in page.Value)
+            {
+                scanned = cursor = e.Sequence;
+                if (Keeps(request, e))
+                {
+                    kept.Add(View(e));
+                    if (kept.Count == max)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (page.Value.Count < max)
+            {
+                break;
+            }
+        }
+
+        return new StreamEventsResponse(kept) { Scanned = scanned };
     }
+
+    private static bool Keeps(StreamEventsRequest request, LedgerEvent e) => request is not null && e is not null;   // red: S1-D6's filter
+
+    private static EventView View(LedgerEvent e) =>
+        new(e.Sequence, e.Envelope.Type, e.Envelope.OccurredAt, e.Envelope.Actor, e.Envelope.Tenant, e.Envelope.Ring, e.Epoch, e.Envelope.Payload);
 }

@@ -130,14 +130,17 @@ internal sealed class WorkflowsHarness : IDisposable
     }
 
     /// <summary>'workflow list --query', retried while visibility catches up (it is eventually consistent).</summary>
-    public static async Task<string> Listed(IServiceProvider sindri, string query, CancellationToken ct)
+    public static Task<string> Listed(IServiceProvider sindri, string query, CancellationToken ct) => Listed(sindri, ct, "list", "--query", query);
+
+    /// <summary>'workflow &lt;args&gt;' (a list), retried while it prints nothing or an empty state, as visibility catches up.</summary>
+    public static async Task<string> Listed(IServiceProvider sindri, CancellationToken ct, params string[] args)
     {
         var deadline = DateTime.UtcNow + _patience;
         var last = (Exit: -1, Stdout: string.Empty, Stderr: string.Empty);
         while (DateTime.UtcNow < deadline)
         {
-            last = await Cli(sindri, "list", "--query", query);
-            if (last.Exit != 0 || last.Stdout.Length > 0)
+            last = await Cli(sindri, args);
+            if (last.Exit != 0 || (last.Stdout.Length > 0 && last.Stdout is not ("no instances match\n" or "nothing needs you\n")))
             {
                 break;
             }

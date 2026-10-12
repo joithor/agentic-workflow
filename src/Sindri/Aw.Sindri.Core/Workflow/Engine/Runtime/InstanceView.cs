@@ -31,4 +31,23 @@ public sealed record InstanceView(
     DeskTask? Task,
     RunToken? Run,
     IReadOnlyList<ChildView> Children,
-    OutcomeName? Outcome);
+    OutcomeName? Outcome)
+{
+    /// <summary>
+    /// The instance's version, 'v&lt;n&gt;' in the status header: the count of events the interpreter has mirrored into the
+    /// ledger (the start and every transition). Temporal keeps no row version, so the mirror count stands in for it.
+    /// </summary>
+    public int Version { get; init; }
+
+    /// <summary>The suggested answer line for a park or escalation (§6.4, one per park reason); null when none applies.</summary>
+    public string? Answer { get; init; }
+
+    /// <summary>A drift recorded behind the open park (§6.4 'drift'): the block, and that the answer needs the re-approval first.</summary>
+    public string? Drift { get; init; }
+
+    /// <summary>The token budgets of the active state and the instance, when the recipe declares one (§6.4 'budget').</summary>
+    public BudgetView? Budget { get; init; }
+
+    /// <summary>What was left of the state's timeout when a takeover paused it (§6.4 'paused'; engine P5 sets it).</summary>
+    public TimeSpan? Paused { get; init; }
+}

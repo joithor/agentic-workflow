@@ -1,0 +1,111 @@
+using System.Text;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+
+namespace Aw.Sindri.Host.Commands;
+
+/// <summary>
+/// 'workflow status' (engine spec §6.4): the header, then labelled lines in a fixed order — next, child, inputs, drift,
+/// timeout, paused, budget, answer, commands — leaving out the empty ones. Labels take 12 columns; a long 'next' wraps
+/// at 120 and every continuation line is indented to the value column. Plain ASCII.
+/// </summary>
+internal static class StatusLayout
+{
+    private const int Width = 120;
+    private const string Indent = "            ";
+
+    /// <summary>The layout of <paramref name="view"/> at <paramref name="now"/>, ending in a newline.</summary>
+    /// <param name="view">The instance.</param>
+    /// <param name="now">The time ages and timeouts are measured to.</param>
+    /// <returns>The text.</returns>
+    public static string Render(InstanceView view, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        if (view.Version >= 0)
+        {
+            throw new NotSupportedException("red: engine P4 unit (e) renders the section 6.4 layout");
+        }
+
+        var text = new StringBuilder().Append(InstanceHeader.Line(view, now)).Append('\n');
+        Labelled(text, "next", Wrap(view.Next));
+        Labelled(text, "child", [.. view.Children.Select(static c => $"{c.Address.Value}  {c.State}")]);
+        Labelled(text, "inputs", view.Task is { } task ? [.. task.Inputs.Select(static i => $"{i.Key.Value}  {i.Value.Name}  sha256:{Short(i.Value.Value.Sha256)}")] : []);
+        Labelled(text, "drift", view.Drift is { } drift ? [drift] : []);
+        Labelled(text, "timeout", view.Task?.TimeoutAt is { } at ? [$"parks in {StatusText.Duration(at - now)} (desk)"] : []);
+        Labelled(text, "paused", view.Paused is { } left ? [$"timeout {StatusText.Duration(left)} left"] : []);
+        Labelled(text, "budget", view.Budget is { } budget ? [Budget(budget)] : []);
+        Labelled(text, "answer", view.Answer is { } answer ? [answer] : []);
+        Labelled(text, "commands", Commands(view) is { Length: > 0 } commands ? [commands] : []);
+        return text.ToString();
+    }
+
+    /// <summary>The verbs of 'allowedCommands', in their order; an answer forwarded to a child says so.</summary>
+    /// <param name="view">The instance.</param>
+    /// <returns>'answer, takeover, cancel', or empty for an ended instance.</returns>
+    public static string Commands(InstanceView view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        var forwarded = view.Question is not null && view.Children.Count > 0;
+        return string.Join(", ", view.AllowedCommands.Select(c => Verb(c.Action) is var verb && verb == "answer" && forwarded ? "answer (forwarded)" : verb));
+    }
+
+    private static string Verb(string action) => action switch
+    {
+        "CompleteStep" => "complete",
+        _ => action[(action.IndexOf(':', StringComparison.Ordinal) + 1)..],
+    };
+
+    private static void Labelled(StringBuilder text, string label, List<string> lines)
+    {
+        for (var i = 0; i < lines.Count; i++)
+        {
+            _ = text.Append(i == 0 ? $"  {label,-10}" : Indent).Append(lines[i]).Append('\n');
+        }
+    }
+
+    /// <summary>'next' as lines: each of its own lines, wrapped at word boundaries to fit the width after the label column.</summary>
+    private static List<string> Wrap(string next)
+    {
+        var lines = new List<string>();
+        foreach (var paragraph in next.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var line = new StringBuilder();
+            foreach (var word in paragraph.Split(' '))
+            {
+                if (line.Length > 0 && Indent.Length + line.Length + 1 + word.Length > Width)
+                {
+                    lines.Add(line.ToString());
+                    _ = line.Clear();
+                }
+
+                _ = (line.Length > 0 ? line.Append(' ') : line).Append(word);
+            }
+
+            lines.Add(line.ToString());
+        }
+
+        return lines;
+    }
+
+    private static string Budget(BudgetView budget)
+    {
+        var parts = new List<string>(2);
+        if (budget.StateCap is { } state)
+        {
+            parts.Add($"{StatusText.Tokens(budget.State)} / {StatusText.Tokens(state)} (state)");
+        }
+
+        if (budget.InstanceCap is { } instance)
+        {
+            parts.Add($"{StatusText.Tokens(budget.Instance)} / {StatusText.Tokens(instance)} (instance)");
+        }
+
+        return "tokens " + string.Join(", ", parts);
+    }
+
+    /// <summary>A fact's digest as status shortens it: its first four hex digits and '...'.</summary>
+    private static string Short(string sha256)
+    {
+        var digits = sha256.StartsWith("sha256:", StringComparison.Ordinal) ? sha256["sha256:".Length..] : sha256;
+        return digits.Length > 4 ? digits[..4] + "..." : digits;
+    }
+}

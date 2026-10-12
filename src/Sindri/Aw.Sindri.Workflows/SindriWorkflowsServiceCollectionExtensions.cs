@@ -33,6 +33,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items
             .AddSingleton<IInstanceRuntime, TemporalInstanceRuntime>()
             .AddSingleton<IWorkflowInstances, TemporalWorkflowInstances>()
-            .AddSingleton<ITemporalWorker, SindriWorkerHost>();
+            .AddSingleton<ITemporalWorker, SindriWorkerHost>()
+            .AddSingleton<ProfileWorkflowTimes>();                   // engine P4 unit (e): S1-D11, workflow.deskTimeout and workflow.eventHold
     }
 }

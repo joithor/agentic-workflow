@@ -12,6 +12,10 @@ namespace Aw.Sindri.Core.Profile;
 /// <param name="Repos">The repos in the path.</param>
 /// <param name="Services">Background services by name, each with its cadence.</param>
 /// <param name="Api">The local API's settings.</param>
+/// <param name="Workflow">
+/// The workflow engine's settings (engine spec S1-D11). Left out of the canonical JSON when absent, so a profile without
+/// a 'workflow:' block keeps the hash it was approved under.
+/// </param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record SindriProfile(
     int SchemaVersion,
@@ -19,7 +23,8 @@ public sealed record SindriProfile(
     string Tenant = SindriProfile.DefaultTenant,
     IReadOnlyList<RepoEntry>? Repos = null,
     IReadOnlyDictionary<string, ServiceSettings>? Services = null,
-    ApiSettings? Api = null)
+    ApiSettings? Api = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] WorkflowSettings? Workflow = null)
 {
     /// <summary>The tenant key until team mode.</summary>
     public const string DefaultTenant = "local";

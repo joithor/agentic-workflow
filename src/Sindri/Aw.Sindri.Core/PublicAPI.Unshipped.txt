@@ -328,7 +328,6 @@ Aw.Sindri.Core.Profile.SindriProfile
 Aw.Sindri.Core.Profile.SindriProfile.<Clone>$() -> Aw.Sindri.Core.Profile.SindriProfile!
 Aw.Sindri.Core.Profile.SindriProfile.Api.get -> Aw.Sindri.Core.Profile.ApiSettings?
 Aw.Sindri.Core.Profile.SindriProfile.Api.init -> void
-Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api) -> void
 Aw.Sindri.Core.Profile.SindriProfile.Equals(Aw.Sindri.Core.Profile.SindriProfile? other) -> bool
 Aw.Sindri.Core.Profile.SindriProfile.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>?
 Aw.Sindri.Core.Profile.SindriProfile.Repos.init -> void
@@ -336,7 +335,6 @@ Aw.Sindri.Core.Profile.SindriProfile.SchemaVersion.get -> int
 Aw.Sindri.Core.Profile.SindriProfile.SchemaVersion.init -> void
 Aw.Sindri.Core.Profile.SindriProfile.Services.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>?
 Aw.Sindri.Core.Profile.SindriProfile.Services.init -> void
-Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null) -> void
 Aw.Sindri.Core.Profile.SindriProfile.Tenant.get -> string!
 Aw.Sindri.Core.Profile.SindriProfile.Tenant.init -> void
 Aw.Sindri.Core.Profile.SindriProfile.User.get -> string!
@@ -3488,7 +3486,6 @@ Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.State.init -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Deconstruct(out string! Address, out string? State, out bool NeedsYou) -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Address.init -> void
 Aw.Sindri.Core.Control.ITemporalWorker.Run(Aw.Sindri.Core.Control.TemporalEndpoint! endpoint, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-Aw.Sindri.Core.Workflow.Engine.Desk.IWorkflowInstances.List(string? query, string? temporal, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>!>!>
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.InstanceRow(string! Address, string? State, bool NeedsYou) -> void
 Aw.Sindri.Core.Control.TemporalRuntime
 Aw.Sindri.Core.Control.TemporalRuntime.Stop(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -4029,3 +4026,92 @@ override Aw.Sindri.Core.Health.HealthReport.ToString() -> string!
 static Aw.Sindri.Core.Health.HealthReport.operator !=(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
 static Aw.Sindri.Core.Health.HealthReport.operator ==(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
 static Aw.Sindri.Core.Health.HealthSummary.For(bool running, Aw.Sindri.Core.Views.ViewsStatus! views, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! services, bool profileNeedsApproval, bool profileChanged) -> Aw.Sindri.Core.Health.HealthReport!
+Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api, out Aw.Sindri.Core.Profile.WorkflowSettings? Workflow) -> void
+Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null, Aw.Sindri.Core.Profile.WorkflowSettings? Workflow = null) -> void
+Aw.Sindri.Core.Profile.SindriProfile.Workflow.get -> Aw.Sindri.Core.Profile.WorkflowSettings?
+Aw.Sindri.Core.Profile.SindriProfile.Workflow.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings
+Aw.Sindri.Core.Profile.WorkflowSettings.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowSettings!
+Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.DeskTimeout.get -> string?
+Aw.Sindri.Core.Profile.WorkflowSettings.DeskTimeout.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Equals(Aw.Sindri.Core.Profile.WorkflowSettings? other) -> bool
+Aw.Sindri.Core.Profile.WorkflowSettings.EventHold.get -> string?
+Aw.Sindri.Core.Profile.WorkflowSettings.EventHold.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null) -> void
+Aw.Sindri.Core.Profile.WorkflowTimes
+Aw.Sindri.Core.Profile.WorkflowTimes.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowTimes!
+Aw.Sindri.Core.Profile.WorkflowTimes.Deconstruct(out System.TimeSpan DeskTimeout, out System.TimeSpan EventHold) -> void
+Aw.Sindri.Core.Profile.WorkflowTimes.DeskTimeout.get -> System.TimeSpan
+Aw.Sindri.Core.Profile.WorkflowTimes.DeskTimeout.init -> void
+Aw.Sindri.Core.Profile.WorkflowTimes.Equals(Aw.Sindri.Core.Profile.WorkflowTimes? other) -> bool
+Aw.Sindri.Core.Profile.WorkflowTimes.EventHold.get -> System.TimeSpan
+Aw.Sindri.Core.Profile.WorkflowTimes.EventHold.init -> void
+Aw.Sindri.Core.Profile.WorkflowTimes.WorkflowTimes(System.TimeSpan DeskTimeout, System.TimeSpan EventHold) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView!
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.BudgetView(int State, int? StateCap, int Instance, int? InstanceCap) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.Deconstruct(out int State, out int? StateCap, out int Instance, out int? InstanceCap) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.Instance.get -> int
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.Instance.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.InstanceCap.get -> int?
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.InstanceCap.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.State.get -> int
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.State.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.StateCap.get -> int?
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.StateCap.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceEvents
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Answer.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Answer.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Budget.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Budget.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Drift.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Drift.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Paused.get -> System.TimeSpan?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Paused.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Version.get -> int
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Version.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList
+Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList!
+Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!
+Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Decisions.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! Decisions, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! Tasks) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.IsEmpty.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.NeedsYouList(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! Decisions, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! Tasks) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Tasks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!
+Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Tasks.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.StatusText
+const Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceEvents.None = "no events" -> string!
+const Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Nothing = "nothing needs you" -> string!
+override Aw.Sindri.Core.Profile.WorkflowSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.WorkflowSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.WorkflowSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.WorkflowTimes.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.WorkflowTimes.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.WorkflowTimes.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.ToString() -> string!
+static Aw.Sindri.Core.Profile.WorkflowSettings.operator !=(Aw.Sindri.Core.Profile.WorkflowSettings? left, Aw.Sindri.Core.Profile.WorkflowSettings? right) -> bool
+static Aw.Sindri.Core.Profile.WorkflowSettings.operator ==(Aw.Sindri.Core.Profile.WorkflowSettings? left, Aw.Sindri.Core.Profile.WorkflowSettings? right) -> bool
+static Aw.Sindri.Core.Profile.WorkflowTimes.Defaults.get -> Aw.Sindri.Core.Profile.WorkflowTimes!
+static Aw.Sindri.Core.Profile.WorkflowTimes.Of(Aw.Sindri.Core.Profile.SindriProfile! profile) -> Aw.Sindri.Core.Profile.WorkflowTimes!
+static Aw.Sindri.Core.Profile.WorkflowTimes.operator !=(Aw.Sindri.Core.Profile.WorkflowTimes? left, Aw.Sindri.Core.Profile.WorkflowTimes? right) -> bool
+static Aw.Sindri.Core.Profile.WorkflowTimes.operator ==(Aw.Sindri.Core.Profile.WorkflowTimes? left, Aw.Sindri.Core.Profile.WorkflowTimes? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView? left, Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView? left, Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceEvents.Belongs(Aw.Sindri.Core.Ledger.LedgerEvent! recorded, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe, System.DateTimeOffset since, System.DateTimeOffset? timeoutAt, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>! children) -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Of(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! views) -> Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? left, Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? left, Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusText.Clock(System.DateTimeOffset at, System.DateTimeOffset now) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusText.Duration(System.TimeSpan span) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusText.Hash12(string! hash) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusText.Tokens(int tokens) -> string!
+Aw.Sindri.Core.Workflow.Engine.Desk.IWorkflowInstances.List(string? query, bool ended, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>!>!>

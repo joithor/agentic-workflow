@@ -31,7 +31,7 @@ internal sealed class TemporalFrontend(IEndpointFile endpoints)
             if (read.Value?.Temporal is not { } temporal)
             {
                 return SindriErrors.NotRunning.With(
-                    "control.json records no Temporal dev server (fix: start sindri serve, or pass --temporal <host:port>)");
+                    "control.json records no Temporal dev server (fix: start sindri serve)");
             }
 
             target = $"127.0.0.1:{temporal.Port.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
@@ -43,7 +43,7 @@ internal sealed class TemporalFrontend(IEndpointFile endpoints)
         }
         catch (Exception e) when (e is RpcException or InvalidOperationException) // boundary: an unreachable frontend is an expected failure
         {
-            return SindriErrors.NotRunning.With($"Temporal at {target} doesn't answer: {e.Message} (fix: start sindri serve, or pass --temporal <host:port>)");
+            return SindriErrors.NotRunning.With($"Temporal at {target} doesn't answer: {e.Message} (fix: start sindri serve)");
         }
     }
 }

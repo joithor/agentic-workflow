@@ -44,6 +44,7 @@ internal sealed class RecipeWorkflow
     private DateTimeOffset? _timeoutAt;
     private Trigger? _report;
     private int _runs;
+    private int _mirrored;
 
     /// <summary>Interprets the recipe from its initial state to a terminal one.</summary>
     /// <param name="start">The recipe, item, attempt, input facts, tenant and ring.</param>
@@ -112,7 +113,7 @@ internal sealed class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt)
+            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt) with { Version = _mirrored }
             : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null);
     }
 
@@ -206,6 +207,7 @@ internal sealed class RecipeWorkflow
     private async Task Mirror(WorkflowEventRecord record, bool needsYou)
     {
         _ = await Workflow.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(record), RecordEventActivities.LocalOptions).ConfigureAwait(true);
+        _mirrored++;   // the instance's version, 'v<n>' in status: Temporal keeps no row version (unit (e))
         Workflow.UpsertTypedSearchAttributes(
             SindriTemporal.ItemKey.ValueSet(record.Item),
             SindriTemporal.RecipeKey.ValueSet(_start!.Recipe.Id.Value), // why: Mirror runs only after RunAsync set _start
