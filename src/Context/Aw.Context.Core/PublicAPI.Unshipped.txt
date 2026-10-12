@@ -96,6 +96,17 @@ Aw.Context.Core.Engine.ContextSettings.Repos.get -> System.Collections.Generic.I
 Aw.Context.Core.Engine.ContextSettings.Repos.init -> void
 Aw.Context.Core.Engine.ContextSettings.SessionsEnabled.get -> bool
 Aw.Context.Core.Engine.ContextSettings.SessionsEnabled.init -> void
+Aw.Context.Core.Engine.QueryRules
+Aw.Context.Core.Engine.ScopeRules
+Aw.Context.Core.Engine.ValidQuery
+Aw.Context.Core.Engine.ValidQuery.<Clone>$() -> Aw.Context.Core.Engine.ValidQuery!
+Aw.Context.Core.Engine.ValidQuery.Budget.get -> int
+Aw.Context.Core.Engine.ValidQuery.Budget.init -> void
+Aw.Context.Core.Engine.ValidQuery.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Terms, out int Budget) -> void
+Aw.Context.Core.Engine.ValidQuery.Equals(Aw.Context.Core.Engine.ValidQuery? other) -> bool
+Aw.Context.Core.Engine.ValidQuery.Terms.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Engine.ValidQuery.Terms.init -> void
+Aw.Context.Core.Engine.ValidQuery.ValidQuery(System.Collections.Generic.IReadOnlyList<string!>! Terms, int Budget) -> void
 Aw.Context.Core.Facade.IContextEngine
 Aw.Context.Core.Facade.IContextEngine.CheckSettings(System.Text.Json.JsonElement? section) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ContextSettings!>!
 Aw.Context.Core.Facade.IContextEngine.Query(Aw.Context.Core.Engine.ContextQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>
@@ -140,6 +151,53 @@ Aw.Context.Core.Onyx.OnyxSettings.Equals(Aw.Context.Core.Onyx.OnyxSettings? othe
 Aw.Context.Core.Onyx.OnyxSettings.Token.get -> string!
 Aw.Context.Core.Onyx.OnyxSettings.Url.get -> System.Uri!
 Aw.Context.Core.Onyx.OnyxSettings.Version.get -> string!
+Aw.Context.Core.Packing.PackCandidate
+Aw.Context.Core.Packing.PackCandidate.<Clone>$() -> Aw.Context.Core.Packing.PackCandidate!
+Aw.Context.Core.Packing.PackCandidate.Deconstruct(out string! Section, out Aw.Context.Core.Results.ResultItem! Item, out string! Marker) -> void
+Aw.Context.Core.Packing.PackCandidate.Equals(Aw.Context.Core.Packing.PackCandidate? other) -> bool
+Aw.Context.Core.Packing.PackCandidate.Item.get -> Aw.Context.Core.Results.ResultItem!
+Aw.Context.Core.Packing.PackCandidate.Item.init -> void
+Aw.Context.Core.Packing.PackCandidate.Marker.get -> string!
+Aw.Context.Core.Packing.PackCandidate.Marker.init -> void
+Aw.Context.Core.Packing.PackCandidate.PackCandidate(string! Section, Aw.Context.Core.Results.ResultItem! Item, string! Marker) -> void
+Aw.Context.Core.Packing.PackCandidate.Section.get -> string!
+Aw.Context.Core.Packing.PackCandidate.Section.init -> void
+Aw.Context.Core.Packing.Packed
+Aw.Context.Core.Packing.Packed.<Clone>$() -> Aw.Context.Core.Packing.Packed!
+Aw.Context.Core.Packing.Packed.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, out int Used, out bool Truncated) -> void
+Aw.Context.Core.Packing.Packed.Equals(Aw.Context.Core.Packing.Packed? other) -> bool
+Aw.Context.Core.Packing.Packed.Packed(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, int Used, bool Truncated) -> void
+Aw.Context.Core.Packing.Packed.Sections.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>!
+Aw.Context.Core.Packing.Packed.Sections.init -> void
+Aw.Context.Core.Packing.Packed.Truncated.get -> bool
+Aw.Context.Core.Packing.Packed.Truncated.init -> void
+Aw.Context.Core.Packing.Packed.Used.get -> int
+Aw.Context.Core.Packing.Packed.Used.init -> void
+Aw.Context.Core.Packing.Packer
+Aw.Context.Core.Packing.TokenEstimate
+Aw.Context.Core.Ranking.FusedItem
+Aw.Context.Core.Ranking.FusedItem.<Clone>$() -> Aw.Context.Core.Ranking.FusedItem!
+Aw.Context.Core.Ranking.FusedItem.Deconstruct(out Aw.Context.Core.Sources.RecordKey Key, out double Score, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceHit!>! Hits, out System.Collections.Generic.IReadOnlyList<string!>! Why) -> void
+Aw.Context.Core.Ranking.FusedItem.Equals(Aw.Context.Core.Ranking.FusedItem? other) -> bool
+Aw.Context.Core.Ranking.FusedItem.FusedItem(Aw.Context.Core.Sources.RecordKey Key, double Score, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceHit!>! Hits, System.Collections.Generic.IReadOnlyList<string!>! Why) -> void
+Aw.Context.Core.Ranking.FusedItem.Hits.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceHit!>!
+Aw.Context.Core.Ranking.FusedItem.Hits.init -> void
+Aw.Context.Core.Ranking.FusedItem.Key.get -> Aw.Context.Core.Sources.RecordKey
+Aw.Context.Core.Ranking.FusedItem.Key.init -> void
+Aw.Context.Core.Ranking.FusedItem.Score.get -> double
+Aw.Context.Core.Ranking.FusedItem.Score.init -> void
+Aw.Context.Core.Ranking.FusedItem.Why.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Ranking.FusedItem.Why.init -> void
+Aw.Context.Core.Ranking.RankFusion
+Aw.Context.Core.Ranking.SourceAnswer
+Aw.Context.Core.Ranking.SourceAnswer.<Clone>$() -> Aw.Context.Core.Ranking.SourceAnswer!
+Aw.Context.Core.Ranking.SourceAnswer.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceHit!>! Hits) -> void
+Aw.Context.Core.Ranking.SourceAnswer.Equals(Aw.Context.Core.Ranking.SourceAnswer? other) -> bool
+Aw.Context.Core.Ranking.SourceAnswer.Hits.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceHit!>!
+Aw.Context.Core.Ranking.SourceAnswer.Hits.init -> void
+Aw.Context.Core.Ranking.SourceAnswer.Source.get -> Aw.Context.Core.Sources.SourceId
+Aw.Context.Core.Ranking.SourceAnswer.Source.init -> void
+Aw.Context.Core.Ranking.SourceAnswer.SourceAnswer(Aw.Context.Core.Sources.SourceId Source, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceHit!>! Hits) -> void
 Aw.Context.Core.Results.BudgetUse
 Aw.Context.Core.Results.BudgetUse.<Clone>$() -> Aw.Context.Core.Results.BudgetUse!
 Aw.Context.Core.Results.BudgetUse.Asked.get -> int
@@ -185,6 +243,7 @@ Aw.Context.Core.Results.CitationState.ScrubBlocked = 4 -> Aw.Context.Core.Result
 Aw.Context.Core.Results.CitationState.Stale = 1 -> Aw.Context.Core.Results.CitationState
 Aw.Context.Core.Results.CitationState.Unchecked = 2 -> Aw.Context.Core.Results.CitationState
 Aw.Context.Core.Results.CitationState.Unstable = 3 -> Aw.Context.Core.Results.CitationState
+Aw.Context.Core.Results.CitationStates
 Aw.Context.Core.Results.ContextResult
 Aw.Context.Core.Results.ContextResult.<Clone>$() -> Aw.Context.Core.Results.ContextResult!
 Aw.Context.Core.Results.ContextResult.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -537,6 +596,12 @@ Aw.Context.Core.Trust.ScrubbedField.Redacted.init -> void
 Aw.Context.Core.Trust.ScrubbedField.ScrubbedField(string! Text, bool Redacted, bool Blocked) -> void
 Aw.Context.Core.Trust.ScrubbedField.Text.get -> string!
 Aw.Context.Core.Trust.ScrubbedField.Text.init -> void
+Aw.Context.Core.Trust.UntrustedFence
+const Aw.Context.Core.Engine.QueryRules.DefaultBudget = 8000 -> int
+const Aw.Context.Core.Engine.QueryRules.MaxDepth = 4 -> int
+const Aw.Context.Core.Engine.QueryRules.MaxTerms = 16 -> int
+const Aw.Context.Core.Engine.QueryRules.MaxTextLength = 2000 -> int
+const Aw.Context.Core.Ranking.RankFusion.K = 60 -> int
 const Aw.Context.Core.Results.ContextResult.CurrentSchemaVersion = 1 -> int
 override Aw.Context.Core.Docs.DocIndexStatus.Equals(object? obj) -> bool
 override Aw.Context.Core.Docs.DocIndexStatus.GetHashCode() -> int
@@ -556,6 +621,9 @@ override Aw.Context.Core.Engine.ContextScope.ToString() -> string!
 override Aw.Context.Core.Engine.ContextSettings.Equals(object? obj) -> bool
 override Aw.Context.Core.Engine.ContextSettings.GetHashCode() -> int
 override Aw.Context.Core.Engine.ContextSettings.ToString() -> string!
+override Aw.Context.Core.Engine.ValidQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.ValidQuery.GetHashCode() -> int
+override Aw.Context.Core.Engine.ValidQuery.ToString() -> string!
 override Aw.Context.Core.Models.ModelAnswer.Equals(object? obj) -> bool
 override Aw.Context.Core.Models.ModelAnswer.GetHashCode() -> int
 override Aw.Context.Core.Models.ModelAnswer.ToString() -> string!
@@ -565,6 +633,18 @@ override Aw.Context.Core.Models.ModelRequest.ToString() -> string!
 override Aw.Context.Core.Onyx.OnyxSettings.Equals(object? obj) -> bool
 override Aw.Context.Core.Onyx.OnyxSettings.GetHashCode() -> int
 override Aw.Context.Core.Onyx.OnyxSettings.ToString() -> string!
+override Aw.Context.Core.Packing.PackCandidate.Equals(object? obj) -> bool
+override Aw.Context.Core.Packing.PackCandidate.GetHashCode() -> int
+override Aw.Context.Core.Packing.PackCandidate.ToString() -> string!
+override Aw.Context.Core.Packing.Packed.Equals(object? obj) -> bool
+override Aw.Context.Core.Packing.Packed.GetHashCode() -> int
+override Aw.Context.Core.Packing.Packed.ToString() -> string!
+override Aw.Context.Core.Ranking.FusedItem.Equals(object? obj) -> bool
+override Aw.Context.Core.Ranking.FusedItem.GetHashCode() -> int
+override Aw.Context.Core.Ranking.FusedItem.ToString() -> string!
+override Aw.Context.Core.Ranking.SourceAnswer.Equals(object? obj) -> bool
+override Aw.Context.Core.Ranking.SourceAnswer.GetHashCode() -> int
+override Aw.Context.Core.Ranking.SourceAnswer.ToString() -> string!
 override Aw.Context.Core.Results.BudgetUse.Equals(object? obj) -> bool
 override Aw.Context.Core.Results.BudgetUse.GetHashCode() -> int
 override Aw.Context.Core.Results.BudgetUse.ToString() -> string!
@@ -658,6 +738,11 @@ static Aw.Context.Core.Engine.ContextScope.operator ==(Aw.Context.Core.Engine.Co
 static Aw.Context.Core.Engine.ContextSettings.DefaultDocGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Context.Core.Engine.ContextSettings.operator !=(Aw.Context.Core.Engine.ContextSettings? left, Aw.Context.Core.Engine.ContextSettings? right) -> bool
 static Aw.Context.Core.Engine.ContextSettings.operator ==(Aw.Context.Core.Engine.ContextSettings? left, Aw.Context.Core.Engine.ContextSettings? right) -> bool
+static Aw.Context.Core.Engine.QueryRules.Check(Aw.Context.Core.Engine.ContextQuery! query, Aw.Context.Core.Engine.ContextSettings! settings) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ValidQuery!>!
+static Aw.Context.Core.Engine.QueryRules.Terms(string! text) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Engine.ScopeRules.Resolve(Aw.Context.Core.Engine.ContextSettings! settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos, Aw.Context.Core.Engine.ContextCaller! caller) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!>!
+static Aw.Context.Core.Engine.ValidQuery.operator !=(Aw.Context.Core.Engine.ValidQuery? left, Aw.Context.Core.Engine.ValidQuery? right) -> bool
+static Aw.Context.Core.Engine.ValidQuery.operator ==(Aw.Context.Core.Engine.ValidQuery? left, Aw.Context.Core.Engine.ValidQuery? right) -> bool
 static Aw.Context.Core.Models.ModelAnswer.operator !=(Aw.Context.Core.Models.ModelAnswer? left, Aw.Context.Core.Models.ModelAnswer? right) -> bool
 static Aw.Context.Core.Models.ModelAnswer.operator ==(Aw.Context.Core.Models.ModelAnswer? left, Aw.Context.Core.Models.ModelAnswer? right) -> bool
 static Aw.Context.Core.Models.ModelRequest.operator !=(Aw.Context.Core.Models.ModelRequest? left, Aw.Context.Core.Models.ModelRequest? right) -> bool
@@ -665,12 +750,24 @@ static Aw.Context.Core.Models.ModelRequest.operator ==(Aw.Context.Core.Models.Mo
 static Aw.Context.Core.Onyx.OnyxSettings.Create(string? url, string? token, string? version) -> Aw.Kernel.Result<Aw.Context.Core.Onyx.OnyxSettings!>!
 static Aw.Context.Core.Onyx.OnyxSettings.operator !=(Aw.Context.Core.Onyx.OnyxSettings? left, Aw.Context.Core.Onyx.OnyxSettings? right) -> bool
 static Aw.Context.Core.Onyx.OnyxSettings.operator ==(Aw.Context.Core.Onyx.OnyxSettings? left, Aw.Context.Core.Onyx.OnyxSettings? right) -> bool
+static Aw.Context.Core.Packing.PackCandidate.operator !=(Aw.Context.Core.Packing.PackCandidate? left, Aw.Context.Core.Packing.PackCandidate? right) -> bool
+static Aw.Context.Core.Packing.PackCandidate.operator ==(Aw.Context.Core.Packing.PackCandidate? left, Aw.Context.Core.Packing.PackCandidate? right) -> bool
+static Aw.Context.Core.Packing.Packed.operator !=(Aw.Context.Core.Packing.Packed? left, Aw.Context.Core.Packing.Packed? right) -> bool
+static Aw.Context.Core.Packing.Packed.operator ==(Aw.Context.Core.Packing.Packed? left, Aw.Context.Core.Packing.Packed? right) -> bool
+static Aw.Context.Core.Packing.Packer.Pack(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Packing.PackCandidate!>! candidates, int budget) -> Aw.Context.Core.Packing.Packed!
+static Aw.Context.Core.Packing.TokenEstimate.Of(string? text) -> int
+static Aw.Context.Core.Ranking.FusedItem.operator !=(Aw.Context.Core.Ranking.FusedItem? left, Aw.Context.Core.Ranking.FusedItem? right) -> bool
+static Aw.Context.Core.Ranking.FusedItem.operator ==(Aw.Context.Core.Ranking.FusedItem? left, Aw.Context.Core.Ranking.FusedItem? right) -> bool
+static Aw.Context.Core.Ranking.RankFusion.Fuse(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Ranking.SourceAnswer!>! answers) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Ranking.FusedItem!>!
+static Aw.Context.Core.Ranking.SourceAnswer.operator !=(Aw.Context.Core.Ranking.SourceAnswer? left, Aw.Context.Core.Ranking.SourceAnswer? right) -> bool
+static Aw.Context.Core.Ranking.SourceAnswer.operator ==(Aw.Context.Core.Ranking.SourceAnswer? left, Aw.Context.Core.Ranking.SourceAnswer? right) -> bool
 static Aw.Context.Core.Results.BudgetUse.operator !=(Aw.Context.Core.Results.BudgetUse? left, Aw.Context.Core.Results.BudgetUse? right) -> bool
 static Aw.Context.Core.Results.BudgetUse.operator ==(Aw.Context.Core.Results.BudgetUse? left, Aw.Context.Core.Results.BudgetUse? right) -> bool
 static Aw.Context.Core.Results.Citation.operator !=(Aw.Context.Core.Results.Citation? left, Aw.Context.Core.Results.Citation? right) -> bool
 static Aw.Context.Core.Results.Citation.operator ==(Aw.Context.Core.Results.Citation? left, Aw.Context.Core.Results.Citation? right) -> bool
 static Aw.Context.Core.Results.CitationRef.operator !=(Aw.Context.Core.Results.CitationRef? left, Aw.Context.Core.Results.CitationRef? right) -> bool
 static Aw.Context.Core.Results.CitationRef.operator ==(Aw.Context.Core.Results.CitationRef? left, Aw.Context.Core.Results.CitationRef? right) -> bool
+static Aw.Context.Core.Results.CitationStates.Of(Aw.Context.Core.Sources.SourceVersion cited, (bool Ran, Aw.Context.Core.Sources.SourceVersion? Current) checkedVersion, bool blocked) -> (Aw.Context.Core.Results.CitationState State, Aw.Context.Core.Sources.SourceVersion? Current)
 static Aw.Context.Core.Results.ContextResult.operator !=(Aw.Context.Core.Results.ContextResult? left, Aw.Context.Core.Results.ContextResult? right) -> bool
 static Aw.Context.Core.Results.ContextResult.operator ==(Aw.Context.Core.Results.ContextResult? left, Aw.Context.Core.Results.ContextResult? right) -> bool
 static Aw.Context.Core.Results.DegradedSource.operator !=(Aw.Context.Core.Results.DegradedSource? left, Aw.Context.Core.Results.DegradedSource? right) -> bool
@@ -742,6 +839,8 @@ static Aw.Context.Core.Sources.SourceVersion.TryFrom(string? value, out Aw.Conte
 static Aw.Context.Core.Sources.SourceVersion.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.SourceVersion result) -> bool
 static Aw.Context.Core.Trust.ScrubbedField.operator !=(Aw.Context.Core.Trust.ScrubbedField? left, Aw.Context.Core.Trust.ScrubbedField? right) -> bool
 static Aw.Context.Core.Trust.ScrubbedField.operator ==(Aw.Context.Core.Trust.ScrubbedField? left, Aw.Context.Core.Trust.ScrubbedField? right) -> bool
+static Aw.Context.Core.Trust.UntrustedFence.Escape(string! text) -> string!
+static Aw.Context.Core.Trust.UntrustedFence.Wrap(string! source, string? author, string! body) -> string!
 static readonly Aw.Context.Core.ContextErrors.AllSourcesUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.OnyxNotPinnedOrLoopback -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.PathInWorktree -> Aw.Kernel.ErrorDefinition!
@@ -777,3 +876,10 @@ static readonly Aw.Context.Core.ContextErrors.OnyxDocumentNotFound -> Aw.Kernel.
 static readonly Aw.Context.Core.ContextErrors.OnyxKeyNotServiceAccount -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.OnyxKeyRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.OnyxUnexpectedReply -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Docs.RepoDocs
+Aw.Context.Core.Engine.SettingsReader
+Aw.Context.Core.Trust.Permalinks
+static Aw.Context.Core.Docs.RepoDocs.Id.get -> Aw.Context.Core.Sources.SourceId
+static Aw.Context.Core.Docs.RepoDocs.Key(string! repo, string! path) -> Aw.Context.Core.Sources.RecordKey
+static Aw.Context.Core.Engine.SettingsReader.Read(System.Text.Json.JsonElement? section) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ContextSettings!>!
+static Aw.Context.Core.Trust.Permalinks.Allowed(System.Uri? link) -> System.Uri?

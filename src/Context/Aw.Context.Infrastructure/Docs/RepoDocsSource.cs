@@ -1,0 +1,142 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
+using Aw.Context.Core;
+using Aw.Context.Core.Docs;
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Sources;
+using Aw.Context.Infrastructure.Git;
+using Aw.Context.Infrastructure.Store;
+using Aw.Kernel;
+using Aw.Kernel.Data;
+
+namespace Aw.Context.Infrastructure.Docs;
+
+/// <summary>
+/// The repo-docs source over the repos in a call's scope (spec §5.2): lexical search in the scrubbed FTS5 chunks
+/// (each term a quoted phrase, never query syntax), fetch from git at the cited blob and line span (raw: the engine
+/// cleans it), and versions from one tree listing per repo at HEAD. Its records are chunks
+/// ('&lt;repo&gt;/&lt;path&gt;#L&lt;a&gt;-L&lt;b&gt;'); the canonical key is the document, so chunks of one document merge.
+/// </summary>
+internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, ContextDatabase database, GitCli git, TimeProvider clock) : IContextSource
+{
+    private static readonly SourceDescriptor _descriptor = new(RepoDocs.Id, SourceKind.Doc, SourceFreshness.Snapshot, SupportsAsOf: false);
+
+    public SourceDescriptor Describe() => _descriptor;
+
+    public async ValueTask<Result<IReadOnlyList<SourceHit>>> Search(SourceQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var readable = await database.Readable(cancellationToken).ConfigureAwait(false);
+        if (readable.IsError || readable.Value is not { } sessions || query.Terms.Count == 0)
+        {
+            return readable.IsError ? Unavailable(readable.Error) : Array.Empty<SourceHit>();
+        }
+
+        var read = await sessions.BeginRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError)
+        {
+            return Unavailable(read.Error);
+        }
+
+        await using (read.Value.ConfigureAwait(false))
+        {
+            var rows = await SqliteQueries.List(read.Value, new SqlStatement(DocSql.Search, c => c
+                    .Bind("@match", string.Join(" OR ", query.Terms.Select(DocSql.Phrase)))
+                    .Bind("@repos", "[" + string.Join(',', repos.Select(r => "\"" + r.Name.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"")) + "]")
+                    .Bind("@limit", Math.Clamp(query.Limit, 1, 200))), DocMappers.Hit, cancellationToken)
+                .ConfigureAwait(false);
+            var now = clock.GetUtcNow();
+            return rows.IsError
+                ? Unavailable(rows.Error)
+                : rows.Value.Select((row, i) => new SourceHit(Ref(row), row.Title, i + 1, now, Leaky: false)).ToList();
+        }
+    }
+
+    public async ValueTask<Result<SourceRecord>> Fetch(SourceRef reference, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(reference);
+        if (Parse(reference.Id) is not { } at)
+        {
+            return ContextErrors.UnknownAnchor.With("not a record of this source");
+        }
+
+        var blob = await git.Blob(at.Repo.Path, reference.Version.Value, cancellationToken).ConfigureAwait(false);
+        if (blob.IsError)
+        {
+            return blob.Error;
+        }
+
+        var lines = blob.Value.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        var start = Math.Clamp(at.Start, 1, lines.Length);
+        var text = string.Join('\n', lines[(start - 1)..Math.Clamp(at.End, start, lines.Length)]);
+        return new SourceRecord(reference, RecordKind.Doc, DocChunker.Title(blob.Value, at.Path), text, Author: null, CreatedAt: null, UpdatedAt: null);
+    }
+
+    public async ValueTask<Result<IReadOnlyList<SourceVersion?>>> Versions(IReadOnlyList<SourceRef> refs, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(refs);
+        var trees = new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal);
+        var versions = new List<SourceVersion?>();
+        foreach (var reference in refs)
+        {
+            if (Parse(reference.Id) is not { } at)
+            {
+                versions.Add(null);
+                continue;
+            }
+
+            if (!trees.TryGetValue(at.Repo.Name, out var tree))
+            {
+                var head = await git.Head(at.Repo.Path, cancellationToken).ConfigureAwait(false);
+                var listed = head.IsError ? head.Error : await git.Tree(at.Repo.Path, head.Value, cancellationToken).ConfigureAwait(false);
+                if (listed.IsError)
+                {
+                    return listed.Error;
+                }
+
+                trees[at.Repo.Name] = tree = listed.Value;
+            }
+
+            versions.Add(tree.TryGetValue(at.Path, out var blob) ? SourceVersion.From(blob) : null);
+        }
+
+        return versions;
+    }
+
+    public async ValueTask<SourceHealth> Probe(CancellationToken cancellationToken)
+    {
+        var readable = await database.Readable(cancellationToken).ConfigureAwait(false);
+        if (readable.IsError)
+        {
+            return new SourceHealth(SourceState.Unavailable, "the store can't be opened", readable.Error.Code);
+        }
+
+        foreach (var repo in repos)
+        {
+            if ((await git.Head(repo.Path, cancellationToken).ConfigureAwait(false)).IsError)
+            {
+                return new SourceHealth(SourceState.Unavailable, $"git can't read repo '{repo.Name}'", ContextErrors.SourceUnavailable.Code);
+            }
+        }
+
+        return new SourceHealth(SourceState.Ok, string.Create(CultureInfo.InvariantCulture, $"{repos.Count} repos readable"), Code: null);
+    }
+
+    private static SourceRef Ref(HitRow row) => new(RepoDocs.Id,
+        ExternalId.From(string.Create(CultureInfo.InvariantCulture, $"{row.Repo}/{row.Path}#L{row.LineStart}-L{row.LineEnd}")),
+        SourceVersion.From(row.Blob), Permalink: null, RepoDocs.Key(row.Repo, row.Path));
+
+    private (ContextRepo Repo, string Path, int Start, int End)? Parse(ExternalId id)
+    {
+        var match = ChunkId.Match(id.Value);
+        var repo = match.Success ? repos.FirstOrDefault(r => string.Equals(r.Name, match.Groups["repo"].Value, StringComparison.Ordinal)) : null;
+        return repo is null
+            ? null
+            : (repo, match.Groups["path"].Value, int.Parse(match.Groups["a"].Value, CultureInfo.InvariantCulture), int.Parse(match.Groups["b"].Value, CultureInfo.InvariantCulture));
+    }
+
+    private static Error Unavailable(Error error) => ContextErrors.SourceUnavailable.With($"repo-docs can't read its index ({error.Code})");
+
+    [GeneratedRegex("^(?<repo>[^/]+)/(?<path>.+)#L(?<a>[0-9]{1,7})-L(?<b>[0-9]{1,7})\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ChunkId { get; }
+}

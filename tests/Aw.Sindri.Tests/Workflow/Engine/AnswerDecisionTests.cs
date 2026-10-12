@@ -64,7 +64,7 @@ public sealed class AnswerDecisionTests
     private static readonly string[] _runtimes = ["step.produce", "step.checks", "step.verify"];
 
     private static Decision Decide(WorkflowInstance instance, Trigger trigger) =>
-        TransitionDecision.Decide(new DecisionInput(instance, Step, trigger, GateAnswers.None, Context(_runtimes)));
+        TransitionDecision.Decide(new DecisionInput(instance, Step, trigger, GateAnswers.None, EngineFixture.Context(_runtimes)));
 
     /// <summary>produce, checks, produce, checks with the same findings twice: parked with no-progress.</summary>
     private static WorkflowInstance NoProgressPark()

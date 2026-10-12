@@ -83,7 +83,7 @@ public sealed class OnyxClientTests
         _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await Search(handler, cancellation: cancel.Token));
     }
 
-    private static async Task<Kernel.Result<IReadOnlyList<Core.Sources.SourceHit>>> Search(
+    private static async Task<Kernel.Result<IReadOnlyList<Aw.Context.Core.Sources.SourceHit>>> Search(
         ScriptedHandler handler, string? token = "on_fixture", CancellationToken? cancellation = null)
     {
         using var http = new HttpClient(handler);

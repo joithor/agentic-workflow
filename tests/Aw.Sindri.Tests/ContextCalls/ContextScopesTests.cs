@@ -1,0 +1,47 @@
+using System.Text.Json;
+using Aw.Context.Core.Engine;
+using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Features.ContextCalls;
+using Aw.Sindri.Features.ValidateProfile;
+using Aw.Sindri.Testing;
+
+namespace Aw.Sindri.Tests.ContextCalls;
+
+public sealed class ContextScopesTests
+{
+    private readonly SliceHarness _h = new();
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(CallerClass.Human, ClientLabel.Cli, ContextCallerKind.Human, ContextClient.Cli)]
+    [InlineData(CallerClass.Human, ClientLabel.Ui, ContextCallerKind.Human, ContextClient.Http)]
+    [InlineData(CallerClass.Session, ClientLabel.Mcp, ContextCallerKind.Session, ContextClient.Mcp)]
+    [InlineData(CallerClass.Session, ClientLabel.Cli, ContextCallerKind.Session, ContextClient.Cli)]
+    public void A_sindri_caller_maps_to_the_engine_s_caller_and_transport(CallerClass caller, ClientLabel client, ContextCallerKind kind, ContextClient transport)
+    {
+        var context = CallerContext.Http(caller, terminal: true, client, RepoName.From("split-panes"), new SequentialIdGenerator());
+
+        var mapped = ContextScopes.Caller(context);
+
+        Assert.Equal((kind, transport), (mapped.Kind, mapped.Client));
+        Assert.Equal(caller == CallerClass.Session ? "split-panes" : null, mapped.Repo);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void No_caller_or_a_service_is_the_engine_s_service() =>
+        Assert.Equal(ContextCallerKind.Service, ContextScopes.Caller(caller: null).Kind);
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Validate_reports_an_invalid_context_section_with_its_key_path()
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live with { Profile = live.Profile with { Context = JsonDocument.Parse("""{"deadline":"soon"}""").RootElement.Clone() } };
+        var service = new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events, SettingsOnlyContextEngine.Instance);
+
+        var validated = await service.Handle(new ValidateProfileRequest(), TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-CONTEXT-001", validated.Error.Code);
+        Assert.StartsWith("context.deadline:", validated.Error.Message, StringComparison.Ordinal);
+    }
+}
