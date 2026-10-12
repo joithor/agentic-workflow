@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Palette;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -46,7 +47,15 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health = new HealthViewModel(records, api, clock, clipboard);
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;
+        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun);
+        Shortcuts = new ShortcutsViewModel(Health.Catalog);
     }
+
+    /// <summary>The command palette (§8: ⌘K).</summary>
+    public CommandPaletteViewModel Palette { get; }
+
+    /// <summary>The shortcuts sheet (§8: ?).</summary>
+    public ShortcutsViewModel Shortcuts { get; }
 
     /// <summary>The app's copy, for the view.</summary>
     public ShellText Text { get; } = ShellText.Instance;
