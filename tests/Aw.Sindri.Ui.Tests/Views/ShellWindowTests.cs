@@ -577,26 +577,163 @@ public sealed class ShellWindowTests : IDisposable
         Frame(window, "sheet-covers");
     });
 
-    // §3.2: window minimum 900 × 600, and the top bar still fits there: the ⌘K field gives way, the pill stays whole
-    // (with room for its focus ring), and nothing in the bar overlaps.
-    [Fact]
-    public Task At_the_900_px_minimum_the_top_bar_fits_with_the_pill_whole() => OnUi(async () =>
+    // §3.2: window minimum 900 × 600, and the top bar still fits there in every pill state, at text scale 1.0 and 1.3: the
+    // ⌘K field gives way first (down to its magnifier), then the pill's age (its accessible name keeps it); the pill's
+    // word stays whole with room for its focus ring, nothing in the bar overlaps or runs past the window, and nothing
+    // overflows the bar's 48 px. "Sindri not responding: run sindri doctor" stays readable in full in a banner under it.
+    /// <summary>A state of the minimum-width test: the pill's states, and the two the pill isn't in.</summary>
+    public enum BarState
     {
-        _records.Write(A.Record());
-        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 900, 600) }, Token);
-        var (window, _) = await Show(s => s.State == ShellState.Normal);
+        /// <summary>Running and fresh.</summary>
+        Normal,
 
-        Assert.Equal(900, window.ClientSize.Width);
-        var bar = _topBarControls.Select(n => Box(window, n)).ToList();
-        var pill = bar[^1];
-        Assert.True(pill.Right <= window.ClientSize.Width - 4, string.Create(CultureInfo.InvariantCulture, $"the pill ends at {pill.Right}, past the window's {window.ClientSize.Width} less its ring"));
-        for (var i = 1; i < bar.Count; i++)
+        /// <summary>Stale, with Refresh.</summary>
+        Stale,
+
+        /// <summary>Stale after three failed refreshes.</summary>
+        NotResponding,
+
+        /// <summary>Not running.</summary>
+        NotRunning,
+
+        /// <summary>SND-UI-003.</summary>
+        Unreadable,
+
+        /// <summary>The full-window panel (no top bar).</summary>
+        VersionMismatch,
+
+        /// <summary>First load.</summary>
+        Connecting,
+    }
+
+    public static TheoryData<BarState, double> MinimumWidthStates()
+    {
+        var data = new TheoryData<BarState, double>();
+        foreach (var state in Enum.GetValues<BarState>())
         {
-            Assert.True(bar[i - 1].Right <= bar[i].Left, $"{bar[i - 1]} overlaps {bar[i]}");
+            data.Add(state, 1.0);
+            data.Add(state, 1.3);
         }
 
-        Frame(window, "min-width-top-bar");
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(MinimumWidthStates))]
+    public Task At_the_900_px_minimum_the_top_bar_fits_in_every_pill_state(BarState state, double scale) => OnUi(async () =>
+    {
+        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 900, 600) }, Token);
+        var window = await ShowIn(state);
+        var resources = Application.Current!.Resources;
+        TextScale.Apply(resources, scale);
+        try
+        {
+            Settle(window);
+            Assert.Equal(900, window.ClientSize.Width);
+            if (state == BarState.VersionMismatch)
+            {
+                Assert.False(Visible(window, "TopBar"));
+                AllInside(window, Named<Control>(window, "VersionMismatchPanel"), state, scale);
+            }
+            else
+            {
+                TopBarFits(window, state, scale);
+            }
+
+            if (state == BarState.NotResponding)
+            {
+                var banner = Named<Control>(window, "NotRespondingBanner");
+                Assert.True(banner.IsEffectivelyVisible, "the not-responding banner is hidden");
+                AllInside(window, banner, state, scale);
+                var words = banner.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible && t.Text is { Length: > 1 }).Select(t => t.Text);
+                Assert.Equal(Labels.NotResponding, string.Join(' ', words));
+                Assert.Equal(Labels.NotResponding, AutomationProperties.GetName(banner));
+            }
+
+            Frame(window, string.Create(CultureInfo.InvariantCulture, $"min-width-{state.ToString().ToLowerInvariant()}-{scale * 100:0}"));
+        }
+        finally
+        {
+            TextScale.Apply(resources, 1.0);
+            Settle(window);
+        }
     });
+
+    // The window in one of the minimum-width test's states.
+    private async Task<ShellWindow> ShowIn(BarState state)
+    {
+        if (state is BarState.NotRunning)
+        {
+            return (await Show(s => s.State == ShellState.NotRunning)).Window;
+        }
+
+        if (state is BarState.Connecting)
+        {
+            return (await Show(s => s.State == ShellState.Connecting, run: false)).Window;
+        }
+
+        _records.Write(A.Record());
+        _server.UnreadableStatus = state == BarState.Unreadable;
+        _server.Current = state == BarState.VersionMismatch ? A.Status() with { ApiVersion = 2 } : A.Status();
+        var expected = state == BarState.Unreadable ? ShellState.Unreadable
+            : state == BarState.VersionMismatch ? ShellState.VersionMismatch
+            : ShellState.Normal;
+        var (window, shell) = await Show(s => s.State == expected);
+        if (state is BarState.Stale or BarState.NotResponding)
+        {
+            _server.FailPing = true;
+            _clock.Advance(ShellViewModel.StaleAfter);
+            await Until(() => shell.State == ShellState.Stale);
+            Assert.Equal(ShellState.Stale, shell.State);
+        }
+
+        if (state is BarState.NotResponding)
+        {
+            _server.FailStatus = true;
+            for (var i = 0; i < 3; i++)
+            {
+                await shell.Health.Refresh(Token);
+            }
+        }
+
+        Settle(window);
+        return window;
+    }
+
+    private static void TopBarFits(Window window, BarState state, double scale)
+    {
+        var at = string.Create(CultureInfo.InvariantCulture, $"{state} at {scale:0.0}");
+        var bar = _topBarControls.Where(n => Visible(window, n)).Select(n => (Name: n, Box: Box(window, n))).ToList();
+        var pill = bar[^1];
+        Assert.Equal("HealthPill", pill.Name);
+        Assert.True(Visible(window, "HealthPillText"), $"{at}: the pill's word is hidden");
+        Assert.True(pill.Box.Right <= window.ClientSize.Width - 4,
+            string.Create(CultureInfo.InvariantCulture, $"{at}: the pill ends at {pill.Box.Right}, past the window's {window.ClientSize.Width} less its ring"));
+        for (var i = 1; i < bar.Count; i++)
+        {
+            Assert.True(bar[i - 1].Box.Right <= bar[i].Box.Left, $"{at}: {bar[i - 1].Name} {bar[i - 1].Box} overlaps {bar[i].Name} {bar[i].Box}");
+        }
+
+        var top = Box(window, "TopBar");
+        foreach (var (name, box) in bar)
+        {
+            Assert.True(box.Top >= top.Top && box.Bottom <= top.Bottom, $"{at}: {name} {box} overflows the top bar {top}");
+        }
+
+        AllInside(window, Named<Control>(window, "TopBar"), state, scale);
+    }
+
+    // Every visible text under the control lies inside the window, whole (no text runs past an edge).
+    private static void AllInside(Window window, Control within, BarState state, double scale)
+    {
+        var outside = within.GetVisualDescendants().OfType<TextBlock>()
+            .Where(t => t.IsEffectivelyVisible && t.Text is { Length: > 0 })
+            .Select(t => (t.Text, Box: new Rect(t.TranslatePoint(new Point(0, 0), window) ?? default, t.Bounds.Size)))
+            .Where(t => t.Box.Left < 0 || t.Box.Right > window.ClientSize.Width || t.Box.Bottom > window.ClientSize.Height)
+            .Select(t => $"{t.Text} {t.Box}")
+            .ToList();
+        Assert.True(outside.Count == 0, string.Create(CultureInfo.InvariantCulture, $"{state} at {scale:0.0}: outside the window: {string.Join(", ", outside)}"));
+    }
 
     // With room the ⌘K field keeps its full 300 px and the pill sits at the right edge (inside the top bar's 16 px padding).
     [Fact]
@@ -650,7 +787,7 @@ public sealed class ShellWindowTests : IDisposable
         Frame(window, "settings");
     });
 
-    private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "HealthPill"];
+    private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "RefreshButton", "HealthPill"];
 
     private static Rect Box(Window window, string name)
     {
