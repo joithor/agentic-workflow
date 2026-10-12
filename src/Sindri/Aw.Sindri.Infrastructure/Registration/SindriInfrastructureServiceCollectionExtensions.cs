@@ -43,5 +43,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IRepoLocator, GitRepoLocator>()
             .AddSingleton<IRecipeReader, YamlRecipeReader>()
             .AddSingleton<IRecipeFiles, FileRecipeFiles>()
-            .AddSingleton<IRecipeWake, NoOpRecipeWake>();
+            .AddSingleton<IRecipeWake, NoOpRecipeWake>()
+            .AddSingleton<IRecipeStore, SqliteRecipeStore>()
+            .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>();
 }
