@@ -7,11 +7,14 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Evals;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.IssueNonce;
 using Aw.Sindri.Features.RunDoctor;
+using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Features.ValidateProfile;
@@ -46,4 +49,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(EvalStepLine))]
 [JsonSerializable(typeof(RecipeValidationView))]
 [JsonSerializable(typeof(CompleteStepResponse))]
+[JsonSerializable(typeof(StartInstanceResponse))]
+[JsonSerializable(typeof(ApplyCommandResponse))]
+[JsonSerializable(typeof(IssueNonceResponse))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

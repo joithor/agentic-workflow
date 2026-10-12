@@ -143,7 +143,7 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
     {
         WriteSkip();
         await using var served = await Served.Start(_harness.Home, server.Environment, static services => services.AddSingleton<IApprovedRecipes>(
-            sp => new RevokedRecipes(ActivatorUtilities.CreateInstance<Aw.Sindri.Infrastructure.Workflows.HomeApprovedRecipes>(sp))));
+            sp => new RevokedRecipes(ActivatorUtilities.CreateInstance<Infrastructure.Workflows.HomeApprovedRecipes>(sp))));
         _ = await served.Cli("start", "workflow.skip", "--item", "T-17", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         _ = await served.Until("T-17/skip/1", static v => v.Task is not null);
 
@@ -177,9 +177,9 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
     }
 
     /// <summary>Puts 'workflow.skip' (a desk Step and a 'command.skip' transition) under the home's recipes.</summary>
-    private void WriteSkip() => System.IO.File.WriteAllText(Path.Combine(_harness.Home, "recipes", "workflow.skip.yaml"), _skipRecipe);
+    private void WriteSkip() => File.WriteAllText(Path.Combine(_harness.Home, "recipes", "workflow.skip.yaml"), _skipRecipe);
 
-    private static async Task<Aw.Kernel.Result<ApplyCommandResponse>> Apply(Served served, ApplyCommandRequest request)
+    private static async Task<Kernel.Result<ApplyCommandResponse>> Apply(Served served, ApplyCommandRequest request)
     {
         await using var scope = served.Sindri.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<IService<ApplyCommandRequest, ApplyCommandResponse>>().Handle(request, TestContext.Current.CancellationToken);

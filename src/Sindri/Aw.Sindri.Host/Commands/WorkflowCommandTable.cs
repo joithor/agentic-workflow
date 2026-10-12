@@ -5,9 +5,9 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// The 'workflow' verb group (engine spec rev 8 §6.3). Engine P4 contract: every verb of §6.3 has its row. 'list' is
-/// P4a's visibility query (unit (e) moves it to the §6.3 filters and '--needs-me'); the others are stubs, each naming
-/// the unit that builds it: 'start' (b), 'status' (e), 'events' (e), 'answer' (b), 'command' (b) and 'cancel' (b).
-/// 'complete' is unit (c)'s <see cref="CompleteCommand"/>. Each becomes a client of 'sindri serve' that calls one slice through the API chain.
+/// P4a's visibility query (unit (e) moves it to the §6.3 filters and '--needs-me'); 'status' and 'events' are unit (e)'s
+/// stubs. 'start' is unit (b)'s <see cref="WorkflowStartCommand"/>, 'answer', 'command' and 'cancel' unit (b)'s
+/// <see cref="ApplyCommandVerbs"/>, and 'complete' unit (c)'s <see cref="CompleteCommand"/>. Each becomes a client of 'sindri serve' that calls one slice through the API chain.
 /// </summary>
 internal static class WorkflowCommandTable
 {
@@ -21,13 +21,13 @@ internal static class WorkflowCommandTable
 
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch
     {
-        ["start", ..] => Unbuilt("start", "unit (b)"),
+        ["start", .. var rest] => WorkflowStartCommand.Run(rest, services, output, ct),
         ["status", ..] => Unbuilt("status", "unit (e)"),
         ["list", .. var rest] => List(rest, services, output, ct),
         ["events", ..] => Unbuilt("events", "unit (e)"),
-        ["answer", ..] => Unbuilt("answer", "unit (b)"),
-        ["command", ..] => Unbuilt("command", "unit (b)"),
-        ["cancel", ..] => Unbuilt("cancel", "unit (b)"),
+        ["answer", .. var rest] => ApplyCommandVerbs.Answer(rest, services, output, ct),
+        ["command", .. var rest] => ApplyCommandVerbs.Command(rest, services, output, ct),
+        ["cancel", .. var rest] => ApplyCommandVerbs.Cancel(rest, services, output, ct),
         ["complete", .. var rest] => CompleteCommand.Run(rest, services, output, ct),
         _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["workflow", .. args])}' is not a sindri command ({Usage})")),
     };
