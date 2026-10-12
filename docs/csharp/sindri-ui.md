@@ -210,7 +210,8 @@ the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `
 
 1. The endpoint-record port (`IEndpointRecordSource`) reads `control.json`. The desktop adapter reads it from
    `AW_SINDRI_HOME`, else `$AW_STATE_DIR/sindri-app`, else `~/.agentic-workflow/sindri-app`, the same place the control
-   plane writes it. No record means "Not running".
+   plane writes it. No record means "Not running". A record whose URL isn't on this machine (loopback: 127.0.0.1, ::1
+   or localhost) is refused as unreadable, with the reason and the record's path; the app never calls that address.
 2. `GET /sindri/ping` must answer the record's pid **and** epoch; otherwise the record is stale and reads as "Not running".
 3. `GET /sindri/status` fills the window. A lower epoch than the last one means a new ledger, so the stream cursor
    starts over. Each `/sindri/events` event (server-sent events, resumed from the last
