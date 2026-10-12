@@ -1,0 +1,424 @@
+{
+  "schemaVersion": 1,
+  "kind": "export",
+  "repo": "aw-split-panes",
+  "nodes": [
+    {
+      "key": "feature:layout.split-pane",
+      "label": "Split pane",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "feature:layout.split-pane.orientation",
+      "label": "Split orientation",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "feature:layout.pane-resize",
+      "label": "Pane resize",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "feature:tabs.tab-manager",
+      "label": "Tab manager",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "surface:command/split-vertical",
+      "label": "Split vertically (command)",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "surface:command/toggle-orientation",
+      "label": "Toggle split orientation (command)",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "surface:keybinding/ctrl+shift+d",
+      "label": "Ctrl+Shift+D",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "surface:setting/paneResizeStep",
+      "label": "paneResizeStep setting",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "action:split-pane.split-vertical",
+      "label": "Split a pane vertically",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "action:split-pane.toggle-orientation",
+      "label": "Toggle the split orientation",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "action:pane-resize.resize-focused",
+      "label": "Resize the focused pane",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "action:tab-manager.restore-layout",
+      "label": "Restore a tab's pane layout",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "thing:pane-layout",
+      "label": "Pane layout",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "code:src/layout/SplitPane.ts",
+      "label": "SplitPane.ts",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "code:src/layout/PaneResize.ts",
+      "label": "PaneResize.ts",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "code:src/tabs/TabManager.ts",
+      "label": "TabManager.ts",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "feature:layout.drag-to-split",
+      "label": "Drag to split",
+      "provenance": "model",
+      "confidence": 0.4,
+      "evidence": [
+        {
+          "key": "linear:issue/0e5a1b00-0000-4000-8000-000000000106",
+          "span": null
+        }
+      ],
+      "attributes": null,
+      "at": null
+    },
+    {
+      "key": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000103",
+      "label": "linear:issue/0e5a1b00-0000-4000-8000-000000000103",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": "2026-07-15T10:00:00.0000000Z"
+    }
+  ],
+  "edges": [
+    {
+      "from": "feature:layout.split-pane.orientation",
+      "to": "feature:layout.split-pane",
+      "type": "part-of",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "feature:layout.pane-resize",
+      "to": "feature:layout.split-pane",
+      "type": "part-of",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "surface:command/split-vertical",
+      "to": "feature:layout.split-pane",
+      "type": "part-of",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "surface:keybinding/ctrl+shift+d",
+      "to": "feature:layout.split-pane",
+      "type": "part-of",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "surface:command/toggle-orientation",
+      "to": "feature:layout.split-pane.orientation",
+      "type": "part-of",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "surface:setting/paneResizeStep",
+      "to": "feature:layout.pane-resize",
+      "type": "part-of",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "surface:keybinding/ctrl+shift+d",
+      "to": "surface:command/split-vertical",
+      "type": "moves-to",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "action:split-pane.split-vertical",
+      "to": "surface:command/split-vertical",
+      "type": "on",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "action:split-pane.toggle-orientation",
+      "to": "surface:command/toggle-orientation",
+      "type": "on",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "action:pane-resize.resize-focused",
+      "to": "surface:setting/paneResizeStep",
+      "type": "on",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "action:split-pane.toggle-orientation",
+      "to": "thing:pane-layout",
+      "type": "writes",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "action:pane-resize.resize-focused",
+      "to": "thing:pane-layout",
+      "type": "writes",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "action:tab-manager.restore-layout",
+      "to": "thing:pane-layout",
+      "type": "reads",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "code:src/layout/SplitPane.ts",
+      "to": "feature:layout.split-pane",
+      "type": "implements",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "evidence": [
+        {
+          "key": "repo:aw-split-panes/src/layout/SplitPane.ts",
+          "span": null
+        }
+      ],
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "code:src/layout/SplitPane.ts",
+      "to": "feature:layout.split-pane.orientation",
+      "type": "implements",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "evidence": [
+        {
+          "key": "repo:aw-split-panes/src/layout/SplitPane.ts",
+          "span": null
+        }
+      ],
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "code:src/layout/PaneResize.ts",
+      "to": "feature:layout.pane-resize",
+      "type": "implements",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "evidence": [
+        {
+          "key": "repo:aw-split-panes/src/layout/PaneResize.ts",
+          "span": null
+        }
+      ],
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "code:src/tabs/TabManager.ts",
+      "to": "feature:tabs.tab-manager",
+      "type": "implements",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "evidence": [
+        {
+          "key": "repo:aw-split-panes/src/tabs/TabManager.ts",
+          "span": null
+        }
+      ],
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "code:src/tabs/TabManager.ts",
+      "to": "action:tab-manager.restore-layout",
+      "type": "implements",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "evidence": [
+        {
+          "key": "repo:aw-split-panes/src/tabs/TabManager.ts",
+          "span": null
+        }
+      ],
+      "order": null,
+      "at": null
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "feature:layout.orientation",
+      "target": "feature:layout.split-pane.orientation"
+    }
+  ],
+  "decisions": [
+    {
+      "record": "linear:issue/0e5a1b00-0000-4000-8000-000000000103",
+      "quote": "toggling orientation keeps the focused pane first, so the cursor never jumps",
+      "wording": "Toggling orientation keeps focus on the first pane.",
+      "provenance": "human",
+      "at": "2026-07-15T10:00:00.0000000Z",
+      "key": "decision:de8ec8057fd7b024638d5ba27464ca3b66158bb2423fc32f48411ad638a1a149"
+    }
+  ],
+  "overrides": [
+    {
+      "action": "reject",
+      "target": "feature:layout.drag-to-split",
+      "who": "avery",
+      "at": "2026-07-30T09:00:00.0000000Z",
+      "label": null,
+      "other": null,
+      "rejection": null,
+      "id": "ovr_da69675871360c0e"
+    },
+    {
+      "action": "rename",
+      "target": "feature:tabs.tab-manager",
+      "who": "avery",
+      "at": "2026-07-30T09:05:00.0000000Z",
+      "label": "Tabs",
+      "other": null,
+      "rejection": null,
+      "id": "ovr_a0ddbafee91412d8"
+    }
+  ],
+  "keyVersion": 1,
+  "commit": null,
+  "mapVersion": 1,
+  "exportedAt": "2026-08-01T12:00:00.0000000Z",
+  "orphaned": []
+}

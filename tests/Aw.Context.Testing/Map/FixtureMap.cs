@@ -16,6 +16,9 @@ public static class FixtureMap
     /// <summary>AwJson options over the map types (in production the Sindri host's JSON context holds them).</summary>
     public static JsonSerializerOptions Json { get; } = AwJson.CreateOptions(MapJsonContext.Default);
 
+    /// <summary>The same options, indented: golden files read better.</summary>
+    public static JsonSerializerOptions IndentedJson { get; } = AwJson.CreateOptions(MapJsonContext.Default, indented: true);
+
     /// <summary>The YAML text.</summary>
     public static string Yaml => SplitPanesFixture.ReadText(Path);
 

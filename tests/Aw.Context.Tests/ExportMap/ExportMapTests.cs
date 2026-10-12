@@ -44,7 +44,7 @@ public sealed class ExportMapTests : IDisposable
 
         var exported = await _world.Map.ExportMap(path: null, MapWorld.Human, MapWorld.None);
 
-        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(_world.Exports.Documents[exported.Value.Path], FixtureMap.Json));
+        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(_world.Exports.Documents[exported.Value.Path], FixtureMap.IndentedJson));
         Golden.Match(json + "\n", typeof(ExportMapTests).Assembly, "ExportMap/Golden/fixture-export.json", Normalization.None);
     }
 
