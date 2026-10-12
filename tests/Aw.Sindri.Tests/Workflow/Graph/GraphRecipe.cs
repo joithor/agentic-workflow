@@ -21,6 +21,10 @@ internal static class GraphRecipe
         StateKind.Wait, Step: null, new WaitFor(EventKind.From(kind), Answer: null, Resource: null, Child: null), Timeout(then),
         Loop: null, Budget: null, next, Outcome: null);
 
+    public static RecipeState WaitForAnswer(string id = "why", string question = "What failed?") => new(
+        StateKind.Wait, Step: null, new WaitFor(Event: null, new AnswerWait(AnswerId.From(id), question), Resource: null, Child: null),
+        Timeout(TimeoutAction.Park), Loop: null, Budget: null, "Waiting for your answer.", Outcome: null);
+
     public static RecipeState WaitForChild(string recipe, TimeoutAction then = TimeoutAction.Park) => new(
         StateKind.Wait, Step: null,
         new WaitFor(Event: null, Answer: null, Resource: null,

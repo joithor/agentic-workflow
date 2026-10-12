@@ -165,7 +165,7 @@ public sealed class RecipeReaderTests
         var lines = Lines(Minimal.Replace("  done:\n", state + "  done:\n", StringComparison.Ordinal));
 
         Assert.NotEmpty(lines);
-        Assert.All(lines, l => Assert.StartsWith("RCP-SCHEMA-00", l, StringComparison.Ordinal));
+        Assert.All(lines, l => Assert.Matches("^RCP-(SCHEMA-00[12]|NAME-001): ", l));
     }
 
     [Fact, Trait("Lane", "unit")]

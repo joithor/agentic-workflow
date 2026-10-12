@@ -80,8 +80,9 @@ internal sealed partial class GraphRules
 
     /// <summary>
     /// RCP-LOOP-001 (§17.28.5 "every loop has a cap"): a cycle of step and wait transitions that passes through no state
-    /// with a loop, so nothing counts its rounds. A cycle closed by a command is a human's choice, not a loop; a cycle
-    /// with no way out is RCP-EXIT-001's. Reported once per cycle, at its first state in the file's order.
+    /// with a loop, so nothing counts its rounds. A cycle closed by a command, or by the answer to an answer wait, is a
+    /// human's choice each round, not a loop; a cycle with no way out is RCP-EXIT-001's. Reported once per cycle, at its
+    /// first state in the file's order.
     /// </summary>
     private static IEnumerable<RecipeFinding> UncappedCycles(Recipe recipe, Edges edges, RecipeSource source)
     {
@@ -115,7 +116,7 @@ internal sealed partial class GraphRules
             .ToDictionary(static s => s.Key, static _ => new HashSet<string>(StringComparer.Ordinal), StringComparer.Ordinal);
         foreach (var transition in recipe.Transitions.Where(t => !t.On.StartsWith("command.", StringComparison.Ordinal) && edges.ContainsKey(t.To)))
         {
-            foreach (var from in transition.From.Where(edges.ContainsKey))
+            foreach (var from in transition.From.Where(f => edges.ContainsKey(f) && !AnsweredByHuman(recipe, transition, f)))
             {
                 _ = edges[from].Add(transition.To);
             }
@@ -123,6 +124,10 @@ internal sealed partial class GraphRules
 
         return edges;
     }
+
+    /// <summary>A wait.satisfied out of an answer wait: a human answers each round, so it closes a cycle like a command does.</summary>
+    private static bool AnsweredByHuman(Recipe recipe, RecipeTransition transition, string from) =>
+        transition.On == "wait.satisfied" && recipe.States[from].WaitFor?.Answer is not null;
 
     private static RecipeFinding? LoopMembership(Recipe recipe, string name, RecipeState state, Edges edges, RecipeSource source)
     {
