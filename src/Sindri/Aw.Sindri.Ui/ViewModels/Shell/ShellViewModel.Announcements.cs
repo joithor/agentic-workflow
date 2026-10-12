@@ -17,8 +17,9 @@ internal sealed partial class ShellViewModel
     /// <summary>The Not running card's live text: "Not running: " and the reason while not running, else its resting text.</summary>
     public string NotRunningAnnouncement { get; private set => Set(ref field, value); } = Labels.Sindri;
 
-    // Called after the flags have been raised. A reason emptied on the way out of a state (Health sets the reason before
-    // the state) keeps the announcement as it is, so nothing is spoken until the flag is off and the text rests.
+    // Called after the flags have been raised. Health sets a state and its reason together and raises the state first
+    // (HealthViewModel.Become), so a region whose flag is still on never sees the next state's reason; an empty reason
+    // while the flag holds keeps the announcement as it is.
     private void Announce()
     {
         UnreadableAnnouncement = Announcement(IsUnreadable, Labels.Unreadable, UnreadableAnnouncement);
