@@ -371,12 +371,15 @@ blocks.
 | `SND-API-007` | An unknown `X-Sindri-Caller` value, or a malformed `X-Sindri-Repo` (400; logged, not audited) |
 | `SND-API-008` | A command carried an `Origin` header (403; logged, not audited) |
 | `SND-API-009` | The command gate wasn't acquired within 5 s: another command is running (503) |
+| `SND-API-010` | A command that reads views was refused while the views rebuild; it wasn't run, retry (503) |
+| `SND-API-011` | The views didn't reach the sequence in time: an `X-Sindri-After` query waited 2 s, or a command waited for the head; at once while the projector is stalled (503) |
 | `SND-AUTH-001` | A `human` caller without the valid per-start token: missing or stale (403; restart the app or rerun the command), or a `prover` label outside a temp or proof home |
 | `SND-AUTH-002` | The caller may not run the command's action class (403; only the `command.handled` audit row is written) |
 | `SND-CLI-001` | Unknown command |
 | `SND-CLI-002` | `sindri serve` didn't come up after starting it |
 | `SND-CLI-003` | Bad input: a CLI argument or setting that is malformed (a profile hash that isn't 64 hex digits, an `AW_SINDRI_PORT` that isn't 0..65535), or an API request body or value the control plane refused (a 400) |
 | `SND-SCHED-001` | A background service run failed |
+| `SND-VIEW-001` | The projector stalled on an event (logged with its sequence and type); `sindri views rebuild` clears it |
 
 ### Workflow errors (`WorkflowErrors`)
 

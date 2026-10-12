@@ -3432,3 +3432,70 @@ Aw.Sindri.Core.Ledger.ILedgerReader.ReadAfter(long sequence, int max, System.Thr
 Aw.Sindri.Core.Ledger.ILedgerStore.Head(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
 Aw.Sindri.Core.Profile.IApprovalReader
 Aw.Sindri.Core.Profile.IApprovalReader.Latest(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile?>!>
+Aw.Sindri.Core.Events.ProfileChecked
+Aw.Sindri.Core.Events.ProfileChecked.<Clone>$() -> Aw.Sindri.Core.Events.ProfileChecked!
+Aw.Sindri.Core.Events.ProfileChecked.Approved.get -> Aw.Sindri.Core.Ids.ProfileHash?
+Aw.Sindri.Core.Events.ProfileChecked.Approved.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.ApprovedServices.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ServiceName>!
+Aw.Sindri.Core.Events.ProfileChecked.ApprovedServices.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.ChangedPaths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Events.ProfileChecked.ChangedPaths.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ProfileChecked.CommandId.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ProfileHash? Approved, out Aw.Sindri.Core.Ids.ProfileHash? Live, out bool Drifted, out System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ServiceName>! ApprovedServices) -> void
+Aw.Sindri.Core.Events.ProfileChecked.Drifted.get -> bool
+Aw.Sindri.Core.Events.ProfileChecked.Drifted.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.Equals(Aw.Sindri.Core.Events.ProfileChecked? other) -> bool
+Aw.Sindri.Core.Events.ProfileChecked.Live.get -> Aw.Sindri.Core.Ids.ProfileHash?
+Aw.Sindri.Core.Events.ProfileChecked.Live.init -> void
+Aw.Sindri.Core.Events.ProfileChecked.ProfileChecked(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ProfileHash? Approved, Aw.Sindri.Core.Ids.ProfileHash? Live, bool Drifted, System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ServiceName>! ApprovedServices) -> void
+Aw.Sindri.Core.Events.ServiceOutcome
+Aw.Sindri.Core.Events.ServiceOutcome.Failed = 1 -> Aw.Sindri.Core.Events.ServiceOutcome
+Aw.Sindri.Core.Events.ServiceOutcome.Ok = 0 -> Aw.Sindri.Core.Events.ServiceOutcome
+Aw.Sindri.Core.Events.ServiceRan
+Aw.Sindri.Core.Events.ServiceRan.<Clone>$() -> Aw.Sindri.Core.Events.ServiceRan!
+Aw.Sindri.Core.Events.ServiceRan.Code.get -> string?
+Aw.Sindri.Core.Events.ServiceRan.Code.init -> void
+Aw.Sindri.Core.Events.ServiceRan.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ServiceRan.CommandId.init -> void
+Aw.Sindri.Core.Events.ServiceRan.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ServiceName Service, out System.DateTimeOffset Slot, out Aw.Sindri.Core.Events.ServiceOutcome Outcome, out string? Code) -> void
+Aw.Sindri.Core.Events.ServiceRan.Equals(Aw.Sindri.Core.Events.ServiceRan? other) -> bool
+Aw.Sindri.Core.Events.ServiceRan.Outcome.get -> Aw.Sindri.Core.Events.ServiceOutcome
+Aw.Sindri.Core.Events.ServiceRan.Outcome.init -> void
+Aw.Sindri.Core.Events.ServiceRan.Service.get -> Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Core.Events.ServiceRan.Service.init -> void
+Aw.Sindri.Core.Events.ServiceRan.ServiceRan(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ServiceName Service, System.DateTimeOffset Slot, Aw.Sindri.Core.Events.ServiceOutcome Outcome, string? Code) -> void
+Aw.Sindri.Core.Events.ServiceRan.Slot.get -> System.DateTimeOffset
+Aw.Sindri.Core.Events.ServiceRan.Slot.init -> void
+Aw.Sindri.Core.Events.ViewsRebuilt
+Aw.Sindri.Core.Events.ViewsRebuilt.<Clone>$() -> Aw.Sindri.Core.Events.ViewsRebuilt!
+Aw.Sindri.Core.Events.ViewsRebuilt.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ViewsRebuilt.CommandId.init -> void
+Aw.Sindri.Core.Events.ViewsRebuilt.CursorBefore.get -> long
+Aw.Sindri.Core.Events.ViewsRebuilt.CursorBefore.init -> void
+Aw.Sindri.Core.Events.ViewsRebuilt.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out long CursorBefore, out long EventsReplayed) -> void
+Aw.Sindri.Core.Events.ViewsRebuilt.Equals(Aw.Sindri.Core.Events.ViewsRebuilt? other) -> bool
+Aw.Sindri.Core.Events.ViewsRebuilt.EventsReplayed.get -> long
+Aw.Sindri.Core.Events.ViewsRebuilt.EventsReplayed.init -> void
+Aw.Sindri.Core.Events.ViewsRebuilt.ViewsRebuilt(Aw.Sindri.Core.Ids.CommandId CommandId, long CursorBefore, long EventsReplayed) -> void
+const Aw.Sindri.Core.Events.EventTypes.ProfileChecked = "profile.checked" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ServiceRan = "service.ran" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ViewsRebuilt = "views.rebuilt" -> string!
+override Aw.Sindri.Core.Events.ProfileChecked.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ProfileChecked.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ProfileChecked.ToString() -> string!
+override Aw.Sindri.Core.Events.ServiceRan.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ServiceRan.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ServiceRan.ToString() -> string!
+override Aw.Sindri.Core.Events.ViewsRebuilt.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ViewsRebuilt.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ViewsRebuilt.ToString() -> string!
+static Aw.Sindri.Core.Events.ProfileChecked.operator !=(Aw.Sindri.Core.Events.ProfileChecked? left, Aw.Sindri.Core.Events.ProfileChecked? right) -> bool
+static Aw.Sindri.Core.Events.ProfileChecked.operator ==(Aw.Sindri.Core.Events.ProfileChecked? left, Aw.Sindri.Core.Events.ProfileChecked? right) -> bool
+static Aw.Sindri.Core.Events.ServiceRan.operator !=(Aw.Sindri.Core.Events.ServiceRan? left, Aw.Sindri.Core.Events.ServiceRan? right) -> bool
+static Aw.Sindri.Core.Events.ServiceRan.operator ==(Aw.Sindri.Core.Events.ServiceRan? left, Aw.Sindri.Core.Events.ServiceRan? right) -> bool
+static Aw.Sindri.Core.Events.ViewsRebuilt.operator !=(Aw.Sindri.Core.Events.ViewsRebuilt? left, Aw.Sindri.Core.Events.ViewsRebuilt? right) -> bool
+static Aw.Sindri.Core.Events.ViewsRebuilt.operator ==(Aw.Sindri.Core.Events.ViewsRebuilt? left, Aw.Sindri.Core.Events.ViewsRebuilt? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.ViewsBehind -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ViewsRebuilding -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ViewsStalled -> Aw.Kernel.ErrorDefinition!
