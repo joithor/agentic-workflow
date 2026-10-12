@@ -75,7 +75,9 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
         var lines = clean.Text.Split('\n');
         var start = Math.Clamp(at.Start, 1, lines.Length);
         var text = clean.Blocked ? clean.Text : string.Join('\n', lines[(start - 1)..Math.Clamp(at.End, start, lines.Length)]);
-        return new SourceRecord(reference, RecordKind.Doc, DocChunker.Title(clean.Text, at.Path), text, Author: null, CreatedAt: null, UpdatedAt: null);
+        return new SourceRecord(reference, RecordKind.Doc, DocChunker.Title(clean.Text, at.Path), clean.Blocked ? string.Empty : text, Author: null, CreatedAt: null,
+            UpdatedAt: null)
+        { Blocked = clean.Blocked };
     }
 
     public async ValueTask<Result<IReadOnlyList<SourceVersion?>>> Versions(IReadOnlyList<SourceRef> refs, CancellationToken cancellationToken)

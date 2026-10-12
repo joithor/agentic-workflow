@@ -113,9 +113,7 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
         }
 
         var profile = loaded.Value.Profile;
-        var repos = (profile.Repos ?? []).Where(r => ContextRepoName.TryFrom(r.Name, out _)).Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path)).ToList();
-        var checkedContext = context.CheckSettings(profile.Context)
-            .Bind(settings => ScopeRules.Resolve(settings, repos, new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli)));
+        var checkedContext = context.CheckSettings(profile.Context, [.. (profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path))]);
         return checkedContext.IsError ? checkedContext.Error : loaded;
     }
 }

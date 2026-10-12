@@ -28,7 +28,7 @@ internal sealed class ContextScopes(IApprovedProfile approvals, ICallerContextAc
             return approved.IsError ? approved.Error : SindriErrors.ProfileNotApproved.With("no profile is approved, so no repo is mapped (fix: sindri profile approve)");
         }
 
-        var repos = (loaded.Profile.Repos ?? []).Where(r => ContextRepoName.TryFrom(r.Name, out _)).Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path)).ToList();
+        var repos = ScopeRules.Usable([.. (loaded.Profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path))]);
         return new ContextScope(loaded.Profile.Context, repos, Caller(callers.Current));
     }
 
@@ -50,7 +50,6 @@ internal sealed class ContextScopes(IApprovedProfile approvals, ICallerContextAc
     {
         "cli" => ContextClient.Cli,
         "mcp" => ContextClient.Mcp,
-        "ui" or "prover" or "http" => ContextClient.Http,
         _ => ContextClient.Http,
     };
 }

@@ -103,7 +103,9 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
                 continue;   // a record gone since the search, or a source that stopped answering: no claim without a citation
             }
 
-            var text = ingest.Clean(record.Value.Text, singleLine: false);   // cleaned whole, then cut, so a cut never splits a secret
+            var text = record.Value.Blocked   // the adapter's own whole-document clean withheld it: cite it as scrub-blocked
+                ? new ScrubbedField(string.Empty, Redacted: false, Blocked: true)
+                : ingest.Clean(record.Value.Text, singleLine: false);   // cleaned whole, then cut, so a cut never splits a secret
             var cut = text.Text.Length > MaxRecordText ? text with { Text = text.Text[..MaxRecordText] } : text;
             fetched.Add(new FetchedRecord(item, source, ingest.Clean(record.Value.Title, singleLine: true), cut));
         }

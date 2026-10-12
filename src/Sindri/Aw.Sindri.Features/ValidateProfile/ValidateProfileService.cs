@@ -41,8 +41,6 @@ internal sealed class ValidateProfileService(IProfileSource live, IApprovals app
     }
 
     /// <summary>The context section checked by the engine, and its 'repos' against the profile's repos (SND-CONTEXT-001).</summary>
-    private Result<IReadOnlyList<ContextRepo>> Checked(SindriProfile profile) =>
-        context.CheckSettings(profile.Context).Bind(settings => ScopeRules.Resolve(settings,
-            [.. (profile.Repos ?? []).Where(r => ContextRepoName.TryFrom(r.Name, out _)).Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path))],
-            new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli)));
+    private Result<ContextSettings> Checked(SindriProfile profile) =>
+        context.CheckSettings(profile.Context, [.. (profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path))]);
 }

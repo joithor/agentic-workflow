@@ -8,4 +8,12 @@ namespace Aw.Context.Core.Sources;
 /// <param name="Author">Its author, if the source has one.</param>
 /// <param name="CreatedAt">When it was created, if known.</param>
 /// <param name="UpdatedAt">When it last changed, if known.</param>
-public sealed record SourceRecord(SourceRef Ref, RecordKind Kind, string Title, string Text, string? Author, DateTimeOffset? CreatedAt, DateTimeOffset? UpdatedAt);
+public sealed record SourceRecord(SourceRef Ref, RecordKind Kind, string Title, string Text, string? Author, DateTimeOffset? CreatedAt, DateTimeOffset? UpdatedAt)
+{
+    /// <summary>
+    /// True when the adapter already ran the ingest scrubber over the whole record and it was withheld (an adapter that
+    /// cleans whole documents before cutting a span, like repo-docs). <see cref="Text"/> then holds no record text, and
+    /// the engine cites the record as scrub-blocked.
+    /// </summary>
+    public bool Blocked { get; init; }
+}
