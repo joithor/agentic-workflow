@@ -134,6 +134,7 @@ Aw.Context.Core.Models.ModelRequest.Purpose.get -> Aw.Context.Core.Models.ModelP
 Aw.Context.Core.Models.ModelRequest.Purpose.init -> void
 Aw.Context.Core.Onyx.OnyxSettings
 Aw.Context.Core.Onyx.OnyxSettings.<Clone>$() -> Aw.Context.Core.Onyx.OnyxSettings!
+Aw.Context.Core.Onyx.OnyxSettings.Address.get -> string!
 Aw.Context.Core.Onyx.OnyxSettings.CheckVersion(string! reported) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 Aw.Context.Core.Onyx.OnyxSettings.Equals(Aw.Context.Core.Onyx.OnyxSettings? other) -> bool
 Aw.Context.Core.Onyx.OnyxSettings.Token.get -> string!
