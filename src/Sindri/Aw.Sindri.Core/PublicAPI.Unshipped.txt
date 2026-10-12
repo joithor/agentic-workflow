@@ -4159,3 +4159,20 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusText.Tokens(int tokens) -> s
 Aw.Sindri.Core.Workflow.Engine.Desk.IWorkflowInstances.List(string? query, bool ended, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>!>!>
 Aw.Sindri.Core.Workflow.Engine.Evals.IApprovalEvals
 Aw.Sindri.Core.Workflow.Engine.Evals.IApprovalEvals.Check(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Scheduling.BuiltInService
+Aw.Sindri.Core.Scheduling.BuiltInService.<Clone>$() -> Aw.Sindri.Core.Scheduling.BuiltInService!
+Aw.Sindri.Core.Scheduling.BuiltInService.BuiltInService(Aw.Sindri.Core.Ids.ServiceName Name, Aw.Sindri.Core.Profile.Cadence! Cadence) -> void
+Aw.Sindri.Core.Scheduling.BuiltInService.Cadence.get -> Aw.Sindri.Core.Profile.Cadence!
+Aw.Sindri.Core.Scheduling.BuiltInService.Cadence.init -> void
+Aw.Sindri.Core.Scheduling.BuiltInService.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out Aw.Sindri.Core.Profile.Cadence! Cadence) -> void
+Aw.Sindri.Core.Scheduling.BuiltInService.Equals(Aw.Sindri.Core.Scheduling.BuiltInService? other) -> bool
+Aw.Sindri.Core.Scheduling.BuiltInService.Name.get -> Aw.Sindri.Core.Ids.ServiceName
+Aw.Sindri.Core.Scheduling.BuiltInService.Name.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ICommandOrigins
+Aw.Sindri.Core.Workflow.Engine.Runtime.ICommandOrigins.CauserOf(Aw.Sindri.Core.Ledger.LedgerEvent! reply, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.InstanceAddress?>!>
+override Aw.Sindri.Core.Scheduling.BuiltInService.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.BuiltInService.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.BuiltInService.ToString() -> string!
+static Aw.Sindri.Core.Scheduling.BuiltInService.operator !=(Aw.Sindri.Core.Scheduling.BuiltInService? left, Aw.Sindri.Core.Scheduling.BuiltInService? right) -> bool
+static Aw.Sindri.Core.Scheduling.BuiltInService.operator ==(Aw.Sindri.Core.Scheduling.BuiltInService? left, Aw.Sindri.Core.Scheduling.BuiltInService? right) -> bool
+static Aw.Sindri.Core.Scheduling.ServiceSchedule.From(Aw.Sindri.Core.Profile.SindriProfile? profile, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Scheduling.BuiltInService!>! builtIns, System.DateTimeOffset start) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.ServiceSchedule!>!

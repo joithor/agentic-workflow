@@ -16,8 +16,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// unit (e) builds Get (the 'GetInstance' Query, SND-WF-001 for no execution); unit (d) builds Signal ('event').
 /// Unit (c) owns Send's 'complete' path, <see cref="TemporalDeskReports"/>; the other Updates are unit (b)'s.
 /// </summary>
-/// <param name="frontend">Finds the dev server control.json records.</param>
 /// <param name="deskReports">The 'complete' Update (unit (c)).</param>
+/// <param name="frontend">Finds the dev server serve keeps (Get, unit (e); the 'event' signal, unit (d)).</param>
 internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, TemporalDeskReports deskReports) : IInstanceRuntime
 {
     /// <summary>How long a Query waits for a worker to answer; past it, status says no worker answered.</summary>
@@ -65,6 +65,28 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         _ => throw new NotSupportedException("engine P4 unit (b): command Updates keyed by the nonce"),
     };
 
-    public ValueTask<Result<Unit>> Signal(InstanceAddress address, WaitSatisfied delivered, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("engine P4 unit (d): the bridge's 'event' signal");
+    /// <summary>
+    /// The bridge's 'event' signal (spec §5.4; unit (d)): Temporal buffers it until the instance reaches the wait. The
+    /// event's ledger sequence is its idempotency key: the workflow drops a sequence it has already taken.
+    /// </summary>
+    public async ValueTask<Result<Unit>> Signal(InstanceAddress address, WaitSatisfied delivered, CancellationToken cancellationToken)
+    {
+        var client = await frontend.Connect(flag: null, cancellationToken).ConfigureAwait(false);
+        if (client.IsError)
+        {
+            return client.Error;
+        }
+
+        try
+        {
+            await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value).SignalAsync(
+                wf => wf.EventAsync(delivered),
+                new WorkflowSignalOptions { Rpc = new RpcOptions { CancellationToken = cancellationToken } }).ConfigureAwait(false);
+            return Unit.Value;
+        }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)   // boundary: no such instance, or it has ended
+        {
+            return WorkflowErrors.InstanceNotFound.With($"no running instance {address.Value} (fix: sindri workflow list)");
+        }
+    }
 }

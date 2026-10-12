@@ -13,6 +13,9 @@ internal sealed record WorkflowsHome(string Home)
     /// <summary>The API's nonce table, one owner-only file per nonce (engine P4 unit (c), until API P1's table).</summary>
     public string NoncesDirectory => Path.Combine(Home, "workflow", "nonces");
 
+    /// <summary>The event bridge's cursor: the last ledger sequence it delivered (engine P4 unit (d)).</summary>
+    public string EventsCursorFile => Path.Combine(Home, "workflow", "events.cursor");
+
     /// <summary>The recipe files, '&lt;id&gt;.yaml'.</summary>
     public string RecipesDirectory => Path.Combine(Home, "recipes");
 }

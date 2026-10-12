@@ -34,5 +34,10 @@ internal static class LedgerSql
 
     internal const string SelectHead = "SELECT COALESCE(MAX(seq), 0) FROM events";
 
+    /// <summary>The 'instance' a recorded event's payload names, by envelope id (engine P4 unit (d), the bridge's causation route); SQLite's json_* functions.</summary>
+    internal const string SelectInstanceOfEvent =
+        "SELECT json_extract(payload_json, '$.instance') FROM events " +
+        "WHERE id = $id AND json_valid(payload_json) AND json_type(payload_json, '$.instance') = 'text'";
+
     internal const string SelectLatest = "SELECT " + EventColumns + " FROM events WHERE type = $type ORDER BY seq DESC LIMIT 1";
 }

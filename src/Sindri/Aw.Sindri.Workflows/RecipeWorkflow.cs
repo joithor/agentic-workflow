@@ -37,6 +37,7 @@ internal sealed partial class RecipeWorkflow
     private const string Timers = "service:workflow.timers";
     private static readonly FactKey _itemFact = FactKey.From("fact:item");
     private readonly Queue<WaitSatisfied> _delivered = new();
+    private readonly HashSet<long> _eventsTaken = [];
     private readonly Dictionary<string, Reported> _reported = new(StringComparer.Ordinal);
     private InstanceStart? _start;
     private InterpretedRecipe? _recipe;
@@ -168,7 +169,10 @@ internal sealed partial class RecipeWorkflow
 
     /// <summary>
     /// A registered ledger event the bridge routed here (spec §5.4). Temporal buffers it until the instance reaches the
-    /// wait; unit (a) consumes <see cref="_delivered"/> at a wait, unit (d) sends it and drops one older than 'eventHold'.
+    /// wait; unit (a) consumes <see cref="_delivered"/> at a wait. Unit (d): the event's ledger sequence is its idempotency
+    /// key, so a re-sent event (a bridge that crashed before it moved its cursor) is dropped; so is a kind no wait of the
+    /// recipe waits for (the bridge signals every live instance of the item). Dropping one older than 'eventHold' is open
+    /// (S1-D11's key, unit (e)).
     /// </summary>
     /// <param name="delivered">The event as the wait's trigger.</param>
     /// <returns>Done.</returns>
@@ -176,9 +180,18 @@ internal sealed partial class RecipeWorkflow
     public Task EventAsync(WaitSatisfied delivered)
     {
         ArgumentNullException.ThrowIfNull(delivered);
+        if (delivered.Source is EventWaitSource e && (!_eventsTaken.Add(e.Sequence) || !WaitsFor(e.Kind)))
+        {
+            return Task.CompletedTask;
+        }
+
         _delivered.Enqueue(delivered);
         return Task.CompletedTask;
     }
+
+    /// <summary>Whether a wait state of the recipe waits for <paramref name="kind"/>; true while the recipe isn't loaded yet.</summary>
+    private bool WaitsFor(EventKind kind) =>
+        _context is not { } context || context.Recipe.States.Values.Any(s => s.WaitFor?.Event == kind);
 
     /// <summary>
     /// Mirrors one event into the ledger ('RecordEvent', a local activity keyed by its own activity id; rev 8.1 §5.6),

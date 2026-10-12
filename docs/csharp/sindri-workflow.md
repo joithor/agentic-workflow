@@ -492,6 +492,7 @@ start its child until P7.
 The loop's tests run on the time-skipping server: `InterpreterEvalTests` runs every shipped `workflow.step` eval case
 through the interpreter and checks each line against the in-process `recipe eval`, and `InterpreterStateLoopTests`
 covers the search attributes, a delivered event, a refused event's park (`NeedsYou` flips) and replay.
+
 ## Status, list and events (engine P4 unit (e))
 
 Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and X16.
@@ -538,3 +539,20 @@ Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and 
 - **Not yet:** approving a recipe runs its evals once engine P2's approval lands: the named hook is the Core port `IApprovalEvals` (SND-RECIPE-008 when an eval is missing or failing), which P2's `ApproveRecipe` calls before it
   records the approval; it is bound when that slice lands, by moving `EvalRecipe`'s case running into Core.
   `workflow events` reads the ledger directly until API P3's item timeline exists.
+
+## The event bridge (engine P4 unit (d))
+
+Spec rev 8 §5.4, §7.2 S1-D8 and S1-D10. `EventBridge` is the built-in service `workflow-events` (a service name is
+kebab-case, so not `workflow.events`). It runs every 5 s without a profile entry; a profile entry of the same name sets
+its cadence. The scheduler gives every service its own loop: a run still in flight holds back no other service, and its
+own slots that come due meanwhile are skipped, never overlapped.
+
+| Part | Behaviour |
+|---|---|
+| Cursor | The last delivered ledger sequence, in the owner-only file `<home>/workflow/events.cursor`, written to a temporary name and moved into place. A missing file reads as 0. The cursor moves past an event once every target has it |
+| Accepted events | A registered `EventDescriptor` kind whose envelope actor is the descriptor's `producer`. Every other event signals nothing |
+| `route: item` | Every live instance of the event's item (a visibility query on `Item`). Temporal buffers the signal until the instance reaches the wait, so an early event isn't lost. The workflow drops a kind its recipe never waits for |
+| `route: causation` | Only the instance that the reply's causing event names (`ICommandOrigins`: the causing ledger event's `instance` field, until P6's `workflow_commands`) |
+| Trigger | `wait.satisfied` from `EventWaitSource(kind, sequence)`, the payload's `outcome` (one the descriptor declares) and the descriptor's facts from the payload's `facts` |
+| Idempotency | The ledger sequence is the key. `RecipeWorkflow.EventAsync` drops a sequence it has already taken, so a bridge that crashed between a signal and its cursor write re-sends harmlessly |
+| Failures | An instance that has ended is skipped. A Temporal or ledger failure ends the run with the cursor before that event, and the next run retries it |
