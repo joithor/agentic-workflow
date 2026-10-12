@@ -34,6 +34,7 @@ public sealed class ApproveProfileTests
 
         Assert.Equal(_h.Profiles.Live.Value.Hash, shown.Hash);
         Assert.False(shown.Approved);
+        Assert.Null(shown.Sequence);
         Assert.Contains("services.heartbeat.every", shown.Changes, StringComparer.Ordinal);
         Assert.Null((await _h.Profiles.Latest(Token)).Value);
         Assert.Empty(_h.Store.Events);
@@ -52,6 +53,7 @@ public sealed class ApproveProfileTests
         Assert.Equal(live.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);
         var recorded = Assert.Single(_h.Store.Events);
         Assert.Equal((EventTypes.ProfileApproved, $"profile.approved:{live.Hash.Value}:after:0"), (recorded.Envelope.Type, recorded.IdempotencyKey));
+        Assert.Equal(recorded.Sequence, approved.Sequence);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -165,6 +167,7 @@ public sealed class ApproveProfileTests
 
         Assert.Equal(SindriErrors.ApprovalsUnavailable.Code, first.Error.Code);
         Assert.True(retry.Value.Approved);
+        Assert.Equal(Assert.Single(_h.Store.Events).Sequence, retry.Value.Sequence);   // why: the retry names the event the first call recorded
         Assert.Equal(live.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);
         _ = Assert.Single(_h.Store.Events);
     }

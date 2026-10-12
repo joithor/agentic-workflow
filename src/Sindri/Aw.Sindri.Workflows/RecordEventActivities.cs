@@ -1,5 +1,3 @@
-using Aw.Kernel.Ids;
-using Aw.Kernel.Json;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -20,13 +18,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </summary>
 /// <param name="ledger">The ledger.</param>
 /// <param name="lease">The lease this process holds; every append is fenced by it.</param>
-/// <param name="scope">Who the process acts as.</param>
-/// <param name="clock">The clock.</param>
-/// <param name="ids">The envelope id source.</param>
-internal sealed class RecordEventActivities(ILedgerStore ledger, HeldLease lease, EventScope scope, TimeProvider clock, IIdGenerator ids)
+/// <param name="events">The control plane's event factory (its scope, clock, ids and the host's JSON options).</param>
+internal sealed class RecordEventActivities(ILedgerStore ledger, HeldLease lease, EventFactory events)
 {
-    private readonly EventFactory _events = new(scope, clock, ids, AwJson.CreateOptions(WorkflowsJsonContext.Default));
-
     /// <summary>
     /// How the interpreter runs it: a local activity with unbounded retries and backoff, so the workflow does not move on
     /// until the ledger has the event (engine spec rev 8 §5.6).
@@ -62,7 +56,7 @@ internal sealed class RecordEventActivities(ILedgerStore ledger, HeldLease lease
         var grant = lease.Current ?? throw new InvalidOperationException("SND-LEASE-002: this process holds no lease; the event waits for one");
         var activity = ActivityExecutionContext.Current;
         var payload = new WorkflowEventPayload(record.WorkflowId, record.From, record.To, record.Trigger, record.Outcome, record.Run);
-        var entry = _events.Entry(record.Type, payload, KeyOf(activity.Info)) with { Item = record.Item };
+        var entry = events.Entry(record.Type, payload, KeyOf(activity.Info)) with { Item = record.Item };
         var appended = await ledger.Append(entry, grant, activity.CancellationToken).ConfigureAwait(false);
         return appended.IsError
             ? throw new InvalidOperationException($"{appended.Error.Code}: {appended.Error.Message}")

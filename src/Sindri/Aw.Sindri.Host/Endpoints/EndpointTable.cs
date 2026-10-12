@@ -1,28 +1,26 @@
-using Aw.Kernel.Services;
-using Aw.Sindri.Core.Control;
-using Aw.Sindri.Core.Events;
-using Aw.Sindri.Features.ApproveProfile;
-using Aw.Sindri.Features.GetStatus;
-using Aw.Sindri.Features.PingProcess;
-using Aw.Sindri.Features.StopProcess;
-
 namespace Aw.Sindri.Host.Endpoints;
 
-/// <summary>Maps every Sindri endpoint under /sindri (factory addendum §17.21 API): each binds, calls one service and maps its Result.</summary>
+/// <summary>
+/// Maps every Sindri endpoint under /sindri (factory addendum §17.21 API): each binds, calls one service and maps its Result.
+/// Queries are GETs and commands POSTs (ARCH-CQRS-001); each slice adds one line under its group's anchor (API spec C7).
+/// </summary>
 internal static class EndpointTable
 {
     internal static WebApplication MapSindriEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/sindri");
-        _ = group.MapGet("/status", static async (IService<GetStatusRequest, GetStatusResponse> service, CancellationToken ct)
-            => (await service.Handle(new GetStatusRequest(), ct).ConfigureAwait(false)).ToHttpResult());
-        _ = group.MapGet("/ping", static async (IService<PingProcessRequest, Ping> service, CancellationToken ct)
-            => (await service.Handle(new PingProcessRequest(), ct).ConfigureAwait(false)).ToHttpResult());
-        _ = group.MapPost("/stop", static async (IService<StopProcessRequest, StopProcessResponse> service, CancellationToken ct)
-            => (await service.Handle(new StopProcessRequest(StopReason.Stop), ct).ConfigureAwait(false)).ToHttpResult());
-        _ = group.MapPost("/profile/approve", static async (ApproveProfileRequest request, IService<ApproveProfileRequest, ApproveProfileResponse> service, CancellationToken ct)
-            => (await service.Handle(request, ct).ConfigureAwait(false)).ToHttpResult());
-        _ = group.MapGet("/events", EventStream.Stream);
+        var queries = group.MapGroup(string.Empty);
+        var commands = group.MapGroup(string.Empty).WithMetadata(CommandRouteMetadata.Instance);   // Origin refused before binding (SND-API-008)
+
+        // ---- queries: one line per slice, sorted ----
+        _ = queries.MapGetStatus();
+        _ = queries.MapListCommands();
+        _ = queries.MapPingProcess();
+        _ = queries.MapStreamEvents();
+
+        // ---- commands: one line per slice, sorted ----
+        _ = commands.MapApproveProfile();
+        _ = commands.MapStopProcess();
         return app;
     }
 }

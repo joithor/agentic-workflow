@@ -45,9 +45,17 @@ public sealed class FakeTemporalServer : ITemporalServer
         return ValueTask.FromResult<Result<TemporalEndpoint>>(Running);
     }
 
+    /// <summary>Runs as <see cref="Stop"/> begins, before the server goes.</summary>
+    public Action? BeforeStop { get; set; }
+
+    /// <summary>The token the last <see cref="Stop"/> was called with.</summary>
+    public CancellationToken? StoppedWith { get; private set; }
+
     /// <inheritdoc/>
     public ValueTask<Result<Unit>> Stop(CancellationToken cancellationToken)
     {
+        StoppedWith = cancellationToken;
+        BeforeStop?.Invoke();
         Stops++;
         Running = null;
         return ValueTask.FromResult<Result<Unit>>(Unit.Value);

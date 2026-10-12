@@ -2,9 +2,11 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Infrastructure;
+using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Callers;
 using Aw.Sindri.Tests.Ledger;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,6 +19,8 @@ public sealed class ServeStopTests : IDisposable
     private readonly TempHome _home = new();
 
     public void Dispose() => _home.Dispose();
+
+    private SindriSettings Settings => new(_home.Path, Path.Combine(_home.Path, "profile", "profile.yaml"));
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_stop_ends_every_event_stream_and_serve_exits_promptly()
@@ -31,7 +35,10 @@ public sealed class ServeStopTests : IDisposable
         using var reader = new StreamReader(await events.Content.ReadAsStreamAsync(ct));
         Assert.StartsWith("event: ", await reader.ReadLineAsync(ct), StringComparison.Ordinal);   // the stream is open
 
-        using var stop = await http.PostAsync(new Uri("/sindri/stop", UriKind.Relative), content: null, ct);
+        var token = (await new FileHumanToken(Settings).Read(ct)).Value;   // a stop that ends the process needs the human and its token
+        Assert.NotNull(token);
+        using var stopRequest = CallerRequests.Post("/sindri/stop", json: null, CallerRequests.Human(token.Value));
+        using var stop = await http.SendAsync(stopRequest, ct);
         var rest = await reader.ReadToEndAsync(ct).WaitAsync(_prompt, ct);
         var code = await serve.WaitAsync(_prompt, ct);
 
@@ -63,7 +70,10 @@ public sealed class ServeStopTests : IDisposable
         var recorded = await Endpoint(ct);
         using var http = new HttpClient { BaseAddress = recorded.Url, Timeout = TimeSpan.FromSeconds(10) };
 
-        using var stop = await http.PostAsync(new Uri("/sindri/stop", UriKind.Relative), content: null, ct);
+        var token = (await new FileHumanToken(Settings).Read(ct)).Value;   // a stop through the API needs the human and its token
+        Assert.NotNull(token);
+        using var stopRequest = CallerRequests.Post("/sindri/stop", json: null, CallerRequests.Human(token.Value));
+        using var stop = await http.SendAsync(stopRequest, ct);
         var code = await serve.WaitAsync(_prompt, ct);
 
         Assert.True(stop.IsSuccessStatusCode);
@@ -72,10 +82,57 @@ public sealed class ServeStopTests : IDisposable
         Assert.False(File.Exists(record));
     }
 
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task A_stop_waits_for_the_worker_before_it_stops_the_dev_server()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var temporal = new FakeTemporalServer();
+        var worker = new ScriptedWorker { Drain = TimeSpan.FromMilliseconds(200) };
+        bool? workerStoppedAtServerStop = null;
+        temporal.BeforeStop = () => workerStoppedAtServerStop = worker.Stopped;
+        var serve = ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => "0", _ => null }, TimeProvider.System, TextWriter.Null,
+            services => NoTemporal.Use(services, temporal, worker));
+        var recorded = await Endpoint(ct);
+        using var http = new HttpClient { BaseAddress = recorded.Url, Timeout = TimeSpan.FromSeconds(10) };
+
+        var token = (await new FileHumanToken(Settings).Read(ct)).Value;   // a stop through the API needs the human and its token
+        Assert.NotNull(token);
+        using var stopRequest = CallerRequests.Post("/sindri/stop", json: null, CallerRequests.Human(token.Value));
+        using var stop = await http.SendAsync(stopRequest, ct);
+        var code = await serve.WaitAsync(_prompt, ct);
+
+        Assert.True(stop.IsSuccessStatusCode);
+        Assert.Equal(0, code);
+        Assert.True(workerStoppedAtServerStop);   // why: serve tracks its worker, so the stop waits for it before the server goes
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task A_worker_that_faults_on_its_way_out_still_lets_serve_stop_cleanly()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var temporal = new FakeTemporalServer();
+        var worker = new ScriptedWorker { Fault = new InvalidOperationException("poller failed") };
+        var serve = ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => "0", _ => null }, TimeProvider.System, TextWriter.Null,
+            services => NoTemporal.Use(services, temporal, worker));
+        var recorded = await Endpoint(ct);
+        using var http = new HttpClient { BaseAddress = recorded.Url, Timeout = TimeSpan.FromSeconds(10) };
+
+        var token = (await new FileHumanToken(Settings).Read(ct)).Value;   // a stop through the API needs the human and its token
+        Assert.NotNull(token);
+        using var stopRequest = CallerRequests.Post("/sindri/stop", json: null, CallerRequests.Human(token.Value));
+        using var stop = await http.SendAsync(stopRequest, ct);
+        var code = await serve.WaitAsync(_prompt, ct);
+
+        Assert.True(stop.IsSuccessStatusCode);
+        Assert.Equal(0, code);   // why: a worker fault is the worker's to log; it must not throw past serve's stop
+        Assert.Null(temporal.Running);
+        Assert.False(File.Exists(Path.Combine(_home.Path, "control.json")));
+    }
+
     /// <summary>The endpoint serve recorded once it listens.</summary>
     private async Task<ControlEndpoint> Endpoint(CancellationToken ct)
     {
-        var file = new FileEndpoint(new SindriSettings(_home.Path, Path.Combine(_home.Path, "profile", "profile.yaml")), SliceHarness.Json);
+        var file = new FileEndpoint(Settings, SliceHarness.Json);
         for (var waited = 0; ; waited += 50)
         {
             if ((await file.Read(ct)).Value is { } recorded)

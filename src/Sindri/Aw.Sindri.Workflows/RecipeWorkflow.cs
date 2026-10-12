@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
@@ -91,7 +92,7 @@ internal sealed partial class RecipeWorkflow
         Workflow.UpsertTypedSearchAttributes(
             SindriTemporal.TenantKey.ValueSet(start.Tenant),
             SindriTemporal.RingKey.ValueSet(start.Ring.ToString(CultureInfo.InvariantCulture)));
-        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, "workflow.started", start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null), NeedsYou(instance)).ConfigureAwait(true);
+        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null), NeedsYou(instance)).ConfigureAwait(true);
         _context = new Interpreting(loaded.Recipe, decisions);
         return (instance, _context);
     }

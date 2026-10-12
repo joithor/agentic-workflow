@@ -27,4 +27,21 @@ public sealed class TemporalRuntimeTests
         Assert.True(stopped.IsSuccess);
         Assert.Null(server.Running);         // why: a worker that hangs must not keep the stop (and the lease) forever
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_second_wait_for_a_worker_that_outlived_the_first_returns_at_once()
+    {
+        var clock = new FakeTimeProvider();
+        var runtime = new TemporalRuntime(new FakeTemporalServer(), clock);
+        runtime.Track(new TaskCompletionSource().Task);   // a worker that never stops
+        var first = runtime.WaitForWorker(Token).AsTask();
+        await Task.Delay(50, Token);
+        clock.Advance(TemporalRuntime.WorkerStopWait);
+        await first.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+
+        var second = runtime.WaitForWorker(Token).AsTask();
+        await Task.Delay(50, Token);
+
+        Assert.True(second.IsCompleted);   // why: serve's wait and then StopProcess's must not add up to twice the bound
+    }
 }

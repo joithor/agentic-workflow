@@ -25,7 +25,7 @@ internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerSt
         if (grant is null)
         {
             shutdown.Request();
-            return new StopProcessResponse(0, 0);
+            return new StopProcessResponse(0, 0, Sequence: null);
         }
 
         var entry = events.Entry(EventTypes.ProcessStopped, new ProcessStopped(grant.Holder.Pid, grant.Epoch, request.Reason),
@@ -33,16 +33,16 @@ internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerSt
         var recorded = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
 
         // Past the point of no return: the process is stopping whatever the caller does, so a client that hangs up now
-        // must not cancel the removal or the release (the lease would stay held until it expires).
+        // must not cancel the removal, the server stop or the release (the lease would stay held until it expires).
         var removed = await endpoints.Remove(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);   // while the grant is held
-        held.Clear();         // the worker, then the server, before the release, so a renewal finishing now can't hold the grant again
-        shutdown.Request();   // the worker, then the server, before the release, so a renewal that runs after it sees a stop, not a lost lease
+        held.Clear();         // before the release, so a renewal finishing now can't hold the grant again
+        shutdown.Request();   // stops the worker; before the release, so a renewal that runs after it sees a stop, not a lost lease
         var stopped = await temporal.Stop(CancellationToken.None).ConfigureAwait(false);   // the worker, then the server, before the release
         var released = await lease.Release(grant, CancellationToken.None).ConfigureAwait(false);
         return recorded.IsError ? recorded.Error
             : removed.IsError ? removed.Error
             : stopped.IsError ? stopped.Error
             : released.IsError ? released.Error
-            : new StopProcessResponse(grant.Holder.Pid, grant.Epoch);
+            : new StopProcessResponse(grant.Holder.Pid, grant.Epoch, recorded.Value.Sequence);
     }
 }

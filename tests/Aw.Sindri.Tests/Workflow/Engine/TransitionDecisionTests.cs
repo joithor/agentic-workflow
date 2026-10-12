@@ -96,7 +96,7 @@ public sealed class TransitionDecisionTests
         var real = EngineRules.Default;
         var parked = Assert.IsType<Applied>(Decide(At(recipe, "produce"), recipe, Completed(1, "done", ("fact:output", "x")), rules: real)).Changes[0].After;
         var resume = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), Sha("resume")), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
-        var deskCatalog = new BlockCatalog([.. Catalog.Blocks.Select(b => b.Id.Value == "step.test.agent" ? b with { DeskCapable = true } : b)], Catalog.Events);
+        var deskCatalog = new BlockCatalog([.. EngineFixture.Catalog.Blocks.Select(b => b.Id.Value == "step.test.agent" ? b with { DeskCapable = true } : b)], EngineFixture.Catalog.Events);
         var later = Context() with { Catalog = deskCatalog };
 
         var restarted = Assert.IsType<Applied>(Decide(parked, recipe, resume, context: later, rules: real));

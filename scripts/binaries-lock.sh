@@ -88,7 +88,9 @@ fetch() {
   mkdir -p "$tmp/x"
   tar -xzf "$tmp/archive.tar.gz" -C "$tmp/x" "$path" || { echo "binaries-lock: $path not in $url" >&2; exit 2; }
   mkdir -p "$(dirname "$target")"
-  install -m 0755 "$tmp/x/$path" "$target"
+  # beside the target, then renamed: an interrupted fetch never leaves a partial file the cache-hit check above would reuse
+  install -m 0755 "$tmp/x/$path" "$target.partial.$$"
+  mv -f "$target.partial.$$" "$target"
   echo "$target"
 }
 

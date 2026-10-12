@@ -40,6 +40,10 @@ internal sealed class TemporalWorkflowInstances(TemporalFrontend frontend) : IWo
         {
             return SindriErrors.InvalidInput.With($"'{query}' isn't a visibility query: {e.Message} (fix: e.g. --query \"NeedsYou = true AND State = 'checks'\")");
         }
+        catch (RpcException e)
+        {
+            return SindriErrors.NotRunning.With($"Temporal didn't answer the list: {e.Message} (fix: sindri doctor)");
+        }
 
         return rows.OrderBy(static r => r.Address, StringComparer.Ordinal).ToList();
     }

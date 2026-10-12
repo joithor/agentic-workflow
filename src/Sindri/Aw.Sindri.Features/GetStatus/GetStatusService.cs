@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -25,8 +26,9 @@ internal sealed class GetStatusService(HeldLease held, IApprovals approvals, IPr
         }
 
         var grant = held.Current;
-        return new GetStatusResponse(grant is not null, grant?.Holder.Pid ?? 0, grant?.Epoch ?? 0, grant?.ExpiresAt,
+        var status = new GetStatusResponse(grant is not null, grant?.Holder.Pid ?? 0, grant?.Epoch ?? 0, grant?.ExpiresAt,
             Profile(approvedProfile, recorded.Value, loaded), services);
+        return status with { ApiVersion = SindriApi.Version };
     }
 
     private static ProfileStatus Profile(LoadedProfile? approved, RecordedApproval? recorded, Result<LoadedProfile> loaded)

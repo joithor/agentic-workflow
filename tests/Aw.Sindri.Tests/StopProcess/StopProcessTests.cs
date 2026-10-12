@@ -28,8 +28,9 @@ public sealed class StopProcessTests
 
         var stopped = (await Service().Handle(new StopProcessRequest(StopReason.Stop), Token)).Value;
 
-        Assert.Equal(new StopProcessResponse(grant.Holder.Pid, grant.Epoch), stopped);
-        Assert.Equal(EventTypes.ProcessStopped, Assert.Single(_h.Store.Events).Envelope.Type);
+        var recorded = Assert.Single(_h.Store.Events);
+        Assert.Equal(new StopProcessResponse(grant.Holder.Pid, grant.Epoch, recorded.Sequence), stopped);
+        Assert.Equal(EventTypes.ProcessStopped, recorded.Envelope.Type);
         Assert.True((await _h.Store.Read(Token)).Value!.Released);
         Assert.Null(_h.Held.Current);
         Assert.True(_h.Shutdown.Requested);
@@ -87,6 +88,7 @@ public sealed class StopProcessTests
 
         Assert.False(record.RemovedWith?.CanBeCanceled ?? true);   // why: a cancelled removal would skip the clear, the shutdown and the release
         Assert.False(lease.ReleasedWith?.CanBeCanceled ?? true);   // why: a client that hangs up mid-stop must not leave the lease held
+        Assert.False(_temporal.StoppedWith?.CanBeCanceled ?? true);   // why: a cancelled server stop would skip the release too
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -94,7 +96,7 @@ public sealed class StopProcessTests
     {
         var stopped = (await Service().Handle(new StopProcessRequest(StopReason.Signal), Token)).Value;
 
-        Assert.Equal(new StopProcessResponse(0, 0), stopped);
+        Assert.Equal(new StopProcessResponse(0, 0, Sequence: null), stopped);
         Assert.Empty(_h.Store.Events);
         Assert.True(_h.Shutdown.Requested);
     }

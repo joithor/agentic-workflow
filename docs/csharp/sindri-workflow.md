@@ -358,7 +358,9 @@ and the time-skipping `temporal-test-server` (1.39.0) for darwin-arm64, darwin-x
 `${AW_STATE_DIR:-~/.agentic-workflow}/cache/bin/<name>-<version>/` after checking its sha256;
 `scripts/binaries-lock.sh check` validates the file (`scripts/tests/binaries-lock.test.sh`).
 
-**Status:** done (2026-10-12). Units (a)–(d) merged; the prover re-proved every check on the merged branch, through `sindri serve`'s own worker, and again after merging main (P4a; proof: `~/.agentic-workflow/jthorare-agentic-workflow/proof/sindri-wf-p0/evidence.md`, "After merging main (P4a)").
+**Status:** done (2026-10-12). Units (a)–(d) merged; the prover re-proved every check on the merged branch (head `1e586964`), through `sindri serve`'s own worker; that is the branch the spec's numbers come from. After merging main (P4a), journeys 1, 3, 4, 5 and 7, the eval and timer tests and the merge gate were re-run; journeys 2 (loopback, 0600), 6 (the pause) and 9 (footprint, check 4) and the bad-query `workflow list` case were not (proof: `~/.agentic-workflow/jthorare-agentic-workflow/proof/sindri-wf-p0/evidence.md`, "After merging main (P4a)").
+
+**On the merged head** (2026-10-12): `sindri stop` answered in 1.33 s, waiting for the worker to drain and then the dev server to exit before the release (both pids gone; the restart reopened the same `temporal.db` inode); after a `kill -9` of serve the next serve adopted the server and `complete --run 2.1` took 0.39 s wall (CLI start included); the ledger held 1 + 3 rows with 4 distinct keys after a stop, a serve and a full replay; the evals took 52 ms with the desk Update and 24 ms with the desk activity, and the `4h` timeout parked in 8 ms of wall time.
 
 | # | Acceptance check | Measurement | Result |
 |---|---|---|---|
@@ -399,7 +401,7 @@ stub (`SpikeDecision`: first matching transition, identical findings park `no-pr
   be tested together there (4 h timer still pending after 2 s; an unpolled activity blocks it too). What works, measured:
   `RunStep` records the desk task and returns at once, and the report arrives as the `complete` Update (§5.2 already
   lists `complete` as an Update) with a validator that refuses a stale run token; the 4 h timeout then parks in 3 ms of
-  wall time, and the evals pass that way too (0.52 s). Also measured: an auto-skipping result wait begun while an
+  wall time, and the evals pass that way too (0.52 s in unit (c)'s run, 46 ms in the prover's). Also measured: an auto-skipping result wait begun while an
   activity was open didn't resume skipping after it closed (the test timed out at 30 s), so a test waits until the
   timer is in history before awaiting the result. The prover also found that an activity left open in an instance
   that was then terminated keeps time skipping off for the rest of that server's life (the shared-fixture `DelayAsync`
@@ -415,9 +417,9 @@ stub (`SpikeDecision`: first matching transition, identical findings park `no-pr
   `GetInstance` query (not timed) answered first, and `complete --run 2.1` then returned `-> verify` in 0.16 s, so any
   sticky-queue wait fell on that first query. (Engine spec rev 8.1 §11.)
 - **F3. Workflow code and `CA2007`.** Library code must write `ConfigureAwait(false)`, which leaves the workflow's
-  deterministic scheduler; the probe workflows (`Workflows/Spike/`) live in the test project, where `CA2007` is off. P4's `RecipeWorkflow`
-  in `Aw.Sindri.Workflows` needs `ConfigureAwait(true)` or a scoped suppression (unit (b)'s `RecipeWorkflow` writes
-  `ConfigureAwait(true)`). `CancellationTokenSource.CancelAsync` (`MA0042`) has the same problem; workflow code calls
+  deterministic scheduler; the probe workflows (`Workflows/Spike/`) live in the test project, where `CA2007` is off. Workflow code
+  in `Aw.Sindri.Workflows` writes `ConfigureAwait(true)` instead (the foundation's `RecipeWorkflow` does; P4's keeps
+  it). `CancellationTokenSource.CancelAsync` (`MA0042`) has the same problem; workflow code calls
   `Cancel`. (Engine spec rev 8.1 §11.)
 
 **The ledger mirror.** `RecordEventActivities.RecordAsync` (`src/Sindri/Aw.Sindri.Workflows`) appends through S1's

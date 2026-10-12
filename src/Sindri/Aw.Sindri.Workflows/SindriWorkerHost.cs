@@ -2,7 +2,6 @@ using System.Globalization;
 using Aw.Sindri.Core.Control;
 using Microsoft.Extensions.Logging;
 using Temporalio.Client;
-using Temporalio.Exceptions;
 using Temporalio.Worker;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -26,26 +25,33 @@ internal sealed partial class SindriWorkerHost(RunStepActivities steps, RecordEv
         {
             client = await TemporalClient.ConnectAsync(new TemporalClientConnectOptions(target) { Namespace = SindriTemporal.Namespace }).ConfigureAwait(false);
         }
-        catch (Exception e) when (e is RpcException or InvalidOperationException) // boundary: serve runs on; the doctor's temporal line shows why
+        catch (Exception e) // boundary: serve runs on; the doctor's temporal line shows why (the connect takes no token)
         {
             NoWorker(logger, target, e.Message);
             return;
         }
 
-        using var worker = new TemporalWorker(client, SindriWorker.Options(steps, events));
-        Polling(logger, target, SindriTemporal.TaskQueue);
         try
         {
+            using var worker = new TemporalWorker(client, SindriWorker.Options(steps, events));
+            Polling(logger, target, SindriTemporal.TaskQueue);
             await worker.ExecuteAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // serve is stopping
         }
+        catch (Exception e) // boundary: the port promises Run never throws; the worker logs why it stopped and serve stops cleanly
+        {
+            Stopped(logger, target, e.Message);
+        }
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "worker polls task queue {Queue} on {Target}")]
     private static partial void Polling(ILogger logger, string target, string queue);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "the worker on {Target} stopped: {Problem}")]
+    private static partial void Stopped(ILogger logger, string target, string problem);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "no worker: Temporal at {Target} doesn't answer: {Problem}")]
     private static partial void NoWorker(ILogger logger, string target, string problem);

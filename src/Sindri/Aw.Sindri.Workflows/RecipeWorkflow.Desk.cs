@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Events;
 using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow;
@@ -98,7 +99,7 @@ internal sealed partial class RecipeWorkflow
                 StepFailed => (TriggerNames.StepFailed, null),
                 _ => (TriggerNames.Deadline, null),
             };
-            var record = new WorkflowEventRecord(start.WorkflowId().Value, "workflow.transition", start.Item.Value, before.State, instance.State, kind, outcome, open.Token.Value);
+            var record = new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowTransition, start.Item.Value, before.State, instance.State, kind, outcome, open.Token.Value);
             await Mirror(record, NeedsYou(instance)).ConfigureAwait(true);
         }
 
