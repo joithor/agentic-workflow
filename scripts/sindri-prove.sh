@@ -6,8 +6,8 @@
 #   sindri-prove.sh human [<verb> [args…]]
 #                                         $SINDRI as the owner: the agent variables (CLAUDECODE, AW_SINDRI_CHILD,
 #                                         CODEX_SANDBOX, CURSOR_AGENT) unset, AW_SINDRI_PROVER=1, under a pty
-#                                         (scripts/lib/with-tty.sh), stdin passed through, CRs stripped; stdout and
-#                                         stderr arrive merged on stdout. Exit: the CLI's.
+#                                         (scripts/lib/with-tty.sh), stdin passed through, CRs and terminal control
+#                                         sequences stripped; stdout and stderr arrive merged on stdout. Exit: the CLI's.
 #                                         e.g. printf '%s\n' "${H:0:6}" | sindri-prove.sh human profile approve "$H"
 #   sindri-prove.sh curl [--no-terminal] [--no-token | --token T] [-H 'Name: value']… <METHOD> <path> [json]
 #                                         a human request to the running process: the URL from
@@ -21,7 +21,8 @@
 #
 # The guard runs first, for every mode: AW_SINDRI_HOME must be set and its real path strictly inside
 # realpath(${TMPDIR:-/tmp}) or inside a proof folder, <AW_STATE_DIR or ~/.agentic-workflow>/<repo slug>/proof/…,
-# the same homes the server honours X-Sindri-Client: prover for (src/Sindri/Aw.Sindri.Infrastructure/ProverHome.cs).
+# a subset of the homes the server honours X-Sindri-Client: prover for (src/Sindri/Aw.Sindri.Infrastructure/ProverHome.cs):
+# the guard also refuses a home whose deepest existing part is a dangling link or a file, which the server would accept.
 # Parts of the home that don't exist yet are judged as written. Anything else exits 2, so a prover can never reach the
 # owner's real ledger. AW_SINDRI_PORT=0 is exported (a free port, recorded in control.json).
 #
@@ -32,7 +33,8 @@
 # Seeding an approved profile: write the profile, H=$($SINDRI profile validate --json | jq -r .hash), then
 #   printf '%s\n' "${H:0:6}" | scripts/sindri-prove.sh human profile approve "$H"
 #
-# Exit 2: the guard, a usage error, or curl/url mode with no control.json or no token file.
+# Exit 2: the guard, a usage error, curl or url mode with no control.json, or curl mode with no token file (unless
+# --no-token or --token).
 # Tests: bash scripts/tests/sindri-prove.test.sh
 set -uo pipefail
 
