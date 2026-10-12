@@ -29,7 +29,9 @@ public static partial class TransitionDecision
                 $"the start pins {request.Recipe.Id.Value}, not {recipe.Id.Value} (fix: start it from the recipe it pins)"));
         }
 
-        var entering = Enter(new Scope(rules, context, recipe, request.Key, request.Actor), Seed(request, recipe, context.Now), recipe.Initial);
+        // A child's start is its own trigger, 'wf:{child}:start' (§5.4), so a grandchild it creates gets an id of its own.
+        var creatingKey = request.Parent is null ? request.Key : TriggerKey.For(request.Id, StartKind);
+        var entering = Enter(new Scope(rules, context, recipe, creatingKey, request.Actor), Seed(request, recipe, context.Now), recipe.Initial);
         if (entering.IsError)
         {
             return new Rejected(request.Key, entering.Error);

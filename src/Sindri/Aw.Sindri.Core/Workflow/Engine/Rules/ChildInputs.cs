@@ -13,16 +13,16 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 internal static class ChildInputs
 {
     /// <summary>
-    /// The child's id: a UUIDv8 over SHA-256 of '{parent trigger key}:child:{child address}', so a replayed Commit
-    /// creates the same child, and a grandchild created in the same Commit (under the same key) gets an id of its own.
+    /// The child's id (spec §5.4): a UUIDv8 over SHA-256 of the key of the trigger that creates it, so a replayed Commit
+    /// creates the same child. A child's own start is its trigger 'wf:{child}:start', so a grandchild created while the
+    /// child starts gets an id of its own.
     /// </summary>
-    /// <param name="key">The parent's trigger key.</param>
-    /// <param name="address">The child's address.</param>
+    /// <param name="key">The creating trigger's key.</param>
     /// <returns>The child's id.</returns>
-    public static WorkflowInstanceId IdFor(TriggerKey key, InstanceAddress address)
+    public static WorkflowInstanceId IdFor(TriggerKey key)
     {
         Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
-        _ = SHA256.HashData(Encoding.UTF8.GetBytes(key.Value + ":child:" + address.Value), digest);
+        _ = SHA256.HashData(Encoding.UTF8.GetBytes(key.Value), digest);
         var bytes = digest[..16];
         bytes[6] = (byte)((bytes[6] & 0x0F) | 0x80);
         bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
