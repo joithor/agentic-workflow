@@ -54,8 +54,20 @@ public abstract class SingleInstanceContract
         Expect.True(!message.Withdrawn.IsCancellationRequested);
 
         Expect.True(!await WhileTimePasses(sending));
-        Expect.True(message.Withdrawn.IsCancellationRequested);
+        Expect.True(await Withdrawn(message));
         Expect.True(!message.TryAct());
+    }
+
+    // The holder withdraws when its handling window closes (1.5 s, before the sender's own 2 s), but the clock moves in
+    // steps, so the sender's timeout can fire in the same step before the holder's withdrawal has run: wait up to 5 s.
+    private static async Task<bool> Withdrawn(InstanceMessage message)
+    {
+        for (var i = 0; i < 500 && !message.Withdrawn.IsCancellationRequested; i++)
+        {
+            await Task.Delay(10, Token);
+        }
+
+        return message.Withdrawn.IsCancellationRequested;
     }
 
     // Review run 4 (julik-frontend-races-reviewer-1, pattern-recognition-specialist-0): acting on a message is one

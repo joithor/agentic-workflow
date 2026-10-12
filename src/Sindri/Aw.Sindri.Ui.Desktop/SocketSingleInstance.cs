@@ -15,7 +15,8 @@ namespace Aw.Sindri.Ui.Desktop;
 /// connects and sends one message (<see cref="InstanceWire"/>); the holder answers 1 only once its reader has handled it
 /// (came back for the next one), within 1.5 s of its arrival; the sender waits 2 s. A message nothing handled in time,
 /// or whose sender has gone, is dropped, never handed over late; one already handed over is withdrawn
-/// (<see cref="InstanceMessage.Withdrawn"/>), and the app checks that again on the UI thread before acting on it.
+/// (<see cref="InstanceMessage.Withdrawn"/>). The app claims a message on the UI thread before acting on it
+/// (<see cref="InstanceMessage.TryAct"/>), and that claim, or the withdrawal if it came first, is the sender's answer.
 /// </summary>
 internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider clock) : ISingleInstance
 {
@@ -118,12 +119,13 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
 
             try
             {
-                yield return new InstanceMessage(delivery.Message, delivery.Withdrawn);
+                yield return new InstanceMessage(delivery.Message, delivery.TryAct, delivery.Withdrawn);
             }
             finally
             {
-                // The reader came back for the next one, or stopped after this one: either way it handled it.
-                _ = delivery.Handled.TrySetResult(true);
+                // The reader came back for the next one, or stopped after this one: either way it handled it, unless the
+                // wait ended first.
+                _ = delivery.TryAct();
             }
         }
     }
@@ -241,15 +243,19 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
         }
     }
 
-    // Waits for the reader to handle the message, until the sender leaves or 1.5 s pass.
+    // Waits for the reader to handle the message, until the sender leaves or 1.5 s pass. The answer is the one decision
+    // the delivery settled on: the app's claim (TryAct, on the UI thread just before acting) or the reader coming back
+    // wins if it came first; otherwise the withdrawal here does, and the app no longer acts on it (review run 4,
+    // julik-frontend-races-reviewer-1).
     private async Task<bool> Handled(Delivery delivery, CancellationToken cancellationToken)
     {
         using var handling = new CancellationTokenSource(_handleWithin, clock);
         using var waiting = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, handling.Token);
         var left = InstanceWire.Left(delivery.Sender, waiting.Token);
-        var first = await Task.WhenAny(delivery.Handled.Task, left).ConfigureAwait(false);
+        _ = await Task.WhenAny(delivery.Handled.Task, left).ConfigureAwait(false);
         await waiting.CancelAsync().ConfigureAwait(false);
         await left.ConfigureAwait(false);
-        return first == delivery.Handled.Task && await delivery.Handled.Task.ConfigureAwait(false);
+        delivery.Withdraw();
+        return await delivery.Handled.Task.ConfigureAwait(false);
     }
 }

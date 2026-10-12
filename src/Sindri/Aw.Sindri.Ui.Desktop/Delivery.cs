@@ -32,10 +32,14 @@ internal sealed class Delivery : IDisposable
     /// <summary>Too late to act on: the wait ended, or the sender has gone.</summary>
     internal bool Stale => Handled.Task.IsCompleted || InstanceWire.Gone(Sender);
 
-    /// <summary>The wait has ended (answered, or given up): withdraws the message (the app re-checks on the UI thread).</summary>
+    /// <summary>Claims the message for acting on it (the app, on the UI thread) or as read (the reader came back).</summary>
+    /// <returns>True for the claim that settles it as handled; false once the wait ended or it was claimed.</returns>
+    internal bool TryAct() => Handled.TrySetResult(true);
+
+    /// <summary>The wait has ended (answered, or given up): withdraws the message, unless it was claimed first.</summary>
     internal void Withdraw()
     {
-        _ = Handled.TrySetResult(false); // unhandled by now: the reader skips it
+        _ = Handled.TrySetResult(false); // unclaimed by now: the app doesn't act on it, and the reader skips it
         _withdrawal.Cancel();
     }
 

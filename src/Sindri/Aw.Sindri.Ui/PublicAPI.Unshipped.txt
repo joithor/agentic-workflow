@@ -23,7 +23,7 @@ Aw.Sindri.Ui.Platform.ITray.QuitRequested -> System.EventHandler?
 Aw.Sindri.Ui.Platform.ITray.Show(Aw.Sindri.Ui.Platform.TrayView! view) -> void
 Aw.Sindri.Ui.Platform.ITray.Shown.get -> Aw.Sindri.Ui.Platform.TrayView?
 Aw.Sindri.Ui.Platform.InstanceMessage
-Aw.Sindri.Ui.Platform.InstanceMessage.InstanceMessage(string! text, System.Threading.CancellationToken withdrawn) -> void
+Aw.Sindri.Ui.Platform.InstanceMessage.InstanceMessage(string! text, System.Func<bool>! tryAct, System.Threading.CancellationToken withdrawn) -> void
 Aw.Sindri.Ui.Platform.InstanceMessage.Text.get -> string!
 Aw.Sindri.Ui.Platform.InstanceMessage.Withdrawn.get -> System.Threading.CancellationToken
 Aw.Sindri.Ui.Platform.InstanceMessages

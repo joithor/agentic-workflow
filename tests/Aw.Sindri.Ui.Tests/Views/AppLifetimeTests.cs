@@ -287,56 +287,42 @@ public sealed class AppLifetimeTests
     });
 
     // Review run 3 (julik-frontend-races-reviewer-2): the listener took a message and queued it for the UI thread, which
-    // was busy; meanwhile the sender's wait ended and the message was withdrawn. When the UI thread gets to it, it checks
-    // again and drops it: the window doesn't come forward and nothing navigates.
+    // was busy; meanwhile the sender's wait ended and the message was withdrawn. When the UI thread gets to it, its claim
+    // fails and it drops the message: the window doesn't come forward, nothing navigates, and the sender heard no. Driven
+    // over the shared fake, whose withdrawal the single-instance contract pins (review run 4,
+    // pattern-recognition-specialist-0).
     [Fact]
     public Task A_message_withdrawn_before_the_UI_thread_gets_to_it_is_not_acted_on() => OnUi(async () =>
     {
+        var channel = new FakeInstanceChannel(_clock);
         var (window, lifetime, _) = Start();
         using (lifetime)
         {
             window.Hide();
-            using var withdraw = new CancellationTokenSource();
-            var instance = new OneMessage(new InstanceMessage("service/heartbeat", withdraw.Token));
+            await using var instance = new FakeSingleInstance(channel);
+            Assert.True(await instance.TryClaim(TestContext.Current.CancellationToken));
             var listener = new InstanceListener(instance);
             listener.Deliver(lifetime.Receive);
             using var stop = new CancellationTokenSource();
             var listening = Task.Run(() => listener.Listen(stop.Token), TestContext.Current.CancellationToken);
+            Assert.True(SpinWait.SpinUntil(() => channel.Reading, TimeSpan.FromSeconds(5)));
+            var sending = Task.Run(() => new FakeSingleInstance(channel, processId: 5150).Send("service/heartbeat", TestContext.Current.CancellationToken).AsTask(), TestContext.Current.CancellationToken);
 
-            // The UI thread is busy (blocked here) while the listener takes the message and queues it; then it's withdrawn.
-            Assert.True(SpinWait.SpinUntil(() => instance.Yielded.IsCompleted, TimeSpan.FromSeconds(5)));
+            // The UI thread is busy (blocked here) while the listener takes the message and queues it; then the sender's
+            // wait ends on the clock.
+            Assert.True(SpinWait.SpinUntil(() => channel.Taken == 1, TimeSpan.FromSeconds(5)));
             _ = SpinWait.SpinUntil(() => false, TimeSpan.FromMilliseconds(200)); // still blocking: the listener queues it meanwhile
-            await withdraw.CancelAsync();
-            await Until(() => listening.IsCompleted);
+            _clock.Advance(FakeInstanceChannel.HandleWithin);
+            Assert.True(SpinWait.SpinUntil(() => sending.IsCompleted, TimeSpan.FromSeconds(5))); // the withdrawal runs before the UI thread is free
+            Assert.False(await sending);
+            await Until(() => false);
+            await stop.CancelAsync();
+            await listening;
 
-            Assert.True(listening.IsCompleted);
             Assert.Empty(_navigated);
             Assert.False(window.IsVisible);
         }
     });
-
-    // One message, then the end of the stream; says when the listener has taken it.
-    private sealed class OneMessage(InstanceMessage message) : ISingleInstance
-    {
-        private readonly TaskCompletionSource _yielded = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public Task Yielded => _yielded.Task;
-
-        public ValueTask<bool> TryClaim(CancellationToken cancellationToken) => ValueTask.FromResult(true);
-
-        public ValueTask<bool> Send(string message, CancellationToken cancellationToken) => ValueTask.FromResult(false);
-
-        public async IAsyncEnumerable<InstanceMessage> Messages([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            await Task.Yield();
-            _yielded.SetResult();
-            yield return message;
-        }
-
-        public int? HolderProcessId() => null;
-
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
-    }
 
     [Fact]
     public Task The_tray_shows_the_shell_state() => OnUi(() =>

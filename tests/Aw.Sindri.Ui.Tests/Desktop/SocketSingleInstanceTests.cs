@@ -97,32 +97,6 @@ public sealed class SocketSingleInstanceTests : IDisposable
         Assert.False(File.Exists(Paths.InstanceSocket));
     }
 
-    // Review run 3 (julik-frontend-races-reviewer-2): the reader took the message, but the handling didn't finish within
-    // 1.5 s (a wedged UI thread). The sender is told no, and the message is withdrawn, so the app never acts on it late.
-    [Fact]
-    public async Task A_message_whose_wait_ended_before_it_was_handled_is_withdrawn()
-    {
-        var clock = new FakeTimeProvider();
-        await using var first = new SocketSingleInstance(Paths, clock);
-        await using var second = new SocketSingleInstance(Paths, clock);
-        Assert.True(await first.TryClaim(Token));
-        await using var messages = first.Messages(Token).GetAsyncEnumerator(Token);
-        var next = messages.MoveNextAsync().AsTask();
-
-        var sending = second.Send("item/ITM-01JC8", Token).AsTask();
-        Assert.True(await next);
-        var message = messages.Current;
-        Assert.False(message.Withdrawn.IsCancellationRequested);
-        for (var i = 0; i < 500 && !sending.IsCompleted; i++)
-        {
-            clock.Advance(TimeSpan.FromMilliseconds(250));
-            await Task.Delay(10, Token);
-        }
-
-        Assert.False(await sending);
-        Assert.True(message.Withdrawn.IsCancellationRequested);
-    }
-
     // Review run 3 (code-reviewer-2): ui/ removed while the app runs (a proof's temp home cleaned up, the home reset):
     // ending the instance treats the missing directory as already cleaned up instead of throwing out of Main.
     [Fact]
