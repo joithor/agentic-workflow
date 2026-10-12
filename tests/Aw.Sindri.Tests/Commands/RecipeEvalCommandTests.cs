@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Ledger;
@@ -50,6 +51,38 @@ public sealed class RecipeEvalCommandTests : IDisposable
 
         Assert.Equal(1, await Run("recipe", "eval", Recipe));
         Assert.Equal("happy fail at evals/workflow.dev-timeout/happy.jsonl:2: expected hold (outcome resolved), got done (outcome resolved)\n", _out.ToString());
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Json_prints_each_cases_result_and_exits_0_when_every_case_passes(bool flagFirst)
+    {
+        await Put(ShippedRecipes.Read("dev/evals/workflow.dev-timeout/happy.jsonl"));
+
+        Assert.Equal(0, await Run(flagFirst ? ["recipe", "eval", "--json", Recipe] : ["recipe", "eval", Recipe, "--json"]));
+        using var body = JsonDocument.Parse(_out.ToString());
+        var only = Assert.Single(body.RootElement.GetProperty("cases").EnumerateArray());
+        Assert.Equal("evals/workflow.dev-timeout/happy.jsonl", only.GetProperty("case").GetString());
+        Assert.True(only.GetProperty("passed").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, only.GetProperty("line").ValueKind);
+        Assert.Equal(JsonValueKind.Null, only.GetProperty("detail").ValueKind);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Json_names_the_diverging_line_and_exits_1(bool flagFirst)
+    {
+        await Put(ShippedRecipes.Read("dev/evals/workflow.dev-timeout/happy.jsonl").Replace("\"state\":\"done\"", "\"state\":\"hold\"", StringComparison.Ordinal));
+
+        Assert.Equal(1, await Run(flagFirst ? ["recipe", "eval", "--json", Recipe] : ["recipe", "eval", Recipe, "--json"]));
+        using var body = JsonDocument.Parse(_out.ToString());
+        var only = Assert.Single(body.RootElement.GetProperty("cases").EnumerateArray());
+        Assert.Equal("evals/workflow.dev-timeout/happy.jsonl", only.GetProperty("case").GetString());
+        Assert.False(only.GetProperty("passed").GetBoolean());
+        Assert.Equal(2, only.GetProperty("line").GetInt32());
+        Assert.Equal("expected hold (outcome resolved), got done (outcome resolved)", only.GetProperty("detail").GetString());
     }
 
     [Fact, Trait("Lane", "integration")]
