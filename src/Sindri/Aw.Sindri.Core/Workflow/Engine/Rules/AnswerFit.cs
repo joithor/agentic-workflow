@@ -84,12 +84,10 @@ internal static class AnswerFit
             FrameRefusals.Answer(address, rounds ? "--grant 1" : "--grant-tokens <n>"));
     }
 
-    // The loop a grant raises: for kind loop, the looped state the withheld transition goes back into; for kind refusal, the active state's own.
+    // The loop a grant raises (the same rule LoopRules.Grant applies): for kind loop, the looped state the withheld transition goes back into; for kind refusal, the active state's own.
     private static int LoopCap(SuspendedFrame top, Recipe recipe)
     {
-        var looped = top.Resume.Withheld?.Transition is { } index && index >= 0 && index < recipe.Transitions.Count
-            ? recipe.Transitions[index].To
-            : top.Frame.State;
+        var looped = LoopRules.LoopedState(recipe, top);
         return recipe.States.TryGetValue(looped, out var state) && state.Loop is { } name && recipe.Loops.TryGetValue(name, out var loop)
             ? loop.Cap
             : int.MaxValue;

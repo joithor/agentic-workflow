@@ -39,6 +39,18 @@ public sealed class AnswerFitTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_grant_on_a_refusal_kind_rounds_park_is_bounded_by_the_active_states_loop()
+    {
+        // 'produce' (loop fix, cap 3) refused on 'produce -> checks', whose target has no loop: the bound is still fix's 3.
+        var withheld = new WithheldTrigger(Transition: 0, CheckFailed().Trigger);
+        var parked = Suspended(Park(ParkReason.Rounds, ParkKind.Refusal, ResumeKind.Rerun, withheld));
+
+        Assert.Equal(ResumeKind.Rerun, FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Grant, amount: 3)).Value.Kind);
+        Refused(parked, Answer(AnswerVariant.Grant, amount: 4), "--grant 1");
+        Assert.Contains("from 1 to 3", FrameRules.Fits(parked, Recipe, Answer(AnswerVariant.Grant, amount: 4)).Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Answer_budget_from_a_step_runs_rerun()
     {
         var parked = Suspended(Park(ParkReason.Budget, ParkKind.Step, ResumeKind.Rerun));

@@ -94,8 +94,11 @@ public static partial class LoopRules
     }
 
     /// <summary>The looped state a park stopped: kind loop the withheld transition's target, kind refusal the active state it suspended.</summary>
-    private static string LoopedState(Recipe recipe, SuspendedFrame park) =>
-        park.Suspension.ParkKind == ParkKind.Loop && park.Resume.Withheld?.Transition is int index && index < recipe.Transitions.Count
+    /// <param name="recipe">The recipe.</param>
+    /// <param name="park">The suspended frame.</param>
+    /// <returns>The state whose loop a grant raises.</returns>
+    internal static string LoopedState(Recipe recipe, SuspendedFrame park) =>
+        park.Suspension.ParkKind == ParkKind.Loop && park.Resume.Withheld?.Transition is int index && index >= 0 && index < recipe.Transitions.Count
             ? recipe.Transitions[index].To
             : park.Frame.State;
 
