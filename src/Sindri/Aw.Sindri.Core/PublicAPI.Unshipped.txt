@@ -3733,3 +3733,76 @@ override Aw.Sindri.Core.Health.HealthReport.ToString() -> string!
 static Aw.Sindri.Core.Health.HealthReport.operator !=(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
 static Aw.Sindri.Core.Health.HealthReport.operator ==(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
 static Aw.Sindri.Core.Health.HealthSummary.For(bool running, Aw.Sindri.Core.Views.ViewsStatus! views, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! services, bool profileNeedsApproval, bool profileChanged) -> Aw.Sindri.Core.Health.HealthReport!
+~override Aw.Sindri.Core.Ids.ItemRef.Equals(object obj) -> bool
+Aw.Sindri.Core.Ids.ItemAlias
+Aw.Sindri.Core.Ids.ItemAlias.Equals(Aw.Sindri.Core.Ids.ItemAlias other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.ItemAlias>! comparer) -> bool
+Aw.Sindri.Core.Ids.ItemAlias.Equals(Aw.Sindri.Core.Ids.ItemAlias other) -> bool
+Aw.Sindri.Core.Ids.ItemAlias.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.ItemAlias.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.ItemAlias.ItemAlias() -> void
+Aw.Sindri.Core.Ids.ItemAlias.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.ItemAlias.Value.get -> string!
+Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Core.Ids.ItemId.Equals(Aw.Sindri.Core.Ids.ItemId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.ItemId>! comparer) -> bool
+Aw.Sindri.Core.Ids.ItemId.Equals(Aw.Sindri.Core.Ids.ItemId other) -> bool
+Aw.Sindri.Core.Ids.ItemId.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.ItemId.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.ItemId.ItemId() -> void
+Aw.Sindri.Core.Ids.ItemId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.ItemId.Value.get -> string!
+Aw.Sindri.Core.Ids.ItemRef
+Aw.Sindri.Core.Ids.ItemRef.Alias.get -> Aw.Sindri.Core.Ids.ItemAlias?
+Aw.Sindri.Core.Ids.ItemRef.Alias.init -> void
+Aw.Sindri.Core.Ids.ItemRef.Deconstruct(out Aw.Sindri.Core.Ids.ItemId? Id, out Aw.Sindri.Core.Ids.ItemAlias? Alias) -> void
+Aw.Sindri.Core.Ids.ItemRef.Equals(Aw.Sindri.Core.Ids.ItemRef other) -> bool
+Aw.Sindri.Core.Ids.ItemRef.Id.get -> Aw.Sindri.Core.Ids.ItemId?
+Aw.Sindri.Core.Ids.ItemRef.Id.init -> void
+Aw.Sindri.Core.Ids.ItemRef.ItemRef() -> void
+Aw.Sindri.Core.Ids.ItemRef.ItemRef(Aw.Sindri.Core.Ids.ItemId? Id, Aw.Sindri.Core.Ids.ItemAlias? Alias) -> void
+Aw.Sindri.Core.Ids.ItemRefJsonConverter
+Aw.Sindri.Core.Ids.ItemRefJsonConverter.ItemRefJsonConverter() -> void
+Aw.Sindri.Core.Ids.RecordKey
+Aw.Sindri.Core.Ids.RecordKey.Equals(Aw.Sindri.Core.Ids.RecordKey other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.RecordKey>! comparer) -> bool
+Aw.Sindri.Core.Ids.RecordKey.Equals(Aw.Sindri.Core.Ids.RecordKey other) -> bool
+Aw.Sindri.Core.Ids.RecordKey.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.RecordKey.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.RecordKey.RecordKey() -> void
+Aw.Sindri.Core.Ids.RecordKey.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.RecordKey.Value.get -> string!
+override Aw.Sindri.Core.Ids.ItemAlias.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.ItemAlias.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.ItemAlias.ToString() -> string!
+override Aw.Sindri.Core.Ids.ItemId.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.ItemId.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.ItemId.ToString() -> string!
+override Aw.Sindri.Core.Ids.ItemRef.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.ItemRef.ToString() -> string!
+override Aw.Sindri.Core.Ids.ItemRefJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Sindri.Core.Ids.ItemRef
+override Aw.Sindri.Core.Ids.ItemRefJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Sindri.Core.Ids.ItemRef value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Sindri.Core.Ids.RecordKey.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.RecordKey.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.RecordKey.ToString() -> string!
+static Aw.Sindri.Core.Ids.ItemAlias.From(string! value) -> Aw.Sindri.Core.Ids.ItemAlias
+static Aw.Sindri.Core.Ids.ItemAlias.operator !=(Aw.Sindri.Core.Ids.ItemAlias left, Aw.Sindri.Core.Ids.ItemAlias right) -> bool
+static Aw.Sindri.Core.Ids.ItemAlias.operator ==(Aw.Sindri.Core.Ids.ItemAlias left, Aw.Sindri.Core.Ids.ItemAlias right) -> bool
+static Aw.Sindri.Core.Ids.ItemAlias.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.ItemAlias
+static Aw.Sindri.Core.Ids.ItemAlias.TryFrom(string? value, out Aw.Sindri.Core.Ids.ItemAlias vo) -> bool
+static Aw.Sindri.Core.Ids.ItemAlias.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.ItemAlias result) -> bool
+static Aw.Sindri.Core.Ids.ItemId.From(string! value) -> Aw.Sindri.Core.Ids.ItemId
+static Aw.Sindri.Core.Ids.ItemId.New(Aw.Kernel.Ids.IIdGenerator! ids) -> Aw.Sindri.Core.Ids.ItemId
+static Aw.Sindri.Core.Ids.ItemId.operator !=(Aw.Sindri.Core.Ids.ItemId left, Aw.Sindri.Core.Ids.ItemId right) -> bool
+static Aw.Sindri.Core.Ids.ItemId.operator ==(Aw.Sindri.Core.Ids.ItemId left, Aw.Sindri.Core.Ids.ItemId right) -> bool
+static Aw.Sindri.Core.Ids.ItemId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.ItemId
+static Aw.Sindri.Core.Ids.ItemId.TryFrom(string? value, out Aw.Sindri.Core.Ids.ItemId vo) -> bool
+static Aw.Sindri.Core.Ids.ItemId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.ItemId result) -> bool
+static Aw.Sindri.Core.Ids.ItemRef.operator !=(Aw.Sindri.Core.Ids.ItemRef left, Aw.Sindri.Core.Ids.ItemRef right) -> bool
+static Aw.Sindri.Core.Ids.ItemRef.operator ==(Aw.Sindri.Core.Ids.ItemRef left, Aw.Sindri.Core.Ids.ItemRef right) -> bool
+static Aw.Sindri.Core.Ids.ItemRef.To(Aw.Sindri.Core.Ids.ItemAlias alias) -> Aw.Sindri.Core.Ids.ItemRef
+static Aw.Sindri.Core.Ids.ItemRef.To(Aw.Sindri.Core.Ids.ItemId id) -> Aw.Sindri.Core.Ids.ItemRef
+static Aw.Sindri.Core.Ids.ItemRef.TryParse(string? text, out Aw.Sindri.Core.Ids.ItemRef value) -> bool
+static Aw.Sindri.Core.Ids.RecordKey.From(string! value) -> Aw.Sindri.Core.Ids.RecordKey
+static Aw.Sindri.Core.Ids.RecordKey.operator !=(Aw.Sindri.Core.Ids.RecordKey left, Aw.Sindri.Core.Ids.RecordKey right) -> bool
+static Aw.Sindri.Core.Ids.RecordKey.operator ==(Aw.Sindri.Core.Ids.RecordKey left, Aw.Sindri.Core.Ids.RecordKey right) -> bool
+static Aw.Sindri.Core.Ids.RecordKey.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.RecordKey
+static Aw.Sindri.Core.Ids.RecordKey.TryFrom(string? value, out Aw.Sindri.Core.Ids.RecordKey vo) -> bool
+static Aw.Sindri.Core.Ids.RecordKey.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.RecordKey result) -> bool
