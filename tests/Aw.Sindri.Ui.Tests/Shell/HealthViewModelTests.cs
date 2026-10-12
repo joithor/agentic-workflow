@@ -465,4 +465,66 @@ public sealed class HealthViewModelTests : IDisposable
             return _vm.State == ShellState.Normal;
         }, "fresh again after a good ping");
     }
+
+    private static string Local(DateTimeOffset t) => t.ToLocalTime().ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+
+    // I4 (§4.2, §4.8): Home's strip is labelled cells, each value a word, in the health line's order.
+    [Fact]
+    public async Task The_health_strip_is_labelled_cells_in_the_health_lines_order()
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status(profile: A.ChangedProfile()) with { ApiVersion = 1 };
+        Start();
+
+        await Eventually(() => _vm.Headline == "Running", "headline");
+        Assert.Equal(
+            [
+                new HealthCell("Process", "Running · pid 4242"),
+                new HealthCell("Epoch · lease", "7 · held"),
+                new HealthCell("API", "v1"),
+                new HealthCell("Services", "1 service"),
+                new HealthCell("Profile", "◇ changed since approval"),
+            ],
+            _vm.Detail.Strip);
+    }
+
+    [Fact]
+    public async Task The_strip_leaves_out_the_API_cell_when_the_status_has_no_version()
+    {
+        _records.Write(A.Record());
+        Start();
+
+        await Eventually(() => _vm.Headline == "Running", "headline");
+        Assert.DoesNotContain(_vm.Detail.Strip, c => c.Label == "API");
+        Assert.Equal(new HealthCell("Profile", "✓ approved"), _vm.Detail.Strip[^1]);
+    }
+
+    // I5 (§4.8): the Health page is label/value rows; times are local, and the home directory is ~.
+    [Fact]
+    public async Task The_Health_page_is_process_and_profile_rows_in_local_time()
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var source = Path.Combine(home, ".sindri", "profile.yaml");
+        _records.Write(A.Record());
+        _server.Current = A.Status(profile: A.ChangedProfile(source)) with { ApiVersion = 1 };
+        Start();
+
+        await Eventually(() => _vm.Headline == "Running", "headline");
+        Assert.Equal(
+            [
+                new HealthCell("pid · epoch", "4242 · 7"),
+                new HealthCell("Host lease", "held · expires " + Local(A.Noon.AddSeconds(60))),
+                new HealthCell("API", "127.0.0.1:7410 · v1"),
+            ],
+            _vm.Detail.Process);
+        Assert.Equal("◇ changed since approval", _vm.Detail.ProfileHead);
+        Assert.Equal(
+            [
+                new HealthCell("approved", "ab12cd"),
+                new HealthCell("live", "ff00ee"),
+                new HealthCell("file", "~/.sindri/profile.yaml"),
+            ],
+            _vm.Detail.Profile);
+        Assert.Equal([new ServiceRow("heartbeat", "every 5s", "last run " + Local(A.Noon))], _vm.Services);
+    }
 }

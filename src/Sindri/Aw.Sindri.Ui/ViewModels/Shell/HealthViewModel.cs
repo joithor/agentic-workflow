@@ -44,6 +44,9 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
     /// <summary>The health pill's parts.</summary>
     public HealthPill Pill { get; } = new();
 
+    /// <summary>The status as labelled values: Home's strip and the Health page's rows.</summary>
+    public HealthDetail Detail { get; } = new();
+
     /// <summary>Home's health strip (§4.2, §4.8): the status's fields in the health line's order, or the state in words.</summary>
     public string HealthLine { get; private set => Set(ref field, value); } = Labels.Connecting;
 
@@ -170,6 +173,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
         }
 
         _url = url;
+        Detail.Show(url, status);
         Api = url.Authority;
         Lease = StatusText.Lease(status);
         ProfileState = StatusText.ProfileState(status.Profile);
