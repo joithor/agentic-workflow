@@ -56,7 +56,7 @@ public sealed class SpikeLedgerTests(LocalServer server) : IClassFixture<LocalSe
         var runId = history.Events.First().WorkflowExecutionStartedEventAttributes.OriginalExecutionRunId;
         var recorded = ledger.Recorder.Log.Where(l => l.EndsWith(":new", StringComparison.Ordinal)).Select(l => l[..^":new".Length]).ToList();
         var again = new ActivityEnvironment { Info = ActivityEnvironment.DefaultInfo with { WorkflowId = Id, WorkflowRunId = runId, ActivityId = recorded[1], IsLocal = true } };
-        var retried = await again.RunAsync(() => ledger.Recorder.RecordAsync(new WorkflowEventRecord(Id, runId, 2, "workflow.transition", "LEDGER-1", "produce", "checks", "step.completed", "done", "1.1")));
+        var retried = await again.RunAsync(() => ledger.Recorder.RecordAsync(new WorkflowEventRecord(Id, "workflow.transition", "LEDGER-1", "produce", "checks", "step.completed", "done", "1.1")));
 
         var transitions = await ledger.Read("workflow.transition", ct);
         var started = await ledger.Read("workflow.started", ct);

@@ -98,10 +98,15 @@ public abstract class TemporalProbes(TemporalServerFixture server)
     {
         var ct = TestContext.Current.CancellationToken;
         var queue = Queue("delay");
-        await Run(queue, new DeskTasks(), async () =>
+
+        // why: a server of its own. On the shared time-skipping server an activity another probe left open (even in a
+        // terminated instance) keeps time skipping off for the server's life (finding F1), so the 4 h timer would run in
+        // wall time. The probe measures the timer, not that leak.
+        await using var env = await TemporalServerFixture.Start(server.Kind);
+        await Run(env, queue, new DeskTasks(), async () =>
         {
             var delay = server.Kind == ServerKind.TimeSkipping ? TimeSpan.FromHours(4) : TimeSpan.FromSeconds(1);
-            var handle = await _env.Client.StartWorkflowAsync((DelayProbeWorkflow w) => w.RunAsync(delay), new WorkflowOptions($"delay-{server.Kind}", queue));
+            var handle = await env.Client.StartWorkflowAsync((DelayProbeWorkflow w) => w.RunAsync(delay), new WorkflowOptions($"delay-{server.Kind}", queue));
             var wall = Stopwatch.StartNew();
 
             var slept = await handle.GetResultAsync();
@@ -110,12 +115,12 @@ public abstract class TemporalProbes(TemporalServerFixture server)
             Assert.True(slept >= delay, $"slept {slept} of workflow time, wanted {delay}");
             if (server.Kind == ServerKind.TimeSkipping)
             {
-                Assert.True(_env.SupportsTimeSkipping);
+                Assert.True(env.SupportsTimeSkipping);
                 Assert.True(wall.Elapsed < TimeSpan.FromSeconds(1), $"a 4h timer took {wall.Elapsed} of wall time");
             }
             else
             {
-                Assert.False(_env.SupportsTimeSkipping);
+                Assert.False(env.SupportsTimeSkipping);
                 Assert.True(wall.Elapsed >= delay - TimeSpan.FromMilliseconds(50), $"a {delay} timer took only {wall.Elapsed} of wall time");
             }
 
@@ -188,12 +193,18 @@ public abstract class TemporalProbes(TemporalServerFixture server)
         }, ct);
         SpikeLog.Write(string.Create(CultureInfo.InvariantCulture,
             $"{server.Kind}: restart (sticky first worker: {stickyFirstWorker}) -> run 2.1 opened: {resumed} after {wall.Elapsed.TotalMilliseconds:F0} ms"));
-        return (resumed, desk, handle!, view);
+
+        // why: leave no running instance on the shared server. (Terminating doesn't give the time-skipping server its
+        // time skipping back: run 2.1's open activity keeps it off for good, so the DelayAsync probe has its own server.)
+        await handle!.TerminateAsync("probe over");
+        return (resumed, desk, handle, view);
     }
 
     private string Queue(string probe) => $"probe-{probe}-{server.Kind}";
 
-    private async Task Run(string queue, DeskTasks desk, Func<Task> body)
+    private Task Run(string queue, DeskTasks desk, Func<Task> body) => Run(_env, queue, desk, body);
+
+    private static async Task Run(WorkflowEnvironment env, string queue, DeskTasks desk, Func<Task> body)
     {
         var options = new TemporalWorkerOptions(queue)
             .AddWorkflow<UpdateProbeWorkflow>()
@@ -203,7 +214,7 @@ public abstract class TemporalProbes(TemporalServerFixture server)
             .AddWorkflow<ChildProbeWorkflow>()
             .AddWorkflow<DelayProbeWorkflow>()
             .AddAllActivities(new ProbeActivities(desk));
-        using var worker = new TemporalWorker(_env.Client, options);
+        using var worker = new TemporalWorker(env.Client, options);
         await worker.ExecuteAsync(body, Token);
     }
 }

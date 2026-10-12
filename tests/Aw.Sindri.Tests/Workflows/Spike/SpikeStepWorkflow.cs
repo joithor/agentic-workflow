@@ -17,7 +17,6 @@ internal sealed class SpikeStepWorkflow
 {
     private readonly Dictionary<string, int> _rounds = new(StringComparer.Ordinal);
     private string? _findings;
-    private int _sequence;
     private SpikeReport? _reported;
 
     /// <summary>The instance as the query shows it.</summary>
@@ -113,9 +112,8 @@ internal sealed class SpikeStepWorkflow
 
     private async Task Mirror(SpikeRun run, string type, string from, string to, string trigger, string? outcome, string? park)
     {
-        _sequence++;
         var entered = park is null ? to : "parked";
-        var record = new WorkflowEventRecord(Wf.Info.WorkflowId, Wf.Info.RunId, _sequence, type, run.Item, from, entered, trigger, outcome, View.Run);
+        var record = new WorkflowEventRecord(Wf.Info.WorkflowId, type, run.Item, from, entered, trigger, outcome, View.Run);
         _ = await Wf.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(record), RecordEventActivities.LocalOptions);
         View = View with { State = entered, Park = park };
     }
