@@ -34,6 +34,20 @@ public sealed class SindriApiClientTests
         Assert.Equal("SND-UI-003", ping.Error.Code);
     }
 
+    // Prover run 7 (§4.1 Unreadable, §12.4, as I7 for SND-UI-002): a body this build can't read is a plain sentence naming
+    // the route, never the parser's text (a .NET type name, a JSON path, a byte position).
+    [Fact]
+    public async Task A_body_this_build_cant_read_is_a_plain_sentence_without_the_parsers_text()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.OK, """{"pid":"not-a-number","version":7}""") };
+
+        var status = await new SindriApiClient(new HttpClient(handler), TimeProvider.System).Status(_api, Token);
+
+        Assert.Equal("SND-UI-003", status.Error.Code);
+        Assert.Equal("/sindri/status answered with something this build can't read", status.Error.Message);
+        Assert.All((string[])["System.", "Path:", "BytePosition", "$."], raw => Assert.DoesNotContain(raw, status.Error.Message, StringComparison.Ordinal));
+    }
+
     // I7: nothing listening is SND-UI-002 without the platform's exception text (it repeated the address in .NET's words).
     [Fact]
     public async Task Nothing_listening_is_unreachable_without_the_exception_text()

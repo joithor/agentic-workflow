@@ -33,6 +33,9 @@ internal sealed class FakeSindriApi : ISindriApi
     /// <summary>When true, status calls answer SND-UI-003 (an answer this build can't read) while pings carry on.</summary>
     public bool UnreadableStatus { get; set; }
 
+    /// <summary>What an unreadable status says (SND-UI-003's message), for a layout test that needs a long one.</summary>
+    public string UnreadableReason { get; set; } = "/sindri/status answered 500";
+
     /// <summary>When set, each status call waits for it before it answers (a slow control plane); null answers at once.</summary>
     public TaskCompletionSource? StatusGate { get; set; }
 
@@ -108,7 +111,7 @@ internal sealed class FakeSindriApi : ISindriApi
         }
 
         return Down || FailStatus ? Unreachable<StatusView>(api)
-            : UnreadableStatus ? SindriUiErrors.BadAnswer.With("/sindri/status answered 500")
+            : UnreadableStatus ? SindriUiErrors.BadAnswer.With(UnreadableReason)
             : Current;
     }
 
