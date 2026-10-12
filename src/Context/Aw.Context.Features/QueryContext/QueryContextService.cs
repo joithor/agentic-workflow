@@ -106,7 +106,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
             var text = record.Value.Blocked   // the adapter's own whole-document clean withheld it: cite it as scrub-blocked
                 ? new ScrubbedField(string.Empty, Redacted: false, Blocked: true)
                 : ingest.Clean(record.Value.Text, singleLine: false);   // cleaned whole, then cut, so a cut never splits a secret
-            var cut = text.Text.Length > MaxRecordText ? text with { Text = text.Text[..MaxRecordText] } : text;
+            var cut = text with { Text = UntrustedFence.Prefix(text.Text, MaxRecordText) };
             fetched.Add(new FetchedRecord(item, source, ingest.Clean(record.Value.Title, singleLine: true), cut));
         }
 

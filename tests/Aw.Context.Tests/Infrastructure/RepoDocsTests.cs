@@ -81,6 +81,63 @@ public sealed class RepoDocsTests
         Assert.NotEmpty(fetched);
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task An_oversized_doc_is_skipped_and_kept_and_an_unreadable_one_keeps_its_earlier_rows()
+    {
+        using var home = new TempHome();
+        using var fixture = FixtureRepo.Build();
+        var repo = new ContextRepo(ContextRepoName.From("split-panes"), fixture.Path);
+        _ = (await home.Index.Refresh(repo, ["docs/**/*.md"], CancellationToken.None)).Value;
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "docs", "huge.md"), "# Huge\n" + new string('x', 1_100_000), TestContext.Current.CancellationToken);
+        await File.AppendAllTextAsync(Path.Combine(fixture.Path, "docs", "architecture.md"), "\nA later line.\n", TestContext.Current.CancellationToken);
+        _ = Git(fixture.Path, "add", "-A");
+        _ = Git(fixture.Path, "commit", "-q", "-m", "huge and edit");
+        var newBlob = Git(fixture.Path, "rev-parse", "HEAD:docs/architecture.md");
+        File.Delete(Path.Combine(fixture.Path, ".git", "objects", newBlob[..2], newBlob[2..]));   // git can't read the edit's blob this run
+
+        var refreshed = (await home.Index.Refresh(repo, ["docs/**/*.md"], CancellationToken.None)).Value;
+        var again = (await home.Index.Refresh(repo, ["docs/**/*.md"], CancellationToken.None)).Value;
+
+        Assert.Equal(2, refreshed.Skipped);   // the oversized doc and the unreadable edit
+        Assert.Equal(1L, Count(home, "SELECT count(*) FROM doc WHERE path = 'docs/huge.md'"));
+        Assert.Equal(0L, Count(home, "SELECT count(*) FROM doc_chunk WHERE path = 'docs/huge.md'"));
+        Assert.True(Count(home, "SELECT count(*) FROM doc_chunk WHERE path = 'docs/architecture.md'") > 0);   // its earlier rows stay
+        Assert.Equal((1, 1), (again.Kept - 1, again.Skipped));   // huge.md is kept now; the edit is still unreadable
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Git_maps_a_missing_object_to_not_found_and_an_unreadable_repo_to_unavailable()
+    {
+        using var home = new TempHome();
+        using var fixture = FixtureRepo.Build();
+
+        var missing = await home.Git.Size(fixture.Path, new string('0', 40), CancellationToken.None);
+        var noRepo = await home.Git.Head(Path.Combine(fixture.Path, "no-such-dir"), CancellationToken.None);
+
+        Assert.Equal(("SND-CONTEXT-003", Aw.Kernel.ErrorKind.NotFound), (missing.Error.Code, missing.Error.Kind));
+        Assert.Equal("SND-CONTEXT-010", noRepo.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_fetched_span_still_matches_the_blob_s_lines_after_a_comment_was_removed()
+    {
+        using var home = new TempHome();
+        using var fixture = FixtureRepo.Build();
+        var repo = new ContextRepo(ContextRepoName.From("split-panes"), fixture.Path);
+        var doc = "# Notes\n<!--\nhidden\nlines\n-->\nintro\n\n## Orientation\nthe zebra line\nlast line\n";
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "docs", "notes.md"), doc, TestContext.Current.CancellationToken);
+        _ = Git(fixture.Path, "add", "-A");
+        _ = Git(fixture.Path, "commit", "-q", "-m", "notes");
+        _ = (await home.Index.Refresh(repo, ["docs/**/*.md"], CancellationToken.None)).Value;
+        var source = new RepoDocsSource([repo], home.Database, home.Git, home.Scrubber, home.Clock);
+
+        var hit = (await source.Search(new SourceQuery(["zebra"], AsOf: null, 5, TimeSpan.FromSeconds(5)), CancellationToken.None)).Value.Single();
+        var record = (await source.Fetch(hit.Ref, CancellationToken.None)).Value;
+
+        Assert.EndsWith("#L8-L11", hit.Ref.Id.Value, StringComparison.Ordinal);
+        Assert.StartsWith("## Orientation\nthe zebra line\nlast line", record.Text, StringComparison.Ordinal);
+    }
+
     private static long Count(TempHome home, string sql)
     {
         using var connection = new SqliteConnection("Data Source=" + home.Settings.DatabasePath + ";Mode=ReadOnly");

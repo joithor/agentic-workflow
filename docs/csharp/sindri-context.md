@@ -14,7 +14,10 @@ composes it through the `compose` edge. The user's guide is `docs/sindri/context
 | `Aw.Context.Features` | `ContextEngine` (the facade: one line per method, dispatching to a slice) and the slices `QueryContext`, `SourcesStatus`, `RefreshDocs` |
 | `Aw.Context.Infrastructure` | `Store.ContextDatabase` (context.db), `Docs.SqliteDocIndex` and `Docs.RepoDocsSource` (FTS5 over scrubbed chunks), `Git.GitCli`, `Scrubbing.IngestSanitizer` and `Scrubbing.RedactionScrubber` (both scrub ports over `Aw.Redaction`) |
 
-`context.repos` must name profile repos: an unknown name is `SND-CONTEXT-001` at validate, approve and query time.
+`context.repos` must name profile repos, and with a `context:` section every repo in scope needs a name the engine can
+use (`ContextRepoName`): otherwise `SND-CONTEXT-001` at validate, approve (`IContextEngine.CheckSettings(section,
+repos)`) and query time. A profile without `context:` is never refused for this; `ScopeRules.Usable` leaves an
+unusable name out.
 
 `deps.yaml`: Context → Kernel, KernelData and Redaction (Infrastructure only) are `project` edges. Sindri → Context is a
 `project` edge (Sindri's Features and Host use Core) plus a `compose` edge (Sindri's Host calls `AddContextFeatures` and
@@ -100,15 +103,21 @@ and the status reads "never refreshed".
 ### Tests
 
 `tests/Aw.Context.Tests`:
-- The contract suites from `tests/Aw.Context.Testing/Engine` run against the fakes (unit) and the real adapters
-  (integration): `ContextSourceContract<T>` (`FakeContextSource`, `RepoDocsSource` on the fixture repo),
-  `DocIndexContract<T>` (`FakeDocIndex`, `SqliteDocIndex`) and `ScrubberContract` (`FakeScrubber`,
-  `RedactionScrubber`).
+- Every port's contract suite from `tests/Aw.Context.Testing/Engine`, bound to its fake and its real adapter:
+  `ContextSourceContract<T>` (`FakeContextSource` unit; `RepoDocsSource` integration), `DocIndexContract<T>`
+  (`FakeDocIndex` and `SqliteDocIndex`, both integration: the fake reads the fixture repo's files),
+  `ScrubberContract` (`FakeScrubber` and `RedactionScrubber`, unit), `SourceCatalogContract<T>` (`FixedSourceCatalog`
+  unit; `RepoDocsCatalog` integration), `ChangeFeedContract<T>` and `ModelPortContract<T>` (fakes; their adapters come
+  with the stages that call them) and `ContextEngineContract<T>` (the real engine over the fakes, and Sindri's
+  `SettingsOnlyContextEngine`).
 - `ContextDatabaseTests`: FTS5 in the bundled `e_sqlite3`, the file modes, and migrations named for their stage.
-- `RepoDocsTests`: a planted secret never reaches `doc_chunk`, and an edit reads as a new version.
+- `RepoDocsTests`: a planted secret never reaches `doc_chunk`; a key or hidden comment across a chunk boundary reaches
+  neither the index nor a fetch; a fetched span matches the blob's lines; oversized and unreadable docs; git's exit-code
+  mapping; an edit reads as a new version.
 - The pure rules (unit) and the facade over the fakes (`QueryContextTests`, `SourcesStatusTests`).
 
 In `tests/Aw.Sindri.Tests/ContextCalls`:
-- the routes through the real pipeline: human, session gate, scope, foreign Origin, codes;
-- the caller mapping;
+- the routes through the real pipeline: human, session gate, scope, foreign Origin, codes, and no question or record
+  text in any log line;
+- the caller mapping, and validate and approve refusing a bad `context:` section or repo;
 - the CLI's argument parsing and text output.

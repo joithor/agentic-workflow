@@ -17,6 +17,9 @@ public sealed class TextRulesTests
     [InlineData("a <img src=\"https://evil.example/p.png?d=1\" alt=\"x\"> b", "a  b")]
     [InlineData("see [the PRD][prd]\n[prd]: https://evil.example/prd", "see the PRD\n")]
     [InlineData("mail <https://evil.example/x> now", "mail  now")]
+    [InlineData("a fact[^1]\n[^1]: The orientation flag came after ADR-0003.", "a fact[^1]\n[^1]: The orientation flag came after ADR-0003.")]
+    [InlineData("see [the PRD][prd]\n[prd]: ./PRD-layout.md", "see [the PRD][prd]\n[prd]: ./PRD-layout.md")]
+    [InlineData("see [prd][]\n[prd]: <https://evil.example/prd>", "see prd\n")]
     [InlineData("a<!-- one\ntwo\nthree -->b", "a\n\nb")]
     public void The_sanitizer_removes_what_ingest_must_not_keep(string input, string expected) =>
         Assert.Equal(expected, IngestSanitizer.Clean(input));

@@ -333,7 +333,7 @@ is in `EventCatalog`, and `command.handled` is flagged non-public there (the str
 because they need Host internals: `ARCH-CQRS-001` (every GET serves an `IQuery`, every POST an `ICommand`, or an `IIssue`
 on the four carve-out routes with `issue` rows; over the endpoint data source), `ARCH-CQRS-002` (no query handler takes
 `ILedgerStore`, `ILease` or `IApprovals`; `GetStatusService` and `StreamEventsService` are allowlisted until P2's
-read-only ports) and `ARCH-CQRS-003` (every command and issue has its row; a classified command has variant rows).
+`ILedgerReader`; the read-only approvals port is `IApprovedProfile`, which the context query handlers already take) and `ARCH-CQRS-003` (every command and issue has its row; a classified command has variant rows).
 
 ## Proving it
 

@@ -47,4 +47,17 @@ public sealed class ContextScopesTests
         Assert.Equal("SND-CONTEXT-001", validated.Error.Code);
         Assert.StartsWith("context.deadline:", validated.Error.Message, StringComparison.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Approve_refuses_a_context_section_naming_a_repo_the_profile_lacks()
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live with { Profile = live.Profile with { Context = JsonDocument.Parse("""{"repos":["nope"]}""").RootElement.Clone() } };
+        var service = new Aw.Sindri.Features.ApproveProfile.ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, SettingsOnlyContextEngine.Instance);
+
+        var approved = await service.Handle(new Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest(Hash: null, Confirmed: false), TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-CONTEXT-001", approved.Error.Code);
+        Assert.StartsWith("context.repos: 'nope' is not a profile repo", approved.Error.Message, StringComparison.Ordinal);
+    }
 }

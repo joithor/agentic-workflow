@@ -36,10 +36,10 @@ public sealed class TelemetryRuntime : IDisposable
     }
 
     /// <summary>
-    /// ASP.NET Core's request lines ('Request starting GET …?q=…') carry the query string, which can hold the text a
-    /// user asked (context spec §7: logs never carry query or record text). This category logs at Warning and above only.
+    /// ASP.NET Core's request lines ('Request starting GET …?q=…') carry the URL with its query string, which may hold
+    /// user text or secrets that no scrubber rule recognizes. This category logs at Warning and above only, in every host.
     /// </summary>
-    public const string RequestLineCategory = "Microsoft.AspNetCore.Hosting.Diagnostics";
+    internal const string RequestLineCategory = "Microsoft.AspNetCore.Hosting.Diagnostics";
 
     /// <summary>Creates loggers that write scrubbed JSON lines.</summary>
     public ILoggerFactory LoggerFactory { get; }

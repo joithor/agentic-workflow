@@ -24,6 +24,12 @@ public sealed class FakeContextSource(SourceDescriptor descriptor, IReadOnlyList
     /// <summary>True: Search waits until its token is cancelled (a source that misses the deadline).</summary>
     public bool Hangs { get; set; }
 
+    /// <summary>True: Fetch waits until its token is cancelled (a fetch that misses the deadline).</summary>
+    public bool FetchHangs { get; set; }
+
+    /// <summary>True: Fetch reports the record as already withheld by a whole-document scrub (SourceRecord.Blocked).</summary>
+    public bool FetchBlocked { get; set; }
+
     /// <summary>True: Versions fails (the stale check can't run).</summary>
     public bool VersionsFail { get; set; }
 
@@ -80,18 +86,26 @@ public sealed class FakeContextSource(SourceDescriptor descriptor, IReadOnlyList
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<SourceRecord>> Fetch(SourceRef reference, CancellationToken cancellationToken)
+    public async ValueTask<Result<SourceRecord>> Fetch(SourceRef reference, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(reference);
+        if (FetchHangs)
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
+        }
+
         if (Failure is { } failure)
         {
-            return ValueTask.FromResult<Result<SourceRecord>>(failure);
+            return failure;
         }
 
         var found = records.FirstOrDefault(r => r.Ref == reference);
-        return ValueTask.FromResult<Result<SourceRecord>>(found is null
+        return found is null
             ? ContextErrors.UnknownAnchor.With("no such record at that version")
-            : new SourceRecord(found.Ref, RecordKind.Doc, found.Title, found.Text, Author: null, CreatedAt: null, UpdatedAt: null));
+            : new SourceRecord(found.Ref, RecordKind.Doc, found.Title, FetchBlocked ? string.Empty : found.Text, Author: null, CreatedAt: null, UpdatedAt: null)
+            {
+                Blocked = FetchBlocked,
+            };
     }
 
     /// <inheritdoc />

@@ -36,7 +36,22 @@ public static class UntrustedFence
     public static string Cap(string text, int max = MaxTitle)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return text.Length <= max ? text : string.Concat(text.AsSpan(0, max - 1), "…");
+        return text.Length <= max ? text : string.Concat(Prefix(text, max - 1), "…");
+    }
+
+    /// <summary>The first <paramref name="length"/> UTF-16 units of <paramref name="text"/>, one fewer when the cut would split a surrogate pair.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="length">The most units kept.</param>
+    /// <returns>The prefix.</returns>
+    public static string Prefix(string text, int length)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (text.Length <= length)
+        {
+            return text;
+        }
+
+        return char.IsHighSurrogate(text[length - 1]) ? text[..(length - 1)] : text[..length];
     }
 
     /// <summary>Escapes '&amp;', '&lt;', '&gt;' and '"', so the text can't open, close or extend a fence.</summary>

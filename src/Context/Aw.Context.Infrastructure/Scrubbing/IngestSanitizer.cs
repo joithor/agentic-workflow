@@ -6,8 +6,8 @@ namespace Aw.Context.Infrastructure.Scrubbing;
 
 /// <summary>
 /// The first half of the ingest boundary (spec §7): removes HTML comments, invisible and control characters (tab and
-/// newline stay), encoded blobs over 200 characters, remote images (markdown and HTML), reference-style link definitions,
-/// autolinks, and link targets (the link text stays), repeating until the text is stable, at most
+/// newline stay), encoded blobs over 200 characters, remote images (markdown and HTML), remote reference-style link
+/// definitions (their uses keep the text), autolinks, and link targets (the link text stays), repeating until the text is stable, at most
 /// <see cref="MaxPasses"/> times. The removal list is the TS sanitizeIngest's; the implementation is its own. Every
 /// removal keeps the newlines it covered, so a cleaned document has the same lines as the blob it came from and chunk
 /// spans still cite the blob's own lines.
@@ -42,12 +42,27 @@ internal static partial class IngestSanitizer
         var cleaned = Comment.Replace(text, static m => Newlines(m.Value));
         cleaned = HtmlImage.Replace(cleaned, static m => Newlines(m.Value));
         cleaned = Image.Replace(cleaned, string.Empty);
-        cleaned = ReferenceDefinition.Replace(cleaned, string.Empty);
+        cleaned = RemoteReferences(cleaned);
         cleaned = Link.Replace(cleaned, "${text}");
-        cleaned = ReferenceLink.Replace(cleaned, "${text}");
         cleaned = Autolink.Replace(cleaned, string.Empty);
         cleaned = Blob.Replace(cleaned, "[encoded blob removed]");
         return Visible(cleaned);
+    }
+
+    /// <summary>
+    /// Removes reference definitions whose destination is remote ('[prd]: https://…'), keeping the line, and reduces their
+    /// uses ('[the PRD][prd]') to the link text. Footnotes ('[^1]: …') and local definitions ('[x]: ./doc.md') stay.
+    /// </summary>
+    private static string RemoteReferences(string text)
+    {
+        var labels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var cleaned = RemoteDefinition.Replace(text, m =>
+        {
+            _ = labels.Add(m.Groups["label"].Value);
+            return string.Empty;
+        });
+        return labels.Count == 0 ? cleaned : ReferenceLink.Replace(cleaned, m =>
+            labels.Contains(m.Groups["label"].Value is { Length: > 0 } label ? label : m.Groups["text"].Value) ? m.Groups["text"].Value : m.Value);
     }
 
     /// <summary>Drops control, format (zero-width, bidi), private-use and unassigned characters; keeps '\n' and '\t'.</summary>
@@ -76,13 +91,13 @@ internal static partial class IngestSanitizer
     [GeneratedRegex("!\\[[^\\]\\n]{0,500}\\]\\([^)\\n]{0,2000}\\)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Image { get; }
 
-    [GeneratedRegex("^[ ]{0,3}\\[[^\\]\\n]{1,500}\\]:[ \\t]*\\S[^\\n]{0,2000}$", RegexOptions.CultureInvariant | RegexOptions.Multiline, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex ReferenceDefinition { get; }
+    [GeneratedRegex("^[ ]{0,3}\\[(?<label>[^\\]^\\n][^\\]\\n]{0,499})\\]:[ \\t]*<?(?:https?|ftp)://[^\\n]{0,2000}$", RegexOptions.CultureInvariant | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex RemoteDefinition { get; }
 
     [GeneratedRegex("\\[(?<text>[^\\]\\n]{0,500})\\]\\([^)\\n]{0,2000}\\)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Link { get; }
 
-    [GeneratedRegex("\\[(?<text>[^\\]\\n]{1,500})\\]\\[[^\\]\\n]{0,500}\\]", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("\\[(?<text>[^\\]\\n]{1,500})\\]\\[(?<label>[^\\]\\n]{0,500})\\]", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ReferenceLink { get; }
 
     [GeneratedRegex("<(?:https?|ftp|mailto):[^>\\s]{1,2000}>", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]

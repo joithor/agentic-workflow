@@ -14,7 +14,7 @@ public sealed class IdTests
 
     private static IdsHolder Valid() => new(SourceId.From("repo-docs"), ExternalId.From("split-panes/docs/architecture.md#L1-L12"),
         SourceVersion.From("3b18e512dba79e4c8300dd08aeb37f8e728b8dad"), RecordKey.From("repo:split-panes/docs/architecture.md"),
-        SourceCursor.From("a41b07d"), QueryId.From("q_01JC"));
+        SourceCursor.From("a41b07d"), QueryId.From("q_01JC"), ContextRepoName.From("split-panes"));
 
     [Fact, Trait("Lane", "unit")]
     public void Every_id_round_trips_through_the_Kernel_profile()
@@ -37,6 +37,8 @@ public sealed class IdTests
     [InlineData("key", "Repo:x")]
     [InlineData("cursor", "")]
     [InlineData("query", "01JC")]
+    [InlineData("repo", "-x")]
+    [InlineData("repo", null)]
     public void A_malformed_or_null_id_is_AW_KERNEL_001(string property, string? value)
     {
         var node = System.Text.Json.Nodes.JsonNode.Parse(AwJson.Serialize(Valid(), _json))!;   // why: the serialized holder is an object
