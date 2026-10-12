@@ -1,7 +1,10 @@
+using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Control;
+using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Tests.Ledger;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Server;
 
@@ -31,6 +34,27 @@ public sealed class ServeStopTests : IDisposable
         Assert.True(stop.IsSuccessStatusCode);
         Assert.NotNull(rest);
         Assert.Equal(0, code);
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task A_stop_removes_control_json_before_it_releases_the_lease()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var record = Path.Combine(_home.Path, "control.json");
+        bool? recordedAtRelease = null;
+        var serve = ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => "0", _ => null }, TimeProvider.System, TextWriter.Null,
+            services => services.AddSingleton<SqliteLease>().AddSingleton<ILease>(sp =>
+                new ScriptedLease(sp.GetRequiredService<SqliteLease>()) { BeforeRelease = () => recordedAtRelease = File.Exists(record) }));
+        var url = await Endpoint(ct);
+        using var http = new HttpClient { BaseAddress = url, Timeout = TimeSpan.FromSeconds(10) };
+
+        using var stop = await http.PostAsync(new Uri("/sindri/stop", UriKind.Relative), content: null, ct);
+        var code = await serve.WaitAsync(_prompt, ct);
+
+        Assert.True(stop.IsSuccessStatusCode);
+        Assert.Equal(0, code);
+        Assert.False(recordedAtRelease);   // why: a client that still finds control.json must not find a process without the lease
+        Assert.False(File.Exists(record));
     }
 
     /// <summary>The endpoint serve recorded once it listens.</summary>
