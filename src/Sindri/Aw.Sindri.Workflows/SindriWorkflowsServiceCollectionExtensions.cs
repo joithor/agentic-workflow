@@ -4,12 +4,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
-/// <summary>Registers the Temporal adapter (engine spec rev 8 §0): the dev server, the RunStep activities, the worker options and the desk completion port.</summary>
+/// <summary>Registers the Temporal adapter (engine spec rev 8 §0): the dev server, the activities, the worker, the desk completion port and the instance list.</summary>
 public static class SindriWorkflowsServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the dev server (the <see cref="ITemporalServer"/> port 'sindri serve' starts and stops), the activities, the
-    /// worker's options and the desk completion port ('sindri workflow complete'; engine P4a), all under the one
+    /// worker serve runs, the desk completion port and the instance list ('sindri workflow complete'; engine P4a), all under the one
     /// Sindri home <see cref="TemporalSettings"/> reads.
     /// </summary>
     /// <param name="services">The service collection.</param>

@@ -4,7 +4,8 @@ namespace Aw.Sindri.Core.Control;
 
 /// <summary>
 /// The Temporal side 'sindri serve' keeps (engine spec §0 "Operations"): the worker it runs and the dev server it started
-/// or adopted. <see cref="Stop"/> takes them down in that order, so the server never goes while the worker still polls it.
+/// or adopted. <see cref="Stop"/> takes them down in that order: the server goes once the worker has stopped, or once
+/// <see cref="WorkerStopWait"/> has run out on a worker that hangs.
 /// </summary>
 /// <param name="server">The dev server.</param>
 /// <param name="clock">The clock the worker wait runs on.</param>

@@ -25,7 +25,7 @@ internal sealed partial class SindriWorkerHost(RunStepActivities steps, RecordEv
         {
             client = await TemporalClient.ConnectAsync(new TemporalClientConnectOptions(target) { Namespace = SindriTemporal.Namespace }).ConfigureAwait(false);
         }
-        catch (Exception e) when (e is not OperationCanceledException) // boundary: serve runs on; the doctor's temporal line shows why
+        catch (Exception e) // boundary: serve runs on; the doctor's temporal line shows why (the connect takes no token)
         {
             NoWorker(logger, target, e.Message);
             return;

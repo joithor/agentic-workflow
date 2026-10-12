@@ -85,7 +85,6 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, T
                 + "(fix: sindri doctor; it may have landed, so check sindri workflow list before running the same complete again)");
         }
 
-
         return Unit.Value;
     }
 
