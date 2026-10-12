@@ -836,7 +836,7 @@ the stacking limits: the stage starts without it and never branches from it (see
 
 Critical path: S-1A → S-3a → S-3b → S-5B → S-6 (its linker part) → S-7B → S-8, with S-4 → S-7A → S-7B about as long beside it. S-6's adapter work starts earlier, on S-5A. API P6 gates both branches: S-4 and S-5B go ready only after it merges, so P6 joins this path whenever it lands later than S-3b, and the lead tracks it in `stages.md` as an outside blocker.
 
-**Owner decisions, 2026-10-12 (delivery only; no behaviour change):** each context stage ships as one PR even when it measures L, built from layered commits (Core → Infrastructure → Features → Host), each layer green on its own; only S-3 is split, into S-3a and S-3b. A stage may stack up to three deep while the goal is to finish this week (S-1A was stacked on API P1 before it merged). S-4, S-5B and S-6 start before their last dependency and add the dependent part (the P6 job routes, the S-5B part) when it merges. That part lands in the same PR (one PR per stage), and the PR goes ready only once it is in; the order is item 7 of the stage-owner brief below. `map build` never runs inside the command gate, even before P6.
+**Owner decisions, 2026-10-12 (delivery only; no behaviour change):** each context stage ships as one PR even when it measures L, built from layered commits (Core → Infrastructure → Features → Host), each layer green on its own; only S-3 is split, into S-3a and S-3b. A stage may stack up to three deep while the goal is to finish this week (S-1A was stacked on API P1 before it merged). S-4, S-5B and S-6 start before their last dependency and add the dependent part (the P6 job routes, the S-5B part) when it merges. That part lands in the same PR (one PR per stage), and the PR is opened only once it is in; the order is item 7 of the stage-owner brief below. `map build` never runs inside the command gate, even before P6.
 
 ```mermaid
 flowchart LR
@@ -909,12 +909,15 @@ defaults:
    asks the human.
 6. After step 9, report "ready" to the lead and stop. Don't start another stage. Stay assigned until the PR merges.
    After a restart, resume from your stage's row in `stages.md` and your `$STAGE_DIR` files.
-7. **A stage with a partial dependency** (S-4 and S-5B on API P6's job route, S-6 on S-5B): before it merges, run
-   steps 1–3 on everything except the late part, then report `parked: <dependency>` and open no PR yet (step 7 needs
-   the hand test). A parked stage holds no building slot and is not a base to stack on. When the lead says the
-   dependency merged, rebase, add the late part, and run steps 4–9 in full on the whole stage (for S-4 the hand test
-   is the first time `map build` runs); a woken stage takes the next free building slot, ahead of new stages. The lead
-   watches API P6 and S-5B as well as this epic's stages.
+7. **A stage with a partial dependency** (S-4 and S-5B on API P6's job route, S-6 on S-5B): before the dependency
+   merges, run steps 1–2 for the whole stage, late part included (the verification plan names its journey), and
+   step 3 for everything except the late part; then report `parked: <dependency>` and open no PR yet (step 7 needs the
+   hand test). A parked stage holds no building slot and is not a base to stack on. When the lead says the dependency
+   merged, rebase, do step 3 for the late part, then run steps 4–9 in full on the whole stage (for S-4 the hand test
+   is the first time `map build` runs); a woken stage takes the next free building slot, ahead of new stages. If the
+   stage still stacks on an unmerged base (S-4 or S-5B on S-3b), the lead first has that base's owner rebase onto
+   `main` and redo its step 9 re-check, or the stage stays parked until its base merges. The lead also watches API
+   P6, which is outside this epic, and wakes S-6 when S-5B merges.
 
 ### Work data stays with the owner
 
@@ -962,7 +965,7 @@ team ever reads work data:
   take, so the third waits briefly; the owner's review bandwidth is the other limit), at most **4 PRs ready and
   unmerged**, and stacks at most **2 deep** (**3 deep** while the goal is to finish this week; owner, 2026-10-12). At either of the last two caps the lead starts no new building stage;
   owners do prep only.
-- **A freed slot is filled at once** with the next ready stage: critical path first, then whichever unblocks the most.
+- **A freed slot is filled at once** with the next ready stage: a woken parked stage first (brief item 7), then critical path, then whichever unblocks the most.
 - **Stacking:** a stage on an unmerged dependency branches from it and bases its PR on it. A stage stacks on **at most
   one** unmerged dependency (the partial dependencies marked in the table don't count); with two or more open, it waits until all but one have merged. When the dependency merges,
   the lead tells the owner, who rebases onto `main`, retargets the PR and redoes the step 9 re-check. A stage never
@@ -997,7 +1000,8 @@ team ever reads work data:
 
 One line per stage on every change, and on request:
 `S-3a  building  step 4 (hand test)  branch …  base S-1A (#…, ready)  port 7493  tokens 0.8M  blockers: none`
-(states: `building`, `parked: <dependency>`, `ready`, `merged`).
+(states include `waiting` (not started, or woken with no free slot), `building`, `parked: <dependency>`, `ready`
+(the PR is marked ready) and `merged`).
 `stages.md` is the single record, so `/specToProvenPR` resume mode works for the lead after a restart.
 
 ## Phases
@@ -1054,7 +1058,7 @@ on the fixture app.
 - **Goal:** the product graph exists and answers cascade questions, from a hand-authored map first; probes guard
   every later phase.
 - **Files:** its `context.db` migration (graph, overrides, decisions, retention); `EntryKey`, aliases, key migration
-  scaffolding; `ImportMap` and `ExportMap` (versioned schema with `schemaVersion` and `kind: export | authored`; an export holds nodes, edges with their evidence, aliases, decisions, overrides and rejections **with their original timestamps and provenance**; import accepts the current and the previous schema version and runs the key migration on older keys, and the imported map becomes `current`. Trust is always recomputed from provenance, never read from the file. Import is a `protected` command (it restores rows with `human` provenance, overrides and rejections); without the shared challenge it is refused with `SND-AUTH-002` and writes nothing; an import from the app is the same `protected` command, shown there as the CLI to copy (API §4.2). Exports are written only under `$AW_SINDRI_HOME/context/exports/` or an owner-check home, by temp file and rename at 0600, and purged after 14 days. Tests: round trip, a golden export from the previous build, and the terminal gate); `ShowNode`, `Neighbors`, `Path`;
+  scaffolding; `ImportMap` and `ExportMap` (versioned schema with `schemaVersion` and `kind: export | authored`; an export holds nodes, edges with their evidence, aliases, decisions, overrides and rejections **with their original timestamps and provenance**; import accepts the current and the previous schema version and runs the key migration on older keys, and the imported map becomes `current`. Trust is always recomputed from provenance, never read from the file. Import is a `protected` command (it restores rows with `human` provenance, overrides and rejections); without the terminal (and, once the engine lands, its shared challenge) it is refused with `SND-AUTH-002` and writes nothing; an import from the app is the same `protected` command, shown there as the CLI to copy (API §4.2). Exports are written only under `$AW_SINDRI_HOME/context/exports/` or an owner-check home, by temp file and rename at 0600, and purged after 14 days. Tests: round trip, a golden export from the previous build, and the terminal gate); `ShowNode`, `Neighbors`, `Path`;
   the cascade (§6.1) with fixtures; `node` shape, `graph` and `affects` sections; anchor resolution for `text`;
   routes, verbs, MCP `context_node` and `context_neighbors` (these two tools are stage S-3M, after S-1M); doctor `context:map` and `context:retention`; the probe
   runner (`eval probes`) and probe file format.
@@ -1062,7 +1066,7 @@ on the fixture app.
 - **S-3a signal:** on the fixture app, `$SINDRI context map import <fixture map>`, then `context map status` prints
   node, edge and alias counts; `context map export` and a re-import into a fresh throwaway home round-trip with the
   original timestamps and provenance; `context map import` without the terminal (a `protected` command from an agent
-  caller, over HTTP or the CLI) is refused with `SND-AUTH-002` and writes nothing to `context.db` (only the audit row), while the same file imported at the terminal through
+  caller, over HTTP or the CLI) is refused with `SND-AUTH-002` and writes nothing to `context.db` (`ledger.db` gets only its `command.handled` audit row), while the same file imported at the terminal through
   `sindri-prove.sh human` restores its `human` rows; an export whose mtime is set back past 14 days is gone after the
   purge service runs once; doctor `context:map` and `context:retention` report ok. The probe rule starts with S-3b.
 - **S1:** `IScheduledService` (purge, in S-3a).
