@@ -722,11 +722,14 @@ public sealed class ShellWindowTests : IDisposable
         var changes = LiveChanges(window, "UnreadableLive");
 
         _server.UnreadableStatus = true;
-        await shell.Health.Refresh(Token);
+        _server.Push(A.Event(1));
+        await Until(() => shell.State == ShellState.Unreadable);
         Settle(window);
         Assert.Equal(ShellState.Unreadable, shell.State);
         _server.UnreadableStatus = false;
-        await shell.Health.Refresh(Token);
+        _server.Push(A.Event(2));
+        _clock.Advance(HealthViewModel.RetryEvery);
+        await Until(() => shell.State == ShellState.Normal);
         Settle(window);
 
         AnnouncedOnly(window, "UnreadableLive", changes, Labels.Unreadable + ": SND-UI-003");

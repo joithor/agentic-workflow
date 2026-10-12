@@ -260,8 +260,12 @@ internal sealed partial class ShellViewModel : ObservableObject
         {
             case nameof(HealthViewModel.State):
                 Changed(_stateProperties);
+                Announce();
                 break;
             case nameof(HealthViewModel.Reason):
+                OnChanged(e.PropertyName);
+                Announce();
+                break;
             case nameof(HealthViewModel.ReasonDetail):
                 OnChanged(e.PropertyName);
                 break;
@@ -275,6 +279,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         if (e.PropertyName == nameof(HealthPill.IsNotResponding))
         {
             OnChanged(nameof(IsNotRespondingBanner));
+            Announce();
         }
     }
 
