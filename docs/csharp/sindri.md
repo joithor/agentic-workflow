@@ -17,7 +17,7 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 |---|---|---|
 | `sindri` | Prints the banner, starts the control plane if it isn't running (detached in its own session, so a Ctrl-C or a kill of the terminal's process group doesn't reach it; `sindri serve`, output in `<home>/logs/serve.log`), then prints the startup summary. It starts one only when nothing runs (`SND-API-001`), and never from an agent session (Callers and auth): there it prints `SND-API-001 Sindri isn't running; ask the human to run 'sindri'` and launches nothing; one that answers late (`SND-API-002`) is reported as it is. A started child that exits with `SND-LEASE-001` lost the lease to a concurrent start, so it waits up to 10 s for the winner to answer; past that the error ends with the line the child exited with. Only lines written to the log since this start count, not an earlier run's | 0; 1 when the profile needs approval, or the control plane went away before its status answered (`SND-API-001`); 2 on any other error (e.g. it can't start `SND-CLI-002`, the running one answers late `SND-API-002`, or the status call answers an error without a code `SND-API-004` or from inside `SND-API-005`) |
 | `sindri --headless` | The same without the UI line (the UI is S1b) | as above |
-| `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later. Refused in an agent session; `AW_SINDRI_PROVER=1` skips only the parent-process check, never the variables | 0 on a clean stop; 1 when it is refused in an agent session (`SND-API-001`), or when another process holds the lease (`SND-LEASE-001`) or the lease was lost (`SND-LEASE-002`); 2 when the port is taken or refused, or the host fails to start listening (`SND-API-003`; the stop is recorded and the lease released), or `AW_SINDRI_PORT` isn't a port number 0..65535 (`SND-CLI-003`, checked before the lease is taken), or the ledger can't be opened (`SND-LEDGER-001/002`) |
+| `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later. Refused in an agent session; `AW_SINDRI_PROVER=1` skips only the parent-process check, never the variables | 0 on a clean stop; 1 when it is refused in an agent session (`SND-API-001`), or when another process holds the lease (`SND-LEASE-001`) or the lease was lost (`SND-LEASE-002`); 2 when the port is taken or refused, or the host fails to start listening (`SND-API-003`; the stop is recorded and the lease released), or `AW_SINDRI_PORT` isn't a port number 0..65535 (`SND-CLI-003`, checked before the lease is taken), or the ledger can't be opened, or the human token file can't be written (`SND-LEDGER-001/002`) |
 | `sindri status [--json]` | The running control plane's status, through the API | 0; 1 when it isn't running (`SND-API-001`) or the profile needs approval (`profile.needsApproval` in the response); 2 on any other error (e.g. it didn't answer in time `SND-API-002`, answered an error without a code `SND-API-004`, failed inside `SND-API-005`, or the ledger or the saved approval can't be read `SND-LEDGER-002`/`SND-PROFILE-006`) |
 | `sindri stop` | Stops it: records the stop, removes `control.json`, releases the lease, shuts down | 0; 1 when it isn't running (`SND-API-001`); 2 on any other error (e.g. the API refused this caller `SND-AUTH-002`, it didn't answer in time `SND-API-002`, the stop couldn't be recorded, or `control.json` couldn't be removed (the process still stops) `SND-LEDGER-002`, answered an error without a code `SND-API-004`, or failed inside `SND-API-005`) |
 | `sindri profile validate [--json]` | Checks the live profile file and prints its hash | 0 valid and approved (it is the saved approval and the latest recorded `profile.approved` event names it, the rule every surface uses); 1 valid, not approved; 2 on any error: invalid (`SND-PROFILE-001/002`), the saved approval can't be read (`SND-PROFILE-006`) or the ledger can't be read (`SND-LEDGER-002`), neither of which is ever "not approved" |
@@ -175,7 +175,8 @@ composed by the host from the class and the client label, never taken from a hea
 
 - **The human token.** `sindri serve` mints `auth/human.token` under the home (32 random bytes, base64url; the file
   0600 in a 0700 `auth/` folder) right after it takes the lease, so a refused second `serve` never replaces the running
-  one's token. It removes the file with `control.json` on the way out. The CLI and the app read the file and send it.
+  one's token. It removes the file on its way out, after the stop (`control.json` goes first, before the lease is
+  released), and only while the file still holds this start's token. The CLI and the app read the file and send it.
 - **The prover label.** `X-Sindri-Client: prover` from a `human` caller is honoured only when the process's home, with
   every symbolic link resolved, lies inside the temp directory (`TMPDIR`, else the platform's) or inside a proof folder
   `<state root>/<repo slug>/proof/…` (the state root is `AW_STATE_DIR`, else `~/.agentic-workflow`). Elsewhere, such
@@ -360,7 +361,7 @@ blocks.
 | `SND-PROFILE-005` | No profile is approved, or the latest approval's snapshot is missing or changed |
 | `SND-PROFILE-006` | The approved snapshots can't be read or written (permissions, a full disk) |
 | `SND-LEDGER-001` | The ledger's schema doesn't match this build |
-| `SND-LEDGER-002` | The ledger can't be opened or written |
+| `SND-LEDGER-002` | The ledger can't be opened or written, or the human token file can't be written |
 | `SND-API-001` | The control plane isn't running (no endpoint record, or nothing answers at it) |
 | `SND-API-002` | It didn't answer the ping within 2 s, or the call itself within 10 s |
 | `SND-API-003` | `sindri serve` can't listen on the API port: another program has it, it is refused, or the host failed to start listening (the stop is recorded and the lease released) |
@@ -369,7 +370,7 @@ blocks.
 | `SND-API-007` | An unknown `X-Sindri-Caller` value, or a malformed `X-Sindri-Repo` (400; logged, not audited) |
 | `SND-API-008` | A command carried an `Origin` header (403; logged, not audited) |
 | `SND-API-009` | The command gate wasn't acquired within 5 s: another command is running (503) |
-| `SND-AUTH-001` | A `human` caller without the valid per-start token: missing or stale (403; restart the app or rerun the command) |
+| `SND-AUTH-001` | A `human` caller without the valid per-start token: missing or stale (403; restart the app or rerun the command), or a `prover` label outside a temp or proof home |
 | `SND-AUTH-002` | The caller may not run the command's action class (403; only the `command.handled` audit row is written) |
 | `SND-CLI-001` | Unknown command |
 | `SND-CLI-002` | `sindri serve` didn't come up after starting it |

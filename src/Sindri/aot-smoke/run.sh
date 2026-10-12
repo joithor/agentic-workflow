@@ -9,7 +9,7 @@
 # and the temp path masked) must equal expected.txt.
 # Callers (API spec §6): the run unsets the agent variables (CLAUDECODE, AW_SINDRI_CHILD, CODEX_SANDBOX, CURSOR_AGENT)
 # and sets AW_SINDRI_PROVER=1, so the binary is the human; a "(human, terminal)" step runs under a pty
-# (scripts/lib/with-tty.sh, CRs stripped, stderr merged), a "(session)" step sets CLAUDECODE=1 with stdin from /dev/null.
+# (scripts/lib/with-tty.sh: CRs and terminal control sequences stripped, stderr merged), a "(session)" step sets CLAUDECODE=1 with stdin from /dev/null.
 # Every invocation of the binary is bounded (30 s, perl's alarm); one that runs over prints 'exit 124'.
 # The publish runs on a copy of the files it needs, in a temp dir under $TMPDIR that is deleted on exit (PublishAot
 # with a RID makes restore add the host RID's ILCompiler packs to the lock files, so it never runs on the checkout).

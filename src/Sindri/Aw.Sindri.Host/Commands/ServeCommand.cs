@@ -21,7 +21,7 @@ namespace Aw.Sindri.Host.Commands;
 /// lease, so a second serve is refused before it binds the port; then it listens, records the endpoint, and runs until a
 /// stop request, SIGTERM/SIGINT or a lost lease. A failure to listen records the stop and releases the lease. SIGHUP is
 /// ignored so closing the terminal doesn't stop it. Once the lease is taken (so a refused second serve never replaces the
-/// running one's token) it mints the per-start human token, and removes it with control.json on the way out. Every
+/// running one's token) it mints the per-start human token, and removes it on the way out (after the stop has removed control.json and released the lease; only while it is still this start's token). Every
 /// in-process call runs as the caller 'service:host', the only place that caller is set (API spec §2.1).
 /// </summary>
 internal static class ServeCommand
