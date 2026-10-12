@@ -11,7 +11,8 @@ namespace Aw.Sindri.Core.Commands;
 /// <param name="Class">The caller class.</param>
 /// <param name="Terminal">True only for a human at an interactive terminal.</param>
 /// <param name="Actor">The envelope's actor: 'human:cli', 'session:mcp', 'service:host' and the like.</param>
-/// <param name="CommandId">This attempt's id.</param>
+/// <param name="CommandId">This attempt's id; for a service caller, the run's (each command attempt under it gets its
+/// own).</param>
 /// <param name="CorrelationId">The correlation every event of this call carries.</param>
 /// <param name="Repo">The repo a session caller is scoped to (X-Sindri-Repo), or null.</param>
 public sealed record CallerContext(CallerClass Class, bool Terminal, string Actor, CommandId CommandId, CorrelationId CorrelationId, RepoName? Repo)

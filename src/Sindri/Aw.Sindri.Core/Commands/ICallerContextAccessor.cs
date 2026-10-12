@@ -9,7 +9,10 @@ public interface ICallerContextAccessor
     /// <summary>The caller of the code running now, or null.</summary>
     public CallerContext? Current { get; }
 
-    /// <summary>Makes <paramref name="context"/> current for the code that follows (and the async calls it starts).</summary>
+    /// <summary>
+    /// Makes <paramref name="context"/> current for the code that follows (and the async calls it starts). For a
+    /// service-class context the command chain gives each command attempt its own command id, replacing the context's.
+    /// </summary>
     /// <param name="context">The caller.</param>
     /// <returns>Restores the previous caller when disposed.</returns>
     public IDisposable Enter(CallerContext context);

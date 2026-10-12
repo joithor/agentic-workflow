@@ -12,8 +12,9 @@ namespace Aw.Sindri.Features.Commands;
 /// refused, invalid or failed) after the rest of the chain ran, plus a 'sindri.command &lt;action&gt;' span and a count.
 /// An accepted self-audited row (StopProcess: its 'process.stopped' is the audit) writes none. A lost row after an
 /// accepted command is logged and the result stands; on any other outcome the caller gets SND-LEDGER-002. A service
-/// caller holds one context for a whole run, so each of its attempts gets its own command id here (the correlation
-/// stays): a second command in the same run is a new row, not a replay of the first.
+/// caller holds one context for a whole run, so each command attempt under any service-class caller gets its own
+/// command id here, replacing the run's (the correlation is kept): a second command in the same run is a new row, not
+/// a replay of the first.
 /// </summary>
 /// <param name="inner">The rest of the chain.</param>
 /// <param name="audit">Writes the row.</param>
@@ -59,7 +60,10 @@ internal sealed class AuditingService<TRequest, TResponse>(IService<TRequest, TR
             : SindriErrors.LedgerUnavailable.With($"the audit row for {row.Action.Value} couldn't be written: {recorded.Error.Code} {recorded.Error.Message}");
     }
 
-    /// <summary>A service caller's attempt under its own command id (null, nothing entered, for any other caller).</summary>
+    /// <summary>
+    /// A service caller's attempt under its own command id, which replaces the run's for the attempt (the correlation
+    /// is kept, and disposing restores the run's context); null, nothing entered, for any other caller.
+    /// </summary>
     private IDisposable? EnterAttempt() => callers.Current is { Class: CallerClass.Service } service
         ? callers.Enter(service with { CommandId = ids.New<CommandId>() })
         : null;

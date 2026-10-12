@@ -186,7 +186,8 @@ composed by the host from the class and the client label, never taken from a hea
   reports `apiVersion: 1`.
 - **In-process callers.** `serve` makes every call it runs itself (start, the stop on Ctrl-C, SIGTERM or a failed
   listen) as `service:host`, the only place that caller is set; the scheduler runs each service as `service:<name>`
-  (`service:heartbeat`). Events written with no caller keep `host:sindri`.
+  (`service:heartbeat`). Events written with no caller keep `host:sindri`. Each command attempt under a service caller
+  gets its own command id from the chain (`AuditingService`), replacing the run's; the run's correlation is kept.
 
 ### How the CLI classes itself
 
