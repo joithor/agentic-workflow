@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Core.Registration;
@@ -14,5 +15,6 @@ public static class SindriCoreServiceCollectionExtensions
         => services
             .AddSingleton(EventScope.ControlPlane)
             .AddSingleton<EventFactory>()
-            .AddSingleton<HeldLease>();
+            .AddSingleton<HeldLease>()
+            .AddSingleton<BlockCatalog>();
 }

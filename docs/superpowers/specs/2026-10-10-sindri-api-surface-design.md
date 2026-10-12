@@ -11,7 +11,7 @@ Status:
   codes past S1's (`SND-API-011`, `-012`), adds the `step-report` class and the agent runtime's launch port (§4, §8,
   P10), the nonce and challenge carve-outs (§2.5), the engine-to-item state map (§3.6), launch-time MCP config for
   Codex and Cursor (§8), and the `human` token before the app's first write (§6). A third batch (X35–X42, after the
-  epic's second /autoplan) adds the launch contract (§8.1: `session wrap`, the launch secret, two target kinds,
+  epic's second /autoplan) adds the launch contract (§8.1: `session wrap`, the launch secret, two target kinds (rev 8 made it one, tmux-owned),
   liveness), builds the `human` token in P1, fixes the queue groups and adds `answerKind` (§3.6), and adds the
   `issue` kind to §4.
 - **The UI app design spec (`2026-10-11-sindri-ui-design.md`, approved) amends this spec** through its §6.7 edits
@@ -795,8 +795,15 @@ claude -p "<journey>" --mcp-config <tmp>/sindri-mcp.json --strict-mcp-config \
 ### 8.1 The launch contract (`ILauncher`, P10)
 
 One port launches every agent session: the human handoff (`OpenItem`) and the engine's agent runtime (engine §6.5).
-- **Two target kinds.** `interactive`: a Warp tab running the agent CLI (`claude`, `codex` or `cursor-agent`), for the
-  human. `process`: the agent CLI as a plain child process, for the agent runtime and the `--headless` box.
+- **One target kind, and tmux owns it (rev 8, README X55; replaces the earlier `interactive` and `process` kinds).**
+  Every launch, for the human (`OpenItem`) and for the engine's agent runtime alike, starts the agent CLI
+  **interactively** inside a tmux session Sindri owns, named `snd-<run>` (or `snd-<launch>` for a human open with no
+  run), in the item's repo or the Step's worktree, with the seed as the initial prompt. **Warp is a viewer:** opening
+  for a human also opens a Warp tab that runs `tmux attach -t <session>`; the `--headless` box opens no Warp and the
+  session simply runs detached. So attended and unattended runs are the same process, Sindri can see the session
+  (`tmux has-session`, `capture-pane`), and the human can join any Step live. Non-interactive runs (`claude -p`,
+  `codex exec`) are never launched as a Step. The tmux socket is Sindri's own (`-L sindri`), so the human's own tmux
+  is untouched.
 - **Ids only at launch.** The command line carries the item id, the repo path and, for a Step, the run token. Context,
   packets and evidence are pulled through the MCP endpoint (Codex and Cursor get it as launch-time config, §8).
 - **`sindri session wrap`.** Every launched command runs as `sindri session wrap --launch <id> -- <agent cli …>`. Wrap
@@ -806,9 +813,10 @@ One port launches every agent session: the human handoff (`OpenItem`) and the en
 - **Liveness.** Wrap sends a heartbeat every 30 s and an exit call when the agent exits (both `issue` kind, proven by
   the secret). `service:launcher` appends `session.ended` with reason `exit` and the exit code, or `lost` after 120 s
   without a heartbeat. So a closed tab or a crash always ends the session; the double-launch guard clears.
-- **Per-launch files.** An interactive launch writes its own Warp launch configuration
-  (`launch_configurations/sindri-<launch>.yaml`, 0600, no secret in it) and deletes it once Warp has read it. Paths are
-  quoted.
+- **Per-launch files.** A launch that opens Warp writes its own Warp launch configuration
+  (`launch_configurations/sindri-<launch>.yaml`, 0600, no secret in it) whose one `exec` line is the `tmux attach`, and
+  deletes it once Warp has read it. Paths are quoted. The agent command itself is started by Sindri with `tmux new-session
+  -d`, never by Warp, so a Warp that fails to open leaves the session running and attachable.
 - **Usage.** Token usage is read by the target's usage reader (Claude Code's session log, and the Codex and Cursor
   equivalents recorded in P10) when the session ends, and recorded on `session.ended`. It is never self-reported.
 - **`OpenItem` is one event.** The command decides and appends `item.open-requested`; it does no launching (UI E-1).
@@ -816,8 +824,11 @@ One port launches every agent session: the human handoff (`OpenItem`) and the en
   anything; the launcher then performs the launch once within 30 s and appends `launch.started` or `launch.failed`.
   A second open while a session is live offers `attach` instead (UI E-2); a launch already in progress is
   `SND-LAUNCH-008`.
-- **Attach** means one thing: focus the live interactive session's tab. The takeover happened when it opened; typing
-  into the tab changes nothing in Sindri.
+- **Attach** (rev 8) means joining the live session: a new Warp tab running `tmux attach -t snd-<run>` on Sindri's
+  socket. It starts no agent process. The first turn the human types is classified `takeover` by the session's
+  `UserPromptSubmit` hook (D §9.3) and pauses the instance (engine §5.5); until `handback`, `step-report` from that
+  session is refused (`SND-AUTH-003`). Attaching to a session the human opened themselves is a no-op takeover. "Sindri
+  can't see inside Warp" no longer applies: the session is Sindri's tmux session, and Warp only shows it.
 
 ## 9. Errors, versioning and JSON
 
@@ -1178,7 +1189,7 @@ Each phase is one PR and follows the slice recipe, red first.
 | **P5** | **Event stream and ledger read.** <ul><li>Public types from `EventCatalog`, `PublicEvent`.</li><li>The `item` and `types` filters, the session repo filter, `Last-Event-ID`.</li><li>The ping and the stream limits (`SND-API-012`).</li><li>`ILedgerSignal`, wired to the projector and the stream.</li><li>`ReadLedger` and `sindri ledger`.</li><li>`sindri status --follow` (C4).</li></ul> | `Core/Events/*`, `Infrastructure/Ledger/LedgerSignal.cs`, `Features/{StreamEvents,ReadLedger}/`, `Host/Endpoints/EventStream.cs`, `Host/Projector.cs` | S | P1, plus P2 for the projector wiring (its signal uses `service.heartbeat`; the item filter is tested once P3 lands) | <ul><li>`curl -N '…/sindri/events?after=0&types=service.*'` shows each `service.heartbeat` within 100 ms of its append.</li><li>Reconnecting with `Last-Event-ID: n` resumes at n+1.</li><li>`command.handled` never appears.</li><li>`sindri-prove.sh human ledger --json --after 0` lists it.</li></ul> | **UI, engine** (S1-D6) |
 | **P6** | **Jobs and services.** <ul><li>`JobId` and the job events.</li><li>The slices `GetJob`, `CancelJob`, `RunService` (as a job), `PauseService`, `ResumeService`; the scheduler honours pause and resume.</li><li>The CLI follows progress on the stream, and Ctrl-C cancels.</li><li>Codes: `SND-JOB-404`, `SND-SVC-404`.</li></ul> | `Core/Jobs/*`, `Features/{GetJob,CancelJob,RunService,PauseService,ResumeService}/`, a scheduler hook in Host | M | P2 + P5 | <ul><li>`sindri-prove.sh human services run heartbeat` prints progress and the result.</li><li>Ctrl-C during a long fake job prints `cancelled`, and the ledger shows `job.cancelled`.</li><li>After `services pause heartbeat`, there's no heartbeat for 3 cadences.</li><li>A run with no caller header gets 403.</li><li>A manual run that succeeds clears that service's `failure` row and sets `lastRun` to `ok`.</li></ul> | UI, **engine** |
 | **P8** | **The `sindri_*` MCP tools.** <ul><li>On `/sindri/mcp` (created here, or by context S-1M if it landed first).</li><li>`sindri mcp register [--apply]`.</li><li>Every call stamped `session`, scoped by `X-Sindri-Repo`.</li></ul> | `Host/Mcp/*`, the SDK in `Directory.Packages.props` (pinned, at least 14 days old), `deps.yaml` | M | P4 + P6 | A fresh `claude -p "<journey>" --mcp-config … --strict-mcp-config --allowedTools …` subagent: <ul><li>lists the queue and an item;</li><li>files a `rescope` request, which shows up in `GET /needs-you`;</li><li>finds no tool to decide with;</li><li>gets `SND-AUTH-002` from a `curl` with no caller header.</li></ul> Its transcript is the evidence | — |
-| **P10a** | **`sindri open` and the launch contract** (UI E-1…E-5, E-11 and §8.1; P10b, opening is a takeover, follows engine P5 with UI E-6 and E-19). <ul><li>`ILauncher` with `interactive` (Warp + Claude Code, Codex or Cursor) and `process` targets (§8.1).</li><li>`sindri session wrap`, the launch secret, heartbeats, `session.launched`/`ended`, per-launch files, usage readers.</li><li>`OpenItem` as one event; `service:launcher` takes over and launches after commit; attach focuses; `SND-LAUNCH-001/002`, `SND-AUTH-003`.</li><li>Codex and Cursor launch-time MCP config, and their usage readers.</li></ul> | `Core/Launch/*`, `Infrastructure/Launch/{Warp,Process}Launcher.cs`, `Host/Commands/SessionWrap*`, `Features/OpenItem/` | L | P3 + P8 | <ul><li>`sindri-prove.sh human open ITM-…` opens a Warp tab running Claude Code in the item's repo; `session.launched` is recorded; the session's first `sindri_item` call returns the item.</li><li>Closing the tab writes `session.ended` (`exit`); killing wrap writes it (`lost`) within 150 s; the item can be opened again.</li><li>A second open while live exits 2 with `SND-LAUNCH-002`.</li><li>The launch file and argv contain no secret and no item text.</li></ul> | engine P8 (the agent runtime) |
+| **P10a** | **`sindri open` and the launch contract** (UI E-1…E-5, E-11 and §8.1; P10b, opening is a takeover, follows engine P5 with UI E-6 and E-19). <ul><li>`ILauncher` with one tmux-owned target (`snd-<run>` running Claude Code, Codex or Cursor; a Warp tab attaches to it when a human opened the item) (§8.1 rev 8, README X55).</li><li>`sindri session wrap`, the launch secret, heartbeats, `session.launched`/`ended`, per-launch files, usage readers.</li><li>`OpenItem` as one event; `service:launcher` takes over and launches after commit; attach focuses; `SND-LAUNCH-001/002`, `SND-AUTH-003`.</li><li>Codex and Cursor launch-time MCP config, and their usage readers.</li></ul> | `Core/Launch/*`, `Infrastructure/Launch/{Warp,Process}Launcher.cs`, `Host/Commands/SessionWrap*`, `Features/OpenItem/` | L | P3 + P8 | <ul><li>`sindri-prove.sh human open ITM-…` opens a Warp tab running Claude Code in the item's repo; `session.launched` is recorded; the session's first `sindri_item` call returns the item.</li><li>Closing the tab writes `session.ended` (`exit`); killing wrap writes it (`lost`) within 150 s; the item can be opened again.</li><li>A second open while live exits 2 with `SND-LAUNCH-002`.</li><li>The launch file and argv contain no secret and no item text.</li></ul> | engine P8 (the agent runtime) |
 
 | **P11** | **Engine item states.** <ul><li>The item projection folds `workflow.*` events into `needs-answer`, `taken-over`, `parked`, `running` and `queued`.</li><li>Engine parks, escalations, idle takeovers and desk tasks become needs-you rows of kind `park`.</li><li>`CloseItem` refuses while an instance is active.</li></ul> | `Features/Projections/*` | M | P4 + engine P4 | <ul><li>Starting `workflow.step` on an item moves it to `running` in `GET /queue`.</li><li>A desk task and a park appear in `GET /needs-you` with the engine's action id.</li></ul> | UI's live item states |
 

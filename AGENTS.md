@@ -32,12 +32,13 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 
 | Layer | Technology (C# build) |
 |-------|------------|
-| Runtime | .NET 10 (LTS), SDK pinned in `global.json`; NativeAOT for hook and CLI entry points |
+| Runtime | .NET 10 (LTS), SDK pinned in `global.json`; NativeAOT for hook and CLI entry points. The Sindri host is framework-dependent (its Temporal worker can't be trimmed; README X54) |
 | Language | C# (latest), nullable on, warnings as errors |
 | HTTP (an http host) | ASP.NET Core minimal APIs (`CreateSlimBuilder`), loopback only |
 | UI (the Sindri app) | [Avalonia UI](https://avaloniaui.net/) (MIT core only, no paid add-ons), MVVM with compiled bindings; a client of Sindri's HTTP API with no logic of its own. Desktop (macOS, Linux, Windows) first; iOS, Android and browser heads later from the same views. Spec §4a "UI" |
 | Database | `Microsoft.Data.Sqlite` with its bundled `e_sqlite3` (shipped beside each AOT tool), new C# schemas, WAL mode |
 | MCP | Official MCP C# SDK (approved in the AOT spike; no package uses it since the bridge was retired) |
+| Workflow engine (Sindri) | [Temporal](https://temporal.io) through the `Temporalio` .NET SDK (pinned, nuget.org): a local `temporal server start-dev` on loopback with its own SQLite file under `$AW_SINDRI_HOME`, started by `sindri serve`; one `RecipeWorkflow` interprets every recipe; every transition is mirrored into the ledger (engine spec §0, §5; decision Q8, 2026-10-11) |
 | JSON | System.Text.Json, one source-generated context per package |
 | Logging | `Aw.Kernel.Telemetry`: JSON lines on stderr (`AW_LOG_LEVEL`), OpenTelemetry spans and metrics, exporting off by default, scrubbed by `Aw.Redaction` |
 | Analyzers | NetAnalyzers, Meziantou, Roslynator, BannedApiAnalyzers, PublicApiAnalyzers (one owner per rule, `.editorconfig`) |
@@ -109,9 +110,10 @@ dotnet run --project src/Evidence/Aw.Evidence.Host -- <run|parity|parity-plan|pa
 dotnet run --project src/BugFix/Aw.BugFix.Host -- <command> --state <dir> [options]   # bugfix-state, the C# /bugFixOrchestrator helper (docs/csharp/bugfix.md); exit 0 ok, 1 bad input, 2 usage, 3 refused
 bash src/BugFix/aot-smoke/run.sh         # bugfix-state under NativeAOT: publish (on a copy), run a bug fix in a temp repo, compare with expected.txt
 dotnet run --project src/Sindri/Aw.Sindri.Host -- [--headless | serve | status | stop | profile validate|approve | doctor]   # the C# Sindri app (S1 app shell, docs/csharp/sindri.md); state in AW_SINDRI_HOME (default $AW_STATE_DIR/sindri-app); exit 0 ok, 1 attention, 2 error
+dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe validate <file> [--json]   # check a workflow recipe in-process, no serve needed (docs/csharp/sindri-workflow.md); exit 0 pass, 1 fail, 2 usage or tool error. 'recipe eval' exits 2 until P3
+bash src/Sindri/aot-smoke/run.sh         # sindri under NativeAOT: publish (on a copy), drive start, a refused second serve, the approve preview and its non-terminal refusal, status, stop and doctor in a temp home, then recipe validate on the shipped recipes and an invalid fixture (each call bounded to 30 s), compare with expected.txt
 dotnet run --project src/Sindri/Aw.Sindri.Ui.Desktop       # the Sindri app (S1b, docs/csharp/sindri-ui.md): a window with the control plane's status, live from its event stream; bare `sindri` opens it (sindri-ui next to sindri, or AW_SINDRI_UI)
 bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh   # sindri-ui under NativeAOT: publish (on a copy) and fail on any IL2xxx/IL3xxx warning or a missing binary
-bash src/Sindri/aot-smoke/run.sh         # sindri under NativeAOT: publish (on a copy), drive start, a refused second serve, the approve preview and its non-terminal refusal, status, stop and doctor in a temp home (each call bounded to 30 s), compare with expected.txt
 
 # Rules (edit .agents/rules/, then regenerate)
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index

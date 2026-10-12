@@ -48,6 +48,7 @@ internal static class CommandTable
             ["profile", "approve"] => await verbs.Approve(hashText: null, Interactive(), Console.In, ct).ConfigureAwait(false),
             ["profile", "approve", var hash] => await verbs.Approve(hash, Interactive(), Console.In, ct).ConfigureAwait(false),
             ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct).ConfigureAwait(false),
+            ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
             ["help" or "--help" or "-h"] => await output.Text(Usage.Text + "\n", 0).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };

@@ -231,7 +231,7 @@ packages:
     files: [sindri-app/control.json]
     namespace: sindri
     routes: [/sindri/]
-    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) is in src/Sindri; reaches lower tiers only through Core contracts or CLIs"
+    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; reaches lower tiers only through Core contracts or CLIs"
 
   # ---- tier 4 ----
   - id: SindriUi
@@ -408,6 +408,14 @@ edges:
     kind: project
     status: current
     note: "the aw-readiness host starts Kernel telemetry in Compose (§4b.4)"
+  # Context's tier-0 edges (context spec §4: Aw.Kernel, Aw.Kernel.Data, Redaction). Stage S-FX declares the Kernel one,
+  # which its test support (tests/Aw.Context.Testing, AwJson for the fixture files) already needs; S-1A flips it to
+  # current with the package's own projects and adds the other two.
+  - from: Context
+    to: Kernel
+    kind: project
+    status: planned
+    note: "Result, AwJson, IService; Aw.Context.Testing reads the fixture's history and probes through AwJson"
   - from: Scorer
     to: Kernel
     kind: project

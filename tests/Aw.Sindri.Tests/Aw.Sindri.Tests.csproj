@@ -25,4 +25,9 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Golden files (Aw.Kernel.Testing Golden) live in this project's source tree; AW_GOLDEN_UPDATE=1 rewrites them there. -->
+    <AssemblyMetadata Include="AwGoldenSourceRoot" Value="$(MSBuildProjectDirectory)" />
+  </ItemGroup>
 </Project>
