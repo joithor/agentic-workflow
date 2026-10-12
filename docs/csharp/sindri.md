@@ -100,10 +100,10 @@ every 20 s.
   nobody took over, lost nothing to fencing). Once another process took the lease, renew fails with `SND-LEASE-002` and
   the process stops (exit 1): it must not write under a stale epoch. Any other renewal error (a busy or unreadable
   ledger) is logged and retried at the next tick, until the grant expires; past expiry the process stops too. A stop
-  records `process.stopped`, then clears the grant (from here `/sindri/ping` refuses), requests the shutdown, removes
-  `control.json`, and only then releases the lease, so a client that still finds `control.json` never finds the
-  process answering without the lease. A renewal that finishes afterwards doesn't hold the grant again, and one that
-  lost to the release ends quietly (a stop, not a loss: exit 0).
+  records `process.stopped`, clears the grant, requests the shutdown, removes `control.json`, and only then releases
+  the lease, so no client finds `control.json` once the lease is free for another process. A ping after the clear
+  answers epoch 0, which no record matches, so it reads as not running. A renewal that finishes afterwards doesn't
+  hold the grant again, and one that lost to the release ends quietly (a stop, not a loss: exit 0).
 - **Fencing:** every ledger append checks, in its own transaction, that the writer's grant is the current epoch;
   otherwise `SND-LEASE-003` and nothing is written.
 
@@ -136,7 +136,7 @@ foreign browser `Origin` a 403):
 | Route | Service |
 |---|---|
 | `GET /sindri/status` | `GetStatus`: running, pid, epoch, lease expiry, approved and live profile hashes, each service with its cadence and last run |
-| `GET /sindri/ping` | `PingProcess`: `{pid, epoch}` while it holds the lease; without one (stopping, or lost) 503 `SND-API-001` |
+| `GET /sindri/ping` | `PingProcess`: `{pid, epoch}` |
 | `POST /sindri/stop` | `StopProcess` |
 | `POST /sindri/profile/approve` | `ApproveProfile` (`{hash, confirmed}`) |
 | `GET /sindri/events?after=N` | `StreamEvents` as server-sent events: one event per ledger row, `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second; ends when the client goes away or a stop is requested, so a stop doesn't wait out Kestrel's 30 s graceful shutdown |
