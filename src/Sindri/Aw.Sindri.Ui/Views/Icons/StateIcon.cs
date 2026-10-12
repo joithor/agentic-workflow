@@ -42,6 +42,9 @@ internal sealed class StateIcon : Control
     // Stops the turn in flight, if any.
     private Action? _spin;
 
+    // The Motion.Spin the turn in flight runs on.
+    private TimeSpan _spinning;
+
     // The grid every icon is drawn on, and its stroke.
     private const double Grid = 16;
     private const double Stroke = 1.5;
@@ -50,6 +53,16 @@ internal sealed class StateIcon : Control
     {
         AffectsRender<StateIcon>(ForegroundProperty, GeometryProperty, AngleProperty);
         AutomationProperties.AccessibilityViewProperty.OverrideDefaultValue<StateIcon>(AccessibilityView.Raw);
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StateIcon"/> class. A change to the app's resources re-evaluates
+    /// the turn, so reduced motion switched on mid-turn (Motion.Spin set to 0) stops it where it is, and switched off
+    /// starts it again (§11.4). The handler is the icon's own, so it goes with the icon.
+    /// </summary>
+    public StateIcon()
+    {
+        ResourcesChanged += (_, _) => Turn();
     }
 
     /// <summary>Gets or sets the state glyph.</summary>
@@ -161,7 +174,8 @@ internal sealed class StateIcon : Control
     /// <inheritdoc />
     protected override AutomationPeer OnCreateAutomationPeer() => new NoneAutomationPeer(this);
 
-    // Starts or stops the turn: it runs while Spins is set, the icon is in a window and Motion.Spin is above 0.
+    // Starts or stops the turn: it runs while Spins is set, the icon is in a window and Motion.Spin is above 0. A turn
+    // already running on another Motion.Spin starts over on the new one.
     private void Turn()
     {
         var duration = this.TryFindResource("Motion.Spin", out var value) && value is TimeSpan spin ? spin : TimeSpan.Zero;
@@ -173,8 +187,15 @@ internal sealed class StateIcon : Control
 
         if (_spin is not null)
         {
-            return;
+            if (duration == _spinning)
+            {
+                return;
+            }
+
+            Stop();
         }
+
+        _spinning = duration;
 
         var turning = new CancellationTokenSource();
         _spin = () =>
