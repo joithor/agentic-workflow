@@ -603,6 +603,13 @@ Aw.Sindri.Core.Auth.IHumanTokenStore
 Aw.Sindri.Core.Auth.IHumanTokenStore.Mint(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Auth.HumanToken!>!>
 Aw.Sindri.Core.Auth.IHumanTokenStore.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Auth.HumanToken?>!>
 Aw.Sindri.Core.Auth.IHumanTokenStore.Remove(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Auth.ProverLabel
+Aw.Sindri.Core.Auth.ProverLabel.<Clone>$() -> Aw.Sindri.Core.Auth.ProverLabel!
+Aw.Sindri.Core.Auth.ProverLabel.Allowed.get -> bool
+Aw.Sindri.Core.Auth.ProverLabel.Allowed.init -> void
+Aw.Sindri.Core.Auth.ProverLabel.Deconstruct(out bool Allowed) -> void
+Aw.Sindri.Core.Auth.ProverLabel.Equals(Aw.Sindri.Core.Auth.ProverLabel? other) -> bool
+Aw.Sindri.Core.Auth.ProverLabel.ProverLabel(bool Allowed) -> void
 Aw.Sindri.Core.Commands.ActionClass
 Aw.Sindri.Core.Commands.ActionClass.Decision = 4 -> Aw.Sindri.Core.Commands.ActionClass
 Aw.Sindri.Core.Commands.ActionClass.Desk = 5 -> Aw.Sindri.Core.Commands.ActionClass
@@ -771,6 +778,9 @@ const Aw.Sindri.Core.Events.EventTypes.CommandHandled = "command.handled" -> str
 override Aw.Sindri.Core.Auth.HumanToken.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Auth.HumanToken.GetHashCode() -> int
 override Aw.Sindri.Core.Auth.HumanToken.ToString() -> string!
+override Aw.Sindri.Core.Auth.ProverLabel.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Auth.ProverLabel.GetHashCode() -> int
+override Aw.Sindri.Core.Auth.ProverLabel.ToString() -> string!
 override Aw.Sindri.Core.Commands.CallerContext.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Commands.CallerContext.GetHashCode() -> int
 override Aw.Sindri.Core.Commands.CallerContext.ToString() -> string!
@@ -803,6 +813,8 @@ override Aw.Sindri.Core.Ids.RepoName.GetHashCode() -> int
 override Aw.Sindri.Core.Ids.RepoName.ToString() -> string!
 static Aw.Sindri.Core.Auth.HumanToken.operator !=(Aw.Sindri.Core.Auth.HumanToken? left, Aw.Sindri.Core.Auth.HumanToken? right) -> bool
 static Aw.Sindri.Core.Auth.HumanToken.operator ==(Aw.Sindri.Core.Auth.HumanToken? left, Aw.Sindri.Core.Auth.HumanToken? right) -> bool
+static Aw.Sindri.Core.Auth.ProverLabel.operator !=(Aw.Sindri.Core.Auth.ProverLabel? left, Aw.Sindri.Core.Auth.ProverLabel? right) -> bool
+static Aw.Sindri.Core.Auth.ProverLabel.operator ==(Aw.Sindri.Core.Auth.ProverLabel? left, Aw.Sindri.Core.Auth.ProverLabel? right) -> bool
 static Aw.Sindri.Core.Commands.CallerContext.Http(Aw.Sindri.Core.Commands.CallerClass caller, bool terminal, Aw.Sindri.Core.Commands.ClientLabel client, Aw.Sindri.Core.Ids.RepoName? repo, Aw.Kernel.Ids.IIdGenerator! ids) -> Aw.Sindri.Core.Commands.CallerContext!
 static Aw.Sindri.Core.Commands.CallerContext.operator !=(Aw.Sindri.Core.Commands.CallerContext? left, Aw.Sindri.Core.Commands.CallerContext? right) -> bool
 static Aw.Sindri.Core.Commands.CallerContext.operator ==(Aw.Sindri.Core.Commands.CallerContext? left, Aw.Sindri.Core.Commands.CallerContext? right) -> bool

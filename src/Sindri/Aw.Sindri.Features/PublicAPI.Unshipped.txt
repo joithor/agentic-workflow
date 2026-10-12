@@ -288,6 +288,8 @@ Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.ApproveProfileResponse(
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash Hash, out System.Collections.Generic.IReadOnlyList<string!>! Changes, out bool Approved, out long? Sequence) -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Sequence.get -> long?
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Sequence.init -> void
+Aw.Sindri.Features.GetStatus.GetStatusResponse.ApiVersion.get -> int
+Aw.Sindri.Features.GetStatus.GetStatusResponse.ApiVersion.init -> void
 Aw.Sindri.Features.StopProcess.StopProcessResponse.Deconstruct(out int Pid, out long Epoch, out long? Sequence) -> void
 Aw.Sindri.Features.StopProcess.StopProcessResponse.Sequence.get -> long?
 Aw.Sindri.Features.StopProcess.StopProcessResponse.Sequence.init -> void

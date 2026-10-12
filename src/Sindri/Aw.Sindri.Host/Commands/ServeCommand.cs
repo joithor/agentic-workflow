@@ -3,6 +3,8 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Auth;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
@@ -18,7 +20,9 @@ namespace Aw.Sindri.Host.Commands;
 /// alive). It chooses the port and checks its loopback listener is configured (nothing is bound yet), then takes the
 /// lease, so a second serve is refused before it binds the port; then it listens, records the endpoint, and runs until a
 /// stop request, SIGTERM/SIGINT or a lost lease. A failure to listen records the stop and releases the lease. SIGHUP is
-/// ignored so closing the terminal doesn't stop it.
+/// ignored so closing the terminal doesn't stop it. Once the lease is taken (so a refused second serve never replaces the
+/// running one's token) it mints the per-start human token, and removes it with control.json on the way out. Every
+/// in-process call runs as the caller 'service:host', the only place that caller is set (API spec §2.1).
 /// </summary>
 internal static class ServeCommand
 {
@@ -56,13 +60,28 @@ internal static class ServeCommand
                 return started.Error.Code == SindriErrors.LeaseHeld.Code ? 1 : 2;
             }
 
-            if (!await Listen(app, error).ConfigureAwait(false))
+            if (!await MintToken(app, error).ConfigureAwait(false) || !await Listen(app, error).ConfigureAwait(false))
             {
                 return 2;
             }
 
             return await RunUntilStopped(app, started.Value.Grant).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>Mints this start's human token and holds it; on failure records the stop and releases the lease.</summary>
+    private static async Task<bool> MintToken(WebApplication app, TextWriter error)
+    {
+        var minted = await app.Services.GetRequiredService<IHumanTokenStore>().Mint(CancellationToken.None).ConfigureAwait(false);
+        if (minted.IsError)
+        {
+            _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.ListenFailed)).ConfigureAwait(false);
+            await error.WriteLineAsync($"{minted.Error.Code} serve couldn't write the human token: {minted.Error.Message}").ConfigureAwait(false);
+            return false;
+        }
+
+        app.Services.GetRequiredService<HeldHumanToken>().Hold(minted.Value);
+        return true;
     }
 
     private static async Task<bool> Listen(WebApplication app, TextWriter error)
@@ -75,12 +94,14 @@ internal static class ServeCommand
         catch (Exception e) when (e is IOException or SocketException)   // taken, privileged or refused
         {
             _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.PortInUse)).ConfigureAwait(false);
+            await DropToken(app).ConfigureAwait(false);
             await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} {e.Message} (fix: free the port, or set AW_SINDRI_PORT)").ConfigureAwait(false);
             return false;
         }
         catch (Exception e)   // a hosted service refused to start (ServeListenerCheck among them): never leave the lease held
         {
             _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.ListenFailed)).ConfigureAwait(false);
+            await DropToken(app).ConfigureAwait(false);
             await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} serve couldn't start listening: {e.Message} (fix: see the log above; run sindri doctor)").ConfigureAwait(false);
             return false;
         }
@@ -108,17 +129,29 @@ internal static class ServeCommand
         }
 
         _ = await endpoints.Remove(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);
+        await DropToken(app).ConfigureAwait(false);
         await app.StopAsync(CancellationToken.None).ConfigureAwait(false);
         return app.Services.GetRequiredService<IExitCode>().Code;
     }
 
+    /// <summary>Forgets this start's token and removes its file (with control.json: the next start mints a new one).</summary>
+    private static async Task DropToken(WebApplication app)
+    {
+        app.Services.GetRequiredService<HeldHumanToken>().Clear();
+        _ = await app.Services.GetRequiredService<IHumanTokenStore>().Remove(CancellationToken.None).ConfigureAwait(false);
+    }
+
+    /// <summary>Runs one service in its own scope as the caller 'service:host'.</summary>
     private static async Task<Kernel.Result<TRes>> Call<TReq, TRes>(WebApplication app, TReq request)
         where TReq : notnull
     {
-        var scope = app.Services.CreateAsyncScope();
-        await using (scope.ConfigureAwait(false))
+        using (app.Services.GetRequiredService<ICallerContextAccessor>().EnterService("host"))
         {
-            return await scope.ServiceProvider.GetRequiredService<IService<TReq, TRes>>().Handle(request, CancellationToken.None).ConfigureAwait(false);
+            var scope = app.Services.CreateAsyncScope();
+            await using (scope.ConfigureAwait(false))
+            {
+                return await scope.ServiceProvider.GetRequiredService<IService<TReq, TRes>>().Handle(request, CancellationToken.None).ConfigureAwait(false);
+            }
         }
     }
 
