@@ -3,7 +3,7 @@ ok    lease    free (never held)
 warn  ledger   no ledger yet (fix: sindri)
 fail  profile  not approved (fix: sindri profile approve)
 fail  api      unreachable: no control plane is recorded (fix: sindri)
-warn  context:map no map yet (fix: context map import <file> (or context map build))
+warn  context:map no map yet (fix: sindri context map import <file>)
 ok    context:retention no expired exports; at most 20 retained map versions
 exit 2
 ## sindri --headless (human, terminal)
@@ -57,7 +57,7 @@ ok    lease    free (last epoch 1)
 ok    ledger   schema 3/3
 ok    profile  approved, hash HASH6
 fail  api      unreachable: no control plane is recorded (fix: sindri)
-warn  context:map no map yet (fix: context map import <file> (or context map build))
+warn  context:map no map yet (fix: sindri context map import <file>)
 ok    context:retention no expired exports; at most 20 retained map versions
 exit 2
 ## sindri recipe validate ROOT/recipes/sindri/workflow.step.yaml
