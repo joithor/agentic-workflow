@@ -13,12 +13,12 @@ namespace Aw.Sindri.Ui.Views.Shell;
 
 /// <summary>
 /// The shell window (UI spec §3.2): binds to the shell view model. The code here is view plumbing only: the keys of §8
-/// that U0 serves (F6 cycles top bar, page and sheet; Esc closes the sheet, or Settings over the Not running card; ⌘,
-/// opens Settings), the sheet's drag and its covering below 1100 px, handing the window's bounds and the sheet's width
-/// to the view model to remember, and keeping focus somewhere sensible (§11.2) when the focused control disappears:
-/// closing the sheet returns it to what opened the sheet (the edge tab) or the page region, and a state change that
-/// hides it moves it to its region's neighbour (the health pill in the top bar, the page region in the page). It never
-/// goes nowhere.
+/// that U0 serves (F6 and Shift+F6 cycle top bar, page and sheet, and on macOS ⌘⌥→ and ⌘⌥← too; Esc closes the sheet,
+/// or Settings over the Not running card; ⌘, opens Settings), the sheet's drag and its covering below 1100 px, handing
+/// the window's bounds and the sheet's width to the view model to remember, and keeping focus somewhere sensible (§11.2)
+/// when the focused control disappears: closing the sheet returns it to what opened the sheet (the edge tab) or the page
+/// region, and a state change that hides it moves it to its region's neighbour (the health pill in the top bar, the page
+/// region in the page). It never goes nowhere.
 /// </summary>
 internal sealed partial class ShellWindow : Window
 {
@@ -86,9 +86,9 @@ internal sealed partial class ShellWindow : Window
     /// <inheritdoc />
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        if (e.Key == Key.F6)
+        if (RegionStep(e.Key, e.KeyModifiers, OperatingSystem.IsMacOS()) is { } step)
         {
-            e.Handled = CycleRegion(back: e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+            e.Handled = CycleRegion(back: step < 0);
         }
         else if (e.Key == Key.Escape)
         {
@@ -130,8 +130,8 @@ internal sealed partial class ShellWindow : Window
         return true;
     }
 
-    // F6 (§11.2): the next region (top bar, page, sheet when open) gets focus: the region itself, so Tab then moves
-    // inside it (or its first focusable control when the region itself can't take focus).
+    // F6, or ⌘⌥→ and ⌘⌥← on macOS (§8, §11.2): the next region (top bar, page, sheet when open) gets focus: the
+    // region itself, so Tab then moves inside it (or its first focusable control when the region itself can't take focus).
     private bool CycleRegion(bool back)
     {
         Control[] regions = [.. _regions.Select(this.Get<Control>).Where(c => c.IsEffectivelyVisible && c.IsEffectivelyEnabled)];
@@ -147,7 +147,14 @@ internal sealed partial class ShellWindow : Window
     /// <param name="modifiers">Its modifiers.</param>
     /// <param name="macOS">Whether the app runs on macOS.</param>
     /// <returns>The step, or null.</returns>
-    internal static int? RegionStep(Key key, KeyModifiers modifiers, bool macOS) => throw new NotSupportedException();
+    internal static int? RegionStep(Key key, KeyModifiers modifiers, bool macOS) => (key, modifiers) switch
+    {
+        (Key.F6, KeyModifiers.None) => 1,
+        (Key.F6, KeyModifiers.Shift) => -1,
+        (Key.Right, KeyModifiers.Meta | KeyModifiers.Alt) when macOS => 1,
+        (Key.Left, KeyModifiers.Meta | KeyModifiers.Alt) when macOS => -1,
+        _ => null,
+    };
 
     private static InputElement? FirstFocusable(Visual within) => within.GetVisualDescendants().OfType<InputElement>()
         .FirstOrDefault(c => c.Focusable && c.IsEffectivelyVisible && c.IsEffectivelyEnabled);

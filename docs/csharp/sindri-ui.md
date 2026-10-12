@@ -147,10 +147,9 @@ stale, and it came from the pid and epoch the follow checked with ping; otherwis
 shows Running over Not running or Unreadable. After three failed refreshes the pill keeps "stale" and a banner under
 the top bar reads "Sindri not responding: run `sindri doctor`" in full, since the sentence doesn't fit the pill at
 900 px. The view models carry no Avalonia types; views bind the app's copy through `ShellText` (compiled bindings
-resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar, page and sheet (on macOS, with the default "Use F1, F2, etc. keys as standard function
-keys" off, F6 is the Focus key and reaches the app only with fn held: fn+F6 and fn+Shift+F6; a second binding that
-doesn't clash waits on the owner, since UI spec §8's key table lists the keys); the window's
-minimum is 900 × 600.
+resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar, page and sheet; on macOS ⌘⌥→ / ⌘⌥← do the same (owner decision, 2026-10-12;
+UI spec §8), since with the default "Use F1, F2, etc. keys as standard function keys" off F6 is the Focus key there and
+reaches the app only with fn held (fn+F6 and fn+Shift+F6). Ctrl+F6 isn't bound. The window's minimum is 900 × 600.
 
 **Focus never goes nowhere (§11.2).** When the focused control disappears, focus moves to a neighbour: Refresh keeps
 focus through its in-flight phase and gets it back when the refresh fails; when Sindri answers and Refresh hides, the
@@ -319,7 +318,7 @@ that code and its detail as they are (API spec §3.6).
 | Lane | What |
 |---|---|
 | unit | The view models (the shell, Health, and Settings against the in-memory preferences and a fake OS setting) against the in-memory API, endpoint record and human token; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; Sindri's API goldens (UI spec E-17: `tests/Aw.Sindri.Tests/Golden/Api/{status,ping,events}`, linked into the test output and read through `GoldenFiles`) deserialized through the app's JSON context, the handler's hand-written bodies held to their shape, and the SND-AUTH-001 refusal goldens served verbatim (one retry, then their code and detail; `Api/GoldenContractTests`); the control.json path; the theme (tokens, contrast, Fluent values, no hex outside `Theme/`); the port contracts over their fakes; preferences, deep links, labels |
-| integration | The shell window under Avalonia's headless platform (Skia rendering), one key frame per pre-API state plus Health, the sheet, its edge tab and its covering form, saved as `frames/shell-*.png` under the test output (`artifacts/bin/Aw.Sindri.Ui.Tests/debug/frames/`); F6, Esc and ⌘,; the remembered bounds; Settings (frames `settings-motion-off`, `-on`, `settings-system-reduces-motion`, `settings-text-120`); `Motion.Apply` over a token dictionary; the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the head's adapters against temp directories (the endpoint-record, human-token, preferences, single-instance and tray contracts, owner-only modes, a crashed instance's socket, the listener's checks), the OS motion readers read-only (GNOME over a stand-in gsettings, macOS against `defaults read com.apple.universalaccess reduceMotion`), and `AppLifetime` on a headless window |
+| integration | The shell window under Avalonia's headless platform (Skia rendering), one key frame per pre-API state plus Health, the sheet, its edge tab and its covering form, saved as `frames/shell-*.png` under the test output (`artifacts/bin/Aw.Sindri.Ui.Tests/debug/frames/`); F6 (and ⌘⌥←/→ on macOS), Esc and ⌘,; the remembered bounds; Settings (frames `settings-motion-off`, `-on`, `settings-system-reduces-motion`, `settings-text-120`); `Motion.Apply` over a token dictionary; the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the head's adapters against temp directories (the endpoint-record, human-token, preferences, single-instance and tray contracts, owner-only modes, a crashed instance's socket, the listener's checks), the OS motion readers read-only (GNOME over a stand-in gsettings, macOS against `defaults read com.apple.universalaccess reduceMotion`), and `AppLifetime` on a headless window |
 
 `Avalonia.Headless.XUnit` 12.1.3 is compiled against xUnit v3 3.2.2 and fails discovery under the repo's xUnit v3 4.0.1
 (`MissingMethodException` in `TestIntrospectionHelper.GetTestCaseDetails`). The view tests are plain xUnit v3 facts that

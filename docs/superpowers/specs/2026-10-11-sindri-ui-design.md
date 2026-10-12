@@ -8,7 +8,9 @@ Status:
   protected rows (`answer-grant`, `answer-grant-tokens`, `answer-accept`, `ApproveRecipe`) `cli-only:typed-confirmation`
   from the start, never app buttons, and the engine's queries stay off the
   catalog; §4.4, §7 and E-12 name `answer-grant-tokens` beside `answer-grant` (API §2.1, X30); §4.1's Unreadable row also
-  covers a Sindri refusal after one token re-read and retry. Nothing else changes.
+  covers a Sindri refusal after one token re-read and retry. Owner decision F6 (2026-10-12, review run 4): §8's key
+  table lists `F6` / `Shift+F6` with `⌘⌥→` / `⌘⌥←` as the macOS alternative (and `fn+F6`), and no `Ctrl+F6`. Nothing
+  else changes.
 - **Revision 7 note (owner, 2026-10-11; README X55):** tmux owns every agent session and Warp attaches to it, so
   **Attach joins the live agent** and the human can type into whatever Step is running; the earlier "Sindri can't see
   inside Warp" limit in §6.2 and §6.6 no longer applies, and the `process` target kind is retired (API §8.1 rev 8).
@@ -620,6 +622,7 @@ Linear's model: everything has a key, keys are shown where the action is, and `?
 | `/` | Filter the current list (by id, title, repo) |
 | `?` | Shortcuts sheet |
 | `⌘,` | Settings |
+| `F6` / `Shift+F6` | Next / previous region: top bar, page, sheet (§11.2). On macOS also `⌘⌥→` / `⌘⌥←`: F6 is the Focus key there and reaches the app only with fn held (`fn+F6`), unless "Use F1, F2, etc. keys as standard function keys" is on. No `Ctrl+F6` |
 
 - **Single keys are scoped to the panel or sheet with focus**; typing in a text field never triggers them.
 - **Key bindings come from the catalog's `shortcut`** (E-8) where one exists, so one key never names two actions on a
@@ -735,8 +738,8 @@ on surface-1). Recorded as a proposed edit to DESIGN.md's "Elevation & Depth" le
 
 - **Window:** top bar (navigation, search, health pill) → page title and summary → Home's panels in their fixed
   order (Needs you rows, each row's actions left to right; Running and With you; Queued; Health) → the detail sheet
-  when open (header actions, answer block, launch block, then the rest in reading order). `F6` cycles top bar, page and
-  sheet; `Tab` moves within one; `J`/`K` move between rows across panels.
+  when open (header actions, answer block, launch block, then the rest in reading order). `F6` (on macOS also `⌘⌥→`, §8)
+  cycles top bar, page and sheet; `Tab` moves within one; `J`/`K` move between rows across panels.
 - **Opening the sheet** keeps focus on the row when the sheet sits beside the page; `Enter` again (or `Tab`) moves into
   its first action. When the sheet covers the page (below 1100 px), focus moves to the sheet's heading, and `Esc` or
   back returns it to the row.
