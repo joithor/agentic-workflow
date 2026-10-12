@@ -29,7 +29,7 @@ SND-PROFILE-004 approving needs an interactive terminal: run it yourself and typ
 exit 2
 ## sindri profile approve HASH (session, terminal)
 Type the first 6 characters of HASH to approve it: HASH6
-SND-AUTH-002 ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve <hash> (this CLI ran as a session: CLAUDECODE is set)
+SND-AUTH-002 ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve [<hash>] (this CLI ran as a session: CLAUDECODE is set)
 exit 2
 ## sindri profile approve HASH (human, terminal)
 Type the first 6 characters of HASH to approve it: HASH6

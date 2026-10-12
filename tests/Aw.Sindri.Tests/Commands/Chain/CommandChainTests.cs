@@ -219,7 +219,7 @@ public sealed class CommandChainTests : IAsyncDisposable
             new(_c.H.Profiles.Live.Value.Hash, Confirmed: true), Session);
 
         Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
-        Assert.Equal("ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve <hash>", refused.Error.Message);
+        Assert.Equal("ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve [<hash>]", refused.Error.Message);
         Assert.Equal(EventTypes.CommandHandled, Assert.Single(_c.Events).Envelope.Type);
         Assert.Null((await _c.H.Profiles.Latest(TestContext.Current.CancellationToken)).Value);
     }
