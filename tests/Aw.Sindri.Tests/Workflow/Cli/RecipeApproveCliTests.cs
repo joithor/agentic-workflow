@@ -89,6 +89,31 @@ public sealed class RecipeApproveCliTests : IDisposable
         Assert.Empty((await app.Services.GetRequiredService<IRecipeStore>().All(ct)).Value);
     }
 
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task File_edited_without_raising_its_version_is_SND_RECIPE_007_before_the_prompt()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var app = await Started(ct);
+        var step = await Register(app, ct);
+        var file = Path.Combine(_home.Path, "workflow.step.yaml");
+        await File.WriteAllTextAsync(file, ShippedRecipes.Read("sindri/workflow.step.yaml")
+            .Replace("Run the Step's deterministic checks.", "Run the edited Step's checks.", StringComparison.Ordinal), ct);
+        foreach (var eval in ShippedRecipes.Evals.Where(e => e.StartsWith("sindri/evals/workflow.step/", StringComparison.Ordinal)))
+        {
+            var to = Path.Combine(_home.Path, eval["sindri/".Length..]);
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(to)!);   // why: a file path under the temp home always has a directory
+            await File.WriteAllTextAsync(to, ShippedRecipes.Read(eval), ct);
+        }
+
+        var code = await Commands(app, human: true, "approve workflow.step 1").Approve(file, ct);
+
+        Assert.Equal(2, code);
+        Assert.DoesNotContain("Type '", _out.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith("SND-RECIPE-007 ", _error.ToString(), StringComparison.Ordinal);
+        Assert.Contains($"RCP-VERSION-001: workflow.step version 1 is registered with hash {step.Hash.Display}", _error.ToString(), StringComparison.Ordinal);
+        Assert.Null((await app.Services.GetRequiredService<IRecipeApprovals>().Latest(step.Id, 1, step.Hash, ct)).Value);
+    }
+
     private RecipeDeskCommands Commands(WebApplication app, bool human, string typed)
     {
         var session = new AgentSession(human ? null : "CLAUDECODE is set", Terminal: true, Prover: false);
