@@ -194,9 +194,12 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
     const without = new Set(findCycles(edges.filter((e) => !(e.from === from && e.to === to && e.kind === kind))).map((c) => c.join(">")));
     const closes = cycles.filter((c) => !without.has(c.join(">")));
     if (closes.length === 1) { x.used = true; coveredCycles.add(closes[0]); }
+    const parallel = closes.length === 0 && cycles.some((c) => c.some((n, i) => n === from && c[i + 1] === to));
     x.measured = closes.length === 1 ? closes[0].join(" -> ")
       : closes.length > 1 ? `${closes.length} cycles pass through ${at} (${closes.map((c) => c.join(" -> ")).join("; ")}), more than the one an exception covers`
-      : cycles.some((c) => c.some((n, i) => n === from && c[i + 1] === to)) ? `every cycle through ${at} also has another ${from} -> ${to} edge` : `no cycle passes through ${at}`;
+      : parallel ? `every cycle through ${at} also has another ${from} -> ${to} edge` : `no cycle passes through ${at}`;
+    x.fix = closes.length > 1 ? `break the other cycle through ${at}: the exception covers one`
+      : parallel ? `remove the other ${from} -> ${to} edge: only the excused ${kind} edge may close the cycle` : undefined;
   }
   for (const c of cycles.filter((x) => !coveredCycles.has(x))) fail("DEPS-CYCLE-001", "the declared graph has a cycle", c.join(" -> "), "the graph is acyclic across every edge kind (§4b.1a); a DEPS-CYCLE-001 exception covers the one cycle its excused cli or http edge closes", "delete one edge of the cycle in deps.yaml, or move the shared part into a lower tier");
 
@@ -223,7 +226,7 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
   checkProjects(root, doc, byId, declared, edges, { fail, info, excepted, measure });
 
   for (const x of active.filter((a) => !a.used)) {
-    fail("DEPS-EXC-002", "exception suppresses nothing", `${x.rule} for ${x.subject}: ${x.measured ?? "no projects to measure yet"}`, "an exception exists only while its rule would fail", `delete the ${x.rule} exception for ${x.subject} from deps.yaml`);
+    fail("DEPS-EXC-002", "exception suppresses nothing", `${x.rule} for ${x.subject}: ${x.measured ?? "no projects to measure yet"}`, "an exception exists only while its rule would fail, and a cycle exception covers exactly one cycle", x.fix ?? `delete the ${x.rule} exception for ${x.subject} from deps.yaml`);
   }
   return { fails, info, doc, valid: true };
 }

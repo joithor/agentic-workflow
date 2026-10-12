@@ -134,7 +134,7 @@ only, never the message, which can name the home), with a line that names the ex
 
 The pre-API states (`ShellState`, highest first): **version mismatch** (the status's `apiVersion` differs from
 `AppApiVersion`: a full-window panel with both versions and "quit both and run" around `sindri` in the command chip, no top bar), **not running**
-(S1b's panel and reasons, closing with "Looks again every 2 s", the follower's retry wait), **connecting** (skeleton rows, first load only), **unreadable** (`SND-UI-003`: a banner with
+(S1b's panel and reasons, closing with "Looks again every 2 s", the follower's retry wait), **connecting** (skeleton rows, first load only), **unreadable** (`SND-UI-003`, or Sindri's own 403 after the token retry with its code and detail: a banner with
 the code and `sindri doctor`, its parts in a wrap panel so a long reason wraps and the command moves to its own line
 rather than past the window's edge at 900 px, as the not-responding banner's does; the page keeps its last data and the pill reads "Unreadable · stale"), **stale** (30 s
 without an event, a status or an answered ping, on the injected clock: the pill reads "⌛ stale · updated Ns ago" with
@@ -207,7 +207,7 @@ announcement is a change again) is set only while `LiveSetting` is Off; and a hi
 show it a moment before its text changes. Refresh's "Sending…" (`TopBar`'s `RefreshSending`) does both: the region is in
 the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `live` class) only while
 `Health.IsSending`, which turns on before the text becomes "Sending…" and off before it goes back to its resting
-"Refresh"; it is zero-width and transparent, so it takes no room and shows nothing. If the pass finds it silent, the fallback is a head adapter posting
+"Refresh"; it is zero-width and transparent, so it takes no room and shows nothing. The Unreadable banner, the Not responding banner and the Not running card follow the same rules (WCAG 4.1.3; review run 2): `ShellWindow`'s `UnreadableLive`, `NotRespondingLive` and `NotRunningLive` sit outside the banners, zero-width and transparent, so each is in the tree before its state comes; each is live only while its state holds (`IsUnreadable`, `IsNotRespondingBanner`, `IsNotRunning`), and `ShellViewModel` changes that flag before its announcement ("Unreadable: " or "Not running: " and the reason, or the not-responding sentence), resting at "Sindri" while Off. If the pass finds it silent, the fallback is a head adapter posting
 `NSAccessibilityAnnouncementRequestedNotification` through ObjC interop; no production seam is added before that.
 
 **The owner's VoiceOver pass** (a throwaway probe window: a polite `TextBlock` changing every 3 s, an assertive one, a
@@ -311,16 +311,16 @@ P2's goldens (`tests/Aw.Sindri.Tests/Golden/Api/**`) and U1's spec-shaped ones (
 Every call carries this start's human token (`IHumanTokenSource`, read at each call; see the caller headers
 above). A call Sindri refuses with 403 `SND-AUTH-001` (a missing or stale token) is retried exactly once with the token
 read again from `auth/human.token`, since a restarted control plane has minted a new one; there is never a third call.
-A call refused after that retry (or any other 403 with Sindri's ProblemDetails) is the **unreadable** banner with
+A follower call (ping, status, the stream) refused after that retry (or any other 403 with Sindri's ProblemDetails) is the **unreadable** banner with
 Sindri's code and `detail` as they are ("SND-AUTH-001: A human caller needs this start's token in X-Sindri-Token (fix:
 restart the app or rerun the command)"), never the token. The app keeps looking every 2 s and recovers on its own once
 the token is good. A ping refused while following ends the follow, so the window names the refusal within one ping
-beat (10 s).
+beat (10 s). A refused Refresh click counts only as a failed refresh; the next ping beat shows the refusal.
 
 1. The endpoint-record port (`IEndpointRecordSource`) reads `control.json`. The desktop adapter reads it from
    `AW_SINDRI_HOME`, else `$AW_STATE_DIR/sindri-app`, else `~/.agentic-workflow/sindri-app`, the same place the control
-   plane writes it. No record means "Not running". A record whose URL isn't on this machine (loopback: 127.0.0.1, ::1
-   or localhost) is refused as unreadable, with the reason and the record's path; the app never calls that address.
+   plane writes it. No record means "Not running". A record whose URL isn't on this machine (loopback: 127.0.0.0/8, ::1
+   or localhost) reads as Not running with "The endpoint record can't be read: … isn't on this machine" and the record's path; the app never calls that address.
 2. `GET /sindri/ping` must answer the record's pid **and** epoch; otherwise the record is stale and reads as "Not running".
 3. `GET /sindri/status` fills the window. A lower epoch than the last one means a new ledger, so the stream cursor
    starts over. Each `/sindri/events` event (server-sent events, resumed from the last
@@ -364,8 +364,8 @@ Either way `sindri` is the binary in a publish directory (framework-dependent: a
 `libAvaloniaNative`; without them it exits 2 with `SND-UI-004: TypeInitializationException`):
 `bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh <dir>` copies all of them. Or point
 `AW_SINDRI_UI` at it; under `dotnet run` the base directory is the host's build output, so set `AW_SINDRI_UI`. The app
-depends on nothing else about how `sindri` is built: it talks to the control plane only through `control.json` and the
-HTTP API.
+depends on nothing else about how `sindri` is built: it talks to the control plane only through the HTTP API and two files under its home, `control.json` and
+`auth/human.token`.
 
 **`opened` is only "started".** `sindri` starts `sindri-ui` detached with its output to `/dev/null` and reports
 `opened (sindri-ui, pid N)` as soon as the process starts, so the line can still claim success when that `sindri-ui`
@@ -376,7 +376,7 @@ see its exit code and standard error.
 **A declared edge with a cycle exception (owner decision, 2026-10-12).** Starting `sindri-ui` from `sindri` is the
 `Sindri -> SindriUi` cli edge in `deps.yaml`. It closes a cycle with the `SindriUi -> Sindri` http edge, so it carries a
 `DEPS-CYCLE-001` exception that names that edge: the launch only spawns a separate process, shares no code or data,
-and Sindri's HTTP API stays the app's only contract. The edge is `status: planned` only because check-deps doesn't
+and Sindri's HTTP API (with `control.json` and `auth/human.token`) stays the app's only contract. The edge is `status: planned` only because check-deps doesn't
 scan C# for cli edges (a current edge its scan can't find fails `DEPS-STALE-001`).
 
 ## Errors
@@ -396,7 +396,7 @@ that code and its detail as they are (API spec §3.6).
 
 | Lane | What |
 |---|---|
-| unit | The view models (the shell, Health, and Settings against the in-memory preferences and a fake OS setting) against the in-memory API, endpoint record and human token; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; the control.json path; the theme (tokens, contrast, Fluent values, no hex outside `Theme/`); the port contracts over their fakes; preferences, deep links, labels |
+| unit | The view models (the shell, Health, and Settings against the in-memory preferences and a fake OS setting) against the in-memory API, endpoint record and human token; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; Sindri's API goldens (UI spec E-17: `tests/Aw.Sindri.Tests/Golden/Api/{status,ping,events}`, linked into the test output and read through `GoldenFiles`) deserialized through the app's JSON context, the handler's hand-written bodies held to their shape, and the SND-AUTH-001 refusal goldens served verbatim (one retry, then their code and detail; `Api/GoldenContractTests`); the control.json path; the theme (tokens, contrast, Fluent values, no hex outside `Theme/`); the port contracts over their fakes; preferences, deep links, labels |
 | integration | The shell window under Avalonia's headless platform (Skia rendering), one key frame per pre-API state plus Health, the sheet, its edge tab and its covering form, saved as `frames/shell-*.png` under the test output (`artifacts/bin/Aw.Sindri.Ui.Tests/debug/frames/`); F6, Esc and ⌘,; the remembered bounds; Settings (frames `settings-motion-off`, `-on`, `settings-system-reduces-motion`, `settings-text-120`); `Motion.Apply` over a token dictionary; the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the head's adapters against temp directories (the endpoint-record, human-token, preferences, single-instance and tray contracts, owner-only modes, a crashed instance's socket, the listener's checks), the OS motion readers read-only (GNOME over a stand-in gsettings, macOS against `defaults read com.apple.universalaccess reduceMotion`), and `AppLifetime` on a headless window |
 
 `Avalonia.Headless.XUnit` 12.1.3 is compiled against xUnit v3 3.2.2 and fails discovery under the repo's xUnit v3 4.0.1

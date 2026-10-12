@@ -200,7 +200,7 @@ internal static partial class Labels
     /// <summary>The freshness word after 30 s with no event or ping.</summary>
     internal const string Stale = "stale";
 
-    /// <summary>The health pill's word for SND-UI-003, an answer this build can't read (§4.1 Unreadable).</summary>
+    /// <summary>The health pill's word for SND-UI-003, an answer this build can't read, or Sindri's 403 after the token retry (§4.1 Unreadable).</summary>
     internal const string Unreadable = "Unreadable";
 
     /// <summary>The control plane answers but holds no lease.</summary>

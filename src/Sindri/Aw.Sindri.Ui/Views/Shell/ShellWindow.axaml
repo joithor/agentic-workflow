@@ -15,6 +15,11 @@
        window. Each pre-API state is a panel the view model makes visible; the view decides nothing. -->
   <Window.Styles>
     <StyleInclude Source="avares://Aw.Sindri.Ui/Views/Shell/ShellStyles.axaml" />
+    <!-- The state live regions below are live only while their state holds, so their resting text, set once the gate is
+         off, is never spoken (docs/csharp/sindri-ui.md "LiveSetting on macOS"). -->
+    <Style Selector="TextBlock.live-region.live">
+      <Setter Property="AutomationProperties.LiveSetting" Value="Polite" />
+    </Style>
   </Window.Styles>
 
   <Panel>
@@ -244,6 +249,17 @@
       </Panel>
     </DockPanel>
 
+    <!-- WCAG 4.1.3: the Unreadable banner, the Not responding banner and the Not running card announce themselves through
+         polite live regions, as Refresh's "Sending…" does: a TextBlock whose Text changes, with no separate name, never "",
+         live only while its state holds (the view model changes the flag before the text). They sit here, outside the
+         banners, so each is in the tree before its state comes and the text change is what is spoken; invisible and
+         zero-width, so they take no room and show nothing. -->
+    <TextBlock x:Name="UnreadableLive" Classes="live-region" Classes.live="{Binding IsUnreadable}" Text="{Binding UnreadableAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <TextBlock x:Name="NotRespondingLive" Classes="live-region" Classes.live="{Binding IsNotRespondingBanner}" Text="{Binding NotRespondingAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <TextBlock x:Name="NotRunningLive" Classes="live-region" Classes.live="{Binding IsNotRunning}" Text="{Binding NotRunningAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- The palette and the ? sheet (§8): layers over everything, shown by their view models; Esc closes the topmost. -->
     <Panel x:Name="PaletteLayer" IsVisible="{Binding Palette.IsOpen}">
       <root:CommandPalette x:Name="CommandPalette" DataContext="{Binding Palette}" />

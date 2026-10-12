@@ -51,12 +51,6 @@ internal sealed partial class ShellViewModel : ObservableObject
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
     }
 
-    /// <summary>The command palette (§8: ⌘K).</summary>
-    public CommandPaletteViewModel Palette { get; }
-
-    /// <summary>The shortcuts sheet (§8: ?).</summary>
-    public ShortcutsViewModel Shortcuts { get; }
-
     /// <summary>The app's copy, for the view.</summary>
     public ShellText Text { get; } = ShellText.Instance;
 
@@ -270,8 +264,12 @@ internal sealed partial class ShellViewModel : ObservableObject
         {
             case nameof(HealthViewModel.State):
                 Changed(_stateProperties);
+                Announce();
                 break;
             case nameof(HealthViewModel.Reason):
+                OnChanged(e.PropertyName);
+                Announce();
+                break;
             case nameof(HealthViewModel.ReasonDetail):
                 OnChanged(e.PropertyName);
                 break;
@@ -285,6 +283,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         if (e.PropertyName == nameof(HealthPill.IsNotResponding))
         {
             OnChanged(nameof(IsNotRespondingBanner));
+            Announce();
         }
     }
 
