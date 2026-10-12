@@ -752,3 +752,28 @@ static readonly Aw.Context.Core.ContextErrors.SourceNotConfigured -> Aw.Kernel.E
 static readonly Aw.Context.Core.ContextErrors.SourceUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.StoreUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.UnknownAnchor -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Onyx.OnyxRecordIdentity
+Aw.Context.Core.Onyx.OnyxRecordIdentity.<Clone>$() -> Aw.Context.Core.Onyx.OnyxRecordIdentity!
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Alias.get -> string?
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Alias.init -> void
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Canonical.get -> Aw.Context.Core.Sources.RecordKey
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Canonical.init -> void
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Deconstruct(out Aw.Context.Core.Sources.RecordKey Canonical, out Aw.Context.Core.Sources.RecordKind Kind, out string? Alias) -> void
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Equals(Aw.Context.Core.Onyx.OnyxRecordIdentity? other) -> bool
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Kind.get -> Aw.Context.Core.Sources.RecordKind
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Kind.init -> void
+Aw.Context.Core.Onyx.OnyxRecordIdentity.OnyxRecordIdentity(Aw.Context.Core.Sources.RecordKey Canonical, Aw.Context.Core.Sources.RecordKind Kind, string? Alias) -> void
+Aw.Context.Core.Onyx.OnyxRecordKeys
+Aw.Context.Core.Sources.SourceHit.Aliases.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Sources.SourceHit.Aliases.init -> void
+override Aw.Context.Core.Onyx.OnyxRecordIdentity.Equals(object? obj) -> bool
+override Aw.Context.Core.Onyx.OnyxRecordIdentity.GetHashCode() -> int
+override Aw.Context.Core.Onyx.OnyxRecordIdentity.ToString() -> string!
+static Aw.Context.Core.Onyx.OnyxRecordIdentity.operator !=(Aw.Context.Core.Onyx.OnyxRecordIdentity? left, Aw.Context.Core.Onyx.OnyxRecordIdentity? right) -> bool
+static Aw.Context.Core.Onyx.OnyxRecordIdentity.operator ==(Aw.Context.Core.Onyx.OnyxRecordIdentity? left, Aw.Context.Core.Onyx.OnyxRecordIdentity? right) -> bool
+static Aw.Context.Core.Onyx.OnyxRecordKeys.Identify(Aw.Context.Core.Sources.ExternalId document, string! sourceType, string! semanticIdentifier, string? link, System.Collections.Generic.IReadOnlySet<string!>! teams) -> Aw.Context.Core.Onyx.OnyxRecordIdentity?
+static Aw.Context.Core.Onyx.OnyxRecordKeys.KindOf(Aw.Context.Core.Sources.RecordKey canonical) -> Aw.Context.Core.Sources.RecordKind
+static readonly Aw.Context.Core.ContextErrors.OnyxDocumentNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.OnyxKeyNotServiceAccount -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.OnyxKeyRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.OnyxUnexpectedReply -> Aw.Kernel.ErrorDefinition!
