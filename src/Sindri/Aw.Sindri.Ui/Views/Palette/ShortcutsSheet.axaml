@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:palette="using:Aw.Sindri.Ui.ViewModels.Palette"
-             x:Class="Aw.Sindri.Ui.Views.ShortcutsSheet"
+             x:Class="Aw.Sindri.Ui.Views.Palette.ShortcutsSheet"
              x:DataType="palette:ShortcutsViewModel">
   <!-- The `?` sheet (UI spec §8): §8's keys and the catalog's own shortcuts on a Surface3 card over the scrim; it takes
        focus when it opens (Tab cycles inside it) and Esc closes it (the window). -->

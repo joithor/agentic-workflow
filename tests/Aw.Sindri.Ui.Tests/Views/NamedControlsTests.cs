@@ -5,6 +5,7 @@ using Avalonia.Headless;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Tests.Theme;
 using Aw.Sindri.Ui.Views;
+using Aw.Sindri.Ui.Views.Palette;
 using Aw.Sindri.Ui.Views.Shell;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -18,13 +19,13 @@ public sealed class NamedControlsTests
 {
     private static readonly XNamespace _x = "http://schemas.microsoft.com/winfx/2006/xaml";
 
-    public static TheoryData<string> Views => ["SettingsView", "CommandPalette", "ShortcutsSheet", "Shell/ShellWindow", "Shell/TopBar", "Shell/HomePage", "Shell/HealthPage", "Shell/PlaceholderPage"];
+    public static TheoryData<string> Views => ["SettingsView", "Palette/CommandPalette", "Palette/ShortcutsSheet", "Shell/ShellWindow", "Shell/TopBar", "Shell/HomePage", "Shell/HealthPage", "Shell/PlaceholderPage"];
 
     private static Control Construct(string view) => view switch
     {
         "SettingsView" => new SettingsView(),
-        "CommandPalette" => new CommandPalette(),
-        "ShortcutsSheet" => new ShortcutsSheet(),
+        "Palette/CommandPalette" => new CommandPalette(),
+        "Palette/ShortcutsSheet" => new ShortcutsSheet(),
         "Shell/ShellWindow" => new ShellWindow(),
         "Shell/TopBar" => new TopBar(),
         "Shell/HomePage" => new HomePage(),

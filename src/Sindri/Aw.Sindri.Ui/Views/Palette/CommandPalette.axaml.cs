@@ -6,7 +6,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Sindri.Ui.ViewModels.Palette;
 
-namespace Aw.Sindri.Ui.Views;
+namespace Aw.Sindri.Ui.Views.Palette;
 
 /// <summary>
 /// The command palette's view (UI spec §8): keys only. ↑/↓ move the selection, Enter runs it and Esc closes, caught

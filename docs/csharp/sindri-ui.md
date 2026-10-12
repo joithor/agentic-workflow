@@ -250,7 +250,7 @@ re-reads the status and the services view at most once per view per 250 ms (§9.
 `ControlPlaneFollower.RefreshOnSignal`): the first event of a burst re-reads at once, the rest collapse into one
 re-read when the window ends. E-15's `invalidates` waits for P5.
 
-**The palette (§8, `ViewModels/Palette/*`, `Views/CommandPalette*`).** ⌘K (Ctrl+K off macOS), a click on the ⌘K field,
+**The palette (§8, `ViewModels/Palette/*`, `Views/Palette/CommandPalette*`, `Views/Palette/ShortcutsSheet*`).** ⌘K (Ctrl+K off macOS), a click on the ⌘K field,
 or Enter or Space on it opens it with focus in its field. Sections: **Actions**, every catalog row not in Sindri,
 ready first, then pending (shown with "arrives in <phase>", never run), then cli-only ("Copy: sindri …"; Enter copies,
 "Copied" for 1.5 s, the palette stays open); U1 has no selected row, so Actions lists the whole catalog (Q3). **Go to**:

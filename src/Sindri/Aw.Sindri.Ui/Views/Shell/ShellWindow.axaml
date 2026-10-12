@@ -5,7 +5,7 @@
         xmlns:views="using:Aw.Sindri.Ui.Views.Shell"
         xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
         xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
-        xmlns:root="using:Aw.Sindri.Ui.Views"
+        xmlns:root="using:Aw.Sindri.Ui.Views.Palette"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
         x:DataType="shell:ShellViewModel"
         Title="{Binding Text.Sindri}"

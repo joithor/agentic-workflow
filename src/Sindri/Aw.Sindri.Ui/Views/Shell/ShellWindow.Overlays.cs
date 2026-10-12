@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Aw.Sindri.Ui.ViewModels.Palette;
+using Aw.Sindri.Ui.Views.Palette;
 
 namespace Aw.Sindri.Ui.Views.Shell;
 

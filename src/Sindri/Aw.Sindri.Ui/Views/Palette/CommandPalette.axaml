@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:palette="using:Aw.Sindri.Ui.ViewModels.Palette"
-             x:Class="Aw.Sindri.Ui.Views.CommandPalette"
+             x:Class="Aw.Sindri.Ui.Views.Palette.CommandPalette"
              x:DataType="palette:CommandPaletteViewModel">
   <!-- The command palette (UI spec §8, prototype.html): a scrim over the window and a Surface3 card with the query field
        and its sections (Actions, Go to, Sindri). Each entry shows its label, its status (ready, "arrives in P3",
