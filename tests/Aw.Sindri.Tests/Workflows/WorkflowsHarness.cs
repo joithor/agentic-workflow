@@ -114,7 +114,7 @@ internal sealed class WorkflowsHarness : IDisposable
         var document = sindri.GetRequiredService<IRecipeReader>().Read(yaml, "recipe.yaml").Document;
         Assert.NotNull(document);
         var recipe = document.Recipe with { Hash = null };
-        var text = System.Text.Encoding.UTF8.GetString(Aw.Kernel.Json.AwJson.Serialize(recipe, json));
+        var text = System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(recipe, json));
         var added = sindri.GetRequiredService<IRecipeStore>()
             .Add(new RegisteredRecipe(recipe.Id, recipe.Version, document.Hash, text, recipe.Base, DateTimeOffset.UtcNow), ct).AsTask().GetAwaiter().GetResult();
         Assert.False(added.IsError, added.IsError ? added.Error.Message : null);
