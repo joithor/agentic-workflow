@@ -113,4 +113,20 @@ public sealed class ShellPreferencesTests
 
         Assert.Equal(0, _store.Writes);
     }
+    // §12.3 paletteHistory: each entry run from the palette is remembered, a repeat moving to the newest end.
+    [Fact]
+    public async Task Palette_entries_run_are_remembered_newest_last()
+    {
+        var shell = await Shell();
+        shell.Palette.Open();
+
+        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Queue"), Token);
+        shell.Palette.Open();
+        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Decisions"), Token);
+        shell.Palette.Open();
+        await shell.Palette.Run(shell.Palette.Entries.First(e => e.Id == "go:Queue"), Token);
+
+        Assert.Equal(["go:Decisions", "go:Queue"], (await Stored()).PaletteHistory, StringComparer.Ordinal);
+        Assert.Equal(PageId.Queue, shell.CurrentPage);
+    }
 }
