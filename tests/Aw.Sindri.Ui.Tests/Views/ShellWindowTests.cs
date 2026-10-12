@@ -710,6 +710,93 @@ public sealed class ShellWindowTests : IDisposable
         Frame(window, "unreadable");
     });
 
+    // Review run 2 (accessibility-tester-0, WCAG 4.1.3): the Unreadable banner, the Not responding banner and the Not
+    // running card each announce themselves through a polite TextBlock, as "Sending…" does ("LiveSetting on macOS"): no
+    // separate name, never "", live only while its state holds, the announcement set while Polite and its resting text
+    // while Off, and in the tree before its state comes so the text change is what is spoken.
+    [Fact]
+    public Task Unreadable_is_announced_through_a_polite_live_region() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        var changes = LiveChanges(window, "UnreadableLive");
+
+        _server.UnreadableStatus = true;
+        await shell.Health.Refresh(Token);
+        Settle(window);
+        Assert.Equal(ShellState.Unreadable, shell.State);
+        _server.UnreadableStatus = false;
+        await shell.Health.Refresh(Token);
+        Settle(window);
+
+        AnnouncedOnly(window, "UnreadableLive", changes, Labels.Unreadable + ": SND-UI-003");
+    });
+
+    [Fact]
+    public Task Not_responding_is_announced_through_a_polite_live_region() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        var changes = LiveChanges(window, "NotRespondingLive");
+
+        await GoStale(window, shell, BarState.NotResponding);
+        Settle(window);
+        Assert.True(shell.IsNotRespondingBanner);
+        (_server.FailStatus, _server.FailPing) = (false, false);
+        await shell.Health.Refresh(Token);
+        Settle(window);
+
+        AnnouncedOnly(window, "NotRespondingLive", changes, Labels.NotResponding);
+    });
+
+    [Fact]
+    public Task Not_running_is_announced_through_a_polite_live_region() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        var changes = LiveChanges(window, "NotRunningLive");
+
+        _records.Remove();
+        _server.GoDown();
+        _clock.Advance(HealthViewModel.PingEvery);
+        await Until(() => shell.State == ShellState.NotRunning);
+        Settle(window);
+        _server.ComeUp();
+        _records.Write(A.Record());
+        _clock.Advance(HealthViewModel.RetryEvery);
+        await Until(() => shell.State == ShellState.Normal);
+        Settle(window);
+
+        AnnouncedOnly(window, "NotRunningLive", changes, Labels.NotRunning + ": ");
+    });
+
+    // Every change of a live region's text, with the live setting it had when it changed.
+    private static List<(string? Text, AutomationLiveSetting Live)> LiveChanges(Window window, string name)
+    {
+        var live = Named<TextBlock>(window, name);
+        var changes = new List<(string? Text, AutomationLiveSetting Live)>();
+        live.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBlock.TextProperty)
+            {
+                changes.Add((live.Text, AutomationProperties.GetLiveSetting(live)));
+            }
+        };
+        Assert.True(live.IsEffectivelyVisible, $"{name} isn't in the tree before its state comes");
+        return changes;
+    }
+
+    private static void AnnouncedOnly(Window window, string name, List<(string? Text, AutomationLiveSetting Live)> changes, string announced)
+    {
+        var live = Named<TextBlock>(window, name);
+        Assert.True(string.IsNullOrEmpty(AutomationProperties.GetName(live)), $"{name} has a separate name");
+        Assert.Equal((0d, 0d), (live.Bounds.Width, live.Opacity));
+        Assert.Contains(changes, c => c.Live == AutomationLiveSetting.Polite && c.Text!.StartsWith(announced, StringComparison.Ordinal));
+        Assert.All(changes, c => Assert.False(string.IsNullOrEmpty(c.Text)));
+        Assert.All(changes, c => Assert.Equal(c.Text == Labels.Sindri ? AutomationLiveSetting.Off : AutomationLiveSetting.Polite, c.Live));
+        Assert.Equal((Labels.Sindri, AutomationLiveSetting.Off), (live.Text, AutomationProperties.GetLiveSetting(live)));
+    }
+
     [Fact]
     public Task Stale_says_so_in_the_pill() => OnUi(async () =>
     {
