@@ -4007,3 +4007,7 @@ Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.Summaries(System.Threading
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.Summary(Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe! recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>!>
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.View(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Validation.RecipeRegistryView!>!>
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.Validation(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Validation.ValidationContext!>!>
+Aw.Sindri.Core.Control.ProcessAncestor.Executable.get -> string?
+Aw.Sindri.Core.Control.ProcessAncestor.Executable.init -> void
+Aw.Sindri.Core.Control.IHarnessVersions
+Aw.Sindri.Core.Control.IHarnessVersions.Read(string! command, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>

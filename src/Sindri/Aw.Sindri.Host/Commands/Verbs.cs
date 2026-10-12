@@ -63,9 +63,15 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             : await output.Text($"Profile valid: {valid.Value.Source}\nhash {valid.Value.Hash.Value}, {state}\n", valid.Value.Approved ? 0 : 1).ConfigureAwait(false);
     }
 
-    internal async Task<int> Doctor(bool json, CancellationToken ct)
+    internal async Task<int> Doctor(bool json, CancellationToken ct, Func<CancellationToken, ValueTask<IReadOnlyList<DoctorCheck>>>? harnesses = null)
     {
         var report = (await scope.GetRequiredService<IService<RunDoctorRequest, RunDoctorResponse>>().Handle(new RunDoctorRequest(), ct).ConfigureAwait(false)).Value;
+        if (harnesses is not null)   // the pinned harness probe's lines (engine spec §6.2)
+        {
+            DoctorCheck[] checks = [.. report.Checks, .. await harnesses(ct).ConfigureAwait(false)];
+            report = new RunDoctorResponse(checks, DoctorRules.ExitCode(checks));
+        }
+
         if (json)
         {
             return await output.Json(report, report.ExitCode).ConfigureAwait(false);

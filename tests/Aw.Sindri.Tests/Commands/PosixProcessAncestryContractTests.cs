@@ -17,6 +17,7 @@ public sealed class PosixProcessAncestryContractTests : ProcessAncestryContract
     /// <summary>
     /// A parent is named as it was invoked (argv[0], as ps shows it), not by its executable's file: Claude Code runs as
     /// '…/claude/versions/2.1.296', invoked through a 'claude' link. Here a shell runs through a link named 'aw-fake-harness'.
+    /// The executable path is the file the OS runs, the link's target (engine spec §6.2: the probe records both).
     /// </summary>
     [Fact(Timeout = 20_000)]
     public async Task A_parent_is_named_as_it_was_invoked_not_by_its_executable()
@@ -32,7 +33,7 @@ public sealed class PosixProcessAncestryContractTests : ProcessAncestryContract
 
             var parent = new PosixProcessAncestry().Ancestors(child, 1);
 
-            Assert.Equal(new ProcessAncestor(harness.Id, "aw-fake-harness"), Assert.Single(parent));
+            Assert.Equal(new ProcessAncestor(harness.Id, "aw-fake-harness") { Executable = "/bin/sh" }, Assert.Single(parent));   // the executable is the link's target
         }
         finally
         {
