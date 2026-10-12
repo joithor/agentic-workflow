@@ -670,6 +670,7 @@ Aw.Sindri.Core.Commands.ClientLabel.Ui = 2 -> Aw.Sindri.Core.Commands.ClientLabe
 Aw.Sindri.Core.Commands.CliForm
 Aw.Sindri.Core.Commands.CliForm.<Clone>$() -> Aw.Sindri.Core.Commands.CliForm!
 Aw.Sindri.Core.Commands.CliForm.Equals(Aw.Sindri.Core.Commands.CliForm? other) -> bool
+Aw.Sindri.Core.Commands.CliForm.Fill<TId>(string! placeholder, TId id) -> Aw.Kernel.Result<Aw.Sindri.Core.Commands.CliForm!>!
 Aw.Sindri.Core.Commands.CliForm.Text.get -> string!
 Aw.Sindri.Core.Commands.CommandAccepted
 Aw.Sindri.Core.Commands.CommandAccepted.<Clone>$() -> Aw.Sindri.Core.Commands.CommandAccepted!

@@ -133,6 +133,7 @@ foreign browser `Origin` a 403):
 |---|---|
 | `GET /sindri/status` | `GetStatus`: running, pid, epoch, lease expiry, approved and live profile hashes, each service with its cadence and last run |
 | `GET /sindri/ping` | `PingProcess`: `{pid, epoch}` |
+| `GET /sindri/commands` | `ListCommands`: the command catalog (Command catalog, below) |
 | `POST /sindri/stop` | `StopProcess` |
 | `POST /sindri/profile/approve` | `ApproveProfile` (`{hash, confirmed}`) |
 | `GET /sindri/events?after=N` | `StreamEvents` as server-sent events: one event per ledger row, `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second; ends when the client goes away or a stop is requested, so a stop doesn't wait out Kestrel's 30 s graceful shutdown |
@@ -226,7 +227,41 @@ A row with `NeedsTerminal` narrows any class to a human at a terminal.
 
 ## Command catalog
 
-Filled by API P1's unit C (`GET /sindri/commands`, the rows and their UI status, the catalog checks).
+`ICommandCatalog` (Core) is implemented by the Host (`Host/Catalog/CommandCatalog.cs`), because routes and CLI forms are
+Host facts: `ShellRows` (S1's shipped rows) and `PendingRows` (API P2–P10a's actions, registered before their phase so
+the app and doctor can list them; each phase binds its command type and flips its rows to `ready`). The engine and
+context lanes add their own rows (the engine's `ApplyCommand:<variant>` rows land with the engine, not P1).
+
+One row per **action id**: a command (`StopProcess`) or a variant (`CloseItem:cancelled`). A row carries its command
+type and variant, action class, the services it grants (desk rows), `NeedsTerminal`, `SelfAudited`, `Destructive` (the
+app confirms first), `ReadsViews` (disabled while the views rebuild), an optional `Shortcut`, the method and route, the
+CLI form and the UI status: `ready`, `pending:<phase>` or `cli-only:<reason>`.
+
+| Action | Class | Callers | UI |
+|---|---|---|---|
+| `StopProcess` | desk (destructive, self-audited) | human+terminal, human, service:host | `ready` |
+| `ApproveProfile` | protected (terminal) | human+terminal | `cli-only:typed-confirmation` |
+| `RunDoctor`, `ValidateProfile` | local | none (CLI only) | `cli-only:local` |
+| P2–P10a actions | per API spec §3.2 | per the table above | `pending:<phase>` |
+
+`GET /sindri/commands` (a query: any caller) answers `{rows: [{action, class, allowedCallers, terminal, method, route,
+cli, ui, destructive, readsViews, shortcut}]}` sorted by action id. `allowedCallers` comes from the authorization table
+(`human+terminal`, `human`, `session`, `service`, `service:<name>`); a terminal-bound row lists only `human+terminal`, and
+`local` and `step-report` rows list none.
+
+**CLI forms (UI spec E-16):** `CliForm.Parse` accepts `sindri` followed by lower-case words, fixed `--flags`,
+`<placeholders>` and `[optional parts]` made of those, and refuses any control, bidi or invisible character (named by
+code point, never echoed). `CliForm.Fill(placeholder, id)` substitutes a typed id over text, and only one whose text is
+letters, digits, `.`, `_`, `:` and `-`, starting with a letter or digit.
+
+**Checks** (`tests/Aw.Sindri.Tests/Catalog/`, `Cqrs/`): every row's CLI parses; no `shortcut` uses a reserved key
+(`G J K O A T B Y C R / ?`); `cli-only` only on terminal-bound or `local` rows; no `pending:<phase>` names a shipped
+phase (`CatalogRules.ShippedPhases`, which each phase extends); every non-pending row's route is mapped; every event type
+is in `EventCatalog`, and `command.handled` isn't public. The architecture rules (API spec §2.5) run in `Aw.Sindri.Tests`
+because they need Host internals: `ARCH-CQRS-001` (every GET serves an `IQuery`, every POST an `ICommand`, or an `IIssue`
+on the four carve-out routes with `issue` rows; over the endpoint data source), `ARCH-CQRS-002` (no query handler takes
+`ILedgerStore`, `ILease` or `IApprovals`; `GetStatusService` and `StreamEventsService` are allowlisted until P2's
+read-only ports) and `ARCH-CQRS-003` (every command and issue has its row; a classified command has variant rows).
 
 ## Proving it
 
