@@ -213,5 +213,11 @@ check "curl_flags_drop_terminal_and_token: a missing token file is an error with
 prove "$H" curl --no-token GET /sindri/status >/dev/null 2>&1; rc=$?
 check "curl_flags_drop_terminal_and_token: --no-token needs no token file" "$rc" "0"
 
+# --- with_tty_under_set_e_outlives_its_feeder ---
+# A caller with errexit on, and a command that runs past the feeder's exit: with_tty returns the command's status.
+out="$(bash -c 'set -euo pipefail; source "$1"; with_tty sh -c "sleep 0.6; echo hi; exit 0" </dev/null; echo "after"' _ "$ROOT/scripts/lib/with-tty.sh" 2>&1)"; rc=$?
+check "with_tty_under_set_e_outlives_its_feeder: the caller carries on" "$rc" "0"
+contains "with_tty_under_set_e_outlives_its_feeder: the caller reaches its next line" "$out" "after"
+
 if [ "$fail" -ne 0 ]; then echo "FAIL: sindri-prove tests"; exit 1; fi
 echo "PASS: sindri-prove tests"
