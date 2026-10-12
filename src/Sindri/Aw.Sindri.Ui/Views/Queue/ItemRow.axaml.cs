@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Queue;
@@ -11,6 +12,9 @@ internal sealed partial class ItemRow : UserControl
     public static readonly RoutedEvent<RoutedEventArgs> OpenEvent =
         RoutedEvent.Register<ItemRow, RoutedEventArgs>(nameof(Open), RoutingStrategies.Bubble);
 
+    /// <summary>Defines <see cref="Compact"/>.</summary>
+    public static readonly StyledProperty<bool> CompactProperty = AvaloniaProperty.Register<ItemRow, bool>(nameof(Compact));
+
     public ItemRow()
     {
         InitializeComponent();
@@ -21,6 +25,13 @@ internal sealed partial class ItemRow : UserControl
     {
         add => AddHandler(OpenEvent, value);
         remove => RemoveHandler(OpenEvent, value);
+    }
+
+    /// <summary>True for Home's half-width panels: id, title, state and age only.</summary>
+    public bool Compact
+    {
+        get => GetValue(CompactProperty);
+        set => SetValue(CompactProperty, value);
     }
 
     /// <summary>The row's item id, or empty.</summary>

@@ -223,8 +223,8 @@
             <Thumb x:Name="SheetGrip" Classes="sheet-grip" DockPanel.Dock="Left" Cursor="SizeWestEast"
                    DragDelta="OnSheetDrag" DragCompleted="OnSheetDragged"
                    AutomationProperties.Name="{Binding Text.Sheet}" />
-            <StackPanel Margin="24,16" Spacing="12">
-              <Grid ColumnDefinitions="Auto,*,Auto">
+            <DockPanel Margin="24,16">
+              <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
                 <Button x:Name="SheetBack" Classes="back" Content="{Binding Text.Back}" Click="OnCloseSheet"
                         AutomationProperties.Name="{Binding Text.Back}" Margin="0,0,12,0" />
                 <TextBlock x:Name="SheetTitle" Grid.Column="1" Classes="detail-title mono" Focusable="True"
@@ -238,12 +238,12 @@
                   </StackPanel>
                 </Button>
               </Grid>
-              <TextBlock x:Name="SheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}" IsVisible="{Binding !IsItemSheet}"
+              <TextBlock x:Name="SheetBody" DockPanel.Dock="Top" Classes="body muted" Text="{Binding Text.NotServedYet}" IsVisible="{Binding !IsItemSheet}"
                          AutomationProperties.Name="{Binding Text.NotServedYet}" />
               <ScrollViewer x:Name="ItemSheetScroll" IsVisible="{Binding IsItemSheet}">
                 <item:ItemSheet x:Name="ItemSheet" DataContext="{Binding Item}" />
               </ScrollViewer>
-            </StackPanel>
+            </DockPanel>
           </DockPanel>
         </Border>
       </Panel>

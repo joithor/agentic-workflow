@@ -1,0 +1,262 @@
+using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Headless;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Shell;
+using Microsoft.Extensions.Time.Testing;
+
+namespace Aw.Sindri.Ui.Tests.Views;
+
+/// <summary>
+/// U2's key frames (UI spec §18.2: one per state in the integration lane), against the in-memory API serving the
+/// spec-shaped P3 fixtures: the Queue page populated, empty and loading; Home's queue panels; the item sheet with its
+/// timeline; SND-ITEM-404 and SND-ITEM-409; the Create item form; the Close confirm. Saved under frames/ as u2-*.png.
+/// </summary>
+[Lane(TestLane.Integration)]
+public sealed class QueueFramesTests : IDisposable
+{
+    private readonly List<Window> _windows = [];
+    private readonly CancellationTokenSource _stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+    private readonly InMemoryEndpointRecords _records = new();
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog-p3") };
+    private readonly FakeTimeProvider _clock = new(A.Noon);
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    public void Dispose() => _stop.Dispose();
+
+    private async Task OnUi(Func<Task> body) =>
+        _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(QueueFramesTests).Assembly)
+            .Dispatch(async () =>
+            {
+                try
+                {
+                    await body();
+                }
+                finally
+                {
+                    await _stop.CancelAsync();
+                    _windows.ForEach(w => w.Close());
+                    Dispatcher.UIThread.RunJobs();
+                }
+
+                return true;
+            }, Token);
+
+    private async Task<(ShellWindow Window, ShellViewModel Shell)> Connected(Func<ShellViewModel, bool> ready)
+    {
+        _records.Write(A.Record());
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+        await shell.Restore(Token);
+        var window = new ShellWindow { DataContext = shell };
+        _windows.Add(window);
+        window.Show();
+        _ = shell.Run(_stop.Token);
+        for (var i = 0; i < 200 && !(shell.State == ShellState.Normal && ready(shell)); i++)
+        {
+            await Task.Delay(10, Token);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Assert.True(ready(shell), "the shell never reached the expected state");
+        Settle(window);
+        return (window, shell);
+    }
+
+    private static void Settle(Window window)
+    {
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static T Named<T>(Visual within, string name)
+        where T : Control => within.GetVisualDescendants().OfType<T>().First(c => c.Name == name);
+
+    private static bool Visible(Visual within, string name) => within.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Name == name)?.IsEffectivelyVisible == true;
+
+    private static void Frame(Window window, string name)
+    {
+        Settle(window);
+        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
+        _ = Directory.CreateDirectory(dir);
+        window.CaptureRenderedFrame()?.Save(Path.Combine(dir, "u2-" + name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+    }
+
+    private static async Task Until(Window window, Func<bool> condition)
+    {
+        for (var i = 0; i < 300 && !condition(); i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Settle(window);
+        Assert.True(condition(), "the view never reached the expected state");
+    }
+
+    private static async Task<(ShellWindow, ShellViewModel)> OpenItem(Task<(ShellWindow Window, ShellViewModel Shell)> connected, string itemId)
+    {
+        var (window, shell) = await connected;
+        shell.OpenItem(itemId);
+        await Until(window, () => shell.Item.HasItem || shell.Item.IsNotFound);
+        Settle(window);
+        Assert.True(Visible(window, "ItemSheet"));
+        return (window, shell);
+    }
+
+    [Fact]
+    public Task The_queue_page_shows_the_apis_groups_and_rows() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(s => !s.Queue.IsLoading);
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+
+        var page = Named<Control>(window, "QueuePage");
+        var headers = page.GetVisualDescendants().OfType<ToggleButton>().Where(t => t.Name == "GroupHeader" && t.IsEffectivelyVisible).Select(AutomationProperties.GetName).ToList();
+        Assert.Equal(["Waiting on you 1", "Queued 4"], headers, StringComparer.Ordinal);
+        var rows = page.GetVisualDescendants().OfType<Aw.Sindri.Ui.Views.Queue.ItemRow>().Where(r => r.IsEffectivelyVisible).Select(r => r.ItemId).ToList();
+        Assert.Equal(5, rows.Count);
+        Assert.Equal(A.NewItem, rows[^1]);
+        Assert.Equal("5", shell.Navigation[1].Count);
+        Frame(window, "queue-populated");
+    });
+
+    [Fact]
+    public Task An_empty_queue_shows_the_views_sentence() => OnUi(async () =>
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "empty");
+        var (window, shell) = await Connected(s => !s.Queue.IsLoading);
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+
+        var empty = Named<TextBlock>(window, "QueueEmpty");
+        Assert.Equal((true, "Nothing in the queue. Add one with `sindri item add`."), (empty.IsEffectivelyVisible, empty.Text));
+        Assert.Equal("Nothing running.", Named<TextBlock>(window, "RunningEmpty").Text);
+        Frame(window, "queue-empty");
+    });
+
+    // §4.1: skeleton rows on the first load only.
+    [Fact]
+    public Task The_queue_is_skeleton_rows_until_its_first_answer() => OnUi(async () =>
+    {
+        _server.QueueView = new RouteAnswer(System.Net.HttpStatusCode.ServiceUnavailable, "{}");
+        var (window, shell) = await Connected(s => s.State == ShellState.Normal);
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+
+        Assert.True(Visible(window, "QueueSkeleton"));
+        Assert.False(Visible(window, "QueueEmpty"));
+        Frame(window, "queue-loading");
+    });
+
+    // §3.2: Running and With you (With you first, at most five, then Show all) beside Queued.
+    [Fact]
+    public Task Homes_queue_panels_cap_their_rows() => OnUi(async () =>
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "running");
+        var (window, _) = await Connected(s => !s.Queue.IsLoading);
+
+        var running = Named<Control>(window, "RunningRows").GetVisualDescendants().OfType<Aw.Sindri.Ui.Views.Queue.ItemRow>().ToList();
+        Assert.Equal(5, running.Count);
+        Assert.Equal("Show all 7 in Queue", AutomationProperties.GetName(Named<Button>(window, "RunningShowAll")));
+        Assert.True(Visible(window, "RunningShowAll"));
+        Frame(window, "home-panels");
+    });
+
+    [Fact]
+    public Task The_item_sheet_shows_the_item_its_actions_and_its_timeline() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+
+        Assert.Equal(("Try the queue", "version 1"), (Named<TextBlock>(window, "ItemTitle").Text, Named<TextBlock>(window, "ItemVersion").Text));
+        var actions = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Button>().Where(b => b.Name == "RunButton").Select(AutomationProperties.GetName).ToList();
+        Assert.Equal(["Close item " + A.NewItem, "Close as cancelled " + A.NewItem], actions, StringComparer.Ordinal);
+        Assert.True(Visible(window, "LoadMoreButton"));
+        Frame(window, "item-sheet");
+
+        Named<Button>(window, "LoadMoreButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Until(window, () => !shell.Item.HasMore);
+        Assert.Equal(3, Named<Control>(window, "TimelineList").GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("timeline-row")));
+        Frame(window, "item-timeline");
+    });
+
+    // §8 E-8: Close as cancelled asks first; Keep is focused; Esc keeps.
+    [Fact]
+    public Task Close_as_cancelled_asks_before_it_sends() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+        var cancel = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Aw.Sindri.Ui.Views.Controls.CommandControl>().ElementAt(1);
+
+        Named<Button>(cancel, "RunButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+
+        Assert.True(Visible(cancel, "ConfirmRow"));
+        Assert.Equal("Close as cancelled " + A.NewItem + "?", Named<TextBlock>(cancel, "ConfirmText").Text);
+        Assert.Empty(_server.Closed);
+        Frame(window, "close-confirm");
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Settle(window);
+        Assert.False(Visible(cancel, "ConfirmRow"));
+        Assert.True(shell.IsSheetOpen);
+    });
+
+    // §18 U2's signal: Close with a stale version shows SND-ITEM-409's detail as served.
+    [Fact]
+    public Task A_stale_close_shows_SND_ITEM_409s_detail() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+        _server.Close = RouteAnswer.Problem("items-id-close", "stale-version");
+        _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
+
+        var close = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Button>().First(b => b.Name == "RunButton");
+        close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Until(window, () => shell.Item.HasProblem);
+
+        Assert.Equal(("SND-ITEM-409", A.Detail("items-id-close", "stale-version")), (Named<TextBlock>(window, "ProblemCodeText").Text, Named<TextBlock>(window, "ProblemDetailText").Text));
+        Assert.Equal("Done", Named<TextBlock>(window, "ItemState").Text);
+        Frame(window, "item-409");
+    });
+
+    [Fact]
+    public Task An_unknown_item_shows_SND_ITEM_404s_detail() => OnUi(async () =>
+    {
+        var (window, _) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.MissingItem);
+
+        Assert.Equal(("SND-ITEM-404", A.Detail("items-id", "not-found")), (Named<TextBlock>(window, "ProblemCodeText").Text, Named<TextBlock>(window, "ProblemDetailText").Text));
+        Assert.False(Visible(window, "ItemBody"));
+        Frame(window, "item-404");
+    });
+
+    // §4.5: C opens the form with focus in the title; it sends through the catalog's control.
+    [Fact]
+    public Task C_opens_the_create_form_and_it_sends_the_title() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(s => !s.Queue.IsLoading);
+        _ = Named<Control>(window, "Page").Focus();
+
+        window.KeyPressQwerty(PhysicalKey.C, RawInputModifiers.None);
+        Settle(window);
+        Assert.True(Visible(window, "CreateLayer"));
+        Assert.True(Named<TextBox>(window, "TitleField").IsFocused);
+
+        window.KeyTextInput("Proof: appears live");
+        Settle(window);
+        Frame(window, "create");
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        await Until(window, () => _server.Created.Count == 1);
+        Assert.Equal("Proof: appears live", _server.Created[0].Title);
+        Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a306", shell.Create.CreatedId);
+    });
+}

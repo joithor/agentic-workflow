@@ -25,7 +25,7 @@
     <Border x:Name="QueuePanel" Classes="panel" AutomationProperties.Name="{Binding Text.Queue}">
       <StackPanel>
         <Border Classes="phead">
-          <Grid ColumnDefinitions="150,*,150,130,110,70,Auto">
+          <Grid ColumnDefinitions="150,*,150,130,110,70,260">
             <TextBlock Classes="eyebrow" Text="{Binding Text.Items.ColumnItem}" />
             <TextBlock Grid.Column="1" Classes="eyebrow" Text="{Binding Text.Items.ColumnTitle}" />
             <TextBlock Grid.Column="2" Classes="eyebrow" Text="{Binding Text.Items.ColumnRepo}" />

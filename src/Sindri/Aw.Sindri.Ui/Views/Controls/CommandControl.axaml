@@ -29,26 +29,26 @@
     </StackPanel>
 
     <!-- A destructive control asks first (§8, E-8): its question, Confirm (sends once) and Keep (Esc; nothing sent). -->
-    <StackPanel x:Name="ConfirmRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding IsConfirming}">
-      <TextBlock x:Name="ConfirmText" Classes="caption" Text="{Binding ConfirmQuestion}" VerticalAlignment="Center"
+    <WrapPanel x:Name="ConfirmRow" Orientation="Horizontal" IsVisible="{Binding IsConfirming}">
+      <TextBlock x:Name="ConfirmText" Classes="caption" Text="{Binding ConfirmQuestion}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,4"
                  AutomationProperties.Name="{Binding ConfirmQuestion}" />
-      <Button x:Name="ConfirmButton" Classes="command-control destructive" Click="OnConfirm" AutomationProperties.Name="{Binding ConfirmQuestion}">
+      <Button x:Name="ConfirmButton" Classes="command-control destructive" Margin="0,0,8,4" Click="OnConfirm" AutomationProperties.Name="{Binding ConfirmQuestion}">
         <TextBlock Classes="button" Text="{Binding ConfirmLabel}" />
       </Button>
       <Button x:Name="KeepButton" Classes="copy" Click="OnKeep" AutomationProperties.Name="{Binding KeepLabel}">
         <TextBlock Classes="caption" Text="{Binding KeepLabel}" />
       </Button>
-    </StackPanel>
+    </WrapPanel>
 
     <!-- pending: the phase and the CLI, focusable so the keyboard reaches it, with Copy. -->
-    <StackPanel x:Name="PendingRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding IsPending}">
+    <WrapPanel x:Name="PendingRow" Orientation="Horizontal" IsVisible="{Binding IsPending}">
       <Border x:Name="PendingLine" Classes="pending-line" Focusable="True" AutomationProperties.Name="{Binding PendingLine}">
-        <TextBlock x:Name="PendingText" Classes="caption subtle" Text="{Binding PendingLine}" AutomationProperties.Name="{Binding PendingLine}" />
+        <TextBlock x:Name="PendingText" Classes="caption subtle" TextWrapping="Wrap" Margin="0,0,6,0" Text="{Binding PendingLine}" AutomationProperties.Name="{Binding PendingLine}" />
       </Border>
       <Button x:Name="PendingCopy" Classes="copy" Click="OnCopy" IsEnabled="{Binding CanCopy}" AutomationProperties.Name="{Binding CopyLabel}">
         <TextBlock Classes="caption" Text="{Binding CopyLabel}" />
       </Button>
-    </StackPanel>
+    </WrapPanel>
 
     <!-- cli-only: the copy block. It never offers to run the command. -->
     <StackPanel x:Name="CopyBlock" Spacing="{StaticResource Space.XXS}" IsVisible="{Binding IsCliOnly}">

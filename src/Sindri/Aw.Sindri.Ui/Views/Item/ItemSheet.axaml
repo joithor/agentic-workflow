@@ -52,11 +52,11 @@
         <TextBlock Classes="eyebrow" Text="{Binding $parent[views:ItemSheet].Text.Actions}" />
         <ItemsControl x:Name="ItemActionList" ItemsSource="{Binding Actions}">
           <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+            <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vmc:ControlViewModel">
-              <controls:CommandControl Margin="0,0,8,6" />
+              <controls:CommandControl />
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
