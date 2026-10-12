@@ -1,5 +1,5 @@
-using Aw.Sindri.Core.Events;
 using System.Globalization;
+using Aw.Sindri.Core.Events;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -71,7 +71,11 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task<WorkflowInstance> RunDeskStep(WorkflowInstance instance, OpenRun open, InstanceStart start, Interpreting context)
     {
-        var trigger = await RunStep(instance.Frame, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true);
+        if (await RunStep(instance.Frame, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true) is not { } trigger)
+        {
+            return await ApplySubmitted(instance, open, context).ConfigureAwait(true);
+        }
+
         var reportId = _reportId;
         _reportId = null;
         var before = instance;
@@ -93,14 +97,7 @@ internal sealed partial class RecipeWorkflow
             }
 
             Enter(instance);
-            var (kind, outcome) = trigger switch
-            {
-                StepCompleted c => (TriggerNames.StepCompleted, c.Outcome.Value),
-                StepFailed => (TriggerNames.StepFailed, null),
-                _ => (TriggerNames.Deadline, null),
-            };
-            var record = new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowTransition, start.Item.Value, before.State, instance.State, kind, outcome, open.Token.Value);
-            await Mirror(record, NeedsYou(instance)).ConfigureAwait(true);
+            await Mirror(Transition(start, before, instance, trigger, open), NeedsYou(instance)).ConfigureAwait(true);
         }
 
         Settle(reportId, new Reported(new CommandResult(GetInstance(), Happened(before, instance, decision)), Refusal: null));
@@ -108,12 +105,41 @@ internal sealed partial class RecipeWorkflow
     }
 
     /// <summary>
+    /// Applies an answer, command or cancel another Update submitted while the desk task is open (unit (a)'s
+    /// <see cref="Submit"/>); a change that ends the run clears its deadline, so the next run arms its own.
+    /// </summary>
+    private async Task<WorkflowInstance> ApplySubmitted(WorkflowInstance instance, OpenRun open, Interpreting context)
+    {
+        var after = await Apply(instance, _submitted.Dequeue(), context).ConfigureAwait(true);
+        if (after.Frame.Run?.Token != open.Token)
+        {
+            _timeoutAt = null;
+        }
+
+        return after;
+    }
+
+    /// <summary>The 'workflow.transition' row for a desk report or the desk timeout.</summary>
+    private static WorkflowEventRecord Transition(InstanceStart start, WorkflowInstance before, WorkflowInstance after, Trigger trigger, OpenRun open)
+    {
+        var (kind, outcome) = trigger switch
+        {
+            StepCompleted c => (TriggerNames.StepCompleted, c.Outcome.Value),
+            StepFailed => (TriggerNames.StepFailed, null),
+            _ => (TriggerNames.Deadline, null),
+        };
+        return new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowTransition, start.Item.Value, before.State, after.State, kind, outcome, open.Token.Value);
+    }
+
+    /// <summary>
     /// Runs one desk Step (rev 8.1 §5.3): once per run, the short 'RunStep' activity with the run token in its id
     /// ('run:{token}:{n}') records the open task, and the wait's deadline is armed when none is (a new run, or an answer that re-arms it): the state's timeout raised to
     /// 'workflow.deskTimeout' (W20). The workflow then waits for the 'complete' Update's report; its expiry is the desk
-    /// timeout, which always parks (W20, §3.8). A later wait on the same run keeps its deadline. Unit (c).
+    /// timeout, which always parks (W20, §3.8). A later wait on the same run keeps its deadline. Unit (c). The wait
+    /// also wakes for a command another Update submitted (unit (a)'s <see cref="Submit"/>); then it returns null and the
+    /// caller applies that command.
     /// </summary>
-    private async Task<Trigger> RunStep(Frame frame, OpenRun open, RecipeState state)
+    private async Task<Trigger?> RunStep(Frame frame, OpenRun open, RecipeState state)
     {
         if (!string.Equals(_recorded, open.Token.Value, StringComparison.Ordinal))
         {
@@ -130,22 +156,37 @@ internal sealed partial class RecipeWorkflow
             _timeoutAt = null;
         }
 
-        if (_timeoutAt is null)
-        {
-            _waited = open.Runtime == StepRuntime.Desk ? DeskTimeouts.Wait(state.Timeout, _deskTimeout) : state.Timeout?.After.Span ?? _deskTimeout;
-            _timeoutAt = Now + _waited;
-        }
-
-        var left = _timeoutAt!.Value - Now; // why: armed above for this run
-        var reported = left > TimeSpan.Zero && await Workflow.WaitConditionAsync(() => _report is not null, left).ConfigureAwait(true);
-        if (reported && _report is { } report)
+        var left = Arm(open, state) - Now;
+        var woke = left > TimeSpan.Zero && await Workflow.WaitConditionAsync(() => _report is not null || _submitted.Count > 0, left).ConfigureAwait(true);
+        if (woke && _report is { } report)
         {
             _report = null;
             return report;
         }
 
+        if (woke)
+        {
+            return null;   // a submitted command; the deadline stays armed for this run
+        }
+
         _timeoutAt = null;
         return new DeadlineFired(Timers, frame.Entry, DeadlineKind.State);
+    }
+
+    /// <summary>
+    /// The run's deadline: armed when none is (a new run, or an answer that re-arms it) to the state's timeout, raised to
+    /// 'workflow.deskTimeout' for a desk Step (W20); a later wait on the same run keeps it.
+    /// </summary>
+    private DateTimeOffset Arm(OpenRun open, RecipeState state)
+    {
+        if (_timeoutAt is { } armed)
+        {
+            return armed;
+        }
+
+        _waited = open.Runtime == StepRuntime.Desk ? DeskTimeouts.Wait(state.Timeout, _deskTimeout) : state.Timeout?.After.Span ?? _deskTimeout;
+        _timeoutAt = Now + _waited;
+        return _timeoutAt.Value;
     }
 
     /// <summary>Hands what the loop did with a report to the 'complete' Update that carried it.</summary>

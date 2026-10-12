@@ -470,3 +470,25 @@ other than `list` are stubs that throw `NotSupportedException`. A rejected Updat
 pins the interface that works at the contract: the desk task 1.1 with its declared outcomes through the Query,
 `allowedCommands`, the ledger key, and replay. `PhaseFourSignalTests` is phase 4 signal 1, and it is red until units
 (b) and (e) land.
+
+**The state loop (unit (a)).** `RunAsync` loads the recipe, enters `initial`, then repeats until a terminal state: an
+active state runs its desk Step (`RunDeskStep`, unit (c)); a wait state, a park, an escalation or a takeover waits
+(`RecipeWorkflow.Loop.cs`). Every trigger reaches the instance at a wait and is decided there, one at a time, by P3's
+`TransitionDecision`: a command an Update hands over through `Submit(trigger)` (which returns the decision to the
+Update), or a delivered `event` signal whose source fits the wait's `waitFor` (its event kind, its resource, or its
+child's end). A delivered event that fits no wait yet stays buffered until one does. An applied or refused trigger writes
+one ledger event (`workflow.transition` or `workflow.refused`) and sets the search attributes; a rejected one records
+nothing. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
+refusal follows §5.8's precedence. Wait timeouts are P5's (P3 doesn't decide `DeadlineFired`), and a child wait doesn't
+start its child until P7.
+
+| Search attribute | Value |
+|---|---|
+| `Item`, `Recipe`, `Tenant`, `Ring` | From `InstanceStart`; `StartRequest` carries the tenant and ring into the instance |
+| `State` | The state after each change (`parked`, `escalated`, `taken-over` while suspended) |
+| `NeedsYou` | True while parked or escalated, or while an open desk task waits; false while taken over |
+| `Repo` | `fact:item`'s `repo`, read once on start by the `ReadItemRepo` local activity; unset without one |
+
+The loop's tests run on the time-skipping server: `InterpreterEvalTests` runs every shipped `workflow.step` eval case
+through the interpreter and checks each line against the in-process `recipe eval`, and `InterpreterStateLoopTests`
+covers the search attributes, a delivered event, a refused event's park (`NeedsYou` flips) and replay.

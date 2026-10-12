@@ -103,7 +103,9 @@ internal sealed class FakeEngineRules : IEngineRules
             parent.Id,
             new Dictionary<FactKey, FactValue>(),
             actor,
-            TakenOver: false);
+            TakenOver: false,
+            parent.Tenant,
+            parent.Ring);
         return new ChildStart(request, child.Recipe);
     }
 

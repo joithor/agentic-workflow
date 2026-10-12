@@ -78,6 +78,30 @@ internal sealed class WorkflowsHarness : IDisposable
         return temporal;
     }
 
+    /// <summary>Writes <paramref name="yaml"/> as the recipe '&lt;home&gt;/recipes/&lt;id&gt;.yaml' the stub approvals read.</summary>
+    public void Recipe(string id, string yaml) => System.IO.File.WriteAllText(Path.Combine(_home.Path, "recipes", id + ".yaml"), yaml);
+
+    /// <summary>The text of the shipped recipe at <paramref name="path"/> (relative to recipes/).</summary>
+    public static string Shipped(string path) => System.IO.File.ReadAllText(Path.Combine(RepoRoot(), "recipes", path));
+
+    /// <summary>Stores <paramref name="content"/> as a fact the way the API does before a start: '&lt;home&gt;/workflow/facts/&lt;sha256&gt;'.</summary>
+    public FactValue Fact(string content)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+        var sha = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(bytes));
+        var facts = Directory.CreateDirectory(Path.Combine(_home.Path, "workflow", "facts")).FullName;
+        System.IO.File.WriteAllBytes(Path.Combine(facts, sha), bytes);
+        return new FactValue("fact:sha256:" + sha, sha, HeadSha: null);
+    }
+
+    /// <summary>The workflow input for the approved <paramref name="recipe"/> on <paramref name="item"/>, attempt 1, with no inputs.</summary>
+    public static async Task<InstanceStart> RecipeStart(IServiceProvider sindri, string recipe, string item, CancellationToken ct)
+    {
+        var approved = await sindri.GetRequiredService<IApprovedRecipes>().Latest(RecipeId.From(recipe), ct);
+        Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);
+        return new InstanceStart(approved.Value.Version, ItemKey.From(item), Attempt: 1, new Dictionary<FactKey, InputFact>(), Tenant: "local", Ring: 0);
+    }
+
     /// <summary>The workflow input for 'workflow.step' on <paramref name="item"/>, attempt 1, with a 'fact:spec' input.</summary>
     public static async Task<InstanceStart> StepStart(IServiceProvider sindri, string item, CancellationToken ct)
     {
