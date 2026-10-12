@@ -11,23 +11,23 @@ namespace Aw.Sindri.Tests.Server;
 /// </summary>
 internal static class NoTemporal
 {
-    /// <summary>Registers a new <see cref="FakeTemporalServer"/> as the <see cref="ITemporalServer"/>, and a worker that polls nothing.</summary>
+    /// <summary>Registers a new <see cref="FakeTemporalServer"/> as the <see cref="ITemporalServer"/>, and a worker that polls nothing until it is stopped.</summary>
     /// <param name="services">The host's services.</param>
     public static void Use(IServiceCollection services) => Use(services, new FakeTemporalServer());
 
-    /// <summary>Registers <paramref name="fake"/> as the <see cref="ITemporalServer"/>, and a worker that polls nothing.</summary>
+    /// <summary>Registers <paramref name="fake"/> as the <see cref="ITemporalServer"/>, and a worker that polls nothing until it is stopped.</summary>
     /// <param name="services">The host's services.</param>
     /// <param name="fake">The fake to use.</param>
-    public static void Use(IServiceCollection services, FakeTemporalServer fake)
+    public static void Use(IServiceCollection services, FakeTemporalServer fake) => Use(services, fake, new ScriptedWorker());
+
+    /// <summary>Registers <paramref name="fake"/> as the <see cref="ITemporalServer"/> and <paramref name="worker"/> as the worker.</summary>
+    /// <param name="services">The host's services.</param>
+    /// <param name="fake">The fake server.</param>
+    /// <param name="worker">The fake worker.</param>
+    public static void Use(IServiceCollection services, FakeTemporalServer fake, ITemporalWorker worker)
     {
         _ = services.Replace(ServiceDescriptor.Singleton<ITemporalServer>(fake));
-        _ = services.Replace(ServiceDescriptor.Singleton<ITemporalWorker>(new NoWorker()));
-    }
-
-    /// <summary>A worker that polls nothing: the fake server has no frontend.</summary>
-    private sealed class NoWorker : ITemporalWorker
-    {
-        public Task Run(TemporalEndpoint endpoint, CancellationToken cancellationToken) => Task.CompletedTask;
+        _ = services.Replace(ServiceDescriptor.Singleton(worker));
     }
 
     /// <summary>A new fake, then <paramref name="more"/>.</summary>

@@ -72,6 +72,47 @@ public sealed class ServeStopTests : IDisposable
         Assert.False(File.Exists(record));
     }
 
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task A_stop_waits_for_the_worker_before_it_stops_the_dev_server()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var temporal = new FakeTemporalServer();
+        var worker = new ScriptedWorker { Drain = TimeSpan.FromMilliseconds(200) };
+        bool? workerStoppedAtServerStop = null;
+        temporal.BeforeStop = () => workerStoppedAtServerStop = worker.Stopped;
+        var serve = ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => "0", _ => null }, TimeProvider.System, TextWriter.Null,
+            services => NoTemporal.Use(services, temporal, worker));
+        var recorded = await Endpoint(ct);
+        using var http = new HttpClient { BaseAddress = recorded.Url, Timeout = TimeSpan.FromSeconds(10) };
+
+        using var stop = await http.PostAsync(new Uri("/sindri/stop", UriKind.Relative), content: null, ct);
+        var code = await serve.WaitAsync(_prompt, ct);
+
+        Assert.True(stop.IsSuccessStatusCode);
+        Assert.Equal(0, code);
+        Assert.True(workerStoppedAtServerStop);   // why: serve tracks its worker, so the stop waits for it before the server goes
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task A_worker_that_faults_on_its_way_out_still_lets_serve_stop_cleanly()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var temporal = new FakeTemporalServer();
+        var worker = new ScriptedWorker { Fault = new InvalidOperationException("poller failed") };
+        var serve = ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => "0", _ => null }, TimeProvider.System, TextWriter.Null,
+            services => NoTemporal.Use(services, temporal, worker));
+        var recorded = await Endpoint(ct);
+        using var http = new HttpClient { BaseAddress = recorded.Url, Timeout = TimeSpan.FromSeconds(10) };
+
+        using var stop = await http.PostAsync(new Uri("/sindri/stop", UriKind.Relative), content: null, ct);
+        var code = await serve.WaitAsync(_prompt, ct);
+
+        Assert.True(stop.IsSuccessStatusCode);
+        Assert.Equal(0, code);   // why: a worker fault is the worker's to log; it must not throw past serve's stop
+        Assert.Null(temporal.Running);
+        Assert.False(File.Exists(Path.Combine(_home.Path, "control.json")));
+    }
+
     /// <summary>The endpoint serve recorded once it listens.</summary>
     private async Task<ControlEndpoint> Endpoint(CancellationToken ct)
     {
