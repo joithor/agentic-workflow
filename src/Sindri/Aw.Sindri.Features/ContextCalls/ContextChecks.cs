@@ -14,7 +14,8 @@ internal static class ContextChecks
     internal const string McpScopeName = "context:mcp-scope";
 
     /// <summary>No approved profile: nothing to check yet.</summary>
-    internal static DoctorCheck NoProfile(Error error) => new(SourcesName, CheckState.Warn, $"{error.Code} {error.Message}", "sindri profile approve");
+    internal static DoctorCheck NoProfile(Error error) =>
+        new(SourcesName, CheckState.Warn, $"{error.Code} {error.Message}", error.Message.Contains("(fix:", StringComparison.Ordinal) ? null : "sindri profile approve");
 
     /// <summary>The profile has no context: section.</summary>
     internal static DoctorCheck NoSection() => new(SourcesName, CheckState.Ok, "no context: section in the profile, so no context sources", Fix: null);
