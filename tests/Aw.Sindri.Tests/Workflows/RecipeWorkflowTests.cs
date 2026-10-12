@@ -128,6 +128,27 @@ public sealed class RecipeWorkflowTests : IDisposable
         await env.Client.GetWorkflowHandle<RecipeWorkflow>(Address).TerminateAsync("test over");
     }
 
+    [Fact(Timeout = 60_000)]
+    public async Task Complete_against_a_server_without_the_sindri_namespace_keeps_the_task_token()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var env = await WorkflowEnvironment.StartLocalAsync(new WorkflowEnvironmentStartLocalOptions
+        {
+            Namespace = "default",   // a Temporal that isn't serve's: no 'sindri' namespace
+            UI = false,
+            DevServerOptions = new DevServerOptions { ExistingPath = PinnedTemporal() },
+        });
+        await using var sindri = Sindri();
+        sindri.GetRequiredService<TaskTokens>().Save(Address, "1.1", [1, 2, 3]);
+
+        var (exit, _, stderr) = await Cli(sindri, "complete", Address, "--run", "1.1", "--outcome", "done", "--temporal", Target(env), "--no-wait");
+
+        // why: a NotFound for the namespace says nothing about the run; deleting its token would strand an open desk run
+        Assert.Equal(1, exit);
+        Assert.StartsWith("SND-API-001 ", stderr, StringComparison.Ordinal);
+        Assert.NotNull(sindri.GetRequiredService<TaskTokens>().Find(Address, "1.1"));
+    }
+
     /// <summary>
     /// The worker 'sindri serve' runs (ITemporalWorker) moves the instance; 'workflow complete' without '--temporal'
     /// finds the frontend in control.json's 'temporal' field; every start and transition is one ledger row keyed by the
