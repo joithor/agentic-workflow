@@ -111,20 +111,31 @@ only, never the message, which can name the home), with a line that names the ex
 
 | Part | What it shows |
 |---|---|
-| Top bar (48 px) | Brand; Home · Queue · Decisions · Services (counts empty until their routes); Later ▾ (Agents, Repos, Today, Automatic work, each "not served yet"); the ⌘K field, inert until U1; the health pill, which opens Health |
+| Top bar (48 px) | Brand; Home · Queue · Decisions · Services (counts empty until their routes); Later ▾ (Agents, Repos, Today, Automatic work, each "not served yet"); the ⌘K field, inert until U1; the health pill, which opens Health. When they don't all fit (the 900 px minimum, text scale up to 1.3) the bar steps down in `TopBar.axaml.cs`: the ⌘K field folds to its magnifier, then the pill's age drops (the pill's accessible name keeps it), then the brand keeps its mark alone. The pill's word always shows |
+| Home panels' bodies | "not served yet", centred in the panel |
 | Home | The page title, three frames (Needs you, Running · With you, Queued), each "not served yet", and the Sindri health strip: the health line (§4.8) over the fields the status carries today (`Running · pid · epoch · API v1 · N services · profile <state>`; "Not running" when it isn't), which opens Health on a click or Enter |
 | Queue, Decisions, Services, Settings | The title and "not served yet"; Settings is the slot `Views/Settings*` fills (⌘, opens it) |
 | Health | S1b's status card (`HealthViewModel`: lease, API, profile, services, last event) |
 | Detail sheet | A deep link's subject over the page at the right, 520 px (420–760, dragged by its left edge and remembered); Esc closes it and leaves an edge tab that reopens it; below 1100 px it covers the page with a Back button and focus moves to its heading |
 
 The pre-API states (`ShellState`, highest first): **version mismatch** (the status's `apiVersion` differs from
-`AppApiVersion`: a full-window panel with both versions and "quit both and run sindri", no top bar), **not running**
+`AppApiVersion`: a full-window panel with both versions and "quit both and run" around `sindri` in the command chip, no top bar), **not running**
 (S1b's panel and reasons), **connecting** (skeleton rows, first load only), **unreadable** (`SND-UI-003`: a banner with
 the code and `sindri doctor`; the page keeps its last data and the pill reads "Unreadable · stale"), **stale** (30 s
-without an event, a status or an answered ping, on the injected clock: the pill reads "Running · stale"; otherwise "Running · updated Ns
-ago", re-worded every second). The view models carry no Avalonia types; views bind the app's copy through
-`ShellText` (compiled bindings resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar,
-page and sheet; the window's minimum is 900 × 600.
+without an event, a status or an answered ping, on the injected clock: the pill reads "⌛ stale · updated Ns ago" with
+**Refresh** beside it; otherwise "✓ Running · updated Ns ago", re-worded every second). Refresh follows §4.1's command
+lifecycle: while it is in flight it is disabled with its label kept, "Sending…" shows beside it after 300 ms (a polite
+live region), and a second click does nothing. After three failed refreshes the pill keeps "stale" and a banner under
+the top bar reads "Sindri not responding: run `sindri doctor`" in full, since the sentence doesn't fit the pill at
+900 px. The view models carry no Avalonia types; views bind the app's copy through `ShellText` (compiled bindings
+resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar, page and sheet; the window's
+minimum is 900 × 600.
+
+**Focus never goes nowhere (§11.2).** When the focused control disappears, focus moves to a neighbour: Refresh keeps
+focus through its in-flight phase and gets it back when the refresh fails; when Sindri answers and Refresh hides, the
+health pill gets it. Closing the sheet returns focus to the edge tab when the tab reopened it, otherwise (a deep link)
+to the page region. A state change that hides the focused control moves focus to its region's neighbour: the pill in
+the top bar, the page region in the page (`ShellWindow.KeepFocus`, `TopBar.KeepRefreshFocus`).
 
 ### Settings and reduced motion (§3.3 ⌘,, §11.4, §14.2)
 
@@ -226,6 +237,15 @@ what happened: `opened (sindri-ui, pid N)`, or `not found at <path>` with the fi
 prints no `ui` line. A relative `AW_SINDRI_UI` is resolved against the working directory before it is checked, and a file
 without an execute bit reads `not executable at <path>` with the fix. Opening the app never changes `sindri`'s exit
 code. A second `sindri-ui` hands over to the running one (`focus`) and exits, so a bare `sindri` while the app runs brings its window forward.
+
+**`sindri` goes framework-dependent; `sindri-ui` stays NativeAOT** (csharp.md "AOT scope", README X54, engine spec
+rev 8). The Temporal .NET SDK can't be trimmed, so the Sindri host publishes framework-dependent once its Temporal
+adapter lands (the host project still sets `PublishAot` until then, and `src/Sindri/aot-smoke/run.sh` still runs).
+Either way `sindri` is the binary in a publish directory (framework-dependent: an apphost beside its assemblies), and
+`AppContext.BaseDirectory`, where the launcher looks for `sindri-ui`, is that directory. Copy the NativeAOT `sindri-ui` there (`bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh <dir>`), or point
+`AW_SINDRI_UI` at it; under `dotnet run` the base directory is the host's build output, so set `AW_SINDRI_UI`. The app
+depends on nothing else about how `sindri` is built: it talks to the control plane only through `control.json` and the
+HTTP API.
 
 **`opened` is only "started".** `sindri` starts `sindri-ui` detached with its output to `/dev/null` and reports
 `opened (sindri-ui, pid N)` as soon as the process starts, so the line can still claim success when that `sindri-ui`

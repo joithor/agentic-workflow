@@ -4,7 +4,9 @@
 # binary. It doesn't open a window (CI has no display); the hand test and the headless view tests cover what it shows.
 # CI's AOT step runs it (the src/*/*.AotSmoke/run.sh glob). Output goes to artifacts/aot-sindri-ui/ (gitignored); the
 # publish runs on a copy, like src/Sindri/aot-smoke/run.sh, so the RID's ILCompiler
-# packs never reach the checkout's lock files. Pass a directory to also copy sindri-ui there (next to a published sindri).
+# packs never reach the checkout's lock files. Pass a directory to also copy sindri-ui there: the publish directory of a
+# sindri (NativeAOT today, framework-dependent from engine rev 8's Temporal adapter; csharp.md "AOT scope"), where
+# bare `sindri` looks for it.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
