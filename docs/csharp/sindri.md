@@ -327,7 +327,40 @@ read-only ports) and `ARCH-CQRS-003` (every command and issue has its row; a cla
 
 ## Proving it
 
-Filled by API P1's unit E (`scripts/sindri-prove.sh`, the API goldens).
+Agents prove a phase in the running app with `scripts/sindri-prove.sh` (API spec §12), never with the `sindri` on
+`PATH` (the TS CLI) and never against the owner's home.
+
+| Mode | Runs | As |
+|---|---|---|
+| `sindri-prove.sh <verb> [args…]` | `$SINDRI <verb>`, environment untouched | the calling agent: a `session` |
+| `sindri-prove.sh human [<verb> [args…]]` | `$SINDRI` with `CLAUDECODE`, `AW_SINDRI_CHILD`, `CODEX_SANDBOX` and `CURSOR_AGENT` unset and `AW_SINDRI_PROVER=1`, under a pty (`scripts/lib/with-tty.sh`): stdin passed through (the typed confirmation), CRs and terminal control sequences stripped, stdout and stderr merged; exit is the CLI's | the owner, `human:prover` |
+| `sindri-prove.sh curl [--no-terminal] [--no-token \| --token T] [-H 'Name: value']… <METHOD> <path> [json]` | `curl` to the URL in `$AW_SINDRI_HOME/control.json`, with `X-Sindri-Caller: human`, `X-Sindri-Terminal: 1` (not with `--no-terminal`), `X-Sindri-Client: prover`, `X-Sindri-Token` from `auth/human.token` (or `--token T`, or none with `--no-token`), and `Content-Type: application/json` when there is a body. The body goes to stdout, `HTTP <status>` to stderr; exit 0 on 2xx, 1 on another status, 3 with no response | the owner, `human:prover` |
+| `sindri-prove.sh url` | prints the base URL, for a session `curl` written by hand (no caller header) | — |
+
+- **Home guard, first, in every mode:** `AW_SINDRI_HOME` must be set and its real path strictly inside
+  realpath(`${TMPDIR:-/tmp}`) or inside a proof folder, `<AW_STATE_DIR or ~/.agentic-workflow>/<repo slug>/proof/…`:
+  the homes for which the server honours `X-Sindri-Client: prover` (`ProverHome`). Anything else exits 2 with
+  `sindri-prove: AW_SINDRI_HOME must be under $TMPDIR or a proof folder (got …)`. Parts of the home that don't exist
+  yet are judged as written.
+- It exports `AW_SINDRI_PORT=0` (a free port, recorded in `control.json`), so parallel provers never share a port.
+- `SINDRI` is the CLI's command line, split on spaces (default `dotnet run --project src/Sindri/Aw.Sindri.Host --`). Use
+  a built binary for proofs: under `dotnet run` a signal reaches dotnet, not sindri.
+- Seeding an approved profile: write the profile, `H=$($SINDRI profile validate --json | jq -r .hash)`, then
+  `printf '%s\n' "${H:0:6}" | scripts/sindri-prove.sh human profile approve "$H"`.
+- Tests: `bash scripts/tests/sindri-prove.test.sh`.
+
+**API goldens (UI spec E-17).** Every API phase's integration tests write each route's response body per scenario to
+`tests/Aw.Sindri.Tests/Golden/Api/<route-slug>/<scenario>.json`; the UI's fake API serves them. The **route slug** is the
+path after `/sindri/` with `/` written `-` and each `{param}` written by its name (`/sindri/profile/approve` →
+`profile-approve`, `/sindri/items/{id}` → `items-id`). The harness is `tests/Aw.Sindri.Tests/ApiGoldens/`: each scenario
+runs on its own `GoldenHost` (a real host on loopback with a `FakeTimeProvider` at the known epoch, sequential ids, pid
+4242, the lease held and a fixed human token), the body is re-indented as served, and only ProblemDetails' `traceId`
+and the temp home's path (`<home>`) are normalized. A new scenario is a row in `ApiScenarios`; record its file with
+`AW_GOLDEN_UPDATE=1` and review the diff (`Every_golden_file_has_a_scenario` fails on a file without a row). P1's
+goldens: `status` (running-unapproved, running-approved, human-no-token, human-stale-token, unknown-caller,
+prover-refused), `ping/running`, `commands/catalog`, `events/process-started` (the first event's `data`), `stop`
+(accepted, refused-session, refused-origin) and `profile-approve` (preview, approved, already-approved,
+refused-session, refused-no-terminal, refused-origin, stale-hash, bad-body).
 
 ## Scheduler
 
