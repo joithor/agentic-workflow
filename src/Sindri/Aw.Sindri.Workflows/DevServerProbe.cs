@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using Temporalio.Api.OperatorService.V1;
@@ -36,6 +37,10 @@ internal static class DevServerProbe
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)
         {
             return (DevServerAnswer.NoNamespace, e.Message);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return (DevServerAnswer.Unreachable, string.Create(CultureInfo.InvariantCulture, $"no answer within {timeout.TotalSeconds:0.#} s"));
         }
         catch (Exception e) when (!cancellationToken.IsCancellationRequested)
         {
