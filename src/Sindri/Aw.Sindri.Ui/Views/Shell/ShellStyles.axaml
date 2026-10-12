@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:Aw.Sindri.Ui.Views">
   <!-- The shell's chrome (UI spec §3.2) over the tokens (Theme/Tokens.axaml): no colour value here, only Brush.* keys. -->
 
   <!-- Top bar: 48 px on the canvas with a hairline bottom rule. -->
@@ -10,9 +11,28 @@
     <Setter Property="BorderThickness" Value="0,0,0,1" />
     <Setter Property="Padding" Value="16,0" />
   </Style>
-  <!-- The brand mark (§3.2 "◆ Sindri"): the glyph in the accent; decorative, the name beside it is read. -->
-  <Style Selector="TextBlock.brand">
+  <!-- Icons (R1, Theme/Icons.axaml): Size.Icon square, the Body line scaled with the text. R9: one colour rule for state
+       glyphs: ✓ Success wherever it means ok, ✕ Error, every other glyph and mark InkMuted; the word beside each stays Ink. -->
+  <Style Selector="views|StateIcon">
+    <Setter Property="Width" Value="{DynamicResource Size.Icon}" />
+    <Setter Property="Height" Value="{DynamicResource Size.Icon}" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
+  </Style>
+  <Style Selector="views|StateIcon:ok">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
+  </Style>
+  <Style Selector="views|StateIcon:down">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <!-- The brand mark (§3.2 "◆ Sindri"): filled in the accent; decorative, the name beside it is read. -->
+  <Style Selector="views|StateIcon.brand">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Primary}" />
+  </Style>
+  <!-- In a keycap (⌘K): the kbd step's size and colour. -->
+  <Style Selector="views|StateIcon.kbd">
+    <Setter Property="Width" Value="{DynamicResource Type.Kbd.Size}" />
+    <Setter Property="Height" Value="{DynamicResource Type.Kbd.Size}" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
   </Style>
 
   <!-- The segmented navigation (home.html .seg): one group on Surface1 with a hairline, segments 26 px high. Unselected
@@ -150,12 +170,6 @@
   <Style Selector="Ellipse.pill-dot.down">
     <Setter Property="Fill" Value="{DynamicResource Brush.Error}" />
   </Style>
-  <Style Selector="TextBlock.pill-glyph.ok">
-    <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
-  </Style>
-  <Style Selector="TextBlock.pill-glyph.down">
-    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
-  </Style>
   <!-- Refresh beside a stale pill: a quiet secondary button at the pill's height. -->
   <Style Selector="Button.refresh">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
@@ -169,6 +183,9 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
   </Style>
   <Style Selector="Button.refresh:disabled TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
+  <Style Selector="Button.refresh:disabled views|StateIcon">
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
   </Style>
 
@@ -270,9 +287,6 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
     <Setter Property="Padding" Value="16,10" />
-  </Style>
-  <Style Selector="TextBlock.error-glyph">
-    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
   </Style>
 
   <!-- The detail sheet: Surface1 with a hairline left rule, 420–760 px; below 1100 px it covers the page ("covers"). -->

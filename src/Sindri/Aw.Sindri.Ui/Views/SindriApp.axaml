@@ -14,6 +14,7 @@
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Aw.Sindri.Ui/Theme/Tokens.axaml" />
+        <ResourceInclude Source="avares://Aw.Sindri.Ui/Theme/Icons.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>

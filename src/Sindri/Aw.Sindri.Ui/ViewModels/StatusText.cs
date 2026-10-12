@@ -53,7 +53,7 @@ internal static class StatusText
         }
 
         yield return new(Labels.CellServices, Services(s));
-        yield return new(Labels.CellProfile, ProfileHead(s.Profile));
+        yield return new(Labels.CellProfile, ProfileHead(s.Profile), ProfileGlyph(s.Profile));
     }
 
     // The Health page's process rows (§4.8): pid and epoch, the lease and its expiry, the API's address and version.
@@ -64,18 +64,16 @@ internal static class StatusText
         yield return new(Labels.CellApi, s.ApiVersion is { } version ? string.Create(CultureInfo.InvariantCulture, $"{url.Authority} · v{version}") : url.Authority);
     }
 
-    // The profile's state with its §11.3 glyph: ✓ approved, ◇ anything to look at, ✕ unreadable.
-    internal static string ProfileHead(ProfileView p)
+    // The profile's state in words; its glyph is ProfileGlyph's.
+    internal static string ProfileHead(ProfileView p) => ProfileState(p);
+
+    // The profile state's §11.3 glyph: ✓ approved, ✕ unreadable, ◇ anything else to look at.
+    internal static StateGlyph ProfileGlyph(ProfileView p) => ProfileState(p) switch
     {
-        var state = ProfileState(p);
-        var glyph = state switch
-        {
-            "approved" => Labels.GlyphOk,
-            "unreadable" => Labels.GlyphDown,
-            _ => Labels.GlyphProfile,
-        };
-        return glyph + " " + state;
-    }
+        "approved" => StateGlyph.Ok,
+        "unreadable" => StateGlyph.Down,
+        _ => StateGlyph.Profile,
+    };
 
     // The Health page's profile rows (§4.8): the approved hash, the live one when it differs, the file with ~ for home.
     internal static IEnumerable<HealthCell> Profile(ProfileView p)

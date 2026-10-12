@@ -42,6 +42,7 @@ internal sealed class HealthDetail : ObservableObject
         Strip = [.. StatusText.Strip(status)];
         Process = [.. StatusText.Process(url, status)];
         ProfileHead = StatusText.ProfileHead(status.Profile);
+        ProfileGlyph = StatusText.ProfileGlyph(status.Profile);
         Profile = [.. StatusText.Profile(status.Profile)];
     }
 }

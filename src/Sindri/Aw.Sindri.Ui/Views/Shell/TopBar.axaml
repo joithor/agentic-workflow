@@ -21,7 +21,7 @@
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
       <StackPanel x:Name="Brand" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,20,0">
-        <TextBlock Classes="detail-title brand" Text="◆" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+        <views:StateIcon x:Name="BrandMark" Classes="brand" Icon="Brand" VerticalAlignment="Center" />
         <TextBlock x:Name="BrandWord" Classes="body-strong" Text="{Binding Text.Sindri}" VerticalAlignment="Center"
                    AutomationProperties.Name="{Binding Text.Sindri}" />
       </StackPanel>
@@ -86,8 +86,12 @@
           <Path Classes="magnifier" Data="M5.5,1 A4.5,4.5 0 1 1 5.5,10 A4.5,4.5 0 1 1 5.5,1 Z M8.8,8.8 L12,12" VerticalAlignment="Center" />
           <TextBlock x:Name="SearchText" Grid.Column="1" Classes="caption subtle search-text" Text="{Binding Text.Search}" AutomationProperties.Name="{Binding Text.Search}" VerticalAlignment="Center"
                      TextTrimming="CharacterEllipsis" />
-          <Border x:Name="SearchKeycap" Grid.Column="2" Classes="kbd search-key">
-            <TextBlock Classes="kbd" Text="{Binding Text.SearchKey}" AutomationProperties.Name="{Binding Text.SearchKey}" />
+          <Border x:Name="SearchKeycap" Grid.Column="2" Classes="kbd search-key" AutomationProperties.Name="{Binding Text.SearchKey}">
+            <StackPanel Orientation="Horizontal" Spacing="1">
+              <views:StateIcon Classes="kbd" Icon="Command" VerticalAlignment="Center" />
+              <TextBlock Classes="kbd" Text="{Binding Text.SearchKeyLetter}" VerticalAlignment="Center"
+                         AutomationProperties.Name="{Binding Text.SearchKey}" />
+            </StackPanel>
           </Border>
         </Grid>
       </Border>
@@ -103,8 +107,8 @@
         <Button x:Name="RefreshButton" Classes="refresh" IsVisible="{Binding Pill.IsRefreshShown}" IsEnabled="{Binding Health.CanRefresh}"
                 Click="OnRefresh" AutomationProperties.Name="{Binding Text.Refresh}">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <TextBlock Classes="caption subtle" Text="⟳" AutomationProperties.AccessibilityView="Raw" />
-            <TextBlock Classes="caption" Text="{Binding Text.Refresh}" />
+            <views:StateIcon x:Name="RefreshIcon" Icon="Refresh" VerticalAlignment="Center" />
+            <TextBlock Classes="caption" Text="{Binding Text.Refresh}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
         <Button x:Name="HealthPill" Classes="health-pill" Click="OnHealthPill"

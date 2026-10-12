@@ -506,8 +506,9 @@ public sealed class ShellWindowTests : IDisposable
                 var icon = Named<StateIcon>(window, name);
                 Assert.True(icon.IsEffectivelyVisible, name + " is hidden");
                 Assert.NotNull(icon.Geometry);
-                Assert.Equal(size, icon.Bounds.Width, 3);
-                Assert.Equal(size, icon.Bounds.Height, 3);
+                // Within layout rounding (the window rounds to whole pixels).
+                Assert.Equal(size, icon.Bounds.Width, 0.5);
+                Assert.Equal(size, icon.Bounds.Height, 0.5);
             }
 
             Assert.Equal(StateGlyph.Stale, Glyph(window, "PillGlyph"));

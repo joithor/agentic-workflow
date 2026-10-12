@@ -58,6 +58,9 @@ internal static partial class Labels
     /// <summary>The ⌘K field's key chip.</summary>
     internal const string SearchKey = "⌘K";
 
+    /// <summary>The ⌘K chip's letter, drawn after the ⌘ icon.</summary>
+    internal const string SearchKeyLetter = "K";
+
     /// <summary>Home's Needs you panel.</summary>
     internal const string NeedsYouPanel = "NEEDS YOU";
 
@@ -140,18 +143,6 @@ internal static partial class Labels
 
     /// <summary>The not-responding banner's words before its <see cref="DoctorFix"/> chip.</summary>
     internal const string NotRespondingLead = "Sindri not responding: run";
-
-    /// <summary>The health pill's glyph while running (§11.3 ok).</summary>
-    internal const string GlyphOk = "✓";
-
-    /// <summary>The health pill's glyph while stale (§11.3 stale).</summary>
-    internal const string GlyphStale = "⌛";
-
-    /// <summary>The health pill's glyph with nothing to follow: not running, unreadable, a version mismatch (§11.3 failure).</summary>
-    internal const string GlyphDown = "✕";
-
-    /// <summary>The profile glyph (§11.3 profile): something to look at.</summary>
-    internal const string GlyphProfile = "◇";
 
     // The health line's labels (§4.8): Home's strip cells and the Health page's rows.
 

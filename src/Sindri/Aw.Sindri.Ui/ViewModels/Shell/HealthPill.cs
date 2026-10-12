@@ -50,14 +50,14 @@ internal sealed class HealthPill : ObservableObject
     /// <param name="notResponding">True after three failed refreshes while stale.</param>
     internal void Show(ShellState state, TimeSpan age, bool notResponding)
     {
-        (_, Word, Age) = state switch
+        (Glyph, Word, Age) = state switch
         {
-            ShellState.Normal => (Labels.GlyphOk, Labels.Running, Labels.UpdatedAgo(age)),
-            ShellState.Stale => (Labels.GlyphStale, Labels.Stale, Labels.UpdatedAgo(age)),
-            ShellState.NotRunning => (Labels.GlyphDown, Labels.NotRunning, string.Empty),
-            ShellState.Unreadable => (Labels.GlyphDown, Labels.Unreadable, Labels.Stale),
-            ShellState.VersionMismatch => (Labels.GlyphDown, Labels.VersionMismatch, string.Empty),
-            ShellState.Connecting => (string.Empty, Labels.Connecting, string.Empty),
+            ShellState.Normal => (StateGlyph.Ok, Labels.Running, Labels.UpdatedAgo(age)),
+            ShellState.Stale => (StateGlyph.Stale, Labels.Stale, Labels.UpdatedAgo(age)),
+            ShellState.NotRunning => (StateGlyph.Down, Labels.NotRunning, string.Empty),
+            ShellState.Unreadable => (StateGlyph.Down, Labels.Unreadable, Labels.Stale),
+            ShellState.VersionMismatch => (StateGlyph.Down, Labels.VersionMismatch, string.Empty),
+            ShellState.Connecting => (StateGlyph.None, Labels.Connecting, string.Empty),
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, message: null),
         };
         Text = HasAge ? Word + " · " + Age : Word;

@@ -29,8 +29,16 @@ internal static class TextScale
             }
         }
 
+        foreach (var key in _sizes)
+        {
+            resources[key] = Base(resources, key) * clamped;
+        }
+
         resources["Type.Scale"] = clamped;
     }
+
+    // Sizes that follow the text: the icon box (Theme/Icons.axaml), so a glyph stays as tall as its word.
+    private static readonly string[] _sizes = ["Size.Icon"];
 
     private static readonly string[] _steps = ["PageTitle", "DetailTitle", "Body", "BodyStrong", "Caption", "Eyebrow", "Button", "Mono", "Kbd"];
 
