@@ -11,7 +11,8 @@ namespace Aw.Sindri.Infrastructure.Control;
 /// comes from proc_pidinfo(PROC_PIDTBSDINFO) on macOS and /proc/&lt;pid&gt;/stat on Linux. The name is the basename of
 /// argv[0] (sysctl KERN_PROCARGS2, /proc/&lt;pid&gt;/cmdline), as ps shows it, because the kernel's own name is the
 /// executable's file name: Claude Code runs as '~/.local/share/claude/versions/2.1.296', invoked as 'claude'. The
-/// kernel's name stands in when argv can't be read. A level the OS won't show (a sandbox, another user's process, a
+/// kernel's name stands in when argv can't be read. The executable's path comes from proc_pidpath on macOS and
+/// /proc/&lt;pid&gt;/exe on Linux (engine spec §6.2: the probe records it). A level the OS won't show (a sandbox, another user's process, a
 /// pid that exited) ends the walk.
 /// </summary>
 internal sealed partial class PosixProcessAncestry : IProcessAncestry
@@ -25,6 +26,7 @@ internal sealed partial class PosixProcessAncestry : IProcessAncestry
     private const int KernelControl = 1;     // CTL_KERN
     private const int ArgumentMax = 8;       // KERN_ARGMAX
     private const int ProcessArguments = 49; // KERN_PROCARGS2
+    private const int PathMax = 4096;        // PROC_PIDPATHINFO_MAXSIZE
 
     public IReadOnlyList<ProcessAncestor> Ancestors(int pid, int max)
     {
@@ -32,21 +34,21 @@ internal sealed partial class PosixProcessAncestry : IProcessAncestry
         var current = pid;
         while (found.Count < max && current != 1 && Read(current) is { Parent: > 0 } self && Read(self.Parent) is { } parent)
         {
-            found.Add(new ProcessAncestor(self.Parent, parent.Name));
+            found.Add(new ProcessAncestor(self.Parent, parent.Name) { Executable = parent.Executable });
             current = self.Parent;
         }
 
         return found;
     }
 
-    private static (int Parent, string Name)? Read(int pid) =>
+    private static (int Parent, string Name, string? Executable)? Read(int pid) =>
         OperatingSystem.IsMacOS() ? ReadMac(pid) : OperatingSystem.IsLinux() ? ReadLinux(pid) : null;
 
-    private static (int Parent, string Name)? ReadMac(int pid)
+    private static (int Parent, string Name, string? Executable)? ReadMac(int pid)
     {
         if (pid == 1)
         {
-            return (0, "launchd");   // pid 1 is always launchd, and proc_pidinfo refuses root's processes to other users
+            return (0, "launchd", "/sbin/launchd");   // pid 1 is always launchd, and proc_pidinfo refuses root's processes to other users
         }
 
         var info = new byte[BsdInfoSize];
@@ -57,7 +59,14 @@ internal sealed partial class PosixProcessAncestry : IProcessAncestry
 
         var name = Text(info.AsSpan(NameOffset, 32));
         var kernelName = name.Length > 0 ? name : Text(info.AsSpan(CommandOffset, 16));
-        return ((int)BinaryPrimitives.ReadUInt32LittleEndian(info.AsSpan(ParentOffset)), BaseName(ArgumentZeroMac(pid)) ?? kernelName);
+        return ((int)BinaryPrimitives.ReadUInt32LittleEndian(info.AsSpan(ParentOffset)), BaseName(ArgumentZeroMac(pid)) ?? kernelName, ExecutableMac(pid));
+    }
+
+    private static string? ExecutableMac(int pid)
+    {
+        var buffer = new byte[PathMax];
+        var length = ProcPidPath(pid, ref buffer[0], PathMax);
+        return length > 0 ? Encoding.UTF8.GetString(buffer, 0, length) : null;
     }
 
     /// <summary>argv[0] from KERN_PROCARGS2: argc (int32), the exec path, NUL padding, then argv[0].</summary>
@@ -91,7 +100,7 @@ internal sealed partial class PosixProcessAncestry : IProcessAncestry
         return argument.Length > 0 ? argument : null;
     }
 
-    private static (int Parent, string Name)? ReadLinux(int pid)
+    private static (int Parent, string Name, string? Executable)? ReadLinux(int pid)
     {
         string stat;
         string? arguments;
@@ -111,8 +120,20 @@ internal sealed partial class PosixProcessAncestry : IProcessAncestry
         var fields = close > open && open >= 0 ? stat[(close + 1)..].Split(' ', StringSplitOptions.RemoveEmptyEntries) : [];
         var argumentZero = arguments.Split('\0')[0];
         return fields.Length > 1 && int.TryParse(fields[1], NumberStyles.None, CultureInfo.InvariantCulture, out var parent)
-            ? (parent, BaseName(argumentZero.Length > 0 ? argumentZero : null) ?? stat[(open + 1)..close])
+            ? (parent, BaseName(argumentZero.Length > 0 ? argumentZero : null) ?? stat[(open + 1)..close], ExecutableLinux(pid))
             : null;
+    }
+
+    private static string? ExecutableLinux(int pid)
+    {
+        try
+        {
+            return new FileInfo(string.Create(CultureInfo.InvariantCulture, $"/proc/{pid}/exe")).LinkTarget;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     private static string? BaseName(string? path) => path is null ? null : path[(path.LastIndexOf('/') + 1)..] is { Length: > 0 } name ? name : null;
@@ -127,6 +148,9 @@ internal sealed partial class PosixProcessAncestry : IProcessAncestry
 
     [LibraryImport(LibSystem, EntryPoint = "proc_pidinfo")]
     private static partial int ProcPidInfo(int pid, int flavor, ulong argument, ref byte buffer, int bufferSize);
+
+    [LibraryImport(LibSystem, EntryPoint = "proc_pidpath")]
+    private static partial int ProcPidPath(int pid, ref byte buffer, uint bufferSize);
 
     [LibraryImport(LibSystem, EntryPoint = "sysctl")]
     private static partial int Sysctl(ref int name, uint nameLength, ref byte value, ref nuint valueLength, IntPtr newValue, nuint newLength);

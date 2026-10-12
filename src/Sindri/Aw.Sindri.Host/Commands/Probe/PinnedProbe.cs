@@ -25,6 +25,7 @@ internal static class PinnedProbe
         ["NoDefaultCurrentDirectoryInExePath"] = "a Windows/Node path-search setting; humans set it too",
         ["AW_SINDRI_HOME"] = "set by scripts/sindri-prove.sh for the probe run, not by Claude Code",
         ["AW_SINDRI_PORT"] = "set by scripts/sindri-prove.sh for the probe run, not by Claude Code",
+        ["SINDRI"] = "the prover's command line, set for the probe run, not by Claude Code",
     };
 
     /// <summary>Every pinned harness, in the order 'doctor' prints them.</summary>

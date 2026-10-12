@@ -203,16 +203,20 @@ composed by the host from the class and the client label, never taken from a hea
 The CLI calls as `human` only when stdin and stdout are a terminal **and** it sees no agent signal; otherwise it calls
 as `session` (API spec §6). An agent signal is either:
 
-- one of the agent-session variables, set to anything non-empty: `CLAUDECODE` (Claude Code), `AW_SINDRI_CHILD`
-  (Sindri's own children), `CODEX_SANDBOX` (Codex's sandbox), `CURSOR_AGENT` (Cursor's agent); or
-- an agent harness among the CLI's ancestors, nearest first, up to 32 levels: `claude`, `codex` or `cursor-agent`. Each
-  ancestor is named by the basename of its `argv[0]`, as `ps` shows it (macOS: `proc_pidinfo` for the parent pid and
-  `sysctl KERN_PROCARGS2` for `argv`; Linux: `/proc/<pid>/stat` and `/proc/<pid>/cmdline`), because the kernel's own
-  name is the executable's file: Claude Code runs as `~/.local/share/claude/versions/<version>`, invoked as `claude`.
-  An ancestry that can't be read (a sandbox refuses process info) is ignored; the variables still apply.
+- one of the agent-session variables, set to anything non-empty: the pinned harness probe's markers (below:
+  `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CLAUDE_CODE_EXECPATH`, `CLAUDE_CODE_SESSION_ID`, `CLAUDE_PID` for Claude
+  Code; `CODEX_SANDBOX` and `CURSOR_AGENT`, provisional until the owner probes), then `AW_SINDRI_CHILD` (Sindri's own
+  children); or
+- an agent harness among the CLI's ancestors, nearest first, up to 32 levels, by the probe's ancestry patterns: invoked
+  as `claude`, or an executable under `…/claude/versions/`; `codex` and `cursor-agent` (provisional). Each ancestor is
+  named by the basename of its `argv[0]`, as `ps` shows it (macOS: `proc_pidinfo` for the parent pid, `sysctl
+  KERN_PROCARGS2` for `argv` and `proc_pidpath` for the executable; Linux: `/proc/<pid>/stat`, `/proc/<pid>/cmdline`
+  and `/proc/<pid>/exe`), because the kernel's own name is the executable's file: Claude Code runs as
+  `~/.local/share/claude/versions/<version>`, invoked as `claude`. An ancestry that can't be read (a sandbox refuses
+  process info) is ignored; the variables still apply.
 
-Both lists are provisional until the engine's harness probe pins them in a golden (engine §6.2, P2).
-`AW_SINDRI_PROVER=1` (set by `scripts/sindri-prove.sh human`) skips the parent-process check, never the variables, and
+Both lists live in `Host/Commands/Probe/PinnedProbe.cs` and are golden-tested against the probe reports (engine §6.2,
+"The harness probe" below). `AW_SINDRI_PROVER=1` (set by `scripts/sindri-prove.sh human`) skips the parent-process check, never the variables, and
 labels a human CLI `X-Sindri-Client: prover`.
 
 What the CLI sends on every API call:
@@ -228,8 +232,9 @@ repo entries (real paths, `~` expanded) by whole path segments; the longest cont
 outside every entry the header is omitted. A missing token file means no token is sent, which the API refuses with
 `SND-AUTH-001`.
 
-A command the API refuses with `SND-AUTH-002` names why the CLI ran as a session: `(this CLI ran as a session:
-CLAUDECODE is set | parent process claude | no terminal)`. It exits 2.
+A command the API refuses with `SND-AUTH-002` names why the CLI ran as a session, the first variable or process it
+found: `(this CLI ran as a session: CLAUDE_CODE_ENTRYPOINT is set | parent process claude | parent process 2.1.296
+(~/.local/share/claude/versions/2.1.296) | no terminal)`. It exits 2.
 
 **Who starts the control plane** (API spec §7):
 
@@ -239,7 +244,7 @@ CLAUDECODE is set | parent process claude | no terminal)`. It exits 2.
 | `sindri serve` | Refused in an agent session (an agent variable is set, or a parent process is an agent harness without `AW_SINDRI_PROVER=1`): `SND-API-001 an agent session never starts Sindri (<signal>); ask the human to run 'sindri'`, exit 1 (P1 plan G6) |
 | `sindri profile approve [--no-start] [<hash>]` | A human at a terminal starts it, then approves; `--no-start` prints `SND-API-001` instead. A malformed hash and a hash without a terminal are refused first, before anything starts. In an agent session or without a terminal it never starts it (P1 plan G8) |
 | `sindri status`, `sindri stop` | Never start it: `not running`, exit 1 |
-| `sindri doctor`, `sindri profile validate` | Run locally |
+| `sindri doctor`, `sindri doctor --probe`, `sindri profile validate` | Run locally |
 
 A CLI without a terminal and without an agent signal (a script, launchd) still starts it with bare `sindri`, as in S1.
 
@@ -255,6 +260,67 @@ A CLI without a terminal and without an agent signal (a script, launchd) still s
 
 Codex also sets `CODEX_THREAD_ID`, `CODEX_SESSION_ID` and `CODEX_CI=1` in every mode, full access included: a candidate
 for the engine probe's list (not read in P1).
+
+### The harness probe
+
+`sindri doctor --probe [--harness <name>]` prints, as JSON and without calling the control plane, what this process
+sees (engine §6.2): the **names** of every environment variable set (never a value, so no secret is recorded), the
+whole ancestry up to launchd or init as `{name, executable}` (the home directory written `~`), whether stdin and stdout
+are a terminal, and the harness's version (from a `…/versions/<v>` executable path, else `<command> --version`).
+Without `--harness` it names the harness the pinned probe recognises (`unknown` when none).
+
+One golden per harness lives in `tests/Aw.Sindri.Tests/Golden/Probe/`, either a report or
+`{"harness": "...", "pending": "owner probe"}`. `PinnedProbe` reduces each report to markers and ancestry patterns, and
+`Agent_variables_match_the_probe` checks the reduction: every marker is in the harness's report and in no human
+terminal's; every other variable the harness adds over the plain terminal is listed as excluded with its reason (so a
+new variable fails the test until someone decides); every ancestry pattern matches the harness's ancestry and no human
+terminal's.
+
+| Golden | State | Source |
+|---|---|---|
+| `claude-code.json` | pinned (2026-10-12, Claude Code 2.1.296, its Bash tool in Warp) | `scripts/sindri-prove.sh doctor --probe` from an agent session, `SINDRI="$HOME/.dotnet/dotnet artifacts/bin/Aw.Sindri.Host/debug/sindri.dll"` |
+| `plain-terminal.json` | pinned (derived) | the variable names Claude Code was launched with (`ps eww` of the `claude` process: the owner's Warp shell's exported environment) and that shell's ancestry (`-zsh`, Warp, launchd). The owner may replace it with a real probe from a plain terminal |
+| `codex-read-only.json`, `codex-workspace-write.json`, `codex-danger-full-access.json` | pending: owner probe | — |
+| `cursor-agent.json`, `cursor-terminal.json` | pending: owner probe | — |
+
+**Excluded from Claude Code's markers** (it sets them, a plain terminal doesn't, but they don't mark it reliably):
+`AI_AGENT` (a cross-tool marker that an app hosting the human's terminal, like Cursor, may set there too; waits for the
+`cursor-terminal` probe); `CLAUDE_CODE_BRIDGE_SESSION_ID`, `CLAUDE_CODE_CHILD_SESSION`, `CLAUDE_CODE_MESSAGING_SOCKET`,
+`CLAUDE_CODE_MESSAGING_TOKEN`, `CLAUDE_CODE_SESSION_ATTENDED` (set only in some launch modes); `CLAUDE_EFFORT` (a setting
+a human may export); `COREPACK_ENABLE_AUTO_PIN`, `GIT_EDITOR`, `NoDefaultCurrentDirectoryInExePath` (other tools'
+settings humans set too); `AW_SINDRI_HOME`, `AW_SINDRI_PORT`, `SINDRI` (set by the prover for the run). Every variable
+of the plain terminal is excluded by definition: humans see it.
+
+**`sindri doctor`** adds one line per pinned harness. The harness it runs in is re-probed: `ok` when every marker is
+still set and the version matches, else `warn` naming the missing variable or the new version. Every other harness's
+installed version (`<command> --version`) is compared with the pinned one: `warn` on a mismatch, `ok` when equal or
+not installed. A pending owner probe is always `warn` (so `doctor` exits at least 1 until the owner probes Codex and
+Cursor).
+
+**Owner steps.** Build once (`dotnet build src/Sindri/Aw.Sindri.Host`), then in the repo root, inside each harness, ask
+it to run (Codex, Cursor's agent) or run yourself (Cursor's integrated terminal):
+
+```bash
+H=$(mktemp -d "${TMPDIR:-/tmp}/probe.XXXX")
+AW_SINDRI_HOME=$H SINDRI="$HOME/.dotnet/dotnet artifacts/bin/Aw.Sindri.Host/debug/sindri.dll" \
+  scripts/sindri-prove.sh doctor --probe --harness <name> | jq . > tests/Aw.Sindri.Tests/Golden/Probe/<file>.json
+```
+
+| Where | `<name>` | `<file>` |
+|---|---|---|
+| `codex exec -s read-only` (or `codex --sandbox read-only`) | `codex:read-only` | `codex-read-only` |
+| `codex exec -s workspace-write` | `codex:workspace-write` | `codex-workspace-write` |
+| `codex exec -s danger-full-access` | `codex:danger-full-access` | `codex-danger-full-access` |
+| Cursor's agent (its terminal tool, or `cursor-agent`) | `cursor-agent` | `cursor-agent` |
+| Cursor's integrated terminal, typed by you | `cursor-terminal` | `cursor-terminal` |
+
+Use the prover's **session** mode as written (not `sindri-prove.sh human`, which unsets the very variables being
+probed). In Codex's read-only sandbox the redirect can't write the file: let it print, and save the output yourself.
+Then, in `PinnedProbe.cs`, turn the entry's `Owner(...)` into a pinned entry: its version (the report's), its markers
+(variables the harness adds over `plain-terminal.json` that only it sets), its ancestry patterns, and every other added
+variable under `Excluded` with a reason. Add the new markers to `scripts/sindri-prove.sh`'s `human` unset line (a test
+checks it). `dotnet test --project tests/Aw.Sindri.Tests --filter-namespace "Aw.Sindri.Tests.Commands.Probe"` then
+says what is still undecided. Re-probe the same way when `sindri doctor` warns that a version changed.
 
 ## Command chain
 

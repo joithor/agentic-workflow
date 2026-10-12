@@ -4,8 +4,10 @@
 #
 #   sindri-prove.sh <verb> [args…]        $SINDRI <verb> as the calling agent (a session): the environment is untouched
 #   sindri-prove.sh human [<verb> [args…]]
-#                                         $SINDRI as the owner: the agent variables (CLAUDECODE, AW_SINDRI_CHILD,
-#                                         CODEX_SANDBOX, CURSOR_AGENT) unset, AW_SINDRI_PROVER=1, under a pty
+#                                         $SINDRI as the owner: the agent variables (the pinned probe's, engine
+#                                         spec §6.2: CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_EXECPATH,
+#                                         CLAUDE_CODE_SESSION_ID, CLAUDE_PID, CODEX_SANDBOX, CURSOR_AGENT,
+#                                         AW_SINDRI_CHILD) unset, AW_SINDRI_PROVER=1, under a pty
 #                                         (scripts/lib/with-tty.sh), stdin passed through, CRs and terminal control
 #                                         sequences stripped; stdout and stderr arrive merged on stdout. Exit: the CLI's.
 #                                         e.g. printf '%s\n' "${H:0:6}" | sindri-prove.sh human profile approve "$H"
@@ -43,7 +45,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/lib/with-tty.sh"
 
 die() { echo "sindri-prove: $*" >&2; exit 2; }
-usage() { sed -n '5,20p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '5,22p' "$0" | sed 's/^# \{0,1\}//'; }
 
 case "${1:-}" in
   -h | --help) usage; exit 0 ;;
@@ -166,7 +168,7 @@ case "$1" in
   curl) shift; prove_curl "$@" ;;
   human)
     shift
-    with_tty env -u CLAUDECODE -u AW_SINDRI_CHILD -u CODEX_SANDBOX -u CURSOR_AGENT AW_SINDRI_PROVER=1 \
+    with_tty env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_EXECPATH -u CLAUDE_CODE_SESSION_ID -u CLAUDE_PID -u AW_SINDRI_CHILD -u CODEX_SANDBOX -u CURSOR_AGENT AW_SINDRI_PROVER=1 \
       "${SINDRI_CMD[@]}" "$@"
     ;;
   *) "${SINDRI_CMD[@]}" "$@" ;;

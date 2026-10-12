@@ -48,5 +48,6 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IRecipeWake, NoOpRecipeWake>()
             .AddSingleton<IRecipeStore, SqliteRecipeStore>()
             .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>()
-            .AddSingleton<IChallenges, ProcessChallenges>();
+            .AddSingleton<IChallenges, ProcessChallenges>()
+            .AddSingleton<IHarnessVersions, CommandHarnessVersions>();
 }

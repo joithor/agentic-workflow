@@ -33,7 +33,9 @@ public sealed class PosixProcessAncestryContractTests : ProcessAncestryContract
 
             var parent = new PosixProcessAncestry().Ancestors(child, 1);
 
-            Assert.Equal(new ProcessAncestor(harness.Id, "aw-fake-harness") { Executable = "/bin/sh" }, Assert.Single(parent));   // the executable is the link's target
+            var found = Assert.Single(parent);
+            Assert.Equal((harness.Id, "aw-fake-harness"), (found.Pid, found.Name));
+            Assert.StartsWith("/bin/", found.Executable, StringComparison.Ordinal);   // the file the OS runs (/bin/sh, which is bash on macOS), never the link
         }
         finally
         {

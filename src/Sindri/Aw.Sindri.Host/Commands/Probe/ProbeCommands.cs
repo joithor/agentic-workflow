@@ -10,13 +10,11 @@ namespace Aw.Sindri.Host.Commands.Probe;
 /// <param name="interactive">Whether stdin and stdout are a terminal.</param>
 internal sealed class ProbeCommands(IProcessAncestry ancestry, IHarnessVersions versions, Func<string, string?> environment, bool interactive)
 {
-    /// <summary>Prints this process's probe as JSON. Exit 0.</summary>
+    /// <summary>This process's probe, which 'doctor --probe' prints as JSON (exit 0).</summary>
     /// <param name="harness">The harness name the owner gave, or null.</param>
-    /// <param name="output">Where it prints.</param>
     /// <param name="cancellationToken">Cancels the version read.</param>
-    /// <returns>The exit code.</returns>
-    internal async Task<int> Probe(string? harness, Output output, CancellationToken cancellationToken) =>
-        await output.Json(await Live(harness, cancellationToken).ConfigureAwait(false), 0).ConfigureAwait(false);
+    /// <returns>The report.</returns>
+    internal ValueTask<HarnessProbeReport> Probe(string? harness, CancellationToken cancellationToken) => Live(harness, cancellationToken);
 
     /// <summary>The doctor's harness lines against the pinned probe.</summary>
     /// <param name="cancellationToken">Cancels the reads.</param>
