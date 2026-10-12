@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
@@ -34,7 +35,7 @@ public static partial class TransitionDecision
             var before = Input.Instance;
             var trigger = Answered is { } answer
                 ? new TriggerRecord(answer.Name, Key, answer.Actor, Outcome: null)
-                : new TriggerRecord(Trigger.Name, Key, Trigger.Actor, Outcome(Trigger));
+                : new TriggerRecord(Trigger.Name, Key, Trigger.Actor, Outcome(Trigger), (Trigger as StepFailed)?.Reason);
             return new InstanceChange(after, new WorkflowEvent(
                 type, after.Id, trigger, Started: null, Rules.Delta(before, after),
                 records.Gates, records.Evidence, Grant: null, Override: null, Refusal: null, Effects: []));

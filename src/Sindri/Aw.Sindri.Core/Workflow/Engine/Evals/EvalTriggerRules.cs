@@ -12,7 +12,7 @@ internal static class EvalTriggerRules
     ];
 
     /// <summary>What is wrong with <paramref name="line"/>, with its fix; null when it keeps the rules.</summary>
-    public static string? Unfit(EvalTrigger line) => Kind(line) ?? Park(line) ?? Variant(line) ?? Amount(line);
+    public static string? Unfit(EvalTrigger line) => Kind(line) ?? Park(line) ?? Reason(line) ?? Variant(line) ?? Amount(line);
 
     /// <summary>The answer option a variant gives.</summary>
     public static AnswerVariant Answer(EvalVariant variant) => variant switch
@@ -66,6 +66,14 @@ internal static class EvalTriggerRules
             ? null
             : $"'{line.Kind}' names no command verb (fix: command.<verb>, the verb [a-z][a-z-]{{1,31}})";
     }
+
+    private static string? Reason(EvalTrigger line) => line.Reason switch
+    {
+        null => null,
+        _ when line.Kind != TriggerNames.StepFailed => "'reason' belongs on a step.failed line only (fix: remove it, or use kind step.failed)",
+        { Length: 0 } => "'reason' is empty (fix: say what failed, or leave 'reason' out for the default)",
+        _ => null,
+    };
 
     private static string? Park(EvalTrigger line) => line.Park is not null && line.Kind != TriggerNames.ChildParked
         ? "'park' belongs on a child.parked line only (fix: remove it, or use kind child.parked)"

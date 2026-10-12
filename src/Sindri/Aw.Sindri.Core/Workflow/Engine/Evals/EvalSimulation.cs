@@ -31,6 +31,9 @@ internal sealed record EvalSimulation(
     private const string Person = "human:eval";
     private const string Inbox = "service:workflow.inbox";
     private const string Timers = "service:workflow.timers";
+
+    /// <summary>A step.failed line's reason when it gives none: the same on every line, so a repeat is 'sameFailure' (§3.7).</summary>
+    internal const string DefaultFailure = "the Step failed";
     private static readonly FactKey _answer = FactKey.From("fact:answer");
 
     /// <summary>The case's instance, started with the line-1 inputs.</summary>
@@ -153,7 +156,7 @@ internal sealed record EvalSimulation(
         {
             TriggerNames.StepCompleted when line.Outcome is { } outcome => Run(run => new StepCompleted(Person, run, outcome, outputs, Tokens: 0, StepRuntime.Agent, report)),
             TriggerNames.StepCompleted => Missing("step.completed needs the Step's 'outcome'"),
-            TriggerNames.StepFailed => Run(run => new StepFailed(Person, run, $"the Step failed (eval line {Text(number)})", Tokens: 0, report)),
+            TriggerNames.StepFailed => Run(run => new StepFailed(Person, run, line.Reason ?? DefaultFailure, Tokens: 0, report)),
             TriggerNames.WaitSatisfied => Satisfied(line, outputs, number),
             TriggerNames.ChildParked => Child(ChildChange.Parked, line.Park, number),
             TriggerNames.ChildResumed => Child(ChildChange.Resumed, reason: null, number),

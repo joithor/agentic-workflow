@@ -98,8 +98,9 @@ public static class EvalRecorder
         var outputs = facts.Count == 0 ? null : facts;
         return kind switch
         {
-            TriggerNames.StepCompleted or TriggerNames.StepFailed or TriggerNames.WaitSatisfied =>
+            TriggerNames.StepCompleted or TriggerNames.WaitSatisfied =>
                 new EvalTrigger(kind, recorded.Trigger.Outcome, Without(outputs, _answer), Park: null),
+            TriggerNames.StepFailed => new EvalTrigger(kind, Outcome: null, Without(outputs, _answer), Park: null, Reason: recorded.Trigger.Reason),
             TriggerNames.ChildParked => new EvalTrigger(kind, Outcome: null, Outputs: null, after.Park),
             TriggerNames.ChildResumed or TriggerNames.ChildEscalated => new EvalTrigger(kind, Outcome: null, Outputs: null, Park: null),
             TriggerNames.Answer => Answer(step, facts, contents),

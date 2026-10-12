@@ -941,9 +941,9 @@ Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Amount.get -> int?
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Amount.init -> void
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Park, out Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant, out int? Amount) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Park, out Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant, out int? Amount, out string? Reason) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Equals(Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.EvalTrigger(string! Kind, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs = null, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park = null, Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant = null, int? Amount = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.EvalTrigger(string! Kind, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs = null, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park = null, Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant = null, int? Amount = null, string? Reason = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Kind.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Kind.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName?
@@ -952,6 +952,8 @@ Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Outputs.get -> System.Collectio
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Outputs.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Park.get -> Aw.Sindri.Core.Workflow.Engine.ParkReason?
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Park.init -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Reason.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Reason.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Variant.get -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant?
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Variant.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
@@ -1074,7 +1076,7 @@ Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord!
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Actor.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Actor.init -> void
-Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, out string! Actor, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome) -> void
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, out string! Actor, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out string? Reason) -> void
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Equals(Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Key.get -> Aw.Sindri.Core.Workflow.Engine.TriggerKey
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Key.init -> void
@@ -1082,7 +1084,9 @@ Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Kind.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Kind.init -> void
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName?
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Outcome.init -> void
-Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.TriggerRecord(string! Kind, Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, string! Actor, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome) -> void
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Reason.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Reason.init -> void
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.TriggerRecord(string! Kind, Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, string! Actor, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, string? Reason = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent!
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType Type, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord! Trigger, out Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? Started, out Aw.Sindri.Core.Workflow.Engine.Events.InstanceDelta! Delta, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>! Gates, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>! Evidence, out Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord? Grant, out Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord? Override, out Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord? Refusal, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity!>! Effects) -> void

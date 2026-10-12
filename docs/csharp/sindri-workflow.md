@@ -68,7 +68,7 @@ and stays inside its directory (`evals/<recipe id>/<case>.jsonl`).
 
 A case file is JSON lines, LF or CRLF:
 - line 1: `{"start":{"inputs":{"<fact>":"<value>",...}}}` (`"scaffold": true` marks a generated case);
-- each later line: `{"trigger":{"kind","outcome"?,"outputs"?,"park"?,"variant"?,"amount"?},"gates"?:{"<block>":"pass|fail|uncertain"},"expect":{"state","park"?,"outcome"?}}`.
+- each later line: `{"trigger":{"kind","outcome"?,"outputs"?,"park"?,"variant"?,"amount"?,"reason"?},"gates"?:{"<block>":"pass|fail|uncertain"},"expect":{"state","park"?,"outcome"?}}`.
 
 `kind` is a recipe trigger (`step.completed`, `step.failed`, `wait.satisfied`, `command.<verb>`), a child's change
 (`child.parked` with `park`, `child.resumed`, `child.escalated`; a child's end is `wait.satisfied` with its outcome),
@@ -76,6 +76,13 @@ or an engine trigger: `answer` with a `variant` (`grant`, `grant-tokens`, `accep
 grants take `amount`, a `text` answer's text is `outputs` `fact:answer`), `takeover`, `handback`, `cancel` and
 `deadline`. An answer wait is satisfied by an `answer` line with `variant` `text` (outcome `answered`), not by
 `wait.satisfied`. A `deadline` line fails until timers land (P5).
+
+A `step.failed` line takes an optional `reason`, what the Step reported as its failure. Left out, it is the constant
+`the Step failed`, the same on every line, so two `step.failed` lines in a loop are the same failure and park
+`no-progress` when the loop names `sameFailure` (spec §3.7). Give different reasons to make a round count as progress.
+`reason` on any other kind fails its line. `--record` writes each failure's reason from the event, so a recorded
+`sameFailure` park replays. `reason` isn't in the spec's §9.2 field list yet; the owner has been asked to add it there,
+and this page documents it in the meantime.
 
 Output, one line per case:
 

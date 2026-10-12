@@ -18,6 +18,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Evals;
 /// <param name="Park">The child's park reason, for 'child.parked' only.</param>
 /// <param name="Variant">The engine trigger the line stands for: required with kind 'answer' (its option), optional and equal to the kind otherwise.</param>
 /// <param name="Amount">The n of '--grant n' or '--grant-tokens n'.</param>
+/// <param name="Reason">A step.failed's reason, for 'step.failed' only; left out, the runner uses a constant, so two such lines are the same failure ('sameFailure', §3.7).</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record EvalTrigger(
     string Kind,
@@ -25,4 +26,5 @@ public sealed record EvalTrigger(
     IReadOnlyDictionary<FactKey, JsonElement>? Outputs = null,
     ParkReason? Park = null,
     EvalVariant? Variant = null,
-    int? Amount = null);
+    int? Amount = null,
+    string? Reason = null);
