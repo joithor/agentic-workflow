@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Aw.Context.Core.Graph;
 
 /// <summary>What a product-graph node is (spec §6.1); a node key's scheme names it.</summary>
-[JsonConverter(typeof(JsonStringEnumConverter<NodeKind>))]
+[JsonConverter(typeof(StrictEnumConverter<NodeKind>))]
 public enum NodeKind
 {
     /// <summary>A named capability, nested by part-of.</summary>

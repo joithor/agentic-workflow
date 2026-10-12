@@ -27,6 +27,11 @@ internal sealed class ImportMapService(IMapFileReader reader, IGraphStore store,
             return map.Error;
         }
 
+        if (MapAccess.Maps(map.Value.Repo, request.Scope) is { } unmapped)
+        {
+            return unmapped;
+        }
+
         if (!string.Equals(file.Value.Hash, request.ConfirmedHash, StringComparison.OrdinalIgnoreCase))
         {
             return ContextErrors.MapFileChanged.With(

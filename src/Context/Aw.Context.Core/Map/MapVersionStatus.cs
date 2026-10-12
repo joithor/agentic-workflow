@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Aw.Context.Core.Map;
 
 /// <summary>A map version's place in its lifecycle (spec §6.2, §8.7).</summary>
-[JsonConverter(typeof(JsonStringEnumConverter<MapVersionStatus>))]
+[JsonConverter(typeof(StrictEnumConverter<MapVersionStatus>))]
 public enum MapVersionStatus
 {
     /// <summary>Being written in batches; never read.</summary>

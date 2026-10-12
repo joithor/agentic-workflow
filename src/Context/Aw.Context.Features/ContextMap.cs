@@ -23,11 +23,11 @@ internal sealed class ContextMap(
     IService<CheckRetentionRequest, MapHealth> checkRetention,
     IService<PurgeMapRequest, PurgeReport> purge) : IContextMap
 {
-    public ValueTask<Result<MapFilePreview>> PreviewMap(string path, CancellationToken cancellationToken) =>
-        preview.Handle(new PreviewMapRequest(path), cancellationToken);
+    public ValueTask<Result<MapFilePreview>> PreviewMap(string path, ContextScope scope, CancellationToken cancellationToken) =>
+        preview.Handle(new PreviewMapRequest(path, scope), cancellationToken);
 
-    public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, CancellationToken cancellationToken) =>
-        import.Handle(new ImportMapRequest(path, confirmedHash), cancellationToken);
+    public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, ContextScope scope, CancellationToken cancellationToken) =>
+        import.Handle(new ImportMapRequest(path, confirmedHash, scope), cancellationToken);
 
     public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) =>
         export.Handle(new ExportMapRequest(path, scope), cancellationToken);

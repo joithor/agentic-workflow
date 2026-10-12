@@ -20,8 +20,9 @@ public sealed class SqliteGraphStoreContractTests : GraphStoreContract, IDisposa
 
     protected override IGraphStore CreateStore()
     {
-        var database = new ContextDatabase(SettingsFromEnvironment.Read(_home.Environment), new FakeTimeProvider());
+        var settings = SettingsFromEnvironment.Read(_home.Environment);
+        var database = new ContextDatabase(settings, new FakeTimeProvider());
         _databases.Add(database);
-        return new SqliteGraphStore(database);
+        return new SqliteGraphStore(database, settings);
     }
 }

@@ -58,8 +58,8 @@ public sealed class ExportMapTests : IDisposable
         _world.Reader.Put("/maps/export.json", document, System.Text.Encoding.UTF8.GetString(AwJson.Serialize(document, FixtureMap.Json)));
         _world.Clock.Advance(TimeSpan.FromDays(1));
 
-        var hash = (await _world.Map.PreviewMap("/maps/export.json", MapWorld.None)).Value.Hash;
-        var second = await _world.Map.ImportMap("/maps/export.json", hash, MapWorld.None);
+        var hash = (await _world.Map.PreviewMap("/maps/export.json", MapWorld.Human, MapWorld.None)).Value.Hash;
+        var second = await _world.Map.ImportMap("/maps/export.json", hash, MapWorld.Human, MapWorld.None);
 
         Assert.Equal(first.Counts, second.Value.Counts);
         var before = Canonical.Of((await _world.Store.Read(first.Version.Number, MapWorld.None)).Value);
@@ -80,7 +80,7 @@ public sealed class ExportMapTests : IDisposable
         var exported = await _world.Map.ExportMap(path: null, MapWorld.Human, MapWorld.None);
         var document = _world.Exports.Documents[exported.Value.Path];
         _world.Reader.Put("/maps/export.json", document, "export");
-        var again = await _world.Map.ImportMap("/maps/export.json", (await _world.Map.PreviewMap("/maps/export.json", MapWorld.None)).Value.Hash, MapWorld.None);
+        var again = await _world.Map.ImportMap("/maps/export.json", (await _world.Map.PreviewMap("/maps/export.json", MapWorld.Human, MapWorld.None)).Value.Hash, MapWorld.Human, MapWorld.None);
 
         Assert.Equal("feature:gone", Assert.Single(document.Orphaned!).Value);
         Assert.True(again.IsSuccess);

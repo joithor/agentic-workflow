@@ -5,7 +5,7 @@ using Aw.Context.Core.Results;
 
 namespace Aw.Context.Infrastructure.Graph;
 
-/// <summary>The text each enum is stored as (the CHECK constraints in 0001_s3a_graph.sql), both ways.</summary>
+/// <summary>The text each enum is stored as (the CHECK constraints in 0002_s3a_graph.sql), both ways.</summary>
 internal static class GraphText
 {
     private static readonly string[] _provenance = ["deterministic", "model", "human"];

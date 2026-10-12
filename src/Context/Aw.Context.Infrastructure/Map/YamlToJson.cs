@@ -25,6 +25,11 @@ internal static class YamlToJson
         var stream = new YamlStream();
         try
         {
+            if (TooDeep(yaml) is { } deep)
+            {
+                return deep;
+            }
+
             stream.Load(new StringReader(yaml));
         }
         catch (YamlException e)
@@ -48,6 +53,28 @@ internal static class YamlToJson
         }
 
         json = buffer.WrittenSpan.ToArray();
+        return null;
+    }
+
+    /// <summary>Walks the parser's events first, so nesting past 32 is refused before the (recursive) representation model is built.</summary>
+    private static string? TooDeep(string yaml)
+    {
+        var parser = new Parser(new StringReader(yaml));
+        var depth = 0;
+        while (parser.MoveNext())
+        {
+            depth += parser.Current switch
+            {
+                YamlDotNet.Core.Events.MappingStart or YamlDotNet.Core.Events.SequenceStart => 1,
+                YamlDotNet.Core.Events.MappingEnd or YamlDotNet.Core.Events.SequenceEnd => -1,
+                _ => 0,
+            };
+            if (depth > 32)
+            {
+                return string.Create(CultureInfo.InvariantCulture, $"line {parser.Current!.Start.Line}: nesting is too deep");   // why: MoveNext returned true, so there is a current event
+            }
+        }
+
         return null;
     }
 

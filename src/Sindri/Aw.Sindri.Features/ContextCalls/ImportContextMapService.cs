@@ -14,12 +14,18 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// its content hash; with a hash and the typed confirmation, the engine imports (refusing a file that changed since,
 /// SND-CONTEXT-034) and 'context.map.imported' is appended. The chain has already refused anyone but a human at a terminal.
 /// </summary>
-internal sealed class ImportContextMapService(IContextEngine engine, HeldLease held, ILedgerStore ledger, EventFactory events)
+internal sealed class ImportContextMapService(ContextScopes scopes, IContextEngine engine, HeldLease held, ILedgerStore ledger, EventFactory events)
     : IService<ImportContextMapRequest, ImportContextMapResponse>
 {
     public async ValueTask<Result<ImportContextMapResponse>> Handle(ImportContextMapRequest request, CancellationToken cancellationToken)
     {
-        var preview = await engine.PreviewMap(request.Path, cancellationToken).ConfigureAwait(false);
+        var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
+        if (scope.IsError)
+        {
+            return scope.Error;
+        }
+
+        var preview = await engine.PreviewMap(request.Path, scope.Value, cancellationToken).ConfigureAwait(false);
         if (preview.IsError || request.Hash is not { } hash)
         {
             return preview.IsError ? preview.Error : new ImportContextMapResponse(preview.Value, Imported: null, Sequence: null);
@@ -36,7 +42,7 @@ internal sealed class ImportContextMapService(IContextEngine engine, HeldLease h
             return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
         }
 
-        var imported = await engine.ImportMap(request.Path, hash, cancellationToken).ConfigureAwait(false);
+        var imported = await engine.ImportMap(request.Path, hash, scope.Value, cancellationToken).ConfigureAwait(false);
         if (imported.IsError)
         {
             return imported.Error;

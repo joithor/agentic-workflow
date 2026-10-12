@@ -17,8 +17,16 @@ internal sealed class PreviewMapService(IMapFileReader reader) : IService<Previe
         }
 
         var map = MapDocumentValidator.Check(file.Value.Document, KeyMigrations.Shipped);
-        return map.IsError
-            ? map.Error
-            : new MapFilePreview(request.Path, map.Value.Repo, file.Value.Document.Kind, file.Value.Hash, map.Value.Counts);
+        if (map.IsError)
+        {
+            return map.Error;
+        }
+
+        if (MapAccess.Maps(map.Value.Repo, request.Scope) is { } unmapped)
+        {
+            return unmapped;
+        }
+
+        return new MapFilePreview(request.Path, map.Value.Repo, file.Value.Document.Kind, file.Value.Hash, map.Value.Counts);
     }
 }

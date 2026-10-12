@@ -15,20 +15,25 @@ public static class OverrideApplier
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(overrides);
         var orphaned = new List<MapOverride>();
-        foreach (var o in overrides.OrderBy(o => o.At).ThenBy(o => o.ToId().Value, StringComparer.Ordinal))
+        var inapplicable = new List<MapOverride>();
+        foreach (var o in overrides.Select(o => (Override: o, Id: o.ToId().Value)).OrderBy(x => x.Override.At).ThenBy(x => x.Id, StringComparer.Ordinal).Select(x => x.Override))
         {
             var next = ApplyOne(graph, o);
-            if (next is null)
+            if (next is not null)
+            {
+                graph = next;
+            }
+            else if (o.Action != OverrideAction.Add && graph.Resolve(o.Target) is null)
             {
                 orphaned.Add(o);
             }
             else
             {
-                graph = next;
+                inapplicable.Add(o);
             }
         }
 
-        return new AppliedMap(graph, orphaned);
+        return new AppliedMap(graph, orphaned, inapplicable);
     }
 
     private static GraphSnapshot? ApplyOne(GraphSnapshot graph, MapOverride o)
@@ -47,7 +52,7 @@ public static class OverrideApplier
         return o.Action switch
         {
             OverrideAction.Accept => Replace(graph, target, target with { Provenance = Provenance.Human }),
-            OverrideAction.Rename when o.Label is { Length: > 0 } label => Replace(graph, target, target with { Label = label }),
+            OverrideAction.Rename when !string.IsNullOrWhiteSpace(o.Label) => Replace(graph, target, target with { Label = o.Label }),
             OverrideAction.Reject => o.Rejection is null || o.Rejection == RejectionIdentity.For(target) ? Remove(graph, target.Key) : graph,
             OverrideAction.Delete => Remove(graph, target.Key),
             OverrideAction.Move or OverrideAction.Merge => WithOther(graph, target, o),
@@ -59,7 +64,10 @@ public static class OverrideApplier
     private static GraphSnapshot? WithOther(GraphSnapshot graph, GraphNode target, MapOverride o)
     {
         var other = o.Other is { } key ? graph.Resolve(key) : null;
-        if (other is null || other.Key.Value == target.Key.Value || (o.Action == OverrideAction.Move && other.Key.Kind != NodeKind.Feature))
+        var allowed = o.Action == OverrideAction.Move
+            ? EdgeRules.Allows(EdgeType.PartOf, target.Key.Kind, other?.Key.Kind ?? NodeKind.Feature)
+            : other?.Key.Kind == target.Key.Kind;
+        if (other is null || other.Key.Value == target.Key.Value || !allowed)
         {
             return null;
         }
@@ -75,7 +83,7 @@ public static class OverrideApplier
         }
 
         var parent = o.Other is { } key ? graph.Resolve(key)?.Key : null;
-        if (o.Other is not null && parent is null)
+        if (o.Other is not null && (parent is not { } p0 || !EdgeRules.Allows(EdgeType.PartOf, o.Target.Kind, p0.Kind)))
         {
             return null;
         }

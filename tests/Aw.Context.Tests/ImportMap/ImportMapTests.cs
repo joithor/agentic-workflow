@@ -14,7 +14,7 @@ public sealed class ImportMapTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Preview_shows_the_hash_and_counts_and_writes_nothing()
     {
-        var preview = await _world.Map.PreviewMap(MapWorld.MapPath, MapWorld.None);
+        var preview = await _world.Map.PreviewMap(MapWorld.MapPath, MapWorld.Human, MapWorld.None);
 
         Assert.Equal(new MapCounts(19, 19, 1, 1, 2), preview.Value.Counts);
         Assert.Equal((FixtureMap.Repo, MapDocumentKind.Authored), (preview.Value.Repo, preview.Value.Kind));
@@ -37,10 +37,10 @@ public sealed class ImportMapTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Import_after_the_file_changed_is_SND_CONTEXT_034_and_writes_nothing()
     {
-        var confirmed = (await _world.Map.PreviewMap(MapWorld.MapPath, MapWorld.None)).Value.Hash;
+        var confirmed = (await _world.Map.PreviewMap(MapWorld.MapPath, MapWorld.Human, MapWorld.None)).Value.Hash;
         _world.Reader.Put(MapWorld.MapPath, Maps.Fixture(), FixtureMap.Yaml + "# edited\n");
 
-        var imported = await _world.Map.ImportMap(MapWorld.MapPath, confirmed, MapWorld.None);
+        var imported = await _world.Map.ImportMap(MapWorld.MapPath, confirmed, MapWorld.Human, MapWorld.None);
 
         Assert.Equal(ContextErrors.MapFileChanged.Code, imported.Error.Code);
         Assert.Contains(confirmed[..12], imported.Error.Message, StringComparison.Ordinal);
@@ -65,7 +65,7 @@ public sealed class ImportMapTests : IDisposable
     [InlineData("/maps/missing.yaml", "SND-CONTEXT-031")]
     public async Task A_file_that_cant_be_read_is_refused_and_nothing_is_written(string path, string code)
     {
-        var imported = await _world.Map.ImportMap(path, new string('0', 64), MapWorld.None);
+        var imported = await _world.Map.ImportMap(path, new string('0', 64), MapWorld.Human, MapWorld.None);
 
         Assert.Equal(code, imported.Error.Code);
         Assert.Empty((await _world.Store.Versions(MapWorld.None)).Value);
@@ -77,8 +77,8 @@ public sealed class ImportMapTests : IDisposable
         var bad = Maps.Parse("schemaVersion: 1\nkind: authored\nrepo: r\nnodes:\n  - {key: \"feature:a\", label: A}\nedges:\n  - {from: \"feature:a\", to: \"feature:b\", type: part-of}\n");
         _world.Reader.Put("/maps/bad.yaml", bad, "bad");
 
-        var preview = await _world.Map.PreviewMap("/maps/bad.yaml", MapWorld.None);
-        var imported = await _world.Map.ImportMap("/maps/bad.yaml", new string('0', 64), MapWorld.None);
+        var preview = await _world.Map.PreviewMap("/maps/bad.yaml", MapWorld.Human, MapWorld.None);
+        var imported = await _world.Map.ImportMap("/maps/bad.yaml", new string('0', 64), MapWorld.Human, MapWorld.None);
 
         Assert.Equal(ContextErrors.MapNodeUndefined.Code, preview.Error.Code);
         Assert.Equal(ContextErrors.MapNodeUndefined.Code, imported.Error.Code);
@@ -88,11 +88,25 @@ public sealed class ImportMapTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task A_store_that_cant_open_is_SND_CONTEXT_004()
     {
-        var hash = (await _world.Map.PreviewMap(MapWorld.MapPath, MapWorld.None)).Value.Hash;
+        var hash = (await _world.Map.PreviewMap(MapWorld.MapPath, MapWorld.Human, MapWorld.None)).Value.Hash;
         _world.Store.Failure = ContextErrors.StoreUnavailable.With("AW-DATA-001: locked");
 
-        var imported = await _world.Map.ImportMap(MapWorld.MapPath, hash, MapWorld.None);
+        var imported = await _world.Map.ImportMap(MapWorld.MapPath, hash, MapWorld.Human, MapWorld.None);
 
         Assert.Equal(ContextErrors.StoreUnavailable.Code, imported.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_map_for_a_repo_the_profile_doesnt_map_is_SND_CONTEXT_031_on_repo()
+    {
+        _world.Reader.Put("/maps/elsewhere.yaml", Maps.Fixture() with { Repo = "elsewhere" }, "elsewhere");
+
+        var preview = await _world.Map.PreviewMap("/maps/elsewhere.yaml", MapWorld.Human, MapWorld.None);
+        var imported = await _world.Map.ImportMap("/maps/elsewhere.yaml", new string('0', 64), MapWorld.Human, MapWorld.None);
+
+        Assert.Equal(ContextErrors.MapFileInvalid.Code, preview.Error.Code);
+        Assert.Contains("repo: 'elsewhere' isn't a repo the approved profile maps (aw-split-panes, other)", preview.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(ContextErrors.MapFileInvalid.Code, imported.Error.Code);
+        Assert.Empty((await _world.Store.Versions(MapWorld.None)).Value);
     }
 }

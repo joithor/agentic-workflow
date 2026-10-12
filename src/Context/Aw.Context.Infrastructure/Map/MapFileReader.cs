@@ -15,7 +15,12 @@ internal sealed class MapFileReader(JsonSerializerOptions options) : IMapFileRea
 
     public async ValueTask<Result<MapFile>> Read(string path, CancellationToken cancellationToken)
     {
-        var full = Path.GetFullPath(path);
+        if (!Path.IsPathRooted(path))
+        {
+            return ContextErrors.MapFileInvalid.With($"'{path}' isn't an absolute path; nothing was written (fix: give the map file's full path)");
+        }
+
+        var full = RealPath.Of(path) ?? Path.GetFullPath(path);
         if (Worktrees.Containing(full) is { } worktree)
         {
             return ContextErrors.PathInWorktree.With($"{full} is inside the git worktree {worktree} (fix: keep map files outside every repo)");

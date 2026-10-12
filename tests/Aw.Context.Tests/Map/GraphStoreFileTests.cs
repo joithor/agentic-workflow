@@ -18,7 +18,7 @@ public sealed class GraphStoreFileTests : IDisposable
         var settings = SettingsFromEnvironment.Read(_home.Environment);
         using var database = new ContextDatabase(settings, new FakeTimeProvider());
 
-        _ = await new SqliteGraphStore(database).SaveCurrent(SampleMap.Build(), SampleMap.At, TestContext.Current.CancellationToken);
+        _ = await new SqliteGraphStore(database, settings).SaveCurrent(SampleMap.Build(), SampleMap.At, TestContext.Current.CancellationToken);
 
         Assert.Equal(settings.DatabasePath, Path.Combine(_home.Root, "context", "context.db"));
         if (OperatingSystem.IsWindows())
@@ -39,13 +39,13 @@ public sealed class GraphStoreFileTests : IDisposable
         var settings = SettingsFromEnvironment.Read(_home.Environment);
         using var database = new ContextDatabase(settings, new FakeTimeProvider());
 
-        var current = await new SqliteGraphStore(database).Current(TestContext.Current.CancellationToken);
+        var current = await new SqliteGraphStore(database, settings).Current(TestContext.Current.CancellationToken);
 
         Assert.Null(current.Value);
         Assert.False(File.Exists(settings.DatabasePath));
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact, Trait("Lane", "unit")]
     public void The_graph_tables_are_migration_0002_after_the_repo_docs_one() =>
         Assert.Equal("1 s1a_repo_docs, 2 s3a_graph", string.Join(", ", ContextDatabase.Migrations.Select(m => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{m.Version} {m.Name}"))));
 
@@ -55,8 +55,9 @@ public sealed class GraphStoreFileTests : IDisposable
         var path = FixtureMap.WriteTo(_home.Root);
         var file = await new MapFileReader(FixtureMap.Json).Read(path, TestContext.Current.CancellationToken);
         var map = Maps.Checked(file.Value.Document);
-        using var database = new ContextDatabase(SettingsFromEnvironment.Read(_home.Environment), new FakeTimeProvider());
-        var store = new SqliteGraphStore(database);
+        var settings = SettingsFromEnvironment.Read(_home.Environment);
+        using var database = new ContextDatabase(settings, new FakeTimeProvider());
+        var store = new SqliteGraphStore(database, settings);
 
         var saved = await store.SaveCurrent(map, SampleMap.At, TestContext.Current.CancellationToken);
         var read = await store.Read(saved.Value.Number, TestContext.Current.CancellationToken);

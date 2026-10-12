@@ -53,6 +53,29 @@ public static class MapAccess
         return repos.IsError ? repos.Error : null;
     }
 
+    /// <summary>
+    /// Whether the profile maps the repo a map file describes (an import's check): a map for a repo the profile doesn't
+    /// map would answer every session read with SND-CONTEXT-003.
+    /// </summary>
+    /// <param name="repo">The file's 'repo'.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <returns>Null when mapped, otherwise SND-CONTEXT-001 (an invalid section) or SND-CONTEXT-031 on 'repo'.</returns>
+    public static Error? Maps(string repo, ContextScope scope)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        var settings = SettingsReader.Read(scope.Settings);
+        if (settings.IsError)
+        {
+            return settings.Error;
+        }
+
+        var mapped = ScopeRules.Resolve(settings.Value, scope.Repos, scope.Caller with { Kind = ContextCallerKind.Human });
+        return mapped.IsError || mapped.Value.Any(r => string.Equals(r.Name, repo, StringComparison.Ordinal))
+            ? (mapped.IsError ? mapped.Error : null)
+            : ContextErrors.MapFileInvalid.With(
+                $"repo: '{repo}' isn't a repo the approved profile maps ({string.Join(", ", mapped.Value.Select(r => r.Name))}); nothing was written (fix: name one of them, or add the repo to the profile and approve it)");
+    }
+
     /// <summary>The export document for a version's visible graph: decision nodes and 'quotes' edges are left to the decisions, which imply them.</summary>
     /// <param name="version">The version.</param>
     /// <param name="graph">The visible graph.</param>
@@ -64,11 +87,15 @@ public static class MapAccess
         ArgumentNullException.ThrowIfNull(version);
         ArgumentNullException.ThrowIfNull(graph);
         var orphaned = OverrideApplier.Apply(graph, overrides).Orphaned;
+        var o = StringComparer.Ordinal;
         return new MapDocument(
             MapDocumentValidator.SchemaVersions[^1], MapDocumentKind.Export, version.Repo,
-            [.. graph.Nodes.Where(n => n.Key.Kind != NodeKind.Decision)],
-            [.. graph.Edges.Where(e => e.Type != EdgeType.Quotes)],
-            graph.Aliases, graph.Decisions, overrides, version.KeyVersion, version.Commit, version.Number, exportedAt,
-            [.. orphaned.Select(o => o.Target).DistinctBy(k => k.Value, StringComparer.Ordinal)]);
+            [.. graph.Nodes.Where(n => n.Key.Kind != NodeKind.Decision).OrderBy(n => n.Key.Value, o)],
+            [.. graph.Edges.Where(e => e.Type != EdgeType.Quotes).OrderBy(e => e.From.Value, o).ThenBy(e => e.To.Value, o).ThenBy(e => e.Type).ThenBy(e => e.Order)],
+            [.. graph.Aliases.OrderBy(a => a.Alias.Value, o)],
+            [.. graph.Decisions.OrderBy(d => d.ToKey().Value, o)],
+            [.. overrides.OrderBy(x => x.At).ThenBy(x => x.ToId().Value, o)],
+            version.KeyVersion, version.Commit, version.Number, exportedAt,
+            [.. orphaned.Select(x => x.Target).DistinctBy(k => k.Value, o).OrderBy(k => k.Value, o)]);
     }
 }

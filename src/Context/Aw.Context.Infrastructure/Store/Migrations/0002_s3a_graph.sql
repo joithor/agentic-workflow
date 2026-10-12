@@ -41,6 +41,8 @@ CREATE TABLE node_alias (
     FOREIGN KEY (map_version, target) REFERENCES node (map_version, key) ON DELETE CASCADE
 ) STRICT;
 
+CREATE INDEX node_alias_target ON node_alias (map_version, target);
+
 CREATE TABLE edge (
     id           INTEGER PRIMARY KEY,
     map_version  INTEGER NOT NULL,

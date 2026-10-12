@@ -24,7 +24,7 @@ internal sealed class CheckMapService(IGraphStore store) : IService<CheckMapRequ
 
         if (current.Value is not { } version)
         {
-            return new MapHealth(Name, MapHealthState.Warn, "no map yet", "context map import <file> (or context map build)");
+            return new MapHealth(Name, MapHealthState.Warn, "no map yet", "sindri context map import <file>");
         }
 
         var graph = await store.Read(version.Number, cancellationToken).ConfigureAwait(false);
@@ -40,7 +40,7 @@ internal sealed class CheckMapService(IGraphStore store) : IService<CheckMapRequ
         return orphaned == 0
             ? new MapHealth(Name, MapHealthState.Ok, detail, Fix: null)
             : new MapHealth(Name, MapHealthState.Warn, string.Create(CultureInfo.InvariantCulture, $"{detail}; {orphaned} orphaned override(s)"),
-                "import a map that has their nodes again, or leave them for map review (S-4)");
+                "sindri context map import a map that has their nodes again, or leave them for map review (S-4)");
     }
 
     private static MapHealth Fail(Error error) =>

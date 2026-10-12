@@ -12,6 +12,7 @@ namespace Aw.Context.Core.Graph;
 /// <param name="Evidence">The records it rests on (an 'implements' edge's file evidence decides a session's repo scope), or null.</param>
 /// <param name="Order">The position in its flow, for 'step-of'; otherwise null.</param>
 /// <param name="At">When it was written; an import keeps the file's value.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record GraphEdge(
     NodeKey From,
     NodeKey To,

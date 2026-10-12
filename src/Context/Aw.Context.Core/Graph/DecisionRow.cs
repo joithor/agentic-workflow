@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Security.Cryptography;
 using System.Text;
 using Aw.Context.Core.Results;
@@ -14,6 +15,7 @@ namespace Aw.Context.Core.Graph;
 /// <param name="Wording">Sindri's wording.</param>
 /// <param name="Provenance">Who wrote the wording.</param>
 /// <param name="At">When it was written; an import keeps the file's value.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record DecisionRow(RecordKey Record, string Quote, string Wording, Provenance Provenance = Provenance.Human, DateTimeOffset? At = null)
 {
     /// <summary>The decision's node key: 'decision:' and the SHA-256 of the record key, a newline and the quote (a method, not a property: it is never read from a file).</summary>

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Security.Cryptography;
 using System.Text;
 using Aw.Context.Core.Graph;
@@ -12,6 +13,7 @@ namespace Aw.Context.Core.Overrides;
 /// <param name="Label">The new label (rename, add), or null.</param>
 /// <param name="Other">The node to merge into or move under (merge, move; for add, its parent feature), or null.</param>
 /// <param name="Rejection">For reject: the rejected proposal's <see cref="RejectionIdentity"/>; null rejects whatever the target is.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record MapOverride(
     OverrideAction Action,
     NodeKey Target,

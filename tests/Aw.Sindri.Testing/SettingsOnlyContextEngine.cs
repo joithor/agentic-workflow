@@ -38,10 +38,10 @@ public sealed class SettingsOnlyContextEngine : IContextEngine
         ValueTask.FromResult<Result<RefreshReport>>(Down());
 
     /// <summary>No map: every map call answers SND-CONTEXT-030.</summary>
-    public ValueTask<Result<MapFilePreview>> PreviewMap(string path, CancellationToken cancellationToken) => NoMap<MapFilePreview>();
+    public ValueTask<Result<MapFilePreview>> PreviewMap(string path, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapFilePreview>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, CancellationToken cancellationToken) => NoMap<MapImported>();
+    public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapImported>();
 
     /// <inheritdoc/>
     public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapExported>();

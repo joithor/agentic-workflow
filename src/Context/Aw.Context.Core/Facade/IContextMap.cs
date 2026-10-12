@@ -12,16 +12,18 @@ public interface IContextMap
 {
     /// <summary>Reads and checks a map file without writing anything: what 'context map import' shows before asking for the hash.</summary>
     /// <param name="path">The file.</param>
+    /// <param name="scope">The profile's context section and repos: the file's repo must be one the profile maps.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The preview, or SND-CONTEXT-005/031/032.</returns>
-    public ValueTask<Result<MapFilePreview>> PreviewMap(string path, CancellationToken cancellationToken);
+    /// <returns>The preview, or SND-CONTEXT-001/005/031/032.</returns>
+    public ValueTask<Result<MapFilePreview>> PreviewMap(string path, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>Imports a map file as the current version (a protected command: Sindri checks the caller first).</summary>
     /// <param name="path">The file.</param>
     /// <param name="confirmedHash">The content hash the owner confirmed.</param>
+    /// <param name="scope">The profile's context section and repos: the file's repo must be one the profile maps.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The new version, or SND-CONTEXT-004/005/031/032/034 with nothing written.</returns>
-    public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, CancellationToken cancellationToken);
+    /// <returns>The new version, or SND-CONTEXT-001/004/005/031/032/034 with nothing written.</returns>
+    public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>Exports the current version (with the override layer) to the exports folder.</summary>
     /// <param name="path">A name or path under the exports folder, or null.</param>

@@ -3,6 +3,7 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
+using Aw.Context.Testing.Map;
 
 namespace Aw.Context.Tests.Map;
 
@@ -58,7 +59,8 @@ public sealed class OverrideLayerTests
 
         var parents = moved.Graph.Edges.Where(e => e.Type == EdgeType.PartOf && e.From.Value == "feature:layout.pane-resize").Select(e => e.To.Value);
         Assert.Equal("feature:tabs.tab-manager", Assert.Single(parents));
-        _ = Assert.Single(refused.Orphaned);
+        _ = Assert.Single(refused.Inapplicable);
+        Assert.Empty(refused.Orphaned);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -93,5 +95,22 @@ public sealed class OverrideLayerTests
         Assert.Equal(Make(OverrideAction.Delete, "feature:a").ToId(), Make(OverrideAction.Delete, "feature:a").ToId());
         Assert.NotEqual(Make(OverrideAction.Delete, "feature:a").ToId(), Make(OverrideAction.Delete, "feature:b").ToId());
         Assert.Matches("^ovr_[0-9a-f]{16}$", Make(OverrideAction.Delete, "feature:a").ToId().Value);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(OverrideAction.Move, "action:pane-resize.resize-focused", null, "feature:layout.split-pane")]
+    [InlineData(OverrideAction.Add, "action:new", null, "thing:pane-layout")]
+    [InlineData(OverrideAction.Merge, "surface:command/split-vertical", null, "feature:layout.split-pane")]
+    [InlineData(OverrideAction.Merge, "feature:layout.split-pane", null, "feature:layout.split-pane")]
+    [InlineData(OverrideAction.Rename, "feature:layout.split-pane", " ", null)]
+    public void An_override_that_would_break_the_edge_table_is_inapplicable_not_orphaned(OverrideAction action, string target, string? label, string? other)
+    {
+        var graph = Graph();
+
+        var applied = OverrideApplier.Apply(graph, [Make(action, target, label, other)]);
+
+        _ = Assert.Single(applied.Inapplicable);
+        Assert.Empty(applied.Orphaned);
+        Assert.Equal(Canonical.Of(graph), Canonical.Of(applied.Graph));
     }
 }

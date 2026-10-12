@@ -12,6 +12,7 @@ namespace Aw.Context.Core.Graph;
 /// <param name="Evidence">The records it rests on, or null for none.</param>
 /// <param name="Attributes">Kind-specific attributes (preconditions, states), or null.</param>
 /// <param name="At">When it was written; an import keeps the file's value.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record GraphNode(
     NodeKey Key,
     string Label,

@@ -12,8 +12,10 @@ internal sealed class FileExportStore(ContextStoreSettings settings, JsonSeriali
 {
     public ValueTask<Result<string>> Write(string? path, string defaultName, MapDocument document, CancellationToken cancellationToken)
     {
-        var folder = Path.GetFullPath(settings.ExportsDirectory);
-        var target = Path.GetFullPath(path ?? defaultName, folder);
+        var lexical = Path.GetFullPath(settings.ExportsDirectory);
+        var folder = RealPath.Of(lexical) ?? lexical;
+        var full = Path.GetFullPath(string.IsNullOrEmpty(path) ? defaultName : path, lexical);
+        var target = RealPath.Of(full) ?? full;
         if (Worktrees.Containing(target) is { } worktree)
         {
             return Done<string>(ContextErrors.PathInWorktree.With($"{target} is inside the git worktree {worktree} (fix: omit the path, or give a name under {folder})"));
@@ -27,7 +29,7 @@ internal sealed class FileExportStore(ContextStoreSettings settings, JsonSeriali
         try
         {
             OwnerOnly.EnsureDirectory(settings.Home);
-            OwnerOnly.EnsureDirectory(folder);
+            OwnerOnly.EnsureDirectory(lexical);
             OwnerOnly.EnsureDirectory(Path.GetDirectoryName(target)!);   // why: target is an absolute file path inside folder
             OwnerOnly.WriteAtomically(target, AwJson.Serialize(document, options));
             return Done(Results.Success(target));
@@ -40,22 +42,29 @@ internal sealed class FileExportStore(ContextStoreSettings settings, JsonSeriali
 
     public ValueTask<Result<IReadOnlyList<ExportedFile>>> List(CancellationToken cancellationToken)
     {
-        var folder = Path.GetFullPath(settings.ExportsDirectory);
+        var folder = Folder();
         if (!Directory.Exists(folder))
         {
             return Done(Results.Success<IReadOnlyList<ExportedFile>>([]));
         }
 
-        IReadOnlyList<ExportedFile> files = [.. Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories)
-            .Select(f => new ExportedFile(f, new DateTimeOffset(File.GetLastWriteTimeUtc(f), TimeSpan.Zero)))
-            .OrderBy(f => f.Path, StringComparer.Ordinal)];
-        return Done(Results.Success(files));
+        try
+        {
+            IReadOnlyList<ExportedFile> files = [.. Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories)
+                .Select(f => new ExportedFile(f, new DateTimeOffset(File.GetLastWriteTimeUtc(f), TimeSpan.Zero)))
+                .OrderBy(f => f.Path, StringComparer.Ordinal)];
+            return Done(Results.Success(files));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return Done<IReadOnlyList<ExportedFile>>(ContextErrors.StoreUnavailable.With($"{folder} can't be listed: {e.Message}"));
+        }
     }
 
     public ValueTask<Result<bool>> Delete(string path, CancellationToken cancellationToken)
     {
-        var full = Path.GetFullPath(path);
-        if (!Inside(Path.GetFullPath(settings.ExportsDirectory), full) || !File.Exists(full))
+        var full = RealPath.Of(path) ?? Path.GetFullPath(path);
+        if (!Inside(Folder(), full) || !File.Exists(full))
         {
             return Done(Results.Success(value: false));
         }
@@ -71,10 +80,18 @@ internal sealed class FileExportStore(ContextStoreSettings settings, JsonSeriali
         }
     }
 
+    /// <summary>The exports folder where it really is (links resolved), as Write returns paths.</summary>
+    private string Folder()
+    {
+        var lexical = Path.GetFullPath(settings.ExportsDirectory);
+        return RealPath.Of(lexical) ?? lexical;
+    }
+
     private static bool Inside(string folder, string path)
     {
         var relative = Path.GetRelativePath(folder, path);
-        return relative != "." && !relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative);
+        var first = relative.Split(Path.DirectorySeparatorChar)[0];
+        return relative != "." && first != ".." && !Path.IsPathRooted(relative);
     }
 
     private static ValueTask<Result<T>> Done<T>(Result<T> result) => ValueTask.FromResult(result);

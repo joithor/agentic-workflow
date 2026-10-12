@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
 
@@ -21,6 +22,7 @@ namespace Aw.Context.Core.Map;
 /// <param name="MapVersion">The version it was exported from, or null.</param>
 /// <param name="ExportedAt">When it was exported, or null.</param>
 /// <param name="Orphaned">The targets of an export's overrides that no longer resolve (they are kept and re-imported; spec §6.1); informational, never read.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record MapDocument(
     int SchemaVersion,
     MapDocumentKind Kind,

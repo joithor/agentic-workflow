@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Aw.Context.Core.Graph;
 
 /// <summary>A product-graph edge's type (spec §6.1); <see cref="EdgeRules"/> says which kinds it joins.</summary>
-[JsonConverter(typeof(JsonStringEnumConverter<EdgeType>))]
+[JsonConverter(typeof(StrictEnumConverter<EdgeType>))]
 public enum EdgeType
 {
     /// <summary>Feature → Feature; Surface → Feature.</summary>

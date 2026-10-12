@@ -1,6 +1,6 @@
 namespace Aw.Context.Infrastructure.Graph;
 
-/// <summary>The graph store's SQL (tables in Migrations/0001_s3a_graph.sql).</summary>
+/// <summary>The graph store's SQL (tables in Store/Migrations/0002_s3a_graph.sql).</summary>
 internal static class GraphSql
 {
     public const string InsertVersion =
@@ -25,6 +25,10 @@ internal static class GraphSql
 
     public const string InsertOverride =
         "INSERT INTO map_override (id, action, target, label, other, who, at, rejection) VALUES ($id, $action, $target, $label, $other, $who, $at, $rejection) ON CONFLICT (id) DO NOTHING";
+
+    public const string DeleteBuilding = "DELETE FROM map_version WHERE status = 'building'";
+
+    public const string CountGraphTables = "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'map_version'";
 
     public const string RetireCurrent = "UPDATE map_version SET status = 'retained' WHERE status = 'current'";
 

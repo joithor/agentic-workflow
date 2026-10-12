@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Aw.Context.Core.Overrides;
 
 /// <summary>What an override does to the map (spec §6.1), applied over every rebuild and import.</summary>
-[JsonConverter(typeof(JsonStringEnumConverter<OverrideAction>))]
+[JsonConverter(typeof(StrictEnumConverter<OverrideAction>))]
 public enum OverrideAction
 {
     /// <summary>A human accepts a node: it counts as human-written (trusted).</summary>

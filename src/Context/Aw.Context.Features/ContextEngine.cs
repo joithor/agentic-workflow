@@ -29,10 +29,11 @@ internal sealed class ContextEngine(
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) =>
         refresh.Handle(new RefreshDocsRequest(scope), cancellationToken);
 
-    public ValueTask<Result<MapFilePreview>> PreviewMap(string path, CancellationToken cancellationToken) => map.PreviewMap(path, cancellationToken);
+    public ValueTask<Result<MapFilePreview>> PreviewMap(string path, ContextScope scope, CancellationToken cancellationToken) =>
+        map.PreviewMap(path, scope, cancellationToken);
 
-    public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, CancellationToken cancellationToken) =>
-        map.ImportMap(path, confirmedHash, cancellationToken);
+    public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, ContextScope scope, CancellationToken cancellationToken) =>
+        map.ImportMap(path, confirmedHash, scope, cancellationToken);
 
     public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) =>
         map.ExportMap(path, scope, cancellationToken);

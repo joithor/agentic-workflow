@@ -1,14 +1,18 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
-using Aw.Kernel;
 using Aw.Context.Infrastructure.Store;
+using Aw.Kernel;
 using Aw.Kernel.Data;
 
 namespace Aw.Context.Infrastructure.Graph;
 
-/// <summary>The graph store in context.db: versions are written in batches as 'building', then made current in one short transaction.</summary>
-internal sealed class SqliteGraphStore(ContextDatabase database) : IGraphStore
+/// <summary>
+/// The graph store in context.db. Reads open the file read-only and never migrate it (doctor runs them from the CLI): a
+/// missing file, or one whose schema has no graph tables yet, is a store with no map. Writes migrate first; a version is
+/// written in batches as 'building', then made current in one short transaction, and removed again when anything fails.
+/// </summary>
+internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSettings settings) : IGraphStore
 {
     private const int BatchSize = 500;
 
@@ -26,21 +30,15 @@ internal sealed class SqliteGraphStore(ContextDatabase database) : IGraphStore
 
     public async ValueTask<Result<GraphSnapshot>> Read(int version, CancellationToken cancellationToken)
     {
-        var open = await database.Readable(cancellationToken).ConfigureAwait(false);
-        if (open.IsError || open.Value is not { } sessions)
+        var read = await OpenRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError || read.Value is not { } session)
         {
-            return open.IsError ? open.Error : GraphSnapshot.Empty;
+            return read.IsError ? read.Error : GraphSnapshot.Empty;
         }
 
-        var read = await sessions.BeginRead(cancellationToken).ConfigureAwait(false);
-        if (read.IsError)
+        await using (session.ConfigureAwait(false))
         {
-            return ContextDatabase.Translate(read.Error);
-        }
-
-        await using (read.Value.ConfigureAwait(false))
-        {
-            var graph = await GraphReads.Version(read.Value, version, cancellationToken).ConfigureAwait(false);
+            var graph = await GraphReads.Version(session, version, cancellationToken).ConfigureAwait(false);
             return graph.IsError ? ContextDatabase.Translate(graph.Error) : graph;
         }
     }
@@ -49,103 +47,68 @@ internal sealed class SqliteGraphStore(ContextDatabase database) : IGraphStore
     {
         ArgumentNullException.ThrowIfNull(map);
         var open = await database.Writable(cancellationToken).ConfigureAwait(false);
-        if (open.IsError)
-        {
-            return open.Error;
-        }
-
-        var begun = await Run(open.Value, [new SqlStatement(GraphSql.InsertVersion, c => c.Bind("$repo", map.Repo).Bind("$commit", map.Commit)
-            .Bind("$keyVersion", EntryKey.Version).Bind("$created", created))], returnsId: true, cancellationToken).ConfigureAwait(false);
-        if (begun.IsError)
-        {
-            return begun.Error;
-        }
-
-        var version = begun.Value;
-        foreach (var batch in GraphStatements.Graph(version, map.Graph).Chunk(BatchSize))
-        {
-            var written = await Run(open.Value, batch, returnsId: false, cancellationToken).ConfigureAwait(false);
-            if (written.IsError)
-            {
-                _ = await Run(open.Value, [Delete(version)], returnsId: false, CancellationToken.None).ConfigureAwait(false);
-                return written.Error;
-            }
-        }
-
-        SqlStatement[] flip = [new(GraphSql.RetireCurrent), new(GraphSql.MakeCurrent, c => c.Bind("$v", version)), .. map.Overrides.Select(GraphStatements.Override)];
-        var flipped = await Run(open.Value, flip, returnsId: false, cancellationToken).ConfigureAwait(false);
-        return flipped.IsError
-            ? flipped.Error
-            : new MapVersion((int)version, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Current);
+        return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).Save(map, created, cancellationToken).ConfigureAwait(false);
     }
 
     public async ValueTask<Result<int>> Delete(IReadOnlyList<int> versions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(versions);
-        if (versions.Count == 0)
+        if (versions.Count == 0 || !await HasGraph(cancellationToken).ConfigureAwait(false))
         {
             return 0;
         }
 
-        var open = await database.Readable(cancellationToken).ConfigureAwait(false);
-        if (open.IsError || open.Value is not { } sessions)
-        {
-            return open.IsError ? open.Error : 0;
-        }
-
-        var deleted = await Run(sessions, [.. versions.Select(v => Delete(v))], returnsId: false, cancellationToken).ConfigureAwait(false);
-        return deleted.IsError ? deleted.Error : (int)deleted.Value;
+        var open = await database.Writable(cancellationToken).ConfigureAwait(false);
+        return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).Delete(versions, cancellationToken).ConfigureAwait(false);
     }
 
-    private static SqlStatement Delete(long version) => new(GraphSql.DeleteVersion, c => c.Bind("$v", version));
-
-    /// <summary>Runs <paramref name="statements"/> in one write transaction: the id the first returns, or the rows they changed.</summary>
-    private static async ValueTask<Result<long>> Run(SqliteUnitOfWorkFactory sessions, IReadOnlyList<SqlStatement> statements, bool returnsId, CancellationToken cancellationToken)
+    private async ValueTask<bool> HasGraph(CancellationToken cancellationToken)
     {
-        var begun = await sessions.BeginSession(cancellationToken).ConfigureAwait(false);
-        if (begun.IsError)
+        var read = await OpenRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError || read.Value is not { } session)
         {
-            return ContextDatabase.Translate(begun.Error);
+            return read.IsError;   // an unreadable store goes on to the write, which reports why
         }
 
-        await using (begun.Value.ConfigureAwait(false))
-        {
-            long total = 0;
-            foreach (var statement in statements)
-            {
-                var step = returnsId
-                    ? await SqliteQueries.One(begun.Value, statement, GraphRows.Id, cancellationToken).ConfigureAwait(false)
-                    : (await SqliteQueries.Execute(begun.Value, statement, cancellationToken).ConfigureAwait(false)).Map(n => (long)n);
-                if (step.IsError)
-                {
-                    return ContextDatabase.Translate(step.Error);
-                }
-
-                total = returnsId ? step.Value : total + step.Value;
-            }
-
-            var committed = await begun.Value.Commit(cancellationToken).ConfigureAwait(false);
-            return committed.IsError ? ContextDatabase.Translate(committed.Error) : total;
-        }
+        await session.DisposeAsync().ConfigureAwait(false);
+        return true;
     }
 
-    private async ValueTask<Result<IReadOnlyList<T>>> Query<T>(SqlStatement statement, IRowMapper<T> mapper, CancellationToken cancellationToken)
+    /// <summary>A read-only session when the file exists and has the graph tables; null for 'no map yet'.</summary>
+    private async ValueTask<Result<SqliteReadSession?>> OpenRead(CancellationToken cancellationToken)
     {
-        var open = await database.Readable(cancellationToken).ConfigureAwait(false);
-        if (open.IsError || open.Value is not { } sessions)
+        if (!File.Exists(settings.DatabasePath))
         {
-            return open.IsError ? open.Error : Results.Success<IReadOnlyList<T>>([]);
+            return (SqliteReadSession?)null;
         }
 
-        var read = await sessions.BeginRead(cancellationToken).ConfigureAwait(false);
+        var read = await database.Sessions.BeginRead(cancellationToken).ConfigureAwait(false);
         if (read.IsError)
         {
             return ContextDatabase.Translate(read.Error);
         }
 
-        await using (read.Value.ConfigureAwait(false))
+        var tables = await SqliteQueries.One(read.Value, new SqlStatement(GraphSql.CountGraphTables), GraphRows.Id, cancellationToken).ConfigureAwait(false);
+        if (tables.IsSuccess && tables.Value > 0)
         {
-            var rows = await SqliteQueries.List(read.Value, statement, mapper, cancellationToken).ConfigureAwait(false);
+            return read.Value;
+        }
+
+        await read.Value.DisposeAsync().ConfigureAwait(false);
+        return tables.IsError ? ContextDatabase.Translate(tables.Error) : (SqliteReadSession?)null;
+    }
+
+    private async ValueTask<Result<IReadOnlyList<T>>> Query<T>(SqlStatement statement, IRowMapper<T> mapper, CancellationToken cancellationToken)
+    {
+        var read = await OpenRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError || read.Value is not { } session)
+        {
+            return read.IsError ? read.Error : Results.Success<IReadOnlyList<T>>([]);
+        }
+
+        await using (session.ConfigureAwait(false))
+        {
+            var rows = await SqliteQueries.List(session, statement, mapper, cancellationToken).ConfigureAwait(false);
             return rows.IsError ? ContextDatabase.Translate(rows.Error) : rows;
         }
     }

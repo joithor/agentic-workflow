@@ -29,6 +29,6 @@ internal sealed class CheckRetentionService(IGraphStore store, IExportStore expo
 
         var detail = string.Create(CultureInfo.InvariantCulture,
             $"{expired} export{(expired == 1 ? string.Empty : "s")} older than 14 days and {excess} map version{(excess == 1 ? string.Empty : "s")} past the last 20 still present");
-        return new MapHealth(Name, MapHealthState.Warn, detail, "the context-purge service removes them: check it is enabled in the profile's services");
+        return new MapHealth(Name, MapHealthState.Warn, detail, "name the context-purge service under services: in the profile; it removes them");
     }
 }

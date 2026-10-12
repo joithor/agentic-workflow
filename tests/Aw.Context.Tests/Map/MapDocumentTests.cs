@@ -1,7 +1,9 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Results;
+using Aw.Context.Testing.Map;
 
 namespace Aw.Context.Tests.Map;
 
@@ -62,6 +64,10 @@ public sealed class MapDocumentTests
     [InlineData(Header + "nodes:\n  - {key: \"surface:widget/x\", label: X}\n", "nodes[0].key: 'surface:widget/x' needs a surface kind")]
     [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: A}\n  - {key: \"feature:A\", label: A2}\n", "nodes[1].key: 'feature:a' is defined twice")]
     [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: \" \"}\n", "nodes[0].label: a label is required")]
+    [InlineData(Header + "nodes: [~]\n", "nodes[0]: an entry is required")]
+    [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: A}\naliases:\n  - {alias: \"feature:old\", target: \"feature:a\"}\n  - {alias: \"feature:Old\", target: \"feature:a\"}\n", "aliases[1].alias: 'feature:old' is defined twice")]
+    [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: A}\nedges:\n  - {from: \"feature:a\", to: \"feature:a\", type: depends-on}\n", "edges[0].type: 'feature:a' can't be joined to itself")]
+    [InlineData("schemaVersion: 1\nkind: authored\nrepo: \"a\\u001bb\"\nnodes: []\n", "repo: the repo's short name is required")]
     [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: A}\naliases:\n  - {alias: \"feature:a\", target: \"feature:a\"}\n", "aliases[0].alias: 'feature:a' is a node's own key")]
     public void A_bad_map_is_SND_CONTEXT_031_with_the_key_path(string yaml, string message)
     {
@@ -92,4 +98,46 @@ public sealed class MapDocumentTests
 
         _ = Assert.Single(Maps.Checked(Maps.Parse(yaml)).Overrides);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_authored_quotes_edge_is_refused_because_decisions_imply_it()
+    {
+        var fixture = Maps.Fixture();
+        var decision = fixture.Decisions![0].ToKey().Value;
+        var yaml = FixtureWith($"  - {{from: \"{decision}\", to: \"record:linear:issue/0e5a1b00-0000-4000-8000-000000000103\", type: quotes}}\n");
+
+        var check = MapDocumentValidator.Check(Maps.Parse(yaml), KeyMigrations.Shipped);
+
+        Assert.Equal(ContextErrors.MapFileInvalid.Code, check.Error.Code);
+        Assert.Contains("'quotes' edges come from the file's decisions", check.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_record_key_too_long_for_a_node_key_is_031_on_the_decision()
+    {
+        var yaml = Header + "nodes: []\ndecisions:\n  - {record: \"repo:" + new string('a', 1020) + "\", quote: q, wording: w}\n";
+
+        var check = MapDocumentValidator.Check(Maps.Parse(yaml), KeyMigrations.Shipped);
+
+        Assert.Equal(ContextErrors.MapFileInvalid.Code, check.Error.Code);
+        Assert.Contains("decisions[0].record", check.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Aliases_and_override_targets_pass_through_EntryKey_too()
+    {
+        var yaml = Header + "nodes:\n  - {key: \"feature:a\", label: A}\n  - {key: \"feature:b\", label: B}\n"
+            + "aliases:\n  - {alias: \"feature:Old.A\", target: \"feature:a\"}\n"
+            + "edges:\n  - {from: \"feature:old.a\", to: \"feature:b\", type: depends-on}\n"
+            + "overrides:\n  - {action: rename, target: \"feature:B\", label: Bee, who: avery, at: \"2026-07-30T09:00:00Z\"}\n";
+
+        var map = Maps.Checked(Maps.Parse(yaml));
+        var applied = OverrideApplier.Apply(map.Graph, map.Overrides);
+
+        Assert.Equal("feature:a", Assert.Single(map.Graph.Edges).From.Value);
+        Assert.Equal("Bee", applied.Graph.Resolve(Maps.Key("feature:b"))?.Label);
+        Assert.Empty(applied.Orphaned);
+    }
+
+    private static string FixtureWith(string edge) => FixtureMap.Yaml.Replace("aliases:\n", edge + "aliases:\n", StringComparison.Ordinal);
 }

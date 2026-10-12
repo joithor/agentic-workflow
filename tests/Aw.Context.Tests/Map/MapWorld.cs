@@ -59,8 +59,8 @@ internal sealed class MapWorld : IDisposable
     /// <summary>Imports the fixture map with its own hash.</summary>
     public async Task<MapImported> ImportFixture()
     {
-        var preview = await Map.PreviewMap(MapPath, None);
-        var imported = await Map.ImportMap(MapPath, preview.Value.Hash, None);
+        var preview = await Map.PreviewMap(MapPath, Human, None);
+        var imported = await Map.ImportMap(MapPath, preview.Value.Hash, Human, None);
         Assert.True(imported.IsSuccess, imported.IsError ? imported.Error.Message : null);
         return imported.Value;
     }

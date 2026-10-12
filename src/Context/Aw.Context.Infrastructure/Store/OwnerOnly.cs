@@ -35,18 +35,25 @@ internal static class OwnerOnly
     /// <param name="contents">The bytes.</param>
     internal static void WriteAtomically(string path, ReadOnlySpan<byte> contents)
     {
-        var temp = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{path}.tmp-{Environment.ProcessId}");
-        var options = new FileStreamOptions { Mode = System.IO.FileMode.Create, Access = FileAccess.Write };
+        var temp = $"{path}.tmp-{Path.GetRandomFileName()}";
+        var options = new FileStreamOptions { Mode = System.IO.FileMode.CreateNew, Access = FileAccess.Write };
         if (!OperatingSystem.IsWindows())
         {
             options.UnixCreateMode = FileMode;
         }
 
-        using (var stream = new FileStream(temp, options))
+        try
         {
-            stream.Write(contents);
-        }
+            using (var stream = new FileStream(temp, options))
+            {
+                stream.Write(contents);
+            }
 
-        File.Move(temp, path, overwrite: true);
+            File.Move(temp, path, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(temp);   // gone already after a successful move; a failed write leaves nothing behind
+        }
     }
 }

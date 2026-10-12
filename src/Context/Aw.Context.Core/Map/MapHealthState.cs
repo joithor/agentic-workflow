@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Aw.Context.Core.Map;
 
 /// <summary>A map doctor check's outcome; Sindri maps it to its own check state.</summary>
-[JsonConverter(typeof(JsonStringEnumConverter<MapHealthState>))]
+[JsonConverter(typeof(StrictEnumConverter<MapHealthState>))]
 public enum MapHealthState
 {
     /// <summary>Nothing to do.</summary>
