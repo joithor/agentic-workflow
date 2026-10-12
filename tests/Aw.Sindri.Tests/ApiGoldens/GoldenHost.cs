@@ -2,6 +2,7 @@ using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Auth;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
@@ -101,8 +102,9 @@ public sealed class GoldenHost : IAsyncDisposable
         });
         _app = app;
         _ = Pipeline.Configure(app);
-        await using (var scope = app.Services.CreateAsyncScope())
+        using (app.Services.GetRequiredService<ICallerContextAccessor>().EnterService("host"))   // as serve starts it
         {
+            await using var scope = app.Services.CreateAsyncScope();
             _ = (await scope.ServiceProvider.GetRequiredService<IService<StartProcessRequest, StartProcessResponse>>()
                 .Handle(new StartProcessRequest(), ct)).Value;
         }
