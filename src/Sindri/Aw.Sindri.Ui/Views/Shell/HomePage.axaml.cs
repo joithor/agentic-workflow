@@ -1,7 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Queue;
 
 namespace Aw.Sindri.Ui.Views.Shell;
 
@@ -11,7 +13,26 @@ internal sealed partial class HomePage : UserControl
     public HomePage()
     {
         InitializeComponent();
+        AddHandler(ItemRow.OpenEvent, OnOpen);
     }
 
     private void OnHealthStrip(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.GoTo(PageId.Health);
+
+    // "Show all N in Queue": the Queue page, filtered to the panel's group for Running (G R), whole for Queued.
+    private void OnShowAll(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ShellViewModel shell && sender is Button { Tag: string tag })
+        {
+            shell.GoToQueue(tag == "Running" ? QueueFilter.Running : QueueFilter.All);
+        }
+    }
+
+    private void OnOpen(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is ItemRow { ItemId.Length: > 0 } row && DataContext is ShellViewModel shell)
+        {
+            shell.Queue.Select(row.ItemId);
+            shell.OpenItem(row.ItemId);
+        }
+    }
 }

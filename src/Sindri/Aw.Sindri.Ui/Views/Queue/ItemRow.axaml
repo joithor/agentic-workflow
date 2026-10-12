@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:queue="using:Aw.Sindri.Ui.ViewModels.Queue"
+             xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+             x:Class="Aw.Sindri.Ui.Views.Queue.ItemRow"
+             x:DataType="queue:ItemRowViewModel">
+  <!-- One item row (UI spec §4.5, queue.html): id (mono), title, repo, the state as a word, step, since, and the row's
+       primary action from the catalog. A click on the title, or Enter, opens the sheet (§3.2); the row is named by its
+       id, title and state. -->
+  <Border x:Name="RowFrame" Classes="item-row" Classes.selected="{Binding IsSelected}" Focusable="True"
+          AutomationProperties.Name="{Binding Name}">
+    <Grid ColumnDefinitions="150,*,150,130,110,70,Auto" VerticalAlignment="Center">
+      <TextBlock x:Name="IdText" AutomationProperties.Name="{Binding Id}" Classes="mono subtle" Text="{Binding Id}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      <Button x:Name="TitleButton" Grid.Column="1" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding Name}">
+        <TextBlock Classes="body-strong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Title}" />
+      </Button>
+      <TextBlock x:Name="RepoText" AutomationProperties.Name="{Binding Repo}" Grid.Column="2" Classes="caption subtle" Text="{Binding Repo}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      <TextBlock x:Name="StateText" AutomationProperties.Name="{Binding StateWord}" Grid.Column="3" Classes="body" Text="{Binding StateWord}" VerticalAlignment="Center" />
+      <TextBlock x:Name="StepText" AutomationProperties.Name="{Binding Step}" Grid.Column="4" Classes="mono" Text="{Binding Step}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      <TextBlock x:Name="AgeText" AutomationProperties.Name="{Binding Age}" Grid.Column="5" Classes="caption subtle" Text="{Binding Age}" VerticalAlignment="Center" />
+      <Panel Grid.Column="6" IsVisible="{Binding HasPrimaryAction}">
+        <controls:CommandControl x:Name="PrimaryAction" DataContext="{Binding PrimaryAction}" />
+      </Panel>
+    </Grid>
+  </Border>
+</UserControl>

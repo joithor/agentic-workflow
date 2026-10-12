@@ -6,6 +6,8 @@
         xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
         xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
         xmlns:root="using:Aw.Sindri.Ui.Views.Palette"
+        xmlns:queue="using:Aw.Sindri.Ui.Views.Queue"
+        xmlns:item="using:Aw.Sindri.Ui.Views.Item"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
         x:DataType="shell:ShellViewModel"
         Title="{Binding Text.Sindri}"
@@ -187,7 +189,7 @@
             <ScrollViewer x:Name="Pages" IsVisible="{Binding IsPageVisible}">
               <Panel x:Name="PageContent" Classes="page-content" Classes.edge="{Binding IsEdgeTabShown}">
                 <views:HomePage x:Name="HomePage" IsVisible="{Binding IsHome}" />
-                <views:PlaceholderPage x:Name="QueuePage" Title="{Binding Text.Queue}" IsVisible="{Binding IsQueue}" />
+                <queue:QueuePage x:Name="QueuePage" IsVisible="{Binding IsQueue}" />
                 <views:PlaceholderPage x:Name="DecisionsPage" Title="{Binding Text.Decisions}" IsVisible="{Binding IsDecisions}" />
                 <views:PlaceholderPage x:Name="ServicesPage" Title="{Binding Text.Services}" IsVisible="{Binding IsServices}" />
                 <Panel IsVisible="{Binding IsHealth}">
@@ -236,8 +238,11 @@
                   </StackPanel>
                 </Button>
               </Grid>
-              <TextBlock x:Name="SheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}"
+              <TextBlock x:Name="SheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}" IsVisible="{Binding !IsItemSheet}"
                          AutomationProperties.Name="{Binding Text.NotServedYet}" />
+              <ScrollViewer x:Name="ItemSheetScroll" IsVisible="{Binding IsItemSheet}">
+                <item:ItemSheet x:Name="ItemSheet" DataContext="{Binding Item}" />
+              </ScrollViewer>
             </StackPanel>
           </DockPanel>
         </Border>
@@ -247,6 +252,9 @@
     <!-- The palette and the ? sheet (§8): layers over everything, shown by their view models; Esc closes the topmost. -->
     <Panel x:Name="PaletteLayer" IsVisible="{Binding Palette.IsOpen}">
       <root:CommandPalette x:Name="CommandPalette" DataContext="{Binding Palette}" />
+    </Panel>
+    <Panel x:Name="CreateLayer" IsVisible="{Binding Create.IsOpen}">
+      <item:CreateItemDialog x:Name="CreateItemDialog" DataContext="{Binding Create}" />
     </Panel>
     <Panel x:Name="ShortcutsLayer" IsVisible="{Binding Shortcuts.IsOpen}">
       <root:ShortcutsSheet x:Name="ShortcutsSheet" DataContext="{Binding Shortcuts}" />

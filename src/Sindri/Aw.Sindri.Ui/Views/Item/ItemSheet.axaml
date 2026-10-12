@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:item="using:Aw.Sindri.Ui.ViewModels.Item"
+             xmlns:vmc="using:Aw.Sindri.Ui.ViewModels.Controls"
+             xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+             xmlns:views="using:Aw.Sindri.Ui.Views.Item"
+             x:Class="Aw.Sindri.Ui.Views.Item.ItemSheet"
+             x:DataType="item:ItemSheetViewModel">
+  <!-- The item detail (UI spec §4.6, item-detail.html), inside the shell's sheet: the header (title, repo, the state as a
+       word, version, since), who created it and what it waits on, the item's actions from the catalog (Close item with
+       the version shown; Close as cancelled confirms first), and the timeline paged by 'next'. SND-ITEM-404 shows its
+       detail; SND-ITEM-409 shows its detail once the re-read item no longer allows the pressed control (§9.1). -->
+  <StackPanel Spacing="{StaticResource Space.MD}">
+    <StackPanel x:Name="ItemSkeleton" Spacing="10" IsVisible="{Binding IsLoading}">
+      <Border Classes="skeleton" Width="300" />
+      <Border Classes="skeleton" Width="220" />
+      <Border Classes="skeleton" Width="260" />
+    </StackPanel>
+
+    <StackPanel x:Name="ProblemLine" Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasProblem}">
+      <icons:StateIcon Glyph="Down" Classes="error" VerticalAlignment="Top" />
+      <TextBlock x:Name="ProblemCodeText" Classes="caption error" Text="{Binding ProblemCode}" AutomationProperties.Name="{Binding ProblemCode}" />
+      <TextBlock x:Name="ProblemDetailText" Classes="caption" Text="{Binding ProblemDetail}" TextWrapping="Wrap" MaxWidth="440"
+                 AutomationProperties.Name="{Binding ProblemDetail}" />
+    </StackPanel>
+
+    <StackPanel x:Name="ItemBody" Spacing="{StaticResource Space.MD}" IsVisible="{Binding HasItem}">
+      <StackPanel Spacing="4">
+        <TextBlock x:Name="ItemTitle" Classes="detail-title" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />
+        <WrapPanel x:Name="ItemFacts" Orientation="Horizontal">
+          <TextBlock Classes="caption subtle" Text="{Binding Repo}" Margin="0,0,12,0" AutomationProperties.Name="{Binding Repo}" />
+          <TextBlock x:Name="ItemState" Classes="caption body-strong" Text="{Binding StateWord}" Margin="0,0,12,0" AutomationProperties.Name="{Binding StateWord}" />
+          <TextBlock x:Name="ItemVersion" Classes="caption subtle" Text="{Binding VersionText}" Margin="0,0,12,0" AutomationProperties.Name="{Binding VersionText}" />
+          <TextBlock x:Name="ItemAge" Classes="caption subtle" Text="{Binding Age}" AutomationProperties.Name="{Binding Age}" />
+        </WrapPanel>
+        <Grid Classes="row" ColumnDefinitions="110,*">
+          <TextBlock Classes="caption subtle row-label" Text="{Binding $parent[views:ItemSheet].Text.CreatedBy}" />
+          <TextBlock x:Name="ItemCreatedBy" Grid.Column="1" Classes="mono" Text="{Binding CreatedBy}" AutomationProperties.Name="{Binding CreatedBy}" />
+        </Grid>
+        <Grid Classes="row" ColumnDefinitions="110,*" IsVisible="{Binding HasWaitingOn}">
+          <TextBlock Classes="caption subtle row-label" Text="{Binding $parent[views:ItemSheet].Text.WaitingOn}" />
+          <TextBlock x:Name="ItemWaitingOn" Grid.Column="1" Classes="mono" Text="{Binding WaitingOn}" AutomationProperties.Name="{Binding WaitingOn}" />
+        </Grid>
+        <Grid Classes="row" ColumnDefinitions="110,*" IsVisible="{Binding HasInstance}">
+          <TextBlock Classes="caption subtle row-label" Text="{Binding $parent[views:ItemSheet].Text.InstanceLabel}" />
+          <TextBlock x:Name="ItemInstance" Grid.Column="1" Classes="mono" Text="{Binding Instance}" AutomationProperties.Name="{Binding Instance}" />
+        </Grid>
+      </StackPanel>
+
+      <StackPanel x:Name="ItemActions" Spacing="6" IsVisible="{Binding HasActions}">
+        <TextBlock Classes="eyebrow" Text="{Binding $parent[views:ItemSheet].Text.Actions}" />
+        <ItemsControl x:Name="ItemActionList" ItemsSource="{Binding Actions}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vmc:ControlViewModel">
+              <controls:CommandControl Margin="0,0,8,6" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <StackPanel x:Name="ItemTimeline" Spacing="6">
+        <TextBlock Classes="eyebrow" Text="{Binding $parent[views:ItemSheet].Text.Timeline}" />
+        <ItemsControl x:Name="TimelineList" ItemsSource="{Binding Timeline}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="item:TimelineRow">
+              <Border Classes="timeline-row" Focusable="True" AutomationProperties.Name="{Binding Name}">
+                <Grid ColumnDefinitions="70,*">
+                  <TextBlock Classes="mono subtle" Text="{Binding Time}" />
+                  <StackPanel Grid.Column="1" Spacing="2">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Classes="mono" Text="{Binding Type}" />
+                      <TextBlock Classes="caption subtle" Text="{Binding Actor}" />
+                    </StackPanel>
+                    <TextBlock Classes="body" Text="{Binding Line}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button x:Name="LoadMoreButton" Classes="copy" Click="OnLoadMore" IsVisible="{Binding HasMore}"
+                AutomationProperties.Name="{Binding $parent[views:ItemSheet].Text.LoadMore}">
+          <TextBlock Classes="caption" Text="{Binding $parent[views:ItemSheet].Text.LoadMore}" />
+        </Button>
+      </StackPanel>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

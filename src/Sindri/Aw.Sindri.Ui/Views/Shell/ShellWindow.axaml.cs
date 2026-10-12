@@ -93,7 +93,7 @@ internal sealed partial class ShellWindow : Window
     {
         e.Handled = e.Key == Key.F6 ? CycleRegion(back: e.KeyModifiers.HasFlag(KeyModifiers.Shift))
             : e.Key == Key.Escape ? Escape()
-            : OpenByKey(e);
+            : OpenByKey(e) || PageKey(e);
         base.OnKeyDown(e);
     }
 
@@ -146,6 +146,11 @@ internal sealed partial class ShellWindow : Window
         if (shell.Shortcuts.IsOpen)
         {
             shell.Shortcuts.Close();
+            return true;
+        }
+
+        if (EscapeItemLayer(shell))
+        {
             return true;
         }
 

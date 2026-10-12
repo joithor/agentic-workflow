@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:shell="using:Aw.Sindri.Ui.ViewModels.Shell"
+             xmlns:queue="using:Aw.Sindri.Ui.ViewModels.Queue"
+             xmlns:rows="using:Aw.Sindri.Ui.Views.Queue"
+             xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+             x:Class="Aw.Sindri.Ui.Views.Queue.QueuePage"
+             x:DataType="shell:ShellViewModel">
+  <!-- The Queue page (UI spec §4.5, queue.html): the API's groups in its order, each a collapsible section with its
+       count; empty groups hidden (a filtered one shows its own sentence, E-18); the view's own sentence when every group
+       is empty; skeleton rows on the first load only (§4.1). Create item (C) sits at the right of the title. -->
+  <StackPanel Spacing="{StaticResource Size.PanelGap}">
+    <Grid ColumnDefinitions="Auto,*,Auto">
+      <TextBlock Classes="page-title" Text="{Binding Text.Queue}" AutomationProperties.Name="{Binding Text.Queue}" VerticalAlignment="Center" />
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <Button x:Name="CreateButton" Classes="command-control" Click="OnCreate" AutomationProperties.Name="{Binding Text.Items.CreateItem}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Classes="button" Text="{Binding Text.Items.CreateItem}" VerticalAlignment="Center" />
+            <Border Classes="kbd" VerticalAlignment="Center"><TextBlock Classes="kbd" Text="C" /></Border>
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <Border x:Name="QueuePanel" Classes="panel" AutomationProperties.Name="{Binding Text.Queue}">
+      <StackPanel>
+        <Border Classes="phead">
+          <Grid ColumnDefinitions="150,*,150,130,110,70,Auto">
+            <TextBlock Classes="eyebrow" Text="{Binding Text.Items.ColumnItem}" />
+            <TextBlock Grid.Column="1" Classes="eyebrow" Text="{Binding Text.Items.ColumnTitle}" />
+            <TextBlock Grid.Column="2" Classes="eyebrow" Text="{Binding Text.Items.ColumnRepo}" />
+            <TextBlock Grid.Column="3" Classes="eyebrow" Text="{Binding Text.Items.ColumnState}" />
+            <TextBlock Grid.Column="4" Classes="eyebrow" Text="{Binding Text.Items.ColumnStep}" />
+            <TextBlock Grid.Column="5" Classes="eyebrow" Text="{Binding Text.Items.ColumnSince}" />
+          </Grid>
+        </Border>
+
+        <StackPanel x:Name="QueueSkeleton" IsVisible="{Binding Queue.IsLoading}">
+          <Grid Classes="skrow" ColumnDefinitions="150,*,60"><Border Classes="skeleton" Width="100" /><Border Grid.Column="1" Classes="skeleton" Width="360" /><Border Grid.Column="2" Classes="skeleton" Width="40" /></Grid>
+          <Grid Classes="skrow" ColumnDefinitions="150,*,60"><Border Classes="skeleton" Width="92" /><Border Grid.Column="1" Classes="skeleton" Width="280" /><Border Grid.Column="2" Classes="skeleton" Width="40" /></Grid>
+          <Grid Classes="skrow" ColumnDefinitions="150,*,60"><Border Classes="skeleton" Width="104" /><Border Grid.Column="1" Classes="skeleton" Width="420" /><Border Grid.Column="2" Classes="skeleton" Width="40" /></Grid>
+        </StackPanel>
+
+        <TextBlock x:Name="QueueEmpty" Classes="caption quiet" Text="{Binding Queue.EmptyText}" IsVisible="{Binding Queue.IsEmpty}"
+                   AutomationProperties.Name="{Binding Queue.EmptyText}" />
+
+        <ItemsControl x:Name="QueueGroups" ItemsSource="{Binding Queue.Groups}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="queue:QueueGroupViewModel">
+              <StackPanel IsVisible="{Binding IsVisible}">
+                <ToggleButton x:Name="GroupHeader" Classes="group-head" IsChecked="{Binding IsExpanded}" AutomationProperties.Name="{Binding Header}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Classes="caption subtle" Text="▾" AutomationProperties.AccessibilityView="Raw" />
+                    <TextBlock Classes="body-strong" Text="{Binding Label}" />
+                    <TextBlock Classes="caption subtle" Text="{Binding Count}" />
+                  </StackPanel>
+                </ToggleButton>
+                <TextBlock Classes="caption quiet" Text="{Binding Empty}" IsVisible="{Binding ShowsEmpty}" AutomationProperties.Name="{Binding Empty}" />
+                <ItemsControl ItemsSource="{Binding Rows}" IsVisible="{Binding IsExpanded}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="queue:ItemRowViewModel">
+                      <rows:ItemRow />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

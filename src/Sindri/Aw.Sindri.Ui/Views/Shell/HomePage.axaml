@@ -3,11 +3,13 @@
              xmlns:vm="using:Aw.Sindri.Ui.ViewModels"
              xmlns:shell="using:Aw.Sindri.Ui.ViewModels.Shell"
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+             xmlns:queue="using:Aw.Sindri.Ui.ViewModels.Queue"
+             xmlns:rows="using:Aw.Sindri.Ui.Views.Queue"
              x:Class="Aw.Sindri.Ui.Views.Shell.HomePage"
              x:DataType="shell:ShellViewModel">
   <!-- Home (UI spec §3.2, §4.2): four panels in a fixed order. Each panel is a header row (the eyebrow over a hairline,
-       home.html .phead) and a body; their routes arrive in later phases (U2, U3), so each body says "not served yet"
-       quietly until then, with no counts. The health strip is the status as labelled cells and opens Health. -->
+       home.html .phead) and a body. Running and With you, and Queued, are GET /queue's groups (U2: at most five rows, then
+       "Show all N in Queue"; each group's own empty sentence, E-18); Needs you arrives with U3 and says "not served yet". The health strip is the status as labelled cells and opens Health. -->
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
     <TextBlock Classes="page-title" Text="{Binding Text.Home}" AutomationProperties.Name="{Binding Text.Home}" />
 
@@ -22,20 +24,52 @@
 
     <Grid ColumnDefinitions="*,16,*">
       <Border x:Name="RunningPanel" Classes="panel" AutomationProperties.Name="{Binding Text.RunningPanel}">
-        <StackPanel>
-          <Border Classes="phead">
-            <TextBlock Classes="eyebrow" Text="{Binding Text.RunningPanel}" AutomationProperties.Name="{Binding Text.RunningPanel}" />
+        <!-- The panel stretches to its row's height; an empty group's sentence sits centred in the body (states.html .empty). -->
+        <DockPanel>
+          <Border Classes="phead" DockPanel.Dock="Top">
+            <TextBlock Classes="eyebrow" Text="{Binding Queue.RunningHeader}" AutomationProperties.Name="{Binding Queue.RunningHeader}" />
           </Border>
-          <TextBlock Classes="caption quiet" Text="{Binding Text.NotServedYet}" AutomationProperties.Name="{Binding Text.NotServedYet}" />
-        </StackPanel>
+          <Button DockPanel.Dock="Bottom" HorizontalAlignment="Left" x:Name="RunningShowAll" Classes="copy" Tag="Running" Click="OnShowAll" IsVisible="{Binding Queue.HasMoreRunning}"
+                  AutomationProperties.Name="{Binding Queue.ShowAllRunning}" Margin="16,6">
+            <TextBlock Classes="caption" Text="{Binding Queue.ShowAllRunning}" />
+          </Button>
+          <Panel>
+          <ItemsControl VerticalAlignment="Top" x:Name="RunningRows" ItemsSource="{Binding Queue.RunningRows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="queue:ItemRowViewModel">
+                <rows:ItemRow Classes="compact" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock VerticalAlignment="Center" x:Name="RunningEmpty" Classes="caption quiet" Text="{Binding Queue.RunningEmpty}"
+                     IsVisible="{Binding Queue.RunningEmpty, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                     AutomationProperties.Name="{Binding Queue.RunningEmpty}" />
+          </Panel>
+        </DockPanel>
       </Border>
       <Border x:Name="QueuedPanel" Grid.Column="2" Classes="panel" AutomationProperties.Name="{Binding Text.QueuedPanel}">
-        <StackPanel>
-          <Border Classes="phead">
-            <TextBlock Classes="eyebrow" Text="{Binding Text.QueuedPanel}" AutomationProperties.Name="{Binding Text.QueuedPanel}" />
+        <!-- The panel stretches to its row's height; an empty group's sentence sits centred in the body (states.html .empty). -->
+        <DockPanel>
+          <Border Classes="phead" DockPanel.Dock="Top">
+            <TextBlock Classes="eyebrow" Text="{Binding Queue.QueuedHeader}" AutomationProperties.Name="{Binding Queue.QueuedHeader}" />
           </Border>
-          <TextBlock Classes="caption quiet" Text="{Binding Text.NotServedYet}" AutomationProperties.Name="{Binding Text.NotServedYet}" />
-        </StackPanel>
+          <Button DockPanel.Dock="Bottom" HorizontalAlignment="Left" x:Name="QueuedShowAll" Classes="copy" Tag="All" Click="OnShowAll" IsVisible="{Binding Queue.HasMoreQueued}"
+                  AutomationProperties.Name="{Binding Queue.ShowAllQueued}" Margin="16,6">
+            <TextBlock Classes="caption" Text="{Binding Queue.ShowAllQueued}" />
+          </Button>
+          <Panel>
+          <ItemsControl VerticalAlignment="Top" x:Name="QueuedRows" ItemsSource="{Binding Queue.QueuedRows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="queue:ItemRowViewModel">
+                <rows:ItemRow Classes="compact" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock VerticalAlignment="Center" x:Name="QueuedEmpty" Classes="caption quiet" Text="{Binding Queue.QueuedEmpty}"
+                     IsVisible="{Binding Queue.QueuedEmpty, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                     AutomationProperties.Name="{Binding Queue.QueuedEmpty}" />
+          </Panel>
+        </DockPanel>
       </Border>
     </Grid>
 
