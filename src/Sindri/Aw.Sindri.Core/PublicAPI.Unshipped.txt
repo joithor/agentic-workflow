@@ -3197,3 +3197,27 @@ Aw.Sindri.Core.Control.TemporalRuntime.TemporalRuntime(Aw.Sindri.Core.Control.IT
 Aw.Sindri.Core.Control.TemporalRuntime.Track(System.Threading.Tasks.Task! worker) -> void
 static Aw.Sindri.Core.Control.TemporalRuntime.WorkerStopWait.get -> System.TimeSpan
 Aw.Sindri.Core.Control.TemporalRuntime.WaitForWorker(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+const Aw.Sindri.Core.Events.EventTypes.WorkflowStarted = "workflow.started" -> string!
+const Aw.Sindri.Core.Events.EventTypes.WorkflowTransition = "workflow.transition" -> string!
+Aw.Sindri.Core.Events.WorkflowEventPayload.<Clone>$() -> Aw.Sindri.Core.Events.WorkflowEventPayload!
+Aw.Sindri.Core.Events.WorkflowEventPayload.Deconstruct(out string! Instance, out string! From, out string! To, out string! Trigger, out string? Outcome, out string? Run) -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Equals(Aw.Sindri.Core.Events.WorkflowEventPayload? other) -> bool
+Aw.Sindri.Core.Events.WorkflowEventPayload.From.get -> string!
+Aw.Sindri.Core.Events.WorkflowEventPayload.From.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Instance.get -> string!
+Aw.Sindri.Core.Events.WorkflowEventPayload.Instance.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Outcome.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventPayload.Outcome.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Run.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventPayload.Run.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.To.get -> string!
+Aw.Sindri.Core.Events.WorkflowEventPayload.To.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Trigger.get -> string!
+Aw.Sindri.Core.Events.WorkflowEventPayload.Trigger.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.WorkflowEventPayload(string! Instance, string! From, string! To, string! Trigger, string? Outcome, string? Run) -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload
+override Aw.Sindri.Core.Events.WorkflowEventPayload.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.WorkflowEventPayload.GetHashCode() -> int
+override Aw.Sindri.Core.Events.WorkflowEventPayload.ToString() -> string!
+static Aw.Sindri.Core.Events.WorkflowEventPayload.operator !=(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
+static Aw.Sindri.Core.Events.WorkflowEventPayload.operator ==(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
@@ -52,7 +53,7 @@ internal sealed class RecipeWorkflow
         var instance = Started(TransitionDecision.Start(StartOf(address, run, recipe), recipe, context));
         _instance = instance;
         var item = address.Value.Split('/')[0];
-        await Mirror(new WorkflowEventRecord(address.Value, "workflow.started", item, string.Empty, instance.State, "start", Outcome: null, Run: null), recipeId, NeedsYou(instance)).ConfigureAwait(true);
+        await Mirror(new WorkflowEventRecord(address.Value, EventTypes.WorkflowStarted, item, string.Empty, instance.State, "start", Outcome: null, Run: null), recipeId, NeedsYou(instance)).ConfigureAwait(true);
         while (!instance.Ended)
         {
             if (instance.Suspension is not null || instance.Frame.Run is not { } open)
@@ -73,7 +74,7 @@ internal sealed class RecipeWorkflow
                     StepFailed => (TriggerNames.StepFailed, null),
                     _ => (TriggerNames.Deadline, null),
                 };
-                var record = new WorkflowEventRecord(address.Value, "workflow.transition", item, before.State, instance.State, kind, outcome, open.Token.Value);
+                var record = new WorkflowEventRecord(address.Value, EventTypes.WorkflowTransition, item, before.State, instance.State, kind, outcome, open.Token.Value);
                 await Mirror(record, recipeId, NeedsYou(instance)).ConfigureAwait(true);
             }
         }

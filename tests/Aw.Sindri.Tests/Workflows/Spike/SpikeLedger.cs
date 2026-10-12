@@ -23,7 +23,7 @@ internal sealed record SpikeLedger(ILedgerStore Ledger, CountingRecorder Recorde
     {
         var held = new HeldLease();
         held.Hold((await stores.Lease.Acquire(probe.Self(), cancellationToken)).Value);
-        var activities = new RecordEventActivities(stores.Ledger, held, EventScope.ControlPlane, clock, new SequentialIdGenerator());
+        var activities = new RecordEventActivities(stores.Ledger, held, new EventFactory(EventScope.ControlPlane, clock, new SequentialIdGenerator(), SliceHarness.Json));
         return new SpikeLedger(stores.Ledger, new CountingRecorder(activities));
     }
 
