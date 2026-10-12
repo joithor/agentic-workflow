@@ -168,6 +168,8 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
       flag("DEPS-KIND-002", "edge into a shell or mod node", edgeText(e), `shell and mod nodes only consume packages; nothing depends on them (${e.to} is ${b.kind})`, `move the shared state or contract into a package and point the edge the other way (${e.to} -> <package>)`);
       return bad;
     }
+    // DEPS-KIND-004 depends only on the target, so it holds for an http edge from a shell or mod node too.
+    if (e.kind === "http" && !(b.routes ?? []).length) flag("DEPS-KIND-004", "http edge to a package that serves no routes", edgeText(e), `an http edge calls a package's HTTP API, declared as its routes (${e.to} lists none)`, `add routes: [/<prefix>/] to ${e.to} in deps.yaml, or change the edge's kind`);
     if (a.kind !== "package") {
       if (linked(e.kind)) flag("DEPS-KIND-001", `${e.kind} edge outside the C# packages`, edgeText(e), `project and compose edges connect kind: package nodes (${e.from} is ${a.kind})`, `change the edge to kind: cli or file in deps.yaml`);
       return bad;
@@ -175,7 +177,6 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
     if (e.kind === "compose" && b.tier === 0) flag("DEPS-COMPOSE-001", "compose edge into a tier-0 package", edgeText(e), "a tier-0 package has no Features or Infrastructure to compose; its library projects are used whole through a project edge", "delete the compose edge; reference the tier-0 library projects under the project edge");
     if (linked(e.kind) && b.test && !a.test) flag("DEPS-KIND-003", `${e.kind} edge from production code into a test-support package`, edgeText(e), "only test projects reference test-support packages, and they need no declared edge", `delete the edge from deps.yaml and move the reference into ${e.from}'s *.Tests project`);
     if (linked(e.kind) && rank(a) <= rank(b)) flag("DEPS-TIER-001", `${e.kind} edge does not point to a lower tier`, `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, `a ${e.kind} edge points strictly down the tiers (§4b.1a)`, `change it to kind: cli and call ${e.to}'s CLI, or move the shared code down a tier`);
-    if (e.kind === "http" && !(b.routes ?? []).length) flag("DEPS-KIND-004", "http edge to a package that serves no routes", edgeText(e), `an http edge calls a package's HTTP API, declared as its routes (${e.to} lists none)`, `add routes: [/<prefix>/] to ${e.to} in deps.yaml, or change the edge's kind`);
     if ((e.kind === "db" || e.kind === "file") && rank(a) < rank(b)) flag("DEPS-TIER-002", `${e.kind} edge points to a higher tier`, `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, "db and file edges point down or across, never up", `replace it with (from: ${e.from}, to: ${e.to}, kind: cli) and ask ${e.to}'s CLI`);
     return bad;
   }
