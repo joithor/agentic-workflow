@@ -24,12 +24,21 @@ internal sealed partial class ShellWindow
             return false;
         }
 
+        FocusOpenedField(shell, key);
+        return true;
+    }
+
+    // A key that opened a field moves focus into it: C the create form's title, / the Queue page's filter.
+    private void FocusOpenedField(Aw.Sindri.Ui.ViewModels.Shell.ShellViewModel shell, string key)
+    {
         if (shell.Create.IsOpen)
         {
             Dispatcher.UIThread.Post(() => this.Get<CreateItemDialog>("CreateItemDialog").FocusTitle(), DispatcherPriority.Loaded);
         }
-
-        return true;
+        else if (key == "/" && shell.Queue.IsFiltering)
+        {
+            Dispatcher.UIThread.Post(() => _ = this.Get<TextBox>("QueueFilter").Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
+        }
     }
 
     // The key as the view model names it: a letter (no Shift), "Enter" or ".".
@@ -45,6 +54,11 @@ internal sealed partial class ShellWindow
             return ".";
         }
 
+        if (e.Key == Key.OemQuestion && e.KeyModifiers == KeyModifiers.None)
+        {
+            return "/";
+        }
+
         return e.Key is >= Key.A and <= Key.Z && e.KeyModifiers == KeyModifiers.None ? e.Key.ToString() : null;
     }
 
@@ -57,12 +71,19 @@ internal sealed partial class ShellWindow
             return true;
         }
 
-        if (shell.Item.Actions.FirstOrDefault(a => a.IsConfirming) is not { } asking)
+        if (shell.Item.Actions.FirstOrDefault(a => a.IsConfirming) is { } asking)
+        {
+            asking.Keep();
+            return true;
+        }
+
+        // §8: the filter is the last layer, after the sheet.
+        if (shell.IsSheetShown || !shell.Queue.IsFiltering)
         {
             return false;
         }
 
-        asking.Keep();
+        shell.Queue.ClearFilter();
         return true;
     }
 }

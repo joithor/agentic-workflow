@@ -85,11 +85,13 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
             return;
         }
 
-        var before = Visible().ToList();
-        _view = answer.Value;
         (IsLoading, IsStale) = (false, false);
-        Show();
-        Keep(before);
+        if (Park(answer.Value))
+        {
+            return;
+        }
+
+        Apply(answer.Value);
     }
 
     /// <summary>Shows one group (G R, G W) or all of them (G Q).</summary>
@@ -123,6 +125,15 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         Select(rows[next].Id);
     }
 
+    // Shows a view, keeping the selection by id (§3.3).
+    private void Apply(QueueView view)
+    {
+        var before = Visible().ToList();
+        _view = view;
+        Show();
+        Keep(before);
+    }
+
     private IEnumerable<ItemRowViewModel> Visible() => Groups.Where(g => g.IsVisible).SelectMany(g => g.Rows);
 
     private void Show()
@@ -133,17 +144,19 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         }
 
         var now = clock.GetUtcNow();
-        Groups = [.. view.Groups.Select(g => Group(g, now))];
-        Total = Groups.Sum(g => g.Count);
-        IsEmpty = Showing == QueueFilter.All && Total == 0;
-        EmptyText = IsEmpty ? view.Empty ?? string.Empty : string.Empty;
-        Panels();
+        var all = view.Groups.ToDictionary(g => g.Group, g => g.Items.Select(i => new ItemRowViewModel(i, g.Group, Primary(i), now)).ToList(), StringComparer.Ordinal);
+        Groups = [.. view.Groups.Select(g => Group(g, all[g.Group]))];
+        Total = all.Values.Sum(r => r.Count);
+        var unmatched = FilterText.Length > 0 && !Visible().Any();
+        IsEmpty = (Showing == QueueFilter.All && Total == 0) || unmatched;
+        EmptyText = unmatched ? Labels.NoMatches : IsEmpty ? view.Empty ?? string.Empty : string.Empty;
+        Panels(all);
         Mark();
     }
 
-    private QueueGroupViewModel Group(QueueGroupView group, DateTimeOffset now)
+    private QueueGroupViewModel Group(QueueGroupView group, List<ItemRowViewModel> all)
     {
-        var rows = group.Items.Select(i => new ItemRowViewModel(i, group.Group, Primary(i), now)).ToList();
+        var rows = all.Where(Matches).ToList();
         var picked = Showing switch
         {
             QueueFilter.Running => group.Group == "running",
@@ -159,11 +172,12 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     private ControlViewModel? Primary(ItemSummaryView item) =>
         item.PrimaryAction is { } action ? catalog.On(action, item.Id, send: null) : null;
 
-    private void Panels()
+    // Home's panels show the whole groups: the Queue page's filter doesn't apply to them.
+    private void Panels(Dictionary<string, List<ItemRowViewModel>> all)
     {
-        var withYou = Rows("withYou");
-        var running = Rows("running");
-        var queued = Rows("queued");
+        var withYou = all.GetValueOrDefault("withYou") ?? [];
+        var running = all.GetValueOrDefault("running") ?? [];
+        var queued = all.GetValueOrDefault("queued") ?? [];
         var left = withYou.Concat(running).ToList();
         RunningRows = [.. left.Take(PanelCap)];
         RunningHeader = Labels.RunningHeader(running.Count, withYou.Count);
@@ -174,9 +188,6 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         QueuedEmpty = queued.Count == 0 ? EmptyOf("queued") : string.Empty;
         (HasMoreQueued, ShowAllQueued) = (queued.Count > PanelCap, Labels.ShowAllInQueue(queued.Count));
     }
-
-    private List<ItemRowViewModel> Rows(string group) =>
-        Groups.FirstOrDefault(g => g.Group == group)?.Rows.ToList() ?? [];
 
     private string EmptyOf(string group) => Groups.FirstOrDefault(g => g.Group == group)?.Empty ?? string.Empty;
 
@@ -196,6 +207,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         var next = group is null ? Visible().FirstOrDefault() : group.Rows[Math.Min(index, group.Rows.Count - 1)];
         Announcement = Labels.Cleared(id);
         SelectedId = next?.Id;
+        _movedAt = clock.GetUtcNow();
         Mark();
     }
 

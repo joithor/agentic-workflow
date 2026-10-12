@@ -22,7 +22,18 @@
       </StackPanel>
     </Grid>
 
-    <Border x:Name="QueuePanel" Classes="panel" AutomationProperties.Name="{Binding Text.Queue}">
+    <!-- §8 `/`: the filter field (id, title, repo); Esc clears and closes it. -->
+    <TextBox x:Name="QueueFilter" Text="{Binding Queue.FilterText}" IsVisible="{Binding Queue.IsFiltering}"
+             PlaceholderText="{Binding Text.Items.Filter}" AutomationProperties.Name="{Binding Text.Items.Filter}" />
+
+    <!-- §8: while the pointer is over the panel, new rows wait behind this pill instead of shifting the rows. -->
+    <Button x:Name="QueueHeldPill" Classes="held-pill" Click="OnShowHeld" IsVisible="{Binding Queue.HasHeld}" HorizontalAlignment="Center"
+            AutomationProperties.Name="{Binding Queue.HeldText}" AutomationProperties.LiveSetting="Polite">
+      <TextBlock Classes="caption" Text="{Binding Queue.HeldText}" />
+    </Button>
+
+    <Border x:Name="QueuePanel" Classes="panel" AutomationProperties.Name="{Binding Text.Queue}"
+            PointerEntered="OnPanelEntered" PointerExited="OnPanelExited">
       <StackPanel>
         <Border Classes="phead">
           <Grid ColumnDefinitions="150,*,150,130,110,70,260">

@@ -24,6 +24,12 @@ internal sealed partial class ShellViewModel
     /// <returns>True when the key was handled.</returns>
     internal bool Press(string key)
     {
+        // §8 key guard: for 500 ms after a refresh moved the selection on its own, single keys do nothing.
+        if (Queue.IsGuarded)
+        {
+            return true;
+        }
+
         if (_chordAt is { } at)
         {
             (_chordAt, ChordHint) = (null, string.Empty);
@@ -36,7 +42,25 @@ internal sealed partial class ShellViewModel
             return true;
         }
 
-        return Single(key);
+        return Single(key) || RowKey(key);
+    }
+
+    // Y copies the selected row's CLI (§8); / opens the Queue page's filter.
+    private bool RowKey(string key)
+    {
+        if (key == "Y" && (IsHome || IsQueue) && Queue.SelectedCopy() is { } control)
+        {
+            _ = control.Copy(CancellationToken.None);
+            return true;
+        }
+
+        if (key != "/" || !IsQueue)
+        {
+            return false;
+        }
+
+        Queue.OpenFilter();
+        return true;
     }
 
     // C, J / K and Enter (§8), scoped to the pages with rows.

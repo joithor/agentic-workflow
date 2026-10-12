@@ -118,6 +118,14 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string Cleared(string id) => id + " cleared";
 
+    /// <summary>The pill over a panel while new rows are held (§8): "N new".</summary>
+    /// <param name="count">How many rows are held.</param>
+    /// <returns>The words.</returns>
+    internal static string NewRows(int count) => string.Create(CultureInfo.InvariantCulture, $"{count} new");
+
+    /// <summary>The Queue page's filter field (§8 `/`).</summary>
+    internal const string Filter = "Filter by id, title, repo";
+
     /// <summary>The item header's version: "version 2".</summary>
     /// <param name="version">The item's version.</param>
     /// <returns>The words.</returns>

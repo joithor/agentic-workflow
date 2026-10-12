@@ -22,7 +22,13 @@
       </StackPanel>
     </Border>
 
-    <Grid ColumnDefinitions="*,16,*">
+    <!-- §8: new rows wait behind this pill while the pointer is over Running or Queued. -->
+    <Button x:Name="HomeHeldPill" Classes="held-pill" Click="OnShowHeld" IsVisible="{Binding Queue.HasHeld}" HorizontalAlignment="Center"
+            AutomationProperties.Name="{Binding Queue.HeldText}" AutomationProperties.LiveSetting="Polite">
+      <TextBlock Classes="caption" Text="{Binding Queue.HeldText}" />
+    </Button>
+
+    <Grid ColumnDefinitions="*,16,*" PointerEntered="OnPanelEntered" PointerExited="OnPanelExited">
       <Border x:Name="RunningPanel" Classes="panel" AutomationProperties.Name="{Binding Text.RunningPanel}">
         <!-- The panel stretches to its row's height; an empty group's sentence sits centred in the body (states.html .empty). -->
         <DockPanel>
