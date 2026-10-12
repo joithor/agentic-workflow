@@ -17,6 +17,9 @@ public static class EventTypes
     /// <summary>The context engine refreshed its snapshot sources (context spec §3; the context-docs-refresh service).</summary>
     public const string ContextSourcesSynced = "context.sources.synced";
 
+    /// <summary>A human imported a map file as the current product map (context spec §3, §8.7; stage S-3a).</summary>
+    public const string ContextMapImported = "context.map.imported";
+
     /// <summary>A command attempt reached the chain: its audit row (not public).</summary>
     public const string CommandHandled = "command.handled";
 
