@@ -1,10 +1,13 @@
+using System.Diagnostics;
 using System.Net;
 using System.Text;
+using Aw.Context.Core.Engine;
 using Aw.Context.Testing.Fixtures;
 using Aw.Kernel.Telemetry;
 using Aw.Kernel.Telemetry.Testing;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.ApiGoldens;
+using Aw.Sindri.Tests.Callers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -112,6 +115,31 @@ public sealed class ContextMcpTests : IDisposable
             [(true, "SND-CONTEXT-020"), (true, "SND-CONTEXT-020"), (true, "SND-CONTEXT-003"), (true, "SND-CONTEXT-021"), (true, "SND-CONTEXT-022"),
              (true, "SND-CONTEXT-022"), (true, "SND-CONTEXT-006"), (true, "SND-CONTEXT-023")],
             codes);
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task An_mcp_call_takes_the_query_chain_as_session_mcp_like_the_http_route()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var calls = new List<(ContextCaller Caller, string? Span)>();
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == "Aw.Sindri",
+            Sample = static (ref _) => ActivitySamplingResult.AllData,
+        };
+        ActivitySource.AddActivityListener(listener);
+        await using var host = await ContextHosts.Approved(_repo, sessions: true, ct, services => RecordingEngine.Install(services, calls));
+        await using var mcp = await McpSession.Open(host, "split-panes", ct);
+
+        var overMcp = await mcp.Call("context_query", """{"q":"orientation"}""", ct);
+        var overHttp = await host.Http.Ask(CallerRequests.Get("/sindri/context/query?q=orientation", (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "split-panes")));
+
+        Assert.NotEqual(true, overMcp.IsError);
+        Assert.Equal(HttpStatusCode.OK, overHttp.Status);
+        Assert.Equal(
+            [(new ContextCaller(ContextCallerKind.Session, ContextRepoName.From("split-panes"), ContextClient.Mcp), "sindri.query QueryContext"),
+             (new ContextCaller(ContextCallerKind.Session, ContextRepoName.From("split-panes"), ContextClient.Http), "sindri.query QueryContext")],
+            calls);
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]

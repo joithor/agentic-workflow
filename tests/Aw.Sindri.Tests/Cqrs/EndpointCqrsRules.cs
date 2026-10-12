@@ -32,9 +32,15 @@ internal static partial class EndpointCqrsRules
         ArgumentNullException.ThrowIfNull(endpoints);
         ArgumentNullException.ThrowIfNull(catalog);
         return [.. endpoints.Endpoints.OfType<RouteEndpoint>()
-            .Where(endpoint => !(endpoint.RoutePattern.RawText ?? string.Empty).StartsWith(Host.Mcp.McpEndpoint.Path, StringComparison.Ordinal))
+            .Where(endpoint => !IsMcp(endpoint))   // the MCP transport's own route only; its tools are proven to take the query chain (ContextMcpTests)
             .SelectMany(endpoint => Violations(endpoint, catalog))];
     }
+
+    /// <summary>The one route the MCP SDK maps: exactly /sindri/mcp (any method), nothing under it.</summary>
+    /// <param name="endpoint">An endpoint.</param>
+    /// <returns>True for the MCP route.</returns>
+    public static bool IsMcp(RouteEndpoint endpoint) =>
+        string.Equals((endpoint.RoutePattern.RawText ?? string.Empty).TrimEnd('/'), Host.Mcp.McpEndpoint.Path, StringComparison.Ordinal);
 
     /// <summary>The request type of the IService&lt;TRequest, _&gt; the endpoint's handler takes, or null.</summary>
     public static Type? Request(RouteEndpoint endpoint)
