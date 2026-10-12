@@ -11,6 +11,7 @@ using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Validation;
@@ -18,7 +19,10 @@ using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.Blocks;
 using Aw.Sindri.Features.Commands;
 using Aw.Sindri.Features.IssueChallenge;
+using Aw.Sindri.Features.ListRecipes;
+using Aw.Sindri.Features.RegisterRecipe;
 using Aw.Sindri.Features.RevokeRecipe;
+using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Host.Catalog;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Challenges;
@@ -66,6 +70,9 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddScoped<IValidator<ApproveRecipeRequest>, AcceptAllValidator<ApproveRecipeRequest>>().AddCommand<ApproveRecipeRequest, ApproveRecipeResponse, ApproveRecipeService>()
             .AddScoped<IValidator<RevokeRecipeRequest>, AcceptAllValidator<RevokeRecipeRequest>>().AddCommand<RevokeRecipeRequest, RevokeRecipeResponse, RevokeRecipeService>()
             .AddScoped<IValidator<IssueChallengeRequest>, AcceptAllValidator<IssueChallengeRequest>>().AddIssue<IssueChallengeRequest, IssueChallengeResponse, IssueChallengeService>()
+            .AddScoped<IValidator<RegisterRecipeRequest>, AcceptAllValidator<RegisterRecipeRequest>>().AddCommand<RegisterRecipeRequest, RegisterRecipeResponse, RegisterRecipeService>()
+            .AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>()
+            .AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, ShowRecipeResponse, ShowRecipeService>()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
 
@@ -127,6 +134,27 @@ internal sealed class RegistryHarness : IAsyncDisposable
         return await Run<ApproveRecipeRequest, ApproveRecipeResponse>(
             new ApproveRecipeRequest(recipe.Id, recipe.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), Human);
     }
+
+    /// <summary>Registers <paramref name="text"/> through RegisterRecipe as <paramref name="caller"/> (a human at a terminal by default).</summary>
+    public Task<Result<RegisterRecipeResponse>> RegisterText(string text, string file, CallerContext? caller = null) =>
+        Run<RegisterRecipeRequest, RegisterRecipeResponse>(new RegisterRecipeRequest(text, file), caller ?? Human);
+
+    /// <summary>Registers the shipped recipe at <paramref name="path"/> through RegisterRecipe.</summary>
+    public Task<Result<RegisterRecipeResponse>> RegisterShipped(string path) => RegisterText(ShippedRecipes.Read(path), Path.GetFileName(path));
+
+    /// <summary>Lists the registered recipes (only the stale ones with <paramref name="stale"/>).</summary>
+    public async Task<IReadOnlyList<RecipeSummary>> List(bool stale = false)
+    {
+        var listed = await Run<ListRecipesRequest, ListRecipesResponse>(new ListRecipesRequest(stale), Human);
+        Assert.True(listed.IsSuccess, listed.IsError ? listed.Error.ToString() : null);
+        return listed.Value.Recipes;
+    }
+
+    /// <summary>The one listed line of <paramref name="recipe"/>.</summary>
+    public async Task<RecipeSummary> Line(RegisteredRecipe recipe) => Assert.Single(await List(), s => s.Hash == recipe.Hash);
+
+    /// <summary>Shows <paramref name="id"/>@<paramref name="hash"/>.</summary>
+    public Task<Result<ShowRecipeResponse>> Show(RecipeId id, string hash) => Run<ShowRecipeRequest, ShowRecipeResponse>(new ShowRecipeRequest(id, hash), Human);
 
     /// <summary>The ledger's events of <paramref name="type"/>.</summary>
     public IReadOnlyList<LedgerEvent> Events(string type) => [.. H.Store.Events.Where(e => e.Envelope.Type == type)];

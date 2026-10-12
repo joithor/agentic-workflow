@@ -34,7 +34,7 @@ public sealed class EngineRowTests
 
     private static readonly (string Action, ActionClass Class, string Ui)[] _expected =
     [
-        ("RegisterRecipe", ActionClass.Desk, "pending:WF-P2"),
+        ("RegisterRecipe", ActionClass.Desk, "ready"),
         ("ApproveRecipe", ActionClass.Protected, "cli-only:typed-confirmation"),
         ("RevokeRecipe", ActionClass.Protected, "cli-only:typed-confirmation"),
         ("IssueChallenge", ActionClass.Issue, "ready"),

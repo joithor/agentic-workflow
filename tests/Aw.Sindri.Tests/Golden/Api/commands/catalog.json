@@ -444,7 +444,7 @@
       "method": "POST",
       "route": "/sindri/workflow/recipes",
       "cli": "sindri recipe register <file>",
-      "ui": "pending:WF-P2",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
