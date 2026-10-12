@@ -1,5 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Docs;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Fixtures;
 using Aw.Kernel;
@@ -44,7 +45,7 @@ public sealed class FakeContextSource(SourceDescriptor descriptor, IReadOnlyList
     /// <param name="version">Its version.</param>
     /// <returns>The record.</returns>
     public static FakeRecord Doc(string path, string title, string text, string version) =>
-        new(new SourceRef(RepoDocs.Id, ExternalId.From("split-panes/" + path), SourceVersion.From(version), Permalink: null, RepoDocs.Key("split-panes", path)), title, text);
+        new(new SourceRef(RepoDocs.Id, ExternalId.From("split-panes/" + path), SourceVersion.From(version), Permalink: null, RepoDocs.Key(ContextRepoName.From("split-panes"), path)), title, text);
 
     /// <summary>Makes <paramref name="id"/>'s current version <paramref name="version"/> (null: gone).</summary>
     /// <param name="id">The record.</param>

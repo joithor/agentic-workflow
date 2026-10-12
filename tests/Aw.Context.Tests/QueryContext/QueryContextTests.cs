@@ -130,7 +130,7 @@ public sealed class QueryContextTests
 
         Assert.Equal(ContextErrors.SessionsDisabled.Code, off.Error.Code);
         Assert.True(on.IsSuccess);
-        Assert.Equal(["split-panes"], catalog.LastRepos.Select(r => r.Name), StringComparer.Ordinal);
+        Assert.Equal(["split-panes"], catalog.LastRepos.Select(r => r.Name.Value), StringComparer.Ordinal);
         Assert.Equal(ContextErrors.UnknownAnchor.Code, elsewhere.Error.Code);
     }
 }

@@ -14,7 +14,7 @@ public sealed class RepoDocsTests
     {
         using var home = new TempHome();
         using var fixture = FixtureRepo.Build();
-        var repo = new ContextRepo("split-panes", fixture.Path);
+        var repo = new ContextRepo(ContextRepoName.From("split-panes"), fixture.Path);
         var doc = Path.Combine(fixture.Path, "docs", "architecture.md");
         await File.AppendAllTextAsync(doc, "\n## Deploy\n\nThe orientation deploy key is " + Planted.Secret + "\n", TestContext.Current.CancellationToken);
         _ = Git(fixture.Path, "commit", "-q", "-am", "plant");
@@ -38,7 +38,7 @@ public sealed class RepoDocsTests
     public async Task A_repo_git_cant_read_is_reported_with_its_code_and_a_source_outside_scope_is_not_found()
     {
         using var home = new TempHome();
-        var missing = new ContextRepo("gone", Path.Combine(Path.GetTempPath(), "aw-ctx-no-such-repo"));
+        var missing = new ContextRepo(ContextRepoName.From("gone"), Path.Combine(Path.GetTempPath(), "aw-ctx-no-such-repo"));
 
         var refreshed = (await home.Index.Refresh(missing, ["docs/**/*.md"], CancellationToken.None)).Value;
         var status = (await home.Index.Status(missing, CancellationToken.None)).Value;

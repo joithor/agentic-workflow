@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Sources;
 
 namespace Aw.Context.Core.Results;
@@ -10,4 +11,8 @@ namespace Aw.Context.Core.Results;
 /// <param name="Kept">Documents unchanged.</param>
 /// <param name="Blocked">Documents the scrubber withheld (indexed without text).</param>
 /// <param name="Code">The error code when the repo couldn't be refreshed, else null.</param>
-public sealed record RepoRefresh(string Repo, SourceVersion? Head, int Added, int Removed, int Kept, int Blocked, string? Code);
+public sealed record RepoRefresh(ContextRepoName Repo, SourceVersion? Head, int Added, int Removed, int Kept, int Blocked, string? Code)
+{
+    /// <summary>Documents the globs match but that weren't indexed: over the size cap, or unreadable this run (their earlier rows are kept).</summary>
+    public int Skipped { get; init; }
+}

@@ -25,12 +25,9 @@ Aw.Context.Core.Engine.ContextCaller
 Aw.Context.Core.Engine.ContextCaller.<Clone>$() -> Aw.Context.Core.Engine.ContextCaller!
 Aw.Context.Core.Engine.ContextCaller.Client.get -> Aw.Context.Core.Engine.ContextClient
 Aw.Context.Core.Engine.ContextCaller.Client.init -> void
-Aw.Context.Core.Engine.ContextCaller.ContextCaller(Aw.Context.Core.Engine.ContextCallerKind Kind, string? Repo, Aw.Context.Core.Engine.ContextClient Client) -> void
-Aw.Context.Core.Engine.ContextCaller.Deconstruct(out Aw.Context.Core.Engine.ContextCallerKind Kind, out string? Repo, out Aw.Context.Core.Engine.ContextClient Client) -> void
 Aw.Context.Core.Engine.ContextCaller.Equals(Aw.Context.Core.Engine.ContextCaller? other) -> bool
 Aw.Context.Core.Engine.ContextCaller.Kind.get -> Aw.Context.Core.Engine.ContextCallerKind
 Aw.Context.Core.Engine.ContextCaller.Kind.init -> void
-Aw.Context.Core.Engine.ContextCaller.Repo.get -> string?
 Aw.Context.Core.Engine.ContextCaller.Repo.init -> void
 Aw.Context.Core.Engine.ContextCallerKind
 Aw.Context.Core.Engine.ContextCallerKind.Human = 0 -> Aw.Context.Core.Engine.ContextCallerKind
@@ -62,10 +59,7 @@ Aw.Context.Core.Engine.ContextQuery.Text.get -> string?
 Aw.Context.Core.Engine.ContextQuery.Text.init -> void
 Aw.Context.Core.Engine.ContextRepo
 Aw.Context.Core.Engine.ContextRepo.<Clone>$() -> Aw.Context.Core.Engine.ContextRepo!
-Aw.Context.Core.Engine.ContextRepo.ContextRepo(string! Name, string! Path) -> void
-Aw.Context.Core.Engine.ContextRepo.Deconstruct(out string! Name, out string! Path) -> void
 Aw.Context.Core.Engine.ContextRepo.Equals(Aw.Context.Core.Engine.ContextRepo? other) -> bool
-Aw.Context.Core.Engine.ContextRepo.Name.get -> string!
 Aw.Context.Core.Engine.ContextRepo.Name.init -> void
 Aw.Context.Core.Engine.ContextRepo.Path.get -> string!
 Aw.Context.Core.Engine.ContextRepo.Path.init -> void
@@ -92,7 +86,6 @@ Aw.Context.Core.Engine.ContextSettings.MaxBudget.get -> int
 Aw.Context.Core.Engine.ContextSettings.MaxBudget.init -> void
 Aw.Context.Core.Engine.ContextSettings.MinHits.get -> int
 Aw.Context.Core.Engine.ContextSettings.MinHits.init -> void
-Aw.Context.Core.Engine.ContextSettings.Repos.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Context.Core.Engine.ContextSettings.Repos.init -> void
 Aw.Context.Core.Engine.ContextSettings.SessionsEnabled.get -> bool
 Aw.Context.Core.Engine.ContextSettings.SessionsEnabled.init -> void
@@ -309,7 +302,6 @@ Aw.Context.Core.Results.RepoRefresh.Blocked.get -> int
 Aw.Context.Core.Results.RepoRefresh.Blocked.init -> void
 Aw.Context.Core.Results.RepoRefresh.Code.get -> string?
 Aw.Context.Core.Results.RepoRefresh.Code.init -> void
-Aw.Context.Core.Results.RepoRefresh.Deconstruct(out string! Repo, out Aw.Context.Core.Sources.SourceVersion? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code) -> void
 Aw.Context.Core.Results.RepoRefresh.Equals(Aw.Context.Core.Results.RepoRefresh? other) -> bool
 Aw.Context.Core.Results.RepoRefresh.Head.get -> Aw.Context.Core.Sources.SourceVersion?
 Aw.Context.Core.Results.RepoRefresh.Head.init -> void
@@ -317,9 +309,7 @@ Aw.Context.Core.Results.RepoRefresh.Kept.get -> int
 Aw.Context.Core.Results.RepoRefresh.Kept.init -> void
 Aw.Context.Core.Results.RepoRefresh.Removed.get -> int
 Aw.Context.Core.Results.RepoRefresh.Removed.init -> void
-Aw.Context.Core.Results.RepoRefresh.Repo.get -> string!
 Aw.Context.Core.Results.RepoRefresh.Repo.init -> void
-Aw.Context.Core.Results.RepoRefresh.RepoRefresh(string! Repo, Aw.Context.Core.Sources.SourceVersion? Head, int Added, int Removed, int Kept, int Blocked, string? Code) -> void
 Aw.Context.Core.Results.ResultConflict
 Aw.Context.Core.Results.ResultConflict.<Clone>$() -> Aw.Context.Core.Results.ResultConflict!
 Aw.Context.Core.Results.ResultConflict.Behavior.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -379,7 +369,6 @@ Aw.Context.Core.Results.SourceStatusRow
 Aw.Context.Core.Results.SourceStatusRow.<Clone>$() -> Aw.Context.Core.Results.SourceStatusRow!
 Aw.Context.Core.Results.SourceStatusRow.Code.get -> string?
 Aw.Context.Core.Results.SourceStatusRow.Code.init -> void
-Aw.Context.Core.Results.SourceStatusRow.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out Aw.Context.Core.Sources.SourceKind Kind, out string? Repo, out Aw.Context.Core.Sources.SourceState State, out string! Detail, out string? Code, out System.DateTimeOffset? LastSync, out int Records) -> void
 Aw.Context.Core.Results.SourceStatusRow.Detail.get -> string!
 Aw.Context.Core.Results.SourceStatusRow.Detail.init -> void
 Aw.Context.Core.Results.SourceStatusRow.Equals(Aw.Context.Core.Results.SourceStatusRow? other) -> bool
@@ -389,11 +378,9 @@ Aw.Context.Core.Results.SourceStatusRow.LastSync.get -> System.DateTimeOffset?
 Aw.Context.Core.Results.SourceStatusRow.LastSync.init -> void
 Aw.Context.Core.Results.SourceStatusRow.Records.get -> int
 Aw.Context.Core.Results.SourceStatusRow.Records.init -> void
-Aw.Context.Core.Results.SourceStatusRow.Repo.get -> string?
 Aw.Context.Core.Results.SourceStatusRow.Repo.init -> void
 Aw.Context.Core.Results.SourceStatusRow.Source.get -> Aw.Context.Core.Sources.SourceId
 Aw.Context.Core.Results.SourceStatusRow.Source.init -> void
-Aw.Context.Core.Results.SourceStatusRow.SourceStatusRow(Aw.Context.Core.Sources.SourceId Source, Aw.Context.Core.Sources.SourceKind Kind, string? Repo, Aw.Context.Core.Sources.SourceState State, string! Detail, string? Code, System.DateTimeOffset? LastSync, int Records) -> void
 Aw.Context.Core.Results.SourceStatusRow.State.get -> Aw.Context.Core.Sources.SourceState
 Aw.Context.Core.Results.SourceStatusRow.State.init -> void
 Aw.Context.Core.Results.SourcesView
@@ -840,6 +827,38 @@ Aw.Context.Core.Docs.RepoDocs
 Aw.Context.Core.Engine.SettingsReader
 Aw.Context.Core.Trust.Permalinks
 static Aw.Context.Core.Docs.RepoDocs.Id.get -> Aw.Context.Core.Sources.SourceId
-static Aw.Context.Core.Docs.RepoDocs.Key(string! repo, string! path) -> Aw.Context.Core.Sources.RecordKey
 static Aw.Context.Core.Engine.SettingsReader.Read(System.Text.Json.JsonElement? section) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ContextSettings!>!
 static Aw.Context.Core.Trust.Permalinks.Allowed(System.Uri? link) -> System.Uri?
+Aw.Context.Core.Engine.ContextCaller.ContextCaller(Aw.Context.Core.Engine.ContextCallerKind Kind, Aw.Context.Core.Engine.ContextRepoName? Repo, Aw.Context.Core.Engine.ContextClient Client) -> void
+Aw.Context.Core.Engine.ContextCaller.Deconstruct(out Aw.Context.Core.Engine.ContextCallerKind Kind, out Aw.Context.Core.Engine.ContextRepoName? Repo, out Aw.Context.Core.Engine.ContextClient Client) -> void
+Aw.Context.Core.Engine.ContextCaller.Repo.get -> Aw.Context.Core.Engine.ContextRepoName?
+Aw.Context.Core.Engine.ContextRepo.ContextRepo(Aw.Context.Core.Engine.ContextRepoName Name, string! Path) -> void
+Aw.Context.Core.Engine.ContextRepo.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Name, out string! Path) -> void
+Aw.Context.Core.Engine.ContextRepo.Name.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Engine.ContextRepoName.ContextRepoName() -> void
+Aw.Context.Core.Engine.ContextRepoName.Equals(Aw.Context.Core.Engine.ContextRepoName other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Engine.ContextRepoName>! comparer) -> bool
+Aw.Context.Core.Engine.ContextRepoName.Equals(Aw.Context.Core.Engine.ContextRepoName other) -> bool
+Aw.Context.Core.Engine.ContextRepoName.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Engine.ContextRepoName.IsInitialized() -> bool
+Aw.Context.Core.Engine.ContextRepoName.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Engine.ContextRepoName.Value.get -> string!
+Aw.Context.Core.Engine.ContextSettings.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepoName>?
+Aw.Context.Core.Results.RepoRefresh.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out Aw.Context.Core.Sources.SourceVersion? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code) -> void
+Aw.Context.Core.Results.RepoRefresh.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Results.RepoRefresh.RepoRefresh(Aw.Context.Core.Engine.ContextRepoName Repo, Aw.Context.Core.Sources.SourceVersion? Head, int Added, int Removed, int Kept, int Blocked, string? Code) -> void
+Aw.Context.Core.Results.RepoRefresh.Skipped.get -> int
+Aw.Context.Core.Results.RepoRefresh.Skipped.init -> void
+Aw.Context.Core.Results.SourceStatusRow.Deconstruct(out Aw.Context.Core.Sources.SourceId Source, out Aw.Context.Core.Sources.SourceKind Kind, out Aw.Context.Core.Engine.ContextRepoName? Repo, out Aw.Context.Core.Sources.SourceState State, out string! Detail, out string? Code, out System.DateTimeOffset? LastSync, out int Records) -> void
+Aw.Context.Core.Results.SourceStatusRow.Repo.get -> Aw.Context.Core.Engine.ContextRepoName?
+Aw.Context.Core.Results.SourceStatusRow.SourceStatusRow(Aw.Context.Core.Sources.SourceId Source, Aw.Context.Core.Sources.SourceKind Kind, Aw.Context.Core.Engine.ContextRepoName? Repo, Aw.Context.Core.Sources.SourceState State, string! Detail, string? Code, System.DateTimeOffset? LastSync, int Records) -> void
+override Aw.Context.Core.Engine.ContextRepoName.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.ContextRepoName.GetHashCode() -> int
+override Aw.Context.Core.Engine.ContextRepoName.ToString() -> string!
+static Aw.Context.Core.Docs.RepoDocs.Key(Aw.Context.Core.Engine.ContextRepoName repo, string! path) -> Aw.Context.Core.Sources.RecordKey
+static Aw.Context.Core.Engine.ContextRepoName.From(string! value) -> Aw.Context.Core.Engine.ContextRepoName
+static Aw.Context.Core.Engine.ContextRepoName.operator !=(Aw.Context.Core.Engine.ContextRepoName left, Aw.Context.Core.Engine.ContextRepoName right) -> bool
+static Aw.Context.Core.Engine.ContextRepoName.operator ==(Aw.Context.Core.Engine.ContextRepoName left, Aw.Context.Core.Engine.ContextRepoName right) -> bool
+static Aw.Context.Core.Engine.ContextRepoName.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Engine.ContextRepoName
+static Aw.Context.Core.Engine.ContextRepoName.TryFrom(string? value, out Aw.Context.Core.Engine.ContextRepoName vo) -> bool
+static Aw.Context.Core.Engine.ContextRepoName.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Engine.ContextRepoName result) -> bool

@@ -49,7 +49,7 @@ public static partial class SettingsReader
             (_, null) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
             _ => settings with
             {
-                Repos = section.Repos,
+                Repos = section.Repos?.Select(ContextRepoName.From).ToList(),
                 DocGlobs = globs,
                 Deadline = deadline.Value,
                 MaxBudget = section.MaxBudget ?? settings.MaxBudget,
@@ -62,9 +62,9 @@ public static partial class SettingsReader
     /// <summary>The first refused key of <paramref name="section"/> other than the deadline, or null.</summary>
     private static Error? Problem(ContextSection section, IReadOnlyList<string> globs)
     {
-        if (section.Repos is { } repos && repos.Any(string.IsNullOrWhiteSpace))
+        if (RepoProblem(section.Repos) is { } repoProblem)
         {
-            return Invalid("context.repos", "names profile repos; an entry is empty");
+            return repoProblem;
         }
 
         if (globs.Count == 0)
@@ -72,9 +72,10 @@ public static partial class SettingsReader
             return Invalid("context.docs.globs", "needs at least one glob");
         }
 
-        if (globs.FirstOrDefault(g => !GlobShape.IsMatch(g)) is { } badGlob)
+        if (globs.Any(g => g is null || !GlobShape.IsMatch(g)))
         {
-            return Invalid("context.docs.globs", $"'{Printable(badGlob)}' isn't a repo-relative glob (letters, digits, '._-/*', no '..', no leading '/')");
+            var badGlob = globs.First(g => g is null || !GlobShape.IsMatch(g));
+            return Invalid("context.docs.globs", $"'{(badGlob is null ? "(empty)" : Printable(badGlob))}' isn't a repo-relative glob (letters, digits, '._-/*', no '..', no leading '/')");
         }
 
         return section switch
@@ -83,6 +84,14 @@ public static partial class SettingsReader
             { MinHits: < 0 or > 50 } => Invalid("context.minHits", "is 0 to 50"),
             _ => null,
         };
+    }
+
+    private static Error? RepoProblem(IReadOnlyList<string>? repos)
+    {
+        var bad = repos?.FirstOrDefault(r => r is null || !ContextRepoName.TryFrom(r, out _));
+        return repos is not null && repos.Any(r => r is null || !ContextRepoName.TryFrom(r, out _))
+            ? Invalid("context.repos", $"'{(bad is null ? "(empty)" : Printable(bad))}' isn't a repo name: 1 to 100 letters, digits, '.', '_' or '-'")
+            : null;
     }
 
     private static string? UnknownKey(JsonElement element)

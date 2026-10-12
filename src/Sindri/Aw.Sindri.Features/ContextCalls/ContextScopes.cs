@@ -28,7 +28,7 @@ internal sealed class ContextScopes(IApprovals approvals, ICallerContextAccessor
             return approved.IsError ? approved.Error : SindriErrors.ProfileNotApproved.With("no profile is approved, so no repo is mapped (fix: sindri profile approve)");
         }
 
-        var repos = (loaded.Profile.Repos ?? []).Select(r => new ContextRepo(r.Name, r.Path)).ToList();
+        var repos = (loaded.Profile.Repos ?? []).Where(r => ContextRepoName.TryFrom(r.Name, out _)).Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path)).ToList();
         return new ContextScope(loaded.Profile.Context, repos, Caller(callers.Current));
     }
 
@@ -38,7 +38,7 @@ internal sealed class ContextScopes(IApprovals approvals, ICallerContextAccessor
     internal static ContextCaller Caller(CallerContext? caller) => caller switch
     {
         { Class: CallerClass.Human } => new ContextCaller(ContextCallerKind.Human, Repo: null, Client(caller.Actor)),
-        { Class: CallerClass.Session } => new ContextCaller(ContextCallerKind.Session, caller.Repo?.Value, Client(caller.Actor)),
+        { Class: CallerClass.Session } => new ContextCaller(ContextCallerKind.Session, caller.Repo is { } repo && ContextRepoName.TryFrom(repo.Value, out var name) ? name : null, Client(caller.Actor)),
         _ => new ContextCaller(ContextCallerKind.Service, Repo: null, ContextClient.Service),
     };
 

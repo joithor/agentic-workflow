@@ -48,7 +48,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
         var changed = wanted.Where(w => !stored.Value.TryGetValue(w.Key, out var blob) || !string.Equals(blob, w.Value, StringComparison.Ordinal)).ToList();
         var prepared = await Prepare(repo, changed, cancellationToken).ConfigureAwait(false);
         var removed = stored.Value.Keys.Where(p => !wanted.TryGetValue(p, out var blob) || !string.Equals(blob, stored.Value[p], StringComparison.Ordinal)).ToList();
-        var written = await DocWriter.Write(writable.Value, new DocBatch(repo.Name, head.Value, removed, prepared, clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
+        var written = await DocWriter.Write(writable.Value, new DocBatch(repo.Name.Value, head.Value, removed, prepared, clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
         database.RestrictFiles();
         return written.IsError
             ? ContextDatabase.Translate(written.Error)
@@ -73,7 +73,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
         await using (read.Value.ConfigureAwait(false))
         {
             var status = await SqliteQueries.One(read.Value, new SqlStatement(DocSql.Status,
-                c => c.Bind("@source", DocSql.Source).Bind("@repo", repo.Name)), DocMappers.Status, cancellationToken).ConfigureAwait(false);
+                c => c.Bind("@source", DocSql.Source).Bind("@repo", repo.Name.Value)), DocMappers.Status, cancellationToken).ConfigureAwait(false);
             return status.IsError ? ContextDatabase.Translate(status.Error) : status.Value;
         }
     }
@@ -112,7 +112,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
 
         await using (read.Value.ConfigureAwait(false))
         {
-            var rows = await SqliteQueries.List(read.Value, new SqlStatement(DocSql.StoredDocs, c => c.Bind("@repo", repo.Name)), DocMappers.Stored, cancellationToken)
+            var rows = await SqliteQueries.List(read.Value, new SqlStatement(DocSql.StoredDocs, c => c.Bind("@repo", repo.Name.Value)), DocMappers.Stored, cancellationToken)
                 .ConfigureAwait(false);
             return rows.Map(r => r.ToDictionary(d => d.Path, d => d.Blob, StringComparer.Ordinal));
         }
@@ -120,7 +120,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
 
     private static async ValueTask<Result<RepoRefresh>> Failed(SqliteUnitOfWorkFactory sessions, ContextRepo repo, string code, CancellationToken cancellationToken)
     {
-        var recorded = await DocWriter.RecordFailure(sessions, repo.Name, code, cancellationToken).ConfigureAwait(false);
+        var recorded = await DocWriter.RecordFailure(sessions, repo.Name.Value, code, cancellationToken).ConfigureAwait(false);
         return recorded.IsError ? ContextDatabase.Translate(recorded.Error) : new RepoRefresh(repo.Name, Head: null, 0, 0, 0, 0, code);
     }
 }

@@ -26,7 +26,7 @@ public sealed class SettingsReaderTests
 
         Assert.Equal((TimeSpan.FromMilliseconds(500), 6_000, 1, true), (settings.Deadline, settings.MaxBudget, settings.MinHits, settings.SessionsEnabled));
         Assert.Equal(["docs/**/*.md"], settings.DocGlobs, StringComparer.Ordinal);
-        Assert.Equal(["split-panes"], settings.Repos, StringComparer.Ordinal);
+        Assert.Equal(["split-panes"], settings.Repos!.Select(r => r.Value), StringComparer.Ordinal);   // why: set above
     }
 
     [Theory, Trait("Lane", "unit")]
