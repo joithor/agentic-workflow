@@ -231,7 +231,9 @@
         "type": "Project",
         "dependencies": {
           "Aw.Context.Core": "[1.0.0, )",
-          "Aw.Kernel": "[1.0.0, )"
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Testing": "[1.0.0, )",
+          "xunit.v3.extensibility.core": "[4.0.1, 4.0.1]"
         }
       },
       "aw.kernel": {
@@ -242,6 +244,13 @@
         "dependencies": {
           "Aw.Kernel": "[1.0.0, )",
           "Microsoft.Data.Sqlite": "[10.0.12, 10.0.12]"
+        }
+      },
+      "aw.kernel.testing": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "xunit.v3.extensibility.core": "[4.0.1, 4.0.1]"
         }
       },
       "Microsoft.Data.Sqlite": {

@@ -15,8 +15,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The map ports' contract bases (Fact, TestContext); they throw ContractViolationException instead of Assert,
+         as Aw.Kernel.Testing's do. -->
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/Aw.Kernel/Aw.Kernel.csproj" />
     <ProjectReference Include="../../src/Context/Aw.Context.Core/Aw.Context.Core.csproj" />
+    <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
