@@ -14,7 +14,8 @@ namespace Aw.Sindri.Ui.Desktop;
 /// lock records its process id in instance.pid (0600), then removes a socket left by a crash and listens. A later launch
 /// connects and sends one message (<see cref="InstanceWire"/>); the holder answers 1 only once its reader has handled it
 /// (came back for the next one), within 1.5 s of its arrival; the sender waits 2 s. A message nothing handled in time,
-/// or whose sender has gone, is dropped, never handed over late.
+/// or whose sender has gone, is dropped, never handed over late; one already handed over is withdrawn
+/// (<see cref="InstanceMessage.Withdrawn"/>), and the app checks that again on the UI thread before acting on it.
 /// </summary>
 internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider clock) : ISingleInstance
 {
@@ -117,7 +118,7 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
 
             try
             {
-                yield return new InstanceMessage(delivery.Message, CancellationToken.None);
+                yield return new InstanceMessage(delivery.Message, delivery.Withdrawn);
             }
             finally
             {
@@ -222,7 +223,7 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
             try
             {
                 var message = await InstanceWire.Read(client, linked.Token).ConfigureAwait(false);
-                delivery = message is null ? null : new Delivery(message, client, new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
+                delivery = message is null ? null : new Delivery(message, client);
                 var handled = delivery is not null && _inbox.Writer.TryWrite(delivery) && await Handled(delivery, linked.Token).ConfigureAwait(false);
                 _ = await client.SendAsync(new[] { handled ? InstanceWire.Handled : InstanceWire.Refused }, SocketFlags.None, linked.Token).ConfigureAwait(false);
             }
@@ -232,7 +233,10 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
             }
             finally
             {
-                _ = delivery?.Handled.TrySetResult(false); // unhandled by now: the reader skips it
+                // Answered or given up: an unhandled message is skipped by the reader, and one already handed to the app
+                // is withdrawn, so the app (which checks again on the UI thread) never acts on it late.
+                delivery?.Withdraw();
+                delivery?.Dispose();
             }
         }
     }

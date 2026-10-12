@@ -29,7 +29,15 @@ internal sealed class InstanceListener(ISingleInstance instance)
             {
                 if (Receiver(message.Text) is { } receive)
                 {
-                    await Dispatcher.UIThread.InvokeAsync(() => receive(message.Text)).GetTask().ConfigureAwait(false);
+                    // Checked again on the UI thread: a message withdrawn while the UI thread was busy (its sender was told
+                    // the app isn't answering) is never acted on late.
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        if (!message.Withdrawn.IsCancellationRequested)
+                        {
+                            receive(message.Text);
+                        }
+                    }).GetTask().ConfigureAwait(false);
                 }
             }
         }
