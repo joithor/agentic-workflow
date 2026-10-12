@@ -27,8 +27,8 @@ internal static class ApiGolden
     public static string PathOf(string slug, string scenario) => $"Golden/Api/{slug}/{scenario}.json";
 
     /// <summary>
-    /// The route slug (E-17): the path after '/sindri/', '/' → '-', each '{param}' → its name without braces
-    /// ('/sindri/items/{id}' → 'items-id', '/sindri/profile/approve' → 'profile-approve').
+    /// The route slug (E-17): the path after '/sindri/', '/' → '-', each '{…}' segment → 'id' whatever its name
+    /// ('/sindri/items/{itemId}' → 'items-id', UI spec §18.1; '/sindri/profile/approve' → 'profile-approve').
     /// </summary>
     public static string Slug(string route)
     {
@@ -39,7 +39,7 @@ internal static class ApiGolden
         }
 
         var parts = route[Prefix.Length..].Split('/', StringSplitOptions.RemoveEmptyEntries)
-            .Select(static p => p.StartsWith('{') && p.EndsWith('}') ? p[1..^1].Split(':')[0] : p);
+            .Select(static p => p.StartsWith('{') && p.EndsWith('}') ? "id" : p);
         return string.Join('-', parts);
     }
 

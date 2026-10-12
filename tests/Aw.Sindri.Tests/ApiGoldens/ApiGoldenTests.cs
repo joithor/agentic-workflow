@@ -46,8 +46,9 @@ public sealed class ApiGoldenTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("/sindri/status", "status")]
     [InlineData("/sindri/profile/approve", "profile-approve")]
-    [InlineData("/sindri/items/{id}", "items-id")]
-    [InlineData("/sindri/workflow/instances/{a}/nonce", "workflow-instances-a-nonce")]
+    [InlineData("/sindri/items/{itemId}", "items-id")]
+    [InlineData("/sindri/items/{id:long}", "items-id")]
+    [InlineData("/sindri/workflow/instances/{instanceId}/nonce", "workflow-instances-id-nonce")]
     public void Route_slug_is_the_path_after_sindri_with_slashes_as_dashes_and_params_by_name(string route, string slug) =>
         Assert.Equal(slug, ApiGolden.Slug(route));
 }
