@@ -105,6 +105,29 @@ public sealed class RecipeWorkflowTests : IDisposable
         }, ct);
     }
 
+    [Fact(Timeout = 60_000)]
+    public async Task Complete_that_waits_with_no_worker_running_says_sent_instead_of_crashing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var env = await StartDevServer();
+        await using (var first = Sindri())
+        {
+            await HoldLease(first, ct);
+            using var worker = new TemporalWorker(env.Client, SindriWorker.Options(first.GetRequiredService<RunStepActivities>(), first.GetRequiredService<RecordEventActivities>()));
+            await worker.ExecuteAsync(async () => { _ = await Until(await StartStep(env.Client), static s => IsOpen(s, "produce", "1.1")); }, ct);
+            _ = await first.GetRequiredService<ILease>().Release(first.GetRequiredService<HeldLease>().Current!, ct);
+        }
+
+        await using var second = Sindri();
+        await HoldLease(second, ct);
+        var run = await Cli(second, "complete", Address, "--run", "1.1", "--outcome", "done",
+            "--output", "fact:output=" + Output("written while the worker was down"), "--temporal", Target(env));
+
+        // why: the completion landed; with no worker to answer the GetInstance query the CLI says so instead of throwing
+        Assert.Equal((0, $"{Address} run 1.1: done -> sent; the instance moves on when a worker runs\n", string.Empty), run);
+        await env.Client.GetWorkflowHandle<RecipeWorkflow>(Address).TerminateAsync("test over");
+    }
+
     /// <summary>
     /// The worker 'sindri serve' runs (ITemporalWorker) moves the instance; 'workflow complete' without '--temporal'
     /// finds the frontend in control.json's 'temporal' field; every start and transition is one ledger row keyed by the
