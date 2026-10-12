@@ -37,11 +37,12 @@ internal sealed partial class SindriApiClient(HttpClient http, TimeProvider cloc
 
     public Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken) => Get<StatusView>(api, "/sindri/status", cancellationToken);
 
-    public Task<Result<CommandList>> Commands(Uri api, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public Task<Result<CommandList>> Commands(Uri api, CancellationToken cancellationToken) => Get<CommandList>(api, "/sindri/commands", cancellationToken);
 
-    public Task<Result<ServiceList>> Services(Uri api, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public Task<Result<ServiceList>> Services(Uri api, CancellationToken cancellationToken) => Get<ServiceList>(api, "/sindri/services", cancellationToken);
 
-    public Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken) =>
+        Call<CommandAcceptedView>(api, HttpMethod.Post, "/sindri/views/rebuild", cancellationToken);
 
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
     {

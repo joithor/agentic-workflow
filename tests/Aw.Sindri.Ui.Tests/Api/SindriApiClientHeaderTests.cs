@@ -64,13 +64,12 @@ public sealed class SindriApiClientHeaderTests
     [Fact]
     public async Task The_query_after_an_accepted_command_waits_for_its_sequence_once()
     {
-        var server = new FakeSindriApi();
+        var server = new FakeSindriApi { StreamsEndAtOnce = true };
         var handler = new FakeSindriHandler(server);
         var client = new SindriApiClient(new HttpClient(handler), TimeProvider.System, new InMemoryHumanTokens { Text = "tok-1" });
 
         _ = await client.Status(_api, Token);
         _ = await client.RebuildViews(_api, Token);
-        server.Drop();
         _ = await client.Events(_api, 0, Token).ToListAsync(Token);
         _ = await client.Services(_api, Token);
         _ = await client.Status(_api, Token);
