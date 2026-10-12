@@ -16,7 +16,7 @@ namespace Aw.Sindri.Infrastructure.Registration;
 /// <summary>Registers Aw.Sindri.Infrastructure's adapters and settings. A second technology for a port gets its own AddSindri&lt;Tech&gt;Infrastructure method.</summary>
 public static class SindriInfrastructureServiceCollectionExtensions
 {
-    /// <summary>Adds the Sindri adapters (SQLite ledger and lease, YAML profile, files, the process probe) and their settings.</summary>
+    /// <summary>Adds the Sindri adapters (SQLite ledger and lease, YAML profile, files, the process probe, process ancestry, git repo resolution) and their settings.</summary>
     /// <param name="services">The service collection.</param>
     /// <remarks>The profile and approval adapters take the package's AwJson options, which Compose registers.</remarks>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
@@ -35,5 +35,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IControlPlaneProbe, HttpControlPlaneProbe>()
             .AddSingleton<IControlPlaneLauncher, ServeLauncher>()
             .AddSingleton<IHumanTokenStore, FileHumanToken>()
-            .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed));
+            .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed))
+            .AddSingleton<IProcessAncestry, PosixProcessAncestry>()
+            .AddSingleton<IRepoLocator, GitRepoLocator>();
 }

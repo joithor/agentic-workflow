@@ -901,3 +901,23 @@ static readonly Aw.Sindri.Core.SindriErrors.AuthTokenRequired -> Aw.Kernel.Error
 static readonly Aw.Sindri.Core.SindriErrors.CallerUnknown -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.CommandBusy -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OriginRefused -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Control.IProcessAncestry
+Aw.Sindri.Core.Control.IProcessAncestry.Ancestors(int pid, int max) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Control.ProcessAncestor!>!
+Aw.Sindri.Core.Control.IRepoLocator
+Aw.Sindri.Core.Control.IRepoLocator.Locate(string! directory, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Ids.RepoName?>
+Aw.Sindri.Core.Control.ProcessAncestor
+Aw.Sindri.Core.Control.ProcessAncestor.<Clone>$() -> Aw.Sindri.Core.Control.ProcessAncestor!
+Aw.Sindri.Core.Control.ProcessAncestor.Deconstruct(out int Pid, out string! Name) -> void
+Aw.Sindri.Core.Control.ProcessAncestor.Equals(Aw.Sindri.Core.Control.ProcessAncestor? other) -> bool
+Aw.Sindri.Core.Control.ProcessAncestor.Name.get -> string!
+Aw.Sindri.Core.Control.ProcessAncestor.Name.init -> void
+Aw.Sindri.Core.Control.ProcessAncestor.Pid.get -> int
+Aw.Sindri.Core.Control.ProcessAncestor.Pid.init -> void
+Aw.Sindri.Core.Control.ProcessAncestor.ProcessAncestor(int Pid, string! Name) -> void
+Aw.Sindri.Core.Control.RepoScope
+override Aw.Sindri.Core.Control.ProcessAncestor.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Control.ProcessAncestor.GetHashCode() -> int
+override Aw.Sindri.Core.Control.ProcessAncestor.ToString() -> string!
+static Aw.Sindri.Core.Control.ProcessAncestor.operator !=(Aw.Sindri.Core.Control.ProcessAncestor? left, Aw.Sindri.Core.Control.ProcessAncestor? right) -> bool
+static Aw.Sindri.Core.Control.ProcessAncestor.operator ==(Aw.Sindri.Core.Control.ProcessAncestor? left, Aw.Sindri.Core.Control.ProcessAncestor? right) -> bool
+static Aw.Sindri.Core.Control.RepoScope.Longest(string! checkout, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>! repos) -> Aw.Sindri.Core.Ids.RepoName?
