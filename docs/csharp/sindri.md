@@ -327,8 +327,8 @@ Use the prover's **session** mode as written (not `sindri-prove.sh human`, which
 probed). In Codex's read-only sandbox the redirect can't write the file: let it print, and save the output yourself.
 Then, in `PinnedProbe.cs`, turn the entry's `Owner(...)` into a pinned entry: its version (the report's), its markers
 (variables the harness adds over `plain-terminal.json` that only it sets), its ancestry patterns, and every other added
-variable under `Excluded` with a reason. Add the new markers to `scripts/sindri-prove.sh`'s `human` unset line (a test
-checks it). `dotnet test --project tests/Aw.Sindri.Tests --filter-namespace "Aw.Sindri.Tests.Commands.Probe"` then
+variable under `Excluded` with a reason. Add the new markers to `scripts/sindri-prove.sh`'s `human` unset line and to the host smoke's `unset` line
+(`src/Sindri/aot-smoke/run.sh`; a test checks each). `dotnet test --project tests/Aw.Sindri.Tests --filter-namespace "Aw.Sindri.Tests.Commands.Probe"` then
 says what is still undecided. Re-probe the same way when `sindri doctor` warns that a version changed.
 
 ## Command chain
