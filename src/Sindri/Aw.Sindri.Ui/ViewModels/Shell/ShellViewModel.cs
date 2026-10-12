@@ -19,7 +19,7 @@ internal sealed class ShellViewModel : ObservableObject
     private static readonly string[] _stateProperties =
     [
         nameof(State), nameof(IsVersionMismatch), nameof(IsChromeVisible), nameof(IsNotRunning), nameof(IsConnecting),
-        nameof(IsUnreadable), nameof(IsPageVisible), nameof(IsSheetShown), nameof(IsEdgeTabShown),
+        nameof(IsUnreadable), nameof(IsPageVisible), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsNavigationEnabled),
     ];
 
     private static readonly string[] _pageProperties =
@@ -122,6 +122,9 @@ internal sealed class ShellViewModel : ObservableObject
 
     /// <summary>The top bar shows in every state but a version mismatch.</summary>
     public bool IsChromeVisible => !IsVersionMismatch;
+
+    /// <summary>The top bar's navigation takes input (dimmed and disabled while not running).</summary>
+    public bool IsNavigationEnabled => State == ShellState.Normal;
 
     /// <summary>Not running: S1b's panel in place of the page.</summary>
     public bool IsNotRunning => State == ShellState.NotRunning;

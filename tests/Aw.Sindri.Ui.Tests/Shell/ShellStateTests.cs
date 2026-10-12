@@ -245,4 +245,21 @@ public sealed class ShellStateTests
         Assert.Equal(("✓", Labels.Running), (healthy.Pill.Glyph, healthy.Pill.Word));
         Assert.True(healthy.Pill.IsHealthy);
     }
+
+    // I7 (states.html Not running): the navigation is dimmed and disabled while nothing runs; it comes back when it does.
+    [Fact]
+    public async Task The_navigation_is_disabled_only_while_not_running()
+    {
+        Assert.True(new ShellViewModel(_records, _server, _clock, _preferences).IsNavigationEnabled);
+        var shell = await Running(ShellState.NotRunning);
+        Assert.False(shell.IsNavigationEnabled);
+
+        _records.Write(A.Record());
+        await Eventually(() =>
+        {
+            _clock.Advance(HealthViewModel.RetryEvery);
+            return shell.State == ShellState.Normal;
+        });
+        Assert.True(shell.IsNavigationEnabled);
+    }
 }
