@@ -70,7 +70,8 @@ public static class Authorization
         { Class: CallerClass.Human, Terminal: true } => Who.Terminal,
         { Class: CallerClass.Human } => Who.App,
         { Class: CallerClass.Session } => Who.Session,
-        _ => Who.Service,
+        { Class: CallerClass.Service } => Who.Service,
+        _ => Who.None,
     };
 
     /// <summary>A service the desk row names: 'service:host' on StopProcess.</summary>
