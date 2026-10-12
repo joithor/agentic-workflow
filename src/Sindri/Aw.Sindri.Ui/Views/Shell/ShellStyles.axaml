@@ -138,10 +138,11 @@
   <Style Selector="Border.kbd > TextBlock">
     <Setter Property="HorizontalAlignment" Value="Center" />
   </Style>
-  <!-- R6: a period is a speck at Kbd size; drawn bold at Body size it reads as a key. -->
-  <Style Selector="TextBlock.kbd.key-dot">
-    <Setter Property="FontSize" Value="{DynamicResource Type.Body.Size}" />
-    <Setter Property="FontWeight" Value="Bold" />
+  <!-- R6: the "." key is drawn as a dot of Size.KeyDot in the keycap's ink, not as a font's period. -->
+  <Style Selector="Ellipse.key-dot">
+    <Setter Property="Width" Value="{DynamicResource Size.KeyDot}" />
+    <Setter Property="Height" Value="{DynamicResource Size.KeyDot}" />
+    <Setter Property="Fill" Value="{DynamicResource Brush.InkSubtle}" />
   </Style>
 
   <!-- The health pill: a word in a pill; it opens Health. -->

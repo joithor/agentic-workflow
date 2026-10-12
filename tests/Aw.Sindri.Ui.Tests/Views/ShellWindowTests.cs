@@ -1312,9 +1312,10 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(Brush("InkSubtle"), dot.Fill);
         var dotBox = Box(window, "HealthKeyDot");
         var cap = Box(window, "HealthKeyCap");
-        Assert.Equal(cap.Center.Y, dotBox.Center.Y, precision: 0);
-        Assert.Equal(cap.Center.X, dotBox.Center.X, precision: 0);
-        Assert.Equal(Box(window, "GoKeyCap").Height, cap.Height, precision: 0);
+        // Centred within the layout's whole-pixel rounding.
+        Assert.InRange(dotBox.Center.Y - cap.Center.Y, -1, 1);
+        Assert.InRange(dotBox.Center.X - cap.Center.X, -1, 1);
+        Assert.InRange(Box(window, "GoKeyCap").Height - cap.Height, -1, 1);
         Assert.True(cap.Width >= cap.Height - 1, string.Create(CultureInfo.InvariantCulture, $"the . keycap is {cap.Width} × {cap.Height}"));
     }
 
