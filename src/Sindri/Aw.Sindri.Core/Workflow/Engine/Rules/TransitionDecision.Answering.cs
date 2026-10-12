@@ -92,8 +92,13 @@ public static partial class TransitionDecision
             return instance;
         }
 
+        return instance with { Facts = new Dictionary<FactKey, FactValue>(instance.Facts) { [_answer] = AnswerFact(text) } };
+    }
+
+    private static FactValue AnswerFact(string text)
+    {
         var digest = RefusalRules.Digest(text);
-        return instance with { Facts = new Dictionary<FactKey, FactValue>(instance.Facts) { [_answer] = new FactValue("blob:" + digest, digest, HeadSha: null) } };
+        return new FactValue("blob:" + digest, digest, HeadSha: null);
     }
 
     /// <summary>The popped frame's resume action (§5.8 table).</summary>

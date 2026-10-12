@@ -25,6 +25,7 @@ public static partial class TransitionDecision
             TakeoverRequested => d.Rules.TakeOver(instance, d.Trigger.Actor, d.Context).Match<Decision>(d.Commit, e => new Rejected(d.Key, e)),
             HandbackRequested => Handback(d, instance),
             ChildChanged change => Child(d, instance, change),
+            AnswerGiven answer when WaitingForAnswer(instance, d.Recipe) is { } wait => AnswerTheWait(d, instance, answer, wait),
             AnswerGiven answer => Answer(d, instance, answer),
             CancelRequested => new Rejected(d.Key, NotAllowed(d.Trigger, instance)),
             _ => throw new NotSupportedException($"{d.Trigger.Name} is decided by the engine-owned rules its phase adds (P5: deadlines and shifts; P2, P6: recipe wakes and outbox refusals; UI E-6: open-requests)."),

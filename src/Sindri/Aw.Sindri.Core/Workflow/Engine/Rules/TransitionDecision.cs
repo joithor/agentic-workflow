@@ -29,7 +29,8 @@ public static partial class TransitionDecision
     /// <summary>
     /// The transition <paramref name="trigger"/> selects from the current state (spec §3.5): the first in file order
     /// whose 'on' is the trigger and whose 'when' holds. A report for another run is <see cref="MatchMiss.StaleRun"/>;
-    /// an engine trigger is <see cref="MatchMiss.EngineTrigger"/>.
+    /// an engine trigger is <see cref="MatchMiss.EngineTrigger"/>, except a text answer on an answer wait, which matches
+    /// as the 'wait.satisfied' it stands for (§3.4).
     /// </summary>
     /// <param name="instance">The instance.</param>
     /// <param name="recipe">Its recipe.</param>
@@ -40,7 +41,7 @@ public static partial class TransitionDecision
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(recipe);
         ArgumentNullException.ThrowIfNull(trigger);
-        return MatchFrom(Unmirrored(instance, trigger), recipe, trigger);
+        return MatchFrom(Unmirrored(instance, trigger), recipe, AnswerSatisfies(instance, recipe, trigger) ?? trigger);
     }
 
     /// <summary>Decides one trigger (spec §5.3–§5.5).</summary>
@@ -64,10 +65,13 @@ public static partial class TransitionDecision
             : DecideEngineTrigger(deciding);
     }
 
-    /// <summary>A recipe trigger (§5.3 steps 4 and 6, §3.5): validate, check the approval, spend, then match and apply or refuse.</summary>
-    private static Decision DecideRecipeTrigger(Deciding d)
+    /// <summary>
+    /// A recipe trigger (§5.3 steps 4 and 6, §3.5): validate, check the approval, spend, then match and apply or refuse.
+    /// <paramref name="from"/> is the row to decide from when it differs from the input's (an answer wait's 'fact:answer').
+    /// </summary>
+    private static Decision DecideRecipeTrigger(Deciding d, WorkflowInstance? from = null)
     {
-        var instance = Release(d);
+        var instance = from ?? Release(d);
         var match = MatchFrom(instance, d.Recipe, d.Trigger);
         if (Invalid(d, instance, match) is { } invalid)
         {

@@ -3314,3 +3314,17 @@ Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.Deconstruct(out Aw.Sindri.Core
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.EvalStepLine(Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger! Trigger, Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation! Expect, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Blocks.GateVerdict>? Gates = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.EvalTrigger(string! Kind, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs = null, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park = null, Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant = null, int? Amount = null) -> void
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalRecorder.Record(string! name, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent!>! events, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Engine.TriggerKey, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>!>! reported, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! contents) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase!>!
+Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource
+Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.Answer.get -> Aw.Sindri.Core.Workflow.Ids.AnswerId
+Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.Answer.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.AnswerWaitSource(Aw.Sindri.Core.Workflow.Ids.AnswerId Answer) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.AnswerId Answer) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource? other) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource!
+override Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.KeyPart.get -> string!
+override Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.ToString() -> string!
+override sealed Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? other) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.operator !=(Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource? left, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource.operator ==(Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource? left, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerWaitSource? right) -> bool

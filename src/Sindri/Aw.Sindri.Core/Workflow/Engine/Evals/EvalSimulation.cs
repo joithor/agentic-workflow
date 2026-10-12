@@ -206,7 +206,7 @@ internal sealed record EvalSimulation(
             _ => null,
         };
         return source is null
-            ? Missing($"'{frame.State}' waits for an answer; answer it with kind 'answer'")
+            ? Missing($"'{frame.State}' waits for an answer; answer it with kind 'answer' and 'variant': 'text' (its 'fact:answer' output is the answer's text)")
             : new WaitSatisfied(Inbox, source, line.Outcome, outputs);
     }
 
@@ -256,13 +256,14 @@ internal sealed record EvalSimulation(
         return new GateAnswers(gates, evidence);
     }
 
-    /// <summary>The transition whose gates the trigger runs: the one it matches, or for an answer the transition its park withheld.</summary>
+    /// <summary>The transition whose gates the trigger runs: the one it matches, for an answer the transition its park withheld, or on an answer wait the wait's own transition.</summary>
     private RecipeTransition? Matched(Trigger trigger)
     {
         var index = trigger switch
         {
             StepCompleted or StepFailed or WaitSatisfied or CommandFired => TransitionDecision.Match(Instance, Recipe, trigger).Transition,
             AnswerGiven when Instance.Suspended.Count > 0 => Instance.Suspended[^1].Resume.Withheld?.Transition,
+            AnswerGiven => TransitionDecision.Match(Instance, Recipe, trigger).Transition,
             _ => null,
         };
         return index is { } i && i >= 0 && i < Recipe.Transitions.Count ? Recipe.Transitions[i] : null;

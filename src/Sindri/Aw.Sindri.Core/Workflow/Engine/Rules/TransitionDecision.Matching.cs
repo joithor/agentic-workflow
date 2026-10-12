@@ -91,6 +91,7 @@ public static partial class TransitionDecision
         EventWaitSource e => wait.Event == e.Kind,
         ResourceWaitSource r => wait.Resource == r.Resource,
         ChildWaitSource c => wait.Child is not null && frame.Child == c.Child,
+        AnswerWaitSource a => wait.Answer is { } answer && answer.Id.Equals(a.Answer),
         _ => false,
     };
 
