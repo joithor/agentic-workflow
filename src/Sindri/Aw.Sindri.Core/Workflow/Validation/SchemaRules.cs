@@ -15,21 +15,19 @@ internal sealed class SchemaRules : IRecipeRules
     internal static IReadOnlySet<string> ReservedStates { get; } =
         new HashSet<string>(["cancelled", "escalated", "parked", "taken-over"], StringComparer.Ordinal);
 
-    public IEnumerable<RecipeFinding> Check(RecipeDocument document, ValidationContext context)
-    {
-        var recipe = document.Recipe;
-        var source = document.Source;
-        return
-        [
-            .. Top(recipe, source),
-            .. StateNames(recipe, source),
-            .. Initial(recipe, source),
-            .. TransitionStates(recipe, source),
-            .. StateFieldRules.Check(recipe, source),
-            .. ValueShapeRules.Check(recipe, source),
-            .. Hash(document),
-        ];
-    }
+    public IEnumerable<RecipeFinding> Check(RecipeDocument document, ValidationContext context) =>
+        [.. Structure(document.Recipe, document.Source), .. Hash(document)];
+
+    /// <summary>Every schema rule except RCP-HASH-001, which needs the recipe as written in full.</summary>
+    internal static IEnumerable<RecipeFinding> Structure(Recipe recipe, RecipeSource source) =>
+    [
+        .. Top(recipe, source),
+        .. StateNames(recipe, source),
+        .. Initial(recipe, source),
+        .. TransitionStates(recipe, source),
+        .. StateFieldRules.Check(recipe, source),
+        .. ValueShapeRules.Check(recipe, source),
+    ];
 
     private static IEnumerable<RecipeFinding> Top(Recipe recipe, RecipeSource source)
     {
@@ -88,7 +86,7 @@ internal sealed class SchemaRules : IRecipeRules
     /// <summary>RCP-SCHEMA-002: a transition's 'from' entry or 'to' that names no state of the recipe (spec §3.5).</summary>
     private static IEnumerable<RecipeFinding> TransitionStates(Recipe recipe, RecipeSource source)
     {
-        var fix = "name one of the recipe's states: " + string.Join(", ", recipe.States.Keys);
+        var fix = recipe.States.Count == 0 ? "declare the state under states" : "name one of the recipe's states: " + string.Join(", ", recipe.States.Keys);
         for (var i = 0; i < recipe.Transitions.Count; i++)
         {
             var transition = recipe.Transitions[i];

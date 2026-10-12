@@ -43,7 +43,89 @@ internal sealed class YamlRecipeReader(JsonSerializerOptions options) : IRecipeR
                 "write the recipe as a YAML mapping with schema, id, version, initial, states and transitions");
         }
 
-        return findings.Any ? new RecipeReading(Document: null, findings.All) : Bind((JsonObject)root!, file, findings);   // why: no finding means the root was a mapping
+        if (!findings.Any)
+        {
+            return Bind((JsonObject)root!, file, findings);   // why: no finding means the root was a mapping
+        }
+
+        return root is JsonObject partial ? new RecipeReading(Document: null, [.. findings.All, .. SchemaPastRefusals(partial, file, findings)])
+            : new RecipeReading(Document: null, findings.All);
+    }
+
+    /// <summary>
+    /// The schema rules' findings on what is left of a recipe the reader refused parts of (spec §3.1: every schema error
+    /// is reported, not just the first). Each refused field or map entry is left out; when the rest still binds, the
+    /// schema rules run on it, and their findings on refused nodes, or already reported, are dropped. Nothing is added
+    /// after refused YAML (RCP-SCHEMA-003), a refused list item (leaving it out would shift the items after it) or a
+    /// recipe that doesn't bind without its refused fields (a required one). It is never hashed or validated further.
+    /// </summary>
+    private IEnumerable<RecipeFinding> SchemaPastRefusals(JsonObject root, string file, ReaderFindings findings)
+    {
+        var refused = findings.Refused.ToList();
+        if (findings.All.Any(static f => f.Rule == "RCP-SCHEMA-003") || refused.Exists(static p => p.Length == 0 || p.EndsWith(']')))
+        {
+            return [];
+        }
+
+        var copy = (JsonObject)root.DeepClone();
+        foreach (var path in refused)
+        {
+            LeaveOut(copy, path);
+        }
+
+        Recipe? recipe;
+        try
+        {
+            recipe = (Recipe?)JsonSerializer.Deserialize(copy, options.GetTypeInfo(typeof(Recipe)));
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+
+        var reported = findings.All.Select(static f => (f.Rule, f.Path)).ToHashSet();
+        var document = new RecipeDocument(recipe!, RecipeHashing.Of(recipe!, options), new RecipeSource(file, findings.Positions));   // why: the root is a mapping, never JSON null
+        return [.. RecipeValidator.CheckSchema(document).Where(f => !findings.IsRefused(f.Path) && !reported.Contains((f.Rule, f.Path)))];
+    }
+
+    /// <summary>Leaves out the field or map entry at <paramref name="path"/> (never a list item); a path already gone is skipped.</summary>
+    private static void LeaveOut(JsonObject root, string path)
+    {
+        var cut = path.LastIndexOf('.');
+        if ((cut < 0 ? root : Find(root, path[..cut])) is JsonObject parent)
+        {
+            _ = parent.Remove(cut < 0 ? path : path[(cut + 1)..]);
+        }
+    }
+
+    /// <summary>The node at <paramref name="path"/> ('states.produce.step', 'transitions[1].from[0]'), or null.</summary>
+    private static JsonNode? Find(JsonNode? node, string path)
+    {
+        var at = 0;
+        while (node is not null && at < path.Length)
+        {
+            if (path[at] == '[')
+            {
+                var close = path.IndexOf(']', at);
+                var index = int.Parse(path.AsSpan(at + 1, close - at - 1), NumberStyles.None, CultureInfo.InvariantCulture);
+                node = node is JsonArray list && index < list.Count ? list[index] : null;
+                at = close + 1;
+            }
+            else
+            {
+                if (path[at] == '.')
+                {
+                    at++;
+                }
+
+                var end = path.IndexOfAny(['.', '['], at);
+                var key = end < 0 ? path[at..] : path[at..end];
+                node = node is JsonObject map ? map[key] : null;
+                at = end < 0 ? path.Length : end;
+            }
+        }
+
+        return node;
     }
 
     private RecipeReading Bind(JsonObject root, string file, ReaderFindings findings)

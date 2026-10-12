@@ -54,6 +54,7 @@ internal sealed class RecipeShape(JsonSerializerOptions options, ReaderFindings 
         if (!nullable)
         {
             findings.Add("RCP-SCHEMA-002", path, $"'{Last(path)}' has no value", $"write {RecipeTypes.Expected(type)}");
+            findings.Refuse(path);
         }
     }
 

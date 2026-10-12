@@ -1542,6 +1542,7 @@ static Aw.Sindri.Core.Workflow.Validation.RecipeProfileFacts.operator !=(Aw.Sind
 static Aw.Sindri.Core.Workflow.Validation.RecipeProfileFacts.operator ==(Aw.Sindri.Core.Workflow.Validation.RecipeProfileFacts? left, Aw.Sindri.Core.Workflow.Validation.RecipeProfileFacts? right) -> bool
 static Aw.Sindri.Core.Workflow.Validation.RecipeSource.operator !=(Aw.Sindri.Core.Workflow.Validation.RecipeSource? left, Aw.Sindri.Core.Workflow.Validation.RecipeSource? right) -> bool
 static Aw.Sindri.Core.Workflow.Validation.RecipeSource.operator ==(Aw.Sindri.Core.Workflow.Validation.RecipeSource? left, Aw.Sindri.Core.Workflow.Validation.RecipeSource? right) -> bool
+static Aw.Sindri.Core.Workflow.Validation.RecipeValidator.CheckSchema(Aw.Sindri.Core.Workflow.Validation.RecipeDocument! document) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Validation.RecipeFinding!>!
 static Aw.Sindri.Core.Workflow.Validation.RecipeValidator.Passes(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Validation.RecipeFinding!>! findings) -> bool
 static Aw.Sindri.Core.Workflow.Validation.RecipeValidator.Validate(Aw.Sindri.Core.Workflow.Validation.RecipeDocument! document, Aw.Sindri.Core.Workflow.Validation.ValidationContext! context) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Validation.RecipeFinding!>!
 static Aw.Sindri.Core.Workflow.Validation.SourcePosition.operator !=(Aw.Sindri.Core.Workflow.Validation.SourcePosition? left, Aw.Sindri.Core.Workflow.Validation.SourcePosition? right) -> bool

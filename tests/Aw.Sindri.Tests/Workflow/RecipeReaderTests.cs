@@ -111,8 +111,8 @@ public sealed class RecipeReaderTests
         Assert.Equal(
             [
                 "RCP-SCHEMA-001: 'colour' isn't a field of the recipe at test.yaml:15:1 (colour); remove it; the recipe has schema, id, version, description, base, inputs, initial, states, transitions, loops, budget, evals, hash",
+                "RCP-SCHEMA-002: transition to 'nowhere' names a state the recipe doesn't declare at test.yaml:14:22 (transitions[0].to); name one of the recipe's states: produce, done",
                 "RCP-SCHEMA-001: active state 'produce' has no 'next' at test.yaml:6:3 (states.produce.next); an active state has step, timeout and next, and may have loop and budget",
-                "RCP-SCHEMA-002: transition to 'nowhere' names a state the recipe doesn't declare at test.yaml:14:32 (transitions[0].to); name one of the recipe's states: produce, done",
             ],
             lines);
         Assert.Null(Reader.Read(yaml, "test.yaml").Document);
@@ -124,7 +124,7 @@ public sealed class RecipeReaderTests
         var lines = Lines(Minimal.Replace("next: \"Produce the Step output.\"", "next: [a, b]", StringComparison.Ordinal) + "colour: blue\n");
 
         Assert.Equal(2, lines.Count);
-        Assert.StartsWith("RCP-SCHEMA-002: 'next' is written as a list at test.yaml:10:5 (states.produce.next)", lines[0], StringComparison.Ordinal);
+        Assert.StartsWith("RCP-SCHEMA-002: [\"a\",\"b\"] isn't text at test.yaml:10:5 (states.produce.next)", lines[0], StringComparison.Ordinal);
         Assert.StartsWith("RCP-SCHEMA-001: 'colour' isn't a field of the recipe", lines[1], StringComparison.Ordinal);
     }
 
