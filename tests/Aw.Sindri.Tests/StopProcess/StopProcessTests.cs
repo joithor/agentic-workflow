@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Features.StopProcess;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Server;
 
 namespace Aw.Sindri.Tests.StopProcess;
@@ -10,7 +11,7 @@ public sealed class StopProcessTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private StopProcessService Service() => new(_h.Held, _h.Store, _h.Store, _h.Events, _h.Shutdown);
+    private StopProcessService Service() => new(_h.Held, _h.Store, _h.Store, _h.Events, _h.Shutdown, new InMemoryEndpointFile());
 
     [Fact, Trait("Lane", "unit")]
     public async Task StopProcess_records_the_stop_releases_the_lease_and_shuts_down()
@@ -34,7 +35,7 @@ public sealed class StopProcessTests
         bool? requestedAtRelease = null;
         lease.BeforeRelease = () => requestedAtRelease = _h.Shutdown.Requested;
 
-        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown).Handle(new StopProcessRequest(StopReason.Stop), Token);
+        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, new InMemoryEndpointFile()).Handle(new StopProcessRequest(StopReason.Stop), Token);
 
         Assert.True(requestedAtRelease);   // why: a renewal that runs after the release must see a stop, not a lost lease
     }

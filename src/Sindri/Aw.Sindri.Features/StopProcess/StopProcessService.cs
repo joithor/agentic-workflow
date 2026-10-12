@@ -8,7 +8,12 @@ using Aw.Sindri.Core.Ledger;
 
 namespace Aw.Sindri.Features.StopProcess;
 
-internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerStore ledger, EventFactory events, IShutdown shutdown)
+/// <summary>
+/// Records the stop, then lets go in the order a client can trust: forget the grant (so ping refuses), request the
+/// shutdown, remove control.json, and only then release the lease. A client that still finds control.json never finds
+/// this process answering without the lease.
+/// </summary>
+internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerStore ledger, EventFactory events, IShutdown shutdown, IEndpointFile endpoints)
     : IService<StopProcessRequest, StopProcessResponse>
 {
     public async ValueTask<Result<StopProcessResponse>> Handle(StopProcessRequest request, CancellationToken cancellationToken)
@@ -25,8 +30,10 @@ internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerSt
         var recorded = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         held.Clear();         // first, so a renewal finishing now can't hold the grant again
         shutdown.Request();   // before the release, so a renewal that runs after it sees a stop, not a lost lease
+        var removed = await endpoints.Remove(grant.Holder.Pid, cancellationToken).ConfigureAwait(false);   // before the release
         var released = await lease.Release(grant, cancellationToken).ConfigureAwait(false);
         return recorded.IsError ? recorded.Error
+            : removed.IsError ? removed.Error
             : released.IsError ? released.Error
             : new StopProcessResponse(grant.Holder.Pid, grant.Epoch);
     }
