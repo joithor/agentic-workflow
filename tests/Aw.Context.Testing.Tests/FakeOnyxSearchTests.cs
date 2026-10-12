@@ -100,7 +100,7 @@ public sealed class FakeOnyxSearchTests
     [InlineData("{\"query\":\"pane\",\"filters\":{\"source_type\":\"linear\"}}")]
     [InlineData("{\"query\":\"pane\",\"filters\":{\"source_type\":[\"not-a-source\"]}}")]
     [InlineData("{\"query\":\"pane\",\"filters\":{\"time_cutoff\":\"yesterday\"}}")]
-    [InlineData("{\"query\":\"pane\",\"filters\":{\"updated_at_range\":{\"start\":5}}}")]
+    [InlineData("{\"query\":\"pane\",\"filters\":{\"updated_at_range\":{\"start\":\"later\"}}}")]
     [InlineData("[]")]
     [InlineData("not json")]
     public async Task A_request_the_real_models_reject_is_onyxs_422_which_names_no_field(string body)

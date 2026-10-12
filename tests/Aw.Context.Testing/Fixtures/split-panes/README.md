@@ -152,28 +152,39 @@ pinned to **Onyx v4.9.0** (`FakeOnyxServer.PinnedVersion`; checked against the r
 - **Unauthenticated.** No key, an unknown key or a wrong form is a **403** with
   `{"error_code": "UNAUTHORIZED", "detail": "Access denied. User is not authenticated."}`, which is what Onyx answers
   (`double_check_user` raises `BasicAuthenticationError`, an `HTTPException` 403, and `main.py` `log_http_error`
-  writes it with the canonical code for 403). It is not a 401.
+  writes it with the canonical code for 403). It is not a 401. `GET /api/me` says `"detail": "Unauthorized"` instead
+  (`verify_user_logged_in`).
+- **The key's account** (`FakeServerOptions.OnyxAccountType`, `OnyxAdmin`): by default the key belongs to a
+  `SERVICE_ACCOUNT` holding `admin`. **`GET /api/me`** returns Onyx's `UserInfo` (`onyx/server/manage/users.py`
+  `verify_user_logged_in`, `manage/models.py:165`): `account_type` and `effective_permissions` (every permission for an
+  admin; `basic` and the CE grants for a basic key, approximately). A key without `admin` gets Onyx's 403
+  `{"error_code": "INSUFFICIENT_PERMISSIONS", "detail": "You do not have the required permissions for this action."}`
+  on admin search (`require_permission(FULL_ADMIN_PANEL_ACCESS)`); the document routes need only `basic`.
 - **`GET /api/version`** returns `{"backend_version": "v4.9.0"}` and needs no key (it is in Onyx's public endpoint
   list, `onyx/server/auth_check.py`; release images set `ONYX_VERSION` from the git tag).
   `FakeServerOptions.OnyxVersion` overrides the reported version so a test can simulate drift.
-- **`GET /api/document/chunk-info?document_id=&chunk_id=`** returns `{"content", "num_tokens"}`; an unknown document or
-  chunk is a 404 `{"error_code": "NOT_FOUND", "detail": "Chunk not found"}`, and a missing or non-integer parameter is
-  Onyx's 422 `{"status_code": 422, "message": "Request validation failed.", "data": null, "error_code":
-  "VALIDATION_ERROR", "detail": "Request validation failed."}` (it names no field).
+- **`POST /api/admin/search`** (`onyx/server/query_and_chat/query_backend.py:36-82`): body `{"query": str,
+  "filters": BaseFilters}`, both required. Reply `{"documents": [SearchDoc]}`: the recorded SearchDoc plus `chunk_ind`,
+  `score`, `match_highlights`, `is_relevant`, `relevance_explanation`, `source_types`, `is_internet`, `file_id`, at
+  most **50** (`NUM_RETURNED_HITS`), one per document id; there is no `limit` or `offset`. Of the filters
+  (`onyx/context/search/models.py:104-124`) the fake applies `source_type` (DocumentSource values; an empty list is no
+  filter), `updated_at_range {start, end}` and its legacy alias `time_cutoff` (an explicit range wins). Pydantic's
+  default ignores fields the models don't have, and so does the fake. A body the real models reject (no `query` or
+  `filters`, a non-string query, a non-list or unknown `source_type`, a bad datetime) is Onyx's generic 422
+  `{"status_code": 422, "message": "Request validation failed.", "data": null, "error_code": "VALIDATION_ERROR",
+  "detail": "Request validation failed."}`, which names no field. A real filter the fake doesn't model
+  (`document_set`, `tags`, `created_at_range`) with a value is a 422 `FAKE_UNSUPPORTED` naming it. Ranking is a
+  deterministic term match (not Onyx's keyword ranking; Sindri ranks, D3); an empty query (Onyx's random retrieval)
+  returns the filtered documents in id order.
+- **`GET /api/document/document-size-info?document_id=`** returns `{"num_chunks", "num_tokens"}`; an unknown document is
+  a 404 `{"error_code": "NOT_FOUND", "detail": "Document not found"}`. **`GET /api/document/chunk-info?document_id=&chunk_id=`**
+  returns `{"content", "num_tokens"}`; an unknown document or chunk is a 404 `"Chunk not found"`. A missing or
+  non-integer parameter is Onyx's 422 above. Token counts are word counts, a stand-in for Onyx's tokenizer.
 - **Any other route** is a 404 `{"error_code": "NOT_FOUND", "detail": …}`, answered before the key check as in Onyx;
   the detail names the routes the fake serves (Onyx's says `Not Found`).
+- **`FakeServerOptions.Delay`** holds every answer back, so a client's deadline can be tested.
 
-**Not pinned yet: search.** `POST /api/query/document-search` is an old Danswer route that v4.9.0 doesn't have. The real
-route (`POST /api/admin/search` or `POST /api/search`) waits on the owner's decision, so this route, its request
-parser and its 422 shape (`detail: [{loc, msg, type}]`) are unchanged until then. It reads exactly `message` and
-`retrieval_options.{filters.{source_type,time_cutoff},limit,offset}`; `time_cutoff` keeps documents updated at or
-after it, and an empty `source_type` list is no filter. **Any other field** (`search_type`, `run_search`, `real_time`,
-`enable_auto_detect_filters`, `tags`, `document_set`, …), a missing `message`, or a badly typed value (a
-`source_type` that isn't a list of strings, a non-string `time_cutoff`, a non-integer `limit`) is a 422 naming it, so
-a client never relies on a knob the fake would ignore. The reply is
-`{"top_documents": [SearchDoc + score, chunk_ind, match_highlights], "llm_indices": []}`, ranked by a deterministic
-term match (not Onyx's ranking; Sindri ranks, D3). The change feed by updated time is still an open item of Phase 5
-(§12); `document-size-info` isn't served.
+There is no change feed (§12: none for a read key) and no route that gives a document's `updated_at` by id.
 
 ## What later stages add
 
@@ -181,7 +192,5 @@ term match (not Onyx's ranking; Sindri ranks, D3). The change feed by updated ti
   `FixtureRepo` and wraps these fakes. Nothing here references `Aw.Context.Core`.
 - **S-5A**: the `onyx` adapter against `FakeOnyxServer`. **S-6**: the native `linear` adapter's `.graphql` files against
   `FakeLinearServer`. **S-3 / S-7A**: the cascade fixtures, the probe runner and the backtest over this app.
-- **Not here yet, added by the stage that needs it:** fault and latency injection (`Unavailable`, deadlines,
-  `Probe` health), records that change between calls (change feeds, cursor replay, removals) and an Onyx
-  fetch-by-id carrying `updated_at` (`Versions`). `FakeServerOptions` is the place to grow them without breaking
-  callers.
+- **Not here yet, added by the stage that needs it:** records that change between calls (change feeds, cursor replay,
+  removals). `FakeServerOptions` is the place to grow them without breaking callers.

@@ -1,17 +1,15 @@
 using System.Globalization;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Aw.Context.Testing.Fakes;
 
 /// <summary>
 /// A fake Onyx HTTP API on loopback that replays the split-panes recordings (spec §5.2, §10). Pinned to Onyx
-/// <see cref="PinnedVersion"/>: 'GET /api/version' (no key, as in Onyx), 'GET /api/document/chunk-info' (a chunk's
-/// text), the key check (a service-account key 'on_…' raw or as 'Bearer', a personal access token 'onyx_pat_…' as
-/// 'Bearer' only; anything else is Onyx's 403 'Access denied. User is not authenticated.') and the error bodies
-/// ('{error_code, detail}', and Onyx's 422 for a bad query parameter) answer as v4.9.0 does. The search route,
-/// 'POST /api/query/document-search' (an old Danswer route that v4.9.0 doesn't have), waits on the owner's choice of
-/// the real route and is unchanged until then. The Authorization header is never recorded or logged.
+/// <see cref="PinnedVersion"/>: 'GET /api/version' (no key), 'POST /api/admin/search' (admin only),
+/// 'GET /api/document/document-size-info' and 'GET /api/document/chunk-info' (any key), 'GET /api/me', the key check
+/// (a service-account key 'on_…' raw or as 'Bearer', a personal access token 'onyx_pat_…' as 'Bearer' only; anything
+/// else is Onyx's 403) and the error bodies ('{error_code, detail}', Onyx's generic 422) answer as v4.9.0 does. The
+/// Authorization header is never recorded or logged.
 /// </summary>
 public sealed class FakeOnyxServer : IAsyncDisposable
 {
@@ -23,9 +21,13 @@ public sealed class FakeOnyxServer : IAsyncDisposable
 
     private const string ServiceAccountPrefix = "on_";
     private const string PersonalTokenPrefix = "onyx_pat_";
-    private const string SearchRoute = "/api/query/document-search";
+    private const string SearchRoute = "/api/admin/search";
+    private const string SizeRoute = "/api/document/document-size-info";
     private const string ChunkRoute = "/api/document/chunk-info";
     private const string VersionRoute = "/api/version";
+    private const string MeRoute = "/api/me";
+    private const string NotAuthenticated = "Access denied. User is not authenticated.";
+    private static readonly string[] _accountTypes = ["SERVICE_ACCOUNT", "STANDARD", "BOT", "EXT_PERM_USER"];
     private readonly LoopbackServer _server;
 
     private FakeOnyxServer(LoopbackServer server, string token)
@@ -52,10 +54,11 @@ public sealed class FakeOnyxServer : IAsyncDisposable
     /// <summary>Starts the server on an ephemeral loopback port.</summary>
     /// <param name="options">Options; null for the defaults.</param>
     /// <returns>The running server.</returns>
-    /// <exception cref="ArgumentException">The token isn't a kind Onyx accepts ('on_…' or 'onyx_pat_…').</exception>
+    /// <exception cref="ArgumentException">The token isn't a kind Onyx accepts ('on_…' or 'onyx_pat_…'), or the account type isn't Onyx's.</exception>
     public static async Task<FakeOnyxServer> Start(FakeServerOptions? options = null)
     {
-        var token = options?.Token ?? DefaultToken;
+        options ??= new FakeServerOptions();
+        var token = options.Token ?? DefaultToken;
         if (!token.StartsWith(ServiceAccountPrefix, StringComparison.Ordinal) && !token.StartsWith(PersonalTokenPrefix, StringComparison.Ordinal))
         {
             throw new ArgumentException(
@@ -63,30 +66,44 @@ public sealed class FakeOnyxServer : IAsyncDisposable
                 nameof(options));
         }
 
-        var version = options?.OnyxVersion ?? PinnedVersion;
-        var server = await LoopbackServer.Start("fake-onyx", r => Handle(r, token, version)).ConfigureAwait(false);
+        var account = options.OnyxAccountType ?? "SERVICE_ACCOUNT";
+        if (!_accountTypes.Contains(account, StringComparer.Ordinal))
+        {
+            throw new ArgumentException($"Onyx's account types are {string.Join(", ", _accountTypes)}.", nameof(options));
+        }
+
+        var key = new OnyxKey(token, account, options.OnyxAdmin, options.OnyxVersion ?? PinnedVersion);
+        var server = await LoopbackServer.Start("fake-onyx", r => Handle(r, key), options.Delay).ConfigureAwait(false);
         return new FakeOnyxServer(server, token);
     }
 
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _server.DisposeAsync();
 
-    private static FakeHttpReply Handle(FakeHttpRequest request, string token, string version)
+    private static FakeHttpReply Handle(FakeHttpRequest request, OnyxKey key)
     {
         try
         {
+            var authenticated = Authenticated(request.Authorization, key.Token);
             return (request.Method, request.Path) switch
             {
-                ("GET", VersionRoute) => new FakeHttpReply(200, new JsonObject { ["backend_version"] = version }, "version"),
-                _ when !Authenticated(request.Authorization, token) => OnyxError(403, "UNAUTHORIZED", "Access denied. User is not authenticated.", "refused: no valid credential"),
+                ("GET", VersionRoute) => new FakeHttpReply(200, new JsonObject { ["backend_version"] = key.Version }, "version"),
+                ("GET", MeRoute) => authenticated ? new FakeHttpReply(200, OnyxMe.Info(key.AccountType, key.Admin), "me") : OnyxError(403, "UNAUTHORIZED", "Unauthorized", "refused: no valid credential"),
+                ("POST", SearchRoute) or ("GET", SizeRoute) or ("GET", ChunkRoute) when !authenticated => OnyxError(403, "UNAUTHORIZED", NotAuthenticated, "refused: no valid credential"),
+                ("POST", SearchRoute) when !key.Admin => OnyxError(403, "INSUFFICIENT_PERMISSIONS", "You do not have the required permissions for this action.", "refused: not admin"),
                 ("POST", SearchRoute) => Search(request.Body),
+                ("GET", SizeRoute) => Size(request.Query),
                 ("GET", ChunkRoute) => Chunk(request.Query),
-                _ => OnyxError(404, "NOT_FOUND", $"The fake Onyx server has no route {request.Method} {request.Path}; it answers GET {VersionRoute}, GET {ChunkRoute} and POST {SearchRoute}.", "refused: route"),
+                _ => OnyxError(404, "NOT_FOUND", $"The fake Onyx server has no route {request.Method} {request.Path}; it answers GET {VersionRoute}, GET {MeRoute}, POST {SearchRoute}, GET {SizeRoute} and GET {ChunkRoute}.", "refused: route"),
             };
+        }
+        catch (FakeRequestException e) when (e.Code == OnyxSearchRequest.ValidationCode)
+        {
+            return ValidationFailed("refused: " + e.Code);
         }
         catch (FakeRequestException e)
         {
-            return new FakeHttpReply(e.Status, new JsonObject { ["detail"] = e.Detail?.DeepClone() ?? e.Message }, "refused: " + e.Code);
+            return OnyxError(e.Status, e.Code, e.Message, "refused: " + e.Code);
         }
     }
 
@@ -98,11 +115,20 @@ public sealed class FakeOnyxServer : IAsyncDisposable
         string.Equals(authorization, "Bearer " + token, StringComparison.Ordinal)
         || (token.StartsWith(ServiceAccountPrefix, StringComparison.Ordinal) && string.Equals(authorization, token, StringComparison.Ordinal));
 
-    private static FakeHttpReply Search(string body)
+    private static FakeHttpReply Search(string body) =>
+        new(200, new JsonObject { ["documents"] = OnyxIndex.Search(OnyxSearchRequest.Parse(body)) }, "admin-search");
+
+    private static FakeHttpReply Size(IReadOnlyDictionary<string, string> query)
     {
-        var request = OnyxSearchRequest.Parse(Parse(body));
-        var documents = OnyxIndex.Search(request);
-        return new FakeHttpReply(200, new JsonObject { ["top_documents"] = documents, ["llm_indices"] = new JsonArray() }, "document-search");
+        if (query.GetValueOrDefault("document_id") is not { } id)
+        {
+            return ValidationFailed("refused: document-size-info query");
+        }
+
+        var document = OnyxIndex.Documents.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.Ordinal));
+        return document is null
+            ? OnyxError(404, "NOT_FOUND", "Document not found", "document-size-info: not found")
+            : new FakeHttpReply(200, new JsonObject { ["num_chunks"] = document.Chunks.Count, ["num_tokens"] = document.Chunks.Sum(Tokens) }, "document-size-info");
     }
 
     private static FakeHttpReply Chunk(IReadOnlyDictionary<string, string> query)
@@ -120,21 +146,11 @@ public sealed class FakeOnyxServer : IAsyncDisposable
         }
 
         var text = document.Chunks[chunk];
-        var tokens = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
-        return new FakeHttpReply(200, new JsonObject { ["content"] = text, ["num_tokens"] = tokens }, "chunk-info");
+        return new FakeHttpReply(200, new JsonObject { ["content"] = text, ["num_tokens"] = Tokens(text) }, "chunk-info");
     }
 
-    private static JsonObject Parse(string body)
-    {
-        try
-        {
-            return JsonNode.Parse(body) as JsonObject ?? throw OnyxSearchRequest.Unprocessable(["body"], "Must be a JSON object.", "model_type");
-        }
-        catch (JsonException e)
-        {
-            throw OnyxSearchRequest.Unprocessable(["body"], "Invalid JSON: " + e.Message, "json_invalid");
-        }
-    }
+    /// <summary>A stand-in for Onyx's tokenizer count: whitespace-separated words.</summary>
+    private static int Tokens(string text) => text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
 
     /// <summary>An error as Onyx's handlers write it: '{"error_code", "detail"}' (onyx/error_handling, main.py log_http_error).</summary>
     private static FakeHttpReply OnyxError(int status, string code, string detail, string operation) =>
