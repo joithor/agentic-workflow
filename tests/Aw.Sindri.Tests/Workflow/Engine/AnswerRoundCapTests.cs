@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Ids;
 using static Aw.Sindri.Tests.Workflow.Engine.LoopFixture;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
@@ -78,6 +79,34 @@ public sealed class AnswerRoundCapTests
         Assert.Equal((EngineStates.Parked, ParkReason.Budget), (change.After.State, change.After.Park));
         Assert.Equal(5, change.After.Loops[Revisions].Allowed);
         Assert.Equal(2, change.Event.Grant?.Rounds);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Accept_on_an_escalation_whose_pending_park_takes_effect_records_no_override()
+    {
+        var producing = In("produce", new LoopState(2, 3, Last: null));
+        var gate = BlockId.From("gate.test.model");
+        var budget = new PendingPark(
+            new Suspension(SuspensionKind.Park, ParkReason.Budget, ParkKind.Step, Escalation: null, "budget spent", "service:test", Mirrors: null),
+            new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effect: null));
+        var escalated = producing with
+        {
+            Suspended =
+            [
+                new SuspendedFrame(
+                    producing.Frame,
+                    new Suspension(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Gate, "gate.test.model scored 0.5", "service:desk", Mirrors: null),
+                    new ResumeAction(ResumeKind.Override, new WithheldTrigger(0, Failed()), gate, Effect: null),
+                    budget),
+            ],
+            Frame = new Frame(EngineStates.Escalated, producing.Frame.Entry, Run: null, Child: null, [], T0.AddMinutes(30)),
+        };
+
+        var applied = Assert.IsType<Applied>(Decide(escalated, Answer(AnswerVariant.Accept)));
+
+        var change = applied.Changes[0];
+        Assert.Equal((EngineStates.Parked, ParkReason.Budget), (change.After.State, change.After.Park));
+        Assert.Null(change.Event.Override);
     }
 
     private static void AssertParkedAtCap(Applied applied, WithheldTrigger withheld)
