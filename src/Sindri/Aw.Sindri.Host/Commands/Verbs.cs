@@ -15,7 +15,13 @@ namespace Aw.Sindri.Host.Commands;
 /// The client verbs. status, stop and profile approve call the running control plane's API; profile validate and doctor
 /// run the same handlers in this process, read-only, so they work while it is down.
 /// </summary>
-internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlaneProbe probe, Output output, IServiceProvider scope)
+/// <param name="client">The API client.</param>
+/// <param name="probe">Finds the running control plane.</param>
+/// <param name="output">Where the verbs write.</param>
+/// <param name="scope">The scope the local verbs resolve their handlers from.</param>
+/// <param name="ensureRunning">Starts the control plane before a human's command, or names why not (API spec §7); null: never start it.</param>
+internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlaneProbe probe, Output output, IServiceProvider scope,
+    Func<CancellationToken, Task<Kernel.Error?>>? ensureRunning = null)
 {
     internal async Task<int> Status(bool json, CancellationToken ct)
     {
@@ -75,6 +81,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             return await output.Error(SindriErrors.InvalidInput.With($"'{hashText}' is not a profile hash (64 hex digits)")).ConfigureAwait(false);
         }
 
+        _ = ensureRunning;   // red: called before the confirmation in the green commit
         var refusal = hash is { } h ? await Confirmation(h, interactive, input).ConfigureAwait(false) : null;
         if (refusal is not null)
         {

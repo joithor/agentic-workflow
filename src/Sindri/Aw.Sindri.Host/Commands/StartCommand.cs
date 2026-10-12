@@ -11,7 +11,8 @@ namespace Aw.Sindri.Host.Commands;
 /// so a script sees the attention. The start wait runs on the injected clock: up to <see cref="Budget"/>, probing
 /// every <see cref="Poll"/>.
 /// </summary>
-internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLauncher launcher, ControlPlaneClient client, Output output, TimeProvider clock)
+internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLauncher launcher, ControlPlaneClient client, Output output, TimeProvider clock,
+    AgentSession? session = null)
 {
     /// <summary>How long a start waits for the control plane to answer.</summary>
     internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(10);
@@ -45,6 +46,20 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
         var found = await probe.Check(ct).ConfigureAwait(false);
         return found.IsError && found.Error.Code == SindriErrors.NotRunning.Code ? await Launch(ct).ConfigureAwait(false) : found;
     }
+
+    /// <summary>
+    /// Before a command a human runs (API spec §7): null when the control plane runs, or once this call started it;
+    /// otherwise the error to print. Only a human CLI starts it, and only when <paramref name="launch"/> (no --no-start).
+    /// </summary>
+    /// <param name="launch">False for --no-start.</param>
+    /// <param name="ct">Cancels the wait.</param>
+    /// <returns>Null, or the error.</returns>
+    internal Task<Error?> EnsureRunning(bool launch, CancellationToken ct) => throw new NotSupportedException($"red: start only for a human ({session}, {launch})");
+
+    /// <summary>Why 'sindri serve' won't run here: inside an agent session, unless AW_SINDRI_PROVER=1 (P1 plan G6); null when it may.</summary>
+    /// <param name="session">How the CLI classed itself.</param>
+    /// <returns>The refusal, or null.</returns>
+    internal static Error? ServeRefusal(AgentSession session) => throw new NotSupportedException("red: refuse serve in an agent session");
 
     private async Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> Launch(CancellationToken ct)
     {
