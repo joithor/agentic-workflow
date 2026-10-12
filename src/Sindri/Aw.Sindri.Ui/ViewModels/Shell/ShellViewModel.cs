@@ -11,7 +11,7 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// connection and its state live in <see cref="Health"/>, and the window's size, the sheet's width and the last page are
 /// local preferences, read once by <see cref="Restore"/> and written over the stored file when they change.
 /// </summary>
-internal sealed class ShellViewModel : ObservableObject
+internal sealed partial class ShellViewModel : ObservableObject
 {
     /// <summary>How long without an event or a ping before the views are stale (§4.1, API §2.4).</summary>
     internal static readonly TimeSpan StaleAfter = HealthViewModel.StaleAfter;
@@ -19,7 +19,7 @@ internal sealed class ShellViewModel : ObservableObject
     private static readonly string[] _stateProperties =
     [
         nameof(State), nameof(IsVersionMismatch), nameof(IsChromeVisible), nameof(IsNotRunning), nameof(IsConnecting),
-        nameof(IsUnreadable), nameof(IsPageVisible), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsNavigationEnabled),
+        nameof(IsUnreadable), nameof(IsNotRespondingBanner), nameof(IsPageVisible), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsNavigationEnabled),
     ];
 
     private static readonly string[] _pageProperties =
@@ -42,6 +42,7 @@ internal sealed class ShellViewModel : ObservableObject
         _store = new Preferences(preferences);
         Health = new HealthViewModel(records, api, clock);
         Health.PropertyChanged += OnHealthChanged;
+        Health.Pill.PropertyChanged += OnPillChanged;
     }
 
     /// <summary>The app's copy, for the view.</summary>
@@ -136,7 +137,7 @@ internal sealed class ShellViewModel : ObservableObject
     public bool IsUnreadable => State == ShellState.Unreadable;
 
     /// <summary>Stale after three failed refreshes: the banner under the top bar that says "Sindri not responding: run sindri doctor" (§4.1).</summary>
-    public bool IsNotRespondingBanner => State == ShellState.Stale && false;
+    public bool IsNotRespondingBanner => State == ShellState.Stale && Pill.IsNotResponding;
 
     /// <summary>The page shows when connected: Normal, Stale, or Unreadable with the last data.</summary>
     public bool IsPageVisible => State is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
@@ -216,64 +217,10 @@ internal sealed class ShellViewModel : ObservableObject
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 
-    /// <summary>Remembers the sheet's width (clamped to 420–760 when it's next read).</summary>
-    /// <param name="width">The width the user dragged it to.</param>
-    internal void ResizeSheet(double width)
-    {
-        Remember(p => p with { SheetWidth = width });
-        OnChanged(nameof(SheetWidth));
-    }
-
-    /// <summary>Remembers the window's bounds (grown to 900 × 600 when they're next read).</summary>
-    /// <param name="bounds">Where the window is.</param>
-    internal void RememberWindow(WindowBounds bounds) => Remember(p => p with { Window = bounds });
-
-    /// <summary>Reads the stored preferences: the last page, the window's bounds and the sheet's width (the defaults when they can't be read).</summary>
-    /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>A task that completes when they are applied.</returns>
-    internal async Task Restore(CancellationToken cancellationToken)
-    {
-        try
-        {
-            _preferences = await _store.Load(cancellationToken).ConfigureAwait(true);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            _preferences = UiPreferences.Defaults;
-        }
-
-        CurrentPage = Enum.TryParse<PageId>(_preferences.LastPage, out var page) ? page : PageId.Home;
-        Changed(_pageProperties);
-        Changed(nameof(Window), nameof(SheetWidth));
-    }
-
     /// <summary>Follows the control plane until cancelled (S1b's loop: control.json, ping, status, events).</summary>
     /// <param name="cancellationToken">Stops following.</param>
     /// <returns>A task that ends when cancelled.</returns>
     internal Task Run(CancellationToken cancellationToken) => Health.Run(cancellationToken);
-
-    // The shell's fields are written over whatever the file holds now (Settings writes its own), whole and in order (each
-    // write waits for the one before); a failed write keeps the old file, since they are a convenience and never change
-    // what the API decides.
-    private void Remember(Func<UiPreferences, UiPreferences> change)
-    {
-        _preferences = change(_preferences).Clamp();
-        _saving = SaveAfter(_saving, change);
-    }
-
-    private async Task SaveAfter(Task previous, Func<UiPreferences, UiPreferences> change)
-    {
-        await previous.ConfigureAwait(true);
-        try
-        {
-            var stored = await _store.Load(CancellationToken.None).ConfigureAwait(true);
-            await _store.Save(change(stored), CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            // Kept in memory for this run; the next change tries again.
-        }
-    }
 
     private void OnHealthChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -287,6 +234,14 @@ internal sealed class ShellViewModel : ObservableObject
                 break;
             default:
                 break;
+        }
+    }
+
+    private void OnPillChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(HealthPill.IsNotResponding))
+        {
+            OnChanged(nameof(IsNotRespondingBanner));
         }
     }
 

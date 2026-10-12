@@ -9,7 +9,7 @@ internal sealed class HealthPill : ObservableObject
     /// <summary>The state's glyph (§11.3): ✓ running, ⌛ stale, ✕ not running or unreadable; none while connecting.</summary>
     public string Glyph { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>The state's word, or "Sindri not responding: run sindri doctor" after three failed refreshes.</summary>
+    /// <summary>The state's word. After three failed refreshes it stays "stale"; the shell's banner says Sindri isn't responding.</summary>
     public string Word { get; private set => Set(ref field, value); } = Labels.Connecting;
 
     /// <summary>"updated Ns ago" once connected, "stale" when unreadable, or empty.</summary>
@@ -38,6 +38,9 @@ internal sealed class HealthPill : ObservableObject
     /// <summary>True when the dot shows nothing to follow: not running, unreadable, or a version mismatch.</summary>
     public bool IsDown { get; private set => Set(ref field, value); }
 
+    /// <summary>Stale after three failed refreshes (§4.1): the shell shows "Sindri not responding: run sindri doctor" in a banner.</summary>
+    public bool IsNotResponding { get; private set => Set(ref field, value); }
+
     /// <summary>Stale: the Refresh button beside the pill (§4.1).</summary>
     public bool IsRefreshShown => IsStale;
 
@@ -50,7 +53,7 @@ internal sealed class HealthPill : ObservableObject
         (Glyph, Word, Age) = state switch
         {
             ShellState.Normal => (Labels.GlyphOk, Labels.Running, Labels.UpdatedAgo(age)),
-            ShellState.Stale => (Labels.GlyphStale, notResponding ? Labels.NotResponding : Labels.Stale, Labels.UpdatedAgo(age)),
+            ShellState.Stale => (Labels.GlyphStale, Labels.Stale, Labels.UpdatedAgo(age)),
             ShellState.NotRunning => (Labels.GlyphDown, Labels.NotRunning, string.Empty),
             ShellState.Unreadable => (Labels.GlyphDown, Labels.Unreadable, Labels.Stale),
             ShellState.VersionMismatch => (Labels.GlyphDown, Labels.VersionMismatch, string.Empty),
@@ -66,6 +69,7 @@ internal sealed class HealthPill : ObservableObject
             OnChanged(nameof(IsRefreshShown));
         }
 
+        IsNotResponding = stale && notResponding;
         IsDown = state is ShellState.NotRunning or ShellState.Unreadable or ShellState.VersionMismatch;
     }
 }

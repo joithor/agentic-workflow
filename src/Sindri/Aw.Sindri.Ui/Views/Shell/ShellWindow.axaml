@@ -45,6 +45,21 @@
               Background="{DynamicResource Brush.Attention}" IsVisible="{Binding IsAttentionBandVisible}"
               AutomationProperties.Name="{Binding Text.NeedsYouPanel}" />
 
+      <!-- Stale after three failed refreshes (§4.1): "Sindri not responding: run sindri doctor" in full under the top bar,
+           since the pill keeps ⌛ stale and its Refresh at the 900 px minimum. -->
+      <Border x:Name="NotRespondingBanner" DockPanel.Dock="Top" Classes="banner" IsVisible="{Binding IsNotRespondingBanner}"
+              AutomationProperties.Name="{Binding Text.NotResponding}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Classes="body subtle" Text="⌛" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+          <TextBlock x:Name="NotRespondingText" Classes="body" Text="{Binding Text.NotRespondingLead}" VerticalAlignment="Center"
+                     AutomationProperties.Name="{Binding Text.NotRespondingLead}" />
+          <Border Classes="command">
+            <TextBlock x:Name="NotRespondingFixText" Classes="mono" Text="{Binding Text.DoctorFix}"
+                       AutomationProperties.Name="{Binding Text.DoctorFix}" />
+          </Border>
+        </StackPanel>
+      </Border>
+
       <!-- Unreadable (§4.1): a banner with the code and sindri doctor; the page below keeps its last data. -->
       <Border x:Name="UnreadableBanner" DockPanel.Dock="Top" Classes="banner" IsVisible="{Binding IsUnreadable}">
         <StackPanel Orientation="Horizontal" Spacing="12">

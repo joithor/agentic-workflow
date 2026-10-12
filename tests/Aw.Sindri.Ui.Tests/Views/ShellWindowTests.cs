@@ -721,6 +721,10 @@ public sealed class ShellWindowTests : IDisposable
         }
 
         AllInside(window, Named<Control>(window, "TopBar"), state, scale);
+
+        // The bar settles: another layout pass moves nothing (no flip between folding the field and dropping the age).
+        Settle(window);
+        Assert.Equal(bar.Select(b => b.Box), _topBarControls.Where(n => Visible(window, n)).Select(n => Box(window, n)));
     }
 
     // Every visible text under the control lies inside the window, whole (no text runs past an edge).

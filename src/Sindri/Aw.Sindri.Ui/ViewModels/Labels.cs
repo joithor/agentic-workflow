@@ -1,5 +1,4 @@
 using System.Globalization;
-using Aw.Sindri.Ui.Navigation;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
@@ -8,7 +7,7 @@ namespace Aw.Sindri.Ui.ViewModels;
 /// the app shows is the API's text as it is. One file, shared by every head (heads get theirs through the app, e.g.
 /// <see cref="Platform.TrayView"/>). Later phases add theirs here, keyed by view name and action id.
 /// </summary>
-internal static class Labels
+internal static partial class Labels
 {
     // Pages and the top bar (§3.2, §3.3).
 
@@ -136,6 +135,9 @@ internal static class Labels
     /// <summary>After three failed refreshes while the process still answers ping (§4.1 Stale, DB §5).</summary>
     internal const string NotResponding = "Sindri not responding: run sindri doctor";
 
+    /// <summary>The not-responding banner's words before its <see cref="DoctorFix"/> chip.</summary>
+    internal const string NotRespondingLead = "Sindri not responding: run";
+
     /// <summary>The health pill's glyph while running (§11.3 ok).</summary>
     internal const string GlyphOk = "✓";
 
@@ -249,51 +251,4 @@ internal static class Labels
         < 3600 => string.Create(CultureInfo.InvariantCulture, $"updated {(int)age.TotalMinutes}m ago"),
         _ => string.Create(CultureInfo.InvariantCulture, $"updated {(int)age.TotalHours}h ago"),
     };
-
-    // The tray (§5). U0 knows no counts; U2/U3 add "Sindri · N running · nothing needs you" and the needs-you tooltips.
-
-    /// <summary>The tray's Neutral tooltip in U0.</summary>
-    internal const string TrayRunning = "Sindri · running";
-
-    /// <summary>The tray's Stale tooltip.</summary>
-    internal const string TrayNotResponding = "Sindri not responding";
-
-    /// <summary>The tray's Not running tooltip.</summary>
-    internal const string TrayNotRunning = "Sindri isn't running · run sindri";
-
-    /// <summary>The tray menu's open item.</summary>
-    internal const string TrayOpen = "Open Sindri";
-
-    /// <summary>The tray menu's quit item.</summary>
-    internal const string TrayQuit = "Quit";
-
-    // Settings (§3.3 ⌘,, §11.4, §14.2).
-
-    /// <summary>The in-app switch that forces reduced motion.</summary>
-    internal const string ReduceMotion = "Reduce motion";
-
-    /// <summary>The note beside the switch while the OS reduces motion (the switch can't turn the OS setting off).</summary>
-    internal const string SystemReducesMotion = "On in your system settings";
-
-    /// <summary>The text size slider.</summary>
-    internal const string TextSize = "Text size";
-
-    /// <summary>A page's name, as the top bar and the page region's accessible name say it (§11.2).</summary>
-    /// <param name="page">The page.</param>
-    /// <returns>The words.</returns>
-    internal static string Page(PageId page) => page switch
-    {
-        PageId.Home => Home,
-        PageId.Queue => Queue,
-        PageId.Decisions => Decisions,
-        PageId.Services => Services,
-        PageId.Health => Health,
-        PageId.Settings => Settings,
-        _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
-    };
-
-    /// <summary>A scale as a percentage ("110%").</summary>
-    /// <param name="scale">The scale (1.0 is 100%).</param>
-    /// <returns>The words.</returns>
-    internal static string Percent(double scale) => string.Create(CultureInfo.InvariantCulture, $"{Math.Round(scale * 100, MidpointRounding.AwayFromZero):0}%");
 }

@@ -63,6 +63,12 @@ internal sealed class ShellText
     /// <summary><see cref="Labels.NotRunning"/>.</summary>
     public string NotRunning { get; } = Labels.NotRunning;
 
+    /// <summary><see cref="Labels.NotResponding"/>.</summary>
+    public string NotResponding { get; } = Labels.NotResponding;
+
+    /// <summary><see cref="Labels.NotRespondingLead"/>.</summary>
+    public string NotRespondingLead { get; } = Labels.NotRespondingLead;
+
     /// <summary><see cref="Labels.NotServedYet"/>.</summary>
     public string NotServedYet { get; } = Labels.NotServedYet;
 
