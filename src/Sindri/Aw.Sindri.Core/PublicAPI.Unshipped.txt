@@ -697,29 +697,29 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput.Trigger.get -> Aw.Sindri.
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput.Trigger.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand!
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Effect, out Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity! Identity, out Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Effect, out Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Identity, out Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With) -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Effect.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Effect.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.EffectCommand(Aw.Sindri.Core.Workflow.Ids.BlockId Effect, Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity! Identity, Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.EffectCommand(Aw.Sindri.Core.Workflow.Ids.BlockId Effect, Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Identity, Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>! With) -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Equals(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Identity.get -> Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity!
+Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Identity.get -> Aw.Sindri.Core.Workflow.Engine.EffectIdentity!
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Identity.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Origin.get -> Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Origin.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.With.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.WithValue!>!
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.With.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity!
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out int Entry, out int Index) -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.EffectIdentity(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, int Entry, int Index) -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.Entry.get -> int
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.Entry.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.Equals(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.Index.get -> int
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.Index.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.Instance.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.Instance.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.Text.get -> string!
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.EffectIdentity!
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out int Entry, out int Index) -> void
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.EffectIdentity(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, int Entry, int Index) -> void
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Entry.get -> int
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Entry.init -> void
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Equals(Aw.Sindri.Core.Workflow.Engine.EffectIdentity? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Index.get -> int
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Index.init -> void
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Instance.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Instance.init -> void
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Text.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp
 Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp!
 Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp.Answer.get -> Aw.Sindri.Core.Workflow.Engine.TriggerKey?
@@ -1089,10 +1089,10 @@ Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Reason.init -> void
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.TriggerRecord(string! Kind, Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, string! Actor, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, string? Reason = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent!
-Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType Type, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord! Trigger, out Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? Started, out Aw.Sindri.Core.Workflow.Engine.Events.InstanceDelta! Delta, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>! Gates, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>! Evidence, out Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord? Grant, out Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord? Override, out Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord? Refusal, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity!>! Effects) -> void
+Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType Type, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord! Trigger, out Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? Started, out Aw.Sindri.Core.Workflow.Engine.Events.InstanceDelta! Delta, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>! Gates, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>! Evidence, out Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord? Grant, out Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord? Override, out Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord? Refusal, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.EffectIdentity!>! Effects) -> void
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Delta.get -> Aw.Sindri.Core.Workflow.Engine.Events.InstanceDelta!
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Delta.init -> void
-Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Effects.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity!>!
+Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Effects.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.EffectIdentity!>!
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Effects.init -> void
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Equals(Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Evidence.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>!
@@ -1113,7 +1113,7 @@ Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Trigger.get -> Aw.Sindri.Cor
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Trigger.init -> void
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Type.get -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.Type.init -> void
-Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.WorkflowEvent(Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType Type, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord! Trigger, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? Started, Aw.Sindri.Core.Workflow.Engine.Events.InstanceDelta! Delta, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>! Gates, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>! Evidence, Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord? Grant, Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord? Override, Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord? Refusal, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity!>! Effects) -> void
+Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent.WorkflowEvent(Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType Type, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord! Trigger, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? Started, Aw.Sindri.Core.Workflow.Engine.Events.InstanceDelta! Delta, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>! Gates, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>! Evidence, Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord? Grant, Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord? Override, Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord? Refusal, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.EffectIdentity!>! Effects) -> void
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType.EffectRefused = 7 -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType.Expired = 6 -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
@@ -1207,15 +1207,15 @@ Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Findings.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.ProgressMark(string? Findings, string? Failure, bool EmptyDiff) -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction!
-Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind Kind, out Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger? Withheld, out Aw.Sindri.Core.Workflow.Ids.BlockId? Gate, out Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity? Effect) -> void
-Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Effect.get -> Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity?
+Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind Kind, out Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger? Withheld, out Aw.Sindri.Core.Workflow.Ids.BlockId? Gate, out Aw.Sindri.Core.Workflow.Engine.EffectIdentity? Effect) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Effect.get -> Aw.Sindri.Core.Workflow.Engine.EffectIdentity?
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Effect.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Equals(Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Gate.get -> Aw.Sindri.Core.Workflow.Ids.BlockId?
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Gate.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Kind.get -> Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Kind.init -> void
-Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.ResumeAction(Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind Kind, Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger? Withheld, Aw.Sindri.Core.Workflow.Ids.BlockId? Gate, Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity? Effect) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.ResumeAction(Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind Kind, Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger? Withheld, Aw.Sindri.Core.Workflow.Ids.BlockId? Gate, Aw.Sindri.Core.Workflow.Engine.EffectIdentity? Effect) -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Withheld.get -> Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger?
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.Withheld.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind
@@ -1491,11 +1491,11 @@ Aw.Sindri.Core.Workflow.Engine.Triggers.OpenRequested.OpenRequested(string! Acto
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Code.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Code.init -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity! Effect, out string! Code, out long Sequence) -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Effect.get -> Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity!
+Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Effect, out string! Code, out long Sequence) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Effect.get -> Aw.Sindri.Core.Workflow.Engine.EffectIdentity!
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Effect.init -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.OutboxRefused(string! Actor, Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity! Effect, string! Code, long Sequence) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.OutboxRefused(string! Actor, Aw.Sindri.Core.Workflow.Engine.EffectIdentity! Effect, string! Code, long Sequence) -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Sequence.get -> long
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Sequence.init -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.RecipeWake
@@ -2217,9 +2217,9 @@ override Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput.ToString() -> st
 override Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.ToString() -> string!
-override Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.GetHashCode() -> int
-override Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.EffectIdentity.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.EffectIdentity.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp.ToString() -> string!
@@ -2751,8 +2751,8 @@ static Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput.operator !=(Aw.Sin
 static Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput.operator ==(Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput? left, Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.operator !=(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand? left, Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.operator ==(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand? left, Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.operator !=(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity? left, Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity.operator ==(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity? left, Aw.Sindri.Core.Workflow.Engine.Decisions.EffectIdentity? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.EffectIdentity.operator !=(Aw.Sindri.Core.Workflow.Engine.EffectIdentity? left, Aw.Sindri.Core.Workflow.Engine.EffectIdentity? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.EffectIdentity.operator ==(Aw.Sindri.Core.Workflow.Engine.EffectIdentity? left, Aw.Sindri.Core.Workflow.Engine.EffectIdentity? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp.operator !=(Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp? left, Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp.operator ==(Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp? left, Aw.Sindri.Core.Workflow.Engine.Decisions.FollowUp? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Decisions.GateAnswers.None.get -> Aw.Sindri.Core.Workflow.Engine.Decisions.GateAnswers!

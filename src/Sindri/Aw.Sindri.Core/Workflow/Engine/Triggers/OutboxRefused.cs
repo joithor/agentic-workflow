@@ -10,7 +10,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 /// <param name="Effect">The refused effect's identity.</param>
 /// <param name="Code">The refusal: SND-RECIPE-005 (revoked), SND-RECIPE-006 (drift) or SND-WF-011 (not allowlisted).</param>
 /// <param name="Sequence">The 'outbox.refused' event's ledger sequence.</param>
-public sealed record OutboxRefused(string Actor, Decisions.EffectIdentity Effect, string Code, long Sequence) : Trigger(Actor)
+public sealed record OutboxRefused(string Actor, EffectIdentity Effect, string Code, long Sequence) : Trigger(Actor)
 {
     /// <inheritdoc/>
     public override string Name => TriggerNames.OutboxRefused;

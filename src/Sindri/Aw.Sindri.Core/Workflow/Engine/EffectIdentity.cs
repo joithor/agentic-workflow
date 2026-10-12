@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
+namespace Aw.Sindri.Core.Workflow.Engine;
 
 /// <summary>
 /// An effect's stable identity (spec §5.7): '{instance}:{entry}:{index}' with the entered frame's entry, so an
