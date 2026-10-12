@@ -297,9 +297,74 @@ and the time-skipping `temporal-test-server` (1.39.0) for darwin-arm64, darwin-x
 | # | Pass line | Measurement | Result |
 |---|---|---|---|
 | 1 | The server starts and stops with `sindri serve`, loopback only, its file under `$AW_SINDRI_HOME`, and survives a host sleep with the instance intact | listen addresses: _ · db path and owning pid: _ · pid in `control.json`: _ · stop takes the server down: _ · sleep (simulated with `kill -STOP`/`-CONT`, _ min): _ | _ |
-| 2 | Async completion, timers and the kill-and-resume case work as stated; the eval cases pass on the time-skipping server in under 10 s total | `complete --run 1.1` moves `produce -> checks`: _ · `4h` timeout wall time: _ · kill -9 mid-Step, same run token after restart: _ · eval cases (`happy`, `no-progress`, `rounds`) total: _ s | _ |
-| 3 | The ledger holds one `workflow.transition` per transition after a replay (no duplicates) | transitions in history: _ · ledger rows before replay: _ · after replay: _ | _ |
+| 2 | Async completion, timers and the kill-and-resume case work as stated; the eval cases pass on the time-skipping server in under 10 s total | `complete --run 1.1` moves `produce -> checks`: _ (CLI: unit (b)); the same completion through the task token moves it in the test interpreter (`SpikeEvalTests`, every eval line) · `4h` timeout wall time: **3 ms** with the desk report as the `complete` Update; **never fires** while the desk Step is an open async-completion activity (2 s asserted, see finding F1) · worker restart mid-Step, same run token after restart: **yes**, `1.1` scheduled once and completed by the new worker, next run `2.1` opened 26 ms (time-skipping, first worker uncached) / 15 ms (dev server); a real `kill -9` is journey 5 · eval cases (`happy`, `no-progress`, `rounds`) total: **0.06 s** (desk activity), **0.52 s** (desk Update), **0.54 s** with PR #180's real `TransitionDecision` (local merge, not pushed) | pass, with finding F1 for P4 (P0 (c)) |
+| 3 | The ledger holds one `workflow.transition` per transition after a replay (no duplicates) | transitions in history: **3** (+1 `workflow.started`; 4 `MarkerRecorded` local-activity markers) · ledger rows before replay: **2** (worker A, sticky cache, stopped at `verify`) · after replay: **3** `workflow.transition` + 1 `workflow.started`, no key twice (`sqlite3`), after worker B with `MaxCachedWorkflows = 0`, the SDK `WorkflowReplayer` over the fetched history, and a direct re-run of event 2 (`AlreadyRecorded`) | pass (P0 (c)) |
 | 4 | Dev server RSS ≤ 300 MB idle and ≤ 500 MB with ten instances; worker overhead inside `sindri serve` ≤ 150 MB; server ready in ≤ 5 s | dev server RSS idle: _ MB · with 10 instances: _ MB · `sindri serve` RSS minus no-worker baseline: _ MB · start-to-ready ×5: _ s (max) · samples: 60 min at 60 s, Ollama running, CSV at _ | _ |
 | 5 | The AOT split builds with zero warnings and the host publishes framework-dependent; the Avalonia app still publishes NativeAOT | `dotnet build -warnaserror`: _ warnings, `IL*` outside `Aw.Sindri.Workflows`: _ · host framework-dependent publish: _ · Avalonia app NativeAOT publish: _ | _ |
+
+### P0 (c): what each server supports, the evals and the ledger mirror
+
+Tests: `tests/Aw.Sindri.Tests/Workflows/Spike/` (integration lane, about 4 s for the 19 tests, both servers started
+from `binaries.lock` with `ExistingPath`; the SDK never downloads). The interpreter there (`SpikeStepWorkflow`) is
+test-only and throwaway: it walks `recipes/sindri/workflow.step.yaml` read by P1's `YamlRecipeReader`, with a decision
+stub (`SpikeDecision`: first matching transition, identical findings park `no-progress`, a loop past its cap parks
+`rounds`). Unit (b) builds the real throwaway `RecipeWorkflow` in parallel. The same evals also ran with PR #180's
+`TransitionDecision` folded inside a Temporal workflow, on a local branch with #180 merged
+(`throwaway/p0-c-real-decisions`, never pushed): all three pass, 0.54 s.
+
+**Support.** Each row is one test that runs on both servers (`TemporalProbes`, bound by `TimeSkippingProbeTests` and
+`LocalProbeTests`), or the named class.
+
+| Feature (rev 8 §, §10) | Test | `temporal-test-server` 1.39.0 (time-skipping) | `temporal` 1.9.1 dev server |
+|---|---|---|---|
+| Update with a validator; a rejected Update records nothing; the same update id twice returns the first result (§5.2) | `Update_validator_rejects_and_a_repeated_update_id_applies_once` | yes | yes |
+| Async activity completion through the task token, from outside the worker (§5.3) | `Async_completion_completes_the_activity_through_its_task_token` | yes | yes |
+| Signals, including ones sent before the wait (§5.4) | `Signals_reach_the_workflow_and_wait_until_it_waits` | yes | yes |
+| Child workflow, id `{parent}/child.1`, `ParentClosePolicy.Terminate` (§5.8) | `Child_workflow_returns_its_result_to_the_parent` | yes | yes |
+| `DelayAsync` with time skipping (§5.5) | `DelayAsync_skips_time_only_on_the_time_skipping_server` | yes: 4 h in 74 ms | no skipping (by design): 1 s took 1.07 s |
+| Timer fires while an activity is scheduled or open | `Four_hour_timeout_does_not_skip_while_the_desk_activity_is_open` (time-skipping) | **no**: time stays still while any activity is scheduled or open (F1) | real time only |
+| Worker restart mid-Step resumes with the same run token (§10) | `Worker_restart_mid_step_resumes_with_the_same_run_token` | yes, first worker without a sticky cache | yes |
+| Restart from a worker that had the instance in its sticky cache | `Worker_restart_from_a_sticky_cache_resumes_only_on_the_dev_server` | **no**: the task stays on the dead sticky queue (F2) | yes, 15 ms |
+| Complete an activity by id (workflow id, activity id) | exploratory, not kept | **no**: the server fails the call (`missing method "getNamespace"`) | not tried; Sindri uses task tokens |
+
+**Findings for P4.**
+- **F1. A desk Step held open as an activity blocks its own timeout on the time-skipping server.** The Java test server
+  doesn't skip time while any activity is scheduled or open, so §5.3's async-completion `RunStep` and §5.5's timer can't
+  be tested together there (4 h timer still pending after 2 s; an unpolled activity blocks it too). What works, measured:
+  `RunStep` records the desk task and returns at once, and the report arrives as the `complete` Update (§5.2 already
+  lists `complete` as an Update) with a validator that refuses a stale run token; the 4 h timeout then parks in 3 ms of
+  wall time, and the evals pass that way too (0.52 s). Also measured: an auto-skipping result wait begun while an
+  activity was open didn't resume skipping after it closed (the test timed out at 30 s), so a test waits until the
+  timer is in history before awaiting the result. Options for P4: desk Steps as Update waits (the agent runtime's
+  heartbeat still needs an activity), or timeout tests with an open activity move to `StartLocalAsync` with short
+  durations. The spec isn't changed here; this is input for the owner.
+- **F2. The time-skipping server never moves a task off a dead worker's sticky queue** (no fallback after 20 s with a
+  1 s `StickyQueueScheduleToStartTimeout`). Restart tests there run the first worker with `MaxCachedWorkflows = 0`, or
+  run on `StartLocalAsync`; the dev server resumes on a new worker in 15 ms after a graceful stop. After a real crash the
+  dev server waits out the sticky timeout (SDK default) first; journey 5 measures that.
+- **F3. Workflow code and `CA2007`.** Library code must write `ConfigureAwait(false)`, which leaves the workflow's
+  deterministic scheduler; the spike's workflows live in the test project, where `CA2007` is off. P4's `RecipeWorkflow`
+  in `Aw.Sindri.Workflows` needs `ConfigureAwait(true)` or a scoped suppression. `CancellationTokenSource.CancelAsync`
+  (`MA0042`) has the same problem; workflow code calls `Cancel`.
+
+**The ledger mirror.** `RecordEventActivities.RecordAsync` (`src/Sindri/Aw.Sindri.Workflows`) appends through S1's
+`ILedgerStore` under the held lease, with the idempotency key `workflow:{workflow id}:{run id}:{sequence}`, where the
+sequence is the workflow's own count of mirrored events (workflow state, so a replay or retry rebuilds the same key;
+the history event id of a local activity's marker isn't known before it runs, so it can't be the key). It is a
+**local** activity, as §5.6 says: its result is a marker written with the workflow task, so a replay reads the marker
+and never runs it again, and it costs no task-queue round trip or extra history events. The one case that runs it
+twice, a worker that dies after the append but before the workflow task completes, is absorbed by S1's `Append`, which
+looks the key up and inserts in one write transaction and returns `AlreadyRecorded`. A regular activity would give the
+same at-least-once execution with three history events per ledger row, so exactly-once comes from the key either way
+and the local activity is the cheaper of the two. Its retry policy is unbounded with backoff, so the workflow waits for
+the ledger.
+
+**How it was measured.** `AW_SPIKE_LOG=<file> dotnet test --project tests/Aw.Sindri.Tests -- --filter-namespace
+Aw.Sindri.Tests.Workflows.Spike` appends each measurement line to the file; `AW_SPIKE_LEDGER_COPY=<dir>` keeps the
+ledger replay test's `ledger.db`. Counted with `sqlite3 ledger.db "select type, count(*) from events group by type"`
+(`workflow.started|1`, `workflow.transition|3`) and `select idempotency_key, count(*) c from events group by
+idempotency_key having c > 1` (no rows). Wall times are `Stopwatch` around the awaited call, on the owner's Mac (arm64),
+2026-10-11. The raw logs and CTRF reports are in the unit's scratch directory (`p0-c/final-spike.log`,
+`p0-c/ledger-sqlite3.txt`, `p0-c/ctrf-final/`).
 
 **Verdict:** _ (pass, or the failed line and the owner's decision: rev 7's §5 returns, cut down, per the spec's "Fail").
