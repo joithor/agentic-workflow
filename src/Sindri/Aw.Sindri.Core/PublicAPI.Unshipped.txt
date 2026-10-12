@@ -3941,3 +3941,125 @@ override Aw.Sindri.Core.Events.WorkflowEventPayload.GetHashCode() -> int
 override Aw.Sindri.Core.Events.WorkflowEventPayload.ToString() -> string!
 static Aw.Sindri.Core.Events.WorkflowEventPayload.operator !=(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
 static Aw.Sindri.Core.Events.WorkflowEventPayload.operator ==(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
+Aw.Sindri.Core.Events.ItemCreated
+Aw.Sindri.Core.Events.ItemCreated.<Clone>$() -> Aw.Sindri.Core.Events.ItemCreated!
+Aw.Sindri.Core.Events.ItemCreated.Body.get -> string?
+Aw.Sindri.Core.Events.ItemCreated.Body.init -> void
+Aw.Sindri.Core.Events.ItemCreated.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ItemCreated.CommandId.init -> void
+Aw.Sindri.Core.Events.ItemCreated.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ItemId Item, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Ids.RecordKey? Link, out string? Body, out string? Owner) -> void
+Aw.Sindri.Core.Events.ItemCreated.Equals(Aw.Sindri.Core.Events.ItemCreated? other) -> bool
+Aw.Sindri.Core.Events.ItemCreated.Item.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Core.Events.ItemCreated.Item.init -> void
+Aw.Sindri.Core.Events.ItemCreated.ItemCreated(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ItemId Item, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Ids.RecordKey? Link, string? Body, string? Owner) -> void
+Aw.Sindri.Core.Events.ItemCreated.Link.get -> Aw.Sindri.Core.Ids.RecordKey?
+Aw.Sindri.Core.Events.ItemCreated.Link.init -> void
+Aw.Sindri.Core.Events.ItemCreated.Owner.get -> string?
+Aw.Sindri.Core.Events.ItemCreated.Owner.init -> void
+Aw.Sindri.Core.Events.ItemCreated.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Events.ItemCreated.Repo.init -> void
+Aw.Sindri.Core.Events.ItemCreated.Title.get -> string!
+Aw.Sindri.Core.Events.ItemCreated.Title.init -> void
+Aw.Sindri.Core.Events.ItemCreatedPublic
+Aw.Sindri.Core.Events.ItemCreatedPublic.<Clone>$() -> Aw.Sindri.Core.Events.ItemCreatedPublic!
+Aw.Sindri.Core.Events.ItemCreatedPublic.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ItemCreatedPublic.CommandId.init -> void
+Aw.Sindri.Core.Events.ItemCreatedPublic.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ItemId Item, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Ids.RecordKey? Link, out string? Owner) -> void
+Aw.Sindri.Core.Events.ItemCreatedPublic.Equals(Aw.Sindri.Core.Events.ItemCreatedPublic? other) -> bool
+Aw.Sindri.Core.Events.ItemCreatedPublic.Item.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Core.Events.ItemCreatedPublic.Item.init -> void
+Aw.Sindri.Core.Events.ItemCreatedPublic.ItemCreatedPublic(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ItemId Item, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Ids.RecordKey? Link, string? Owner) -> void
+Aw.Sindri.Core.Events.ItemCreatedPublic.Link.get -> Aw.Sindri.Core.Ids.RecordKey?
+Aw.Sindri.Core.Events.ItemCreatedPublic.Link.init -> void
+Aw.Sindri.Core.Events.ItemCreatedPublic.Owner.get -> string?
+Aw.Sindri.Core.Events.ItemCreatedPublic.Owner.init -> void
+Aw.Sindri.Core.Events.ItemCreatedPublic.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Events.ItemCreatedPublic.Repo.init -> void
+Aw.Sindri.Core.Events.ItemCreatedPublic.Title.get -> string!
+Aw.Sindri.Core.Events.ItemCreatedPublic.Title.init -> void
+Aw.Sindri.Core.Events.ItemLinked
+Aw.Sindri.Core.Events.ItemLinked.<Clone>$() -> Aw.Sindri.Core.Events.ItemLinked!
+Aw.Sindri.Core.Events.ItemLinked.Alias.get -> Aw.Sindri.Core.Ids.ItemAlias?
+Aw.Sindri.Core.Events.ItemLinked.Alias.init -> void
+Aw.Sindri.Core.Events.ItemLinked.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ItemLinked.CommandId.init -> void
+Aw.Sindri.Core.Events.ItemLinked.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Ids.RecordKey Record, out Aw.Sindri.Core.Ids.ItemAlias? Alias) -> void
+Aw.Sindri.Core.Events.ItemLinked.Equals(Aw.Sindri.Core.Events.ItemLinked? other) -> bool
+Aw.Sindri.Core.Events.ItemLinked.Item.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Core.Events.ItemLinked.Item.init -> void
+Aw.Sindri.Core.Events.ItemLinked.ItemLinked(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Ids.RecordKey Record, Aw.Sindri.Core.Ids.ItemAlias? Alias) -> void
+Aw.Sindri.Core.Events.ItemLinked.Record.get -> Aw.Sindri.Core.Ids.RecordKey
+Aw.Sindri.Core.Events.ItemLinked.Record.init -> void
+Aw.Sindri.Core.Events.ItemStateChanged
+Aw.Sindri.Core.Events.ItemStateChanged.<Clone>$() -> Aw.Sindri.Core.Events.ItemStateChanged!
+Aw.Sindri.Core.Events.ItemStateChanged.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.ItemStateChanged.CommandId.init -> void
+Aw.Sindri.Core.Events.ItemStateChanged.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Items.ItemState From, out Aw.Sindri.Core.Items.ItemState To, out long Version, out string? Reason) -> void
+Aw.Sindri.Core.Events.ItemStateChanged.Equals(Aw.Sindri.Core.Events.ItemStateChanged? other) -> bool
+Aw.Sindri.Core.Events.ItemStateChanged.From.get -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Events.ItemStateChanged.From.init -> void
+Aw.Sindri.Core.Events.ItemStateChanged.Item.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Core.Events.ItemStateChanged.Item.init -> void
+Aw.Sindri.Core.Events.ItemStateChanged.ItemStateChanged(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Items.ItemState From, Aw.Sindri.Core.Items.ItemState To, long Version, string? Reason) -> void
+Aw.Sindri.Core.Events.ItemStateChanged.Reason.get -> string?
+Aw.Sindri.Core.Events.ItemStateChanged.Reason.init -> void
+Aw.Sindri.Core.Events.ItemStateChanged.To.get -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Events.ItemStateChanged.To.init -> void
+Aw.Sindri.Core.Events.ItemStateChanged.Version.get -> long
+Aw.Sindri.Core.Events.ItemStateChanged.Version.init -> void
+Aw.Sindri.Core.Items.CloseReason
+Aw.Sindri.Core.Items.CloseReason.Cancelled = 1 -> Aw.Sindri.Core.Items.CloseReason
+Aw.Sindri.Core.Items.CloseReason.Done = 0 -> Aw.Sindri.Core.Items.CloseReason
+Aw.Sindri.Core.Items.ItemActions
+Aw.Sindri.Core.Items.ItemScope
+Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemState.Cancelled = 8 -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemState.Done = 7 -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemState.NeedsAnswer = 4 -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemState.NeedsDecision = 3 -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemState.New = 0 -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemState.Parked = 5 -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemState.Queued = 1 -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemState.Running = 2 -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemState.TakenOver = 6 -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemStates
+Aw.Sindri.Core.Items.QueueGroup
+Aw.Sindri.Core.Items.QueueGroup.Parked = 2 -> Aw.Sindri.Core.Items.QueueGroup
+Aw.Sindri.Core.Items.QueueGroup.Queued = 4 -> Aw.Sindri.Core.Items.QueueGroup
+Aw.Sindri.Core.Items.QueueGroup.Running = 3 -> Aw.Sindri.Core.Items.QueueGroup
+Aw.Sindri.Core.Items.QueueGroup.WaitingOnYou = 0 -> Aw.Sindri.Core.Items.QueueGroup
+Aw.Sindri.Core.Items.QueueGroup.WithYou = 1 -> Aw.Sindri.Core.Items.QueueGroup
+Aw.Sindri.Core.Items.QueueGroups
+Aw.Sindri.Core.Items.TimelineLine
+const Aw.Sindri.Core.Events.EventTypes.ItemCreated = "item.created" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ItemLinked = "item.linked" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ItemStateChanged = "item.state-changed" -> string!
+override Aw.Sindri.Core.Events.ItemCreated.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ItemCreated.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ItemCreated.ToString() -> string!
+override Aw.Sindri.Core.Events.ItemCreatedPublic.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ItemCreatedPublic.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ItemCreatedPublic.ToString() -> string!
+override Aw.Sindri.Core.Events.ItemLinked.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ItemLinked.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ItemLinked.ToString() -> string!
+override Aw.Sindri.Core.Events.ItemStateChanged.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ItemStateChanged.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ItemStateChanged.ToString() -> string!
+static Aw.Sindri.Core.Events.ItemCreated.operator !=(Aw.Sindri.Core.Events.ItemCreated? left, Aw.Sindri.Core.Events.ItemCreated? right) -> bool
+static Aw.Sindri.Core.Events.ItemCreated.operator ==(Aw.Sindri.Core.Events.ItemCreated? left, Aw.Sindri.Core.Events.ItemCreated? right) -> bool
+static Aw.Sindri.Core.Events.ItemCreatedPublic.operator !=(Aw.Sindri.Core.Events.ItemCreatedPublic? left, Aw.Sindri.Core.Events.ItemCreatedPublic? right) -> bool
+static Aw.Sindri.Core.Events.ItemCreatedPublic.operator ==(Aw.Sindri.Core.Events.ItemCreatedPublic? left, Aw.Sindri.Core.Events.ItemCreatedPublic? right) -> bool
+static Aw.Sindri.Core.Events.ItemLinked.operator !=(Aw.Sindri.Core.Events.ItemLinked? left, Aw.Sindri.Core.Events.ItemLinked? right) -> bool
+static Aw.Sindri.Core.Events.ItemLinked.operator ==(Aw.Sindri.Core.Events.ItemLinked? left, Aw.Sindri.Core.Events.ItemLinked? right) -> bool
+static Aw.Sindri.Core.Events.ItemStateChanged.operator !=(Aw.Sindri.Core.Events.ItemStateChanged? left, Aw.Sindri.Core.Events.ItemStateChanged? right) -> bool
+static Aw.Sindri.Core.Events.ItemStateChanged.operator ==(Aw.Sindri.Core.Events.ItemStateChanged? left, Aw.Sindri.Core.Events.ItemStateChanged? right) -> bool
+static Aw.Sindri.Core.Items.ItemActions.For(Aw.Sindri.Core.Items.ItemState state) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>!
+static Aw.Sindri.Core.Items.ItemActions.Primary(Aw.Sindri.Core.Items.ItemState state) -> Aw.Sindri.Core.Ids.ActionId?
+static Aw.Sindri.Core.Items.ItemScope.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Ids.RepoName? itemRepo) -> bool
+static Aw.Sindri.Core.Items.ItemStates.IsClosed(Aw.Sindri.Core.Items.ItemState state) -> bool
+static Aw.Sindri.Core.Items.QueueGroups.GroupOf(Aw.Sindri.Core.Items.ItemState state) -> Aw.Sindri.Core.Items.QueueGroup?
+static Aw.Sindri.Core.Items.QueueGroups.Order.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.QueueGroup>!
+static Aw.Sindri.Core.Items.TimelineLine.For(Aw.Sindri.Core.Ledger.LedgerEvent! recorded, System.Text.Json.JsonSerializerOptions! json) -> string!
+static readonly Aw.Sindri.Core.SindriErrors.ItemConflict -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ItemNotFound -> Aw.Kernel.ErrorDefinition!

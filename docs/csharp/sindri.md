@@ -389,6 +389,8 @@ blocks.
 | `SND-CLI-003` | Bad input: a CLI argument or setting that is malformed (a profile hash that isn't 64 hex digits, an `AW_SINDRI_PORT` that isn't 0..65535), or an API request body or value the control plane refused (a 400) |
 | `SND-SCHED-001` | A background service run failed |
 | `SND-VIEW-001` | The projector stalled on an event (logged with its sequence and type); `sindri views rebuild` clears it |
+| `SND-ITEM-404` | No item has that id or alias, or a `session` caller asked for an item outside its repo (404) |
+| `SND-ITEM-409` | The item changed since the caller looked (a stale `itemVersion`, or another close won the fact key), or it is already done or cancelled (409) |
 
 ### Workflow errors (`WorkflowErrors`)
 
