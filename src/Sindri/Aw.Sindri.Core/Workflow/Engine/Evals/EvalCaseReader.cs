@@ -1,11 +1,13 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using Aw.Kernel;
 using Aw.Kernel.Json;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Evals;
 
 /// <summary>Reads an eval file (spec §9.2): line 1 the start, then one trigger line per line, no blank lines between them.</summary>
-public static class EvalCaseReader
+public static partial class EvalCaseReader
 {
     /// <summary>Reads <paramref name="text"/> as the case <paramref name="name"/>.</summary>
     /// <param name="name">The case's name ('happy').</param>
@@ -24,7 +26,7 @@ public static class EvalCaseReader
         var start = AwJson.Deserialize<EvalStartLine>(Encoding.UTF8.GetBytes(lines[0]), options);
         if (start.IsError)
         {
-            return Invalid(1, "line 1 isn't a start line { \"start\": { \"inputs\": { ... } } }: " + start.Error.Message);
+            return Invalid(1, "line 1 isn't a start line { \"start\": { \"inputs\": { ... } } }: " + Reason(start.Error));
         }
 
         var steps = new List<EvalStepLine>(lines.Length - 1);
@@ -38,7 +40,7 @@ public static class EvalCaseReader
             var step = AwJson.Deserialize<EvalStepLine>(Encoding.UTF8.GetBytes(lines[i]), options);
             if (step.IsError)
             {
-                return Invalid(i + 1, "not a trigger line { \"trigger\", \"gates\"?, \"expect\" }: " + step.Error.Message);
+                return Invalid(i + 1, "not a trigger line { \"trigger\", \"gates\"?, \"expect\" }: " + Reason(step.Error));
             }
 
             steps.Add(step.Value);
@@ -47,5 +49,14 @@ public static class EvalCaseReader
         return new EvalReading(new EvalCase(name, start.Value, steps), Invalid: null);
     }
 
+    /// <summary>What the parser said, without its record name and its byte position: the case's line number is the position.</summary>
+    private static string Reason(Error error) => Position.Replace(Prefix.Replace(error.Message, string.Empty), string.Empty);
+
     private static EvalReading Invalid(int line, string detail) => new(Case: null, new EvalVerdict(Passed: false, line, detail));
+
+    [GeneratedRegex(@"^Invalid JSON for \w+: ", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex Prefix { get; }
+
+    [GeneratedRegex(@" ?\| LineNumber: \d+ \| BytePositionInLine: \d+\.?", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex Position { get; }
 }
