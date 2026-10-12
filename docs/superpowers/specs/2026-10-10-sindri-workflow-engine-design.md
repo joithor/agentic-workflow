@@ -6,9 +6,14 @@ fields stay `null` in the hash, §3.1; block ids take an optional area, §3.3; `
 the owner's decisions from PR #180's review and is folded in here (no progress from identical findings and a repeated
 failure reason until P8, §3.7; an answer's re-run past the loop cap parks `rounds`, §3.8, §5.8; `--reject` on a
 command's escalation, §3.8, §5.8; `--scaffold`'s rule, §6.3; child lines, engine triggers and recorded content in the
-eval format, §9.2) · **Date:** 2026-10-10 · **Builds:** factory addendum §17.28 (one workflow
-state machine) and §17.29.4 step 2 · **Next:** P0 (the Temporal spike), then `/specToProvenPR` takes the Phases at the
-end to PRs.
+eval format, §9.2). **Revision 8.1** (2026-10-12) applies the owner's decisions of that day: Temporal is decided and
+there is no spike; the code written to measure it lands as **P4a, the Temporal foundation**, whose acceptance checks
+carry the measured numbers (Phases), and P4 builds on it; a desk Step is a short activity and the report is the
+`complete` Update (§5.3); the ledger mirror is keyed by the `RecordEvent` activity id (§5.6); the Temporal test
+findings F1–F3 are in §11. Each is marked *rev 8.1* inline
+· **Date:** 2026-10-10 · **Builds:** factory addendum §17.28 (one workflow
+state machine) and §17.29.4 step 2 · **Next:** P4a (the Temporal foundation), then `/specToProvenPR` takes the Phases at
+the end to PRs.
 
 This doc makes §17.28 concrete. It doesn't reopen §17.28 or §17.29, which are settled (decisions Q6 and Q7). It
 settles the block contract, the recipe schema, approval and invariant 13, the instance and its events, the CLI and
@@ -56,7 +61,7 @@ deterministic-code rule for workflow code.
 | Deadlines, `retry`, `takeoverIdle`, sleep shift | `Workflow.DelayAsync` in cancellation scopes | The park and escalate rules the timers trigger (§3.8) |
 | Inbox, router, cursor, held and expired rows | **Signals**, buffered until the workflow consumes them | The ledger-to-Temporal bridge service that turns registered ledger events into signals (§5.4) |
 | Children, propagation, forwarded answers | **Child workflows** with a parent-close policy; signals up; an Update on the child | The address grammar and `onBehalfOf` |
-| Run token, desk and agent reports | An **activity with async completion**: the task token is completed by `sindri workflow complete` | The launch secret, the report validation (§5.5), the outcomes and outputs contract |
+| Run token, desk and agent reports | An **activity with async completion**: the task token is completed by `sindri workflow complete` *(rev 8.1: an agent Step only; a desk Step is a short activity and the report is the `complete` Update, §5.3)* | The launch secret, the report validation (§5.5), the outcomes and outputs contract |
 | Outbox commands, dispatch delay, recheck | **Activities** with retry policies, after `DelayAsync(dispatchDelay)` and a revoke recheck | Effect identity, the effect allowlist, the ledger row every effect writes |
 | Fencing, lease epoch, `VersionConflict`, `SND-WF-002` | Task-queue ownership; Updates serialize per workflow | Nothing. `SND-WF-002` is retired |
 | `workflow list`, `--needs-me` | Visibility **search attributes** (`Item`, `Recipe`, `State`, `NeedsYou`, `Repo`) | `GET /needs-you` stays the one list, folded from the ledger (API §3.6) |
@@ -88,8 +93,9 @@ a timeout that fires on wake parks or escalates, which is harmless and visible, 
 If dogfooding shows wake-storms, the bridge service gets a `shift` signal that extends deadlines by the measured
 gap. Recorded as README X58.
 
-**Phases.** P0 (the Temporal spike) is new and gates P4 and later. P1 (merged, #179) and P2 are unchanged. P3
-(#180) keeps its pure decisions and drops the frame, fold and store work. P4 through P8 are rewritten at the end.
+**Phases.** P4a (the Temporal foundation, *rev 8.1*) is new: Temporal is decided (owner, 2026-10-12), and P4a lands
+the substrate with its acceptance checks measured; P4 and later build on it. P1 (merged, #179) and P2 are unchanged.
+P3 (#180) keeps its pure decisions and drops the frame, fold and store work. P4 through P8 are rewritten at the end.
 
 ## 1. Decisions
 
@@ -127,7 +133,7 @@ gap. Recorded as README X58.
 | W30 | **Authorization never reaches Temporal.** The API chain is the only writer of Updates and starts; the server is loopback with no auth | API §4; the honest-mistake threat model (A §17.28.3) |
 | W31 | **tmux owns every agent session; Warp attaches.** `attach` joins the live session; typing is a takeover | README X55; the human can step onto the line at any Step (API §8.1, UI §6.2) |
 | W32 | **The Sindri host is framework-dependent;** the Temporal adapter opts out of `IsAotCompatible` with its reason; the Avalonia app stays NativeAOT | temporalio/sdk-dotnet#286; README X54; csharp.md "AOT scope" |
-| W33 | **P0 is a three-day spike with numbered pass lines**; a failed spike returns rev 7's §5, cut down | Nothing depends on Temporal until it is measured |
+| W33 | **Temporal is decided; there is no spike** (owner, 2026-10-12, *rev 8.1*). P4a, the Temporal foundation, lands the substrate with five acceptance checks, each measured | The numbers were taken before any other engine phase depends on Temporal |
 
 ## 2. The block contract
 
@@ -452,19 +458,28 @@ Every write verb in §6.3 that targets an instance (`answer` in all its variants
 - **Takeover and `open-request`.** Both are Updates the engine itself sends with caller `service:engine`:
   `open-request` has id `wf:{instance}:open:{launchId}` and is a no-op when already taken over (UI E-6, E-19).
 
-### 5.3 Steps are activities with async completion
+### 5.3 Steps are activities; a desk report is an Update (rev 8.1)
 
 An `active` state starts an activity `RunStep` with a **run token** `{entry}.{n}` in its activity id, so the token
 stays a public counter in `status` and in the CLI.
-- **Desk runtime (W20).** `RunStep` records the desk task and returns pending (async completion). The human reports
-  with `sindri workflow complete <address> --run <token> --outcome <o> --output …`; the API maps the token to the
-  activity's task token (stored on `step.started` in the ledger) and completes it. `ScheduleToClose` is the state's
-  timeout, at least `workflow.deskTimeout` in desk mode; expiry is `step.failed(timeout)` and follows §3.4.
+- **Desk runtime (W20; *rev 8.1*, owner decision 2026-10-12).** `RunStep` is a **short** activity: it records the open
+  desk task and returns. The workflow then waits for the `complete` **Update** (§5.2), which the validator checks
+  synchronously like every other command: a stale run token is `SND-WF-005`, a malformed report `SND-WF-008`, and a
+  rejected report records nothing. The human reports with `sindri workflow complete <address> --run <token> --outcome
+  <o> --output …`; the API sends the Update. The state's timeout, at least `workflow.deskTimeout` in desk mode, is the
+  wait's `Workflow.DelayAsync` (§5.5); expiry is `step.failed(timeout)` and follows §3.4. *Why:* finding F1
+  (§11): the time-skipping server skips no time while an activity is open, so a desk Step held open as an
+  async-completion activity can't have its timeout tested there; with the Update the 4 h timeout fired in 3 ms of wall
+  time. Rev 8 stored the task token on `step.started` and completed the activity through it; that is gone. The shipped
+  code (P4a) still has rev 8's async-completion desk activity; it is P4's starting point, and **P4 moves it to the
+  Update model** (unit (c)).
 - **Agent runtime (§6.5).** `RunStep` asks `ILauncher` for the launch and returns pending. `session wrap`'s heartbeat
   becomes an **activity heartbeat**; a missed heartbeat timeout (120 s) fails the activity with `lost`, and a wrapped
   exit without a report fails it with `exit`, so a closed tab or a crash ends the run as `step.failed` within 150 s,
   as rev 7 required. The launched session, and only it, completes the activity through `complete --run`, proven by
   the launch secret (`X-Sindri-Launch-Secret`, `SND-AUTH-003`); a taken-over instance invalidates the secret.
+  *Rev 8.1:* agent Steps (P8) keep this heartbeating activity, so their timeout tests run on the dev server
+  (`StartLocalAsync`, short durations), not on the time-skipping server (F1, §11).
 - **Reports** are validated as in rev 7 §5.5: an undeclared outcome, a missing required output or an undeclared fact
   is `SND-WF-008`, rejected before any decision, and uses no round. Output files travel as content (≤ 1 MiB each) and
   are stored `0600` by the API before completion.
@@ -503,9 +518,15 @@ Registered events (`EventDescriptor`, §2) reach instances as Temporal **Signals
   `actor`; gate, evidence, grant or override data; the effect ids; and the post-state delta. The event kinds are
   unchanged: `workflow.started`, `workflow.transition`, `workflow.refused`, `workflow.shifted`, `workflow.notified`,
   `workflow.expired`, `recipe.*`. A child's `workflow.started` is written by the parent's transition.
-- `RecordEvent` is idempotent on `(workflow id, run id, history event id)`, so a replay never duplicates a row. Its
-  retry policy is unbounded with backoff: the workflow does not proceed until the ledger has the event, which keeps
-  the ledger a complete record.
+- *Rev 8.1 (owner decision 2026-10-12).* `RecordEvent`'s ledger key is `workflow:{workflow id}:{run id}:{activity
+  id}`. Every Temporal activity, local or regular, has a deterministic `ActivityInfo.ActivityId`, the same on every
+  replay. No activity sees a history event id: `ActivityInfo` has no scheduled-event-id field, so rev 8's `(workflow
+  id, run id, history event id)` can't be built. `RecordEvent` stays a **local** activity, so it costs one marker per
+  row; a replay reads the marker and never runs it again, and the one case that runs it twice (a worker that dies
+  after the append, before the workflow task completes) has the same activity id, so S1's ledger refuses the repeated
+  key and records nothing. The key is read inside the activity, not counted by the workflow. Its retry policy is
+  unbounded with backoff: the workflow does not proceed until the ledger has the event, which keeps the ledger a
+  complete record.
 - The ledger writer runs the payload through `Aw.Redaction`. `causation` is the trigger's source; `EventFactory` takes
   the item, the causation and the request's actor (S1-D7, API P1).
 - Temporal's own history is never read by the UI, the API or the evolve loop. `workflow events` and the item timeline
@@ -965,6 +986,19 @@ lane and the interpreter in the integration lane.
 | `integration` | < 60 s | The registry's contract bases on SQLite; migrations on a copy of the previous schema; loopback endpoints; CLI golden files (every §6.4 layout, empty states); *rev 8:* the interpreter, Updates, timers, children and eval cases on the SDK's time-skipping test server, and the bridge and CLI goldens against `StartLocalAsync` (both binaries pinned in `binaries.lock`) |
 | `heavy` | nightly | The Avalonia app's AOT smoke; the Sindri host's framework-dependent publish with `Aw.Sindri.Workflows` (*rev 8*); `recipe validate` on both |
 
+**Temporal test findings (*rev 8.1*, found while measuring P4a; measurements in `docs/csharp/sindri-workflow.md`,
+"Temporal foundation").**
+- **F1. The time-skipping server skips no time while an activity is open.** A timer can't fire on it while any
+  activity is scheduled or open, and an activity left open (even in a terminated instance) keeps time skipping off for
+  that server's life. So desk Steps wait for the `complete` Update (§5.3), timeout tests with an open activity (agent
+  Steps, P8) run on `StartLocalAsync` with short durations, and a test that needs time skipping gets a server no other
+  test left an activity open on.
+- **F2. The time-skipping server never moves a task off a dead worker's sticky queue.** Worker-restart tests there run
+  the first worker with `MaxCachedWorkflows = 0`, or run on `StartLocalAsync`, where a new worker resumes the instance.
+- **F3. Workflow code awaits with `ConfigureAwait(true)`.** `ConfigureAwait(false)`, which `CA2007` asks for in library
+  code, leaves the workflow's deterministic scheduler; `RecipeWorkflow` writes `ConfigureAwait(true)`. For the same
+  reason workflow code calls `CancellationTokenSource.Cancel`, not `CancelAsync` (`MA0042`).
+
 **Telemetry:**
 - spans per `Commit` (`Aw.Sindri.Workflow`);
 - metrics:
@@ -1327,24 +1361,24 @@ worker or several slices.
 
 **Status at rev 8:** P1 merged (#179). P3 open as #180: it keeps its contract unit and units (a), (c), (d) and (f),
 drops (b) `FrameRules` and (e) `EventFold` and the store contract, and lands once rebased on this revision. P2 is
-unchanged. P0 is new and gates P4.
+unchanged. *Rev 8.1:* P4a (the Temporal foundation) is new; it needs only P3, and P4 needs it.
 
 ### Parallel execution with an agent team
 
 ```
-P0 Temporal spike ──────────────────────────────────────────────┐
-P1 model + validator (merged) ──┬──► P2 registry + approval (S1, API P1) ──┤
-                                └──► P3 pure decisions + evals ───────────┴──► P4 interpreter, worker, desk Steps, bridge (API P3) ──┬──► P5 timers, takeover ─┐
-                                                                                                                                    └──► P6 effects ─────────┴──► P7 children + item ──► P8 agent runtime (API P10, Judge #156)
+P1 model + validator (merged) ──┬──► P2 registry + approval (S1, API P1) ──────────────────────┐
+                                └──► P3 pure decisions + evals ──► P4a Temporal foundation ────┴──► P4 interpreter, worker, desk Steps, bridge (API P3) ──┬──► P5 timers, takeover ─┐
+                                                                                                                                                          └──► P6 effects ─────────┴──► P7 children + item ──► P8 agent runtime (API P10, Judge #156)
 ```
 
 | Wave | Parallel | Starts when |
 |---|---|---|
-| 0 | P0 ∥ P2 ∥ P3 | Now. P2 also needs S1 merged and API P1 |
-| 1 | P4 | P0 passed, P2 and P3 merged, API P3 merged |
-| 2 | P5 ∥ P6 | P4 merged |
-| 3 | P7 | P5 and P6 merged |
-| 4 | P8 | P7, API P10a and Judge (#156) merged |
+| 0 | P2 ∥ P3 | Now. P2 also needs S1 merged and API P1 |
+| 1 | P4a | P3 merged; nothing else |
+| 2 | P4 | P4a, P2 and P3 merged, API P3 merged |
+| 3 | P5 ∥ P6 | P4 merged |
+| 4 | P7 | P5 and P6 merged |
+| 5 | P8 | P7, API P10a and Judge (#156) merged |
 
 These engine-local waves sit inside the cross-spec order in `docs/sindri/README.md`, which decides what starts when.
 
@@ -1353,10 +1387,10 @@ out, one implementer each:
 
 | Phase | Contract unit | Parallel units |
 |---|---|---|
-| P0 | The spike worktree, `Temporalio` in `Directory.Packages.props`, `Aw.Sindri.Workflows` project skeleton, `binaries.lock` entry for the `temporal` CLI | (a) the dev server under `sindri serve` and `doctor` · (b) a throwaway interpreter for `workflow.step` with a desk Step as an async activity · (c) the ledger mirror and the eval cases on the time-skipping server · (d) the AOT split and footprint measurement |
+| P4a | None: the Temporal foundation lands as one PR from the branch its numbers were measured on (head `1e586964`) | — |
 | P2 | Ports, fakes, contract bases, the challenge shell, the engine's catalog rows on API P1's chain, the agent-variable probe | (a) SQLite adapters for `recipes` and `recipe_approvals`, S1-D9 · (b) register, show, list, `--stale` · (c) approve (including drift re-approval), revoke with previews, cascade; the revoke and drift **signals** are stubs until P4 · (d) pins, `RCP-VERSION-*`, registry events, the architecture test · (e) the harness probe and its golden test |
 | P3 | Instance state records, triggers, decision signatures | (a) `TransitionDecision`, `RefusalRules` · (c) `LoopRules`, `BudgetRules`, grants · (d) `ChildPropagation` · (f) `recipe eval`, `--scaffold`, `--record` format. Units (b) and (e) of rev 7 are dropped |
-| P4 | `RecipeWorkflow` skeleton with the Query and the Update signatures, the worker host inside `sindri serve`, `RecordEvent`, the `workflow` group table | (a) the interpreter's state loop over `TransitionDecision`, search attributes · (b) start, Updates, nonces (API-side table), the §5.8 resume actions · (c) desk runtime: `RunStep` async completion, `complete`, task-token map on `step.started` · (d) the bridge service (S1-D8, S1-D10) · (e) status, list (visibility), events (S1-D6), golden layouts, approve running the evals, S1-D11 (`deskTimeout`, `eventHold`) |
+| P4 | `RecipeWorkflow` skeleton with the Query and the Update signatures, the worker host inside `sindri serve`, `RecordEvent`, the `workflow` group table | (a) the interpreter's state loop over `TransitionDecision`, search attributes · (b) start, Updates, nonces (API-side table), the §5.8 resume actions · (c) desk runtime: `RunStep` records the open task, the `complete` Update and its validator (*rev 8.1*, §5.3) · (d) the bridge service (S1-D8, S1-D10) · (e) status, list (visibility), events (S1-D6), golden layouts, approve running the evals, S1-D11 (`deskTimeout`, `eventHold`) |
 | P5 | The timer scopes and `remaining` on the suspension | (a) state timers, `retry`, downtime behaviour (X58) · (b) takeover, handback, `takeoverIdle` |
 | P6 | `IEffectKind` as activities, the recheck local activity | (a) effect activities, `dispatchDelay`, effect identity, `retry` re-emission · (b) the recheck and `outbox.refused` parks · (c) `notify.desk`, notifications, `outbox list` (reads effect rows from the ledger) · (d) `effect.claim.ref`, `workflow_claims`, S1-D11 (`effects`, `dispatchDelay`) |
 | P7 | Child workflow start, parent-close policy, the mirror suspension | (a) child creation and propagation signals, forwarded Updates · (b) router and slot stubs, `route` key, both gates · (c) `workflow.item` end to end, filing the `/new-block` issue |
@@ -1375,40 +1409,6 @@ The `integration` lane uses `WorkflowEnvironment.StartTimeSkippingAsync` (the SD
 download recorded in `binaries.lock`, cached under `$AW_STATE_DIR/cache`) for the interpreter, the Updates, the
 timers and the eval cases, and `StartLocalAsync` for the bridge and the CLI goldens. The `heavy` lane runs the AOT
 smoke for the Avalonia app and the framework-dependent publish of the Sindri host.
-
-### Phase 0: the Temporal spike (3 days)
-
-- **Goal:** prove, with numbers, that Temporal meets the three constraints the walkthrough named before any engine
-  code depends on it. Thrown away afterwards except `binaries.lock`, the package pin and the measurements, which land in
-  `docs/csharp/sindri-workflow.md`.
-- **Files:** a worktree on `main`; `Directory.Packages.props` (+ `Temporalio`); `src/Sindri/Aw.Sindri.Workflows/`
-  (skeleton, `AwAotCompatible=false`); `binaries.lock` (+ `temporal` CLI version and sha256); the spike's notes.
-- **Size:** M (3 days, one builder with agent help).
-- **Day 1:** `sindri serve` starts `temporal server start-dev` on loopback with its SQLite file under
-  `$AW_SINDRI_HOME`, records the pid, and `doctor` reports it. A throwaway `RecipeWorkflow` runs `workflow.step` with
-  the three desk Steps as async-completion activities; `sindri workflow complete --run 1.1` completes the first one.
-- **Day 2:** the ledger mirror (`RecordEvent`) writes `workflow.*` rows the API's timeline can read; the three
-  `workflow.step` eval cases (`happy`, `no-progress`, `rounds`) run on the time-skipping server; a `4h` timeout fires in
-  under a second of wall time; the worker is killed mid-Step and the instance resumes with the same run token.
-- **Day 3:** the AOT split: `dotnet publish` of the Sindri host framework-dependent with `Aw.Sindri.Workflows`
-  referenced, and `IsAotCompatible` still true on every other library (zero `IL*` warnings outside the adapter).
-  Footprint: RSS of the dev server and of `sindri serve` with the worker idle and with ten open instances, measured for
-  an hour beside Ollama; the start-to-ready time of the server. Visibility: `workflow list` as a search-attribute query.
-- **Pass:** every line below holds, written into the notes with its number.
-  1. The server starts and stops with `sindri serve`, loopback only, its file under `$AW_SINDRI_HOME`, and survives a
-     host sleep with the instance intact.
-  2. Async completion, timers and the kill-and-resume case work as stated; the eval cases pass on the time-skipping
-     server in under 10 s total.
-  3. The ledger holds one `workflow.transition` per transition after a replay (no duplicates).
-  4. Dev server RSS ≤ 300 MB idle and ≤ 500 MB with ten instances; worker overhead inside `sindri serve` ≤ 150 MB;
-     server ready in ≤ 5 s.
-  5. The AOT split builds with zero warnings and the host publishes framework-dependent; the Avalonia app still
-     publishes NativeAOT.
-- **Fail:** any line fails and can't be fixed inside the three days. Then rev 7's §5 returns as the design, cut to
-  what `workflow.item` and `workflow.step` need: no two-deep stack and pending parks, no drift wakes, no forwarded
-  child answers in v1. The owner decides; the spike notes record which line failed and why.
-- **Signal** (all **(agent)**): the five pass lines, each with its measurement, in `docs/csharp/sindri-workflow.md`
-  under "Temporal spike (P0)", and a green `dotnet build -warnaserror`.
 
 ### Phase 1: the recipe model and validator
 
@@ -1441,17 +1441,44 @@ Merged (#179). Unchanged by rev 8.
   P3 `recipe eval` folds the pure decisions over the triggers in-process; from P4 it also runs them through the
   interpreter on the time-skipping server (the two must agree).
 
+### Phase 4a: the Temporal foundation (*rev 8.1*)
+
+- **Goal:** the Temporal substrate that P4 and every later phase build on, landed with its acceptance checks measured.
+  There is no spike: Temporal is decided (owner, 2026-10-12), and the code written to measure it lands as this phase.
+- **Ships:** the `Temporalio` pin in `Directory.Packages.props`; `binaries.lock` (the `temporal` CLI's version and
+  sha256); `Aw.Sindri.Workflows` (`AwAotCompatible=false`); the framework-dependent Sindri host; the dev server under
+  `sindri serve` and `doctor`; the worker; a first `RecipeWorkflow`; `workflow complete` and `workflow list`; the
+  ledger mirror (`RecordEvent`). P4's units rebuild or extend each of these to this spec. The desk Step is still rev
+  8's async-completion activity; P4 moves it to the Update model (§5.3).
+- **Size:** L (one PR from the branch the numbers were measured on, head `1e586964`).
+- **Dependencies:** P3 merged; nothing else.
+- **Acceptance (Temporal):** each line measured on that branch; see `docs/csharp/sindri-workflow.md`, "Temporal
+  foundation", for the numbers and how they were taken.
+  1. The server starts and stops with `sindri serve`, on loopback only, its file under `$AW_SINDRI_HOME`, with
+     adopt-or-replace after a crash, and survives a pause.
+  2. Async completion, timers and kill-and-resume work. The evals take 46 ms in total, and the 4 h timeout fires in
+     3 ms of wall time on the time-skipping server with the Update model.
+  3. The ledger holds one row per transition after a replay.
+  4. Footprint: the dev server's physical footprint has a median of 129 MB idle and 133 MB with ten instances (RSS
+     164 and 181 MB); worker overhead is at most 59 MB physical; the server is ready in ≤ 1.1 s. The thresholds stay
+     ≤ 300 MB, ≤ 500 MB, ≤ 150 MB and ≤ 5 s.
+  5. The AOT split builds with zero warnings; the host publishes framework-dependent; the Avalonia app still
+     publishes NativeAOT. The app line was checked in a merge with U0's branch and is re-checked once U0 is on main.
+- **Signal** (all **(agent)**): the five acceptance lines, each with its measurement, in
+  `docs/csharp/sindri-workflow.md` under "Temporal foundation", and a green `dotnet build -warnaserror`.
+
 ### Phase 4: the interpreter, the worker, desk Steps and the bridge
 
 - **Goal:** instances run as `RecipeWorkflow` executions on the local Temporal server; commands are Updates; desk
-  Steps complete through async activity completion; registered ledger events reach instances as signals; every
+  Steps wait for the `complete` Update (*rev 8.1*, §5.3); registered ledger events reach instances as signals; every
   transition is mirrored into the ledger.
 - **Files:** `Aw.Sindri.Workflows` (`RecipeWorkflow`, `RunStep`, `RecordEvent`, `LoadRecipe`, the worker host); the
   slices for start, command, complete, nonce, get, list, the bridge; the actor table; S1-D6, D7, D8, D10 and D11
   (`deskTimeout`, `eventHold`); golden layouts; approve running the evals; the revoke and drift signal sender behind
   P2's port; docs.
 - **Size:** L.
-- **Dependencies:** P0 passed, P2 and P3 merged, API P3 (items) merged.
+- **Starts from** P4a's code (*rev 8.1*): its units rebuild or extend the foundation to this spec.
+- **Dependencies:** P4a, P2 and P3 merged, API P3 (items) merged.
 - **Signal:**
   1. **(owner)** With `workflow.step` approved, `sindri workflow start workflow.step --item T-1 --fact fact:spec=spec.md`,
      then `sindri workflow status T-1/step/1`, shows the desk-task layout with `--run 1.1`.

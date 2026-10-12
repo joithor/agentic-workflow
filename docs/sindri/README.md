@@ -16,7 +16,7 @@ Each part of the app has its own design spec under `docs/superpowers/specs/`. Th
 | App shell: process, CLI, lease, ledger, profile, scheduler, doctor | `docs/csharp/sindri.md` (on `feat/sindri-s1-app-shell` until it merges) | 1 | S1 |
 | API surface: commands, queries, projections, the event stream, auth v0, the MCP server, `sindri open` | `2026-10-10-sindri-api-surface-design.md` | 1 (the command layer and API) | API P0–P11 |
 | **UI app design** (Avalonia, Linear design language): the control plane's views, actions and launching sessions | `2026-10-11-sindri-ui-design.md` (mockups in `2026-10-11-sindri-ui-design/`). Approved by the owner (revision 6). It settles X2, X5, X15 and X17 for the UI; its own rows X18–X26 are X43–X51 below | 1 (the UI app) | S1b |
-| Workflow engine: recipes, blocks, validator, approval, the agent runtime; **instances run on Temporal** (revision 8, owner decision Q8, 2026-10-11) | `2026-10-10-sindri-workflow-engine-design.md` | 2 | S2 (P0–P8) |
+| Workflow engine: recipes, blocks, validator, approval, the agent runtime; **instances run on Temporal** (revision 8, owner decision Q8, 2026-10-11) | `2026-10-10-sindri-workflow-engine-design.md` | 2 | S2 (P1–P8, with P4a) |
 | Context retrieval engine: the product graph, adapters, planner, evals | `2026-10-10-sindri-context-retrieval-design.md` | 3 | S3 (Phases 1–10) |
 | What the UI shows (input to the UI design) | `2026-10-09-sindri-dashboard-design.md` | — | — |
 
@@ -81,10 +81,10 @@ Within steps 1–3 the specs' phases land in this order. It is the only cross-sp
 | Wave | Lands | Needs |
 |---|---|---|
 | 0 | S1 (#163); API P0; context S-1C, S-2R, S-FX; engine P1 and P3, UI U0 (stacked on S1) | — |
-| 1 | API P1 (command chain, callers, the `human` token, `sindri-prove.sh`, golden JSON) | S1, API P0 |
+| 1 | API P1 (command chain, callers, the `human` token, `sindri-prove.sh`, golden JSON); engine P4a (the Temporal foundation) | S1, API P0; engine P3 |
 | 2 | API P2 (projector, `health`); engine P2 (registry, challenge); context S-1A | API P1 (+ engine P1; S-1C, S-FX) |
 | 3 | API P3 (items), P5 (stream); context S-1M (`/sindri/mcp`), S-2W, S-3, S-5A; UI U1 (catalog, headers, freshness) | API P2; S-1A; API P1 + P2 |
-| 4 | API P4 (decisions, needs-you), P6 (jobs); engine P4; context S-3M; UI U2 (queue, item detail) | API P3; API P2 + P5; engine P2 + P3 + API P3; S-1M + S-3; U1 + API P3 |
+| 4 | API P4 (decisions, needs-you), P6 (jobs); engine P4; context S-3M; UI U2 (queue, item detail) | API P3; API P2 + P5; engine P4a + P2 + P3 + API P3; S-1M + S-3; U1 + API P3 |
 | 5 | API P8 (`sindri_*` tools), P11 (engine item states); engine P5, P6; context S-4, S-5B, S-10; UI U3 (needs you, home), U4 (services, health) | API P4 + P6; API P4 + engine P4; engine P4; S-3 (+ S-5A) + API P6; engine P4; U2 + API P4; U1 + API P6 |
 | 6 | API P10a (`OpenItem`, the launcher, Warp); engine P7; context S-6, S-7A, S-CF; UI U5 (engine surfaces), U7 (context tab) | API P3 + P8; engine P5 + P6; S-5B; S-3 + S-4; S-4 + S-5B; U3 + engine P4, P5 + API P11; U2 + S-4 |
 | 7 | API P10b (opening is a takeover); engine P8 (agent runtime); context S-7B; UI U6a (open in Warp) | API P10a + engine P5; engine P7 + API P10a + Judge (#156); S-4 + S-6 + S-7A; U3 + API P10a |
@@ -93,9 +93,10 @@ Within steps 1–3 the specs' phases land in this order. It is the only cross-sp
 The scoping recipe's spec comes after these. Context S-9 waits for the code index block. "Execution plan" below turns
 this into lanes that run in parallel.
 
-**Rev 8 of the engine spec (2026-10-11, X53):** engine **P0, the Temporal spike**, joins wave 0 and gates engine P4 and
-later; P3 (#180) is rebased on rev 8 and shrinks; the engine's wave labels above are otherwise unchanged. The
-engine lane's order is now P0 → P2 → P3 → P4 → P5 → P6 → P7 → P8 (P1 is merged, #179).
+**Rev 8 of the engine spec (2026-10-11, X53):** P3 (#180) is rebased on rev 8 and shrinks. **Rev 8.1 (owner,
+2026-10-12):** Temporal is decided and there is no spike; engine **P4a, the Temporal foundation**, lands the substrate
+with its acceptance checks measured. It needs only engine P3, so it sits in wave 1, and engine P4 needs it (P4 keeps
+wave 4). The engine lane's order is P1, P3 done → P4a → P2 → P4 → P5 → P6 → P7 → P8.
 
 ### Execution plan
 
@@ -107,7 +108,7 @@ parallel across lanes. The lane leads talk only through merged code and these do
 |---|---|---|---|
 | **Gate: land S1** | #163 merged (needs a CI run or the owner's local merge-gate run), #156 Judge merged | — | — |
 | **API** | P0 → P1 → P2 → P3 → P5 → P4 → P6 → P8 → P11 → P10a → P10b | P0 | S1 (P1); engine P4 (P11); engine P5 (P10b) |
-| **Engine** | P0 (Temporal spike) → P2 → P3 → P4 → P5 → P6 → P7 → P8 | P0, P2, P3 (P1 merged) | API P1 (P2); API P3 and a passed P0 (P4); API P10a and Judge (P8) |
+| **Engine** | P1, P3 done → P4a → P2 → P4 → P5 → P6 → P7 → P8 | P4a (needs nothing else) | API P1 (P2); API P3 (P4); API P10a and Judge (P8) |
 | **Context** | S-1C, S-2R, S-FX → S-1A → S-1M, S-2W, S-3, S-5A → S-3M → S-4, S-5B, S-10 → S-6, S-7A, S-CF → S-7B → S-8 | S-1C, S-2R, S-FX | API P1 (S-1A); API P6 (S-4, S-5B); engine P4 (S-10) |
 | **UI** | U0 → U1 → U2 → U3, U4 → U5, U7 → U6a → U6b | U0 (S1b rebased, stacked on S1) | API P1 + P2 (U1); P3 (U2); P4, P6 (U3, U4); engine P4, P5 + API P11 (U5); context S-4 (U7); API P10a (U6a); API P10b (U6b) |
 
@@ -178,7 +179,7 @@ Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disa
 | X50 | (UI X25) API §5.1 and WF §6.2/§6.3 described the old UI role | The app never raises OS notifications, before or after engine P6; `notify.desk` is the only notifier (UI X5). This replaces X32's "until P6" | API §5.1; WF §6.3 |
 | X51 | (UI X26) Golden JSON for the UI's contract tests | Every API phase from P1 writes per-route, per-scenario goldens (UI E-17) | API §12 |
 | X52 | The UI spec's API and engine edits E-1…E-19 (its §6.7, §18.1) were written against the earlier API P10 | **The UI spec wins** for the launch surface: `OpenItem` modes `open`, `attach`, `resume`; target ids `claude-code`, `codex`, `cursor` (`--agent`); `launch.*` events and `GET /launch/targets`; codes `SND-LAUNCH-001…009` as UI E-5 numbers them (API's earlier `-002` "live session" becomes the `attach` mode); P10 splits into P10a and P10b. API §8.1 keeps `session wrap`, the launch secret and liveness (the two target kinds became one tmux-owned kind, X55) | API §3.2, §8.1, §9, P10; WF §6.5 |
-| X53 | **The engine substrate** (owner, 2026-10-11, decision Q8). WF rev 7 hand-built durable execution (instance store, fencing, inbox, timers, nonces, frames) with no written buy-or-build decision; the context spec had one for Onyx | **Temporal** runs the instances: one `RecipeWorkflow` interprets every recipe; commands are Updates keyed by the nonce, Steps are activities with async completion, events are signals, children are child workflows, timers are `DelayAsync`. The ledger stays the public log (every transition mirrored). Engine P0 is a three-day spike with numbered pass lines that gates P4; a failed spike returns rev 7's §5, cut down | WF §0, §5, §7, Phases; A §17.17 Q8, §17.28.3 |
+| X53 | **The engine substrate** (owner, 2026-10-11, decision Q8). WF rev 7 hand-built durable execution (instance store, fencing, inbox, timers, nonces, frames) with no written buy-or-build decision; the context spec had one for Onyx | **Temporal** runs the instances: one `RecipeWorkflow` interprets every recipe; commands are Updates keyed by the nonce, Steps are activities (rev 8.1: a desk Step waits for the `complete` Update), events are signals, children are child workflows, timers are `DelayAsync`. The ledger stays the public log (every transition mirrored). Rev 8.1 (owner, 2026-10-12): Temporal is decided with no spike; its acceptance checks, each measured, belong to engine P4a (the Temporal foundation), which P4 needs | WF §0, §5, §7, Phases; A §17.17 Q8, §17.28.3 |
 | X54 | **AOT scope.** The Temporal .NET SDK has no trimming support (temporalio/sdk-dotnet#286), and csharp.md listed the `sindri` CLI as NativeAOT | The Sindri host (and its Temporal worker) publishes framework-dependent; the adapter project `Aw.Sindri.Workflows` opts out of `IsAotCompatible` with the reason; every other library stays AOT-compatible and the Avalonia app stays NativeAOT. Hook binaries, `aw-readiness`, `aw-packets`, `judge` and `bugfix-state` are unchanged | csharp.md "AOT scope"; AGENTS.md Tech Stack; WF §0 |
 | X55 | **Stepping onto the line.** UI §6.2 said Sindri can't see inside Warp, attach only focuses a tab, and `process` targets (the agent runtime, `--headless`) had no attach at all, so "interact with whatever agent is doing whatever step" was not deliverable | **tmux owns every agent session; Warp attaches.** `ILauncher` starts each agent Step's CLI interactively in `snd-<run>`; attach is `tmux attach` in a Warp tab; the first typed turn is a takeover (D §9.3). The `process` target kind is retired; attended and unattended runs are the same session. `tmux capture-pane` feeds the UI's live preview later (the collector spec) | API §8.1; UI §6.2–§6.4 (rev 7 note); WF §6.5, P8; A §17.29.3 |
 | X56 | Headless runs | `claude -p`, `codex exec` and the like are never used for a Step, because they can't be joined; bounded tool-less jobs (triage, labeling, judge questions) are not Steps and keep using them | WF §6.5 |
