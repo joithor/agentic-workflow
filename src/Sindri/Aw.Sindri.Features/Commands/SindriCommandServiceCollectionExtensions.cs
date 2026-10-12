@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Microsoft.Extensions.DependencyInjection;
@@ -72,7 +73,7 @@ public static class SindriCommandServiceCollectionExtensions
                 new AuthorizingService<TRequest, TResponse>(
                     new ValidatingService<TRequest, TResponse>(sp.GetRequiredService<TService>(), sp.GetRequiredService<IValidator<TRequest>>()),
                     callers, catalog),
-                sp.GetRequiredService<AuditTrail>(), callers, catalog),
+                sp.GetRequiredService<AuditTrail>(), callers, catalog, sp.GetRequiredService<IIdGenerator>()),
             sp.GetRequiredService<CommandGateLock>(), sp.GetRequiredService<TimeProvider>());
     }
 }

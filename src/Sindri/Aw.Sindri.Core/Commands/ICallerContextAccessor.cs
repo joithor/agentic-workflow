@@ -14,7 +14,10 @@ public interface ICallerContextAccessor
     /// <returns>Restores the previous caller when disposed.</returns>
     public IDisposable Enter(CallerContext context);
 
-    /// <summary>Makes a fresh 'service:&lt;name&gt;' caller current.</summary>
+    /// <summary>
+    /// Makes a fresh 'service:&lt;name&gt;' caller current. Its command id is the context's; the command chain gives
+    /// each attempt under it its own.
+    /// </summary>
     /// <param name="service">The service name, for example 'host'.</param>
     /// <returns>Restores the previous caller when disposed.</returns>
     public IDisposable EnterService(string service);

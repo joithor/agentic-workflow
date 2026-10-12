@@ -75,6 +75,21 @@ public sealed class CommandChainTests : IAsyncDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Two_commands_under_one_service_caller_write_two_audit_rows()
+    {
+        _ = await _c.H.HoldLease();
+        using var service = _c.H.Callers.EnterService("jobs");   // one service context, as a scheduler run holds it
+        var correlation = _c.H.Callers.Current!.CorrelationId;
+
+        _ = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), caller: null);
+        _ = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), caller: null);
+
+        Assert.Equal(2, _c.Handled.Count);   // each attempt has its own command id, so the second isn't a replay
+        Assert.NotEqual(_c.Handled[0].CommandId, _c.Handled[1].CommandId);
+        Assert.All(_c.Events, e => Assert.Equal(correlation.Value, e.Envelope.CorrelationId));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Failed_command_is_audited_with_its_code()
     {
         _ = await _c.H.HoldLease();
