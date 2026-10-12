@@ -923,8 +923,8 @@ defaults:
    After a restart, resume from your stage's row in `stages.md` and your `$STAGE_DIR` files.
 7. **A stage with a partial dependency** (S-4 and S-5B on API P6's job route, S-6 on S-5B): before the dependency
    merges, run steps 1–2 for the whole stage, late part included (the verification plan names its journey), and
-   step 3 for everything except the late part; then report `parked: <dependency>` and open no PR yet (step 7 needs the
-   hand test). A parked stage holds no building slot and is not a base to stack on. When the lead says the dependency
+   step 3 for everything except the late part; then push the work so far, open a draft PR (so progress isn't lost if
+   storage fills up; owner decision 2026-10-12) and report `parked: <dependency>`. A parked stage holds no building slot and is not a base to stack on. When the lead says the dependency
    merged, rebase, do step 3 for the late part, then run steps 4–9 in full on the whole stage (for S-4 the hand test
    is the first time `map build` runs); a woken stage takes the next free building slot, ahead of new stages (a woken stage is not a new stage for the caps). If the
    stage still stacks on an unmerged base (S-4 on S-3b, or S-5B on S-3b or S-5A), the lead first has the stack
