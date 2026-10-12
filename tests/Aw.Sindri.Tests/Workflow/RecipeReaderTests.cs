@@ -144,6 +144,18 @@ public sealed class RecipeReaderTests
     }
 
     [Theory, Trait("Lane", "unit")]
+    [InlineData("  done:\n", "  \"x.y\": ~\n  done:\n")]
+    [InlineData("schema: 1\n", "schema: 1\nschema: 1\n")]
+    public void An_unknown_field_beside_another_reader_finding_leaves_the_schema_rules_waiting(string from, string to)
+    {
+        var lines = Lines(Minimal.Replace(from, to, StringComparison.Ordinal).Replace("to: done", "to: nowhere", StringComparison.Ordinal) + "colour: blue\n");
+
+        Assert.Equal(2, lines.Count);
+        Assert.Contains(lines, l => l.StartsWith("RCP-SCHEMA-001: 'colour' isn't a field of the recipe", StringComparison.Ordinal));
+        Assert.DoesNotContain(lines, l => l.Contains("nowhere", StringComparison.Ordinal));
+    }
+
+    [Theory, Trait("Lane", "unit")]
     [InlineData("  \"x.y\": ~\n")]
     [InlineData("  \"a[x]\": { kind: active, wat: 1 }\n")]
     [InlineData("  \"a[0\": { kind: active, wat: 1 }\n")]
