@@ -92,6 +92,7 @@ internal sealed partial class RecipeWorkflow
         var catalog = new BlockCatalog(loaded.Blocks, []);
         _recipe = new InterpretedRecipe(loaded.Version, loaded.Recipe, catalog, start.Inputs);
         _deskTimeout = loaded.DeskTimeout;
+        _eventHold = loaded.EventHold;
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance);
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
@@ -153,6 +154,7 @@ internal sealed partial class RecipeWorkflow
         }
 
         _delivered.Enqueue(delivered);
+        _arrivals++;
         return Task.CompletedTask;
     }
 

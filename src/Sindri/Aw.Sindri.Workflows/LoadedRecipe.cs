@@ -13,4 +13,5 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Recipe">The recipe's long form, its <see cref="Recipe.Hash"/> set.</param>
 /// <param name="Blocks">The build's descriptors of the blocks the recipe names.</param>
 /// <param name="DeskTimeout">The 'workflow.deskTimeout' floor every desk wait is raised to (W20; engine P4 unit (c)).</param>
-internal sealed record LoadedRecipe(RecipeVersion Version, Recipe Recipe, IReadOnlyList<BlockDescriptor> Blocks, TimeSpan DeskTimeout);
+/// <param name="EventHold">'workflow.eventHold': how long a delivered event waits for a wait before it expires (§5.4).</param>
+internal sealed record LoadedRecipe(RecipeVersion Version, Recipe Recipe, IReadOnlyList<BlockDescriptor> Blocks, TimeSpan DeskTimeout, TimeSpan EventHold);

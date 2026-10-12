@@ -43,6 +43,6 @@ internal static class DeliveredEvents
 
         var facts = read.Value.Facts ?? new Dictionary<string, FactValue>(StringComparer.Ordinal);
         var outputs = descriptor.Facts.Where(k => facts.ContainsKey(k.Value)).ToDictionary(static k => k, k => facts[k.Value]);
-        return (new WaitSatisfied(actor, new EventWaitSource(descriptor.Kind, recorded.Sequence), outcome, outputs), null);
+        return (new WaitSatisfied(actor, new EventWaitSource(descriptor.Kind, recorded.Sequence), outcome, outputs) { OccurredAt = recorded.Envelope.OccurredAt }, null);
     }
 }

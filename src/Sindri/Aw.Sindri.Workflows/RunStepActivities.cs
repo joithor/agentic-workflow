@@ -38,7 +38,7 @@ internal sealed partial class RunStepActivities(IApprovedRecipes approvals, Bloc
             .Concat(definition.Transitions.SelectMany(static t => t.Gates.Select(static g => (BlockId?)g.Use).Concat(t.Effects.Select(static e => (BlockId?)e.Use))))
             .OfType<BlockId>().ToHashSet();
         var workflow = await times.Read(cancel).ConfigureAwait(false);
-        return new LoadedRecipe(found.Value.Version, definition, [.. catalog.Blocks.Where(b => used.Contains(b.Id))], workflow.DeskTimeout);
+        return new LoadedRecipe(found.Value.Version, definition, [.. catalog.Blocks.Where(b => used.Contains(b.Id))], workflow.DeskTimeout, workflow.EventHold);
     }
 
     /// <summary>

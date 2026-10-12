@@ -49,7 +49,11 @@ internal sealed partial class RecipeWorkflow
     private async Task<WorkflowInstance> Wait(WorkflowInstance instance, Interpreting context)
     {
         var wait = instance.Suspension is null && context.Recipe.States.TryGetValue(instance.Frame.State, out var state) ? state.WaitFor : null;
-        await Workflow.WaitConditionAsync(() => _submitted.Count > 0 || _delivered.Any(e => Fits(e, wait, instance.Frame))).ConfigureAwait(true);
+        if (!await WaitHolding(() => _submitted.Count > 0 || _delivered.Any(e => Fits(e, wait, instance.Frame)), instance).ConfigureAwait(true))
+        {
+            return instance;   // woke only to expire a held event (§5.4); wait again
+        }
+
         return _submitted.TryDequeue(out var submission)
             ? await Apply(instance, submission, context).ConfigureAwait(true)
             : await Apply(instance, new Submission(Ticket: 0, Take(wait, instance.Frame)), context).ConfigureAwait(true);
