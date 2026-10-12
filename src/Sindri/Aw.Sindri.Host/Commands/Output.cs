@@ -21,7 +21,11 @@ internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerialize
     /// <param name="body">The body.</param>
     /// <param name="exitCode">The exit code to return.</param>
     /// <returns><paramref name="exitCode"/>.</returns>
-    public Task<int> Raw(ReadOnlyMemory<byte> body, int exitCode) => throw new NotSupportedException("red: print the body unchanged");
+    public async Task<int> Raw(ReadOnlyMemory<byte> body, int exitCode)
+    {
+        await Out.WriteLineAsync(Encoding.UTF8.GetString(body.Span)).ConfigureAwait(false);
+        return exitCode;
+    }
 
     public async Task<int> Text(string text, int exitCode)
     {

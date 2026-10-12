@@ -6,7 +6,6 @@ using Aw.Sindri.Core.Profile;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>The caller headers the CLI sends on every API call (API spec §6, "Who sends what").</summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0182:Unused internal type", Justification = "red commit: ControlPlaneClient takes it in the green one")]
 internal sealed class CallerHeaders
 {
     private readonly AgentSession? _session;

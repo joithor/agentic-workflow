@@ -55,7 +55,7 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
         }
 
         using var request = new HttpRequestMessage(method, new Uri(found.Value.Endpoint.Url, route)) { Content = content };
-        _ = _headers.SessionReason;   // red: applied in the green commit
+        await _headers.Apply(request, ct).ConfigureAwait(false);
         try
         {
             using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
@@ -66,7 +66,7 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
             }
 
             var value = AwJson.Deserialize<T>(bytes, options);
-            return value.IsError ? value.Error : new ApiAnswer<T>(value.Value, ReadOnlyMemory<byte>.Empty);
+            return value.IsError ? value.Error : new ApiAnswer<T>(value.Value, bytes);
         }
         catch (HttpRequestException e)
         {
@@ -83,7 +83,18 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     {
         var problem = AwJson.Deserialize<ApiProblem>(bytes, options);
         return problem.IsSuccess && problem.Value.Title is { } code
-            ? new Error(code, status >= 500 ? ErrorKind.Unavailable : ErrorKind.Invalid, problem.Value.Detail ?? code)
+            ? new Error(code, Kind(status), Refusal(code, problem.Value.Detail ?? code))
             : SindriErrors.ApiNoCode.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the API answered HTTP {status} without an error code"));
     }
+
+    private static ErrorKind Kind(int status) => status switch
+    {
+        >= 500 => ErrorKind.Unavailable,
+        403 => ErrorKind.Forbidden,
+        _ => ErrorKind.Invalid,
+    };
+
+    /// <summary>A refused action class names why this CLI called as a session (workflow spec §4.2), so the reader knows what to change.</summary>
+    private string Refusal(string code, string detail) =>
+        code == SindriErrors.AuthRefused.Code && _headers.SessionReason is { } reason ? $"{detail} (this CLI ran as a session: {reason})" : detail;
 }
