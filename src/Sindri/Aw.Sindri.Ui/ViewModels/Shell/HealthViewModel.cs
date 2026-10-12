@@ -31,6 +31,8 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
     // The ticker runs on the clock's thread; in tests (no UI context) it runs inline, so state changes take this lock.
     private readonly Lock _gate = new();
     private DateTimeOffset _heard;
+    private Uri? _url;
+    private int _failedRefreshes;
     private SynchronizationContext? _ui;
 
     /// <summary>The app's copy, for the view.</summary>
@@ -38,9 +40,6 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
 
     /// <summary>The pre-API state (§4.1).</summary>
     public ShellState State { get; private set => Set(ref field, value); } = ShellState.Connecting;
-
-    /// <summary>The health pill's words: the state, and once connected how fresh the status is.</summary>
-    public string HealthPill { get; private set => Set(ref field, value); } = Labels.Connecting;
 
     /// <summary>The health pill's parts.</summary>
     public HealthPill Pill { get; } = new();
@@ -122,7 +121,26 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
     /// <summary>Refresh (§4.1 Stale): reads the status again, a query.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>A task that completes when the answer is shown.</returns>
-    internal Task Refresh(CancellationToken cancellationToken) => throw new NotSupportedException();
+    internal async Task Refresh(CancellationToken cancellationToken)
+    {
+        if (_url is not { } url)
+        {
+            return;
+        }
+
+        var status = await api.Status(url, cancellationToken).ConfigureAwait(true);
+        if (status.IsSuccess)
+        {
+            Show(url, status.Value);
+            return;
+        }
+
+        lock (_gate)
+        {
+            _failedRefreshes++;
+            Word();
+        }
+    }
 
     /// <summary>An event on the stream: the newest event, and the views are fresh.</summary>
     /// <param name="e">The event.</param>
@@ -151,6 +169,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
             _ = NotRunning(Labels.NoLease);
         }
 
+        _url = url;
         Api = url.Authority;
         Lease = StatusText.Lease(status);
         ProfileState = StatusText.ProfileState(status.Profile);
@@ -192,7 +211,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
             IsRunning = false;
             IsNotRunning = true;
             State = ShellState.NotRunning;
-            HealthPill = Labels.NotRunning;
+            Word();
         }
 
         return null;
@@ -204,7 +223,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
         {
             Reason = $"{error.Code}: {error.Message}";
             State = ShellState.Unreadable;
-            HealthPill = Labels.Unreadable + " · " + Labels.Stale;
+            Word();
         }
 
         return null;
@@ -217,7 +236,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
             Reason = Labels.Versions(version, SindriApiClient.AppApiVersion);
             HealthLine = Labels.VersionMismatch;
             State = ShellState.VersionMismatch;
-            HealthPill = Labels.VersionMismatch;
+            Word();
         }
     }
 
@@ -227,10 +246,11 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
         lock (_gate)
         {
             _heard = clock.GetUtcNow();
+            _failedRefreshes = 0;
             if (State is ShellState.Normal or ShellState.Stale)
             {
                 State = ShellState.Normal;
-                HealthPill = Labels.Running + " · " + Labels.UpdatedAgo(TimeSpan.Zero);
+                Word();
             }
         }
     }
@@ -245,15 +265,20 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
                 return;
             }
 
-            var age = clock.GetUtcNow() - _heard;
-            if (age >= StaleAfter)
+            if (clock.GetUtcNow() - _heard >= StaleAfter)
             {
                 State = ShellState.Stale;
             }
 
-            HealthPill = Labels.Running + " · " + (State == ShellState.Stale ? Labels.Stale : Labels.UpdatedAgo(age));
+            Word();
         }
     }
+
+    // The pill for the state now (under the gate): its age counts from the last event, status or answered ping.
+    private void Word() => Pill.Show(State, clock.GetUtcNow() - _heard, _failedRefreshes >= NotRespondingAfter);
+
+    // §4.1 Stale: "After 3 failed refreshes: Sindri not responding: run sindri doctor".
+    private const int NotRespondingAfter = 3;
 
     private void OnUi(Action action)
     {

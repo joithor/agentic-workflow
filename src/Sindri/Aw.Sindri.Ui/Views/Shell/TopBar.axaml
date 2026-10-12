@@ -79,11 +79,30 @@
         </StackPanel>
       </Border>
 
-      <Button x:Name="HealthPill" Grid.Column="5" Classes="health-pill" Click="OnHealthPill"
-              AutomationProperties.Name="{Binding HealthPill}">
-        <TextBlock x:Name="HealthPillText" Classes="caption" Text="{Binding HealthPill}"
-                   AutomationProperties.Name="{Binding HealthPill}" />
-      </Button>
+      <!-- The health pill (§3.2, §11.3): a dot and a glyph before the state's word, then the age; it opens Health.
+           While stale, Refresh sits beside it (§4.1). -->
+      <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button x:Name="RefreshButton" Classes="refresh" IsVisible="{Binding Pill.IsRefreshShown}" Click="OnRefresh"
+                AutomationProperties.Name="{Binding Text.Refresh}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Classes="caption subtle" Text="⟳" AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock Classes="caption" Text="{Binding Text.Refresh}" />
+          </StackPanel>
+        </Button>
+        <Button x:Name="HealthPill" Classes="health-pill" Click="OnHealthPill"
+                AutomationProperties.Name="{Binding Pill.Text}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Ellipse x:Name="PillDot" Classes="pill-dot" Classes.ok="{Binding Pill.IsHealthy}"
+                     Classes.stale="{Binding Pill.IsStale}" Classes.down="{Binding Pill.IsDown}" VerticalAlignment="Center" />
+            <TextBlock x:Name="PillGlyph" Classes="caption pill-glyph" Classes.ok="{Binding Pill.IsHealthy}"
+                       Classes.down="{Binding Pill.IsDown}" Text="{Binding Pill.Glyph}" VerticalAlignment="Center"
+                       AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock x:Name="HealthPillText" Classes="body-strong" Text="{Binding Pill.Word}" VerticalAlignment="Center" />
+            <TextBlock x:Name="PillAgeText" Classes="caption subtle" Text="{Binding Pill.Age}" IsVisible="{Binding Pill.HasAge}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
     </Grid>
   </Border>
 </UserControl>

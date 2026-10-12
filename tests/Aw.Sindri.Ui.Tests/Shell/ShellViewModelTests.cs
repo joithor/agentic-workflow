@@ -129,7 +129,7 @@ public sealed class ShellViewModelTests
     {
         var shell = await Shell();
 
-        Assert.Equal((ShellState.Connecting, Labels.Connecting), (shell.State, shell.HealthPill));
+        Assert.Equal((ShellState.Connecting, Labels.Connecting), (shell.State, shell.Pill.Text));
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public sealed class ShellViewModelTests
         var shell = await Running(ShellState.NotRunning);
 
         Assert.Equal(Labels.NoRecord(_records.Location), shell.Reason);
-        Assert.Equal(Labels.NotRunning, shell.HealthPill);
+        Assert.Equal(Labels.NotRunning, shell.Pill.Text);
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public sealed class ShellViewModelTests
 
         var shell = await Running(ShellState.Normal);
 
-        Assert.StartsWith(Labels.Running, shell.HealthPill, StringComparison.Ordinal);
+        Assert.StartsWith(Labels.Running, shell.Pill.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -184,7 +184,7 @@ public sealed class ShellViewModelTests
         await Until(() => shell.State == ShellState.Stale);
 
         Assert.Equal(ShellState.Stale, shell.State);
-        Assert.Contains(Labels.Stale, shell.HealthPill, StringComparison.Ordinal);
+        Assert.Contains(Labels.Stale, shell.Pill.Text, StringComparison.Ordinal);
 
         _server.Push(A.Event(1));
         await Until(() => shell.State == ShellState.Normal);

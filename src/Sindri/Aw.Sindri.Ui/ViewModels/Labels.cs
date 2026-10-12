@@ -136,6 +136,18 @@ internal static class Labels
     /// <summary>After three failed refreshes while the process still answers ping (§4.1 Stale, DB §5).</summary>
     internal const string NotResponding = "Sindri not responding: run sindri doctor";
 
+    /// <summary>The health pill's glyph while running (§11.3 ok).</summary>
+    internal const string GlyphOk = "✓";
+
+    /// <summary>The health pill's glyph while stale (§11.3 stale).</summary>
+    internal const string GlyphStale = "⌛";
+
+    /// <summary>The health pill's glyph with nothing to follow: not running, unreadable, a version mismatch (§11.3 failure).</summary>
+    internal const string GlyphDown = "✕";
+
+    /// <summary>The Refresh button beside a stale pill (§4.1 Stale).</summary>
+    internal const string Refresh = "Refresh";
+
     /// <summary>The freshness word after 30 s with no event or ping.</summary>
     internal const string Stale = "stale";
 

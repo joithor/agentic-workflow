@@ -94,6 +94,10 @@ public sealed class ShellWindowTests : IDisposable
 
     private static string Text(Window window, string name) => window.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t => t.Name == name)?.Text ?? "<missing>";
 
+    // A control by name anywhere in the window, across the views' own name scopes (TopBar, HomePage).
+    private static T Named<T>(Window window, string name)
+        where T : Control => window.GetVisualDescendants().OfType<T>().First(c => c.Name == name);
+
     private static bool Visible(Window window, string name) => window.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Name == name)?.IsEffectivelyVisible == true;
 
     private static void Frame(Window window, string name)
@@ -218,6 +222,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(Labels.NoRecord(_records.Location), Text(window, "ReasonText"));
         Assert.Equal("sindri", Text(window, "FixText"));
         Assert.Equal(Labels.NotRunning, Text(window, "HealthPillText"));
+        Assert.Equal(Labels.GlyphDown, Text(window, "PillGlyph"));
         EveryControlIsNamed(window);
         Frame(window, "not-running");
     });
@@ -248,7 +253,8 @@ public sealed class ShellWindowTests : IDisposable
             Assert.True(Visible(window, panel), panel);
         }
 
-        Assert.Equal("Running · updated 0s ago", Text(window, "HealthPillText"));
+        Assert.Equal((Labels.GlyphOk, Labels.Running, "updated 0s ago"), (Text(window, "PillGlyph"), Text(window, "HealthPillText"), Text(window, "PillAgeText")));
+        Assert.Equal("Running · updated 0s ago", AutomationProperties.GetName(Named<Button>(window, "HealthPill")));
         Assert.False(Visible(window, "AttentionBand"));
         Assert.Equal(1280, window.Width);
         Assert.Equal((900d, 600d), (window.MinWidth, window.MinHeight));
@@ -281,8 +287,19 @@ public sealed class ShellWindowTests : IDisposable
         await Until(() => shell.State == ShellState.Stale);
 
         Assert.Equal(ShellState.Stale, shell.State);
-        Assert.Equal(Labels.Running + " · " + Labels.Stale, Text(window, "HealthPillText"));
+        Assert.Equal((Labels.GlyphStale, Labels.Stale), (Text(window, "PillGlyph"), Text(window, "HealthPillText")));
+        Assert.Equal(Labels.UpdatedAgo(ShellViewModel.StaleAfter), Text(window, "PillAgeText"));
+        Assert.True(Visible(window, "RefreshButton"));
+        Assert.True(Visible(window, "PillDot"));
+        EveryControlIsNamed(window);
         Frame(window, "stale");
+
+        var before = _server.StatusCalls;
+        Named<Button>(window, "RefreshButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Until(() => shell.State == ShellState.Normal);
+        Assert.Equal(before + 1, _server.StatusCalls);
+        Assert.False(Visible(window, "RefreshButton"));
+        Assert.Equal((Labels.GlyphOk, Labels.Running), (Text(window, "PillGlyph"), Text(window, "HealthPillText")));
     });
 
     [Fact]

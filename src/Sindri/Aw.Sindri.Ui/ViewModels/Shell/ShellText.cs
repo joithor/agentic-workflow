@@ -72,6 +72,9 @@ internal sealed class ShellText
     /// <summary><see cref="Labels.QueuedPanel"/>.</summary>
     public string QueuedPanel { get; } = Labels.QueuedPanel;
 
+    /// <summary><see cref="Labels.Refresh"/>.</summary>
+    public string Refresh { get; } = Labels.Refresh;
+
     /// <summary><see cref="Labels.RunningPanel"/>.</summary>
     public string RunningPanel { get; } = Labels.RunningPanel;
 

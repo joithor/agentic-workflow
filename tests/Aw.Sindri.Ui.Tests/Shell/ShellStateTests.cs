@@ -66,7 +66,7 @@ public sealed class ShellStateTests
         var shell = await Running(ShellState.VersionMismatch);
 
         Assert.Equal((true, false, false, false, false, false), Shown(shell));
-        Assert.Equal(Labels.VersionMismatch, shell.HealthPill);
+        Assert.Equal(Labels.VersionMismatch, shell.Pill.Text);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public sealed class ShellStateTests
         var shell = await Running(ShellState.Normal);
 
         Assert.Equal((false, true, false, false, false, true), Shown(shell));
-        Assert.Equal("Running · updated 0s ago", shell.HealthPill);
+        Assert.Equal("Running · updated 0s ago", shell.Pill.Text);
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public sealed class ShellStateTests
 
         _clock.Advance(TimeSpan.FromSeconds(5));
 
-        Assert.Equal("Running · updated 5s ago", shell.HealthPill);
+        Assert.Equal("Running · updated 5s ago", shell.Pill.Text);
         Assert.Equal(ShellState.Normal, shell.State);
     }
 
@@ -104,7 +104,7 @@ public sealed class ShellStateTests
         await Eventually(() => shell.State == ShellState.Unreadable);
 
         Assert.Equal((false, true, false, false, true, true), Shown(shell));
-        Assert.Equal(Labels.Unreadable + " · " + Labels.Stale, shell.HealthPill);
+        Assert.Equal(Labels.Unreadable + " · " + Labels.Stale, shell.Pill.Text);
         Assert.Equal("pid 4242 · epoch 7", shell.Health.Lease);
 
         _server.UnreadableStatus = false;
@@ -124,7 +124,7 @@ public sealed class ShellStateTests
         var shell = await Running(ShellState.NotRunning);
 
         Assert.Equal(Labels.NoLease, shell.Reason);
-        Assert.Equal(Labels.NotRunning, shell.HealthPill);
+        Assert.Equal(Labels.NotRunning, shell.Pill.Text);
     }
 
     [Fact]

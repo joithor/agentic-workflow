@@ -114,9 +114,6 @@ internal sealed class ShellViewModel : ObservableObject
     /// <summary>The state's reason in words: why it isn't running, the two versions, the unreadable answer's code and message; empty when Normal.</summary>
     public string Reason => Health.Reason;
 
-    /// <summary>The health pill: the state word, and "updated Ns ago" (or "stale") once connected. It opens Health.</summary>
-    public string HealthPill => Health.HealthPill;
-
     /// <summary>The health pill's parts: its dot, glyph, word and age, and Refresh while stale.</summary>
     public HealthPill Pill => Health.Pill;
 
@@ -280,7 +277,6 @@ internal sealed class ShellViewModel : ObservableObject
                 Changed(_stateProperties);
                 break;
             case nameof(HealthViewModel.Reason):
-            case nameof(HealthViewModel.HealthPill):
                 OnChanged(e.PropertyName);
                 break;
             default:

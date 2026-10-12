@@ -2,31 +2,70 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>
 /// The top bar's health pill (UI spec §3.2, §4.1, §11.3): a dot, a glyph and the state's word, then how fresh the views
-/// are. It maps the shell's state to words; the connection decides the state.
+/// are. It maps the shell's state to words; the connection (<see cref="HealthViewModel"/>) decides the state.
 /// </summary>
 internal sealed class HealthPill : ObservableObject
 {
     /// <summary>The state's glyph (§11.3): ✓ running, ⌛ stale, ✕ not running or unreadable; none while connecting.</summary>
-    public string Glyph { get; } = string.Empty;
+    public string Glyph { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The state's word, or "Sindri not responding: run sindri doctor" after three failed refreshes.</summary>
-    public string Word { get; } = string.Empty;
+    public string Word { get; private set => Set(ref field, value); } = Labels.Connecting;
 
     /// <summary>"updated Ns ago" once connected, "stale" when unreadable, or empty.</summary>
-    public string Age { get; } = string.Empty;
+    public string Age
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(HasAge));
+        }
+    } = string.Empty;
+
+    /// <summary>True when the pill shows an age after its word.</summary>
+    public bool HasAge => Age.Length > 0;
 
     /// <summary>The pill in words (its accessible name): the word, and the age after a separator.</summary>
-    public string Text { get; } = string.Empty;
+    public string Text { get; private set => Set(ref field, value); } = Labels.Connecting;
 
     /// <summary>True when the dot shows a healthy control plane.</summary>
-    public bool IsHealthy { get; }
+    public bool IsHealthy { get; private set => Set(ref field, value); }
 
     /// <summary>True when the dot shows stale views.</summary>
-    public bool IsStale { get; }
+    public bool IsStale { get; private set => Set(ref field, value); }
 
     /// <summary>True when the dot shows nothing to follow: not running, unreadable, or a version mismatch.</summary>
-    public bool IsDown { get; }
+    public bool IsDown { get; private set => Set(ref field, value); }
 
     /// <summary>Stale: the Refresh button beside the pill (§4.1).</summary>
-    public bool IsRefreshShown { get; }
+    public bool IsRefreshShown => IsStale;
+
+    /// <summary>Words the pill for a state.</summary>
+    /// <param name="state">The shell's state.</param>
+    /// <param name="age">How long since the views were last heard from.</param>
+    /// <param name="notResponding">True after three failed refreshes while stale.</param>
+    internal void Show(ShellState state, TimeSpan age, bool notResponding)
+    {
+        (Glyph, Word, Age) = state switch
+        {
+            ShellState.Normal => (Labels.GlyphOk, Labels.Running, Labels.UpdatedAgo(age)),
+            ShellState.Stale => (Labels.GlyphStale, notResponding ? Labels.NotResponding : Labels.Stale, Labels.UpdatedAgo(age)),
+            ShellState.NotRunning => (Labels.GlyphDown, Labels.NotRunning, string.Empty),
+            ShellState.Unreadable => (Labels.GlyphDown, Labels.Unreadable, Labels.Stale),
+            ShellState.VersionMismatch => (Labels.GlyphDown, Labels.VersionMismatch, string.Empty),
+            ShellState.Connecting => (string.Empty, Labels.Connecting, string.Empty),
+            _ => throw new ArgumentOutOfRangeException(nameof(state), state, message: null),
+        };
+        Text = HasAge ? Word + " · " + Age : Word;
+        IsHealthy = state == ShellState.Normal;
+        var stale = state == ShellState.Stale;
+        if (stale != IsStale)
+        {
+            IsStale = stale;
+            OnChanged(nameof(IsRefreshShown));
+        }
+
+        IsDown = state is ShellState.NotRunning or ShellState.Unreadable or ShellState.VersionMismatch;
+    }
 }

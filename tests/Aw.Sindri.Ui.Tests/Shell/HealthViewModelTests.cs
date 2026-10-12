@@ -403,7 +403,7 @@ public sealed class HealthViewModelTests : IDisposable
             _clock.Advance(TimeSpan.FromSeconds(1));
             var due = pings + (second / 10);
             await Eventually(() => _server.PingCalls >= due, "a ping every 10 s");
-            Assert.DoesNotContain("stale", _vm.HealthPill, StringComparison.Ordinal);
+            Assert.DoesNotContain("stale", _vm.Pill.Text, StringComparison.Ordinal);
         }
 
         Assert.Equal(ShellState.Normal, _vm.State);
@@ -426,7 +426,7 @@ public sealed class HealthViewModelTests : IDisposable
 
         _clock.Advance(TimeSpan.FromSeconds(1));
         await Eventually(() => _vm.State == ShellState.Stale, "stale after 30 s of failed pings");
-        Assert.Equal("Running · stale", _vm.HealthPill);
+        Assert.Equal("stale · updated 30s ago", _vm.Pill.Text);
     }
 
     // A ping answered by another process or epoch isn't the control plane this follow connected to: it doesn't count.

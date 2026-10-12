@@ -60,6 +60,38 @@
     <Setter Property="Padding" Value="12,4" />
   </Style>
 
+  <!-- The pill's dot: filled Success when healthy, hollow when stale, filled Error with nothing to follow; the glyph
+       and the word beside it say the same (§11.3, never colour alone). -->
+  <Style Selector="Ellipse.pill-dot">
+    <Setter Property="Width" Value="7" />
+    <Setter Property="Height" Value="7" />
+    <Setter Property="Fill" Value="{DynamicResource Brush.InkSubtle}" />
+  </Style>
+  <Style Selector="Ellipse.pill-dot.ok">
+    <Setter Property="Fill" Value="{DynamicResource Brush.Success}" />
+  </Style>
+  <Style Selector="Ellipse.pill-dot.stale">
+    <Setter Property="Fill" Value="Transparent" />
+    <Setter Property="Stroke" Value="{DynamicResource Brush.InkSubtle}" />
+    <Setter Property="StrokeThickness" Value="1" />
+  </Style>
+  <Style Selector="Ellipse.pill-dot.down">
+    <Setter Property="Fill" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <Style Selector="TextBlock.pill-glyph.ok">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
+  </Style>
+  <Style Selector="TextBlock.pill-glyph.down">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <!-- Refresh beside a stale pill: a quiet secondary button at the pill's height. -->
+  <Style Selector="Button.refresh">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="10,4" />
+  </Style>
+
   <!-- Home's health strip: a panel that is a button (it opens Health). -->
   <Style Selector="Button.health-strip">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
