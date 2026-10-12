@@ -3,7 +3,9 @@ using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.RunDoctor;
+using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Secrets;
 
 namespace Aw.Sindri.Tests.RunDoctor;
 
@@ -16,7 +18,7 @@ public sealed class RunDoctorTests
 
     private RunDoctorService Service(ILedgerStore? ledger = null) =>
         new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events), _api,
-            new OnyxDoctor(SettingsOnlyContextEngine.Instance), _h.Clock);
+            new OnyxDoctor(SettingsOnlyContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), _h.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task RunDoctor_is_green_when_running_approved_and_answering()

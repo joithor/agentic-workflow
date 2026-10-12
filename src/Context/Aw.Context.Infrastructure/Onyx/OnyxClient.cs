@@ -40,8 +40,9 @@ internal sealed partial class OnyxClient(OnyxSettings settings, OnyxSourceParts 
         if (string.IsNullOrEmpty(key) || key.Any(c => char.IsControl(c) || char.IsWhiteSpace(c)))
         {
             return Failed(call, ContextErrors.SourceNotConfigured.With(
-                $"{TokenKey}: the secret pointer doesn't resolve to a usable Onyx key (none, or one with spaces or control characters). "
-                + "Set it to a dedicated service account's admin key (spec §8.8) and approve the profile again."), status: null);
+                $"{TokenKey}: the {Scheme(Settings.Token)}: secret pointer doesn't resolve to a usable Onyx key (none, or one with spaces or "
+                + "control characters); 'sindri doctor' shows why (its SND-SECRET code names the target and the fix). "
+                + "Point it at a dedicated service account's admin key (spec §8.8)."), status: null);
         }
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -61,6 +62,9 @@ internal sealed partial class OnyxClient(OnyxSettings settings, OnyxSourceParts 
             return Failed(call, Unavailable($"isn't reachable ({e.HttpRequestError}); start Onyx or check context.sources.onyx.url"), status: null);
         }
     }
+
+    /// <summary>The pointer's scheme ('env', 'file', 'keychain', 'op'; OnyxSettings checked the form): never its target, which Sindri's doctor names.</summary>
+    private static string Scheme(string pointer) => pointer[..pointer.IndexOf(':', StringComparison.Ordinal)];
 
     private Result<T> Read<T>(OnyxCall call, OnyxReply reply)
     {

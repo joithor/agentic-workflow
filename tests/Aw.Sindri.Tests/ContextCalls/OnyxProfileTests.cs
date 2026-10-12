@@ -4,13 +4,16 @@ using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.ValidateProfile;
+using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Secrets;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 
 /// <summary>'context.sources.onyx' as 'profile validate' and doctor 'context:onyx' judge it, before any call to Onyx.</summary>
 public sealed class OnyxProfileTests
 {
+    private static readonly PointerSecrets _noSecrets = new(_ => null, new FakeToolRunner(ToolRun.Missing));
     private readonly SliceHarness _h = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -46,7 +49,7 @@ public sealed class OnyxProfileTests
         var approved = SliceHarness.Profile();
         _ = await _h.Profiles.Save(approved, Token);
 
-        var check = await new OnyxDoctor(SettingsOnlyContextEngine.Instance).Check(approved, Token);
+        var check = await new OnyxDoctor(SettingsOnlyContextEngine.Instance, _noSecrets).Check(approved, Token);
 
         Assert.Equal(new DoctorCheck("context:onyx", CheckState.Ok, "not configured (the approved profile names no context.sources.onyx)", Fix: null), check);
     }
@@ -54,7 +57,7 @@ public sealed class OnyxProfileTests
     [Fact, Trait("Lane", "unit")]
     public async Task Doctor_skips_onyx_as_ok_when_no_profile_is_approved()
     {
-        var check = await new OnyxDoctor(SettingsOnlyContextEngine.Instance).Check(approved: null, Token);
+        var check = await new OnyxDoctor(SettingsOnlyContextEngine.Instance, _noSecrets).Check(approved: null, Token);
 
         Assert.Equal((CheckState.Ok, "not configured (no profile is approved)"), (check.State, check.Detail));
     }
@@ -64,15 +67,27 @@ public sealed class OnyxProfileTests
     {
         var approved = With("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"env:ONYX_KEY","version":"v4.9.0"}}}""");
 
-        var check = await new OnyxDoctor(SettingsOnlyContextEngine.Instance).Check(approved, Token);
+        var check = await new OnyxDoctor(SettingsOnlyContextEngine.Instance, _noSecrets).Check(approved, Token);
 
         Assert.Equal((CheckState.Warn, "the approved profile maps no repo, so no context source runs, onyx included"), (check.State, check.Detail));
     }
 
-    private static LoadedProfile With(string context)
+    [Fact, Trait("Lane", "unit")]
+    public async Task Doctor_fails_with_the_pointers_SND_SECRET_reason_before_any_call_to_onyx()
+    {
+        var approved = With("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"env:ONYX_KEY","version":"v4.9.0"}}}""", [new RepoEntry("split-panes", "/repos/split-panes")]);
+
+        var check = await new OnyxDoctor(SettingsOnlyContextEngine.Instance, _noSecrets).Check(approved, Token);
+
+        Assert.Equal(CheckState.Fail, check.State);
+        Assert.Equal("SND-SECRET-002: The env:ONYX_KEY secret doesn't resolve: the variable is unset or empty; set it before starting Sindri.", check.Detail);
+        Assert.Contains("docs/sindri/onyx.md", check.Fix, StringComparison.Ordinal);   // the test engine's Sources would answer 011: it was never asked
+    }
+
+    private static LoadedProfile With(string context, IReadOnlyList<RepoEntry>? repos = null)
     {
         var json = SliceHarness.Json;
-        var profile = new SindriProfile(1, "thor", Context: JsonDocument.Parse(context).RootElement.Clone());
+        var profile = new SindriProfile(1, "thor", Repos: repos, Context: JsonDocument.Parse(context).RootElement.Clone());
         return new LoadedProfile(profile, ProfileHashing.Of(AwJson.Serialize(profile, json)), "/home/profile.yaml");
     }
 }

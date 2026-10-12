@@ -12,7 +12,9 @@ using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Secrets;
 
 namespace Aw.Sindri.Tests.ApproveProfile;
 
@@ -217,7 +219,7 @@ public sealed class ApproveProfileTests
         var status = (await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, _h.Store, _h.Events).Handle(new GetStatusRequest(), Token)).Value;
         var validated = (await new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events, SettingsOnlyContextEngine.Instance).Handle(new ValidateProfileRequest(), Token)).Value;
         var doctor = (await new RunDoctorService(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, _h.Store, _h.Events), new FakeControlPlaneProbe(),
-            new OnyxDoctor(SettingsOnlyContextEngine.Instance), _h.Clock)
+            new OnyxDoctor(SettingsOnlyContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), _h.Clock)
             .Handle(new RunDoctorRequest(), Token)).Value.Checks.Single(c => c.Name == "profile");
         var summary = SummaryText.Render(status, new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 1, 1), showUi: false)
             .Split('\n').Single(l => l.TrimStart().StartsWith("profile ", StringComparison.Ordinal))["  profile   ".Length..].TrimEnd('\r');

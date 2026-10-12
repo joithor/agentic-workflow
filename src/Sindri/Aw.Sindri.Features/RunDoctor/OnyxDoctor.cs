@@ -5,6 +5,7 @@ using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Secrets;
 
 namespace Aw.Sindri.Features.RunDoctor;
 
@@ -12,10 +13,14 @@ namespace Aw.Sindri.Features.RunDoctor;
 /// Doctor's 'context:onyx' check (context spec §8.8): the onyx row of the engine's sources view for the approved profile,
 /// asked as an in-process service, so it shows the source's own probe: the loopback url and pinned version
 /// (SND-CONTEXT-055), whether the key can search (050) and the key's role and account type (053 warns on a person's
-/// admin key). A profile that names no onyx source, or no approved profile, is 'ok: not configured'.
+/// admin key). A profile that names no onyx source, or no approved profile, is 'ok: not configured'. Before probing,
+/// it resolves 'context.sources.onyx.token' through <paramref name="secrets"/>: a pointer that doesn't resolve fails
+/// with its SND-SECRET code, which names the scheme and the target (a variable, a file and its mode), never a value.
+/// The engine sees only "no usable key" (its 002), so this is where the reason is shown.
 /// </summary>
 /// <param name="engine">The context engine.</param>
-internal sealed class OnyxDoctor(IContextEngine engine)
+/// <param name="secrets">Resolves the key's pointer, as Sindri Host does for the engine.</param>
+internal sealed class OnyxDoctor(IContextEngine engine, ISecretPointers secrets)
 {
     /// <summary>The check's name.</summary>
     internal const string Name = "context:onyx";
@@ -50,6 +55,13 @@ internal sealed class OnyxDoctor(IContextEngine engine)
         if (repos.Count == 0 || (settings.Value.Repos is { } named && !repos.Any(r => named.Contains(r.Name))))
         {
             return new DoctorCheck(Name, CheckState.Warn, "the approved profile maps no repo, so no context source runs, onyx included", "map a repo in the profile's repos and context.repos");
+        }
+
+        var key = SecretPointer.Parse(settings.Value.Onyx.Token).Bind(secrets.Resolve);
+        if (key.IsError)
+        {
+            return new DoctorCheck(Name, CheckState.Fail, $"{key.Error.Code}: {key.Error.Message}",
+                $"fix context.sources.onyx.token's target as the message says, or point it at the Onyx key ({Setup})");
         }
 
         var scope = new ContextScope(approved.Profile.Context, repos, new ContextCaller(ContextCallerKind.Service, Repo: null, ContextClient.Service));
