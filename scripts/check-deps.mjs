@@ -140,6 +140,12 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
       continue;
     }
     if (x.expires < today) { fail("DEPS-EXC-001", "expired exception", `${x.rule} for ${x.subject} expired ${x.expires} (today ${today})`, "an exception is valid until its expires date", "fix the violation, or renew the exception in a reviewed PR with a new reason and dates"); continue; }
+    if (x.rule === "DEPS-CYCLE-001") { // attached to the cli or http edge that closes one cycle; covered or not at the cycle check
+      if (!["cli", "http"].some((k) => seenEdges.has(`${x.subject}|${x.edge}|${k}`))) { fail("DEPS-EXC-004", "cycle exception attached to an edge that isn't a declared cli or http edge", `${x.rule} for ${x.subject}: no ${x.subject} -> ${x.edge} (cli or http) edge`, "a DEPS-CYCLE-001 exception names a declared cli or http edge from its subject: only a call to another process's CLI or HTTP API may close a cycle", `declare (from: ${x.subject}, to: ${x.edge}, kind: cli or http), or fix the exception's edge`); continue; }
+      active.push({ ...x, used: false, measured: null });
+      info.push(`exception ${x.rule} ${x.subject} -> ${x.edge} (expires ${x.expires}): ${x.reason}`);
+      continue;
+    }
     const attachLimit = "an exception's edge names a declared project edge from its subject to a package fan-out counts (not test support)";
     if (x.edge && !seenEdges.has(`${x.subject}|${x.edge}|project`)) { fail("DEPS-EXC-004", "exception attached to an edge that isn't declared", `${x.rule} for ${x.subject}: no ${x.subject} -> ${x.edge} (project) edge`, attachLimit, `declare (from: ${x.subject}, to: ${x.edge}, kind: project), or fix the exception's edge`); continue; }
     if (x.edge && byId.get(x.edge)?.test) { fail("DEPS-EXC-004", "exception attached to an edge fan-out doesn't count", `${x.rule} for ${x.subject}: ${x.subject} -> ${x.edge} goes into test support`, attachLimit, `delete the exception's edge: fan-out never counts ${x.edge}`); continue; }
@@ -181,7 +187,14 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
   for (const e of edges.filter((x) => x.kind === "compose" && !misplaced.has(edgeKey(x)) && !seenEdges.has(`${x.from}|${x.to}|project`))) {
     fail("DEPS-COMPOSE-001", "compose edge without a project edge", `${edgeText(e)}: no project edge ${e.from} -> ${e.to}`, "a compose edge sits beside a project edge to the same package, which fan-out counts (DEPS-FANOUT-001 counts project edges only)", `declare the project edge too (the Host and Features reference ${e.to}'s Core):\n${yamlEdge(e.from, e.to, "project", e.status)}`);
   }
-  for (const c of findCycles(edges)) fail("DEPS-CYCLE-001", "the declared graph has a cycle", c.join(" -> "), "the graph is acyclic across every edge kind (§4b.1a)", "delete one edge of the cycle in deps.yaml, or move the shared part into a lower tier");
+  const cycles = findCycles(edges);
+  const coveredCycles = new Set(); // a cycle exception covers the one cycle through its edge
+  for (const x of active.filter((a) => a.rule === "DEPS-CYCLE-001")) {
+    const through = cycles.filter((c) => c.some((n, i) => n === x.subject && c[i + 1] === x.edge));
+    if (through.length === 1) { x.used = true; coveredCycles.add(through[0]); }
+    x.measured = through.length === 0 ? `no cycle passes through ${x.subject} -> ${x.edge}` : through.length === 1 ? through[0].join(" -> ") : `${through.length} cycles pass through ${x.subject} -> ${x.edge} (${through.map((c) => c.join(" -> ")).join("; ")}), more than the one an exception covers`;
+  }
+  for (const c of cycles.filter((x) => !coveredCycles.has(x))) fail("DEPS-CYCLE-001", "the declared graph has a cycle", c.join(" -> "), "the graph is acyclic across every edge kind (§4b.1a); a DEPS-CYCLE-001 exception attached to a cli or http edge covers the one cycle through that edge", "delete one edge of the cycle in deps.yaml, or move the shared part into a lower tier");
 
   // ---- declared fan-out per package ----
   const testPkg = new Set(doc.packages.filter((p) => p.test).map((p) => p.id));

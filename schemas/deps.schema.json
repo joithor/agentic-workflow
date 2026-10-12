@@ -353,17 +353,18 @@
           "enum": [
             "DEPS-FANOUT-001",
             "DEPS-FANOUT-002",
-            "DEPS-FANOUT-003"
+            "DEPS-FANOUT-003",
+            "DEPS-CYCLE-001"
           ],
-          "description": "Only the fan-out rules take exceptions."
+          "description": "Only the fan-out rules and the cycle rule take exceptions."
         },
         "subject": {
           "$ref": "#/$defs/id",
-          "description": "The package the exception covers (for DEPS-FANOUT-002/003: every project of that package)."
+          "description": "The package the exception covers (for DEPS-FANOUT-002/003: every project of that package; for DEPS-CYCLE-001: the package the excused edge leaves)."
         },
         "edge": {
           "$ref": "#/$defs/id",
-          "description": "DEPS-FANOUT-001 only: the package of the declared project edge (subject -> edge) this exception is attached to. It then covers that one edge: the fan-out without it must be within the limit. DEPS-EXC-004 when no such edge is declared or it points into a test-support package (fan-out never counts those)."
+          "description": "DEPS-FANOUT-001 only: the package of the declared project edge (subject -> edge) this exception is attached to. It then covers that one edge: the fan-out without it must be within the limit. DEPS-EXC-004 when no such edge is declared or it points into a test-support package (fan-out never counts those). DEPS-CYCLE-001 (required): the package of the declared cli or http edge (subject -> edge) this exception is attached to. It then covers the one cycle that passes through that edge; DEPS-EXC-004 when no such cli or http edge is declared, DEPS-EXC-002 when no cycle or more than one passes through it."
         },
         "reason": {
           "type": "string",
@@ -381,7 +382,14 @@
           "if": {
             "required": [
               "edge"
-            ]
+            ],
+            "properties": {
+              "rule": {
+                "not": {
+                  "const": "DEPS-CYCLE-001"
+                }
+              }
+            }
           },
           "then": {
             "properties": {
@@ -389,6 +397,20 @@
                 "const": "DEPS-FANOUT-001"
               }
             }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "rule": {
+                "const": "DEPS-CYCLE-001"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "edge"
+            ]
           }
         }
       ]

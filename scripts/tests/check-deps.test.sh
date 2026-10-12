@@ -664,7 +664,7 @@ for dates in "2026-13-45 2026-12-01" "2026-12-01 2026-11-01" "2026-10-10 2027-10
 done
 
 d="$(fixture cycle-excepted-no-edge)"; perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-CYCLE-001\n    subject: Alpha\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
-expect "a cycle exception names the edge it is attached to" 1 "DEPS-SCHEMA-001" "/exceptions/0"
+expect "a cycle exception names the edge it is attached to" 1 "DEPS-SCHEMA-001" "/exceptions/0: missing required property edge"
 
 # ---- parser, validator and schema drift (node unit table) ----
 set +e; UNIT="$(node "$HERE/check-deps.unit.mjs" 2>&1)"; UCODE=$?; set -e
