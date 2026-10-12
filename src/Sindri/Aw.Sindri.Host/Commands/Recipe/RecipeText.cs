@@ -1,4 +1,3 @@
-using System.Globalization;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.ValidateRecipe;
 
@@ -17,13 +16,11 @@ internal static class RecipeText
         return string.Concat(lines) + hash;
     }
 
-    /// <summary>'recipe eval': one line per case, or the empty state.</summary>
+    /// <summary>'recipe eval': one line per case ('happy pass', or 'happy fail at &lt;file&gt;:&lt;line&gt;: &lt;detail&gt;'), or the empty state.</summary>
     /// <param name="response">The eval results.</param>
     /// <returns>The text, each line ending in '\n'.</returns>
     internal static string Eval(EvalRecipeResponse response) =>
         response.Cases.Count == 0
             ? "no evals declared\n"
-            : string.Concat(response.Cases.Select(c => c.Passed
-                ? $"pass {c.Case}\n"
-                : string.Create(CultureInfo.InvariantCulture, $"fail {c.Case}:{c.Line} {c.Detail}\n")));
+            : string.Concat(response.Cases.Select(static c => c.ToLine() + "\n"));
 }

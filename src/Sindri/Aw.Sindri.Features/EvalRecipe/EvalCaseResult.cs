@@ -14,9 +14,12 @@ public sealed record EvalCaseResult(string Case, bool Passed, int? Line, string?
     [JsonIgnore]
     public string Name => Path.GetFileNameWithoutExtension(Case);
 
-    /// <summary>The line 'recipe eval' prints: '&lt;name&gt; pass', or '&lt;name&gt; fail at line &lt;n&gt;: &lt;detail&gt;'.</summary>
+    /// <summary>
+    /// The line 'recipe eval' prints: '&lt;name&gt; pass', or '&lt;name&gt; fail at &lt;file&gt;:&lt;line&gt;: &lt;detail&gt;', naming the eval
+    /// file and the line that diverged with what was expected and what happened.
+    /// </summary>
     /// <returns>The line.</returns>
     public string ToLine() => Passed
         ? Name + " pass"
-        : string.Create(CultureInfo.InvariantCulture, $"{Name} fail at line {Line}: {Detail}");
+        : string.Create(CultureInfo.InvariantCulture, $"{Name} fail at {Case}:{Line}: {Detail}");
 }

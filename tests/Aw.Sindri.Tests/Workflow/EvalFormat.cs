@@ -2,7 +2,10 @@ using System.Text.Json;
 
 namespace Aw.Sindri.Tests.Workflow;
 
-/// <summary>The §9.2 eval line shapes: line 1 '{ start: { inputs } }', then '{ trigger, gates?, expect }' lines; a 'child.parked' trigger carries the child's reason in 'park'.</summary>
+/// <summary>
+/// The §9.2 eval line shapes: line 1 '{ start: { inputs }, scaffold?: true }', then '{ trigger, gates?, expect }' lines; a
+/// 'child.parked' trigger carries the child's reason in 'park', an engine trigger its 'variant' and a grant its 'amount'.
+/// </summary>
 internal static class EvalFormat
 {
     private static readonly string[] _verdicts = ["pass", "fail", "uncertain"];
@@ -12,9 +15,14 @@ internal static class EvalFormat
     public static void AssertStart(string line)
     {
         using var json = JsonDocument.Parse(line);
-        var start = Assert.Single(json.RootElement.EnumerateObject());
-        Assert.Equal("start", start.Name);
-        var inputs = Assert.Single(start.Value.EnumerateObject());
+        Assert.Subset(Set("start", "scaffold"), Names(json.RootElement));
+        if (json.RootElement.TryGetProperty("scaffold", out var scaffold))
+        {
+            Assert.Equal(JsonValueKind.True, scaffold.ValueKind);
+        }
+
+        var start = json.RootElement.GetProperty("start");
+        var inputs = Assert.Single(start.EnumerateObject());
         Assert.Equal("inputs", inputs.Name);
         Assert.Equal(JsonValueKind.Object, inputs.Value.ValueKind);
     }
@@ -28,7 +36,7 @@ internal static class EvalFormat
         Assert.Subset(Set("trigger", "gates", "expect"), Names(root));
 
         var trigger = root.GetProperty("trigger");
-        Assert.Subset(Set("kind", "outcome", "outputs", "park"), Names(trigger));
+        Assert.Subset(Set("kind", "outcome", "outputs", "park", "variant", "amount"), Names(trigger));
         Assert.Equal(JsonValueKind.String, trigger.GetProperty("kind").ValueKind);
         if (trigger.TryGetProperty("park", out _))
         {
