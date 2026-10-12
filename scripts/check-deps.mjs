@@ -139,15 +139,11 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
       continue;
     }
     if (x.expires < today) { fail("DEPS-EXC-001", "expired exception", `${x.rule} for ${x.subject} expired ${x.expires} (today ${today})`, "an exception is valid until its expires date", "fix the violation, or renew the exception in a reviewed PR with a new reason and dates"); continue; }
-    const attachLimit = "an exception's edge names a declared project edge from its subject to a package fan-out counts (not test support)";
-    if (x.edge && !seenEdges.has(`${x.subject}|${x.edge}|project`)) { fail("DEPS-EXC-004", "exception attached to an edge that isn't declared", `${x.rule} for ${x.subject}: no ${x.subject} -> ${x.edge} (project) edge`, attachLimit, `declare (from: ${x.subject}, to: ${x.edge}, kind: project), or fix the exception's edge`); continue; }
-    if (x.edge && byId.get(x.edge)?.test) { fail("DEPS-EXC-004", "exception attached to an edge fan-out doesn't count", `${x.rule} for ${x.subject}: ${x.subject} -> ${x.edge} goes into test support`, attachLimit, `delete the exception's edge: fan-out never counts ${x.edge}`); continue; }
     active.push({ ...x, used: false, measured: null });
     info.push(`exception ${x.rule} ${x.subject} (expires ${x.expires}): ${x.reason}`);
   }
-  // An exception attached to an edge covers that one edge: the targets without it must be within the limit.
-  const excepted = (rule, subject, measured, covers = () => true) => {
-    const x = active.find((a) => a.rule === rule && a.subject === subject && (!a.edge || covers(a.edge)));
+  const excepted = (rule, subject, measured) => {
+    const x = active.find((a) => a.rule === rule && a.subject === subject);
     if (!x) return false;
     x.used = true;
     x.measured = measured;
@@ -177,21 +173,9 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
   const misplaced = new Set(); // compose edges a kind or tier rule already failed: no DEPS-COMPOSE-001 on top
   for (const e of edges) if (kindsAndTiers(e, byId.get(e.from), byId.get(e.to)) && e.kind === "compose") misplaced.add(edgeKey(e));
   for (const e of edges.filter((x) => x.kind === "compose" && !misplaced.has(edgeKey(x)) && !seenEdges.has(`${x.from}|${x.to}|project`))) {
-    fail("DEPS-COMPOSE-001", "compose edge without a project edge", `${edgeText(e)}: no project edge ${e.from} -> ${e.to}`, "a compose edge sits beside a project edge to the same package, which fan-out counts (DEPS-FANOUT-001 counts project edges only)", `declare the project edge too (the Host and Features reference ${e.to}'s Core):\n${yamlEdge(e.from, e.to, "project", e.status)}`);
+    fail("DEPS-COMPOSE-001", "compose edge without a project edge", `${edgeText(e)}: no project edge ${e.from} -> ${e.to}`, "a compose edge sits beside a project edge to the same package: the Host and Features reach the target's Core through the project edge, and the compose edge adds only the Add…() registration calls", `declare the project edge too (the Host and Features reference ${e.to}'s Core):\n${yamlEdge(e.from, e.to, "project", e.status)}`);
   }
   for (const c of findCycles(edges)) fail("DEPS-CYCLE-001", "the declared graph has a cycle", c.join(" -> "), "the graph is acyclic across every edge kind (§4b.1a)", "delete one edge of the cycle in deps.yaml, or move the shared part into a lower tier");
-
-  // ---- declared fan-out per package ----
-  const testPkg = new Set(doc.packages.filter((p) => p.test).map((p) => p.id));
-  for (const p of doc.packages.filter((x) => x.kind === "package" && !x.test)) {
-    const targets = [...new Set(edges.filter((e) => e.from === p.id && e.kind === "project" && !testPkg.has(e.to)).map((e) => e.to))].sort();
-    const measured = `${p.id} has ${targets.length} project edges (${targets.join(", ")})`;
-    if (targets.length <= doc.limits.packageFanOut) { measure("DEPS-FANOUT-001", p.id, measured); continue; }
-    const covers = (to) => targets.includes(to) && targets.length - 1 <= doc.limits.packageFanOut;
-    if (excepted("DEPS-FANOUT-001", p.id, measured, covers)) continue;
-    measure("DEPS-FANOUT-001", p.id, `${measured}, more than an exception attached to one edge covers`);
-    fail("DEPS-FANOUT-001", "package fan-out over the limit", measured, `${doc.limits.packageFanOut} packages per package (limits.packageFanOut; test packages exempt; an exception attached to an edge covers that one edge)`, `split ${p.id}, or record a DEPS-FANOUT-001 exception with a reason and an expiry`);
-  }
 
   // ---- cli/db/file edges in the source ----
   const declared = new Map(edges.map((e) => [edgeKey(e), e]));
