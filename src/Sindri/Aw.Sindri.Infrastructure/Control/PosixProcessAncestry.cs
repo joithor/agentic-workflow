@@ -74,9 +74,9 @@ internal sealed partial class PosixProcessAncestry : IProcessAncestry
         int[] request = [KernelControl, ProcessArguments, pid];
         var buffer = new byte[size];
         var length = (nuint)size;
-        if (Sysctl(ref request[0], 3, ref buffer[0], ref length, IntPtr.Zero, 0) != 0)
+        if (Sysctl(ref request[0], 3, ref buffer[0], ref length, IntPtr.Zero, 0) != 0 || length < sizeof(int))
         {
-            return null;
+            return null;   // no argc, so no argument zero: the caller falls back to the kernel's name
         }
 
         var rest = buffer.AsSpan(sizeof(int), (int)length - sizeof(int));
