@@ -92,7 +92,7 @@ JSON Schemas: `schemas/recipes/recipe.schema.json` is the long form, generated f
 
 **Hash:** `sha256:` over the RFC 8785 (JCS) canonical JSON of the normalized long form without `hash`. A `hash` written in
 the file is checked (`RCP-HASH-001`). Listings show the first 12 hex digits. The long form writes every absent optional
-field as `null` (owner decision, 2026-10-11), so adding an optional field to the format re-hashes every recipe, and each
+value as `null` and every absent list or map as empty (owner decision, 2026-10-11), so adding an optional field to the format re-hashes every recipe, and each
 needs re-approval.
 
 ### Top level

@@ -125,7 +125,7 @@ public interface IDescribedBlock { public static abstract BlockDescriptor Descri
   `JsonUnmappedMemberHandling.Disallow`.
 - **Hash:** `sha256:` over RFC 8785 (JCS) of the normalized document without `hash`, so a short form and its long
   form hash the same. Hashes are shown as 12 hex characters, and input accepts a prefix of 8 or more. The normalized
-  document writes every absent optional field as `null` (owner decision, 2026-10-11), so adding an optional field to the
+  document writes every absent optional value as `null` and every absent list or map as empty (owner decision, 2026-10-11), so adding an optional field to the
   format re-hashes every recipe, and each needs re-approval.
 
 ### 3.2 Top level
