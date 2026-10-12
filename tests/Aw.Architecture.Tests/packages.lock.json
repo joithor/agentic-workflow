@@ -549,7 +549,8 @@
           "Aw.Kernel.Telemetry": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Aw.Sindri.Features": "[1.0.0, )",
-          "Aw.Sindri.Infrastructure": "[1.0.0, )"
+          "Aw.Sindri.Infrastructure": "[1.0.0, )",
+          "Aw.Sindri.Workflows": "[1.0.0, )"
         }
       },
       "ui-evidence": {
