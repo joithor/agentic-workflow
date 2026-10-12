@@ -11,6 +11,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.Theme;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Settings;
 using Aw.Sindri.Ui.ViewModels.Shell;
@@ -116,6 +117,84 @@ public sealed class ShellWindowTests : IDisposable
             .ToList();
         Assert.True(unnamed.Count == 0, "unnamed: " + string.Join(", ", unnamed));
     }
+
+    // §14.2: every text is a step of the type ramp, so the Text size preference reaches all of it. At scale 1.3 each
+    // visible TextBlock's size is a ramp size × 1.3 (a literal size, or one Fluent's own default sets, stays put). The
+    // scale is applied, checked and reset without yielding the UI thread, so no other test sees it.
+    private static readonly double[] _ramp = [20, 18, 13, 12, 11];
+
+    private static void EveryTextIsOnTheRampAt130(Window window)
+    {
+        var resources = Application.Current!.Resources;
+        TextScale.Apply(resources, 1.3);
+        try
+        {
+            Settle(window);
+            var off = window.GetVisualDescendants().OfType<TextBlock>()
+                .Where(t => t.IsEffectivelyVisible && !_ramp.Any(r => Math.Abs(t.FontSize - (r * 1.3)) < 0.01))
+                .Select(t => string.Create(CultureInfo.InvariantCulture, $"{t.Name ?? t.Text}={t.FontSize}"))
+                .ToList();
+            Assert.True(off.Count == 0, "off the ramp at 130%: " + string.Join(", ", off));
+        }
+        finally
+        {
+            TextScale.Apply(resources, 1.0);
+            Settle(window);
+        }
+    }
+
+    [Fact]
+    public Task Every_text_on_Home_Health_and_the_sheet_follows_the_text_scale() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        EveryTextIsOnTheRampAt130(window);
+
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        shell.GoTo(PageId.Health);
+        Settle(window);
+        EveryTextIsOnTheRampAt130(window);
+    });
+
+    [Fact]
+    public Task Every_text_while_not_running_follows_the_text_scale() => OnUi(async () =>
+    {
+        var (window, _) = await Show(s => s.State == ShellState.NotRunning);
+        EveryTextIsOnTheRampAt130(window);
+    });
+
+    [Fact]
+    public Task Every_text_while_connecting_follows_the_text_scale() => OnUi(async () =>
+    {
+        var (window, _) = await Show(s => s.State == ShellState.Connecting, run: false);
+        EveryTextIsOnTheRampAt130(window);
+    });
+
+    [Fact]
+    public Task Every_text_on_a_version_mismatch_follows_the_text_scale() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status() with { ApiVersion = 2 };
+        var (window, _) = await Show(s => s.State == ShellState.VersionMismatch);
+        EveryTextIsOnTheRampAt130(window);
+    });
+
+    // I6: the sheet's heading is DetailTitle (18/500) in the mono family; .mono's later size doesn't win.
+    [Fact]
+    public Task The_sheet_heading_is_a_mono_detail_title() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        Settle(window);
+
+        var title = window.Get<TextBlock>("SheetTitle");
+        Assert.Equal(18, title.FontSize);
+        Assert.Equal(Avalonia.Media.FontWeight.Medium, title.FontWeight);
+        Assert.Contains("JetBrains Mono", title.FontFamily.ToString(), StringComparison.Ordinal);
+    });
 
     [Fact]
     public Task Connecting_shows_the_chrome_and_skeleton_rows() => OnUi(async () =>
