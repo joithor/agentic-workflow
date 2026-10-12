@@ -4,6 +4,8 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Aw.Sindri.Ui.Api;
 
@@ -13,8 +15,10 @@ namespace Aw.Sindri.Ui.Api;
 /// </summary>
 /// <param name="http">The HTTP client, with no timeout of its own (the app's, or one over a canned handler in tests).</param>
 /// <param name="clock">The clock the 2 s deadline runs on (the app's, so tests drive it with a fake one).</param>
-internal sealed class SindriApiClient(HttpClient http, TimeProvider clock) : ISindriApi
+/// <param name="log">The app's log, where an unreadable body's parser detail goes (never the window); none by default.</param>
+internal sealed class SindriApiClient(HttpClient http, TimeProvider clock, ILogger? log = null) : ISindriApi
 {
+    private readonly ILogger _log = log ?? NullLogger.Instance;
 
     /// <summary>
     /// The version of Sindri's API this build speaks (API spec "Versioning": the status reports apiVersion from P1). A
@@ -78,7 +82,15 @@ internal sealed class SindriApiClient(HttpClient http, TimeProvider clock) : ISi
             }
 
             var value = AwJson.Deserialize<T>(body, Json);
-            return value.IsError ? SindriUiErrors.BadAnswer.With($"{path}: {value.Error.Message}") : value;
+            if (value.IsError)
+            {
+                // The parser's text names .NET types, JSON paths and byte positions: the log keeps it, the window gets
+                // the route in words (UI spec §4.1 Unreadable; as I7 for SND-UI-002).
+                SindriApiLog.Unreadable(_log, path, value.Error.Message);
+                return SindriUiErrors.BadAnswer.With($"{path} answered with something this build can't read");
+            }
+
+            return value;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {

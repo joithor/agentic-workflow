@@ -284,7 +284,7 @@ The app shows the first three as words in the window, never a dialog or a crash.
 |---|---|
 | `SND-UI-001` | No usable endpoint record, or it names a process that isn't the one answering |
 | `SND-UI-002` | Nothing answered at the recorded endpoint, or not within 2 s |
-| `SND-UI-003` | The API answered, but not with the record this build reads (an error status, or another body) |
+| `SND-UI-003` | The API answered, but not with the record this build reads (an error status, or another body). The banner says it in words ("SND-UI-003: /sindri/status answered with something this build can't read", or "… answered 500"); a body's parser detail (record, JSON path, byte position) goes only to the log, as a `SND-UI-003` warning |
 | `SND-UI-004` | The app's start-up, its following of the control plane, or the launch before it (claiming the single instance, handing over) threw: logged (code and exception type) and the app exits 2. Not shown in a window: there may be none |
 
 ## Tests

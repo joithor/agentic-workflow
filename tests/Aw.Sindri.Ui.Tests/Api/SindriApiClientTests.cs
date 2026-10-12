@@ -2,6 +2,7 @@ using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Api;
@@ -35,17 +36,22 @@ public sealed class SindriApiClientTests
     }
 
     // Prover run 7 (§4.1 Unreadable, §12.4, as I7 for SND-UI-002): a body this build can't read is a plain sentence naming
-    // the route, never the parser's text (a .NET type name, a JSON path, a byte position).
+    // the route, never the parser's text (a .NET type name, a JSON path, a byte position). That text goes to the app's log.
     [Fact]
-    public async Task A_body_this_build_cant_read_is_a_plain_sentence_without_the_parsers_text()
+    public async Task A_body_this_build_cant_read_is_a_plain_sentence_and_the_parsers_text_goes_to_the_log()
     {
         var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.OK, """{"pid":"not-a-number","version":7}""") };
+        var log = new RecordingLogger();
 
-        var status = await new SindriApiClient(new HttpClient(handler), TimeProvider.System).Status(_api, Token);
+        var status = await new SindriApiClient(new HttpClient(handler), TimeProvider.System, log).Status(_api, Token);
 
         Assert.Equal("SND-UI-003", status.Error.Code);
         Assert.Equal("/sindri/status answered with something this build can't read", status.Error.Message);
         Assert.All((string[])["System.", "Path:", "BytePosition", "$."], raw => Assert.DoesNotContain(raw, status.Error.Message, StringComparison.Ordinal));
+        var entry = Assert.Single(log.Entries);
+        Assert.Equal(("SND-UI-003", LogLevel.Warning), (entry.EventName, entry.Level));
+        Assert.Contains("/sindri/status", entry.Message, StringComparison.Ordinal);
+        Assert.Contains("BytePosition", entry.Message, StringComparison.Ordinal);
     }
 
     // I7: nothing listening is SND-UI-002 without the platform's exception text (it repeated the address in .NET's words).
