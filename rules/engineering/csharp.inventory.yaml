@@ -1,6 +1,7 @@
 # The §4b rule list (readiness spec), plus the rules the C# rules docs (.agents/rules/csharp.md, csharp-testing.md)
 # state under a §4b heading beyond the spec; those records cite that doc as their source, and docs/csharp/rule-records.md
-# lists them. One record per entry in rules/engineering/csharp/<slug>.yaml. Checked by node scripts/check-rules.mjs.
+# lists them. The sindri-cqrs-* records file the Sindri API spec's §2.5 architecture rules under 4b.2 and cite that spec.
+# One record per entry in rules/engineering/csharp/<slug>.yaml. Checked by node scripts/check-rules.mjs.
 version: 1
 spec: docs/superpowers/specs/2026-10-09-agent-readiness-design.md
 records:
@@ -57,6 +58,12 @@ records:
   - id: engineering.csharp.sqlite-connection-pragmas
     section: "4b.2"
   - id: engineering.csharp.numbered-tested-migrations
+    section: "4b.2"
+  - id: engineering.csharp.sindri-cqrs-endpoints
+    section: "4b.2"
+  - id: engineering.csharp.sindri-cqrs-query-ports
+    section: "4b.2"
+  - id: engineering.csharp.sindri-cqrs-catalog
     section: "4b.2"
   - id: engineering.csharp.typed-ids
     section: "4b.3"
