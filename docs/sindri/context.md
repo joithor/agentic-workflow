@@ -108,3 +108,93 @@ anchor (`003`), a refused question (`006`), session reads off (`020`) · `2` a t
 
 `$AW_SINDRI_HOME/context/context.db` (default `$AW_STATE_DIR/sindri-app/context/`), owner-only (directory 0700, the
 file and its `-wal` and `-shm` 0600). Never delete it: later stages keep review decisions there.
+
+## S-5A: the onyx source, secret pointers, doctor `context:onyx`
+
+Onyx CE (pinned **v4.9.0**) indexes the work product's Linear records, Slack and docs; Sindri searches it as the
+`onyx` source beside repo-docs. Setting Onyx itself up (the pinned image, ports bound to `127.0.0.1`, local
+embeddings, telemetry off, connectors, the service account and its key) is `docs/sindri/onyx.md`.
+
+### Profile
+
+```yaml
+context:
+  sources:
+    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-read", version: "v4.9.0" }
+    linear: { teams: [ENG, APP] }      # the Linear team keys an Onyx identifier alias (ENG-482) may name
+```
+
+- `url`: http or https on a loopback host (`127.0.0.0/8`, `[::1]`, `localhost`), no user, password, query or
+  fragment. Anything else is `SND-CONTEXT-055`.
+- `version`: the release tag that runs (`v4.9.0`), never `latest`; missing or `latest` is `SND-CONTEXT-055`.
+- `token`: a **secret pointer** to the Onyx admin key of a service account Sindri alone uses, never the key itself.
+  Missing, or text that isn't a pointer, is `SND-CONTEXT-002`; the message doesn't repeat the text (rotate a key that
+  was written into the profile).
+- `linear.teams`: team keys (a capital letter, then up to 9 capitals or digits). Linear's own `token` and `url` arrive
+  with the native Linear adapter (S-5B); this build refuses them (`SND-CONTEXT-001`), like any unknown key under
+  `sources`, `onyx` or `linear`.
+
+`sindri profile validate` reports each of these with its key path (`context.sources.onyx.url: …`).
+
+### Secret pointers
+
+| Pointer | Resolves to |
+|---|---|
+| `env:NAME` | the environment variable `NAME` of the `sindri` process (fixtures and tests) |
+| `file:/absolute/path` | the file's contents, trimmed; the file must be a regular file with mode `0600` or stricter |
+| `keychain:service/account` | `security find-generic-password -s service -a account -w` (store it with `security add-generic-password -s onyx -a sindri-read -w`) |
+| `op:vault/item/field` | `op read op://vault/item/field` (1Password CLI) |
+
+Sindri resolves the pointer in its host (`Composition`), on each Onyx call; the context engine never reads the
+keychain or a file. A pointer that doesn't resolve shows as `SND-CONTEXT-002` in the onyx row and doctor, never with a
+value. Pointer errors themselves are `SND-SECRET-001`..`003` (`docs/csharp/sindri.md`).
+
+### Asking, status and degraded answers
+
+`sindri context query` fuses Onyx's hits with repo-docs (reciprocal rank fusion). Onyx's Linear issues key on Linear's UUID
+(`linear:issue/<uuid>`, with its identifier alias, `ENG-482`, when its team is listed). Onyx v4.9.0 has no route that returns a
+document's `updated_at` by id, so **onyx citations stay `unchecked`** (version unchecked) instead of `current` or
+`stale`.
+
+When Onyx doesn't answer, is the wrong version or refuses the key, the answer still returns with repo-docs' results and
+a `degraded` entry `{ "source": "onyx", "code": "SND-CONTEXT-010", … }`. Only when every source is down is the answer
+`SND-CONTEXT-011`.
+
+Agent sessions don't read the onyx source yet: a session sees intent records only from the Linear teams the profile
+maps to its repo (`context.repoTeams`, a later stage), so until then onyx answers humans and services only. A caller
+whose scope maps no repo gets no source at all, onyx included.
+
+`sindri context sources status` shows an `onyx` row: `ok`, `degraded` (the key is an admin key of a person's account,
+`SND-CONTEXT-053`) or `unavailable` (no answer, `SND-CONTEXT-010`; another version, `055`; key refused, `050`; pointer
+unresolved, `002`), with the version and the key's role and account type in its detail.
+
+### Doctor `context:onyx`
+
+`sindri doctor` runs the onyx source's probe for the approved profile: `GET /api/version` (no key) against the pinned
+version, then `GET /api/me` with the key for its role and account type.
+
+| Result | When | Fix |
+|---|---|---|
+| `ok` | Onyx answers the pinned version and the key is an admin key of a service account; or the profile names no onyx (`not configured`) | — |
+| `warn` | the key is an admin key of a person's account (`053`); or onyx is named but no repo is mapped, so no source runs | create a service-account key; map a repo |
+| `fail` | Onyx is down (`010`), another version (`055`), the key lacks admin (`050`), the pointer doesn't resolve (`002`), the section is invalid | per the line; see `docs/sindri/onyx.md` |
+
+Onyx's provider and telemetry settings can't be read with the key; `docs/sindri/onyx.md` lists them as a manual check
+on each Onyx version change.
+
+### Trying it in a throwaway profile
+
+```bash
+export AW_SINDRI_HOME="$(mktemp -d)"            # throwaway state
+export SINDRI_ONYX_KEY='on_…'                   # the service account's admin key (or use keychain:onyx/sindri-read)
+# add to $AW_SINDRI_HOME/profile/profile.yaml:
+#   repos: [{ name: work-app, path: /path/to/work-app }]
+#   context:
+#     sources:
+#       onyx: { url: "http://127.0.0.1:3000", token: "env:SINDRI_ONYX_KEY", version: "v4.9.0" }
+#       linear: { teams: [ENG] }
+sindri profile validate && sindri profile approve
+sindri doctor                                   # context:onyx
+sindri context sources status
+sindri context query "split pane orientation"
+```

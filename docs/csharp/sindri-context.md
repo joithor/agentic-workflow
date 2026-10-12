@@ -98,3 +98,78 @@ In `tests/Aw.Sindri.Tests/ContextCalls`:
 - the routes through the real pipeline: human, session gate, scope, foreign Origin, codes;
 - the caller mapping;
 - the CLI's argument parsing and text output.
+
+## S-5A: the onyx adapter
+
+### Shape
+
+- `Aw.Context.Core.Onyx`: `OnyxSettings` (only `Create` makes one: loopback url, a secret-pointer token, a pinned
+  release tag; `CheckVersion` compares a reported version), `OnyxRecordKeys` and `OnyxRecordIdentity` (canonical key
+  and alias). `SourceHit.Aliases` carries the aliases a hit adds.
+- `Aw.Context.Core.Engine`: `SourcesReader` reads `context.sources` (`onyx`, `linear.teams`) for `SettingsReader`;
+  `ContextSettings.Onyx` and `ContextSettings.LinearTeams` hold the result. `ScopeRules.MayRead` keeps intent sources
+  from session callers until `context.repoTeams` exists.
+- `Aw.Context.Infrastructure.Onyx` (all internal): `OnyxSource` (`IContextSource`), `OnyxClient`, `OnyxRequests` and
+  `OnyxRoute` (the allowlist), `OnyxVersionProbe`, the wire records and their own `OnyxWireJsonContext`, and
+  `OnyxSources.Create(OnyxSettings, IReadOnlySet<string> teams)`, the per-call factory registered by
+  `AddContextInfrastructure`.
+- `Aw.Context.Infrastructure.Sources.ContextSourceCatalog` replaces S-1A's repo-docs catalog: repo-docs, then onyx when
+  the profile names it; no repo in scope gives no source (`SourceCatalogContract`).
+- Sindri: `Composition` passes `ContextEnvironment(environment)` to `AddContextInfrastructure`, which resolves a name
+  that is a secret pointer through `ISecretPointers` (`SecretPointerEnvironment`); every other name reads the real
+  environment. Doctor's `context:onyx` is `OnyxDoctor` in the `RunDoctor` slice: it asks the facade's `Sources` for the
+  approved profile as a service caller and judges the `onyx` row.
+
+### Routes and allowlist
+
+The adapter can send only these requests to Onyx v4.9.0; `OnyxRequests` refuses anything else before it reaches the
+network (tested), and the client has no proxy and follows no redirects.
+
+| Route | Use | Key |
+|---|---|---|
+| `POST /api/admin/search` | `Search`: document ids, `updated_at`, `semantic_identifier`, links; no model | admin |
+| `GET /api/document/document-size-info` | `Fetch`: how many chunks a document has | admin |
+| `GET /api/document/chunk-info` | `Fetch`: the chunks' text | admin |
+| `GET /api/version` | `Probe` and doctor: `backend_version` against the pin | none |
+| `GET /api/me` | `Probe` and doctor: the key's role and account type | the key |
+
+### Keys and aliases
+
+Onyx's Linear connector uses the issue's UUID as its document id, so those hits key directly on
+`linear:issue/<uuid>` (lower case). The identifier (`ENG-482`) becomes an alias only when the connector-built title
+prefix (`[ENG-482] `) and the `linear.app` link name the same identifier and its team is in
+`context.sources.linear.teams`. Slack threads (`<channel>__<thread_ts>`) key as `slack:<channel>/<thread_ts>`; anything
+else as `onyx:<source_type>/<document id>`. Body text never contributes. Fusion deduplicates on the canonical key, so
+the same issue from Onyx and the native Linear adapter (S-5B) is one item.
+
+### Versions
+
+`Versions` is always `SND-CONTEXT-010`: no v4.9.0 route gives `updated_at` by id, so onyx citations are `unchecked`.
+`SupportsAsOf` is false.
+
+### Errors
+
+| Code | Kind (HTTP) | Exit | Meaning |
+|---|---|---|---|
+| `SND-CONTEXT-002` | Invalid (400) | 2 | `context.sources.onyx.token` is missing or isn't a secret pointer (`profile validate`; the text isn't repeated); at run time, a pointer that doesn't resolve (a row and doctor code) |
+| `SND-CONTEXT-050` | Forbidden | — | Onyx refused the key (403), or the key lacks the admin role `POST /api/admin/search` needs: a row, doctor or `degraded` code |
+| `SND-CONTEXT-051` | Unavailable | — | Onyx answered with an unexpected status or shape (not the pinned version's): a `degraded` code |
+| `SND-CONTEXT-052` | NotFound | — | Onyx has no such document: the item is dropped, not degraded |
+| `SND-CONTEXT-053` | Forbidden | — | The admin key belongs to a person's account, not a service account: a `degraded` row and a doctor `warn` |
+| `SND-CONTEXT-055` | Invalid (400) | 2 | The url isn't loopback or the version isn't a pinned release tag (`profile validate`); at run time, Onyx reports another version (a row and doctor `fail`) |
+
+An onyx failure during a query is always the `degraded` entry `SND-CONTEXT-010` with the cause in its message; the
+answer's own error is `011` only when repo-docs is down too. The pointer errors are Sindri's: `SND-SECRET-001`
+(malformed), `002` (doesn't resolve) and `003` (unsafe `file:`), in `docs/csharp/sindri.md`; through the context
+environment a pointer that fails resolves to nothing, which the onyx client reports as `SND-CONTEXT-002`.
+
+### Tests
+
+- `tests/Aw.Context.Testing/Fakes/FakeOnyxServer`: a loopback fake that answers like v4.9.0 (auth by key kind, admin
+  search, document size and chunk info, version, `/api/me`).
+- `tests/Aw.Context.Tests/Onyx`: `ContextSourceContract` against `FakeOnyxServer`, the client's allowlist, failures,
+  settings and record keys; `Core/SourcesSettingsTests` (profile keys, pointer forms, session rule);
+  `Infrastructure/ContextSourceCatalogContractTests`.
+- `tests/Aw.Sindri.Tests/ContextCalls/OnyxContextTests` (integration, the real host with `env:` fixture pointers):
+  fused query with `unchecked` onyx citations, the status row, doctor ok / warn / fail, Onyx down degrading only
+  itself; `OnyxProfileTests` (validate and doctor without Onyx); `Secrets/*` for the pointers.
