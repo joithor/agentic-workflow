@@ -22,8 +22,8 @@ public sealed class UpstreamRulesTests
             id: "workflow.wire");
 
         Assert.Equal(
-            ["RCP-WIRE-001: step 'step.checks' in state 'checks' needs 'fact:output', but the path through transitions[0] from 'produce' doesn't produce it at RCP-WIRE-001.yaml:13:5 (states.checks.step.use); produce it on every path into 'checks', or add it to the recipe's inputs"],
-            CheckWiring(recipe, new Located("RCP-WIRE-001.yaml", [("states.checks.step", 13, 5)])).Lines());
+            ["RCP-WIRE-001: step 'step.checks' in state 'checks' needs 'fact:output', but the path through transitions[0] from 'produce' doesn't produce it at RCP-WIRE-001.yaml:14:5 (states.checks.step.use); produce it on every path into 'checks', or add it to the recipe's inputs"],
+            CheckWiring(recipe, new Located("RCP-WIRE-001.yaml", [("states.checks.step", 14, 5)])).Lines());
     }
 
     [Fact, Trait("Lane", "unit")]

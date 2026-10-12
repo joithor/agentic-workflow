@@ -36,7 +36,8 @@ internal sealed partial class GraphRules
     }
 
     /// <summary>
-    /// RCP-LOOP-001: a state names a loop the recipe doesn't declare, or a loop's cap is below 1. RCP-LOOP-002: a
+    /// RCP-LOOP-001: a state names a loop the recipe doesn't declare, a loop's cap is below 1, or a cycle has no looped
+    /// state (<see cref="UncappedCycles"/>). RCP-LOOP-002: a
     /// state in a loop isn't on a cycle, so its counter can never pass round 1. RCP-LOOP-003: an empty noProgress.
     /// </summary>
     private static IEnumerable<RecipeFinding> Loops(Recipe recipe, Edges edges, RecipeSource source)
@@ -70,6 +71,57 @@ internal sealed partial class GraphRules
                 yield return finding;
             }
         }
+
+        foreach (var finding in UncappedCycles(recipe, edges, source))
+        {
+            yield return finding;
+        }
+    }
+
+    /// <summary>
+    /// RCP-LOOP-001 (§17.28.5 "every loop has a cap"): a cycle of step and wait transitions that passes through no state
+    /// with a loop, so nothing counts its rounds. A cycle closed by a command is a human's choice, not a loop; a cycle
+    /// with no way out is RCP-EXIT-001's. Reported once per cycle, at its first state in the file's order.
+    /// </summary>
+    private static IEnumerable<RecipeFinding> UncappedCycles(Recipe recipe, Edges edges, RecipeSource source)
+    {
+        var automatic = UncountedEdges(recipe);
+        var terminals = recipe.States.Where(s => s.Value.Kind == StateKind.Terminal).Select(s => s.Key);
+        var canEnd = Reached(terminals, Reverse(edges));
+        var reported = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var name in recipe.States.Keys.Where(n => automatic.ContainsKey(n) && canEnd.Contains(n) && !reported.Contains(n)))
+        {
+            var ahead = Reached([name], automatic);
+            if (!ahead.Contains(name))
+            {
+                continue;
+            }
+
+            var cycle = recipe.States.Keys.Where(n => n == name || (ahead.Contains(n) && Reached([n], automatic).Contains(name))).ToList();
+            reported.UnionWith(cycle);
+            yield return source.Finding(
+                "RCP-LOOP-001",
+                $"states.{name}",
+                $"the cycle through {string.Join(", ", cycle.Select(n => $"'{n}'"))} has no loop cap",
+                "add loop: <name> to one of its states and declare the loop under loops with a cap");
+        }
+    }
+
+    /// <summary>The step and wait transitions between non-terminal states that have no loop: the edges no loop counts.</summary>
+    private static Edges UncountedEdges(Recipe recipe)
+    {
+        var edges = recipe.States
+            .Where(static s => s.Value.Loop is null && s.Value.Kind != StateKind.Terminal)
+            .ToDictionary(static s => s.Key, static _ => new HashSet<string>(StringComparer.Ordinal), StringComparer.Ordinal);
+        foreach (var transition in recipe.Transitions.Where(t => !t.On.StartsWith("command.", StringComparison.Ordinal) && edges.ContainsKey(t.To)))
+        {
+            foreach (var from in transition.From.Where(edges.ContainsKey))
+            {
+                _ = edges[from].Add(transition.To);
+            }
+        }
+
+        return edges;
     }
 
     private static RecipeFinding? LoopMembership(Recipe recipe, string name, RecipeState state, Edges edges, RecipeSource source)
