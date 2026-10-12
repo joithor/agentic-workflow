@@ -66,6 +66,28 @@ internal sealed class SqliteLedger(LedgerDatabase database) : ILedgerStore
         return events.IsError ? events.Error : Results.Success(events.Value.Count == 0 ? null : events.Value[0]);
     }
 
+    public async ValueTask<Result<long>> Head(CancellationToken cancellationToken)
+    {
+        var schema = await database.Schema(cancellationToken).ConfigureAwait(false);
+        if (schema.IsError || schema.Value.Applied == 0)
+        {
+            return schema.IsError ? schema.Error : 0L;
+        }
+
+        var read = await database.Sessions.BeginRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError)
+        {
+            return LedgerDatabase.Translate(read.Error);
+        }
+
+        await using (read.Value.ConfigureAwait(false))
+        {
+            var head = await SqliteQueries.One(read.Value, new SqlStatement(LedgerSql.SelectHead), (IRowMapper<long>)CountMapper.Instance, cancellationToken)
+                .ConfigureAwait(false);
+            return head.IsError ? LedgerDatabase.Translate(head.Error) : head;
+        }
+    }
+
     public ValueTask<Result<SchemaStatus>> Schema(CancellationToken cancellationToken) => database.Schema(cancellationToken);
 
     private async ValueTask<Result<IReadOnlyList<LedgerEvent>>> ReadEvents(SqlStatement statement, CancellationToken cancellationToken)
