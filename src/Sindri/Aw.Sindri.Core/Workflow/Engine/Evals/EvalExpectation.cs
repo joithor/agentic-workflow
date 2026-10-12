@@ -8,4 +8,4 @@ namespace Aw.Sindri.Core.Workflow.Engine.Evals;
 /// <param name="Park">The park reason, when the state is 'parked'.</param>
 /// <param name="Outcome">The terminal outcome, when the instance ended.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record EvalExpectation(string State, ParkReason? Park, OutcomeName? Outcome);
+public sealed record EvalExpectation(string State, ParkReason? Park = null, OutcomeName? Outcome = null);

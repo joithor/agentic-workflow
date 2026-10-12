@@ -1916,7 +1916,6 @@ Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation.Deconstruct(out string! State, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Park, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation.Equals(Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation.EvalExpectation(string! State, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName?
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation.Outcome.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation.Park.get -> Aw.Sindri.Core.Workflow.Engine.ParkReason?
@@ -1937,16 +1936,13 @@ Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Evals.EvalStart! Start, out bool? Scaffold) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine.Equals(Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine.EvalStartLine(Aw.Sindri.Core.Workflow.Engine.Evals.EvalStart! Start, bool? Scaffold) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine.Scaffold.get -> bool?
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine.Scaffold.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine.Start.get -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalStart!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine.Start.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine!
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger! Trigger, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Blocks.GateVerdict>? Gates, out Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation! Expect) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.Equals(Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.EvalStepLine(Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger! Trigger, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Blocks.GateVerdict>? Gates, Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation! Expect) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.Expect.get -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.Expect.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.Gates.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Blocks.GateVerdict>?
@@ -1955,9 +1951,7 @@ Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.Trigger.get -> Aw.Sindri.Core.
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.Trigger.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger!
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Park) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Equals(Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.EvalTrigger(string! Kind, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Kind.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Kind.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName?
@@ -3112,7 +3106,6 @@ static Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase.operator !=(Aw.Sindri.Core.
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase.operator ==(Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase? left, Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation.operator !=(Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation? left, Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation.operator ==(Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation? left, Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Evals.EvalRecorder.Record(string! name, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent!>! events) -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase!
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalRunner.Run(Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase! evalCase, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! children) -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVerdict!
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalScaffold.Generate(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog) -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase!
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalStart.operator !=(Aw.Sindri.Core.Workflow.Engine.Evals.EvalStart? left, Aw.Sindri.Core.Workflow.Engine.Evals.EvalStart? right) -> bool
@@ -3297,3 +3290,49 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger.PrintMembers(System.Text
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? other) -> bool
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalCaseReader
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalFacts
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalLines
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading!
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.Case.get -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase?
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.Case.init -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase? Case, out Aw.Sindri.Core.Workflow.Engine.Evals.EvalVerdict? Invalid) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.Equals(Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.EvalReading(Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase? Case, Aw.Sindri.Core.Workflow.Engine.Evals.EvalVerdict? Invalid) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.Invalid.get -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVerdict?
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.Invalid.init -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Amount.get -> int?
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Amount.init -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Park, out Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant, out int? Amount) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Variant.get -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant?
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Variant.init -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant.Accept = 3 -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant.Cancel = 9 -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant.Command = 11 -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant.Deadline = 10 -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant.Grant = 1 -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant.GrantTokens = 2 -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant.Handback = 8 -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant.Reject = 4 -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant.Resume = 5 -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant.Takeover = 7 -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant.Text = 6 -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
+override Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Evals.EvalCaseReader.Read(string! name, string! text, System.Text.Json.JsonSerializerOptions! options) -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading!
+static Aw.Sindri.Core.Workflow.Engine.Evals.EvalFacts.OfText(string! text) -> System.Text.Json.JsonElement
+static Aw.Sindri.Core.Workflow.Engine.Evals.EvalFacts.Text(System.Text.Json.JsonElement content) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Evals.EvalFacts.Value(System.Text.Json.JsonElement content) -> Aw.Sindri.Core.Workflow.Engine.FactValue!
+static Aw.Sindri.Core.Workflow.Engine.Evals.EvalLines.Write(Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase! evalCase, System.Text.Json.JsonSerializerOptions! options) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.operator !=(Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? left, Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.operator ==(Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? left, Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Evals.EvalScaffold.Generate(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! children) -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase!
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation.EvalExpectation(string! State, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park = null, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalStartLine.EvalStartLine(Aw.Sindri.Core.Workflow.Engine.Evals.EvalStart! Start, bool? Scaffold = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger! Trigger, out Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation! Expect, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Blocks.GateVerdict>? Gates) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.EvalStepLine(Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger! Trigger, Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation! Expect, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Blocks.GateVerdict>? Gates = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.EvalTrigger(string! Kind, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs = null, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park = null, Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant = null, int? Amount = null) -> void
+static Aw.Sindri.Core.Workflow.Engine.Evals.EvalRecorder.Record(string! name, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent!>! events, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Engine.TriggerKey, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>!>! reported, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! contents) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase!>!

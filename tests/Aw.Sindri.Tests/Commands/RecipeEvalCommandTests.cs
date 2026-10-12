@@ -1,0 +1,87 @@
+using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.Ledger;
+
+namespace Aw.Sindri.Tests.Commands;
+
+/// <summary>
+/// 'sindri recipe eval' as Program runs it, over real files (spec §6.3, W27): case lines and exit 0 or 1, the
+/// scaffold, and '--record' refusing with exit 2 until the server has instances (P4). It swaps the process's console.
+/// </summary>
+[Collection(ProcessEnvironment.Name)]
+public sealed class RecipeEvalCommandTests : IDisposable
+{
+    private readonly TempHome _home = new();
+    private readonly StringWriter _out = new();
+    private readonly StringWriter _error = new();
+    private readonly TextWriter _consoleOut = Console.Out;
+    private readonly TextWriter _consoleError = Console.Error;
+
+    public RecipeEvalCommandTests()
+    {
+        Console.SetOut(_out);
+        Console.SetError(_error);
+    }
+
+    public void Dispose()
+    {
+        Console.SetOut(_consoleOut);
+        Console.SetError(_consoleError);
+        _home.Dispose();
+    }
+
+    private string Recipe => Path.Combine(_home.Path, "recipes", "workflow.dev-timeout.yaml");
+
+    private string Happy => Path.Combine(_home.Path, "recipes", "evals", "workflow.dev-timeout", "happy.jsonl");
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Passing_evals_print_one_line_per_case_and_exit_0()
+    {
+        await Put(ShippedRecipes.Read("dev/evals/workflow.dev-timeout/happy.jsonl"));
+
+        Assert.Equal(0, await Run("recipe", "eval", Recipe));
+        Assert.Equal("happy pass\n", _out.ToString());
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_diverging_line_exits_1_and_names_the_file_and_the_line()
+    {
+        await Put(ShippedRecipes.Read("dev/evals/workflow.dev-timeout/happy.jsonl").Replace("\"state\":\"done\"", "\"state\":\"hold\"", StringComparison.Ordinal));
+
+        Assert.Equal(1, await Run("recipe", "eval", Recipe));
+        Assert.Equal("happy fail at evals/workflow.dev-timeout/happy.jsonl:2: expected hold (outcome resolved), got done (outcome resolved)\n", _out.ToString());
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Scaffold_prints_a_case_that_then_passes()
+    {
+        await Put("placeholder\n");
+
+        Assert.Equal(0, await Run("recipe", "eval", "--scaffold", Recipe));
+        var scaffold = _out.ToString();
+        Assert.StartsWith("{\"start\":{\"inputs\":{}},\"scaffold\":true}\n", scaffold, StringComparison.Ordinal);
+
+        await File.WriteAllTextAsync(Happy, scaffold, TestContext.Current.CancellationToken);
+        _out.GetStringBuilder().Clear();
+        Assert.Equal(0, await Run("recipe", "eval", Recipe));
+        Assert.Equal("happy pass\n", _out.ToString());
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Record_exits_2_until_the_server_has_instances()
+    {
+        Assert.Equal(2, await Run("recipe", "eval", "--record", "T-3/step/1", "--out", Happy));
+        Assert.Contains("needs the server (P4)", _error.ToString(), StringComparison.Ordinal);
+    }
+
+    private async Task Put(string happy)
+    {
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(Happy)!); // why: the eval path has a parent
+        await File.WriteAllTextAsync(Recipe, ShippedRecipes.Read("dev/workflow.dev-timeout.yaml"), TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Happy, happy, TestContext.Current.CancellationToken);
+    }
+
+    private string? Environment(string name) => name switch { "AW_SINDRI_HOME" => _home.Path, _ => null };
+
+    private Task<int> Run(params string[] args) => CommandTable.Run(args, Environment, TimeProvider.System);
+}
