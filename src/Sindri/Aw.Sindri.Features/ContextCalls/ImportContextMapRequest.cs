@@ -11,4 +11,4 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <param name="Path">The map file's absolute path, outside every git worktree.</param>
 /// <param name="Hash">The content hash to import, or null to see it.</param>
 /// <param name="Confirmed">True only after the human's typed confirmation.</param>
-public sealed record ImportContextMapRequest(string Path, string? Hash, bool Confirmed) : ICommand<ImportContextMapResponse>;
+public sealed record ImportContextMapRequest(string Path, string? Hash = null, bool Confirmed = false) : ICommand<ImportContextMapResponse>;

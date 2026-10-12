@@ -45,7 +45,7 @@ Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Deconstruct(out string! 
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Equals(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? other) -> bool
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Hash.get -> string?
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Hash.init -> void
-Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.ImportContextMapRequest(string! Path, string? Hash, bool Confirmed) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.ImportContextMapRequest(string! Path, string? Hash = null, bool Confirmed = false) -> void
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Path.get -> string!
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Path.init -> void
 Aw.Sindri.Features.ContextCalls.ImportContextMapResponse
