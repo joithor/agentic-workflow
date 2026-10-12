@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Aw.Kernel;
+using Aw.Kernel.Ids;
 
 namespace Aw.Sindri.Core.Commands;
 
@@ -24,6 +25,15 @@ public sealed partial record CliForm
         Shape.IsMatch(text)
             ? new CliForm(text)
             : SindriErrors.InvalidInput.With($"'{text}' is not a CLI form: 'sindri' then words, --flags, <placeholders> or [optional parts]");
+
+    /// <summary>The form with the typed id <paramref name="id"/> in place of '&lt;<paramref name="placeholder"/>&gt;' (P4's NeedsYouRow.cli).</summary>
+    /// <param name="placeholder">The placeholder's name, for example 'itemId'.</param>
+    /// <param name="id">The id to substitute.</param>
+    /// <typeparam name="TId">A typed id over text.</typeparam>
+    /// <returns>The filled form, or SND-CLI-003 when the form has no such placeholder or the id's text isn't safe on a command line.</returns>
+    public Result<CliForm> Fill<TId>(string placeholder, TId id)
+        where TId : struct, ITypedId<TId, string>
+        => throw new NotSupportedException($"CliForm.Fill: make CliFormTests pass ({placeholder}, {id.Value})");
 
     /// <inheritdoc />
     public override string ToString() => Text;
