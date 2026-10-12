@@ -6,6 +6,7 @@ namespace Aw.Sindri.Ui.Testing;
 internal sealed class FakeTray : ITray
 {
     private readonly List<TrayView> _history = [];
+    private Exception? _fail;
 
     public event EventHandler? OpenRequested;
 
@@ -18,9 +19,18 @@ internal sealed class FakeTray : ITray
 
     public void Show(TrayView view)
     {
+        if (Interlocked.Exchange(ref _fail, value: null) is { } error)
+        {
+            throw error;
+        }
+
         Shown = view;
         _history.Add(view);
     }
+
+    /// <summary>Makes the next show throw, as a tray the platform can't create does.</summary>
+    /// <param name="error">The exception.</param>
+    public void FailNextShow(Exception error) => _fail = error;
 
     /// <summary>Picks "Open Sindri".</summary>
     public void ClickOpen() => OpenRequested?.Invoke(this, EventArgs.Empty);

@@ -11,7 +11,7 @@ internal static class Program
         var platform = Composition.Platform(Environment.GetEnvironmentVariable, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), TimeProvider.System);
         try
         {
-            return SingleLaunch.Run(platform.Instance, args, () => Composition.Compose(platform, TimeProvider.System).StartWithClassicDesktopLifetime(args));
+            return SingleLaunch.Run(platform.Instance, args, () => Composition.Compose(platform, TimeProvider.System).StartWithClassicDesktopLifetime(args), Console.Error);
         }
         finally
         {

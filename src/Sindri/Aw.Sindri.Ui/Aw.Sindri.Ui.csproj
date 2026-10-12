@@ -15,6 +15,9 @@
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
+    <!-- ILogger and [LoggerMessage]: the app reports a failed start-up through the logger the head passes in
+         SindriPlatform.Log (the desktop head's is Aw.Kernel.Telemetry's). -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>

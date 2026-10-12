@@ -7,6 +7,7 @@ using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views;
 using Aw.Sindri.Ui.Views.Shell;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -36,8 +37,20 @@ public sealed class StartupTests : IDisposable
                 return true;
             }, Token);
 
+    private readonly RecordingLogger _log = new();
+
     private SindriPlatform Platform(FakeSingleInstance instance) =>
-        new(new InMemoryEndpointRecords(), new InMemoryPreferencesStore(), new FakeMotionPreference(), instance, _tray);
+        new(new InMemoryEndpointRecords(), new InMemoryPreferencesStore(), new FakeMotionPreference(), instance, _tray) { Log = _log };
+
+    // The app as the head starts it: created over the ports, initialized, then the framework's initialization completes.
+    private SindriApp Start(FakeSingleInstance instance)
+    {
+        var app = SindriApp.Create(Platform(instance), _clock);
+        app.ApplicationLifetime = _desktop;
+        app.Initialize();
+        app.OnFrameworkInitializationCompleted();
+        return app;
+    }
 
     private static async Task Until(Func<bool> condition)
     {
@@ -65,11 +78,7 @@ public sealed class StartupTests : IDisposable
     {
         var instance = new FakeSingleInstance(_channel);
         Assert.True(await instance.TryClaim(Token));
-        var app = SindriApp.Create(Platform(instance), _clock);
-        app.ApplicationLifetime = _desktop;
-        app.Initialize();
-
-        app.OnFrameworkInitializationCompleted();
+        _ = Start(instance);
         await Until(() => _desktop.MainWindow is { IsVisible: true } && _tray.Shown is not null);
 
         try
@@ -88,6 +97,42 @@ public sealed class StartupTests : IDisposable
         finally
         {
             Quit();
+            await instance.DisposeAsync();
+        }
+    });
+
+    // A start-up that throws is never silent: the app logs the code and the exception's type (no message, no stack),
+    // and ends with exit code 2 instead of lingering without a window or tray.
+    [Fact]
+    public Task A_failed_start_up_logs_its_code_and_ends_the_app_with_exit_code_2() => OnUi(async () =>
+    {
+        var instance = new FakeSingleInstance(_channel);
+        Assert.True(await instance.TryClaim(Token));
+        _tray.FailNextShow(new InvalidOperationException("no status bar at /secret/path"));
+        int? exitCode = null;
+        _desktop.Exit += (_, e) => exitCode = e.ApplicationExitCode;
+
+        try
+        {
+            _ = Start(instance);
+            await Until(() => exitCode is not null);
+
+            Assert.Equal(2, exitCode);
+            var entry = Assert.Single(_log.Entries, e => e.Level == LogLevel.Error);
+            Assert.Equal("SND-UI-004", entry.EventName);
+            Assert.Contains(nameof(InvalidOperationException), entry.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("/secret/path", entry.Message, StringComparison.Ordinal);
+            Assert.Null(entry.Exception);
+            Assert.DoesNotContain(_desktop.Windows, w => w.IsVisible);
+        }
+        finally
+        {
+            foreach (var window in _desktop.Windows.ToList())
+            {
+                window.Close();
+            }
+
+            Dispatcher.UIThread.RunJobs();
             await instance.DisposeAsync();
         }
     });

@@ -15,8 +15,9 @@ internal static class SingleLaunch
     /// <param name="instance">This launch's instance port.</param>
     /// <param name="args">The command line.</param>
     /// <param name="runApp">Runs the app until it quits; returns its exit code.</param>
+    /// <param name="errors">Standard error.</param>
     /// <returns>The exit code: the app's, 0 when the running instance took the message, 1 when none answered.</returns>
-    internal static int Run(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp)
+    internal static int Run(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors)
     {
         // Before the UI starts, on the main thread with no synchronization context: blocking here deadlocks nothing.
         if (instance.TryClaim(CancellationToken.None).AsTask().GetAwaiter().GetResult())
@@ -29,7 +30,7 @@ internal static class SingleLaunch
             return 0;
         }
 
-        Console.Error.WriteLine("sindri-ui: another instance holds the claim but didn't answer; quit it and try again");
+        errors.WriteLine("sindri-ui: another instance holds the claim but didn't answer; quit it and try again");
         return 1;
     }
 

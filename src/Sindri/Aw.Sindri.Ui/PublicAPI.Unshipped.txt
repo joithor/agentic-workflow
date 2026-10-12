@@ -25,6 +25,8 @@ Aw.Sindri.Ui.Platform.SindriPlatform.Deconstruct(out Aw.Sindri.Ui.Platform.IEndp
 Aw.Sindri.Ui.Platform.SindriPlatform.Equals(Aw.Sindri.Ui.Platform.SindriPlatform? other) -> bool
 Aw.Sindri.Ui.Platform.SindriPlatform.Instance.get -> Aw.Sindri.Ui.Platform.ISingleInstance!
 Aw.Sindri.Ui.Platform.SindriPlatform.Instance.init -> void
+Aw.Sindri.Ui.Platform.SindriPlatform.Log.get -> Microsoft.Extensions.Logging.ILogger!
+Aw.Sindri.Ui.Platform.SindriPlatform.Log.init -> void
 Aw.Sindri.Ui.Platform.SindriPlatform.Motion.get -> Aw.Sindri.Ui.Platform.IMotionPreference!
 Aw.Sindri.Ui.Platform.SindriPlatform.Motion.init -> void
 Aw.Sindri.Ui.Platform.SindriPlatform.Preferences.get -> Aw.Sindri.Ui.Platform.IPreferencesStore!

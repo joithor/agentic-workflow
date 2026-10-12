@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace Aw.Sindri.Ui.Platform;
 
 /// <summary>The platform adapters a head hands the app (one per port), so a new port doesn't change <see cref="Views.SindriApp.Create(SindriPlatform, TimeProvider)"/>'s signature.</summary>
@@ -11,4 +14,8 @@ public sealed record SindriPlatform(
     IPreferencesStore Preferences,
     IMotionPreference Motion,
     ISingleInstance Instance,
-    ITray Tray);
+    ITray Tray)
+{
+    /// <summary>The app's log (the desktop head's writes JSON lines on standard error through Aw.Kernel.Telemetry); none by default.</summary>
+    public ILogger Log { get; init; } = NullLogger.Instance;
+}
