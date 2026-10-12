@@ -174,6 +174,37 @@ public sealed class FrameStackTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_park_on_a_frame_whose_pending_park_is_taken_leaves_the_first_one_standing()
+    {
+        var drift = Park(ParkReason.SpecConflict, ParkKind.Drift, ResumeKind.Rearm);
+        var pending = FrameRules.Suspend(Suspended(Park(ParkReason.Timeout, kind: null, ResumeKind.Rearm)), drift, T0.AddHours(1));
+
+        var again = FrameRules.Suspend(pending, Park(ParkReason.Budget, ParkKind.Step, ResumeKind.Rerun), T0.AddHours(2));
+
+        // §5.1: a pending park already there stands and takes effect first; the slot holds one, so the later park changes nothing.
+        Assert.Same(pending, again);
+        Assert.Equal(new PendingPark(drift.Suspension, drift.Resume), again.Suspended[^1].Pending);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Parks_on_a_parked_and_taken_over_instance_wait_one_per_suspended_frame()
+    {
+        var taken = FrameRules.TakeOver(Suspended(Park(ParkReason.Timeout, kind: null, ResumeKind.Rearm)), "human:cli", Context(T0.AddHours(1))).Value;
+        var budget = Park(ParkReason.Budget, ParkKind.Step, ResumeKind.Rerun);
+        var drift = Park(ParkReason.SpecConflict, ParkKind.Drift, ResumeKind.Rearm);
+
+        var first = FrameRules.Suspend(taken, budget, T0.AddHours(2));
+        var second = FrameRules.Suspend(first, drift, T0.AddHours(3));
+        var third = FrameRules.Suspend(second, Park(ParkReason.NeedsAnswer, ParkKind.Step, ResumeKind.Rerun), T0.AddHours(4));
+
+        Assert.Equal(2, taken.Suspended.Count);
+        Assert.Equal(new PendingPark(budget.Suspension, budget.Resume), first.Suspended[1].Pending);
+        Assert.Null(first.Suspended[0].Pending);
+        Assert.Equal(new PendingPark(drift.Suspension, drift.Resume), second.Suspended[0].Pending);
+        Assert.Same(second, third);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Park_on_a_taken_over_instance_takes_effect_on_handback()
     {
         var taken = FrameRules.TakeOver(Producing(), "human:cli", Context(T0)).Value;

@@ -117,7 +117,9 @@ internal static class FrameStack
     }
 
     // A park arriving while parked, escalated or taken over waits on the topmost suspended frame without one (§5.1); a
-    // pending park already there stands, and takes effect first.
+    // pending park already there stands, and takes effect first. Each suspended frame holds one, so with every slot
+    // taken the later park changes nothing (FrameStackTests pins it). In P3 nothing reaches that: only a drift park
+    // arrives on a suspended instance, a second drift is absorbed and a revoke replaces the stack.
     private static WorkflowInstance WithPending(WorkflowInstance instance, SuspendOutcome outcome)
     {
         var index = instance.Suspended.ToList().FindLastIndex(static s => s.Pending is null);
