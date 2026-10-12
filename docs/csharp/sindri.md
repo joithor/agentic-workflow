@@ -100,10 +100,11 @@ every 20 s.
   nobody took over, lost nothing to fencing). Once another process took the lease, renew fails with `SND-LEASE-002` and
   the process stops (exit 1): it must not write under a stale epoch. Any other renewal error (a busy or unreadable
   ledger) is logged and retried at the next tick, until the grant expires; past expiry the process stops too. A stop
-  records `process.stopped`, clears the grant, requests the shutdown, removes `control.json`, and only then releases
-  the lease, so no client finds `control.json` once the lease is free for another process. A ping after the clear
-  answers epoch 0, which no record matches, so it reads as not running. A renewal that finishes afterwards doesn't
-  hold the grant again, and one that lost to the release ends quietly (a stop, not a loss: exit 0).
+  records `process.stopped`, removes `control.json` while it still holds the grant, clears the grant, requests the
+  shutdown, and only then releases the lease. So `/sindri/ping` answers epoch 0 (after the clear, until the port
+  closes) only once `control.json` is gone, and no client finds `control.json` once the lease is free for another
+  process. A renewal that finishes afterwards doesn't hold the grant again, and one that lost to the release ends
+  quietly (a stop, not a loss: exit 0).
 - **Fencing:** every ledger append checks, in its own transaction, that the writer's grant is the current epoch;
   otherwise `SND-LEASE-003` and nothing is written.
 
