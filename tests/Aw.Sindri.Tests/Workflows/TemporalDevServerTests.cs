@@ -17,10 +17,10 @@ public sealed class TemporalDevServerTests : IDisposable
 
     public void Dispose() => _home.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 60_000)]
     public async Task Serve_starts_the_dev_server_on_loopback_with_its_database_under_the_home()
     {
-        var temporal = PinnedTemporal();
+        var temporal = PinnedTemporal.Path();
         var server = new TemporalDevServer();
 
         var running = await server.StartAsync(new TemporalServerStart(temporal, _home.Path), TestContext.Current.CancellationToken);
@@ -37,35 +37,89 @@ public sealed class TemporalDevServerTests : IDisposable
         }
     }
 
-    /// <summary>The 'temporal' CLI pinned in binaries.lock, where scripts/binaries-lock.sh fetch installs it.</summary>
-    private static string PinnedTemporal()
+    [Fact(Timeout = 60_000)]
+    public async Task A_server_left_by_a_serve_that_died_is_adopted_by_the_next_start()
     {
-        var root = RepoRoot();
-        var row = File.ReadLines(Path.Combine(root, "binaries.lock"))
-            .Select(l => l.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
-            .First(f => f.Length == 6 && f[0] == "temporal");
-        var stateDir = Environment.GetEnvironmentVariable("AW_STATE_DIR") is { Length: > 0 } dir
-            ? dir
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agentic-workflow");
-        var path = Path.Combine(stateDir, "cache", "bin", $"temporal-{row[1]}", "temporal");
-        if (!File.Exists(path))
+        var ct = TestContext.Current.CancellationToken;
+        var start = new TemporalServerStart(PinnedTemporal.Path(), _home.Path);
+        var first = await new TemporalDevServer().StartAsync(start, ct);   // the serve that started it is gone; its server isn't
+        var next = new TemporalDevServer();
+        try
         {
-            Assert.Fail($"the pinned temporal CLI {row[1]} is not installed at {path}: run scripts/binaries-lock.sh fetch temporal");
-        }
+            var adopted = await next.StartAsync(start, ct);
 
-        return path;
+            Assert.Equal((first.ProcessId, first.Frontend.Port, true), (adopted.ProcessId, adopted.Frontend.Port, adopted.Adopted));
+        }
+        finally
+        {
+            await next.StopAsync(first, ct);
+        }
     }
 
-    private static string RepoRoot()
+    [Fact(Timeout = 60_000)]
+    public async Task A_server_on_the_home_database_that_doesnt_answer_is_replaced()
     {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        var ct = TestContext.Current.CancellationToken;
+        var server = new TemporalDevServer();
+        var start = new TemporalServerStart(PinnedTemporal.Path(), _home.Path);
+        var stuck = await server.StartAsync(start, ct);
+        DevServerProcesses.Signal(stuck.ProcessId, "STOP");   // alive, holding the database, answering nothing
+        RunningTemporalServer? replacement = null;
+        try
         {
-            if (File.Exists(Path.Combine(directory.FullName, "AgenticWorkflow.slnx")))
+            replacement = await server.StartAsync(start, ct);
+
+            Assert.NotEqual(stuck.ProcessId, replacement.ProcessId);
+            Assert.False(replacement.Adopted);
+            Assert.True(DevServerProcesses.Gone(stuck.ProcessId), "the stuck server still runs");
+            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(replacement.Frontend, TimeSpan.FromSeconds(5), ct)).Answer);
+        }
+        finally
+        {
+            DevServerProcesses.Signal(stuck.ProcessId, "KILL");
+            if (replacement is not null)
             {
-                return directory.FullName;
+                await server.StopAsync(replacement, ct);
             }
         }
-
-        throw new InvalidOperationException("No AgenticWorkflow.slnx above the test's base directory.");
     }
+
+    [Fact(Timeout = 60_000)]
+    public async Task A_restart_on_the_same_database_keeps_the_namespace_and_the_search_attributes()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var server = new TemporalDevServer();
+        var start = new TemporalServerStart(PinnedTemporal.Path(), _home.Path);
+        await server.StopAsync(await server.StartAsync(start, ct), ct);
+
+        var restarted = await server.StartAsync(start, ct);
+        try
+        {
+            Assert.False(restarted.Adopted);
+            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(restarted.Frontend, TimeSpan.FromSeconds(5), ct)).Answer);
+            var listed = await Temporalio.Client.TemporalConnection.CreateLazy(new(restarted.Frontend.ToString())).OperatorService
+                .ListSearchAttributesAsync(new() { Namespace = SindriTemporal.Namespace }, new() { CancellationToken = ct });
+            Assert.All(SindriTemporal.SearchAttributes, a => Assert.Equal(a.Type, listed.CustomAttributes[a.Name]));
+        }
+        finally
+        {
+            await server.StopAsync(restarted, ct);
+        }
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task Stop_takes_the_server_down()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var server = new TemporalDevServer();
+        var running = await server.StartAsync(new TemporalServerStart(PinnedTemporal.Path(), _home.Path), ct);
+
+        await server.StopAsync(running, ct);
+
+        Assert.True(DevServerProcesses.Gone(running.ProcessId));
+        Assert.Empty(TemporalDevServer.Find(_home.Path));
+    }
+
+    [Fact]
+    public void The_pin_in_code_is_the_pin_in_binaries_lock() => Assert.Equal(SindriTemporal.PinnedVersion, PinnedTemporal.Version);
 }

@@ -8,7 +8,12 @@ using Aw.Sindri.Core.Ledger;
 
 namespace Aw.Sindri.Features.StopProcess;
 
-internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerStore ledger, EventFactory events, IShutdown shutdown)
+/// <summary>
+/// Records the stop, requests the shutdown, stops the Temporal dev server, then releases the lease: the server goes down
+/// before the lease is free, so the next serve never adopts a server that is stopping. Without a lease this process owns
+/// no server, so it only shuts down.
+/// </summary>
+internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerStore ledger, EventFactory events, IShutdown shutdown, ITemporalServer temporal)
     : IService<StopProcessRequest, StopProcessResponse>
 {
     public async ValueTask<Result<StopProcessResponse>> Handle(StopProcessRequest request, CancellationToken cancellationToken)
@@ -25,8 +30,10 @@ internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerSt
         var recorded = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         held.Clear();         // first, so a renewal finishing now can't hold the grant again
         shutdown.Request();   // before the release, so a renewal that runs after it sees a stop, not a lost lease
+        var stopped = await temporal.Stop(cancellationToken).ConfigureAwait(false);
         var released = await lease.Release(grant, cancellationToken).ConfigureAwait(false);
         return recorded.IsError ? recorded.Error
+            : stopped.IsError ? stopped.Error
             : released.IsError ? released.Error
             : new StopProcessResponse(grant.Holder.Pid, grant.Epoch);
     }
