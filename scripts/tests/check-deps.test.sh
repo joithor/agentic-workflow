@@ -640,13 +640,15 @@ expect "a cycle exception covers its one cycle: another cycle still fails" 1 "DE
 refuse "  ... and the excused cycle is not reported" "Alpha -> Beta -> Alpha"
 
 d="$(fixture cycle-excepted-two)"; edge "$d" Alpha Beta cli planned; edge "$d" Beta Delta cli planned; edge "$d" Delta Alpha cli planned; cyc "$d" Alpha Alpha Beta cli; run "$d"
-expect "a cycle exception whose edge closes two cycles covers neither" 1 "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha" "Alpha -> Beta -> Delta -> Alpha" "DEPS-EXC-002" "2 cycles pass through Alpha -> Beta (cli)"
+expect "a cycle exception whose edge closes two cycles covers neither" 1 "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha" "Alpha -> Beta -> Delta -> Alpha" "DEPS-EXC-002" "2 cycles pass through Alpha -> Beta (cli)" "fix: break the other cycle through Alpha -> Beta (cli)"
+refuse "  ... and its fix isn't to delete the exception" "fix: delete the DEPS-CYCLE-001 exception"
 
 d="$(fixture cycle-excepted-none)"; edge "$d" Delta Alpha cli planned; cyc "$d" Delta Delta Alpha cli; run "$d"
-expect "a cycle exception whose cycle doesn't exist suppresses nothing" 1 "DEPS-EXC-002" "DEPS-CYCLE-001 for Delta: no cycle passes through Delta -> Alpha (cli)"
+expect "a cycle exception whose cycle doesn't exist suppresses nothing" 1 "DEPS-EXC-002" "DEPS-CYCLE-001 for Delta: no cycle passes through Delta -> Alpha (cli)" "fix: delete the DEPS-CYCLE-001 exception for Delta from deps.yaml"
 
 d="$(fixture cycle-excepted-parallel)"; edge "$d" Alpha Beta cli planned; edge "$d" Alpha Beta file planned; cyc "$d" Alpha Alpha Beta cli; run "$d"
-expect "a cycle exception covers nothing when another edge of the same pair still closes the cycle" 1 "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha" "DEPS-EXC-002" "every cycle through Alpha -> Beta (cli) also has another Alpha -> Beta edge"
+expect "a cycle exception covers nothing when another edge of the same pair still closes the cycle" 1 "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha" "DEPS-EXC-002" "every cycle through Alpha -> Beta (cli) also has another Alpha -> Beta edge" "fix: remove the other Alpha -> Beta edge"
+refuse "  ... and its fix isn't to delete the exception" "fix: delete the DEPS-CYCLE-001 exception"
 
 d="$(fixture cycle-excepted-missing)"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Alpha Beta http; run "$d"
 expect "a cycle exception excusing an edge that isn't declared fails, and the cycle with it" 1 "DEPS-EXC-005" "Alpha -> Beta (http) is not a declared edge" "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha"
