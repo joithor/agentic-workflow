@@ -6,7 +6,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// The 'workflow' verb group (engine spec rev 8 §6.3). Engine P0 spike: 'complete' and 'list', which talk to Temporal
+/// The 'workflow' verb group (engine spec rev 8 §6.3). Engine P4a: 'complete' and 'list', which talk to Temporal
 /// directly through <see cref="IDeskSteps"/> and <see cref="IWorkflowInstances"/> (no 'serve' route yet), at the
 /// frontend control.json's 'temporal' field records; '--temporal host:port' overrides it. 'complete' prints what
 /// happened ('T-1/step/1 run 1.1: done -> checks'); 'list' prints one open instance a line ('T-1/step/1  checks  needs-you').

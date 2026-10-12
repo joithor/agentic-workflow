@@ -6,8 +6,8 @@ using Wf = Temporalio.Workflows.Workflow;
 namespace Aw.Sindri.Tests.Workflows.Spike;
 
 /// <summary>
-/// The throwaway test-only interpreter for 'workflow.step' (engine P0 pass line 2). Unit (b) builds the real throwaway
-/// RecipeWorkflow in parallel; this one exists so unit (c) isn't blocked. Each active state runs the desk Step as an
+/// The test-only interpreter for 'workflow.step' (engine P4a acceptance check 2), the eval harness. Unit (b) built
+/// RecipeWorkflow, the foundation's interpreter, in parallel; this one exists so unit (c) wasn't blocked. Each active state runs the desk Step as an
 /// async-completion activity whose id is the run token '{entry}.1', races it with Workflow.DelayAsync(timeout), decides
 /// with <see cref="SpikeDecision"/> and mirrors every start and transition into the ledger through the 'RecordEvent'
 /// local activity. A park ends the run (P4 keeps it open for answers); a timeout parks ('then: retry' isn't modelled).

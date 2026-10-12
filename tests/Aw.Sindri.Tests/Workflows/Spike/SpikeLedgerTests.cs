@@ -11,7 +11,7 @@ using Temporalio.Worker;
 namespace Aw.Sindri.Tests.Workflows.Spike;
 
 /// <summary>
-/// Engine P0 pass line 3: the ledger holds one 'workflow.transition' per transition after a replay. The interpreter
+/// Engine P4a acceptance check 3: the ledger holds one 'workflow.transition' per transition after a replay. The interpreter
 /// mirrors through the real 'RecordEvent' into S1's SQLite ledger (ILedgerStore); the replay is forced three ways:
 /// a new worker with no sticky cache (every workflow task replays the whole history), the SDK's WorkflowReplayer over
 /// the fetched history, and a direct re-execution of a recorded event (the at-least-once retry a crash can cause).

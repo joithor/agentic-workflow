@@ -1,7 +1,7 @@
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
-/// Where the adapter keeps its files under the Sindri home. Engine P0 spike: the desk task tokens, the output facts a
+/// Where the adapter keeps its files under the Sindri home. Engine P4a: the desk task tokens, the output facts a
 /// desk report stored, and the recipes the worker loads (P2's registry replaces the directory).
 /// </summary>
 /// <param name="Home">The Sindri home, as <see cref="TemporalSettings"/> reads it.</param>

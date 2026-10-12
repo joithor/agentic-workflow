@@ -18,7 +18,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <summary>
 /// The recipe interpreter: the one workflow type that runs every recipe (engine spec rev 8 §5.1). Workflow code is
 /// deterministic: no I/O, clock or random except through 'Workflow.*'; every decision is P3's pure
-/// <see cref="TransitionDecision"/>. Engine P0 spike: the throwaway interpreter for 'workflow.step': it loads the recipe
+/// <see cref="TransitionDecision"/>. Engine P4a: the first interpreter for 'workflow.step': it loads the recipe
 /// through the 'LoadRecipe' local activity, enters the initial state, and runs each active state's Step as a 'RunStep'
 /// activity (desk runtime: async completion, the run token in the activity id) until a terminal state. It mirrors the
 /// start and every transition into the ledger through the 'RecordEvent' local activity (spec rev 8.1 §5.6) and upserts

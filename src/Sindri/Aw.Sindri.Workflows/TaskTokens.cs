@@ -2,7 +2,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
 /// The run-token-to-task-token map (engine spec rev 8 §5.3; spec: the API stores the task token on 'step.started' in
-/// the ledger). Engine P0 spike: one small file per open desk run under the Sindri home, so the CLI process finds the
+/// the ledger). Engine P4a: one small file per open desk run under the Sindri home, so the CLI process finds the
 /// task token the worker process recorded, and a worker restart loses nothing (a replay never re-runs RunStep, so an
 /// in-memory map would be empty after a restart).
 /// </summary>

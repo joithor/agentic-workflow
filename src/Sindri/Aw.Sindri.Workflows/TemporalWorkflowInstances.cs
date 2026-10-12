@@ -7,7 +7,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
 /// <see cref="IWorkflowInstances"/> as a Temporal visibility query on the search attributes the interpreter upserts
-/// (engine spec rev 8 §5.1). Engine P0 spike: the CLI asks the dev server directly; the caller's query is ANDed with
+/// (engine spec rev 8 §5.1). Engine P4a: the CLI asks the dev server directly; the caller's query is ANDed with
 /// "the running RecipeWorkflow instances".
 /// </summary>
 /// <param name="frontend">Finds the dev server.</param>

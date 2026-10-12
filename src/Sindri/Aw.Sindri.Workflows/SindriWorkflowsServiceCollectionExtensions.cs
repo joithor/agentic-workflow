@@ -9,7 +9,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the dev server (the <see cref="ITemporalServer"/> port 'sindri serve' starts and stops), the activities, the
-    /// worker's options and the desk completion port ('sindri workflow complete'; engine P0 spike), all under the one
+    /// worker's options and the desk completion port ('sindri workflow complete'; engine P4a), all under the one
     /// Sindri home <see cref="TemporalSettings"/> reads.
     /// </summary>
     /// <param name="services">The service collection.</param>

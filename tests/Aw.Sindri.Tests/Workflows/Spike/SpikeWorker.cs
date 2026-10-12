@@ -3,7 +3,7 @@ using Temporalio.Worker;
 
 namespace Aw.Sindri.Tests.Workflows.Spike;
 
-/// <summary>Runs the spike interpreter's worker for the duration of a body.</summary>
+/// <summary>Runs the test interpreter's worker for the duration of a body.</summary>
 internal static class SpikeWorker
 {
     /// <summary>The worker options: the interpreter, the desk Step and the counting RecordEvent.</summary>

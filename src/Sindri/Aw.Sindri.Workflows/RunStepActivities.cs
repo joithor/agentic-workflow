@@ -10,7 +10,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// The interpreter's activities (engine spec rev 8 §5.1, §5.3). 'LoadRecipe' (a local activity) reads and normalizes the
 /// recipe. 'RunStep' is the activity an 'active' state starts: in the desk runtime it records the desk task's task
 /// token under its run token and returns pending (async completion); 'sindri workflow complete --run &lt;token&gt;'
-/// completes it through that task token. Engine P0 spike: recipes come from the home's recipes directory.
+/// completes it through that task token. Engine P4a: recipes come from the home's recipes directory.
 /// </summary>
 /// <param name="reader">The recipe reader.</param>
 /// <param name="catalog">The build's block catalog.</param>

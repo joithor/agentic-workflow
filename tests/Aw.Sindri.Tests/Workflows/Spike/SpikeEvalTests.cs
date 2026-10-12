@@ -7,7 +7,7 @@ using Temporalio.Testing;
 namespace Aw.Sindri.Tests.Workflows.Spike;
 
 /// <summary>
-/// Engine P0 pass line 2 on the time-skipping server: the three 'workflow.step' eval cases through the throwaway
+/// Engine P4a acceptance check 2 on the time-skipping server: the three 'workflow.step' eval cases through the test
 /// interpreter in under 10 s in total, and the '4h' timeout. The time-skipping server doesn't skip time while any
 /// activity is scheduled or open, so a desk Step held open as an async-completion activity (rev 8 §5.3) blocks its own
 /// timeout; with the report as the 'complete' Update (rev 8 §5.2) and no open activity, the 4h timeout fires at once.

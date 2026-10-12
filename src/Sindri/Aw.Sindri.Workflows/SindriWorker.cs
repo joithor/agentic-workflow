@@ -4,7 +4,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
 /// The worker 'sindri serve' runs on task queue 'sindri' (engine spec rev 8 §0 "Operations"): the one workflow type and
-/// its activities. Engine P0 spike: <see cref="SindriWorkerHost"/> runs it inside 'sindri serve'.
+/// its activities. Engine P4a: <see cref="SindriWorkerHost"/> runs it inside 'sindri serve'.
 /// </summary>
 internal static class SindriWorker
 {

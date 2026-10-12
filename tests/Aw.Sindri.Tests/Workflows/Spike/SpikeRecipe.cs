@@ -3,7 +3,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Tests.Workflows.Spike;
 
 /// <summary>
-/// The part of a recipe the throwaway interpreter walks, projected from P1's normalized <see cref="Recipe"/> (the workflow
+/// The part of a recipe the test interpreter walks, projected from P1's normalized <see cref="Recipe"/> (the workflow
 /// input must serialize with the SDK's default converter, so it carries plain values, not the typed recipe).
 /// </summary>
 /// <param name="Initial">The initial state.</param>

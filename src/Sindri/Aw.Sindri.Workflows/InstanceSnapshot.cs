@@ -1,7 +1,7 @@
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
-/// What the 'GetInstance' Query returns (engine spec rev 8 §5.1 "Queries"). Engine P0 spike: the state, the open run
+/// What the 'GetInstance' Query returns (engine spec rev 8 §5.1 "Queries"). Engine P4a: the state, the open run
 /// token and the outcome; P4 adds the rendered 'next', allowedCommands, the open task and the children.
 /// </summary>
 /// <param name="State">The state status shows ('starting' before the recipe loaded).</param>

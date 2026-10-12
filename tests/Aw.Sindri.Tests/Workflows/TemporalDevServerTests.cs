@@ -6,7 +6,7 @@ using Aw.Sindri.Tests.Ledger;
 namespace Aw.Sindri.Tests.Workflows;
 
 /// <summary>
-/// Engine P0 pass line 1 (engine spec rev 8, Phases "Phase 0"): the dev server starts with 'sindri serve', loopback only,
+/// Engine P4a acceptance check 1 (engine spec rev 8.1, "Phase 4a"): the dev server starts with 'sindri serve', loopback only,
 /// its database under the Sindri home. Runs the real pinned 'temporal' CLI (binaries.lock); without it the test fails and
 /// says how to install it, so a missing binary never reads as a pass.
 /// </summary>

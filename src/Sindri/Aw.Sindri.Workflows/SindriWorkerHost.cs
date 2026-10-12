@@ -9,7 +9,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
 /// <see cref="ITemporalWorker"/> over the SDK's TemporalWorker (engine spec rev 8 §0 "Operations"): the worker 'sindri
-/// serve' runs on task queue 'sindri' of the dev server it keeps. Engine P0 spike: a frontend that doesn't answer is
+/// serve' runs on task queue 'sindri' of the dev server it keeps. Engine P4a: a frontend that doesn't answer is
 /// logged and serve runs on without a worker (P4 makes it a health failure).
 /// </summary>
 /// <param name="steps">The RunStep activities.</param>

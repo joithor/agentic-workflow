@@ -2,7 +2,7 @@ using Aw.Kernel;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Desk;
 
-/// <summary>The open instances, by a visibility query on their search attributes (engine spec rev 8 §5.1, §6.3 'workflow list'). Engine P0 spike.</summary>
+/// <summary>The open instances, by a visibility query on their search attributes (engine spec rev 8 §5.1, §6.3 'workflow list'). Engine P4a.</summary>
 public interface IWorkflowInstances
 {
     /// <summary>Lists the running instances that match <paramref name="query"/>.</summary>

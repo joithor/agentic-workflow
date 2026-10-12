@@ -9,7 +9,7 @@ using Temporalio.Exceptions;
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
-/// <see cref="IDeskSteps"/> over Temporal's async activity completion (engine spec rev 8 §5.3). Engine P0 spike: the CLI
+/// <see cref="IDeskSteps"/> over Temporal's async activity completion (engine spec rev 8 §5.3). Engine P4a: the CLI
 /// talks to Temporal directly (no 'serve' route yet), at the frontend control.json records unless '--temporal' names
 /// one: it stores each output file under the home, finds the run's task token in <see cref="TaskTokens"/>, completes
 /// the RunStep activity with the report, and waits on the 'GetInstance' Query until the instance has left the run.

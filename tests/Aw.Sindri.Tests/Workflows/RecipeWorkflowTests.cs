@@ -17,7 +17,7 @@ using Temporalio.Worker;
 namespace Aw.Sindri.Tests.Workflows;
 
 /// <summary>
-/// Engine P0 Day 1 (engine spec rev 8, Phases "Phase 0"; §5.1, §5.3, §6.3): the throwaway interpreter runs
+/// Engine P4a (engine spec rev 8.1, "Phase 4a"; §5.1, §5.3, §6.3): the first interpreter runs
 /// 'workflow.step' on the pinned dev server (binaries.lock, DevServerOptions.ExistingPath, never a download), its desk
 /// Step is an async-completion activity, and 'sindri workflow complete --run 1.1' completes it so the instance moves
 /// 'produce -> checks'.

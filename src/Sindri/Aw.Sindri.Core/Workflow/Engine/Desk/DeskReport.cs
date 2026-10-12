@@ -2,7 +2,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Desk;
 
-/// <summary>A desk report (engine spec rev 8 §5.3, §6.3 'workflow complete'). Engine P0 spike.</summary>
+/// <summary>A desk report (engine spec rev 8 §5.3, §6.3 'workflow complete'). Engine P4a.</summary>
 /// <param name="Address">The instance.</param>
 /// <param name="Run">The open run's token.</param>
 /// <param name="Outcome">One of the Step's declared outcomes.</param>

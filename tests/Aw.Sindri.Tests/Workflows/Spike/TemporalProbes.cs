@@ -9,9 +9,9 @@ using Temporalio.Worker;
 namespace Aw.Sindri.Tests.Workflows.Spike;
 
 /// <summary>
-/// Engine P0 step 0: what each pinned server supports of rev 8 §5, §10 and §11 (Updates with validators and id
+/// Engine P4a probes: what each pinned server supports of rev 8 §5, §10 and §11 (Updates with validators and id
 /// deduplication, async activity completion, signals, child workflows, DelayAsync with time skipping). The same probes
-/// run on both servers; the support table in docs/csharp/sindri-workflow.md ("Temporal spike (P0)") names these tests.
+/// run on both servers; the support table in docs/csharp/sindri-workflow.md ("Temporal foundation") names these tests.
 /// </summary>
 /// <param name="server">The server under probe.</param>
 public abstract class TemporalProbes(TemporalServerFixture server)

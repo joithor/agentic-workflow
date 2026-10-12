@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Tests.Workflows.Spike;
 
-/// <summary>A state as the throwaway interpreter needs it.</summary>
+/// <summary>A state as the test interpreter needs it.</summary>
 /// <param name="Name">The state's name.</param>
 /// <param name="Terminal">True for a terminal state.</param>
 /// <param name="Timeout">An active state's timeout.</param>

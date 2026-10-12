@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Tests.Workflows.Spike;
 
-/// <summary>Spike measurements: sent as xUnit diagnostics and, when AW_SPIKE_LOG names a file, appended to it (the raw source the doc cites).</summary>
+/// <summary>Probe measurements: sent as xUnit diagnostics and, when AW_SPIKE_LOG names a file, appended to it (the raw source the doc cites).</summary>
 internal static class SpikeLog
 {
     private static readonly Lock _gate = new();

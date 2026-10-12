@@ -2,7 +2,7 @@ namespace Aw.Sindri.Core.Control;
 
 /// <summary>
 /// The Temporal worker 'sindri serve' runs beside the control plane (port; engine spec rev 8 §0 "Operations"): it polls
-/// task queue 'sindri' on the dev server serve keeps, so instances move while serve runs. Engine P0 spike.
+/// task queue 'sindri' on the dev server serve keeps, so instances move while serve runs. Engine P4a.
 /// </summary>
 public interface ITemporalWorker
 {

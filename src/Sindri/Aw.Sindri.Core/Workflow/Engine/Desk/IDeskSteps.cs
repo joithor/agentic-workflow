@@ -4,7 +4,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Desk;
 
 /// <summary>
 /// Completes a desk Step (port; engine spec rev 8 §5.3): 'sindri workflow complete --run &lt;token&gt;' reports the
-/// outcome and output files of the open desk run, and the instance moves on. Engine P0 spike: the adapter completes the
+/// outcome and output files of the open desk run, and the instance moves on. Engine P4a: the adapter completes the
 /// RunStep activity through its task token; P4 routes it through the API's CompleteStep slice.
 /// </summary>
 public interface IDeskSteps

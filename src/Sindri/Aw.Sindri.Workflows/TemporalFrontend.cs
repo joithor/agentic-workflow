@@ -7,7 +7,7 @@ using Temporalio.Exceptions;
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
-/// Finds and connects to the dev server a CLI command talks to (engine P0 spike: no 'serve' route yet): the
+/// Finds and connects to the dev server a CLI command talks to (engine P4a: no 'serve' route yet): the
 /// '--temporal host:port' override when given, else the frontend control.json's 'temporal' field records.
 /// </summary>
 /// <param name="endpoints">control.json.</param>
