@@ -7,7 +7,15 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 internal sealed class HealthPill : ObservableObject
 {
     /// <summary>The state's glyph (§11.3): ✓ running, ⌛ stale, ✕ not running or unreadable; none while connecting.</summary>
-    public StateGlyph Glyph { get; private set => Set(ref field, value); }
+    public StateGlyph Glyph
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(HasGlyph));
+        }
+    }
 
     /// <summary>The state's word. After three failed refreshes it stays "stale"; the shell's banner says Sindri isn't responding.</summary>
     public string Word { get; private set => Set(ref field, value); } = Labels.Connecting;
@@ -23,8 +31,8 @@ internal sealed class HealthPill : ObservableObject
         }
     } = string.Empty;
 
-    /// <summary>True when the state has a glyph (red stub).</summary>
-    public bool HasGlyph => Word.Length > 0;
+    /// <summary>True when the state has a glyph; while connecting it has none, and the pill drops the glyph's slot (S1).</summary>
+    public bool HasGlyph => Glyph != StateGlyph.None;
 
     /// <summary>True when the pill shows an age after its word.</summary>
     public bool HasAge => Age.Length > 0;
