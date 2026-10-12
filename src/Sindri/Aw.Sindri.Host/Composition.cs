@@ -19,6 +19,6 @@ internal static class Composition
             .AddSindriCore()
             .AddSindriFeatures()
             .AddSindriInfrastructure(environment)
-            .AddSindriWorkflows(environment)   // the Temporal dev server serve keeps beside itself (engine spec rev 8 §0)
+            .AddSindriWorkflows(environment)   // the Temporal dev server serve keeps beside itself (engine spec rev 8 §0), the worker and 'workflow complete'
             .AddSindriHost();
 }
