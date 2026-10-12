@@ -6,7 +6,8 @@
              x:Class="Aw.Sindri.Ui.Views.Shell.HealthPage"
              x:DataType="shell:HealthViewModel">
   <!-- Health (UI spec §4.8, services-health.html HEALTH): one panel of sections, each an eyebrow with the state's glyph
-       and word at its right, over label/value rows at Body size. The same status 'sindri status' prints. -->
+       and word at its right (on the eyebrow's baseline, S2: .head-eyebrow), over label/value rows at Body size. The same
+       status 'sindri status' prints. -->
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
     <TextBlock Classes="page-title" Text="{Binding Text.Health}" AutomationProperties.Name="{Binding Text.Health}" />
 
@@ -16,7 +17,8 @@
         <Border Classes="section">
           <StackPanel Spacing="{StaticResource Space.XS}">
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Classes="eyebrow" Text="{Binding Text.ControlPlaneCard}" AutomationProperties.Name="{Binding Text.ControlPlaneCard}" />
+              <TextBlock x:Name="ControlPlaneEyebrow" Classes="eyebrow head-eyebrow" Text="{Binding Text.ControlPlaneCard}"
+                         AutomationProperties.Name="{Binding Text.ControlPlaneCard}" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
                 <icons:StateIcon x:Name="ProcessGlyph" Glyph="{Binding Pill.Glyph}" VerticalAlignment="Center" />
                 <TextBlock x:Name="ProcessWord" Classes="body-strong" Text="{Binding Pill.Word}" AutomationProperties.Name="{Binding Pill.Text}" />
@@ -58,7 +60,8 @@
         <Border Classes="section">
           <StackPanel Spacing="{StaticResource Space.XS}">
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Classes="eyebrow" Text="{Binding Text.ProfileCard}" AutomationProperties.Name="{Binding Text.ProfileCard}" />
+              <TextBlock x:Name="ProfileEyebrow" Classes="eyebrow head-eyebrow" Text="{Binding Text.ProfileCard}"
+                         AutomationProperties.Name="{Binding Text.ProfileCard}" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
                 <icons:StateIcon x:Name="ProfileHeadGlyph" Glyph="{Binding Detail.ProfileGlyph}" VerticalAlignment="Center" />
                 <TextBlock x:Name="ProfileHeadText" Classes="body-strong" Text="{Binding Detail.ProfileHead}"

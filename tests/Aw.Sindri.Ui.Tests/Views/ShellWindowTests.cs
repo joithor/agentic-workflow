@@ -1332,8 +1332,23 @@ public sealed class ShellWindowTests : IDisposable
             return text.TranslatePoint(default, window)!.Value.Y + text.TextLayout.TextLines[0].Baseline;
         }
 
-        Assert.Equal(Baseline("ControlPlaneEyebrow"), Baseline("ProcessWord"), precision: 0);
-        Assert.Equal(Baseline("ProfileEyebrow"), Baseline("ProfileHeadText"), precision: 0);
+        // Within half a pixel at text scale 1.0 and 1.3 (the layout rounds to whole pixels).
+        var resources = Application.Current!.Resources;
+        try
+        {
+            foreach (var scale in (double[])[1.0, 1.3])
+            {
+                TextScale.Apply(resources, scale);
+                Settle(window);
+                Assert.InRange(Baseline("ProcessWord") - Baseline("ControlPlaneEyebrow"), -0.5, 0.5);
+                Assert.InRange(Baseline("ProfileHeadText") - Baseline("ProfileEyebrow"), -0.5, 0.5);
+            }
+        }
+        finally
+        {
+            TextScale.Apply(resources, 1.0);
+            Settle(window);
+        }
     }
 
     private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "RefreshSending", "RefreshButton", "HealthPill"];
