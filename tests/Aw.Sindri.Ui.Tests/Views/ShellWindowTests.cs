@@ -318,7 +318,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal("pid 4242 · epoch 7", Text(window, "LeaseText"));
         Assert.Equal("changed since approval", Text(window, "ProfileStateText"));
         Assert.Equal("sindri profile approve", Text(window, "ProfileFixText"));
-        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "last run 12:00:00Z");
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "last run " + A.Noon.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture));
         EveryControlIsNamed(window);
         Frame(window, "health");
     });

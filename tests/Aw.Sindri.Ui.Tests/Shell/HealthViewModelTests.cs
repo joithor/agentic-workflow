@@ -85,7 +85,7 @@ public sealed class HealthViewModelTests : IDisposable
         Assert.Equal("approved", _vm.ProfileState);
         Assert.Equal("hash ab12cd · /home/profile.yaml", _vm.ProfileDetail);
         Assert.Equal("", _vm.ProfileFix);
-        Assert.Equal([new ServiceRow("heartbeat", "every 5s", "last run 12:00:00Z")], _vm.Services);
+        Assert.Equal([new ServiceRow("heartbeat", "every 5s", "last run " + Local(A.Noon))], _vm.Services);
         Assert.Equal("127.0.0.1:7410", _vm.Api);
     }
 
@@ -164,8 +164,8 @@ public sealed class HealthViewModelTests : IDisposable
         _server.Current = A.Status(services: A.Heartbeat(A.Noon.AddSeconds(5)));
         _server.Push(A.Event(12, at: A.Noon.AddSeconds(5)));
 
-        await Eventually(() => _vm.Services is [{ LastRun: "last run 12:00:05Z" }], "heartbeat last run");
-        Assert.Equal("service.heartbeat · 12:00:05Z · #12", _vm.LastEvent);
+        await Eventually(() => _vm.Services is [{ LastRun: var run }] && run == "last run " + Local(A.Noon.AddSeconds(5)), "heartbeat last run");
+        Assert.Equal("service.heartbeat · " + Local(A.Noon.AddSeconds(5)) + " · #12", _vm.LastEvent);
     }
 
     [Fact]

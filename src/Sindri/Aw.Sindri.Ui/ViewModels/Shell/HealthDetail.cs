@@ -9,19 +9,25 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 internal sealed class HealthDetail : ObservableObject
 {
     /// <summary>Home's health strip: Process, Epoch · lease, API, Services, Profile.</summary>
-    public IReadOnlyList<HealthCell> Strip { get; } = [];
+    public IReadOnlyList<HealthCell> Strip { get; private set => Set(ref field, value); } = [];
 
     /// <summary>The Health page's process rows: pid · epoch, host lease, API.</summary>
-    public IReadOnlyList<HealthCell> Process { get; } = [];
+    public IReadOnlyList<HealthCell> Process { get; private set => Set(ref field, value); } = [];
 
     /// <summary>The Health page's profile head: its glyph and state word.</summary>
-    public string ProfileHead { get; } = string.Empty;
+    public string ProfileHead { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The Health page's profile rows: approved, live (when it differs), file.</summary>
-    public IReadOnlyList<HealthCell> Profile { get; } = [];
+    public IReadOnlyList<HealthCell> Profile { get; private set => Set(ref field, value); } = [];
 
     /// <summary>Shows a status.</summary>
     /// <param name="url">Where the API answered.</param>
     /// <param name="status">The status.</param>
-    internal void Show(Uri url, StatusView status) => OnChanged(status.Running ? url.Authority : nameof(Strip));
+    internal void Show(Uri url, StatusView status)
+    {
+        Strip = [.. StatusText.Strip(status)];
+        Process = [.. StatusText.Process(url, status)];
+        ProfileHead = StatusText.ProfileHead(status.Profile);
+        Profile = [.. StatusText.Profile(status.Profile)];
+    }
 }

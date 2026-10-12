@@ -32,7 +32,7 @@ internal static class StatusText
         { Approved: null } => $"{p.Source} (hash {Short(p.Live)})",
         { ChangedSinceApproval: true } => $"running with approved {Short(p.Approved)}; {p.Source} is now {Short(p.Live)}",
         { Problem: { } problem } => $"hash {Short(p.Approved)}; the live file has a problem: {problem}",
-        _ => $"hash {Short(p.Approved)} · {p.Source}",
+        _ => $"hash {Short(p.Approved)} · {(p.Source is { } source ? Home(source) : null)}",
     };
 
     // Approving needs a live profile that loads: offer the command only when it can work (approve refuses an unreadable one).
@@ -41,6 +41,66 @@ internal static class StatusText
     internal static ServiceRow Service(ServiceView s) => new(s.Name, "every " + s.Every, s.LastRun is { } t ? "last run " + Time(t) : "not run yet");
 
     internal static string Event(EventView e) => string.Create(CultureInfo.InvariantCulture, $"{e.Type} · {Time(e.OccurredAt)} · #{e.Sequence}");
+
+    // Home's strip (§4.2, §4.8): the health line's fields as labelled cells, each value a word.
+    internal static IEnumerable<HealthCell> Strip(StatusView s)
+    {
+        yield return new(Labels.CellProcess, string.Create(CultureInfo.InvariantCulture, $"{Labels.Running} · pid {s.Pid}"));
+        yield return new(Labels.CellEpoch, string.Create(CultureInfo.InvariantCulture, $"{s.Epoch} · {Labels.LeaseHeld}"));
+        if (s.ApiVersion is { } version)
+        {
+            yield return new(Labels.CellApi, string.Create(CultureInfo.InvariantCulture, $"v{version}"));
+        }
+
+        yield return new(Labels.CellServices, Services(s));
+        yield return new(Labels.CellProfile, ProfileHead(s.Profile));
+    }
+
+    // The Health page's process rows (§4.8): pid and epoch, the lease and its expiry, the API's address and version.
+    internal static IEnumerable<HealthCell> Process(Uri url, StatusView s)
+    {
+        yield return new(Labels.RowPidEpoch, string.Create(CultureInfo.InvariantCulture, $"{s.Pid} · {s.Epoch}"));
+        yield return new(Labels.RowLease, s.LeaseExpiresAt is { } expires ? $"{Labels.LeaseHeld} · expires {Time(expires)}" : Labels.LeaseHeld);
+        yield return new(Labels.CellApi, s.ApiVersion is { } version ? string.Create(CultureInfo.InvariantCulture, $"{url.Authority} · v{version}") : url.Authority);
+    }
+
+    // The profile's state with its §11.3 glyph: ✓ approved, ◇ anything to look at, ✕ unreadable.
+    internal static string ProfileHead(ProfileView p)
+    {
+        var state = ProfileState(p);
+        var glyph = state switch
+        {
+            "approved" => Labels.GlyphOk,
+            "unreadable" => Labels.GlyphDown,
+            _ => Labels.GlyphProfile,
+        };
+        return glyph + " " + state;
+    }
+
+    // The Health page's profile rows (§4.8): the approved hash, the live one when it differs, the file with ~ for home.
+    internal static IEnumerable<HealthCell> Profile(ProfileView p)
+    {
+        yield return new(Labels.RowApproved, Short(p.Approved));
+        if (!string.Equals(p.Live, p.Approved, StringComparison.Ordinal))
+        {
+            yield return new(Labels.RowLive, Short(p.Live));
+        }
+
+        if (p.Source is { } source)
+        {
+            yield return new(Labels.RowFile, Home(source));
+        }
+    }
+
+    // A path under the user's home directory, written from ~.
+    internal static string Home(string path)
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        return home.Length > 0 && path.StartsWith(home + Path.DirectorySeparatorChar, StringComparison.Ordinal) ? "~" + path[home.Length..] : path;
+    }
+
+    private static string Services(StatusView s) =>
+        s.Services.Count == 1 ? "1 service" : string.Create(CultureInfo.InvariantCulture, $"{s.Services.Count} services");
 
     private static IEnumerable<string> HealthWords(StatusView s)
     {
@@ -51,11 +111,12 @@ internal static class StatusText
             yield return string.Create(CultureInfo.InvariantCulture, $"API v{version}");
         }
 
-        yield return s.Services.Count == 1 ? "1 service" : string.Create(CultureInfo.InvariantCulture, $"{s.Services.Count} services");
+        yield return Services(s);
         yield return "profile " + ProfileState(s.Profile);
     }
 
-    private static string Time(DateTimeOffset t) => t.UtcDateTime.ToString("HH:mm:ss", CultureInfo.InvariantCulture) + "Z";
+    // Times in the viewer's local time, as the mockups show them (§4.8).
+    private static string Time(DateTimeOffset t) => t.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture);
 
     private static string Short(string? hash) => hash is { Length: >= 6 } ? hash[..6] : hash ?? "none";
 }

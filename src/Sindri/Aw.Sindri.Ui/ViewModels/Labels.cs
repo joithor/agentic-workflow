@@ -145,6 +145,44 @@ internal static class Labels
     /// <summary>The health pill's glyph with nothing to follow: not running, unreadable, a version mismatch (§11.3 failure).</summary>
     internal const string GlyphDown = "✕";
 
+    /// <summary>The profile glyph (§11.3 profile): something to look at.</summary>
+    internal const string GlyphProfile = "◇";
+
+    // The health line's labels (§4.8): Home's strip cells and the Health page's rows.
+
+    /// <summary>The strip's process cell.</summary>
+    internal const string CellProcess = "Process";
+
+    /// <summary>The strip's epoch and lease cell.</summary>
+    internal const string CellEpoch = "Epoch · lease";
+
+    /// <summary>The API's cell and row.</summary>
+    internal const string CellApi = "API";
+
+    /// <summary>The strip's services cell.</summary>
+    internal const string CellServices = "Services";
+
+    /// <summary>The strip's profile cell.</summary>
+    internal const string CellProfile = "Profile";
+
+    /// <summary>The control plane holds its lease.</summary>
+    internal const string LeaseHeld = "held";
+
+    /// <summary>The Health page's pid and epoch row.</summary>
+    internal const string RowPidEpoch = "pid · epoch";
+
+    /// <summary>The Health page's lease row.</summary>
+    internal const string RowLease = "Host lease";
+
+    /// <summary>The Health page's approved-hash row.</summary>
+    internal const string RowApproved = "approved";
+
+    /// <summary>The Health page's live-hash row.</summary>
+    internal const string RowLive = "live";
+
+    /// <summary>The Health page's profile file row.</summary>
+    internal const string RowFile = "file";
+
     /// <summary>The Refresh button beside a stale pill (§4.1 Stale).</summary>
     internal const string Refresh = "Refresh";
 
