@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Ledger;
 
 namespace Aw.Sindri.Features.StreamEvents;
 
-internal sealed class StreamEventsService(ILedgerStore ledger) : IService<StreamEventsRequest, StreamEventsResponse>
+internal sealed class StreamEventsService(ILedgerReader ledger) : IService<StreamEventsRequest, StreamEventsResponse>
 {
     public async ValueTask<Result<StreamEventsResponse>> Handle(StreamEventsRequest request, CancellationToken cancellationToken)
     {
