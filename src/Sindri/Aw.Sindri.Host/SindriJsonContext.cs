@@ -3,7 +3,9 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Evals;
 using Aw.Sindri.Core.Workflow.Engine.Events;
@@ -35,6 +37,11 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ServiceRan))]
 [JsonSerializable(typeof(ProfileChecked))]
 [JsonSerializable(typeof(ViewsRebuilt))]
+[JsonSerializable(typeof(AsOf))]
+[JsonSerializable(typeof(ViewsStatus))]
+[JsonSerializable(typeof(ServiceRow))]
+[JsonSerializable(typeof(ProfileRow))]
+[JsonSerializable(typeof(HealthReport))]
 [JsonSerializable(typeof(CommandAccepted))]
 [JsonSerializable(typeof(GetStatusResponse))]
 [JsonSerializable(typeof(StopProcessResponse))]
