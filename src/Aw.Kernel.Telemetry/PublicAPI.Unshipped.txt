@@ -65,4 +65,3 @@ Aw.Kernel.Telemetry.WithheldCounts.WithheldCounts(long Logs, long Spans, long Me
 static Aw.Kernel.Telemetry.WithheldCounts.operator !=(Aw.Kernel.Telemetry.WithheldCounts left, Aw.Kernel.Telemetry.WithheldCounts right) -> bool
 static Aw.Kernel.Telemetry.WithheldCounts.operator ==(Aw.Kernel.Telemetry.WithheldCounts left, Aw.Kernel.Telemetry.WithheldCounts right) -> bool
 static readonly Aw.Kernel.Telemetry.TelemetryErrors.InvalidSetting -> Aw.Kernel.ErrorDefinition!
-const Aw.Kernel.Telemetry.TelemetryRuntime.RequestLineCategory = "Microsoft.AspNetCore.Hosting.Diagnostics" -> string!

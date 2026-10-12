@@ -17,7 +17,7 @@ internal sealed class ContextEngine(
     IService<RefreshDocsRequest, RefreshReport> refresh) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
-        SettingsReader.Read(section).Bind(settings => ScopeRules.CheckRepos(section is { ValueKind: not JsonValueKind.Null }, settings, repos));
+        SettingsReader.Check(section, repos);
 
     public ValueTask<Result<ContextResult>> Query(ContextQuery query1, ContextScope scope, CancellationToken cancellationToken) =>
         query.Handle(new QueryContextRequest(query1, scope), cancellationToken);

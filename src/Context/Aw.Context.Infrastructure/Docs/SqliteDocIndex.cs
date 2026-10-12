@@ -44,7 +44,8 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
         }
 
         var glob = new Glob(globs);
-        var wanted = tree.Value.Where(e => glob.Matches(e.Key)).ToDictionary(StringComparer.Ordinal);
+        var matched = tree.Value.Where(e => glob.Matches(e.Key)).ToList();
+        var wanted = matched.Where(e => Citable(repo, e.Key)).ToDictionary(StringComparer.Ordinal);   // a path the ids can't carry is never indexed
         var changed = wanted.Where(w => !stored.Value.TryGetValue(w.Key, out var blob) || !string.Equals(blob, w.Value, StringComparison.Ordinal)).ToList();
         var (prepared, unreadable) = await Prepare(repo, changed, cancellationToken).ConfigureAwait(false);
         var removed = stored.Value.Keys.Where(p => !wanted.ContainsKey(p) || (!string.Equals(stored.Value[p], wanted[p], StringComparison.Ordinal) && !unreadable.Contains(p))).ToList();
@@ -55,7 +56,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
             : new RepoRefresh(repo.Name, SourceVersion.From(head.Value), prepared.Count(p => p is { Blocked: false, Oversized: false }),
                 removed.Count(p => !wanted.ContainsKey(p)), wanted.Count - changed.Count, prepared.Count(p => p.Blocked), Code: null)
             {
-                Skipped = prepared.Count(p => p.Oversized) + unreadable.Count,
+                Skipped = prepared.Count(p => p.Oversized) + unreadable.Count + (matched.Count - wanted.Count),
             };
     }
 
@@ -80,6 +81,10 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
             return status.IsError ? ContextDatabase.Translate(status.Error) : status.Value;
         }
     }
+
+    /// <summary>True when the path fits a chunk id and a record key (no control or format characters, not too long), so a hit on it can be cited.</summary>
+    private static bool Citable(ContextRepo repo, string path) =>
+        RepoDocs.TryChunkId(repo.Name, path, DocChunker.MaxLine, DocChunker.MaxLine, out _) && RepoDocs.TryKey(repo.Name, path, out _);
 
     /// <summary>
     /// Reads and cleans each changed document. One over <see cref="MaxDocumentBytes"/> keeps a row without chunks (so it
