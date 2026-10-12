@@ -163,8 +163,15 @@ internal sealed class AppLifetime : IDisposable
         }
 
         _quitting = true;
-        _ = _settle().WaitAsync(SettleWithin, _clock); // red: not awaited yet
-        await Task.CompletedTask.ConfigureAwait(true);
+        try
+        {
+            await _settle().WaitAsync(SettleWithin, _clock).ConfigureAwait(true);
+        }
+        catch (TimeoutException)
+        {
+            // A write still pending ends with the app: the preferences are a convenience.
+        }
+
         _shutdown();
     }
 
@@ -177,6 +184,14 @@ internal sealed class AppLifetime : IDisposable
     /// <param name="e">The request.</param>
     internal void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
     {
-        // red: nothing recorded yet
+        _quitting = true;
+        try
+        {
+            _settle().WaitAsync(SettleWithin, _clock).GetAwaiter().GetResult();
+        }
+        catch (TimeoutException)
+        {
+            // As Quit: the app ends anyway.
+        }
     }
 }
