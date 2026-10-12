@@ -23,6 +23,9 @@ internal sealed class HealthPill : ObservableObject
         }
     } = string.Empty;
 
+    /// <summary>True when the state has a glyph (red stub).</summary>
+    public bool HasGlyph => Word.Length > 0;
+
     /// <summary>True when the pill shows an age after its word.</summary>
     public bool HasAge => Age.Length > 0;
 

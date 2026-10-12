@@ -133,6 +133,9 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>Not running: S1b's panel in place of the page.</summary>
     public bool IsNotRunning => State == ShellState.NotRunning;
 
+    /// <summary>The Not running card shows (red stub).</summary>
+    public bool IsNotRunningPanel => IsNotRunning;
+
     /// <summary>Connecting: skeleton rows in place of the page (first load only).</summary>
     public bool IsConnecting => State == ShellState.Connecting;
 
@@ -207,6 +210,10 @@ internal sealed partial class ShellViewModel : ObservableObject
         IsSheetOpen = false;
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
+
+    /// <summary>Leaves Settings (red stub).</summary>
+    /// <returns>True when it left.</returns>
+    internal bool LeaveSettings() => IsSettings && !IsSettings;
 
     /// <summary>Opens the sheet again on its last subject (the edge tab).</summary>
     internal void ReopenSheet()

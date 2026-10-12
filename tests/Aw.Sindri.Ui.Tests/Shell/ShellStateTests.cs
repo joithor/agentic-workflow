@@ -321,6 +321,8 @@ public sealed class ShellStateTests
     {
         var connecting = new ShellViewModel(_records, _server, _clock, _preferences);
         Assert.Equal((StateGlyph.None, Labels.Connecting, string.Empty), (connecting.Pill.Glyph, connecting.Pill.Word, connecting.Pill.Age));
+        // S1: no glyph while connecting, so the pill drops the glyph's slot and its word centres.
+        Assert.False(connecting.Pill.HasGlyph);
 
         var down = await Running(ShellState.NotRunning);
         Assert.Equal((StateGlyph.Down, Labels.NotRunning, string.Empty), (down.Pill.Glyph, down.Pill.Word, down.Pill.Age));
@@ -336,6 +338,7 @@ public sealed class ShellStateTests
         var healthy = await Running(ShellState.Normal);
         Assert.Equal((StateGlyph.Ok, Labels.Running), (healthy.Pill.Glyph, healthy.Pill.Word));
         Assert.True(healthy.Pill.IsHealthy);
+        Assert.True(healthy.Pill.HasGlyph);
     }
 
     // I7 (states.html Not running): the navigation is dimmed and disabled while nothing runs; it comes back when it does.
@@ -353,5 +356,34 @@ public sealed class ShellStateTests
             return shell.State == ShellState.Normal;
         });
         Assert.True(shell.IsNavigationEnabled);
+    }
+
+    // ⌘, while not running (§12.3: Settings is local preferences, so it stays reachable): Settings shows over the Not
+    // running card, and leaving it (Esc) returns to the card on the page it came from.
+    [Fact]
+    public async Task Settings_shows_over_the_not_running_card_and_leaving_it_returns_to_the_card()
+    {
+        var shell = await Running(ShellState.NotRunning);
+        Assert.Equal((true, false), (shell.IsNotRunningPanel, shell.IsPageVisible));
+
+        shell.GoTo(PageId.Settings);
+        Assert.Equal((true, false, true), (shell.IsSettings, shell.IsNotRunningPanel, shell.IsPageVisible));
+        Assert.False(shell.IsSheetShown);
+
+        Assert.True(shell.LeaveSettings());
+        Assert.Equal((PageId.Home, true, false), (shell.CurrentPage, shell.IsNotRunningPanel, shell.IsPageVisible));
+        Assert.False(shell.LeaveSettings());
+    }
+
+    // Esc on Settings while connected keeps Settings: only the Not running card is a place to go back to.
+    [Fact]
+    public async Task Leaving_Settings_does_nothing_while_connected()
+    {
+        _records.Write(A.Record());
+        var shell = await Running(ShellState.Normal);
+        shell.GoTo(PageId.Settings);
+
+        Assert.False(shell.LeaveSettings());
+        Assert.Equal(PageId.Settings, shell.CurrentPage);
     }
 }

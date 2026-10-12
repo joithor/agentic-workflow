@@ -52,6 +52,7 @@ public sealed class HealthViewModelTests : IDisposable
         Assert.False(_vm.IsRunning);
     }
 
+    // I7 (§4.1, §12.4): SND-UI-001's sentence leads; the record and the answer are one detail line under it.
     [Fact]
     public async Task A_record_for_another_process_reads_as_stale()
     {
@@ -59,9 +60,22 @@ public sealed class HealthViewModelTests : IDisposable
         Start();
 
         await Eventually(() => _vm.Headline == "Not running", "headline");
-        Assert.Contains("stale", _vm.Reason, StringComparison.Ordinal);
+        Assert.Equal((Labels.StaleRecord, "recorded pid 1 · epoch 7, answering pid 4242 · epoch 7"), (_vm.Reason, _vm.ReasonDetail));
     }
 
+    // I7: the same process at another epoch (a restart that reused the pid) names the pid once, so it reads as no contradiction.
+    [Fact]
+    public async Task A_record_for_another_epoch_of_the_same_process_names_the_pid_once()
+    {
+        _records.Write(A.Record(pid: 69190, epoch: 4));
+        _server.Pong = new(69190, 0);
+        Start();
+
+        await Eventually(() => _vm.Headline == "Not running", "headline");
+        Assert.Equal((Labels.StaleRecord, "recorded pid 69190 · epoch 4, answering epoch 0"), (_vm.Reason, _vm.ReasonDetail));
+    }
+
+    // I7 (kill -9): SND-UI-002's sentence leads, the address is the detail line once, and no exception text shows.
     [Fact]
     public async Task A_record_nothing_answers_at_reads_as_not_running()
     {
@@ -70,7 +84,7 @@ public sealed class HealthViewModelTests : IDisposable
         Start();
 
         await Eventually(() => _vm.Headline == "Not running", "headline");
-        Assert.Contains("127.0.0.1:7410", _vm.Reason, StringComparison.Ordinal);
+        Assert.Equal((Labels.NothingAnswered, "127.0.0.1:7410"), (_vm.Reason, _vm.ReasonDetail));
     }
 
     [Fact]

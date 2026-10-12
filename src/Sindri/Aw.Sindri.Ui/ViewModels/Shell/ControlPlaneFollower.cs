@@ -100,7 +100,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
 
         if (ping.Value.Pid != record.Pid || ping.Value.Epoch != record.Epoch)
         {
-            return health.NotRunning(Labels.StaleRecord(record.Pid, record.Epoch, ping.Value.Pid, ping.Value.Epoch));
+            return health.NotRunning(Labels.StaleRecordBecause(record.Pid, record.Epoch, ping.Value.Pid, ping.Value.Epoch));
         }
 
         _record = bytes;

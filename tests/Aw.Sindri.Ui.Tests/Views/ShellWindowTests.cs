@@ -405,12 +405,7 @@ public sealed class ShellWindowTests : IDisposable
         try
         {
             Settle(window);
-            var dot = Named<TextBlock>(window, "HealthKeyText");
-            Assert.Equal(".", dot.Text);
-            Assert.True(dot.FontWeight >= FontWeight.Bold, "the . keycap's glyph isn't bold");
-            var cap = Named<Border>(window, "HealthKeyCap");
-            // Within the window's whole-pixel rounding.
-            Assert.True(cap.Bounds.Width >= cap.Bounds.Height - 1, string.Create(CultureInfo.InvariantCulture, $"the . keycap is {cap.Bounds.Width} × {cap.Bounds.Height}"));
+            TheDotKeycapIsVisible(window, scale);
 
             var strip = Box(window, "HealthStrip");
             foreach (var value in Named<ItemsControl>(window, "HealthCells").GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible))
@@ -525,6 +520,13 @@ public sealed class ShellWindowTests : IDisposable
         Assert.True(Visible(window, "ConnectingSkeleton"));
         Assert.False(Visible(window, "Pages"));
         Assert.Equal(Labels.Connecting, Text(window, "HealthPillText"));
+
+        // S1: no glyph while connecting, so its slot goes and the word sits centred in the pill.
+        Assert.False(Visible(window, "PillGlyph"));
+        var pill = Box(window, "HealthPill");
+        var word = Box(window, "HealthPillText");
+        Assert.True(Math.Abs(word.Left - pill.Left - (pill.Right - word.Right)) <= 1,
+            string.Create(CultureInfo.InvariantCulture, $"insets {word.Left - pill.Left} and {pill.Right - word.Right}"));
         Frame(window, "connecting");
     });
 
@@ -541,6 +543,80 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(StateGlyph.Down, Glyph(window, "PillGlyph"));
         EveryControlIsNamed(window);
         Frame(window, "not-running");
+    });
+
+    // I7, kill -9 (§4.1, §12.4): SND-UI-002's sentence leads, the address shows once on its own mono line, and the
+    // platform's exception text isn't shown.
+    [Fact]
+    public Task Not_running_after_kill_9_leads_with_a_sentence_and_shows_the_address_once() => OnUi(async () =>
+    {
+        _records.Write(A.Record(port: 61879));
+        _server.GoDown();
+        var (window, _) = await Show(s => s.State == ShellState.NotRunning);
+
+        Assert.Equal(Labels.NothingAnswered, Text(window, "ReasonText"));
+        Assert.Equal("127.0.0.1:61879", Text(window, "ReasonDetailText"));
+        Assert.Contains("mono", Named<TextBlock>(window, "ReasonDetailText").Classes, StringComparer.Ordinal);
+        Assert.True(Box(window, "ReasonDetailText").Top >= Box(window, "ReasonText").Bottom, "the address isn't on its own line");
+        var texts = window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text ?? string.Empty).ToList();
+        _ = Assert.Single(texts, t => t.Contains("61879", StringComparison.Ordinal));
+        Assert.DoesNotContain(texts, t => t.Contains("refused", StringComparison.OrdinalIgnoreCase));
+        EveryControlIsNamed(window);
+        Frame(window, "not-running-kill9");
+    });
+
+    // I7, a stale record (§4.1, §12.4): SND-UI-001's sentence leads; the record and the answer are one detail line.
+    [Theory]
+    [InlineData(1.0)]
+    [InlineData(1.3)]
+    public Task Not_running_on_a_stale_record_leads_with_a_sentence_and_one_detail_line(double scale) => OnUi(async () =>
+    {
+        _records.Write(A.Record(pid: 69190, epoch: 4));
+        _server.Pong = new(69190, 0);
+        var (window, _) = await Show(s => s.State == ShellState.NotRunning);
+        var resources = Application.Current!.Resources;
+        TextScale.Apply(resources, scale);
+        try
+        {
+            Settle(window);
+            Assert.Equal(Labels.StaleRecord, Text(window, "ReasonText"));
+            Assert.Equal("recorded pid 69190 · epoch 4, answering epoch 0", Text(window, "ReasonDetailText"));
+            var detail = Named<TextBlock>(window, "ReasonDetailText");
+            Assert.True(detail.TextLayout.WidthIncludingTrailingWhitespace <= detail.Bounds.Width + 0.5, "the detail is clipped");
+            Frame(window, string.Create(CultureInfo.InvariantCulture, $"not-running-stale-{scale * 100:0}"));
+        }
+        finally
+        {
+            TextScale.Apply(resources, 1.0);
+            Settle(window);
+        }
+    });
+
+    // ⌘, while not running (§12.3): Settings is local preferences, so it shows over the Not running card; Esc returns to
+    // the card.
+    [Fact]
+    public Task Command_comma_while_not_running_shows_Settings_and_Esc_returns_to_the_card() => OnUi(async () =>
+    {
+        var (window, shell) = await Show(s => s.State == ShellState.NotRunning);
+        var settings = new SettingsViewModel(new Preferences(_preferences), new FakeMotionPreference(), _ => { });
+        window.SettingsSlot.Content = new SettingsView { DataContext = settings };
+        var command = OperatingSystem.IsMacOS() ? RawInputModifiers.Meta : RawInputModifiers.Control;
+
+        window.KeyPress(Key.OemComma, command, PhysicalKey.Comma, keySymbol: ",");
+        Settle(window);
+        Assert.True(Visible(window, "SettingsSlot"));
+        Assert.False(Visible(window, "NotRunningPanel"));
+        var focused = window.FocusManager?.GetFocusedElement() as Visual;
+        Assert.True(focused is not null && window.SettingsSlot.IsVisualAncestorOf(focused), "focus isn't in Settings");
+        Frame(window, "settings-not-running");
+
+        window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, keySymbol: null);
+        Settle(window);
+        Assert.True(Visible(window, "NotRunningPanel"));
+        Assert.False(Visible(window, "SettingsSlot"));
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+        var after = window.FocusManager?.GetFocusedElement() as Control;
+        Assert.True(after is { IsEffectivelyVisible: true }, "focus went nowhere");
     });
 
     [Fact]
@@ -899,6 +975,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal((StateGlyph.Ok, Labels.Running), (Glyph(window, "ProcessGlyph"), Text(window, "ProcessWord")));
         Assert.Equal(("changed since approval", StateGlyph.Profile), (Text(window, "ProfileHeadText"), Glyph(window, "ProfileHeadGlyph")));
         Assert.Equal(["approved", "ab12cd", "live", "ff00ee", "file", "/home/profile.yaml"], Rows("ProfileRows"));
+        HealthHeadsAndPathsAreAligned(window);
         Assert.Equal("sindri profile approve", Text(window, "ProfileFixText"));
         Assert.False(Visible(window, "HeadlineText"));
         var page = Named<Control>(window, "HealthPage");
@@ -1224,6 +1301,39 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(home.X, onSettings.X);
         Frame(window, "settings");
     });
+
+    // R6: the period is a vector dot of 4–5 pt at text scale 1 (scaled with the text), centred in a cap as tall as G's
+    // and at least as wide as it is tall (within the window's whole-pixel rounding).
+    private static void TheDotKeycapIsVisible(Window window, double scale)
+    {
+        var dot = Named<Avalonia.Controls.Shapes.Ellipse>(window, "HealthKeyDot");
+        Assert.InRange(dot.Bounds.Width, 4 * scale, 5 * scale);
+        Assert.Equal(dot.Bounds.Width, dot.Bounds.Height);
+        Assert.Equal(Brush("InkSubtle"), dot.Fill);
+        var dotBox = Box(window, "HealthKeyDot");
+        var cap = Box(window, "HealthKeyCap");
+        Assert.Equal(cap.Center.Y, dotBox.Center.Y, precision: 0);
+        Assert.Equal(cap.Center.X, dotBox.Center.X, precision: 0);
+        Assert.Equal(Box(window, "GoKeyCap").Height, cap.Height, precision: 0);
+        Assert.True(cap.Width >= cap.Height - 1, string.Create(CultureInfo.InvariantCulture, $"the . keycap is {cap.Width} × {cap.Height}"));
+    }
+
+    // S2 and S3 on Health: each section head's state word sits on its eyebrow's baseline, and the profile's file is a
+    // path in mono like the Not running card's.
+    private static void HealthHeadsAndPathsAreAligned(Window window)
+    {
+        Assert.Contains("mono", Named<ItemsControl>(window, "ProfileRows").GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => t.Text == "/home/profile.yaml").Classes, StringComparer.Ordinal);
+
+        double Baseline(string name)
+        {
+            var text = Named<TextBlock>(window, name);
+            return text.TranslatePoint(default, window)!.Value.Y + text.TextLayout.TextLines[0].Baseline;
+        }
+
+        Assert.Equal(Baseline("ControlPlaneEyebrow"), Baseline("ProcessWord"), precision: 0);
+        Assert.Equal(Baseline("ProfileEyebrow"), Baseline("ProfileHeadText"), precision: 0);
+    }
 
     private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "RefreshSending", "RefreshButton", "HealthPill"];
 

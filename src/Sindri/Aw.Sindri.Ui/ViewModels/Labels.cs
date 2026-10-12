@@ -217,8 +217,22 @@ internal static partial class Labels
     /// <param name="answeringPid">The answering pid.</param>
     /// <param name="answeringEpoch">The answering epoch.</param>
     /// <returns>The reason.</returns>
-    internal static string StaleRecord(int pid, long epoch, int answeringPid, long answeringEpoch) => string.Create(CultureInfo.InvariantCulture,
+    internal static string StaleRecordBecause(int pid, long epoch, int answeringPid, long answeringEpoch) => string.Create(CultureInfo.InvariantCulture,
         $"the endpoint record is stale: it names pid {pid} at epoch {epoch}, but pid {answeringPid} at epoch {answeringEpoch} answers");
+
+    /// <summary>Not running: control.json names another process or epoch than the one answering (red stub).</summary>
+    internal const string StaleRecord = "the endpoint record is stale";
+
+    /// <summary>Not running: nothing answered at the recorded endpoint (red stub).</summary>
+    internal const string NothingAnswered = "";
+
+    /// <summary>The stale record's detail line (red stub).</summary>
+    /// <param name="pid">The record's pid.</param>
+    /// <param name="epoch">The record's epoch.</param>
+    /// <param name="answeringPid">The answering pid.</param>
+    /// <param name="answeringEpoch">The answering epoch.</param>
+    /// <returns>The detail.</returns>
+    internal static string StaleRecordDetail(int pid, long epoch, int answeringPid, long answeringEpoch) => throw new NotSupportedException();
 
     /// <summary>The version-mismatch panel's label for this app's version (states.html).</summary>
     internal const string ThisApp = "This app";

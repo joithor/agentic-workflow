@@ -33,6 +33,19 @@ public sealed class SindriApiClientTests
         Assert.Equal("SND-UI-003", ping.Error.Code);
     }
 
+    // I7: nothing listening is SND-UI-002 without the platform's exception text (it repeated the address in .NET's words).
+    [Fact]
+    public async Task Nothing_listening_is_unreachable_without_the_exception_text()
+    {
+        var server = new FakeSindriApi();
+        server.GoDown();
+
+        var ping = await new SindriApiClient(new HttpClient(new FakeSindriHandler(server))).Ping(_api, Token);
+
+        Assert.Equal("SND-UI-002", ping.Error.Code);
+        Assert.DoesNotContain("Connection refused", ping.Error.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task An_event_stream_that_isnt_ok_ends_at_once()
     {

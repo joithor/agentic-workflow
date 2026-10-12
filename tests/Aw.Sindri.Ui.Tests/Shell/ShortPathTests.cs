@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 
 namespace Aw.Sindri.Ui.Tests.Shell;
@@ -36,4 +37,9 @@ public sealed class ShortPathTests
         Assert.StartsWith("/var/…", shown, StringComparison.Ordinal);
         Assert.Equal(StatusText.ShortPathLength, shown.Length);
     }
+
+    // S3: the profile's file is a path, shown in mono as every path is; the hashes beside it stay as they are.
+    [Fact]
+    public void The_profile_file_is_the_one_path_cell() =>
+        Assert.Equal([false, false, true], StatusText.Profile(A.ChangedProfile()).Select(c => c.IsPath));
 }
