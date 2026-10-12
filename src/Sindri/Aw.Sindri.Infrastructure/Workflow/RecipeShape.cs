@@ -79,7 +79,7 @@ internal sealed class RecipeShape(JsonSerializerOptions options, ReaderFindings 
 
             findings.Add("RCP-SCHEMA-001", at, $"'{key}' isn't a field of {RecipeTypes.What(info.Type)}",
                 $"remove it; {RecipeTypes.What(info.Type)} has {string.Join(", ", fields.Keys)}");
-            findings.Refuse(at);
+            findings.RefuseUnknown(at, map, key);
         }
 
         foreach (var field in fields.Values.Where(f => !map.ContainsKey(f.Name)))
