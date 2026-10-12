@@ -1,0 +1,21 @@
+schemaVersion: 1
+id: engineering.csharp.sindri-cqrs-query-ports
+kind: engineering
+section: "4b.2"
+text: "No Sindri query handler's constructor takes a write port: ILedgerStore, ILease or IApprovals (projection writers join in P2)."
+why: "A query that can write can change state behind the command chain's audit."
+select:
+  languages: [csharp]
+  paths: ["src/Sindri/Aw.Sindri.Features/**"]
+checks:
+  - type: test
+    id: "ARCH-CQRS-002"
+    ref: tests/Aw.Sindri.Tests/Cqrs/QueryPortRules.cs
+    status: active
+    note: "GetStatusService and StreamEventsService are allowlisted until P2's read-only ledger and approvals ports land (API spec C9); the allowlist test fails on a stale entry"
+gap: partial
+gapNote: "S1's GetStatusService and StreamEventsService still read ILedgerStore and IApprovals: they are allowlisted until P2 adds ILedgerReader and a read-only approvals port (API spec C9), which removes the allowlist."
+source:
+  type: adr
+  ref: "docs/superpowers/specs/2026-10-10-sindri-api-surface-design.md#25-architecture-tests-testsawarchitecturetests"
+status: active

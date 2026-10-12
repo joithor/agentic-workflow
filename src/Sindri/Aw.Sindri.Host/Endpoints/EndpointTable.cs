@@ -10,10 +10,11 @@ internal static class EndpointTable
     {
         var group = app.MapGroup("/sindri");
         var queries = group.MapGroup(string.Empty);
-        var commands = group.MapGroup(string.Empty);
+        var commands = group.MapGroup(string.Empty).WithMetadata(CommandRouteMetadata.Instance);   // Origin refused before binding (SND-API-008)
 
         // ---- queries: one line per slice, sorted ----
         _ = queries.MapGetStatus();
+        _ = queries.MapListCommands();
         _ = queries.MapPingProcess();
         _ = queries.MapStreamEvents();
 

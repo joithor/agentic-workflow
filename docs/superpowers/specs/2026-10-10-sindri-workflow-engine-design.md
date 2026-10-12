@@ -1,6 +1,6 @@
 # Sindri workflow engine: recipes, blocks, validator and engine
 
-**Status:** design, revision 7 (revision 6 after five /autoplan passes, then the epic reconciliation with the API surface and context retrieval specs, 2026-10-11), awaiting approval · **Date:** 2026-10-10 · **Builds:**
+**Status:** design, revision 7 (revision 6 after five /autoplan passes, then the epic reconciliation with the API surface and context retrieval specs, 2026-10-11; revision 7.1 applies the owner's decisions of 2026-10-11 from PR #179's review: absent optional fields stay `null` in the hash (§3.1), block ids take an optional area (§3.3), and names are restricted by `RCP-NAME-001` (§3.4, §9.1)), awaiting approval · **Date:** 2026-10-10 · **Builds:**
 factory addendum §17.28 (one workflow state machine) and §17.29.4 step 2 · **Next:** `/specToProvenPR` takes the
 Phases at the end to PRs.
 
@@ -124,7 +124,9 @@ public interface IDescribedBlock { public static abstract BlockDescriptor Descri
 - **Normalization:** short forms become long forms, then typed binding runs with
   `JsonUnmappedMemberHandling.Disallow`.
 - **Hash:** `sha256:` over RFC 8785 (JCS) of the normalized document without `hash`, so a short form and its long
-  form hash the same. Hashes are shown as 12 hex characters, and input accepts a prefix of 8 or more.
+  form hash the same. Hashes are shown as 12 hex characters, and input accepts a prefix of 8 or more. The normalized
+  document writes every absent optional value as `null` and every absent list or map as empty (owner decision, 2026-10-11), so adding an optional field to the
+  format re-hashes every recipe, and each needs re-approval.
 
 ### 3.2 Top level
 
@@ -150,7 +152,7 @@ Reserved state names: `cancelled`, `escalated`, `parked`, `taken-over`.
 | Grammar | Form |
 |---|---|
 | Fact key | `fact:<name>` or `evidence:<kind>@<base\|head>` |
-| Block id | `<gate\|step\|effect\|evidence\|input>.<area>.<name>` |
+| Block id | `<gate\|step\|effect\|evidence\|input>.[<area>.]<name>` (`step.produce`, `gate.budget.available`) |
 | Event kind | `<area>.<name>`, registered as an `EventDescriptor` |
 | Duration | `<n>m`, `<n>h` or `<n>d`, at least `1m` |
 | Tokens | int, or with a `k`/`M` suffix |
@@ -158,7 +160,8 @@ Reserved state names: `cancelled`, `escalated`, `parked`, `taken-over`.
 
 ### 3.4 States
 
-Every state has `kind: active | wait | terminal`.
+Every state has `kind: active | wait | terminal`. State, loop and parameter (`with:` key) names match
+`[a-z][a-z0-9-]{0,63}` (`RCP-NAME-001`), so a node path is never ambiguous.
 
 | Field | `active` | `wait` | `terminal` |
 |---|---|---|---|
@@ -840,7 +843,7 @@ directory when not (so `workflow.item.yaml` finds `workflow.step.yaml`).
 
 | §17.28.5 | Rules |
 |---|---|
-| Schema | `RCP-SCHEMA-001`–`003`, `RCP-STATE-001`, `RCP-INIT-001`, `RCP-DUR-001` |
+| Schema | `RCP-SCHEMA-001`–`003`, `RCP-STATE-001`, `RCP-INIT-001`, `RCP-DUR-001`, `RCP-NAME-001` |
 | Blocks registered | `RCP-BLOCK-001`–`003`, `RCP-EVID-001`, `RCP-EVENT-001` |
 | Inputs upstream | `RCP-WIRE-001`, `-002`, `RCP-WHEN-001`, `RCP-OUTCOME-001`, `RCP-CHILD-001` |
 | Capability | `RCP-CAP-001`–`007` |

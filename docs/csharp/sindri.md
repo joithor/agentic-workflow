@@ -15,25 +15,30 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 
 | Command | What it does | Exit |
 |---|---|---|
-| `sindri` | Prints the banner, starts the control plane if it isn't running (detached in its own session, so a Ctrl-C or a kill of the terminal's process group doesn't reach it; `sindri serve`, output in `<home>/logs/serve.log`), then prints the startup summary. It starts one only when nothing runs (`SND-API-001`); one that answers late (`SND-API-002`) is reported as it is. A started child that exits with `SND-LEASE-001` lost the lease to a concurrent start, so it waits up to 10 s for the winner to answer; past that the error ends with the line the child exited with. Only lines written to the log since this start count, not an earlier run's | 0; 1 when the profile needs approval, or the control plane went away before its status answered (`SND-API-001`); 2 on any other error (e.g. it can't start `SND-CLI-002`, the running one answers late `SND-API-002`, or the status call answers an error without a code `SND-API-004` or from inside `SND-API-005`) |
+| `sindri` | Prints the banner, starts the control plane if it isn't running (detached in its own session, so a Ctrl-C or a kill of the terminal's process group doesn't reach it; `sindri serve`, output in `<home>/logs/serve.log`), then prints the startup summary. It starts one only when nothing runs (`SND-API-001`), and never from an agent session (Callers and auth): there it prints `SND-API-001 Sindri isn't running; ask the human to run 'sindri'` and launches nothing; one that answers late (`SND-API-002`) is reported as it is. A started child that exits with `SND-LEASE-001` lost the lease to a concurrent start, so it waits up to 10 s for the winner to answer; past that the error ends with the line the child exited with. Only lines written to the log since this start count, not an earlier run's | 0; 1 when the profile needs approval, or the control plane went away before its status answered (`SND-API-001`); 2 on any other error (e.g. it can't start `SND-CLI-002`, the running one answers late `SND-API-002`, or the status call answers an error without a code `SND-API-004` or from inside `SND-API-005`) |
 | `sindri --headless` | The same without the UI line (the UI is S1b) | as above |
-| `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later | 0 on a clean stop; 1 when another process holds the lease (`SND-LEASE-001`) or the lease was lost (`SND-LEASE-002`); 2 when the port is taken or refused, or the host fails to start listening (`SND-API-003`; the stop is recorded and the lease released), or `AW_SINDRI_PORT` isn't a port number 0..65535 (`SND-CLI-003`, checked before the lease is taken), or the ledger can't be opened (`SND-LEDGER-001/002`) |
+| `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later. Refused in an agent session unless `AW_SINDRI_PROVER=1` | 0 on a clean stop; 1 when it is refused in an agent session (`SND-API-001`), or when another process holds the lease (`SND-LEASE-001`) or the lease was lost (`SND-LEASE-002`); 2 when the port is taken or refused, or the host fails to start listening (`SND-API-003`; the stop is recorded and the lease released), or `AW_SINDRI_PORT` isn't a port number 0..65535 (`SND-CLI-003`, checked before the lease is taken), or the ledger can't be opened (`SND-LEDGER-001/002`) |
 | `sindri status [--json]` | The running control plane's status, through the API | 0; 1 when it isn't running (`SND-API-001`) or the profile needs approval (`profile.needsApproval` in the response); 2 on any other error (e.g. it didn't answer in time `SND-API-002`, answered an error without a code `SND-API-004`, failed inside `SND-API-005`, or the ledger or the saved approval can't be read `SND-LEDGER-002`/`SND-PROFILE-006`) |
-| `sindri stop` | Stops it: records the stop, releases the lease, shuts down | 0; 1 when it isn't running (`SND-API-001`); 2 on any other error (e.g. it didn't answer in time `SND-API-002`, the stop couldn't be recorded `SND-LEDGER-002`, answered an error without a code `SND-API-004`, or failed inside `SND-API-005`) |
+| `sindri stop` | Stops it: records the stop, releases the lease, shuts down | 0; 1 when it isn't running (`SND-API-001`); 2 on any other error (e.g. the API refused this caller `SND-AUTH-002`, it didn't answer in time `SND-API-002`, the stop couldn't be recorded `SND-LEDGER-002`, answered an error without a code `SND-API-004`, or failed inside `SND-API-005`) |
 | `sindri profile validate [--json]` | Checks the live profile file and prints its hash | 0 valid and approved (it is the saved approval and the latest recorded `profile.approved` event names it, the rule every surface uses); 1 valid, not approved; 2 on any error: invalid (`SND-PROFILE-001/002`), the saved approval can't be read (`SND-PROFILE-006`) or the ledger can't be read (`SND-LEDGER-002`), neither of which is ever "not approved" |
-| `sindri profile approve` | Shows the live hash and the key paths changed since the latest approval; changes nothing | 0 when it already is approved; 1 when not approved yet, or when it isn't running (`SND-API-001`); 2 on any other error (e.g. an invalid profile `SND-PROFILE-001/002`, a ledger it can't read `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
-| `sindri profile approve <hash>` | Approves: the hash must be the live one, and you type its first 6 characters at an interactive terminal | 0; 1 when it isn't running (`SND-API-001`); 2 on any other error (e.g. a malformed hash `SND-CLI-003`, a stale hash `SND-PROFILE-003`, no terminal or a wrong confirmation `SND-PROFILE-004`, approvals that can't be written `SND-PROFILE-006`, a ledger it can't read or write `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
+| `sindri profile approve` | `[--no-start]`: shows the live hash and the key paths changed since the latest approval; changes nothing | 0 when it already is approved; 1 when not approved yet, or when it isn't running and wasn't started (`SND-API-001`: `--no-start`, an agent session, no terminal); 2 on any other error (e.g. an invalid profile `SND-PROFILE-001/002`, a ledger it can't read `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
+| `sindri profile approve <hash>` | Approves: the hash must be the live one, and you type its first 6 characters at an interactive terminal. Starts the control plane first if it isn't running, unless `--no-start` (`sindri profile approve [--no-start] <hash>`) | 0; 1 when it isn't running and wasn't started (`SND-API-001`); 2 on any other error (e.g. the API refused this caller `SND-AUTH-002`, it couldn't start `SND-CLI-002`, a malformed hash `SND-CLI-003`, a stale hash `SND-PROFILE-003`, no terminal or a wrong confirmation `SND-PROFILE-004`, approvals that can't be written `SND-PROFILE-006`, a ledger it can't read or write `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
 | `sindri doctor [--json]` | One line per check, in order: `lease`, `ledger`, `profile`, `api`, each `ok` / `warn` / `fail` with a fix. `profile` is `ok` only when approved by the one rule (see Profile); changed since the saved approval, or saved but not the latest recorded one, is a `warn` | 0 all ok, 1 any warn, 2 any fail |
+| `sindri recipe validate <file> [--json]` | Validates a recipe in this process against the build's block catalog, never contacting the control plane: one line per finding (errors first; information and skipped findings labelled), then the recipe's hash. `--json` adds each finding's fields and the normalized long form. Reference: `docs/csharp/sindri-workflow.md` | 0 no errors; 1 any `RCP-*` error; 2 a usage error (no file, `SND-CLI-003`; an unknown `recipe` verb or extra arguments, `SND-CLI-001`), an unreadable file (`SND-RECIPE-010`) or a bug inside sindri (`SND-API-005`) |
+| `sindri recipe eval <file>` | Arrives with the engine's evals (P3); until then it refuses | 2 (`SND-CLI-001`) |
 
 Output: state is always a word, never colour; there is no colour at all, so `NO_COLOR` and redirected output need
-nothing special. Errors go to stderr as `SND-<AREA>-NNN message`, with `(fix: …)` where there is one. `--json` prints
-the response record through AwJson.
+nothing special. Errors go to stderr as `SND-<AREA>-NNN message`, with `(fix: …)` where there is one, or `(usage: …)` for a
+usage error. `status --json` prints the API's response body exactly as received, then a newline (API spec §9, C5); the
+local verbs' `--json` (`profile validate`, `doctor`, `recipe validate`) print their response record through AwJson.
 
 **Which verbs are API clients.** `status`, `stop` and `profile approve` call the running process's API (the CLI is a
 client of the same handlers the UI will call, §17.27.1). `doctor` and `profile validate` run the same handlers in the
 calling process, read-only, because they must work while the control plane is down (`doctor` reports exactly that).
+`recipe validate` is local too: it reads only the recipe file and its child recipes beside it.
 `status` and `stop` never start the process: "not running" is an answer. `profile approve` needs it running, because
-the approval is a ledger event fenced by the lease.
+the approval is a ledger event fenced by the lease, so from a human at a terminal it starts it first (`--no-start` opts
+out); no verb starts it from an agent session (Callers and auth below).
 
 ## Files
 
@@ -46,6 +51,7 @@ directory keeps its mode; files are 0600.
 |---|---|
 | `ledger.db` | The ledger (SQLite, WAL, through `Aw.Kernel.Data`): `events`, `lease`, `outbox_commands` |
 | `approved/<hash>/profile.json`, `approved/latest` | Approved profile snapshots (canonical JSON) and the latest hash. Runtime reads only these, never the live file |
+| `auth/human.token` | This start's human token (0600, in a 0700 `auth/` folder): minted by `serve` after it takes the lease, removed on stop (see Callers and auth) |
 | `control.json` | The running control plane's endpoint: `url`, `pid`, `epoch`. Written once it listens, removed on stop. A client checks the pid and epoch against `/sindri/ping`, so a stale record reads as "not running" |
 | `logs/serve.log` | The detached control plane's output (0600: written under umask 077, and an older log is narrowed after each start) |
 | `profile/profile.yaml` | The live profile (`AW_SINDRI_PROFILE` overrides the path) |
@@ -118,7 +124,8 @@ in-memory store and the SQLite adapter). Append-only, idempotent and fenced.
 
 S1 events and their keys: `process.started` (`process.started:<epoch>`), `process.stopped` (`process.stopped:<epoch>`),
 `profile.approved` (`profile.approved:<hash>:after:<seq of the latest profile.approved event, or 0>`, so each
-approval is recorded: approving A, B, A, B, A records five events), `service.heartbeat` (`service.heartbeat:<epoch>:<slot>`). A service's
+approval is recorded: approving A, B, A, B, A records five events), `service.heartbeat` (`service.heartbeat:<epoch>:<slot>`), and from API P1
+`command.handled` (`command.handled:<commandId>`; the command chain's audit row, not public: see Command chain). A service's
 run event is `service.<name>`. `outbox_commands` is Kernel.Data's outbox table (migration 3), empty in S1: outward
 actions join it in later stages.
 
@@ -132,6 +139,7 @@ foreign browser `Origin` a 403):
 |---|---|
 | `GET /sindri/status` | `GetStatus`: running, pid, epoch, lease expiry, approved and live profile hashes, each service with its cadence and last run |
 | `GET /sindri/ping` | `PingProcess`: `{pid, epoch}` |
+| `GET /sindri/commands` | `ListCommands`: the command catalog (Command catalog, below) |
 | `POST /sindri/stop` | `StopProcess` |
 | `POST /sindri/profile/approve` | `ApproveProfile` (`{hash, confirmed}`) |
 | `GET /sindri/events?after=N` | `StreamEvents` as server-sent events: one event per ledger row, `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second; ends when the client goes away or a stop is requested, so a stop doesn't wait out Kestrel's 30 s graceful shutdown |
@@ -142,22 +150,180 @@ binding refuses (JSON that doesn't read as the request, a malformed hash or id) 
 text naming the method and path (a framework's message is logged, never answered). The loopback guard's 400 and 403, an
 unknown route's 404, a wrong method's 405 and a wrong `Content-Type`'s 415 carry no ProblemDetails body; the CLI
 reports an error answer without a code as `SND-API-004`, never as "not running". The approve route's `confirmed` is the CLI's claim that the human typed the
-confirmation; in S1 that terminal check in the CLI is the only gate. There is no API token in S1: the threat model guards honest
-mistakes (`docs/csharp/bugfix.md`), and approval stays terminal-bound in the CLI. Device-bound approvals for the UI
-(passkeys, §17.21 D6) come with the UI's action forms.
+confirmation. Since API P1 every request is classed from its caller headers and every command runs through the command
+chain (Callers and auth, Command chain, below): approving is a `protected` action, so only a `human` caller at a
+terminal with this start's token gets past the chain. The threat model guards honest mistakes (`docs/csharp/bugfix.md`).
+Device-bound approvals for the UI (passkeys, §17.21 D6) come with the UI's action forms.
 
 ## Callers and auth
 
-Filled by API P1's units B (the headers, the per-start human token, the `Origin` refusal, `Sindri-Api-Version`) and D
-(how the CLI classes itself: the agent variables, the parent-process check, the no-start rule).
+Every request is classed from its headers before any handler runs (API spec §6). The actor on the events it records is
+composed by the host from the class and the client label, never taken from a header.
+
+| Header | Values | Effect |
+|---|---|---|
+| `X-Sindri-Caller` | `human`; `session` or missing; anything else | `human` or `session` (the default). Any other value, or two values, is 400 `SND-API-007` (logged) |
+| `X-Sindri-Terminal` | `1` | Honoured only with `human` |
+| `X-Sindri-Client` | `cli`, `ui`, `prover`, `mcp` | Names the actor: `human:cli`, `human:ui`, `human:prover`, else `human:http`; `session:cli`, `session:mcp`, else `session:http`. An unknown label counts as none (logged) |
+| `X-Sindri-Repo` | a repo name | Scopes the caller (enforced from P3); a malformed name is 400 `SND-API-007` |
+| `X-Sindri-Token` | the per-start token | Required with `human`, on queries too: missing or stale is 403 `SND-AUTH-001` ("restart the app or rerun the command"), never a silent downgrade to `session` |
+
+- **The human token.** `sindri serve` mints `auth/human.token` under the home (32 random bytes, base64url; the file
+  0600 in a 0700 `auth/` folder) right after it takes the lease, so a refused second `serve` never replaces the running
+  one's token. It removes the file with `control.json` on the way out. The CLI and the app read the file and send it.
+- **The prover label.** `X-Sindri-Client: prover` from a `human` caller is honoured only when the process's home, with
+  every symbolic link resolved, lies inside the temp directory (`TMPDIR`, else the platform's) or inside a proof folder
+  `<state root>/<repo slug>/proof/…` (the state root is `AW_STATE_DIR`, else `~/.agentic-workflow`). Elsewhere, such
+  as the owner's real home, it is 403 `SND-AUTH-001`. The label is the only way the server sees the prover marker.
+- **`Origin` on a command.** Every command route (the `commands` route group, later the issue routes) refuses any
+  `Origin` header with 403 `SND-API-008` (logged), before the body is bound, so a malformed body still gets the 403.
+  Queries keep S1's loopback guard: a loopback `Origin` is answered, any other is the guard's bare 403.
+- **Not audited.** `SND-API-007`, `SND-AUTH-001` and `SND-API-008` are refused before the command chain, so they are
+  logged, never written as `command.handled`.
+- **`Sindri-Api-Version: 1`** is on every answer past the loopback guard, problems included, and `GET /sindri/status`
+  reports `apiVersion: 1`.
+- **In-process callers.** `serve` makes every call it runs itself (start, the stop on Ctrl-C, SIGTERM or a failed
+  listen) as `service:host`, the only place that caller is set; the scheduler runs each service as `service:<name>`
+  (`service:heartbeat`). Events written with no caller keep `host:sindri`.
+
+### How the CLI classes itself
+
+The CLI calls as `human` only when stdin and stdout are a terminal **and** it sees no agent signal; otherwise it calls
+as `session` (API spec §6). An agent signal is either:
+
+- one of the agent-session variables, set to anything non-empty: `CLAUDECODE` (Claude Code), `AW_SINDRI_CHILD`
+  (Sindri's own children), `CODEX_SANDBOX` (Codex's sandbox), `CURSOR_AGENT` (Cursor's agent); or
+- an agent harness among the CLI's ancestors, nearest first, up to 32 levels: `claude`, `codex` or `cursor-agent`. Each
+  ancestor is named by the basename of its `argv[0]`, as `ps` shows it (macOS: `proc_pidinfo` for the parent pid and
+  `sysctl KERN_PROCARGS2` for `argv`; Linux: `/proc/<pid>/stat` and `/proc/<pid>/cmdline`), because the kernel's own
+  name is the executable's file: Claude Code runs as `~/.local/share/claude/versions/<version>`, invoked as `claude`.
+  An ancestry that can't be read (a sandbox refuses process info) is ignored; the variables still apply.
+
+Both lists are provisional until the engine's harness probe pins them in a golden (engine §6.2, P2).
+`AW_SINDRI_PROVER=1` (set by `scripts/sindri-prove.sh human`) skips the parent-process check, never the variables, and
+labels a human CLI `X-Sindri-Client: prover`.
+
+What the CLI sends on every API call:
+
+| | `X-Sindri-Caller` | `X-Sindri-Terminal` | `X-Sindri-Client` | `X-Sindri-Token` | `X-Sindri-Repo` |
+|---|---|---|---|---|---|
+| human | `human` | `1` | `cli` (`prover` under the marker) | `<home>/auth/human.token`, read at each call | the repo, when found |
+| session | `session` | — | `cli` | — (the token file is never read) | the repo, when found |
+
+The repo (API spec §3.1): the parent of `git rev-parse --path-format=absolute --git-common-dir` from the working
+directory (so a worktree resolves to its main checkout), as a real path, matched against the **approved** profile's
+repo entries (real paths, `~` expanded) by whole path segments; the longest containing entry wins. Outside git or
+outside every entry the header is omitted. A missing token file means no token is sent, which the API refuses with
+`SND-AUTH-001`.
+
+A command the API refuses with `SND-AUTH-002` names why the CLI ran as a session: `(this CLI ran as a session:
+CLAUDECODE is set | parent process claude | no terminal)`. It exits 2.
+
+**Who starts the control plane** (API spec §7):
+
+| Verb | When it isn't running |
+|---|---|
+| `sindri`, `sindri --headless` | Starts it, except in an agent session: `SND-API-001 Sindri isn't running; ask the human to run 'sindri' (an agent session never starts it: <signal>)`, exit 1, nothing launched. When it runs, the summary prints as usual |
+| `sindri serve` | Refused in an agent session unless `AW_SINDRI_PROVER=1`: `SND-API-001 an agent session never starts Sindri (<signal>); ask the human to run 'sindri'`, exit 1 (P1 plan G6) |
+| `sindri profile approve [--no-start] [<hash>]` | A human at a terminal starts it, then approves; `--no-start` prints `SND-API-001` instead. A malformed hash and a hash without a terminal are refused first, before anything starts. In an agent session or without a terminal it never starts it (P1 plan G8) |
+| `sindri status`, `sindri stop` | Never start it: `not running`, exit 1 |
+| `sindri doctor`, `sindri profile validate` | Run locally |
+
+A CLI without a terminal and without an agent signal (a script, launchd) still starts it with bare `sindri`, as in S1.
+
+**Checked against real runs (2026-10-11).**
+
+| Harness | Mode | Signal the CLI saw | How it was checked |
+|---|---|---|---|
+| Claude Code 2.1.296 | its Bash tool | `CLAUDECODE is set` (`CLAUDECODE=1`); with it unset, `parent process claude` | the built `sindri --headless` and `serve` with a temp home, from this session: both refused, nothing launched |
+| Codex CLI 0.162.1 | `codex exec -s read-only` | `CODEX_SANDBOX is set` (`CODEX_SANDBOX=seatbelt`; `ps` is refused in the sandbox) | `codex exec` running the built `sindri --headless` with a temp home |
+| Codex CLI 0.162.1 | `codex exec -s workspace-write` | `CODEX_SANDBOX is set` (`seatbelt`) | as above |
+| Codex CLI 0.162.1 | `codex exec -s danger-full-access` | `parent process codex` (`CODEX_SANDBOX` is unset in this mode, as the spec expected) | as above |
+| Cursor's agent (`cursor-agent`) | — | **unverified** (not installed on this Mac): `CURSOR_AGENT` and the `cursor-agent` name are unconfirmed | owner step |
+
+Codex also sets `CODEX_THREAD_ID`, `CODEX_SESSION_ID` and `CODEX_CI=1` in every mode, full access included: a candidate
+for the engine probe's list (not read in P1).
 
 ## Command chain
 
-Filled by API P1's unit A (the decorators, outermost first, and what `command.handled` records).
+Every command (`ICommand<T>`) and issue (`IIssue<T>`) is registered through `AddCommand`/`AddIssue`
+(`Features/Commands/SindriCommandServiceCollectionExtensions.cs`), so none can skip the chain. Outermost first:
+
+| # | Decorator | What it does |
+|---|---|---|
+| 1 | `CommandGate` | One command at a time, process-wide. A command that waits 5 s for the gate fails with `SND-API-009` (503) and writes nothing. Records `sindri.command.gate_wait` (seconds) |
+| 2 | `AuditingService` | After the rest of the chain ran, appends one `command.handled {commandId, command, class, caller, outcome, code?}` keyed `command.handled:<commandId>`, under the lease, with the caller's actor and correlation. Outcome: `accepted`; `refused` (`SND-AUTH-*`); `invalid` (an `invalid`-kind error); `failed` (any other error, with its code). A `sindri.command <action>` span and the `sindri.commands` counter carry class, caller and outcome |
+| 3 | `AuthorizingService` | Classifies the attempt (`ActionClassifier`) and checks the caller against the authorization table (`Authorization`, below) before validation. A refusal is `SND-AUTH-002 <Command> is a human decision. Ask the human to run it in a terminal or the Sindri app: <cli>` (protected rows: "in a terminal: <cli>") |
+| 4 | `ValidatingService` (Kernel) | The slice's `IValidator` (`AcceptAllValidator<T>` when it has no rule) |
+
+Queries (`IQuery<T>`, `AddQuery`) get a `sindri.query <name>` span around validation, and nothing else.
+
+- **Self-audited:** `StopProcess`'s accepted path writes no `command.handled`: it releases the lease, and its
+  `process.stopped` is the audit. A refused stop is audited like any other command.
+- **No caller context** (nothing set it) is refused and audited as caller `none`. `ServeCommand` calls `StopProcess` as
+  `service:host`, the one service the catalog grants a desk command.
+- **The audit can't be written:** after an accepted command the result stands and the host logs `SND-LEDGER-002`; on any
+  other outcome the caller gets `SND-LEDGER-002` (503). Without a held lease no row can be written, so a refusal while the
+  process holds no lease answers `SND-LEDGER-002`.
+- **Not audited:** requests the host can't bind (400/415), and the refusals before the chain (`SND-AUTH-001`,
+  `SND-API-007`, `SND-API-008`); they are logged.
+
+**Classification (fail-closed, UI spec E-12):** a plain command runs as its one catalog row. A command implementing
+`IClassifiedCommand` runs as `<Command>:<Variant>`; an unknown variant, protected fields on a row that isn't protected,
+or a command with no row of its own run as `protected` (a human at a terminal only).
+
+**Authorization table (API spec §4.2):**
+
+| Class | human + terminal | human (app) | session | service |
+|---|---|---|---|---|
+| `request`, `pause` | yes | yes | yes | yes |
+| `job` | yes | yes | no | yes |
+| `decision` | yes | yes | no | no |
+| `desk` | yes | yes | no | only a service the row grants (`service:host` → `StopProcess`) |
+| `protected` | yes | no | no | no |
+| `issue` | yes | yes | yes | no |
+| `step-report` | no (the launched session only, once P10's launch proof exists) | no | no | no |
+| `local` | never through the API | | | |
+
+A row with `NeedsTerminal` narrows any class to a human at a terminal.
 
 ## Command catalog
 
-Filled by API P1's unit C (`GET /sindri/commands`, the rows and their UI status, the catalog checks).
+`ICommandCatalog` (Core) is implemented by the Host (`Host/Catalog/CommandCatalog.cs`), because routes and CLI forms are
+Host facts: `ShellRows` (S1's shipped rows) and `PendingRows` (API P2–P10a's actions, registered before their phase so
+the app and doctor can list them; each phase binds its command type and flips its rows to `ready`). The engine and
+context lanes add their own rows (the engine's `ApplyCommand:<variant>` rows land with the engine, not P1).
+
+One row per **action id**: a command (`StopProcess`) or a variant (`CloseItem:cancelled`). A row carries its command
+type and variant, action class, the services it grants (desk rows), `NeedsTerminal`, `SelfAudited`, `Destructive` (the
+app confirms first), `ReadsViews` (disabled while the views rebuild), an optional `Shortcut`, the method and route, the
+CLI form and the UI status: `ready`, `pending:<phase>` or `cli-only:<reason>`.
+
+| Action | Class | Callers | UI |
+|---|---|---|---|
+| `StopProcess` | desk (destructive, self-audited) | human+terminal, human, service:host | `ready` |
+| `ApproveProfile` | protected (terminal) | human+terminal | `cli-only:typed-confirmation` |
+| `RunDoctor`, `ValidateProfile` | local | none (CLI only) | `cli-only:local` |
+| P2–P10a actions | per API spec §3.2 | per the table above | `pending:<phase>` |
+
+`GET /sindri/commands` (a query: any caller) answers `{rows: [{action, class, allowedCallers, terminal, method, route,
+cli, ui, destructive, readsViews, shortcut}]}` sorted by action id. `allowedCallers` comes from the authorization table
+(`human+terminal`, `human`, `session`, `service`, `service:<name>`); a terminal-bound row lists only `human+terminal`, and
+`local` and `step-report` rows list none.
+
+**CLI forms (UI spec E-16):** `CliForm.Parse` accepts `sindri` followed by lower-case words, fixed `--flags`,
+`<placeholders>` and `[optional parts]` made of those, and refuses any control, bidi or invisible character (named by
+code point, never echoed). `CliForm.Fill(placeholder, id)` substitutes a typed id over text, and only one whose text is
+letters, digits, `.`, `_`, `:` and `-`, starting with a letter or digit.
+
+**Checks** (`tests/Aw.Sindri.Tests/Catalog/`, `Cqrs/`): every row's CLI parses; no `shortcut` uses a reserved key
+(`G J K O A T B Y C R / ?`); `cli-only` only on terminal-bound or `local` rows; no `pending:<phase>` names a shipped
+phase (`CatalogRules.ShippedPhases`, which each phase extends); every non-pending row's route is mapped; every event type
+is in `EventCatalog`, and `command.handled` isn't public. The architecture rules (API spec §2.5) run in `Aw.Sindri.Tests`
+because they need Host internals: `ARCH-CQRS-001` (every GET serves an `IQuery`, every POST an `ICommand`, or an `IIssue`
+on the four carve-out routes with `issue` rows; over the endpoint data source), `ARCH-CQRS-002` (no query handler takes
+`ILedgerStore`, `ILease` or `IApprovals`; `GetStatusService` and `StreamEventsService` are allowlisted until P2's
+read-only ports) and `ARCH-CQRS-003` (every command and issue has its row; a classified command has variant rows).
 
 ## Proving it
 
@@ -201,6 +367,42 @@ blocks.
 | `SND-CLI-002` | `sindri serve` didn't come up after starting it |
 | `SND-CLI-003` | Bad input: a CLI argument or setting that is malformed (a profile hash that isn't 64 hex digits, an `AW_SINDRI_PORT` that isn't 0..65535), or an API request body or value the control plane refused (a 400) |
 | `SND-SCHED-001` | A background service run failed |
+
+### Workflow errors (`WorkflowErrors`)
+
+The workflow engine's catalogue (engine spec §8) is a second class, `Aw.Sindri.Core.Workflow.WorkflowErrors`, validated
+together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Retired` and are never reused.
+
+| Code | Kind | When |
+|---|---|---|
+| `SND-RECIPE-001` | invalid | Validation failed; fix each `RCP-*` line |
+| `SND-RECIPE-002` | notFound | No recipe with that id or hash (`sindri recipe list`) |
+| `SND-RECIPE-003` | conflict | Not approved (`sindri recipe approve`) |
+| `SND-RECIPE-004` | — | Retired: a caller without a terminal gets the API's `SND-AUTH-002` |
+| `SND-RECIPE-005` | conflict | Revoked; approve a new version |
+| `SND-RECIPE-006` | conflict | A pinned block changed since approval; re-approve (`recipe list --stale`) |
+| `SND-RECIPE-007` | conflict | Same id and version, other content; raise `version` |
+| `SND-RECIPE-008` | conflict | Evals missing or failing (`sindri recipe eval <file>`) |
+| `SND-RECIPE-009` | conflict | A recipe challenge expired, or its subject changed since the preview |
+| `SND-RECIPE-010` | notFound | The recipe file can't be read |
+| `SND-WF-001` | notFound | No such instance (`sindri workflow list`) |
+| `SND-WF-002` | conflict | The instance changed; re-read and retry |
+| `SND-WF-003` | conflict | The trigger isn't allowed here (`allowedCommands` in `status`) |
+| `SND-WF-004` | conflict | A gate refused; act on the reasons |
+| `SND-WF-005` | conflict | A stale run token; use the token in `status` |
+| `SND-WF-006` | invalid | An ambiguous address; use a listed address |
+| `SND-WF-007` | — | Retired: authorization is the API's `SND-AUTH-002` |
+| `SND-WF-008` | invalid | A malformed desk report |
+| `SND-WF-009` | conflict | The command's nonce was used, expired or is for another version |
+| `SND-WF-010` | unavailable | No runtime for a named block or resource in this build |
+| `SND-WF-011` | forbidden | The effect kind isn't on the profile's effect allowlist (`workflow.effects`) |
+| `SND-WF-012` | conflict | An earlier attempt of this item is still live |
+| `SND-WF-013` | conflict | A workflow challenge expired, or its subject changed |
+| `SND-WF-014` | invalid | `--item` and `fact:item`'s `id` differ |
+
+`sindri recipe validate <file> [--json]` and `sindri recipe eval <file>` are local checker verbs (engine spec W27): exit
+0 pass, 1 fail, 2 usage or tool error; `eval` arrives with P3. The recipe reference, the `RCP-*` rule table and how to add
+a block are in `docs/csharp/sindri-workflow.md`.
 
 ## Hook contract
 

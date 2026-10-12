@@ -1,0 +1,226 @@
+using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Features.StopProcess;
+using Aw.Sindri.Testing;
+
+namespace Aw.Sindri.Tests.Commands.Chain;
+
+/// <summary>The command chain (API spec §2.1): every attempt that reaches it is audited once, refusals write nothing else, and commands run one at a time.</summary>
+public sealed class CommandChainTests : IAsyncDisposable
+{
+    private readonly ChainHarness _c = new();
+
+    public ValueTask DisposeAsync() => _c.DisposeAsync();
+
+    private static CallerContext Human => A.Caller().AtTerminal().Client(ClientLabel.Cli).Build();
+
+    private static CallerContext Session => A.Caller().Session().Client(ClientLabel.Cli).Build();
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Refused_command_writes_only_command_handled_refused()
+    {
+        _ = await _c.H.HoldLease();
+
+        var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Session);
+
+        Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
+        Assert.Equal(0, _c.Latch.Started);
+        var only = Assert.Single(_c.Events);
+        Assert.Equal(EventTypes.CommandHandled, only.Envelope.Type);
+        var handled = Assert.Single(_c.Handled);
+        Assert.Equal((CommandOutcome.Refused, "SND-AUTH-002", "session:cli", ActionClass.Desk), (handled.Outcome, handled.Code, handled.Caller, handled.Class));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_command_with_no_caller_is_refused_and_audited_as_none()
+    {
+        _ = await _c.H.HoldLease();
+
+        var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), caller: null);
+
+        Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
+        Assert.Equal("none", Assert.Single(_c.Handled).Caller);
+        Assert.Equal("host:sindri", Assert.Single(_c.Events).Envelope.Actor);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Invalid_command_writes_only_command_handled_invalid()
+    {
+        _ = await _c.H.HoldLease();
+
+        var invalid = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("invalid"), Human);
+
+        Assert.Equal(SindriErrors.InvalidInput.Code, invalid.Error.Code);
+        Assert.Equal(0, _c.Latch.Started);
+        var handled = Assert.Single(_c.Handled);
+        _ = Assert.Single(_c.Events);
+        Assert.Equal((CommandOutcome.Invalid, "SND-CLI-003"), (handled.Outcome, handled.Code));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Accepted_command_appends_its_event_then_command_handled_accepted()
+    {
+        _ = await _c.H.HoldLease();
+        var human = Human;
+
+        var accepted = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), human);
+
+        Assert.True(accepted.IsSuccess);
+        Assert.Equal([FixtureService.Done, EventTypes.CommandHandled], _c.Events.Select(e => e.Envelope.Type), StringComparer.Ordinal);
+        Assert.All(_c.Events, e => Assert.Equal((human.Actor, human.CorrelationId.Value), (e.Envelope.Actor, e.Envelope.CorrelationId)));
+        var handled = Assert.Single(_c.Handled);
+        Assert.Equal(new CommandHandled(human.CommandId, Core.Ids.ActionId.From("FixtureCommand"), ActionClass.Desk, "human:cli", CommandOutcome.Accepted, Code: null), handled);
+        Assert.Equal("command.handled:" + human.CommandId.Value, _c.Events[1].IdempotencyKey);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Failed_command_is_audited_with_its_code()
+    {
+        _ = await _c.H.HoldLease();
+
+        var failed = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("fail"), Human);
+
+        Assert.Equal(SindriErrors.ProfileHashMismatch.Code, failed.Error.Code);
+        var handled = Assert.Single(_c.Handled);
+        Assert.Equal((CommandOutcome.Failed, "SND-PROFILE-003"), (handled.Outcome, handled.Code));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Accepted_stop_is_self_audited_and_writes_no_command_handled()
+    {
+        _ = await _c.H.HoldLease();
+
+        var stopped = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Human);
+
+        Assert.True(stopped.IsSuccess);
+        Assert.Equal(EventTypes.ProcessStopped, Assert.Single(_c.Events).Envelope.Type);
+        Assert.Null(_c.H.Held.Current);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Refused_stop_is_audited()
+    {
+        _ = await _c.H.HoldLease();
+
+        var refused = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Session);
+
+        Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
+        Assert.Equal((CommandOutcome.Refused, "StopProcess"), (Assert.Single(_c.Handled).Outcome, _c.Handled[0].Command.Value));
+        Assert.NotNull(_c.H.Held.Current);
+        Assert.False(_c.H.Shutdown.Requested);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Service_host_stops_through_the_chain()
+    {
+        _ = await _c.H.HoldLease();
+
+        var stopped = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Signal), A.Caller().Service("host").Build());
+
+        Assert.True(stopped.IsSuccess);
+        Assert.Equal("service:host", Assert.Single(_c.Events).Envelope.Actor);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Gate_times_out_after_5_seconds_with_SND_API_009()
+    {
+        _ = await _c.H.HoldLease();
+        var first = _c.Start(new FixtureCommand("block"), Human);
+        var second = _c.Start(new FixtureCommand("accept"), Human);
+
+        _c.H.Clock.Advance(TimeSpan.FromSeconds(4.9));
+        Assert.False(second.IsCompleted);
+        _c.H.Clock.Advance(TimeSpan.FromSeconds(0.1));
+        var busy = await second.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
+        _c.Latch.Release.SetResult();
+        _ = await first.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
+
+        Assert.Equal(SindriErrors.CommandBusy.Code, busy.Error.Code);
+        Assert.Equal(1, _c.Latch.Started);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Commands_run_one_at_a_time()
+    {
+        _ = await _c.H.HoldLease();
+        var first = _c.Start(new FixtureCommand("block"), Human);
+        var second = _c.Start(new FixtureCommand("accept"), Human with { CommandId = Core.Ids.CommandId.From(new Guid(0xaa, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)) });
+        await Task.Delay(TimeSpan.FromMilliseconds(50), TimeProvider.System, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, _c.Latch.Started);   // the second waits at the gate
+        _c.Latch.Release.SetResult();
+        var results = await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
+
+        Assert.All(results, r => Assert.True(r.IsSuccess));
+        Assert.Equal(2, _c.Latch.Started);
+        Assert.Equal([FixtureService.Done, EventTypes.CommandHandled, FixtureService.Done, EventTypes.CommandHandled], _c.Events.Select(e => e.Envelope.Type),
+            StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Audit_failure_after_accept_returns_the_result_and_logs_SND_LEDGER_002()
+    {
+        await using var c = new ChainHarness(inner => new HandledFailingLedger(inner));
+        _ = await c.H.HoldLease();
+
+        var accepted = await c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Human);
+
+        Assert.True(accepted.IsSuccess);
+        Assert.Equal(FixtureService.Done, Assert.Single(c.Events).Envelope.Type);
+        _ = Assert.Single(c.Log.Lines, l => l.StartsWith("SND-LEDGER-002 ", StringComparison.Ordinal) && l.Contains("FixtureCommand", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Audit_failure_on_a_refusal_is_SND_LEDGER_002()
+    {
+        var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Session);   // no lease held: no grant to write the row with
+
+        Assert.Equal(SindriErrors.LedgerUnavailable.Code, refused.Error.Code);
+        Assert.Empty(_c.Events);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Command_span_and_counter_carry_class_caller_and_outcome()
+    {
+        _ = await _c.H.HoldLease();
+        using var probe = new TelemetryProbe();
+
+        _ = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("fail"), Human);
+
+        var expected = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["sindri.command.class"] = "desk",
+            ["sindri.command.caller"] = "human:cli",
+            ["sindri.command.outcome"] = "failed",
+        };
+        var span = Assert.Single(probe.Spans, s => s.DisplayName == "sindri.command FixtureCommand" && Equals(s.GetTagItem("sindri.command.caller"), "human:cli"));
+        Assert.All(expected, kv => Assert.Equal(kv.Value, span.GetTagItem(kv.Key)));
+        Assert.Contains(probe.Counted, m => m.Value == 1 && expected.All(kv => m.Tags.TryGetValue(kv.Key, out var v) && Equals(v, kv.Value)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Refusal_names_the_command_and_its_cli()
+    {
+        _ = await _c.H.HoldLease();
+
+        var refused = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Session);
+
+        Assert.Equal("StopProcess is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri stop", refused.Error.Message);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_session_can_not_approve_a_profile_and_nothing_but_the_audit_is_written()
+    {
+        _c.H.Profiles.Live = SliceHarness.Profile();
+        _ = await _c.H.HoldLease();
+
+        var refused = await _c.Run<Features.ApproveProfile.ApproveProfileRequest, Features.ApproveProfile.ApproveProfileResponse>(
+            new(_c.H.Profiles.Live.Value.Hash, Confirmed: true), Session);
+
+        Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
+        Assert.Equal("ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve <hash>", refused.Error.Message);
+        Assert.Equal(EventTypes.CommandHandled, Assert.Single(_c.Events).Envelope.Type);
+        Assert.Null((await _c.H.Profiles.Latest(TestContext.Current.CancellationToken)).Value);
+    }
+}

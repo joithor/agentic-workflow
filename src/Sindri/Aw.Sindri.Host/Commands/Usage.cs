@@ -6,13 +6,15 @@ internal static class Usage
     private static readonly string[] _verbs =
     [
         // ---- one line per verb ----
-        "usage: sindri [--headless]           start the control plane if it isn't running, then print its summary",
-        "       sindri serve                  run the control plane in the foreground (what 'sindri' starts; launchd target)",
+        "usage: sindri [--headless]           start the control plane if it isn't running, then print its summary (never from an agent session)",
+        "       sindri serve                  run the control plane in the foreground (what 'sindri' starts; launchd target; refused in an agent session)",
         "       sindri status [--json]        the running control plane's status (exit 1 when it isn't running)",
         "       sindri stop                   stop it and release the host lease",
         "       sindri profile validate [--json]",
-        "       sindri profile approve [<hash>]   without a hash: show the hash and what changed; with it: approve (needs a terminal)",
+        "       sindri profile approve [--no-start] [<hash>]   without a hash: show the hash and what changed; with it: approve (needs a terminal); starts the control plane unless --no-start",
         "       sindri doctor [--json]        lease, ledger, profile and api checks; runs without the control plane",
+        "       sindri recipe validate <file> [--json]   check a recipe in-process: rule lines, then its hash (exit 0 pass, 1 fail, 2 error)",
+        "       sindri recipe eval <file>     run a recipe's eval cases (arrives with P3; exits 2 until then)",
     ];
 
     internal static readonly string Text = string.Join('\n', [.. _verbs, "exit codes: 0 ok, 1 attention needed, 2 error"]);

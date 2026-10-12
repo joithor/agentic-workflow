@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Aw.Kernel.Testing.Golden.Match resolves golden files under this folder (the API goldens, P1 unit E). -->
+    <!-- Golden files (Aw.Kernel.Testing Golden) live in this project's source tree (the recipe goldens, and the API goldens of API P1 unit E); AW_GOLDEN_UPDATE=1 rewrites them there. -->
     <AssemblyMetadata Include="AwGoldenSourceRoot" Value="$(MSBuildProjectDirectory)" />
   </ItemGroup>
 </Project>

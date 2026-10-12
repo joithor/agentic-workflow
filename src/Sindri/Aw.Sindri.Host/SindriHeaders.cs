@@ -1,9 +1,6 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Aw.Sindri.Host;
 
 /// <summary>The headers the API reads and writes (API spec §6, §9): shared by the caller middleware, the CLI client and the tests.</summary>
-[SuppressMessage("Design", "MA0182:Unused internal type", Justification = "The P1 contract unit adds the names; units B (middleware) and D (CLI client) use them (P1 plan §2.4).")]
 internal static class SindriHeaders
 {
     /// <summary>'human', or 'session' (also the default when missing).</summary>

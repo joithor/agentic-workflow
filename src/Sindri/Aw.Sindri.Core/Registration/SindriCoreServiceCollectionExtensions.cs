@@ -2,6 +2,7 @@ using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Core.Registration;
@@ -21,5 +22,6 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<EventFactory>()
             .AddSingleton<ICallerContextAccessor, AsyncLocalCallerContextAccessor>()
             .AddSingleton<HeldLease>()
-            .AddSingleton<HeldHumanToken>();
+            .AddSingleton<HeldHumanToken>()
+            .AddSingleton<BlockCatalog>();
 }

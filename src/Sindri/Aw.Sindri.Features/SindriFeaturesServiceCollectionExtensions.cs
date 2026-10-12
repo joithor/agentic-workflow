@@ -2,8 +2,11 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.ApproveProfile;
+using Aw.Sindri.Features.Blocks;
 using Aw.Sindri.Features.Commands;
+using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RunDoctor;
@@ -11,6 +14,7 @@ using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Features.ValidateProfile;
+using Aw.Sindri.Features.ValidateRecipe;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Features;
@@ -20,7 +24,8 @@ public static class SindriFeaturesServiceCollectionExtensions
 {
     /// <summary>
     /// Adds every Sindri use case as an IService: commands and queries behind their chains (API spec §2.1), the host's
-    /// own services and the CLI-local verbs as plain services, and the background services as IScheduledService.
+    /// own services and the CLI-local verbs as plain services, the background services as IScheduledService, and the
+    /// workflow blocks this build ships.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
@@ -32,7 +37,10 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddScoped<ProfileFacts>()
             .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>, RunDoctorService>()
-            .AddScoped<IScheduledService, HeartbeatService>();
+            .AddScoped<IScheduledService, HeartbeatService>()
+            .AddScoped<IService<ValidateRecipeRequest, ValidateRecipeResponse>, ValidateRecipeService>()
+            .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
+            .AddRecipeBlocks();
 
         // ---- commands (one line per slice) ----
         _ = services.AddScoped<IValidator<ApproveProfileRequest>, AcceptAllValidator<ApproveProfileRequest>>().AddCommand<ApproveProfileRequest, ApproveProfileResponse, ApproveProfileService>();
@@ -40,6 +48,7 @@ public static class SindriFeaturesServiceCollectionExtensions
 
         // ---- queries (one line per slice) ----
         _ = services.AddScoped<IValidator<GetStatusRequest>, AcceptAllValidator<GetStatusRequest>>().AddQuery<GetStatusRequest, GetStatusResponse, GetStatusService>();
+        _ = services.AddScoped<IValidator<ListCommandsRequest>, AcceptAllValidator<ListCommandsRequest>>().AddQuery<ListCommandsRequest, ListCommandsResponse, ListCommandsService>();
         _ = services.AddScoped<IValidator<PingProcessRequest>, AcceptAllValidator<PingProcessRequest>>().AddQuery<PingProcessRequest, Ping, PingProcessService>();
         _ = services.AddScoped<IValidator<StreamEventsRequest>, AcceptAllValidator<StreamEventsRequest>>().AddQuery<StreamEventsRequest, StreamEventsResponse, StreamEventsService>();
         return services;
