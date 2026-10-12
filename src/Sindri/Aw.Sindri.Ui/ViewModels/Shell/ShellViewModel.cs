@@ -30,7 +30,6 @@ internal sealed partial class ShellViewModel : ObservableObject
 
     private readonly Preferences _store;
     private UiPreferences _preferences = UiPreferences.Defaults;
-    private Task _saving = Task.CompletedTask;
 
     // The page Settings was opened from, where leaving it over the Not running card returns.
     private PageId _beforeSettings = PageId.Home;
@@ -39,10 +38,10 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="records">Where the control plane recorded its endpoint.</param>
     /// <param name="api">Its API.</param>
     /// <param name="clock">The clock for every timing rule.</param>
-    /// <param name="preferences">The local preferences (window, sheet width, last page).</param>
-    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, IPreferencesStore preferences)
+    /// <param name="preferences">The app's local preferences, shared with Settings (the shell keeps its window, sheet width and last page there).</param>
+    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences)
     {
-        _store = new Preferences(preferences);
+        _store = preferences;
         Health = new HealthViewModel(records, api, clock);
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;

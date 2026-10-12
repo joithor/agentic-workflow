@@ -18,7 +18,7 @@ internal sealed class SettingsViewModel : ObservableObject, IDisposable
     private bool _loading;
 
     /// <summary>Settings over the preferences, the OS setting and the theme.</summary>
-    /// <param name="preferences">The local preferences.</param>
+    /// <param name="preferences">The app's local preferences, shared with the shell.</param>
     /// <param name="motion">The OS reduce-motion setting.</param>
     /// <param name="apply">Applies the appearance to the theme (on the UI thread).</param>
     internal SettingsViewModel(Preferences preferences, IMotionPreference motion, Action<AppearanceSettings> apply)
@@ -104,9 +104,6 @@ internal sealed class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>The text size in words ("110%").</summary>
     public string TextScaleText => Labels.Percent(TextScale);
 
-    /// <summary>The latest preferences write; complete when nothing is being written.</summary>
-    internal Task Saving { get; private set; } = Task.CompletedTask;
-
     /// <summary>Reads the stored preferences and the OS setting, and applies them (the shell's start-up calls it once).</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>A task that completes when they're applied.</returns>
@@ -149,21 +146,12 @@ internal sealed class SettingsViewModel : ObservableObject, IDisposable
 
     private void Apply() => _apply(new AppearanceSettings(TextScale, IsMotionReduced));
 
-    // Writes the two values over whatever else the preferences hold (the shell writes its own), one write after another.
-    private void Save() => Saving = SaveAfter(Saving, TextScale, ReduceMotion);
-
-    private async Task SaveAfter(Task previous, double scale, bool reduce)
+    // Writes the two values over whatever else the file holds by then, through the app's one write queue (shared with the
+    // shell). A refused write leaves the setting applied for this session; the next change tries again.
+    private void Save()
     {
-        await previous.ConfigureAwait(false);
-        try
-        {
-            var current = await _preferences.Load(CancellationToken.None).ConfigureAwait(false);
-            await _preferences.Save(current with { TextScale = scale, ReduceMotion = reduce }, CancellationToken.None).ConfigureAwait(false);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            // The setting stays applied for this session; the next change tries again.
-        }
+        var (scale, reduce) = (TextScale, ReduceMotion);
+        _ = _preferences.Update(p => p with { TextScale = scale, ReduceMotion = reduce });
     }
 
     private void OnMotionChanged(object? sender, EventArgs e)

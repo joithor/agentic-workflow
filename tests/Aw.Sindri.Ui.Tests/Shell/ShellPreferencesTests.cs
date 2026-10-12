@@ -19,7 +19,7 @@ public sealed class ShellPreferencesTests
 
     private async Task<ShellViewModel> Shell()
     {
-        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), _store);
+        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), new Preferences(_store));
         await shell.Restore(Token);
         return shell;
     }
@@ -75,7 +75,7 @@ public sealed class ShellPreferencesTests
     public async Task A_shell_write_keeps_what_Settings_wrote_since_start_up()
     {
         var shell = await Shell();
-        await new Preferences(_store).Save(UiPreferences.Defaults with { TextScale = 1.2, ReduceMotion = true }, Token);
+        await new Preferences(_store).Update(_ => UiPreferences.Defaults with { TextScale = 1.2, ReduceMotion = true });
 
         shell.ResizeSheet(600);
 
@@ -89,20 +89,18 @@ public sealed class ShellPreferencesTests
     public async Task A_Settings_change_and_a_shell_change_made_together_both_land()
     {
         var store = new GatedPreferencesStore();
-        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), store);
+        var preferences = new Preferences(store);
+        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), preferences);
         await shell.Restore(Token);
-        using var settings = new SettingsViewModel(new Preferences(store), new FakeMotionPreference(), _ => { });
+        using var settings = new SettingsViewModel(preferences, new FakeMotionPreference(), _ => { });
         store.HoldReads();
 
         settings.ReduceMotion = true;
         shell.ResizeSheet(600);
         store.ReleaseReads();
-        for (var i = 0; i < 500 && store.Writes < 2; i++)
-        {
-            await Task.Delay(10, Token);
-        }
+        await preferences.Flush();
 
-        var stored = await new Preferences(store).Load(Token);
+        var stored = await preferences.Load(Token);
         Assert.Equal((true, 600d), (stored.ReduceMotion, stored.SheetWidth));
     }
 

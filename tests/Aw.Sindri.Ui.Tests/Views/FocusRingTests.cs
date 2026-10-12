@@ -63,7 +63,7 @@ public sealed class FocusRingTests : IDisposable
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Running(double width = 1280, double height = 800)
     {
         _records.Write(A.Record());
-        var shell = new ShellViewModel(_records, _server, _clock, _preferences);
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell, Width = width, Height = height };
         var settings = new SettingsViewModel(new Preferences(_preferences), new FakeMotionPreference(), _ => { });

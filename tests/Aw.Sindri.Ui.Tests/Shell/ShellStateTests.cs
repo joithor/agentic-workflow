@@ -20,7 +20,7 @@ public sealed class ShellStateTests
 
     private async Task<ShellViewModel> Running(ShellState until)
     {
-        var shell = new ShellViewModel(_records, _server, _clock, _preferences);
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
         await shell.Restore(Token);
         _ = shell.Run(Token);
         await Eventually(() => shell.State == until);
@@ -43,7 +43,7 @@ public sealed class ShellStateTests
     [Fact]
     public async Task Connecting_shows_the_chrome_and_the_skeleton_only()
     {
-        var shell = new ShellViewModel(_records, _server, _clock, _preferences);
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
         await shell.Restore(Token);
 
         Assert.Equal((false, true, false, true, false, false), Shown(shell));
@@ -160,7 +160,7 @@ public sealed class ShellStateTests
     [Fact]
     public async Task The_top_bar_selection_follows_the_page_and_selecting_a_segment_goes_there()
     {
-        var shell = new ShellViewModel(_records, _server, _clock, _preferences);
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
         await shell.Restore(Token);
 
         shell.SelectedNav = shell.Navigation[2];
@@ -319,7 +319,7 @@ public sealed class ShellStateTests
     [Fact]
     public async Task Each_state_puts_its_glyph_before_its_word()
     {
-        var connecting = new ShellViewModel(_records, _server, _clock, _preferences);
+        var connecting = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
         Assert.Equal((StateGlyph.None, Labels.Connecting, string.Empty), (connecting.Pill.Glyph, connecting.Pill.Word, connecting.Pill.Age));
         // S1: no glyph while connecting, so the pill drops the glyph's slot and its word centres.
         Assert.False(connecting.Pill.HasGlyph);
@@ -345,7 +345,7 @@ public sealed class ShellStateTests
     [Fact]
     public async Task The_navigation_is_disabled_only_while_not_running()
     {
-        Assert.True(new ShellViewModel(_records, _server, _clock, _preferences).IsNavigationEnabled);
+        Assert.True(new ShellViewModel(_records, _server, _clock, new Preferences(_preferences)).IsNavigationEnabled);
         var shell = await Running(ShellState.NotRunning);
         Assert.False(shell.IsNavigationEnabled);
 
