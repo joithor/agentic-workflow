@@ -7,8 +7,9 @@ both. The design and its reasons are in the engine spec,
 this page summarizes, the spec wins. The app shell (the `sindri` binary, its home, the error catalogue) is in
 `docs/csharp/sindri.md`.
 
-Phase 1 (this page's scope) reads, normalizes, hashes and validates recipes in-process. Registering, approving and
-running them come in later phases (registry P2, engine and evals P3, store and desk Steps P4).
+This page covers reading, normalizing, hashing and validating recipes in-process (P1) and the pure engine's eval verb,
+`recipe eval` (P3). Registering and approving recipes (P2) and running instances (store and desk Steps, P4) come in
+later phases.
 
 ## `sindri recipe validate`
 
@@ -89,8 +90,8 @@ rounds pass
 
 A line the engine rejects (an answer that doesn't fit the park, a grant of 0 or above the loop's cap, an undeclared
 outcome) or one out of the format (not JSON, an unknown `kind`, a `variant` that doesn't go with its kind) fails its case
-at that line, saying why. A recipe without `evals:` prints `no evals declared` and exits 0: nothing failed, and
-approving it is refused separately (`SND-RECIPE-008`). `--json` prints `{"cases":[{"case","passed","line","detail"}],"scaffold":null,"passed"}`.
+at that line, saying why. A recipe without `evals:` prints `no evals declared` and exits 0: nothing failed. Approval will refuse
+such a recipe (`SND-RECIPE-008`) once the registry lands (P2); this build has no approve path yet. `--json` prints `{"cases":[{"case","passed","line","detail"}],"scaffold":null,"passed"}`.
 The same eval run twice prints the same output.
 
 `--scaffold <file>` prints a happy-path case for the recipe on stdout, marked `"scaffold": true` on line 1: the start
@@ -213,6 +214,11 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`). A loop must be declared (`R
 
 - **Loops:** `loops: { <name>: { cap ≥ 1, noProgress } }`. `noProgress` defaults to `[findings, emptyDiff, sameFailure]`
   and can't be empty (`RCP-LOOP-003`). A looped state needs a transition back into it (`RCP-LOOP-002`).
+  **P3 limit:** the pure engine sees a round's `fact:findings` only as a reference and its SHA-256, and a Step report
+  carries no diff, so it implements part of A §17.23.13. `findings` fires only when a round's findings are identical to
+  the last round's (a superset, keyed by file, check and normalized message, isn't detected), `sameFailure` when a
+  `step.failed` repeats its reason, and `emptyDiff` never fires. A loop that names only `emptyDiff` therefore never parks
+  early, and the validator doesn't say so. The rest waits on the report carrying finding keys and a diff signal.
 - **Budgets:** `budget: { tokens }` on an active state and on the recipe. Exhausting one parks the instance with `budget`.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
   `{state}`, `{user}`, `{child}`, `{loop.<name>}`, `{loop.<name>.cap}` and `{budget.tokens.left}` (`RCP-NEXT-001`).
