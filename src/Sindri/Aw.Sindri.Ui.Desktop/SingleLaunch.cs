@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.Views;
 
 namespace Aw.Sindri.Ui.Desktop;
 
@@ -16,13 +17,19 @@ internal static class SingleLaunch
     /// <param name="args">The command line.</param>
     /// <param name="runApp">Runs the app until it quits; returns its exit code.</param>
     /// <param name="errors">Standard error.</param>
-    /// <returns>The exit code: the app's, 0 when the running instance took the message, 1 when none answered.</returns>
+    /// <returns>The exit code: the app's (2 when it failed), 0 when the running instance took the message, 1 when none answered.</returns>
     internal static int Run(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors)
     {
         // Before the UI starts, on the main thread with no synchronization context: blocking here deadlocks nothing.
         if (instance.TryClaim(CancellationToken.None).AsTask().GetAwaiter().GetResult())
         {
-            return runApp();
+            var exit = runApp();
+            if (exit == SindriApp.FailedExitCode)
+            {
+                errors.WriteLine("sindri-ui: couldn't start (SND-UI-004); the log line above names the cause");
+            }
+
+            return exit;
         }
 
         if (instance.Send(MessageFor(args), CancellationToken.None).AsTask().GetAwaiter().GetResult())

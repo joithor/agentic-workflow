@@ -20,6 +20,12 @@ public sealed partial class SindriApp : Application
 {
     private readonly ShellViewModel? _shell;
 
+    /// <summary>
+    /// The exit code when the app failed (SND-UI-004): its start-up, or its following of the control plane, threw. The app
+    /// logs the code and the exception's type, then ends rather than lingering without a window or tray.
+    /// </summary>
+    public const int FailedExitCode = 2;
+
     /// <summary>The app with its theme only: no window, nothing followed.</summary>
     public SindriApp()
     {
@@ -41,6 +47,12 @@ public sealed partial class SindriApp : Application
     /// <summary>The head's adapters, or null for the theme-only app.</summary>
     internal SindriPlatform? Platform { get; }
 
+    /// <summary>
+    /// Ends the app with an exit code: the lifetime's Shutdown. A headless test replaces it, since the real one also shuts
+    /// the UI thread's dispatcher down, which the test session shares.
+    /// </summary>
+    internal Action<IControlledApplicationLifetime, int> End { get; set; } = static (lifetime, exitCode) => lifetime.Shutdown(exitCode);
+
     // The API is on loopback: never through a configured proxy (as the CLI's client), and a connect that hangs fails in 2 s.
     // The client owns no timeout of its own, so the event stream stays open.
     private static HttpClient Loopback() =>
@@ -54,8 +66,13 @@ public sealed partial class SindriApp : Application
     {
         if (_shell is not null && Platform is { } platform && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Started on the UI thread, so the view models' awaits come back to it.
-            _ = Open(desktop, _shell, platform);
+            // Started on the UI thread, so the view models' awaits come back to it. Its failure is observed there: logged,
+            // then the app ends with FailedExitCode.
+            _ = Open(desktop, _shell, platform).ContinueWith(
+                opened => Fail(desktop, platform, opened.Exception),
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.FromCurrentSynchronizationContext());
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -75,6 +92,14 @@ public sealed partial class SindriApp : Application
         window.Show();
         ShellOpened(desktop, window, shell);
         await shell.Run(CancellationToken.None).ConfigureAwait(true);
+    }
+
+    // The code and the exception's type only: its message and stack can carry paths and payloads.
+    private void Fail(IClassicDesktopStyleApplicationLifetime desktop, SindriPlatform platform, AggregateException? failure)
+    {
+        var cause = failure?.InnerException ?? failure;
+        SindriAppLog.Failed(platform.Log, cause?.GetType().Name ?? "unknown");
+        End(desktop, FailedExitCode);
     }
 
     // Settings (⌘,) over the preferences and the OS setting, applying to this app's resources. A preferences file that

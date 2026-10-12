@@ -95,7 +95,17 @@ window. `SindriApp.Create(SindriPlatform, TimeProvider)` builds the view model o
 preferences store, restores the preferences (window bounds, sheet width, last page), then shows the window and follows
 the control plane; the platform wiring (tray, single instance, close-to-tray) receives the window through the partial
 `ShellOpened` hook. The head's `Composition.Compose` passes its `SindriPlatform`; S1b's `Create(records, clock)` is
-gone.
+gone. Every view loads its XAML through the generated `InitializeComponent()` (never `AvaloniaXamlLoader.Load(this)`,
+which leaves the `x:Name` fields null; `Views/NamedControlsTests` checks each view's), and `Views/StartupTests` drives
+this start-up path the way the head does (`Create`, `Initialize`, `OnFrameworkInitializationCompleted` with a classic
+desktop lifetime).
+
+**Start-up never fails silently.** The start-up and the following run as one task on the UI thread; when it throws,
+the app logs `SND-UI-004` through `SindriPlatform.Log` (an `ILogger`; the desktop head's is `Aw.Kernel.Telemetry`'s,
+JSON lines on standard error, `AW_LOG_LEVEL`) with the exception's type only (no message, no stack: they can carry paths
+and payloads), then ends with exit code 2 (`SindriApp.FailedExitCode`) instead of staying up without a window or tray.
+`SingleLaunch` then writes `sindri-ui: couldn't start (SND-UI-004); the log line above names the cause` on standard
+error.
 
 | Part | What it shows |
 |---|---|
@@ -220,13 +230,14 @@ the launch is named in the `SindriUi` note in `deps.yaml`.
 
 ## Errors
 
-The app shows each as words in the window, never a dialog or a crash.
+The app shows the first three as words in the window, never a dialog or a crash.
 
 | Code | When |
 |---|---|
 | `SND-UI-001` | No usable endpoint record, or it names a process that isn't the one answering |
 | `SND-UI-002` | Nothing answered at the recorded endpoint, or not within 2 s |
 | `SND-UI-003` | The API answered, but not with the record this build reads (an error status, or another body) |
+| `SND-UI-004` | The app's start-up, or its following of the control plane, threw: logged (code and exception type) and the app exits 2. Not shown in a window: there may be none |
 
 ## Tests
 

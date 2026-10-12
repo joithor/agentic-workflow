@@ -1,4 +1,5 @@
 using Avalonia;
+using Aw.Kernel.Telemetry;
 
 namespace Aw.Sindri.Ui.Desktop;
 
@@ -8,7 +9,13 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        var platform = Composition.Platform(Environment.GetEnvironmentVariable, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), TimeProvider.System);
+        // JSON log lines on standard error (AW_LOG_LEVEL); the app logs a failed start-up here (SND-UI-004).
+        using var telemetry = TelemetryRuntime.Start(TelemetryOptions.FromEnvironment("sindri-ui", Environment.GetEnvironmentVariable, TimeProvider.System));
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var platform = Composition.Platform(Environment.GetEnvironmentVariable, home, TimeProvider.System) with
+        {
+            Log = telemetry.LoggerFactory.CreateLogger("Aw.Sindri.Ui"),
+        };
         try
         {
             return SingleLaunch.Run(platform.Instance, args, () => Composition.Compose(platform, TimeProvider.System).StartWithClassicDesktopLifetime(args), Console.Error);

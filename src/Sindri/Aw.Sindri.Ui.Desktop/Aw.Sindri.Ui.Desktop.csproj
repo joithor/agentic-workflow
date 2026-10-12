@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Aw.Sindri.Ui/Aw.Sindri.Ui.csproj" />
+    <ProjectReference Include="../../Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj" />
   </ItemGroup>
 
   <ItemGroup>

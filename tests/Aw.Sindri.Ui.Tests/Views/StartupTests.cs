@@ -38,14 +38,17 @@ public sealed class StartupTests : IDisposable
             }, Token);
 
     private readonly RecordingLogger _log = new();
+    private int? _exitCode;
 
     private SindriPlatform Platform(FakeSingleInstance instance) =>
         new(new InMemoryEndpointRecords(), new InMemoryPreferencesStore(), new FakeMotionPreference(), instance, _tray) { Log = _log };
 
     // The app as the head starts it: created over the ports, initialized, then the framework's initialization completes.
+    // The lifetime's real Shutdown also stops the dispatcher the session shares, so the test records the exit code instead.
     private SindriApp Start(FakeSingleInstance instance)
     {
         var app = SindriApp.Create(Platform(instance), _clock);
+        app.End = (_, exitCode) => _exitCode ??= exitCode;
         app.ApplicationLifetime = _desktop;
         app.Initialize();
         app.OnFrameworkInitializationCompleted();
@@ -109,21 +112,18 @@ public sealed class StartupTests : IDisposable
         var instance = new FakeSingleInstance(_channel);
         Assert.True(await instance.TryClaim(Token));
         _tray.FailNextShow(new InvalidOperationException("no status bar at /secret/path"));
-        int? exitCode = null;
-        _desktop.Exit += (_, e) => exitCode = e.ApplicationExitCode;
 
         try
         {
             _ = Start(instance);
-            await Until(() => exitCode is not null);
+            await Until(() => _exitCode is not null);
 
-            Assert.Equal(2, exitCode);
+            Assert.Equal(2, _exitCode);
             var entry = Assert.Single(_log.Entries, e => e.Level == LogLevel.Error);
             Assert.Equal("SND-UI-004", entry.EventName);
             Assert.Contains(nameof(InvalidOperationException), entry.Message, StringComparison.Ordinal);
             Assert.DoesNotContain("/secret/path", entry.Message, StringComparison.Ordinal);
             Assert.Null(entry.Exception);
-            Assert.DoesNotContain(_desktop.Windows, w => w.IsVisible);
         }
         finally
         {

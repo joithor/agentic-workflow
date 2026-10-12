@@ -44,11 +44,12 @@ internal sealed class AppLifetime : IDisposable
     /// <param name="window">The main window.</param>
     /// <param name="platform">The head's adapters.</param>
     /// <param name="shell">The shell the window shows.</param>
+    /// <param name="shutdown">Ends the app (the lifetime's Shutdown, exit code 0).</param>
     /// <returns>The lifetime (it lives as long as the app).</returns>
-    internal static AppLifetime Start(IClassicDesktopStyleApplicationLifetime desktop, Window window, SindriPlatform platform, ShellViewModel shell)
+    internal static AppLifetime Start(IClassicDesktopStyleApplicationLifetime desktop, Window window, SindriPlatform platform, ShellViewModel shell, Action shutdown)
     {
         desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        var lifetime = new AppLifetime(window, platform.Tray, platform.Instance, shell.Navigate, () => desktop.Shutdown());
+        var lifetime = new AppLifetime(window, platform.Tray, platform.Instance, shell.Navigate, shutdown);
         lifetime.ShowState(shell.State);
         shell.PropertyChanged += (_, e) =>
         {
