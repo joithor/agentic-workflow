@@ -2,7 +2,8 @@ namespace Aw.Sindri.Infrastructure;
 
 /// <summary>
 /// Resolves every symbolic link along a path, like realpath(3), so a home reached through a link (macOS's /var is
-/// /private/var) is judged where it really is. Parts that don't exist yet are kept as written.
+/// /private/var) is judged where it really is. Parts that don't exist yet are kept as written. '~' and '~/…' expand to
+/// the user's home first (profile repo entries are written that way). Used by the prover-home rule and the repo locator.
 /// </summary>
 internal static class RealPath
 {
@@ -13,13 +14,18 @@ internal static class RealPath
     {
         try
         {
-            return Resolve(Path.GetFullPath(path), MaxLinks);
+            return Resolve(Path.GetFullPath(Expanded(path)), MaxLinks);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return null;
         }
     }
+
+    private static string Expanded(string path) =>
+        path == "~" || path.StartsWith("~/", StringComparison.Ordinal)
+            ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + path[1..]
+            : path;
 
     private static string? Resolve(string full, int budget)
     {

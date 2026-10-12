@@ -22,8 +22,8 @@ internal sealed class GitRepoLocator : IRepoLocator
             return null;
         }
 
-        var checkout = RealPath.Of(Path.GetDirectoryName(commonDir.TrimEnd('/')) ?? "/");
-        return RepoScope.Longest(checkout, [.. repos.Select(r => r with { Path = RealPath.Of(r.Path) })]);
+        var checkout = Path.GetDirectoryName(commonDir.TrimEnd('/')) ?? "/";
+        return RepoScope.Longest(RealPath.Of(checkout) ?? checkout, [.. repos.Select(r => r with { Path = RealPath.Of(r.Path) ?? r.Path })]);   // a link loop: kept as written
     }
 
     private static async Task<string?> CommonDir(string directory, CancellationToken cancellationToken)

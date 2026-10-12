@@ -77,11 +77,12 @@ internal static class CommandTable
     }
 
     /// <summary>
-    /// The caller headers. The token store is Infrastructure's; without one a human call carries no token and the API
-    /// refuses it (SND-AUTH-001). The repo is looked up at the first call, from the working directory.
+    /// The caller headers. The token store is Infrastructure's (registered with it); a missing token file means a human
+    /// call carries no token and the API refuses it (SND-AUTH-001). The repo is looked up at the first call, from the
+    /// working directory.
     /// </summary>
     private static CallerHeaders Headers(AgentSession session, IServiceProvider services) =>
-        CallerHeaders.For(session, services.GetService<IHumanTokenStore>(),
+        CallerHeaders.For(session, services.GetRequiredService<IHumanTokenStore>(),
             ct => CallerHeaders.RepoOf(services.GetRequiredService<IApprovals>(), services.GetRequiredService<IRepoLocator>(), Environment.CurrentDirectory, ct));
 
     private static bool? Json(string[] rest) => rest switch
