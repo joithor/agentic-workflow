@@ -119,7 +119,7 @@ The pre-API states (`ShellState`, highest first): **version mismatch** (the stat
 `AppApiVersion`: a full-window panel with both versions and "quit both and run sindri", no top bar), **not running**
 (S1b's panel and reasons), **connecting** (skeleton rows, first load only), **unreadable** (`SND-UI-003`: a banner with
 the code and `sindri doctor`; the page keeps its last data and the pill reads "Unreadable · stale"), **stale** (30 s
-without an event or a status, on the injected clock: the pill reads "Running · stale"; otherwise "Running · updated Ns
+without an event, a status or an answered ping, on the injected clock: the pill reads "Running · stale"; otherwise "Running · updated Ns
 ago", re-worded every second). The view models carry no Avalonia types; views bind the app's copy through
 `ShellText` (compiled bindings resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar,
 page and sheet; the window's minimum is 900 × 600.
@@ -197,6 +197,9 @@ window (popups aren't `AvnWindow`s). If the pass finds it silent, the fallback i
    plane stopped or was killed), a status refresh fails, or `control.json` changes (checked every 2 s; a stopping
    control plane can hold its stream open), the app looks again, every 2 s while nothing answers. A record the
    platform can't read, or one with a relative `url`, reads as "can't be read" with the reason, and the app keeps trying.
+4. While it follows, the app pings every 10 s (S1's stream sends no keep-alive, and a control plane with nothing
+   scheduled sends no events). A ping answered with the followed pid and epoch keeps the views fresh; failed pings, or
+   another process's answer, for 30 s read as stale.
 
 ## What the Health page shows
 

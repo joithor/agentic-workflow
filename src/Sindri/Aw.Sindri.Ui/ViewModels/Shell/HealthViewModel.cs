@@ -19,8 +19,11 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
     /// <summary>How long to wait before looking for the control plane again.</summary>
     internal static readonly TimeSpan RetryEvery = TimeSpan.FromSeconds(2);
 
-    /// <summary>How long without an event or a status before the views are stale (§4.1, API §2.4).</summary>
+    /// <summary>How long without an event, a status or an answered ping before the views are stale (§4.1, API §2.4).</summary>
     internal static readonly TimeSpan StaleAfter = TimeSpan.FromSeconds(30);
+
+    /// <summary>How often the follow pings the control plane it follows, well inside <see cref="StaleAfter"/>.</summary>
+    internal static readonly TimeSpan PingEvery = TimeSpan.FromSeconds(10);
 
     // How often "updated Ns ago" is re-worded.
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
@@ -121,6 +124,9 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
         Heard();
     }
 
+    /// <summary>The followed control plane answered a ping: it is there, so the views are fresh (§4.1).</summary>
+    internal void Answered() => Heard();
+
     /// <summary>A status: the card's words, or a version mismatch.</summary>
     /// <param name="url">Where the API answered.</param>
     /// <param name="status">The status.</param>
@@ -207,7 +213,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
         }
     }
 
-    // An event or a status: the views are fresh again.
+    // An event, a status or an answered ping: the views are fresh again.
     private void Heard()
     {
         lock (_gate)
@@ -221,7 +227,7 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
         }
     }
 
-    // The ticker: "updated Ns ago", and after StaleAfter without an event or a status the word stale.
+    // The ticker: "updated Ns ago", and after StaleAfter without an event, a status or an answered ping the word stale.
     private void Age()
     {
         lock (_gate)

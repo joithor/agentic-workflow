@@ -7,13 +7,16 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// <summary>
 /// S1b's loop behind <see cref="HealthViewModel"/>: it finds the control plane through its endpoint record, checks the
 /// record against /sindri/ping (a stale record reads as not running), reads /sindri/status, and refreshes the status after
-/// each event on /sindri/events. When the stream ends, a refresh fails or the record changes, it looks again every 2 s.
+/// each event on /sindri/events. While it follows, it pings every 10 s: a quiet control plane (nothing scheduled) sends
+/// no events, and an answer from the process it connected to keeps the views fresh (UI spec §4.1: stale is "no event or
+/// ping for 30 s"; the stream sends no keep-alive). When the stream ends, a refresh fails or the record changes, it looks
+/// again every 2 s.
 /// Every await resumes on the caller's context (the UI thread in the app), so what it tells the view model reaches the
 /// bindings there.
 /// </summary>
 /// <param name="records">Where the control plane recorded its endpoint.</param>
 /// <param name="api">Its API.</param>
-/// <param name="clock">The clock for retry waits.</param>
+/// <param name="clock">The clock for retry waits and pings.</param>
 /// <param name="health">The view model it tells.</param>
 internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, HealthViewModel health)
 {
@@ -126,6 +129,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var refresher = RefreshOnSignal(url, dirty.Reader, stop);
         var watcher = WatchRecord(stop);
+        var pinger = PingWhileFollowing(url, stop.Token);
         try
         {
             await foreach (var e in api.Events(url, _cursor, stop.Token).ConfigureAwait(true))
@@ -143,7 +147,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         finally
         {
             await stop.CancelAsync().ConfigureAwait(true);
-            await Task.WhenAll(refresher, watcher).ConfigureAwait(true);
+            await Task.WhenAll(refresher, watcher, pinger).ConfigureAwait(true);
         }
 
         return events;
@@ -188,6 +192,29 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             await stop.CancelAsync().ConfigureAwait(true);   // the next Connect reads it again and says why
+        }
+        catch (OperationCanceledException)
+        {
+            // The follow ended.
+        }
+    }
+
+    // Pings on its own beat while the follow lasts. An answer from the process and epoch this follow connected to is
+    // heard; a failed ping or another process's answer isn't, so 30 s of them reads as stale. Ending the follow stays
+    // with the stream, the refresh and the record watch.
+    private async Task PingWhileFollowing(Uri url, CancellationToken stop)
+    {
+        using var beat = new PeriodicTimer(HealthViewModel.PingEvery, clock);
+        try
+        {
+            while (await beat.WaitForNextTickAsync(stop).ConfigureAwait(true))
+            {
+                var ping = await api.Ping(url, stop).ConfigureAwait(true);
+                if (ping.IsSuccess && ping.Value.Pid == _pid && ping.Value.Epoch == _epoch)
+                {
+                    health.Answered();
+                }
+            }
         }
         catch (OperationCanceledException)
         {
