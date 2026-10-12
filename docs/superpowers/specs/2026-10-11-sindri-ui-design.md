@@ -1,6 +1,9 @@
 # Sindri UI app design: the control plane's views, actions and launching sessions
 
 Status:
+- **Revision 7 amendment (owner, 2026-10-12; PR #184):** §12.4 lists two more app-owned sentences, "On in your system
+  settings" (Settings, while the OS reduces motion) and "Looks again every 2 s" (the Not running card); §15's deps cycle
+  row is decided (a `DEPS-CYCLE-001` exception). Nothing else changes.
 - **Revision 7 note (owner, 2026-10-11; README X55):** tmux owns every agent session and Warp attaches to it, so
   **Attach joins the live agent** and the human can type into whatever Step is running; the earlier "Sindri can't see
   inside Warp" limit in §6.2 and §6.6 no longer applies, and the `process` target kind is retired (API §8.1 rev 8).
@@ -789,13 +792,14 @@ sentences are the app's own, because no API exists at that moment or because the
 | Where | Sentences |
 |---|---|
 | Home's summary line and panel headers (§4.2) | "N need you · N running · N with you · N queued" and the headers "NEEDS YOU N", "RUNNING N · WITH YOU N", "QUEUED N", built from the panels' row counts |
-| Before the API answers (§4.1) | "Not running" and its reasons (S1b's `SND-UI-*`), "Connecting…", "Sindri and the app are different versions" (API §9's wording), "Sindri not responding: run `sindri doctor`", "stale", "updated Ns ago" |
+| Before the API answers (§4.1) | "Not running" and its reasons (S1b's `SND-UI-*`), "Looks again every 2 s" (the Not running card), "Connecting…", "Sindri and the app are different versions" (API §9's wording), "Sindri not responding: run `sindri doctor`", "stale", "updated Ns ago" |
 | Command lifecycle (§4.1) | "Sending…", "Copied", the accepted outcome ("Resumed ITM-…", built from the action's label and the subject id), "Cleared: …" |
 | Copy block (§7) | "Needs a typed confirmation at a terminal." |
 | Launch (§6.6) | "Sending to Warp…", "Sent to Warp · tab `sindri ITM-…`", "Sent to Warp <age> ago · <agent>", "Open another session" (the confirm's question is the server's `confirm.reason`), "Warp hasn't confirmed: run `sindri doctor`", the menu's "last used in <repo>", "profile default" |
 | Urgency words (§5, §11.3) | "needs you now", "failed", "to look at", "new" |
 | Tray tooltips (§5) | The five tooltips |
 | Announcements | "N now need you", "<id> cleared" |
+| Settings (§12.3) | "On in your system settings" (under the reduce-motion switch while the OS reduces motion) |
 
 Labels live in one resource file keyed by action id and view name, so every head shares them.
 
@@ -923,7 +927,7 @@ buttons and inputs, `FocusAdornerTemplate` drawing the §11.1 ring, `ScrollBar` 
 | `MainWindow` as one status card layout | **Replace** with §3.2's shell; its status card becomes the Health page, the health pill and Home's health strip |
 | `ISindriApi` (ping, status, events) | **Extend** with the headers (`X-Sindri-Caller: human`, `X-Sindri-Client: ui`), the `apiVersion` check, `X-Sindri-After`, and one method per route in §10.1 as its API phase lands |
 | Each bare `sindri` opens another window | **Change**: single instance (a second launch focuses the running one), and close-to-tray (§5) |
-| The deps cycle question (`Sindri -> SindriUi` cli edge) | Unchanged here; the owner's call on PR #168 stands |
+| The deps cycle question (`Sindri -> SindriUi` cli edge) | **Decided** (owner, 2026-10-12): declared, with a reasoned `DEPS-CYCLE-001` exception in `deps.yaml` |
 
 ## 16. Mockups
 

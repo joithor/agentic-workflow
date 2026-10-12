@@ -235,7 +235,9 @@ splits now is §9 R17.
 ### 4b.1a No cycles, no spider web
 
 The dependency graph is a **declared, layered, acyclic tree** at every level, and CI fails on any drift from the
-declaration.
+declaration. The one allowed exception is a package cycle closed by a `cli` or `http` edge, under a reviewed, dated
+`DEPS-CYCLE-001` exception in `deps.yaml` that names that edge and covers exactly that cycle (owner, 2026-10-12: bare
+`sindri` launching `sindri-ui`).
 
 **Package tiers** (a package takes `project` dependencies only on lower tiers; read-only `db` and `file` edges may also point across a tier, see the direction rule below):
 
@@ -276,9 +278,10 @@ declaration.
   namespace in every registered production assembly (MSBuild already refuses circular *project* references; this
   covers the namespaces inside one). Test projects and the AOT smoke apps aren't registered, so it doesn't cover them.
 - **Fan-out limits** (every `Host` and all test code are exempt: composing is the Host's job): a project references at most 4 other in-repo projects and at most 6 third-party packages
-  (analyzers and test packages excluded; DEPS-FANOUT-002/003). Per package, at most 4 other packages through
-  declared project edges (`limits.packageFanOut` in `deps.yaml`, DEPS-FANOUT-001). Going over either is a ratchet
-  violation that needs a recorded exception with a reason and an expiry.
+  (analyzers and test packages excluded; DEPS-FANOUT-002/003). Going over either is a ratchet violation that needs
+  a recorded exception with a reason and an expiry. The per-package cap (at most 4 other packages through declared
+  project edges, DEPS-FANOUT-001) was removed by the owner on 2026-10-12: a package may declare project edges to any
+  number of lower-tier packages.
 - **No dumping grounds:** there is no `Common`, `Shared`, `Utils` or `Helpers` project or namespace. Code shared by
   two packages goes into `Aw.Kernel` only if it is domain-free and stable; otherwise it is duplicated until a
   second case proves the abstraction (§6.2), then extracted into the owning package's `Core`.
@@ -874,10 +877,9 @@ are `aw-packets validate` and `aw-packets freeze`, with the rule ids, output, ex
 
 - **Tiers (B10):** `Redaction` is domain-free and moves to tier 0 next to `Aw.Kernel`, so judge and sindri both depend
   on it downward. Scorer reading Evidence's run files is declared as a `file` edge. The new outbox table is named
-  `outbox_commands` to avoid `judge/outbox`. On main, Sindri reaches Readiness through its CLI (§8) and has 5
-  project edges, over the limit of 4, under a recorded DEPS-FANOUT-001 exception. #142 makes the Packets edge `cli`
-  too (§4c), which leaves Kernel, KernelData, KernelTelemetry and Redaction (4, at the limit), and deletes the
-  exception.
+  `outbox_commands` to avoid `judge/outbox`. Sindri reaches Readiness (§8) and Packets (§4c) through their CLIs.
+  The per-package fan-out cap this once counted against (DEPS-FANOUT-001) was removed by the owner on 2026-10-12, so
+  Sindri's project edges need no exception however many there are.
 - **Readiness target (B11):** the target level is per ring in `readiness.yaml` (ring 0: Level 4 before F0, Level 5
   with F3). Exit code 0 means every repo in scope meets its ring's target.
 - **Overrides (B11):** requested by PR only. `overrides.yaml` is CODEOWNERS-protected and an approval-tier file, so an

@@ -140,11 +140,9 @@ tests/
   checked by `check-deps.mjs` (`DEPS-COMPOSE-001`) and an ArchUnitNET rule (`ARCH-COMPOSE-001`: no other type from
   those projects in the Host). Phase 1 lands the edge kind, its rule record and both checks. The same mechanism
   serves later blocks (Judge, Evidence).
-- **Fan-out:** Sindri's package fan-out is at its limit of 4. The `compose` edge to `Context` carries a recorded
-  `deps.yaml` exception: the context engine is one of Sindri's three engines by definition (§17.29.2), not a
-  dependency of convenience. Like every exception it carries the schema's review date (`exceptionMaxDays`) and is
-  renewed on review. S-1C also adds the `DEPS-PROJ-007` carve-out that lets a Host reference a `compose` target's
-  Features and Infrastructure projects (for the `Add…()` calls only).
+- **Fan-out:** the Sindri → Context `project` and `compose` edges need no fan-out exception: the owner removed the per-package fan-out cap, DEPS-FANOUT-001, on 2026-10-12,
+  and only the per-project limits (DEPS-FANOUT-002/003) remain. S-1C also adds the `DEPS-PROJ-007` carve-out that
+  lets a Host reference a `compose` target's Features and Infrastructure projects (for the `Add…()` calls only).
 - **Profile key:** `SindriProfile` gains `Context: JsonElement?` (Sindri Core can't type it). Sindri validates it by
   calling `IContextEngine.CheckSettings`, so `profile validate` reports `context.*` errors with their key paths.
 - **Secrets:** Sindri Host resolves the profile's secret pointers (`keychain:`, `env:`, `op:`, `file:` 0600) in
@@ -623,7 +621,7 @@ fake passes `ContextSourceContract<TSource>`. Tests never touch work data or the
 | S1 merged: process, `ControlPlaneClient`, `CommandTable`, `EndpointTable`, `LoopbackGuard`, doctor, profile v1 | 1 | On `feat/sindri-s1-app-shell`, not merged. **Phase 1 needs it merged** |
 | `SindriProfile.Context: JsonElement?` (optional key, joins v1) | 1 | Added by Phase 1 |
 | `IScheduledService` (repo-docs refresh, syncs, rebuilds, purge) | 1 | In S1 |
-| The `compose` edge kind and Sindri's fan-out exception (§4) | 1 | Built by Phase 1 |
+| The `compose` edge kind (§4) | 1 | Built by Phase 1 |
 | MCP host (`ModelContextProtocol.AspNetCore`, a new reviewed package in `Directory.Packages.props`) | 1 | Built by Phase 1 (AOT approved for servers in the readiness spike) |
 | Secret pointer resolution in Sindri Host `Composition` | 5 | Built by Phase 5 |
 | Heavy-job lock: port in `Aw.Context.Core`; Sindri's own lock in Sindri Infrastructure, adapted in Sindri Host (§4) | 4 | Built by Phase 4 |
@@ -666,7 +664,7 @@ Every HIGH finding is fixed in this revision; MEDIUM and LOW findings are fixed 
 
 | Id | Finding | Fix |
 |---|---|---|
-| A-F1 | The `compose` edge couldn't carry Phase 1: endpoints and MCP need Features types; Sindri's fan-out is at 4 | §4: the `IContextEngine` facade in Core; `compose` limited to `Add…()` registration; a recorded fan-out exception; where every Sindri-side adapter lives |
+| A-F1 | The `compose` edge couldn't carry Phase 1: endpoints and MCP need Features types; Sindri's fan-out is at 4 | §4: the `IContextEngine` facade in Core; `compose` limited to `Add…()` registration; a recorded fan-out exception (no longer needed: the owner removed the per-package fan-out cap, DEPS-FANOUT-001, on 2026-10-12); where every Sindri-side adapter lives |
 | A-F2 | `affects` couldn't reach its own headline example at depth 2 and expanded siblings | §6.1: typed steps, free own-scope and ascend, state hop as one step, visited set, fixtures |
 | A-F3 / P-1 | Eval truth needed `implements`, which only arrived in Phase 9 | §9.1 and Phase 4: file-level `implements` from the extractor |
 | A-F4 | The backtest's graph arm leaked future knowledge | §9.1: per-sample maps at the cut commit with overrides dated before it |
@@ -739,7 +737,7 @@ counts in `sources status` (P-4); every-source-down is exit 2 (`SND-CONTEXT-011`
 stale review files refused (`SND-CONTEXT-043`), resume after quit, `--undo`; cascade behaviour after ascend; truth
 mapped through the sample's as-of map; as-of maps deterministic-only and cached; Linear canonical keys on the UUID; the
 `symbol` shape's phases; fixtures stated synthetic. **Answered:** the fan-out exception follows the schema's review date like any
-exception (round 3 corrected an earlier answer here); S-1A's size is measured at its plan step, and it splits if over M.
+exception (round 3 corrected an earlier answer here; the exception is gone since the owner removed the per-package fan-out cap, DEPS-FANOUT-001, on 2026-10-12); S-1A's size is measured at its plan step, and it splits if over M.
 
 **Round 3** (final, `…/round3/`): product, devex and security PASS; architecture NEEDS_WORK on one HIGH, fixed:
 
@@ -747,7 +745,8 @@ exception (round 3 corrected an earlier answer here); S-1A's size is measured at
 |---|---|---|
 | R3-1 (arch) | Owner checks would run a PR's unmerged migration against the real `context.db`, whose review decisions can't be rebuilt | Owner checks run in a scratch owner-check home with the real profile copied in; prior state seeded by `map import`, never by copying `context.db` |
 
-Also fixed in round 3: the fan-out exception carries the schema's review date and S-1C adds the `DEPS-PROJ-007`
+Also fixed in round 3: the fan-out exception carries the schema's review date (since dropped with the per-package
+cap, owner 2026-10-12) and S-1C adds the `DEPS-PROJ-007`
 carve-out (R3-2, correcting the round-2 answer); stack on at most one unmerged dependency (R3-3); Onyx's Linear
 records resolved to the UUID key through aliases (R3-4); the loader's migration file form (devex); `linear.url`
 limited to Linear's host or loopback, fixture tokens by `env:`/`file:` (devex); escalations go to the lead, restart
@@ -787,7 +786,8 @@ on import, imported map is `current` (devex 4); the owner-check flow exports fir
 engine's services under `services:`, allows labeling when needed, isolates the session with `--strict-mcp-config` and
 confirms the answering build (devex 1–3, design M2, arch R5-4), with `scripts/owner-check.sh`; a build with an empty
 queue becomes current and doctor reports a stale `current` (product M1); the stale `--apply` sentence removed (design
-M1); a planned Sindri → Context `project` edge carries the fan-out exception (arch R5-1); the §8.8 example lists the
+M1); a planned Sindri → Context `project` edge carries the fan-out exception (arch R5-1; no exception is needed since
+the per-package cap was removed, owner 2026-10-12); the §8.8 example lists the
 engine's services (arch R5-7); aliases on search hits and pending keys re-resolved after team moves (arch R5-5); UUID
 record keys in examples (arch R5-6); code-text attributes fenced unless identifier-shaped (security R5-3). Remaining
 LOWs (MCP-disabled as a transport 403, `map status` output, empty states for `neighbors`/`path`) are left for the
@@ -813,7 +813,7 @@ stacks on that branch).
 
 | Stage | What | Depends on | Wave |
 |---|---|---|---|
-| **S-1C** | The `compose` edge kind: `deps.yaml` schema, `check-deps.mjs` (`DEPS-COMPOSE-001`), the ArchUnitNET rule (`ARCH-COMPOSE-001`), the `DEPS-PROJ-007` and ARCH-DIR-004 carve-outs for `compose` targets' `Add…()` calls, rule records, a Sindri → Context `project` edge declared `planned` (Sindri's Host and Features reference `Aw.Context.Core`; S-1A flips it to `current`), the fan-out exception attached to that `project` edge (`DEPS-FANOUT-001` counts project edges only), and the `compose` edge with its own tier and staleness checks, `scripts/denylist-check.sh` | — (no S1 needed) | 0 |
+| **S-1C** | The `compose` edge kind: `deps.yaml` schema, `check-deps.mjs` (`DEPS-COMPOSE-001`), the ArchUnitNET rule (`ARCH-COMPOSE-001`), the `DEPS-PROJ-007` and ARCH-DIR-004 carve-outs for `compose` targets' `Add…()` calls, rule records, a Sindri → Context `project` edge declared `planned` (Sindri's Host and Features reference `Aw.Context.Core`; S-1A flips it to `current`; no fan-out exception: the owner removed the per-package fan-out cap, DEPS-FANOUT-001, on 2026-10-12), and the `compose` edge with its own tier and staleness checks, `scripts/denylist-check.sh` | — (no S1 needed) | 0 |
 | **S-2R** | `Aw.Redaction` extra patterns from configuration, validated and compiled with the match timeout | — | 0 |
 | **S-FX** | The fixture app and its recorded sources (§10), all **synthetic**, never captured from a real workspace: repo, Linear and Onyx recordings, merged-PR history, probe file, fake Linear and Onyx servers that replay them | — | 0 |
 | **S-1A** | Phase 1a: `Aw.Context` package, facade, contract, sanitizer, egress scrubber, repo-docs, planner skeleton, HTTP and CLI | S1 merged · API P1 merged (the chain) · S-1C · S-FX | 1 |
@@ -1005,7 +1005,7 @@ on the fixture app.
   `tests/Aw.Context.{Tests,Testing}` (contract base, fakes, fixture app skeleton); Sindri: `Context: JsonElement?`
   in the profile, routes, `context query` and `context sources status|sync` verbs, the `/sindri/mcp` endpoint (stateless,
   behind the guard; or its tools only, if API P8 created it) with `context_query` and `context_sources`, doctor `context:sources` and `context:mcp-scope`;
-  `deps.yaml` (package, edges, `compose` edge kind, fan-out exception), `scripts/check-deps.mjs`, the ArchUnitNET
+  `deps.yaml` (package, edges, `compose` edge kind), `scripts/check-deps.mjs`, the ArchUnitNET
   rule, rule records; `Directory.Packages.props` (MCP package); `docs/sindri/context.md` (setup, `$SINDRI`, MCP
   registration per repo, the agent-rules snippet, a text-output example); `docs/csharp/sindri-context.md` (C# codes);
   `.env.example` for any new variable.

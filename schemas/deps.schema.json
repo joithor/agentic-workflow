@@ -19,17 +19,11 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "packageFanOut",
         "projectFanOut",
         "thirdPartyFanOut",
         "exceptionMaxDays"
       ],
       "properties": {
-        "packageFanOut": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "Max packages one package declares project edges to (test packages exempt). The declared-graph view of fan-out; DEPS-FANOUT-001."
-        },
         "projectFanOut": {
           "type": "integer",
           "minimum": 1,
@@ -351,19 +345,39 @@
       "properties": {
         "rule": {
           "enum": [
-            "DEPS-FANOUT-001",
             "DEPS-FANOUT-002",
-            "DEPS-FANOUT-003"
+            "DEPS-FANOUT-003",
+            "DEPS-CYCLE-001"
           ],
-          "description": "Only the fan-out rules take exceptions."
+          "description": "Only the fan-out rules and the cycle rule take exceptions."
         },
         "subject": {
           "$ref": "#/$defs/id",
-          "description": "The package the exception covers (for DEPS-FANOUT-002/003: every project of that package)."
+          "description": "The package the exception covers: every project of that package (DEPS-FANOUT-002/003), or the package its excused edge leaves (DEPS-CYCLE-001)."
         },
-        "edge": {
-          "$ref": "#/$defs/id",
-          "description": "DEPS-FANOUT-001 only: the package of the declared project edge (subject -> edge) this exception is attached to. It then covers that one edge: the fan-out without it must be within the limit. DEPS-EXC-004 when no such edge is declared or it points into a test-support package (fan-out never counts those)."
+        "excuses": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "from",
+            "to",
+            "kind"
+          ],
+          "properties": {
+            "from": {
+              "$ref": "#/$defs/id"
+            },
+            "to": {
+              "$ref": "#/$defs/id"
+            },
+            "kind": {
+              "enum": [
+                "cli",
+                "http"
+              ]
+            }
+          },
+          "description": "DEPS-CYCLE-001 only (required there): the one declared cli or http edge, leaving the subject, that the exception excuses. It covers the one cycle that edge closes (the cycle that goes away without it); DEPS-EXC-005 when the edge isn't declared or doesn't leave the subject, DEPS-EXC-002 when it closes no cycle or more than one."
         },
         "reason": {
           "type": "string",
@@ -379,14 +393,28 @@
       "allOf": [
         {
           "if": {
+            "properties": {
+              "rule": {
+                "const": "DEPS-CYCLE-001"
+              }
+            }
+          },
+          "then": {
             "required": [
-              "edge"
+              "excuses"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "excuses"
             ]
           },
           "then": {
             "properties": {
               "rule": {
-                "const": "DEPS-FANOUT-001"
+                "const": "DEPS-CYCLE-001"
               }
             }
           }
