@@ -6,7 +6,10 @@ using Aw.Kernel.Testing;
 
 namespace Aw.Context.Testing.Tests;
 
-/// <summary>The fake Onyx HTTP server replays the recorded documents on loopback (spec §5.2, §10, §12, §14 S-L2).</summary>
+/// <summary>
+/// The fake Onyx HTTP server replays the recorded documents on loopback (spec §5.2, §10, §12, §14 S-L2) and answers
+/// auth, chunk-info and version the way Onyx v4.9.0 does.
+/// </summary>
 [Lane(TestLane.Integration)]
 public sealed class FakeOnyxServerTests
 {
@@ -21,7 +24,8 @@ public sealed class FakeOnyxServerTests
 
         var top = docs[0]!;
         Assert.Equal(Spl105, (string?)top["document_id"]);
-        Assert.Equal("SPL-105", (string?)top["metadata"]!["identifier"]);
+        Assert.StartsWith("[SPL-105] ", (string?)top["semantic_identifier"], StringComparison.Ordinal);
+        Assert.Null(top["metadata"]!["identifier"]);
         Assert.Equal("linear", (string?)top["source_type"]);
         Assert.Equal(DateTimeOffset.Parse("2026-08-12T15:00:00Z", CultureInfo.InvariantCulture),
             DateTimeOffset.Parse((string)top["updated_at"]!, CultureInfo.InvariantCulture));
@@ -45,18 +49,37 @@ public sealed class FakeOnyxServerTests
     }
 
     [Fact]
-    public async Task Chunk_info_returns_a_documents_text_and_404s_an_unknown_one()
+    public async Task Chunk_info_returns_a_documents_text_and_404s_an_unknown_one_as_onyx_does()
     {
         await using var onyx = await FakeOnyxServer.Start();
 
         var (Status, Body) = await Http.Get(new Uri(onyx.Url, $"api/document/chunk-info?document_id={Spl105}&chunk_id=3"), onyx.Authorization);
         var missing = await Http.Get(new Uri(onyx.Url, "api/document/chunk-info?document_id=nope&chunk_id=0"), onyx.Authorization);
+        var pastTheEnd = await Http.Get(new Uri(onyx.Url, $"api/document/chunk-info?document_id={Spl105}&chunk_id=99"), onyx.Authorization);
 
         Assert.Equal(HttpStatusCode.OK, Status);
         Assert.Contains("20 columns", (string?)Body!["content"], StringComparison.Ordinal);
         Assert.True((int)Body!["num_tokens"]! > 0);
         Assert.Equal(HttpStatusCode.NotFound, missing.Status);
-        Assert.Contains("nope", (string?)missing.Body!["detail"], StringComparison.Ordinal);
+        Assert.Equal("{\"error_code\":\"NOT_FOUND\",\"detail\":\"Chunk not found\"}", missing.Body!.ToJsonString());
+        Assert.Equal(HttpStatusCode.NotFound, pastTheEnd.Status);
+        Assert.Equal("{\"error_code\":\"NOT_FOUND\",\"detail\":\"Chunk not found\"}", pastTheEnd.Body!.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData("api/document/chunk-info?chunk_id=0")]
+    [InlineData("api/document/chunk-info?document_id=x")]
+    [InlineData("api/document/chunk-info?document_id=x&chunk_id=first")]
+    public async Task Chunk_info_without_a_valid_document_or_chunk_id_is_onyxs_422(string target)
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+
+        var (status, body) = await Http.Get(new Uri(onyx.Url, target), onyx.Authorization);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, status);
+        Assert.Equal(
+            "{\"status_code\":422,\"message\":\"Request validation failed.\",\"data\":null,\"error_code\":\"VALIDATION_ERROR\",\"detail\":\"Request validation failed.\"}",
+            body!.ToJsonString());
     }
 
     [Fact]
@@ -70,6 +93,7 @@ public sealed class FakeOnyxServerTests
         var noMessage = await Http.Post(new Uri(onyx.Url, "api/query/document-search"), onyx.Authorization, "{}");
 
         Assert.Equal(HttpStatusCode.NotFound, Status);
+        Assert.Equal("NOT_FOUND", (string?)Body!["error_code"]);
         Assert.Contains("api/query/document-search", (string?)Body!["detail"], StringComparison.Ordinal);
         Assert.Equal(HttpStatusCode.UnprocessableEntity, field.Status);
         Assert.Contains("tags", field.Body!["detail"]!.ToJsonString(), StringComparison.Ordinal);
@@ -116,23 +140,91 @@ public sealed class FakeOnyxServerTests
         Assert.Equal(unfiltered.Select(d => (string?)d!["document_id"]), empty.Select(d => (string?)d!["document_id"]), StringComparer.Ordinal);
     }
 
-    [Fact]
-    public async Task A_missing_or_wrong_bearer_token_is_401()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Bearer on_not-the-fixture-key")]
+    [InlineData("on_not-the-fixture-key")]
+    [InlineData("Bearer fixture-onyx")]
+    [InlineData("Basic b25faXhpdHVyZQ==")]
+    public async Task A_missing_or_unknown_key_is_the_403_onyx_gives_an_unauthenticated_caller(string? authorization)
     {
         await using var onyx = await FakeOnyxServer.Start();
-        var search = new Uri(onyx.Url, "api/query/document-search");
 
-        var (Status, Body) = await Http.Post(search, authorization: null, "{\"message\":\"pane\"}");
-        var raw = await Http.Post(search, onyx.Token, "{\"message\":\"pane\"}");
+        var (status, body) = await Http.Get(new Uri(onyx.Url, $"api/document/chunk-info?document_id={Spl105}&chunk_id=0"), authorization);
+        var (searchStatus, _) = await Http.Post(new Uri(onyx.Url, "api/query/document-search"), authorization, "{\"message\":\"pane\"}");
 
-        Assert.Equal(HttpStatusCode.Unauthorized, Status);
-        Assert.Equal(HttpStatusCode.Unauthorized, raw.Status);
+        Assert.Equal(HttpStatusCode.Forbidden, status);
+        Assert.Equal("{\"error_code\":\"UNAUTHORIZED\",\"detail\":\"Access denied. User is not authenticated.\"}", body!.ToJsonString());
+        Assert.Equal(HttpStatusCode.Forbidden, searchStatus);
+    }
+
+    [Fact]
+    public async Task The_fixture_key_is_a_service_account_key_accepted_raw_or_as_bearer()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        var chunk = new Uri(onyx.Url, $"api/document/chunk-info?document_id={Spl105}&chunk_id=0");
+
+        var (bearerStatus, _) = await Http.Get(chunk, onyx.Authorization);
+        var (rawStatus, _) = await Http.Get(chunk, onyx.Token);
+
+        Assert.StartsWith("on_", FakeOnyxServer.DefaultToken, StringComparison.Ordinal);
+        Assert.Equal("Bearer " + FakeOnyxServer.DefaultToken, onyx.Authorization);
+        Assert.Equal(HttpStatusCode.OK, bearerStatus);
+        Assert.Equal(HttpStatusCode.OK, rawStatus);
+    }
+
+    [Fact]
+    public async Task A_personal_access_token_is_accepted_only_as_bearer()
+    {
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { Token = "onyx_pat_fixture" });
+        var chunk = new Uri(onyx.Url, $"api/document/chunk-info?document_id={Spl105}&chunk_id=0");
+
+        var (bearerStatus, _) = await Http.Get(chunk, "Bearer onyx_pat_fixture");
+        var (rawStatus, _) = await Http.Get(chunk, "onyx_pat_fixture");
+
+        Assert.Equal(HttpStatusCode.OK, bearerStatus);
+        Assert.Equal(HttpStatusCode.Forbidden, rawStatus);
+    }
+
+    [Theory]
+    [InlineData("fixture-onyx")]
+    [InlineData("dn_old-style")]
+    [InlineData("")]
+    public async Task A_token_onyx_would_never_accept_is_refused_at_start(string token)
+    {
+        var error = await Assert.ThrowsAsync<ArgumentException>(() => FakeOnyxServer.Start(new FakeServerOptions { Token = token }));
+
+        Assert.Contains("on_", error.Message, StringComparison.Ordinal);
+        Assert.Contains("onyx_pat_", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Version_reports_the_pinned_release_without_a_key()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+
+        var (status, body) = await Http.Get(new Uri(onyx.Url, "api/version"), authorization: null);
+
+        Assert.Equal("v4.9.0", FakeOnyxServer.PinnedVersion);
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal("{\"backend_version\":\"v4.9.0\"}", body!.ToJsonString());
+    }
+
+    [Fact]
+    public async Task Version_reports_the_version_the_options_set_so_a_test_can_simulate_drift()
+    {
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxVersion = "v4.8.1" });
+
+        var (status, body) = await Http.Get(new Uri(onyx.Url, "api/version"), onyx.Authorization);
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal("v4.8.1", (string?)body!["backend_version"]);
     }
 
     [Fact]
     public async Task It_listens_on_loopback_and_never_logs_the_authorization_header()
     {
-        const string planted = "planted-onyx-91c2";
+        const string planted = "on_planted-onyx-91c2";
         await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { Token = planted });
 
         _ = await Search(onyx, new JsonObject { ["message"] = "pane" });

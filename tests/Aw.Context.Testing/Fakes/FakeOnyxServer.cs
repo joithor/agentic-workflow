@@ -16,6 +16,9 @@ public sealed class FakeOnyxServer : IAsyncDisposable
     /// <summary>The credential a server started without options accepts (a fixture value, not a secret).</summary>
     public const string DefaultToken = "fixture-onyx";
 
+    /// <summary>The Onyx release the fake answers like, and the version 'GET /api/version' reports by default.</summary>
+    public const string PinnedVersion = "v4.9.0";
+
     private const string SearchRoute = "/api/query/document-search";
     private const string ChunkRoute = "/api/document/chunk-info";
     private readonly LoopbackServer _server;
