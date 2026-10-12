@@ -36,8 +36,9 @@ with_tty() {
   # its last byte at once, macOS script(1) can deliver the ^D first and the command reads nothing (0 of 20 runs
   # without the pause, 20 of 20 with 0.05 s). script(1)'s stdin must be an anonymous pipe: macOS script refuses a
   # FIFO (tcgetattr fails with EOPNOTSUPP, not ENOTTY). Once script(1) returns, the middle stage stops the feeder
-  # and its cat, so a stdin that never ends can't hold the pipeline open.
-  sh -c 'echo $$ > "$0"; : < "$1"; cat; sleep 0.2' "$tmp/pid" "$tmp/ready" 2>/dev/null |
+  # and its cat, so a stdin that never ends can't hold the pipeline open; the feeder exits 0 on that TERM, so the shell
+  # reports no killed job.
+  sh -c 'trap "exit 0" TERM; echo $$ > "$0"; : < "$1"; cat; sleep 0.2' "$tmp/pid" "$tmp/ready" 2>/dev/null |
     {
       _with_tty_script "$flavour" sh -c 'stty -echo 2>/dev/null; : > "$0"; exec "$@"' "$tmp/ready" "$@"
       status=$?
