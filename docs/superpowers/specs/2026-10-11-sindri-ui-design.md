@@ -661,7 +661,7 @@ invalidates through the server's `GET /events/catalog` (E-15: `invalidates` per 
 re-queries those views (debounced to one refresh per view per 250 ms) and never applies the payload. A type the catalog
 doesn't know re-queries every visible view. Until E-15 ships (P5), the app re-queries every visible view on each event.
 
-A stream that ends falls back to S1b's 2 s look-again loop; `SND-API-005` (429) falls back to re-querying every 5 s
+A stream that ends falls back to S1b's 2 s look-again loop; `SND-API-012` (429) falls back to re-querying every 5 s
 (API §5.4).
 
 ## 10. Data sources
