@@ -211,28 +211,27 @@ internal static partial class Labels
     /// <returns>The reason; the record's path follows on its own line.</returns>
     internal static string RecordUnreadableBecause(string why) => $"{RecordUnreadable}: {why}";
 
-    /// <summary>Not running: control.json names another process or epoch than the one answering.</summary>
+    /// <summary>
+    /// Not running (SND-UI-001): control.json names another process or epoch than the one answering. The record and the
+    /// answer follow on their own line (<see cref="StaleRecordDetail"/>).
+    /// </summary>
+    internal const string StaleRecord = "The endpoint record is stale";
+
+    /// <summary>
+    /// Not running (SND-UI-002, kill -9 or a crash): nothing answered at the recorded endpoint, or not within 2 s. The
+    /// address follows on its own line; the platform's exception text is never shown.
+    /// </summary>
+    internal const string NothingAnswered = "Nothing answered at the recorded endpoint";
+
+    /// <summary>The stale record's detail line: the record's pid and epoch, then the answer's, naming its pid only when it differs.</summary>
     /// <param name="pid">The record's pid.</param>
     /// <param name="epoch">The record's epoch.</param>
     /// <param name="answeringPid">The answering pid.</param>
     /// <param name="answeringEpoch">The answering epoch.</param>
-    /// <returns>The reason.</returns>
-    internal static string StaleRecordBecause(int pid, long epoch, int answeringPid, long answeringEpoch) => string.Create(CultureInfo.InvariantCulture,
-        $"the endpoint record is stale: it names pid {pid} at epoch {epoch}, but pid {answeringPid} at epoch {answeringEpoch} answers");
-
-    /// <summary>Not running: control.json names another process or epoch than the one answering (red stub).</summary>
-    internal const string StaleRecord = "the endpoint record is stale";
-
-    /// <summary>Not running: nothing answered at the recorded endpoint (red stub).</summary>
-    internal const string NothingAnswered = "";
-
-    /// <summary>The stale record's detail line (red stub).</summary>
-    /// <param name="pid">The record's pid.</param>
-    /// <param name="epoch">The record's epoch.</param>
-    /// <param name="answeringPid">The answering pid.</param>
-    /// <param name="answeringEpoch">The answering epoch.</param>
-    /// <returns>The detail.</returns>
-    internal static string StaleRecordDetail(int pid, long epoch, int answeringPid, long answeringEpoch) => throw new NotSupportedException();
+    /// <returns>"recorded pid 69190 · epoch 4, answering epoch 0".</returns>
+    internal static string StaleRecordDetail(int pid, long epoch, int answeringPid, long answeringEpoch) => pid == answeringPid
+        ? string.Create(CultureInfo.InvariantCulture, $"recorded pid {pid} · epoch {epoch}, answering epoch {answeringEpoch}")
+        : string.Create(CultureInfo.InvariantCulture, $"recorded pid {pid} · epoch {epoch}, answering pid {answeringPid} · epoch {answeringEpoch}");
 
     /// <summary>The version-mismatch panel's label for this app's version (states.html).</summary>
     internal const string ThisApp = "This app";

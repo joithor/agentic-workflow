@@ -95,12 +95,12 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         var ping = await api.Ping(record.Url, cancellationToken).ConfigureAwait(true);
         if (ping.IsError)
         {
-            return health.Failed(ping.Error);
+            return health.Failed(ping.Error, record.Url);
         }
 
         if (ping.Value.Pid != record.Pid || ping.Value.Epoch != record.Epoch)
         {
-            return health.NotRunning(Labels.StaleRecordBecause(record.Pid, record.Epoch, ping.Value.Pid, ping.Value.Epoch));
+            return health.NotRunning(Labels.StaleRecord, Labels.StaleRecordDetail(record.Pid, record.Epoch, ping.Value.Pid, ping.Value.Epoch));
         }
 
         _record = bytes;
@@ -227,7 +227,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         var status = await api.Status(url, cancellationToken).ConfigureAwait(true);
         if (status.IsError)
         {
-            _ = health.Failed(status.Error);
+            _ = health.Failed(status.Error, url);
             return false;
         }
 

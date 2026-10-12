@@ -82,9 +82,10 @@ internal sealed class SindriApiClient(HttpClient http) : ISindriApi
         {
             return SindriUiErrors.Unreachable.With($"{api.Authority} didn't answer within 2 s");
         }
-        catch (HttpRequestException e)
+        catch (HttpRequestException)
         {
-            return SindriUiErrors.Unreachable.With($"nothing answers at {api.Authority} ({e.Message})");
+            // The platform's message repeats the address in its own words ("Connection refused (127.0.0.1:61879)"): I7.
+            return SindriUiErrors.Unreachable.With($"nothing answered at {api.Authority}");
         }
     }
 
