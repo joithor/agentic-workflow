@@ -144,7 +144,8 @@ the top bar, the page region in the page (`ShellWindow.KeepFocus`, `TopBar.KeepR
 written over whatever else the file holds (read, replace the two fields, write; one write after another), and a write
 the platform refuses leaves the change applied for the session. Motion is reduced when the OS asks
 (`IMotionPreference`, re-read on `Changed`, posted back to the UI thread) **or** the switch is on; while the OS asks, the
-page says "On in your system settings" and the switch can't turn it off.
+page says "On in your system settings" and the switch can't turn it off. Settings is local preferences, so it stays
+reachable while Sindri is not running: ⌘, shows it over the Not running card, and Esc returns to the card.
 
 The theme is changed in one place each: `Theme/Motion.Apply(resources, reduce)` sets every `Motion.*` duration to 0, or
 back to its token value, and `Theme/TextScale.Apply` scales the ramp. `Views/SettingsTheme.For(resources)` is the view

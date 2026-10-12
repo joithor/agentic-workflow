@@ -18,19 +18,22 @@ internal sealed partial class ShellViewModel : ObservableObject
 
     private static readonly string[] _stateProperties =
     [
-        nameof(State), nameof(IsVersionMismatch), nameof(IsChromeVisible), nameof(IsNotRunning), nameof(IsConnecting),
+        nameof(State), nameof(IsVersionMismatch), nameof(IsChromeVisible), nameof(IsNotRunning), nameof(IsNotRunningPanel), nameof(IsConnecting),
         nameof(IsUnreadable), nameof(IsNotRespondingBanner), nameof(IsPageVisible), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsNavigationEnabled),
     ];
 
     private static readonly string[] _pageProperties =
     [
         nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsQueue), nameof(IsDecisions), nameof(IsServices),
-        nameof(IsHealth), nameof(IsSettings),
+        nameof(IsHealth), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
     ];
 
     private readonly Preferences _store;
     private UiPreferences _preferences = UiPreferences.Defaults;
     private Task _saving = Task.CompletedTask;
+
+    // The page Settings was opened from, where leaving it over the Not running card returns.
+    private PageId _beforeSettings = PageId.Home;
 
     /// <summary>The shell over its ports.</summary>
     /// <param name="records">Where the control plane recorded its endpoint.</param>
@@ -133,8 +136,8 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>Not running: S1b's panel in place of the page.</summary>
     public bool IsNotRunning => State == ShellState.NotRunning;
 
-    /// <summary>The Not running card shows (red stub).</summary>
-    public bool IsNotRunningPanel => IsNotRunning;
+    /// <summary>Not running: S1b's card, unless Settings (local preferences, reachable in any state) shows over it.</summary>
+    public bool IsNotRunningPanel => IsNotRunning && !IsSettings;
 
     /// <summary>Connecting: skeleton rows in place of the page (first load only).</summary>
     public bool IsConnecting => State == ShellState.Connecting;
@@ -145,8 +148,11 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>Stale after three failed refreshes: the banner under the top bar that says "Sindri not responding: run sindri doctor" (§4.1).</summary>
     public bool IsNotRespondingBanner => State == ShellState.Stale && Pill.IsNotResponding;
 
-    /// <summary>The page shows when connected: Normal, Stale, or Unreadable with the last data.</summary>
-    public bool IsPageVisible => State is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
+    /// <summary>The page shows when connected (Normal, Stale, or Unreadable with the last data), and Settings over the Not running card.</summary>
+    public bool IsPageVisible => IsConnected || (IsSettings && IsNotRunning);
+
+    // Connected: the API's pages (and the sheet over them) have something to show.
+    private bool IsConnected => State is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
 
     /// <summary>True while the detail sheet is open.</summary>
     public bool IsSheetOpen { get; private set; }
@@ -158,13 +164,13 @@ internal sealed partial class ShellViewModel : ObservableObject
     public bool HasEdgeTab => SheetSubject.Length > 0;
 
     /// <summary>The sheet shows when it's open over a visible page.</summary>
-    public bool IsSheetShown => IsSheetOpen && IsPageVisible;
+    public bool IsSheetShown => IsSheetOpen && IsConnected;
 
     /// <summary>The edge tab's accessible name: "Reopen" and its subject.</summary>
     public string EdgeTabName => Labels.Reopen + " " + SheetSubject;
 
     /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
-    public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsPageVisible;
+    public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
 
     /// <summary>The attention band under the top bar (§3.2): always false in U0, since needs-you arrives in U3.</summary>
     public bool IsAttentionBandVisible { get; }
@@ -182,6 +188,11 @@ internal sealed partial class ShellViewModel : ObservableObject
         if (page == CurrentPage)
         {
             return;
+        }
+
+        if (page == PageId.Settings)
+        {
+            _beforeSettings = CurrentPage;
         }
 
         CurrentPage = page;
@@ -211,9 +222,21 @@ internal sealed partial class ShellViewModel : ObservableObject
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 
-    /// <summary>Leaves Settings (red stub).</summary>
-    /// <returns>True when it left.</returns>
-    internal bool LeaveSettings() => IsSettings && !IsSettings;
+    /// <summary>
+    /// Esc on Settings over the Not running card: back to the page it was opened from, so the card shows again. While
+    /// connected Settings is a page like any other, and Esc leaves it where it is.
+    /// </summary>
+    /// <returns>True when it left Settings.</returns>
+    internal bool LeaveSettings()
+    {
+        if (!IsSettings || !IsNotRunning)
+        {
+            return false;
+        }
+
+        GoTo(_beforeSettings);
+        return true;
+    }
 
     /// <summary>Opens the sheet again on its last subject (the edge tab).</summary>
     internal void ReopenSheet()

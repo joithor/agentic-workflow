@@ -13,11 +13,12 @@ namespace Aw.Sindri.Ui.Views.Shell;
 
 /// <summary>
 /// The shell window (UI spec §3.2): binds to the shell view model. The code here is view plumbing only: the keys of §8
-/// that U0 serves (F6 cycles top bar, page and sheet; Esc closes the sheet; ⌘, opens Settings), the sheet's drag and its
-/// covering below 1100 px, handing the window's bounds and the sheet's width to the view model to remember, and keeping
-/// focus somewhere sensible (§11.2) when the focused control disappears: closing the sheet returns it to what opened the
-/// sheet (the edge tab) or the page region, and a state change that hides it moves it to its region's neighbour (the
-/// health pill in the top bar, the page region in the page). It never goes nowhere.
+/// that U0 serves (F6 cycles top bar, page and sheet; Esc closes the sheet, or Settings over the Not running card; ⌘,
+/// opens Settings), the sheet's drag and its covering below 1100 px, handing the window's bounds and the sheet's width
+/// to the view model to remember, and keeping focus somewhere sensible (§11.2) when the focused control disappears:
+/// closing the sheet returns it to what opened the sheet (the edge tab) or the page region, and a state change that
+/// hides it moves it to its region's neighbour (the health pill in the top bar, the page region in the page). It never
+/// goes nowhere.
 /// </summary>
 internal sealed partial class ShellWindow : Window
 {
@@ -81,10 +82,9 @@ internal sealed partial class ShellWindow : Window
         {
             e.Handled = CycleRegion(back: e.KeyModifiers.HasFlag(KeyModifiers.Shift));
         }
-        else if (e.Key == Key.Escape && Shell is { IsSheetOpen: true } shell)
+        else if (e.Key == Key.Escape)
         {
-            shell.CloseSheet();
-            e.Handled = true;
+            e.Handled = Escape();
         }
         else if (e.Key == Key.OemComma && e.KeyModifiers == _command && Shell is { } open)
         {
@@ -95,6 +95,30 @@ internal sealed partial class ShellWindow : Window
         }
 
         base.OnKeyDown(e);
+    }
+
+    // Esc closes the sheet, or Settings over the Not running card (focus then goes from its hidden control to the page
+    // region); otherwise it does nothing here.
+    private bool Escape()
+    {
+        if (Shell is not { } shell)
+        {
+            return false;
+        }
+
+        if (shell.IsSheetOpen)
+        {
+            shell.CloseSheet();
+            return true;
+        }
+
+        if (!shell.LeaveSettings())
+        {
+            return false;
+        }
+
+        Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
+        return true;
     }
 
     // F6 (§11.2): the next region (top bar, page, sheet when open) gets focus: the region itself, so Tab then moves
