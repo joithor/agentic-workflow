@@ -114,7 +114,7 @@ public sealed class RepoDocsTests
         var missing = await home.Git.Size(fixture.Path, new string('0', 40), CancellationToken.None);
         var noRepo = await home.Git.Head(Path.Combine(fixture.Path, "no-such-dir"), CancellationToken.None);
 
-        Assert.Equal(("SND-CONTEXT-003", Aw.Kernel.ErrorKind.NotFound), (missing.Error.Code, missing.Error.Kind));
+        Assert.Equal(("SND-CONTEXT-003", Kernel.ErrorKind.NotFound), (missing.Error.Code, missing.Error.Kind));
         Assert.Equal("SND-CONTEXT-010", noRepo.Error.Code);
     }
 
