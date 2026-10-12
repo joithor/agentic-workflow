@@ -246,9 +246,13 @@ beat (10 s). A refused Refresh click counts only as a failed refresh; the next p
    sequence seen) triggers one status refresh; a burst of events triggers one. When the stream ends (the control
    plane stopped or was killed), a status refresh fails, or `control.json` changes (checked every 2 s; a stopping
    control plane can hold its stream open), the app looks again, every 2 s while nothing answers. A record the
-   platform can't read, or one with a relative `url`, reads as "can't be read" with the reason, and the app keeps trying. The reason is the app's own words
-("this user has no permission to read it", or "the platform couldn't read it …"), never the platform's message, which names the full
-path; the path shows shortened (`~/…`) on its own line, as every path in the window does.
+   platform can't read, or one with a relative `url`, reads as "can't be read" with the reason, and the app keeps trying. The port
+says why in its own terms (`EndpointRecordUnreadableException` with an `EndpointRecordFailure`: `NoPermission`, `NotAFile`
+or `Unreadable`; `EndpointRecordSourceContract` binds the desktop adapter to a real directory and a mode-000 file), since
+.NET on macOS and Linux throws the same `UnauthorizedAccessException` for both; the desktop adapter checks for a
+directory at the path first. The reason is the app's own words ("this user has no permission to read it", "it isn't a
+file (something else, such as a directory, is in its place)", or "the platform couldn't read it"), never the platform's
+message, which names the full path; the path shows shortened (`~/…`) on its own line, as every path in the window does.
 4. While it follows, the app pings every 10 s (S1's stream sends no keep-alive, and a control plane with nothing
    scheduled sends no events). A ping answered with the followed pid and epoch keeps the views fresh; failed pings, or
    another process's answer, for 30 s read as stale.
