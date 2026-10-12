@@ -308,7 +308,9 @@ jobs:
       - name: NativeAOT smoke tests
         if: steps.sln.outputs.run == 'true'
         # Each publishes for the runner's own RID (linux-x64), runs the native binary and
-        # compares its output; clang and zlib1g-dev are on ubuntu runners. The smokes are found by
+        # compares its output; clang and zlib1g-dev are on ubuntu runners. One exception: the Sindri
+        # host's smoke (src/Sindri/aot-smoke) publishes framework-dependent, since the Temporal SDK has
+        # no trimming support (engine spec rev 8 §11), and runs the published apphost. The smokes are found by
         # location (src/<Project>.AotSmoke/, src/<Pkg>/<Project>.AotSmoke/ or src/<Pkg>/aot-smoke/), so
         # a new package's smoke needs no edit here.
         run: |
