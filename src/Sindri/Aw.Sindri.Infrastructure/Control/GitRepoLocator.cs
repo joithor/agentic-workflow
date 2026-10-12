@@ -63,9 +63,14 @@ internal sealed class GitRepoLocator : IRepoLocator
             _ = await error.ConfigureAwait(false);   // 'not a git repository' and the like: no repo
             return git.ExitCode == 0 && text.Length > 0 ? text : null;
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
-            git.Kill();
+            git.Kill();   // the budget or the caller's own cancellation: never leave git running
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
             return null;
         }
     }
