@@ -84,9 +84,13 @@ B is dated after PR #5 merged, so SPL-105 is also the `leaky` case for an as-of 
 
 ## Onyx (`onyx/documents.json`)
 
-The same six issues as Onyx's Linear connector would index them: `document_id` is the issue UUID, the identifier is
-in `metadata.identifier` (structured metadata, never parsed from text; §5.1), `updated_at` equals the issue's
-`updatedAt`, `source_type` is `linear`, and the chunks are the description then each comment. One Slack thread
+The same six issues as Onyx's Linear connector (Onyx **v4.9.0**, `backend/onyx/connectors/linear/connector.py`) would
+index them: `document_id` is the issue UUID, `semantic_identifier` is `[<identifier>] <title>` (the only place a
+search result carries the `SPL-1NN` identifier; the connector puts it nowhere in `metadata`), `link` is the issue URL,
+`updated_at` equals the issue's `updatedAt`, `source_type` is `linear`, and the chunks are the description then each
+comment. `metadata` holds only keys the v4.9.0 connector writes, as strings (it applies `str()` to each value): here
+`team`, `state`, `priority`, `completed_at` (when set) and `created_at`, taken from `linear/issues.json`. There is no
+`identifier` and no `project` key, because the real connector sends neither. One Slack thread
 (`C0FIXTURE01__1784972400.000100`, canonical key `slack:C0FIXTURE01/1784972400.000100`) adds a second source type.
 Each entry is `{"search_doc": <SearchDoc as Onyx returns it>, "chunks": [...]}`. Onyx has no PRD: its Linear connector
 doesn't read Linear Documents (D4).
@@ -138,20 +142,38 @@ to change; an exception it didn't anticipate becomes a recorded JSON 500 naming 
   except `neq`, `nin` and `null: true`; the fake doesn't model Linear's joins beyond that.
 - No or a wrong token is a 401.
 
-`FakeOnyxServer` (`Url` = base, `Token`, default `fixture-onyx`, `Authorization` = `Bearer <token>`):
+`FakeOnyxServer` (`Url` = base, `Token`, default `on_fixture-onyx`, `Authorization` = `Bearer <token>`). What is
+pinned to **Onyx v4.9.0** (`FakeOnyxServer.PinnedVersion`; checked against the release's source, S-5A):
 
-- `POST /api/query/document-search` reads exactly `message` and
-  `retrieval_options.{filters.{source_type,time_cutoff},limit,offset}`; `time_cutoff` keeps documents updated at or
-  after it, and an empty `source_type` list is no filter (as in Onyx). **Any other field** (`search_type`, `run_search`, `real_time`, `enable_auto_detect_filters`, `tags`,
-  `document_set`, …), a missing `message`, or a badly typed value (a `source_type` that isn't a list of strings, a
-  non-string `time_cutoff`, a non-integer `limit`) is a 422 in Onyx's validation shape (`detail: [{loc, msg, type}]`),
-  so a client never relies on a knob the fake would ignore. The reply is
-  `{"top_documents": [SearchDoc + score, chunk_ind, match_highlights], "llm_indices": []}`, ranked by a deterministic
-  term match (not Onyx's ranking; Sindri ranks, D3).
-- `GET /api/document/chunk-info?document_id=&chunk_id=` returns `{"content", "num_tokens"}`, 404 for an unknown one.
-- Any other route is a 404 naming the two it serves.
-- The exact HTTP routes and the change feed by updated time are open items of Phase 5 (§12). S-5A pins them against
-  the Onyx release it sets up and, if they differ, changes this fake and these recordings in its own PR.
+- **Keys.** A token must be a service-account key (`on_…`) or a personal access token (`onyx_pat_…`), the two kinds
+  Onyx accepts; `Start` refuses any other with an `ArgumentException`. As in Onyx (`onyx/auth/utils.py`
+  `get_hashed_bearer_token_from_request`), `Authorization: Bearer <token>` works for both kinds and the raw
+  `Authorization: <token>` only for an `on_…` key. Onyx's alternative header `X-Onyx-Authorization` isn't served.
+- **Unauthenticated.** No key, an unknown key or a wrong form is a **403** with
+  `{"error_code": "UNAUTHORIZED", "detail": "Access denied. User is not authenticated."}`, which is what Onyx answers
+  (`double_check_user` raises `BasicAuthenticationError`, an `HTTPException` 403, and `main.py` `log_http_error`
+  writes it with the canonical code for 403). It is not a 401.
+- **`GET /api/version`** returns `{"backend_version": "v4.9.0"}` and needs no key (it is in Onyx's public endpoint
+  list, `onyx/server/auth_check.py`; release images set `ONYX_VERSION` from the git tag).
+  `FakeServerOptions.OnyxVersion` overrides the reported version so a test can simulate drift.
+- **`GET /api/document/chunk-info?document_id=&chunk_id=`** returns `{"content", "num_tokens"}`; an unknown document or
+  chunk is a 404 `{"error_code": "NOT_FOUND", "detail": "Chunk not found"}`, and a missing or non-integer parameter is
+  Onyx's 422 `{"status_code": 422, "message": "Request validation failed.", "data": null, "error_code":
+  "VALIDATION_ERROR", "detail": "Request validation failed."}` (it names no field).
+- **Any other route** is a 404 `{"error_code": "NOT_FOUND", "detail": …}`, answered before the key check as in Onyx;
+  the detail names the routes the fake serves (Onyx's says `Not Found`).
+
+**Not pinned yet: search.** `POST /api/query/document-search` is an old Danswer route that v4.9.0 doesn't have. The real
+route (`POST /api/admin/search` or `POST /api/search`) waits on the owner's decision, so this route, its request
+parser and its 422 shape (`detail: [{loc, msg, type}]`) are unchanged until then. It reads exactly `message` and
+`retrieval_options.{filters.{source_type,time_cutoff},limit,offset}`; `time_cutoff` keeps documents updated at or
+after it, and an empty `source_type` list is no filter. **Any other field** (`search_type`, `run_search`, `real_time`,
+`enable_auto_detect_filters`, `tags`, `document_set`, …), a missing `message`, or a badly typed value (a
+`source_type` that isn't a list of strings, a non-string `time_cutoff`, a non-integer `limit`) is a 422 naming it, so
+a client never relies on a knob the fake would ignore. The reply is
+`{"top_documents": [SearchDoc + score, chunk_ind, match_highlights], "llm_indices": []}`, ranked by a deterministic
+term match (not Onyx's ranking; Sindri ranks, D3). The change feed by updated time is still an open item of Phase 5
+(§12); `document-size-info` isn't served.
 
 ## What later stages add
 
