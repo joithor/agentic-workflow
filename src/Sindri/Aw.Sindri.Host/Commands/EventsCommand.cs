@@ -79,7 +79,7 @@ internal static class EventsCommand
     internal static string Lines(IReadOnlyList<InstanceEventView> events, bool empty) =>
         events.Count == 0
             ? empty ? InstanceEvents.None + "\n" : string.Empty
-            : string.Concat(events.Select(static e => Line(e)[..0] + "\n"));   // red: engine P4 unit (e) prints the event lines
+            : string.Concat(events.Select(static e => Line(e) + "\n"));
 
     private static string Line(InstanceEventView e)
     {

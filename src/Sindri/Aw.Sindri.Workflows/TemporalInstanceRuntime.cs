@@ -32,9 +32,9 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend) : IInst
     public async ValueTask<Result<InstanceView>> Get(InstanceAddress address, CancellationToken cancellationToken)
     {
         var client = await frontend.Connect(flag: null, cancellationToken).ConfigureAwait(false);
-        if (client.IsError || client.IsSuccess)
+        if (client.IsError)
         {
-            throw new NotSupportedException("red: engine P4 unit (e): the GetInstance Query");
+            return client.Error;
         }
 
         try

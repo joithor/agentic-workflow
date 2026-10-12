@@ -24,7 +24,7 @@ internal static class EventStream
         var filter = Filter(context.Request.Query["item"], context.Request.Query["instance"]);
         if (filter.IsError)
         {
-            return Aw.Kernel.Results.Failure<Unit>(filter.Error).ToHttpResult();
+            return TypedResults.Problem(title: filter.Error.Code, detail: filter.Error.Message, statusCode: StatusCodes.Status400BadRequest);
         }
 
         var cursor = after ?? (long.TryParse(context.Request.Headers["Last-Event-ID"], out var last) ? last : 0);

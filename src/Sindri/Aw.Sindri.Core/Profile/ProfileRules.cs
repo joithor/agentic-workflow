@@ -92,11 +92,6 @@ public static class ProfileRules
     /// <summary>The 'workflow:' durations (S1-D11): each key that is set must be a duration such as '1m', '4h' or '2d'.</summary>
     private static Error? Durations(WorkflowSettings? workflow)
     {
-        if (workflow is not null)
-        {
-            return null;   // red: S1-D11's check
-        }
-
         foreach (var (key, value) in new[] { ("deskTimeout", workflow?.DeskTimeout), ("eventHold", workflow?.EventHold) })
         {
             if (value is not null && !RecipeDuration.TryFrom(value, out _))

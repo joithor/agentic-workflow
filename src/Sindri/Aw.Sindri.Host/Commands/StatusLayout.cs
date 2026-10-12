@@ -5,7 +5,7 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'workflow status' (engine spec §6.4): the header, then labelled lines in a fixed order — next, child, inputs, drift,
-/// timeout, paused, budget, answer, commands — leaving out the empty ones. Labels take 12 columns; a long 'next' wraps
+/// timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands — leaving out the empty ones. Labels take 12 columns; a long 'next' wraps
 /// at 120 and every continuation line is indented to the value column. Plain ASCII.
 /// </summary>
 internal static class StatusLayout
@@ -20,11 +20,6 @@ internal static class StatusLayout
     public static string Render(InstanceView view, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(view);
-        if (view.Version >= 0)
-        {
-            throw new NotSupportedException("red: engine P4 unit (e) renders the section 6.4 layout");
-        }
-
         var text = new StringBuilder().Append(InstanceHeader.Line(view, now)).Append('\n');
         Labelled(text, "next", Wrap(view.Next));
         Labelled(text, "child", [.. view.Children.Select(static c => $"{c.Address.Value}  {c.State}")]);
@@ -32,7 +27,7 @@ internal static class StatusLayout
         Labelled(text, "drift", view.Drift is { } drift ? [drift] : []);
         Labelled(text, "timeout", view.Task?.TimeoutAt is { } at ? [$"parks in {StatusText.Duration(at - now)} (desk)"] : []);
         Labelled(text, "paused", view.Paused is { } left ? [$"timeout {StatusText.Duration(left)} left"] : []);
-        Labelled(text, "budget", view.Budget is { } budget ? [Budget(budget)] : []);
+        Labelled(text, "budget", view is { Task: not null, Budget: { } budget } ? [Budget(budget)] : []);
         Labelled(text, "answer", view.Answer is { } answer ? [answer] : []);
         Labelled(text, "commands", Commands(view) is { Length: > 0 } commands ? [commands] : []);
         return text.ToString();

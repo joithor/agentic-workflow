@@ -17,6 +17,6 @@ internal sealed class ProfileWorkflowTimes(IProfileSource profiles)
     public async ValueTask<WorkflowTimes> Read(CancellationToken cancellationToken)
     {
         var loaded = await profiles.Load(cancellationToken).ConfigureAwait(false);
-        return loaded.IsError || loaded.IsSuccess ? WorkflowTimes.Defaults : WorkflowTimes.Of(loaded.Value.Profile);   // red
+        return loaded.IsError ? WorkflowTimes.Defaults : WorkflowTimes.Of(loaded.Value.Profile);
     }
 }

@@ -43,13 +43,14 @@ public static class InstanceViews
             ? Task(instance.Frame.State, open.Token, recipe, timeoutAt)
             : null;
         var question = instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question) : null;
+        var words = new InstanceWords(instance, recipe, since, children.Count > 0 ? children[0] : null);
         return new InstanceView(
             instance.Address,
             recipe.Version,
             instance.State,
-            task is not null ? "desk task" : null,
+            task is not null ? "desk task" : words.Detail(),
             since,
-            string.Empty,   // red: unit (e) renders 'next'
+            words.Next(task),
             Allowed(instance, task),
             question,
             task,
@@ -57,6 +58,8 @@ public static class InstanceViews
             children,
             instance.Outcome)
         {
+            Answer = words.Answer(),
+            Drift = words.Drift(),
             Budget = Budget(instance, recipe),
         };
     }

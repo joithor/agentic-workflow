@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Host.Endpoints;
 
 namespace Aw.Sindri.Tests.GetInstanceEvents;
 
@@ -59,6 +60,21 @@ public sealed class GetInstanceEventsTests
         Assert.Equal([2L, 3L, 4L], byItem.Events.Select(static e => e.Sequence));
         Assert.Equal(5, unfiltered.Events.Count);
     }
+
+    [Theory]
+    [InlineData("t-1", null, "'t-1' isn't an item id")]
+    [InlineData(null, "T-1", "'T-1' isn't an instance address")]
+    public void The_event_streams_filter_refuses_a_malformed_item_or_address(string? item, string? instance, string message)
+    {
+        var filter = EventStream.Filter(item, instance);
+
+        Assert.Equal("SND-CLI-003", filter.Error.Code);
+        Assert.StartsWith(message, filter.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_event_streams_filter_reads_an_item_and_an_address() =>
+        Assert.Equal((ItemKey.From("T-1"), _address), (EventStream.Filter("T-1", "T-1/step/1").Value.Item, EventStream.Filter(item: null, "T-1/step/1").Value.Instance));
 
     /// <summary>Five rows: a heartbeat, T-1/step/1's start, its child's start, its transition, and T-2/step/1's start.</summary>
     private static async Task<SliceHarness> Ledger()

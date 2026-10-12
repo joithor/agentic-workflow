@@ -4115,3 +4115,5 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusText.Duration(System.TimeSpa
 static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusText.Hash12(string! hash) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusText.Tokens(int tokens) -> string!
 Aw.Sindri.Core.Workflow.Engine.Desk.IWorkflowInstances.List(string? query, bool ended, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>!>!>
+Aw.Sindri.Core.Workflow.Engine.Evals.IApprovalEvals
+Aw.Sindri.Core.Workflow.Engine.Evals.IApprovalEvals.Check(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>

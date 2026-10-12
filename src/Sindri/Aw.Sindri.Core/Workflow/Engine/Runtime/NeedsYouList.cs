@@ -21,8 +21,6 @@ public sealed record NeedsYouList(IReadOnlyList<InstanceView> Decisions, IReadOn
     public static NeedsYouList Of(IEnumerable<InstanceView> views)
     {
         ArgumentNullException.ThrowIfNull(views);
-        return new NeedsYouList([], []);   // red
-#pragma warning disable CS0162 // red: unreachable until unit (e)
         var all = views.OrderBy(static v => v.Address.Value, StringComparer.Ordinal).ToList();
         var listed = all.Select(static v => v.Address.Value).ToHashSet(StringComparer.Ordinal);
         var shown = all.Where(v => !(v.Question is not null && v.Children.Any(c => listed.Contains(c.Address.Value)))).ToList();

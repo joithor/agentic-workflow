@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 namespace Aw.Sindri.Features.StreamEvents;
 
@@ -48,7 +49,9 @@ internal sealed class StreamEventsService(ILedgerStore ledger) : IService<Stream
         return new StreamEventsResponse(kept) { Scanned = scanned };
     }
 
-    private static bool Keeps(StreamEventsRequest request, LedgerEvent e) => request is not null && e is not null;   // red: S1-D6's filter
+    private static bool Keeps(StreamEventsRequest request, LedgerEvent e) =>
+        (request.Item is not { } item || string.Equals(e.Item, item.Value, StringComparison.Ordinal))
+        && (request.Instance is not { } instance || InstanceEvents.Belongs(e, instance));
 
     private static EventView View(LedgerEvent e) =>
         new(e.Sequence, e.Envelope.Type, e.Envelope.OccurredAt, e.Envelope.Actor, e.Envelope.Tenant, e.Envelope.Ring, e.Epoch, e.Envelope.Payload);

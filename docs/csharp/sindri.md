@@ -74,7 +74,12 @@ repos:                    # optional
 services:                 # optional: background services by name, each with a cadence
   heartbeat: { every: 30s }   # <n>s|m|h, 5s to 24h
 api: { port: 7410 }       # optional, default 7410; 0 (a free port) or 1024..65535; AW_SINDRI_PORT overrides it
+workflow:                 # optional (engine S1-D11); each a duration <n>m|h|d
+  deskTimeout: 2d         # default 2d: the floor of every desk Step's timeout
+  eventHold: 24h          # default 24h: how long a buffered event waits for its wait
 ```
+
+A profile without a `workflow:` block serializes without it, so its hash (and any approval of it) is unchanged.
 
 The approval hash is SHA-256 over the canonical JSON (the checked record, repos and services sorted), so comments and
 key order don't change it. An approval snapshot whose content no longer matches its hash isn't trusted.
@@ -149,7 +154,7 @@ foreign browser `Origin` a 403):
 | `GET /sindri/commands` | `ListCommands`: the command catalog (Command catalog, below) |
 | `POST /sindri/stop` | `StopProcess` |
 | `POST /sindri/profile/approve` | `ApproveProfile` (`{hash, confirmed}`) |
-| `GET /sindri/events?after=N` | `StreamEvents` as server-sent events: one event per ledger row, `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second; ends when the client goes away or a stop is requested, so a stop doesn't wait out Kestrel's 30 s graceful shutdown |
+| `GET /sindri/events?after=N[&item=<id>\|&instance=<address>]` | `StreamEvents` as server-sent events: one event per ledger row (with `item`, that item's rows; with `instance`, the rows that instance mirrored; engine S1-D6), `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second; ends when the client goes away or a stop is requested, so a stop doesn't wait out Kestrel's 30 s graceful shutdown |
 
 A service's error is ProblemDetails with the `SND-*` code as `title`. The API's own failures carry a code too: an
 unhandled exception in a handler is logged and answered 500 with `SND-API-005`, and a body or query value the request

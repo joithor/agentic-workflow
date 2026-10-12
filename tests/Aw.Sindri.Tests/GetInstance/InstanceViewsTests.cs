@@ -56,7 +56,7 @@ public sealed class InstanceViewsTests
         var view = StatusCases.View("parked-rounds-with-drift");
 
         Assert.Equal(
-            "step.produce changed since workflow.step@" + Hash12() + " was approved; re-approve it before you answer: sindri recipe approve workflow.step@" + Hash12(),
+            "step.produce changed since workflow.step@" + Hash12() + " was approved; answer after the re-approval: sindri recipe approve workflow.step@" + Hash12(),
             view.Drift);
     }
 

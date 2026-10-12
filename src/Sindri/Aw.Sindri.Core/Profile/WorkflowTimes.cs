@@ -16,8 +16,6 @@ public sealed record WorkflowTimes(TimeSpan DeskTimeout, TimeSpan EventHold)
     public static WorkflowTimes Of(SindriProfile profile)
     {
         ArgumentNullException.ThrowIfNull(profile);
-        return Defaults;   // red
-#pragma warning disable CS0162
         return new(
             Span(profile.Workflow?.DeskTimeout) ?? Defaults.DeskTimeout,
             Span(profile.Workflow?.EventHold) ?? Defaults.EventHold);
