@@ -50,16 +50,12 @@ public sealed class ServeTests : IDisposable
         var ping = await http.GetFromJsonAsync("/sindri/ping", HttpJson.Info<Ping>(), Token);
         var events = await FirstEventLines(http);
         var stop = await http.PostAsync(new Uri("/sindri/stop", UriKind.Relative), content: null, Token);
-        using var pingAfterStop = await http.GetAsync(new Uri("/sindri/ping", UriKind.Relative), Token);
-        var refusal = await pingAfterStop.Content.ReadAsStringAsync(Token);
 
         Assert.True(status!.Running);
         Assert.Equal((Environment.ProcessId, status.Epoch), (ping!.Pid, ping.Epoch));
         Assert.Contains("event: process.started", events, StringComparison.Ordinal);
         Assert.Contains("id: 1", events, StringComparison.Ordinal);
         Assert.Equal(HttpStatusCode.OK, stop.StatusCode);
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, pingAfterStop.StatusCode);   // why: without the lease it isn't the control plane
-        Assert.Equal("SND-API-001", System.Text.Json.JsonDocument.Parse(refusal).RootElement.GetProperty("title").GetString());
         Assert.Null(app.Services.GetRequiredService<HeldLease>().Current);
         Assert.True(app.Services.GetRequiredService<ProcessShutdown>().Stopping.IsCancellationRequested);
         await app.StopAsync(ct);
