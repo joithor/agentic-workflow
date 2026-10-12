@@ -124,8 +124,9 @@ The pre-API states (`ShellState`, highest first): **version mismatch** (the stat
 the code and `sindri doctor`; the page keeps its last data and the pill reads "Unreadable · stale"), **stale** (30 s
 without an event, a status or an answered ping, on the injected clock: the pill reads "⌛ stale · updated Ns ago" with
 **Refresh** beside it; otherwise "✓ Running · updated Ns ago", re-worded every second). Refresh follows §4.1's command
-lifecycle: while it is in flight it is disabled with its label kept, "Sending…" shows beside it after 300 ms (a polite
-live region), and a second click does nothing. After three failed refreshes the pill keeps "stale" and a banner under
+lifecycle: while it is in flight it is disabled with its label kept and a spinner in its icon's place (still under
+reduced motion), "Sending…" is announced after 300 ms through a polite live region (not shown), and a second click does
+nothing. After three failed refreshes the pill keeps "stale" and a banner under
 the top bar reads "Sindri not responding: run `sindri doctor`" in full, since the sentence doesn't fit the pill at
 900 px. The view models carry no Avalonia types; views bind the app's copy through `ShellText` (compiled bindings
 resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar, page and sheet; the window's
@@ -185,7 +186,13 @@ VoiceOver pass below confirms or refutes it.
 **Rules for later phases' announcements** ("N now need you", "<id> cleared", §12.4): a dedicated `TextBlock` with
 `LiveSetting="Polite"` whose `Text` changes; never set it to `""` (hide it instead); give it no separate
 `AutomationProperties.Name` (the peer announces the name, and a second binding may lag the text); only in a top-level
-window (popups aren't `AvnWindow`s). If the pass finds it silent, the fallback is a head adapter posting
+window (popups aren't `AvnWindow`s). Two more from the source: once assistive tech has read the element, every `Text`
+change is announced even while it is hidden, so a text that must not be spoken (a resting text, set so the next
+announcement is a change again) is set only while `LiveSetting` is Off; and a hidden element has no native element, so
+show it a moment before its text changes. Refresh's "Sending…" (`TopBar`'s `RefreshSending`) does both: the region is in
+the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `live` class) only while
+`Health.IsSending`, which turns on before the text becomes "Sending…" and off before it goes back to its resting
+"Refresh"; it is zero-width and transparent, so it takes no room and shows nothing. If the pass finds it silent, the fallback is a head adapter posting
 `NSAccessibilityAnnouncementRequestedNotification` through ObjC interop; no production seam is added before that.
 
 **The owner's VoiceOver pass** (a throwaway probe window: a polite `TextBlock` changing every 3 s, an assertive one, a

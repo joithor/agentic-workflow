@@ -241,7 +241,7 @@ public sealed class ShellStateTests
 
         _clock.Advance(TimeSpan.FromMilliseconds(299));
         Assert.False(shell.Health.IsSending);
-        Assert.Equal(string.Empty, shell.Health.SendingAnnouncement);
+        Assert.Equal(Labels.Refresh, shell.Health.SendingAnnouncement);
         _clock.Advance(TimeSpan.FromMilliseconds(1));
         await Eventually(() => shell.Health.IsSending);
 
@@ -252,7 +252,7 @@ public sealed class ShellStateTests
         await first;
         Assert.True(shell.Health.CanRefresh);
         Assert.False(shell.Health.IsSending);
-        Assert.Equal(string.Empty, shell.Health.SendingAnnouncement);
+        Assert.Equal(Labels.Refresh, shell.Health.SendingAnnouncement);
         Assert.Equal(ShellState.Normal, shell.State);
     }
 

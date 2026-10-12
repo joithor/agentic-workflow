@@ -4,6 +4,13 @@
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
              x:Class="Aw.Sindri.Ui.Views.Shell.TopBar"
              x:DataType="shell:ShellViewModel">
+  <UserControl.Styles>
+    <!-- The "Sending…" live region is live only while sending (Health.IsSending), so its resting text, set once the
+         gate is off, is never spoken (docs/csharp/sindri-ui.md "LiveSetting on macOS"). -->
+    <Style Selector="TextBlock.live-region.live">
+      <Setter Property="AutomationProperties.LiveSetting" Value="Polite" />
+    </Style>
+  </UserControl.Styles>
   <!-- The top bar (UI spec §3.2): brand, the segmented navigation with its counts, Later ▾, the ⌘K field (a placeholder
        until U1's palette) and the health pill, which opens Health. The ⌘K field's column is a star column that outweighs the
        spacer and stops at 300 px plus its margins: with room it is 300 px wide at the right, and as the window narrows it
@@ -99,10 +106,13 @@
       <!-- The health pill (§3.2, §11.3): the state's glyph before its word, then the age; it opens Health. R4: one mark per
            state, the glyph, which §11.3 gives every state; a dot beside it only doubled it and cost the age its room.
            While stale, Refresh sits beside it (§4.1). -->
-      <!-- After 300 ms in flight, "Sending…" is announced through this polite live region (§4.1); it takes no room in the
-           bar, so the brand word never drops for the in-flight moment. -->
-      <Border x:Name="RefreshSending" Grid.Column="5" Width="0" HorizontalAlignment="Left"
-              AutomationProperties.Name="{Binding Health.SendingAnnouncement}" AutomationProperties.LiveSetting="Polite" />
+      <!-- After 300 ms in flight, "Sending…" is announced through this polite live region (§4.1), a TextBlock whose Text
+           changes (a bound name on a Border raises no change) with no separate name. It is in the tree from the click,
+           so assistive tech has read it before its text changes, and out of it otherwise; its text is never "" (Avalonia
+           #22312). Invisible and zero-width, so the bar never moves for the in-flight moment. -->
+      <TextBlock x:Name="RefreshSending" Grid.Column="5" Classes="caption live-region" Classes.live="{Binding Health.IsSending}"
+                 Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Center"
+                 Text="{Binding Health.SendingAnnouncement}" IsVisible="{Binding !Health.CanRefresh}" />
       <StackPanel x:Name="PillGroup" Grid.Column="5" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <Button x:Name="RefreshButton" Classes="refresh" IsVisible="{Binding Pill.IsRefreshShown}" IsEnabled="{Binding Health.CanRefresh}"
                 Click="OnRefresh" AutomationProperties.Name="{Binding Text.Refresh}">

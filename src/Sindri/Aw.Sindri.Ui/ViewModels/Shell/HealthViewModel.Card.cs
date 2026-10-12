@@ -3,8 +3,12 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// <summary>The Health page's status card (<see cref="HealthViewModel"/>, continued): the lease, the API, the profile, the services.</summary>
 internal sealed partial class HealthViewModel
 {
-    /// <summary>The polite announcement while a refresh is in flight (§4.1 "sending"): "Sending…" after 300 ms, else empty.</summary>
-    public string SendingAnnouncement { get; private set => Set(ref field, value); } = string.Empty;
+    /// <summary>
+    /// The live region's text (§4.1 "sending"): "Sending…" once a refresh has been in flight for 300 ms, otherwise its
+    /// resting text, "Refresh". Never empty (Avalonia #22312: a live element's name set to "" crashes on macOS), and the
+    /// resting text is never spoken: it is set only once <see cref="IsSending"/>, the region's live gate, is off.
+    /// </summary>
+    public string SendingAnnouncement { get; private set => Set(ref field, value); } = Labels.Refresh;
 
     /// <summary>Home's health strip's accessible name (R3): the health line, then "stale" while the views are stale.</summary>
     public string StripName { get; private set => Set(ref field, value); } = Labels.Connecting;
