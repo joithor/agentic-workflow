@@ -5,6 +5,7 @@ using Aw.Context.Core;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Sources;
+using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Store;
 using Aw.Kernel;
@@ -14,11 +15,11 @@ namespace Aw.Context.Infrastructure.Docs;
 
 /// <summary>
 /// The repo-docs source over the repos in a call's scope (spec §5.2): lexical search in the scrubbed FTS5 chunks
-/// (each term a quoted phrase, never query syntax), fetch from git at the cited blob and line span (raw: the engine
-/// cleans it), and versions from one tree listing per repo at HEAD. Its records are chunks
+/// (each term a quoted phrase, never query syntax), fetch from git at the cited blob and line span, and versions from one tree listing per repo at HEAD. Its records are chunks
 /// ('&lt;repo&gt;/&lt;path&gt;#L&lt;a&gt;-L&lt;b&gt;'); the canonical key is the document, so chunks of one document merge.
 /// </summary>
-internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, ContextDatabase database, GitCli git, TimeProvider clock) : IContextSource
+internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, ContextDatabase database, GitCli git, IIngestFilter ingest, TimeProvider clock)
+    : IContextSource
 {
     private static readonly SourceDescriptor _descriptor = new(RepoDocs.Id, SourceKind.Doc, SourceFreshness.Snapshot, SupportsAsOf: false);
 
@@ -67,10 +68,16 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
             return blob.Error;
         }
 
-        var lines = blob.Value.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        // The whole document is cleaned before the span is cut (line-preserving), the same way it was indexed, so a
+        // secret or comment that crosses the span's edge can't come back half-scrubbed. The engine cleans the slice
+        // again at its own boundary, which changes nothing.
+        var clean = ingest.Clean(blob.Value.Replace("\r\n", "\n", StringComparison.Ordinal), singleLine: false);
+        var lines = clean.Text.Split('\n');
         var start = Math.Clamp(at.Start, 1, lines.Length);
-        var text = string.Join('\n', lines[(start - 1)..Math.Clamp(at.End, start, lines.Length)]);
-        return new SourceRecord(reference, RecordKind.Doc, DocChunker.Title(blob.Value, at.Path), text, Author: null, CreatedAt: null, UpdatedAt: null);
+        var text = clean.Blocked ? clean.Text : string.Join('\n', lines[(start - 1)..Math.Clamp(at.End, start, lines.Length)]);
+        return new SourceRecord(reference, RecordKind.Doc, DocChunker.Title(clean.Text, at.Path), clean.Blocked ? string.Empty : text, Author: null, CreatedAt: null,
+            UpdatedAt: null)
+        { Blocked = clean.Blocked };
     }
 
     public async ValueTask<Result<IReadOnlyList<SourceVersion?>>> Versions(IReadOnlyList<SourceRef> refs, CancellationToken cancellationToken)

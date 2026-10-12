@@ -38,6 +38,20 @@ public sealed class ProfileSourceTests : IDisposable
         Assert.NotEqual(first, changed);
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task Key_order_inside_context_keeps_the_hash()
+    {
+        _files.Write(Valid);
+        var without = (await _files.Source.Load(Token)).Value.Hash;
+        _files.Write(Valid + "context:\n  deadline: 4s\n  docs: { globs: [\"docs/**/*.md\"] }\n");
+        var first = (await _files.Source.Load(Token)).Value.Hash;
+        _files.Write(Valid + "context:\n  docs: { globs: [\"docs/**/*.md\"] }\n  deadline: 4s\n");
+        var reordered = (await _files.Source.Load(Token)).Value.Hash;
+
+        Assert.Equal(first, reordered);
+        Assert.NotEqual(without, first);
+    }
+
     [Theory, Trait("Lane", "integration")]
     [InlineData("schemaVersion: 1\nuser: thor\ncolour: blue\n", "'colour' is not a profile key here (allowed: schemaVersion, user, tenant, repos, services, api, context)")]
     [InlineData("schemaVersion: one\nuser: thor\n", "schemaVersion: expected a whole number")]

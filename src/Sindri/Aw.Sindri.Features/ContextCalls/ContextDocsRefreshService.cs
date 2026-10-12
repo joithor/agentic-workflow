@@ -32,7 +32,7 @@ internal sealed class ContextDocsRefreshService(ContextScopes scopes, IContextEn
         }
 
         var payload = new ContextSourcesSynced(report.Value.Source.Value, run.Slot,
-            [.. report.Value.Repos.Select(r => new ContextRepoSynced(r.Repo.Value, r.Head?.Value, r.Added, r.Removed, r.Kept, r.Blocked, r.Code))]);
+            [.. report.Value.Repos.Select(r => new ContextRepoSynced(r.Repo.Value, r.Head?.Value, r.Added, r.Removed, r.Kept, r.Blocked, r.Code, r.Skipped))]);
         var key = string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ContextSourcesSynced}:{run.Grant.Epoch}:{run.Slot:O}");
         var recorded = await ledger.Append(events.Entry(EventTypes.ContextSourcesSynced, payload, key), run.Grant, cancellationToken).ConfigureAwait(false);
         return recorded.IsError ? recorded.Error : Unit.Value;

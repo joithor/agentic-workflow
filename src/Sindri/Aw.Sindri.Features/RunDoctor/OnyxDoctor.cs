@@ -34,7 +34,8 @@ internal sealed class OnyxDoctor(IContextEngine engine)
             return new DoctorCheck(Name, CheckState.Ok, "not configured (no profile is approved)", Fix: null);
         }
 
-        var settings = engine.CheckSettings(approved.Profile.Context);
+        ProfileRepoEntry[] entries = [.. (approved.Profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path))];
+        var settings = engine.CheckSettings(approved.Profile.Context, entries);
         if (settings.IsError)
         {
             return new DoctorCheck(Name, CheckState.Fail, $"{settings.Error.Code}: {settings.Error.Message}", "sindri profile validate");
@@ -45,9 +46,8 @@ internal sealed class OnyxDoctor(IContextEngine engine)
             return new DoctorCheck(Name, CheckState.Ok, "not configured (the approved profile names no context.sources.onyx)", Fix: null);
         }
 
-        var repos = (approved.Profile.Repos ?? []).Where(r => ContextRepoName.TryFrom(r.Name, out _))
-            .Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path)).ToList();
-        if (repos.Count == 0 || (settings.Value.Repos is { } named && !repos.Exists(r => named.Contains(r.Name))))
+        var repos = ScopeRules.Usable(entries);
+        if (repos.Count == 0 || (settings.Value.Repos is { } named && !repos.Any(r => named.Contains(r.Name))))
         {
             return new DoctorCheck(Name, CheckState.Warn, "the approved profile maps no repo, so no context source runs, onyx included", "map a repo in the profile's repos and context.repos");
         }

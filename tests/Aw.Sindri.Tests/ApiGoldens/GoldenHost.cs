@@ -38,12 +38,14 @@ public sealed class GoldenHost : IAsyncDisposable
 
     private readonly string _profileYaml;
     private readonly IReadOnlyDictionary<string, string>? _environment;
+    private readonly Action<IServiceCollection>? _extra;
 
-    private GoldenHost(bool temporary, string profileYaml, IReadOnlyDictionary<string, string>? environment)
+    private GoldenHost(bool temporary, string profileYaml, IReadOnlyDictionary<string, string>? environment, Action<IServiceCollection>? extra)
     {
         _elsewhere = temporary ? null : new TempHome();
         _profileYaml = profileYaml;
         _environment = environment;
+        _extra = extra;
     }
 
     /// <summary>The token the host holds.</summary>
@@ -63,11 +65,12 @@ public sealed class GoldenHost : IAsyncDisposable
     /// <param name="ct">Cancellation.</param>
     /// <param name="profileYaml">The live profile it starts with (<see cref="ProfileYaml"/> unless a test needs another).</param>
     /// <param name="environment">More environment variables the host reads (fixture secrets behind 'env:' pointers), or null.</param>
+    /// <param name="extra">More service replacements, after the fixed ones (a test's log sink).</param>
     /// <returns>The started host.</returns>
     public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct, string profileYaml = ProfileYaml,
-        IReadOnlyDictionary<string, string>? environment = null)
+        IReadOnlyDictionary<string, string>? environment = null, Action<IServiceCollection>? extra = null)
     {
-        var host = new GoldenHost(temporary, profileYaml, environment);
+        var host = new GoldenHost(temporary, profileYaml, environment, extra);
         try
         {
             await host.Run(ct);
@@ -103,8 +106,9 @@ public sealed class GoldenHost : IAsyncDisposable
     {
         _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
         await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), _profileYaml, ct);
-        var app = LoopbackBinding.Build([], Environment, new FakeTimeProvider(KnownInstants.Epoch), static services =>
+        var app = LoopbackBinding.Build([], Environment, new FakeTimeProvider(KnownInstants.Epoch), services =>
         {
+            _extra?.Invoke(services);
             _ = services.Replace(ServiceDescriptor.Singleton<IIdGenerator>(new SequentialIdGenerator()));
             _ = services.Replace(ServiceDescriptor.Singleton<IProcessProbe>(new FakeProcessProbe(Pid)));
         });

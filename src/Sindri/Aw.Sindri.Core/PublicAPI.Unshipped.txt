@@ -291,7 +291,6 @@ Aw.Sindri.Core.Profile.Cadence.Equals(Aw.Sindri.Core.Profile.Cadence? other) -> 
 Aw.Sindri.Core.Profile.Cadence.Interval.get -> System.TimeSpan
 Aw.Sindri.Core.Profile.Cadence.Interval.init -> void
 Aw.Sindri.Core.Profile.IApprovals
-Aw.Sindri.Core.Profile.IApprovals.Latest(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile?>!>
 Aw.Sindri.Core.Profile.IApprovals.Save(Aw.Sindri.Core.Profile.LoadedProfile! profile, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Sindri.Core.Profile.IProfileSource
 Aw.Sindri.Core.Profile.IProfileSource.Load(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>!>
@@ -3454,8 +3453,6 @@ Aw.Sindri.Core.Events.ContextRepoSynced.Blocked.get -> int
 Aw.Sindri.Core.Events.ContextRepoSynced.Blocked.init -> void
 Aw.Sindri.Core.Events.ContextRepoSynced.Code.get -> string?
 Aw.Sindri.Core.Events.ContextRepoSynced.Code.init -> void
-Aw.Sindri.Core.Events.ContextRepoSynced.ContextRepoSynced(string! Repo, string? Head, int Added, int Removed, int Kept, int Blocked, string? Code) -> void
-Aw.Sindri.Core.Events.ContextRepoSynced.Deconstruct(out string! Repo, out string? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code) -> void
 Aw.Sindri.Core.Events.ContextRepoSynced.Equals(Aw.Sindri.Core.Events.ContextRepoSynced? other) -> bool
 Aw.Sindri.Core.Events.ContextRepoSynced.Head.get -> string?
 Aw.Sindri.Core.Events.ContextRepoSynced.Head.init -> void
@@ -3491,3 +3488,9 @@ static Aw.Sindri.Core.Events.ContextRepoSynced.operator !=(Aw.Sindri.Core.Events
 static Aw.Sindri.Core.Events.ContextRepoSynced.operator ==(Aw.Sindri.Core.Events.ContextRepoSynced? left, Aw.Sindri.Core.Events.ContextRepoSynced? right) -> bool
 static Aw.Sindri.Core.Events.ContextSourcesSynced.operator !=(Aw.Sindri.Core.Events.ContextSourcesSynced? left, Aw.Sindri.Core.Events.ContextSourcesSynced? right) -> bool
 static Aw.Sindri.Core.Events.ContextSourcesSynced.operator ==(Aw.Sindri.Core.Events.ContextSourcesSynced? left, Aw.Sindri.Core.Events.ContextSourcesSynced? right) -> bool
+Aw.Sindri.Core.Profile.IApprovedProfile
+Aw.Sindri.Core.Profile.IApprovedProfile.Latest(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile?>!>
+Aw.Sindri.Core.Events.ContextRepoSynced.ContextRepoSynced(string! Repo, string? Head, int Added, int Removed, int Kept, int Blocked, string? Code, int Skipped = 0) -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Deconstruct(out string! Repo, out string? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code, out int Skipped) -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Skipped.get -> int
+Aw.Sindri.Core.Events.ContextRepoSynced.Skipped.init -> void

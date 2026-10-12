@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Aw.Context.Core;
@@ -9,8 +10,8 @@ namespace Aw.Context.Infrastructure.Git;
 /// <summary>
 /// Read-only git calls for the repo-docs source (spec §5.1 argument rules): shas match ^[0-9a-f]{7,64}$ and never start
 /// with '-', every path comes after '--', the arguments go through ArgumentList (no shell), and git runs with the
-/// caller's GIT_* variables removed. A git failure is SND-CONTEXT-010 (the source is unavailable); a missing object
-/// is NotFound.
+/// caller's GIT_* variables removed. A process that misses its time (30 s, or the caller's token) is killed. A missing
+/// object is NotFound (SND-CONTEXT-003); any other git failure is SND-CONTEXT-010 (the repo can't be read).
 /// </summary>
 internal sealed partial class GitCli
 {
@@ -22,7 +23,7 @@ internal sealed partial class GitCli
     /// <returns>The sha.</returns>
     public async ValueTask<Result<string>> Head(string repo, CancellationToken cancellationToken)
     {
-        var head = await Run(repo, ["rev-parse", "--verify", "--quiet", "HEAD^{commit}"], cancellationToken).ConfigureAwait(false);
+        var head = await Text(repo, ["rev-parse", "--verify", "--quiet", "HEAD^{commit}"], cancellationToken).ConfigureAwait(false);
         return head.Bind<string>(h => IsSha(h.Trim()) ? h.Trim() : ContextErrors.SourceUnavailable.With("git rev-parse HEAD didn't answer a sha"));
     }
 
@@ -38,29 +39,36 @@ internal sealed partial class GitCli
             return ContextErrors.SourceUnavailable.With("not a commit sha");
         }
 
-        var listed = await Run(repo, ["ls-tree", "-r", "-z", "--full-tree", commit], cancellationToken).ConfigureAwait(false);
+        var listed = await Text(repo, ["ls-tree", "-r", "-z", "--full-tree", commit], cancellationToken).ConfigureAwait(false);
         return listed.Map<IReadOnlyDictionary<string, string>>(text => text.Split('\0', StringSplitOptions.RemoveEmptyEntries)
             .Select(entry => entry.Split('\t', 2))
             .Where(parts => parts.Length == 2 && parts[0].Split(' ') is [_, "blob", _])
             .ToDictionary(parts => parts[1], parts => parts[0].Split(' ')[2], StringComparer.Ordinal));
     }
 
+    /// <summary>A blob's size in bytes, read before its text so an oversized document is never loaded.</summary>
+    /// <param name="repo">The repo's checkout.</param>
+    /// <param name="blob">The blob sha.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The size, NotFound when the repo has no such blob, or SND-CONTEXT-010.</returns>
+    public async ValueTask<Result<long>> Size(string repo, string blob, CancellationToken cancellationToken)
+    {
+        var exists = await Exists(repo, blob, cancellationToken).ConfigureAwait(false);
+        var size = exists.IsError ? exists.Error : await Text(repo, ["cat-file", "-s", blob], cancellationToken).ConfigureAwait(false);
+        return size.Bind<long>(s => long.TryParse(s.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var bytes)
+            ? bytes
+            : ContextErrors.SourceUnavailable.With("git cat-file -s didn't answer a size"));
+    }
+
     /// <summary>A blob's text.</summary>
     /// <param name="repo">The repo's checkout.</param>
     /// <param name="blob">The blob sha.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The text, or NotFound (SND-CONTEXT-003) when the repo has no such blob.</returns>
+    /// <returns>The text, NotFound (SND-CONTEXT-003) when the repo has no such blob, or SND-CONTEXT-010.</returns>
     public async ValueTask<Result<string>> Blob(string repo, string blob, CancellationToken cancellationToken)
     {
-        if (!IsSha(blob))
-        {
-            return ContextErrors.UnknownAnchor.With("not a blob sha");
-        }
-
-        var exists = await Run(repo, ["cat-file", "-e", blob + "^{blob}"], cancellationToken).ConfigureAwait(false);
-        return exists.IsError
-            ? ContextErrors.UnknownAnchor.With("the repo has no such blob")
-            : await Run(repo, ["cat-file", "blob", blob], cancellationToken).ConfigureAwait(false);
+        var exists = await Exists(repo, blob, cancellationToken).ConfigureAwait(false);
+        return exists.IsError ? exists.Error : await Text(repo, ["cat-file", "blob", blob], cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>True for a full or abbreviated lower-case hex sha (never an option, never a ref expression).</summary>
@@ -68,7 +76,31 @@ internal sealed partial class GitCli
     /// <returns>Whether it is a sha.</returns>
     internal static bool IsSha(string text) => Sha.IsMatch(text);
 
-    private async ValueTask<Result<string>> Run(string repo, string[] args, CancellationToken cancellationToken)
+    /// <summary>Whether the blob exists: 'cat-file -e' exits 1 for a missing object and 128 when the repo itself can't be read.</summary>
+    private async ValueTask<Result<Unit>> Exists(string repo, string blob, CancellationToken cancellationToken)
+    {
+        if (!IsSha(blob))
+        {
+            return ContextErrors.UnknownAnchor.With("not a blob sha");
+        }
+
+        var run = await Run(repo, ["cat-file", "-e", blob], cancellationToken).ConfigureAwait(false);
+        return run switch
+        {
+            { IsError: true } => run.Error,
+            { Value.Exit: 0 } => Unit.Value,
+            { Value.Exit: 1 } => ContextErrors.UnknownAnchor.With("the repo has no such blob"),
+            _ => Failed("cat-file", run.Value.Exit),
+        };
+    }
+
+    private async ValueTask<Result<string>> Text(string repo, string[] args, CancellationToken cancellationToken)
+    {
+        var run = await Run(repo, args, cancellationToken).ConfigureAwait(false);
+        return run.IsError ? run.Error : run.Value.Exit == 0 ? run.Value.Stdout : Failed(args[0], run.Value.Exit);
+    }
+
+    private async ValueTask<Result<(int Exit, string Stdout)>> Run(string repo, string[] args, CancellationToken cancellationToken)
     {
         var start = new ProcessStartInfo("git")
         {
@@ -90,27 +122,57 @@ internal sealed partial class GitCli
         return await Execute(start, args[0], cancellationToken).ConfigureAwait(false);
     }
 
-    private async ValueTask<Result<string>> Execute(ProcessStartInfo start, string verb, CancellationToken cancellationToken)
+    private async ValueTask<Result<(int Exit, string Stdout)>> Execute(ProcessStartInfo start, string verb, CancellationToken cancellationToken)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(_timeout);
+        Process? git = null;
         try
         {
-            using var git = Process.Start(start) ?? throw new InvalidOperationException("git didn't start");
+            git = Process.Start(start) ?? throw new InvalidOperationException("git didn't start");
             var stdout = git.StandardOutput.ReadToEndAsync(timeout.Token);
             var stderr = git.StandardError.ReadToEndAsync(timeout.Token);
             await git.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
             _ = await stderr.ConfigureAwait(false);   // drained, never logged: it may name repo content
-            return git.ExitCode == 0
-                ? await stdout.ConfigureAwait(false)
-                : ContextErrors.SourceUnavailable.With($"git {verb} failed (exit {git.ExitCode.ToString(System.Globalization.CultureInfo.InvariantCulture)})");
+            return (git.ExitCode, await stdout.ConfigureAwait(false));
         }
-        catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception
-            || (e is OperationCanceledException && !cancellationToken.IsCancellationRequested))
+        catch (OperationCanceledException)
+        {
+            Kill(git);   // a git call never outlives the query or its own time
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
+            return ContextErrors.SourceUnavailable.With($"git {verb} didn't finish in time");
+        }
+        catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception)
         {
             return ContextErrors.SourceUnavailable.With($"git {verb} didn't run: {e.GetType().Name}");
         }
+        finally
+        {
+            git?.Dispose();
+        }
     }
+
+    private static void Kill(Process? git)
+    {
+        try
+        {
+            if (git is { HasExited: false })
+            {
+                git.Kill(entireProcessTree: true);
+            }
+        }
+        catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            // it exited between the check and the kill
+        }
+    }
+
+    private static Error Failed(string verb, int exit) =>
+        ContextErrors.SourceUnavailable.With(string.Create(CultureInfo.InvariantCulture, $"git {verb} failed (exit {exit})"));
 
     [GeneratedRegex("^[0-9a-f]{7,64}\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Sha { get; }

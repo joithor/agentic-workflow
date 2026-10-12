@@ -9,7 +9,8 @@ namespace Aw.Sindri.Testing;
 
 /// <summary>
 /// An <see cref="IContextEngine"/> for Sindri tests that don't query context: it checks settings with the engine's own
-/// pure rules (SettingsReader), and answers every query or refresh with SND-CONTEXT-011. The real engine and its fakes
+/// pure rules (SettingsReader, ScopeRules for the repos), and answers every query or refresh with SND-CONTEXT-011. It
+/// passes ContextEngineContract. The real engine and its fakes
 /// are tested in Aw.Context.Tests.
 /// </summary>
 public sealed class SettingsOnlyContextEngine : IContextEngine
@@ -22,7 +23,8 @@ public sealed class SettingsOnlyContextEngine : IContextEngine
     public static SettingsOnlyContextEngine Instance { get; } = new();
 
     /// <inheritdoc />
-    public Result<ContextSettings> CheckSettings(JsonElement? section) => SettingsReader.Read(section);
+    public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
+        SettingsReader.Read(section).Bind(settings => ScopeRules.CheckRepos(section is { ValueKind: not JsonValueKind.Null }, settings, repos));
 
     /// <inheritdoc />
     public ValueTask<Result<ContextResult>> Query(ContextQuery query, ContextScope scope, CancellationToken cancellationToken) =>

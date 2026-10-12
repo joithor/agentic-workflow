@@ -49,7 +49,11 @@ internal sealed class ContextDatabase : IDisposable
         {
             if (!_migrated)
             {
-                OwnerOnly.EnsureDirectory(_settings.Home);
+                if (Prepare() is { } unusable)
+                {
+                    return unusable;
+                }
+
                 var report = await _runner.Migrate(Migrations, cancellationToken).ConfigureAwait(false);
                 if (report.IsError)
                 {
@@ -82,9 +86,32 @@ internal sealed class ContextDatabase : IDisposable
         return writable.IsError ? writable.Error : writable.Value;
     }
 
+    /// <summary>Creates the 0700 home; a home that can't be made or chmod-ed is SND-CONTEXT-004, never an exception a query sees.</summary>
+    private Error? Prepare()
+    {
+        try
+        {
+            OwnerOnly.EnsureDirectory(_settings.Home);
+            return null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return ContextErrors.StoreUnavailable.With($"the context home can't be created or restricted ({e.GetType().Name}); check $AW_SINDRI_HOME permissions");
+        }
+    }
+
     /// <summary>Restricts the store's files to the owner (the -wal and -shm files appear after the first write).</summary>
-    public void RestrictFiles() =>
-        OwnerOnly.RestrictFiles(_settings.DatabasePath, _settings.DatabasePath + "-wal", _settings.DatabasePath + "-shm");
+    public void RestrictFiles()
+    {
+        try
+        {
+            OwnerOnly.RestrictFiles(_settings.DatabasePath, _settings.DatabasePath + "-wal", _settings.DatabasePath + "-shm");
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // the files were made 0600 when they were created; a later chmod that fails leaves them as they were
+        }
+    }
 
     /// <summary>Maps a store failure to SND-CONTEXT-004, keeping the original code in the message.</summary>
     /// <param name="error">The Kernel.Data error.</param>

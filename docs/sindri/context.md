@@ -43,7 +43,7 @@ without `context:` keeps its hash.
 ### Keeping repo docs fresh
 
 The repo-docs index holds the documents the globs match at each repo's HEAD, chunked by heading and **scrubbed before
-they are stored** (secrets become `[REDACTED:<rule>]`; a document the scrubber blocks keeps its row without text). The
+they are stored**: each document is cleaned whole (hidden comments, remote images and link targets removed; secrets become `[REDACTED:<rule>]`) and only then chunked, so nothing that spans a chunk boundary slips through. A document the scrubber blocks keeps its row without text; one over 1 MiB, or one git can't read on a run, is counted as skipped. The
 `context-docs-refresh` service brings it up to date, at serve start and on its cadence, and records
 `context.sources.synced` in the ledger. Name it under `services:`, or nothing is indexed.
 
@@ -55,7 +55,7 @@ its route once P6 merges. Until then it answers `SND-CLI-001` (exit 2) and the s
 ```bash
 $SINDRI context query "split pane orientation"            # text
 $SINDRI context query "split pane orientation" --json     # the API's JSON, unchanged
-$SINDRI context query "…" --budget 4000                   # tokens, capped at context.maxBudget (default 8000)
+$SINDRI context query "…" --budget 4000                   # tokens; default 8000, capped at context.maxBudget (32000)
 $SINDRI context sources status [--json]                   # each source's state; whether sessions may read
 ```
 
@@ -85,8 +85,8 @@ sources:
 - Every item cites a record (`[Cn]`), and every citation has a version: the blob sha for repo docs. A citation is
   `current`, `stale` (the doc changed since the last refresh: both versions are shown), `unchecked` (the version check
   missed the deadline) or `scrub-blocked`.
-- Text from a record is **untrusted**: it stays inside the `<untrusted …>` fence, whose attributes and body are
-  escaped so no text can close it.
+- Text from a record is **untrusted**: its body and its title (at most 200 characters) stay inside the
+  `<untrusted …>` fence, whose attributes and body are escaped so no text can close it.
 - A source that doesn't answer is listed as `DEGRADED <source>: SND-CONTEXT-010 …` and the query goes on without it;
   all of them down is `SND-CONTEXT-011`.
 - States are words; there is never colour, so `NO_COLOR` holds.

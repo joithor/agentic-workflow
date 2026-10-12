@@ -11,11 +11,11 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// section and repos, and the current caller as the engine's caller (class, X-Sindri-Repo, transport from the actor:
 /// 'human:cli' is cli, 'session:mcp' is mcp, other HTTP callers http, services service). Every surface (HTTP, CLI, MCP,
 /// the scheduled refresh) goes through it, and the engine decides the session gate and repo scope (SND-CONTEXT-020,
-/// 003). It reads approvals only (<see cref="IApprovals.Latest"/>); nothing here writes.
+/// 003). It takes the read-only approvals port (<see cref="IApprovedProfile"/>, ARCH-CQRS-002).
 /// </summary>
 /// <param name="approvals">The approved profiles.</param>
 /// <param name="callers">The current caller.</param>
-internal sealed class ContextScopes(IApprovals approvals, ICallerContextAccessor callers)
+internal sealed class ContextScopes(IApprovedProfile approvals, ICallerContextAccessor callers)
 {
     /// <summary>The scope of the call running now.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -28,7 +28,7 @@ internal sealed class ContextScopes(IApprovals approvals, ICallerContextAccessor
             return approved.IsError ? approved.Error : SindriErrors.ProfileNotApproved.With("no profile is approved, so no repo is mapped (fix: sindri profile approve)");
         }
 
-        var repos = (loaded.Profile.Repos ?? []).Where(r => ContextRepoName.TryFrom(r.Name, out _)).Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path)).ToList();
+        var repos = ScopeRules.Usable([.. (loaded.Profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path))]);
         return new ContextScope(loaded.Profile.Context, repos, Caller(callers.Current));
     }
 
@@ -42,8 +42,14 @@ internal sealed class ContextScopes(IApprovals approvals, ICallerContextAccessor
         _ => new ContextCaller(ContextCallerKind.Service, Repo: null, ContextClient.Service),
     };
 
-    private static ContextClient Client(string actor) =>
-        actor.EndsWith(":cli", StringComparison.Ordinal) ? ContextClient.Cli
-        : actor.EndsWith(":mcp", StringComparison.Ordinal) ? ContextClient.Mcp
-        : ContextClient.Http;
+    /// <summary>
+    /// The transport, from the label CallerContext.Http put after the class ('human:cli', 'session:mcp'): cli and mcp are
+    /// themselves; the app (ui), the prover and plain HTTP are http.
+    /// </summary>
+    private static ContextClient Client(string actor) => actor[(actor.IndexOf(':', StringComparison.Ordinal) + 1)..] switch
+    {
+        "cli" => ContextClient.Cli,
+        "mcp" => ContextClient.Mcp,
+        _ => ContextClient.Http,
+    };
 }

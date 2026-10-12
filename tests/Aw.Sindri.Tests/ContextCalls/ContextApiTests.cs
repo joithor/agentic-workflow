@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using Aw.Context.Testing.Fixtures;
+using Aw.Kernel.Telemetry;
+using Aw.Kernel.Telemetry.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -8,6 +10,8 @@ using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.ApiGoldens;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
 
 namespace Aw.Sindri.Tests.ContextCalls;
@@ -68,12 +72,32 @@ public sealed class ContextApiTests : IDisposable
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (empty.Status, empty.Code));
     }
 
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task Neither_the_question_nor_record_text_reaches_a_log_line()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var sink = new InMemoryLogSink();
+        var runtime = TelemetryRuntime.Start(new TelemetryOptions { ServiceName = "sindri", Sink = sink, Clock = TimeProvider.System, MinimumLevel = LogLevel.Debug });
+        await using var host = await Approved(sessions: false, ct, services => services
+            .Replace(ServiceDescriptor.Singleton(runtime))
+            .Replace(ServiceDescriptor.Singleton(runtime.LoggerFactory)));
+
+        var answer = await host.Http.Ask(Get("/sindri/context/query?q=zebra%20quokka%20orientation", Human(host.Token.Value)));
+        runtime.Flush();
+
+        Assert.Equal(HttpStatusCode.OK, answer.Status);
+        Assert.Contains("focused pane", answer.Body, StringComparison.Ordinal);   // the decision doc's text came back …
+        Assert.NotEmpty(sink.Lines);                                             // … and the host did log
+        Assert.DoesNotContain("zebra", sink.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("focused pane", sink.Text, StringComparison.Ordinal);
+    }
+
     /// <summary>A host whose profile maps the fixture repo, approved by the human, with one context-docs-refresh run done.</summary>
-    private async Task<GoldenHost> Approved(bool sessions, CancellationToken ct)
+    private async Task<GoldenHost> Approved(bool sessions, CancellationToken ct, Action<IServiceCollection>? extra = null)
     {
         var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: split-panes, path: \"{_repo.Path}\" }}\n"
             + $"context:\n  docs: {{ globs: [\"docs/**/*.md\"] }}\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n";
-        var host = await GoldenHost.Start(temporary: true, ct, yaml);
+        var host = await GoldenHost.Start(temporary: true, ct, yaml, extra: extra);
         var hash = (await host.LiveHash(ct)).Value;
         var approved = await host.Http.Ask(Post("/sindri/profile/approve", $"{{\"hash\":\"{hash}\",\"confirmed\":true}}", Human(host.Token.Value)));
         Assert.Equal(HttpStatusCode.OK, approved.Status);

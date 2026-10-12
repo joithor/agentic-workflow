@@ -1,6 +1,7 @@
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Sources;
+using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Docs;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Onyx;
@@ -14,7 +15,7 @@ namespace Aw.Context.Infrastructure.Sources;
 /// all, onyx included (SourceCatalogContract): a caller whose scope maps no repo reads nothing. Which of the sources a
 /// caller may read is ScopeRules.MayRead's decision, in the slices.
 /// </summary>
-internal sealed class ContextSourceCatalog(ContextDatabase database, GitCli git, TimeProvider clock, OnyxSources onyx) : ISourceCatalog
+internal sealed class ContextSourceCatalog(ContextDatabase database, GitCli git, IIngestFilter ingest, TimeProvider clock, OnyxSources onyx) : ISourceCatalog
 {
     public IReadOnlyList<IContextSource> For(ContextSettings settings, IReadOnlyList<ContextRepo> repos)
     {
@@ -25,7 +26,7 @@ internal sealed class ContextSourceCatalog(ContextDatabase database, GitCli git,
             return [];
         }
 
-        var sources = new List<IContextSource>(2) { new RepoDocsSource(repos, database, git, clock) };
+        var sources = new List<IContextSource>(2) { new RepoDocsSource(repos, database, git, ingest, clock) };
 
         if (settings.Onyx is { } onyxSettings)
         {
