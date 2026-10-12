@@ -13,7 +13,7 @@ public static class SindriCoreServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the Sindri domain services: the control plane's event scope and factory, the caller of the code running now,
-    /// the lease and human token this process holds, the registry's approve and revoke planners, and the registry's event
+    /// the lease and human token this process holds, the registry's approve and revoke planners and its reader, and the registry's event
     /// appender.
     /// </summary>
     /// <param name="services">The service collection.</param>
@@ -28,5 +28,6 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<BlockCatalog>()
             .AddScoped<RecipeApprovalPlanner>()
             .AddScoped<RecipeRevokePlanner>()
+            .AddScoped<RecipeRegistryReader>()
             .AddSingleton<RecipeEvents>();
 }

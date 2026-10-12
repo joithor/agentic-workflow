@@ -15,7 +15,9 @@ internal static class EndpointTable
         // ---- queries: one line per slice, sorted ----
         _ = queries.MapGetStatus();
         _ = queries.MapListCommands();
+        _ = queries.MapListRecipes();
         _ = queries.MapPingProcess();
+        _ = queries.MapShowRecipe();
         _ = queries.MapStreamEvents();
 
         // ---- commands: one line per slice, sorted ----
@@ -24,6 +26,7 @@ internal static class EndpointTable
         _ = commands.MapApproveRecipe();
         _ = commands.MapRevokeRecipe();
         _ = commands.MapIssueChallenge();
+        _ = commands.MapRegisterRecipe();
         return app;
     }
 }

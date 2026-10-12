@@ -17,6 +17,9 @@ internal static class Usage
         "       sindri recipe eval <file> [--json]       run a recipe's eval cases in-process (exit 0 pass, 1 fail, 2 error)",
         "       sindri recipe eval --scaffold <file>     print a happy-path eval case for the recipe",
         "       sindri recipe eval --record <address> --out <file>   an instance's history as an eval case (needs the server, P4)",
+        "       sindri recipe register <file>            register a recipe by hash: 'registered <id>@<hash> (unapproved)'",
+        "       sindri recipe show <id@hash>             the recipe's line and its approval preview",
+        "       sindri recipe list [--stale] [--json]    one line per registered recipe; --stale: approved ones that drifted or pin a stale child",
     ];
 
     internal static readonly string Text = string.Join('\n', [.. _verbs, "exit codes: 0 ok, 1 attention needed, 2 error"]);

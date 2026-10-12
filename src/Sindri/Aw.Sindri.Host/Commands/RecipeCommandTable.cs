@@ -19,10 +19,13 @@ internal static partial class RecipeCommandTable
     private const string EvalUsage = "usage: sindri recipe eval <file> [--json] | --scaffold <file> | --record <address> --out <file>";
     private const string ApproveUsage = "usage: sindri recipe approve <file|id@hash>";
     private const string RevokeUsage = "usage: sindri recipe revoke <id@hash>";
+    private const string RegisterUsage = "usage: sindri recipe register <file>";
+    private const string ShowUsage = "usage: sindri recipe show <id@hash>";
+    private const string ListUsage = "usage: sindri recipe list [--stale] [--json]";
 
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct) => Run(args, services, output, desk: null, ct);
 
-    /// <summary>Runs a 'recipe' verb; the registry's server verbs (approve, revoke) need <paramref name="desk"/>.</summary>
+    /// <summary>Runs a 'recipe' verb; the registry's server verbs (register, show, list, approve, revoke) need <paramref name="desk"/>.</summary>
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, RecipeDesk? desk, CancellationToken ct) => args switch
     {
         ["validate", "--json"] or ["validate"] => output.Error(SindriErrors.InvalidInput.With($"recipe validate needs a recipe file ({ValidateUsage})")),
@@ -30,14 +33,17 @@ internal static partial class RecipeCommandTable
         ["validate", var file, "--json"] => Validate(file, json: true, services, output, ct),
         ["validate", "--json", var file] => Validate(file, json: true, services, output, ct),
         ["eval", .. var rest] => RunEval(rest, services, output, ct),
-        ["register", ..] => Pending("register", "(b)", output),
-        ["show", ..] => Pending("show", "(b)", output),
-        ["list", ..] => Pending("list", "(b)", output),
+        ["register", var file] when !IsFlag(file) && desk is not null => new RecipeRegistryCommands(desk, services, output).Register(file, ct),
+        ["register", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe register needs one recipe file ({RegisterUsage})")),
+        ["show", var target] when target.Contains('@', StringComparison.Ordinal) && desk is not null => new RecipeRegistryCommands(desk, services, output).Show(target, ct),
+        ["show", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe show needs one id@hash ({ShowUsage})")),
+        ["list", .. var flags] when ListFlags(flags) is { } list && desk is not null => new RecipeRegistryCommands(desk, services, output).List(list.Stale, list.Json, ct),
+        ["list", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe list takes only --stale and --json ({ListUsage})")),
         ["approve", var target] when !IsFlag(target) && desk is not null => new RecipeDeskCommands(desk, services, output).Approve(target, ct),
         ["approve", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe approve needs one recipe file or id@hash ({ApproveUsage})")),
         ["revoke", var target] when target.Contains('@', StringComparison.Ordinal) && desk is not null => new RecipeDeskCommands(desk, services, output).Revoke(target, ct),
         ["revoke", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe revoke needs one id@hash ({RevokeUsage})")),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", .. args])}' is not a sindri command ({ValidateUsage}; {EvalUsage})")),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", .. args])}' is not a sindri command ({ValidateUsage}; {EvalUsage}; {RegisterUsage}; {ShowUsage}; {ListUsage})")),
     };
 
     private static Task<int> RunEval(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch
@@ -53,9 +59,15 @@ internal static partial class RecipeCommandTable
         _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", "eval", .. args])}' is not a sindri command ({EvalUsage})")),
     };
 
-    /// <summary>P2 contract: the registry verbs are listed, and each says which unit ships it.</summary>
-    private static Task<int> Pending(string verb, string unit, Output output) =>
-        output.Error(SindriErrors.UnknownVerb.With($"recipe {verb} arrives with engine P2 unit {unit} (fix: sindri recipe validate <file> checks a recipe now)"));
+    /// <summary>'list' takes '--stale' and '--json', each at most once, in either order.</summary>
+    private static (bool Stale, bool Json)? ListFlags(string[] flags) => flags switch
+    {
+        [] => (false, false),
+        ["--stale"] => (true, false),
+        ["--json"] => (false, true),
+        ["--stale", "--json"] or ["--json", "--stale"] => (true, true),
+        _ => null,
+    };
 
     private static bool IsFlag(string arg) => arg.StartsWith("--", StringComparison.Ordinal);
 

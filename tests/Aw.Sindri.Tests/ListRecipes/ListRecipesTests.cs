@@ -53,7 +53,8 @@ public sealed class ListRecipesTests
         var line = await r.Line(step);
         var stale = await r.List(stale: true);
 
-        Assert.Equal((RecipeStanding.Approved, [StaleReason.PinDrift]), (line.Standing, line.Stale));
+        Assert.Equal(RecipeStanding.Approved, line.Standing);
+        Assert.Equal([StaleReason.PinDrift], line.Stale);
         Assert.Equal([step.Hash], stale.Select(s => s.Hash));
     }
 
@@ -72,7 +73,8 @@ public sealed class ListRecipesTests
 
         Assert.Equal(RecipeStanding.Revoked, (await r.Line(step)).Standing);
         var parent = Assert.Single(stale);
-        Assert.Equal((item.Hash, RecipeStanding.Approved, [StaleReason.ChildStale]), (parent.Hash, parent.Standing, parent.Stale));
+        Assert.Equal((item.Hash, RecipeStanding.Approved), (parent.Hash, parent.Standing));
+        Assert.Equal([StaleReason.ChildStale], parent.Stale);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -90,7 +92,8 @@ public sealed class ListRecipesTests
         _ = await r.Approve(step2);
 
         var parent = Assert.Single(await r.List(stale: true));
-        Assert.Equal((item.Hash, [StaleReason.ChildStale]), (parent.Hash, parent.Stale));
+        Assert.Equal(item.Hash, parent.Hash);
+        Assert.Equal([StaleReason.ChildStale], parent.Stale);
     }
 
     [Fact, Trait("Lane", "unit")]

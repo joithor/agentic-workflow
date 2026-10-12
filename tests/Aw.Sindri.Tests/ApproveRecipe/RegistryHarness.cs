@@ -66,6 +66,8 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddSingleton<BlockCatalog>()
             .AddScoped<RecipeApprovalPlanner>()
             .AddScoped<RecipeRevokePlanner>()
+            .AddScoped<RecipeRegistryReader>()
+            .AddSingleton(Workflow.RecipeReaderTests.Reader)
             .AddSingleton<Core.Events.RecipeEvents>()
             .AddScoped<IValidator<ApproveRecipeRequest>, AcceptAllValidator<ApproveRecipeRequest>>().AddCommand<ApproveRecipeRequest, ApproveRecipeResponse, ApproveRecipeService>()
             .AddScoped<IValidator<RevokeRecipeRequest>, AcceptAllValidator<RevokeRecipeRequest>>().AddCommand<RevokeRecipeRequest, RevokeRecipeResponse, RevokeRecipeService>()

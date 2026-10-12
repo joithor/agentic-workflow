@@ -22,7 +22,7 @@ internal static class EngineRows
     internal static IReadOnlyList<CommandRow> All { get; } =
     [
         // ---- P2: the registry (bound) ----
-        Bound("RegisterRecipe", typeof(RegisterRecipeRequest), ActionClass.Desk, "POST /sindri/workflow/recipes", "sindri recipe register <file>"),
+        Bound("RegisterRecipe", typeof(RegisterRecipeRequest), ActionClass.Desk, "POST /sindri/workflow/recipes", "sindri recipe register <file>") with { Ui = "ready" },
         Protected("ApproveRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/approve", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(ApproveRecipeRequest), Ui = TypedConfirmation },
         Protected("RevokeRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/revoke", "sindri recipe revoke <recipe>", "WF-P2") with { CommandType = typeof(RevokeRecipeRequest), Ui = TypedConfirmation },
         Protected("IssueChallenge", "POST /sindri/workflow/challenges", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(IssueChallengeRequest), Class = ActionClass.Issue, Ui = "ready" },

@@ -50,6 +50,18 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
     /// <returns>The plan, or SND-RECIPE-002 when no single registered version of the id matches, or the plan's refusal.</returns>
     public async ValueTask<Result<ApprovalPlan>> Approve(RecipeId id, string hash, CancellationToken cancellationToken)
     {
+        var found = await Find(id, hash, cancellationToken).ConfigureAwait(false);
+        return found.IsError ? found.Error : await Approve(found.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The registered version of <paramref name="id"/> named by <paramref name="hash"/>: the full hash, its 64 digits, or a prefix of 8 or more.</summary>
+    /// <param name="id">The recipe id.</param>
+    /// <param name="hash">The hash or its prefix.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The recipe, or SND-RECIPE-002 when no single registered version of the id matches.</returns>
+    public async ValueTask<Result<RegisteredRecipe>> Find(RecipeId id, string hash, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(hash);
         var versions = await store.Versions(id, cancellationToken).ConfigureAwait(false);
         if (versions.IsError)
         {
@@ -58,10 +70,34 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
 
         var matching = versions.Value.Where(r => string.Equals(r.Hash.Value, hash, StringComparison.Ordinal) || r.Hash.MatchesPrefix(hash)).ToList();
         return matching.Count == 1
-            ? await Approve(matching[0], cancellationToken).ConfigureAwait(false)
+            ? matching[0]
             : WorkflowErrors.RecipeNotFound.With(matching.Count == 0
                 ? $"no registered {id.Value} has hash {hash}; sindri recipe list shows what is"
                 : $"{hash} matches more than one {id.Value}; give more of the hash");
+    }
+
+    /// <summary>
+    /// What approving <paramref name="recipe"/> now would show ('recipe show'), whatever it stands at: approved with the
+    /// same pins, revoked, without evals, or with a child not yet approved (that child gets no pin). It refuses nothing.
+    /// </summary>
+    /// <param name="recipe">The registered recipe.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <returns>The preview.</returns>
+    public async ValueTask<Result<ApprovalPreview>> Preview(RegisteredRecipe recipe, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        var parsed = AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(recipe.Text), json);
+        var current = parsed.IsError ? parsed.Error : await approvals.Current(cancellationToken).ConfigureAwait(false);
+        var latest = current.IsError ? current.Error : await approvals.Latest(recipe.Id, recipe.Version, recipe.Hash, cancellationToken).ConfigureAwait(false);
+        if (latest.IsError)
+        {
+            return latest.Error;
+        }
+
+        var pins = PinRules.Pins(parsed.Value, catalog, current.Value, json);
+        var drift = latest.Value is { } before && before.Pins != pins ? before : null;
+        var plan = await Plan(recipe, (parsed.Value, current.Value), pins, drift, cancellationToken).ConfigureAwait(false);
+        return plan.IsError ? plan.Error : plan.Value.Preview;
     }
 
     /// <summary>The plan for approving <paramref name="hash"/>, which must be registered under <paramref name="id"/>.</summary>
