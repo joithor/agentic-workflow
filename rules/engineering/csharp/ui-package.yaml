@@ -12,7 +12,7 @@ checks:
     id: "ARCH-UI-001"
     status: active
 gap: partial
-gapNote: "ARCH-UI-001 covers Sindri types in the UI, view models (no Avalonia type) and heads (no view or view model). Compiled bindings (x:DataType everywhere, no ReflectionBinding) rest on the build default, the NativeAOT publish (src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh) and review."
+gapNote: "ARCH-UI-001 covers Sindri types in the UI, view models (no Avalonia type; checked under Aw.Sindri.Ui.ViewModels, where view models live) and heads (no view or view model). Compiled bindings (x:DataType everywhere, no ReflectionBinding) rest on the build default, the NativeAOT publish (src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh) and review."
 source:
   type: import
   ref: ".agents/rules/csharp.md"
