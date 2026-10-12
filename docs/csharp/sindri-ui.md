@@ -51,7 +51,7 @@ takes the ring, the darker primary hover and pressed fills, and `semantic-error`
 | Port | Desktop adapter (Unit B) | Contract base |
 |---|---|---|
 | `IMotionPreference` (`ReduceMotion`, `Changed`) | macOS `NSWorkspace`, Windows `SPI_GETCLIENTAREAANIMATION`, GNOME `enable-animations`; bound over a drivable OS seam | `MotionPreferenceContract` |
-| `ISingleInstance` (`TryClaim`, `Send`, `Messages`; `InstanceMessages.Focus`, `MaxLength` 512) | A local channel only the user can open, under `$AW_SINDRI_HOME/ui/`. A message only navigates: the app reads it as a `DeepLink` and ignores anything else | `SingleInstanceContract` |
+| `ISingleInstance` (`TryClaim`, `Send`, `Messages`, `HolderProcessId`; `InstanceMessages.Focus`, `MaxLength` 512) | A local channel only the user can open, under `$AW_SINDRI_HOME/ui/`. A message only navigates: the app reads it as a `DeepLink` and ignores anything else. `Send` is true only once the running instance has **handled** the message (its reader came back for the next one), never because a lock is held: a holder that doesn't read gives no answer, and the message isn't handed over later | `SingleInstanceContract` |
 | `ITray` (`Show(TrayView)`, `Shown`, `OpenRequested`, `QuitRequested`; `TrayState` Neutral, NotRunning, Stale) | Avalonia `TrayIcon`; menu labels escape `_` | `TrayContract` |
 | `IPreferencesStore` (`Location`, `Read`/`Write` of the bytes, like the endpoint record) | `$AW_SINDRI_HOME/ui/preferences.json`, 0600, temp file and rename | `PreferencesStoreContract` |
 
@@ -65,8 +65,8 @@ Windows the profile's ACLs do it):
 | Adapter | How |
 |---|---|
 | `FilePreferencesStore` | `ui/preferences.json`; a write goes to a new 0600 temp file beside it, flushed to disk, then renamed over it |
-| `SocketSingleInstance` | The claim is an exclusive lock on `ui/instance.lock` (the OS drops it when the process dies, so a crash leaves no claim); its holder removes a crashed instance's `ui/instance.sock` and listens there (a Unix domain socket, 0600; AF_UNIX on Windows 10 and later too; when the path won't fit sun_path's 104 bytes, as in a deep temp home, the socket goes to `$TMPDIR/sindri-ui-<hash of the path>/`, 0700). A later launch writes one UTF-8 message and reads one byte back (1 taken, 0 refused); the listener refuses an empty message, one over 512 characters or one that isn't UTF-8, and gives a sender 2 s |
-| `SingleLaunch` | `Program` claims before Avalonia starts; a later launch sends `focus` (or its one argument when it is a deep link, `sindri://` optional) and exits 0, or 1 when the holder doesn't answer |
+| `SocketSingleInstance` | The claim is an exclusive lock on `ui/instance.lock` (the OS drops it when the process dies, so a crash leaves no claim); its holder removes a crashed instance's `ui/instance.sock` and listens there (a Unix domain socket, 0600; AF_UNIX on Windows 10 and later too; when the path won't fit sun_path's 104 bytes, as in a deep temp home, the socket goes to `$TMPDIR/sindri-ui-<hash of the path>/`, 0700). The holder records its process id in `ui/instance.pid` (0600; removed on exit). A later launch writes one UTF-8 message ending in a newline, keeps its side open and reads one byte back: 1 once the holder's reader has handled the message (`AppLifetime.Listen` handles each on the UI thread before reading the next), 0 refused. The listener refuses an empty message, one over 512 characters, one that isn't UTF-8 or one without its newline; it waits 1.5 s from a message's arrival for the handling and the sender waits 2 s, so a holder that doesn't handle it (a failed start-up, a wedged app) gives no answer. A message nothing handled in time, or whose sender has gone, is dropped |
+| `SingleLaunch` | `Program` claims before Avalonia starts; a later launch sends `focus` (or its one argument when it is a deep link, `sindri://` optional) and exits 0 once the running app handled it. With no answer it claims again: if the holder ended meanwhile, this launch runs the app; otherwise it exits 1 with `sindri-ui: Sindri app is running but not answering (pid N): quit it or kill it` on standard error. Exit codes: 0 handed over (or the app quit), 1 a holder that doesn't answer, 2 the app failed (SND-UI-004) |
 | `AvaloniaTray` | Avalonia's `TrayIcon`, created on the first `Show` and registered with the app; `TrayMarks` draws Sindri's mark in the theme's Ink, filled (Neutral), hollow (Stale) and hollow struck through (NotRunning), as macOS template images; menu labels double each `_` |
 | `PolledMotionPreference` | The OS reader at start and every 2 s on the injected `TimeProvider`: macOS `NSWorkspace.accessibilityDisplayShouldReduceMotion` through `objc_msgSend` (`MacMotion`), Windows `SPI_GETCLIENTAREAANIMATION` (`WindowsMotion`), GNOME `gsettings get org.gnome.desktop.interface enable-animations` (`GnomeMotion`; no gsettings, a failure or a hang past 1 s reads as off) |
 
@@ -221,6 +221,12 @@ what happened: `opened (sindri-ui, pid N)`, or `not found at <path>` with the fi
 prints no `ui` line. A relative `AW_SINDRI_UI` is resolved against the working directory before it is checked, and a file
 without an execute bit reads `not executable at <path>` with the fix. Opening the app never changes `sindri`'s exit
 code. A second `sindri-ui` hands over to the running one (`focus`) and exits, so a bare `sindri` while the app runs brings its window forward.
+
+**`opened` is only "started".** `sindri` starts `sindri-ui` detached with its output to `/dev/null` and reports
+`opened (sindri-ui, pid N)` as soon as the process starts, so the line can still claim success when that `sindri-ui`
+then exits 1 (a running app that doesn't answer) or 2 (a failed start-up), and N is the launched process, not the
+running app's. The UI package can't fix this: the line is `Aw.Sindri.Host`'s `UiLauncher`. Run `sindri-ui` directly to
+see its exit code and standard error.
 
 **Not a declared edge (owner question, PR #168).** Starting `sindri-ui` from `sindri` is a `Sindri -> SindriUi` cli
 dependency by `deps.yaml`'s definition, but declaring it would close a cycle with the `SindriUi -> Sindri` http edge

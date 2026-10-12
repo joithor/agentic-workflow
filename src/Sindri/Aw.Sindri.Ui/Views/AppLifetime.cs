@@ -94,16 +94,17 @@ internal sealed class AppLifetime : IDisposable
         }
     }
 
-    /// <summary>Reads the instance's messages until cancelled, handling each on the UI thread.</summary>
+    /// <summary>Reads the instance's messages until cancelled, handling each on the UI thread before reading the next.</summary>
     /// <param name="cancellationToken">Stops listening.</param>
     /// <returns>A task that ends when cancelled or the instance ends.</returns>
     internal async Task Listen(CancellationToken cancellationToken)
     {
         try
         {
+            // Handled on the UI thread before the next is read, so the sender's answer means the app acted on it.
             await foreach (var message in _instance.Messages(cancellationToken).ConfigureAwait(false))
             {
-                Dispatcher.UIThread.Post(() => Receive(message));
+                await Dispatcher.UIThread.InvokeAsync(() => Receive(message)).GetTask().ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

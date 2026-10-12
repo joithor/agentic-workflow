@@ -97,19 +97,21 @@ public sealed class SocketSingleInstanceTests : IDisposable
         Assert.False(File.Exists(Paths.InstanceSocket));
     }
 
-    // A client that skips the adapter's own length check: the listener refuses what it reads and keeps serving.
+    // A client that skips the adapter's own checks: the listener refuses what it reads (over the limit, not UTF-8, empty,
+    // or a message without its newline) and keeps serving.
     [Theory]
-    [InlineData(InstanceMessages.MaxLength + 1, (byte)'x')]
-    [InlineData(4, (byte)0xff)]
-    [InlineData(0, (byte)'x')]
-    public async Task The_listener_refuses_a_message_over_the_limit_or_not_utf8_or_empty(int length, byte fill)
+    [InlineData(InstanceMessages.MaxLength + 1, (byte)'x', true)]
+    [InlineData(4, (byte)0xff, true)]
+    [InlineData(0, (byte)'x', true)]
+    [InlineData(5, (byte)'x', false)]
+    public async Task The_listener_refuses_a_message_over_the_limit_or_not_utf8_or_empty_or_unterminated(int length, byte fill, bool terminated)
     {
         await using var first = Launch();
         await using var second = Launch();
         Assert.True(await first.TryClaim(Token));
         await using var reader = new InstanceReader(first, Token);
 
-        Assert.Equal(0, await RawSend([.. Enumerable.Repeat(fill, length)]));
+        Assert.Equal(0, await RawSend([.. Enumerable.Repeat(fill, length), .. terminated ? "\n"u8.ToArray() : []]));
         Assert.True(await second.Send(InstanceMessages.Focus, Token));
 
         Assert.Equal([InstanceMessages.Focus], await reader.Take(1));

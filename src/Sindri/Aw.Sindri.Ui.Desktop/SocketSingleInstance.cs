@@ -1,6 +1,6 @@
+using System.Globalization;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Channels;
 using Aw.Sindri.Ui.Platform;
 
@@ -10,20 +10,19 @@ namespace Aw.Sindri.Ui.Desktop;
 /// The desktop adapter of <see cref="ISingleInstance"/>, under the owner-only 'ui' directory: the claim is an exclusive
 /// lock on instance.lock (the OS drops it when the process dies, so a crash leaves no claim behind), and the channel a
 /// Unix domain socket, instance.sock (0600; AF_UNIX on Windows 10 and later too; in an owner-only directory under the
-/// user's temp directory when the home is too deep for sun_path, <see cref="UiStatePaths.SocketIn"/>). Whoever holds the lock removes a socket
-/// left by a crash and listens. A later launch connects, writes one message (UTF-8, at most
-/// <see cref="InstanceMessages.MaxLength"/> characters), closes its side and reads one byte: 1 taken, 0 refused.
+/// user's temp directory when the home is too deep for sun_path, <see cref="UiStatePaths.SocketIn"/>). Whoever holds the
+/// lock removes a socket left by a crash, listens, and records its process id in instance.pid (0600). A later launch
+/// connects and sends one message (<see cref="InstanceWire"/>); the holder answers 1 only once its reader has handled it
+/// (came back for the next one), within 1.5 s of its arrival; the sender waits 2 s. A message nothing handled in time,
+/// or whose sender has gone, is dropped, never handed over late.
 /// </summary>
-/// <param name="paths">Where the lock and the socket live.</param>
-/// <param name="clock">The clock for the channel's timeouts.</param>
 internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider clock) : ISingleInstance
 {
-    private const byte Taken = 1;
-    private const byte Refused = 0;
-    private const int MaxBytes = InstanceMessages.MaxLength * 4;
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(2);
-    private static readonly UTF8Encoding _strict = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-    private readonly Channel<string> _inbox = Channel.CreateUnbounded<string>(new UnboundedChannelOptions { SingleReader = true });
+
+    // Shorter than the sender's 2 s, so a message handled in time is answered before the sender gives up.
+    private static readonly TimeSpan _handleWithin = TimeSpan.FromMilliseconds(1500);
+    private readonly Channel<Delivery> _inbox = Channel.CreateUnbounded<Delivery>(new UnboundedChannelOptions { SingleReader = true });
     private readonly CancellationTokenSource _stop = new();
     private FileStream? _claim;
     private Socket? _listener;
@@ -59,13 +58,15 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
         }
 
         _claim = claim;
+        await File.WriteAllTextAsync(paths.InstancePid, Environment.ProcessId.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+        OwnerOnly.Restrict(paths.InstancePid);
         _accepting = Accept(_listener, _stop.Token);
         return true;
     }
 
     public async ValueTask<bool> Send(string message, CancellationToken cancellationToken)
     {
-        if (message.Length is 0 or > InstanceMessages.MaxLength)
+        if (InstanceWire.Encode(message) is not { } wire)
         {
             return false;
         }
@@ -76,15 +77,14 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
         try
         {
             await socket.ConnectAsync(new UnixDomainSocketEndPoint(paths.InstanceSocket), linked.Token).ConfigureAwait(false);
-            var bytes = Encoding.UTF8.GetBytes(message).AsMemory();
+            var bytes = wire.AsMemory();
             while (!bytes.IsEmpty)
             {
                 bytes = bytes[await socket.SendAsync(bytes, SocketFlags.None, linked.Token).ConfigureAwait(false)..];
             }
 
-            socket.Shutdown(SocketShutdown.Send);
             var answer = new byte[1];
-            return await socket.ReceiveAsync(answer, SocketFlags.None, linked.Token).ConfigureAwait(false) == 1 && answer[0] == Taken;
+            return await socket.ReceiveAsync(answer, SocketFlags.None, linked.Token).ConfigureAwait(false) == 1 && answer[0] == InstanceWire.Handled;
         }
         catch (SocketException)
         {
@@ -103,13 +103,39 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
             yield break;
         }
 
-        await foreach (var message in _inbox.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+        await foreach (var delivery in _inbox.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
-            yield return message;
+            if (delivery.Stale)
+            {
+                _ = delivery.Handled.TrySetResult(false);
+                continue; // its sender stopped waiting, or is about to: too late to act on
+            }
+
+            try
+            {
+                yield return delivery.Message;
+            }
+            finally
+            {
+                // The reader came back for the next one, or stopped after this one: either way it handled it.
+                _ = delivery.Handled.TrySetResult(true);
+            }
         }
     }
 
-    public int? HolderProcessId() => null;
+    public int? HolderProcessId()
+    {
+        // Only a launch whose claim failed asks, so the file is the live holder's (a crashed one's lock is gone and the
+        // next holder rewrites it).
+        try
+        {
+            return int.TryParse(File.ReadAllText(paths.InstancePid), NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > 0 ? id : null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
 
     public async ValueTask DisposeAsync()
     {
@@ -118,7 +144,9 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
         await _accepting.ConfigureAwait(false);
         if (_claim is not null)
         {
-            File.Delete(paths.InstanceSocket); // while the lock is still held, so it can't be a later instance's
+            // While the lock is still held, so neither can be a later instance's.
+            File.Delete(paths.InstanceSocket);
+            File.Delete(paths.InstancePid);
             await _claim.DisposeAsync().ConfigureAwait(false);
         }
 
@@ -170,49 +198,34 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
         {
             using var timeout = new CancellationTokenSource(_timeout, clock);
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(stop, timeout.Token);
+            Delivery? delivery = null;
             try
             {
-                var message = Decode(await ReadAll(client, linked.Token).ConfigureAwait(false));
-                var taken = message is not null && _inbox.Writer.TryWrite(message);
-                _ = await client.SendAsync(new[] { taken ? Taken : Refused }, SocketFlags.None, linked.Token).ConfigureAwait(false);
+                var message = await InstanceWire.Read(client, linked.Token).ConfigureAwait(false);
+                delivery = message is null ? null : new Delivery(message, client, new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
+                var handled = delivery is not null && _inbox.Writer.TryWrite(delivery) && await Handled(delivery, linked.Token).ConfigureAwait(false);
+                _ = await client.SendAsync(new[] { handled ? InstanceWire.Handled : InstanceWire.Refused }, SocketFlags.None, linked.Token).ConfigureAwait(false);
             }
             catch (Exception e) when (e is OperationCanceledException or SocketException)
             {
                 // A sender that hangs or goes away gets no answer; the listener keeps serving.
             }
+            finally
+            {
+                _ = delivery?.Handled.TrySetResult(false); // unhandled by now: the reader skips it
+            }
         }
     }
 
-    // Reads to the sender's end of stream, stopping one byte past the limit.
-    private static async Task<ArraySegment<byte>> ReadAll(Socket client, CancellationToken cancellationToken)
+    // Waits for the reader to handle the message, until the sender leaves or 1.5 s pass.
+    private async Task<bool> Handled(Delivery delivery, CancellationToken cancellationToken)
     {
-        var buffer = new byte[MaxBytes + 1];
-        var total = 0;
-        int read;
-        while (total < buffer.Length && (read = await client.ReceiveAsync(buffer.AsMemory(total), SocketFlags.None, cancellationToken).ConfigureAwait(false)) > 0)
-        {
-            total += read;
-        }
-
-        return new ArraySegment<byte>(buffer, 0, total);
-    }
-
-    // The message, or null when it is empty, over the limit or not UTF-8.
-    private static string? Decode(ArraySegment<byte> bytes)
-    {
-        if (bytes.Count is 0 or > MaxBytes)
-        {
-            return null;
-        }
-
-        try
-        {
-            var text = _strict.GetString(bytes);
-            return text.Length <= InstanceMessages.MaxLength ? text : null;
-        }
-        catch (DecoderFallbackException)
-        {
-            return null;
-        }
+        using var handling = new CancellationTokenSource(_handleWithin, clock);
+        using var waiting = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, handling.Token);
+        var left = InstanceWire.Left(delivery.Sender, waiting.Token);
+        var first = await Task.WhenAny(delivery.Handled.Task, left).ConfigureAwait(false);
+        await waiting.CancelAsync().ConfigureAwait(false);
+        await left.ConfigureAwait(false);
+        return first == delivery.Handled.Task && await delivery.Handled.Task.ConfigureAwait(false);
     }
 }

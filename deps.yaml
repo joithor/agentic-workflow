@@ -241,7 +241,7 @@ packages:
     ts: null
     src: src/Sindri/Aw.Sindri.Ui
     bins: [sindri-ui]
-    files: [sindri-app/ui/preferences.json, sindri-app/ui/instance.sock, sindri-app/ui/instance.lock]
+    files: [sindri-app/ui/preferences.json, sindri-app/ui/instance.sock, sindri-app/ui/instance.lock, sindri-app/ui/instance.pid]
     note: "the Avalonia desktop app (readiness spec §4a UI): Aw.Sindri.Ui (views, view models, the typed API client, platform ports) and the thin Aw.Sindri.Ui.Desktop head (NativeAOT, binary sindri-ui). It references no Sindri project and holds no logic: Sindri's HTTP API and its endpoint record (control.json) are its only contract (docs/csharp/sindri-ui.md). It owns its own files in a ui/ directory (0700) of Sindri's home: the local preferences and the single-instance lock and socket. Bare `sindri` starts sindri-ui; that Sindri -> SindriUi launch is NOT declared as a cli edge, because it would close a cycle with the http edge (DEPS-CYCLE-001) and check-deps does not scan C# for cli edges. Open owner question (PR #168): invert the launch, or record a reasoned cycle exception"
 
   # ---- outside the tiers: code that stays bash or TypeScript and calls the CLIs (§4a) ----
