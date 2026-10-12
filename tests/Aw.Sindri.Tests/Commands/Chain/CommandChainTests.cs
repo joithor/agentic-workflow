@@ -242,4 +242,16 @@ public sealed class CommandChainTests : IAsyncDisposable
         Assert.Equal(EventTypes.CommandHandled, Assert.Single(_c.Events).Envelope.Type);
         Assert.Null((await _c.H.Profiles.Latest(TestContext.Current.CancellationToken)).Value);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_stop_keeps_its_own_reason_when_its_audit_row_can_not_be_written()
+    {
+        await using var c = new ChainHarness(endpoints: new UnremovableEndpointFile());
+        _ = await c.H.HoldLease();
+
+        var stopped = await c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Human);
+
+        Assert.Equal(SindriErrors.LedgerUnavailable.Code, stopped.Error.Code);   // API §2.1: a row that can't be written is SND-LEDGER-002
+        Assert.Contains(UnremovableEndpointFile.Reason, stopped.Error.Message, StringComparison.Ordinal);   // why: the stop cleared the grant itself; its own reason is the one to show
+    }
 }

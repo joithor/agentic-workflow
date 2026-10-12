@@ -26,7 +26,7 @@ internal sealed class ChainHarness : IAsyncDisposable
 {
     private readonly ServiceProvider _provider;
 
-    public ChainHarness(Func<ILedgerStore, ILedgerStore>? ledger = null)
+    public ChainHarness(Func<ILedgerStore, ILedgerStore>? ledger = null, IEndpointFile? endpoints = null)
     {
         Ledger = ledger?.Invoke(H.Store) ?? H.Store;
         var fixture = Authorization.Rows.Of(ActionClass.Desk, "FixtureCommand", typeof(FixtureCommand));
@@ -39,7 +39,7 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton(H.Events)
             .AddSingleton(H.Callers)
             .AddSingleton<IShutdown>(H.Shutdown)
-            .AddSingleton<IEndpointFile>(new InMemoryEndpointFile())
+            .AddSingleton(endpoints ?? new InMemoryEndpointFile())
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddSingleton<IApprovals>(H.Profiles)
             .AddSingleton<ICommandCatalog>(new InMemoryCommandCatalog([.. ShellRows.All, fixture]))
