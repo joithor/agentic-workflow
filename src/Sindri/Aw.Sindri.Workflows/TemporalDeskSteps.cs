@@ -46,9 +46,27 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, T
             return outputs.Error;
         }
 
+        var sent = await Send(client.Value, taskToken, report, outputs.Value, cancellationToken).ConfigureAwait(false);
+        if (sent.IsError)
+        {
+            return sent.Error;
+        }
+
+        tokens.Remove(address, report.Run.Value);
+        return report.Wait
+            ? await Next(client.Value, address, report.Run.Value, cancellationToken).ConfigureAwait(false)
+            : new DeskOutcome(State: null, Run: null);
+    }
+
+    /// <summary>Completes the desk run's activity through its task token; a run that is gone is SND-WF-005, any other RPC error SND-API-001.</summary>
+    private async Task<Result<Unit>> Send(ITemporalClient client, byte[] taskToken, DeskReport report, IReadOnlyDictionary<string, FactValue> outputs, CancellationToken cancellationToken)
+    {
+        var address = report.Address.Value;
         try
         {
-            await client.Value.GetAsyncActivityHandle(taskToken).CompleteAsync(new StepReport(report.Outcome.Value, outputs.Value)).ConfigureAwait(false);
+            var rpc = new RpcOptions { CancellationToken = cancellationToken, Timeout = _patience };
+            await client.GetAsyncActivityHandle(taskToken).CompleteAsync(new StepReport(report.Outcome.Value, outputs), new AsyncActivityCompleteOptions { Rpc = rpc })
+                .ConfigureAwait(false);
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)
         {
@@ -61,10 +79,8 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, T
                 + "(fix: sindri doctor, then run the same complete again)");
         }
 
-        tokens.Remove(address, report.Run.Value);
-        return report.Wait
-            ? await Next(client.Value, address, report.Run.Value, cancellationToken).ConfigureAwait(false)
-            : new DeskOutcome(State: null, Run: null);
+
+        return Unit.Value;
     }
 
     /// <summary>
@@ -75,9 +91,9 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, T
     {
         var handle = client.GetWorkflowHandle<RecipeWorkflow>(address);
         var deadline = DateTimeOffset.UtcNow + _patience;
-        InstanceSnapshot? last = null;
-        while (DateTimeOffset.UtcNow < deadline)
+        while (deadline - DateTimeOffset.UtcNow > TimeSpan.FromMilliseconds(100))   // a sub-millisecond timeout would mean none to the SDK
         {
+            InstanceSnapshot last;
             try
             {
                 var rpc = new RpcOptions { CancellationToken = cancellationToken, Timeout = deadline - DateTimeOffset.UtcNow };
@@ -96,7 +112,7 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, T
             await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken).ConfigureAwait(false);
         }
 
-        return new DeskOutcome(last?.State, Run: null);
+        return new DeskOutcome(State: null, Run: null);   // still on the run: "sent", not the unchanged state as if it were the next one
     }
 
     private async Task<Result<IReadOnlyDictionary<string, FactValue>>> StoreAll(DeskReport report, CancellationToken cancellationToken)

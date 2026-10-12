@@ -89,10 +89,6 @@ internal static class ServeCommand
     private static async Task<int> RunUntilStopped(WebApplication app, StartProcessResponse started)
     {
         var grant = started.Grant;
-        var endpoints = app.Services.GetRequiredService<IEndpointFile>();
-        var url = new Uri(app.Urls.First());
-        var endpoint = new ControlEndpoint(url, grant.Holder.Pid, grant.Epoch) { Temporal = started.Temporal };   // the dev server's pid and ports
-        _ = await endpoints.Write(endpoint, CancellationToken.None).ConfigureAwait(false);
         var shutdown = app.Services.GetRequiredService<ProcessShutdown>();
         using var either = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Stopping, app.Lifetime.ApplicationStopping);
 
@@ -102,6 +98,12 @@ internal static class ServeCommand
             : Task.CompletedTask;
         var runtime = app.Services.GetRequiredService<TemporalRuntime>();
         runtime.Track(worker);   // StopProcess waits for it before it stops the dev server
+
+        // written once the worker is tracked: a client that finds control.json can stop serve, and that stop waits for it
+        var endpoints = app.Services.GetRequiredService<IEndpointFile>();
+        var url = new Uri(app.Urls.First());
+        var endpoint = new ControlEndpoint(url, grant.Holder.Pid, grant.Epoch) { Temporal = started.Temporal };   // the dev server's pid and ports
+        _ = await endpoints.Write(endpoint, CancellationToken.None).ConfigureAwait(false);
         try
         {
             await Task.Delay(Timeout.Infinite, either.Token).ConfigureAwait(false);

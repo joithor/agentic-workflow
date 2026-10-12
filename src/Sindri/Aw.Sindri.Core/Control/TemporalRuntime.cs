@@ -14,7 +14,7 @@ public sealed class TemporalRuntime(ITemporalServer server, TimeProvider clock)
     private int _waitedOut;
 
     /// <summary>How long <see cref="Stop"/> waits for the worker before it stops the server anyway.</summary>
-    public static TimeSpan WorkerStopWait { get; } = TimeSpan.FromSeconds(5);   // the SDK worker drains in about 1.3 s; the stop answers within the CLI's 10 s
+    public static TimeSpan WorkerStopWait { get; } = TimeSpan.FromSeconds(5);   // the SDK worker drains in about 1.3 s; with a server that exits promptly on SIGTERM the stop answers within the CLI's 10 s
 
     /// <summary>Records the worker serve runs; it stops once the shutdown is requested.</summary>
     /// <param name="worker">The worker's run, which completes once it has stopped.</param>
