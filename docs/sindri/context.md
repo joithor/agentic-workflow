@@ -37,7 +37,9 @@ services:
   context-docs-refresh: { every: 5m }                  # indexes the docs at each repo's HEAD; first run at serve start
 ```
 
-`sindri profile validate` and `sindri profile approve` check the section; an invalid one is never approved. A profile
+`sindri profile validate` and `sindri profile approve` check the section; an invalid one is never approved. With a `context:` section, every repo in its scope (all profile repos, or those `context.repos` names) needs a
+name of letters, digits, `.`, `_` or `-` (at most 100, starting with a letter or digit): rename the repo under
+`repos:`, or leave it out of `context.repos`. A profile
 without `context:` keeps its hash.
 
 ### Keeping repo docs fresh

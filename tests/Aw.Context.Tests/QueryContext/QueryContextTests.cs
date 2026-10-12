@@ -3,6 +3,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Engine;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Context.Tests.QueryContext;
 
@@ -55,9 +56,10 @@ public sealed class QueryContextTests
     public async Task A_source_past_the_deadline_is_degraded()
     {
         var slow = new FakeContextSource(_onyx, []) { Hangs = true };
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero));
+        var engine = Engines.Over(new FixedSourceCatalog(FakeContextSource.FixtureDocs(), slow), time: clock);
 
-        var result = await Engines.Over(FakeContextSource.FixtureDocs(), slow)
-            .Query(new ContextQuery("orientation"), Engines.Human("""{"deadline":"200ms"}"""), CancellationToken.None);
+        var result = await Engines.Advancing(clock, () => engine.Query(new ContextQuery("orientation"), Engines.Human("""{"deadline":"2s"}"""), CancellationToken.None).AsTask());
 
         Assert.Equal("onyx", result.Value.Degraded.Single().Source.Value);
         Assert.Contains("deadline", result.Value.Degraded.Single().Message, StringComparison.Ordinal);
@@ -166,8 +168,10 @@ public sealed class QueryContextTests
     {
         var docs = FakeContextSource.FixtureDocs();
         docs.FetchHangs = true;
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero));
+        var engine = Engines.Over(new FixedSourceCatalog(docs), time: clock);
 
-        var result = await Engines.Over(docs).Query(new ContextQuery("orientation"), Engines.Human("""{"deadline":"200ms"}"""), CancellationToken.None);
+        var result = await Engines.Advancing(clock, () => engine.Query(new ContextQuery("orientation"), Engines.Human("""{"deadline":"2s"}"""), CancellationToken.None).AsTask());
 
         Assert.Equal("repo-docs", result.Value.Degraded.Single().Source.Value);
         Assert.Empty(result.Value.Cites);

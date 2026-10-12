@@ -138,6 +138,25 @@ public sealed class RepoDocsTests
         Assert.StartsWith("## Orientation\nthe zebra line\nlast line", record.Text, StringComparison.Ordinal);
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_doc_path_the_ids_can_t_carry_is_skipped_and_never_breaks_a_query()
+    {
+        using var home = new TempHome();
+        using var fixture = FixtureRepo.Build();
+        var repo = new ContextRepo(ContextRepoName.From("split-panes"), fixture.Path);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Path, "docs", "team\u200Bnotes.md"), "# Notes\norientation zebra\n", TestContext.Current.CancellationToken);
+        _ = Git(fixture.Path, "add", "-A");
+        _ = Git(fixture.Path, "commit", "-q", "-m", "an odd name");
+
+        var refreshed = (await home.Index.Refresh(repo, ["docs/**/*.md"], CancellationToken.None)).Value;
+        var hits = await new RepoDocsSource([repo], home.Database, home.Git, home.Scrubber, home.Clock)
+            .Search(new SourceQuery(["orientation"], AsOf: null, 10, TimeSpan.FromSeconds(5)), CancellationToken.None);
+
+        Assert.Equal(1, refreshed.Skipped);
+        Assert.True(hits.IsSuccess);
+        Assert.DoesNotContain(hits.Value, h => h.Ref.Id.Value.Contains("notes", StringComparison.Ordinal));
+    }
+
     private static long Count(TempHome home, string sql)
     {
         using var connection = new SqliteConnection("Data Source=" + home.Settings.DatabasePath + ";Mode=ReadOnly");

@@ -50,7 +50,7 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
             var now = clock.GetUtcNow();
             return rows.IsError
                 ? Unavailable(rows.Error)
-                : rows.Value.Select((row, i) => new SourceHit(Ref(row), row.Title, i + 1, now, Leaky: false)).ToList();
+                : rows.Value.Select(Ref).OfType<SourceRef>().Select((reference, i) => new SourceHit(reference, Title(rows.Value, reference), i + 1, now, Leaky: false)).ToList();
         }
     }
 
@@ -130,9 +130,17 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
         return new SourceHealth(SourceState.Ok, string.Create(CultureInfo.InvariantCulture, $"{repos.Count} repos readable"), Code: null);
     }
 
-    private static SourceRef Ref(HitRow row) => new(RepoDocs.Id,
-        ExternalId.From(string.Create(CultureInfo.InvariantCulture, $"{row.Repo}/{row.Path}#L{row.LineStart}-L{row.LineEnd}")),
-        SourceVersion.From(row.Blob), Permalink: null, RepoDocs.Key(ContextRepoName.From(row.Repo), row.Path));
+    /// <summary>The hit's reference, or null when its repo or path can't be carried by the ids (never indexed since S-1A's review, but an older row is skipped, never thrown).</summary>
+    private static SourceRef? Ref(HitRow row) =>
+        ContextRepoName.TryFrom(row.Repo, out var repo)
+        && ExternalId.TryFrom(string.Create(CultureInfo.InvariantCulture, $"{row.Repo}/{row.Path}#L{row.LineStart}-L{row.LineEnd}"), out var id)
+        && SourceVersion.TryFrom(row.Blob, out var version)
+        && RecordKey.TryFrom($"repo:{repo.Value}/{row.Path}", out _)
+            ? new SourceRef(RepoDocs.Id, id, version, Permalink: null, RepoDocs.Key(repo, row.Path))
+            : null;
+
+    private static string Title(IReadOnlyList<HitRow> rows, SourceRef reference) =>
+        rows.First(r => reference.Id.Value.StartsWith($"{r.Repo}/{r.Path}#", StringComparison.Ordinal)).Title;
 
     private (ContextRepo Repo, string Path, int Start, int End)? Parse(ExternalId id)
     {

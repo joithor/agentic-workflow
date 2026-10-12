@@ -12,7 +12,7 @@ checks:
     id: "ARCH-CQRS-002"
     ref: tests/Aw.Sindri.Tests/Cqrs/QueryPortRules.cs
     status: active
-    note: "GetStatusService and StreamEventsService are allowlisted until P2's read-only ledger and approvals ports land (API spec C9); the allowlist test fails on a stale entry"
+    note: "GetStatusService and StreamEventsService are allowlisted until P2's ILedgerReader lands (API spec C9; the read-only approvals port IApprovedProfile exists); the rule also follows a handler's own Features helpers one level (ContextScopes); the allowlist test fails on a stale entry"
 gap: partial
 gapNote: "S1's GetStatusService and StreamEventsService still read ILedgerStore and IApprovals: they are allowlisted until P2 adds ILedgerReader (API spec C9), which removes the allowlist. The read-only approvals port exists: IApprovedProfile (context stage S-1A), which the context query handlers take."
 source:

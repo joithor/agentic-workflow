@@ -14,6 +14,17 @@ public static partial class SettingsReader
 {
     private static readonly JsonSerializerOptions _json = AwJson.CreateOptions(SettingsJsonContext.Default);
 
+    /// <summary>
+    /// The section checked as <see cref="Read"/> does, then against the profile's repos: with a section, 'context.repos'
+    /// names only profile repos and every repo in scope needs a usable name; without one, nothing about the repos is
+    /// refused. The one place a section counts as present (not null, not undefined).
+    /// </summary>
+    /// <param name="section">The section, or null.</param>
+    /// <param name="repos">The profile's repos as written.</param>
+    /// <returns>The settings, or SND-CONTEXT-001 naming the key path.</returns>
+    public static Result<ContextSettings> Check(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
+        Read(section).Bind(settings => ScopeRules.CheckRepos(section is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined }, settings, repos));
+
     /// <summary>The checked settings for <paramref name="section"/> (defaults for a missing or null section).</summary>
     /// <param name="section">The section.</param>
     /// <returns>The settings, or SND-CONTEXT-001.</returns>

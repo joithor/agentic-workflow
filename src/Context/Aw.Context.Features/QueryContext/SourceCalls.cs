@@ -11,11 +11,11 @@ namespace Aw.Context.Features.QueryContext;
 /// </summary>
 internal static class SourceCalls
 {
-    internal static async ValueTask<Result<T>> Within<T>(IContextSource source, TimeSpan deadline, Func<CancellationToken, ValueTask<Result<T>>> call,
-        CancellationToken cancellationToken)
+    internal static async ValueTask<Result<T>> Within<T>(IContextSource source, (TimeSpan Left, TimeProvider Clock) deadline,
+        Func<CancellationToken, ValueTask<Result<T>>> call, CancellationToken cancellationToken)
     {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(deadline <= TimeSpan.Zero ? TimeSpan.FromMilliseconds(1) : deadline);
+        using var expiry = new CancellationTokenSource(deadline.Left <= TimeSpan.Zero ? TimeSpan.FromMilliseconds(1) : deadline.Left, deadline.Clock);   // the query's clock
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, expiry.Token);
         try
         {
             return await call(timeout.Token).ConfigureAwait(false);

@@ -66,7 +66,7 @@ public static class ScopeRules
     /// <param name="settings">The checked settings.</param>
     /// <param name="repos">The profile's repos as written.</param>
     /// <returns>The settings, or SND-CONTEXT-001 naming the repo and the fix.</returns>
-    public static Result<ContextSettings> CheckRepos(bool hasSection, ContextSettings settings, IReadOnlyList<ProfileRepoEntry> repos)
+    internal static Result<ContextSettings> CheckRepos(bool hasSection, ContextSettings settings, IReadOnlyList<ProfileRepoEntry> repos)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(repos);

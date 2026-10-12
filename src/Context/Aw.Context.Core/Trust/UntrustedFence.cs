@@ -36,6 +36,7 @@ public static class UntrustedFence
     public static string Cap(string text, int max = MaxTitle)
     {
         ArgumentNullException.ThrowIfNull(text);
+        ArgumentOutOfRangeException.ThrowIfLessThan(max, 2);
         return text.Length <= max ? text : string.Concat(Prefix(text, max - 1), "…");
     }
 
@@ -46,6 +47,7 @@ public static class UntrustedFence
     public static string Prefix(string text, int length)
     {
         ArgumentNullException.ThrowIfNull(text);
+        ArgumentOutOfRangeException.ThrowIfLessThan(length, 1);
         if (text.Length <= length)
         {
             return text;

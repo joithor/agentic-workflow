@@ -17,9 +17,9 @@ internal static class Engines
 {
     internal static readonly ContextRepo[] Repos = [new(ContextRepoName.From("split-panes"), "/repos/split-panes"), new(ContextRepoName.From("other"), "/repos/other")];
 
-    internal static IContextEngine Over(FixedSourceCatalog catalog, FakeDocIndex? index = null)
+    internal static IContextEngine Over(FixedSourceCatalog catalog, FakeDocIndex? index = null, FakeTimeProvider? time = null)
     {
-        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero));
+        var clock = time ?? new FakeTimeProvider(new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero));
         var scrubber = new FakeScrubber();
         var docs = index ?? new FakeDocIndex(clock);
         return new ContextEngine(new QueryContextService(catalog, scrubber, scrubber, new SequentialIdGenerator(), clock),
@@ -27,6 +27,19 @@ internal static class Engines
     }
 
     internal static IContextEngine Over(params IContextSource[] sources) => Over(new FixedSourceCatalog(sources));
+
+    /// <summary>Runs <paramref name="query"/> while advancing <paramref name="clock"/> a second at a time, so a deadline on the query's clock passes without real waiting.</summary>
+    internal static async Task<T> Advancing<T>(FakeTimeProvider clock, Func<Task<T>> query)
+    {
+        var running = query();
+        for (var i = 0; i < 30 && !running.IsCompleted; i++)
+        {
+            clock.Advance(TimeSpan.FromSeconds(1));
+            await Task.Yield();
+        }
+
+        return await running;
+    }
 
     internal static ContextScope Human(string? settingsJson = null) =>
         new(Settings(settingsJson), Repos, new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));

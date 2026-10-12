@@ -15,9 +15,9 @@ composes it through the `compose` edge. The user's guide is `docs/sindri/context
 | `Aw.Context.Infrastructure` | `Store.ContextDatabase` (context.db), `Docs.SqliteDocIndex` and `Docs.RepoDocsSource` (FTS5 over scrubbed chunks), `Git.GitCli`, `Scrubbing.IngestSanitizer` and `Scrubbing.RedactionScrubber` (both scrub ports over `Aw.Redaction`) |
 
 `context.repos` must name profile repos, and with a `context:` section every repo in scope needs a name the engine can
-use (`ContextRepoName`): otherwise `SND-CONTEXT-001` at validate, approve (`IContextEngine.CheckSettings(section,
-repos)`) and query time. A profile without `context:` is never refused for this; `ScopeRules.Usable` leaves an
-unusable name out.
+use (`ContextRepoName`): otherwise `SND-CONTEXT-001` at validate and approve (`IContextEngine.CheckSettings(section,
+repos)`, through `SettingsReader.Check`); an unknown `context.repos` name is also 001 at query time. A profile without
+`context:` is never refused for this, and `ScopeRules.Usable` leaves an unusable name out of the scope.
 
 `deps.yaml`: Context → Kernel, KernelData and Redaction (Infrastructure only) are `project` edges. Sindri → Context is a
 `project` edge (Sindri's Features and Host use Core) plus a `compose` edge (Sindri's Host calls `AddContextFeatures` and
@@ -108,8 +108,8 @@ and the status reads "never refreshed".
   (`FakeDocIndex` and `SqliteDocIndex`, both integration: the fake reads the fixture repo's files),
   `ScrubberContract` (`FakeScrubber` and `RedactionScrubber`, unit), `SourceCatalogContract<T>` (`FixedSourceCatalog`
   unit; `RepoDocsCatalog` integration), `ChangeFeedContract<T>` and `ModelPortContract<T>` (fakes; their adapters come
-  with the stages that call them) and `ContextEngineContract<T>` (the real engine over the fakes, and Sindri's
-  `SettingsOnlyContextEngine`).
+  with the stages that call them) and `ContextEngineContract<T>` (the real engine over the fakes, and
+  `FakeContextEngine`, which Sindri's tests use).
 - `ContextDatabaseTests`: FTS5 in the bundled `e_sqlite3`, the file modes, and migrations named for their stage.
 - `RepoDocsTests`: a planted secret never reaches `doc_chunk`; a key or hidden comment across a chunk boundary reaches
   neither the index nor a fetch; a fetched span matches the blob's lines; oversized and unreadable docs; git's exit-code

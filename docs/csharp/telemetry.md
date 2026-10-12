@@ -100,7 +100,7 @@ The hook matches by line (`grep '^no brief for'`), so a JSON log line beside it 
 An http host clears ASP.NET's logging providers (`/new-package`'s `LoopbackBinding`), so Kernel's factory is the only
 logger and ASP.NET's own lines (lifetime, routing, Kestrel) are scrubbed JSON too. The factory filters by `MinimumLevel`,
 and the host reads no `Logging:LogLevel` configuration, with **one per-category rule, in every host:**
-`Microsoft.AspNetCore.Hosting.Diagnostics` logs at warning and above whatever `AW_LOG_LEVEL` says. Its "Request
+`Microsoft.AspNetCore.Hosting.Diagnostics` never logs below warning (warning or `AW_LOG_LEVEL`, whichever is higher). Its "Request
 starting … / Request finished …" lines carry the URL with its query string, which may hold user text or secrets that
 no scrubber rule recognizes (Sindri's `GET /sindri/context/query?q=…` put the question in `serve.log`). The cost: no
 per-request line, and so no trace id on one, at information or debug. Every other ASP.NET category (routing, Kestrel,

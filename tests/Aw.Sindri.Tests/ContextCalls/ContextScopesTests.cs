@@ -1,11 +1,11 @@
 using System.Text.Json;
 using Aw.Context.Core.Engine;
+using Aw.Context.Testing.Engine;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.ValidateProfile;
-using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 
@@ -40,7 +40,7 @@ public sealed class ContextScopesTests
     {
         var live = SliceHarness.Profile("5s");
         _h.Profiles.Live = live with { Profile = live.Profile with { Context = JsonDocument.Parse("""{"deadline":"soon"}""").RootElement.Clone() } };
-        var service = new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events, SettingsOnlyContextEngine.Instance);
+        var service = new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events, FakeContextEngine.Instance);
 
         var validated = await service.Handle(new ValidateProfileRequest(), TestContext.Current.CancellationToken);
 
@@ -53,7 +53,7 @@ public sealed class ContextScopesTests
     {
         var live = SliceHarness.Profile("5s");
         _h.Profiles.Live = live with { Profile = live.Profile with { Context = JsonDocument.Parse("""{"repos":["nope"]}""").RootElement.Clone() } };
-        var service = new Features.ApproveProfile.ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, SettingsOnlyContextEngine.Instance);
+        var service = new Features.ApproveProfile.ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, FakeContextEngine.Instance);
 
         var approved = await service.Handle(new Features.ApproveProfile.ApproveProfileRequest(Hash: null, Confirmed: false), TestContext.Current.CancellationToken);
 

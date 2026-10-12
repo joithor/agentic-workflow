@@ -59,7 +59,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
         var calls = sources.Select(async source =>
         {
             var query = new SourceQuery(terms, AsOf: null, Limit: 50, deadline - clock.GetUtcNow());
-            var hits = await SourceCalls.Within(source, query.Deadline, t => source.Search(query, t), ct).ConfigureAwait(false);
+            var hits = await SourceCalls.Within(source, (query.Deadline, clock), t => source.Search(query, t), ct).ConfigureAwait(false);
             return (source.Describe().Id, hits);
         });
         var answers = new List<SourceAnswer>();
@@ -92,7 +92,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
 
             var hit = item.Hits[0];
             var source = sources.First(s => s.Describe().Id == hit.Ref.Source);
-            var record = await SourceCalls.Within(source, deadline - clock.GetUtcNow(), t => source.Fetch(hit.Ref, t), ct).ConfigureAwait(false);
+            var record = await SourceCalls.Within(source, (deadline - clock.GetUtcNow(), clock), t => source.Fetch(hit.Ref, t), ct).ConfigureAwait(false);
             if (record.IsError)
             {
                 if (record.Error.Kind != ErrorKind.NotFound && degraded.TrueForAll(d => d.Source != hit.Ref.Source))
@@ -125,7 +125,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
             var left = deadline - clock.GetUtcNow();
             var versions = left <= TimeSpan.Zero
                 ? ContextErrors.SourceUnavailable.With("no time left for the version check")
-                : await SourceCalls.Within(source, left, t => source.Versions(refs, t), ct).ConfigureAwait(false);
+                : await SourceCalls.Within(source, (left, clock), t => source.Versions(refs, t), ct).ConfigureAwait(false);
             for (var i = 0; i < refs.Count; i++)
             {
                 checkedRefs[refs[i]] = versions.IsSuccess && versions.Value.Count == refs.Count ? (true, versions.Value[i]) : (false, null);
