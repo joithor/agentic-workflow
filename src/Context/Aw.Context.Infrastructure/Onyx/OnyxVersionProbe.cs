@@ -9,7 +9,7 @@ namespace Aw.Context.Infrastructure.Onyx;
 /// <summary>
 /// Doctor's 'context:onyx' version check (spec §8.8): 'GET &lt;url&gt;/api/version' with no Authorization header (the
 /// route is public in Onyx v4.9.0, onyx/server/auth_check.py), and the reported 'backend_version' compared with the
-/// pinned release. No answer, an HTTP error or a reply that isn't Onyx's is Unavailable with SND-CONTEXT-010; another
+/// pinned release, sent through <see cref="OnyxRequests"/> like every Onyx call. No answer, an HTTP error or a reply that isn't Onyx's is Unavailable with SND-CONTEXT-010; another
 /// version is Unavailable with SND-CONTEXT-055. The caller's own cancellation is thrown, not turned into a health.
 /// </summary>
 /// <param name="http">The client; production passes <see cref="OnyxHttp.Client"/> (no proxy, no redirects).</param>
@@ -29,12 +29,10 @@ internal sealed class OnyxVersionProbe(HttpClient http)
         timeout.CancelAfter(deadline);
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(settings.Url, VersionPath));
-            using var response = await http.SendAsync(request, timeout.Token).ConfigureAwait(false);
-            var body = await response.Content.ReadAsByteArrayAsync(timeout.Token).ConfigureAwait(false);
-            return response.IsSuccessStatusCode
-                ? Compare(settings, body)
-                : Unavailable(settings, string.Create(CultureInfo.InvariantCulture, $"answered HTTP {(int)response.StatusCode} on /{VersionPath}; is this Onyx?"));
+            var reply = await OnyxRequests.Send(http, settings.Url, OnyxCall.Get("/" + VersionPath), token: null, timeout.Token).ConfigureAwait(false);
+            return (int)reply.Status is >= 200 and < 300
+                ? Compare(settings, reply.Body)
+                : Unavailable(settings, string.Create(CultureInfo.InvariantCulture, $"answered HTTP {(int)reply.Status} on /{VersionPath}; is this Onyx?"));
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {

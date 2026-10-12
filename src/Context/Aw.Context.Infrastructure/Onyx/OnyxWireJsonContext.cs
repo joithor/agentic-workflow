@@ -7,4 +7,9 @@ namespace Aw.Context.Infrastructure.Onyx;
 /// only through <see cref="OnyxWire.Options"/> (the AwJson profile).
 /// </summary>
 [JsonSerializable(typeof(OnyxVersionReply))]
+[JsonSerializable(typeof(OnyxAdminSearchRequest))]
+[JsonSerializable(typeof(OnyxAdminSearchReply))]
+[JsonSerializable(typeof(OnyxDocumentSizeReply))]
+[JsonSerializable(typeof(OnyxChunkReply))]
+[JsonSerializable(typeof(OnyxMeReply))]
 internal sealed partial class OnyxWireJsonContext : JsonSerializerContext;
