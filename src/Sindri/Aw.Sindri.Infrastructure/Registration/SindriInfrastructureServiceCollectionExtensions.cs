@@ -34,5 +34,6 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IEndpointFile, FileEndpoint>()
             .AddSingleton<IControlPlaneProbe, HttpControlPlaneProbe>()
             .AddSingleton<IControlPlaneLauncher, ServeLauncher>()
-            .AddSingleton<IHumanTokenStore, FileHumanToken>();
+            .AddSingleton<IHumanTokenStore, FileHumanToken>()
+            .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed));
 }
