@@ -9,7 +9,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// Replay (spec W21, §10 'Replay reproduces the instance'): every event carries the full post-state delta, so folding
 /// an instance's events from its workflow.started rebuilds the row exactly. P3 unit (e).
 /// </summary>
-public static class EventFold
+internal static class EventFold
 {
     /// <summary>
     /// The delta from <paramref name="before"/> to <paramref name="after"/>: each changed part's full post-state value

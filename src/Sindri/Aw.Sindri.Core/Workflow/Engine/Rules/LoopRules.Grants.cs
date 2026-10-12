@@ -9,7 +9,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// instance and then pops the park (the frame rules), so it fits a park once; the pop and the round the resume starts
 /// count as §5.1 says. Both clear the last round's mark, so the resumed round isn't compared with the parked one again.
 /// </summary>
-public static partial class LoopRules
+internal static partial class LoopRules
 {
     /// <summary>
     /// '--grant n' (W7): 1 ≤ n ≤ the loop's cap, on a rounds or no-progress park; the round it starts is the first of

@@ -10,7 +10,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>What a refusal says (the park's question, §3.8) and what it marks for the no-progress check (§3.7).</summary>
-public static partial class RefusalRules
+internal static partial class RefusalRules
 {
     /// <summary>
     /// The refusal's digest for the no-progress check (A §17.23.13 'sameFailure'): the SHA-256 of the refusing gates'

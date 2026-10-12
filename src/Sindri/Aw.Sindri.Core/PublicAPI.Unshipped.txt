@@ -2377,12 +2377,6 @@ Aw.Sindri.Core.Workflow.Engine.ParkReason.NoRuntime = 7 -> Aw.Sindri.Core.Workfl
 Aw.Sindri.Core.Workflow.Engine.ParkReason.Rounds = 1 -> Aw.Sindri.Core.Workflow.Engine.ParkReason
 Aw.Sindri.Core.Workflow.Engine.ParkReason.SpecConflict = 6 -> Aw.Sindri.Core.Workflow.Engine.ParkReason
 Aw.Sindri.Core.Workflow.Engine.ParkReason.Timeout = 5 -> Aw.Sindri.Core.Workflow.Engine.ParkReason
-Aw.Sindri.Core.Workflow.Engine.Rules.BudgetRules
-Aw.Sindri.Core.Workflow.Engine.Rules.ChildPropagation
-Aw.Sindri.Core.Workflow.Engine.Rules.EventFold
-Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules
-Aw.Sindri.Core.Workflow.Engine.Rules.LoopRules
-Aw.Sindri.Core.Workflow.Engine.Rules.RefusalRules
 Aw.Sindri.Core.Workflow.Engine.Rules.TransitionDecision
 Aw.Sindri.Core.Workflow.Engine.RunToken
 Aw.Sindri.Core.Workflow.Engine.RunToken.Entry.get -> int
@@ -3184,28 +3178,6 @@ static Aw.Sindri.Core.Workflow.Engine.OutboxCommandId.operator ==(Aw.Sindri.Core
 static Aw.Sindri.Core.Workflow.Engine.OutboxCommandId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Workflow.Engine.OutboxCommandId
 static Aw.Sindri.Core.Workflow.Engine.OutboxCommandId.TryFrom(string? value, out Aw.Sindri.Core.Workflow.Engine.OutboxCommandId vo) -> bool
 static Aw.Sindri.Core.Workflow.Engine.OutboxCommandId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Workflow.Engine.OutboxCommandId result) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Rules.BudgetRules.GrantTokens(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, int tokens) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!>!
-static Aw.Sindri.Core.Workflow.Engine.Rules.BudgetRules.Left(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> int?
-static Aw.Sindri.Core.Workflow.Engine.Rules.BudgetRules.Spend(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, int tokens) -> Aw.Sindri.Core.Workflow.Engine.Decisions.BudgetVerdict!
-static Aw.Sindri.Core.Workflow.Engine.Rules.ChildPropagation.Cascade(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! parent, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!>! children) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>!
-static Aw.Sindri.Core.Workflow.Engine.Rules.ChildPropagation.ForwardTo(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! parent, Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger! trigger) -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId?
-static Aw.Sindri.Core.Workflow.Engine.Rules.ChildPropagation.Release(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! parent, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId child, System.DateTimeOffset now) -> Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!
-static Aw.Sindri.Core.Workflow.Engine.Rules.ChildPropagation.ToParent(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! parent, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged! change) -> Aw.Sindri.Core.Workflow.Engine.Decisions.ParentEffect!
-static Aw.Sindri.Core.Workflow.Engine.Rules.EventFold.Apply(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent! recorded) -> Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!
-static Aw.Sindri.Core.Workflow.Engine.Rules.EventFold.Delta(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after) -> Aw.Sindri.Core.Workflow.Engine.Events.InstanceDelta!
-static Aw.Sindri.Core.Workflow.Engine.Rules.EventFold.Fold(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent!>! events) -> Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!
-static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.Cancel(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, System.DateTimeOffset now) -> Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!
-static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.Enter(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, string! state, Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext! context) -> Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!
-static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.Fits(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerGiven! answer) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction!>!
-static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.Pop(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId? child, System.DateTimeOffset now) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Decisions.PopResult!>!
-static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.Suspend(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Decisions.SuspendOutcome! outcome, System.DateTimeOffset now) -> Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!
-static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.TakeOver(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, string! actor, Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext! context) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!>!
-static Aw.Sindri.Core.Workflow.Engine.Rules.LoopRules.AtCap(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, string! state) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Rules.LoopRules.Grant(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, int rounds) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!>!
-static Aw.Sindri.Core.Workflow.Engine.Rules.LoopRules.NoProgress(Aw.Sindri.Core.Workflow.Recipes.LoopSpec! loop, Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark? previous, Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark! current) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Rules.LoopRules.Reenter(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, string! state, Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark! mark) -> Aw.Sindri.Core.Workflow.Engine.Decisions.LoopVerdict!
-static Aw.Sindri.Core.Workflow.Engine.Rules.RefusalRules.Classify(Aw.Sindri.Core.Workflow.Recipes.GateUse! use, Aw.Sindri.Core.Workflow.Blocks.GateResult? answer, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor) -> Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!
-static Aw.Sindri.Core.Workflow.Engine.Rules.RefusalRules.Refuse(Aw.Sindri.Core.Workflow.Engine.Decisions.RefusalInput! input) -> Aw.Sindri.Core.Workflow.Engine.Decisions.RefusalOutcome!
 static Aw.Sindri.Core.Workflow.Engine.Rules.TransitionDecision.Decide(Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput! input) -> Aw.Sindri.Core.Workflow.Engine.Decisions.Decision!
 static Aw.Sindri.Core.Workflow.Engine.Rules.TransitionDecision.Match(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger! trigger) -> Aw.Sindri.Core.Workflow.Engine.Decisions.TransitionMatch!
 static Aw.Sindri.Core.Workflow.Engine.Rules.TransitionDecision.Start(Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest! request, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext! context) -> Aw.Sindri.Core.Workflow.Engine.Decisions.Decision!
@@ -3293,17 +3265,9 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.T
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Recorded.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Engine.TriggerKey>!
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Recorded.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind.Refuse = 12 -> Aw.Sindri.Core.Workflow.Engine.Instances.ResumeKind
-static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.Fits(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerGiven! answer) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction!>!
-static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.HandBack(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, System.DateTimeOffset now) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Decisions.PopResult!>!
-static Aw.Sindri.Core.Workflow.Engine.Rules.FrameRules.Pop(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId? child, Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext! context) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Decisions.PopResult!>!
 Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.TextAnswered.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.TextAnswered.init -> void
-static Aw.Sindri.Core.Workflow.Engine.Rules.LoopRules.AnswerText(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!>!
-static Aw.Sindri.Core.Workflow.Engine.Rules.LoopRules.Values(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
-static Aw.Sindri.Core.Workflow.Engine.Rules.ChildPropagation.CancelFor(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! parent, string! actor) -> Aw.Sindri.Core.Workflow.Engine.Triggers.CancelRequested!
-static Aw.Sindri.Core.Workflow.Engine.Rules.ChildPropagation.Forward(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! parent, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerGiven! answer, Aw.Sindri.Core.Workflow.Engine.Triggers.CommandStamp! stamp) -> Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerGiven!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalCaseReader
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalFacts
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalLines
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading!
@@ -3335,9 +3299,6 @@ override Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.Equals(object? obj) ->
 override Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.ToString() -> string!
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalCaseReader.Read(string! name, string! text, System.Text.Json.JsonSerializerOptions! options) -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading!
-static Aw.Sindri.Core.Workflow.Engine.Evals.EvalFacts.OfText(string! text) -> System.Text.Json.JsonElement
-static Aw.Sindri.Core.Workflow.Engine.Evals.EvalFacts.Text(System.Text.Json.JsonElement content) -> string!
-static Aw.Sindri.Core.Workflow.Engine.Evals.EvalFacts.Value(System.Text.Json.JsonElement content) -> Aw.Sindri.Core.Workflow.Engine.FactValue!
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalLines.Write(Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase! evalCase, System.Text.Json.JsonSerializerOptions! options) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.operator !=(Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? left, Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading.operator ==(Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? left, Aw.Sindri.Core.Workflow.Engine.Evals.EvalReading? right) -> bool
@@ -3353,4 +3314,3 @@ Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.Deconstruct(out Aw.Sindri.Core
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalStepLine.EvalStepLine(Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger! Trigger, Aw.Sindri.Core.Workflow.Engine.Evals.EvalExpectation! Expect, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Blocks.GateVerdict>? Gates = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.EvalTrigger(string! Kind, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs = null, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park = null, Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant = null, int? Amount = null) -> void
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalRecorder.Record(string! name, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent!>! events, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Engine.TriggerKey, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>!>! reported, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! contents) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase!>!
-static Aw.Sindri.Core.Workflow.Engine.Rules.ChildPropagation.Create(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! parent, Aw.Sindri.Core.Workflow.Recipes.ChildWait! wait, Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! pinned, Aw.Sindri.Core.Workflow.Engine.TriggerKey key, string! actor) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Decisions.StartRequest!>!

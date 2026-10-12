@@ -12,7 +12,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// every token granted, less what was spent against it. A budget park this class decides carries no actor and no
 /// withheld trigger: the decision that took the Step's report sets both.
 /// </remarks>
-public static class BudgetRules
+internal static class BudgetRules
 {
     /// <summary>A run's spend (spec §3.7): exhausting the state's or the recipe's budget parks with budget (kind step, resume rerun).</summary>
     /// <param name="instance">The instance.</param>

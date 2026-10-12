@@ -12,7 +12,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// escalation or takeover, popping back exactly, re-arming deadlines, and which answer fits which suspension.
 /// P3 unit (b).
 /// </summary>
-public static class FrameRules
+internal static class FrameRules
 {
     /// <summary>
     /// A real state entry (spec §5.1): a new frame with entry + 1, its state deadline armed at arm 1, a new run

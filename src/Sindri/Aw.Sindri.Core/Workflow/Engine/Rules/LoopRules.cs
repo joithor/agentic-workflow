@@ -14,7 +14,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// refusal (the decision bumps it, §5.5); popping a frame never counts one (§5.1). A park this class decides carries
 /// no actor and no withheld trigger: the decision that matched the trigger sets both.
 /// </remarks>
-public static partial class LoopRules
+internal static partial class LoopRules
 {
     /// <summary>
     /// Entering a looped state again (spec §3.7): the next round, or a park with no-progress (the round repeats the

@@ -11,7 +11,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// Refusals (spec §5.5, W5, W14): what a gate answer means, and what follows a refused transition. A refusal is never
 /// a dead end: every one consumes its trigger and ends in a re-run, a park, an escalation or SND-WF-004. P3 unit (a).
 /// </summary>
-public static partial class RefusalRules
+internal static partial class RefusalRules
 {
     private const string BudgetGatePrefix = "gate.budget.";
 

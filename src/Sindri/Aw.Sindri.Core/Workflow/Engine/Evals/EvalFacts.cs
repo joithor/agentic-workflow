@@ -8,7 +8,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Evals;
 /// An eval line's fact content as the instance holds it (spec §5.1): a string's own text, any other JSON value's
 /// text, referenced as 'blob:{sha256}', so equal content gives equal digests (no-progress compares them).
 /// </summary>
-public static class EvalFacts
+internal static class EvalFacts
 {
     /// <summary>The stored reference for <paramref name="content"/>.</summary>
     /// <param name="content">The content as the eval line writes it.</param>

@@ -11,7 +11,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// Children both ways (spec §5.7, W17): a child created in its parent's Commit, its changes propagated to the
 /// parent's frames, answers forwarded to it, and a parent's cancel cascading. P3 unit (d).
 /// </summary>
-public static class ChildPropagation
+internal static class ChildPropagation
 {
     /// <summary>
     /// The child a 'waitFor: { child }' creates (spec §5.7): the child recipe as <paramref name="pinned"/> resolves it,
