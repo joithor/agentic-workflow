@@ -91,7 +91,7 @@ public static class EvalRecorder
             return facts.Error;
         }
 
-        var trigger = Trigger(recorded, after, facts.Value);
+        var trigger = Trigger(new Recorded(recorded, before, after), facts.Value, contents);
         if (trigger.IsError)
         {
             return trigger.Error;
@@ -102,8 +102,9 @@ public static class EvalRecorder
         return (after, new EvalStepLine(trigger.Value, expect, gates.Count == 0 ? null : gates));
     }
 
-    private static Result<EvalTrigger> Trigger(WorkflowEvent recorded, WorkflowInstance after, Dictionary<FactKey, JsonElement> facts)
+    private static Result<EvalTrigger> Trigger(Recorded step, Dictionary<FactKey, JsonElement> facts, IReadOnlyDictionary<string, JsonElement> contents)
     {
+        var (recorded, _, after) = step;
         var kind = recorded.Trigger.Kind;
         var outputs = facts.Count == 0 ? null : facts;
         return kind switch
@@ -112,28 +113,63 @@ public static class EvalRecorder
                 new EvalTrigger(kind, recorded.Trigger.Outcome, Without(outputs, _answer), Park: null),
             TriggerNames.ChildParked => new EvalTrigger(kind, Outcome: null, Outputs: null, after.Park),
             TriggerNames.ChildResumed or TriggerNames.ChildEscalated => new EvalTrigger(kind, Outcome: null, Outputs: null, Park: null),
-            TriggerNames.Answer => Answer(recorded, facts),
+            TriggerNames.Answer => Answer(step, facts, contents),
             TriggerNames.Deadline or TriggerNames.TakeoverIdle => new EvalTrigger(TriggerNames.Deadline, Outcome: null, Outputs: null, Park: null, EvalVariant.Deadline),
             _ when EvalTriggerRules.For(kind) is { } variant => new EvalTrigger(kind, Outcome: null, Outputs: null, Park: null, variant),
             _ => KernelErrors.Invalid.With($"{kind} at version {recorded.ToVersion.ToString(CultureInfo.InvariantCulture)} is an engine wake an eval line can't name (fix: record a history without it)"),
         };
     }
 
-    /// <summary>An answer's option, from what its event recorded: a grant, an override, a refusal, the text it left, or a plain resume.</summary>
-    private static EvalTrigger Answer(WorkflowEvent recorded, Dictionary<FactKey, JsonElement> facts)
+    /// <summary>
+    /// An answer's option, from what it answered (the row before it) and what its event recorded: with nothing suspended,
+    /// the answer to an answer wait ('text', its text from the row after it when the delta leaves out a repeated
+    /// answer); on a needs-answer (wait), timeout or SND-WF-010 park, or a timeout escalation, 'resume' (with any text it
+    /// gave); on a gate escalation, 'accept' when it overrode the gate and 'reject' when it was refused; otherwise a
+    /// grant, an override, a refusal, the text it left, or a plain resume.
+    /// </summary>
+    private static Result<EvalTrigger> Answer(Recorded step, Dictionary<FactKey, JsonElement> facts, IReadOnlyDictionary<string, JsonElement> contents)
     {
-        var (variant, amount) = recorded switch
+        var (recorded, before, after) = step;
+        var text = facts.TryGetValue(_answer, out var given) ? new Dictionary<FactKey, JsonElement> { [_answer] = given } : null;
+        if (before.Suspended.Count == 0)
+        {
+            if (text is null && after.Facts.TryGetValue(_answer, out var kept))
+            {
+                if (!contents.TryGetValue(kept.Ref, out var content))
+                {
+                    return KernelErrors.Invalid.With($"the store has no content for {_answer.Value} ({kept.Ref}) (fix: record while the instance's facts are kept)");
+                }
+
+                text = new Dictionary<FactKey, JsonElement> { [_answer] = content };
+            }
+
+            return new EvalTrigger(TriggerNames.Answer, Outcome: null, text, Park: null, EvalVariant.Text);
+        }
+
+        var (variant, amount) = Fitted(before.Suspended[^1].Suspension, recorded) ?? recorded switch
         {
             { Grant.Rounds: { } rounds } => (EvalVariant.Grant, rounds),
-            { Grant.Tokens: { } tokens } => (EvalVariant.GrantTokens, (int?)tokens),
+            { Grant.Tokens: { } tokens } => (EvalVariant.GrantTokens, tokens),
             { Override: not null } => (EvalVariant.Accept, null),
             { Type: WorkflowEventType.Refused } => (EvalVariant.Reject, null),
-            _ when facts.ContainsKey(_answer) => (EvalVariant.Text, null),
+            _ when text is not null => (EvalVariant.Text, null),
             _ => (EvalVariant.Resume, null),
         };
-        var text = facts.TryGetValue(_answer, out var answer) ? new Dictionary<FactKey, JsonElement> { [_answer] = answer } : null;
         return new EvalTrigger(TriggerNames.Answer, Outcome: null, text, Park: null, variant, amount);
     }
+
+    /// <summary>The option a suspension takes whatever its event shows: resume on a wait's needs-answer, a timeout or SND-WF-010; accept or reject on a gate escalation.</summary>
+    private static (EvalVariant Variant, int? Amount)? Fitted(Suspension suspension, WorkflowEvent recorded) => suspension switch
+    {
+        { Reason: ParkReason.NeedsAnswer, ParkKind: ParkKind.Wait } or { Reason: ParkReason.Timeout or ParkReason.NoRuntime }
+            or { Escalation: EscalationKind.Timeout } => (EvalVariant.Resume, null),
+        { Escalation: EscalationKind.Gate } when recorded.Override is not null => (EvalVariant.Accept, null),
+        { Escalation: EscalationKind.Gate } when recorded.Type == WorkflowEventType.Refused => (EvalVariant.Reject, null),
+        _ => null,
+    };
+
+    /// <summary>One event of the history with the rows before and after it.</summary>
+    private sealed record Recorded(WorkflowEvent Event, WorkflowInstance Before, WorkflowInstance After);
 
     private static Dictionary<FactKey, JsonElement>? Without(Dictionary<FactKey, JsonElement>? outputs, FactKey fact)
     {
