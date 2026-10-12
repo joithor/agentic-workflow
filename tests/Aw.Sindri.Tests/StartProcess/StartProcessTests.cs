@@ -8,10 +8,11 @@ namespace Aw.Sindri.Tests.StartProcess;
 public sealed class StartProcessTests
 {
     private readonly SliceHarness _h = new();
+    private readonly FakeTemporalServer _temporal = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private StartProcessService Service() => new(_h.Store, _h.Probe, _h.Held, _h.Profiles, _h.Store, _h.Events);
+    private StartProcessService Service() => new(_h.Store, _h.Probe, _h.Held, _h.Profiles, _h.Store, _h.Events, _temporal);
 
     [Fact, Trait("Lane", "unit")]
     public async Task StartProcess_takes_the_lease_holds_it_and_records_the_start_once()
@@ -43,11 +44,57 @@ public sealed class StartProcessTests
     [Fact, Trait("Lane", "unit")]
     public async Task StartProcess_gives_the_lease_back_when_the_start_cant_be_recorded()
     {
-        var failed = await new StartProcessService(_h.Store, _h.Probe, _h.Held, _h.Profiles, new AppendFailingLedger(_h.Store), _h.Events)
+        var failed = await new StartProcessService(_h.Store, _h.Probe, _h.Held, _h.Profiles, new AppendFailingLedger(_h.Store), _h.Events, _temporal)
             .Handle(new StartProcessRequest(), Token);
 
         Assert.Equal(AppendFailingLedger.Failure, failed.Error);
         Assert.Null(_h.Held.Current);
         Assert.True((await _h.Store.Read(Token)).Value is { Released: true });
+        Assert.Null(_temporal.Running);   // why: an unrecorded start leaves no server behind either
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task StartProcess_brings_up_the_temporal_dev_server_and_returns_it()
+    {
+        var started = (await Service().Handle(new StartProcessRequest(), Token)).Value;
+
+        Assert.Equal(_temporal.Running, started.Temporal);
+        Assert.Equal(1, _temporal.Starts);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task StartProcess_adopts_the_server_a_dead_serve_left_running()
+    {
+        var left = (await _temporal.Ensure(Token)).Value;
+
+        var started = (await Service().Handle(new StartProcessRequest(), Token)).Value;
+
+        Assert.Equal(left, started.Temporal);
+        Assert.Equal(1, _temporal.Starts);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task StartProcess_gives_the_lease_back_and_records_nothing_when_the_server_doesnt_start()
+    {
+        _temporal.StartFailure = FakeTemporalServer.MissingBinary();
+
+        var failed = await Service().Handle(new StartProcessRequest(), Token);
+
+        Assert.Equal(SindriErrors.StartFailed.Code, failed.Error.Code);
+        Assert.Null(_h.Held.Current);
+        Assert.True((await _h.Store.Read(Token)).Value is { Released: true });
+        Assert.Empty(_h.Store.Events);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task StartProcess_refused_by_the_lease_never_touches_the_server()
+    {
+        var other = FakeProcessProbe.Holder(200);
+        _h.Probe.Start(other);
+        _ = await _h.Store.Acquire(other, Token);
+
+        _ = await Service().Handle(new StartProcessRequest(), Token);
+
+        Assert.Equal(0, _temporal.Starts);
     }
 }

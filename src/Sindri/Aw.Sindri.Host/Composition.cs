@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Registration;
 using Aw.Sindri.Features;
 using Aw.Sindri.Host.Registration;
 using Aw.Sindri.Infrastructure.Registration;
+using Aw.Sindri.Infrastructure.Workflows;
 
 namespace Aw.Sindri.Host;
 
@@ -21,6 +22,7 @@ internal static class Composition
             .AddSindriCore()
             .AddSindriFeatures()
             .AddSindriInfrastructure(environment)
+            .AddSindriWorkflows(environment)   // the Temporal dev server serve keeps beside itself (engine spec rev 8 §0), the worker and 'workflow complete'
             .AddContextCore()
             .AddContextFeatures()
             .AddContextInfrastructure(ContextEnvironment(environment))   // context engine: $AW_SINDRI_HOME/context (compose edge); pointers resolve here

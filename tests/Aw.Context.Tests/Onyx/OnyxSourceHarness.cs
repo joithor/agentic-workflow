@@ -7,8 +7,8 @@ using Microsoft.Extensions.Time.Testing;
 namespace Aw.Context.Tests.Onyx;
 
 /// <summary>
-/// One onyx source over a fake Onyx server, built the way the registered factory builds it. The shape a later
-/// ContextSourceContract&lt;OnyxSource&gt; binding needs: create the source, the server it reads, and the logs.
+/// One onyx source over a fake Onyx server, built the way the registered factory builds it: the source, the server it
+/// reads, and the logs (OnyxSourceContractTests binds ContextSourceContract to it).
 /// </summary>
 internal sealed class OnyxSourceHarness : IDisposable
 {

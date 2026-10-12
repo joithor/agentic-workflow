@@ -93,6 +93,36 @@ public static class DoctorRules
             : new("api", CheckState.Warn, Text($"{endpoint.Url.Authority} answers at epoch {ping.Epoch}, but the lease is at {row?.Epoch ?? 0}"), "sindri stop, then sindri");
     }
 
+    /// <summary>
+    /// The Temporal dev server (engine spec rev 8 §0 "Operations"): it runs on this home's database, answers on loopback,
+    /// is the version binaries.lock pins, and has the 'sindri' namespace.
+    /// </summary>
+    /// <param name="facts">What the probe found.</param>
+    /// <returns>The check.</returns>
+    public static DoctorCheck Temporal(TemporalFacts facts)
+    {
+        if (facts.Running is not { } s)
+        {
+            return new("temporal", CheckState.Fail, "not running: no dev server on this home's temporal.db", "sindri");
+        }
+
+        var at = Text($"pid {s.Pid} on 127.0.0.1:{s.Port}");
+        if (!facts.Reachable)
+        {
+            return new("temporal", CheckState.Fail, $"{at} doesn't answer: {facts.Problem ?? "no answer"}", "sindri stop, then sindri");
+        }
+
+        if (!string.Equals(facts.Version, facts.Pinned, StringComparison.Ordinal))
+        {
+            return new("temporal", CheckState.Fail, $"{at} is version {facts.Version ?? "unknown"}, but binaries.lock pins {facts.Pinned}",
+                "scripts/binaries-lock.sh fetch temporal, then sindri stop and sindri");
+        }
+
+        return facts.NamespacePresent
+            ? new("temporal", CheckState.Ok, Text($"127.0.0.1:{s.Port} answers (pid {s.Pid}), version {facts.Version} as pinned, namespace sindri present"), Fix: null)
+            : new("temporal", CheckState.Fail, $"{at} answers, but has no namespace sindri", "sindri stop, then sindri");
+    }
+
     /// <summary>The exit code for a set of checks: 0 all ok, 1 any warn, 2 any fail.</summary>
     /// <param name="checks">The checks.</param>
     /// <returns>The exit code.</returns>

@@ -1,31 +1,35 @@
 using System.Globalization;
 using Aw.Context.Core;
 using Aw.Context.Core.Sources;
+using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Fakes;
 
 namespace Aw.Context.Tests.Onyx;
 
 /// <summary>
-/// The onyx source against the fake Onyx v4.9.0 (spec §5.1, §5.2): what a ContextSourceContract binding will check
-/// (describe, search, fetch, versions, probe), written so it can move onto that base when S-1A adds it.
+/// The onyx source against the fake Onyx v4.9.0 (spec §5.1, §5.2, §10): the ContextSourceContract every source passes,
+/// and what is the onyx source's own (keys, aliases, leaky hits, the key checks of its probe).
 /// </summary>
-public sealed class OnyxSourceContractTests
+[Trait("Lane", "integration")]
+public sealed class OnyxSourceContractTests : ContextSourceContract<IContextSource>, IAsyncDisposable
 {
     private const string Spl105 = "0e5a1b00-0000-4000-8000-000000000105";
     private const string Spl103 = "0e5a1b00-0000-4000-8000-000000000103";
+    private readonly List<(FakeOnyxServer Server, OnyxSourceHarness Harness)> _created = [];
 
-    [Fact, Trait("Lane", "unit")]
-    public void Describe_says_a_live_intent_source_that_cannot_cut_to_a_past_time()
+    [Fact]
+    public void Describe_says_a_live_local_intent_source_that_cannot_cut_to_a_past_time_and_declares_no_limits()
     {
         using var harness = new OnyxSourceHarness(new Uri("http://127.0.0.1:3000"), "on_x");
 
         var descriptor = harness.Source.Describe();
 
-        Assert.Equal(("onyx", SourceKind.Intent, SourceFreshness.Live, false),
-            (descriptor.Id.Value, descriptor.Kind, descriptor.Freshness, descriptor.SupportsAsOf));
+        Assert.Equal(("onyx", SourceKind.Intent, SourceFreshness.Live, false, SourcePlacement.Local),
+            (descriptor.Id.Value, descriptor.Kind, descriptor.Freshness, descriptor.SupportsAsOf, descriptor.Placement));
+        Assert.Null(descriptor.Limits);   // today's local Onyx; a shared one would declare them (README X61)
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task Search_returns_ranked_hits_with_uuid_keys_aliases_and_updated_at_versions()
     {
         await using var onyx = await FakeOnyxServer.Start();
@@ -48,7 +52,7 @@ public sealed class OnyxSourceContractTests
         Assert.Equal(("POST", "/api/admin/search", 200), (request.Method, request.Path, request.Status));
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task Search_keys_a_slack_thread_on_its_channel_and_ts_and_applies_the_limit_client_side()
     {
         await using var onyx = await FakeOnyxServer.Start();
@@ -63,7 +67,7 @@ public sealed class OnyxSourceContractTests
         Assert.Equal(2, onyx.Requests.Count);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task Search_keeps_hits_changed_after_as_of_and_marks_them_leaky()
     {
         await using var onyx = await FakeOnyxServer.Start();
@@ -76,7 +80,7 @@ public sealed class OnyxSourceContractTests
         Assert.False(Assert.Single(hits, h => h.Ref.Id.Value == Spl103).Leaky);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task Fetch_joins_the_documents_chunks_in_order_with_the_hits_title_author_and_updated_at()
     {
         await using var onyx = await FakeOnyxServer.Start();
@@ -99,7 +103,7 @@ public sealed class OnyxSourceContractTests
             onyx.Requests.Select(r => r.Path), StringComparer.Ordinal);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task Fetch_without_a_search_takes_the_kind_from_the_key_and_updated_at_from_the_version()
     {
         await using var onyx = await FakeOnyxServer.Start();
@@ -116,7 +120,7 @@ public sealed class OnyxSourceContractTests
         Assert.Contains("paneResizeStep", record.Text, StringComparison.Ordinal);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task Fetch_of_a_document_onyx_does_not_have_is_not_found_with_052()
     {
         await using var onyx = await FakeOnyxServer.Start();
@@ -129,7 +133,7 @@ public sealed class OnyxSourceContractTests
         Assert.Equal(Kernel.ErrorKind.NotFound, result.Error.Kind);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task Versions_is_unavailable_and_asks_onyx_nothing()
     {
         await using var onyx = await FakeOnyxServer.Start();
@@ -142,7 +146,7 @@ public sealed class OnyxSourceContractTests
         Assert.Empty(onyx.Requests);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task Probe_is_ok_for_a_service_account_admin_key_and_says_so()
     {
         await using var onyx = await FakeOnyxServer.Start();
@@ -157,7 +161,7 @@ public sealed class OnyxSourceContractTests
         Assert.Equal(["/api/version", "/api/me"], onyx.Requests.Select(r => r.Path), StringComparer.Ordinal);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task Probe_warns_when_the_admin_key_is_not_a_service_accounts()
     {
         await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxAccountType = "STANDARD" });
@@ -171,7 +175,7 @@ public sealed class OnyxSourceContractTests
         Assert.Contains("service account", health.Detail, StringComparison.Ordinal);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task Probe_of_a_key_without_admin_is_unavailable_with_050_and_search_is_refused_alike()
     {
         await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxAdmin = false });
@@ -185,7 +189,7 @@ public sealed class OnyxSourceContractTests
         Assert.Equal(ContextErrors.OnyxKeyRefused.Code, search.Error.Code);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact]
     public async Task Probe_of_another_onyx_version_is_unavailable_with_055()
     {
         await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxVersion = "v4.8.1" });
@@ -195,5 +199,24 @@ public sealed class OnyxSourceContractTests
 
         Assert.Equal((SourceState.Unavailable, ContextErrors.OnyxNotPinnedOrLoopback.Code), (health.State, health.Code));
         Assert.Equal(["/api/version"], onyx.Requests.Select(r => r.Path), StringComparer.Ordinal);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var (server, harness) in _created)
+        {
+            harness.Dispose();
+            await server.DisposeAsync();
+        }
+    }
+
+    protected override bool ChecksVersions => false;
+
+    protected override async Task<IContextSource> Create()
+    {
+        var onyx = await FakeOnyxServer.Start();
+        var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+        _created.Add((onyx, harness));
+        return harness.Source;
     }
 }

@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Tests.Server;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -47,7 +48,7 @@ public sealed class CallerHost : IAsyncLifetime
     /// <summary>Builds and starts a host over <paramref name="environment"/>, holding the lease and <paramref name="token"/>.</summary>
     public static async Task<WebApplication> Start(Func<string, string?> environment, HumanToken token)
     {
-        var app = LoopbackBinding.Build([], environment, TimeProvider.System);
+        var app = LoopbackBinding.Build([], environment, TimeProvider.System, NoTemporal.Use);   // the Temporal side is faked: these tests are about the API
         _ = Pipeline.Configure(app);
         await using (var scope = app.Services.CreateAsyncScope())
         {

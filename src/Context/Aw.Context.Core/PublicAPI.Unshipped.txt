@@ -934,3 +934,27 @@ static Aw.Context.Core.Trust.UntrustedFence.Prefix(string! text, int length) -> 
 static Aw.Context.Core.Engine.SettingsReader.Check(System.Text.Json.JsonElement? section, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ProfileRepoEntry!>! repos) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ContextSettings!>!
 static Aw.Context.Core.Docs.RepoDocs.TryChunkId(Aw.Context.Core.Engine.ContextRepoName repo, string! path, int start, int end, out Aw.Context.Core.Sources.ExternalId id) -> bool
 static Aw.Context.Core.Docs.RepoDocs.TryKey(Aw.Context.Core.Engine.ContextRepoName repo, string! path, out Aw.Context.Core.Sources.RecordKey key) -> bool
+Aw.Context.Core.Sources.SourceDescriptor.Limits.get -> Aw.Context.Core.Sources.SourceLimits?
+Aw.Context.Core.Sources.SourceDescriptor.Limits.init -> void
+Aw.Context.Core.Sources.SourceDescriptor.Placement.get -> Aw.Context.Core.Sources.SourcePlacement
+Aw.Context.Core.Sources.SourceDescriptor.Placement.init -> void
+Aw.Context.Core.Sources.SourceLimits
+Aw.Context.Core.Sources.SourceLimits.<Clone>$() -> Aw.Context.Core.Sources.SourceLimits!
+Aw.Context.Core.Sources.SourceLimits.Deconstruct(out int? Requests, out System.TimeSpan? Window, out int? MaxConcurrency) -> void
+Aw.Context.Core.Sources.SourceLimits.Equals(Aw.Context.Core.Sources.SourceLimits? other) -> bool
+Aw.Context.Core.Sources.SourceLimits.IsWellFormed.get -> bool
+Aw.Context.Core.Sources.SourceLimits.MaxConcurrency.get -> int?
+Aw.Context.Core.Sources.SourceLimits.MaxConcurrency.init -> void
+Aw.Context.Core.Sources.SourceLimits.Requests.get -> int?
+Aw.Context.Core.Sources.SourceLimits.Requests.init -> void
+Aw.Context.Core.Sources.SourceLimits.SourceLimits(int? Requests = null, System.TimeSpan? Window = null, int? MaxConcurrency = null) -> void
+Aw.Context.Core.Sources.SourceLimits.Window.get -> System.TimeSpan?
+Aw.Context.Core.Sources.SourceLimits.Window.init -> void
+Aw.Context.Core.Sources.SourcePlacement
+Aw.Context.Core.Sources.SourcePlacement.Local = 0 -> Aw.Context.Core.Sources.SourcePlacement
+Aw.Context.Core.Sources.SourcePlacement.Shared = 1 -> Aw.Context.Core.Sources.SourcePlacement
+override Aw.Context.Core.Sources.SourceLimits.Equals(object? obj) -> bool
+override Aw.Context.Core.Sources.SourceLimits.GetHashCode() -> int
+override Aw.Context.Core.Sources.SourceLimits.ToString() -> string!
+static Aw.Context.Core.Sources.SourceLimits.operator !=(Aw.Context.Core.Sources.SourceLimits? left, Aw.Context.Core.Sources.SourceLimits? right) -> bool
+static Aw.Context.Core.Sources.SourceLimits.operator ==(Aw.Context.Core.Sources.SourceLimits? left, Aw.Context.Core.Sources.SourceLimits? right) -> bool

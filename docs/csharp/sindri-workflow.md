@@ -338,3 +338,112 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
 5. **A behaviour change bumps `Version`** in the descriptor, in the reviewed change that makes it. Once approvals pin
    blocks (P2), a changed descriptor parks the instances of every recipe approved against the old one until it is
    re-approved (`SND-RECIPE-006`).
+
+## Temporal foundation
+
+Engine rev 8 runs recipe instances on Temporal (engine spec §0, §5; README X53). Temporal is decided (owner,
+2026-10-12), and **P4a, the Temporal foundation** (engine spec rev 8.1, "Phase 4a"), lands the code that measured it:
+the `Temporalio` pin, `binaries.lock`, `Aw.Sindri.Workflows`, the dev server under `sindri serve` and `doctor`, the
+worker, a first `RecipeWorkflow`, `workflow complete` and `workflow list`, and the ledger mirror. P4's units rebuild or
+extend each of these to the spec. This section is P4a's acceptance record: each of the spec's five "Acceptance
+(Temporal)" checks below with its measurement and how it was taken. The checks were written before the code and are not
+tuned; the verification plan is `~/.agentic-workflow/jthorare-agentic-workflow/proof/sindri-wf-p0/verification-plan.md`.
+The measurements were taken while the work was still called Phase 0, so the units (a)–(d), the "P0 scratch dir" and
+the `proof/sindri-wf-p0/` paths below keep that name.
+
+**Pins.** `Temporalio` 1.19.0 (`Directory.Packages.props`), referenced only by `src/Sindri/Aw.Sindri.Workflows`
+(`AwAotCompatible=false`, temporalio/sdk-dotnet#286). `binaries.lock` pins the `temporal` CLI (1.9.1, the dev server)
+and the time-skipping `temporal-test-server` (1.39.0) for darwin-arm64, darwin-x64, linux-x64 and linux-arm64.
+`scripts/binaries-lock.sh fetch <name>` installs one for this platform under
+`${AW_STATE_DIR:-~/.agentic-workflow}/cache/bin/<name>-<version>/` after checking its sha256;
+`scripts/binaries-lock.sh check` validates the file (`scripts/tests/binaries-lock.test.sh`).
+
+**Status:** done (2026-10-12). Units (a)–(d) merged; the prover re-proved every check on the merged branch (head `1e586964`), through `sindri serve`'s own worker; that is the branch the spec's numbers come from. After merging main (P4a), journeys 1, 3, 4, 5 and 7, the eval and timer tests and the merge gate were re-run; journeys 2 (loopback, 0600), 6 (the pause) and 9 (footprint, check 4) and the bad-query `workflow list` case were not (proof: `~/.agentic-workflow/jthorare-agentic-workflow/proof/sindri-wf-p0/evidence.md`, "After merging main (P4a)").
+
+**On the merged head** (2026-10-12): `sindri stop` answered in 1.33 s, waiting for the worker to drain and then the dev server to exit before the release (both pids gone; the restart reopened the same `temporal.db` inode); after a `kill -9` of serve the next serve adopted the server and `complete --run 2.1` took 0.39 s wall (CLI start included); the ledger held 1 + 3 rows with 4 distinct keys after a stop, a serve and a full replay; the evals took 52 ms with the desk Update and 24 ms with the desk activity, and the `4h` timeout parked in 8 ms of wall time.
+
+| # | Acceptance check | Measurement | Result |
+|---|---|---|---|
+| 1 | The server starts and stops with `sindri serve`, loopback only, its file under `$AW_SINDRI_HOME`, and survives a host sleep with the instance intact | listen addresses: all seven of the server's listeners on `127.0.0.1` (gRPC frontend, Web UI and five internal ports), none elsewhere (`lsof -nP -iTCP -sTCP:LISTEN -a -p <pid>`) · db path and owning pid: `$AW_SINDRI_HOME/temporal.db` (0600) open by the temporal pid (`lsof -p <pid>`), output in `logs/temporal.log` · pid in `control.json`: `"temporal":{"pid":…,"port":…,"uiPort":…}` beside serve's own `url`, `pid`, `epoch`; `sindri doctor` prints `ok temporal 127.0.0.1:<port> answers (pid <pid>), version 1.9.1 as pinned, namespace sindri present` · serve's start-to-`control.json`: 1.03 s with a fresh database, 0.47 s on the existing one · stop takes the server down: `sindri stop` exits 0 and the temporal pid is gone before the lease is released; a restart starts a new pid on the same `temporal.db` with the namespace and the seven search attributes (`Item`, `Recipe`, `State`, `NeedsYou`, `Repo`, `Tenant`, `Ring`) intact; `--namespace sindri` and `--search-attribute` on an existing database are no-ops, and serve also registers missing attributes through the OperatorService on every start · unclean exit: after `kill -9` of serve the server keeps running (it runs detached, in its own session, never as serve's child) and the next `sindri serve` adopts it (same pid); a server that doesn't answer within 3 s (SIGSTOPped, after `kill -9` of serve) is killed and replaced (new pid, 3.5 s to `control.json`) · sleep (simulated with `kill -STOP`/`-CONT` of serve and the server together, 2 min; a stand-in for host sleep, which isn't used on the owner's box): an open `RecipeWorkflow` instance (no worker yet, started with `NeedsYou=true`) kept its run id, history (2 events) and search attributes; `workflow list --query 'NeedsYou = true'` still found it; serve kept its lease (epoch 4) and `doctor` was green for `lease`, `api` and `temporal` 2 s after the resume. How: the built apphost (`artifacts/bin/Aw.Sindri.Host/debug/sindri`, `DOTNET_ROOT=~/.dotnet`), `AW_SINDRI_HOME=$TMPDIR/sindri-dev-p0`, `AW_SINDRI_PORT=0`, pinned `temporal` 1.9.1 (archive sha256 checked by `scripts/binaries-lock.sh fetch`; the extracted binary is `33c298d4…`); raw outputs in `p0-a/hand/` (`j123.out`, `j6.out`) in the P0 scratch dir. Tests: `TemporalDevServerTests`, `DevServerTemporalContractTests`, `DevServerTemporalTests` (integration, the real CLI), `TemporalCheckTests` and the slice tests (unit) · **Prover, merged build (journeys 1, 2, 3, 6):** doctor `ok temporal … version 1.9.1 as pinned, namespace sindri present`; seven listeners on `127.0.0.1` and none elsewhere; `temporal.db` open by the temporal pid; `sindri stop` takes it down and a restart opens the same file (same inode); the 2-min SIGSTOP stand-in (not a real sleep) left `J-6/step/1` with the same run id, history length 8, state `produce` run `1.1`, `workflow list` still finding it and its one ledger row, and doctor green 2 s after the resume | Pass |
+| 2 | Async completion, timers and the kill-and-resume case work as stated; the eval cases pass on the time-skipping server in under 10 s total | `complete --run 1.1` moves `produce -> checks`: yes, `RecipeWorkflowTests` (integration, pinned dev server 1.9.1 via `ExistingPath`): run 1.1 completed through its task token, the instance is in `checks` with run 2.1, a second `complete --run 1.1` is `SND-WF-005`, the history replays clean; a run completed with no worker running moves on when a worker starts (both tests 2.4 s) (P0 (b)); the same completion through the task token moves it in the test interpreter (`SpikeEvalTests`, every eval line) · `4h` timeout wall time: **3 ms** with the desk report as the `complete` Update; **never fires** while the desk Step is an open async-completion activity (2 s asserted, see finding F1) · worker restart mid-Step, same run token after restart: **yes**, `1.1` scheduled once and completed by the new worker, next run `2.1` opened 26 ms (time-skipping, first worker uncached) / 15 ms (dev server); a real `kill -9` is journey 5 · eval cases (`happy`, `no-progress`, `rounds`) total: **0.06 s** (desk activity), **0.52 s** (desk Update), **0.54 s** with PR #180's real `TransitionDecision` (local merge, not pushed) · **Prover, merged build, through `sindri serve`'s own worker** (journeys 4, 5, 8): `sindri workflow complete J-4/step/1 --run 1.1 --outcome done --output fact:output=…`, with the frontend read from `control.json` (no `--temporal`), printed `-> checks`; the history shows `RunStep` `run:1.1:1` completed by the CLI's identity · a real `kill -9` of serve with `checks` open: the dev server kept running, the next serve adopted it, `GetInstance` still `checks` run `2.1`, and `complete --run 2.1` moved it to `verify` (activity `run:2.1:2` scheduled once) · the 19 probe tests (`Workflows/Spike/`) pass in 3.8 s on the merged build (evals 46 ms with the desk Update, 19 ms with the desk activity; 4 h timeout 3 ms wall with the Update, no skip with the activity open) | Pass, with F1: engine spec rev 8.1 §5.3 (desk Steps wait for the `complete` Update; P4 builds it) |
+| 3 | The ledger holds one `workflow.transition` per transition after a replay (no duplicates) | transitions in history: **3** (+1 `workflow.started`; 4 `MarkerRecorded` local-activity markers) · ledger rows before replay: **2** (worker A, sticky cache, stopped at `verify`) · after replay: **3** `workflow.transition` + 1 `workflow.started`, no key twice (`sqlite3`), after worker B with `MaxCachedWorkflows = 0`, the SDK `WorkflowReplayer` over the fetched history, and a direct re-run of event 2 (`AlreadyRecorded`) · **Prover:** the key is now `workflow:{workflow id}:{run id}:{activity id}` (rev 8.1 §5.6; the test above re-proven with it, and a re-execution under the same activity id is `AlreadyRecorded`) · **through `sindri serve`** (journey 7): `J-4/step/1` after a `kill -9`, a `sindri stop` + `sindri serve` (empty sticky cache) and a full replay by `GetInstance`: 1 `workflow.started` + 2 `workflow.transition`, 3 distinct keys; after the next transition on the new worker, 1 + 3, 4 distinct keys (`…:2`, `…:4`, `…:6`, `…:8`), equal to the 3 `RunStep` transitions in history (`sqlite3 ledger.db`) | Pass |
+| 4 | Dev server RSS ≤ 300 MB idle and ≤ 500 MB with ten instances; worker overhead inside `sindri serve` ≤ 150 MB; server ready in ≤ 5 s | **Prover re-measure (2026-10-12), macOS physical footprint** (`footprint -p <pid>`, cross-checked with `vmmap --summary` "Physical footprint" at start and end) beside `ps -o rss=`, because RSS leaves out compressed and swapped pages and the box was under memory pressure (unit (d)'s RSS also went *down* under load): the real `sindri serve` with its Temporal worker (`SindriWorkerHost`) and its dev server, 15 min at 60 s, minutes 0–5 idle (no open instance), 10 `RecipeWorkflow` instances started after minute 5, each holding an open desk activity (`temporal workflow count` = 10 to the end), Ollama running · dev server idle: footprint median 129, max 137 MB (RSS median 164, max 171) · with 10 instances: footprint median 133, max 134 MB (RSS median 181, max 182) · `sindri serve` (whole process, worker included): footprint idle median 106, max 106 MB; with 10, median 109, max 115 MB (RSS 73/76 idle, 108/111 with 10) · worker overhead, serve minus unit (d)'s no-Temporal probe host as the baseline (an upper bound: serve also carries the ledger, lease and API): footprint median 50, max 59 MB (RSS median 72, max 75 MB with 10) · memory pressure: swap used 6983 MB at the start, 6759 MB at the end (of 8192), `memory_pressure` free 59% → 63%, compressor pages 226440 → 187362 · samples: `p0-prover/footprint/samples.csv`, `pressure.txt`, `run.sh` · ready ≤ 5 s: not re-measured (unit (d): 0.66 s max headless; unit (a): serve start to `control.json` 1.03 s fresh) · **Unit (d)'s hour (RSS only, a probe worker):** dev server RSS idle: median 133, max 164 MB (11 samples, minutes 0–10) · with 10 instances: median 116, max 165 MB (50 samples, minutes 11–60; `temporal workflow count` = 10 throughout) · `sindri serve` RSS minus no-worker baseline: median 8, max 16 MB (worker process max 48 MB, baseline max 40 MB) · start-to-ready ×5: 0.66 s max headless (0.22–0.66), 1.10 s max with the web UI (0.21–1.10) · samples: 60 min at 60 s, Ollama running (`ollama serve` up in every sample, no model loaded), CSV at `p0-d/footprint/hour.csv` in the P0 scratch dir. How: pinned `temporal` 1.9.1 `server start-dev --db-filename <tmp>/temporal.db --ip 127.0.0.1 --port <free> --ui-port <free> --namespace sindri` (web UI on for the hour; ready = `temporal operator namespace describe sindri` succeeds, measured from launch, fresh db each run, `ready.csv`); RSS = `ps -o rss=` on macOS arm64. The worker is a stand-alone probe that mirrors serve's shape, not `sindri serve` itself (unit (a) owns that wiring): an ASP.NET Core slim host on 127.0.0.1:0 with a hosted service, in `worker` mode a `TemporalClient` plus a `TemporalWorker` for a workflow that waits on a signal, in `baseline` mode the same host without Temporal; both ran side by side under `dotnet` for the hour, and 10 executions were started at minute 10 | Pass: every number is under its threshold in both measures (footprint max 137 of 300 idle, 134 of 500 with 10; overhead max 59 of 150) |
+| 5 | The AOT split builds with zero warnings and the host publishes framework-dependent; the Avalonia app still publishes NativeAOT | `dotnet build AgenticWorkflow.slnx -warnaserror`: 0 warnings, `IL*` outside `Aw.Sindri.Workflows`: 0 (grep of the normal-verbosity log: no `IL` codes at all; `IsAotCompatible=true` on Sindri Core, Features and Infrastructure, unset on Workflows, by `dotnet msbuild -getProperty`) · host framework-dependent publish: passes (`src/Sindri/aot-smoke/run.sh`: `dotnet publish -c Release --no-self-contained -warnaserror`, runtimeconfig names `Microsoft.AspNetCore.App`, no runtime beside it, `Temporalio.dll` and its native core bridge present, the published apphost matches `expected.txt`; output 271 MB because the portable publish carries the Temporal bridge for every RID) · Avalonia app NativeAOT publish: passes on a throwaway merge (never pushed, removed afterwards) of `feat/sindri-wf-p0-d` 5bb297ef with `origin/feat/sindri-s1b-ui-shell` 3e5eb8a2 (U0, PR #168), `AgenticWorkflow.slnx` and `Directory.Packages.props` union-resolved (Temporalio and Avalonia pins side by side), the other conflicts (docs, deps tooling, architecture tests) not touched by the app: `src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh` published `sindri-ui` NativeAOT for osx-arm64, 19 MB Mach-O, 0 warnings, no `IL` codes. The full merged solution wasn't built (those conflicts are U0's to resolve on rebase) · **Prover, merged build (2026-10-12):** `dotnet build AgenticWorkflow.slnx -warnaserror` 0 warnings, 0 errors (Debug and Release); `src/Sindri/aot-smoke/run.sh` ok (framework-dependent publish, 272 MB); the Avalonia app is still not on main (U0 open), so unit (d)'s throwaway-merge NativeAOT publish is the evidence for that clause | Pass |
+
+### What each server supports, the evals and the ledger mirror
+
+Tests: `tests/Aw.Sindri.Tests/Workflows/Spike/` (integration lane, about 4 s for the 19 tests, both servers started
+from `binaries.lock` with `ExistingPath`; the SDK never downloads). The interpreter there (`SpikeStepWorkflow`) is
+test-only, the eval harness: it walks `recipes/sindri/workflow.step.yaml` read by P1's `YamlRecipeReader`, with a decision
+stub (`SpikeDecision`: first matching transition, identical findings park `no-progress`, a loop past its cap parks
+`rounds`). Unit (b) built `RecipeWorkflow`, the foundation's interpreter, in parallel. The same evals also ran with PR #180's
+`TransitionDecision` folded inside a Temporal workflow, on a local branch with #180 merged
+(`throwaway/p0-c-real-decisions`, never pushed): all three pass, 0.54 s.
+
+**Support.** Each row is one test that runs on both servers (`TemporalProbes`, bound by `TimeSkippingProbeTests` and
+`LocalProbeTests`), or the named class.
+
+| Feature (rev 8 §, §10) | Test | `temporal-test-server` 1.39.0 (time-skipping) | `temporal` 1.9.1 dev server |
+|---|---|---|---|
+| Update with a validator; a rejected Update records nothing; the same update id twice returns the first result (§5.2) | `Update_validator_rejects_and_a_repeated_update_id_applies_once` | yes | yes |
+| Async activity completion through the task token, from outside the worker (§5.3) | `Async_completion_completes_the_activity_through_its_task_token` | yes | yes |
+| Signals, including ones sent before the wait (§5.4) | `Signals_reach_the_workflow_and_wait_until_it_waits` | yes | yes |
+| Child workflow, id `{parent}/child.1`, `ParentClosePolicy.Terminate` (§5.8) | `Child_workflow_returns_its_result_to_the_parent` | yes | yes |
+| `DelayAsync` with time skipping (§5.5) | `DelayAsync_skips_time_only_on_the_time_skipping_server` | yes: 4 h in 74 ms | no skipping (by design): 1 s took 1.07 s |
+| Timer fires while an activity is scheduled or open | `Four_hour_timeout_does_not_skip_while_the_desk_activity_is_open` (time-skipping) | **no**: time stays still while any activity is scheduled or open (F1) | real time only |
+| Worker restart mid-Step resumes with the same run token (§10) | `Worker_restart_mid_step_resumes_with_the_same_run_token` | yes, first worker without a sticky cache | yes |
+| Restart from a worker that had the instance in its sticky cache | `Worker_restart_from_a_sticky_cache_resumes_only_on_the_dev_server` | **no**: the task stays on the dead sticky queue (F2) | yes, 15 ms |
+| Complete an activity by id (workflow id, activity id) | exploratory, not kept | **no**: the server fails the call (`missing method "getNamespace"`) | not tried; Sindri uses task tokens |
+
+**Findings for P4.**
+- **F1. A desk Step held open as an activity blocks its own timeout on the time-skipping server.** The Java test server
+  doesn't skip time while any activity is scheduled or open, so §5.3's async-completion `RunStep` and §5.5's timer can't
+  be tested together there (4 h timer still pending after 2 s; an unpolled activity blocks it too). What works, measured:
+  `RunStep` records the desk task and returns at once, and the report arrives as the `complete` Update (§5.2 already
+  lists `complete` as an Update) with a validator that refuses a stale run token; the 4 h timeout then parks in 3 ms of
+  wall time, and the evals pass that way too (0.52 s in unit (c)'s run, 46 ms in the prover's). Also measured: an auto-skipping result wait begun while an
+  activity was open didn't resume skipping after it closed (the test timed out at 30 s), so a test waits until the
+  timer is in history before awaiting the result. The prover also found that an activity left open in an instance
+  that was then terminated keeps time skipping off for the rest of that server's life (the shared-fixture `DelayAsync`
+  probe timed out after the restart probes; it now starts a server of its own). **Owner decision (2026-10-12), engine
+  spec rev 8.1 §5.3:** a desk Step is a short activity that records the open task, and the workflow waits for the
+  `complete` Update, validated synchronously; agent Steps (P8) keep a heartbeating activity, and their timeout tests
+  run on the dev server. The foundation's `RecipeWorkflow` keeps unit (b)'s async-completion desk activity; P4 builds the
+  Update model.
+- **F2. The time-skipping server never moves a task off a dead worker's sticky queue** (no fallback after 20 s with a
+  1 s `StickyQueueScheduleToStartTimeout`). Restart tests there run the first worker with `MaxCachedWorkflows = 0`, or
+  run on `StartLocalAsync`; the dev server resumes on a new worker in 15 ms after a graceful stop. After a real crash
+  (journey 5, `kill -9` of `sindri serve` with `checks` open), the new serve's worker resumed the instance: a
+  `GetInstance` query (not timed) answered first, and `complete --run 2.1` then returned `-> verify` in 0.16 s, so any
+  sticky-queue wait fell on that first query. (Engine spec rev 8.1 §11.)
+- **F3. Workflow code and `CA2007`.** Library code must write `ConfigureAwait(false)`, which leaves the workflow's
+  deterministic scheduler; the probe workflows (`Workflows/Spike/`) live in the test project, where `CA2007` is off. Workflow code
+  in `Aw.Sindri.Workflows` writes `ConfigureAwait(true)` instead (the foundation's `RecipeWorkflow` does; P4's keeps
+  it). `CancellationTokenSource.CancelAsync` (`MA0042`) has the same problem; workflow code calls
+  `Cancel`. (Engine spec rev 8.1 §11.)
+
+**The ledger mirror.** `RecordEventActivities.RecordAsync` (`src/Sindri/Aw.Sindri.Workflows`) appends through S1's
+`ILedgerStore` under the held lease, with the idempotency key `workflow:{workflow id}:{run id}:{activity id}` (engine
+spec rev 8.1 §5.6, owner decision 2026-10-12), read inside the activity from its own `ActivityInfo`. Every activity,
+local or regular, has a deterministic `ActivityId`, the same on every replay; no activity sees a history event id
+(`ActivityInfo` has no scheduled-event-id field). Unit (c) first keyed it by a workflow-side counter; the prover changed
+it test-first (`Replay_leaves_one_ledger_row_per_transition_keyed_by_the_activity_id`, red 98c8ec60, green 0395ca65).
+The local activity ids are the SDK's activity sequence, shared with regular activities, so in the test interpreter the
+four mirrored events are `1`, `3`, `5`, `7`. It is a
+**local** activity, as §5.6 says: its result is a marker written with the workflow task, so a replay reads the marker
+and never runs it again, and it costs no task-queue round trip or extra history events. The one case that runs it
+twice, a worker that dies after the append but before the workflow task completes, is absorbed by S1's `Append`, which
+looks the key up and inserts in one write transaction and returns `AlreadyRecorded`. A regular activity would give the
+same at-least-once execution with three history events per ledger row, so exactly-once comes from the key either way
+and the local activity is the cheaper of the two. Its retry policy is unbounded with backoff, so the workflow waits for
+the ledger.
+
+**How it was measured.** `AW_SPIKE_LOG=<file> dotnet test --project tests/Aw.Sindri.Tests -- --filter-namespace
+Aw.Sindri.Tests.Workflows.Spike` appends each measurement line to the file; `AW_SPIKE_LEDGER_COPY=<dir>` keeps the
+ledger replay test's `ledger.db`. Counted with `sqlite3 ledger.db "select type, count(*) from events group by type"`
+(`workflow.started|1`, `workflow.transition|3`) and `select idempotency_key, count(*) c from events group by
+idempotency_key having c > 1` (no rows). Wall times are `Stopwatch` around the awaited call, on the owner's Mac (arm64),
+2026-10-11. The raw logs and CTRF reports are in the unit's scratch directory (`p0-c/final-spike.log`,
+`p0-c/ledger-sqlite3.txt`, `p0-c/ctrf-final/`).
+
+**Verdict: pass.** All five pass lines hold on the merged build, line 4 in both physical footprint and RSS. Temporal stays the substrate (rev 8); P4 starts from rev 8.1: desk Steps wait for the `complete` Update (F1), the ledger key is the RecordEvent activity id, and time-skipping tests follow F1–F3 (spec §11).

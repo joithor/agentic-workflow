@@ -14,12 +14,13 @@ public sealed class RunDoctorTests
 {
     private readonly SliceHarness _h = new();
     private readonly FakeControlPlaneProbe _api = new();
+    private readonly FakeTemporalServer _temporal = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private RunDoctorService Service(ILedgerStore? ledger = null) =>
         new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events), _api,
-            new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), _h.Clock);
+            new ServiceChecks(_temporal, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing)))), _h.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task RunDoctor_is_green_when_running_approved_and_answering()
@@ -29,10 +30,11 @@ public sealed class RunDoctorTests
         var grant = await _h.HoldLease();
         _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, FakeContextEngine.Instance).Handle(new ApproveProfileRequest(approved.Hash, Confirmed: true), Token);
         _api.Answer = (new ControlEndpoint(new Uri("http://127.0.0.1:7410"), grant.Holder.Pid, grant.Epoch), new Ping(grant.Holder.Pid, grant.Epoch));
+        _ = await _temporal.Ensure(Token);
 
         var report = (await Service().Handle(new RunDoctorRequest(), Token)).Value;
 
-        Assert.Equal("lease,ledger,profile,api,context:onyx", string.Join(',', report.Checks.Select(c => c.Name)));
+        Assert.Equal("lease,ledger,profile,api,temporal,context:onyx", string.Join(',', report.Checks.Select(c => c.Name)));
         Assert.All(report.Checks, c => Assert.Equal(CheckState.Ok, c.State));
         Assert.Equal(0, report.ExitCode);
     }
@@ -45,6 +47,8 @@ public sealed class RunDoctorTests
         Assert.Equal(2, report.ExitCode);
         var api = report.Checks.Single(c => c.Name == "api");
         Assert.Equal((CheckState.Fail, "sindri"), (api.State, api.Fix));
+        var temporal = report.Checks.Single(c => c.Name == "temporal");
+        Assert.Equal((CheckState.Fail, "sindri"), (temporal.State, temporal.Fix));
         Assert.Equal(CheckState.Fail, report.Checks.Single(c => c.Name == "profile").State);
     }
 

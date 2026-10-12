@@ -18,6 +18,15 @@ public sealed class RepoDocsSourceContractTests : ContextSourceContract<IContext
         _repo.Dispose();
     }
 
+    [Fact]
+    public async Task Repo_docs_is_local_and_declares_no_limits()
+    {
+        var described = (await Create()).Describe();
+
+        Assert.Equal(SourcePlacement.Local, described.Placement);
+        Assert.Null(described.Limits);
+    }
+
     protected override async Task<IContextSource> Create()
     {
         var repo = new ContextRepo(ContextRepoName.From("split-panes"), _repo.Path);
