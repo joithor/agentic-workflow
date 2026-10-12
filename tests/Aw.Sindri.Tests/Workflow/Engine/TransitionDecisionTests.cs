@@ -81,6 +81,26 @@ public sealed class TransitionDecisionTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Answer_SND_WF_010_runs_restart()
+    {
+        var recipe = WithAgentReview();
+        var real = EngineRules.Default;
+        var parked = Assert.IsType<Applied>(Decide(At(recipe, "produce"), recipe, Completed(1, "done", ("fact:output", "x")), rules: real)).Changes[0].After;
+        var resume = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), Sha("resume")), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
+
+        var restarted = Assert.IsType<Applied>(Decide(parked, recipe, resume, context: Context("step.test.agent"), rules: real));
+        var still = Assert.IsType<Applied>(Decide(parked, recipe, resume, rules: real)).Changes[0].After;
+
+        var after = restarted.Changes[0].After;
+        Assert.Equal(("review", 2, RunToken.For(2, 1), StepRuntime.Agent), (after.State, after.Frame.Entry, after.Frame.Run?.Token, after.Frame.Run?.Runtime));
+        Assert.Empty(after.Suspended);
+        var start = Assert.Single(restarted.FollowUps);
+        Assert.Equal((FollowUpKind.StartRun, RunToken.For(2, 1), BlockId.From("step.test.agent")), (start.Kind, start.Run!.Value, start.Step!.Value));
+        Assert.Equal((EngineStates.Parked, ParkReason.NoRuntime, ResumeKind.Restart), (still.State, still.Park, still.Suspended[^1].Resume.Kind));
+        Assert.Equal(("review", 2), (still.Suspended[^1].Frame.State, still.Suspended[^1].Frame.Entry));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Desk_capable_step_without_runtime_runs_on_the_desk()
     {
         var applied = Assert.IsType<Applied>(Decide(At(Step, "produce"), Step, Completed(1, "done", ("fact:output", "x"))));

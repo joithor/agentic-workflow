@@ -105,6 +105,7 @@ public static partial class TransitionDecision
                 Reevaluate(d.Withholding(withheld.Trigger), instance, index, resume),
             ResumeKind.Rerun => RerunAfterAnswer(d, instance, countsRound: true),
             ResumeKind.Restart when instance.Frame.Run is not null => RerunAfterAnswer(d, instance, countsRound: false),
+            ResumeKind.Restart => Restart(d, instance),
             ResumeKind.None => new Rejected(d.Key, WorkflowErrors.TriggerNotAllowed.With(
                 $"nothing resumes {instance.Address.Value} (fix: cancel it with sindri workflow cancel {instance.Address.Value})")),
             ResumeKind.Reemit => throw new NotSupportedException("A reemit resume is decided by the outbox rules (P6)."),
@@ -142,6 +143,25 @@ public static partial class TransitionDecision
         var after = instance with { Frame = instance.Frame with { Run = next }, Loops = loops };
         var applied = d.Commit(after);
         return applied with { FollowUps = [new FollowUp(FollowUpKind.StartRun, instance.Id, next.Token, step.Use, Answer: null)] };
+    }
+
+    /// <summary>
+    /// An SND-WF-010 park's restart (§5.8): its frame never opened a run, so the Step's run opens now, as a real entry
+    /// would, and starts after the Commit; with no runtime still, it parks with SND-WF-010 again.
+    /// </summary>
+    private static Applied Restart(Deciding d, WorkflowInstance instance)
+    {
+        if (d.Recipe.States[instance.State].Step is not { } step)
+        {
+            return d.Commit(instance);
+        }
+
+        if (FrameRules.Restart(instance, d.Recipe, d.Context) is not { Frame.Run: { } run } restarted)
+        {
+            return d.Commit(d.Rules.Suspend(instance, NoRuntime(step.Use, d.Trigger.Actor), d.Now));
+        }
+
+        return d.Commit(restarted) with { FollowUps = [new FollowUp(FollowUpKind.StartRun, instance.Id, run.Token, step.Use, Answer: null)] };
     }
 
     private sealed partial record Deciding

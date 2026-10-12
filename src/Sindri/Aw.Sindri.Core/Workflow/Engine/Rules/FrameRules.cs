@@ -120,6 +120,31 @@ public static class FrameRules
 
     private static OutcomeName Cancelled { get; } = OutcomeName.From("cancelled");
 
+    /// <summary>
+    /// An SND-WF-010 restart (spec §5.8 'restart', W5, W20): the popped frame's Step opens run '{entry}.1' as a real entry
+    /// would (the agent runtime when the build has it, else the desk when the Step is deskCapable), and its running state
+    /// deadline gets that run's full timeout. Null when the build still has neither, so the caller parks again.
+    /// </summary>
+    /// <param name="instance">The instance, its SND-WF-010 park popped.</param>
+    /// <param name="recipe">Its recipe.</param>
+    /// <param name="context">The time, runtimes and timings.</param>
+    /// <returns>The instance with the run open, or null.</returns>
+    internal static WorkflowInstance? Restart(WorkflowInstance instance, Recipe recipe, DecisionContext context)
+    {
+        var target = recipe.States[instance.State];
+        if (OpenRun(target, instance.Frame.Entry, context) is not { } run)
+        {
+            return null;
+        }
+
+        var full = FrameDeadlines.FullTimeout(target, run, context.Timings);
+        var deadlines = full is { } span
+            ? [.. instance.Frame.Deadlines.Select(d => d.Id.Kind == DeadlineKind.State && d.Due is not null ? d with { Due = context.Now + span } : d)]
+            : instance.Frame.Deadlines;
+        return instance with { Frame = instance.Frame with { Run = run, Deadlines = deadlines } };
+    }
+
+
     private static WorkflowInstance EnterState(WorkflowInstance instance, Recipe recipe, string state, DecisionContext context)
     {
         var target = recipe.States[state];
