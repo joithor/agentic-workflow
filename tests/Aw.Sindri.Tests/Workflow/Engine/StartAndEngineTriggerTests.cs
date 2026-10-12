@@ -105,6 +105,20 @@ public sealed class StartAndEngineTriggerTests
         Assert.Contains("workflow.middle", rejected.Error.Message, StringComparison.Ordinal);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_child_that_resolves_to_another_hash_than_the_pin_is_rejected()
+    {
+        var middle = Nested("workflow.middle", "workflow.step");
+        var outer = Nested("workflow.outer", "workflow.middle");
+        var drifted = new ChildRecipe(middle.Recipe, RecipeHash.From("sha256:" + new string('6', 64)));
+        var context = Context() with { Children = new InMemoryChildRecipes().With(drifted).With(new ChildRecipe(Step, Step.Hash!.Value)) };
+
+        var rejected = Assert.IsType<Rejected>(TransitionDecision.Start(NestedRequest(outer, middle), outer.Recipe, context));
+
+        Assert.Equal("SND-RECIPE-002", rejected.Error.Code);
+        Assert.Contains(middle.Hash.Value, rejected.Error.Message, StringComparison.Ordinal);
+    }
+
     /// <summary>A child's id as spec §5.4 derives it: a UUIDv8 over SHA-256 of the creating trigger's key.</summary>
     private static WorkflowInstanceId ChildIdFor(TriggerKey key)
     {
