@@ -117,6 +117,9 @@ internal sealed class ShellViewModel : ObservableObject
     /// <summary>The health pill: the state word, and "updated Ns ago" (or "stale") once connected. It opens Health.</summary>
     public string HealthPill => Health.HealthPill;
 
+    /// <summary>The health pill's parts: its dot, glyph, word and age, and Refresh while stale.</summary>
+    public HealthPill Pill => Health.Pill;
+
     /// <summary>Version mismatch: the full-window panel, and nothing else.</summary>
     public bool IsVersionMismatch => State == ShellState.VersionMismatch;
 

@@ -42,6 +42,9 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
     /// <summary>The health pill's words: the state, and once connected how fresh the status is.</summary>
     public string HealthPill { get; private set => Set(ref field, value); } = Labels.Connecting;
 
+    /// <summary>The health pill's parts.</summary>
+    public HealthPill Pill { get; } = new();
+
     /// <summary>Home's health strip (§4.2, §4.8): the status's fields in the health line's order, or the state in words.</summary>
     public string HealthLine { get; private set => Set(ref field, value); } = Labels.Connecting;
 
@@ -115,6 +118,11 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
             await new ControlPlaneFollower(records, api, clock, this).Run(cancellationToken).ConfigureAwait(true);
         }
     }
+
+    /// <summary>Refresh (§4.1 Stale): reads the status again, a query.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>A task that completes when the answer is shown.</returns>
+    internal Task Refresh(CancellationToken cancellationToken) => throw new NotSupportedException();
 
     /// <summary>An event on the stream: the newest event, and the views are fresh.</summary>
     /// <param name="e">The event.</param>

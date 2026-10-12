@@ -169,4 +169,80 @@ public sealed class ShellStateTests
         Assert.Null(shell.SelectedNav);
         Assert.True(shell.IsHealth);
     }
+
+    // §4.1 Stale and §11.3: a stale pill is the ⌛ glyph and the word stale, still saying how old the views are, with a
+    // Refresh beside it.
+    private async Task<ShellViewModel> Stale()
+    {
+        _records.Write(A.Record());
+        var shell = await Running(ShellState.Normal);
+        _server.FailPing = true;
+        _clock.Advance(ShellViewModel.StaleAfter);
+        await Eventually(() => shell.State == ShellState.Stale);
+        return shell;
+    }
+
+    [Fact]
+    public async Task Stale_is_the_hourglass_and_the_word_with_the_age_and_a_refresh()
+    {
+        var shell = await Stale();
+
+        Assert.Equal(("⌛", Labels.Stale, Labels.UpdatedAgo(ShellViewModel.StaleAfter)), (shell.Pill.Glyph, shell.Pill.Word, shell.Pill.Age));
+        Assert.Equal(Labels.Stale + " · " + Labels.UpdatedAgo(ShellViewModel.StaleAfter), shell.Pill.Text);
+        Assert.True(shell.Pill.IsRefreshShown);
+        Assert.True(shell.Pill.IsStale);
+    }
+
+    [Fact]
+    public async Task Refresh_reads_the_status_again_and_the_views_are_fresh()
+    {
+        var shell = await Stale();
+        var before = _server.StatusCalls;
+
+        await shell.Health.Refresh(Token);
+
+        Assert.Equal(before + 1, _server.StatusCalls);
+        Assert.Equal(ShellState.Normal, shell.State);
+        Assert.Equal(("✓", Labels.Running, Labels.UpdatedAgo(TimeSpan.Zero)), (shell.Pill.Glyph, shell.Pill.Word, shell.Pill.Age));
+        Assert.False(shell.Pill.IsRefreshShown);
+    }
+
+    [Fact]
+    public async Task After_three_failed_refreshes_the_pill_says_Sindri_is_not_responding()
+    {
+        var shell = await Stale();
+        _server.FailStatus = true;
+
+        await shell.Health.Refresh(Token);
+        await shell.Health.Refresh(Token);
+        Assert.Equal(Labels.Stale, shell.Pill.Word);
+        await shell.Health.Refresh(Token);
+
+        Assert.Equal(ShellState.Stale, shell.State);
+        Assert.Equal(("⌛", Labels.NotResponding), (shell.Pill.Glyph, shell.Pill.Word));
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(Labels.NotResponding, shell.Pill.Word);
+    }
+
+    [Fact]
+    public async Task Each_state_puts_its_glyph_before_its_word()
+    {
+        var connecting = new ShellViewModel(_records, _server, _clock, _preferences);
+        Assert.Equal((string.Empty, Labels.Connecting, string.Empty), (connecting.Pill.Glyph, connecting.Pill.Word, connecting.Pill.Age));
+
+        var down = await Running(ShellState.NotRunning);
+        Assert.Equal(("✕", Labels.NotRunning, string.Empty), (down.Pill.Glyph, down.Pill.Word, down.Pill.Age));
+        Assert.True(down.Pill.IsDown);
+
+        _records.Write(A.Record());
+        _server.UnreadableStatus = true;
+        var unreadable = await Running(ShellState.Unreadable);
+        Assert.Equal(("✕", Labels.Unreadable, Labels.Stale), (unreadable.Pill.Glyph, unreadable.Pill.Word, unreadable.Pill.Age));
+        Assert.True(unreadable.Pill.IsDown);
+
+        _server.UnreadableStatus = false;
+        var healthy = await Running(ShellState.Normal);
+        Assert.Equal(("✓", Labels.Running), (healthy.Pill.Glyph, healthy.Pill.Word));
+        Assert.True(healthy.Pill.IsHealthy);
+    }
 }
