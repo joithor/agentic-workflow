@@ -37,7 +37,7 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, T
         if (tokens.Find(address, report.Run.Value) is not { } taskToken)
         {
             return WorkflowErrors.StaleRunToken.With(
-                $"{address} has no open desk run {report.Run.Value} (fix: sindri workflow status {address} shows the open run)");
+                $"{address} has no open desk run {report.Run.Value} (fix: sindri workflow list shows where it is; report the run it has open, until P4 adds 'sindri workflow status')");
         }
 
         var outputs = await StoreAll(report, cancellationToken).ConfigureAwait(false);

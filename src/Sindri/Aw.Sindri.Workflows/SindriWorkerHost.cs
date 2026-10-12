@@ -2,7 +2,6 @@ using System.Globalization;
 using Aw.Sindri.Core.Control;
 using Microsoft.Extensions.Logging;
 using Temporalio.Client;
-using Temporalio.Exceptions;
 using Temporalio.Worker;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -26,23 +25,23 @@ internal sealed partial class SindriWorkerHost(RunStepActivities steps, RecordEv
         {
             client = await TemporalClient.ConnectAsync(new TemporalClientConnectOptions(target) { Namespace = SindriTemporal.Namespace }).ConfigureAwait(false);
         }
-        catch (Exception e) when (e is RpcException or InvalidOperationException) // boundary: serve runs on; the doctor's temporal line shows why
+        catch (Exception e) when (e is not OperationCanceledException) // boundary: serve runs on; the doctor's temporal line shows why
         {
             NoWorker(logger, target, e.Message);
             return;
         }
 
-        using var worker = new TemporalWorker(client, SindriWorker.Options(steps, events));
-        Polling(logger, target, SindriTemporal.TaskQueue);
         try
         {
+            using var worker = new TemporalWorker(client, SindriWorker.Options(steps, events));
+            Polling(logger, target, SindriTemporal.TaskQueue);
             await worker.ExecuteAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // serve is stopping
         }
-        catch (Exception e) when (e is not OperationCanceledException) // boundary: the worker stops; serve runs on and stops cleanly
+        catch (Exception e) // boundary: the port promises Run never throws; the worker logs why it stopped and serve stops cleanly
         {
             Stopped(logger, target, e.Message);
         }

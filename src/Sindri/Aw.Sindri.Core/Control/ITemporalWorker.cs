@@ -9,6 +9,9 @@ public interface ITemporalWorker
     /// <summary>Polls the dev server at <paramref name="endpoint"/> until <paramref name="cancellationToken"/> is cancelled.</summary>
     /// <param name="endpoint">The dev server serve started or adopted.</param>
     /// <param name="cancellationToken">Stops the worker.</param>
-    /// <returns>Completes once the worker has stopped.</returns>
+    /// <returns>
+    /// Completes once the worker has stopped, and never faults: a frontend that doesn't answer or a worker that fails is
+    /// logged, so <see cref="TemporalRuntime"/>'s stop can rely on it (contract: TemporalWorkerContract).
+    /// </returns>
     public Task Run(TemporalEndpoint endpoint, CancellationToken cancellationToken);
 }
