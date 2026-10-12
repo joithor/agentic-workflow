@@ -552,7 +552,9 @@ the `onyx` adapter can send only its own requests (search, the two document read
 `/api/me`), an allowlist enforced in Infrastructure and tested; doctor shows the key's role so it stays visible; and the
 key belongs to a service account used by Sindri alone. The no-cloud-provider and telemetry-off
 settings can't be read with a search-only key, so the setup doc lists them as a manual check on each Onyx version change. First indexing time is reported by
-`context sources status` from Onyx's own connector status.
+`context sources status` from Onyx's own connector status. A future shared Onyx (README X61) would declare its placement
+and limits through `SourceDescriptor.Placement` and `SourceDescriptor.Limits`; today's local one keeps the defaults
+(`Local`, no limits).
 
 ## 9. Evaluation
 
