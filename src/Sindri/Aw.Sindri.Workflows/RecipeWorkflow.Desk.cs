@@ -135,9 +135,9 @@ internal sealed partial class RecipeWorkflow
     /// Runs one desk Step (rev 8.1 §5.3): once per run, the short 'RunStep' activity with the run token in its id
     /// ('run:{token}:{n}') records the open task, and the wait's deadline is armed when none is (a new run, or an answer that re-arms it): the state's timeout raised to
     /// 'workflow.deskTimeout' (W20). The workflow then waits for the 'complete' Update's report; its expiry is the desk
-    /// timeout, which always parks (W20, §3.8). A later wait on the same run keeps its deadline. Unit (c). The wait
-    /// also wakes for a command another Update submitted (unit (a)'s <see cref="Submit"/>); then it returns null and the
-    /// caller applies that command.
+    /// timeout, which always parks (W20, §3.8). A later wait on the same run keeps its deadline. Unit (c). The wait also
+    /// wakes for an answer, command or cancel another Update submitted; it then returns null and the loop applies that
+    /// command (unit (b)).
     /// </summary>
     private async Task<Trigger?> RunStep(Frame frame, OpenRun open, RecipeState state)
     {

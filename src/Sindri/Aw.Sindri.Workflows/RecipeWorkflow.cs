@@ -73,7 +73,7 @@ internal sealed partial class RecipeWorkflow
                 : await Wait(instance, context).ConfigureAwait(true);
         }
 
-        await Workflow.WaitConditionAsync(static () => Workflow.AllHandlersFinished).ConfigureAwait(true);
+        await Workflow.WaitConditionAsync(static () => Workflow.AllHandlersFinished).ConfigureAwait(true);   // the Update that ended it returns its result
         return new RecipeResult(instance.State, instance.Outcome?.Value);
     }
 
@@ -111,39 +111,6 @@ internal sealed partial class RecipeWorkflow
             ? InstanceViews.Of(instance, recipe, _since, _timeoutAt) with { Version = _mirrored }
             : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null);
     }
-
-    /// <summary>'workflow answer' in all its variants (spec §5.2, §5.8): ends the suspension it fits and runs its resume action. Unit (b).</summary>
-    /// <param name="answer">The answer.</param>
-    /// <returns>The instance after it, and the resume action it ran.</returns>
-    [WorkflowUpdate("answer")]
-    public Task<CommandResult> AnswerAsync(AnswerGiven answer) => throw Unbuilt("unit (b): the answer Update");
-
-    /// <summary>Rejects an answer that doesn't fit the park reason (SND-WF-003, the fix naming the right answer). Unit (b).</summary>
-    /// <param name="answer">The answer.</param>
-    [WorkflowUpdateValidator(nameof(AnswerAsync))]
-    public void ValidateAnswer(AnswerGiven answer) => throw Unbuilt("unit (b): the answer validator");
-
-    /// <summary>'workflow command &lt;verb&gt;' (spec §3.5, §6.3): fires the recipe's 'command.&lt;verb&gt;' trigger. Unit (b).</summary>
-    /// <param name="command">The command.</param>
-    /// <returns>The instance after it, and what happened.</returns>
-    [WorkflowUpdate("command")]
-    public Task<CommandResult> CommandAsync(CommandFired command) => throw Unbuilt("unit (b): the command Update");
-
-    /// <summary>Rejects a verb with no transition from the current state (SND-WF-003). Unit (b).</summary>
-    /// <param name="command">The command.</param>
-    [WorkflowUpdateValidator(nameof(CommandAsync))]
-    public void ValidateCommand(CommandFired command) => throw Unbuilt("unit (b): the command validator");
-
-    /// <summary>'workflow cancel' (spec §3.8): ends the instance as 'cancelled'; exempt from the approval check. Unit (b).</summary>
-    /// <param name="cancel">The cancel.</param>
-    /// <returns>The instance after it.</returns>
-    [WorkflowUpdate("cancel")]
-    public Task<CommandResult> CancelAsync(CancelRequested cancel) => throw Unbuilt("unit (b): the cancel Update");
-
-    /// <summary>Rejects a cancel of an ended instance (SND-WF-003). Unit (b).</summary>
-    /// <param name="cancel">The cancel.</param>
-    [WorkflowUpdateValidator(nameof(CancelAsync))]
-    public void ValidateCancel(CancelRequested cancel) => throw Unbuilt("unit (b): the cancel validator");
 
     /// <summary>'workflow takeover' (class pause, spec §5.5): suspends the instance and pauses its timer. P5.</summary>
     /// <param name="takeover">The takeover.</param>
@@ -220,6 +187,11 @@ internal sealed partial class RecipeWorkflow
         if (_instance is null || !string.Equals(_instance.State, instance.State, StringComparison.Ordinal) || _instance.Frame.Entry != instance.Frame.Entry)
         {
             _since = Now;
+        }
+
+        if (_instance?.Suspension is not null && instance.Suspension is null)
+        {
+            _timeoutAt = null;   // an answer ended the suspension: its resume re-arms the desk deadline from now (§5.8 'rearm'; unit (b))
         }
 
         _instance = instance;

@@ -39,6 +39,8 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IFactStore, HomeFactStore>()               // engine P4 unit (c): facts stored 0600 before the report
             .AddSingleton<ICommandNonces, HomeCommandNonces>()           // engine P4 unit (c): the nonce table (stand-in until API's IssueNonce)
             .AddSingleton<TemporalDeskReports>()                     // engine P4 unit (c): Send's 'complete' path
+            .AddSingleton<TemporalCommands>()                          // engine P4 unit (b): Send's answer, command and cancel paths
+            .AddSingleton<IInstanceDirectory, TemporalInstanceDirectory>()   // engine P4 unit (b): attempts and bare items
             .AddSingleton<ProfileWorkflowTimes>()                    // engine P4 unit (e): S1-D11, workflow.deskTimeout and workflow.eventHold, read by LoadRecipe
             .AddSingleton<EventBridgeCursor>()                         // engine P4 unit (d): the bridge's cursor file
             .AddScoped<IScheduledService, EventBridge>()               // engine P4 unit (d): the ledger-to-Temporal bridge

@@ -2,6 +2,7 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.Blocks;
 using Aw.Sindri.Features.CheckProfile;
@@ -15,11 +16,13 @@ using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Features.ListServices;
+using Aw.Sindri.Features.IssueNonce;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RecordServiceRun;
 using Aw.Sindri.Features.RunDoctor;
+using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
@@ -53,6 +56,9 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<ValidateRecipeRequest, ValidateRecipeResponse>, ValidateRecipeService>()
             .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
             .AddScoped<IService<CompleteStepRequest, CompleteStepResponse>, CompleteStepService>()
+            .AddScoped<IService<StartInstanceRequest, StartInstanceResponse>, StartInstanceService>()
+            .AddScoped<IService<ApplyCommandRequest, ApplyCommandResponse>, ApplyCommandService>()
+            .AddScoped<IService<IssueNonceRequest, IssueNonceResponse>, IssueNonceService>()
             .AddRecipeBlocks();
 
         // ---- commands (one line per slice) ----

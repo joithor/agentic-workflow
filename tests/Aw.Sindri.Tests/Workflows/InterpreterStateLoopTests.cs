@@ -128,7 +128,7 @@ public sealed class InterpreterStateLoopTests(SindriTimeSkippingServer server) :
         }, ct);
     }
 
-    [Fact] // red until unit (b)'s cancel Update merges
+    [Fact]
     public async Task A_cancel_sent_while_the_desk_task_is_open_ends_the_instance_without_waiting_for_the_report()
     {
         var ct = TestContext.Current.CancellationToken;

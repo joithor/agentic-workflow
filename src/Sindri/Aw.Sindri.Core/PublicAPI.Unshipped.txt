@@ -4176,3 +4176,108 @@ override Aw.Sindri.Core.Scheduling.BuiltInService.ToString() -> string!
 static Aw.Sindri.Core.Scheduling.BuiltInService.operator !=(Aw.Sindri.Core.Scheduling.BuiltInService? left, Aw.Sindri.Core.Scheduling.BuiltInService? right) -> bool
 static Aw.Sindri.Core.Scheduling.BuiltInService.operator ==(Aw.Sindri.Core.Scheduling.BuiltInService? left, Aw.Sindri.Core.Scheduling.BuiltInService? right) -> bool
 static Aw.Sindri.Core.Scheduling.ServiceSchedule.From(Aw.Sindri.Core.Profile.SindriProfile? profile, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Scheduling.BuiltInService!>! builtIns, System.DateTimeOffset start) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.ServiceSchedule!>!
+Aw.Sindri.Core.Challenges.ChallengeId
+Aw.Sindri.Core.Challenges.ChallengeId.ChallengeId() -> void
+Aw.Sindri.Core.Challenges.ChallengeId.Equals(Aw.Sindri.Core.Challenges.ChallengeId other) -> bool
+Aw.Sindri.Core.Challenges.ChallengeId.Equals(Aw.Sindri.Core.Challenges.ChallengeId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Challenges.ChallengeId>! comparer) -> bool
+Aw.Sindri.Core.Challenges.ChallengeId.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Challenges.ChallengeId.IsInitialized() -> bool
+Aw.Sindri.Core.Challenges.ChallengeId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Challenges.ChallengeId.Value.get -> string!
+override Aw.Sindri.Core.Challenges.ChallengeId.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Challenges.ChallengeId.GetHashCode() -> int
+override Aw.Sindri.Core.Challenges.ChallengeId.ToString() -> string!
+static Aw.Sindri.Core.Challenges.ChallengeId.From(string! value) -> Aw.Sindri.Core.Challenges.ChallengeId
+static Aw.Sindri.Core.Challenges.ChallengeId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Challenges.ChallengeId
+static Aw.Sindri.Core.Challenges.ChallengeId.TryFrom(string? value, out Aw.Sindri.Core.Challenges.ChallengeId vo) -> bool
+static Aw.Sindri.Core.Challenges.ChallengeId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Challenges.ChallengeId result) -> bool
+static Aw.Sindri.Core.Challenges.ChallengeId.operator !=(Aw.Sindri.Core.Challenges.ChallengeId left, Aw.Sindri.Core.Challenges.ChallengeId right) -> bool
+static Aw.Sindri.Core.Challenges.ChallengeId.operator ==(Aw.Sindri.Core.Challenges.ChallengeId left, Aw.Sindri.Core.Challenges.ChallengeId right) -> bool
+Aw.Sindri.Core.Challenges.ChallengeAction
+Aw.Sindri.Core.Challenges.ChallengeAction.<Clone>$() -> Aw.Sindri.Core.Challenges.ChallengeAction!
+Aw.Sindri.Core.Challenges.ChallengeAction.ChallengeAction(string! Text) -> void
+Aw.Sindri.Core.Challenges.ChallengeAction.Deconstruct(out string! Text) -> void
+Aw.Sindri.Core.Challenges.ChallengeAction.Equals(Aw.Sindri.Core.Challenges.ChallengeAction? other) -> bool
+Aw.Sindri.Core.Challenges.ChallengeAction.Text.get -> string!
+Aw.Sindri.Core.Challenges.ChallengeAction.Text.init -> void
+Aw.Sindri.Core.Challenges.ChallengeAnswer
+Aw.Sindri.Core.Challenges.ChallengeAnswer.<Clone>$() -> Aw.Sindri.Core.Challenges.ChallengeAnswer!
+Aw.Sindri.Core.Challenges.ChallengeAnswer.Challenge.get -> Aw.Sindri.Core.Challenges.ChallengeId
+Aw.Sindri.Core.Challenges.ChallengeAnswer.Challenge.init -> void
+Aw.Sindri.Core.Challenges.ChallengeAnswer.ChallengeAnswer(Aw.Sindri.Core.Challenges.ChallengeId Challenge, string! Typed) -> void
+Aw.Sindri.Core.Challenges.ChallengeAnswer.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeId Challenge, out string! Typed) -> void
+Aw.Sindri.Core.Challenges.ChallengeAnswer.Equals(Aw.Sindri.Core.Challenges.ChallengeAnswer? other) -> bool
+Aw.Sindri.Core.Challenges.ChallengeAnswer.Typed.get -> string!
+Aw.Sindri.Core.Challenges.ChallengeAnswer.Typed.init -> void
+Aw.Sindri.Core.Challenges.ChallengeSubject
+Aw.Sindri.Core.Challenges.ChallengeSubject.<Clone>$() -> Aw.Sindri.Core.Challenges.ChallengeSubject!
+Aw.Sindri.Core.Challenges.ChallengeSubject.ChallengeSubject(string! Key, string? Digest) -> void
+Aw.Sindri.Core.Challenges.ChallengeSubject.Deconstruct(out string! Key, out string? Digest) -> void
+Aw.Sindri.Core.Challenges.ChallengeSubject.Digest.get -> string?
+Aw.Sindri.Core.Challenges.ChallengeSubject.Digest.init -> void
+Aw.Sindri.Core.Challenges.ChallengeSubject.Equals(Aw.Sindri.Core.Challenges.ChallengeSubject? other) -> bool
+Aw.Sindri.Core.Challenges.ChallengeSubject.Key.get -> string!
+Aw.Sindri.Core.Challenges.ChallengeSubject.Key.init -> void
+Aw.Sindri.Core.Challenges.IChallenges
+Aw.Sindri.Core.Challenges.IChallenges.Issue(Aw.Sindri.Core.Challenges.ChallengeAction! action, Aw.Sindri.Core.Challenges.ChallengeSubject! subject) -> Aw.Sindri.Core.Challenges.IssuedChallenge!
+Aw.Sindri.Core.Challenges.IChallenges.Redeem(Aw.Sindri.Core.Challenges.ChallengeAnswer! answer, Aw.Sindri.Core.Challenges.ChallengeAction! expected, Aw.Sindri.Core.Challenges.ChallengeSubject! current, Aw.Kernel.ErrorDefinition! stale) -> Aw.Kernel.Result<Aw.Sindri.Core.Challenges.IssuedChallenge!>!
+Aw.Sindri.Core.Challenges.IssuedChallenge
+Aw.Sindri.Core.Challenges.IssuedChallenge.<Clone>$() -> Aw.Sindri.Core.Challenges.IssuedChallenge!
+Aw.Sindri.Core.Challenges.IssuedChallenge.Action.get -> Aw.Sindri.Core.Challenges.ChallengeAction!
+Aw.Sindri.Core.Challenges.IssuedChallenge.Action.init -> void
+Aw.Sindri.Core.Challenges.IssuedChallenge.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeId Id, out Aw.Sindri.Core.Challenges.ChallengeAction! Action, out Aw.Sindri.Core.Challenges.ChallengeSubject! Subject, out System.DateTimeOffset ExpiresAt) -> void
+Aw.Sindri.Core.Challenges.IssuedChallenge.Equals(Aw.Sindri.Core.Challenges.IssuedChallenge? other) -> bool
+Aw.Sindri.Core.Challenges.IssuedChallenge.ExpiresAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Challenges.IssuedChallenge.ExpiresAt.init -> void
+Aw.Sindri.Core.Challenges.IssuedChallenge.Id.get -> Aw.Sindri.Core.Challenges.ChallengeId
+Aw.Sindri.Core.Challenges.IssuedChallenge.Id.init -> void
+Aw.Sindri.Core.Challenges.IssuedChallenge.IssuedChallenge(Aw.Sindri.Core.Challenges.ChallengeId Id, Aw.Sindri.Core.Challenges.ChallengeAction! Action, Aw.Sindri.Core.Challenges.ChallengeSubject! Subject, System.DateTimeOffset ExpiresAt) -> void
+Aw.Sindri.Core.Challenges.IssuedChallenge.Subject.get -> Aw.Sindri.Core.Challenges.ChallengeSubject!
+Aw.Sindri.Core.Challenges.IssuedChallenge.Subject.init -> void
+override Aw.Sindri.Core.Challenges.ChallengeAction.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Challenges.ChallengeAction.GetHashCode() -> int
+override Aw.Sindri.Core.Challenges.ChallengeAction.ToString() -> string!
+override Aw.Sindri.Core.Challenges.ChallengeAnswer.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Challenges.ChallengeAnswer.GetHashCode() -> int
+override Aw.Sindri.Core.Challenges.ChallengeAnswer.ToString() -> string!
+override Aw.Sindri.Core.Challenges.ChallengeSubject.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Challenges.ChallengeSubject.GetHashCode() -> int
+override Aw.Sindri.Core.Challenges.ChallengeSubject.ToString() -> string!
+override Aw.Sindri.Core.Challenges.IssuedChallenge.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Challenges.IssuedChallenge.GetHashCode() -> int
+override Aw.Sindri.Core.Challenges.IssuedChallenge.ToString() -> string!
+static Aw.Sindri.Core.Challenges.ChallengeAction.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, int version) -> Aw.Sindri.Core.Challenges.ChallengeAction!
+static Aw.Sindri.Core.Challenges.ChallengeAction.Revoke(Aw.Sindri.Core.Workflow.Ids.RecipeId id, Aw.Sindri.Core.Workflow.Ids.RecipeHash hash) -> Aw.Sindri.Core.Challenges.ChallengeAction!
+static Aw.Sindri.Core.Challenges.ChallengeAction.operator !=(Aw.Sindri.Core.Challenges.ChallengeAction? left, Aw.Sindri.Core.Challenges.ChallengeAction? right) -> bool
+static Aw.Sindri.Core.Challenges.ChallengeAction.operator ==(Aw.Sindri.Core.Challenges.ChallengeAction? left, Aw.Sindri.Core.Challenges.ChallengeAction? right) -> bool
+static Aw.Sindri.Core.Challenges.ChallengeAnswer.operator !=(Aw.Sindri.Core.Challenges.ChallengeAnswer? left, Aw.Sindri.Core.Challenges.ChallengeAnswer? right) -> bool
+static Aw.Sindri.Core.Challenges.ChallengeAnswer.operator ==(Aw.Sindri.Core.Challenges.ChallengeAnswer? left, Aw.Sindri.Core.Challenges.ChallengeAnswer? right) -> bool
+static Aw.Sindri.Core.Challenges.ChallengeId.For(System.Guid value) -> Aw.Sindri.Core.Challenges.ChallengeId
+static Aw.Sindri.Core.Challenges.ChallengeSubject.ForInstance(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId instance, long version) -> Aw.Sindri.Core.Challenges.ChallengeSubject!
+static Aw.Sindri.Core.Challenges.ChallengeSubject.ForProfile(Aw.Sindri.Core.Ids.ProfileHash hash) -> Aw.Sindri.Core.Challenges.ChallengeSubject!
+static Aw.Sindri.Core.Challenges.ChallengeSubject.ForRecipe(Aw.Sindri.Core.Workflow.Ids.RecipeHash hash, int version, string? pinsDigest) -> Aw.Sindri.Core.Challenges.ChallengeSubject!
+static Aw.Sindri.Core.Challenges.ChallengeSubject.operator !=(Aw.Sindri.Core.Challenges.ChallengeSubject? left, Aw.Sindri.Core.Challenges.ChallengeSubject? right) -> bool
+static Aw.Sindri.Core.Challenges.ChallengeSubject.operator ==(Aw.Sindri.Core.Challenges.ChallengeSubject? left, Aw.Sindri.Core.Challenges.ChallengeSubject? right) -> bool
+static Aw.Sindri.Core.Challenges.IssuedChallenge.Lifetime.get -> System.TimeSpan
+static Aw.Sindri.Core.Challenges.IssuedChallenge.operator !=(Aw.Sindri.Core.Challenges.IssuedChallenge? left, Aw.Sindri.Core.Challenges.IssuedChallenge? right) -> bool
+static Aw.Sindri.Core.Challenges.IssuedChallenge.operator ==(Aw.Sindri.Core.Challenges.IssuedChallenge? left, Aw.Sindri.Core.Challenges.IssuedChallenge? right) -> bool
+static Aw.Sindri.Core.Challenges.ChallengeAction.ApproveProfile(Aw.Sindri.Core.Ids.ProfileHash hash) -> Aw.Sindri.Core.Challenges.ChallengeAction!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.Live.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState
+Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.Address.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.Live.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.Attempt.get -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.ToString() -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.Attempt.init -> void
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState? right) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.Equals(object? obj) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out int Attempt, out bool Live) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.IInstanceDirectory
+Aw.Sindri.Core.Workflow.Engine.Runtime.IInstanceDirectory.Latest(Aw.Sindri.Core.Workflow.Engine.ItemKey item, Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState?>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IInstanceDirectory.Resolve(string! reference, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.InstanceAddress>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.AttemptState(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, int Attempt, bool Live) -> void

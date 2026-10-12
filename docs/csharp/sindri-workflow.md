@@ -556,3 +556,32 @@ own slots that come due meanwhile are skipped, never overlapped.
 | Trigger | `wait.satisfied` from `EventWaitSource(kind, sequence)`, the payload's `outcome` (one the descriptor declares) and the descriptor's facts from the payload's `facts` |
 | Idempotency | The ledger sequence is the key. `RecipeWorkflow.EventAsync` drops a sequence it has already taken, so a bridge that crashed between a signal and its cursor write re-sends harmlessly |
 | Failures | An instance that has ended is skipped. A Temporal or ledger failure ends the run with the cursor before that event, and the next run retries it |
+## Start, answer, command and cancel (engine P4 unit (b))
+
+Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
+
+- **`workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]…`** runs the `StartInstance` slice: it
+  resolves the item (`IItems`) and the approved recipe (the latest, or `id@hash`, a hash prefix of 8 or more digits),
+  refuses a `fact:item` whose `id` isn't the item (`SND-WF-014`) and a missing declared input (`SND-CLI-003`), stores
+  each fact owner-only (`IFactStore`, at most 1 MiB, the CLI sends name and content, never the path), and starts
+  `RecipeWorkflow` with the address as its workflow id (`WorkflowIdConflictPolicy.UseExisting`,
+  `WorkflowIdReusePolicy.RejectDuplicate`). The attempts come from `IInstanceDirectory.Latest`, which describes
+  `{item}/{recipe}/1`, `/2` … so a start never waits on visibility. Without `--attempt` the latest attempt is used (a
+  live one is returned as it is; an ended one is shown with `start a new one with --attempt next`); `--attempt next`
+  is refused while the latest is live (`SND-WF-012`). It prints the status header.
+- **`workflow answer`, `command <verb>`, `cancel`** run the `ApplyCommand` slice, in this order: resolve the address
+  (a bare item is the root of its latest attempt, `SND-WF-006` listing the candidates when the item has roots of more
+  than one recipe); check the arguments; claim the nonce for exactly this command (`SND-WF-009`); for a protected
+  answer (`--grant`, `--grant-tokens`, `--accept`) redeem its challenge (`IChallenges`, P2's shape; action text
+  `grant n <address>`, `grant-tokens n <address>`, `accept <address>`; subject the instance's address, state, run and
+  since; `SND-WF-013`); check the recipe's approval unless the trigger is exempt (cancel; `SND-RECIPE-005`, `-006`);
+  then send the Update with the nonce as its id. A refusal gives the nonce back. A repeated nonce skips the checks and
+  Temporal returns the first outcome, printed `already applied (…)`. The CLI prints the status header and what happened;
+  an answer prints the resume action it ran (`resumed (transition): -> produce`).
+- **In the workflow**, each validator runs P3's pure `TransitionDecision` on the instance as it stands and rejects what
+  it rejects (an answer that doesn't fit is `SND-WF-003`, its fix naming the answer that does), so nothing is recorded.
+  An accepted Update hands its trigger to the loop through `Submit` (unit (a)'s seam; `RecipeWorkflow.Loop.cs` is unit
+  (b)'s stand-in with (a)'s names). The desk wait wakes for a submitted command as well as for the report. An answer
+  that ends a suspension clears the desk deadline, so `--resume` on a timeout park re-arms it from the answer.
+- **`IssueNonce`** returns a nonce for an existing instance (class issue). Until API P1's nonce table and route land,
+  the nonces are unit (c)'s `HomeCommandNonces`, and the CLI calls the slices in process.

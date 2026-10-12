@@ -3,10 +3,10 @@ using Aw.Sindri.Core;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// The 'workflow' verb group (engine spec rev 8 §6.3). Engine P4 contract: every verb of §6.3 has its row. Unit (e)
-/// builds 'status' (<see cref="StatusCommand"/>), 'list' (<see cref="ListCommand"/>) and 'events'
-/// (<see cref="EventsCommand"/>), unit (c) 'complete' (<see cref="CompleteCommand"/>); the others are stubs, each
-/// naming the unit that builds it: 'start' (b), 'answer' (b), 'command' (b) and 'cancel' (b). Each calls one slice.
+/// The 'workflow' verb group (engine spec rev 8 §6.3): every verb of §6.3 has its row, each a client that calls one
+/// slice. Unit (b) builds 'start' (<see cref="WorkflowStartCommand"/>) and 'answer', 'command' and 'cancel'
+/// (<see cref="ApplyCommandVerbs"/>); unit (c) 'complete' (<see cref="CompleteCommand"/>); unit (e) 'status'
+/// (<see cref="StatusCommand"/>), 'list' (<see cref="ListCommand"/>) and 'events' (<see cref="EventsCommand"/>).
 /// </summary>
 internal static class WorkflowCommandTable
 {
@@ -18,17 +18,14 @@ internal static class WorkflowCommandTable
 
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch
     {
-        ["start", ..] => Unbuilt("start", "unit (b)"),
+        ["start", .. var rest] => WorkflowStartCommand.Run(rest, services, output, ct),
         ["status", .. var rest] => StatusCommand.Run(rest, services, output, ct),
         ["list", .. var rest] => ListCommand.Run(rest, services, output, ct),
         ["events", .. var rest] => EventsCommand.Run(rest, services, output, ct),
-        ["answer", ..] => Unbuilt("answer", "unit (b)"),
-        ["command", ..] => Unbuilt("command", "unit (b)"),
-        ["cancel", ..] => Unbuilt("cancel", "unit (b)"),
+        ["answer", .. var rest] => ApplyCommandVerbs.Answer(rest, services, output, ct),
+        ["command", .. var rest] => ApplyCommandVerbs.Command(rest, services, output, ct),
+        ["cancel", .. var rest] => ApplyCommandVerbs.Cancel(rest, services, output, ct),
         ["complete", .. var rest] => CompleteCommand.Run(rest, services, output, ct),
         _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["workflow", .. args])}' is not a sindri command ({Usage})")),
     };
-
-    private static Task<int> Unbuilt(string verb, string unit) =>
-        throw new NotSupportedException($"'sindri workflow {verb}' is engine P4 {unit}'s and is not built yet");
 }

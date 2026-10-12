@@ -32,7 +32,6 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     /// <param name="trigger">The command's trigger (a report, an answer, a command, a cancel …).</param>
     /// <returns>The decision: applied, refused, absorbed, or rejected (nothing recorded).</returns>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0052:Remove unread private member", Justification = "Unit (b)'s answer, command and cancel Updates call it; this suppression goes when (b) merges.")]
     private async Task<Decision> Submit(Trigger trigger)
     {
         var ticket = ++_tickets;
