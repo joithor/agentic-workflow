@@ -117,7 +117,7 @@ only, never the message, which can name the home), with a line that names the ex
 
 | Part | What it shows |
 |---|---|
-| Top bar (48 px) | Brand; Home · Queue · Decisions · Services (counts empty until their routes); Later ▾ (Agents, Repos, Today, Automatic work, each "not served yet"); the ⌘K field, inert until U1; the health pill, which opens Health (while Sindri isn't running it is only the state: disabled like the navigation, its word undimmed, since the Not running card is the health state and Health has nothing to show). When they don't all fit (the 900 px minimum, text scale up to 1.3) the bar steps down in `TopBar.axaml.cs`: the ⌘K field folds to its magnifier, then the pill's age drops (the pill's accessible name keeps it), then the brand keeps its mark alone. The pill's word always shows |
+| Top bar (48 px) | Brand; Home · Queue · Decisions · Services (counts empty until their routes); Later ▾ (Agents, Repos, Today, Automatic work, each "not served yet"); the ⌘K field, which opens the palette (U1); the health pill, which opens Health (while Sindri isn't running it is only the state: disabled like the navigation, its word undimmed, since the Not running card is the health state and Health has nothing to show). When they don't all fit (the 900 px minimum, text scale up to 1.3) the bar steps down in `TopBar.axaml.cs`: the ⌘K field folds to its magnifier, then the pill's age drops (the pill's accessible name keeps it), then the brand keeps its mark alone. The pill's word always shows |
 | Home panels' bodies | "not served yet", centred in the panel |
 | Home | The page title, three frames (Needs you, Running · With you, Queued), each "not served yet", and the Sindri health strip: the health line (§4.8) over the fields the status carries today (`Running · pid · epoch · API v1 · N services · profile <state>`; "Not running" when it isn't), which opens Health on a click or Enter |
 | Queue, Decisions, Services, Settings | The title and "not served yet"; Settings is the slot `Views/Settings*` fills (⌘, opens it) |
@@ -212,6 +212,82 @@ the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `
    only once something has read the tree).
 5. Accessibility Inspector shows `AXARIALive` on the element and the `AXLiveRegionChanged` and announcement events.
 6. The app in the background: is the announcement still spoken?
+
+## U1: catalog, headers and freshness (UI spec §18 U1)
+
+U1 gives the app the API's catalog of actions, the headers and token every call carries, and the views' freshness.
+
+**Requests (§9.1, API §6).** Every request sends `X-Sindri-Caller: human` and `X-Sindri-Client: ui`, and
+`X-Sindri-Token` read from `<home>/auth/human.token` before each request (a restart mints a new one; a missing file
+sends none, so the API answers `SND-AUTH-001`). Never `X-Sindri-Terminal` or `Origin`. After an accepted command the
+next query carries `X-Sindri-After: <sequence>` once. A non-2xx with a ProblemDetails body is that error (`title` the
+SND code, `detail` as served); anything else stays `SND-UI-003`. The token port here (`IHumanTokenSource`) is replaced
+by #184's at the merge, which also brings Q2: on `SND-AUTH-001` re-read the token and retry once, then show the
+refusal (code and detail) in the Unreadable banner. Until that merge, this branch shows a refused call as Not running.
+
+| Route | Read when | Shown as |
+|---|---|---|
+| `GET /sindri/commands` | on connect and after every reconnect (a new epoch) | the controls, Health's ACTIONS card, the palette's Actions |
+| `GET /sindri/status` | on connect and on each event | the pill (`health.word`, `health.problems`, `views.projectedAt`) |
+| `GET /sindri/services` | on connect and on each event | the stalled / rebuilding banner (`asOf`, `empty`) |
+| `POST /sindri/views/rebuild` | Rebuild views (banner, palette) | the command lifecycle |
+
+**Controls (§7, `ViewModels/Controls/*`, `Views/Controls/CommandControl`).** One control per catalog row, keyed by
+action id (labels in `Labels.Actions.cs`): `ready` is a button (it runs only when the app has a sender for it; U1 sends
+`RebuildViews`), `pending:<phase>` a disabled button with a focusable `InkSubtle` line "arrives in <phase> · <cli>" and
+Copy, `cli-only:<reason>` the copy block (the CLI, Copy, and "Needs a typed confirmation at a terminal." for
+`typed-confirmation`). A CLI with a control, bidi or invisible character is neither shown nor copied. Lifecycle (§4.1):
+sending (disabled, label kept, spinner; "Sending…" announced after 300 ms; a second click does nothing), accepted
+("Rebuild views: done", 2 s), refused or failed (the code and `detail` inline, as served), Copy ("Copied", 1.5 s).
+The clipboard is a port (`Platform/IClipboard`, `Views/AvaloniaClipboard`).
+
+**Freshness (U10, E-14).** The pill reads `health.word` (Healthy, Degraded, Stalled, Rebuilding), its age from
+`views.projectedAt`, then each `health.problems[].text`. Connection states win. While `views` or `health` is null (P1,
+or P2 before unit E) it reads "Running" with the age from the last event or ping (Q1; the one decision point is
+`HealthPill.Show`). A stalled services view shows the banner under the top bar with the view's own `empty` sentence and
+**Rebuild views** (the catalog's row through the control renderer); rebuilding shows a progress banner. Each event
+re-reads the status and the services view at most once per view per 250 ms (§9.2; `HealthViewModel.RefreshEvery`,
+`ControlPlaneFollower.RefreshOnSignal`): the first event of a burst re-reads at once, the rest collapse into one
+re-read when the window ends. E-15's `invalidates` waits for P5.
+
+**The palette (§8, `ViewModels/Palette/*`, `Views/CommandPalette*`).** ⌘K (Ctrl+K off macOS), a click on the ⌘K field,
+or Enter or Space on it opens it with focus in its field. Sections: **Actions**, every catalog row not in Sindri,
+ready first, then pending (shown with "arrives in <phase>", never run), then cli-only ("Copy: sindri …"; Enter copies,
+"Copied" for 1.5 s, the palette stays open); U1 has no selected row, so Actions lists the whole catalog (Q3). **Go to**:
+Home G H, Queue G Q, Decisions G D, Services G S, Health G ., Settings ⌘,. **Sindri**: Rebuild views, Stop Sindri
+(Enter goes to Health, where it lives; never sent from the palette, its confirm is U4: Q4) and Health. Every catalog row
+appears once. Typing filters by a fuzzy match (the query's letters in order, spaces ignored) on labels and ids; ↑/↓
+move between entries that do something, Enter runs one, Esc or a click on the scrim closes it, and focus returns to
+what had it (the ⌘K field when that is gone). Each entry run is remembered in `paletteHistory`, newest last.
+
+**The `?` sheet.** `?` (not while typing in a field, nor over the palette) opens §8's keys plus each catalog row's own
+`shortcut` (none yet); it takes focus, Tab cycles inside it, Esc closes it and returns focus. The sheet lists §8's
+table; the keys U1 serves are ⌘K, `?`, ⌘, and F6 (the G-chords, J/K, O, A and the rest arrive with their views).
+
+**Proof fixture (§18.2): `scripts/sindri-ui-fixture.sh`.** Everything goes through `scripts/sindri-prove.sh`, whose
+guard runs first (a temp or proof `AW_SINDRI_HOME` only). `up` writes the live profile (a 5 s heartbeat, port 0),
+approves it as the owner and starts `sindri --headless`; `stall` inserts one `service.ran` row with an unparseable
+payload into `ledger.db` (`STALL_TYPE` overrides the type); `unstall` deletes it; `drift` changes the heartbeat's
+cadence so the approval no longer matches; `down` stops it; `--large` is reserved for U2/U3. Test:
+`bash scripts/tests/sindri-ui-fixture.test.sh` (the guard, usage, the stall SQL on a temp ledger, a stub SINDRI).
+
+```bash
+H=$(mktemp -d "${TMPDIR:-/tmp}/sindri-u1.XXXXXX"); export AW_SINDRI_HOME=$H SINDRI=<built sindri>
+scripts/sindri-ui-fixture.sh up
+AW_SINDRI_HOME=$H <published sindri-ui> &      # bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh <dir>
+scripts/sindri-ui-fixture.sh stall             # the stalled banner and Rebuild views
+scripts/sindri-ui-fixture.sh unstall           # then click Rebuild views
+sqlite3 -readonly $H/ledger.db "select type, actor from events where type in ('command.handled','views.rebuilt') order by seq desc limit 2"
+scripts/sindri-ui-fixture.sh down
+```
+
+**Tests.** Unit lane: `Palette/*` (the palette and the sheet), `Controls/ControlViewModelTests`, `Shell/FreshnessTests`
+(the pill, the banners, the catalog on connect, the 250 ms re-read), `Api/*` (headers, token, ProblemDetails, and
+`GoldenContractTests`, which deserializes every golden through `SindriUiJsonContext`). Integration lane:
+`Views/CommandPaletteTests` (⌘K, the field's click, arrows, Enter, Esc returning focus, `?` never while typing; frames
+`palette`, `palette-filtered`, `shortcuts`) and `Views/CatalogFramesTests` (frames `u1-banner-stalled`,
+`u1-banner-rebuilding`, `u1-control-sending`, `u1-control-accepted`, `u1-health-controls`). The fake serves P1's and
+P2's goldens (`tests/Aw.Sindri.Tests/Golden/Api/**`) and U1's spec-shaped ones (`tests/Aw.Sindri.Ui.Tests/Golden/SpecShaped/**`, to be replaced by P2's as they land).
 
 ## How it finds the control plane
 

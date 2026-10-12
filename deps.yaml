@@ -232,7 +232,7 @@ packages:
     scan: [sindri/src]
     bins: [sindri]
     db: [sindri/ledger.db, sindri-app/ledger.db]
-    files: [sindri-app/control.json]
+    files: [sindri-app/control.json, sindri-app/auth/human.token]
     namespace: sindri
     routes: [/sindri/]
     note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; reaches lower tiers only through Core contracts or CLIs"
@@ -521,12 +521,12 @@ edges:
     to: Sindri
     kind: file
     status: current
-    note: "the app reads the endpoint record (control.json under AW_SINDRI_HOME) to find the API and check it against /sindri/ping; read-only"
+    note: "the app reads the endpoint record (control.json under AW_SINDRI_HOME) to find the API and check it against /sindri/ping, and auth/human.token (this start's human token, re-read before each request) to send X-Sindri-Token; read-only. Its tests read Sindri's API goldens (tests/Aw.Sindri.Tests/Golden/Api/**, UI spec E-17) as the fake's wire, through Aw.Sindri.Ui.Testing's GoldenFiles: a wire change fails the UI's unit lane"
   - from: SindriUi
     to: Sindri
     kind: http
     status: current
-    note: "the app's API edge to Sindri (the file edge covers the endpoint record): GET /sindri/ping, /sindri/status and the /sindri/events stream (docs/csharp/sindri.md); it finds the endpoint in control.json under AW_SINDRI_HOME"
+    note: "the app's API edge to Sindri (the file edge covers the endpoint record and the human token): GET /sindri/ping, /sindri/status, /sindri/commands, /sindri/services, /sindri/profile, the /sindri/events stream, and POST /sindri/views/rebuild (docs/csharp/sindri.md, docs/csharp/sindri-ui.md U1); it finds the endpoint in control.json under AW_SINDRI_HOME"
 
 # Sindri -> SindriUi (cli) closes a cycle with SindriUi -> Sindri (http): bare `sindri` only spawns the app's process.
 # Renewed on review like every exception.
