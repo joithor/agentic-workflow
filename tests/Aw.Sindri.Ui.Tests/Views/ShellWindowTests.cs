@@ -1181,6 +1181,43 @@ public sealed class ShellWindowTests : IDisposable
         Frame(window, "sheet-covers");
     });
 
+    // Review run 3 (accessibility-tester-3; WCAG 2.4.3, 2.4.7): at 900 px the sheet covers the page, so the page and its
+    // controls leave the tab order while it does. Tab and Shift+Tab from Back, and F6, never land under the sheet, and
+    // closing it gives the page back its focus and its stops.
+    [Fact]
+    public Task At_900_px_the_covering_sheet_takes_the_page_out_of_the_tab_order() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        await new Preferences(_preferences).Update(_ => UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 900, 600) });
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        Settle(window);
+        Assert.Contains("covers", window.Get<Border>("Sheet").Classes, StringComparer.Ordinal);
+        var page = window.Get<Border>("Page");
+        bool UnderTheSheet() => Focused(window) is Visual focused && (focused == page || page.IsVisualAncestorOf(focused));
+
+        foreach (var (key, modifiers) in new[] { (Key.Tab, RawInputModifiers.Shift), (Key.Tab, RawInputModifiers.None), (Key.F6, RawInputModifiers.None), (Key.F6, RawInputModifiers.Shift) })
+        {
+            Assert.True(window.Get<Button>("SheetBack").Focus(NavigationMethod.Tab));
+            for (var i = 0; i < 12; i++)
+            {
+                window.KeyPress(key, modifiers, key == Key.Tab ? PhysicalKey.Tab : PhysicalKey.F6, keySymbol: null);
+                Settle(window);
+                Assert.False(UnderTheSheet(), string.Create(CultureInfo.InvariantCulture, $"{modifiers}+{key} #{i + 1} reached {(Focused(window) as Control)?.Name ?? Focused(window)?.GetType().Name} under the sheet"));
+            }
+        }
+
+        Assert.True(window.Get<Button>("SheetBack").Focus(NavigationMethod.Tab));
+        window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, keySymbol: null);
+        Settle(window);
+
+        Assert.Same(page, Focused(window));
+        window.KeyPress(Key.Tab, RawInputModifiers.None, PhysicalKey.Tab, keySymbol: null);
+        Settle(window);
+        Assert.True(UnderTheSheet() && Focused(window) != page, "Tab moves inside the page again once the sheet closes");
+    });
+
     // §3.2: window minimum 900 × 600, and the top bar still fits there in every pill state, at text scale 1.0 and 1.3: the
     // ⌘K field gives way first (down to its magnifier), then the pill's age (its accessible name keeps it); the pill's
     // word stays whole with room for its focus ring, nothing in the bar overlaps or runs past the window, and nothing
