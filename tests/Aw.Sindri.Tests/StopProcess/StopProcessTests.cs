@@ -69,14 +69,16 @@ public sealed class StopProcessTests
     private static ControlEndpoint? Recorded(InMemoryEndpointFile record) => record.Read(Token).AsTask().GetAwaiter().GetResult().Value;
 
     [Fact, Trait("Lane", "unit")]
-    public async Task StopProcess_releases_the_lease_whatever_the_caller_cancels_once_the_grant_is_cleared()
+    public async Task StopProcess_removes_and_releases_whatever_the_caller_cancels_once_the_stop_is_recorded()
     {
         _ = await _h.HoldLease();
         var lease = new ScriptedLease(_h.Store);
+        var record = new ObservedEndpointFile(new InMemoryEndpointFile());
         using var caller = CancellationTokenSource.CreateLinkedTokenSource(Token);   // the request's RequestAborted
 
-        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, new InMemoryEndpointFile()).Handle(new StopProcessRequest(StopReason.Stop), caller.Token);
+        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, record).Handle(new StopProcessRequest(StopReason.Stop), caller.Token);
 
+        Assert.False(record.RemovedWith?.CanBeCanceled ?? true);   // why: a cancelled removal would skip the clear, the shutdown and the release
         Assert.False(lease.ReleasedWith?.CanBeCanceled ?? true);   // why: a client that hangs up mid-stop must not leave the lease held
     }
 

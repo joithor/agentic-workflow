@@ -8,6 +8,9 @@ internal sealed class ObservedEndpointFile(IEndpointFile inner) : IEndpointFile
 {
     public Action? BeforeRemove { get; set; }
 
+    /// <summary>The token the last removal ran with.</summary>
+    public CancellationToken? RemovedWith { get; private set; }
+
     public ValueTask<Result<ControlEndpoint?>> Read(CancellationToken cancellationToken) => inner.Read(cancellationToken);
 
     public ValueTask<Result<Unit>> Write(ControlEndpoint endpoint, CancellationToken cancellationToken) => inner.Write(endpoint, cancellationToken);
@@ -15,6 +18,7 @@ internal sealed class ObservedEndpointFile(IEndpointFile inner) : IEndpointFile
     public ValueTask<Result<Unit>> Remove(int pid, CancellationToken cancellationToken)
     {
         BeforeRemove?.Invoke();
+        RemovedWith = cancellationToken;
         return inner.Remove(pid, cancellationToken);
     }
 }
