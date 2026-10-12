@@ -124,7 +124,7 @@ internal sealed class ShellViewModel : ObservableObject
     public bool IsChromeVisible => !IsVersionMismatch;
 
     /// <summary>The top bar's navigation takes input (dimmed and disabled while not running).</summary>
-    public bool IsNavigationEnabled => State == ShellState.Normal;
+    public bool IsNavigationEnabled => !IsNotRunning;
 
     /// <summary>Not running: S1b's panel in place of the page.</summary>
     public bool IsNotRunning => State == ShellState.NotRunning;
