@@ -4281,3 +4281,5 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.IInstanceDirectory
 Aw.Sindri.Core.Workflow.Engine.Runtime.IInstanceDirectory.Latest(Aw.Sindri.Core.Workflow.Engine.ItemKey item, Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState?>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IInstanceDirectory.Resolve(string! reference, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.InstanceAddress>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.AttemptState(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, int Attempt, bool Live) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSatisfied.OccurredAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSatisfied.OccurredAt.init -> void
