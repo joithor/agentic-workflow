@@ -6,6 +6,7 @@ using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Tests.Server;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Commands;
@@ -88,7 +89,9 @@ public sealed class CommandTableTests : IDisposable
     private async Task Approve()
     {
         var ct = TestContext.Current.CancellationToken;
-        var provider = Composition.Compose(new ServiceCollection(), Environment, TimeProvider.System).BuildServiceProvider();
+        var collection = Composition.Compose(new ServiceCollection(), Environment, TimeProvider.System);
+        NoTemporal.Use(collection);   // why: approving a profile needs the lease, not a real dev server (which would outlive the test)
+        var provider = collection.BuildServiceProvider();
         await using (provider)
         {
             await using var scope = provider.CreateAsyncScope();

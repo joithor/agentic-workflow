@@ -87,6 +87,7 @@ public sealed class StopProcessTests
 
         Assert.False(record.RemovedWith?.CanBeCanceled ?? true);   // why: a cancelled removal would skip the clear, the shutdown and the release
         Assert.False(lease.ReleasedWith?.CanBeCanceled ?? true);   // why: a client that hangs up mid-stop must not leave the lease held
+        Assert.False(_temporal.StoppedWith?.CanBeCanceled ?? true);   // why: a cancelled server stop would skip the release too
     }
 
     [Fact, Trait("Lane", "unit")]
