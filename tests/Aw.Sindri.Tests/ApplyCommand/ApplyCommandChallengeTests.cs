@@ -1,6 +1,8 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ApplyCommand;
 
 namespace Aw.Sindri.Tests.ApplyCommand;
@@ -34,4 +36,34 @@ public sealed class ApplyCommandChallengeTests
             ["grant 3 T-1/step/1", "grant-tokens 100000 T-1/step/1", "accept T-1/step/1"],
             [ApplyCommandChallenge.Action(address, AnswerVariant.Grant, 3).Text, ApplyCommandChallenge.Action(address, AnswerVariant.GrantTokens, 100_000).Text, ApplyCommandChallenge.Action(address, AnswerVariant.Accept, amount: null).Text]);
     }
+
+    [Fact]
+    public void The_challenge_is_bound_to_the_address_and_the_instance_version()
+    {
+        var parked = View("T-1/step/1", "parked", version: 4, since: 1_000);
+        var moved = parked with { State = "produce", Since = DateTimeOffset.FromUnixTimeMilliseconds(9_000) };   // same version: no event between them
+        var later = parked with { Version = 5 };
+
+        // why: the owner's decision (P4 integration): the subject is "address and version" (spec §4.2); a challenge
+        // issued for v4 is stale once the instance has mirrored another event, whatever its state or since show
+        Assert.Equal("instance:T-1/step/1@v4", ApplyCommandChallenge.Subject(parked).Key);
+        Assert.Equal(ApplyCommandChallenge.Subject(parked), ApplyCommandChallenge.Subject(moved));
+        Assert.NotEqual(ApplyCommandChallenge.Subject(parked), ApplyCommandChallenge.Subject(later));
+        Assert.NotEqual(ApplyCommandChallenge.Subject(parked), ApplyCommandChallenge.Subject(View("T-2/step/1", "parked", version: 4, since: 1_000)));
+    }
+
+    private static InstanceView View(string address, string state, int version, long since) => new(
+        InstanceAddress.From(address),
+        new RecipeVersion(RecipeId.From("workflow.step"), 1, RecipeHash.From("sha256:" + new string('a', 64))),
+        state,
+        Detail: null,
+        DateTimeOffset.FromUnixTimeMilliseconds(since),
+        string.Empty,
+        [],
+        Question: null,
+        Task: null,
+        Run: null,
+        Children: [],
+        Outcome: null)
+    { Version = version };
 }
