@@ -40,6 +40,9 @@ internal static partial class Labels
         ["ValidateProfile"] = "Validate profile",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
+    /// <summary>The Health page's catalog section.</summary>
+    internal const string ActionsCard = "ACTIONS";
+
     /// <summary>The copy button.</summary>
     internal const string Copy = "Copy";
 

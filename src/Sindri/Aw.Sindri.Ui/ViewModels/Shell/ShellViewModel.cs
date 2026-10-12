@@ -39,10 +39,11 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="api">Its API.</param>
     /// <param name="clock">The clock for every timing rule.</param>
     /// <param name="preferences">The app's local preferences, shared with Settings (the shell keeps its window, sheet width and last page there).</param>
-    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences)
+    /// <param name="clipboard">Where Copy puts a CLI (the window's clipboard); none by default.</param>
+    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard? clipboard = null)
     {
         _store = preferences;
-        Health = new HealthViewModel(records, api, clock);
+        Health = new HealthViewModel(records, api, clock, clipboard);
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;
     }

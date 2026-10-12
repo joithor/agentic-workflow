@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Aw.Sindri.Ui.ViewModels.Controls"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+             x:Class="Aw.Sindri.Ui.Views.Controls.CommandControl"
+             x:DataType="controls:ControlViewModel">
+  <!-- One catalog row as a control (UI spec §7, U3) with its §4.1 lifecycle. ready: a button; pending: the same button
+       disabled, and its phase and CLI on the next line in InkSubtle, focusable and copyable (disabled ink never carries
+       information); cli-only: the copy block (terminal glyph, the CLI, Copy, and its one line). -->
+  <StackPanel Spacing="{StaticResource Space.XXS}">
+    <!-- The polite live region for "Sending…", the outcome and "Copied" (U0's LiveSetting rules): zero-width, never "". -->
+    <TextBlock x:Name="Announcer" Classes="caption live-region live" Width="0" Opacity="0" IsHitTestVisible="False"
+               Text="{Binding Announcement}" HorizontalAlignment="Left" />
+
+    <StackPanel x:Name="ButtonRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding !IsCliOnly}">
+      <Button x:Name="RunButton" Classes="command-control" IsEnabled="{Binding CanRun}" Click="OnRun"
+              AutomationProperties.Name="{Binding Name}">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <icons:StateIcon x:Name="RunSpinner" Icon="Spinner" IsVisible="{Binding IsSending}" Spins="{Binding IsSending}"
+                           VerticalAlignment="Center" />
+          <TextBlock x:Name="RunLabel" Classes="button" Text="{Binding Label}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+      <StackPanel x:Name="AcceptedLine" Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsAccepted}" VerticalAlignment="Center"
+                  AutomationProperties.Name="{Binding Outcome}">
+        <icons:StateIcon Glyph="Ok" VerticalAlignment="Center" />
+        <TextBlock x:Name="OutcomeText" Classes="caption" Text="{Binding Outcome}" VerticalAlignment="Center" />
+      </StackPanel>
+    </StackPanel>
+
+    <!-- pending: the phase and the CLI, focusable so the keyboard reaches it, with Copy. -->
+    <StackPanel x:Name="PendingRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding IsPending}">
+      <Border x:Name="PendingLine" Classes="pending-line" Focusable="True" AutomationProperties.Name="{Binding PendingLine}">
+        <TextBlock x:Name="PendingText" Classes="caption subtle" Text="{Binding PendingLine}" AutomationProperties.Name="{Binding PendingLine}" />
+      </Border>
+      <Button x:Name="PendingCopy" Classes="copy" Click="OnCopy" IsEnabled="{Binding CanCopy}" AutomationProperties.Name="{Binding CopyLabel}">
+        <TextBlock Classes="caption" Text="{Binding CopyLabel}" />
+      </Button>
+    </StackPanel>
+
+    <!-- cli-only: the copy block. It never offers to run the command. -->
+    <StackPanel x:Name="CopyBlock" Spacing="{StaticResource Space.XXS}" IsVisible="{Binding IsCliOnly}">
+      <Border Classes="command">
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.XS}">
+          <TextBlock x:Name="TerminalGlyph" Classes="mono subtle" Text="&gt;_" VerticalAlignment="Center" AutomationProperties.Name="{Binding Cli}" />
+          <TextBlock x:Name="CliText" Classes="mono" Text="{Binding Cli}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Cli}" />
+          <Button x:Name="BlockCopy" Classes="copy" Click="OnCopy" IsEnabled="{Binding CanCopy}"
+                  AutomationProperties.Name="{Binding CopyLabel}">
+            <TextBlock Classes="caption" Text="{Binding CopyLabel}" />
+          </Button>
+        </StackPanel>
+      </Border>
+      <TextBlock x:Name="CopyNoteText" Classes="caption subtle" Text="{Binding CopyNote}" IsVisible="{Binding CopyNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 AutomationProperties.Name="{Binding CopyNote}" />
+    </StackPanel>
+
+    <!-- refused / failed: the API's title (the SND code) and detail as served, under the control. -->
+    <StackPanel x:Name="ErrorLine" Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsFailed}">
+      <icons:StateIcon Glyph="Down" Classes="error" VerticalAlignment="Top" />
+      <TextBlock x:Name="ErrorCodeText" Classes="caption error" Text="{Binding ErrorCode}" AutomationProperties.Name="{Binding ErrorCode}" />
+      <TextBlock x:Name="ErrorDetailText" Classes="caption" Text="{Binding ErrorDetail}" TextWrapping="Wrap" MaxWidth="560"
+                 AutomationProperties.Name="{Binding ErrorDetail}" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

@@ -147,6 +147,9 @@
               <TextBlock x:Name="PillAgeText" Classes="caption subtle" Text="{Binding Pill.Age}" IsVisible="{Binding Pill.HasAge}"
                          Margin="6,0,0,0" VerticalAlignment="Center" />
             </Panel>
+            <!-- §3.2: any problem the status's health names, in words as served ("index failed"). -->
+            <TextBlock x:Name="PillProblems" Classes="caption" Text="{Binding Pill.Problems}" IsVisible="{Binding Pill.HasProblems}"
+                       Margin="6,0,0,0" VerticalAlignment="Center" MaxWidth="220" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Button>
       </StackPanel>
