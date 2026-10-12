@@ -127,6 +127,77 @@ public sealed class SingleLaunchTests : IDisposable
         Assert.Equal("SND-UI-004", Assert.Single(_log.Entries).EventName);
     }
 
+    // Review run 3 (code-reviewer-2): ending the instance after the app quit is inside the boundary too. A failure there
+    // (ui/ removed while the app ran) is SND-UI-004 with the type only and exit 2, never an unhandled exception whose
+    // message and stack name the home.
+    [Fact]
+    public void A_failure_ending_the_instance_exits_2_with_SND_UI_004_and_no_path()
+    {
+        var instance = new FailsToEnd(new FakeSingleInstance(_channel), new DirectoryNotFoundException("Could not find a part of the path '/Users/someone/.agentic-workflow/sindri-app/ui/instance.sock'."));
+
+        var exit = SingleLaunch.Run(instance, [], () => 0, _errors, _log);
+
+        Assert.Equal(2, exit);
+        Assert.True(instance.Ended);
+        Assert.Equal("sindri-ui: couldn't start (SND-UI-004: DirectoryNotFoundException)" + Environment.NewLine, _errors.ToString());
+        Assert.Equal("SND-UI-004", Assert.Single(_log.Entries).EventName);
+        Assert.DoesNotContain("/Users/someone", Assert.Single(_log.Entries).Message, StringComparison.Ordinal);
+    }
+
+    // Composing the platform (the first OS motion read, the adapters) is inside the boundary as well, and the launch
+    // ends the instance and the motion poll it composed.
+    [Fact]
+    public void A_failure_composing_the_platform_exits_2_with_SND_UI_004()
+    {
+        var exit = SingleLaunch.Run(() => throw new UnauthorizedAccessException("Access to the path '/Users/someone/ui' is denied."), [], _ => 0, _errors, _log);
+
+        Assert.Equal(2, exit);
+        Assert.Equal("sindri-ui: couldn't start (SND-UI-004: UnauthorizedAccessException)" + Environment.NewLine, _errors.ToString());
+        Assert.Equal("SND-UI-004", Assert.Single(_log.Entries).EventName);
+    }
+
+    [Fact]
+    public void The_launch_runs_the_app_over_the_platform_it_composed_and_ends_its_instance()
+    {
+        var instance = new FailsToEnd(new FakeSingleInstance(_channel), failure: null);
+        var platform = new SindriPlatform(new InMemoryEndpointRecords(), new InMemoryHumanToken(), new InMemoryPreferencesStore(), new FakeMotionPreference(), instance, new FakeTray());
+        SindriPlatform? ran = null;
+
+        var exit = SingleLaunch.Run(() => platform, [], p =>
+        {
+            ran = p;
+            return 7;
+        }, _errors, _log);
+
+        Assert.Equal(7, exit);
+        Assert.Same(platform, ran);
+        Assert.True(instance.Ended);
+    }
+
+    // An instance whose end fails (or not, with no failure), and says whether it was ended.
+    private sealed class FailsToEnd(ISingleInstance inner, Exception? failure) : ISingleInstance
+    {
+        public bool Ended { get; private set; }
+
+        public ValueTask<bool> TryClaim(CancellationToken cancellationToken) => inner.TryClaim(cancellationToken);
+
+        public ValueTask<bool> Send(string message, CancellationToken cancellationToken) => inner.Send(message, cancellationToken);
+
+        public IAsyncEnumerable<string> Messages(CancellationToken cancellationToken) => inner.Messages(cancellationToken);
+
+        public int? HolderProcessId() => inner.HolderProcessId();
+
+        public async ValueTask DisposeAsync()
+        {
+            Ended = true;
+            await inner.DisposeAsync();
+            if (failure is not null)
+            {
+                throw failure;
+            }
+        }
+    }
+
     private sealed class FailsToClaim(Exception failure) : ISingleInstance
     {
         public ValueTask<bool> TryClaim(CancellationToken cancellationToken) => ValueTask.FromException<bool>(failure);

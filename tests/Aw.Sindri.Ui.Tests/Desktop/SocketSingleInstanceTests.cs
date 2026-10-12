@@ -97,6 +97,20 @@ public sealed class SocketSingleInstanceTests : IDisposable
         Assert.False(File.Exists(Paths.InstanceSocket));
     }
 
+    // Review run 3 (code-reviewer-2): ui/ removed while the app runs (a proof's temp home cleaned up, the home reset):
+    // ending the instance treats the missing directory as already cleaned up instead of throwing out of Main.
+    [Fact]
+    public async Task Ending_the_instance_after_its_ui_directory_is_gone_is_quiet()
+    {
+        var first = Launch();
+        Assert.True(await first.TryClaim(Token));
+        Directory.Delete(Paths.Directory, recursive: true);
+
+        await first.DisposeAsync();
+
+        Assert.False(Directory.Exists(Paths.Directory));
+    }
+
     // A client that skips the adapter's own checks: the listener refuses what it reads (over the limit, not UTF-8, empty,
     // or a message without its newline) and keeps serving.
     [Theory]

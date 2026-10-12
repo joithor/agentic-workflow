@@ -42,6 +42,16 @@ internal static class SingleLaunch
         }
     }
 
+    /// <summary>Composes the platform, then runs the app over it or hands over to the running one.</summary>
+    /// <param name="compose">Builds the head's adapters.</param>
+    /// <param name="args">The command line.</param>
+    /// <param name="runApp">Runs the app over the platform until it quits; returns its exit code.</param>
+    /// <param name="errors">Standard error.</param>
+    /// <param name="log">The head's log.</param>
+    /// <returns>The exit code, as the other overload's.</returns>
+    internal static int Run(Func<SindriPlatform> compose, IReadOnlyList<string> args, Func<SindriPlatform, int> runApp, TextWriter errors, ILogger log) =>
+        throw new NotSupportedException();
+
     private static int Launch(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors)
     {
         // Before the UI starts, on the main thread with no synchronization context: blocking here deadlocks nothing.
