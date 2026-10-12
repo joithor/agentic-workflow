@@ -7,8 +7,8 @@ using Aw.Sindri.Ui.Platform;
 namespace Aw.Sindri.Ui.Desktop;
 
 /// <summary>
-/// The tray's icons (UI spec §5), drawn from Sindri's mark (the top bar's brand glyph): filled for Neutral, hollow for
-/// Stale, hollow and struck through for NotRunning. On macOS they are template images, so the menu bar tints them and
+/// The tray's icons (UI spec §5), drawn from Sindri's mark, the ◆ of the top bar's brand (§3.2): filled for Neutral,
+/// hollow for Stale, hollow and struck through for NotRunning. On macOS they are template images, so the menu bar tints them and
 /// only their shape counts; elsewhere they are white, the tray convention. (The theme's Ink would need the app's
 /// resources, and a head references no Application: ARCH-UI-001.) Drawn on the UI thread, once per state.
 /// </summary>
@@ -16,7 +16,7 @@ internal static class TrayMarks
 {
     private const int Pixels = 32;
     private const double Units = 12;
-    private static readonly Geometry _mark = Geometry.Parse("M2 10.25 6 2.75l4 7.5H7.4L6 7.55 4.6 10.25z");
+    private static readonly Geometry _mark = Geometry.Parse("M6 1.25 10.75 6 6 10.75 1.25 6z");
     private static readonly Dictionary<TrayState, WindowIcon> _icons = [];
 
     /// <summary>The icon for a state.</summary>
