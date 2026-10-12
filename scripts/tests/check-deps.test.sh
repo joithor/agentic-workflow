@@ -633,6 +633,39 @@ refuse "  ... without the wider-fan-out wording" "more than an exception"
 d="$(fixture fanout-attached-rule)"; perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-002\n    subject: Beta\n    edge: Alpha\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
 expect "only a DEPS-FANOUT-001 exception is attached to an edge" 1 "DEPS-SCHEMA-001" "/exceptions/0/rule: must be \"DEPS-FANOUT-001\""
 
+# ---- cycle exceptions: a DEPS-CYCLE-001 exception attached to the cli or http edge that closes one cycle ----
+cyc() { # cyc <dir> <subject> <edge> [recorded expires] — a DEPS-CYCLE-001 exception attached to <subject> -> <edge>
+  perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-CYCLE-001\n    subject: $2\n    edge: $3\n    reason: test\n    recorded: ${4:-2026-10-10}\n    expires: ${5:-2026-12-01}\n/" "$1/deps.yaml"
+}
+d="$(fixture cycle-excepted)"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Beta; run "$d"
+expect "a cycle exception attached to the cli edge that closes the cycle passes" 0 "deps: ok" "exception DEPS-CYCLE-001 Alpha -> Beta (expires 2026-12-01)"
+
+d="$(fixture cycle-excepted-other)"; edge "$d" Alpha Beta cli planned; edge "$d" Alpha Delta cli planned; edge "$d" Delta Beta cli planned; cyc "$d" Alpha Beta; run "$d"
+expect "a cycle exception covers its one cycle: another cycle still fails" 1 "DEPS-CYCLE-001" "Alpha -> Delta -> Beta -> Alpha"
+refuse "  ... and the excepted cycle is not reported" "Alpha -> Beta -> Alpha"
+
+d="$(fixture cycle-excepted-two)"; edge "$d" Alpha Beta cli planned; edge "$d" Beta Delta cli planned; edge "$d" Delta Alpha cli planned; cyc "$d" Alpha Beta; run "$d"
+expect "a cycle exception whose edge closes two cycles covers neither" 1 "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha" "Alpha -> Beta -> Delta -> Alpha" "DEPS-EXC-002" "2 cycles pass through Alpha -> Beta"
+
+d="$(fixture cycle-excepted-none)"; edge "$d" Delta Alpha cli planned; cyc "$d" Delta Alpha; run "$d"
+expect "a cycle exception whose cycle doesn't exist suppresses nothing" 1 "DEPS-EXC-002" "DEPS-CYCLE-001 for Delta: no cycle passes through Delta -> Alpha"
+
+d="$(fixture cycle-excepted-missing)"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Delta; run "$d"
+expect "a cycle exception attached to an edge that isn't declared fails, and the cycle with it" 1 "DEPS-EXC-004" "no Alpha -> Delta (cli or http) edge" "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha"
+
+d="$(fixture cycle-excepted-db)"; edge "$d" Alpha Beta file planned; cyc "$d" Alpha Beta; run "$d"
+expect "a cycle exception is attached to a cli or http edge, not a db or file edge" 1 "DEPS-EXC-004" "no Alpha -> Beta (cli or http) edge" "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha"
+
+d="$(fixture cycle-excepted-expired)"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Beta 2020-01-01 2020-06-01; run "$d"
+expect "an expired cycle exception fails and no longer covers the cycle" 1 "DEPS-EXC-001" "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha"
+for dates in "2026-13-45 2026-12-01" "2026-12-01 2026-11-01" "2026-10-10 2027-10-10"; do
+  set -- $dates; d="$(fixture "cycle-dates-$1-$2")"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Beta "$1" "$2"; run "$d"
+  expect "bad cycle exception dates fail (recorded $1, expires $2)" 1 "DEPS-EXC-003" "Alpha -> Beta -> Alpha"
+done
+
+d="$(fixture cycle-excepted-no-edge)"; perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-CYCLE-001\n    subject: Alpha\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
+expect "a cycle exception names the edge it is attached to" 1 "DEPS-SCHEMA-001" "/exceptions/0"
+
 # ---- parser, validator and schema drift (node unit table) ----
 set +e; UNIT="$(node "$HERE/check-deps.unit.mjs" 2>&1)"; UCODE=$?; set -e
 if [ "$UCODE" = 0 ]; then ok "parser/validator unit table ($(printf '%s' "$UNIT" | tail -1))"; else fail "parser/validator unit table"; printf '%s\n' "$UNIT" | sed 's/^/       | /'; fi
