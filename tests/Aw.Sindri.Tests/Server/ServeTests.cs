@@ -35,7 +35,7 @@ public sealed class ServeTests : IDisposable
     public async Task The_api_serves_status_ping_events_and_stop_under_the_lease()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
+        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, InterimCallers.Configure);
         _ = Pipeline.Configure(app);
         await using (var scope = app.Services.CreateAsyncScope())
         {
@@ -120,7 +120,7 @@ public sealed class ServeTests : IDisposable
         var error = new StringWriter();
 
         var code = await ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => "0", _ => null }, TimeProvider.System, error,
-            static services => services.AddHostedService<FailsToStart>()).WaitAsync(ct);
+            static services => InterimCallers.Configure(services.AddHostedService<FailsToStart>())).WaitAsync(ct);
 
         Assert.Equal(2, code);
         Assert.StartsWith("SND-API-003 serve couldn't start listening: ", error.ToString(), StringComparison.Ordinal);
@@ -153,7 +153,7 @@ public sealed class ServeTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
         await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), "schemaVersion: 1\nuser: thor\n", ct);
-        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
+        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, InterimCallers.Configure);
         _ = Pipeline.Configure(app);
         await using var scope = app.Services.CreateAsyncScope();
         var grant = (await scope.ServiceProvider.GetRequiredService<IService<StartProcessRequest, StartProcessResponse>>().Handle(new StartProcessRequest(), ct)).Value.Grant;
