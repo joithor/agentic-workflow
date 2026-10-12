@@ -44,6 +44,11 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
         }
 
         var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
+        if (server.FailPing && uri.AbsolutePath == "/sindri/ping")
+        {
+            throw new HttpRequestException("Connection refused (127.0.0.1)");
+        }
+
         return uri.AbsolutePath switch
         {
             "/sindri/ping" => Text(HttpStatusCode.OK, string.Create(CultureInfo.InvariantCulture, $$"""{"pid":{{server.Pong.Pid}},"epoch":{{server.Pong.Epoch}}}"""), "application/json"),

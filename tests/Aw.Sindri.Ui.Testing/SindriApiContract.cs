@@ -25,6 +25,16 @@ public abstract class SindriApiContract
     }
 
     [Fact]
+    public async Task A_failing_ping_is_unreachable_while_the_status_still_answers()
+    {
+        var server = new FakeSindriApi { FailPing = true };
+        var api = Reach(server);
+
+        Expect.Equal("SND-UI-002", (await api.Ping(_api, Token)).Error.Code);
+        Expect.Equal(4242, (await api.Status(_api, Token)).Value.Pid);
+    }
+
+    [Fact]
     public async Task Status_answers_the_lease_profile_and_services()
     {
         var server = new FakeSindriApi { Current = A.Status(pid: 5, epoch: 2, A.ChangedProfile(), A.Heartbeat(A.Noon, "7s")) };

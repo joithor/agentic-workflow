@@ -178,6 +178,7 @@ public sealed class ShellViewModelTests
     {
         _records.Write(A.Record());
         var shell = await Running(ShellState.Normal);
+        _server.FailPing = true;
 
         _clock.Advance(ShellViewModel.StaleAfter);
         await Until(() => shell.State == ShellState.Stale);

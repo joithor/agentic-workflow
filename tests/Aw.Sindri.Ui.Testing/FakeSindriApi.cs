@@ -33,8 +33,16 @@ internal sealed class FakeSindriApi : ISindriApi
     /// <summary>When true, status calls answer SND-UI-003 (an answer this build can't read) while pings carry on.</summary>
     public bool UnreadableStatus { get; set; }
 
+    /// <summary>When true, pings fail as unreachable while status calls and open streams carry on.</summary>
+    public bool FailPing { get; set; }
+
     /// <summary>How many status calls were made.</summary>
     public int StatusCalls { get; private set; }
+
+    /// <summary>How many pings were made.</summary>
+    public int PingCalls => Volatile.Read(ref _pingCalls);
+
+    private int _pingCalls;
 
     /// <summary>The cursor each event stream was opened with.</summary>
     public IReadOnlyList<long> StreamCursors => [.. _cursors];
@@ -82,8 +90,11 @@ internal sealed class FakeSindriApi : ISindriApi
     /// <summary>Brings it back.</summary>
     public void ComeUp() => Down = false;
 
-    public Task<Result<PingView>> Ping(Uri api, CancellationToken cancellationToken) =>
-        Task.FromResult(Down ? Unreachable<PingView>(api) : Pong);
+    public Task<Result<PingView>> Ping(Uri api, CancellationToken cancellationToken)
+    {
+        _ = Interlocked.Increment(ref _pingCalls);
+        return Task.FromResult(Down || FailPing ? Unreachable<PingView>(api) : Pong);
+    }
 
     public Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken)
     {

@@ -193,6 +193,7 @@ public sealed class ShellWindowTests : IDisposable
     {
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        _server.FailPing = true;
 
         _clock.Advance(ShellViewModel.StaleAfter);
         await Until(() => shell.State == ShellState.Stale);

@@ -387,4 +387,82 @@ public sealed class HealthViewModelTests : IDisposable
             return _vm.Headline == "Running" && _server.StreamCursors.Count >= 2;
         }, "the watcher ended the follow and the app reconnected");
     }
+
+    // §4.1: stale is "no event or ping for 30 s". A control plane with nothing scheduled (an unapproved profile) emits no
+    // events, but it answers ping, so the views stay fresh however long it stays quiet.
+    [Fact]
+    public async Task A_quiet_control_plane_that_answers_ping_never_goes_stale()
+    {
+        _records.Write(A.Record());
+        Start();
+        await Eventually(() => _vm.Headline == "Running", "running");
+        var pings = _server.PingCalls;
+
+        for (var second = 1; second <= 90; second++)
+        {
+            _clock.Advance(TimeSpan.FromSeconds(1));
+            var due = pings + (second / 10);
+            await Eventually(() => _server.PingCalls >= due, "a ping every 10 s");
+            Assert.DoesNotContain("stale", _vm.HealthPill, StringComparison.Ordinal);
+        }
+
+        Assert.Equal(ShellState.Normal, _vm.State);
+    }
+
+    [Fact]
+    public async Task Pings_that_fail_for_30_seconds_go_stale()
+    {
+        _records.Write(A.Record());
+        Start();
+        await Eventually(() => _vm.Headline == "Running", "running");
+        _server.FailPing = true;
+
+        for (var second = 1; second < 30; second++)
+        {
+            _clock.Advance(TimeSpan.FromSeconds(1));
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+            Assert.Equal(ShellState.Normal, _vm.State);
+        }
+
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        await Eventually(() => _vm.State == ShellState.Stale, "stale after 30 s of failed pings");
+        Assert.Equal("Running · stale", _vm.HealthPill);
+    }
+
+    // A ping answered by another process or epoch isn't the control plane this follow connected to: it doesn't count.
+    [Fact]
+    public async Task A_ping_from_another_process_does_not_keep_the_views_fresh()
+    {
+        _records.Write(A.Record());
+        Start();
+        await Eventually(() => _vm.Headline == "Running", "running");
+        _server.Pong = new(5151, 9);
+
+        for (var second = 1; second <= 30; second++)
+        {
+            _clock.Advance(TimeSpan.FromSeconds(1));
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+        }
+
+        await Eventually(() => _vm.State == ShellState.Stale, "stale: the pings came from someone else");
+    }
+
+    // A good ping after a stale spell freshens the views again.
+    [Fact]
+    public async Task A_ping_that_answers_again_freshens_a_stale_view()
+    {
+        _records.Write(A.Record());
+        Start();
+        await Eventually(() => _vm.Headline == "Running", "running");
+        _server.FailPing = true;
+        _clock.Advance(HealthViewModel.StaleAfter);
+        await Eventually(() => _vm.State == ShellState.Stale, "stale");
+
+        _server.FailPing = false;
+        await Eventually(() =>
+        {
+            _clock.Advance(TimeSpan.FromSeconds(1));
+            return _vm.State == ShellState.Normal;
+        }, "fresh again after a good ping");
+    }
 }
