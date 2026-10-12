@@ -32,8 +32,9 @@ internal sealed class ControlViewModel : ObservableObject
     /// <param name="row">The catalog row.</param>
     /// <param name="send">Sends the command once; null when nothing is wired to it (it then never runs).</param>
     /// <param name="clipboard">Where Copy puts the CLI.</param>
+    /// <param name="subject">The subject the control acts on (an item id), named in its accessible name; null for none.</param>
     /// <param name="clock">The clock for the lifecycle's timings.</param>
-    internal ControlViewModel(CommandRowView row, Func<CancellationToken, Task<Result<CommandAcceptedView>>>? send, IClipboard clipboard, TimeProvider clock)
+    internal ControlViewModel(CommandRowView row, Func<CancellationToken, Task<Result<CommandAcceptedView>>>? send, IClipboard clipboard, TimeProvider clock, string? subject = null)
     {
         _send = send;
         _clipboard = clipboard;
@@ -45,7 +46,10 @@ internal sealed class ControlViewModel : ObservableObject
         Cli = Safe(row.Cli) ? row.Cli : string.Empty;
         PendingLine = Kind == ControlKind.Pending ? Labels.Arrives(Stage) + " · " + Cli : string.Empty;
         CopyNote = row.Ui == "cli-only:typed-confirmation" ? Labels.TypedConfirmation : string.Empty;
-        Name = Kind == ControlKind.Pending ? Label + ", " + Labels.Arrives(Stage) : Label;
+        var named = subject is { Length: > 0 } ? Label + " " + subject : Label;
+        Name = Kind == ControlKind.Pending ? named + ", " + Labels.Arrives(Stage) : named;
+        IsDestructive = row.Destructive;
+        ConfirmQuestion = Labels.ConfirmQuestion(named);
     }
 
     /// <summary>The catalog action id.</summary>
@@ -130,6 +134,62 @@ internal sealed class ControlViewModel : ObservableObject
 
     /// <summary>The polite live region's text: "Sending…", the outcome, "Copied"; never empty (Avalonia #22312).</summary>
     public string Announcement { get; private set => Set(ref field, value); } = Labels.Copy;
+
+    /// <summary>True when the catalog marks the action destructive (E-8): a press asks in-app before it sends (§8).</summary>
+    public bool IsDestructive { get; }
+
+    /// <summary>True while a destructive control asks "… ?" with Confirm and Keep.</summary>
+    public bool IsConfirming { get; private set => Set(ref field, value); }
+
+    /// <summary>The confirm row's Confirm label.</summary>
+    public string ConfirmLabel { get; } = Labels.Confirm;
+
+    /// <summary>The confirm row's Keep label.</summary>
+    public string KeepLabel { get; } = Labels.Keep;
+
+    /// <summary>The question a destructive control asks: its name and a question mark ("Close as cancelled ITM-…?").</summary>
+    public string ConfirmQuestion { get; }
+
+    /// <summary>A press: a destructive control asks first; any other sends at once.</summary>
+    /// <param name="cancellationToken">Cancels the wait for the answer.</param>
+    /// <returns>A task that completes when the answer is shown, or at once when it asks.</returns>
+    internal Task Press(CancellationToken cancellationToken)
+    {
+        if (!IsDestructive || !CanRun)
+        {
+            return Run(cancellationToken);
+        }
+
+        IsConfirming = true;
+        return Task.CompletedTask;
+    }
+
+    /// <summary>The asked question's Confirm: sends once.</summary>
+    /// <param name="cancellationToken">Cancels the wait for the answer.</param>
+    /// <returns>A task that completes when the answer is shown.</returns>
+    internal Task Confirm(CancellationToken cancellationToken)
+    {
+        if (!IsConfirming)
+        {
+            return Task.CompletedTask;
+        }
+
+        IsConfirming = false;
+        return Run(cancellationToken);
+    }
+
+    /// <summary>The asked question's Keep (or Esc): nothing is sent.</summary>
+    internal void Keep() => IsConfirming = false;
+
+    /// <summary>Clears a shown refusal: the owner shows it elsewhere (the item sheet's SND-ITEM-409 line).</summary>
+    internal void ClearError()
+    {
+        if (Phase == CommandPhase.Failed)
+        {
+            (ErrorCode, ErrorDetail) = (string.Empty, string.Empty);
+            Phase = CommandPhase.Idle;
+        }
+    }
 
     /// <summary>Sends the command once (a second click while sending does nothing; the app never retries on its own).</summary>
     /// <param name="cancellationToken">Cancels the wait for the answer.</param>

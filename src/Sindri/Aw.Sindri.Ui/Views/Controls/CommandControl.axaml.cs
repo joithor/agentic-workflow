@@ -17,7 +17,30 @@ internal sealed partial class CommandControl : UserControl
     {
         if (DataContext is ControlViewModel control)
         {
-            _ = control.Run(CancellationToken.None);
+            _ = control.Press(CancellationToken.None);
+            if (control.IsConfirming)
+            {
+                // The question replaces nothing: focus moves to Keep, the safe answer (Esc keeps too).
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = this.FindControl<Button>("KeepButton")?.Focus(), Avalonia.Threading.DispatcherPriority.Loaded);
+            }
+        }
+    }
+
+    private void OnConfirm(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ControlViewModel control)
+        {
+            _ = control.Confirm(CancellationToken.None);
+            _ = this.FindControl<Button>("RunButton")?.Focus();
+        }
+    }
+
+    private void OnKeep(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ControlViewModel control)
+        {
+            control.Keep();
+            _ = this.FindControl<Button>("RunButton")?.Focus();
         }
     }
 

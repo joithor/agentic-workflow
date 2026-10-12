@@ -28,6 +28,18 @@
       </StackPanel>
     </StackPanel>
 
+    <!-- A destructive control asks first (§8, E-8): its question, Confirm (sends once) and Keep (Esc; nothing sent). -->
+    <StackPanel x:Name="ConfirmRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding IsConfirming}">
+      <TextBlock x:Name="ConfirmText" Classes="caption" Text="{Binding ConfirmQuestion}" VerticalAlignment="Center"
+                 AutomationProperties.Name="{Binding ConfirmQuestion}" />
+      <Button x:Name="ConfirmButton" Classes="command-control destructive" Click="OnConfirm" AutomationProperties.Name="{Binding ConfirmQuestion}">
+        <TextBlock Classes="button" Text="{Binding ConfirmLabel}" />
+      </Button>
+      <Button x:Name="KeepButton" Classes="copy" Click="OnKeep" AutomationProperties.Name="{Binding KeepLabel}">
+        <TextBlock Classes="caption" Text="{Binding KeepLabel}" />
+      </Button>
+    </StackPanel>
+
     <!-- pending: the phase and the CLI, focusable so the keyboard reaches it, with Copy. -->
     <StackPanel x:Name="PendingRow" Orientation="Horizontal" Spacing="{StaticResource Space.XS}" IsVisible="{Binding IsPending}">
       <Border x:Name="PendingLine" Classes="pending-line" Focusable="True" AutomationProperties.Name="{Binding PendingLine}">

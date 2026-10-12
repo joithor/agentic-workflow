@@ -153,4 +153,40 @@ public sealed class ControlViewModelTests
     public void Labels_are_keyed_by_action_id_and_an_unknown_one_shows_its_id(string action, string label) =>
         Assert.Equal(label, Control(Row(action, "cli-only:typed-confirmation", "sindri workflow answer <address> --grant <n>")).Label);
 
+    // §8 (E-8): a destructive row confirms in-app first; Confirm sends once, Keep sends nothing.
+    [Fact]
+    public async Task A_destructive_control_asks_before_it_sends()
+    {
+        var control = Control(Row("RebuildViews", "ready", destructive: true));
+
+        await control.Press(Token);
+        Assert.Equal((true, 0), (control.IsConfirming, _server.RebuildCalls));
+
+        control.Keep();
+        Assert.Equal((false, 0), (control.IsConfirming, _server.RebuildCalls));
+
+        await control.Press(Token);
+        await control.Confirm(Token);
+        Assert.Equal((false, 1, CommandPhase.Accepted), (control.IsConfirming, _server.RebuildCalls, control.Phase));
+    }
+
+    [Fact]
+    public async Task A_control_that_isnt_destructive_sends_on_the_first_press()
+    {
+        var control = Control(Row("RebuildViews", "ready"));
+
+        await control.Press(Token);
+
+        Assert.Equal((false, 1), (control.IsConfirming, _server.RebuildCalls));
+    }
+
+    // §11.2: a control on a subject is named with it ("Hand back ITM-01JA1").
+    [Fact]
+    public void A_control_on_a_subject_is_named_with_it()
+    {
+        var control = new ControlViewModel(Row("RebuildViews", "ready"), send: null, _clipboard, _clock, subject: "ITM-01JA1");
+
+        Assert.Equal("Rebuild views ITM-01JA1", control.Name);
+        Assert.Equal("Rebuild views ITM-01JA1?", control.ConfirmQuestion);
+    }
 }
