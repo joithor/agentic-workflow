@@ -46,12 +46,23 @@
   </FluentTheme>
 
   <!-- The focus ring (§11.1, X22): 2 px PrimaryHover at full opacity, 2 px outside the control (6.6:1 on Surface1;
-       DESIGN.md's 50 % primary-focus ring is 1.8:1, below the 3:1 non-text minimum). -->
+       DESIGN.md's 50 % primary-focus ring is 1.8:1, below the 3:1 non-text minimum). The adorner layer clips an adorner
+       to its control's bounds by default, which hides a ring drawn wholly outside them, so the ring turns that clip off;
+       the layouts leave at least 4 px around each focusable control for it (FocusRingTests). -->
   <Style Selector=":is(Control)">
     <Setter Property="FocusAdorner">
       <FocusAdornerTemplate>
         <Border BorderBrush="{DynamicResource Brush.PrimaryHover}" BorderThickness="2" Margin="-4"
-                CornerRadius="{DynamicResource ControlCornerRadius}" />
+                CornerRadius="{DynamicResource ControlCornerRadius}" AdornerLayer.IsClipEnabled="False" />
+      </FocusAdornerTemplate>
+    </Setter>
+  </Style>
+  <!-- A focusable region that fills the window's width (the top bar, the page, the sheet: F6's stops) has no room
+       outside it, so its ring is drawn 2 px inside its edge instead. -->
+  <Style Selector=":is(Control).focus-region">
+    <Setter Property="FocusAdorner">
+      <FocusAdornerTemplate>
+        <Border BorderBrush="{DynamicResource Brush.PrimaryHover}" BorderThickness="2" Margin="2" />
       </FocusAdornerTemplate>
     </Setter>
   </Style>

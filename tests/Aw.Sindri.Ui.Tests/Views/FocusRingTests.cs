@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
@@ -203,45 +204,50 @@ public sealed class FocusRingTests : IDisposable
     private static string Name(Control control) =>
         control.Name ?? control.GetLogicalAncestors().OfType<Control>().FirstOrDefault(c => c.Name is not null)?.Name ?? "<unnamed>";
 
-    // Captures a frame and checks the ring around the control: on each side, at a quarter, a half and three quarters of
-    // its length, a ring-coloured pixel within 1–5 px outside the control's edge (inside it, for a region that fills the
-    // window's width: there is no room outside).
+    // Captures a frame and checks the ring around the control (§11.1: 2 px, full opacity, offset 2 px). On each side, at a
+    // quarter, a half and three quarters of its length: the pixel 3 px out from the edge (in the 2–4 px band) is the
+    // ring's colour, and the pixel 1 px out (the 2 px gap) is not. A region that fills the window's width has no room
+    // outside, so its ring sits 2 px inside its edge: the same check, mirrored.
     private static void AssertRing(Window window, Control control, string frame, bool inside = false)
     {
         Settle(window);
         using var bitmap = window.CaptureRenderedFrame() ?? throw new InvalidOperationException("no frame");
         Save(bitmap, frame);
         var pixels = Pixels(bitmap);
-        var origin = control.TranslatePoint(new Point(0, 0), window) ?? throw new InvalidOperationException("not in the window");
-        var box = new Rect(origin, control.Bounds.Size);
+        var target = Adorned(control);
+        var origin = target.TranslatePoint(new Point(0, 0), window) ?? throw new InvalidOperationException("not in the window");
+        var box = new Rect(origin, target.Bounds.Size);
         var scale = window.RenderScaling;
+        var outward = inside ? -1 : 1;
 
-        var missing = new List<string>();
+        var wrong = new List<string>();
         foreach (var f in new[] { 0.25, 0.5, 0.75 })
         {
-            Side("left", box.Left, box.Top + (box.Height * f), -1, 0);
-            Side("right", box.Right, box.Top + (box.Height * f), 1, 0);
-            Side("top", box.Left + (box.Width * f), box.Top, 0, -1);
-            Side("bottom", box.Left + (box.Width * f), box.Bottom, 0, 1);
+            Side("left", box.Left, box.Top + (box.Height * f), -outward, 0);
+            Side("right", box.Right, box.Top + (box.Height * f), outward, 0);
+            Side("top", box.Left + (box.Width * f), box.Top, 0, -outward);
+            Side("bottom", box.Left + (box.Width * f), box.Bottom, 0, outward);
         }
 
-        Assert.True(missing.Count == 0, $"no ring on {frame} ({box}) at: {string.Join(", ", missing)}");
+        Assert.True(wrong.Count == 0, $"ring wrong on {frame} ({box}) at: {string.Join(", ", wrong)}");
 
         void Side(string side, double x, double y, int dx, int dy)
         {
-            (dx, dy) = inside ? (-dx, -dy) : (dx, dy);
-            for (var d = 1; d <= 5; d++)
+            bool At(int d) => pixels.IsRing((int)Math.Floor((x + (dx * d)) * scale), (int)Math.Floor((y + (dy * d)) * scale));
+            if (!At(3) || At(1))
             {
-                var px = (int)Math.Floor((x + (dx * d)) * scale);
-                var py = (int)Math.Floor((y + (dy * d)) * scale);
-                if (pixels.IsRing(px, py))
-                {
-                    return;
-                }
+                wrong.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{side}@{x:0},{y:0} (ring {At(3)}, gap {!At(1)})"));
             }
-
-            missing.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{side}@{x:0},{y:0}"));
         }
+    }
+
+    // What the focus ring is drawn around: the control, or the part of its template it adorns (Fluent's ToggleSwitch
+    // adorns its switch and label, not its whole box).
+    private static Visual Adorned(Control control)
+    {
+        var layer = AdornerLayer.GetAdornerLayer(control) ?? throw new InvalidOperationException("no adorner layer");
+        return layer.Children.Select(AdornerLayer.GetAdornedElement)
+            .FirstOrDefault(v => v is not null && (v == control || control.IsVisualAncestorOf(v))) ?? control;
     }
 
     private static void Save(Bitmap bitmap, string name)

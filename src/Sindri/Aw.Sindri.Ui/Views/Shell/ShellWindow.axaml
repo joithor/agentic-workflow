@@ -53,7 +53,7 @@
       </Border>
 
       <Panel>
-        <Border x:Name="Page" Focusable="True" AutomationProperties.Name="{Binding Text.Home}">
+        <Border x:Name="Page" Classes="focus-region" Focusable="True" AutomationProperties.Name="{Binding Text.Home}">
           <Panel>
             <!-- Connecting (§4.1): the chrome and skeleton rows, first load only. -->
             <StackPanel x:Name="ConnectingSkeleton" IsVisible="{Binding IsConnecting}" Margin="32,24" Spacing="8">
@@ -117,7 +117,7 @@
         </Button>
 
         <!-- The detail sheet (§3.2): over the page at the right, 420–760 px wide; below 1100 px it covers the page. -->
-        <Border x:Name="Sheet" Classes="sheet" IsVisible="{Binding IsSheetShown}" Focusable="True"
+        <Border x:Name="Sheet" Classes="sheet focus-region" IsVisible="{Binding IsSheetShown}" Focusable="True"
                 AutomationProperties.Name="{Binding SheetSubject}">
           <DockPanel>
             <Thumb x:Name="SheetGrip" Classes="sheet-grip" DockPanel.Dock="Left" Cursor="SizeWestEast"

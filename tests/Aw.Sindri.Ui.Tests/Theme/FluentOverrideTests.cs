@@ -69,17 +69,7 @@ public sealed class FluentOverrideTests
     [Fact]
     public void Buttons_and_inputs_use_the_medium_radius() => Assert.Equal(_tokens.Resources["Radius.MD"].Value.Trim(), Override("ControlCornerRadius"));
 
-    // §11.1: the ring is 2 px PrimaryHover at full opacity, 2 px outside the control.
-    [Fact]
-    public void The_focus_ring_is_two_px_primary_hover_at_full_opacity_offset_two_px()
-    {
-        var ring = _overrides.Descendants().Single(e => e.Name.LocalName == "FocusAdornerTemplate").Elements().Single();
-
-        Assert.Equal("{DynamicResource Brush.PrimaryHover}", ring.Attribute("BorderBrush")?.Value);
-        Assert.Equal("2", ring.Attribute("BorderThickness")?.Value);
-        Assert.Equal("-4", ring.Attribute("Margin")?.Value);
-        Assert.Null(ring.Attribute("Opacity"));
-    }
+    // §11.1's focus ring (2 px PrimaryHover, full opacity, offset 2 px) is checked as rendered, in Views/FocusRingTests.
 
     [Fact]
     public void Nothing_casts_a_shadow() =>
