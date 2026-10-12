@@ -573,8 +573,8 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   (a bare item is the root of its latest attempt, `SND-WF-006` listing the candidates when the item has roots of more
   than one recipe); check the arguments; claim the nonce for exactly this command (`SND-WF-009`); for a protected
   answer (`--grant`, `--grant-tokens`, `--accept`) redeem its challenge (`IChallenges`, P2's shape; action text
-  `grant n <address>`, `grant-tokens n <address>`, `accept <address>`; subject the instance's address, state, run and
-  since; `SND-WF-013`); check the recipe's approval unless the trigger is exempt (cancel; `SND-RECIPE-005`, `-006`);
+  `grant n <address>`, `grant-tokens n <address>`, `accept <address>`; subject `instance:<address>@v<version>`, the
+  address and the instance version the preview showed, so any event mirrored since makes it stale; `SND-WF-013`); check the recipe's approval unless the trigger is exempt (cancel; `SND-RECIPE-005`, `-006`);
   then send the Update with the nonce as its id. A refusal gives the nonce back. A repeated nonce skips the checks and
   Temporal returns the first outcome, printed `already applied (…)`. The CLI prints the status header and what happened;
   an answer prints the resume action it ran (`resumed (transition): -> produce`).

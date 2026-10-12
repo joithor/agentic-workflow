@@ -10,7 +10,8 @@ namespace Aw.Sindri.Features.ApplyCommand;
 /// The action class and the §4.2 challenge of a command (engine spec §4.2, §6.2): '--grant n', '--grant-tokens n' and
 /// '--accept' are protected and need a challenge whose action text is 'grant n &lt;address&gt;', 'grant-tokens n
 /// &lt;address&gt;' or 'accept &lt;address&gt;'; every other answer, a recipe command and a cancel are desk. The challenge
-/// is bound to the instance as the preview showed it: its address, state, run and since.
+/// is bound to the instance's address and version (spec §4.2 "address and version"): the version is the count of events
+/// it has mirrored, so a challenge goes stale once anything else has happened to the instance.
 /// </summary>
 public static class ApplyCommandChallenge
 {
@@ -39,14 +40,14 @@ public static class ApplyCommandChallenge
         });
     }
 
-    /// <summary>What a protected answer's challenge is bound to: the instance as the preview showed it.</summary>
+    /// <summary>What a protected answer's challenge is bound to: the instance's address and version as the preview showed them.</summary>
     /// <param name="view">The instance.</param>
-    /// <returns>'instance:&lt;address&gt;@&lt;state&gt;:&lt;run&gt;:&lt;since&gt;'.</returns>
+    /// <returns>'instance:&lt;address&gt;@v&lt;version&gt;'.</returns>
     public static ChallengeSubject Subject(InstanceView view)
     {
         ArgumentNullException.ThrowIfNull(view);
         return new ChallengeSubject(
-            string.Create(CultureInfo.InvariantCulture, $"instance:{view.Address.Value}@{view.State}:{view.Run?.Value}:{view.Since.ToUnixTimeMilliseconds()}"),
+            string.Create(CultureInfo.InvariantCulture, $"instance:{view.Address.Value}@v{view.Version}"),
             Digest: null);
     }
 }
