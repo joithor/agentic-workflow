@@ -30,6 +30,11 @@ public sealed class TextRulesTests
     [InlineData("[Note]: Warning: the orientation flag must stay on", "[Note]: Warning: the orientation flag must stay on")]
     [InlineData("[Decision]:\nStatus: accepted", "[Decision]:\nStatus: accepted")]
     [InlineData("[x]: c:\\docs\\a.md", "[x]: c:\\docs\\a.md")]
+    [InlineData("see [the PRD][p]\n[p]: https://evil.example/x \"see\nthe PRD\"", "see the PRD\n\nthe PRD\"")]
+    [InlineData("see [the PRD][p]\n[p]: https://evil.example/x \"say \\\"hi\\\"\"", "see the PRD\n")]
+    [InlineData("see [the PRD][p]\n[p]: https://evil.example/x\u00A0y", "see the PRD\n")]
+    [InlineData("see [the PRD][p]\n[p]: &#104;ttps://evil.example/x", "see the PRD\n")]
+    [InlineData("a <image src=\"https://evil.example/p.png\"> b", "a  b")]
     [InlineData("a<!-- one\ntwo\nthree -->b", "a\n\nb")]
     public void The_sanitizer_removes_what_ingest_must_not_keep(string input, string expected) =>
         Assert.Equal(expected, IngestSanitizer.Clean(input));

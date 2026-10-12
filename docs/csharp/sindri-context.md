@@ -23,8 +23,8 @@ repos)`, through `SettingsReader.Check`); an unknown `context.repos` name is als
 assume a local process: `Placement` (`SourcePlacement.Local` or `Shared`, default `Local`) and `Limits`
 (`SourceLimits`: requests per window and max concurrency, each optional; null means none). CTX D6's "no rate limiting"
 is a property of local sources, which declare no limits; it is not a global rule. Nothing enforces limits yet. The
-contract base checks that the placement is defined and that any declared limits are well formed (positive, a request
-count with its window). repo-docs is `Local` with no limits.
+contract base checks that the placement is defined, that any declared limits are well formed (at least one, positive,
+a request count with its window), and that a `Local` source declares none. repo-docs is `Local` with no limits.
 
 `deps.yaml`: Context → Kernel, KernelData and Redaction (Infrastructure only) are `project` edges. Sindri → Context is a
 `project` edge (Sindri's Features and Host use Core) plus a `compose` edge (Sindri's Host calls `AddContextFeatures` and

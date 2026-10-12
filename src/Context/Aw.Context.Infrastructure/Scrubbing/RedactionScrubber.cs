@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using Aw.Context.Core.Trust;
 using Aw.Redaction;
 
@@ -9,7 +10,8 @@ namespace Aw.Context.Infrastructure.Scrubbing;
 /// blocked field is <see cref="ScrubResult.BlockedText"/> in that field only. Ingest sanitizes first, collapses a
 /// single-line field, then scrubs. A multi-line field keeps its line count: a redacted span that covered newlines is
 /// '[REDACTED:rule]' followed by the same newlines, so a whole document cleaned at once still lines up with its blob
-/// (documents are cleaned whole, then chunked: a secret or comment across a chunk boundary can't slip through).
+/// (documents are cleaned whole, then chunked: a secret or comment across a chunk boundary can't slip through). A text the
+/// sanitizer can't clean within its regex timeouts is blocked, never kept and never thrown.
 /// </summary>
 /// <param name="redactor">The redactor.</param>
 internal sealed class RedactionScrubber(IRedactor redactor) : IEgressScrubber, IIngestFilter
@@ -26,7 +28,16 @@ internal sealed class RedactionScrubber(IRedactor redactor) : IEgressScrubber, I
     public ScrubbedField Clean(string raw, bool singleLine)
     {
         ArgumentNullException.ThrowIfNull(raw);
-        var text = IngestSanitizer.Clean(raw);
+        string text;
+        try
+        {
+            text = IngestSanitizer.Clean(raw);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return new ScrubbedField(ScrubResult.BlockedText, Redacted: false, Blocked: true);   // fails closed: a text too costly to clean is never kept
+        }
+
         return singleLine ? Scrub(string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))) : ScrubKeepingLines(text);
     }
 

@@ -24,7 +24,7 @@ public sealed class SourceDescriptorTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(null, null, null, true)]
+    [InlineData(null, null, null, false)]
     [InlineData(60, 60, null, true)]
     [InlineData(null, null, 4, true)]
     [InlineData(60, null, null, false)]
