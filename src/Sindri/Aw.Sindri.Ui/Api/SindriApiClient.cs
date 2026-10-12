@@ -12,8 +12,10 @@ namespace Aw.Sindri.Ui.Api;
 /// answer within 2 s is unreachable, like the CLI's; the event stream has no timeout and ends with its connection.
 /// </summary>
 /// <param name="http">The HTTP client, with no timeout of its own (the app's, or one over a canned handler in tests).</param>
-internal sealed class SindriApiClient(HttpClient http) : ISindriApi
+/// <param name="clock">The clock the 2 s deadline runs on (the app's, so tests drive it with a fake one).</param>
+internal sealed class SindriApiClient(HttpClient http, TimeProvider clock) : ISindriApi
 {
+
     /// <summary>
     /// The version of Sindri's API this build speaks (API spec "Versioning": the status reports apiVersion from P1). A
     /// status that reports another one is the Version mismatch state (UI spec §4.1); one that reports none (S1) is not.
@@ -63,6 +65,7 @@ internal sealed class SindriApiClient(HttpClient http) : ISindriApi
 
     private async Task<Result<T>> Get<T>(Uri api, string path, CancellationToken cancellationToken)
     {
+        _ = clock; // Red: the deadline doesn't run on the clock yet.
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(_callTimeout);
         try
