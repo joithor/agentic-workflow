@@ -498,6 +498,118 @@ public sealed class ShellWindowTests : IDisposable
         Assert.False(Visible(window, "RefreshSending"));
     });
 
+    private static IInputElement? Focused(Window window) => window.FocusManager?.GetFocusedElement();
+
+    private async Task<(ShellWindow Window, ShellViewModel Shell)> StaleWithRefreshFocused()
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        _server.FailPing = true;
+        _clock.Advance(ShellViewModel.StaleAfter);
+        await Until(() => shell.State == ShellState.Stale);
+        Settle(window);
+        Assert.True(Named<Button>(window, "RefreshButton").Focus(NavigationMethod.Tab));
+        return (window, shell);
+    }
+
+    // §11.2 (c): when Sindri answers a focused Refresh, the button hides with the stale state; focus moves to its
+    // neighbour, the health pill, never to nothing.
+    [Fact]
+    public Task When_Refresh_hides_on_recovery_focus_moves_to_the_pill() => OnUi(async () =>
+    {
+        var (window, shell) = await StaleWithRefreshFocused();
+
+        Named<Button>(window, "RefreshButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Until(() => shell.State == ShellState.Normal);
+        Settle(window);
+
+        Assert.False(Visible(window, "RefreshButton"));
+        Assert.Same(Named<Button>(window, "HealthPill"), Focused(window));
+    });
+
+    // §4.1 "refused / failed": focus stays on the control, through the in-flight phase that disables it.
+    [Fact]
+    public Task A_failed_refresh_keeps_focus_on_Refresh() => OnUi(async () =>
+    {
+        var (window, shell) = await StaleWithRefreshFocused();
+        _server.FailStatus = true;
+        _server.StatusGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var refresh = Named<Button>(window, "RefreshButton");
+
+        refresh.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+        Assert.False(refresh.IsEffectivelyEnabled);
+        _server.StatusGate.SetResult();
+        await Until(() => shell.Health.CanRefresh);
+        Settle(window);
+
+        Assert.Equal(ShellState.Stale, shell.State);
+        Assert.Same(refresh, Focused(window));
+    });
+
+    // §11.2 (c): Esc on a sheet a deep link opened returns focus to the page region (no row opened it), never to nothing;
+    // beside the page and covering it below 1100 px alike.
+    [Theory]
+    [InlineData(1280)]
+    [InlineData(1000)]
+    public Task Esc_on_a_deep_linked_sheet_returns_focus_to_the_page_region(int width) => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(0, 0, width, 700) }, Token);
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        Settle(window);
+        Assert.True(window.Get<Button>("SheetClose").Focus(NavigationMethod.Tab));
+
+        window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, keySymbol: null);
+        Settle(window);
+
+        Assert.False(Visible(window, "Sheet"));
+        Assert.Same(window.Get<Border>("Page"), Focused(window));
+    });
+
+    // §11.2 (c): a sheet reopened from its edge tab returns focus to the edge tab when it closes.
+    [Fact]
+    public Task Closing_a_sheet_reopened_from_its_edge_tab_returns_focus_to_the_edge_tab() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        shell.CloseSheet();
+        Settle(window);
+        var tab = window.Get<Button>("EdgeTab");
+        Assert.True(tab.Focus(NavigationMethod.Tab));
+
+        tab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+        Assert.True(window.Get<Button>("SheetClose").Focus(NavigationMethod.Tab));
+        window.Get<Button>("SheetClose").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+
+        Assert.Same(tab, Focused(window));
+    });
+
+    // §11.2 (c): when a state change hides the focused control (Home's health strip when Sindri stops), focus moves to
+    // the page region rather than nowhere.
+    [Fact]
+    public Task When_a_state_change_hides_the_focused_control_focus_moves_to_its_region() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(Named<Button>(window, "HealthStrip").Focus(NavigationMethod.Tab));
+
+        _records.Remove();
+        _server.GoDown();
+        _clock.Advance(HealthViewModel.PingEvery);
+        await Until(() => shell.State == ShellState.NotRunning);
+        Settle(window);
+
+        Assert.False(Visible(window, "HealthStrip"));
+        Assert.Same(window.Get<Border>("Page"), Focused(window));
+    });
+
     // B2 on the Health page: stale reads ⌛ stale at the process section's head.
     [Fact]
     public Task Stale_says_so_on_the_Health_page() => OnUi(async () =>
