@@ -60,6 +60,9 @@ internal sealed class StateIcon : Control
         set => SetValue(ForegroundProperty, value);
     }
 
+    /// <summary>Gets a value indicating whether the icon is turning (the spinner, unless motion is reduced).</summary>
+    public bool IsSpinning => Bounds.Width < 0;
+
     /// <summary>Gets the geometry drawn, or null when there is nothing to draw (no glyph).</summary>
     public Geometry? Geometry => GetValue(GeometryProperty);
 

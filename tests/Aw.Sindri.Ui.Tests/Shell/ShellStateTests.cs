@@ -226,13 +226,18 @@ public sealed class ShellStateTests
 
         _clock.Advance(TimeSpan.FromMilliseconds(299));
         Assert.False(shell.Health.IsSending);
+        Assert.Equal(string.Empty, shell.Health.SendingAnnouncement);
         _clock.Advance(TimeSpan.FromMilliseconds(1));
         await Eventually(() => shell.Health.IsSending);
+
+        // R2 (§4.1): "Sending…" is the polite announcement, not a visible label.
+        Assert.Equal(Labels.Sending, shell.Health.SendingAnnouncement);
 
         _server.StatusGate.SetResult();
         await first;
         Assert.True(shell.Health.CanRefresh);
         Assert.False(shell.Health.IsSending);
+        Assert.Equal(string.Empty, shell.Health.SendingAnnouncement);
         Assert.Equal(ShellState.Normal, shell.State);
     }
 

@@ -75,6 +75,9 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>A refresh has been in flight for 300 ms: "Sending…" shows beside Refresh and is announced politely (§4.1).</summary>
     public bool IsSending { get; private set => Set(ref field, value); }
 
+    /// <summary>The polite announcement while a refresh is in flight (§4.1 "sending"): "Sending…" after 300 ms, else empty.</summary>
+    public string SendingAnnouncement { get; private set => Set(ref field, value); } = string.Empty;
+
     /// <summary>The newest event seen on the stream.</summary>
     public string LastEvent { get; private set => Set(ref field, value); } = "none yet";
 

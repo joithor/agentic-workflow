@@ -528,40 +528,70 @@ public sealed class ShellWindowTests : IDisposable
         }
     });
 
-    // §4.1 "sending" (§12.4): while a refresh is in flight Refresh is disabled and keeps its label, "Sending…" shows beside
-    // it after 300 ms as a polite live region, and a second click does nothing.
-    [Fact]
-    public Task While_a_refresh_is_in_flight_Refresh_is_disabled_keeps_its_label_and_says_Sending() => OnUi(async () =>
+    // §4.1 "sending" (§12.4), R2: while a refresh is in flight Refresh keeps its place and its label, disabled, and a
+    // spinner replaces its ⟳ (static under reduced motion); after 300 ms "Sending…" is announced through a polite live
+    // region that takes no room in the bar, so nothing in the top bar moves; a second click does nothing.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public Task While_a_refresh_is_in_flight_Refresh_keeps_its_label_shows_a_spinner_and_announces_Sending(bool reduceMotion) => OnUi(async () =>
     {
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
         _server.FailPing = true;
         _clock.Advance(ShellViewModel.StaleAfter);
         await Until(() => shell.State == ShellState.Stale);
-        _server.StatusGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var before = _server.StatusCalls;
+        var resources = Application.Current!.Resources;
+        Motion.Apply(resources, reduceMotion);
+        try
+        {
+            Settle(window);
+            var stale = _topBarControls.Where(n => Visible(window, n)).Select(n => (n, Box(window, n))).ToList();
+            _server.StatusGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var before = _server.StatusCalls;
+            var refresh = Named<Button>(window, "RefreshButton");
+
+            refresh.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            _clock.Advance(TimeSpan.FromMilliseconds(300));
+            await Until(() => shell.Health.IsSending);
+            Settle(window);
+
+            SendingKeepsTheBar(window, stale, reduceMotion);
+            refresh.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Equal(before + 1, _server.StatusCalls);
+            EveryControlIsNamed(window);
+            Frame(window, reduceMotion ? "refresh-sending-reduced" : "refresh-sending");
+
+            _server.StatusGate.SetResult();
+            await Until(() => shell.State == ShellState.Normal);
+            Settle(window);
+            Assert.Equal(string.Empty, AutomationProperties.GetName(Named<Control>(window, "RefreshSending")) ?? string.Empty);
+            Assert.False(Named<StateIcon>(window, "RefreshSpinner").IsSpinning);
+        }
+        finally
+        {
+            Motion.Apply(resources, reduce: false);
+        }
+    });
+
+    // While sending: Refresh disabled with its label, the spinner in place of ⟳ (turning unless motion is reduced),
+    // "Sending…" only in the zero-width live region, and every top-bar control where the stale bar had it.
+    private static void SendingKeepsTheBar(Window window, List<(string, Rect)> stale, bool reduceMotion)
+    {
         var refresh = Named<Button>(window, "RefreshButton");
-
-        refresh.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        _clock.Advance(TimeSpan.FromMilliseconds(300));
-        await Until(() => shell.Health.IsSending);
-        Settle(window);
-
         Assert.False(refresh.IsEffectivelyEnabled);
         Assert.Contains(refresh.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Text == Labels.Refresh);
-        Assert.True(Visible(window, "RefreshSending"));
-        Assert.Equal(Labels.Sending, Text(window, "RefreshSending"));
-        Assert.Equal(AutomationLiveSetting.Polite, AutomationProperties.GetLiveSetting(Named<TextBlock>(window, "RefreshSending")));
-        refresh.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Assert.Equal(before + 1, _server.StatusCalls);
-        EveryControlIsNamed(window);
-        Frame(window, "refresh-sending");
-
-        _server.StatusGate.SetResult();
-        await Until(() => shell.State == ShellState.Normal);
-        Settle(window);
-        Assert.False(Visible(window, "RefreshSending"));
-    });
+        var spinner = Named<StateIcon>(window, "RefreshSpinner");
+        Assert.True(spinner.IsEffectivelyVisible, "no spinner while sending");
+        Assert.False(Visible(window, "RefreshIcon"));
+        Assert.Equal(!reduceMotion, spinner.IsSpinning);
+        var live = Named<Control>(window, "RefreshSending");
+        Assert.Equal(Labels.Sending, AutomationProperties.GetName(live));
+        Assert.Equal(AutomationLiveSetting.Polite, AutomationProperties.GetLiveSetting(live));
+        Assert.Equal(0, live.Bounds.Width);
+        Assert.DoesNotContain(window.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Bounds.Width > 0 && t.Text == Labels.Sending);
+        Assert.Equal(stale, _topBarControls.Where(n => Visible(window, n)).Select(n => (n, Box(window, n))));
+    }
 
     private static IInputElement? Focused(Window window) => window.FocusManager?.GetFocusedElement();
 
@@ -873,8 +903,12 @@ public sealed class ShellWindowTests : IDisposable
     {
         if (state == BarState.Sending)
         {
-            Assert.True(Visible(window, "RefreshSending"), "Sending… is hidden");
-            Assert.Equal(Labels.Sending, Text(window, "RefreshSending"));
+            // R2: the spinner replaces ⟳ inside Refresh and "Sending…" is only announced, so the bar keeps the stale
+            // state's layout: the brand word stays wherever the stale bar kept it.
+            Assert.True(Visible(window, "RefreshSpinner"), "no spinner while sending");
+            Assert.Equal(Labels.Sending, AutomationProperties.GetName(Named<Control>(window, "RefreshSending")));
+            Assert.Equal(0, Named<Control>(window, "RefreshSending").Bounds.Width);
+            Assert.True(Visible(window, "BrandWord"), "the brand word dropped while sending");
         }
 
         if (state == BarState.NotResponding)
