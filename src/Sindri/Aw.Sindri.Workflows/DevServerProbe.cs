@@ -26,9 +26,11 @@ internal static class DevServerProbe
                 await tcp.ConnectAsync(frontend, bounded.Token).ConfigureAwait(false);   // refused fast, before the SDK's connect
             }
 
+            // WaitAsync bounds the wait itself: the SDK's lazy connect ignores the RPC's cancellation, so against a server
+            // that accepts TCP but never answers (SIGSTOPped, say) the call alone would hang.
             _ = await Connection(frontend).WorkflowService
                 .DescribeNamespaceAsync(new DescribeNamespaceRequest { Namespace = SindriTemporal.Namespace }, Options(timeout, bounded.Token))
-                .ConfigureAwait(false);
+                .WaitAsync(bounded.Token).ConfigureAwait(false);
             return (DevServerAnswer.Ready, null);
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)
@@ -50,7 +52,8 @@ internal static class DevServerProbe
         var connection = Connection(frontend);
         var options = Options(TimeSpan.FromSeconds(10), cancellationToken);
         var listed = await connection.OperatorService
-            .ListSearchAttributesAsync(new ListSearchAttributesRequest { Namespace = SindriTemporal.Namespace }, options).ConfigureAwait(false);
+            .ListSearchAttributesAsync(new ListSearchAttributesRequest { Namespace = SindriTemporal.Namespace }, options)
+            .WaitAsync(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
         var add = new AddSearchAttributesRequest { Namespace = SindriTemporal.Namespace };
         foreach (var (name, type) in SindriTemporal.SearchAttributes.Where(a => !listed.CustomAttributes.ContainsKey(a.Name)))
         {
@@ -59,7 +62,7 @@ internal static class DevServerProbe
 
         if (add.SearchAttributes.Count > 0)
         {
-            _ = await connection.OperatorService.AddSearchAttributesAsync(add, options).ConfigureAwait(false);
+            _ = await connection.OperatorService.AddSearchAttributesAsync(add, options).WaitAsync(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
         }
     }
 

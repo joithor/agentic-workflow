@@ -5,7 +5,8 @@
 # (temporalio/sdk-dotnet#286; .agents/rules/csharp.md "AOT scope"). So this publishes the host framework-dependent and
 # portable (no runtime identifier, no self-contained runtime) with warnings as errors, checks that the output is
 # framework-dependent and carries the Temporal SDK with its native bridge, then drives the published apphost 'sindri'
-# (DOTNET_ROOT set from the 'dotnet' on PATH when unset) over the S1 journeys against a temp home: doctor with nothing running, start headless with an unapproved
+# (DOTNET_ROOT set from the 'dotnet' on PATH when unset) over the S1 journeys against a temp home (serve brings up the pinned Temporal dev
+# server, so the temporal CLI must be installed: scripts/binaries-lock.sh fetch temporal): doctor with nothing running, start headless with an unapproved
 # profile, a second serve refused by the lease, the approve preview and its non-terminal refusal, status, stop, and
 # doctor again; then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and
 # on an invalid fixture (RCP-REACH-001, exit 1). The normalized output (pids, ports, hashes, times, the host name and the

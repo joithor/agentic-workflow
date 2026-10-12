@@ -28,7 +28,12 @@ internal sealed class StartProcessService(
         }
 
         held.Hold(grant.Value);
-        _ = temporal;   // red: engine P0 unit (a) brings the dev server up here
+        var server = await temporal.Ensure(cancellationToken).ConfigureAwait(false);
+        if (server.IsError)
+        {
+            await GiveBack(grant.Value, cancellationToken).ConfigureAwait(false);
+            return server.Error;
+        }
 
         var approved = await approvals.Latest(cancellationToken).ConfigureAwait(false);
         var hash = approved.IsSuccess ? approved.Value?.Hash : null;
@@ -37,11 +42,12 @@ internal sealed class StartProcessService(
         var recorded = await ledger.Append(entry, grant.Value, cancellationToken).ConfigureAwait(false);
         if (recorded.IsError)
         {
+            _ = await temporal.Stop(cancellationToken).ConfigureAwait(false);
             await GiveBack(grant.Value, cancellationToken).ConfigureAwait(false);   // the start isn't recorded: give the lease back for the next start
             return recorded.Error;
         }
 
-        return new StartProcessResponse(grant.Value, hash, new TemporalEndpoint(0, 0, 0));
+        return new StartProcessResponse(grant.Value, hash, server.Value);
     }
 
     private async ValueTask GiveBack(LeaseGrant grant, CancellationToken cancellationToken)

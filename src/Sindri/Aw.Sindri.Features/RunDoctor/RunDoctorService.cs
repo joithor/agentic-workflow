@@ -13,7 +13,6 @@ internal sealed class RunDoctorService(
 {
     public async ValueTask<Result<RunDoctorResponse>> Handle(RunDoctorRequest request, CancellationToken cancellationToken)
     {
-        _ = temporal;   // red: engine P0 unit (a) adds the temporal line
         var now = clock.GetUtcNow();
         var read = await lease.Read(cancellationToken).ConfigureAwait(false);
         var row = read.IsSuccess ? read.Value : null;
@@ -25,6 +24,7 @@ internal sealed class RunDoctorService(
             DoctorRules.Ledger(await ledger.Schema(cancellationToken).ConfigureAwait(false)),
             DoctorRules.Profile(live, saved, recorded),
             DoctorRules.Api(await api.Check(cancellationToken).ConfigureAwait(false), row, now),
+            DoctorRules.Temporal(await temporal.Inspect(cancellationToken).ConfigureAwait(false)),
         ];
         return new RunDoctorResponse(checks, DoctorRules.ExitCode(checks));
     }

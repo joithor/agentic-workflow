@@ -17,7 +17,7 @@ public sealed class TemporalDevServerTests : IDisposable
 
     public void Dispose() => _home.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 60_000)]
     public async Task Serve_starts_the_dev_server_on_loopback_with_its_database_under_the_home()
     {
         var temporal = PinnedTemporal.Path();
@@ -37,7 +37,7 @@ public sealed class TemporalDevServerTests : IDisposable
         }
     }
 
-    [Fact]
+    [Fact(Timeout = 60_000)]
     public async Task A_server_left_by_a_serve_that_died_is_adopted_by_the_next_start()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -56,7 +56,7 @@ public sealed class TemporalDevServerTests : IDisposable
         }
     }
 
-    [Fact]
+    [Fact(Timeout = 60_000)]
     public async Task A_server_on_the_home_database_that_doesnt_answer_is_replaced()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -84,7 +84,7 @@ public sealed class TemporalDevServerTests : IDisposable
         }
     }
 
-    [Fact]
+    [Fact(Timeout = 60_000)]
     public async Task A_restart_on_the_same_database_keeps_the_namespace_and_the_search_attributes()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -107,7 +107,7 @@ public sealed class TemporalDevServerTests : IDisposable
         }
     }
 
-    [Fact]
+    [Fact(Timeout = 60_000)]
     public async Task Stop_takes_the_server_down()
     {
         var ct = TestContext.Current.CancellationToken;

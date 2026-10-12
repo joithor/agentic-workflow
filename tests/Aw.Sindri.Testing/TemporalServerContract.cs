@@ -40,7 +40,7 @@ public abstract class TemporalServerContract : IAsyncLifetime
 
     /// <summary>Ensure starts a server that answers at the pin with the namespace.</summary>
     /// <returns>The test.</returns>
-    [Fact]
+    [Fact(Timeout = 60_000)]
     public async Task Ensure_starts_a_server_that_answers_at_the_pin_with_the_namespace()
     {
         var started = (await Server.Ensure(Token)).Value;
@@ -54,7 +54,7 @@ public abstract class TemporalServerContract : IAsyncLifetime
 
     /// <summary>A second Ensure adopts the running server instead of starting another.</summary>
     /// <returns>The test.</returns>
-    [Fact]
+    [Fact(Timeout = 60_000)]
     public async Task A_second_ensure_adopts_the_running_server()
     {
         var first = (await Server.Ensure(Token)).Value;
@@ -66,7 +66,7 @@ public abstract class TemporalServerContract : IAsyncLifetime
 
     /// <summary>Stop takes the server down; with none running it is a no-op.</summary>
     /// <returns>The test.</returns>
-    [Fact]
+    [Fact(Timeout = 60_000)]
     public async Task Stop_takes_it_down_and_inspect_finds_none()
     {
         _ = (await Server.Ensure(Token)).Value;

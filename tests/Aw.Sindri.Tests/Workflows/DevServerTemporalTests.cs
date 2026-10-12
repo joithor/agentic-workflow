@@ -14,7 +14,7 @@ public sealed class DevServerTemporalTests : IDisposable
 
     public void Dispose() => _home.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 60_000)]
     public async Task Doctor_reports_a_running_server_ok_at_the_pin_with_the_namespace()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -36,7 +36,7 @@ public sealed class DevServerTemporalTests : IDisposable
         Assert.Equal((CheckState.Fail, "sindri"), (stopped.State, stopped.Fix));
     }
 
-    [Fact]
+    [Fact(Timeout = 60_000)]
     public async Task Ensure_without_the_pinned_binary_is_SND_CLI_002_naming_the_fetch()
     {
         var missing = Path.Combine(_home.Path, "no-such", "temporal");

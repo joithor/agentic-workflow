@@ -86,7 +86,10 @@ internal static partial class DevServerProcesses
     }
 
     /// <summary>Runs <paramref name="file"/> to completion (at most 10 s) and returns its standard output.</summary>
-    private static string Capture(string file, params string[] arguments)
+    /// <param name="file">The executable.</param>
+    /// <param name="arguments">Its arguments.</param>
+    /// <returns>Its standard output.</returns>
+    public static string Capture(string file, params string[] arguments)
     {
         var info = new ProcessStartInfo(file, arguments) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
         using var process = Process.Start(info) ?? throw new InvalidOperationException($"{file} didn't start");

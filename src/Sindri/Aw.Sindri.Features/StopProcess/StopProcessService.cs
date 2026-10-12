@@ -30,8 +30,7 @@ internal sealed class StopProcessService(HeldLease held, ILease lease, ILedgerSt
         var recorded = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         held.Clear();         // first, so a renewal finishing now can't hold the grant again
         shutdown.Request();   // before the release, so a renewal that runs after it sees a stop, not a lost lease
-        _ = temporal;   // red: engine P0 unit (a) stops the dev server here
-        var stopped = Results.Success(Unit.Value);
+        var stopped = await temporal.Stop(cancellationToken).ConfigureAwait(false);
         var released = await lease.Release(grant, cancellationToken).ConfigureAwait(false);
         return recorded.IsError ? recorded.Error
             : stopped.IsError ? stopped.Error
