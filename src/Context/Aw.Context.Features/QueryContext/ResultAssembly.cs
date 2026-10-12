@@ -8,9 +8,10 @@ using Aw.Context.Core.Trust;
 namespace Aw.Context.Features.QueryContext;
 
 /// <summary>
-/// Turns fetched records into the result (spec §8.3, §8.4): one 'record' item and one citation per record, every field
-/// scrubbed on its own before it is written (a blocked field is '[REDACTED:blocked]' in that field only), untrusted
-/// text inside the fence, then packed into the budget.
+/// Turns fetched records into the result (spec §7, §8.3, §8.4): one 'record' item and one citation per record, every
+/// field from a record scrubbed on its own before it is written (title, text, key, ids, versions, aliases, permalink,
+/// and the degraded sources' messages; a blocked field is '[REDACTED:blocked]' in that field only), untrusted text
+/// inside the fence, then packed into the budget.
 /// </summary>
 /// <param name="egress">The per-field scrubber.</param>
 /// <param name="queryId">The query's id.</param>
@@ -31,7 +32,7 @@ internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, Da
 
         var packed = Packer.Pack(candidates, budget);
         return new ContextResult(ContextResult.CurrentSchemaVersion, queryId, query, Anchors: [], MapVersion: null, asOf, packed.Sections,
-            Conflicts: [], SuggestedAnchors: [], degraded, packed.Truncated, new BudgetUse(budget, packed.Used, Estimate: true), cites);
+            Conflicts: [], SuggestedAnchors: [], [.. degraded.Select(d => d with { Message = egress.Scrub(d.Message).Text })], packed.Truncated, new BudgetUse(budget, packed.Used, Estimate: true), cites);
     }
 
     private ResultItem Item(FetchedRecord record, string marker)
@@ -52,11 +53,11 @@ internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, Da
         {
             var (state, current) = CitationStates.Of(hit.Ref.Version, versions.GetValueOrDefault(hit.Ref, (false, null)), record.Text.Blocked);
             states.Add(state);
-            refs.Add(new CitationRef(hit.Ref.Source, ExternalId.From(Scrubbed(hit.Ref.Id.Value)), hit.Ref.Version) { Current = current });
+            refs.Add(new CitationRef(hit.Ref.Source, ExternalId.From(Scrubbed(hit.Ref.Id.Value)), Scrubbed(hit.Ref.Version)) { Current = current is { } c ? Scrubbed(c) : null });
         }
 
         var best = record.Item.Hits[0];
-        return new Citation(RecordKey.From(Scrubbed(record.Item.Key.Value)), refs, Permalinks.Allowed(best.Ref.Permalink), Trust.Untrusted, Worst(states))
+        return new Citation(RecordKey.From(Scrubbed(record.Item.Key.Value)), refs, Permalink(best.Ref.Permalink), Trust.Untrusted, Worst(states))
         {
             Aliases = Aliases(record.Aliases),
         };
@@ -72,6 +73,17 @@ internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, Da
 
     /// <summary>An id or key scrubbed like any other field; a blocked one keeps a fixed, valid placeholder.</summary>
     private string Scrubbed(string value) => egress.Scrub(value) is { Blocked: false } scrubbed ? scrubbed.Text : "scrub:blocked";
+
+    private SourceVersion Scrubbed(SourceVersion version) => SourceVersion.From(Scrubbed(version.Value));
+
+    /// <summary>
+    /// The link, scrubbed as written and as it reads unescaped, then allowed by host; one the scrub changes at all
+    /// (redacted or blocked) is dropped, never rewritten: a link with a placeholder in it leads nowhere and could mislead.
+    /// </summary>
+    private Uri? Permalink(Uri? link) =>
+        link is not null && Unchanged(link.OriginalString) && Unchanged(Uri.UnescapeDataString(link.OriginalString)) ? Permalinks.Allowed(link) : null;
+
+    private bool Unchanged(string value) => egress.Scrub(value) is { Blocked: false } scrubbed && string.Equals(scrubbed.Text, value, StringComparison.Ordinal);
 
     /// <summary>The citation's state is its worst reference's: blocked, then stale, then unchecked, then current.</summary>
     private static CitationState Worst(List<CitationState> states) =>

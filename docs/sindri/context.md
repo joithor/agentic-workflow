@@ -162,11 +162,12 @@ or entry) or `003` (an unsafe `file:`: names the file and the `chmod 600` fix), 
 citation: `cites.<n>.aliases` in `--json` and HTTP (every alias of the record, merged across its refs, each scrubbed
 like a title), and the first one beside the key in the text form (`linear:issue/<uuid> (ENG-482)`). Onyx v4.9.0 has no route that returns a
 document's `updated_at` by id, so **onyx citations stay `unchecked`** (version unchecked) instead of `current` or
-`stale`.
+`stale`. A citation's `permalink` is scrubbed like every other field: a link the scrub changes at all (redacted or
+blocked) is left out, and the citation keeps its key and aliases.
 
 When Onyx doesn't answer, refuses the key, answers with an error status or replies in a shape the pinned release
 doesn't have, the answer still returns with repo-docs' results and a `degraded` entry `{ "source": "onyx", "code":
-"SND-CONTEXT-010", … }` (the cause, such as `050` or `051`, in its message). Only when every source is down is the
+"SND-CONTEXT-010", … }` (the cause leads its message, such as `SND-CONTEXT-051: …`). Only when every source is down is the
 answer `SND-CONTEXT-011`. A query doesn't check Onyx's version: version drift is doctor's and `sources status`'s check
 (`055`, naming both versions), and a query keeps using an Onyx that reports another version as long as its replies
 read; a reply that doesn't degrades onyx (`010`, cause `051`).
