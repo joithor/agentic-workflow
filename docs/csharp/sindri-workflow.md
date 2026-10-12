@@ -492,3 +492,49 @@ start its child until P7.
 The loop's tests run on the time-skipping server: `InterpreterEvalTests` runs every shipped `workflow.step` eval case
 through the interpreter and checks each line against the in-process `recipe eval`, and `InterpreterStateLoopTests`
 covers the search attributes, a delivered event, a refused event's park (`NeedsYou` flips) and replay.
+## Status, list and events (engine P4 unit (e))
+
+Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and X16.
+
+| Verb | Slice | What it reads | Prints |
+|---|---|---|---|
+| `workflow status <address> [--json]` | `GetInstance` | the `GetInstance` Query (`TemporalInstanceRuntime.Get`); an ended instance answers too | the §6.4 layout, or the `InstanceView` as JSON. Exit 2 with `SND-WF-001` for no such instance, `SND-API-002` when no worker answers in 10 s |
+| `workflow list [--needs-me \| --item <id> \| --state <s>] [--query <q>] [--json]` | `ListInstances` | a visibility query on the search attributes, then each row's `GetInstance` | one status header per line; `--needs-me` prints **Decisions** (parks, escalations, takeovers) then **Tasks** (open desk tasks), each under its heading. Empty: `nothing needs you` (`--needs-me`) or `no instances match`; exit 0 |
+| `workflow events <address> [--follow] [--json]` | `GetInstanceEvents` | the ledger through `ILedgerReader`, never Temporal's history | one line per event: `seq  MM-dd HH:mm:ss  type  from -> to  trigger outcome  run r  actor`; `no events`. `--follow` reads after its cursor every second until interrupted |
+
+- **`--needs-me` is a stand-in.** `GET /needs-you` (API P4) isn't built yet, so `ListInstances` serves it with the
+  visibility query `NeedsYou = true` over running instances and sorts the views with `NeedsYouList.Of`: Decisions,
+  then Tasks, by address, and a parent whose open question mirrors a listed child shown once, under the child. When
+  API P4 lands, `--needs-me` reads its route instead and keeps this output.
+- **Which instances.** Bare `list` and `--needs-me` list running instances; `--item` and `--state` list ended ones too
+  (`IWorkflowInstances.List(query, ended, …)`). `--state` takes a state name (`[a-z][a-z0-9-]{0,63}`); `--query` adds a
+  raw visibility query for scripts.
+- **`v<n>`.** Temporal keeps no row version, so the instance's version is the count of events the interpreter has
+  mirrored into the ledger (`workflow.started` and every transition): a new instance is `v1`. The workflow counts
+  them in `Mirror` and sets `InstanceView.Version` in the Query.
+- **Times.** Every clock time status prints is UTC (`since 11:54`; `since 10-09 11:54` once a day or more has passed),
+  in the header and in `next` alike, because the Query has no local time zone. Durations read `1d 22h 48m`, or `40s`
+  under a minute (`StatusText`).
+- **What the view renders** (`InstanceViews.Of`, pure, so the Query and the goldens call the same code): the header's
+  detail (`desk task`, the park reason with `(child)` for a mirrored park, `spec-conflict (<kind>)`, the escalation
+  kind, the outcome when it isn't the state's name), `next` (§3.8's text per row, a park's instruction on its own line;
+  a desk task's recipe `next` with its variables filled and the `workflow complete` line with the Step's first declared
+  outcome and the outputs required on it), the answer line per park reason (`--grant 1`, `--grant-tokens <half the
+  state's budget>`, `--text`, `--resume [--text]`, `--resume`, `--accept`, and the approval or cancel a spec-conflict
+  needs), the drift line for a drift recorded behind a park, the budgets, and `allowedCommands`. A spec-conflict park
+  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`.
+- **Layout** (`StatusLayout`): the labels take 12 columns, `next` wraps at 120, and the lines come in a fixed order:
+  next, child, inputs, drift, timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands.
+  An input's digest prints as its first four hex digits and `...` (ASCII for §6.4's ellipsis). The answer note is set
+  off by five spaces. Golden files pin the six §6.4 layouts and one per §3.8 row P4 reaches
+  (`tests/Aw.Sindri.Tests/GetInstance/Golden/`).
+- **The event stream's filter (S1-D6).** `GET /sindri/events?item=<id>` keeps one item's rows and `?instance=<address>`
+  the rows an instance mirrored (keys `workflow:{address}:…`, so a child's rows stay out of its parent's). The stream's
+  cursor still moves past the rows the filter skips (`StreamEventsResponse.Scanned`).
+- **Profile keys (S1-D11).** `workflow.deskTimeout` (default `2d`) and `workflow.eventHold` (default `24h`), each a
+  duration (`1m`, `4h`, `2d`); a profile without a `workflow:` block keeps the canonical JSON (and so the hash) it had.
+  The worker reads them through `ProfileWorkflowTimes`: `LoadRecipe` reads both when an instance starts, so the desk
+  floor (unit (c)) and the interpreter's `eventHold` expiry come from history and a replay sees the same values. The dev profile sets `deskTimeout: 1m`.
+- **Not yet:** approving a recipe runs its evals once engine P2's approval lands: the named hook is the Core port `IApprovalEvals` (SND-RECIPE-008 when an eval is missing or failing), which P2's `ApproveRecipe` calls before it
+  records the approval; it is bound when that slice lands, by moving `EvalRecipe`'s case running into Core.
+  `workflow events` reads the ledger directly until API P3's item timeline exists.

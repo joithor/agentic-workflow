@@ -79,7 +79,12 @@ repos:                    # optional
 services:                 # optional: background services by name, each with a cadence
   heartbeat: { every: 30s }   # <n>s|m|h, 5s to 24h
 api: { port: 7410 }       # optional, default 7410; 0 (a free port) or 1024..65535; AW_SINDRI_PORT overrides it
+workflow:                 # optional (engine S1-D11); each a duration <n>m|h|d
+  deskTimeout: 2d         # default 2d: the floor of every desk Step's timeout
+  eventHold: 24h          # default 24h: how long a buffered event waits for its wait
 ```
+
+A profile without a `workflow:` block serializes without it, so its hash (and any approval of it) is unchanged.
 
 The approval hash is SHA-256 over the canonical JSON (the checked record, repos and services sorted), so comments and
 key order don't change it. An approval snapshot whose content no longer matches its hash isn't trusted.
@@ -156,7 +161,7 @@ foreign browser `Origin` a 403):
 | `GET /sindri/commands` | `ListCommands`: the command catalog (Command catalog, below) |
 | `POST /sindri/stop` | `StopProcess` |
 | `POST /sindri/profile/approve` | `ApproveProfile` (`{hash, confirmed}`) |
-| `GET /sindri/events?after=N` | `StreamEvents` as server-sent events: one event per ledger row, `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second; ends when the client goes away or a stop is requested, so a stop doesn't wait out Kestrel's 30 s graceful shutdown |
+| `GET /sindri/events?after=N[&item=<id>\|&instance=<address>]` | `StreamEvents` as server-sent events: one event per ledger row (with `item`, that item's rows; with `instance`, the rows that instance mirrored; engine S1-D6), `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second; ends when the client goes away or a stop is requested, so a stop doesn't wait out Kestrel's 30 s graceful shutdown |
 
 A service's error is ProblemDetails with the `SND-*` code as `title`. The API's own failures carry a code too: an
 unhandled exception in a handler is logged and answered 500 with `SND-API-005`, and a body or query value the request
@@ -380,12 +385,15 @@ blocks.
 | `SND-API-007` | An unknown `X-Sindri-Caller` value, or a malformed `X-Sindri-Repo` (400; logged, not audited) |
 | `SND-API-008` | A command carried an `Origin` header (403; logged, not audited) |
 | `SND-API-009` | The command gate wasn't acquired within 5 s: another command is running (503) |
+| `SND-API-010` | A command that reads views was refused while the views rebuild; it wasn't run, retry (503) |
+| `SND-API-011` | The views didn't reach the sequence in time: an `X-Sindri-After` query waited 2 s, or a command waited for the head; at once while the projector is stalled (503) |
 | `SND-AUTH-001` | A `human` caller without the valid per-start token: missing or stale (403; restart the app or rerun the command), or a `prover` label outside a temp or proof home |
 | `SND-AUTH-002` | The caller may not run the command's action class (403; only the `command.handled` audit row is written) |
 | `SND-CLI-001` | Unknown command |
 | `SND-CLI-002` | `sindri serve` didn't come up after starting it, or serve couldn't bring up the Temporal dev server (the pinned CLI is missing, it exited, or it didn't answer within 30 s), or `sindri stop` couldn't stop it |
 | `SND-CLI-003` | Bad input: a CLI argument or setting that is malformed (a profile hash that isn't 64 hex digits, an `AW_SINDRI_PORT` that isn't 0..65535), or an API request body or value the control plane refused (a 400) |
 | `SND-SCHED-001` | A background service run failed |
+| `SND-VIEW-001` | The projector stalled on an event (logged with its sequence and type); `sindri views rebuild` clears it |
 
 ### Workflow errors (`WorkflowErrors`)
 

@@ -20,5 +20,7 @@ internal sealed class HandledFailingLedger(ILedgerStore inner) : ILedgerStore
 
     public ValueTask<Result<LedgerEvent?>> Latest(string type, CancellationToken cancellationToken) => inner.Latest(type, cancellationToken);
 
+    public ValueTask<Result<long>> Head(CancellationToken cancellationToken) => inner.Head(cancellationToken);
+
     public ValueTask<Result<SchemaStatus>> Schema(CancellationToken cancellationToken) => inner.Schema(cancellationToken);
 }

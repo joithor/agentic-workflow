@@ -15,9 +15,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </summary>
 /// <param name="approvals">The approved recipes.</param>
 /// <param name="catalog">The build's block catalog.</param>
-/// <param name="desk">The desk runtime's settings ('workflow.deskTimeout').</param>
+/// <param name="times">The profile's 'workflow:' times (S1-D11): 'workflow.deskTimeout' and 'workflow.eventHold'.</param>
 /// <param name="logger">The log the open desk task is recorded in.</param>
-internal sealed partial class RunStepActivities(IApprovedRecipes approvals, BlockCatalog catalog, DeskSettings desk, ILogger<RunStepActivities> logger)
+internal sealed partial class RunStepActivities(IApprovedRecipes approvals, BlockCatalog catalog, ProfileWorkflowTimes times, ILogger<RunStepActivities> logger)
 {
     /// <summary>Reads the approved recipe and the descriptors of its blocks.</summary>
     /// <param name="recipe">The recipe the instance is pinned to.</param>
@@ -26,7 +26,8 @@ internal sealed partial class RunStepActivities(IApprovedRecipes approvals, Bloc
     public async Task<LoadedRecipe> LoadRecipeAsync(RecipeVersion recipe)
     {
         ArgumentNullException.ThrowIfNull(recipe);
-        var found = await approvals.Find(recipe.Id, recipe.Hash, ActivityExecutionContext.Current.CancellationToken).ConfigureAwait(false);
+        var cancel = ActivityExecutionContext.Current.CancellationToken;
+        var found = await approvals.Find(recipe.Id, recipe.Hash, cancel).ConfigureAwait(false);
         if (found.IsError)
         {
             throw new ApplicationFailureException($"{found.Error.Message}", errorType: found.Error.Code, nonRetryable: true);
@@ -36,7 +37,8 @@ internal sealed partial class RunStepActivities(IApprovedRecipes approvals, Bloc
         var used = definition.States.Values.Select(static s => s.Step?.Use)
             .Concat(definition.Transitions.SelectMany(static t => t.Gates.Select(static g => (BlockId?)g.Use).Concat(t.Effects.Select(static e => (BlockId?)e.Use))))
             .OfType<BlockId>().ToHashSet();
-        return new LoadedRecipe(found.Value.Version, definition, [.. catalog.Blocks.Where(b => used.Contains(b.Id))], desk.Timeout);
+        var workflow = await times.Read(cancel).ConfigureAwait(false);
+        return new LoadedRecipe(found.Value.Version, definition, [.. catalog.Blocks.Where(b => used.Contains(b.Id))], workflow.DeskTimeout);
     }
 
     /// <summary>

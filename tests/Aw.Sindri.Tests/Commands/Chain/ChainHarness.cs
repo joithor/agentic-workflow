@@ -39,6 +39,7 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton(H.Events)
             .AddSingleton(H.Callers)
             .AddSingleton<IShutdown>(H.Shutdown)
+            .AddSingleton(new TemporalRuntime(new FakeTemporalServer(), H.Clock))   // P4a: stop stops the worker and the dev server
             .AddSingleton(endpoints ?? new InMemoryEndpointFile())
             .AddSingleton(new TemporalRuntime(new FakeTemporalServer(), H.Clock))   // the stop's Temporal side, with no server running
             .AddSingleton<IProfileSource>(H.Profiles)

@@ -51,6 +51,7 @@ internal sealed partial class RecipeWorkflow
     private StepCompleted? _report;
     private string? _reportId;
     private int _runs;
+    private int _mirrored;
 
     /// <summary>
     /// Interprets the recipe from its initial state to a terminal one (spec §5.1): an active state runs its Step (unit
@@ -106,7 +107,7 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt)
+            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt) with { Version = _mirrored }
             : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null);
     }
 
@@ -186,6 +187,7 @@ internal sealed partial class RecipeWorkflow
     private async Task Mirror(WorkflowEventRecord record, bool needsYou)
     {
         _ = await Workflow.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(record), RecordEventActivities.LocalOptions).ConfigureAwait(true);
+        _mirrored++;   // the instance's version, 'v<n>' in status: Temporal keeps no row version (unit (e))
         Upsert(record.To, needsYou);
     }
 

@@ -73,7 +73,7 @@ public sealed class RecipeWorkflowTests : IDisposable
             var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.StepStart(sindri, "T-1", ct));
             _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
 
-            Assert.Equal($"{Address}  produce  needs-you\n", await WorkflowsHarness.Listed(sindri, "NeedsYou = true AND Tenant = 'local'", ct));
+            Assert.Matches($"^{Address}  workflow\\.step@[0-9a-f]{{12}}  v1  produce: desk task  since .+\n$", await WorkflowsHarness.Listed(sindri, "NeedsYou = true AND Tenant = 'local'", ct));
             var runId = (await handle.DescribeAsync()).RunId;
             var rows = (await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 100, ct)).Value
                 .Where(static e => e.Envelope.Type.StartsWith("workflow.", StringComparison.Ordinal)).ToList();

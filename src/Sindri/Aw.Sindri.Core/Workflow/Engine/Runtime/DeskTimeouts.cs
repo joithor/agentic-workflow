@@ -12,7 +12,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// </summary>
 public static class DeskTimeouts
 {
-    /// <summary>The 'workflow.deskTimeout' default (W20), until S1-D11's profile key sets it.</summary>
+    /// <summary>The 'workflow.deskTimeout' default (W20); the profile key (S1-D11, WorkflowTimes) overrides it.</summary>
     public static TimeSpan DefaultFloor { get; } = TimeSpan.FromDays(2);
 
     /// <summary>How long a desk Step waits for its report: the state's timeout, raised to <paramref name="floor"/>.</summary>

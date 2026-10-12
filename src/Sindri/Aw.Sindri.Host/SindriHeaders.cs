@@ -18,6 +18,9 @@ internal static class SindriHeaders
     /// <summary>The per-start human token.</summary>
     internal const string Token = "X-Sindri-Token";
 
+    /// <summary>On a query: the ledger sequence its answer must include (read-your-writes, API spec §2.1).</summary>
+    internal const string After = "X-Sindri-After";
+
     /// <summary>The API version every response carries.</summary>
     internal const string ApiVersion = "Sindri-Api-Version";
 }

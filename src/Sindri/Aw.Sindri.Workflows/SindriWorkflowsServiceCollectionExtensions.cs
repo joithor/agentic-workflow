@@ -38,6 +38,6 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IFactStore, HomeFactStore>()               // engine P4 unit (c): facts stored 0600 before the report
             .AddSingleton<ICommandNonces, HomeCommandNonces>()           // engine P4 unit (c): the nonce table (stand-in until API's IssueNonce)
             .AddSingleton<TemporalDeskReports>()                     // engine P4 unit (c): Send's 'complete' path
-            .AddSingleton(new DeskSettings(DeskTimeouts.DefaultFloor));   // engine P4 unit (c): 'workflow.deskTimeout' until S1-D11 (unit (e))
+            .AddSingleton<ProfileWorkflowTimes>();                   // engine P4 unit (e): S1-D11, workflow.deskTimeout and workflow.eventHold, read by LoadRecipe
     }
 }
