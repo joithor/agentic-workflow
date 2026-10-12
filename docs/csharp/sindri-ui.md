@@ -289,6 +289,72 @@ scripts/sindri-ui-fixture.sh down
 `u1-banner-rebuilding`, `u1-control-sending`, `u1-control-accepted`, `u1-health-controls`). The fake serves P1's and
 P2's goldens (`tests/Aw.Sindri.Tests/Golden/Api/**`) and U1's spec-shaped ones (`tests/Aw.Sindri.Ui.Tests/Golden/SpecShaped/**`, to be replaced by P2's as they land).
 
+## U2: queue, item detail, timeline, Create and Close item (UI spec §18 U2)
+
+Built against the fake `ISindriApi` because API P3 isn't built: every P3 route is served from a **spec-shaped
+fixture** under `tests/Aw.Sindri.Ui.Tests/Golden/SpecShaped/` (listed below), each to be replaced by P3's golden
+(E-17). The real catalog keeps `CreateItem`, `CloseItem:done` and `CloseItem:cancelled` at `pending:P3`, so against
+today's control plane the Create button and the sheet's Close controls draw disabled with "arrives in P3"; the tests
+use `commands/catalog-p3.json` (P1's catalog with those three rows `ready`).
+
+**Routes (API P3).** `GET /sindri/queue` (`QueueView`: `groups[]` of `{group, items, empty}` in the API's order,
+every group present, E-18; the view's `empty`; `asOf`), `GET /sindri/items/{id}` (`ItemView`: the summary fields plus
+`version`, `createdBy`, `waitingOn`, `instance`, `createdAt`, `updatedAt`, `asOf`), `GET /sindri/items/{id}/timeline?after=`
+(`entries[]` of `{sequence, time, type, actor, line}`, `next`), `POST /sindri/items` (`{title, repo?, body?, link?}` →
+`{accepted: {commandId, sequence}, itemId}`), `POST /sindri/items/{id}/close` (`{reason, itemVersion}` →
+`{commandId, sequence}`). Field names the API spec leaves open are the U2-API edits in the PR description. The client
+takes `X-Sindri-After` from `ItemCreated.accepted.sequence` as from every accepted command.
+
+**Codes.** `SND-ITEM-404` (the sheet shows its `detail` with Back), `SND-ITEM-409` (the sheet re-reads the item; the
+pressed control shows the `detail` inline while the item still allows it, else the sheet's own line does, §9.1).
+Tests key off the code and the golden's `detail`, never a copy of the sentence.
+
+**What the app shows.**
+- **Queue page** (`G Q`; `Views/Queue/QueuePage`): the API's groups as collapsible sections with counts; empty groups
+  hidden, a filtered group (`G R` running, `G W` with you) shows its own sentence; the view's `empty` when every group
+  is empty; skeleton rows on the first load only. Rows (`ItemRow`): id, title, repo, the state as a word, step, age,
+  and the API's `primaryAction` as the catalog's control (pending rows draw disabled with their phase). A row sends
+  nothing itself: Enter or a title click opens its sheet.
+- **Home** (`HomePage`): Running and With you (With you first, at most five, then "Show all N in Queue", which opens
+  the Queue on `G R`) and Queued (five, then "Show all N"), each with its group's own sentence when empty (E-18), in a
+  compact row. Needs you stays "not served yet" until U3. The Queue tab carries the queue's count.
+- **Item sheet** (`Views/Item/ItemSheet`, in the shell's sheet when the subject is `item/<ItemId>`): title, repo, the
+  state as a word, version, age, created by, waiting on, instance; the item's `actions` ∩ the catalog as controls
+  (kept across refreshes so their lifecycle survives); `CloseItem:*` send the version shown; the timeline paged by
+  `next` with **Load more** (a refresh re-reads the pages loaded so far).
+- **Create item** (`C`, the Queue page's button; `Views/Item/CreateItemDialog`): title, repo, body, sent by the
+  catalog's `CreateItem` control; accepted shows "Create item: done" for 2 s, then the form closes. The new row comes
+  from the stream's re-query, never from the answer.
+- **Destructive confirm** (E-8, all controls): a destructive row's press asks "<label> <subject>?" with **Confirm**
+  and **Keep** (focused; Esc keeps). Controls on a subject are named with it ("Close item ITM-…", §11.2).
+- **Refresh:** `HealthViewModel.Follow` registers the queue and the open item; the follower re-reads them after the
+  status and services on connect and on every event (U1's 250 ms debounce). No payload is folded.
+- **Keys** (`ShellViewModel.Keys`): the `G` chord (1 s on the injected clock, "G …" while it waits: `N`/`H` Home, `Q`,
+  `R`, `W` Queue filters, `D`, `S`, `.`), `J`/`K` rows, `Enter` opens the selected row, `C` create; never while typing
+  in a field or over a layer. Esc closes the create form, then a confirm, then the sheet.
+
+**Spec-shaped fixtures (replace with P3 goldens).** `queue/{fixture,empty,stalled,large,running}`,
+`items-id/{new,needs-decision,after-close,not-found}`, `items-id-timeline/{fixture,page-2}`, `items/created`,
+`items-id-close/{accepted,stale-version}`, `commands/catalog-p3`.
+
+**Proof recipe (once P3 is on main).** Under `scripts/sindri-prove.sh`'s guard:
+
+```bash
+H=$(mktemp -d "${TMPDIR:-/tmp}/sindri-u2.XXXXXX"); export AW_SINDRI_HOME=$H SINDRI=<published sindri>
+scripts/sindri-ui-fixture.sh up && scripts/sindri-ui-fixture.sh items      # items --large for the fold test
+AW_SINDRI_HOME=$H <published sindri-ui> &                                  # bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh <dir>
+scripts/sindri-prove.sh human item add "Proof: appears live"               # the row appears within 1 s, no click
+scripts/sindri-ui-fixture.sh close <id>                                    # then Close in the app's sheet: SND-ITEM-409
+scripts/sindri-prove.sh curl GET /sindri/queue | jq -r '.groups[] | "\(.group) \(.items|length)"'
+scripts/sindri-ui-fixture.sh down
+```
+
+**Tests.** Unit lane: `Queue/QueueViewModelTests`, `Item/ItemSheetViewModelTests`, `Item/CreateItemViewModelTests`,
+`Shell/ShellItemsTests` (a new item appears on the next event without a click; the item link; the keys), the confirm
+facts in `Controls/ControlViewModelTests`, and the P3 facts in `SindriApiContract` (fake and client). Integration lane:
+`Views/QueueFramesTests` (frames `u2-queue-populated`, `u2-queue-empty`, `u2-queue-loading`, `u2-home-panels`,
+`u2-item-sheet`, `u2-item-timeline`, `u2-item-404`, `u2-item-409`, `u2-create`, `u2-close-confirm`).
+
 ## How it finds the control plane
 
 1. The endpoint-record port (`IEndpointRecordSource`) reads `control.json`. The desktop adapter reads it from

@@ -526,7 +526,7 @@ edges:
     to: Sindri
     kind: http
     status: current
-    note: "the app's API edge to Sindri (the file edge covers the endpoint record and the human token): GET /sindri/ping, /sindri/status, /sindri/commands, /sindri/services, /sindri/profile, the /sindri/events stream, and POST /sindri/views/rebuild (docs/csharp/sindri.md, docs/csharp/sindri-ui.md U1); it finds the endpoint in control.json under AW_SINDRI_HOME"
+    note: "the app's API edge to Sindri (the file edge covers the endpoint record and the human token): GET /sindri/ping, /sindri/status, /sindri/commands, /sindri/services, /sindri/profile, the /sindri/events stream, and POST /sindri/views/rebuild (docs/csharp/sindri.md, docs/csharp/sindri-ui.md U1); U2 adds API P3's GET /sindri/queue, /sindri/items/{id}, /sindri/items/{id}/timeline and POST /sindri/items, /sindri/items/{id}/close (spec-shaped fixtures until P3's goldens land; docs/csharp/sindri-ui.md U2); it finds the endpoint in control.json under AW_SINDRI_HOME"
 
 # Sindri -> SindriUi (cli) closes a cycle with SindriUi -> Sindri (http): bare `sindri` only spawns the app's process.
 # Renewed on review like every exception.
