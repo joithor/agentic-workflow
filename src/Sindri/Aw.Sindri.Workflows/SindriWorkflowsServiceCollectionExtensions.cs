@@ -27,7 +27,8 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<ITemporalServer, DevServerTemporal>()
             .AddSingleton<RunStepActivities>()
             .AddSingleton<RecordEventActivities>()
-            .AddSingleton(provider => SindriWorker.Options(provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>()))
+            .AddSingleton<ItemFactActivities>()
+            .AddSingleton(provider => SindriWorker.Options(provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(), provider.GetRequiredService<ItemFactActivities>()))
             .AddSingleton<TemporalFrontend>()
             .AddSingleton<IApprovedRecipes, HomeApprovedRecipes>()   // stub until P2's registry
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items

@@ -5,11 +5,11 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// §5.6). It carries no key: the activity keys it by its own ActivityInfo (<see cref="RecordEventActivities.KeyOf"/>).
 /// </summary>
 /// <param name="WorkflowId">The workflow id: the instance address.</param>
-/// <param name="Type">'workflow.started' or 'workflow.transition'.</param>
+/// <param name="Type">The event type: 'workflow.started', 'workflow.transition', 'workflow.refused' (spec §5.6).</param>
 /// <param name="Item">The work item.</param>
 /// <param name="From">The state left ('' for a start).</param>
 /// <param name="To">The state entered.</param>
-/// <param name="Trigger">The trigger's kind ('start', 'step.completed', 'timeout').</param>
+/// <param name="Trigger">The trigger's kind ('start', 'step.completed', 'wait.satisfied', 'answer').</param>
 /// <param name="Outcome">The trigger's outcome, when it has one.</param>
 /// <param name="Run">The run token the trigger reported on, when it has one.</param>
 internal sealed record WorkflowEventRecord(

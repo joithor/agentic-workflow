@@ -8,13 +8,15 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </summary>
 internal static class SindriWorker
 {
-    /// <summary>The worker options: <see cref="RecipeWorkflow"/>, the <see cref="RunStepActivities"/> and 'RecordEvent'.</summary>
+    /// <summary>The worker options: <see cref="RecipeWorkflow"/>, the <see cref="RunStepActivities"/>, 'RecordEvent' and 'ReadItemRepo'.</summary>
     /// <param name="activities">The RunStep activities instance.</param>
     /// <param name="events">The RecordEvent activity instance (the interpreter runs it as a local activity).</param>
+    /// <param name="items">The ReadItemRepo activity instance (a local activity on start).</param>
     /// <returns>The options, on <see cref="SindriTemporal.TaskQueue"/>.</returns>
-    public static TemporalWorkerOptions Options(RunStepActivities activities, RecordEventActivities events) =>
+    public static TemporalWorkerOptions Options(RunStepActivities activities, RecordEventActivities events, ItemFactActivities items) =>
         new TemporalWorkerOptions(SindriTemporal.TaskQueue)
             .AddWorkflow<RecipeWorkflow>()
             .AddAllActivities(activities)
-            .AddAllActivities(events);
+            .AddAllActivities(events)
+            .AddAllActivities(items);
 }

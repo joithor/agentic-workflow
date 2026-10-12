@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
@@ -14,27 +15,12 @@ namespace Aw.Sindri.Tests.Workflows;
 /// <summary>
 /// The interpreter's state loop on the time-skipping server (engine spec rev 8 §5.1, §5.4, §5.5, §5.8): the search
 /// attributes are set on start and on every transition ('Repo' from 'fact:item''s repo, unset otherwise; 'Tenant' and
-/// 'Ring' from the workflow input); a wait state consumes the event the bridge delivered; a wait's timeout parks it and
-/// 'NeedsYou' flips; every history replays clean.
+/// 'Ring' from the workflow input); a wait state consumes the event the bridge delivered; a refused event parks the wait
+/// and 'NeedsYou' flips; every history replays clean.
 /// </summary>
 [Lane(TestLane.Integration)]
 public sealed class InterpreterStateLoopTests(SindriTimeSkippingServer server) : IClassFixture<SindriTimeSkippingServer>, IDisposable
 {
-    /// <summary>A wait for 'item.routed' that parks after 1h: NeedsYou is false while it waits and true once it parks.</summary>
-    private static readonly string _waitPark = string.Join('\n',
-    [
-        "schema: 1",
-        "id: workflow.wait-park",
-        "version: 1",
-        "initial: routed",
-        "states:",
-        "  routed: { kind: wait, waitFor: { event: item.routed }, timeout: { after: 1h, then: park },",
-        "            next: \"Waiting for the router to route {item}.\" }",
-        "  done:   { kind: terminal, outcome: resolved }",
-        "transitions:",
-        "  - { from: routed, to: done, on: wait.satisfied, when: { outcome: startable } }",
-    ]) + "\n";
-
     private readonly WorkflowsHarness _harness = new();
 
     public void Dispose() => _harness.Dispose();
@@ -98,29 +84,45 @@ public sealed class InterpreterStateLoopTests(SindriTimeSkippingServer server) :
         }, ct);
     }
 
+    /// <summary>
+    /// 'item.routed' with outcome startable matches triaged -> startable, whose gate has no runtime in the interpreter yet,
+    /// so it refuses (fail closed, W5) and the wait parks with needs-answer (refusal precedence, §5.8): NeedsYou flips,
+    /// and the ledger has the start and the refusal, one row each. This 'fact:item' names no repo, so 'Repo' stays unset.
+    /// </summary>
     [Fact]
-    public async Task A_wait_that_times_out_parks_and_needs_you_flips_to_true()
+    public async Task A_refused_event_parks_the_wait_and_needs_you_flips_to_true()
     {
         var ct = TestContext.Current.CancellationToken;
         var env = server.Environment;
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
-        _harness.Recipe("workflow.wait-park", _waitPark);
+        _harness.Recipe("workflow.item", WorkflowsHarness.Shipped("sindri/workflow.item.yaml"));
         using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
 
         await worker.ExecuteAsync(async () =>
         {
-            var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.RecipeStart(sindri, "workflow.wait-park", "T-41", ct));
-            _ = await WorkflowsHarness.Until(handle, static v => v.State == "routed");
+            var item = _harness.Fact("""{"id":"T-41","spec":"Add a --version flag."}""");
+            var start = await WorkflowsHarness.RecipeStart(sindri, "workflow.item", "T-41", ct) with
+            {
+                Inputs = new Dictionary<FactKey, InputFact> { [FactKey.From("fact:item")] = new InputFact("item.json", item) },
+            };
+            var handle = await WorkflowsHarness.Start(env.Client, start);
+            _ = await WorkflowsHarness.Until(handle, static v => v.State == "triaged");
             var waiting = await Attributes(handle, static a => a.ContainsKey(SindriTemporal.StateKey));
 
-            await env.DelayAsync(TimeSpan.FromHours(2), ct);
+            var routed = new WaitSatisfied("service:workflow.events", new EventWaitSource(EventKind.From("item.routed"), 1), OutcomeName.From("startable"), new Dictionary<FactKey, FactValue>());
+            await handle.SignalAsync(wf => wf.EventAsync(routed));
             var parked = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
             var flipped = await Attributes(handle, static a => a.Get(SindriTemporal.StateKey) == "parked");
+            var rows = (await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 100, ct)).Value
+                .Where(static e => e.Envelope.Type.StartsWith("workflow.", StringComparison.Ordinal)).ToList();
 
-            Assert.Equal(("routed", false), (waiting.Get(SindriTemporal.StateKey), waiting.Get(SindriTemporal.NeedsYouKey)));
-            Assert.Equal(ParkReason.Timeout, parked.Question?.Reason);
+            Assert.Equal(("triaged", false), (waiting.Get(SindriTemporal.StateKey), waiting.Get(SindriTemporal.NeedsYouKey)));
+            Assert.Equal(ParkReason.NeedsAnswer, parked.Question?.Reason);
             Assert.True(flipped.Get(SindriTemporal.NeedsYouKey));
+            Assert.Equal(["workflow.started", "workflow.refused"], [.. rows.Select(static e => e.Envelope.Type)]);
+            Assert.Equal(2, rows.Select(static e => e.IdempotencyKey).Distinct(StringComparer.Ordinal).Count());
+            Assert.False(flipped.ContainsKey(SindriTemporal.RepoKey));
             Assert.Null((await InterpreterEvalTests.Replay(handle, ct)).ReplayFailure);
             await handle.TerminateAsync("test over");
         }, ct);
