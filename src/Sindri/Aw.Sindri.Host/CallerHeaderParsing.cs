@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
@@ -11,7 +10,6 @@ namespace Aw.Sindri.Host;
 /// 'session' is a session (the safe default), 'human' is a human, and any other value is SND-API-007. The terminal claim
 /// counts only with human; an unknown client label counts as none; a malformed repo name is SND-API-007.
 /// </summary>
-[SuppressMessage("Design", "MA0182:Unused internal type", Justification = "Red stub: the caller middleware in the next commit uses it.")]
 internal static class CallerHeaderParsing
 {
     /// <summary>Parses the four caller header values (each null when the header is missing).</summary>
