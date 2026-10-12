@@ -914,9 +914,10 @@ defaults:
    step 3 for everything except the late part; then report `parked: <dependency>` and open no PR yet (step 7 needs the
    hand test). A parked stage holds no building slot and is not a base to stack on. When the lead says the dependency
    merged, rebase, do step 3 for the late part, then run steps 4–9 in full on the whole stage (for S-4 the hand test
-   is the first time `map build` runs); a woken stage takes the next free building slot, ahead of new stages. If the
-   stage still stacks on an unmerged base (S-4 or S-5B on S-3b), the lead first has that base's owner rebase onto
-   `main` and redo its step 9 re-check, or the stage stays parked until its base merges. The lead also watches API
+   is the first time `map build` runs); a woken stage takes the next free building slot, ahead of new stages (a woken stage is not a new stage for the caps). If the
+   stage still stacks on an unmerged base (S-4 on S-3b, or S-5B on S-3b or S-5A), the lead first has the stack
+   rebased from the bottom (the lowest unmerged stage onto `main`, each one above onto the one below), each owner
+   redoing its step 9 re-check, or the stage stays parked, as `parked: <base>`, until its base merges. The lead also watches API
    P6, which is outside this epic, and wakes S-6 when S-5B merges.
 
 ### Work data stays with the owner
@@ -1024,7 +1025,8 @@ on the fixture app.
   `SourcesStatus` slices, `repo-docs` adapter with scrubbed FTS5 and its refresh service, its `context.db` migration);
   `tests/Aw.Context.{Tests,Testing}` (contract base, fakes, fixture app skeleton); Sindri: `Context: JsonElement?`
   in the profile, routes, `context query` and `context sources status|sync` verbs (the `SyncSources` catalog row
-  for `sources sync` is `pending:S-5B`, a label API P6 never ships and leaves alone; S-5B adds the P6 job route and
+  for `sources sync` is `pending:S-5B`, a context stage id that the catalog test treats as unshipped until S-5B flips the row (API
+  P6 leaves the row alone); S-5B adds the P6 job route and
   makes it ready), the `/sindri/mcp` endpoint (stateless,
   behind the guard; or its tools only, if API P8 created it) with `context_query` and `context_sources`, doctor `context:sources` and `context:mcp-scope`;
   `deps.yaml` (package, edges, `compose` edge kind), `scripts/check-deps.mjs`, the ArchUnitNET
@@ -1063,8 +1065,8 @@ on the fixture app.
   routes, verbs, MCP `context_node` and `context_neighbors` (these two tools are stage S-3M, after S-1M); doctor `context:map` and `context:retention`; the probe
   runner (`eval probes`) and probe file format.
 - **Size:** L as measured, so two stages (owner, 2026-10-12): **S-3a** (store, keys, overrides, import and export, map status, doctor, purge) and **S-3b** (cascade, `node`/`neighbors`/`path`, anchors, probe runner; carries the signal below except `context_node` from a session, which is S-3M's).
-- **S-3a signal:** on the fixture app, `$SINDRI context map import <fixture map>`, then `context map status` prints
-  node, edge and alias counts; `context map export` and a re-import into a fresh throwaway home round-trip with the
+- **S-3a signal:** on the fixture app, `sindri-prove.sh human $SINDRI context map import <fixture map>`, then `context map status` prints
+  node, edge and alias counts; `context map export` and a re-import (through `sindri-prove.sh human` again) into a fresh throwaway home round-trip with the
   original timestamps and provenance; `context map import` without the terminal (a `protected` command from an agent
   caller, over HTTP or the CLI) is refused with `SND-AUTH-002` and writes nothing to `context.db` (`ledger.db` gets only its `command.handled` audit row), while the same file imported at the terminal through
   `sindri-prove.sh human` restores its `human` rows; an export whose mtime is set back past 14 days is gone after the
