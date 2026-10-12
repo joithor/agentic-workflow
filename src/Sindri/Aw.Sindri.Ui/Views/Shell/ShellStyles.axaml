@@ -151,24 +151,51 @@
     <Setter Property="Padding" Value="10,4" />
   </Style>
 
-  <!-- Home's health strip: a panel that is a button (it opens Health). -->
+  <!-- Home's health strip (home.html .strip): a panel that is a button (it opens Health), Surface2 on hover. -->
   <Style Selector="Button.health-strip">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource Radius.LG}" />
-    <Setter Property="Padding" Value="20,16" />
+    <Setter Property="Padding" Value="0" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.health-strip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+  </Style>
+  <Style Selector="StackPanel.strip-head">
+    <Setter Property="Margin" Value="16,0,12,0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.cell">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1,0,0,0" />
+    <Setter Property="Padding" Value="12,8" />
   </Style>
 
-  <!-- Panels, skeleton rows and the unreadable banner. -->
+  <!-- Panels (home.html .panel): Surface1 with a hairline; a header row (.phead, 36 px, the eyebrow over a hairline) and
+       a body on the spacing scale. -->
   <Style Selector="Border.panel">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource Radius.LG}" />
-    <Setter Property="Padding" Value="20,16" />
+  </Style>
+  <Style Selector="Border.phead">
+    <Setter Property="MinHeight" Value="{StaticResource Size.Row}" />
+    <Setter Property="Padding" Value="16,0" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.phead > TextBlock">
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- A body the API doesn't serve yet: a quiet caption, never the brightest text in the panel. -->
+  <Style Selector="TextBlock.quiet">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+    <Setter Property="Margin" Value="16" />
   </Style>
   <Style Selector="Border.skeleton">
     <Setter Property="Height" Value="{StaticResource Size.Row}" />

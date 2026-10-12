@@ -30,6 +30,12 @@ internal sealed class ShellText
     /// <summary><see cref="Labels.DoctorFix"/>.</summary>
     public string DoctorFix { get; } = Labels.DoctorFix;
 
+    /// <summary><see cref="Labels.GoKey"/>.</summary>
+    public string GoKey { get; } = Labels.GoKey;
+
+    /// <summary><see cref="Labels.HealthKey"/>.</summary>
+    public string HealthKey { get; } = Labels.HealthKey;
+
     /// <summary><see cref="Labels.Health"/>.</summary>
     public string Health { get; } = Labels.Health;
 

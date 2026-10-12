@@ -183,6 +183,12 @@ internal static class Labels
     /// <summary>The Health page's profile file row.</summary>
     internal const string RowFile = "file";
 
+    /// <summary>The G-chord's first key (§8), as Home's strip hints it.</summary>
+    internal const string GoKey = "G";
+
+    /// <summary>The G-chord's key for Health (§8: G .).</summary>
+    internal const string HealthKey = ".";
+
     /// <summary>The Refresh button beside a stale pill (§4.1 Stale).</summary>
     internal const string Refresh = "Refresh";
 

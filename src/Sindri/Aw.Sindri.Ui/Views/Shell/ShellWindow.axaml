@@ -87,7 +87,7 @@
 
             <!-- The pages (§3.3), each shown by the view model's page flag. -->
             <ScrollViewer x:Name="Pages" IsVisible="{Binding IsPageVisible}">
-              <Panel Margin="32,24">
+              <Panel x:Name="PageContent" Margin="{StaticResource Space.LG.Thickness}">
                 <views:HomePage x:Name="HomePage" IsVisible="{Binding IsHome}" />
                 <views:PlaceholderPage x:Name="QueuePage" Title="{Binding Text.Queue}" IsVisible="{Binding IsQueue}" />
                 <views:PlaceholderPage x:Name="DecisionsPage" Title="{Binding Text.Decisions}" IsVisible="{Binding IsDecisions}" />

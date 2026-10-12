@@ -37,7 +37,7 @@
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="{StaticResource Radius.LG}" />
-      <Setter Property="Padding" Value="20,16" />
+      <Setter Property="Padding" Value="{StaticResource Space.MD.Thickness}" />
     </Style>
     <Style Selector="TextBlock.muted">
       <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
