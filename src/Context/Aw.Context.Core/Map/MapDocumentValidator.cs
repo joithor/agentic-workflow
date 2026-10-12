@@ -110,14 +110,21 @@ public static class MapDocumentValidator
     private static (GraphSnapshot Graph, List<GraphEdge> Quotes) WithDecisions(GraphSnapshot graph, MapProblems problems)
     {
         var nodes = graph.Nodes.ToList();
+        for (var i = 0; i < nodes.Count; i++)
+        {
+            if (nodes[i].Key.Kind == NodeKind.Decision)
+            {
+                problems.Invalid(Fmt($"nodes[{i}].key"), "decisions go under 'decisions:'; their nodes are implied");
+            }
+        }
+
         var keys = nodes.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
         var quotes = new List<GraphEdge>();
         for (var i = 0; i < graph.Decisions.Count; i++)
         {
             var d = graph.Decisions[i];
-            if (!NodeKey.TryFrom($"record:{d.Record.Value}", out var record))
+            if (Refused(d, i, keys, problems) || !NodeKey.TryFrom($"record:{d.Record.Value}", out var record))
             {
-                problems.Invalid(Fmt($"decisions[{i}].record"), "too long to be pointed at by a record node (at most 1017 characters)");
                 continue;
             }
 
@@ -131,6 +138,21 @@ public static class MapDocumentValidator
         }
 
         return (graph with { Nodes = nodes }, quotes);
+    }
+
+    /// <summary>A decision's own problems, reported at its key path: blank wording, a duplicate, a record key too long for a node key.</summary>
+    private static bool Refused(DecisionRow d, int i, HashSet<string> keys, MapProblems problems)
+    {
+        var problem = string.IsNullOrWhiteSpace(d.Wording) || string.IsNullOrWhiteSpace(d.Quote) ? ("wording", "a quote and a wording are required")
+            : !keys.Add(d.ToKey().Value) ? ("quote", "the same record and quote are decided twice")
+            : !NodeKey.TryFrom($"record:{d.Record.Value}", out _) ? ("record", "too long to be pointed at by a record node (at most 1017 characters)")
+            : default((string, string)?);
+        if (problem is { } p)
+        {
+            problems.Invalid(Fmt($"decisions[{i}].{p.Item1}"), p.Item2);
+        }
+
+        return problem is not null;
     }
 
     private static MapOverride Normalized(MapOverride o) =>

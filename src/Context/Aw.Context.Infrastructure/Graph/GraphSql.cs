@@ -30,15 +30,15 @@ internal static class GraphSql
 
     public const string CountGraphTables = "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'map_version'";
 
-    // Retires the current version only while the new one is still 'building' (another import's sweep may have removed it).
-    public const string RetireCurrent =
-        "UPDATE map_version SET status = 'retained' WHERE status = 'current' AND EXISTS (SELECT 1 FROM map_version WHERE id = $v AND status = 'building')";
+    public const string RetireCurrent = "UPDATE map_version SET status = 'retained' WHERE status = 'current'";
 
-    public const string IsCurrent = "SELECT count(*) FROM map_version WHERE id = $v AND status = 'current'";
+    public const string IsBuilding = "SELECT count(*) FROM map_version WHERE id = $v AND status = 'building'";
 
     public const string MakeCurrent = "UPDATE map_version SET status = 'current' WHERE id = $v AND status = 'building'";
 
-    public const string DeleteVersion = "DELETE FROM map_version WHERE id = $v AND status IN ('retained', 'building')";
+    public const string DeleteRetained = "DELETE FROM map_version WHERE id = $v AND status = 'retained'";
+
+    public const string DeleteBuildingVersion = "DELETE FROM map_version WHERE id = $v AND status = 'building'";
 
     public const string SelectVersions =
         "SELECT id, repo, commit_sha, key_version, created, status FROM map_version WHERE status <> 'building' ORDER BY id DESC";

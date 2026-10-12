@@ -30,7 +30,7 @@ public sealed class RunDoctorTests
 
         Assert.Equal("lease,ledger,profile,api,context:map,context:retention", string.Join(',', report.Checks.Select(c => c.Name)));
         Assert.All(report.Checks.Where(c => !c.Name.StartsWith("context:", StringComparison.Ordinal)), c => Assert.Equal(CheckState.Ok, c.State));
-        Assert.Equal((CheckState.Warn, "no map yet"), (report.Checks[4].State, report.Checks[4].Detail));
+        Assert.Equal((CheckState.Warn, "no map yet", "sindri context map import <file>"), (report.Checks[4].State, report.Checks[4].Detail, report.Checks[4].Fix));
         Assert.Equal(1, report.ExitCode);   // the test engine has no map, so context:map warns (S-3a); everything else is green
     }
 

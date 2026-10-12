@@ -51,7 +51,7 @@ public sealed class SettingsOnlyContextEngine : IContextEngine
 
     /// <inheritdoc/>
     public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) =>
-        ValueTask.FromResult(Results.Success(new MapHealth("context:map", MapHealthState.Warn, "no map yet", "context map import <file>")));
+        ValueTask.FromResult(Results.Success(new MapHealth("context:map", MapHealthState.Warn, "no map yet", "sindri context map import <file>")));
 
     /// <inheritdoc/>
     public ValueTask<Result<MapHealth>> CheckRetention(CancellationToken cancellationToken) =>

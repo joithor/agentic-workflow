@@ -20,7 +20,7 @@ internal sealed class ShowMapStatusService(IGraphStore store) : IService<ShowMap
         var versions = await store.Versions(cancellationToken).ConfigureAwait(false);
         if (versions.IsError || versions.Value.FirstOrDefault(v => v.Status == MapVersionStatus.Current) is not { } version)
         {
-            return versions.IsError ? versions.Error : ContextErrors.NoMap.With("there is no map yet (fix: context map import <file>, or context map build)");
+            return versions.IsError ? versions.Error : ContextErrors.NoMap.With("there is no map yet (fix: sindri context map import <file>)");
         }
 
         var graph = await store.Read(version.Number, cancellationToken).ConfigureAwait(false);

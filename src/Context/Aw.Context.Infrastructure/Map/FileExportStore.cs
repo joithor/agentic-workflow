@@ -14,8 +14,11 @@ internal sealed class FileExportStore(ContextStoreSettings settings, JsonSeriali
     {
         var lexical = Path.GetFullPath(settings.ExportsDirectory);
         var folder = RealPath.Of(lexical) ?? lexical;
-        var full = Path.GetFullPath(string.IsNullOrEmpty(path) ? defaultName : path, lexical);
-        var target = RealPath.Of(full) ?? full;
+        var named = string.IsNullOrEmpty(path) ? defaultName : path;
+        if (named.Any(char.IsControl) || RealPath.Of(Path.GetFullPath(named, lexical)) is not { } target)
+        {
+            return Done<string>(ContextErrors.ExportOutsideHome.With($"the export path isn't resolvable or has control characters (fix: omit the path, or give a plain name under {folder})"));
+        }
         if (Worktrees.Containing(target) is { } worktree)
         {
             return Done<string>(ContextErrors.PathInWorktree.With($"{target} is inside the git worktree {worktree} (fix: omit the path, or give a name under {folder})"));

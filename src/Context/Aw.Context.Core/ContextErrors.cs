@@ -21,7 +21,7 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-004: the store can't open, or its schema doesn't match this build.</summary>
     public static readonly ErrorDefinition StoreUnavailable = new("SND-CONTEXT-004", ErrorKind.Unavailable, "The context store can't be opened");
 
-    /// <summary>SND-CONTEXT-005: an output path inside a git worktree.</summary>
+    /// <summary>SND-CONTEXT-005: a map file or an output path inside a git worktree.</summary>
     public static readonly ErrorDefinition PathInWorktree = new("SND-CONTEXT-005", ErrorKind.Invalid, "Output path inside a git worktree");
 
     /// <summary>SND-CONTEXT-006: the question itself is invalid (empty, two shapes, a value out of range).</summary>
@@ -36,7 +36,7 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-020: session reads are off ('context.sessions.enabled: false'), on every transport.</summary>
     public static readonly ErrorDefinition SessionsDisabled = new("SND-CONTEXT-020", ErrorKind.Forbidden, "Context reads from sessions are off");
 
-    /// <summary>SND-CONTEXT-030: no map yet (fix: context map import, or context map build).</summary>
+    /// <summary>SND-CONTEXT-030: no map yet (fix: sindri context map import &lt;file&gt;).</summary>
     public static readonly ErrorDefinition NoMap = new("SND-CONTEXT-030", ErrorKind.NotFound, "No map yet");
 
     /// <summary>SND-CONTEXT-031: the map file is invalid (schema version, shape, an unknown kind or a disallowed edge); the message names the key path and nothing was written.</summary>

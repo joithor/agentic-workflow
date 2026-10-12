@@ -103,6 +103,7 @@ public sealed class OverrideLayerTests
     [InlineData(OverrideAction.Merge, "surface:command/split-vertical", null, "feature:layout.split-pane")]
     [InlineData(OverrideAction.Merge, "feature:layout.split-pane", null, "feature:layout.split-pane")]
     [InlineData(OverrideAction.Rename, "feature:layout.split-pane", " ", null)]
+    [InlineData(OverrideAction.Add, "surface:widget/x", "X", null)]
     public void An_override_that_would_break_the_edge_table_is_inapplicable_not_orphaned(OverrideAction action, string target, string? label, string? other)
     {
         var graph = Graph();

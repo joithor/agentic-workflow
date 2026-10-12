@@ -196,7 +196,7 @@ $SINDRI context map export [<name-or-path>] [--json]
 - **Sessions** (with `context.sessions.enabled: true`) see only the nodes their repo implements: the targets of
   `implements` edges whose file evidence is `repo:<their X-Sindri-Repo>/…`, and the edges between those nodes. A repo
   that implements nothing in the map answers `SND-CONTEXT-003`.
-- No map yet: `SND-CONTEXT-030` (fix: `context map import <file>`).
+- No map yet: `SND-CONTEXT-030` (fix: `sindri context map import <file>`).
 
 ### Doctor and the purge
 

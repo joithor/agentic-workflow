@@ -42,10 +42,10 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
         }
     }
 
-    /// <summary>Deletes retained (and leftover building) versions; their graphs go with them (ON DELETE CASCADE).</summary>
+    /// <summary>Deletes retained versions (never a current or building one); their graphs go with them (ON DELETE CASCADE).</summary>
     public async ValueTask<Result<int>> Delete(IReadOnlyList<int> versions, CancellationToken cancellationToken)
     {
-        var deleted = await Run([.. versions.Select(v => DeleteVersion(v))], returnsId: false, cancellationToken).ConfigureAwait(false);
+        var deleted = await Run([.. versions.Select(v => new SqlStatement(GraphSql.DeleteRetained, c => c.Bind("$v", (long)v)))], returnsId: false, cancellationToken).ConfigureAwait(false);
         return deleted.IsError ? deleted.Error : (int)deleted.Value;
     }
 
@@ -60,30 +60,54 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
             }
         }
 
-        SqlStatement[] flip = [new(GraphSql.RetireCurrent, c => c.Bind("$v", version)), new(GraphSql.MakeCurrent, c => c.Bind("$v", version)), .. map.Overrides.Select(GraphStatements.Override)];
-        var flipped = await Run(flip, returnsId: false, cancellationToken).ConfigureAwait(false);
-        if (flipped.IsError)
+        return await Flip(map, version, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Retires the current version, makes this one current and adds the file's overrides, in one transaction that commits
+    /// only when this version was still 'building' (another import's sweep may have removed it); otherwise nothing changes.
+    /// </summary>
+    internal async ValueTask<Result<long>> Flip(MapImport map, long version, CancellationToken cancellationToken)
+    {
+        var begun = await sessions.BeginSession(cancellationToken).ConfigureAwait(false);
+        if (begun.IsError)
         {
-            return flipped;
+            return ContextDatabase.Translate(begun.Error);
         }
 
-        var current = await Run([new SqlStatement(GraphSql.IsCurrent, c => c.Bind("$v", version))], returnsId: true, cancellationToken).ConfigureAwait(false);
-        return current.IsError || current.Value == 1
-            ? current
-            : ContextErrors.StoreUnavailable.With("another import removed this one before it became current; nothing changed (fix: import again)");
+        await using (begun.Value.ConfigureAwait(false))
+        {
+            var building = await SqliteQueries.One(begun.Value, new SqlStatement(GraphSql.IsBuilding, c => c.Bind("$v", version)), GraphRows.Id, cancellationToken).ConfigureAwait(false);
+            if (building.IsError || building.Value != 1)
+            {
+                return building.IsError ? ContextDatabase.Translate(building.Error)
+                    : ContextErrors.StoreUnavailable.With("another import removed this one before it became current; nothing changed (fix: import again)");
+            }
+
+            SqlStatement[] flip = [new(GraphSql.RetireCurrent), new(GraphSql.MakeCurrent, c => c.Bind("$v", version)), .. map.Overrides.Select(GraphStatements.Override)];
+            foreach (var statement in flip)
+            {
+                var done = await SqliteQueries.Execute(begun.Value, statement, cancellationToken).ConfigureAwait(false);
+                if (done.IsError)
+                {
+                    return ContextDatabase.Translate(done.Error);
+                }
+            }
+
+            var committed = await begun.Value.Commit(cancellationToken).ConfigureAwait(false);
+            return committed.IsError ? ContextDatabase.Translate(committed.Error) : version;
+        }
     }
 
     /// <summary>Removes a version that didn't become current, whatever the caller's token says; reports both failures if that fails too.</summary>
     private async ValueTask<Result<MapVersion>> Abandon(long version, Error? error)
     {
-        var removed = await Run([DeleteVersion(version)], returnsId: false, CancellationToken.None).ConfigureAwait(false);
+        var removed = await Run([new SqlStatement(GraphSql.DeleteBuildingVersion, c => c.Bind("$v", version))], returnsId: false, CancellationToken.None).ConfigureAwait(false);
         var cause = error is null ? "the save stopped" : $"{error.Code}: {error.Message}";
         return removed.IsError
             ? ContextErrors.StoreUnavailable.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{removed.Error.Code}: {removed.Error.Message}, while removing building version {version} after {cause}"))
             : error ?? ContextErrors.StoreUnavailable.With("the save stopped; nothing became current");
     }
-
-    private static SqlStatement DeleteVersion(long version) => new(GraphSql.DeleteVersion, c => c.Bind("$v", version));
 
     /// <summary>Runs <paramref name="statements"/> in one write transaction: the id the first returns, or the rows they changed.</summary>
     private async ValueTask<Result<long>> Run(IReadOnlyList<SqlStatement> statements, bool returnsId, CancellationToken cancellationToken)

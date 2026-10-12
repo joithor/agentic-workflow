@@ -1,3 +1,4 @@
+using Aw.Context.Core.Overrides;
 using Aw.Context.Infrastructure.Graph;
 using Aw.Context.Infrastructure.Store;
 using Aw.Context.Testing.Map;
@@ -41,6 +42,22 @@ public sealed class GraphStoreFailureTests : IDisposable
         Assert.Equal(first.Number, Assert.Single((await store.Versions(Ct)).Value).Number);
         Assert.Equal(1L, await Count("SELECT count(*) FROM map_version"));
         Assert.Equal(Canonical.Of(SampleMap.Build().Graph), Canonical.Of((await store.Read(first.Number, Ct)).Value));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_flip_whose_building_version_was_swept_changes_nothing()
+    {
+        var store = new SqliteGraphStore(_database, _settings);
+        var first = (await store.SaveCurrent(SampleMap.Build(), SampleMap.At, Ct)).Value;
+        var overrides = (await store.Overrides(Ct)).Value.Count;
+        var late = SampleMap.Build(" (late)");
+        late = late with { Overrides = [new MapOverride(OverrideAction.Delete, Context.Core.Graph.NodeKey.From("feature:x"), "avery", SampleMap.At)] };
+
+        var flipped = await new GraphWrites((await _database.Writable(Ct)).Value, 500).Flip(late, version: 99, Ct);
+
+        Assert.Contains("another import removed this one", flipped.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(first.Number, (await store.Current(Ct)).Value?.Number);
+        Assert.Equal(overrides, (await store.Overrides(Ct)).Value.Count);
     }
 
     [Fact, Trait("Lane", "integration")]

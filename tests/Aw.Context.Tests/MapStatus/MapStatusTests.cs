@@ -17,7 +17,7 @@ public sealed class MapStatusTests : IDisposable
         var status = await _world.Map.MapStatus(MapWorld.Human, MapWorld.None);
 
         Assert.Equal(ContextErrors.NoMap.Code, status.Error.Code);
-        Assert.Contains("fix: context map import <file>", status.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("fix: sindri context map import <file>", status.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

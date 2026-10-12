@@ -45,6 +45,10 @@ public sealed class MapFileTests : IDisposable
         Assert.Equal("SND-CONTEXT-031", nested.Error.Code);
         Assert.Contains("nesting is too deep", nested.Error.Message, StringComparison.Ordinal);
         Assert.Equal("SND-CONTEXT-031", relative.Error.Code);
+        Assert.Equal("SND-CONTEXT-031", (await new MapFileReader(FixtureMap.Json).Read("/tmp/a\0b.yaml", Ct)).Error.Code);
+        var settings = SettingsFromEnvironment.Read(_home.Environment);
+        var nul = await new FileExportStore(settings, FixtureMap.Json).Write("a\0b.json", "x.json", new MapDocument(1, MapDocumentKind.Export, Context.Core.Engine.ContextRepoName.From("r"), []), Ct);
+        Assert.Equal("SND-CONTEXT-033", nul.Error.Code);
     }
 
     [Fact, Trait("Lane", "integration")]

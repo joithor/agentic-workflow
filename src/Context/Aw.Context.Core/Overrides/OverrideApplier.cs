@@ -82,6 +82,11 @@ public static class OverrideApplier
             return graph;
         }
 
+        if (!Addable(o.Target))
+        {
+            return null;
+        }
+
         var parent = o.Other is { } key ? graph.Resolve(key)?.Key : null;
         if (o.Other is not null && (parent is not { } p0 || !EdgeRules.Allows(EdgeType.PartOf, o.Target.Kind, p0.Kind)))
         {
@@ -92,6 +97,9 @@ public static class OverrideApplier
         GraphEdge[] edges = parent is { } p ? [new GraphEdge(o.Target, p, EdgeType.PartOf, At: o.At)] : [];
         return graph with { Nodes = [.. graph.Nodes, node], Edges = [.. graph.Edges, .. edges] };
     }
+
+    /// <summary>A node an add may create: the file validator's surface-kind rule; decisions come only from 'decisions:'.</summary>
+    private static bool Addable(NodeKey key) => NodeKinds.HasValidSurfaceKind(key) && key.Kind != NodeKind.Decision;
 
     private static GraphSnapshot Replace(GraphSnapshot graph, GraphNode old, GraphNode next) =>
         graph with { Nodes = [.. graph.Nodes.Select(n => ReferenceEquals(n, old) ? next : n)] };

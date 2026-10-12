@@ -22,10 +22,14 @@ public sealed class ContextFacadeBoundaryTests
             .SelectMany(a => a.GetTypes())
             .SelectMany(t => t.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                 .SelectMany(c => c.GetParameters())
-                .Where(p => p.ParameterType.IsInterface && p.ParameterType.Assembly == contextCore && p.ParameterType != typeof(IContextEngine))
+                .Where(p => Types(p.ParameterType).Any(t => t.IsInterface && t.Assembly == contextCore && t != typeof(IContextEngine)))
                 .Select(p => $"{t.FullName}({p.ParameterType.Name} {p.Name})"))
             .ToList();
 
         Assert.True(offenders.Count == 0, "Sindri must use IContextEngine, not these context ports: " + string.Join("; ", offenders));
     }
+
+    /// <summary>A type and every generic argument inside it (IEnumerable&lt;IGraphStore&gt;, Lazy&lt;…&gt;, Func&lt;…&gt;).</summary>
+    private static IEnumerable<Type> Types(Type type) =>
+        type.IsGenericType ? [type, .. type.GetGenericArguments().SelectMany(Types)] : [type];
 }

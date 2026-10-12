@@ -23,7 +23,7 @@ internal sealed class ExportMapService(IGraphStore store, IExportStore exports, 
         var current = await store.Current(cancellationToken).ConfigureAwait(false);
         if (current.IsError || current.Value is not { } version)
         {
-            return current.IsError ? current.Error : ContextErrors.NoMap.With("there is no current map to export (fix: context map import <file>)");
+            return current.IsError ? current.Error : ContextErrors.NoMap.With("there is no current map to export (fix: sindri context map import <file>)");
         }
 
         var graph = await store.Read(version.Number, cancellationToken).ConfigureAwait(false);

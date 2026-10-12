@@ -1,4 +1,5 @@
 using Aw.Context.Core;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Kernel;
@@ -15,6 +16,11 @@ internal sealed class ImportMapService(IMapFileReader reader, IGraphStore store,
 {
     public async ValueTask<Result<MapImported>> Handle(ImportMapRequest request, CancellationToken cancellationToken)
     {
+        if (request.Scope.Caller.Kind == ContextCallerKind.Session)
+        {
+            return ContextErrors.SessionsDisabled.With("importing a map is a human decision: a session can't preview or import one");
+        }
+
         var file = await reader.Read(request.Path, cancellationToken).ConfigureAwait(false);
         if (file.IsError)
         {

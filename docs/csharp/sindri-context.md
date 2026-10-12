@@ -77,7 +77,7 @@ and the status reads "never refreshed".
 | `SND-CONTEXT-002` | Invalid (400) | 2 | A configured source isn't set up, or its secret pointer doesn't resolve (later stages) |
 | `SND-CONTEXT-003` | NotFound (404) | 1 | Unknown anchor, or a record outside a session's repo scope (the same answer) |
 | `SND-CONTEXT-004` | Unavailable (503) | 2 | The store can't be opened or migrated (the message keeps the AW-DATA code) |
-| `SND-CONTEXT-005` | Invalid (400) | 1 | An output path inside a git worktree (later stages) |
+| `SND-CONTEXT-005` | Invalid (400) | 1 | A map file or an output path inside a git worktree (links resolved) |
 | `SND-CONTEXT-006` | Invalid (400) | 1 | The question is invalid: no words, two shapes, depth or budget out of range |
 | `SND-CONTEXT-010` | Unavailable | — | One source is unavailable: a `degraded` entry, never the answer's error |
 | `SND-CONTEXT-011` | Unavailable (503) | 2 | Every source is unavailable |
@@ -117,6 +117,11 @@ the command `ImportContextMapRequest(Path, Hash?, Confirmed)` → `ImportContext
 counts); the scheduled service `ContextPurgeService` (`context-purge`); doctor rows `context:map` and
 `context:retention` in `RunDoctorService`. CLI: `Host/Commands/ContextMapVerbs` and `ContextMapText`. The map JSON
 types are in `SindriJsonContext`; the reader and the exports folder take its `JsonSerializerOptions`.
+
+`GET /sindri/context/map/export` is the one query that writes: a file under `exports/` (owner-only, purged after 14
+days), never the store or the ledger. It is a query because the API spec lists it as one, and it changes no state a
+command or event describes; a later file-writing route should not take it as a precedent without the same reasons.
+Import and preview refuse a session-kind caller in the engine too (SND-CONTEXT-020), whatever surface reaches them.
 
 **Not on this base:** the API lane's shared challenge. The import is shaped like `profile approve` (human, terminal,
 content hash, `confirmed`) and adopts the challenge when that lane ships it.
