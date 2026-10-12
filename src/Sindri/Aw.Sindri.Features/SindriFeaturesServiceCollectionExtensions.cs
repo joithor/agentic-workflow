@@ -11,6 +11,7 @@ using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.RecordHeartbeat;
+using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;
@@ -39,6 +40,8 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddScoped<ProfileFacts>()
             .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>, RunDoctorService>()
+            .AddScoped<IService<CheckContextRequest, CheckContextResponse>, CheckContextService>()
+            .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddScoped<ContextScopes>()
             .AddScoped<IScheduledService, ContextDocsRefreshService>()

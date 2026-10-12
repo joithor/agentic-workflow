@@ -1,4 +1,3 @@
-using Aw.Sindri.Host.Mcp;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Host.Catalog;
@@ -16,8 +15,7 @@ internal static class SindriHostServiceCollectionExtensions
         .AddSingleton<ProcessShutdown>()
         .AddSingleton<IShutdown>(static sp => sp.GetRequiredService<ProcessShutdown>())
         .AddSingleton<IExitCode, ProcessExitCode>()
-        .AddSingleton<ICommandCatalog, CommandCatalog>()
-        .AddSindriMcp();
+        .AddSingleton<ICommandCatalog, CommandCatalog>();
 
     /// <summary>
     /// Adds what only 'sindri serve' runs: the port it chooses before it binds (and the check that refuses to start without
