@@ -27,10 +27,10 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             return await output.Error(error).ConfigureAwait(false);
         }
 
-        var code = status.Value.Profile.NeedsApproval ? 1 : 0;
+        var code = status.Value.Value.Profile.NeedsApproval ? 1 : 0;
         return json
-            ? await output.Json(status.Value, code).ConfigureAwait(false)
-            : await output.Text(SummaryText.Render(status.Value, found.Value.Endpoint, showUi: false), code).ConfigureAwait(false);
+            ? await output.Raw(status.Value.Body, code).ConfigureAwait(false)
+            : await output.Text(SummaryText.Render(status.Value.Value, found.Value.Endpoint, showUi: false), code).ConfigureAwait(false);
     }
 
     internal async Task<int> Stop(CancellationToken ct)
@@ -38,7 +38,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
         var stopped = await client.Post<StopProcessRequest, StopProcessResponse>("/sindri/stop", body: null, ct).ConfigureAwait(false);
         return stopped.IsError
             ? await output.Error(stopped.Error).ConfigureAwait(false)
-            : await output.Text(string.Create(CultureInfo.InvariantCulture, $"stopped (pid {stopped.Value.Pid}, epoch {stopped.Value.Epoch} released)\n"), 0).ConfigureAwait(false);
+            : await output.Text(string.Create(CultureInfo.InvariantCulture, $"stopped (pid {stopped.Value.Value.Pid}, epoch {stopped.Value.Value.Epoch} released)\n"), 0).ConfigureAwait(false);
     }
 
     internal async Task<int> Validate(bool json, CancellationToken ct)
@@ -82,7 +82,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
         }
 
         var answer = await client.Post<ApproveProfileRequest, ApproveProfileResponse>("/sindri/profile/approve", new ApproveProfileRequest(hash, hash is not null), ct).ConfigureAwait(false);
-        return answer.IsError ? await output.Error(answer.Error).ConfigureAwait(false) : await output.Text(ApprovalText(answer.Value, hash is null), answer.Value.Approved ? 0 : 1).ConfigureAwait(false);
+        return answer.IsError ? await output.Error(answer.Error).ConfigureAwait(false) : await output.Text(ApprovalText(answer.Value.Value, hash is null), answer.Value.Value.Approved ? 0 : 1).ConfigureAwait(false);
     }
 
     private async Task<Kernel.Error?> Confirmation(ProfileHash hash, bool interactive, TextReader input)

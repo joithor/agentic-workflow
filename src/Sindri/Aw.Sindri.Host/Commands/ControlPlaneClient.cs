@@ -10,11 +10,18 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>
 /// The CLI's typed client of the control plane's API (factory addendum §17.27.1: the CLI is a client of the same
 /// handlers the UI calls). It finds the process through the endpoint record and the probe, so a stale record reads as
-/// 'not running', never as a hang.
+/// 'not running', never as a hang. Every call carries the caller headers (API spec §6); an answer keeps its raw body.
 /// </summary>
-internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerializerOptions options, TimeSpan? timeout = null) : IDisposable
+/// <param name="probe">Finds the running control plane.</param>
+/// <param name="options">The package's AwJson options.</param>
+/// <param name="headers">The caller headers; none (read as a session) when null.</param>
+/// <param name="timeout">How long a call may take (10 s by default).</param>
+/// <param name="handler">The HTTP handler (tests); a loopback handler without a proxy when null.</param>
+internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerializerOptions options, CallerHeaders? headers = null, TimeSpan? timeout = null,
+    HttpMessageHandler? handler = null) : IDisposable
 {
-    private readonly HttpClient _http = new(new SocketsHttpHandler { UseProxy = false }) { Timeout = timeout ?? TimeSpan.FromSeconds(10) };
+    private readonly HttpClient _http = new(handler ?? new SocketsHttpHandler { UseProxy = false }) { Timeout = timeout ?? TimeSpan.FromSeconds(10) };
+    private readonly CallerHeaders _headers = headers ?? CallerHeaders.None;
 
     public void Dispose() => _http.Dispose();
 
@@ -23,7 +30,7 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     /// <param name="ct">Cancels the call.</param>
     /// <typeparam name="T">The response record (in the package's JSON context).</typeparam>
     /// <returns>The answer, or the API's error.</returns>
-    public Task<Result<T>> Get<T>(string route, CancellationToken ct) => Send<T>(HttpMethod.Get, route, content: null, ct);
+    public Task<Result<ApiAnswer<T>>> Get<T>(string route, CancellationToken ct) => Send<T>(HttpMethod.Get, route, content: null, ct);
 
     /// <summary>POST <paramref name="body"/> (or nothing) to a route and read its answer.</summary>
     /// <param name="route">The route.</param>
@@ -32,13 +39,13 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     /// <typeparam name="TBody">The request type.</typeparam>
     /// <typeparam name="T">The response type.</typeparam>
     /// <returns>The answer, or the API's error.</returns>
-    public Task<Result<T>> Post<TBody, T>(string route, TBody? body, CancellationToken ct)
+    public Task<Result<ApiAnswer<T>>> Post<TBody, T>(string route, TBody? body, CancellationToken ct)
     {
         var content = body is null ? null : new ByteArrayContent(AwJson.Serialize(body, options)) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } };
         return Send<T>(HttpMethod.Post, route, content, ct);
     }
 
-    private async Task<Result<T>> Send<T>(HttpMethod method, string route, HttpContent? content, CancellationToken ct)
+    private async Task<Result<ApiAnswer<T>>> Send<T>(HttpMethod method, string route, HttpContent? content, CancellationToken ct)
     {
         var found = await probe.Check(ct).ConfigureAwait(false);
         if (found.IsError)
@@ -48,11 +55,18 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
         }
 
         using var request = new HttpRequestMessage(method, new Uri(found.Value.Endpoint.Url, route)) { Content = content };
+        _ = _headers.SessionReason;   // red: applied in the green commit
         try
         {
             using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
             var bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
-            return response.IsSuccessStatusCode ? AwJson.Deserialize<T>(bytes, options) : Problem(bytes, (int)response.StatusCode);
+            if (!response.IsSuccessStatusCode)
+            {
+                return Problem(bytes, (int)response.StatusCode);
+            }
+
+            var value = AwJson.Deserialize<T>(bytes, options);
+            return value.IsError ? value.Error : new ApiAnswer<T>(value.Value, ReadOnlyMemory<byte>.Empty);
         }
         catch (HttpRequestException e)
         {

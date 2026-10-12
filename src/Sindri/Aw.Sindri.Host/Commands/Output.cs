@@ -17,6 +17,12 @@ internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerialize
         return exitCode;
     }
 
+    /// <summary>Prints an API response body exactly as received, then a newline (--json, API spec §9).</summary>
+    /// <param name="body">The body.</param>
+    /// <param name="exitCode">The exit code to return.</param>
+    /// <returns><paramref name="exitCode"/>.</returns>
+    public Task<int> Raw(ReadOnlyMemory<byte> body, int exitCode) => throw new NotSupportedException("red: print the body unchanged");
+
     public async Task<int> Text(string text, int exitCode)
     {
         await Out.WriteAsync(text).ConfigureAwait(false);
