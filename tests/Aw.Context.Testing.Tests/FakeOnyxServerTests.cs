@@ -1,6 +1,4 @@
-using System.Globalization;
 using System.Net;
-using System.Text.Json.Nodes;
 using Aw.Context.Testing.Fakes;
 using Aw.Kernel.Testing;
 
@@ -8,45 +6,12 @@ namespace Aw.Context.Testing.Tests;
 
 /// <summary>
 /// The fake Onyx HTTP server replays the recorded documents on loopback (spec §5.2, §10, §12, §14 S-L2) and answers
-/// auth, chunk-info and version the way Onyx v4.9.0 does.
+/// auth, chunk-info, document-size-info, /me and version the way Onyx v4.9.0 does (search: FakeOnyxSearchTests).
 /// </summary>
 [Lane(TestLane.Integration)]
 public sealed class FakeOnyxServerTests
 {
     private const string Spl105 = "0e5a1b00-0000-4000-8000-000000000105";
-
-    [Fact]
-    public async Task Search_ranks_the_matching_issue_first_with_its_uuid_identifier_and_updated_at()
-    {
-        await using var onyx = await FakeOnyxServer.Start();
-
-        var docs = await Search(onyx, new JsonObject { ["message"] = "minimum pane width" });
-
-        var top = docs[0]!;
-        Assert.Equal(Spl105, (string?)top["document_id"]);
-        Assert.StartsWith("[SPL-105] ", (string?)top["semantic_identifier"], StringComparison.Ordinal);
-        Assert.Null(top["metadata"]!["identifier"]);
-        Assert.Equal("linear", (string?)top["source_type"]);
-        Assert.Equal(DateTimeOffset.Parse("2026-08-12T15:00:00Z", CultureInfo.InvariantCulture),
-            DateTimeOffset.Parse((string)top["updated_at"]!, CultureInfo.InvariantCulture));
-        Assert.True((double)top["score"]! > 0);
-        Assert.Equal(docs.Count, docs.Select(d => (string?)d!["document_id"]).Distinct(StringComparer.Ordinal).Count());
-    }
-
-    [Fact]
-    public async Task Search_filters_by_source_type_and_time_cutoff_and_honors_limit()
-    {
-        await using var onyx = await FakeOnyxServer.Start();
-
-        var slack = await Search(onyx, Request("resize step", ["slack"], cutoff: null, limit: null));
-        var recent = await Search(onyx, Request("pane", sources: null, "2026-07-29T00:00:00Z", limit: null));
-        var one = await Search(onyx, Request("pane", sources: null, cutoff: null, 1));
-
-        Assert.Equal(["C0FIXTURE01__1784972400.000100"], slack.Select(d => (string?)d!["document_id"]), StringComparer.Ordinal);
-        Assert.All(recent, d => Assert.True(DateTimeOffset.Parse((string)d!["updated_at"]!, CultureInfo.InvariantCulture) >= new DateTimeOffset(2026, 7, 29, 0, 0, 0, TimeSpan.Zero)));
-        Assert.Contains(recent, d => (string?)d!["document_id"] == Spl105);
-        _ = Assert.Single(one);
-    }
 
     [Fact]
     public async Task Chunk_info_returns_a_documents_text_and_404s_an_unknown_one_as_onyx_does()
@@ -82,64 +47,6 @@ public sealed class FakeOnyxServerTests
             body!.ToJsonString());
     }
 
-    [Fact]
-    public async Task An_unknown_route_or_an_unsupported_field_is_a_clear_error()
-    {
-        await using var onyx = await FakeOnyxServer.Start();
-
-        var (Status, Body) = await Http.Post(new Uri(onyx.Url, "api/chat/send-message"), onyx.Authorization, "{}");
-        var field = await Http.Post(new Uri(onyx.Url, "api/query/document-search"), onyx.Authorization,
-            new JsonObject { ["message"] = "pane", ["retrieval_options"] = new JsonObject { ["filters"] = new JsonObject { ["tags"] = new JsonArray("x") } } }.ToJsonString());
-        var noMessage = await Http.Post(new Uri(onyx.Url, "api/query/document-search"), onyx.Authorization, "{}");
-
-        Assert.Equal(HttpStatusCode.NotFound, Status);
-        Assert.Equal("NOT_FOUND", (string?)Body!["error_code"]);
-        Assert.Contains("api/query/document-search", (string?)Body!["detail"], StringComparison.Ordinal);
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, field.Status);
-        Assert.Contains("tags", field.Body!["detail"]!.ToJsonString(), StringComparison.Ordinal);
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, noMessage.Status);
-        Assert.Contains("message", noMessage.Body!["detail"]!.ToJsonString(), StringComparison.Ordinal);
-    }
-
-    [Theory]
-    [InlineData("{\"message\":\"pane\",\"search_type\":\"keyword\"}", "search_type")]
-    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"enable_auto_detect_filters\":false}}", "enable_auto_detect_filters")]
-    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"filters\":{\"source_type\":\"linear\"}}}", "source_type")]
-    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"filters\":{\"time_cutoff\":5}}}", "time_cutoff")]
-    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"limit\":1.5}}", "limit")]
-    [InlineData("{\"message\":\"pane\",\"retrieval_options\":{\"offset\":-1}}", "offset")]
-    public async Task A_field_the_fake_does_not_read_or_a_badly_typed_value_is_a_422_naming_it(string body, string named)
-    {
-        await using var onyx = await FakeOnyxServer.Start();
-
-        var (status, reply) = await Http.Post(new Uri(onyx.Url, "api/query/document-search"), onyx.Authorization, body);
-
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, status);
-        Assert.Contains(named, reply!["detail"]!.ToJsonString(), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task Offset_skips_into_the_ranked_list()
-    {
-        await using var onyx = await FakeOnyxServer.Start();
-
-        var all = await Search(onyx, Request("pane", sources: null, cutoff: null, limit: null));
-        var second = await Search(onyx, new JsonObject { ["message"] = "pane", ["retrieval_options"] = new JsonObject { ["offset"] = 1, ["limit"] = 1 } });
-
-        Assert.Equal((string?)all[1]!["document_id"], (string?)Assert.Single(second)!["document_id"]);
-    }
-
-    [Fact]
-    public async Task An_empty_source_type_list_is_no_filter_as_in_onyx()
-    {
-        await using var onyx = await FakeOnyxServer.Start();
-
-        var unfiltered = await Search(onyx, Request("pane", sources: null, cutoff: null, limit: null));
-        var empty = await Search(onyx, Request("pane", [], cutoff: null, limit: null));
-
-        Assert.Equal(unfiltered.Select(d => (string?)d!["document_id"]), empty.Select(d => (string?)d!["document_id"]), StringComparer.Ordinal);
-    }
-
     [Theory]
     [InlineData(null)]
     [InlineData("Bearer on_not-the-fixture-key")]
@@ -151,11 +58,17 @@ public sealed class FakeOnyxServerTests
         await using var onyx = await FakeOnyxServer.Start();
 
         var (status, body) = await Http.Get(new Uri(onyx.Url, $"api/document/chunk-info?document_id={Spl105}&chunk_id=0"), authorization);
-        var (searchStatus, _) = await Http.Post(new Uri(onyx.Url, "api/query/document-search"), authorization, "{\"message\":\"pane\"}");
+        var (searchStatus, searchBody) = await Http.Post(new Uri(onyx.Url, "api/admin/search"), authorization, "{\"query\":\"pane\",\"filters\":{}}");
+        var (sizeStatus, _) = await Http.Get(new Uri(onyx.Url, $"api/document/document-size-info?document_id={Spl105}"), authorization);
+        var (meStatus, meBody) = await Http.Get(new Uri(onyx.Url, "api/me"), authorization);
 
         Assert.Equal(HttpStatusCode.Forbidden, status);
         Assert.Equal("{\"error_code\":\"UNAUTHORIZED\",\"detail\":\"Access denied. User is not authenticated.\"}", body!.ToJsonString());
         Assert.Equal(HttpStatusCode.Forbidden, searchStatus);
+        Assert.Equal("UNAUTHORIZED", (string?)searchBody!["error_code"]);
+        Assert.Equal(HttpStatusCode.Forbidden, sizeStatus);
+        Assert.Equal(HttpStatusCode.Forbidden, meStatus);
+        Assert.Equal("{\"error_code\":\"UNAUTHORIZED\",\"detail\":\"Unauthorized\"}", meBody!.ToJsonString());
     }
 
     [Fact]
@@ -227,9 +140,9 @@ public sealed class FakeOnyxServerTests
         const string planted = "on_planted-onyx-91c2";
         await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { Token = planted });
 
-        _ = await Search(onyx, new JsonObject { ["message"] = "pane" });
+        _ = await Http.Post(new Uri(onyx.Url, "api/admin/search"), "Bearer " + planted, "{\"query\":\"pane\",\"filters\":{}}");
         _ = await Http.Get(new Uri(onyx.Url, "api/nothing"), "Bearer " + planted);
-        _ = await Http.Post(new Uri(onyx.Url, "api/query/document-search"), "Bearer wrong-" + planted, "{\"message\":\"pane\"}");
+        _ = await Http.Post(new Uri(onyx.Url, "api/admin/search"), "Bearer wrong-" + planted, "{\"query\":\"pane\",\"filters\":{}}");
 
         Assert.Equal("127.0.0.1", onyx.Url.Host);
         Assert.Equal(3, onyx.Requests.Count);
@@ -238,32 +151,79 @@ public sealed class FakeOnyxServerTests
         Assert.DoesNotContain(onyx.Requests, r => r.ToString().Contains(planted, StringComparison.Ordinal));
     }
 
-    private static JsonObject Request(string message, string[]? sources, string? cutoff, int? limit)
+    [Fact]
+    public async Task Document_size_info_counts_a_documents_chunks_and_404s_an_unknown_one_as_onyx_does()
     {
-        var filters = new JsonObject();
-        if (sources is not null)
-        {
-            filters["source_type"] = new JsonArray([.. sources.Select(s => JsonValue.Create(s))]);
-        }
+        await using var onyx = await FakeOnyxServer.Start();
 
-        if (cutoff is not null)
-        {
-            filters["time_cutoff"] = cutoff;
-        }
+        var (status, body) = await Http.Get(new Uri(onyx.Url, $"api/document/document-size-info?document_id={Spl105}"), onyx.Authorization);
+        var (missingStatus, missingBody) = await Http.Get(new Uri(onyx.Url, "api/document/document-size-info?document_id=nope"), onyx.Authorization);
+        var (noIdStatus, noIdBody) = await Http.Get(new Uri(onyx.Url, "api/document/document-size-info"), onyx.Authorization);
 
-        var options = new JsonObject { ["filters"] = filters };
-        if (limit is not null)
-        {
-            options["limit"] = limit;
-        }
-
-        return new JsonObject { ["message"] = message, ["retrieval_options"] = options };
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal(4, (int)body!["num_chunks"]!);
+        Assert.True((int)body["num_tokens"]! > 0);
+        Assert.Equal(HttpStatusCode.NotFound, missingStatus);
+        Assert.Equal("{\"error_code\":\"NOT_FOUND\",\"detail\":\"Document not found\"}", missingBody!.ToJsonString());
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, noIdStatus);
+        Assert.Equal("VALIDATION_ERROR", (string?)noIdBody!["error_code"]);
     }
 
-    private static async Task<JsonArray> Search(FakeOnyxServer onyx, JsonObject request)
+    [Fact]
+    public async Task Me_reports_a_service_account_admin_by_default()
     {
-        var (status, body) = await Http.Post(new Uri(onyx.Url, "api/query/document-search"), onyx.Authorization, request.ToJsonString());
+        await using var onyx = await FakeOnyxServer.Start();
+
+        var (status, body) = await Http.Get(new Uri(onyx.Url, "api/me"), onyx.Authorization);
+
         Assert.Equal(HttpStatusCode.OK, status);
-        return body!["top_documents"]!.AsArray();
+        Assert.Equal("SERVICE_ACCOUNT", (string?)body!["account_type"]);
+        Assert.Contains("admin", body["effective_permissions"]!.AsArray().Select(p => (string?)p), StringComparer.Ordinal);
+        Assert.Contains("read:search", body["effective_permissions"]!.AsArray().Select(p => (string?)p), StringComparer.Ordinal);
+        Assert.True((bool)body["is_active"]!);
+    }
+
+    [Fact]
+    public async Task A_standard_basic_key_has_no_admin_permission_and_gets_403_insufficient_permissions_on_admin_search()
+    {
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxAccountType = "STANDARD", OnyxAdmin = false });
+
+        var (meStatus, me) = await Http.Get(new Uri(onyx.Url, "api/me"), onyx.Authorization);
+        var (searchStatus, search) = await Http.Post(new Uri(onyx.Url, "api/admin/search"), onyx.Authorization, "{\"query\":\"pane\",\"filters\":{}}");
+        var (chunkStatus, _) = await Http.Get(new Uri(onyx.Url, $"api/document/chunk-info?document_id={Spl105}&chunk_id=0"), onyx.Authorization);
+
+        Assert.Equal(HttpStatusCode.OK, meStatus);
+        Assert.Equal("STANDARD", (string?)me!["account_type"]);
+        Assert.DoesNotContain("admin", me["effective_permissions"]!.AsArray().Select(p => (string?)p), StringComparer.Ordinal);
+        Assert.Equal(HttpStatusCode.Forbidden, searchStatus);
+        Assert.Equal(
+            "{\"error_code\":\"INSUFFICIENT_PERMISSIONS\",\"detail\":\"You do not have the required permissions for this action.\"}",
+            search!.ToJsonString());
+        Assert.Equal(HttpStatusCode.OK, chunkStatus);
+    }
+
+    [Fact]
+    public async Task An_unknown_route_is_a_404_naming_the_routes_it_serves_before_the_key_check()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+
+        var (status, body) = await Http.Post(new Uri(onyx.Url, "api/query/document-search"), authorization: null, "{}");
+
+        Assert.Equal(HttpStatusCode.NotFound, status);
+        Assert.Equal("NOT_FOUND", (string?)body!["error_code"]);
+        Assert.Contains("POST /api/admin/search", (string?)body["detail"], StringComparison.Ordinal);
+        Assert.Contains("GET /api/me", (string?)body["detail"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_delay_holds_every_answer_back()
+    {
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { Delay = TimeSpan.FromMilliseconds(300) });
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        var (status, _) = await Http.Get(new Uri(onyx.Url, "api/version"), authorization: null);
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.True(clock.Elapsed >= TimeSpan.FromMilliseconds(250), $"answered after {clock.ElapsedMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture)} ms");
     }
 }
