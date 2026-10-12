@@ -48,6 +48,18 @@ csproj() { # csproj <dir> <relpath> [ref-relpath...]
     echo '  </ItemGroup>'; echo '</Project>'; } > "$d/$p"
 }
 
+exc() { # exc <dir> <rule> <subject> <recorded> <expires> — record one exception
+  perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: $2\n    subject: $3\n    reason: test\n    recorded: $4\n    expires: $5\n/" "$1/deps.yaml"
+}
+
+over() { # over <name> — Aw.Beta.Features holds 2 in-repo references under limits.projectFanOut 1 (DEPS-FANOUT-002); prints the path
+  local d; d="$(fixture "$1")"; perl -pi -e 's/^  projectFanOut: 4\n/  projectFanOut: 1\n/' "$d/deps.yaml"
+  perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"; edge "$d" Beta Alpha project current
+  csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" src/Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj
+  csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj
+  echo "$d"
+}
+
 echo "check-deps.mjs"
 
 d="$(fixture clean)"; run "$d"
@@ -124,16 +136,19 @@ expect "YAML outside the subset fails" 1 "DEPS-YAML-001" "anchor"
 d="$(fixture yaml-dup)"; perl -pi -e 's/^    note: delta\n/    note: delta\n    note: again\n/' "$d/deps.yaml"; run "$d"
 expect "duplicate key fails" 1 "DEPS-YAML-001" "duplicate key"
 
-d="$(fixture fanout)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned; run "$d"
-expect "fan-out over the limit fails" 1 "DEPS-FANOUT-001" "Beta has 2 project edges" "limit: 1"
+# The per-package cap (DEPS-FANOUT-001) was removed by the owner, 2026-10-12: a package may declare project edges
+# to any number of lower-tier packages; only the per-project limits remain.
+d="$(fixture fanout-wide)"
+for t in P1 P2 P3 P4; do perl -0pi -e "s/(  - id: Beta\n)/  - id: $t\n    kind: package\n    tier: 1\n    projectPrefix: Aw.$t\n    ts: null\n    src: src\/$t\n    note: $t\n\$1/" "$d/deps.yaml"; done
+for t in Alpha P1 P2 P3 P4; do edge "$d" Beta "$t" project planned; done; run "$d"
+expect "a package with project edges to 6 packages passes" 0 "deps: ok"
+refuse "  ... with no package fan-out rule" "DEPS-FANOUT-001"
 
-d="$(fixture fanout-exc)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned
-perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Beta\n    reason: test\n    recorded: 2026-10-10\n    expires: 2027-01-01\n/' "$d/deps.yaml"; run "$d"
-expect "an unexpired exception silences fan-out" 0 "deps: ok" "exception DEPS-FANOUT-001 Beta (expires 2027-01-01)"
+d="$(over fanout-exc)"; exc "$d" DEPS-FANOUT-002 Beta 2026-10-10 2027-01-01; run "$d"
+expect "an unexpired exception silences fan-out" 0 "deps: ok" "exception DEPS-FANOUT-002 Beta (expires 2027-01-01)"
 
-d="$(fixture fanout-expired)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned
-perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Beta\n    reason: test\n    recorded: 2020-01-01\n    expires: 2020-06-01\n/' "$d/deps.yaml"; run "$d"
-expect "an expired exception fails and no longer silences" 1 "DEPS-EXC-001" "DEPS-FANOUT-001"
+d="$(over fanout-expired)"; exc "$d" DEPS-FANOUT-002 Beta 2020-01-01 2020-06-01; run "$d"
+expect "an expired exception fails and no longer silences" 1 "DEPS-EXC-001" "DEPS-FANOUT-002" "Aw.Beta.Features references 2 in-repo projects"
 
 d="$(fixture proj-undeclared)"
 csproj "$d" src/Beta/Aw.Beta.Core/Aw.Beta.Core.csproj ../../Delta/Aw.Delta.Core/Aw.Delta.Core.csproj
@@ -250,7 +265,7 @@ d="$(fixture dup-edge)"; edge "$d" Beta Alpha cli current; run "$d"
 expect "duplicate edge fails" 1 "DEPS-REF-003" "Beta -> Alpha (cli)"
 d="$(fixture dup-prefix)"; perl -pi -e 's/projectPrefix: Aw.Delta/projectPrefix: Aw.Beta/' "$d/deps.yaml"; run "$d"
 expect "two packages with one projectPrefix fails" 1 "DEPS-REF-004" "Aw.Beta"
-d="$(fixture exc-unknown)"; perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Zeta\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/' "$d/deps.yaml"; run "$d"
+d="$(fixture exc-unknown)"; exc "$d" DEPS-FANOUT-002 Zeta 2026-10-10 2026-12-01; run "$d"
 expect "an exception for an unknown package fails" 1 "DEPS-REF-001" "Zeta"
 d="$(fixture self-loop)"; edge "$d" Delta Delta cli planned; run "$d"
 expect "a self-loop is a cycle" 1 "DEPS-CYCLE-001" "Delta -> Delta"
@@ -258,13 +273,12 @@ d="$(fixture cycle3)"; edge "$d" Alpha Delta cli planned; edge "$d" Delta Beta c
 expect "a three-node cycle reports its path" 1 "DEPS-CYCLE-001" "Alpha -> Delta -> Beta -> Alpha"
 
 # ---- exceptions ----
-d="$(fixture exc-unused)"; perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Beta\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/' "$d/deps.yaml"; run "$d"
-expect "an exception that suppresses nothing fails" 1 "DEPS-EXC-002" "DEPS-FANOUT-001 for Beta"
+d="$(fixture exc-unused)"; exc "$d" DEPS-FANOUT-002 Beta 2026-10-10 2026-12-01; run "$d"
+expect "an exception that suppresses nothing fails" 1 "DEPS-EXC-002" "DEPS-FANOUT-002 for Beta"
 d="$(fixture exc-rule)"; perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-TIER-001\n    subject: Beta\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/' "$d/deps.yaml"; run "$d"
 expect "an exception for a rule that takes none fails the schema" 1 "DEPS-SCHEMA-001" "/exceptions/0/rule"
 for dates in "2026-13-45 2026-12-01" "2026-12-01 2026-11-01" "2026-10-10 2027-10-10"; do
-  set -- $dates; d="$(fixture "exc-dates-$1-$2")"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned
-  perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Beta\n    reason: test\n    recorded: $1\n    expires: $2\n/" "$d/deps.yaml"; run "$d"
+  set -- $dates; d="$(over "exc-dates-$1-$2")"; exc "$d" DEPS-FANOUT-002 Beta "$1" "$2"; run "$d"
   expect "bad exception dates fail (recorded $1, expires $2)" 1 "DEPS-EXC-003"
 done
 
@@ -327,7 +341,7 @@ d="$(fixture fixcmd)"; printf 'execFile("beta", []);\n' > "$d/alpha/src/call.ts"
 expect "fix prints the YAML to paste and the rerun command" 1 "      - from: Alpha" "rerun: node scripts/check-deps.mjs"
 
 # ---- review run 2 (PR #92) ----
-d="$(fixture today)"; perl -pi -e 's/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: Beta\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/; s/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned
+d="$(over today)"; exc "$d" DEPS-FANOUT-002 Beta 2026-10-10 2026-12-01
 TODAY=2026-11-30 run "$d"; expect "--today pins the date: the day before expiry passes" 0 "deps: ok"
 TODAY=2026-12-02 run "$d"; expect "--today pins the date: the day after expiry fails" 1 "DEPS-EXC-001" "today 2026-12-02"
 TODAY=2026-13-01 run "$d"; expect "--today must be a calendar date" 2 "--today needs a YYYY-MM-DD date"
@@ -537,10 +551,6 @@ printf 'var p = "outbox";\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
 expect "one segment alone is not a file edge" 0 "deps: ok"
 
 # ---- the compose edge kind (context spec §4, stage S-1C): a Host calls a lower package's Add…() methods ----
-exc() { # exc <dir> <subject> [edge] — a DEPS-FANOUT-001 exception, attached to the project edge to <edge> when given
-  local extra=""; [ -z "${3:-}" ] || extra="\n    edge: $3"
-  perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-001\n    subject: $2$extra\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$1/deps.yaml"
-}
 composed() { # composed <name> — Beta reaches Alpha by project (current) and compose (current); Alpha has every layer
   local d; d="$(fixture "$1")"
   perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/' "$d/deps.yaml"
@@ -612,59 +622,11 @@ expect "a current compose edge with no Host reference into Features or Infrastru
 d="$(composed compose-early)"; perl -0pi -e 's/kind: compose\n    status: current/kind: compose\n    status: planned/' "$d/deps.yaml"; run "$d"
 expect "a planned compose edge the Host already uses fails" 1 "DEPS-STALE-002" "Beta -> Alpha (compose)"
 
-d="$(fixture fanout-attached)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned; exc "$d" Beta Alpha; run "$d"
-expect "a fan-out exception attached to the project edge that tips it over passes" 0 "deps: ok" "exception DEPS-FANOUT-001 Beta"
+d="$(fixture exc-001)"; exc "$d" DEPS-FANOUT-001 Beta 2026-10-10 2026-12-01; run "$d"
+expect "the removed package fan-out rule takes no exception" 1 "DEPS-SCHEMA-001" "/exceptions/0/rule"
 
-d="$(fixture fanout-attached-missing)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned; exc "$d" Beta Delta; run "$d"
-expect "an exception attached to an edge that isn't declared fails" 1 "DEPS-EXC-004" "Beta -> Delta (project)"
-
-d="$(fixture fanout-attached-wide)"; perl -pi -e 's/packageFanOut: 4/packageFanOut: 1/' "$d/deps.yaml"; edge "$d" Beta Alpha project planned; edge "$d" Beta Delta project planned; exc "$d" Beta Alpha; run "$d"
-expect "an attached exception covers its one edge, not a wider fan-out" 1 "DEPS-FANOUT-001" "Beta has 3 project edges" "DEPS-EXC-002" "Beta has 3 project edges (Alpha, Delta, Kernel), more than an exception attached to one edge covers"
-
-d="$(fixture fanout-attached-test)"; perl -0pi -e 's/(  - id: Alpha\n)/  - id: KTest\n    kind: package\n    tier: 0\n    sublevel: 2\n    test: true\n    projectPrefix: Aw.KTest\n    ts: null\n    src: tests\/Aw.KTest.Testing\n    note: test support\n$1/' "$d/deps.yaml"
-edge "$d" Delta KTest project planned; exc "$d" Delta KTest; run "$d"
-expect "an exception attached to an edge into test support (which fan-out never counts) fails" 1 "DEPS-EXC-004" "exception attached to an edge fan-out doesn't count" "Delta -> KTest goes into test support"
-refuse "  ... without claiming the declared edge is missing" "isn't declared"
-
-d="$(fixture fanout-attached-within)"; edge "$d" Beta Alpha project planned; exc "$d" Beta Alpha; run "$d"
-expect "an attached exception within the limit suppresses nothing, with the plain measurement" 1 "DEPS-EXC-002" "Beta has 2 project edges (Alpha, Kernel)"
-refuse "  ... without the wider-fan-out wording" "more than an exception"
-
-d="$(fixture fanout-attached-rule)"; perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-002\n    subject: Beta\n    edge: Alpha\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
-expect "only a DEPS-FANOUT-001 exception is attached to an edge" 1 "DEPS-SCHEMA-001" "/exceptions/0/rule: must be \"DEPS-FANOUT-001\""
-
-# ---- cycle exceptions: a DEPS-CYCLE-001 exception attached to the cli or http edge that closes one cycle ----
-cyc() { # cyc <dir> <subject> <edge> [recorded expires] — a DEPS-CYCLE-001 exception attached to <subject> -> <edge>
-  perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-CYCLE-001\n    subject: $2\n    edge: $3\n    reason: test\n    recorded: ${4:-2026-10-10}\n    expires: ${5:-2026-12-01}\n/" "$1/deps.yaml"
-}
-d="$(fixture cycle-excepted)"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Beta; run "$d"
-expect "a cycle exception attached to the cli edge that closes the cycle passes" 0 "deps: ok" "exception DEPS-CYCLE-001 Alpha -> Beta (expires 2026-12-01)"
-
-d="$(fixture cycle-excepted-other)"; edge "$d" Alpha Beta cli planned; edge "$d" Alpha Delta cli planned; edge "$d" Delta Beta cli planned; cyc "$d" Alpha Beta; run "$d"
-expect "a cycle exception covers its one cycle: another cycle still fails" 1 "DEPS-CYCLE-001" "Alpha -> Delta -> Beta -> Alpha"
-refuse "  ... and the excepted cycle is not reported" "Alpha -> Beta -> Alpha"
-
-d="$(fixture cycle-excepted-two)"; edge "$d" Alpha Beta cli planned; edge "$d" Beta Delta cli planned; edge "$d" Delta Alpha cli planned; cyc "$d" Alpha Beta; run "$d"
-expect "a cycle exception whose edge closes two cycles covers neither" 1 "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha" "Alpha -> Beta -> Delta -> Alpha" "DEPS-EXC-002" "2 cycles pass through Alpha -> Beta"
-
-d="$(fixture cycle-excepted-none)"; edge "$d" Delta Alpha cli planned; cyc "$d" Delta Alpha; run "$d"
-expect "a cycle exception whose cycle doesn't exist suppresses nothing" 1 "DEPS-EXC-002" "DEPS-CYCLE-001 for Delta: no cycle passes through Delta -> Alpha"
-
-d="$(fixture cycle-excepted-missing)"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Delta; run "$d"
-expect "a cycle exception attached to an edge that isn't declared fails, and the cycle with it" 1 "DEPS-EXC-004" "no Alpha -> Delta (cli or http) edge" "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha"
-
-d="$(fixture cycle-excepted-db)"; edge "$d" Alpha Beta file planned; cyc "$d" Alpha Beta; run "$d"
-expect "a cycle exception is attached to a cli or http edge, not a db or file edge" 1 "DEPS-EXC-004" "no Alpha -> Beta (cli or http) edge" "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha"
-
-d="$(fixture cycle-excepted-expired)"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Beta 2020-01-01 2020-06-01; run "$d"
-expect "an expired cycle exception fails and no longer covers the cycle" 1 "DEPS-EXC-001" "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha"
-for dates in "2026-13-45 2026-12-01" "2026-12-01 2026-11-01" "2026-10-10 2027-10-10"; do
-  set -- $dates; d="$(fixture "cycle-dates-$1-$2")"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Beta "$1" "$2"; run "$d"
-  expect "bad cycle exception dates fail (recorded $1, expires $2)" 1 "DEPS-EXC-003" "Alpha -> Beta -> Alpha"
-done
-
-d="$(fixture cycle-excepted-no-edge)"; perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-CYCLE-001\n    subject: Alpha\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
-expect "a cycle exception names the edge it is attached to" 1 "DEPS-SCHEMA-001" "/exceptions/0: missing required property edge"
+d="$(over exc-edge)"; perl -pi -e "s/^exceptions: \[\]\n/exceptions:\n  - rule: DEPS-FANOUT-002\n    subject: Beta\n    edge: Alpha\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
+expect "an exception names no edge" 1 "DEPS-SCHEMA-001" "/exceptions/0" "edge"
 
 # ---- parser, validator and schema drift (node unit table) ----
 set +e; UNIT="$(node "$HERE/check-deps.unit.mjs" 2>&1)"; UCODE=$?; set -e
