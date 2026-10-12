@@ -12,5 +12,7 @@
     "needsApproval": true
   },
   "services": [],
-  "apiVersion": 1
+  "apiVersion": 1,
+  "views": null,
+  "health": null
 }

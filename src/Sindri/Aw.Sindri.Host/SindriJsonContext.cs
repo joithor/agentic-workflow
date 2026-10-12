@@ -12,8 +12,11 @@ using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.EvalRecipe;
+using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.ListCommands;
+using Aw.Sindri.Features.ListServices;
+using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
@@ -53,6 +56,12 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ListCommandsRequest))]
 [JsonSerializable(typeof(ListCommandsResponse))]
 [JsonSerializable(typeof(CommandListRow))]
+[JsonSerializable(typeof(ListServicesRequest))]
+[JsonSerializable(typeof(ListServicesResponse))]
+[JsonSerializable(typeof(ServiceView))]
+[JsonSerializable(typeof(GetProfileRequest))]
+[JsonSerializable(typeof(GetProfileResponse))]
+[JsonSerializable(typeof(RebuildViewsRequest))]
 [JsonSerializable(typeof(Recipe))]
 [JsonSerializable(typeof(BlockDescriptor))]
 [JsonSerializable(typeof(ValidateRecipeResponse))]
