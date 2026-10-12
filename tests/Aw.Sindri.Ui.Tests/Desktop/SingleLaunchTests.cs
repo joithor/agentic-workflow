@@ -183,7 +183,7 @@ public sealed class SingleLaunchTests : IDisposable
 
         public ValueTask<bool> Send(string message, CancellationToken cancellationToken) => inner.Send(message, cancellationToken);
 
-        public IAsyncEnumerable<string> Messages(CancellationToken cancellationToken) => inner.Messages(cancellationToken);
+        public IAsyncEnumerable<InstanceMessage> Messages(CancellationToken cancellationToken) => inner.Messages(cancellationToken);
 
         public int? HolderProcessId() => inner.HolderProcessId();
 
@@ -204,7 +204,7 @@ public sealed class SingleLaunchTests : IDisposable
 
         public ValueTask<bool> Send(string message, CancellationToken cancellationToken) => ValueTask.FromResult(false);
 
-        public IAsyncEnumerable<string> Messages(CancellationToken cancellationToken) => AsyncEnumerable.Empty<string>();
+        public IAsyncEnumerable<InstanceMessage> Messages(CancellationToken cancellationToken) => AsyncEnumerable.Empty<InstanceMessage>();
 
         public int? HolderProcessId() => null;
 
@@ -217,7 +217,7 @@ public sealed class SingleLaunchTests : IDisposable
 
         public ValueTask<bool> Send(string message, CancellationToken cancellationToken) => ValueTask.FromException<bool>(failure);
 
-        public IAsyncEnumerable<string> Messages(CancellationToken cancellationToken) => AsyncEnumerable.Empty<string>();
+        public IAsyncEnumerable<InstanceMessage> Messages(CancellationToken cancellationToken) => AsyncEnumerable.Empty<InstanceMessage>();
 
         public int? HolderProcessId() => null;
 
@@ -235,7 +235,7 @@ public sealed class SingleLaunchTests : IDisposable
             return await inner.Send(message, cancellationToken);
         }
 
-        public IAsyncEnumerable<string> Messages(CancellationToken cancellationToken) => inner.Messages(cancellationToken);
+        public IAsyncEnumerable<InstanceMessage> Messages(CancellationToken cancellationToken) => inner.Messages(cancellationToken);
 
         public int? HolderProcessId() => inner.HolderProcessId();
 

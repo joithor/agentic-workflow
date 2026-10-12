@@ -21,8 +21,8 @@ public interface ISingleInstance : IAsyncDisposable
 
     /// <summary>The messages later launches send, in order, while this process holds the claim.</summary>
     /// <param name="cancellationToken">Ends the stream.</param>
-    /// <returns>Each message's text, unparsed.</returns>
-    public IAsyncEnumerable<string> Messages(CancellationToken cancellationToken);
+    /// <returns>Each message, with the token that withdraws it once its sender's wait has ended.</returns>
+    public IAsyncEnumerable<InstanceMessage> Messages(CancellationToken cancellationToken);
 
     /// <summary>The process id of the instance that holds the claim, when one does and it is known.</summary>
     /// <returns>The id, or null.</returns>

@@ -132,6 +132,6 @@ public abstract class SingleInstanceContract
         Expect.True(await first.TryClaim(Token));
         Expect.True(!await second.TryClaim(Token));
 
-        Expect.Sequence([], await second.Messages(Token).ToListAsync(Token));
+        Expect.Sequence([], await second.Messages(Token).Select(m => m.Text).ToListAsync(Token));
     }
 }

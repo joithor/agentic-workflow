@@ -27,9 +27,9 @@ internal sealed class InstanceListener(ISingleInstance instance)
         {
             await foreach (var message in instance.Messages(cancellationToken).ConfigureAwait(false))
             {
-                if (Receiver(message) is { } receive)
+                if (Receiver(message.Text) is { } receive)
                 {
-                    await Dispatcher.UIThread.InvokeAsync(() => receive(message)).GetTask().ConfigureAwait(false);
+                    await Dispatcher.UIThread.InvokeAsync(() => receive(message.Text)).GetTask().ConfigureAwait(false);
                 }
             }
         }

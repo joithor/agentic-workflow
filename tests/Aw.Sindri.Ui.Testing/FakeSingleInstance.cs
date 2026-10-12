@@ -19,7 +19,8 @@ internal sealed class FakeSingleInstance(FakeInstanceChannel channel, int proces
         message.Length is > 0 and <= InstanceMessages.MaxLength
         && await channel.Deliver(message).WaitAsync(cancellationToken).ConfigureAwait(false);
 
-    public async IAsyncEnumerable<string> Messages([EnumeratorCancellation] CancellationToken cancellationToken)
+    // The fake has no clock, so a message is never withdrawn: its sender waits until the reader comes back.
+    public async IAsyncEnumerable<InstanceMessage> Messages([EnumeratorCancellation] CancellationToken cancellationToken)
     {
         if (channel.Inbox(this) is not { } inbox)
         {
@@ -32,7 +33,7 @@ internal sealed class FakeSingleInstance(FakeInstanceChannel channel, int proces
             {
                 try
                 {
-                    yield return delivery.Message;
+                    yield return new InstanceMessage(delivery.Message, CancellationToken.None);
                 }
                 finally
                 {

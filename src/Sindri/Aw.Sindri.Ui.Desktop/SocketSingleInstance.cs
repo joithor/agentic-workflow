@@ -100,7 +100,7 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
         }
     }
 
-    public async IAsyncEnumerable<string> Messages([EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<InstanceMessage> Messages([EnumeratorCancellation] CancellationToken cancellationToken)
     {
         if (_claim is null)
         {
@@ -117,7 +117,7 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
 
             try
             {
-                yield return delivery.Message;
+                yield return new InstanceMessage(delivery.Message, CancellationToken.None);
             }
             finally
             {

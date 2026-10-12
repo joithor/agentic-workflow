@@ -31,7 +31,7 @@ internal sealed class InstanceReader : IAsyncDisposable
                 {
                     lock (_gate)
                     {
-                        _seen.Add(messages.Current);
+                        _seen.Add(messages.Current.Text);
                     }
 
                     next = messages.MoveNextAsync();
