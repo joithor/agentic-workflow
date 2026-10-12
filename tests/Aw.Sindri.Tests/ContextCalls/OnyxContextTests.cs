@@ -1,4 +1,5 @@
 using System.Net;
+using System.Runtime.Versioning;
 using System.Text.Json;
 using Aw.Context.Testing.Fakes;
 using Aw.Context.Testing.Fixtures;
@@ -41,6 +42,7 @@ public sealed class OnyxContextTests : IDisposable
         Assert.Contains("onyx", refs, StringComparer.Ordinal);
         Assert.Contains("repo-docs", refs, StringComparer.Ordinal);
         Assert.Contains("\"state\":\"unchecked\"", answer.Body, StringComparison.Ordinal);   // onyx citations stay version unchecked (no Versions route)
+        Assert.Contains("\"aliases\":[\"SPL-", answer.Body, StringComparison.Ordinal);   // the Linear identifier beside its UUID key
         var row = Row(sources.Body, "onyx");
         Assert.Equal("ok", row.GetProperty("state").GetString());
         Assert.Contains("key: admin, service account", row.GetProperty("detail").GetString(), StringComparison.Ordinal);
@@ -97,7 +99,34 @@ public sealed class OnyxContextTests : IDisposable
         var doctor = await Doctor(host, ct);
 
         Assert.Equal(CheckState.Fail, doctor.State);
-        Assert.Contains("SND-CONTEXT-002", doctor.Detail, StringComparison.Ordinal);
+        Assert.StartsWith("SND-SECRET-002: The env:" + KeyVariable + " secret doesn't resolve: the variable is unset or empty", doctor.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    [UnsupportedOSPlatform("windows")]
+    public async Task A_file_pointer_others_may_read_fails_doctor_with_SND_SECRET_003_naming_the_file_and_the_fix()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var onyx = await FakeOnyxServer.Start();
+        var file = Path.Combine(_repo.Path, "..", Path.GetRandomFileName());
+        await File.WriteAllTextAsync(file, onyx.Token + "\n", ct);
+        File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+        try
+        {
+            await using var host = await Approved(onyx, ct, pointer: "file:" + Path.GetFullPath(file));
+
+            var doctor = await Doctor(host, ct);
+
+            Assert.Equal(CheckState.Fail, doctor.State);
+            Assert.StartsWith("SND-SECRET-003: ", doctor.Detail, StringComparison.Ordinal);
+            Assert.Contains($"chmod 600 {Path.GetFullPath(file)}", doctor.Detail, StringComparison.Ordinal);
+            Assert.DoesNotContain(onyx.Token, doctor.Detail + doctor.Fix, StringComparison.Ordinal);
+            Assert.Empty(onyx.Requests);   // refused before any call to Onyx
+        }
+        finally
+        {
+            File.Delete(file);
+        }
     }
 
     private static async Task<DoctorCheck> Doctor(GoldenHost host, CancellationToken ct)
@@ -122,11 +151,11 @@ public sealed class OnyxContextTests : IDisposable
     }
 
     /// <summary>A host whose approved profile maps the fixture repo and names <paramref name="onyx"/> behind an env: pointer, with repo-docs refreshed.</summary>
-    private async Task<GoldenHost> Approved(FakeOnyxServer onyx, CancellationToken ct, Dictionary<string, string>? environment = null)
+    private async Task<GoldenHost> Approved(FakeOnyxServer onyx, CancellationToken ct, Dictionary<string, string>? environment = null, string pointer = "env:" + KeyVariable)
     {
         var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: split-panes, path: \"{_repo.Path}\" }}\n"
             + "context:\n  docs: { globs: [\"docs/**/*.md\"] }\n  sources:\n"
-            + $"    onyx: {{ url: \"{onyx.Url}\", token: \"env:{KeyVariable}\", version: \"{FakeOnyxServer.PinnedVersion}\" }}\n"
+            + $"    onyx: {{ url: \"{onyx.Url}\", token: \"{pointer}\", version: \"{FakeOnyxServer.PinnedVersion}\" }}\n"
             + "    linear: { teams: [SPL] }\n";
         var host = await GoldenHost.Start(temporary: true, ct, yaml, environment ?? new Dictionary<string, string>(StringComparer.Ordinal) { [KeyVariable] = onyx.Token });
         var hash = (await host.LiveHash(ct)).Value;

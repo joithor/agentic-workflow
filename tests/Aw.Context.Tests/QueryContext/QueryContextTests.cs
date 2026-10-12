@@ -150,6 +150,23 @@ public sealed class QueryContextTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Aliases_reach_the_citation_scrubbed_field_by_field_like_titles()
+    {
+        var record = FakeContextSource.Doc("docs/decisions/0001-orientation-toggle.md", "Mirror", "orientation toggle", "o9");
+        var other = new FakeContextSource(_onyx, [record with
+        {
+            Ref = record.Ref with { Source = _onyx.Id },
+            Aliases = ["SPL-103", "SPL-" + FakeScrubber.Secret, "SPL-" + FakeScrubber.BlockMe, "SPL-103"],
+        }]);
+
+        var result = await Engines.Over(FakeContextSource.FixtureDocs(), other).Query(new ContextQuery("orientation toggle"), Engines.Human(), CancellationToken.None);
+
+        var cite = result.Value.Cites["C1"];
+        Assert.Equal(["SPL-103", "SPL-[REDACTED:fake]"], cite.Aliases, StringComparer.Ordinal);   // a blocked alias is dropped, not shown
+        Assert.Empty(result.Value.Cites.Values.Where(c => c != cite).SelectMany(c => c.Aliases));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Titles_are_fenced_and_capped()
     {
         var docs = new FakeContextSource(FakeContextSource.FixtureDocs().Describe(),

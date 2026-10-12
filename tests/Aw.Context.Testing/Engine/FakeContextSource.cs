@@ -75,7 +75,7 @@ public sealed class FakeContextSource(SourceDescriptor descriptor, IReadOnlyList
             .Where(x => x.Score > 0)
             .OrderByDescending(x => x.Score).ThenBy(x => x.r.Ref.Id.Value, StringComparer.Ordinal)
             .Take(query.Limit)
-            .Select((x, i) => new SourceHit(x.r.Ref, x.r.Title, i + 1, DateTimeOffset.UnixEpoch, Leaky: false));
+            .Select((x, i) => new SourceHit(x.r.Ref, x.r.Title, i + 1, DateTimeOffset.UnixEpoch, Leaky: false) { Aliases = x.r.Aliases });
         return hits.ToList();
     }
 

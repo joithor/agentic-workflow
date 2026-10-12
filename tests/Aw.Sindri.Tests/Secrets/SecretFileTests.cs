@@ -61,6 +61,20 @@ public sealed class SecretFileTests : IDisposable
         Assert.Equal(SindriErrors.SecretFileUnsafe.Code, result.Error.Code);
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public void A_symlink_is_SND_SECRET_003_even_to_a_0600_file()
+    {
+        var target = Write(Fixture, OwnerReadWrite);
+        var link = Path.Combine(_home.Path, "token-link");
+        _ = File.CreateSymbolicLink(link, target);
+
+        var result = _secrets.Resolve(PointerSecretsTests.Pointer("file:" + link));
+
+        Assert.Equal(SindriErrors.SecretFileUnsafe.Code, result.Error.Code);
+        Assert.Contains($"{link} is not a regular file", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(Fixture, result.Error.Message, StringComparison.Ordinal);
+    }
+
     [Theory, Trait("Lane", "integration")]
     [InlineData("")]
     [InlineData("\n")]

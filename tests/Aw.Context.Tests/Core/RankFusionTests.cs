@@ -21,6 +21,16 @@ public sealed class RankFusionTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Aliases_of_every_hit_of_a_record_merge_best_hit_first_without_repeats()
+    {
+        var fused = RankFusion.Fuse([
+            new SourceAnswer(SourceId.From("onyx"), [Hit("onyx", "a", 1) with { Aliases = ["SPL-103"] }, Hit("onyx", "a", 4, "#2") with { Aliases = ["SPL-9"] }]),
+            new SourceAnswer(SourceId.From("linear"), [Hit("linear", "a", 2) with { Aliases = ["SPL-103", "SPL-7"] }])]);
+
+        Assert.Equal(["SPL-103", "SPL-9", "SPL-7"], fused.Single().Aliases, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_source_with_many_sub_queries_is_re_ranked_densely_before_fusion()
     {
         // 'docs' saw b only at rank 9 of its sub-queries; it is still its second-best record, so rank 2.

@@ -66,6 +66,9 @@ public sealed class OnyxClientTests
 
         Assert.Equal(ContextErrors.SourceNotConfigured.Code, result.Error.Code);
         Assert.DoesNotContain("X-Evil", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("the env: secret pointer", result.Error.Message, StringComparison.Ordinal);   // the scheme, never the target or a value
+        Assert.Contains("'sindri doctor'", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("ONYX_FIXTURE_KEY", result.Error.Message, StringComparison.Ordinal);
         Assert.Empty(handler.Requests);
     }
 
