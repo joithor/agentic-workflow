@@ -329,8 +329,8 @@ read-only ports) and `ARCH-CQRS-003` (every command and issue has its row; a cla
 
 ## Proving it
 
-Proving a phase isn't a user feature, so its recipe isn't here (API spec §12): it is in API spec §12 and the phase's
-plan, with the wrapper's modes in the header of `scripts/sindri-prove.sh` and the API golden harness in
+Proving a phase isn't a user feature, so its recipe isn't here: it is in API spec §12 and the phase's plan. The
+wrapper's modes are in the header of `scripts/sindri-prove.sh`, and the API golden harness is in
 `tests/Aw.Sindri.Tests/ApiGoldens/`.
 
 ## Scheduler
