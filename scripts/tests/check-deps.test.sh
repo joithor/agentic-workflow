@@ -529,6 +529,13 @@ expect "an http edge to a package with no routes fails" 1 "DEPS-KIND-004" "Gamma
 d="$(http_fixture http-no-routes-shell)"; edge "$d" Hooks Delta http planned; run "$d"
 expect "an http edge from a shell node to a package with no routes fails" 1 "DEPS-KIND-004" "Hooks -> Delta (http)"
 
+# Review run 4 (kieran-typescript-reviewer-0): no scan covers http calls from shell or mod sources, so a current http
+# edge from one can't be stale. It passes with an info line saying it isn't scanned, and nothing names C# projects for it.
+d="$(http_fixture http-shell-current)"; edge "$d" Hooks Beta http current
+printf 'curl -s "http://127.0.0.1:7480/beta/status"\n' >> "$d/hooks/gate.sh"; run "$d"
+expect "a current http edge from a shell node passes with a not-scanned info line" 0 "deps: ok" "Hooks -> Beta (http): not scanned"
+refuse "  ... and its text names no C# projects for the shell node" "Hooks's C# projects"
+
 d="$(http_fixture http-cycle)"; edge "$d" Gamma Beta http planned; edge "$d" Beta Gamma cli planned; run "$d"
 expect "http edges count in the cycle check" 1 "DEPS-CYCLE-001" "Beta -> Gamma -> Beta"
 
