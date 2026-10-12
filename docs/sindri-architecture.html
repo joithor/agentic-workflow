@@ -145,10 +145,58 @@ svg .t-m { fill: var(--ink-3); font: 600 11px var(--mono); letter-spacing: .06em
 .ctrl details summary { cursor: pointer; color: var(--ink-3); font-size: 13px; }
 .ctrl details p { margin: 6px 0 0; }
 
+/* storyboards */
+.storyset { display: grid; gap: 34px; }
+.story h3 { font: 700 20px/1.25 var(--serif); margin: 0 0 2px; }
+.story .sub { color: var(--ink-3); font-size: 14px; margin: 0 0 12px; }
+.frames { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 38px; padding: 4px 2px 6px; align-items: start; }
+.frame { margin: 0; position: relative; scroll-snap-align: start; min-width: 0; }
+.frame:not(:last-child)::after { content: "→"; position: absolute; right: -28px; top: 64px; font: 700 22px var(--sans); color: var(--accent); }
+.shot { position: relative; display: block; width: 100%; border: 0; padding: 0; background: #010102; border-radius: 10px; overflow: hidden; cursor: zoom-in; box-shadow: 0 0 0 1px var(--line), 0 8px 22px rgba(0,0,0,.16); text-align: left; }
+.shot img { display: block; width: 100%; height: auto; }
+.mark { position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; background: #ff7a45; color: #fff; font: 700 12.5px/24px var(--sans); text-align: center; box-shadow: 0 0 0 4px rgba(255,122,69,.35); animation: pulse 1.8s ease-in-out infinite; pointer-events: none; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 10px rgba(255,122,69,.1); } }
+.frame figcaption { display: grid; grid-template-columns: 22px 1fr; gap: 3px 8px; margin-top: 10px; font-size: 14px; line-height: 1.35; }
+.frame figcaption .n { font: 700 12px/20px var(--mono); color: #fff; background: var(--accent); border-radius: 50%; width: 20px; height: 20px; text-align: center; }
+.frame figcaption code { grid-column: 2; justify-self: start; }
+.tag { position: absolute; right: 6px; bottom: 6px; font: 9.5px/1.3 var(--mono); color: #8a8f98; background: rgba(1,1,2,.8); padding: 2px 6px; border-radius: 5px; pointer-events: none; }
+/* warp + tmux illustration (Linear-dark, docs/sindri/DESIGN.md) */
+.warp { aspect-ratio: 16 / 10; display: flex; flex-direction: column; background: #010102; color: #e6e7e9; font-family: var(--mono); line-height: 1.5; border-radius: 10px; overflow: hidden; container-type: inline-size; }
+.warp > * { font-size: clamp(7.5px, 3.3cqi, 15px); }
+.warp .wbar { display: flex; align-items: center; gap: 5px; padding: 6px 8px; background: #0f1011; border-bottom: 1px solid #23252a; }
+.warp .wd { width: 8px; height: 8px; border-radius: 50%; background: #3e3e44; }
+.warp .wtab { margin-left: 6px; padding: 2px 8px; border-radius: 5px; color: #8a8f98; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.warp .wtab.on { background: #23252a; color: #f7f8f8; }
+.warp .wbody { flex: 1; padding: .7em .9em; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.warp .dim { color: #8a8f98; } .warp .ok { color: #4cb782; } .warp .bad { color: #eb5757; } .warp .acc { color: #828fff; }
+.warp .you { color: #f7f8f8; background: #5e6ad2; padding: 0 3px; border-radius: 3px; }
+.warp .banner { display: inline-block; min-width: 70%; color: #f7f8f8; background: #2b2d6e; border-left: 3px solid #828fff; padding: 2px 6px; margin-top: 4px; }
+.warp .cur { display: inline-block; width: .6em; background: #f7f8f8; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.warp .tmux { display: flex; gap: 8px; padding: 2px 8px; background: #4cb782; color: #010102; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.warp .tmux .r { margin-left: auto; font-weight: 500; }
+.warp.big { border-radius: 12px; aspect-ratio: 16 / 7; }
+dialog#lb { border: 0; padding: 12px; background: #0f1011; border-radius: 16px; max-width: min(1200px, 94vw); width: 94vw; max-height: 94vh; }
+dialog#lb::backdrop { background: rgba(0,0,0,.72); }
+dialog#lb .lbin { position: relative; border-radius: 12px; overflow: hidden; background: #010102; }
+dialog#lb img { display: block; width: 100%; height: auto; }
+dialog#lb .mark { width: 32px; height: 32px; margin: -16px 0 0 -16px; font-size: 15px; line-height: 32px; }
+dialog#lb .lbcap { color: #f7f8f8; font-size: 15px; margin: 10px 2px 0; display: flex; gap: 10px; align-items: center; }
+dialog#lb .x { margin-left: auto; background: #23252a; color: #f7f8f8; border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.screen.img { background: #010102; border-color: #23252a; }
+.screen.img .body { padding: 0; display: grid; place-items: center; }
+.screen.img .shot { border-radius: 0; box-shadow: none; }
+.screen.img .bar { border-color: #23252a; color: #8a8f98; }
+.screen.img .dot { background: #3e3e44; }
+.screen.warpk { background: #010102; border-color: #23252a; }
+.screen.warpk .body { padding: 0; }
+.screen.warpk .warp { border-radius: 0; height: 100%; aspect-ratio: auto; }
 .later-note { display: flex; gap: 10px; align-items: center; color: var(--ink-2); font-size: 14.5px; margin: 0 0 14px; }
 footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--ink-3); font-size: 14px; }
 
 @media (max-width: 860px) {
+  .frames { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 12px; }
+  .frame { scroll-snap-align: start; }
   .stage { grid-template-columns: 1fr; }
   .screen { min-height: 200px; }
   .top nav { display: none; }
@@ -163,7 +211,7 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--ink-
 <body>
 <header class="top">
   <a class="brand" href="#top">Sindri <span>how it fits together</span></a>
-  <nav aria-label="Sections"><a href="#map">Map</a><a href="#using">Using Sindri</a><a href="#building">Building Sindri</a><a href="#later">Later</a></nav>
+  <nav aria-label="Sections"><a href="#map">Map</a><a href="#screens">Screens</a><a href="#using">Using Sindri</a><a href="#building">Building Sindri</a><a href="#later">Later</a></nav>
   <span class="sp"></span>
   <button id="themeBtn" class="btn" type="button" aria-label="Switch colour theme">Theme: auto</button>
 </header>
@@ -184,6 +232,13 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--ink-
       <div class="svgbox"><svg id="mapSvg" viewBox="0 0 960 520" style="min-width:720px" role="group" aria-label="Sindri architecture map. Each piece is a button."></svg></div>
       <div class="mapinfo" id="mapInfo" aria-live="polite"><span class="hint">Select a piece.</span></div>
     </div>
+  </section>
+
+  <section id="screens">
+    <p class="kicker">What it looks like</p>
+    <h2>From the app to the agent's terminal</h2>
+    <p class="cap">Real screens from the approved UI design, joined to the terminal you land in. Numbered dots mark what you press. Click any frame to see it full size.</p>
+    <div class="storyset" id="stories"></div>
   </section>
 
   <section id="using">
@@ -207,7 +262,8 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--ink-
     <div id="laterPlayer"></div>
   </section>
 
-  <footer>Sources: <code>docs/sindri/README.md</code>, the factory addendum (A), and the API, engine (WF) and context (CTX) design specs under <code>docs/superpowers/specs/</code>. Shipped recipes: <code>recipes/sindri/</code>.</footer>
+  <dialog id="lb" aria-label="Full-size frame"><div class="lbin" id="lbin"></div><div class="lbcap"><span id="lbcap"></span><button class="x" type="button" id="lbx">Close · Esc</button></div></dialog>
+  <footer>App screens: the approved mockups in <code>docs/superpowers/specs/2026-10-11-sindri-ui-design/</code>, a design reference, not the implementation. The Warp and tmux frames are illustrations. Sources: <code>docs/sindri/README.md</code>, the factory addendum (A), and the API, engine (WF) and context (CTX) design specs under <code>docs/superpowers/specs/</code>. Shipped recipes: <code>recipes/sindri/</code>.</footer>
 </main>
 
 <script>
@@ -267,7 +323,7 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--ink-
       { l: "temporal", t: "start Temporal", c: "temporal server start-dev", s: "building", r: "WF §0 · P4a #188", d: "A local Temporal server on loopback, with its own SQLite file. Workflow instances survive restarts.", scr: term("zsh", ["$ sindri", "~ lease acquired", "~ temporal 127.0.0.1 (sqlite)"]) },
       { l: "app", t: "open the app", c: "Sindri.app", s: "building", r: "UI U0 #184", d: "The Avalonia app opens as a client of the API. sindri --headless skips it on an always-on box.", scr: app("Sindri", [["Queue", ""], ["Needs you", "3"], ["Running", "2"]]) },
       { l: "cli", t: "what's running", c: "sindri status", s: "built", r: "S1 · A §17.29.1", d: "The CLI prints the profile, the API address, services and what needs you.", scr: term("zsh", ["$ sindri status", "profile   approved 3f1c…", "api       127.0.0.1:7410", "services  index · intake · evolve", "ready     3 need you · 2 running"]) },
-      { l: "you", t: "start with needs you", c: "GET /needs-you", s: "specced", r: "API P4 · UI U3", d: "The first thing to look at is the one list of what's waiting on you.", scr: app("Needs you", [["ITM-41 parked: timeout", "answer", true], ["Recipe drift: workflow.step", "approve"], ["ITM-38 escalated", "look"]]) }
+      { l: "you", t: "start with needs you", c: "GET /needs-you", s: "specced", r: "API P4 · UI U3", d: "The first thing to look at is the one list of what's waiting on you.", scr: { k: "img", key: "home", m: [[6.4, 12.6]], alt: "Home opens on Needs you" } }
     ] },
     { id: "U2", ic: "🎫", name: "Ticket to PR", lanes: ["you", "engine", "agent", "gh"], hops: [
       { l: "you", t: "create an item", c: "CreateItem → ITM-12", s: "building", r: "API P3 · UI U2 #197", d: "An item comes in by hand, or later from intake (Linear, notes). Its id is always ITM-…; tracker keys are aliases.", scr: app("New item", [["Fix flaky export", "ITM-12", true]]) },
@@ -281,27 +337,27 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--ink-
       { l: "you", t: "review + merge", c: "your decision", s: "designed", r: "A §17.10", d: "You review and merge. A later merge-gate design lets a recipe auto-merge small, safe fixes.", scr: big("✅", "Merged by you") }
     ] },
     { id: "U3", ic: "🔔", name: "Something needs you", lanes: ["engine", "notify", "app", "you", "api"], hops: [
-      { l: "engine", t: "park", c: "timeout 4h → park", s: "building", r: "workflow.step · P3", d: "A Step runs out of time, rounds or budget. Instead of guessing, it parks with a typed reason.", scr: term("sindri", ["workflow.step  produce", "timeout after 4h → parked"]) },
-      { l: "notify", t: "notify once", c: "notify.desk", s: "designed", r: "WF P6 · README X5", d: "notify.desk raises the one OS notification. The app never notifies on its own, so nothing fires twice.", scr: big("🔔", "ITM-41 needs an answer") },
-      { l: "app", t: "needs-you row", c: "kind: park", s: "specced", r: "API §3.6 · UI U3", d: "The row says which answer it needs (answerKind), with its actions.", scr: app("Needs you", [["ITM-41 parked: timeout", "answer", true], ["ITM-38 escalated", "look"]]) },
-      { l: "you", t: "answer", c: "sindri workflow answer … --grant 1", s: "specced", r: "WF §6.3", d: "Answer in the app's form, or at a terminal. Protected answers need the terminal.", scr: term("zsh", ["$ sindri workflow answer ITM-41/item/1 --grant 1", "recorded"]) },
-      { l: "api", t: "one chain", c: "decision.recorded", s: "built", r: "API §2.1 · P1 #181", d: "Every write goes through one command chain: gate, audit, authorization, validation, then one event.", scr: term("ledger", ["command.handled  ok", "decision.recorded  ITM-41"]) },
+      { l: "engine", t: "park", c: "no-progress → park", s: "building", r: "workflow.step · P3", d: "A Step runs out of time, rounds or budget, or repeats its findings. Instead of guessing, it parks with a typed reason.", scr: term("sindri", ["ITM-01JC8  workflow.step  checks", "failed twice with the same findings", "→ parked: no-progress"]) },
+      { l: "notify", t: "notify once", c: "notify.desk", s: "designed", r: "WF P6 · README X5", d: "notify.desk raises the one OS notification. The app never notifies on its own, so nothing fires twice.", scr: big("🔔", "ITM-01JC8 needs an answer") },
+      { l: "app", t: "needs-you row", c: "kind: park", s: "specced", r: "API §3.6 · UI U3", d: "The row says which answer it needs (answerKind), with its actions.", scr: { k: "img", key: "needs", m: [[5.3, 20.8]], alt: "Needs you, with the park open" } },
+      { l: "you", t: "answer", c: "sindri workflow answer ITM-01JC8 --grant 1", s: "specced", r: "WF §6.3", d: "Answer in the app's form, or copy the command for a protected answer and confirm it at a terminal.", scr: { k: "warp", state: "answer" } },
+      { l: "api", t: "one chain", c: "decision.recorded", s: "built", r: "API §2.1 · P1 #181", d: "Every write goes through one command chain: gate, audit, authorization, validation, then one event.", scr: term("ledger", ["command.handled  ok", "decision.recorded  ITM-01JC8"]) },
       { l: "engine", t: "resume", c: "→ produce", s: "building", r: "WF P4 #192", d: "The instance resumes where it parked, with the grant applied.", scr: term("sindri", ["workflow.step  produce (round 3/3, +1 grant)"]) }
     ] },
     { id: "U4", ic: "🎮", name: "Step onto the line", lanes: ["you", "tool", "agent", "engine"], hops: [
-      { l: "you", t: "attach", c: "sindri open ITM-12 --attach", s: "specced", r: "API P10a · UI U6", d: "From the app's button or the CLI, on an item with a live agent.", scr: term("zsh", ["$ sindri open ITM-12 --attach"]) },
-      { l: "tool", t: "Warp tab", c: "tmux attach -t snd-7f2", s: "designed", r: "README X55", d: "A Warp tab joins the tmux session the agent is running in. You see exactly what it sees.", scr: term("Warp · snd-7f2", ["claude · ITM-12 · round 2/3", "> running the export tests…"]) },
-      { l: "agent", t: "you type", c: "takeover", s: "designed", r: "A §9.3", d: "The first thing you type is a takeover. The instance pauses and its timers stop.", scr: term("Warp · snd-7f2", ["> running the export tests…", "you: use the UTC helper instead", "~ with you (timers paused)"]) },
-      { l: "engine", t: "paused", c: "taken-over", s: "designed", r: "WF §6.3", d: "The item shows 'with you'. Nothing times out while you drive.", scr: app("ITM-12", [["with you since 10:42", "taken over", true]]) },
-      { l: "you", t: "hand back", c: "sindri workflow handback", s: "specced", r: "WF §6.3", d: "When you're done, hand back from the app or the CLI.", scr: term("zsh", ["$ sindri workflow handback ITM-12/item/1", "handed back"]) },
+      { l: "you", t: "attach", c: "sindri open ITM-01JE7 --attach", s: "specced", r: "API P10a · UI U6", d: "From the app's Attach button or the CLI, on an item with a live agent.", scr: { k: "img", key: "home", m: [[51.8, 65.4]], alt: "Attach on a live row" } },
+      { l: "tool", t: "Warp tab", c: "tmux attach -t snd-7f2", s: "designed", r: "README X55", d: "A Warp tab joins the tmux session the agent is running in. You see exactly what it sees.", scr: { k: "warp", state: "watch" } },
+      { l: "agent", t: "you type", c: "takeover", s: "designed", r: "A §9.3", d: "The first thing you type is a takeover. The instance pauses and its timers stop.", scr: { k: "warp", state: "typed" } },
+      { l: "engine", t: "paused", c: "taken-over", s: "designed", r: "WF §6.3", d: "The item shows 'with you'. Nothing times out while you drive.", scr: { k: "img", key: "sent", m: [[73.3, 16.5]], alt: "With you: automation paused" } },
+      { l: "you", t: "hand back", c: "sindri workflow handback", s: "specced", r: "WF §6.3", d: "When you're done, press Hand back (B) in the app, or use the CLI.", scr: { k: "img", key: "sent", m: [[92.0, 24.1]], alt: "Hand back" } },
       { l: "engine", t: "resume", c: "timers restart", s: "building", r: "WF P4", d: "The workflow continues from where it was, with your changes as recorded input.", scr: term("sindri", ["workflow.step  produce (resumed)"]) }
     ] },
     { id: "U5", ic: "🪟", name: "Open in your tool", lanes: ["you", "api", "launcher", "tool", "engine"], hops: [
-      { l: "you", t: "open", c: "sindri open ITM-12 --agent codex", s: "specced", r: "API P10a · UI X52", d: "On an item with no live session: between steps, at a gate, or parked. Pick Claude Code, Codex or Cursor.", scr: term("zsh", ["$ sindri open ITM-12 --agent codex"]) },
-      { l: "api", t: "record it", c: "LaunchRequested", s: "specced", r: "README X44", d: "Opening is a command that records one event. The launch itself happens after it commits.", scr: term("ledger", ["launch.requested  ITM-12 codex"]) },
-      { l: "launcher", t: "launch", c: "launch.started", s: "designed", r: "API P10a", d: "The launcher opens Warp with your tool within 30 s, seeded only with ids.", scr: big("🚀", "Warp · codex · ITM-12") },
-      { l: "tool", t: "pull context", c: "/sindri/mcp", s: "designed", r: "API §8 · CTX S-1M", d: "Your session pulls the item's state, packet, evidence and context through Sindri's MCP endpoint.", scr: term("Warp · codex", ["> sindri_item ITM-12", "> context_query \"export date bug\"", "  4 cited sections · 3.1k tokens"]) },
-      { l: "engine", t: "taken over", c: "until handback", s: "designed", r: "README X43", d: "If the item had a live instance, opening it takes it over until you hand back.", scr: app("ITM-12", [["open in codex", "with you", true]]) }
+      { l: "you", t: "open", c: "sindri open ITM-01JC8 --agent claude-code", s: "specced", r: "API P10a · UI X52", d: "On an item with no live session: between steps, at a gate, or parked. Pick Claude Code, Codex or Cursor.", scr: { k: "img", key: "menu", m: [[88.4, 21.8], [75.9, 30.1]], alt: "The launch menu" } },
+      { l: "api", t: "record it", c: "LaunchRequested", s: "specced", r: "README X44", d: "Opening is a command that records one event. The launch itself happens after it commits.", scr: term("ledger", ["launch.requested  ITM-01JC8 claude-code"]) },
+      { l: "launcher", t: "launch", c: "launch.started", s: "designed", r: "API P10a", d: "The launcher opens Warp with your tool within 30 s, seeded only with ids.", scr: { k: "img", key: "sent", m: [[70.3, 60.8]], alt: "Sent to Warp" } },
+      { l: "tool", t: "pull context", c: "/sindri/mcp", s: "designed", r: "API §8 · CTX S-1M", d: "Your session pulls the item's state, packet, evidence and context through Sindri's MCP endpoint.", scr: { k: "warp", state: "seeded" } },
+      { l: "engine", t: "taken over", c: "until handback", s: "designed", r: "README X43", d: "If the item had a live instance, opening it takes it over until you hand back.", scr: { k: "img", key: "sent", m: [[73.3, 16.5]], alt: "With you until hand back" } }
     ] },
     { id: "U6", ic: "🧭", name: "Ask for context", lanes: ["you", "tool", "api", "ctx", "src"], hops: [
       { l: "you", t: "ask", c: "\"what does this change affect?\"", s: "built", r: "", d: "From any session in your own tool.", scr: term("claude", ["you: what does changing the export date affect?"]) },
@@ -373,6 +429,100 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--ink-
     ] }
   ];
 
+  /* ---------- screens: mockup images and the terminal illustration ---------- */
+  var UI = "superpowers/specs/2026-10-11-sindri-ui-design/";
+  var IMG = {
+    home: UI + "mockups/home.png", needs: UI + "mockups/needs-you.png",
+    menu: UI + "prototype-launch-menu.png", sent: UI + "prototype-sent-to-warp.png"
+  };
+  function shot(src, marks, alt) {
+    return '<span class="shot-in" style="position:relative;display:block"><img src="' + src + '" alt="' + esc(alt) + '" loading="lazy">' +
+      (marks || []).map(function (m, i) { return '<span class="mark" style="left:' + m[0] + "%;top:" + m[1] + '%">' + (m[2] || i + 1) + "</span>"; }).join("") +
+      '<span class="tag">design reference</span></span>';
+  }
+  var WARP = {
+    watch: { tab: "sindri ITM-01JE7", r: "ITM-01JE7 · produce 2/3", lines: [
+      '<span class="dim">claude · ITM-01JE7 · produce 2/3</span>',
+      "⏺ Read ack-route.ts",
+      '⏺ Run tests  <span class="ok">14 passed</span> · <span class="bad">1 failed</span>',
+      '  <span class="bad">✗</span> 409 on a stale nonce',
+      "⏺ Fixing the nonce check…",
+      '<span class="cur">&nbsp;</span>'] },
+    typed: { tab: "sindri ITM-01JE7", r: "ITM-01JE7 · with you", lines: [
+      '<span class="dim">claude · ITM-01JE7 · produce 2/3</span>',
+      '⏺ Run tests  <span class="ok">14 passed</span> · <span class="bad">1 failed</span>',
+      "⏺ Fixing the nonce check…",
+      '<span class="you">&gt; reuse NonceStore here</span>',
+      '<span class="banner">sindri: with you · timers paused</span>',
+      "⏺ Using NonceStore.Consume…"] },
+    seeded: { tab: "sindri ITM-01JC8", r: "ITM-01JC8 · with you", lines: [
+      '<span class="dim">$ claude "Sindri item ITM-01JC8"</span>',
+      '⏺ sindri_item ITM-01JC8 <span class="dim">→ parked</span>',
+      '⏺ context_query <span class="dim">→ 4 cited</span>',
+      '  <span class="acc">[1]</span> decision: retries back off',
+      '  <span class="acc">[2]</span> src/outbox/Dispatcher.cs:88',
+      '<span class="cur">&nbsp;</span>'] },
+    answer: { tab: "zsh", r: "", lines: [
+      '<span class="ok">$</span> sindri workflow answer ITM-01JC8 --grant 1',
+      '<span class="dim">Grant 1 round to step.2? (protected)</span>',
+      "Type 3f1c9a to confirm: 3f1c9a",
+      '<span class="ok">✓</span> recorded · step.2 resumes',
+      '<span class="cur">&nbsp;</span>'] }
+  };
+  function warp(state, big) {
+    var w = WARP[state];
+    return '<div class="warp' + (big ? " big" : "") + '"><div class="wbar"><span class="wd"></span><span class="wd"></span><span class="wd"></span><span class="wtab on">' + esc(w.tab) + '</span><span class="wtab">~</span></div>' +
+      '<div class="wbody">' + w.lines.join("\n") + "</div>" +
+      (w.r ? '<div class="tmux"><span>[snd-7f2]</span><span>0:claude*</span><span class="r">' + esc(w.r) + "</span></div>" : "") + "</div>";
+  }
+  var lb = document.getElementById("lb"), lbin = document.getElementById("lbin"), lbcap = document.getElementById("lbcap");
+  function openLb(kind, a, b, cap) {
+    lbin.innerHTML = kind === "img" ? shot(a, b, cap) : warp(a, true);
+    lbcap.textContent = cap || "";
+    if (lb.showModal) lb.showModal(); else lb.setAttribute("open", "");
+  }
+  document.getElementById("lbx").addEventListener("click", function () { lb.close(); });
+  lb.addEventListener("click", function (e) { if (e.target === lb) lb.close(); });
+
+  /* ---------- storyboards ---------- */
+  var STORIES = [
+    { t: "Step in on a live agent", sub: "The app, then the agent's own terminal, then back. Frames come from separate mockups, so item ids differ.", f: [
+      { img: IMG.home, m: [[51.8, 65.4]], cap: "Find a live agent on Home and press Attach.", c: "sindri open ITM-01JE7 --attach" },
+      { warp: "watch", cap: "Warp joins the tmux session Sindri owns. You see what the agent sees.", c: "tmux attach -t snd-7f2" },
+      { warp: "typed", cap: "Type a line. That's a takeover: automation pauses and timers stop.", c: "takeover" },
+      { img: IMG.sent, m: [[73.3, 16.5, 4], [92.0, 24.1, 5]], cap: "The app shows it's with you. Press Hand back (B) when you're done.", c: "sindri workflow handback" }
+    ] },
+    { t: "Answer what's waiting on you", sub: "A parked item asks for more rounds; a protected answer is typed at a terminal.", f: [
+      { img: IMG.needs, m: [[5.3, 20.8], [93.7, 44.8]], cap: "Open the park, read its timeline, and copy the answer command.", c: "kind: park · answerKind" },
+      { warp: "answer", cap: "Paste it in any terminal and type the confirmation. The step resumes.", c: "sindri workflow answer ITM-01JC8 --grant 1" }
+    ] },
+    { t: "Open an item in your own tool", sub: "No live session yet: pick Claude Code, Codex or Cursor and land in Warp with the item seeded.", f: [
+      { img: IMG.menu, m: [[88.4, 21.8], [75.9, 30.1]], cap: "Open the chevron and pick a tool, or press O for the default.", c: "GET /launch/targets" },
+      { img: IMG.sent, m: [[70.3, 60.8, 3]], cap: "Sindri records the launch and says when it reached Warp.", c: "launch.started" },
+      { warp: "seeded", cap: "Your session pulls the item and its cited context through Sindri's MCP endpoint.", c: "sindri_item · context_query" }
+    ] }
+  ];
+  (function () {
+    var root = document.getElementById("stories"), step = 0;
+    STORIES.forEach(function (st) {
+      var sec = h("div", "story");
+      sec.appendChild(h("h3", null, esc(st.t)));
+      sec.appendChild(h("p", "sub", esc(st.sub)));
+      var row = h("div", "frames"); row.style.setProperty("--n", st.f.length);
+      st.f.forEach(function (fr, i) {
+        var fig = h("figure", "frame");
+        var b = h("button", "shot", fr.img ? shot(fr.img, fr.m, fr.cap) : warp(fr.warp));
+        b.type = "button"; b.setAttribute("aria-label", "Frame " + (i + 1) + ": " + fr.cap + " Open full size.");
+        b.addEventListener("click", function () { if (fr.img) openLb("img", fr.img, fr.m, fr.cap); else openLb("warp", fr.warp, null, fr.cap); });
+        fig.appendChild(b);
+        fig.appendChild(h("figcaption", null, '<span class="n">' + (i + 1) + "</span><span>" + esc(fr.cap) + "</span><code>" + esc(fr.c) + "</code>"));
+        row.appendChild(fig);
+      });
+      sec.appendChild(row);
+      root.appendChild(sec);
+    });
+  })();
+
   /* ---------- player ---------- */
   function player(rootId, flows) {
     var root = document.getElementById(rootId);
@@ -443,6 +593,16 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--ink-
     }
 
     function renderScreen(sc) {
+      if (sc && (sc.k === "img" || sc.k === "warp")) {
+        screen.className = "card screen " + (sc.k === "img" ? "img" : "warpk");
+        screen.innerHTML = sc.k === "img"
+          ? '<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:6px">Sindri app</span></div><div class="body"><button type="button" class="shot">' + shot(sc.src || IMG[sc.key], sc.m, sc.alt || "Sindri app") + "</button></div>"
+          : '<div class="body">' + warp(sc.state) + "</div>";
+        var b = screen.querySelector(".shot");
+        if (b) b.addEventListener("click", function () { openLb("img", sc.src || IMG[sc.key], sc.m, sc.alt || ""); });
+        screen.setAttribute("aria-label", "What you'd see");
+        return;
+      }
       screen.className = "card screen" + (sc && (sc.k === "term") ? " term" : "");
       var bar = '<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:6px">' + esc(sc && sc.title || "") + "</span></div>";
       var body = "";
