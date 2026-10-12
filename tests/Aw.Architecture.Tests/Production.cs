@@ -60,17 +60,28 @@ internal static class Production
 
     /// <summary>
     /// The projects that are neither tier 0, a layer project of a shaped package (Core, Features, Infrastructure, Host,
-    /// App), nor declared unshaped: each is a misnamed project the layer rules would miss (ARCH-REG-003).
+    /// App), nor declared unshaped: each is a misnamed project the layer rules would miss (ARCH-REG-003). A project
+    /// whose root namespace sits in its package's layer (Aw.Sindri.Workflows, root namespace
+    /// Aw.Sindri.Infrastructure.Workflows) is a layer project: the layer rules read namespaces, so they cover it.
     /// </summary>
     /// <param name="projectNames">Project names.</param>
     /// <param name="declaredUnshaped">The declared unshaped projects (Packages.Unshaped).</param>
+    /// <param name="rootNamespaceOf">A project's root namespace; the project name when omitted.</param>
     /// <returns>The undeclared ones, sorted.</returns>
-    public static IReadOnlyList<string> UndeclaredUnshaped(IEnumerable<string> projectNames, IEnumerable<string> declaredUnshaped) =>
+    public static IReadOnlyList<string> UndeclaredUnshaped(
+        IEnumerable<string> projectNames, IEnumerable<string> declaredUnshaped, Func<string, string>? rootNamespaceOf = null) =>
         [.. projectNames
-            .Where(n => !TierZero.Contains(n) && !_layerProjects.Contains(n.Split('.')[^1], StringComparer.Ordinal))
+            .Where(n => !TierZero.Contains(n) && !_layerProjects.Contains(n.Split('.')[^1], StringComparer.Ordinal)
+                && !InLayerNamespace(n, rootNamespaceOf?.Invoke(n) ?? n))
             .Except(declaredUnshaped, StringComparer.Ordinal)
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)];
+
+    private static bool InLayerNamespace(string project, string rootNamespace)
+    {
+        var package = project[..project.LastIndexOf('.')];
+        return _layerProjects.Any(l => rootNamespace == $"{package}.{l}" || rootNamespace.StartsWith($"{package}.{l}.", StringComparison.Ordinal));
+    }
 
     /// <summary>Whether a registered project's assembly loaded.</summary>
     /// <param name="project">A Packages.cs line.</param>
