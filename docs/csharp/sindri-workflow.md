@@ -44,8 +44,6 @@ reads the file and its child recipes, and writes nothing.
 
 Errors go to stderr as `CODE message (fix: …)`, like every `sindri` verb.
 
-`sindri recipe eval <file>` (run a recipe's eval cases, spec §9.2) arrives with P3. Until then it exits 2 with
-`SND-CLI-001 'recipe eval' isn't in this build yet`.
 
 ```
 $ sindri recipe validate tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml
@@ -58,6 +56,54 @@ $ echo $?
 The golden files under `tests/Aw.Sindri.Tests/Workflow/Cli/Golden/` pin this output. After an intended change, re-pin
 them with `AW_GOLDEN_UPDATE=1 dotnet test --project tests/Aw.Sindri.Tests --filter-namespace Aw.Sindri.Tests.Workflow.Cli`
 (the run rewrites them and fails), review the diff, then run again without the variable.
+
+## recipe eval
+
+`sindri recipe eval <file> [--json]` runs a recipe's eval cases (spec §9.2) in this process, never contacting the
+control plane. It reads the recipe and its child recipes beside it, then folds the pure engine's decisions (P3) over
+each case listed in `evals:`, in order, with a fake clock and fake gates. Each case's path is relative to the recipe
+and stays inside its directory (`evals/<recipe id>/<case>.jsonl`).
+
+A case file is JSON lines, LF or CRLF:
+- line 1: `{"start":{"inputs":{"<fact>":"<value>",...}}}` (`"scaffold": true` marks a generated case);
+- each later line: `{"trigger":{"kind","outcome"?,"outputs"?,"park"?,"variant"?,"amount"?},"gates"?:{"<block>":"pass|fail|uncertain"},"expect":{"state","park"?,"outcome"?}}`.
+
+`kind` is a recipe trigger (`step.completed`, `step.failed`, `wait.satisfied`, `command.<verb>`), a child's change
+(`child.parked` with `park`, `child.resumed`, `child.escalated`; a child's end is `wait.satisfied` with its outcome),
+or an engine trigger: `answer` with a `variant` (`grant`, `grant-tokens`, `accept`, `reject`, `resume`, `text`; the
+grants take `amount`, a `text` answer's text is `outputs` `fact:answer`), `takeover`, `handback`, `cancel` and
+`deadline`. A `deadline` line fails until timers land (P5).
+
+Output, one line per case:
+
+```
+$ sindri recipe eval recipes/sindri/workflow.step.yaml
+happy pass
+no-progress pass
+rounds pass
+$ sindri recipe eval <copy with line 3 of happy.jsonl expecting checks>
+happy fail at evals/workflow.step/happy.jsonl:3: expected checks, got verify
+no-progress pass
+rounds pass
+```
+
+A line the engine rejects (an answer that doesn't fit the park, a grant of 0 or above the loop's cap, an undeclared
+outcome) or one out of the format (not JSON, an unknown `kind`, a `variant` that doesn't go with its kind) fails its case
+at that line, saying why. A recipe without `evals:` prints `no evals declared` and exits 0: nothing failed, and
+approving it is refused separately (`SND-RECIPE-008`). `--json` prints `{"cases":[{"case","passed","line","detail"}],"scaffold":null,"passed"}`.
+The same eval run twice prints the same output.
+
+`--scaffold <file>` prints a happy-path case for the recipe on stdout, marked `"scaffold": true` on line 1: the start
+with a placeholder for each input, then, from the initial state, the first of each state's declared outcomes whose
+transition moves into a state not yet visited, until a terminal state. Every gate passes, and each line expects what the
+engine did, so it passes once it is in the recipe's `evals:`. `--record <address> --out <file>` writes a live instance's
+history in the same format; it needs the server's instances (P4) and exits 2 until then.
+
+| Exit | When |
+|---|---|
+| 0 | Every case passes, or the recipe declares none |
+| 1 | A case fails (`<case> fail at <file>:<line>: <detail>`) |
+| 2 | A usage error (no file, `--record` without an address and `--out`: `SND-CLI-003`; an unknown argument: `SND-CLI-001`; `--record` itself until P4: `SND-CLI-001 … needs the server (P4)`), or a tool error: the recipe can't be read (`SND-RECIPE-010`) or doesn't bind (`SND-RECIPE-001`, fix: `sindri recipe validate`), a listed eval file is missing, unreadable or outside the recipe's directory (`SND-RECIPE-008`), or a bug inside `sindri` (`SND-API-005 recipe eval failed inside sindri: …`) |
 
 ## Recipe reference (schema 1)
 
