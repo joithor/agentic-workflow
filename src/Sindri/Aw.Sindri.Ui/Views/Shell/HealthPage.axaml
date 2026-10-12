@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Aw.Sindri.Ui.ViewModels"
              xmlns:shell="using:Aw.Sindri.Ui.ViewModels.Shell"
-             xmlns:views="using:Aw.Sindri.Ui.Views"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
              x:Class="Aw.Sindri.Ui.Views.Shell.HealthPage"
              x:DataType="shell:HealthViewModel">
   <!-- Health (UI spec §4.8, services-health.html HEALTH): one panel of sections, each an eyebrow with the state's glyph
@@ -18,7 +18,7 @@
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Classes="eyebrow" Text="{Binding Text.ControlPlaneCard}" AutomationProperties.Name="{Binding Text.ControlPlaneCard}" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                <views:StateIcon x:Name="ProcessGlyph" Glyph="{Binding Pill.Glyph}" VerticalAlignment="Center" />
+                <icons:StateIcon x:Name="ProcessGlyph" Glyph="{Binding Pill.Glyph}" VerticalAlignment="Center" />
                 <TextBlock x:Name="ProcessWord" Classes="body-strong" Text="{Binding Pill.Word}" AutomationProperties.Name="{Binding Pill.Text}" />
               </StackPanel>
             </Grid>
@@ -60,7 +60,7 @@
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Classes="eyebrow" Text="{Binding Text.ProfileCard}" AutomationProperties.Name="{Binding Text.ProfileCard}" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                <views:StateIcon x:Name="ProfileHeadGlyph" Glyph="{Binding Detail.ProfileGlyph}" VerticalAlignment="Center" />
+                <icons:StateIcon x:Name="ProfileHeadGlyph" Glyph="{Binding Detail.ProfileGlyph}" VerticalAlignment="Center" />
                 <TextBlock x:Name="ProfileHeadText" Classes="body-strong" Text="{Binding Detail.ProfileHead}"
                            AutomationProperties.Name="{Binding Detail.ProfileHead}" />
               </StackPanel>

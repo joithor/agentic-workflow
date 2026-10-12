@@ -18,6 +18,7 @@ using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Settings;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views;
+using Aw.Sindri.Ui.Views.Icons;
 using Aw.Sindri.Ui.Views.Shell;
 using Microsoft.Extensions.Time.Testing;
 

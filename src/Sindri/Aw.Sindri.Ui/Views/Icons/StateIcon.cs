@@ -8,7 +8,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Aw.Sindri.Ui.ViewModels;
 
-namespace Aw.Sindri.Ui.Views;
+namespace Aw.Sindri.Ui.Views.Icons;
 
 /// <summary>
 /// A state glyph (UI spec §11.3) or one of the shell's marks, drawn as a vector icon from Theme/Icons.axaml (R1): the

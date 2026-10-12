@@ -1,6 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:views="using:Aw.Sindri.Ui.Views">
+        xmlns:icons="using:Aw.Sindri.Ui.Views.Icons">
   <!-- The shell's chrome (UI spec §3.2) over the tokens (Theme/Tokens.axaml): no colour value here, only Brush.* keys. -->
 
   <!-- Top bar: 48 px on the canvas with a hairline bottom rule. -->
@@ -13,23 +13,23 @@
   </Style>
   <!-- Icons (R1, Theme/Icons.axaml): Size.Icon square, the Body line scaled with the text. R9: one colour rule for state
        glyphs: ✓ Success wherever it means ok, ✕ Error, every other glyph and mark InkMuted; the word beside each stays Ink. -->
-  <Style Selector="views|StateIcon">
+  <Style Selector="icons|StateIcon">
     <Setter Property="Width" Value="{DynamicResource Size.Icon}" />
     <Setter Property="Height" Value="{DynamicResource Size.Icon}" />
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
   </Style>
-  <Style Selector="views|StateIcon:ok">
+  <Style Selector="icons|StateIcon:ok">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
   </Style>
-  <Style Selector="views|StateIcon:down">
+  <Style Selector="icons|StateIcon:down">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
   </Style>
   <!-- The brand mark (§3.2 "◆ Sindri"): filled in the accent; decorative, the name beside it is read. -->
-  <Style Selector="views|StateIcon.brand">
+  <Style Selector="icons|StateIcon.brand">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Primary}" />
   </Style>
   <!-- In a keycap (⌘K): the kbd step's size and colour. -->
-  <Style Selector="views|StateIcon.kbd">
+  <Style Selector="icons|StateIcon.kbd">
     <Setter Property="Width" Value="{DynamicResource Type.Kbd.Size}" />
     <Setter Property="Height" Value="{DynamicResource Type.Kbd.Size}" />
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
@@ -177,7 +177,7 @@
   <Style Selector="Button.refresh:disabled TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
   </Style>
-  <Style Selector="Button.refresh:disabled views|StateIcon">
+  <Style Selector="Button.refresh:disabled icons|StateIcon">
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
   </Style>
 
