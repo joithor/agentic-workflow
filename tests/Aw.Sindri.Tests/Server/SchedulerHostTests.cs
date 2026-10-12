@@ -133,7 +133,7 @@ public sealed class SchedulerHostTests
             .AddScoped<IScheduledService, TimingOutService>()
             .BuildServiceProvider();
         var clock = new SteppedClock(_h.Clock);
-        using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), approvals, _h.Held, clock, _log);
+        using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), approvals, _h.Held, _h.Callers, clock, _log);
         await scheduler.StartAsync(Token);
         for (var step = 0; !done(); step++)
         {
