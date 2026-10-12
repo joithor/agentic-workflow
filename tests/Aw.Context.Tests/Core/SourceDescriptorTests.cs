@@ -20,7 +20,7 @@ public sealed class SourceDescriptorTests
 
         Assert.Equal((_onyx.Id, _onyx.Kind, _onyx.Freshness), (shared.Id, shared.Kind, shared.Freshness));
         Assert.Equal(SourcePlacement.Shared, shared.Placement);
-        Assert.True(shared.Limits!.IsWellFormed);   // why: set on the line above
+        Assert.True(shared.Limits.IsWellFormed);
     }
 
     [Theory, Trait("Lane", "unit")]
