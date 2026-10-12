@@ -1,0 +1,288 @@
+using System.Runtime.InteropServices;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
+using Avalonia.LogicalTree;
+using Avalonia.Media.Imaging;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Settings;
+using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views;
+using Aw.Sindri.Ui.Views.Shell;
+using Microsoft.Extensions.Time.Testing;
+
+namespace Aw.Sindri.Ui.Tests.Views;
+
+/// <summary>
+/// The focus ring as rendered (UI spec §11.1, §11.2): each control reached by the keyboard shows a ring of PrimaryHover
+/// (#828fff) at full opacity on all four sides, just outside its bounds, and nothing the control sits in clips it away.
+/// Key frames are saved under the test output's frames/ as focus-*.png.
+/// </summary>
+[Lane(TestLane.Integration)]
+public sealed class FocusRingTests : IDisposable
+{
+    // §11.1: the ring's colour, PrimaryHover.
+    private static readonly (byte R, byte G, byte B) _ring = (0x82, 0x8f, 0xff);
+
+    private readonly List<Window> _windows = [];
+    private readonly CancellationTokenSource _stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+    private readonly InMemoryEndpointRecords _records = new();
+    private readonly FakeSindriApi _server = new();
+    private readonly FakeTimeProvider _clock = new(A.Noon);
+    private readonly InMemoryPreferencesStore _preferences = new();
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    public void Dispose() => _stop.Dispose();
+
+    private async Task OnUi(Func<Task> body) =>
+        _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(FocusRingTests).Assembly)
+            .Dispatch(async () =>
+            {
+                try
+                {
+                    await body();
+                }
+                finally
+                {
+                    await _stop.CancelAsync();
+                    _windows.ForEach(w => w.Close());
+                    Dispatcher.UIThread.RunJobs();
+                }
+
+                return true;
+            }, Token);
+
+    private async Task<(ShellWindow Window, ShellViewModel Shell)> Running(double width = 1280, double height = 800)
+    {
+        _records.Write(A.Record());
+        var shell = new ShellViewModel(_records, _server, _clock, _preferences);
+        await shell.Restore(Token);
+        var window = new ShellWindow { DataContext = shell, Width = width, Height = height };
+        var settings = new SettingsViewModel(new Preferences(_preferences), new FakeMotionPreference(), _ => { });
+        window.SettingsSlot.Content = new SettingsView { DataContext = settings };
+        _windows.Add(window);
+        window.Show();
+        _ = shell.Run(_stop.Token);
+        for (var i = 0; i < 200 && shell.State != ShellState.Normal; i++)
+        {
+            await Task.Delay(10, Token);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Assert.Equal(ShellState.Normal, shell.State);
+        Settle(window);
+        return (window, shell);
+    }
+
+    private static void Settle(Window window)
+    {
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void Press(Window window, Key key, PhysicalKey physical, RawInputModifiers modifiers = RawInputModifiers.None)
+    {
+        window.KeyPress(key, modifiers, physical, keySymbol: null);
+        Settle(window);
+    }
+
+    private static Control Focused(Window window) =>
+        window.FocusManager?.GetFocusedElement() as Control ?? throw new InvalidOperationException("nothing has focus");
+
+    private static bool FocusIsIn(Window window, Control region) =>
+        window.FocusManager?.GetFocusedElement() is Control focused && (focused == region || region.IsVisualAncestorOf(focused));
+
+    // F6 to the top bar, then Tab through its controls, collecting each one reached, until focus leaves the top bar.
+    private static List<Control> TabThroughTopBar(ShellWindow window)
+    {
+        var topBar = window.Get<Control>("TopBar");
+        FocusRegion(window, topBar);
+        var reached = new List<Control>();
+        for (var i = 0; i < 12 && FocusIsIn(window, topBar); i++)
+        {
+            reached.Add(Focused(window));
+            Press(window, Key.Tab, PhysicalKey.Tab);
+        }
+
+        return reached;
+    }
+
+    // F6 until focus is in the region (§11.2: F6 cycles top bar, page and sheet).
+    private static void FocusRegion(ShellWindow window, Control region)
+    {
+        for (var i = 0; i < 4 && !FocusIsIn(window, region); i++)
+        {
+            Press(window, Key.F6, PhysicalKey.F6);
+        }
+
+        Assert.True(FocusIsIn(window, region), "F6 never reached " + region.Name);
+    }
+
+    [Fact]
+    public Task Every_top_bar_control_reached_by_Tab_shows_the_ring() => OnUi(async () =>
+    {
+        var (window, _) = await Running();
+        var reached = TabThroughTopBar(window);
+        string[] expected = ["Navigation", "LaterButton", "SearchField", "HealthPill"]; // §11.2: navigation, search, health pill
+
+        var names = reached.Select(Name).ToList();
+        Assert.Equal(["TopBar", .. expected], names);
+
+        // The top bar's own stop (F6 lands there) fills the window's width: its ring is drawn just inside it.
+        FocusByTab(window, window.Get<Control>("TopBar"), "TopBar");
+        AssertRing(window, Focused(window), "topbar-region", inside: true);
+
+        foreach (var target in expected)
+        {
+            FocusByTab(window, window.Get<Control>("TopBar"), target);
+            AssertRing(window, Focused(window), "topbar-" + target);
+        }
+    });
+
+    [Fact]
+    public Task The_Home_health_strip_shows_the_ring() => OnUi(async () =>
+    {
+        var (window, _) = await Running();
+
+        FocusByTab(window, window.Get<Control>("Page"), "HealthStrip");
+
+        AssertRing(window, Focused(window), "home-health-strip");
+    });
+
+    [Fact]
+    public Task The_sheet_buttons_show_the_ring() => OnUi(async () =>
+    {
+        var (window, shell) = await Running();
+        Assert.True(DeepLink.TryParse("item/ITM-1", out var link));
+        shell.Navigate(link);
+        Settle(window);
+
+        FocusByTab(window, window.Get<Control>("Sheet"), "SheetClose");
+
+        AssertRing(window, Focused(window), "sheet-close");
+    });
+
+    [Fact]
+    public Task Settings_controls_show_the_ring() => OnUi(async () =>
+    {
+        var (window, shell) = await Running();
+        shell.GoTo(PageId.Settings);
+        Settle(window);
+
+        FocusByTab(window, window.Get<Control>("Page"), "ReduceMotionSwitch");
+        AssertRing(window, Focused(window), "settings-switch");
+
+        Press(window, Key.Tab, PhysicalKey.Tab);
+        Assert.Equal("TextScaleSlider", Name(Focused(window)));
+        AssertRing(window, Focused(window), "settings-slider");
+    });
+
+    // F6 until focus is in the region, then Tab until the named control has focus.
+    private static void FocusByTab(ShellWindow window, Control region, string name)
+    {
+        FocusRegion(window, region);
+
+        for (var i = 0; i < 20 && Name(Focused(window)) != name; i++)
+        {
+            Press(window, Key.Tab, PhysicalKey.Tab);
+        }
+
+        Assert.Equal(name, Name(Focused(window)));
+    }
+
+    // The control's name, or its nearest named logical ancestor's (a ListBoxItem reads as its ListBox, the top bar's own
+    // stop as the top bar).
+    private static string Name(Control control) =>
+        control.Name ?? control.GetLogicalAncestors().OfType<Control>().FirstOrDefault(c => c.Name is not null)?.Name ?? "<unnamed>";
+
+    // Captures a frame and checks the ring around the control: on each side, at a quarter, a half and three quarters of
+    // its length, a ring-coloured pixel within 1–5 px outside the control's edge (inside it, for a region that fills the
+    // window's width: there is no room outside).
+    private static void AssertRing(Window window, Control control, string frame, bool inside = false)
+    {
+        Settle(window);
+        using var bitmap = window.CaptureRenderedFrame() ?? throw new InvalidOperationException("no frame");
+        Save(bitmap, frame);
+        var pixels = Pixels(bitmap);
+        var origin = control.TranslatePoint(new Point(0, 0), window) ?? throw new InvalidOperationException("not in the window");
+        var box = new Rect(origin, control.Bounds.Size);
+        var scale = window.RenderScaling;
+
+        var missing = new List<string>();
+        foreach (var f in new[] { 0.25, 0.5, 0.75 })
+        {
+            Side("left", box.Left, box.Top + (box.Height * f), -1, 0);
+            Side("right", box.Right, box.Top + (box.Height * f), 1, 0);
+            Side("top", box.Left + (box.Width * f), box.Top, 0, -1);
+            Side("bottom", box.Left + (box.Width * f), box.Bottom, 0, 1);
+        }
+
+        Assert.True(missing.Count == 0, $"no ring on {frame} ({box}) at: {string.Join(", ", missing)}");
+
+        void Side(string side, double x, double y, int dx, int dy)
+        {
+            (dx, dy) = inside ? (-dx, -dy) : (dx, dy);
+            for (var d = 1; d <= 5; d++)
+            {
+                var px = (int)Math.Floor((x + (dx * d)) * scale);
+                var py = (int)Math.Floor((y + (dy * d)) * scale);
+                if (pixels.IsRing(px, py))
+                {
+                    return;
+                }
+            }
+
+            missing.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{side}@{x:0},{y:0}"));
+        }
+    }
+
+    private static void Save(Bitmap bitmap, string name)
+    {
+        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
+        _ = Directory.CreateDirectory(dir);
+        bitmap.Save(Path.Combine(dir, "focus-" + name + ".png"), new PngBitmapEncoderOptions());
+    }
+
+    private static Frame Pixels(Bitmap bitmap)
+    {
+        var size = bitmap.PixelSize;
+        var stride = size.Width * 4;
+        var buffer = Marshal.AllocHGlobal(stride * size.Height);
+        try
+        {
+            bitmap.CopyPixels(new PixelRect(size), buffer, stride * size.Height, stride);
+            var bytes = new byte[stride * size.Height];
+            Marshal.Copy(buffer, bytes, 0, bytes.Length);
+            return new Frame(bytes, size.Width, size.Height, bitmap.Format == Avalonia.Platform.PixelFormat.Rgba8888);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+    }
+
+    private sealed class Frame(byte[] bytes, int width, int height, bool rgba)
+    {
+        // A pixel at full ring colour (a small tolerance for the edge's anti-aliasing on a fractional position).
+        public bool IsRing(int x, int y)
+        {
+            if (x < 0 || y < 0 || x >= width || y >= height)
+            {
+                return false;
+            }
+
+            var i = ((y * width) + x) * 4;
+            var (r, b) = rgba ? (bytes[i], bytes[i + 2]) : (bytes[i + 2], bytes[i]);
+            var g = bytes[i + 1];
+            return Math.Abs(r - _ring.R) <= 12 && Math.Abs(g - _ring.G) <= 12 && Math.Abs(b - _ring.B) <= 12;
+        }
+    }
+}
