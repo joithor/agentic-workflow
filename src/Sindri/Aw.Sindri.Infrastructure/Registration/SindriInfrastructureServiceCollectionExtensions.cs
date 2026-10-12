@@ -30,6 +30,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IProcessProbe, PosixProcessProbe>()
             .AddSingleton<LedgerDatabase>()
             .AddSingleton<ILedgerStore, SqliteLedger>()
+            .AddSingleton<ILedgerReader, SqliteLedgerReader>()
             .AddSingleton<ILease, SqliteLease>()
             .AddSingleton<IProfileSource, YamlProfileSource>()
             .AddSingleton<IApprovals, FileApprovals>()
