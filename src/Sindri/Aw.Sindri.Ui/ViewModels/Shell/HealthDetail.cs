@@ -25,7 +25,11 @@ internal sealed class HealthDetail : ObservableObject
 
     /// <summary>Shows a version mismatch.</summary>
     /// <param name="sindri">The API version Sindri reports.</param>
-    internal void Mismatch(int sindri) => Versions = [new(nameof(sindri), sindri.ToString(System.Globalization.CultureInfo.InvariantCulture))];
+    internal void Mismatch(int sindri) => Versions =
+    [
+        new(Labels.ThisApp, Labels.ApiVersion(SindriApiClient.AppApiVersion)),
+        new(Labels.Sindri, Labels.ApiVersion(sindri)),
+    ];
 
     /// <summary>Shows a status.</summary>
     /// <param name="url">Where the API answered.</param>

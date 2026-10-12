@@ -226,6 +226,14 @@ internal static class Labels
     internal static string StaleRecord(int pid, long epoch, int answeringPid, long answeringEpoch) => string.Create(CultureInfo.InvariantCulture,
         $"the endpoint record is stale: it names pid {pid} at epoch {epoch}, but pid {answeringPid} at epoch {answeringEpoch} answers");
 
+    /// <summary>The version-mismatch panel's label for this app's version (states.html).</summary>
+    internal const string ThisApp = "This app";
+
+    /// <summary>An API version as the version-mismatch panel shows it.</summary>
+    /// <param name="version">The version.</param>
+    /// <returns>"API v1".</returns>
+    internal static string ApiVersion(int version) => string.Create(CultureInfo.InvariantCulture, $"API v{version}");
+
     /// <summary>The version-mismatch panel's versions line.</summary>
     /// <param name="sindri">The API version Sindri reports.</param>
     /// <param name="app">The API version this app speaks.</param>
