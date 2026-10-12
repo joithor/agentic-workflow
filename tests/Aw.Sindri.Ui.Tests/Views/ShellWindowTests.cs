@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
@@ -256,6 +257,107 @@ public sealed class ShellWindowTests : IDisposable
         Frame(window, "home-panels");
     });
 
+    // I7 (states.html Not running): a compact card centred in the page, with the struck ◆ mark.
+    [Fact]
+    public Task Not_running_is_a_compact_centred_card_with_the_struck_mark() => OnUi(async () =>
+    {
+        var (window, _) = await Show(s => s.State == ShellState.NotRunning);
+
+        var card = Box(window, "NotRunningPanel");
+        var page = Box(window, "Page");
+        Assert.True(card.Width <= 520, string.Create(CultureInfo.InvariantCulture, $"card is {card.Width} wide"));
+        Assert.Equal(page.Center.X, card.Center.X, precision: 0);
+        Assert.Equal(page.Center.Y, card.Center.Y, precision: 0);
+        Assert.True(Visible(window, "NotRunningMark"));
+        Assert.Contains("detail-title", window.Get<TextBlock>("NotRunningText").Classes, StringComparer.Ordinal);
+    });
+
+    // I8 (states.html Connecting): Home's frame (title, the Needs-you panel's header, two half panels) with left-aligned
+    // skeleton bars; static, so nothing moves under reduced motion.
+    [Fact]
+    public Task Connecting_echoes_Homes_frame_with_left_aligned_skeleton_rows() => OnUi(async () =>
+    {
+        var (window, _) = await Show(s => s.State == ShellState.Connecting, run: false);
+        var skeleton = Named<Control>(window, "ConnectingSkeleton");
+
+        Assert.Contains(skeleton.GetVisualDescendants().OfType<TextBlock>(), t => t.Classes.Contains("page-title") && t.Text == Labels.Home);
+        Assert.Contains(skeleton.GetVisualDescendants().OfType<TextBlock>(), t => t.Classes.Contains("eyebrow") && t.Text == Labels.NeedsYouPanel);
+        Assert.Equal(3, skeleton.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("panel")));
+        var bars = skeleton.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("skeleton")).ToList();
+        Assert.True(bars.Count >= 6);
+        Assert.All(bars, b => Assert.Equal(HorizontalAlignment.Left, b.HorizontalAlignment));
+        Assert.All(bars, b => Assert.Empty(b.Transitions ?? []));
+    });
+
+    // I6: Close reads "✕ Close" so it doesn't look like Back's equal; lead (3): the heading's ring has room before Close.
+    [Fact]
+    public Task The_sheet_heading_has_room_for_its_ring_before_Close() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        Settle(window);
+
+        Assert.Contains(window.Get<Button>("SheetClose").GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "✕");
+        var title = Box(window, "SheetTitle");
+        var close = Box(window, "SheetClose");
+        Assert.True(close.Left - title.Right >= 8, string.Create(CultureInfo.InvariantCulture, $"{close.Left - title.Right} px between the heading and Close"));
+    });
+
+    // Lead (7): the edge tab keeps the spacing token's gap from the panels at a narrow window.
+    [Fact]
+    public Task The_edge_tab_keeps_a_gap_from_the_panels() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 1000, 700) }, Token);
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        shell.CloseSheet();
+        Settle(window);
+
+        var tab = Box(window, "EdgeTab");
+        var panel = Box(window, "NeedsYouPanel");
+        Assert.True(tab.Left - panel.Right >= 8, string.Create(CultureInfo.InvariantCulture, $"{tab.Left - panel.Right} px between the panels and the edge tab"));
+        Frame(window, "edge-tab-narrow");
+    });
+
+    // Lead (6), §11.2: F6 lands on the page region itself, and Tab then moves inside it.
+    [Fact]
+    public Task F6_lands_on_the_page_region_on_Home() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, _) = await Show(s => s.State == ShellState.Normal);
+
+        window.KeyPress(Key.F6, RawInputModifiers.None, PhysicalKey.F6, keySymbol: null);
+        window.KeyPress(Key.F6, RawInputModifiers.None, PhysicalKey.F6, keySymbol: null);
+        Settle(window);
+        Assert.Same(window.Get<Border>("Page"), window.FocusManager?.GetFocusedElement());
+
+        window.KeyPress(Key.Tab, RawInputModifiers.None, PhysicalKey.Tab, keySymbol: null);
+        Settle(window);
+        Assert.True(window.Get<Border>("Page").IsVisualAncestorOf((Visual)window.FocusManager!.GetFocusedElement()!));
+    });
+
+    // Lead (5): ⌘, moves focus into Settings (its first control), as opening the sheet moves it to the heading.
+    [Fact]
+    public Task Command_comma_moves_focus_into_Settings() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, _) = await Show(s => s.State == ShellState.Normal);
+        var settings = new SettingsViewModel(new Preferences(_preferences), new FakeMotionPreference(), _ => { });
+        window.SettingsSlot.Content = new SettingsView { DataContext = settings };
+        var command = OperatingSystem.IsMacOS() ? RawInputModifiers.Meta : RawInputModifiers.Control;
+
+        window.KeyPress(Key.OemComma, command, PhysicalKey.Comma, keySymbol: ",");
+        Settle(window);
+
+        var focused = window.FocusManager?.GetFocusedElement() as Visual;
+        Assert.NotNull(focused);
+        Assert.True(window.SettingsSlot.IsVisualAncestorOf(focused), focused.GetType().Name);
+    });
+
     [Fact]
     public Task Connecting_shows_the_chrome_and_skeleton_rows() => OnUi(async () =>
     {
@@ -292,7 +394,10 @@ public sealed class ShellWindowTests : IDisposable
 
         Assert.True(Visible(window, "VersionMismatchPanel"));
         Assert.False(Visible(window, "TopBar"));
-        Assert.Equal(Labels.Versions(2, 1), Text(window, "VersionsText"));
+        // N4 (states.html): the two versions as labelled rows, and the fix as a sentence, not in the command chip.
+        var rows = Named<ItemsControl>(window, "VersionRows").GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+        Assert.Equal(["This app", "API v1", "Sindri", "API v2"], rows);
+        Assert.Null(window.Get<TextBlock>("VersionFixText").FindAncestorOfType<Border>() is { } b && b.Classes.Contains("command") ? b : null);
         Assert.Equal(Labels.VersionMismatchFix, Text(window, "VersionFixText"));
         Frame(window, "version-mismatch");
     });
