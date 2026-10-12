@@ -350,9 +350,27 @@ Tests key off the code and the golden's `detail`, never a copy of the sentence.
   `R`, `W` Queue filters, `D`, `S`, `.`), `J`/`K` rows, `Enter` opens the selected row, `C` create; never while typing
   in a field or over a layer. Esc closes the create form, then a confirm, then the sheet.
 
-**Spec-shaped fixtures (replace with P3 goldens).** `queue/{fixture,empty,stalled,large,running}`,
-`items-id/{new,needs-decision,after-close,not-found}`, `items-id-timeline/{fixture,page-2}`, `items/created`,
-`items-id-close/{accepted,stale-version}`, `commands/catalog-p3`.
+**Spec-shaped fixtures (replace with P3 goldens of the same names).** `queue/{fixture,empty,stalled,large}`,
+`items-id/{new,after-close,not-found}`, `items-id-timeline/{fixture,page-2}` (the fixture a full page of 100),
+`items/created`, `items-id-close/{accepted,stale-version}`, `commands/catalog` (P1's catalog with CreateItem and
+CloseItem:* `ready`). Marked extras, not P3's: `queue/extra-p4-waiting` (a needs-decision row), `queue/extra-p11-parked`,
+`queue/extra-p11-running`, `items-id/extra-p4-needs-decision`. In P3 every `primaryAction` is null, `waitingOn` and
+`instance` are null, and `owner` is null (README X61: multiplayer later; the records accept it, no owner UI).
+
+**Owner decisions (2026-10-12).** Four queue groups (API §3.6); a parked item shows in Waiting on you with a "parked"
+badge from its `state`. The sheet shows `body` (scrubbed, plain text) and `link`. The sheet stays open after Close.
+The destructive confirm reads "<label> <id>?" with Confirm and Keep. Actors (`createdBy`, the timeline's `actor`) are
+opaque strings shown exactly as served; the app maps no fixed set (README X61), and assumes nothing about where an
+agent session runs. Running rows' agent, place and budget arrive with P11 (open for U5/P11).
+
+**§8's guards and filter.** While the pointer is over the Queue panel or Home's queue panels, a refresh is parked and
+an "N new" pill (polite) counts the rows it adds; leaving, or the pill, shows them. For 500 ms after a refresh moved
+the selection because its row cleared, single keys do nothing. `Y` copies the selected row's primary-action CLI
+(through its control: "Copied"); `/` opens the Queue page's filter (id, title, repo; "Nothing matches"), the last Esc
+layer after the sheet; Home's panels ignore it. The top bar shows "G …" while the chord waits.
+
+**The event stream (P5).** API P5 replaces `/events`' body with `PublicEvent`; the follower switches its event record
+when P5 merges. U2 doesn't touch the stream: it only re-reads views on each event.
 
 **Proof recipe (once P3 is on main).** Under `scripts/sindri-prove.sh`'s guard:
 

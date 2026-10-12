@@ -21,6 +21,7 @@ namespace Aw.Sindri.Ui.Api;
 /// <param name="CreatedAt">When it was created.</param>
 /// <param name="UpdatedAt">When it last changed.</param>
 /// <param name="AsOf">How fresh the view is.</param>
+/// <param name="Owner">Who owns the item (README X61), null for now; no owner UI.</param>
 internal sealed record ItemView(
     string Id,
     string Title,
@@ -38,4 +39,5 @@ internal sealed record ItemView(
     string? Instance,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
-    AsOfView AsOf);
+    AsOfView AsOf,
+    string? Owner = null);

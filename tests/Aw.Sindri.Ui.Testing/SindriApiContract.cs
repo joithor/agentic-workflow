@@ -164,7 +164,7 @@ public abstract class SindriApiContract
         Expect.Sequence([0, 0, 0, 4], queue.Groups.Select(g => g.Items.Count));
         Expect.Equal("Nothing is waiting on you.", queue.Groups[0].Empty);
         Expect.Equal("Nothing running.", queue.Groups[2].Empty);
-        Expect.True(queue.Groups.SelectMany(g => g.Items).All(i => i.PrimaryAction is null));
+        Expect.True(queue.Groups.SelectMany(g => g.Items).All(i => i.PrimaryAction is null && i.Owner is null));
         Expect.Equal(expected: null, queue.Groups[3].Empty);
         Expect.Equal(("new", "Try the queue"), (queue.Groups[3].Items[3].State, queue.Groups[3].Items[3].Title));
     }
@@ -188,6 +188,7 @@ public abstract class SindriApiContract
         Expect.Equal((A.NewItem, 1L, "human:cli"), (item.Id, item.Version, item.CreatedBy));
         Expect.Sequence(["CloseItem:done", "CloseItem:cancelled"], item.Actions);
         Expect.Equal(("Check the queue shows a new item without a click.", "linear:issue/ENG-142"), (item.Body, item.Link));
+        Expect.Equal(expected: null, item.Owner);   // README X61: owner is served, null for now; the app builds no owner UI
     }
 
     // UI spec §4.9 Item detail: an unknown item is the API's SND-ITEM-404 with its detail as served.

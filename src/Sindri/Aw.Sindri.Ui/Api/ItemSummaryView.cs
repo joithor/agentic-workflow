@@ -12,6 +12,7 @@ namespace Aw.Sindri.Ui.Api;
 /// <param name="Since">When the item entered its state: the clock behind its age.</param>
 /// <param name="PrimaryAction">Its next action: a catalog action id, or null.</param>
 /// <param name="Actions">The action ids allowed now, in the API's order.</param>
+/// <param name="Owner">Who owns the item (README X61: multiplayer later), null for now; the app shows no owner UI.</param>
 internal sealed record ItemSummaryView(
     string Id,
     string Title,
@@ -20,4 +21,5 @@ internal sealed record ItemSummaryView(
     string? Step,
     DateTimeOffset Since,
     string? PrimaryAction,
-    IReadOnlyList<string> Actions);
+    IReadOnlyList<string> Actions,
+    string? Owner = null);

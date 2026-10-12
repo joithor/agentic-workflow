@@ -54,6 +54,19 @@ public sealed class ItemSheetViewModelTests
         Assert.Equal((false, false), (sheet.HasBody, sheet.HasLink));
     }
 
+    // README X61 (multiplayer later): createdBy and each entry's actor are opaque strings, shown exactly as served.
+    [Fact]
+    public async Task Actors_are_shown_exactly_as_served()
+    {
+        _server.Items[A.NewItem] = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("items-id", "new").Replace("\"human:cli\"", "\"human:ada\"", StringComparison.Ordinal));
+        _server.TimelinePages[0] = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("items-id-timeline", "fixture").Replace("\"human:cli\"", "\"human:ada@laptop\"", StringComparison.Ordinal));
+        var sheet = await Sheet();
+
+        await sheet.Open(_api, A.NewItem, Token);
+
+        Assert.Equal(("human:ada", "human:ada@laptop"), (sheet.CreatedBy, sheet.Timeline[0].Actor));
+    }
+
     // §4.6: the timeline is paged by 'next'; Load more appends the next page and goes once there is none.
     [Fact]
     public async Task Load_more_appends_the_next_page_until_there_is_none()
