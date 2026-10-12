@@ -773,6 +773,41 @@ public sealed class ShellWindowTests : IDisposable
         AnnouncedOnly(window, "NotRunningLive", changes, Labels.NotRunning + ": ");
     });
 
+    // Review run 3 (julik-frontend-races-reviewer-0): going straight from Not running to Unreadable and back, each state's
+    // new reason is spoken only through its own live region. The old state's region goes Off and rests; it never speaks
+    // the new reason while it is still Polite. The sequences are exact, so a stray announcement fails.
+    [Fact]
+    public Task Not_running_to_Unreadable_and_back_speaks_each_reason_only_through_its_own_region() => OnUi(async () =>
+    {
+        var (window, shell) = await Show(_ => true, run: false);
+        var notRunning = LiveChanges(window, "NotRunningLive");
+        var unreadable = LiveChanges(window, "UnreadableLive");
+        _ = shell.Run(_stop.Token);
+        await Until(() => shell.State == ShellState.NotRunning);
+        Settle(window);
+        Assert.Equal(ShellState.NotRunning, shell.State);
+        var notRunningSaid = Labels.NotRunning + ": " + shell.Reason;
+
+        _records.Write(A.Record());
+        _server.Refusal = A.NoTokenRefusal;
+        _clock.Advance(HealthViewModel.RetryEvery);
+        await Until(() => shell.State == ShellState.Unreadable);
+        Settle(window);
+        Assert.Equal(ShellState.Unreadable, shell.State);
+        var unreadableSaid = Labels.Unreadable + ": " + shell.Reason;
+
+        _records.Remove();
+        _clock.Advance(HealthViewModel.RetryEvery);
+        await Until(() => shell.State == ShellState.NotRunning);
+        Settle(window);
+        Assert.Equal(ShellState.NotRunning, shell.State);
+
+        Assert.Equal(
+            [(notRunningSaid, AutomationLiveSetting.Polite), (Labels.Sindri, AutomationLiveSetting.Off), (notRunningSaid, AutomationLiveSetting.Polite)],
+            notRunning);
+        Assert.Equal([(unreadableSaid, AutomationLiveSetting.Polite), (Labels.Sindri, AutomationLiveSetting.Off)], unreadable);
+    });
+
     // Every change of a live region's text, with the live setting it had when it changed.
     private static List<(string? Text, AutomationLiveSetting Live)> LiveChanges(Window window, string name)
     {
