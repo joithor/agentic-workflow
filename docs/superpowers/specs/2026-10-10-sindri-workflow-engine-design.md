@@ -1524,7 +1524,8 @@ Merged (#179). Unchanged by rev 8.
   with them the full A §17.23.13 no-progress rule (§3.7, rev 7.2); docs.
 - **Size:** M.
 - **Dependencies:** P7, API P10a (`ILauncher` and §8.1), Judge's provider port (#156). This phase adds Sindri's
-  `deps.yaml` edge to Judge with a recorded fan-out exception (Sindri is at 4), reviewed like Context's.
+  `deps.yaml` edge to Judge. It needs no fan-out exception: the owner removed the per-package cap (DEPS-FANOUT-001)
+  on 2026-10-12.
 - **Signal:** with `workflow.agent.target: claude-code`, starting `workflow.step` on a new item launches Claude Code
   **interactively inside a tmux session named `snd-<run>`**, in a per-run worktree, with the seed as the initial
   prompt. **(owner)** `sindri open <item> --attach` opens a Warp tab attached to that tmux session; typing one line
