@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Testing;
@@ -38,6 +39,23 @@ public sealed class StopProcessTests
         _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, new InMemoryEndpointFile()).Handle(new StopProcessRequest(StopReason.Stop), Token);
 
         Assert.True(requestedAtRelease);   // why: a renewal that runs after the release must see a stop, not a lost lease
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task StopProcess_removes_the_endpoint_record_before_it_releases_the_lease()
+    {
+        var grant = await _h.HoldLease();
+        var endpoints = new InMemoryEndpointFile();
+        _ = await endpoints.Write(new ControlEndpoint(new Uri("http://127.0.0.1:7470"), grant.Holder.Pid, grant.Epoch), Token);
+        var lease = new ScriptedLease(_h.Store);
+        ControlEndpoint? recordedAtRelease = null;
+        lease.BeforeRelease = () => recordedAtRelease = endpoints.Read(Token).AsTask().GetAwaiter().GetResult().Value;   // the fake completes synchronously
+
+        var stopped = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, endpoints).Handle(new StopProcessRequest(StopReason.Stop), Token);
+
+        Assert.True(stopped.IsSuccess);
+        Assert.True((await _h.Store.Read(Token)).Value!.Released);   // why: the lease row exists once HoldLease took it
+        Assert.Null(recordedAtRelease);   // why: a client that finds control.json must never find the lease already free
     }
 
     [Fact, Trait("Lane", "unit")]
