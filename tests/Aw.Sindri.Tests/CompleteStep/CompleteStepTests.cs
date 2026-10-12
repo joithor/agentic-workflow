@@ -35,10 +35,10 @@ public sealed class CompleteStepTests(DevServer server) : IClassFixture<DevServe
             Assert.Matches("^[0-9a-f]{32}$", json.RootElement.GetProperty("nonce").GetString());
             Assert.Equal("-> checks", json.RootElement.GetProperty("result").GetProperty("happened").GetString());
             Assert.Equal((0, string.Empty), (passed.Exit, passed.Stderr));
-            Assert.Equal(["-> verify"], passed.Lines[1..]);
+            Assert.Equal(["  -> verify"], passed.Lines[1..]);
             Assert.Equal((0, string.Empty), (accepted.Exit, accepted.Stderr));
             Assert.Matches(Header("T-1/step/1", "done: resolved"), accepted.Lines[0]);
-            Assert.Equal(["-> done"], accepted.Lines[1..]);
+            Assert.Equal(["  -> done"], accepted.Lines[1..]);
             Assert.Equal(["workflow.started", "workflow.transition", "workflow.transition", "workflow.transition"], await desk.Events());
         });
     }
@@ -56,9 +56,9 @@ public sealed class CompleteStepTests(DevServer server) : IClassFixture<DevServe
 
             Assert.Equal((0, string.Empty), (first.Exit, first.Stderr));
             Assert.Matches(Header("T-2/step/1", "checks: desk task"), first.Lines[0]);
-            Assert.Equal(["-> checks"], first.Lines[1..]);
+            Assert.Equal(["  -> checks"], first.Lines[1..]);
             Assert.Equal((0, string.Empty), (again.Exit, again.Stderr));
-            Assert.Equal(["already applied (-> checks)"], again.Lines[1..]);
+            Assert.Equal(["  already applied (-> checks)"], again.Lines[1..]);
             Assert.Equal(events, await desk.Events());
             Assert.Equal(["workflow.started", "workflow.transition"], events);
         });
@@ -102,7 +102,7 @@ public sealed class CompleteStepTests(DevServer server) : IClassFixture<DevServe
             Assert.Equal(("produce", "1.1"), (unchanged.State, unchanged.Run?.Value));
             Assert.Equal(["workflow.started"], events);
             Assert.Equal((0, string.Empty), (valid.Exit, valid.Stderr));
-            Assert.Equal(["-> checks"], valid.Lines[1..]);
+            Assert.Equal(["  -> checks"], valid.Lines[1..]);
         });
     }
 
@@ -153,7 +153,7 @@ public sealed class CompleteStepTests(DevServer server) : IClassFixture<DevServe
 
             Assert.Equal(("produce", "1.1"), (view.State, view.Run?.Value));
             Assert.Equal((0, string.Empty), (done.Exit, done.Stderr));
-            Assert.Equal(["-> checks"], done.Lines[1..]);
+            Assert.Equal(["  -> checks"], done.Lines[1..]);
         }
         finally
         {

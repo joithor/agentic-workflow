@@ -2,9 +2,11 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Workflows;
 using Aw.Sindri.Tests.Workflows.Spike;
 using Microsoft.Extensions.DependencyInjection;
+using Temporalio.Api.OperatorService.V1;
 using Temporalio.Client;
 using Temporalio.Worker;
 
@@ -30,6 +32,9 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
         var env = server.Environment;
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
+        var attributes = new AddSearchAttributesRequest { Namespace = env.Client.Options.Namespace };
+        attributes.SearchAttributes.Add(SindriTemporal.SearchAttributes.ToDictionary(static a => a.Name, static a => a.Type, StringComparer.Ordinal));
+        _ = await env.Client.OperatorService.AddSearchAttributesAsync(attributes);   // what serve registers on the dev server
         using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var running = worker.ExecuteAsync(stop.Token);

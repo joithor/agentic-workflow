@@ -6,8 +6,8 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>
 /// The 'workflow' verb group (engine spec rev 8 §6.3). Engine P4 contract: every verb of §6.3 has its row. 'list' is
 /// P4a's visibility query (unit (e) moves it to the §6.3 filters and '--needs-me'); the others are stubs, each naming
-/// the unit that builds it: 'start' (b), 'status' (e), 'events' (e), 'answer' (b), 'command' (b), 'cancel' (b) and
-/// 'complete' (c). Each becomes a client of 'sindri serve' that calls one slice through the API chain.
+/// the unit that builds it: 'start' (b), 'status' (e), 'events' (e), 'answer' (b), 'command' (b) and 'cancel' (b).
+/// 'complete' is unit (c)'s <see cref="CompleteCommand"/>. Each becomes a client of 'sindri serve' that calls one slice through the API chain.
 /// </summary>
 internal static class WorkflowCommandTable
 {
@@ -17,7 +17,7 @@ internal static class WorkflowCommandTable
         "usage: sindri workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]... | status <address> [--json] | "
         + "list [--needs-me | --item <id> | --state <s>] [--json] | events <address> [--follow] [--json] | "
         + "answer <address> [--text …|--file …] [--grant n | --grant-tokens n | --accept | --reject | --resume] | "
-        + "command <address> <verb> | cancel <address> | complete <address> --run <token> --outcome <o> [--output <fact>=<file>]...";
+        + "command <address> <verb> | cancel <address> | complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--nonce <n>] [--json]";
 
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch
     {
@@ -28,7 +28,7 @@ internal static class WorkflowCommandTable
         ["answer", ..] => Unbuilt("answer", "unit (b)"),
         ["command", ..] => Unbuilt("command", "unit (b)"),
         ["cancel", ..] => Unbuilt("cancel", "unit (b)"),
-        ["complete", ..] => Unbuilt("complete", "unit (c)"),
+        ["complete", .. var rest] => CompleteCommand.Run(rest, services, output, ct),
         _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["workflow", .. args])}' is not a sindri command ({Usage})")),
     };
 

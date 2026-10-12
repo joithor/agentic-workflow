@@ -9,7 +9,6 @@ using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Core.Workflow.Recipes;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
@@ -31,18 +30,23 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </para>
 /// </summary>
 [Workflow("RecipeWorkflow")]
-internal sealed class RecipeWorkflow
+internal sealed partial class RecipeWorkflow
 {
     private const string Desk = "human:desk";
     private const string Timers = "service:workflow.timers";
-    private static readonly TimeSpan _noTimeout = TimeSpan.FromDays(30);
     private readonly Queue<WaitSatisfied> _delivered = new();
+    private readonly Dictionary<string, Reported> _reported = new(StringComparer.Ordinal);
     private InstanceStart? _start;
     private InterpretedRecipe? _recipe;
+    private Interpreting? _context;
     private WorkflowInstance? _instance;
     private DateTimeOffset _since;
     private DateTimeOffset? _timeoutAt;
-    private Trigger? _report;
+    private TimeSpan _deskTimeout;
+    private TimeSpan _waited;
+    private string? _recorded;
+    private StepCompleted? _report;
+    private string? _reportId;
     private int _runs;
 
     /// <summary>Interprets the recipe from its initial state to a terminal one.</summary>
@@ -52,7 +56,6 @@ internal sealed class RecipeWorkflow
     public async Task<RecipeResult> RunAsync(InstanceStart start)
     {
         var (instance, context) = await Begin(start).ConfigureAwait(true);
-        var recipe = context.Recipe;
         while (!instance.Ended)
         {
             if (instance.Suspension is not null || instance.Frame.Run is not { } open)
@@ -61,21 +64,7 @@ internal sealed class RecipeWorkflow
                 continue;
             }
 
-            var trigger = await RunStep(instance.Frame, open, recipe.States[instance.Frame.State]).ConfigureAwait(true);
-            var before = instance;
-            instance = After(instance, TransitionDecision.Decide(new DecisionInput(instance, recipe, trigger, GateAnswers.None, context.Decisions)));
-            if (!ReferenceEquals(before, instance))
-            {
-                Enter(instance);
-                var (kind, outcome) = trigger switch
-                {
-                    StepCompleted c => (TriggerNames.StepCompleted, c.Outcome.Value),
-                    StepFailed => (TriggerNames.StepFailed, null),
-                    _ => (TriggerNames.Deadline, null),
-                };
-                var record = new WorkflowEventRecord(start.WorkflowId().Value, "workflow.transition", start.Item.Value, before.State, instance.State, kind, outcome, open.Token.Value);
-                await Mirror(record, NeedsYou(instance)).ConfigureAwait(true);
-            }
+            instance = await RunDeskStep(instance, open, start, context).ConfigureAwait(true);
         }
 
         return new RecipeResult(instance.State, instance.Outcome?.Value);
@@ -95,6 +84,7 @@ internal sealed class RecipeWorkflow
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
         var catalog = new BlockCatalog(loaded.Blocks, []);
         _recipe = new InterpretedRecipe(loaded.Version, loaded.Recipe, catalog, start.Inputs);
+        _deskTimeout = loaded.DeskTimeout;
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance);
         var instance = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions)) with { Tenant = start.Tenant, Ring = start.Ring };
         Enter(instance);
@@ -102,7 +92,8 @@ internal sealed class RecipeWorkflow
             SindriTemporal.TenantKey.ValueSet(start.Tenant),
             SindriTemporal.RingKey.ValueSet(start.Ring.ToString(CultureInfo.InvariantCulture)));
         await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, "workflow.started", start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null), NeedsYou(instance)).ConfigureAwait(true);
-        return (instance, new Interpreting(loaded.Recipe, decisions));
+        _context = new Interpreting(loaded.Recipe, decisions);
+        return (instance, _context);
     }
 
     /// <summary>The instance as status shows it (the 'GetInstance' Query, spec §5.1, §6.3).</summary>
@@ -115,20 +106,6 @@ internal sealed class RecipeWorkflow
             ? InstanceViews.Of(instance, recipe, _since, _timeoutAt)
             : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null);
     }
-
-    /// <summary>
-    /// 'workflow complete' from the desk (spec rev 8.1 §5.3): the report for the open run, which the desk wait consumes.
-    /// Update id: the nonce. Unit (c).
-    /// </summary>
-    /// <param name="report">The report: the run token, a declared outcome and the stored outputs.</param>
-    /// <returns>The instance after the report, and what happened ('-> checks').</returns>
-    [WorkflowUpdate("complete")]
-    public Task<CommandResult> CompleteAsync(StepCompleted report) => throw Unbuilt("unit (c): the complete Update");
-
-    /// <summary>Rejects, recording nothing: a run token that isn't the open run's (SND-WF-005), a malformed report (SND-WF-008). Unit (c).</summary>
-    /// <param name="report">The report.</param>
-    [WorkflowUpdateValidator(nameof(CompleteAsync))]
-    public void ValidateComplete(StepCompleted report) => throw Unbuilt("unit (c): the complete validator");
 
     /// <summary>'workflow answer' in all its variants (spec §5.2, §5.8): ends the suspension it fits and runs its resume action. Unit (b).</summary>
     /// <param name="answer">The answer.</param>
@@ -224,30 +201,6 @@ internal sealed class RecipeWorkflow
         }
 
         _instance = instance;
-    }
-
-    /// <summary>
-    /// Runs one desk Step (rev 8.1 §5.3): the short 'RunStep' activity with the run token in its id records the open task,
-    /// then the workflow waits for the 'complete' Update's report, bounded by the state's timeout (its expiry is the
-    /// state's deadline). Unit (c) applies the 'workflow.deskTimeout' floor (S1-D11 is unit (e)'s).
-    /// </summary>
-    private async Task<Trigger> RunStep(Frame frame, OpenRun open, RecipeState state)
-    {
-        _runs++;
-        var step = new StepRun(_start!.WorkflowId().Value, frame.State, open.Token.Value); // why: RunStep runs only after RunAsync set _start
-        await Workflow.ExecuteActivityAsync(
-            () => RunStepActivities.RunStepAsync(step),
-            new ActivityOptions
-            {
-                ActivityId = string.Create(CultureInfo.InvariantCulture, $"run:{open.Token.Value}:{_runs}"),
-                StartToCloseTimeout = TimeSpan.FromSeconds(30),
-            }).ConfigureAwait(true);
-        var timeout = state.Timeout?.After.Span ?? _noTimeout;
-        _report = null;
-        _timeoutAt = Now + timeout;
-        var reported = await Workflow.WaitConditionAsync(() => _report is not null, timeout).ConfigureAwait(true);
-        _timeoutAt = null;
-        return reported && _report is { } report ? report : new DeadlineFired(Timers, frame.Entry, DeadlineKind.State);
     }
 
     /// <summary>The workflow's deterministic clock, as an offset in UTC.</summary>

@@ -1,17 +1,54 @@
+using System.Security.Cryptography;
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
-/// <summary><see cref="IFactStore"/> as owner-only files under the home (red: engine P4 unit (c)).</summary>
-internal sealed class HomeFactStore : IFactStore
+/// <summary>
+/// <see cref="IFactStore"/> as files under '&lt;home&gt;/workflow/facts' (engine spec rev 8.1 §5.3, §6.1): one file per
+/// content, named by its SHA-256, owner-only (0600) in an owner-only (0700) directory. A file is written to a temporary
+/// name and moved into place, so a reader never sees half of one.
+/// </summary>
+/// <param name="home">Where the facts directory is.</param>
+internal sealed class HomeFactStore(WorkflowsHome home) : IFactStore
 {
-    public HomeFactStore(WorkflowsHome home)
-    {
-        ArgumentNullException.ThrowIfNull(home);
-    }
+    private const UnixFileMode OwnerFile = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+    private const UnixFileMode OwnerDirectory = OwnerFile | UnixFileMode.UserExecute;
 
-    public ValueTask<Result<FactValue>> Put(ReadOnlyMemory<byte> content, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("red: engine P4 unit (c)");
+    public async ValueTask<Result<FactValue>> Put(ReadOnlyMemory<byte> content, CancellationToken cancellationToken)
+    {
+        var sha = Convert.ToHexStringLower(SHA256.HashData(content.Span));
+        var fact = new FactValue("fact:sha256:" + sha, sha, HeadSha: null);
+        var file = Path.Combine(home.FactsDirectory, sha);
+        try
+        {
+            if (File.Exists(file))
+            {
+                return fact;
+            }
+
+            _ = OperatingSystem.IsWindows() ? Directory.CreateDirectory(home.FactsDirectory) : Directory.CreateDirectory(home.FactsDirectory, OwnerDirectory);
+            var temporary = file + "." + Path.GetRandomFileName();
+            var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write };
+            if (!OperatingSystem.IsWindows())
+            {
+                options.UnixCreateMode = OwnerFile;
+            }
+
+            var stream = new FileStream(temporary, options);
+            await using (stream.ConfigureAwait(false))
+            {
+                await stream.WriteAsync(content, cancellationToken).ConfigureAwait(false);
+            }
+
+            File.Move(temporary, file, overwrite: true);
+            return fact;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) // boundary: a home that can't be written is an expected failure
+        {
+            return SindriErrors.ApiInternal.With($"the fact {sha} can't be stored under {home.FactsDirectory}: {e.Message} (fix: check the Sindri home's permissions and free space)");
+        }
+    }
 }

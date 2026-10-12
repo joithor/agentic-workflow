@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
+using Microsoft.Extensions.Logging;
 using Temporalio.Activities;
 using Temporalio.Exceptions;
 
@@ -14,7 +15,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </summary>
 /// <param name="approvals">The approved recipes.</param>
 /// <param name="catalog">The build's block catalog.</param>
-internal sealed class RunStepActivities(IApprovedRecipes approvals, BlockCatalog catalog)
+/// <param name="desk">The desk runtime's settings ('workflow.deskTimeout').</param>
+/// <param name="logger">The log the open desk task is recorded in.</param>
+internal sealed partial class RunStepActivities(IApprovedRecipes approvals, BlockCatalog catalog, DeskSettings desk, ILogger<RunStepActivities> logger)
 {
     /// <summary>Reads the approved recipe and the descriptors of its blocks.</summary>
     /// <param name="recipe">The recipe the instance is pinned to.</param>
@@ -33,19 +36,25 @@ internal sealed class RunStepActivities(IApprovedRecipes approvals, BlockCatalog
         var used = definition.States.Values.Select(static s => s.Step?.Use)
             .Concat(definition.Transitions.SelectMany(static t => t.Gates.Select(static g => (BlockId?)g.Use).Concat(t.Effects.Select(static e => (BlockId?)e.Use))))
             .OfType<BlockId>().ToHashSet();
-        return new LoadedRecipe(found.Value.Version, definition, [.. catalog.Blocks.Where(b => used.Contains(b.Id))]);
+        return new LoadedRecipe(found.Value.Version, definition, [.. catalog.Blocks.Where(b => used.Contains(b.Id))], desk.Timeout);
     }
 
     /// <summary>
-    /// Records the open desk task and returns (rev 8.1 §5.3). Engine P4 contract: it records nothing yet; unit (c) writes
-    /// the task (and the first-desk-task notification is P6's).
+    /// Records the open desk task and returns (rev 8.1 §5.3): the activity, scheduled with the run token in its id
+    /// ('run:{token}:{n}'), is the record in the instance's history that a worker restart replays, so the task keeps its
+    /// token; it also writes one log line. The workflow then waits for the 'complete' Update. The first-desk-task
+    /// notification is P6's ('notify.desk').
     /// </summary>
     /// <param name="run">The run.</param>
     /// <returns>Done.</returns>
     [Activity("RunStep")]
-    public static Task RunStepAsync(StepRun run)
+    public Task RunStepAsync(StepRun run)
     {
         ArgumentNullException.ThrowIfNull(run);
+        DeskTaskOpen(logger, run.Address, run.State, run.Token);
         return Task.CompletedTask;
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "desk task open: {Address} {State} run {Token}")]
+    private static partial void DeskTaskOpen(ILogger logger, string address, string state, string token);
 }
