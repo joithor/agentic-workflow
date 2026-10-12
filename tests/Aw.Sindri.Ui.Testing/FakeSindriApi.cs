@@ -8,8 +8,10 @@ namespace Aw.Sindri.Ui.Testing;
 /// <summary>
 /// The in-memory Sindri API, and the model the canned HTTP handler serves: a ping, a status, the ledger's events, and
 /// open event streams that get each pushed event until they are dropped (the connection ends) or the server goes down.
+/// The catalog, the services view and the rebuild command answer with golden bodies (<see cref="RouteAnswer"/>), the
+/// same text the handler serves.
 /// </summary>
-internal sealed class FakeSindriApi : ISindriApi
+internal sealed partial class FakeSindriApi : ISindriApi
 {
     private readonly Lock _gate = new();
     private readonly List<EventView> _events = [];

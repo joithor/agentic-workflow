@@ -24,4 +24,9 @@ public sealed class ControlFilePathTests
     [Fact]
     public void Else_the_home_default() =>
         Assert.Equal(Path.Combine("/u", ".agentic-workflow", "sindri-app", "control.json"), ControlFilePath.From(Env(), "/u"));
+
+    // API spec §6: 'serve' mints <home>/auth/human.token beside control.json; the app reads it from the same home.
+    [Fact]
+    public void The_human_token_sits_in_auth_beside_control_json() =>
+        Assert.Equal(Path.Combine("/s", "auth", "human.token"), ControlFilePath.Token(Env(("AW_SINDRI_HOME", "/s")), "/u"));
 }

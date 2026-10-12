@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
+using Aw.Sindri.Ui.Platform;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -15,8 +16,9 @@ namespace Aw.Sindri.Ui.Api;
 /// </summary>
 /// <param name="http">The HTTP client, with no timeout of its own (the app's, or one over a canned handler in tests).</param>
 /// <param name="clock">The clock the 2 s deadline runs on (the app's, so tests drive it with a fake one).</param>
+/// <param name="tokens">The control plane's per-start human token, read before each request (API spec §6).</param>
 /// <param name="log">The app's log, where an unreadable body's parser detail goes (never the window); none by default.</param>
-internal sealed class SindriApiClient(HttpClient http, TimeProvider clock, ILogger? log = null) : ISindriApi
+internal sealed partial class SindriApiClient(HttpClient http, TimeProvider clock, IHumanTokenSource tokens, ILogger? log = null) : ISindriApi
 {
     private readonly ILogger _log = log ?? NullLogger.Instance;
 
@@ -34,6 +36,12 @@ internal sealed class SindriApiClient(HttpClient http, TimeProvider clock, ILogg
     public Task<Result<PingView>> Ping(Uri api, CancellationToken cancellationToken) => Get<PingView>(api, "/sindri/ping", cancellationToken);
 
     public Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken) => Get<StatusView>(api, "/sindri/status", cancellationToken);
+
+    public Task<Result<CommandList>> Commands(Uri api, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public Task<Result<ServiceList>> Services(Uri api, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken) => throw new NotSupportedException();
 
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -67,56 +75,10 @@ internal sealed class SindriApiClient(HttpClient http, TimeProvider clock, ILogg
         }
     }
 
-    private async Task<Result<T>> Get<T>(Uri api, string path, CancellationToken cancellationToken)
-    {
-        using var timeout = new CancellationTokenSource(_callTimeout, clock);
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
-        try
-        {
-            using var request = Request(new Uri(api, path));
-            using var response = await http.SendAsync(request, deadline.Token).ConfigureAwait(false);
-            var body = await response.Content.ReadAsByteArrayAsync(deadline.Token).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return SindriUiErrors.BadAnswer.With(string.Create(CultureInfo.InvariantCulture, $"{path} answered {(int)response.StatusCode}"));
-            }
-
-            var value = AwJson.Deserialize<T>(body, Json);
-            if (value.IsError)
-            {
-                // The parser's text names .NET types, JSON paths and byte positions: the log keeps it, the window gets
-                // the route in words (UI spec §4.1 Unreadable; as I7 for SND-UI-002).
-                SindriApiLog.Unreadable(_log, path, value.Error.Message);
-                return SindriUiErrors.BadAnswer.With($"{path} answered with something this build can't read");
-            }
-
-            return value;
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            return SindriUiErrors.Unreachable.With($"{api.Authority} didn't answer within 2 s");
-        }
-        catch (HttpRequestException)
-        {
-            // The platform's message repeats the address in its own words ("Connection refused (127.0.0.1:61879)"): I7.
-            return SindriUiErrors.Unreachable.With($"nothing answered at {api.Authority}");
-        }
-    }
-
-    // Every request says who the app is to the API (UI spec §9.1, API §6): a human, from the UI. Never X-Sindri-Terminal
-    // (the app is no terminal, so protected actions stay at the CLI) and never Origin (commands refuse it).
-    private static HttpRequestMessage Request(Uri url)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Add("X-Sindri-Caller", "human");
-        request.Headers.Add("X-Sindri-Client", "ui");
-        return request;
-    }
-
     // The open event-stream response (owned by the caller), or null when it didn't answer 2xx or nothing answered.
     private async Task<HttpResponseMessage?> Open(Uri url, CancellationToken cancellationToken)
     {
-        using var request = Request(url);
+        using var request = await Request(HttpMethod.Get, url, query: false, cancellationToken).ConfigureAwait(false);
         request.Headers.Accept.ParseAdd("text/event-stream");
         try
         {

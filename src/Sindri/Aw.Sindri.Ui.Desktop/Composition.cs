@@ -23,6 +23,7 @@ internal static class Composition
         var ui = UiStatePaths.From(environment, userHome);
         return new SindriPlatform(
             new FileEndpointRecords(ControlFilePath.From(environment, userHome)),
+            new FileHumanTokens(ControlFilePath.Token(environment, userHome)),
             new FilePreferencesStore(ui.Preferences),
             new PolledMotionPreference(MotionReader(), clock, MotionPoll),
             new SocketSingleInstance(ui, clock),

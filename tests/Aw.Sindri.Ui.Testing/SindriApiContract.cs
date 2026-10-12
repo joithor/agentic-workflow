@@ -1,3 +1,4 @@
+using System.Net;
 using Aw.Sindri.Ui.Api;
 
 namespace Aw.Sindri.Ui.Testing;
@@ -91,5 +92,48 @@ public abstract class SindriApiContract
         Expect.Equal("SND-UI-002", ping.Error.Code);
         Expect.Equal("SND-UI-002", status.Error.Code);
         Expect.Sequence([], await api.Events(_api, 0, Token).ToListAsync(Token));
+    }
+
+    // GET /sindri/commands (API P1): the catalog as Sindri's golden serves it.
+    [Fact]
+    public async Task Commands_answer_the_catalog_rows_with_their_ui_status()
+    {
+        var catalog = (await Reach(new FakeSindriApi()).Commands(_api, Token)).Value;
+
+        Expect.Equal(18, catalog.Rows.Count);
+        Expect.Equal("pending:P2", catalog.Rows.Single(r => r.Action == "RebuildViews").Ui);
+        Expect.Equal("sindri profile approve [<hash>]", catalog.Rows.Single(r => r.Action == "ApproveProfile").Cli);
+    }
+
+    // GET /sindri/services (API P2, spec-shaped): U1 reads the view's EmptyText sentence and its asOf.
+    [Fact]
+    public async Task Services_answer_their_empty_sentence_and_freshness()
+    {
+        var server = new FakeSindriApi { ServiceView = RouteAnswer.SpecShaped("services", "stalled") };
+
+        var view = (await Reach(server).Services(_api, Token)).Value;
+
+        Expect.Equal("Views are stalled at 42: run sindri views rebuild", view.Empty);
+        Expect.Equal((41L, 42L, true, false), (view.AsOf.Cursor, view.AsOf.LedgerHead, view.AsOf.Stalled, view.AsOf.Rebuilding));
+    }
+
+    // POST /sindri/views/rebuild (API P2, spec-shaped): accepted with the sequence the next query waits for.
+    [Fact]
+    public async Task Rebuild_views_answers_the_accepted_sequence()
+    {
+        var accepted = (await Reach(new FakeSindriApi()).RebuildViews(_api, Token)).Value;
+
+        Expect.Equal(43L, accepted.Sequence);
+    }
+
+    // UI spec §4.1 Error: a refusal is the API's title (the SND code) and detail as served, never the app's words.
+    [Fact]
+    public async Task A_refused_command_is_the_apis_code_and_detail()
+    {
+        var server = new FakeSindriApi { Rebuild = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-009", "Sindri is busy with another command (fix: retry)") };
+
+        var refused = await Reach(server).RebuildViews(_api, Token);
+
+        Expect.Equal(("SND-API-009", "Sindri is busy with another command (fix: retry)"), (refused.Error.Code, refused.Error.Message));
     }
 }

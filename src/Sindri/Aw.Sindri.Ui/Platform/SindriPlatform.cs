@@ -5,12 +5,14 @@ namespace Aw.Sindri.Ui.Platform;
 
 /// <summary>The platform adapters a head hands the app (one per port), so a new port doesn't change <see cref="Views.SindriApp.Create(SindriPlatform, TimeProvider)"/>'s signature.</summary>
 /// <param name="Records">Where the control plane recorded its endpoint.</param>
+/// <param name="Tokens">The control plane's per-start human token.</param>
 /// <param name="Preferences">The local preferences.</param>
 /// <param name="Motion">The OS reduce-motion setting.</param>
 /// <param name="Instance">The single-instance claim and its messages.</param>
 /// <param name="Tray">The tray icon.</param>
 public sealed record SindriPlatform(
     IEndpointRecordSource Records,
+    IHumanTokenSource Tokens,
     IPreferencesStore Preferences,
     IMotionPreference Motion,
     ISingleInstance Instance,

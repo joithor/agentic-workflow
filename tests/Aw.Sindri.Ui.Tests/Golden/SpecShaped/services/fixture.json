@@ -1,0 +1,23 @@
+{
+  "services": [
+    {
+      "name": "heartbeat",
+      "cadence": "5s",
+      "paused": false,
+      "lastRun": {
+        "slot": "2026-01-01T00:00:55.0000000Z",
+        "outcome": "ok",
+        "code": null
+      },
+      "nextSlot": "2026-01-01T00:01:00.0000000Z"
+    }
+  ],
+  "empty": "No services are scheduled.",
+  "asOf": {
+    "cursor": 41,
+    "ledgerHead": 41,
+    "projectedAt": "2026-01-01T00:00:58.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

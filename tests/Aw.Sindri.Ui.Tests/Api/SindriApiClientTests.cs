@@ -14,12 +14,14 @@ public sealed class SindriApiClientTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
+    private static InMemoryHumanTokens Tokens => new() { Text = "tok-1" };
+
     [Fact]
     public async Task An_error_status_is_an_answer_the_app_cant_read()
     {
         var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.InternalServerError, """{"title":"SND-LEDGER-002"}""") };
 
-        var status = await new SindriApiClient(new HttpClient(handler), TimeProvider.System).Status(_api, Token);
+        var status = await new SindriApiClient(new HttpClient(handler), TimeProvider.System, Tokens).Status(_api, Token);
 
         Assert.Equal("SND-UI-003", status.Error.Code);
         Assert.Contains("500", status.Error.Message, StringComparison.Ordinal);
@@ -30,7 +32,7 @@ public sealed class SindriApiClientTests
     {
         var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.OK, "<html>not sindri</html>") };
 
-        var ping = await new SindriApiClient(new HttpClient(handler), TimeProvider.System).Ping(_api, Token);
+        var ping = await new SindriApiClient(new HttpClient(handler), TimeProvider.System, Tokens).Ping(_api, Token);
 
         Assert.Equal("SND-UI-003", ping.Error.Code);
     }
@@ -43,7 +45,7 @@ public sealed class SindriApiClientTests
         var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.OK, """{"pid":"not-a-number","version":7}""") };
         var log = new RecordingLogger();
 
-        var status = await new SindriApiClient(new HttpClient(handler), TimeProvider.System, log).Status(_api, Token);
+        var status = await new SindriApiClient(new HttpClient(handler), TimeProvider.System, Tokens, log).Status(_api, Token);
 
         Assert.Equal("SND-UI-003", status.Error.Code);
         Assert.Equal("/sindri/status answered with something this build can't read", status.Error.Message);
@@ -61,7 +63,7 @@ public sealed class SindriApiClientTests
         var server = new FakeSindriApi();
         server.GoDown();
 
-        var ping = await new SindriApiClient(new HttpClient(new FakeSindriHandler(server)), TimeProvider.System).Ping(_api, Token);
+        var ping = await new SindriApiClient(new HttpClient(new FakeSindriHandler(server)), TimeProvider.System, Tokens).Ping(_api, Token);
 
         Assert.Equal("SND-UI-002", ping.Error.Code);
         Assert.DoesNotContain("Connection refused", ping.Error.Message, StringComparison.Ordinal);
@@ -72,7 +74,7 @@ public sealed class SindriApiClientTests
     {
         var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.NotFound, "{}") };
 
-        var events = await new SindriApiClient(new HttpClient(handler), TimeProvider.System).Events(_api, 0, Token).ToListAsync(Token);
+        var events = await new SindriApiClient(new HttpClient(handler), TimeProvider.System, Tokens).Events(_api, 0, Token).ToListAsync(Token);
 
         Assert.Empty(events);
     }
@@ -85,7 +87,7 @@ public sealed class SindriApiClientTests
         var server = new FakeSindriApi();
         server.Push(A.Event(1));
         var handler = new FakeSindriHandler(server);
-        var client = new SindriApiClient(new HttpClient(handler), TimeProvider.System);
+        var client = new SindriApiClient(new HttpClient(handler), TimeProvider.System, Tokens);
 
         _ = await client.Ping(_api, Token);
         _ = await client.Status(_api, Token);
@@ -95,7 +97,7 @@ public sealed class SindriApiClientTests
         }
 
         Assert.Equal(["/sindri/ping", "/sindri/status", "/sindri/events"], handler.Requests.Select(r => r.Path), StringComparer.Ordinal);
-        Assert.All(handler.Requests, r => Assert.Equal(new SeenRequest(r.Path, "human", "ui", Terminal: null, Origin: null), r));
+        Assert.All(handler.Requests, r => Assert.Equal(new SeenRequest(r.Path, "human", "ui", Terminal: null, Origin: null, Token: "tok-1"), r));
     }
 
     // SND-UI-002's 2 s rule runs on the app's clock, like every other timing rule: a call that hangs is unreachable
@@ -105,7 +107,7 @@ public sealed class SindriApiClientTests
     {
         var clock = new FakeTimeProvider(A.Noon);
         using var http = new HttpClient(new SilentHandler());
-        var ping = new SindriApiClient(http, clock).Ping(_api, Token);
+        var ping = new SindriApiClient(http, clock, Tokens).Ping(_api, Token);
 
         clock.Advance(TimeSpan.FromSeconds(2) - TimeSpan.FromTicks(1));
         Assert.False(ping.IsCompleted);
