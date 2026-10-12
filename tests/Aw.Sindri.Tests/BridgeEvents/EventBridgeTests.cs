@@ -170,7 +170,7 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
         var deadline = DateTime.UtcNow + _patience;
         while (DateTime.UtcNow < deadline)
         {
-            var listed = await sindri.GetRequiredService<IWorkflowInstances>().List($"Item = '{item}'", temporal: null, Token);
+            var listed = await sindri.GetRequiredService<IWorkflowInstances>().List($"Item = '{item}'", ended: false, Token);
             if (!listed.IsError && listed.Value.Count == count)
             {
                 return;

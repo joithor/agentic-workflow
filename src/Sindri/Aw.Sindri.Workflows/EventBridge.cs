@@ -146,7 +146,7 @@ internal sealed partial class EventBridge(
             return Array.Empty<InstanceAddress>();
         }
 
-        var live = await instances.List($"Item = '{item.Replace("'", "''", StringComparison.Ordinal)}'", temporal: null, cancellationToken).ConfigureAwait(false);
+        var live = await instances.List($"Item = '{item.Replace("'", "''", StringComparison.Ordinal)}'", ended: false, cancellationToken).ConfigureAwait(false);
         return live.IsError
             ? live.Error
             : live.Value.Select(static row => InstanceAddress.TryFrom(row.Address, out var address) ? address : (InstanceAddress?)null).OfType<InstanceAddress>().ToList();
