@@ -89,6 +89,31 @@ public sealed class LoopRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_cycle_closed_by_a_human_answer_is_capped_like_a_command()
+    {
+        // A clarification loop: a human answers each round, so no loop cap is needed (owner decision, 2026-10-11).
+        var recipe = Of(
+            "work",
+            [("work", Active()), ("ask", WaitForAnswer()), ("done", Terminal())],
+            [Go("work", "done"), Go("work", "ask", "step.failed"), Go("ask", "work", "wait.satisfied")]);
+
+        Assert.Empty(Lines(recipe));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_cycle_through_an_event_wait_still_needs_a_loop()
+    {
+        var recipe = Of(
+            "work",
+            [("work", Active()), ("hold", WaitForEvent("item.routed")), ("done", Terminal())],
+            [Go("work", "done"), Go("work", "hold", "step.failed"), Go("hold", "work", "wait.satisfied")]);
+
+        Assert.Equal(
+            ["RCP-LOOP-001: the cycle through 'work', 'hold' has no loop cap at r.yaml:1:1 (states.work); add loop: <name> to one of its states and declare the loop under loops with a cap"],
+            Lines(recipe));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_looped_state_that_is_not_on_a_cycle_is_refused()
     {
         // The recipe of invalid/RCP-LOOP-002.yaml: nothing leads back into 'produce'.

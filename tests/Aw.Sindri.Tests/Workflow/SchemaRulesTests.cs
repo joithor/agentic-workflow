@@ -7,7 +7,7 @@ namespace Aw.Sindri.Tests.Workflow;
 /// <summary>The schema rules (spec §3.2–§3.4, §9.1 "Schema", "Hash"): each rule's invalid fixture gives its exact line.</summary>
 public sealed class SchemaRulesTests
 {
-    private static readonly HashSet<string> _schemaRuleIds = new(["RCP-STATE-001", "RCP-INIT-001", "RCP-DUR-001", "RCP-HASH-001"], StringComparer.Ordinal);
+    private static readonly HashSet<string> _schemaRuleIds = new(["RCP-STATE-001", "RCP-INIT-001", "RCP-DUR-001", "RCP-HASH-001", "RCP-NAME-001"], StringComparer.Ordinal);
 
     public static TheoryData<string, string> Fixtures => new()
     {
@@ -34,6 +34,10 @@ public sealed class SchemaRulesTests
         {
             "RCP-DUR-001",
             "RCP-DUR-001: '90s' isn't a duration ('10m', '4h', '2d', at least 1m) at RCP-DUR-001.yaml:9:16 (states.produce.timeout.after); write a whole number and m, h or d, at least 1m ('10m', '4h', '2d')"
+        },
+        {
+            "RCP-NAME-001",
+            "RCP-NAME-001: state name 'produce_it' doesn't match [a-z][a-z0-9-]{0,63} at RCP-NAME-001.yaml:6:3 (states.produce_it); rename it: a lower-case letter, then up to 63 lower-case letters, digits or '-'"
         },
         {
             "RCP-HASH-001",
@@ -109,6 +113,40 @@ public sealed class SchemaRulesTests
                 "RCP-SCHEMA-002: transition to 'nowhere' names a state the recipe doesn't declare at test.yaml:16:31 (transitions[1].to); name one of the recipe's states: produce, done",
             ],
             lines);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_bad_state_loop_and_parameter_name_is_RCP_NAME_001_once_at_its_place()
+    {
+        var yaml = RecipeReaderTests.Minimal
+            .Replace("initial: produce", "initial: Produce", StringComparison.Ordinal)
+            .Replace("  produce:\n", "  Produce:\n", StringComparison.Ordinal)
+            .Replace("step: step.produce", "step: { use: step.produce, with: { maxRounds: 3 } }", StringComparison.Ordinal)
+            .Replace("from: produce", "from: Produce", StringComparison.Ordinal)
+            + "  - { from: Produce, to: done, on: step.failed }\nloops: { Rounds_1: { cap: 2 }, rounds: { cap: 2 } }\n";
+
+        var lines = Validate(yaml, "test.yaml").Where(l => l.StartsWith("RCP-NAME-001", StringComparison.Ordinal));
+
+        Assert.Equal(
+            [
+                "RCP-NAME-001: state name 'Produce' doesn't match [a-z][a-z0-9-]{0,63} at test.yaml:6:3 (states.Produce); rename it: a lower-case letter, then up to 63 lower-case letters, digits or '-'",
+                "RCP-NAME-001: loop name 'Rounds_1' doesn't match [a-z][a-z0-9-]{0,63} at test.yaml:17:10 (loops.Rounds_1); rename it: a lower-case letter, then up to 63 lower-case letters, digits or '-'",
+                "RCP-NAME-001: parameter name 'maxRounds' doesn't match [a-z][a-z0-9-]{0,63} at test.yaml:8:40 (states.Produce.step.with.maxRounds); rename it: a lower-case letter, then up to 63 lower-case letters, digits or '-'",
+            ],
+            lines,
+            StringComparer.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("a")]
+    [InlineData("fix-single")]
+    [InlineData("taken-over")]
+    [InlineData("r2")]
+    public void A_lower_case_name_is_no_RCP_NAME_001(string name)
+    {
+        var yaml = RecipeReaderTests.Minimal.Replace("  done:\n", "  " + name + ":\n    kind: terminal\n    outcome: unresolved\n  done:\n", StringComparison.Ordinal);
+
+        Assert.DoesNotContain(Validate(yaml, "test.yaml"), l => l.StartsWith("RCP-NAME-001", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]

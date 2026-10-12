@@ -140,6 +140,10 @@ internal static class InvalidFixtureCases
             FixtureSetup.Shipped,
             "RCP-SCHEMA-003: anchor '&standard' isn't allowed at RCP-SCHEMA-003.yaml:9:14 (states.produce.timeout); write the value out in full; recipes don't use anchors or aliases",
             []),
+        ["RCP-NAME-001"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-001: state name 'produce_it' doesn't match [a-z][a-z0-9-]{0,63} at RCP-NAME-001.yaml:6:3 (states.produce_it); rename it: a lower-case letter, then up to 63 lower-case letters, digits or '-'",
+            []),
         ["RCP-STATE-001"] = new(
             FixtureSetup.Shipped,
             "RCP-STATE-001: state name 'parked' is reserved for the engine at RCP-STATE-001.yaml:11:3 (states.parked); rename it; cancelled, escalated, parked and taken-over are engine-owned states",

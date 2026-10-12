@@ -13,7 +13,7 @@ public sealed class InvalidFixturesTests
     /// <summary>Spec §9.1's rules. RCP-CAP-003 and RCP-VERSION-* need the registry and come with it in P2.</summary>
     private static readonly string[] _section91 =
     [
-        "RCP-SCHEMA-001", "RCP-SCHEMA-002", "RCP-SCHEMA-003", "RCP-STATE-001", "RCP-INIT-001", "RCP-DUR-001",
+        "RCP-SCHEMA-001", "RCP-SCHEMA-002", "RCP-SCHEMA-003", "RCP-STATE-001", "RCP-INIT-001", "RCP-DUR-001", "RCP-NAME-001",
         "RCP-BLOCK-001", "RCP-BLOCK-002", "RCP-BLOCK-003", "RCP-EVID-001", "RCP-EVENT-001",
         "RCP-WIRE-001", "RCP-WIRE-002", "RCP-WHEN-001", "RCP-OUTCOME-001", "RCP-CHILD-001",
         "RCP-CAP-001", "RCP-CAP-002", "RCP-CAP-003", "RCP-CAP-004", "RCP-CAP-005", "RCP-CAP-006", "RCP-CAP-007",
