@@ -381,7 +381,7 @@ blocks.
 | `SND-SCHED-001` | A background service run failed |
 | `SND-SECRET-001` | A secret pointer is malformed: no scheme, an unknown scheme, or a bad target. Expected `env:NAME`, `file:/absolute/path`, `keychain:<service>/<account>` or `op:<vault>/<item>/<field>`; the message names only the scheme, never the text after it (it may be a secret pasted by mistake) |
 | `SND-SECRET-002` | A secret pointer doesn't resolve: the variable is unset or empty, the file is missing or empty, the keychain or 1Password entry is missing, or `security`/`op` isn't on PATH or ran past its timeout (5 s, 30 s). The message names the pointer and the fix, never a value |
-| `SND-SECRET-003` | A `file:` pointer is unsafe: the file has group or other permission bits (it must be 0600 or stricter) or isn't a regular file |
+| `SND-SECRET-003` | A `file:` pointer is unsafe: the file has group or other permission bits (it must be 0600 or stricter) or isn't a regular file (a symbolic link, even to a 0600 file, or a directory; only the last path segment is checked) |
 
 ### Workflow errors (`WorkflowErrors`)
 

@@ -43,9 +43,11 @@ internal sealed class PointerSecrets(Func<string, string?> environment, IToolRun
     private static Result<string> FromFile(SecretPointer secretPointer)
     {
         var path = secretPointer.Target;
-        if (Directory.Exists(path))
+        if (new FileInfo(path).LinkTarget is not null || Directory.Exists(path))
         {
-            return SindriErrors.SecretFileUnsafe.With($"The {secretPointer} secret is unsafe: {path} is not a regular file. Point it at a file holding only the secret, mode 0600.");
+            // A link (even to a 0600 file) is refused, not followed: its target's mode isn't what the pointer names, and
+            // the target can change under it. Only the last path segment is checked (macOS's /tmp and /var are links).
+            return SindriErrors.SecretFileUnsafe.With($"The {secretPointer} secret is unsafe: {path} is not a regular file (a link or a directory). Point it at a file holding only the secret, mode 0600.");
         }
 
         if (!File.Exists(path))

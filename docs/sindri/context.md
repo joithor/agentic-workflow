@@ -141,7 +141,7 @@ context:
 | Pointer | Resolves to |
 |---|---|
 | `env:NAME` | the environment variable `NAME` of the `sindri` process (fixtures and tests) |
-| `file:/absolute/path` | the file's contents without a trailing newline; the file must be a regular file with mode `0600` or stricter |
+| `file:/absolute/path` | the file's contents without a trailing newline; the file must be a regular file (not a symbolic link) with mode `0600` or stricter |
 | `keychain:service/account` | `security find-generic-password -s service -a account -w` (store it with `security add-generic-password -s onyx -a sindri-read -w`) |
 | `op:vault/item/field` | `op read op://vault/item/field` (1Password CLI) |
 
