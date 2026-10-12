@@ -200,6 +200,39 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Contains("JetBrains Mono", title.FontFamily.ToString(), StringComparison.Ordinal);
     });
 
+    private static Avalonia.Media.Color Ink(TextBlock t) => ((Avalonia.Media.ISolidColorBrush)t.Foreground!).Color;
+
+    private static Avalonia.Media.Color Colour(string key) =>
+        Application.Current!.TryGetResource(key, theme: null, out var v) && v is Avalonia.Media.Color c ? c : default;
+
+    // I1 (home.html .seg): one group; unselected labels muted, the selected one in PrimaryHover with the Primary dot;
+    // Later ▾ a flat segment of the same group; the whole group disabled while not running.
+    [Fact]
+    public Task The_navigation_is_one_segmented_group_with_the_selected_dot() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, _) = await Show(s => s.State == ShellState.Normal);
+        var labels = window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Classes.Contains("nav-label") && t.Text is { Length: > 1 }).ToList();
+
+        Assert.Equal(Colour("Color.PrimaryHover"), Ink(labels.Single(t => t.Text == Labels.Home)));
+        Assert.All(labels.Where(t => t.Text != Labels.Home), t => Assert.Equal(Colour("Color.InkSubtle"), Ink(t)));
+        _ = Assert.Single(window.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Ellipse>(), e => e.Classes.Contains("nav-dot") && e.IsEffectivelyVisible);
+        var group = Named<StackPanel>(window, "NavigationGroup");
+        Assert.True(group.IsVisualAncestorOf(Named<Button>(window, "LaterButton")));
+        Assert.True(group.IsVisualAncestorOf(Named<ListBox>(window, "Navigation")));
+        Frame(window, "nav");
+    });
+
+    [Fact]
+    public Task Not_running_dims_and_disables_the_navigation() => OnUi(async () =>
+    {
+        var (window, _) = await Show(s => s.State == ShellState.NotRunning);
+
+        Assert.False(Named<StackPanel>(window, "NavigationGroup").IsEffectivelyEnabled);
+        Assert.All(window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Classes.Contains("nav-label")),
+            t => Assert.Equal(Colour("Color.InkTertiary"), Ink(t)));
+    });
+
     [Fact]
     public Task Connecting_shows_the_chrome_and_skeleton_rows() => OnUi(async () =>
     {

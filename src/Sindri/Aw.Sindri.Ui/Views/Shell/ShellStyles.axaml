@@ -15,24 +15,83 @@
     <Setter Property="Foreground" Value="{DynamicResource Brush.Primary}" />
   </Style>
 
-  <!-- The segmented navigation: the selected segment on PrimarySoft with its label in PrimaryHover. -->
+  <!-- The segmented navigation (home.html .seg): one group on Surface1 with a hairline, segments 26 px high. Unselected
+       labels are InkSubtle at 13/500; the selected segment sits on PrimarySoft with a 6 px Primary dot and its label in
+       PrimaryHover. Later ▾ is a flat segment. While disabled (not running) the labels drop to InkTertiary. -->
+  <Style Selector="Border.seg">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+    <Setter Property="Padding" Value="2" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
   <Style Selector="ListBox.nav">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Padding" Value="0" />
   </Style>
   <Style Selector="ListBox.nav > ListBoxItem">
-    <Setter Property="Padding" Value="10,4" />
-    <Setter Property="Margin" Value="2,0" />
-    <Setter Property="MinHeight" Value="{StaticResource Size.Control}" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="Margin" Value="0" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Height" Value="26" />
     <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ListBox.nav > ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
   </Style>
   <Style Selector="ListBox.nav > ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource Brush.PrimarySoft}" />
   </Style>
-  <Style Selector="ListBox.nav > ListBoxItem:selected TextBlock.body-strong">
+  <Style Selector="TextBlock.nav-label">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+  </Style>
+  <Style Selector="ListBox.nav > ListBoxItem:pointerover TextBlock.nav-label, Button.later:pointerover TextBlock.nav-label">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
+  </Style>
+  <Style Selector="ListBox.nav > ListBoxItem:selected TextBlock.nav-label">
     <Setter Property="Foreground" Value="{DynamicResource Brush.PrimaryHover}" />
+  </Style>
+  <Style Selector="Ellipse.nav-dot">
+    <Setter Property="Width" Value="6" />
+    <Setter Property="Height" Value="6" />
+    <Setter Property="Fill" Value="{DynamicResource Brush.Primary}" />
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="ListBox.nav > ListBoxItem:selected Ellipse.nav-dot">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="StackPanel:disabled TextBlock.nav-label">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
+  <Style Selector="StackPanel:disabled Ellipse.nav-dot">
+    <Setter Property="Fill" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
+  <Style Selector="StackPanel:disabled ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
+  <Style Selector="Button.later">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.later:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
+  <Style Selector="Button.later:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Path.magnifier">
+    <Setter Property="Stroke" Value="{DynamicResource Brush.InkSubtle}" />
+    <Setter Property="StrokeThickness" Value="1.4" />
+    <Setter Property="Width" Value="13" />
+    <Setter Property="Height" Value="13" />
   </Style>
 
   <!-- The ⌘K field: a placeholder until the palette (U1). It fills its top-bar column (300 px with room, down to 160 px;
