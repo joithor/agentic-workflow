@@ -1,4 +1,6 @@
 #nullable enable
+Aw.Sindri.Ui.Platform.IClipboard
+Aw.Sindri.Ui.Platform.IClipboard.SetText(string! text, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
 Aw.Sindri.Ui.Platform.IEndpointRecordSource
 Aw.Sindri.Ui.Platform.IEndpointRecordSource.Location.get -> string!
 Aw.Sindri.Ui.Platform.IEndpointRecordSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<byte[]?>

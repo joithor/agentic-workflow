@@ -72,8 +72,10 @@ internal sealed partial class FakeSindriApi
             return AwJson.Deserialize<T>(System.Text.Encoding.UTF8.GetBytes(answer.Body), SindriApiClient.Json);
         }
 
-        var problem = AwJson.Deserialize<ProblemView>(System.Text.Encoding.UTF8.GetBytes(answer.Body), SindriApiClient.Json).Value;
-        return new Error(problem.Title, KindOf(answer.Status), problem.Detail);
+        var problem = AwJson.Deserialize<ProblemView>(System.Text.Encoding.UTF8.GetBytes(answer.Body), SindriApiClient.Json);
+        return problem.IsSuccess
+            ? new Error(problem.Value.Title, KindOf(answer.Status), problem.Value.Detail)
+            : SindriUiErrors.BadAnswer.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{api.AbsolutePath} answered {(int)answer.Status}"));
     }
 
     private static ErrorKind KindOf(HttpStatusCode status) => (int)status switch

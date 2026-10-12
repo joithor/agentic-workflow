@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -14,7 +15,8 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// <param name="records">Where the control plane recorded its endpoint.</param>
 /// <param name="api">Its API.</param>
 /// <param name="clock">The clock for retry waits and freshness.</param>
-internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock) : ObservableObject
+/// <param name="clipboard">Where the catalog's controls copy a CLI; none by default.</param>
+internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, IClipboard? clipboard = null) : ObservableObject
 {
     /// <summary>How long to wait before looking for the control plane again.</summary>
     internal static readonly TimeSpan RetryEvery = TimeSpan.FromSeconds(2);
@@ -38,6 +40,8 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     private int _failedRefreshes;
     private int _refreshes;
     private SynchronizationContext? _ui;
+    private HealthView? _health;
+    private DateTimeOffset? _projectedAt;
 
     /// <summary>The app's copy, for the view.</summary>
     public ShellText Text { get; } = ShellText.Instance;
@@ -47,6 +51,12 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
 
     /// <summary>The health pill's parts.</summary>
     public HealthPill Pill { get; } = new();
+
+    /// <summary>The command catalog as controls (read on connect and after a reconnect).</summary>
+    public CatalogViewModel Catalog { get; } = new(clipboard ?? NoClipboard.Instance, clock);
+
+    /// <summary>The stalled and rebuilding banners (§4.1), from the services view's asOf.</summary>
+    public ViewsBanner Banner { get; } = new();
 
     /// <summary>The status as labelled values: Home's strip and the Health page's rows.</summary>
     public HealthDetail Detail { get; } = new();
@@ -127,6 +137,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
         }
 
         _url = url;
+        (_health, _projectedAt) = (status.Health, status.Views?.ProjectedAt);
         Detail.Show(url, status);
         Api = url.Authority;
         Lease = StatusText.Lease(status);
@@ -149,6 +160,15 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
             Heard();
         }
     }
+
+    /// <summary>The catalog as the API at <paramref name="url"/> served it; the stalled banner's Rebuild views follows it.</summary>
+    /// <param name="url">Where the API answered.</param>
+    /// <param name="catalog">The catalog.</param>
+    internal void ShowCatalog(Uri url, CommandList catalog) => Catalog.Show(url, api, catalog);
+
+    /// <summary>The services view (API P2) for the banners; null when it isn't served or failed, which hides them.</summary>
+    /// <param name="view">The view, or null.</param>
+    internal void ShowViews(ServiceList? view) => Banner.Show(view, Catalog.For("RebuildViews"));
 
     /// <summary>
     /// A failed call: SND-UI-003 is an answer this build can't read (Unreadable, the last data kept); anything else is
@@ -242,7 +262,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     // The pill for the state now (under the gate): its age counts from the last event, status or answered ping.
     private void Word()
     {
-        Pill.Show(State, clock.GetUtcNow() - _heard, _failedRefreshes >= NotRespondingAfter);
+        Pill.Show(State, clock.GetUtcNow() - (_projectedAt ?? _heard), _failedRefreshes >= NotRespondingAfter, _health);
         StripName = Pill.IsDataStale ? HealthLine + " · " + Labels.Stale : HealthLine;
     }
 

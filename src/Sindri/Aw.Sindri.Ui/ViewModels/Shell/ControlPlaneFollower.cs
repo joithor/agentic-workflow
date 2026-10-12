@@ -6,8 +6,9 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>
 /// S1b's loop behind <see cref="HealthViewModel"/>: it finds the control plane through its endpoint record, checks the
-/// record against /sindri/ping (a stale record reads as not running), reads /sindri/status, and refreshes the status after
-/// each event on /sindri/events. While it follows, it pings every 10 s: a quiet control plane (nothing scheduled) sends
+/// record against /sindri/ping (a stale record reads as not running), reads the catalog (/sindri/commands) and
+/// /sindri/status, and after each event on /sindri/events re-reads every view it shows (the status and, for the
+/// stalled and rebuilding banners, /sindri/services): it never applies an event's payload (UI spec §9.2). While it follows, it pings every 10 s: a quiet control plane (nothing scheduled) sends
 /// no events, and an answer from the process it connected to keeps the views fresh (UI spec §4.1: stale is "no event or
 /// ping for 30 s"; the stream sends no keep-alive). When the stream ends, a refresh fails or the record changes, it looks
 /// again every 2 s.
@@ -110,6 +111,11 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
 
         _record = bytes;
         Track(ping.Value);
+        if (await api.Commands(record.Url, cancellationToken).ConfigureAwait(true) is { IsSuccess: true } catalog)
+        {
+            health.ShowCatalog(record.Url, catalog.Value);   // §9.1: on connect and after every reconnect
+        }
+
         return await Refresh(record.Url, cancellationToken).ConfigureAwait(true) ? record.Url : null;
     }
 
@@ -237,6 +243,8 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         }
 
         health.Show(url, status.Value);
+        var views = await api.Services(url, cancellationToken).ConfigureAwait(true);
+        health.ShowViews(views.IsSuccess ? views.Value : null);   // before P2 there's no such route: no banner
         return true;
     }
 }

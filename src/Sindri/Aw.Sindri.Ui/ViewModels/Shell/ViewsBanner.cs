@@ -1,0 +1,43 @@
+using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.ViewModels.Controls;
+
+namespace Aw.Sindri.Ui.ViewModels.Shell;
+
+/// <summary>
+/// The stalled and rebuilding banners (UI spec §4.1): shown while the views' asOf says so, with the view's own
+/// EmptyText sentence as the API serves it. Stalled carries Rebuild views (the catalog's RebuildViews row); rebuilding
+/// is a progress banner. U1 reads them from GET /sindri/services, the list view API P2 serves.
+/// </summary>
+internal sealed class ViewsBanner : ObservableObject
+{
+    /// <summary>True while the views are stalled.</summary>
+    public bool IsStalled { get; private set => Set(ref field, value); }
+
+    /// <summary>True while the views rebuild.</summary>
+    public bool IsRebuilding { get; private set => Set(ref field, value); }
+
+    /// <summary>True when either banner shows.</summary>
+    public bool IsShown { get; private set => Set(ref field, value); }
+
+    /// <summary>The view's sentence for its state, as served.</summary>
+    public string Text { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>The Rebuild views control (stalled only), or null when the catalog has no such row.</summary>
+    public ControlViewModel? Rebuild { get; private set => Set(ref field, value); }
+
+    /// <summary>True when the stalled banner carries its Rebuild views control.</summary>
+    public bool HasRebuild { get; private set => Set(ref field, value); }
+
+    /// <summary>Shows what the view says; null (no such route before P2, or it failed) hides both banners.</summary>
+    /// <param name="view">The services view, or null.</param>
+    /// <param name="rebuild">The catalog's RebuildViews control, or null.</param>
+    internal void Show(ServiceList? view, ControlViewModel? rebuild)
+    {
+        IsStalled = view?.AsOf.Stalled == true;
+        IsRebuilding = !IsStalled && view?.AsOf.Rebuilding == true;
+        IsShown = IsStalled || IsRebuilding;
+        Text = IsShown ? view!.Empty : string.Empty; // why: IsShown implies a view
+        Rebuild = IsStalled ? rebuild : null;
+        HasRebuild = Rebuild is not null;
+    }
+}
