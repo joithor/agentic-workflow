@@ -12,7 +12,6 @@
   </Style>
   <!-- The brand mark (§3.2 "◆ Sindri"): the glyph in the accent; decorative, the name beside it is read. -->
   <Style Selector="TextBlock.brand">
-    <Setter Property="FontSize" Value="16" />
     <Setter Property="Foreground" Value="{DynamicResource Brush.Primary}" />
   </Style>
 

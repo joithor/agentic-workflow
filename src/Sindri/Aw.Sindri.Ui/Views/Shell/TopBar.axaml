@@ -18,7 +18,7 @@
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
       <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,20,0">
-        <TextBlock Classes="brand" Text="◆" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+        <TextBlock Classes="detail-title brand" Text="◆" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
         <TextBlock Classes="body-strong" Text="{Binding Text.Sindri}" VerticalAlignment="Center"
                    AutomationProperties.Name="{Binding Text.Sindri}" />
       </StackPanel>

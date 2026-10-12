@@ -18,16 +18,16 @@
       <Border Classes="card">
         <StackPanel>
           <TextBlock Classes="eyebrow" Text="{Binding Text.LeaseCard}" AutomationProperties.Name="{Binding Text.LeaseCard}" />
-          <TextBlock x:Name="LeaseText" Classes="title" Text="{Binding Lease}" AutomationProperties.Name="{Binding Lease}" />
-          <TextBlock x:Name="ApiText" Classes="subtle" Text="{Binding Api}" AutomationProperties.Name="{Binding Api}" Margin="0,6,0,0" />
+          <TextBlock x:Name="LeaseText" Classes="detail-title" Text="{Binding Lease}" AutomationProperties.Name="{Binding Lease}" />
+          <TextBlock x:Name="ApiText" Classes="caption subtle" Text="{Binding Api}" AutomationProperties.Name="{Binding Api}" Margin="0,6,0,0" />
         </StackPanel>
       </Border>
       <Border Grid.Column="2" Classes="card">
         <StackPanel>
           <TextBlock Classes="eyebrow" Text="{Binding Text.ProfileCard}" AutomationProperties.Name="{Binding Text.ProfileCard}" />
-          <TextBlock x:Name="ProfileStateText" Classes="title" Text="{Binding ProfileState}"
+          <TextBlock x:Name="ProfileStateText" Classes="detail-title" Text="{Binding ProfileState}"
                      AutomationProperties.Name="{Binding ProfileState}" />
-          <TextBlock x:Name="ProfileDetailText" Classes="subtle" Text="{Binding ProfileDetail}" TextWrapping="Wrap"
+          <TextBlock x:Name="ProfileDetailText" Classes="caption subtle" Text="{Binding ProfileDetail}" TextWrapping="Wrap"
                      AutomationProperties.Name="{Binding ProfileDetail}" Margin="0,6,0,0" />
           <Border Classes="command" Margin="0,10,0,0" IsVisible="{Binding HasProfileFix}">
             <TextBlock x:Name="ProfileFixText" Classes="mono" Text="{Binding ProfileFix}"
@@ -51,7 +51,7 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <TextBlock Classes="subtle" Text="{Binding Text.NoServices}" IsVisible="{Binding !HasServices}"
+        <TextBlock Classes="caption subtle" Text="{Binding Text.NoServices}" IsVisible="{Binding !HasServices}"
                    AutomationProperties.Name="{Binding Text.NoServices}" />
       </StackPanel>
     </Border>

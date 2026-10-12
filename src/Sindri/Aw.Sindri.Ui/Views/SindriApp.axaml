@@ -24,10 +24,11 @@
     <Style Selector="Window">
       <Setter Property="Background" Value="{DynamicResource Brush.Canvas}" />
       <Setter Property="FontFamily" Value="{DynamicResource Font.Text}" />
+      <!-- Text with no ramp class inherits Body, so it follows the text scale too (§14.2). -->
+      <Setter Property="FontSize" Value="{DynamicResource Type.Body.Size}" />
     </Style>
     <Style Selector="TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Ink}" />
-      <Setter Property="FontSize" Value="14" />
     </Style>
 
     <!-- S1b's status card (the window until U0's shell replaces it; its content becomes the Health page). -->
@@ -38,20 +39,11 @@
       <Setter Property="CornerRadius" Value="{StaticResource Radius.LG}" />
       <Setter Property="Padding" Value="20,16" />
     </Style>
-    <Style Selector="TextBlock.eyebrow">
-      <Setter Property="Margin" Value="0,0,0,8" />
-    </Style>
-    <Style Selector="TextBlock.title">
-      <Setter Property="FontSize" Value="22" />
-      <Setter Property="FontWeight" Value="Medium" />
-      <Setter Property="LetterSpacing" Value="-0.4" />
-    </Style>
     <Style Selector="TextBlock.muted">
       <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
     </Style>
     <Style Selector="TextBlock.subtle">
       <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
-      <Setter Property="FontSize" Value="13" />
     </Style>
     <Style Selector="Border.command">
       <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />

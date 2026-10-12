@@ -71,12 +71,12 @@
                     VerticalAlignment="Top">
               <StackPanel Spacing="12">
                 <TextBlock Classes="eyebrow" Text="{Binding Text.ControlPlaneCard}" AutomationProperties.Name="{Binding Text.ControlPlaneCard}" />
-                <TextBlock x:Name="NotRunningText" Classes="title" Text="{Binding Text.NotRunning}"
+                <TextBlock x:Name="NotRunningText" Classes="page-title" Text="{Binding Text.NotRunning}"
                            AutomationProperties.Name="{Binding Text.NotRunning}" />
-                <TextBlock x:Name="ReasonText" Classes="muted" Text="{Binding Reason}" TextWrapping="Wrap"
+                <TextBlock x:Name="ReasonText" Classes="body muted" Text="{Binding Reason}" TextWrapping="Wrap"
                            AutomationProperties.Name="{Binding Reason}" />
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                  <TextBlock Classes="subtle" Text="{Binding Text.StartIt}" AutomationProperties.Name="{Binding Text.StartIt}" VerticalAlignment="Center" />
+                  <TextBlock Classes="body subtle" Text="{Binding Text.StartIt}" AutomationProperties.Name="{Binding Text.StartIt}" VerticalAlignment="Center" />
                   <Border Classes="command">
                     <TextBlock x:Name="FixText" Classes="mono" Text="{Binding Text.StartFix}"
                                AutomationProperties.Name="{Binding Text.StartFix}" />
