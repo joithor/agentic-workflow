@@ -4,7 +4,9 @@ Status:
 - **Revision 7 amendment (owner, 2026-10-12; PR #184):** §12.4 lists two more app-owned sentences, "On in your system
   settings" (Settings, while the OS reduces motion) and "Looks again every 2 s" (the Not running card); §15's deps cycle
   row is decided (a `DEPS-CYCLE-001` exception). Lane decisions relayed by the orchestrator (2026-10-12): §7 and §18.1
-say engine P2 registers every engine catalog row and WF P4/P5 flip them to ready, and the engine's queries stay off the
+say engine P2 registers every engine catalog row, the desk and pause rows pending until WF P4/P5 flip them to ready and the
+protected rows (`answer-grant`, `answer-grant-tokens`, `answer-accept`, `ApproveRecipe`) `cli-only:typed-confirmation`
+from the start, never app buttons, and the engine's queries stay off the
 catalog; §4.4, §7 and E-12 name `answer-grant-tokens` beside `answer-grant` (API §2.1, X30); §4.1's Unreadable row also
 covers a Sindri refusal after one token re-read and retry. Nothing else changes.
 - **Revision 7 note (owner, 2026-10-11; README X55):** tmux owns every agent session and Warp attaches to it, so
@@ -584,8 +586,9 @@ renders a button once that phase ships; until then the catalog says `pending:<ph
 | Copy CLI, Refresh, navigation, palette | everywhere | — (local) | — | ready |
 
 `answer-resume`, `answer-reject` and `answer-text` are defined by E-12; until then the fail-closed rule would make them
-`protected`. Engine P2 registers every engine catalog row (as `pending:WF-P4` or `pending:WF-P5`), and WF P4 and P5 flip
-them to ready. The engine's queries (`ShowRecipe`, `ListRecipes`, `GetInstance` and the rest) have no catalog rows: the
+`protected`. Engine P2 registers every engine catalog row: the desk and pause rows as `pending:WF-P4` or `pending:WF-P5`, which WF
+P4 and P5 flip to ready, and the protected rows (`answer-grant`, `answer-grant-tokens`, `answer-accept`,
+`ApproveRecipe`) as `cli-only:typed-confirmation` from the start; they never become app buttons. The engine's queries (`ShowRecipe`, `ListRecipes`, `GetInstance` and the rest) have no catalog rows: the
 app reads them as plain GETs, with no catalog gating.
 
 Before the engine (S2) the app shows no engine controls: parks don't exist, and launching takes nothing over.
@@ -1098,7 +1101,7 @@ approved.
 | E-1…E-5, E-11 | API P10a | U6a |
 | E-6 (WF trigger), E-19 (`StartInstance` starts taken over), P10b | WF P5 edit, API P10b | U6b |
 | X23 (the nonce POST's class) | WF P4 | U5 |
-| E-9, E-13, and E-12's engine rows | WF P2 registers every engine catalog row (pending); WF P4 and P5 flip them to ready | U5 |
+| E-9, E-13, and E-12's engine rows | WF P2 registers every engine catalog row: desk and pause rows pending, which WF P4 and P5 flip to ready; the protected rows `cli-only:typed-confirmation` from the start | U5 |
 | E-10 | the API spec's phase table | — |
 
 **E-17.** Each API phase's integration tests write response bodies as golden JSON under
