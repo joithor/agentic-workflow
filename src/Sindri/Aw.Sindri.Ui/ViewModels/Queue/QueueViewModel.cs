@@ -8,7 +8,7 @@ namespace Aw.Sindri.Ui.ViewModels.Queue;
 /// Groups, their order, the rows' order, the empty sentences and the actions are the API's (§2 "no logic"); the app maps
 /// them to words and visibility, caps Home's panels at five rows, and keeps the selected row by id across refreshes (§3.3).
 /// </summary>
-internal sealed class QueueViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock) : ObservableObject
+internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock) : ObservableObject
 {
     // Home's panels show at most this many rows, then "Show all N in Queue" (§3.2 caps).
     internal const int PanelCap = 5;

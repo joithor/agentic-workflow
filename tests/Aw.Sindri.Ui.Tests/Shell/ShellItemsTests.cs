@@ -106,4 +106,44 @@ public sealed class ShellItemsTests
         Assert.True(shell.Create.IsOpen);
         Assert.False(shell.Press("X"));
     }
+
+    // §8 Y: copies the selected row's CLI ("Copied" through the control's lifecycle); / opens the Queue's filter.
+    [Fact]
+    public async Task Y_copies_the_selected_rows_cli_and_slash_opens_the_filter()
+    {
+        var clipboard = new FakeClipboard();
+        _records.Write(A.Record());
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), clipboard);
+        await shell.Restore(Token);
+        _ = shell.Run(Token);
+        await Until(() => shell.State == ShellState.Normal && !shell.Queue.IsLoading);
+
+        _ = shell.Press("J");
+        Assert.True(shell.Press("Y"));
+        await Until(() => clipboard.Text is not null);
+        Assert.Equal("sindri decide <decisionId> <choice> [--note <note>]", clipboard.Text);
+
+        Assert.False(shell.Press("/"));
+        shell.GoTo(PageId.Queue);
+        Assert.True(shell.Press("/"));
+        Assert.True(shell.Queue.IsFiltering);
+    }
+
+    // §8 key guard: while it holds, single keys do nothing.
+    [Fact]
+    public async Task Single_keys_are_ignored_while_the_key_guard_holds()
+    {
+        var shell = await Connected();
+        shell.Queue.Select(A.NewItem);
+        _server.QueueView = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("queue", "fixture").Replace(A.NewItem, "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff", StringComparison.Ordinal));
+        _server.Push(A.Event(58, "item.state-changed"));
+        await Until(() => shell.Queue.IsGuarded);
+
+        Assert.True(shell.Press("C"));
+        Assert.False(shell.Create.IsOpen);
+
+        _clock.Advance(QueueViewModel.KeyGuard);
+        Assert.True(shell.Press("C"));
+        Assert.True(shell.Create.IsOpen);
+    }
 }
