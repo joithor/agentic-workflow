@@ -2,14 +2,20 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.ApproveProfile;
+using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.Blocks;
 using Aw.Sindri.Features.Commands;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.ListCommands;
+using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.RecordHeartbeat;
+using Aw.Sindri.Features.RegisterRecipe;
+using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
+using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
@@ -45,12 +51,20 @@ public static class SindriFeaturesServiceCollectionExtensions
         // ---- commands (one line per slice) ----
         _ = services.AddScoped<IValidator<ApproveProfileRequest>, AcceptAllValidator<ApproveProfileRequest>>().AddCommand<ApproveProfileRequest, ApproveProfileResponse, ApproveProfileService>();
         _ = services.AddScoped<IValidator<StopProcessRequest>, AcceptAllValidator<StopProcessRequest>>().AddCommand<StopProcessRequest, StopProcessResponse, StopProcessService>();
+        _ = services.AddScoped<IValidator<RegisterRecipeRequest>, AcceptAllValidator<RegisterRecipeRequest>>().AddCommand<RegisterRecipeRequest, RegisterRecipeResponse, RegisterRecipeService>();
+        _ = services.AddScoped<IValidator<ApproveRecipeRequest>, AcceptAllValidator<ApproveRecipeRequest>>().AddCommand<ApproveRecipeRequest, ApproveRecipeResponse, ApproveRecipeService>();
+        _ = services.AddScoped<IValidator<RevokeRecipeRequest>, AcceptAllValidator<RevokeRecipeRequest>>().AddCommand<RevokeRecipeRequest, RevokeRecipeResponse, RevokeRecipeService>();
+
+        // ---- issues (one line per slice) ----
+        _ = services.AddScoped<IValidator<IssueChallengeRequest>, AcceptAllValidator<IssueChallengeRequest>>().AddIssue<IssueChallengeRequest, IssueChallengeResponse, IssueChallengeService>();
 
         // ---- queries (one line per slice) ----
         _ = services.AddScoped<IValidator<GetStatusRequest>, AcceptAllValidator<GetStatusRequest>>().AddQuery<GetStatusRequest, GetStatusResponse, GetStatusService>();
         _ = services.AddScoped<IValidator<ListCommandsRequest>, AcceptAllValidator<ListCommandsRequest>>().AddQuery<ListCommandsRequest, ListCommandsResponse, ListCommandsService>();
         _ = services.AddScoped<IValidator<PingProcessRequest>, AcceptAllValidator<PingProcessRequest>>().AddQuery<PingProcessRequest, Ping, PingProcessService>();
         _ = services.AddScoped<IValidator<StreamEventsRequest>, AcceptAllValidator<StreamEventsRequest>>().AddQuery<StreamEventsRequest, StreamEventsResponse, StreamEventsService>();
+        _ = services.AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>();
+        _ = services.AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, ShowRecipeResponse, ShowRecipeService>();
         return services;
     }
 }

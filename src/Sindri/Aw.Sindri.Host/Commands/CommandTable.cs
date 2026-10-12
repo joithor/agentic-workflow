@@ -5,6 +5,8 @@ using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Profile;
 
+using Aw.Sindri.Host.Commands.Probe;
+
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
@@ -70,6 +72,7 @@ internal static class CommandTable
             ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
             ["profile", "approve", .. var rest] when Approval(rest) is { } a => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!a.NoStart, c))
                 .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
+            ["doctor", "--probe", ..] => await output.Error(SindriErrors.UnknownVerb.With(HarnessProbe.Pending)).ConfigureAwait(false),
             ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
             ["help" or "--help" or "-h"] => await output.Text(Usage.Text + "\n", 0).ConfigureAwait(false),

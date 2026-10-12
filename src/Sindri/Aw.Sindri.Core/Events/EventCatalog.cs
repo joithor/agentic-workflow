@@ -1,3 +1,5 @@
+using Aw.Sindri.Core.Workflow.Registry;
+
 namespace Aw.Sindri.Core.Events;
 
 /// <summary>Every event type Sindri records (API spec §3.4): the phase that adds an event registers it here.</summary>
@@ -12,5 +14,8 @@ public static class EventCatalog
         new(EventTypes.ProfileApproved, Public: true, typeof(ProfileApproved), "profile.approved:<hash>:after:<seq>"),
         new("service.heartbeat", Public: true, typeof(Heartbeat), "service.heartbeat:<epoch>:<slot>"),
         new(EventTypes.CommandHandled, Public: false, PublicPayload: null, "command.handled:<commandId>"),
+        new(EventTypes.RecipeRegistered, Public: true, typeof(RecipeRegistered), "recipe.registered:<hash>"),
+        new(EventTypes.RecipeApproved, Public: true, typeof(RecipeApproved), "recipe.approved:<hash>:after:<seq>"),
+        new(EventTypes.RecipeRevoked, Public: true, typeof(RecipeRevoked), "recipe.revoked:<hash>"),
     ];
 }

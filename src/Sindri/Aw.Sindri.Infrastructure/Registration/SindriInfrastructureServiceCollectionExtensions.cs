@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Infrastructure.Lease;
@@ -41,5 +42,6 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IProcessAncestry, PosixProcessAncestry>()
             .AddSingleton<IRepoLocator, GitRepoLocator>()
             .AddSingleton<IRecipeReader, YamlRecipeReader>()
-            .AddSingleton<IRecipeFiles, FileRecipeFiles>();
+            .AddSingleton<IRecipeFiles, FileRecipeFiles>()
+            .AddSingleton<IRecipeWake, NoOpRecipeWake>();
 }

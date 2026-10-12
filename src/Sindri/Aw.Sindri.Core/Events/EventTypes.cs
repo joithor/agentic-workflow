@@ -14,6 +14,15 @@ public static class EventTypes
     /// <summary>A human approved a profile hash.</summary>
     public const string ProfileApproved = "profile.approved";
 
+    /// <summary>A recipe was registered by hash (engine spec §4.1).</summary>
+    public const string RecipeRegistered = "recipe.registered";
+
+    /// <summary>A recipe hash was approved, or re-approved with new pins (engine spec §4.1).</summary>
+    public const string RecipeApproved = "recipe.approved";
+
+    /// <summary>A recipe hash was revoked, directly or by a cascade (engine spec §4.1).</summary>
+    public const string RecipeRevoked = "recipe.revoked";
+
     /// <summary>A command attempt reached the chain: its audit row (not public).</summary>
     public const string CommandHandled = "command.handled";
 

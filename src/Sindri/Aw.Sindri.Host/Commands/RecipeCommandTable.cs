@@ -25,6 +25,11 @@ internal static partial class RecipeCommandTable
         ["validate", var file, "--json"] => Validate(file, json: true, services, output, ct),
         ["validate", "--json", var file] => Validate(file, json: true, services, output, ct),
         ["eval", .. var rest] => RunEval(rest, services, output, ct),
+        ["register", ..] => Pending("register", "(b)", output),
+        ["show", ..] => Pending("show", "(b)", output),
+        ["list", ..] => Pending("list", "(b)", output),
+        ["approve", ..] => Pending("approve", "(c)", output),
+        ["revoke", ..] => Pending("revoke", "(c)", output),
         _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", .. args])}' is not a sindri command ({ValidateUsage}; {EvalUsage})")),
     };
 
@@ -40,6 +45,10 @@ internal static partial class RecipeCommandTable
         [var file] when !IsFlag(file) => Eval(new EvalRecipeRequest(file, EvalMode.Run), json: false, services, output, ct),
         _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", "eval", .. args])}' is not a sindri command ({EvalUsage})")),
     };
+
+    /// <summary>P2 contract: the registry verbs are listed, and each says which unit ships it.</summary>
+    private static Task<int> Pending(string verb, string unit, Output output) =>
+        output.Error(SindriErrors.UnknownVerb.With($"recipe {verb} arrives with engine P2 unit {unit} (fix: sindri recipe validate <file> checks a recipe now)"));
 
     private static bool IsFlag(string arg) => arg.StartsWith("--", StringComparison.Ordinal);
 
