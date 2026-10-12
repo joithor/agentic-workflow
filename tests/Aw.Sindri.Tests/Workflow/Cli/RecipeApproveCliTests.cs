@@ -95,6 +95,40 @@ public sealed class RecipeApproveCliTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         await using var app = await Started(ct);
         var step = await Register(app, ct);
+        var file = await EditedCopy(ct);
+
+        var code = await Commands(app, human: true, "approve workflow.step 1").Approve(file, ct);
+
+        AssertRefusedAsEdited(step, code);
+        Assert.Null((await app.Services.GetRequiredService<IRecipeApprovals>().Latest(step.Id, 1, step.Hash, ct)).Value);
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task File_edited_without_raising_an_approved_version_is_SND_RECIPE_007_not_already_approved()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var app = await Started(ct);
+        var step = await Register(app, ct);
+        Assert.Equal(0, await Commands(app, human: true, "approve workflow.step 1").Approve($"workflow.step@{step.Hash.Display}", ct));
+        _out.GetStringBuilder().Clear();
+        var file = await EditedCopy(ct);
+
+        var code = await Commands(app, human: true, "approve workflow.step 1").Approve(file, ct);
+
+        AssertRefusedAsEdited(step, code);
+    }
+
+    private void AssertRefusedAsEdited(RegisteredRecipe step, int code)
+    {
+        Assert.Equal(2, code);
+        Assert.DoesNotContain("Type '", _out.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith("SND-RECIPE-007 ", _error.ToString(), StringComparison.Ordinal);
+        Assert.Contains($"RCP-VERSION-001: workflow.step version 1 is registered with hash {step.Hash.Display}", _error.ToString(), StringComparison.Ordinal);
+    }
+
+    /// <summary>workflow.step's text with one 'next:' line edited and its version left at 1, with its eval files beside it.</summary>
+    private async Task<string> EditedCopy(CancellationToken ct)
+    {
         var file = Path.Combine(_home.Path, "workflow.step.yaml");
         await File.WriteAllTextAsync(file, ShippedRecipes.Read("sindri/workflow.step.yaml")
             .Replace("Run the Step's deterministic checks.", "Run the edited Step's checks.", StringComparison.Ordinal), ct);
@@ -105,13 +139,7 @@ public sealed class RecipeApproveCliTests : IDisposable
             await File.WriteAllTextAsync(to, ShippedRecipes.Read(eval), ct);
         }
 
-        var code = await Commands(app, human: true, "approve workflow.step 1").Approve(file, ct);
-
-        Assert.Equal(2, code);
-        Assert.DoesNotContain("Type '", _out.ToString(), StringComparison.Ordinal);
-        Assert.StartsWith("SND-RECIPE-007 ", _error.ToString(), StringComparison.Ordinal);
-        Assert.Contains($"RCP-VERSION-001: workflow.step version 1 is registered with hash {step.Hash.Display}", _error.ToString(), StringComparison.Ordinal);
-        Assert.Null((await app.Services.GetRequiredService<IRecipeApprovals>().Latest(step.Id, 1, step.Hash, ct)).Value);
+        return file;
     }
 
     private RecipeDeskCommands Commands(WebApplication app, bool human, string typed)
