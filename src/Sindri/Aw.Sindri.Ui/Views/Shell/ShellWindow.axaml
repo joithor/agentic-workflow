@@ -16,7 +16,7 @@
 
   <Panel>
     <!-- Version mismatch (§4.1, states.html): a full-window card, no data, no actions: the sentence, both versions as
-         labelled rows, and the fix as a sentence. -->
+         labelled rows, and the fix, with sindri in the command chip. -->
     <Border x:Name="VersionMismatchPanel" IsVisible="{Binding IsVersionMismatch}" Classes="card state-card"
             HorizontalAlignment="Center" VerticalAlignment="Center">
       <StackPanel Spacing="{StaticResource Space.SM}">
@@ -32,8 +32,15 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <TextBlock x:Name="VersionFixText" Classes="body muted" TextWrapping="Wrap" Text="{Binding Text.VersionMismatchFix}"
-                   AutomationProperties.Name="{Binding Text.VersionMismatchFix}" />
+        <!-- N4: the fix as a sentence around sindri in the mono command chip; the line is named by the whole sentence. -->
+        <StackPanel x:Name="VersionFix" Orientation="Horizontal" Spacing="10" AutomationProperties.Name="{Binding Text.VersionMismatchFix}">
+          <TextBlock x:Name="VersionFixText" Classes="body muted" Text="{Binding Text.VersionMismatchFixLead}" VerticalAlignment="Center"
+                     AutomationProperties.Name="{Binding Text.VersionMismatchFixLead}" />
+          <Border Classes="command">
+            <TextBlock x:Name="VersionFixCommand" Classes="mono" Text="{Binding Text.StartFix}"
+                       AutomationProperties.Name="{Binding Text.StartFix}" />
+          </Border>
+        </StackPanel>
       </StackPanel>
     </Border>
 

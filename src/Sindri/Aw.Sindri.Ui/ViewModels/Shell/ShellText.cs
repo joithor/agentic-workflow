@@ -128,4 +128,7 @@ internal sealed class ShellText
 
     /// <summary><see cref="Labels.VersionMismatchFix"/>.</summary>
     public string VersionMismatchFix { get; } = Labels.VersionMismatchFix;
+
+    /// <summary><see cref="Labels.VersionMismatchFixLead"/>.</summary>
+    public string VersionMismatchFixLead { get; } = Labels.VersionMismatchFixLead;
 }

@@ -226,10 +226,13 @@
     <Setter Property="MinHeight" Value="24" />
   </Style>
 
-  <!-- A body the API doesn't serve yet: a quiet caption, never the brightest text in the panel. -->
+  <!-- A body the API doesn't serve yet: a quiet caption, never the brightest text in the panel, centred in the body
+       (I3, states.html .empty). -->
   <Style Selector="TextBlock.quiet">
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
     <Setter Property="Margin" Value="16" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="TextAlignment" Value="Center" />
   </Style>
   <!-- Skeleton bars (states.html .sk): 10 px, Surface3, left-aligned at their own widths; static, no shimmer, so
        reduced motion has nothing to stop. -->
