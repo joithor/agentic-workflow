@@ -142,6 +142,13 @@ internal sealed partial class ShellWindow : Window
         return target.Focus(NavigationMethod.Tab);
     }
 
+    /// <summary>The step a key takes through the regions (§8, §11.2): 1 forward, -1 back, null when it isn't a region key.</summary>
+    /// <param name="key">The key.</param>
+    /// <param name="modifiers">Its modifiers.</param>
+    /// <param name="macOS">Whether the app runs on macOS.</param>
+    /// <returns>The step, or null.</returns>
+    internal static int? RegionStep(Key key, KeyModifiers modifiers, bool macOS) => throw new NotSupportedException();
+
     private static InputElement? FirstFocusable(Visual within) => within.GetVisualDescendants().OfType<InputElement>()
         .FirstOrDefault(c => c.Focusable && c.IsEffectivelyVisible && c.IsEffectivelyEnabled);
 

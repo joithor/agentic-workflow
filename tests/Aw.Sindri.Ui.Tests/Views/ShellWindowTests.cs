@@ -1585,6 +1585,37 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(["TopBar", "Page", "Sheet", "TopBar"], seen);
     });
 
+    // Owner decision F6 (2026-10-12, review run 4): on macOS ⌘⌥→ and ⌘⌥← cycle the regions forward and back, like F6
+    // and Shift+F6 (F6 there is the Focus key, which reaches the app only with fn held). RegionKeysTests covers the
+    // mapping on every OS; this drives the window on the platform that binds it.
+    [Fact]
+    public Task Command_option_arrows_cycle_the_regions_on_macOS() => OnUi(async () =>
+    {
+        Assert.SkipUnless(OperatingSystem.IsMacOS(), "⌘⌥←/→ is the macOS binding");
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-1", out var link));
+        shell.Navigate(link);
+        Settle(window);
+
+        string Region()
+        {
+            var focused = window.FocusManager?.GetFocusedElement() as Visual;
+            string[] names = ["TopBar", "Page", "Sheet"];
+            return names.FirstOrDefault(n => focused is not null && window.Get<Control>(n) is var r && (r == focused || r.IsVisualAncestorOf(focused))) ?? "none";
+        }
+
+        var seen = new List<string>();
+        foreach (var (key, physical) in new[] { (Key.Right, PhysicalKey.ArrowRight), (Key.Right, PhysicalKey.ArrowRight), (Key.Right, PhysicalKey.ArrowRight), (Key.Left, PhysicalKey.ArrowLeft), (Key.Left, PhysicalKey.ArrowLeft) })
+        {
+            window.KeyPress(key, RawInputModifiers.Meta | RawInputModifiers.Alt, physical, keySymbol: null);
+            Settle(window);
+            seen.Add(Region());
+        }
+
+        Assert.Equal(["TopBar", "Page", "Sheet", "Page", "TopBar"], seen);
+    });
+
     [Fact]
     public Task Command_comma_opens_Settings() => OnUi(async () =>
     {
