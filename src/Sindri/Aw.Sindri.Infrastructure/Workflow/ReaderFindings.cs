@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Workflow.Validation;
 
 namespace Aw.Sindri.Infrastructure.Workflow;
@@ -11,6 +12,7 @@ internal sealed class ReaderFindings(string file)
 {
     private readonly List<RecipeFinding> _findings = [];
     private readonly HashSet<string> _refused = new(StringComparer.Ordinal);
+    private readonly List<(JsonObject Parent, string Key)> _unknown = [];
     private readonly Dictionary<string, SourcePosition> _positions = new(StringComparer.Ordinal);
 
     public IReadOnlyList<RecipeFinding> All => _findings;
@@ -31,8 +33,15 @@ internal sealed class ReaderFindings(string file)
     /// <summary>Marks the node at <paramref name="path"/> as reported: the later passes skip it and everything under it.</summary>
     public void Refuse(string path) => _refused.Add(path);
 
-    /// <summary>The refused paths, shortest first.</summary>
-    public IEnumerable<string> Refused => _refused.OrderBy(static p => p.Length).ThenBy(static p => p, StringComparer.Ordinal);
+    /// <summary>The unknown fields reported, each as its mapping and key, so the reader can leave them out without parsing a path.</summary>
+    public IReadOnlyList<(JsonObject Parent, string Key)> Unknown => _unknown;
+
+    /// <summary>Marks the unknown field <paramref name="key"/> of <paramref name="parent"/>, at <paramref name="path"/>, as reported.</summary>
+    public void RefuseUnknown(string path, JsonObject parent, string key)
+    {
+        Refuse(path);
+        _unknown.Add((parent, key));
+    }
 
     public bool IsRefused(string path) =>
         _refused.Any(r => path.Length >= r.Length && path.StartsWith(r, StringComparison.Ordinal)

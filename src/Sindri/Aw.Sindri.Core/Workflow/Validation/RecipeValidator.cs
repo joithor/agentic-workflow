@@ -30,10 +30,11 @@ public static class RecipeValidator
 
     /// <summary>
     /// The schema rules alone, without RCP-HASH-001 (spec §3.1: every schema error is reported, not just the first). The
-    /// reader runs them on a recipe it bound with its refused nodes left out, so a reader finding doesn't hide the
-    /// schema errors only the bound recipe shows; such a recipe is never hashed or validated further.
+    /// reader runs them on a recipe whose only reader findings are unknown fields, bound with those left out, so a
+    /// misspelt field doesn't hide the schema errors only the bound recipe shows; such a recipe is never hashed or
+    /// validated further.
     /// </summary>
-    /// <param name="document">A recipe bound with its refused nodes left out.</param>
+    /// <param name="document">A recipe bound with its unknown fields left out.</param>
     /// <returns>The schema rules' findings.</returns>
     public static IReadOnlyList<RecipeFinding> CheckSchema(RecipeDocument document)
     {

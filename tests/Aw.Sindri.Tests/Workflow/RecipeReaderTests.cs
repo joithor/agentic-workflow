@@ -119,6 +119,56 @@ public sealed class RecipeReaderTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_refused_state_isnt_then_reported_as_undeclared()
+    {
+        var yaml = Minimal.Replace(
+            "  produce:\n    kind: active\n    step: step.produce\n    timeout: { after: 4h, then: park }\n    next: \"Produce the Step output.\"\n",
+            "  produce: 5\n", StringComparison.Ordinal) + "colour: blue\n";
+
+        var lines = Lines(yaml);
+
+        Assert.Equal(2, lines.Count);
+        Assert.StartsWith("RCP-SCHEMA-002: a state is written as 5 at test.yaml:6:3 (states.produce)", lines[0], StringComparison.Ordinal);
+        Assert.StartsWith("RCP-SCHEMA-001: 'colour' isn't a field of the recipe", lines[1], StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("    timeout: { after: 4h, then: park }", "    timeout: 5")]
+    [InlineData("schema: 1\n", "schema: 1\nschema: 1\n")]
+    public void After_a_wrong_type_or_refused_yaml_the_schema_rules_wait(string from, string to)
+    {
+        var lines = Lines(Minimal.Replace(from, to, StringComparison.Ordinal).Replace("to: done", "to: nowhere", StringComparison.Ordinal));
+
+        _ = Assert.Single(lines);
+        Assert.DoesNotContain(lines, l => l.Contains("nowhere", StringComparison.Ordinal));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("  done:\n", "  \"x.y\": ~\n  done:\n")]
+    [InlineData("schema: 1\n", "schema: 1\nschema: 1\n")]
+    public void An_unknown_field_beside_another_reader_finding_leaves_the_schema_rules_waiting(string from, string to)
+    {
+        var lines = Lines(Minimal.Replace(from, to, StringComparison.Ordinal).Replace("to: done", "to: nowhere", StringComparison.Ordinal) + "colour: blue\n");
+
+        Assert.Equal(2, lines.Count);
+        Assert.Contains(lines, l => l.StartsWith("RCP-SCHEMA-001: 'colour' isn't a field of the recipe", StringComparison.Ordinal));
+        Assert.DoesNotContain(lines, l => l.Contains("nowhere", StringComparison.Ordinal));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("  \"x.y\": ~\n")]
+    [InlineData("  \"a[x]\": { kind: active, wat: 1 }\n")]
+    [InlineData("  \"a[0\": { kind: active, wat: 1 }\n")]
+    [InlineData("  \"a.next\": ~\n")]
+    public void A_state_name_with_a_dot_or_bracket_is_reported_not_a_crash(string state)
+    {
+        var lines = Lines(Minimal.Replace("  done:\n", state + "  done:\n", StringComparison.Ordinal));
+
+        Assert.NotEmpty(lines);
+        Assert.All(lines, l => Assert.StartsWith("RCP-SCHEMA-00", l, StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_refused_value_isnt_reported_again_as_missing_by_the_schema_rules()
     {
         var lines = Lines(Minimal.Replace("next: \"Produce the Step output.\"", "next: [a, b]", StringComparison.Ordinal) + "colour: blue\n");

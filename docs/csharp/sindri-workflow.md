@@ -42,7 +42,7 @@ reads the file and its child recipes, and writes nothing.
 | 1 | One or more errors |
 | 2 | A usage error (no file: `SND-CLI-003`; an unknown `recipe` verb: `SND-CLI-001`), or a tool error: the file doesn't exist, is a directory or can't be read (`SND-RECIPE-010 <path> doesn't exist`, `… is a directory, not a recipe file` or `… can't be read: <reason>`, each with its fix), or a bug inside `sindri` (`SND-API-005 recipe validate failed inside sindri: …`) |
 
-Errors go to stderr as `CODE message (fix: …)`, like every `sindri` verb.
+Errors go to stderr as `CODE message (fix: …)`, or `CODE message (usage: …)` for a usage error, like every `sindri` verb.
 
 
 ```
@@ -116,10 +116,11 @@ JSON Schemas: `schemas/recipes/recipe.schema.json` is the long form, generated f
 - **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, a file over 256 KiB,
   or nesting deeper than 32.
 - **Scalars** follow the YAML 1.2 core schema, so `on` stays a string.
-- **All schema errors** are reported with their line and column, not just the first. When the reader refuses a field
-  (unknown, or the wrong type), the schema rules still run on the rest of the recipe, so a typo doesn't hide a missing
-  `next` or an undeclared state. They don't after refused YAML (`RCP-SCHEMA-003`), a refused list item, or a missing
-  required field; then the recipe has no hash and the other rule groups wait until those are fixed.
+- **All schema errors** are reported with their line and column, not just the first. When the reader's only findings
+  are unknown fields, the schema rules still run on the rest of the recipe, so a misspelt field doesn't hide a missing
+  `next` or an undeclared state. After any other reader finding (a wrong type, a missing or empty value, refused YAML)
+  they wait, since the recipe without that node would make them report on something the author didn't write. A recipe
+  with any reader finding has no hash, and the other rule groups wait until it is fixed.
 - **Short forms become long forms** before typed binding, which refuses unknown fields (`RCP-SCHEMA-001`). A short form
   and its long form bind to the same record and hash the same. `tests/Aw.Sindri.Testing/Workflow/Recipes/valid/` has
   `short-forms.yaml` and the same recipe written out as `long-forms.yaml`.
