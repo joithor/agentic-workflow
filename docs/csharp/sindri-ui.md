@@ -130,7 +130,7 @@ only, never the message, which can name the home), with a line that names the ex
 | Home | The page title, three frames (Needs you, Running · With you, Queued), each "not served yet", and the Sindri health strip: the health line (§4.8) over the fields the status carries today (`Running · pid · epoch · API v1 · N services · profile <state>`; "Not running" when it isn't), which opens Health on a click or Enter |
 | Queue, Decisions, Services, Settings | The title and "not served yet"; Settings is the slot `Views/Settings*` fills (⌘, opens it) |
 | Health | S1b's status card (`HealthViewModel`: lease, API, profile, services, last event) |
-| Detail sheet | A deep link's subject over the page at the right, 520 px (420–760, dragged by its left edge and remembered); Esc closes it and leaves an edge tab that reopens it; below 1100 px it covers the page with a Back button and focus moves to its heading |
+| Detail sheet | A deep link's subject over the page at the right, 520 px (420–760, dragged by its left edge and remembered); Esc closes it and leaves an edge tab that reopens it; below 1100 px it covers the page with a Back button, focus moves to its heading, and the page (disabled under it) leaves the tab order and F6 until the sheet closes or stops covering |
 
 The pre-API states (`ShellState`, highest first): **version mismatch** (the status's `apiVersion` differs from
 `AppApiVersion`: a full-window panel with both versions and "quit both and run" around `sindri` in the command chip, no top bar), **not running**

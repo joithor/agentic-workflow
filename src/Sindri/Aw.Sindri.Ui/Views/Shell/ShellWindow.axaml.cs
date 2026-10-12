@@ -42,6 +42,8 @@ internal sealed partial class ShellWindow : Window
 
     private Border SheetPanel => this.Get<Border>("Sheet");
 
+    private Border PagePanel => this.Get<Border>("Page");
+
     /// <inheritdoc />
     protected override void OnDataContextChanged(EventArgs e)
     {
@@ -132,7 +134,7 @@ internal sealed partial class ShellWindow : Window
     // inside it (or its first focusable control when the region itself can't take focus).
     private bool CycleRegion(bool back)
     {
-        Control[] regions = [.. _regions.Select(this.Get<Control>).Where(c => c.IsEffectivelyVisible)];
+        Control[] regions = [.. _regions.Select(this.Get<Control>).Where(c => c.IsEffectivelyVisible && c.IsEffectivelyEnabled)];
         var focused = FocusManager?.GetFocusedElement() as Visual;
         var current = Array.FindIndex(regions, r => focused is not null && (r == focused || r.IsVisualAncestorOf(focused)));
         var next = regions[(current + (back ? regions.Length - 1 : 1) + regions.Length) % regions.Length];
@@ -150,10 +152,21 @@ internal sealed partial class ShellWindow : Window
         var covers = width > 0 && width < below;
         SheetPanel.Classes.Set("covers", covers);
         SheetPanel.Width = covers ? double.NaN : Shell?.SheetWidth ?? double.NaN;
+        CoverPage();
     }
+
+    // While the sheet covers the page, the page and its controls leave the tab order, F6's cycle and hit-testing, so focus
+    // never lands where it can't be seen (WCAG 2.4.3, 2.4.7). The sheet hides the page's disabled look. The page is
+    // enabled again as soon as the sheet closes or stops covering, before focus returns to it (KeepFocus runs later).
+    private void CoverPage() => PagePanel.IsEnabled = !(SheetPanel.Classes.Contains("covers") && Shell is { IsSheetShown: true });
 
     private void OnShellChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (string.Equals(e.PropertyName, nameof(ShellViewModel.IsSheetShown), StringComparison.Ordinal) || string.Equals(e.PropertyName, nameof(ShellViewModel.State), StringComparison.Ordinal))
+        {
+            CoverPage();
+        }
+
         if (e.PropertyName == nameof(ShellViewModel.SheetWidth))
         {
             Cover(Bounds.Width);
