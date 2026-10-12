@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+  "title": "SND-AUTH-001",
+  "status": 403,
+  "detail": "The prover label is honoured only for a temp or proof home (fix: run scripts/sindri-prove.sh against a home under $TMPDIR or a proof folder)",
+  "traceId": "<trace>"
+}

@@ -53,25 +53,26 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
 
         var appended = await Record(asked, shown.Changes, recorded.Value, grant, cancellationToken).ConfigureAwait(false);
         var saved = appended.IsError ? appended.Error : await approvals.Save(loaded.Value, cancellationToken).ConfigureAwait(false);
-        return saved.IsError ? saved.Error : shown with { Approved = true };
+        return saved.IsError ? saved.Error : shown with { Approved = true, Sequence = appended.Value };
     }
 
     /// <summary>
     /// Appends the approval of <paramref name="asked"/> unless the latest recorded approval already names it (the
     /// event exists and only the save failed), keyed by the event it follows.
     /// </summary>
-    private async ValueTask<Result<Unit>> Record(ProfileHash asked, IReadOnlyList<string> changes, RecordedApproval? recorded,
+    /// <returns>The approval event's sequence (the earlier one when it was already recorded).</returns>
+    private async ValueTask<Result<long>> Record(ProfileHash asked, IReadOnlyList<string> changes, RecordedApproval? recorded,
         LeaseGrant grant, CancellationToken cancellationToken)
     {
         if (recorded?.Hash == asked)
         {
-            return Unit.Value;
+            return recorded.Sequence;
         }
 
         var entry = events.Entry(EventTypes.ProfileApproved, new ProfileApproved(asked, changes),
             string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ProfileApproved}:{asked.Value}:after:{recorded?.Sequence ?? 0}"));
         var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
-        return appended.IsError ? appended.Error : Unit.Value;
+        return appended.IsError ? appended.Error : appended.Value.Sequence;
     }
 
     /// <summary>
@@ -88,7 +89,7 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
 
         var previous = latest.IsSuccess ? latest.Value : null;
         var approved = ProfileRules.IsApproved(previous?.Hash, recorded?.Hash, loaded.Hash);
-        return new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), approved);
+        return new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), approved, Sequence: null);
     }
 
     private static Error? Refusal(ProfileHash asked, LoadedProfile live, bool confirmed) => true switch
