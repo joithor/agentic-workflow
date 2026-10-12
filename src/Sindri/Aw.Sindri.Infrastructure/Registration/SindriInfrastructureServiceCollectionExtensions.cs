@@ -1,9 +1,11 @@
 using Aw.Kernel.Ids;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Infrastructure.Challenges;
 using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Infrastructure.Lease;
 using Aw.Sindri.Infrastructure.Ledger;
@@ -35,5 +37,6 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IControlPlaneProbe, HttpControlPlaneProbe>()
             .AddSingleton<IControlPlaneLauncher, ServeLauncher>()
             .AddSingleton<IRecipeReader, YamlRecipeReader>()
-            .AddSingleton<IRecipeFiles, FileRecipeFiles>();
+            .AddSingleton<IRecipeFiles, FileRecipeFiles>()
+            .AddSingleton<IChallenges, ProcessChallenges>();
 }

@@ -1,0 +1,36 @@
+using System.Globalization;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Ids;
+
+namespace Aw.Sindri.Core.Challenges;
+
+/// <summary>
+/// What a challenge is bound to (engine spec §4.2): the recipe hash and version, plus the pins digest for a drift
+/// approval; the instance and its version (a forwarded answer adds the child's); or the profile hash (S1-D5). If the
+/// subject changes before the answer, the challenge is refused.
+/// </summary>
+/// <param name="Key">The subject, for example 'recipe:sha256:…@1'.</param>
+/// <param name="Digest">The pins digest of a drift approval, or null.</param>
+public sealed record ChallengeSubject(string Key, string? Digest)
+{
+    /// <summary>A recipe approval or revoke.</summary>
+    /// <param name="hash">The recipe hash.</param>
+    /// <param name="version">Its version.</param>
+    /// <param name="pinsDigest">The pins digest for a drift approval, else null.</param>
+    /// <returns>The subject.</returns>
+    public static ChallengeSubject ForRecipe(RecipeHash hash, int version, string? pinsDigest) =>
+        new(string.Create(CultureInfo.InvariantCulture, $"recipe:{hash.Value}@{version}"), pinsDigest);
+
+    /// <summary>An answer to an instance's park or escalation.</summary>
+    /// <param name="instance">The instance.</param>
+    /// <param name="version">The instance version the preview showed.</param>
+    /// <returns>The subject.</returns>
+    public static ChallengeSubject ForInstance(WorkflowInstanceId instance, long version) =>
+        new(string.Create(CultureInfo.InvariantCulture, $"instance:{instance.Value}@{version}"), Digest: null);
+
+    /// <summary>A profile approval (S1-D5: replaces the 'confirmed' flag).</summary>
+    /// <param name="hash">The profile hash.</param>
+    /// <returns>The subject.</returns>
+    public static ChallengeSubject ForProfile(ProfileHash hash) => new("profile:" + hash.Value, Digest: null);
+}

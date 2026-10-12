@@ -411,3 +411,131 @@ Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Result.get -> Aw.Sindri.Cor
 Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Result.init -> void
 Aw.Sindri.Features.CompleteStep.CompleteStepResponse.CompleteStepResponse(Aw.Sindri.Core.Workflow.Engine.Runtime.CommandResult! Result, Aw.Sindri.Core.Workflow.Engine.CommandNonce Nonce, bool AlreadyApplied) -> void
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.CompleteStepRequest(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, string! Actor) -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandChallenge
+Aw.Sindri.Features.ApplyCommand.ApplyCommandKind
+Aw.Sindri.Features.ApplyCommand.ApplyCommandKind.Answer = 1 -> Aw.Sindri.Features.ApplyCommand.ApplyCommandKind
+Aw.Sindri.Features.ApplyCommand.ApplyCommandKind.Command = 2 -> Aw.Sindri.Features.ApplyCommand.ApplyCommandKind
+Aw.Sindri.Features.ApplyCommand.ApplyCommandKind.Cancel = 3 -> Aw.Sindri.Features.ApplyCommand.ApplyCommandKind
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest
+override Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.ToString() -> string!
+static Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.operator !=(Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest? left, Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest? right) -> bool
+static Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.operator ==(Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest? left, Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest? right) -> bool
+override Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Equals(object? obj) -> bool
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Equals(Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest? other) -> bool
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.<Clone>$() -> Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest!
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Deconstruct(out string! Instance, out Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, out Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, out string? Text, out int? Amount, out Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge, out string! Actor) -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Instance.get -> string!
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Instance.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Kind.get -> Aw.Sindri.Features.ApplyCommand.ApplyCommandKind
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Kind.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Answer.get -> Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant?
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Answer.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Text.get -> string?
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Text.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Amount.get -> int?
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Amount.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Challenge.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer?
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Challenge.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Nonce.get -> Aw.Sindri.Core.Workflow.Engine.CommandNonce?
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Verb.get -> Aw.Sindri.Core.Workflow.Engine.CommandVerb?
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Verb.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Nonce.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Actor.get -> string!
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Actor.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Nonce.get -> Aw.Sindri.Core.Workflow.Engine.CommandNonce
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Nonce.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.AlreadyApplied.get -> bool
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.AlreadyApplied.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Result.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.CommandResult!
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Result.init -> void
+override Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.ToString() -> string!
+static Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.operator !=(Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse? left, Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse? right) -> bool
+static Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.operator ==(Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse? left, Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse? right) -> bool
+override Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.GetHashCode() -> int
+override Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Equals(object? obj) -> bool
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Equals(Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse? other) -> bool
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.<Clone>$() -> Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse!
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.CommandResult! Result, out Aw.Sindri.Core.Workflow.Engine.CommandNonce Nonce, out bool AlreadyApplied) -> void
+Aw.Sindri.Features.IssueNonce.IssueNonceRequest
+override Aw.Sindri.Features.IssueNonce.IssueNonceRequest.ToString() -> string!
+static Aw.Sindri.Features.IssueNonce.IssueNonceRequest.operator !=(Aw.Sindri.Features.IssueNonce.IssueNonceRequest? left, Aw.Sindri.Features.IssueNonce.IssueNonceRequest? right) -> bool
+Aw.Sindri.Features.IssueNonce.IssueNonceRequest.Instance.get -> string!
+static Aw.Sindri.Features.IssueNonce.IssueNonceRequest.operator ==(Aw.Sindri.Features.IssueNonce.IssueNonceRequest? left, Aw.Sindri.Features.IssueNonce.IssueNonceRequest? right) -> bool
+Aw.Sindri.Features.IssueNonce.IssueNonceRequest.Instance.init -> void
+override Aw.Sindri.Features.IssueNonce.IssueNonceRequest.GetHashCode() -> int
+override Aw.Sindri.Features.IssueNonce.IssueNonceRequest.Equals(object? obj) -> bool
+Aw.Sindri.Features.IssueNonce.IssueNonceRequest.Equals(Aw.Sindri.Features.IssueNonce.IssueNonceRequest? other) -> bool
+Aw.Sindri.Features.IssueNonce.IssueNonceResponse.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Features.IssueNonce.IssueNonceRequest.<Clone>$() -> Aw.Sindri.Features.IssueNonce.IssueNonceRequest!
+Aw.Sindri.Features.IssueNonce.IssueNonceResponse.Instance.init -> void
+Aw.Sindri.Features.IssueNonce.IssueNonceRequest.Deconstruct(out string! Instance) -> void
+Aw.Sindri.Features.IssueNonce.IssueNonceResponse
+override Aw.Sindri.Features.IssueNonce.IssueNonceResponse.ToString() -> string!
+static Aw.Sindri.Features.IssueNonce.IssueNonceResponse.operator !=(Aw.Sindri.Features.IssueNonce.IssueNonceResponse? left, Aw.Sindri.Features.IssueNonce.IssueNonceResponse? right) -> bool
+static Aw.Sindri.Features.IssueNonce.IssueNonceResponse.operator ==(Aw.Sindri.Features.IssueNonce.IssueNonceResponse? left, Aw.Sindri.Features.IssueNonce.IssueNonceResponse? right) -> bool
+override Aw.Sindri.Features.IssueNonce.IssueNonceResponse.GetHashCode() -> int
+override Aw.Sindri.Features.IssueNonce.IssueNonceResponse.Equals(object? obj) -> bool
+Aw.Sindri.Features.IssueNonce.IssueNonceResponse.Equals(Aw.Sindri.Features.IssueNonce.IssueNonceResponse? other) -> bool
+Aw.Sindri.Features.IssueNonce.IssueNonceResponse.<Clone>$() -> Aw.Sindri.Features.IssueNonce.IssueNonceResponse!
+Aw.Sindri.Features.IssueNonce.IssueNonceResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out Aw.Sindri.Core.Workflow.Engine.CommandNonce Nonce) -> void
+Aw.Sindri.Features.IssueNonce.IssueNonceResponse.Nonce.get -> Aw.Sindri.Core.Workflow.Engine.CommandNonce
+Aw.Sindri.Features.IssueNonce.IssueNonceResponse.Nonce.init -> void
+Aw.Sindri.Features.StartInstance.StartFact.Name.get -> string!
+Aw.Sindri.Features.StartInstance.StartFact.Content.get -> System.ReadOnlyMemory<byte>
+Aw.Sindri.Features.StartInstance.StartFact.Name.init -> void
+Aw.Sindri.Features.StartInstance.StartFact
+Aw.Sindri.Features.StartInstance.StartFact.Content.init -> void
+override Aw.Sindri.Features.StartInstance.StartFact.ToString() -> string!
+static Aw.Sindri.Features.StartInstance.StartFact.operator !=(Aw.Sindri.Features.StartInstance.StartFact? left, Aw.Sindri.Features.StartInstance.StartFact? right) -> bool
+static Aw.Sindri.Features.StartInstance.StartFact.operator ==(Aw.Sindri.Features.StartInstance.StartFact? left, Aw.Sindri.Features.StartInstance.StartFact? right) -> bool
+override Aw.Sindri.Features.StartInstance.StartFact.GetHashCode() -> int
+override Aw.Sindri.Features.StartInstance.StartFact.Equals(object? obj) -> bool
+Aw.Sindri.Features.StartInstance.StartFact.Equals(Aw.Sindri.Features.StartInstance.StartFact? other) -> bool
+Aw.Sindri.Features.StartInstance.StartFact.<Clone>$() -> Aw.Sindri.Features.StartInstance.StartFact!
+Aw.Sindri.Features.StartInstance.StartFact.Deconstruct(out string! Name, out System.ReadOnlyMemory<byte> Content) -> void
+Aw.Sindri.Features.StartInstance.StartInstanceRequest
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Features.StartInstance.StartFact!>!
+override Aw.Sindri.Features.StartInstance.StartInstanceRequest.ToString() -> string!
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.NextAttempt.get -> bool
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Facts.init -> void
+static Aw.Sindri.Features.StartInstance.StartInstanceRequest.operator !=(Aw.Sindri.Features.StartInstance.StartInstanceRequest? left, Aw.Sindri.Features.StartInstance.StartInstanceRequest? right) -> bool
+static Aw.Sindri.Features.StartInstance.StartInstanceRequest.operator ==(Aw.Sindri.Features.StartInstance.StartInstanceRequest? left, Aw.Sindri.Features.StartInstance.StartInstanceRequest? right) -> bool
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.NextAttempt.init -> void
+override Aw.Sindri.Features.StartInstance.StartInstanceRequest.GetHashCode() -> int
+override Aw.Sindri.Features.StartInstance.StartInstanceRequest.Equals(object? obj) -> bool
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Actor.get -> string!
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Equals(Aw.Sindri.Features.StartInstance.StartInstanceRequest? other) -> bool
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Actor.init -> void
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.<Clone>$() -> Aw.Sindri.Features.StartInstance.StartInstanceRequest!
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Item.get -> string!
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Deconstruct(out string! Recipe, out string! Item, out bool NextAttempt, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Features.StartInstance.StartFact!>! Facts, out string! Actor) -> void
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Item.init -> void
+Aw.Sindri.Features.StartInstance.StartInstanceResponse.Finished.get -> bool
+Aw.Sindri.Features.StartInstance.StartInstanceResponse.Existing.get -> bool
+Aw.Sindri.Features.StartInstance.StartInstanceResponse.Finished.init -> void
+Aw.Sindri.Features.StartInstance.StartInstanceResponse.Existing.init -> void
+Aw.Sindri.Features.StartInstance.StartInstanceResponse
+override Aw.Sindri.Features.StartInstance.StartInstanceResponse.ToString() -> string!
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Recipe.get -> string!
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Recipe.init -> void
+Aw.Sindri.Features.StartInstance.StartInstanceResponse.Instance.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
+Aw.Sindri.Features.StartInstance.StartInstanceResponse.Instance.init -> void
+static Aw.Sindri.Features.StartInstance.StartInstanceResponse.operator !=(Aw.Sindri.Features.StartInstance.StartInstanceResponse? left, Aw.Sindri.Features.StartInstance.StartInstanceResponse? right) -> bool
+static Aw.Sindri.Features.StartInstance.StartInstanceResponse.operator ==(Aw.Sindri.Features.StartInstance.StartInstanceResponse? left, Aw.Sindri.Features.StartInstance.StartInstanceResponse? right) -> bool
+override Aw.Sindri.Features.StartInstance.StartInstanceResponse.GetHashCode() -> int
+override Aw.Sindri.Features.StartInstance.StartInstanceResponse.Equals(object? obj) -> bool
+Aw.Sindri.Features.StartInstance.StartInstanceResponse.Equals(Aw.Sindri.Features.StartInstance.StartInstanceResponse? other) -> bool
+Aw.Sindri.Features.StartInstance.StartInstanceResponse.<Clone>$() -> Aw.Sindri.Features.StartInstance.StartInstanceResponse!
+Aw.Sindri.Features.StartInstance.StartInstanceResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! Instance, out bool Existing, out bool Finished) -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.ApplyCommandResponse(Aw.Sindri.Core.Workflow.Engine.Runtime.CommandResult! Result, Aw.Sindri.Core.Workflow.Engine.CommandNonce Nonce, bool AlreadyApplied) -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.ApplyCommandRequest(string! Instance, Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, string? Text, int? Amount, Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge, string! Actor) -> void
+static Aw.Sindri.Features.ApplyCommand.ApplyCommandChallenge.IsProtected(Aw.Sindri.Features.ApplyCommand.ApplyCommandKind kind, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? answer) -> bool
+static Aw.Sindri.Features.ApplyCommand.ApplyCommandChallenge.Action(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant answer, int? amount) -> Aw.Sindri.Core.Challenges.ChallengeAction!
+static Aw.Sindri.Features.ApplyCommand.ApplyCommandChallenge.Subject(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> Aw.Sindri.Core.Challenges.ChallengeSubject!
+Aw.Sindri.Features.StartInstance.StartInstanceResponse.StartInstanceResponse(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! Instance, bool Existing, bool Finished) -> void
+Aw.Sindri.Features.StartInstance.StartFact.StartFact(string! Name, System.ReadOnlyMemory<byte> Content) -> void
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.StartInstanceRequest(string! Recipe, string! Item, bool NextAttempt, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Features.StartInstance.StartFact!>! Facts, string! Actor) -> void
+Aw.Sindri.Features.IssueNonce.IssueNonceResponse.IssueNonceResponse(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, Aw.Sindri.Core.Workflow.Engine.CommandNonce Nonce) -> void
+Aw.Sindri.Features.IssueNonce.IssueNonceRequest.IssueNonceRequest(string! Instance) -> void
