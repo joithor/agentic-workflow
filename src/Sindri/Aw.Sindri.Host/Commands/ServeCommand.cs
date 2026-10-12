@@ -100,6 +100,7 @@ internal static class ServeCommand
         var worker = started.Temporal is { } temporal
             ? app.Services.GetRequiredService<ITemporalWorker>().Run(temporal, either.Token)
             : Task.CompletedTask;
+        app.Services.GetRequiredService<TemporalRuntime>().Track(worker);   // StopProcess waits for it before it stops the dev server
         try
         {
             await Task.Delay(Timeout.Infinite, either.Token).ConfigureAwait(false);

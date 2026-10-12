@@ -3191,3 +3191,8 @@ Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Address.init -> void
 Aw.Sindri.Core.Control.ITemporalWorker.Run(Aw.Sindri.Core.Control.TemporalEndpoint! endpoint, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Aw.Sindri.Core.Workflow.Engine.Desk.IWorkflowInstances.List(string? query, string? temporal, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>!>!>
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.InstanceRow(string! Address, string? State, bool NeedsYou) -> void
+Aw.Sindri.Core.Control.TemporalRuntime
+Aw.Sindri.Core.Control.TemporalRuntime.Stop(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Control.TemporalRuntime.TemporalRuntime(Aw.Sindri.Core.Control.ITemporalServer! server, System.TimeProvider! clock) -> void
+Aw.Sindri.Core.Control.TemporalRuntime.Track(System.Threading.Tasks.Task! worker) -> void
+static Aw.Sindri.Core.Control.TemporalRuntime.WorkerStopWait.get -> System.TimeSpan

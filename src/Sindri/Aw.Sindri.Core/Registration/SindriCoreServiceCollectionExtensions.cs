@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -8,7 +9,7 @@ namespace Aw.Sindri.Core.Registration;
 /// <summary>Registers Aw.Sindri.Core's types.</summary>
 public static class SindriCoreServiceCollectionExtensions
 {
-    /// <summary>Adds the Sindri domain services: the control plane's event scope and factory, and the lease this process holds.</summary>
+    /// <summary>Adds the Sindri domain services: the control plane's event scope and factory, the lease this process holds, and the Temporal runtime serve keeps.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddSindriCore(this IServiceCollection services)
@@ -16,5 +17,6 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton(EventScope.ControlPlane)
             .AddSingleton<EventFactory>()
             .AddSingleton<HeldLease>()
+            .AddSingleton<TemporalRuntime>()
             .AddSingleton<BlockCatalog>();
 }
