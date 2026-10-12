@@ -1,7 +1,7 @@
 using System.Globalization;
 using Aw.Kernel.Events;
-using Aw.Sindri.Core.Commands;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Host.Server;

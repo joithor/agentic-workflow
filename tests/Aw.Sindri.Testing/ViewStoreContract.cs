@@ -1,6 +1,6 @@
 using Aw.Kernel.Events;
-using Aw.Sindri.Core;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
 using Microsoft.Extensions.Time.Testing;
@@ -146,7 +146,7 @@ public abstract class ViewStoreContract
 
         public bool Handles(string eventType) => string.Equals(eventType, Throw, StringComparison.Ordinal);
 
-        public ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>> Apply(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken) =>
+        public ValueTask<Kernel.Result<Kernel.Unit>> Apply(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("fixture: the fold threw");
     }
 }
