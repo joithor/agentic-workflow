@@ -39,12 +39,12 @@ internal static partial class YamlScalars
 
         if (text.StartsWith("0o", StringComparison.Ordinal) && Octal.IsMatch(text))
         {
-            return Based(text[2..], 8, path, findings);
+            return Based(text, 8, path, findings);
         }
 
         if (text.StartsWith("0x", StringComparison.Ordinal) && Hex.IsMatch(text))
         {
-            return Based(text[2..], 16, path, findings);
+            return Based(text, 16, path, findings);
         }
 
         return Real(text, path, findings);
@@ -61,15 +61,21 @@ internal static partial class YamlScalars
         return double.IsFinite(value) ? JsonValue.Create(value) : Unrepresentable(text, path, findings);
     }
 
-    private static JsonNode? Based(string digits, int radix, string path, ReaderFindings findings)
+    /// <summary>
+    /// A 0o or 0x integer, <paramref name="text"/> as written. Up to 64 bits it is read unsigned (Convert.ToInt64 would
+    /// wrap 2^63 and above to a negative number): within long's range a long, above it a double. Past 64 bits it is a
+    /// number JSON can't hold, reported as written.
+    /// </summary>
+    private static JsonNode? Based(string text, int radix, string path, ReaderFindings findings)
     {
         try
         {
-            return JsonValue.Create(Convert.ToInt64(digits, radix));
+            var value = Convert.ToUInt64(text[2..], radix);
+            return value <= long.MaxValue ? JsonValue.Create((long)value) : JsonValue.Create((double)value);
         }
         catch (OverflowException)
         {
-            return Unrepresentable(digits, path, findings);
+            return Unrepresentable(text, path, findings);
         }
     }
 

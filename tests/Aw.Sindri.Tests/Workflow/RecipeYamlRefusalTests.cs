@@ -24,6 +24,18 @@ public sealed class RecipeYamlRefusalTests
         Assert.Contains(line, RecipeReaderTests.Lines(yaml), StringComparer.Ordinal);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("schema: 1\ninputs: [fact:item\ninitial: a\n")]
+    [InlineData(Head + "states: { produce: { kind: active }\ntransitions: []\n")]
+    public void An_unclosed_flow_collection_is_one_RCP_SCHEMA_003_not_a_crash(string yaml)
+    {
+        var lines = RecipeReaderTests.Lines(yaml);
+
+        var line = Assert.Single(lines);
+        Assert.StartsWith("RCP-SCHEMA-003: the file isn't valid YAML: ", line, StringComparison.Ordinal);
+        Assert.EndsWith("; fix the YAML at that position", line, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Nesting_deeper_than_32_is_refused_once_at_the_first_level_too_deep()
     {

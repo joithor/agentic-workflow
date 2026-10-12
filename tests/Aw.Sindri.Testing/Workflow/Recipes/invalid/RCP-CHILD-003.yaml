@@ -12,4 +12,4 @@ states:
     kind: terminal
     outcome: resolved
 transitions:
-  - { from: running, to: done, on: wait.satisfied, when: { outcome: resolved } }
+  - { from: running, to: done, on: wait.satisfied }

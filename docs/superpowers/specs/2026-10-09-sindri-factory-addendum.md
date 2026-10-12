@@ -2075,6 +2075,10 @@ reference for what each part does, and it keeps running at the desk until the sw
    validation, verification, shipper and PR babysitter; webhook-started workflows as their sources are wired.
 6. **The switch** (readiness §4a step 3) once every desk tool has its C# form.
 
+Each step has its own design spec, listed with its stage in `docs/sindri/README.md` ("Design specs for the
+application"): the API surface and the UI app design for step 1, the workflow engine for step 2, and the context
+retrieval engine for step 3. That README also keeps the cross-spec reconciliation list (X1–X42) and the one build order.
+
 ## 17.17 Decisions
 
 **Decided by the human (2026-10-11):**

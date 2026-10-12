@@ -37,10 +37,13 @@ internal sealed partial class GraphRules : IRecipeRules
         ];
     }
 
-    /// <summary>RCP-REACH-001: a state no chain of transitions from 'initial' enters.</summary>
+    /// <summary>
+    /// RCP-REACH-001: a state no chain of transitions from 'initial' enters. A terminal initial state reaches nothing,
+    /// which is RCP-INIT-001's one finding, so this rule waits until 'initial' is fixed.
+    /// </summary>
     private static IEnumerable<RecipeFinding> Unreachable(Recipe recipe, Edges edges, RecipeSource source)
     {
-        if (!recipe.States.ContainsKey(recipe.Initial))
+        if (!recipe.States.TryGetValue(recipe.Initial, out var initial) || initial.Kind == StateKind.Terminal)
         {
             return [];
         }

@@ -28,7 +28,7 @@ public sealed class HandWrittenCapabilityTests
         };
 
         Assert.Equal(
-            ["RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@44136fa355b3 at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes"],
+            ["RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@5aa84cb58a5a at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes"],
             Lines(recipe, baseRecipe: null, "RCP-CAP-004.yaml", [("base", 4, 1)]));
     }
 

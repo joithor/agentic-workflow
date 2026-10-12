@@ -361,10 +361,13 @@ t("SIGINT while waiting on the heavy lock reverts everything and exits 1 (SCAFFO
   assert.equal(pkg(d).code, 0);
   const state = fs.mkdtempSync(path.join(os.tmpdir(), "aw-scaffold-unit-state-"));
   trees.push(state);
-  fs.mkdirSync(path.join(state, "locks", "heavy-job.lock"), { recursive: true });   // someone else's build
+  fs.mkdirSync(path.join(state, "locks", "heavy-job.lock"), { recursive: true });   // someone else's builds, in both slots
+  fs.mkdirSync(path.join(state, "locks", "heavy-job.lock.2"));
   const before = hashTree(d);
   const env = { ...process.env, AW_STATE_DIR: state };
   delete env.AW_HEAVY_LOCK_HELD;
+  delete env.AW_HEAVY_JOB_LOCK;
+  delete env.AW_HEAVY_SLOTS;
   // spawnSync stops collecting a pipe once its timeout fires, so the child writes to a file instead.
   const log = path.join(state, "out.txt");
   const fd = fs.openSync(log, "w");
@@ -407,6 +410,38 @@ const common = await import(path.join(REPO, "scripts/scaffold/lib/common.mjs"));
 const colored = await common.run(REPO, "printf", ["\u001b[31mfailed Aw.X.Tests.T.T_does (1ms)\u001b[m\n  failed: 1\n"], { log: () => {} });
 t("run() strips ANSI colors (CI colors MTP's 'failed' lines, which the red-test check parses)", () => {
   assert.equal(colored.out, "failed Aw.X.Tests.T.T_does (1ms)\n  failed: 1\n");
+});
+
+// The heavy-job lock's slots: slot 1 is <state>/locks/heavy-job.lock, slot 2 that path plus ".2".
+const saved = Object.fromEntries(["AW_STATE_DIR", "AW_HEAVY_LOCK_HELD", "AW_HEAVY_JOB_LOCK", "AW_HEAVY_SLOTS"].map((k) => [k, process.env[k]]));
+const slotState = fs.mkdtempSync(path.join(os.tmpdir(), "aw-scaffold-unit-slots-"));
+trees.push(slotState);
+const slotBase = path.join(slotState, "locks", "heavy-job.lock");
+process.env.AW_STATE_DIR = slotState;
+for (const k of ["AW_HEAVY_LOCK_HELD", "AW_HEAVY_JOB_LOCK", "AW_HEAVY_SLOTS"]) delete process.env[k];
+const quiet = { timeoutS: 0, log: () => {} };
+const both = await common.withHeavyLock(async () => [fs.existsSync(slotBase), fs.existsSync(`${slotBase}.2`), process.env.AW_HEAVY_LOCK_HELD], quiet);
+const leftAfter = fs.readdirSync(path.dirname(slotBase));
+fs.mkdirSync(slotBase);   // another heavy job (a plain locks.sh holder) has slot 1
+const second = await common.withHeavyLock(async () => fs.existsSync(path.join(`${slotBase}.2`, "owner")), quiet);
+fs.mkdirSync(`${slotBase}.2`);
+const full = await common.withHeavyLock(async () => "ran", quiet).catch((e) => e);
+process.env.AW_HEAVY_SLOTS = "3";
+const third = await common.withHeavyLock(async () => fs.existsSync(`${slotBase}.3`), quiet);
+process.env.AW_HEAVY_SLOTS = "1";
+fs.rmdirSync(`${slotBase}.2`);
+const one = await common.withHeavyLock(async () => "ran", quiet).catch((e) => e);
+for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
+t("withHeavyLock takes slot 1, then slot 2 beside a plain holder of slot 1, and fails only when every slot is held", () => {
+  assert.deepEqual(both, [true, false, "1"]);
+  assert.deepEqual(leftAfter, []);
+  assert.equal(second, true);
+  assert.equal(full.rule, "SCAFFOLD-LOCK");
+  assert.match(full.message, /every slot of the heavy-job lock .* \(2\)/);
+  assert.equal(third, true);
+  assert.equal(one.rule, "SCAFFOLD-LOCK");
+  assert.deepEqual(common.heavySlots({}), 2);
+  for (const bad of ["0", "x", "1.5"]) assert.equal(common.heavySlots({ AW_HEAVY_SLOTS: bad }), 2);
 });
 
 for (const dir of trees) fs.rmSync(dir, { recursive: true, force: true });

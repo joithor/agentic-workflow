@@ -23,15 +23,15 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/aw-scaffold-e2e.XXXXXX")"
-# One heavy job at a time (config/lib/locks.sh): take the box-wide lock for the whole run unless a caller holds it,
-# and tell the generators it is held.
+# At most AW_HEAVY_SLOTS heavy jobs at a time (default 2; config/lib/locks.sh): take a slot of the box-wide lock for
+# the whole run unless a caller holds one, and tell the generators it is held.
 LOCK=""
 if [ "${AW_HEAVY_LOCK_HELD:-}" != "1" ]; then
   # shellcheck source=../../config/lib/locks.sh
   source "$ROOT/config/lib/locks.sh"
-  LOCK="${AW_STATE_DIR:-$HOME/.agentic-workflow}/locks/heavy-job.lock"
-  mkdir -p "$(dirname "$LOCK")"
-  acquire_lock "$LOCK" 5400 || { echo "heavy-job lock busy: $LOCK" >&2; exit 2; }
+  BASE="${AW_HEAVY_JOB_LOCK:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/locks/heavy-job.lock}"
+  mkdir -p "$(dirname "$BASE")"
+  LOCK="$(acquire_any_lock "$BASE" "${AW_HEAVY_SLOTS:-2}" 5400)" || { echo "heavy-job lock busy (every slot): $BASE" >&2; exit 2; }
   echo "$$ $(date -u +%FT%TZ) scripts/scaffold/e2e.sh" > "$LOCK/owner"
 fi
 export AW_HEAVY_LOCK_HELD=1

@@ -1272,6 +1272,9 @@ reviewed again. Its fixes are listed below for the owner's review.
     phases.
 - **The eval format** (owner decision, 2026-10-11): child lines, `variant` and `amount` for the engine triggers, and
   `--record` reading content from the store's facts (§9.2).
+- **`answer --text` on a `no-progress` park works once per loop** (§3.8; the lane lead's decision, 2026-10-11, not
+  the owner's). `--text` is a desk action and grants are protected (W7), so a `--text` that worked once per park would
+  let a desk caller add rounds without end. After the one `--text`, more rounds need `--grant n` at a terminal.
 - **Crafted bypasses** are outside the threat model (A 17.28.3; `docs/csharp/bugfix.md` "Threat model"):
   - direct SQLite writes;
   - unauthenticated loopback callers and port squatting;

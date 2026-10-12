@@ -54,6 +54,7 @@ internal sealed class RecipeShape(JsonSerializerOptions options, ReaderFindings 
         if (!nullable)
         {
             findings.Add("RCP-SCHEMA-002", path, $"'{Last(path)}' has no value", $"write {RecipeTypes.Expected(type)}");
+            findings.Refuse(path);
         }
     }
 
@@ -159,12 +160,20 @@ internal sealed class RecipeShape(JsonSerializerOptions options, ReaderFindings 
         findings.Refuse(path);
     }
 
+    /// <summary>
+    /// Whether <paramref name="node"/> binds as <paramref name="info"/>'s type. An enum takes exactly one of its names:
+    /// the converter also accepts numbers, numeric text, any case and comma lists, so the value must write back as the
+    /// same text.
+    /// </summary>
     private static bool Reads(JsonNode node, JsonTypeInfo info)
     {
         try
         {
-            _ = JsonSerializer.Deserialize(node, info);
-            return true;
+            var value = JsonSerializer.Deserialize(node, info);
+            var type = Nullable.GetUnderlyingType(info.Type) ?? info.Type;
+            return !type.IsEnum
+                || (node is JsonValue text && text.GetValueKind() == JsonValueKind.String
+                    && string.Equals(JsonSerializer.Serialize(value, info), node.ToJsonString(), StringComparison.Ordinal));
         }
         catch (JsonException)
         {

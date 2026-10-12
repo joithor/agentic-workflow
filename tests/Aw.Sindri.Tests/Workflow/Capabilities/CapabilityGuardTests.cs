@@ -17,16 +17,32 @@ public sealed class CapabilityGuardTests
     [Fact, Trait("Lane", "unit")]
     public void A_lower_threshold_on_a_dominating_gate_is_refused()
     {
-        // The recipe of invalid/RCP-CAP-005.yaml; the child's 'recipe' is at 21:25 and the effect's 'use' at 47:9.
+        // The recipe of invalid/RCP-CAP-005.yaml: 'running' waits for an answer instead of the base's child (a use
+        // fewer, which the base allows), so the lowered gate guards one capability use, the effect at 47:9.
         var recipe = (Generated with { Id = RecipeId.From("workflow.cap-005") })
-            .WithTransition(0, t => t with { Gates = [Gate("gate.review", 0.6), Gate("gate.check")] });
+            .WithTransition(0, t => t with { Gates = [Gate("gate.review", 0.6), Gate("gate.check")] })
+            .WithState("running", s => s with
+            {
+                WaitFor = new WaitFor(Event: null, new AnswerWait(AnswerId.From("go"), "Publish it?"), Resource: null, Child: null),
+                Next = "Waiting for the answer.",
+            });
+
+        Assert.Equal(
+            ["RCP-CAP-005: capability use effect.repo.push on publish -> running is guarded by gate.review at threshold 0.6, below base workflow.cap-base's 0.8 at RCP-CAP-005.yaml:47:9 (transitions[2].effects[0].use); raise the threshold to 0.8 or more"],
+            Lines(recipe, Base, "RCP-CAP-005.yaml", [("transitions[2].effects[0].use", 47, 9)]));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_lower_threshold_is_reported_for_each_use_it_guards()
+    {
+        var recipe = Generated.WithTransition(0, t => t with { Gates = [Gate("gate.review", 0.6), Gate("gate.check")] });
 
         Assert.Equal(
             [
-                "RCP-CAP-005: capability use child workflow.step in state 'running' is guarded by gate.review at threshold 0.6, below base workflow.cap-base's 0.8 at RCP-CAP-005.yaml:21:25 (states.running.waitFor.child.recipe); raise the threshold to 0.8 or more",
-                "RCP-CAP-005: capability use effect.repo.push on publish -> running is guarded by gate.review at threshold 0.6, below base workflow.cap-base's 0.8 at RCP-CAP-005.yaml:47:9 (transitions[2].effects[0].use); raise the threshold to 0.8 or more",
+                "RCP-CAP-005: capability use child workflow.step in state 'running' is guarded by gate.review at threshold 0.6, below base workflow.cap-base's 0.8 at r.yaml:1:1 (states.running.waitFor.child.recipe); raise the threshold to 0.8 or more",
+                "RCP-CAP-005: capability use effect.repo.push on publish -> running is guarded by gate.review at threshold 0.6, below base workflow.cap-base's 0.8 at r.yaml:1:1 (transitions[2].effects[0].use); raise the threshold to 0.8 or more",
             ],
-            Lines(recipe, Base, "RCP-CAP-005.yaml", [("states.running.waitFor.child.recipe", 21, 25), ("transitions[2].effects[0].use", 47, 9)]));
+            Lines(recipe, Base));
     }
 
     [Fact, Trait("Lane", "unit")]

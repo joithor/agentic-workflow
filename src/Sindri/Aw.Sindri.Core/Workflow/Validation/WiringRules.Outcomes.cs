@@ -81,7 +81,7 @@ internal sealed partial class WiringRules
         foreach (var (name, state) in recipe.States)
         {
             var on = state.Kind switch { StateKind.Active => "step.completed", StateKind.Wait => "wait.satisfied", StateKind.Terminal => null, _ => null };
-            if (on is null || SourceOf(recipe, name, on, context) is not { Outcomes.Count: > 0 } trigger)
+            if (on is null || HasMisfit(recipe, name, state.Kind) || SourceOf(recipe, name, on, context) is not { Outcomes.Count: > 0 } trigger)
             {
                 continue;
             }
@@ -95,6 +95,17 @@ internal sealed partial class WiringRules
             }
         }
     }
+
+    /// <summary>
+    /// Whether a transition from <paramref name="state"/> has a trigger the state can't fire (a wait trigger on an active
+    /// state, an unknown trigger). That is RCP-TRIG-001's one finding: the transition was meant to handle the state's
+    /// outcomes, so they aren't reported as unhandled until its trigger is fixed.
+    /// </summary>
+    private static bool HasMisfit(Recipe recipe, string state, StateKind kind) =>
+        recipe.Transitions.Any(t =>
+            t.From.Contains(state, StringComparer.Ordinal)
+            && !t.On.StartsWith("command.", StringComparison.Ordinal)
+            && (kind, t.On) is not ((StateKind.Active, "step.completed" or "step.failed") or (StateKind.Wait, "wait.satisfied")));
 
     /// <summary>The outcomes the transitions from <paramref name="state"/> on <paramref name="on"/> can match, or null when one matches any outcome.</summary>
     private static HashSet<OutcomeName>? Handled(Recipe recipe, string state, string on)
@@ -146,6 +157,12 @@ internal sealed partial class WiringRules
             }
 
             var id = child.Recipe.Value;
+            if (child.Recipe.Equals(recipe.Id))
+            {
+                // why: a recipe that starts itself is RCP-CHILD-002's cycle, not a missing child
+                continue;
+            }
+
             if (children.Resolve(child.Recipe) is not { } found)
             {
                 yield return source.Finding(

@@ -15,18 +15,22 @@ namespace Aw.Sindri.Tests.Workflow.Capabilities;
 /// </summary>
 internal static class CapabilityRecipe
 {
-    public static readonly RecipeHash BaseHash = RecipeHash.Of("{}"u8);
+    /// <summary>The hash of Workflow/Recipes/base/workflow.cap-base.yaml, which the fixtures name in their 'base' (the end-to-end fixture test checks it).</summary>
+    public static readonly RecipeHash BaseHash = RecipeHash.From("sha256:5aa84cb58a5a6a2c70fa4c9b3a1758625a9e78b625734ec55e49f2e762125b03");
 
     /// <summary>
     /// The blocks the fixtures name: a desk Step and two gates without capabilities, the effects 'effect.claim.ref'
-    /// (Effects, WriteScope) and 'effect.notify.desk' (Effects) as P1 unit (e) declares them, and the test-only
-    /// 'effect.repo.push' (Effects, Network), whose 'remote' is a capability parameter and whose 'message' isn't.
+    /// (Effects, WriteScope) and 'effect.notify.desk' (Effects) as P1 unit (e) declares them, the test-only
+    /// 'effect.repo.push' (Effects, Network), whose 'remote' is a capability parameter and whose 'message' isn't, and
+    /// the evidence provider 'evidence.tests' the fixtures' 'evidence: [{ kind: tests }]' needs.
     /// </summary>
     public static BlockCatalog Catalog { get; } = new(
     [
         TestBlocks.Step("step.produce"),
         TestBlocks.Gate("gate.check"),
         TestBlocks.Gate("gate.review") with { Rung = Rung.JudgeQuestion },
+        new BlockDescriptor(BlockId.From("evidence.tests"), BlockKind.EvidenceProvider, Version: 1, Inputs: [], Outputs: [], Outcomes: [],
+            Capability.None, Parameters: [], Rung: null, DeskCapable: false),
         Effect("effect.claim.ref", Capability.Effects | Capability.WriteScope),
         Effect("effect.notify.desk", Capability.Effects),
         Effect("effect.repo.push", Capability.Effects | Capability.Network) with

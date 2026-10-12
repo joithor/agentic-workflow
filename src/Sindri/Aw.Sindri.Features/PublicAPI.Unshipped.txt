@@ -369,3 +369,5 @@ Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Deconstruct(out System.Collecti
 Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.EvalRecipeResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.EvalCaseResult!>! Cases, string? Scaffold = null) -> void
 Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Scaffold.get -> string?
 Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Scaffold.init -> void
+Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.Normalized.get -> Aw.Sindri.Core.Workflow.Recipes.Recipe?
+Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.Normalized.init -> void

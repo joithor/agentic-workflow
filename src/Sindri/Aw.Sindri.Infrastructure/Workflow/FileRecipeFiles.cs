@@ -9,6 +9,11 @@ internal sealed class FileRecipeFiles : IRecipeFiles
     public async ValueTask<Result<string>> Read(string path, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(path);
+        if (Directory.Exists(path))
+        {
+            return WorkflowErrors.RecipeUnreadable.With($"{path} is a directory, not a recipe file (fix: name the recipe's .yaml file)");
+        }
+
         if (!File.Exists(path))
         {
             return WorkflowErrors.RecipeUnreadable.With($"{path} doesn't exist (fix: check the path)");

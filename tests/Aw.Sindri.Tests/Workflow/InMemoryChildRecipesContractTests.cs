@@ -1,15 +1,16 @@
+using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow;
 
+[Lane(TestLane.Unit)]
 public sealed class InMemoryChildRecipesContractTests : ChildRecipeResolverContract
 {
-    [Fact, Trait("Lane", "unit")]
-    public void Known_child_resolves() => A_known_child_resolves_with_its_hash();
-
-    [Fact, Trait("Lane", "unit")]
-    public void Unknown_child_is_null() => An_unknown_child_is_null();
-
-    protected override IChildRecipeResolver CreateWithKnown() => new InMemoryChildRecipes().With(Known);
+    protected override ValueTask<(IChildRecipeResolver Resolver, ChildRecipe Known)> CreateWithKnown()
+    {
+        var known = new ChildRecipe(ARecipe.Minimal(RecipeId.From("workflow.child")), RecipeHash.From("sha256:" + new string('c', 64)));
+        return ValueTask.FromResult<(IChildRecipeResolver, ChildRecipe)>((new InMemoryChildRecipes().With(known), known));
+    }
 }

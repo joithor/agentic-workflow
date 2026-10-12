@@ -31,6 +31,9 @@ internal sealed class ReaderFindings(string file)
     /// <summary>Marks the node at <paramref name="path"/> as reported: the later passes skip it and everything under it.</summary>
     public void Refuse(string path) => _refused.Add(path);
 
+    /// <summary>The refused paths, shortest first.</summary>
+    public IEnumerable<string> Refused => _refused.OrderBy(static p => p.Length).ThenBy(static p => p, StringComparer.Ordinal);
+
     public bool IsRefused(string path) =>
         _refused.Any(r => path.Length >= r.Length && path.StartsWith(r, StringComparison.Ordinal)
             && (path.Length == r.Length || r.Length == 0 || path[r.Length] is '.' or '['));

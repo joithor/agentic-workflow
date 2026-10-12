@@ -15,6 +15,7 @@ using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Features.ValidateRecipe;
+using Aw.Sindri.Host.Commands.Recipe;
 
 namespace Aw.Sindri.Host;
 
@@ -42,4 +43,5 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(WorkflowEvent))]
 [JsonSerializable(typeof(EvalStartLine))]
 [JsonSerializable(typeof(EvalStepLine))]
+[JsonSerializable(typeof(RecipeValidationView))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;
