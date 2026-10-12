@@ -134,7 +134,7 @@ only, never the message, which can name the home), with a line that names the ex
 
 The pre-API states (`ShellState`, highest first): **version mismatch** (the status's `apiVersion` differs from
 `AppApiVersion`: a full-window panel with both versions and "quit both and run" around `sindri` in the command chip, no top bar), **not running**
-(S1b's panel and reasons, closing with "Looks again every 2 s", the follower's retry wait), **connecting** (skeleton rows, first load only), **unreadable** (`SND-UI-003`: a banner with
+(S1b's panel and reasons, closing with "Looks again every 2 s", the follower's retry wait), **connecting** (skeleton rows, first load only), **unreadable** (`SND-UI-003`, or Sindri's own 403 after the token retry with its code and detail: a banner with
 the code and `sindri doctor`, its parts in a wrap panel so a long reason wraps and the command moves to its own line
 rather than past the window's edge at 900 px, as the not-responding banner's does; the page keeps its last data and the pill reads "Unreadable · stale"), **stale** (30 s
 without an event, a status or an answered ping, on the injected clock: the pill reads "⌛ stale · updated Ns ago" with
@@ -226,16 +226,16 @@ the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `
 Every call carries this start's human token (`IHumanTokenSource`, read at each call; see the caller headers
 above). A call Sindri refuses with 403 `SND-AUTH-001` (a missing or stale token) is retried exactly once with the token
 read again from `auth/human.token`, since a restarted control plane has minted a new one; there is never a third call.
-A call refused after that retry (or any other 403 with Sindri's ProblemDetails) is the **unreadable** banner with
+A follower call (ping, status, the stream) refused after that retry (or any other 403 with Sindri's ProblemDetails) is the **unreadable** banner with
 Sindri's code and `detail` as they are ("SND-AUTH-001: A human caller needs this start's token in X-Sindri-Token (fix:
 restart the app or rerun the command)"), never the token. The app keeps looking every 2 s and recovers on its own once
 the token is good. A ping refused while following ends the follow, so the window names the refusal within one ping
-beat (10 s).
+beat (10 s). A refused Refresh click counts only as a failed refresh; the next ping beat shows the refusal.
 
 1. The endpoint-record port (`IEndpointRecordSource`) reads `control.json`. The desktop adapter reads it from
    `AW_SINDRI_HOME`, else `$AW_STATE_DIR/sindri-app`, else `~/.agentic-workflow/sindri-app`, the same place the control
-   plane writes it. No record means "Not running". A record whose URL isn't on this machine (loopback: 127.0.0.1, ::1
-   or localhost) is refused as unreadable, with the reason and the record's path; the app never calls that address.
+   plane writes it. No record means "Not running". A record whose URL isn't on this machine (loopback: 127.0.0.0/8, ::1
+   or localhost) reads as Not running with "The endpoint record can't be read: … isn't on this machine" and the record's path; the app never calls that address.
 2. `GET /sindri/ping` must answer the record's pid **and** epoch; otherwise the record is stale and reads as "Not running".
 3. `GET /sindri/status` fills the window. A lower epoch than the last one means a new ledger, so the stream cursor
    starts over. Each `/sindri/events` event (server-sent events, resumed from the last

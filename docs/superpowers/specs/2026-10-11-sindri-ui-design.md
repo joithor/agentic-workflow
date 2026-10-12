@@ -4,11 +4,11 @@ Status:
 - **Revision 7 amendment (owner, 2026-10-12; PR #184):** §12.4 lists two more app-owned sentences, "On in your system
   settings" (Settings, while the OS reduces motion) and "Looks again every 2 s" (the Not running card); §15's deps cycle
   row is decided (a `DEPS-CYCLE-001` exception). Lane decisions relayed by the orchestrator (2026-10-12): §7 and §18.1
-say engine P2 registers every engine catalog row, the desk and pause rows pending until WF P4/P5 flip them to ready and the
-protected rows (`answer-grant`, `answer-grant-tokens`, `answer-accept`, `ApproveRecipe`) `cli-only:typed-confirmation`
-from the start, never app buttons, and the engine's queries stay off the
-catalog; §4.4, §7 and E-12 name `answer-grant-tokens` beside `answer-grant` (API §2.1, X30); §4.1's Unreadable row also
-covers a Sindri refusal after one token re-read and retry. Nothing else changes.
+  say WF P2 registers every engine catalog row, the desk and pause rows pending until WF P4/P5 flip them to ready and the
+  protected rows (`answer-grant`, `answer-grant-tokens`, `answer-accept`, `ApproveRecipe`) `cli-only:typed-confirmation`
+  from the start, never app buttons, and the engine's queries stay off the
+  catalog; §4.4, §7 and E-12 name `answer-grant-tokens` beside `answer-grant` (API §2.1, X30); §4.1's Unreadable row also
+  covers a Sindri refusal after one token re-read and retry. Nothing else changes.
 - **Revision 7 note (owner, 2026-10-11; README X55):** tmux owns every agent session and Warp attaches to it, so
   **Attach joins the live agent** and the human can type into whatever Step is running; the earlier "Sindri can't see
   inside Warp" limit in §6.2 and §6.6 no longer applies, and the `process` target kind is retired (API §8.1 rev 8).
@@ -541,7 +541,7 @@ each edit lands in).
 | **E-9** | `CompleteStep` gets a catalog row with UI status `ready` once WF P4 lands; its route accepts output file contents (≤ 1 MiB each), as WF §6.1 says for the CLI. API §2.1's `ApplyCommand:complete` variant is dropped in favour of `CompleteStep` | The desk-task form (§4.4); one name |
 | **E-10** | P10 is split: **P10a** (`OpenItem`, the launcher service, `WarpLauncher`, E-1…E-5, E-11; depends on P3 + P8) ships before the engine, and **P10b** (E-6's wait for the takeover) depends on WF P5. P10a carries the spike unit (§6.3) | The headline ships early; takeover lands with the engine |
 | **E-11** | `sindri open <item> [--agent claude-code\|codex\|cursor] [--attach \| --resume]`; bare `sindri open` takes the mode the item's `launch` block puts first | One surface for the CLI and the app |
-| **E-12** | API §2.1 and §4.1 define the `ApplyCommand` variants the app calls: `answer-text`, `answer-resume`, `answer-reject` (all `desk`), beside `answer-grant`, `answer-grant-tokens` and `answer-accept` (`protected`), `takeover` (`pause`), `handback` and `cancel` (`desk`). The field rule is restated per variant: `grant` is valid only on `answer-grant`, `grantTokens` only on `answer-grant-tokens` and `accept` only on `answer-accept`; either field on another variant is refused, and the request is still classified `protected` (fail-closed) | Without them the fail-closed rule makes Reject and Resume `protected` |
+| **E-12** | API §2.1 and §4.1 define the `ApplyCommand` variants the app calls: `answer-text`, `answer-resume`, `answer-reject` (all `desk`), beside `answer-grant`, `answer-grant-tokens` and `answer-accept` (`protected`), `takeover` (`pause`), `handback` and `cancel` (`desk`). The field rule is restated per variant: `grant` is valid only on `answer-grant`, `grantTokens` only on `answer-grant-tokens` and `accept` only on `answer-accept`; any of these fields on another variant is refused, and the request is still classified `protected` (fail-closed) | Without them the fail-closed rule makes Reject and Resume `protected` |
 | **E-13** | **WF edit (§6.3):** each `allowedCommands` entry on `GET /workflow/instances/{address}` is `{ actionId, cli }`, with ids filled and the class taken from the catalog; a parent mirroring a child lists the forwarded actions | The app intersects ids, never maps verbs |
 | **E-14** | `GET /status` gains `health: { word: healthy\|degraded\|stalled\|rebuilding, problems: [{code, text}] }`, computed by `Core`'s `HealthSummary.For(…)` | The health pill renders it verbatim |
 | **E-15** | Each `EventCatalog` entry gains `invalidates: [viewName]`, served by `GET /events/catalog` (a query, P5) | The app's refresh map comes from the server; an unknown type re-queries every visible view |
@@ -586,7 +586,7 @@ renders a button once that phase ships; until then the catalog says `pending:<ph
 | Copy CLI, Refresh, navigation, palette | everywhere | — (local) | — | ready |
 
 `answer-resume`, `answer-reject` and `answer-text` are defined by E-12; until then the fail-closed rule would make them
-`protected`. Engine P2 registers every engine catalog row: the desk and pause rows as `pending:WF-P4` or `pending:WF-P5`, which WF
+`protected`. WF P2 registers every engine catalog row: the desk and pause rows as `pending:WF-P4` or `pending:WF-P5`, which WF
 P4 and P5 flip to ready, and the protected rows (`answer-grant`, `answer-grant-tokens`, `answer-accept`,
 `ApproveRecipe`) as `cli-only:typed-confirmation` from the start; they never become app buttons. The engine's queries (`ShowRecipe`, `ListRecipes`, `GetInstance` and the rest) have no catalog rows: the
 app reads them as plain GETs, with no catalog gating.

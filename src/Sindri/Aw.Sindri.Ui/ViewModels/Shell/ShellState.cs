@@ -15,7 +15,7 @@ internal enum ShellState
     /// <summary>First load, before /status answers: the chrome and skeleton rows (first load only, never on refresh).</summary>
     Connecting,
 
-    /// <summary>SND-UI-003, the API answered with something this build doesn't read: a banner with the code; the last good data stays, marked stale.</summary>
+    /// <summary>SND-UI-003, the API answered with something this build doesn't read, or Sindri's own 403 after the token retry (its code and detail): a banner with the code; the last good data stays, marked stale.</summary>
     Unreadable,
 
     /// <summary>No event or ping for 30 s: "updated Ns ago" becomes the word stale.</summary>

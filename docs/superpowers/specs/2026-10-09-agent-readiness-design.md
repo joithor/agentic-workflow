@@ -656,7 +656,8 @@ one that is merged; any other is still open, and its rule record (§4b intro) sa
 | Service-locator types only in `Host` and registration classes | ARCH-DI-001 | same | #131 (main) |
 | No technology types in `Core`, `Features` or the small shape's `App.Commands` (`Host` may use them); only `Composition` uses `Infrastructure` | ARCH-PORT-001, ARCH-PORT-002 | same | #131 (main) |
 | Typed ids (R9: defaults, user-code converter) | ARCH-ID-001, ARCH-ID-002 (`TypedIdGuard`, moved from `Aw.Kernel.Tests`) | same | #131 (main) |
-| The `Packages.Production` registry matches the solution | ARCH-REG-001, ARCH-REG-002 | same | #131 (main) |
+| The `Packages.Production` registry matches the solution, and every non-layer project is declared unshaped | ARCH-REG-001, ARCH-REG-002, ARCH-REG-003 | same | #131 (main), #184 |
+| The UI package: no Sindri type, plain view models, thin heads | ARCH-UI-001 | same | #184 |
 | Raw ids in public `Core`/`Features` signatures; `!` without `// why:`; endpoint lambda calls exactly one service; file ≤ 300 lines; parameters ≤ 5; constructor dependencies > 7 (error) and 6–7 (`suggestion`); generic arity ≤ 3 | AW1001, AW1002, AW1004, AW1005, AW1006, AW1007, AW1008, AW1009 | `Aw.Analyzers` (`CA1005` off, owned by AW1009) | #132 |
 | Per-test lane cap; exactly one known lane | LANE-TEST-001, LANE-TEST-002 | `tests/Aw.LaneCap.Testing` over CTRF reports | #133 (main) |
 | Per-package lane budget; a timed lane run failed | LANE-PKG-001, LANE-PKG-002 | `node scripts/ci/lane-budgets.mjs` (CI .NET job) | #138 |
