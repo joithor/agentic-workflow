@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
 
@@ -113,14 +114,29 @@ public sealed class InMemoryViewStore(JsonSerializerOptions options) : IViewStor
     {
         foreach (var projection in projections.Where(p => p.Handles(recorded.Envelope.Type)))
         {
-            var applied = await projection.Apply(recorded, rows, cancellationToken).ConfigureAwait(false);
-            if (applied.IsError)
+            var failure = await FoldOne(projection, recorded, rows, cancellationToken).ConfigureAwait(false);
+            if (failure is not null)
             {
-                return applied.Error;
+                return failure;
             }
         }
 
         return null;
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Mirrors SqliteViewStore's boundary: a throwing fold stalls the projector (SND-VIEW-001), it doesn't crash it.")]
+    private static async ValueTask<Error?> FoldOne(IProjection projection, LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var applied = await projection.Apply(recorded, rows, cancellationToken).ConfigureAwait(false);
+            return applied.IsError ? applied.Error : null;
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return SindriErrors.ViewsStalled.With($"{e.GetType().Name}: {e.Message}");
+        }
     }
 
     private (Dictionary<string, SortedDictionary<string, string>> Tables, ProjectorState State) Snapshot()

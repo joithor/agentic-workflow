@@ -4,6 +4,7 @@ using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Tests.Server;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Commands;
@@ -19,7 +20,7 @@ public sealed class CliStatusJsonTests : IDisposable
     public async Task Cli_status_json_equals_the_raw_api_body()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
+        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, NoTemporal.Use);   // the Temporal side is faked: these tests are about the API
         _ = Pipeline.Configure(app);
         await using var scope = app.Services.CreateAsyncScope();
         var grant = (await scope.ServiceProvider.GetRequiredService<IService<StartProcessRequest, StartProcessResponse>>().Handle(new StartProcessRequest(), ct)).Value.Grant;
