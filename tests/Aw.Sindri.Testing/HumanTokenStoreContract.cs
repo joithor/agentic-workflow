@@ -5,7 +5,7 @@ namespace Aw.Sindri.Testing;
 
 /// <summary>
 /// The contract every <see cref="IHumanTokenStore"/> honours: nothing before a mint, a read returns the minted token, a new
-/// mint replaces it, and a remove leaves none (also when there was none). Run against the fake and the file adapter.
+/// mint replaces it, and a remove leaves none (also when there was none) but never removes another start's token. Run against the fake and the file adapter.
 /// </summary>
 public abstract class HumanTokenStoreContract
 {
@@ -53,10 +53,22 @@ public abstract class HumanTokenStoreContract
     public async Task Remove_leaves_no_token_and_a_second_remove_succeeds()
     {
         var store = Create();
-        _ = await store.Mint(Token);
+        var minted = (await store.Mint(Token)).Value;
 
-        Expect.True((await store.Remove(Token)).IsSuccess);
-        Expect.True((await store.Remove(Token)).IsSuccess);
+        Expect.True((await store.Remove(minted, Token)).IsSuccess);
+        Expect.True((await store.Remove(minted, Token)).IsSuccess);
         Expect.True((await store.Read(Token)).Value is null);
+    }
+
+    /// <summary>A start that stops after another start minted leaves the other start's token in place.</summary>
+    [Fact]
+    public async Task Remove_leaves_another_starts_token()
+    {
+        var store = Create();
+        var mine = (await store.Mint(Token)).Value;
+        var successor = (await store.Mint(Token)).Value;
+
+        Expect.True((await store.Remove(mine, Token)).IsSuccess);
+        Expect.Equal(successor, (await store.Read(Token)).Value);
     }
 }

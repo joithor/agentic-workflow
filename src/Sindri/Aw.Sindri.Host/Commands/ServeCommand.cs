@@ -134,11 +134,19 @@ internal static class ServeCommand
         return app.Services.GetRequiredService<IExitCode>().Code;
     }
 
-    /// <summary>Forgets this start's token and removes its file (with control.json: the next start mints a new one).</summary>
+    /// <summary>
+    /// Forgets this start's token and removes its file if it still holds this start's token (like control.json: a
+    /// serve that lost its lease leaves its successor's token alone).
+    /// </summary>
     private static async Task DropToken(WebApplication app)
     {
-        app.Services.GetRequiredService<HeldHumanToken>().Clear();
-        _ = await app.Services.GetRequiredService<IHumanTokenStore>().Remove(CancellationToken.None).ConfigureAwait(false);
+        var held = app.Services.GetRequiredService<HeldHumanToken>();
+        var mine = held.Current;
+        held.Clear();
+        if (mine is not null)
+        {
+            _ = await app.Services.GetRequiredService<IHumanTokenStore>().Remove(mine, CancellationToken.None).ConfigureAwait(false);
+        }
     }
 
     /// <summary>Runs one service in its own scope as the caller 'service:host'.</summary>

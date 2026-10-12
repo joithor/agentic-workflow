@@ -602,7 +602,7 @@ Aw.Sindri.Core.Auth.HumanToken.Value.init -> void
 Aw.Sindri.Core.Auth.IHumanTokenStore
 Aw.Sindri.Core.Auth.IHumanTokenStore.Mint(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Auth.HumanToken!>!>
 Aw.Sindri.Core.Auth.IHumanTokenStore.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Auth.HumanToken?>!>
-Aw.Sindri.Core.Auth.IHumanTokenStore.Remove(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Auth.IHumanTokenStore.Remove(Aw.Sindri.Core.Auth.HumanToken! mine, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Sindri.Core.Auth.ProverLabel
 Aw.Sindri.Core.Auth.ProverLabel.<Clone>$() -> Aw.Sindri.Core.Auth.ProverLabel!
 Aw.Sindri.Core.Auth.ProverLabel.Allowed.get -> bool

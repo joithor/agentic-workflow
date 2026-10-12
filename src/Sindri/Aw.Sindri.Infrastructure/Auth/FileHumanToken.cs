@@ -9,7 +9,8 @@ namespace Aw.Sindri.Infrastructure.Auth;
 
 /// <summary>
 /// The per-start human token as &lt;home&gt;/auth/human.token (API spec §6): 32 random bytes in base64url, written
-/// atomically as a 0600 file in a 0700 'auth' folder. Only 'serve' mints and removes it; the CLI and the app read it.
+/// atomically as a 0600 file in a 0700 'auth' folder. Only 'serve' mints and removes it (only while it still holds
+/// its own token); the CLI and the app read it.
 /// </summary>
 /// <param name="settings">The settings naming the token file.</param>
 internal sealed class FileHumanToken(SindriSettings settings) : IHumanTokenStore
@@ -49,20 +50,31 @@ internal sealed class FileHumanToken(SindriSettings settings) : IHumanTokenStore
         }
     }
 
-    public ValueTask<Result<Unit>> Remove(CancellationToken cancellationToken)
+    public async ValueTask<Result<Unit>> Remove(HumanToken mine, CancellationToken cancellationToken)
     {
+        var stored = await Read(cancellationToken).ConfigureAwait(false);
+        if (stored.IsError)
+        {
+            return stored.Error;
+        }
+
+        if (stored.Value is null || !stored.Value.Matches(mine.Value))
+        {
+            return Unit.Value;   // none, or another start's: leave it
+        }
+
         try
         {
             File.Delete(settings.TokenPath);   // no error when the file is missing
-            return ValueTask.FromResult<Result<Unit>>(Unit.Value);
+            return Unit.Value;
         }
         catch (DirectoryNotFoundException)
         {
-            return ValueTask.FromResult<Result<Unit>>(Unit.Value);
+            return Unit.Value;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return ValueTask.FromResult<Result<Unit>>(Unwritable(e));
+            return Unwritable(e);
         }
     }
 

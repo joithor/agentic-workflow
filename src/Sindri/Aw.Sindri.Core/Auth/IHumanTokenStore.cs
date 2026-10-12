@@ -15,8 +15,12 @@ public interface IHumanTokenStore
     /// <returns>The token, null when none is stored, or the error that kept it from being read.</returns>
     public ValueTask<Result<HumanToken?>> Read(CancellationToken cancellationToken);
 
-    /// <summary>Removes the stored token (a no-op when there is none).</summary>
+    /// <summary>
+    /// Removes the stored token if it is still <paramref name="mine"/> (a no-op when there is none or another start's):
+    /// a serve that stops after losing its lease must not delete its successor's token.
+    /// </summary>
+    /// <param name="mine">The token this start minted.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
-    /// <returns>Success, or the error that kept it from being removed.</returns>
-    public ValueTask<Result<Unit>> Remove(CancellationToken cancellationToken);
+    /// <returns>Success, or the error that kept it from being read or removed.</returns>
+    public ValueTask<Result<Unit>> Remove(HumanToken mine, CancellationToken cancellationToken);
 }

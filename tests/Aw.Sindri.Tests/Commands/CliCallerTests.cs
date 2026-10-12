@@ -179,6 +179,6 @@ public sealed class CliCallerTests
             return ValueTask.FromResult<Result<HumanToken?>>((HumanToken?)null);
         }
 
-        public ValueTask<Result<Unit>> Remove(CancellationToken cancellationToken) => throw new NotSupportedException("the CLI never removes");
+        public ValueTask<Result<Unit>> Remove(HumanToken mine, CancellationToken cancellationToken) => throw new NotSupportedException("the CLI never removes");
     }
 }

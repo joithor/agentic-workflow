@@ -22,9 +22,13 @@ public sealed class InMemoryHumanTokenStore : IHumanTokenStore
     public ValueTask<Result<HumanToken?>> Read(CancellationToken cancellationToken) => ValueTask.FromResult<Result<HumanToken?>>(_token);
 
     /// <inheritdoc/>
-    public ValueTask<Result<Unit>> Remove(CancellationToken cancellationToken)
+    public ValueTask<Result<Unit>> Remove(HumanToken mine, CancellationToken cancellationToken)
     {
-        _token = null;
+        if (_token is not null && _token.Matches(mine.Value))
+        {
+            _token = null;
+        }
+
         return ValueTask.FromResult<Result<Unit>>(Unit.Value);
     }
 }
