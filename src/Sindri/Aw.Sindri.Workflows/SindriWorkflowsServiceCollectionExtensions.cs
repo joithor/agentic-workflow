@@ -33,6 +33,8 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items
             .AddSingleton<IInstanceRuntime, TemporalInstanceRuntime>()
             .AddSingleton<IWorkflowInstances, TemporalWorkflowInstances>()
-            .AddSingleton<ITemporalWorker, SindriWorkerHost>();
+            .AddSingleton<ITemporalWorker, SindriWorkerHost>()
+            .AddSingleton<IFactStore, HomeFactStore>()               // engine P4 unit (c): facts stored 0600 before the report
+            .AddSingleton<ICommandNonces, HomeCommandNonces>();      // engine P4 unit (c): the nonce table (stand-in until API's IssueNonce)
     }
 }

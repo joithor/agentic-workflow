@@ -373,3 +373,41 @@ Aw.Sindri.Features.StartProcess.StartProcessResponse.Deconstruct(out Aw.Sindri.C
 Aw.Sindri.Features.StartProcess.StartProcessResponse.StartProcessResponse(Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ProfileHash? Profile, Aw.Sindri.Core.Control.TemporalEndpoint! Temporal) -> void
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint!
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.init -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Address.init -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Run.get -> Aw.Sindri.Core.Workflow.Engine.RunToken
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Run.init -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Outcome.init -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Outputs.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>!
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Outputs.init -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Actor.get -> string!
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Actor.init -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Nonce.get -> Aw.Sindri.Core.Workflow.Engine.CommandNonce?
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Nonce.init -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest
+override Aw.Sindri.Features.CompleteStep.CompleteStepRequest.ToString() -> string!
+static Aw.Sindri.Features.CompleteStep.CompleteStepRequest.operator !=(Aw.Sindri.Features.CompleteStep.CompleteStepRequest? left, Aw.Sindri.Features.CompleteStep.CompleteStepRequest? right) -> bool
+Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Nonce.get -> Aw.Sindri.Core.Workflow.Engine.CommandNonce
+Aw.Sindri.Features.CompleteStep.CompleteStepResponse
+static Aw.Sindri.Features.CompleteStep.CompleteStepRequest.operator ==(Aw.Sindri.Features.CompleteStep.CompleteStepRequest? left, Aw.Sindri.Features.CompleteStep.CompleteStepRequest? right) -> bool
+Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Nonce.init -> void
+override Aw.Sindri.Features.CompleteStep.CompleteStepRequest.GetHashCode() -> int
+override Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Equals(object? obj) -> bool
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Equals(Aw.Sindri.Features.CompleteStep.CompleteStepRequest? other) -> bool
+override Aw.Sindri.Features.CompleteStep.CompleteStepResponse.ToString() -> string!
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.<Clone>$() -> Aw.Sindri.Features.CompleteStep.CompleteStepRequest!
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, out string! Actor) -> void
+static Aw.Sindri.Features.CompleteStep.CompleteStepResponse.operator !=(Aw.Sindri.Features.CompleteStep.CompleteStepResponse? left, Aw.Sindri.Features.CompleteStep.CompleteStepResponse? right) -> bool
+Aw.Sindri.Features.CompleteStep.CompleteStepResponse.AlreadyApplied.get -> bool
+Aw.Sindri.Features.CompleteStep.CompleteStepResponse.AlreadyApplied.init -> void
+static Aw.Sindri.Features.CompleteStep.CompleteStepResponse.operator ==(Aw.Sindri.Features.CompleteStep.CompleteStepResponse? left, Aw.Sindri.Features.CompleteStep.CompleteStepResponse? right) -> bool
+override Aw.Sindri.Features.CompleteStep.CompleteStepResponse.GetHashCode() -> int
+override Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Equals(object? obj) -> bool
+Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Equals(Aw.Sindri.Features.CompleteStep.CompleteStepResponse? other) -> bool
+Aw.Sindri.Features.CompleteStep.CompleteStepResponse.<Clone>$() -> Aw.Sindri.Features.CompleteStep.CompleteStepResponse!
+Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.CommandResult! Result, out Aw.Sindri.Core.Workflow.Engine.CommandNonce Nonce, out bool AlreadyApplied) -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Result.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.CommandResult!
+Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Result.init -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepResponse.CompleteStepResponse(Aw.Sindri.Core.Workflow.Engine.Runtime.CommandResult! Result, Aw.Sindri.Core.Workflow.Engine.CommandNonce Nonce, bool AlreadyApplied) -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.CompleteStepRequest(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, string! Actor) -> void

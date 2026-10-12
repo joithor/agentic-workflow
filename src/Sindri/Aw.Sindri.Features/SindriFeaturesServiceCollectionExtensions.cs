@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.Blocks;
+using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.PingProcess;
@@ -39,6 +40,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddScoped<IService<ValidateRecipeRequest, ValidateRecipeResponse>, ValidateRecipeService>()
             .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
+            .AddScoped<IService<CompleteStepRequest, CompleteStepResponse>, CompleteStepService>()
             .AddRecipeBlocks();
         return services;
     }
