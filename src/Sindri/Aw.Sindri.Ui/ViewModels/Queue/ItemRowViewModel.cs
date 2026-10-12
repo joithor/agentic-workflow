@@ -20,6 +20,7 @@ internal sealed class ItemRowViewModel : ObservableObject
         Age = Labels.Age(now - item.Since);
         Name = Id + " " + Title + ", " + StateWord;
         PrimaryAction = primaryAction;
+        Badge = item.State == "parked" ? Labels.ParkedBadge : string.Empty;
     }
 
     /// <summary>The item's id ('ITM-…').</summary>
@@ -55,11 +56,14 @@ internal sealed class ItemRowViewModel : ObservableObject
     /// <summary>True when the row has a primary action to show.</summary>
     public bool HasPrimaryAction => PrimaryAction is not null;
 
-    /// <summary>Red stub: the parked badge.</summary>
-    public string Badge { get; } = string.Empty;
+    /// <summary>
+    /// "parked" for a parked item (UI spec §4.5, owner 2026-10-12: parked items sit in Waiting on you, API §3.6), from
+    /// the item's state; empty otherwise.
+    /// </summary>
+    public string Badge { get; }
 
-    /// <summary>Red stub.</summary>
-    public bool HasBadge { get; }
+    /// <summary>True when the row shows a badge.</summary>
+    public bool HasBadge => Badge.Length > 0;
 
     /// <summary>True while the row is the selected one (J/K, a click).</summary>
     public bool IsSelected { get; set => Set(ref field, value); }

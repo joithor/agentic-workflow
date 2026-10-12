@@ -39,6 +39,9 @@ internal sealed class ItemText
     /// <summary><see cref="Labels.ItemActions"/>.</summary>
     public string Actions { get; } = Labels.ItemActions;
 
+    /// <summary><see cref="Labels.Link"/>.</summary>
+    public string Link { get; } = Labels.Link;
+
     /// <summary><see cref="Labels.CreatedBy"/>.</summary>
     public string CreatedBy { get; } = Labels.CreatedBy;
 

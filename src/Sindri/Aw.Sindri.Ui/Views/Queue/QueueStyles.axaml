@@ -38,6 +38,13 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
     <Setter Property="BorderThickness" Value="0,1,0,0" />
   </Style>
+  <Style Selector="Border.badge">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="Padding" Value="6,0" />
+  </Style>
   <Style Selector="Button.held-pill">
     <Setter Property="Background" Value="{DynamicResource Brush.PrimarySoft}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Primary}" />

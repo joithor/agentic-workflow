@@ -33,6 +33,13 @@
           <TextBlock x:Name="ItemVersion" Classes="caption subtle" Text="{Binding VersionText}" Margin="0,0,12,0" AutomationProperties.Name="{Binding VersionText}" />
           <TextBlock x:Name="ItemAge" Classes="caption subtle" Text="{Binding Age}" AutomationProperties.Name="{Binding Age}" />
         </WrapPanel>
+        <!-- §4.6 (owner, 2026-10-12): the body as served (scrubbed, plain text) and the tracker link. -->
+        <TextBlock x:Name="ItemBodyText" Classes="body" Text="{Binding Body}" TextWrapping="Wrap" IsVisible="{Binding HasBody}"
+                   Margin="0,6,0,6" AutomationProperties.Name="{Binding Body}" />
+        <Grid Classes="row" ColumnDefinitions="110,*" IsVisible="{Binding HasLink}">
+          <TextBlock Classes="caption subtle row-label" Text="{Binding Text.Link}" />
+          <TextBlock x:Name="ItemLinkText" Grid.Column="1" Classes="mono" Text="{Binding Link}" AutomationProperties.Name="{Binding Link}" />
+        </Grid>
         <Grid Classes="row" ColumnDefinitions="110,*">
           <TextBlock Classes="caption subtle row-label" Text="{Binding Text.CreatedBy}" />
           <TextBlock x:Name="ItemCreatedBy" Grid.Column="1" Classes="mono" Text="{Binding CreatedBy}" AutomationProperties.Name="{Binding CreatedBy}" />

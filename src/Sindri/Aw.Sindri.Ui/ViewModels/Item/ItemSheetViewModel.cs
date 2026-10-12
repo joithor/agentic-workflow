@@ -50,17 +50,17 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     /// <summary>The engine step, or empty before S2.</summary>
     public string Step { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>Red stub: the body.</summary>
-    public string Body { get; } = string.Empty;
+    /// <summary>The item's body as served (scrubbed by the API; plain text), or empty (§4.6).</summary>
+    public string Body { get; private set { Set(ref field, value); OnChanged(nameof(HasBody)); } } = string.Empty;
 
-    /// <summary>Red stub.</summary>
-    public bool HasBody { get; }
+    /// <summary>True when the item has a body.</summary>
+    public bool HasBody => Body.Length > 0;
 
-    /// <summary>Red stub: the link.</summary>
-    public string Link { get; } = string.Empty;
+    /// <summary>The tracker record key the item is linked to, or empty (§4.6).</summary>
+    public string Link { get; private set { Set(ref field, value); OnChanged(nameof(HasLink)); } } = string.Empty;
 
-    /// <summary>Red stub.</summary>
-    public bool HasLink { get; }
+    /// <summary>True when the item is linked.</summary>
+    public bool HasLink => Link.Length > 0;
 
     /// <summary>Who created it, as the API names the actor.</summary>
     public string CreatedBy { get; private set => Set(ref field, value); } = string.Empty;
@@ -210,6 +210,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
         (Title, Repo, StateWord, Step) = (item.Title, item.Repo ?? string.Empty, Labels.ItemState(item.State), item.Step ?? string.Empty);
         (VersionText, Age, CreatedBy) = (Labels.Version(item.Version), Labels.Age(clock.GetUtcNow() - item.Since), item.CreatedBy);
         (WaitingOn, Instance) = (item.WaitingOn ?? string.Empty, item.Instance ?? string.Empty);
+        (Body, Link) = (item.Body ?? string.Empty, item.Link ?? string.Empty);
         OnChanged(nameof(HasWaitingOn));
         OnChanged(nameof(HasInstance));
         ShowActions(item.Actions);
@@ -240,7 +241,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
         (_pages, Next, HasItem, IsNotFound, IsStale) = (0, null, false, false, false);
         (Title, Repo, StateWord, VersionText, Age, Step, CreatedBy, WaitingOn, Instance) =
             (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
-        (Timeline, Actions) = ([], []);
+        (Timeline, Actions, Body, Link) = ([], [], string.Empty, string.Empty);
         Problem(string.Empty, string.Empty);
     }
 }

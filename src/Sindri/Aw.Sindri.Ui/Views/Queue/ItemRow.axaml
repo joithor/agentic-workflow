@@ -15,7 +15,12 @@
         <TextBlock Classes="body-strong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Title}" />
       </Button>
       <TextBlock x:Name="RepoText" AutomationProperties.Name="{Binding Repo}" Grid.Column="2" Classes="caption subtle" Text="{Binding Repo}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-      <TextBlock x:Name="StateText" AutomationProperties.Name="{Binding StateWord}" Grid.Column="3" Classes="body" Text="{Binding StateWord}" VerticalAlignment="Center" />
+      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <TextBlock x:Name="StateText" AutomationProperties.Name="{Binding StateWord}" Classes="body" Text="{Binding StateWord}" VerticalAlignment="Center" />
+        <Border x:Name="Badge" Classes="badge" IsVisible="{Binding HasBadge}" VerticalAlignment="Center">
+          <TextBlock x:Name="BadgeText" Classes="caption" Text="{Binding Badge}" AutomationProperties.Name="{Binding Badge}" />
+        </Border>
+      </StackPanel>
       <TextBlock x:Name="StepText" AutomationProperties.Name="{Binding Step}" Grid.Column="4" Classes="mono" Text="{Binding Step}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
       <TextBlock x:Name="AgeText" AutomationProperties.Name="{Binding Age}" Grid.Column="5" Classes="caption subtle" Text="{Binding Age}" VerticalAlignment="Center" />
       <Panel Grid.Column="6" IsVisible="{Binding HasPrimaryAction}">

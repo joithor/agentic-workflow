@@ -51,6 +51,9 @@ internal static partial class Labels
     /// <summary>The top bar's hint while the G chord waits (§8).</summary>
     internal const string ChordHint = "G …";
 
+    /// <summary>The badge on a parked item in Waiting on you (§4.5).</summary>
+    internal const string ParkedBadge = "parked";
+
     /// <summary>The Load more button under a timeline with a next page.</summary>
     internal const string LoadMore = "Load more";
 
@@ -59,6 +62,9 @@ internal static partial class Labels
 
     /// <summary>The item sheet's actions heading.</summary>
     internal const string ItemActions = "ACTIONS";
+
+    /// <summary>The item header's tracker link label.</summary>
+    internal const string Link = "Link";
 
     /// <summary>The "created by" label in the item header.</summary>
     internal const string CreatedBy = "Created by";
