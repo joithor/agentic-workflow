@@ -36,7 +36,8 @@
     <Setter Property="Foreground" Value="{DynamicResource Brush.PrimaryHover}" />
   </Style>
 
-  <!-- The ⌘K field: a placeholder until the palette (U1). -->
+  <!-- The ⌘K field: a placeholder until the palette (U1). It fills its top-bar column (300 px with room, down to 160 px;
+       TopBar.axaml), and its text trims. -->
   <Style Selector="Border.search">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
@@ -44,7 +45,6 @@
     <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
     <Setter Property="Padding" Value="10,0" />
     <Setter Property="Height" Value="{StaticResource Size.Control}" />
-    <Setter Property="Width" Value="300" />
   </Style>
   <Style Selector="Border.kbd">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />

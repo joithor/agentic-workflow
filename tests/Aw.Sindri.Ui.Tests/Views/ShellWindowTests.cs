@@ -309,6 +309,17 @@ public sealed class ShellWindowTests : IDisposable
         Frame(window, "min-width-top-bar");
     });
 
+    // With room the ⌘K field keeps its full 300 px and the pill sits at the right edge (inside the top bar's 16 px padding).
+    [Fact]
+    public Task With_room_the_search_field_keeps_its_full_width() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, _) = await Show(s => s.State == ShellState.Normal);
+
+        Assert.Equal(300, Box(window, "SearchField").Width, precision: 0);
+        Assert.Equal(window.ClientSize.Width - 16, Box(window, "HealthPill").Right, precision: 0);
+    });
+
     private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "HealthPill"];
 
     private static Rect Box(Window window, string name)
