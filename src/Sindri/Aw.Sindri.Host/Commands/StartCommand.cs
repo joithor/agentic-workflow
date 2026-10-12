@@ -37,15 +37,12 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
     }
 
     /// <summary>
-    /// The running control plane, or the one this call starts. It launches only when nothing runs (SND-API-001); one that
-    /// answers late (SND-API-002) is reported as it is. A child that exits with SND-LEASE-001 lost the lease to a
-    /// concurrent start, so polling goes on until the deadline for the winner to answer.
+    /// The running control plane, or the one this call starts. It launches only when nothing runs (SND-API-001), and
+    /// never from an agent session (API spec §7: SND-API-001 asking for the human); one that answers late (SND-API-002)
+    /// is reported as it is. A child that exits with SND-LEASE-001 lost the lease to a concurrent start, so polling goes
+    /// on until the deadline for the winner to answer.
     /// </summary>
-    internal async Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> FindOrLaunch(CancellationToken ct)
-    {
-        var found = await probe.Check(ct).ConfigureAwait(false);
-        return found.IsError && found.Error.Code == SindriErrors.NotRunning.Code ? await Launch(ct).ConfigureAwait(false) : found;
-    }
+    internal Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> FindOrLaunch(CancellationToken ct) => Find(launch: true, ct);
 
     /// <summary>
     /// Before a command a human runs (API spec §7): null when the control plane runs, or once this call started it;
@@ -54,12 +51,35 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
     /// <param name="launch">False for --no-start.</param>
     /// <param name="ct">Cancels the wait.</param>
     /// <returns>Null, or the error.</returns>
-    internal Task<Error?> EnsureRunning(bool launch, CancellationToken ct) => throw new NotSupportedException($"red: start only for a human ({session}, {launch})");
+    internal async Task<Error?> EnsureRunning(bool launch, CancellationToken ct)
+    {
+        var found = await Find(launch && (session?.Human ?? true), ct).ConfigureAwait(false);
+        return found.IsError ? found.Error : null;
+    }
 
     /// <summary>Why 'sindri serve' won't run here: inside an agent session, unless AW_SINDRI_PROVER=1 (P1 plan G6); null when it may.</summary>
     /// <param name="session">How the CLI classed itself.</param>
     /// <returns>The refusal, or null.</returns>
-    internal static Error? ServeRefusal(AgentSession session) => throw new NotSupportedException("red: refuse serve in an agent session");
+    internal static Error? ServeRefusal(AgentSession session) =>
+        session is { Signal: { } signal, Prover: false }
+            ? SindriErrors.NotRunning.With($"an agent session never starts Sindri ({signal}); ask the human to run 'sindri'")
+            : null;
+
+    private async Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> Find(bool launch, CancellationToken ct)
+    {
+        var found = await probe.Check(ct).ConfigureAwait(false);
+        if (found.IsSuccess || found.Error.Code != SindriErrors.NotRunning.Code)
+        {
+            return found;
+        }
+
+        if (session is { Signal: { } signal })
+        {
+            return SindriErrors.NotRunning.With($"Sindri isn't running; ask the human to run 'sindri' (an agent session never starts it: {signal})");
+        }
+
+        return launch ? await Launch(ct).ConfigureAwait(false) : found;
+    }
 
     private async Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> Launch(CancellationToken ct)
     {

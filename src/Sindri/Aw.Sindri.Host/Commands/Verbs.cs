@@ -76,13 +76,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
     internal async Task<int> Approve(string? hashText, bool interactive, TextReader input, CancellationToken ct)
     {
         ProfileHash? hash = hashText is not null && ProfileHash.TryFrom(hashText, out var parsed) ? parsed : null;
-        if (hashText is not null && hash is null)
-        {
-            return await output.Error(SindriErrors.InvalidInput.With($"'{hashText}' is not a profile hash (64 hex digits)")).ConfigureAwait(false);
-        }
-
-        _ = ensureRunning;   // red: called before the confirmation in the green commit
-        var refusal = hash is { } h ? await Confirmation(h, interactive, input).ConfigureAwait(false) : null;
+        var refusal = Precheck(hashText, hash, interactive) ?? await BeforeTheCall(hash, input, ct).ConfigureAwait(false);
         if (refusal is not null)
         {
             return await output.Error(refusal).ConfigureAwait(false);
@@ -92,13 +86,23 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
         return answer.IsError ? await output.Error(answer.Error).ConfigureAwait(false) : await output.Text(ApprovalText(answer.Value.Value, hash is null), answer.Value.Value.Approved ? 0 : 1).ConfigureAwait(false);
     }
 
-    private async Task<Kernel.Error?> Confirmation(ProfileHash hash, bool interactive, TextReader input)
+    /// <summary>A malformed hash, or a hash without a terminal: refused before any call, and before starting anything.</summary>
+    private static Kernel.Error? Precheck(string? hashText, ProfileHash? hash, bool interactive) => (hashText, hash) switch
     {
-        if (!interactive)
-        {
-            return SindriErrors.ProfileNeedsTerminal.With("approving needs an interactive terminal: run it yourself and type the first 6 characters of the hash");
-        }
+        ({ } text, null) => SindriErrors.InvalidInput.With($"'{text}' is not a profile hash (64 hex digits)"),
+        (_, { }) when !interactive => SindriErrors.ProfileNeedsTerminal.With("approving needs an interactive terminal: run it yourself and type the first 6 characters of the hash"),
+        _ => null,
+    };
 
+    /// <summary>Starts the control plane if this CLI may (API spec §7), then asks for the hash's first 6 characters.</summary>
+    private async Task<Kernel.Error?> BeforeTheCall(ProfileHash? hash, TextReader input, CancellationToken ct)
+    {
+        var down = ensureRunning is null ? null : await ensureRunning(ct).ConfigureAwait(false);
+        return down ?? (hash is { } h ? await Confirmation(h, input).ConfigureAwait(false) : null);
+    }
+
+    private async Task<Kernel.Error?> Confirmation(ProfileHash hash, TextReader input)
+    {
         var typed = await Prompt(hash, input).ConfigureAwait(false);
         return string.Equals(typed, hash.Abbreviated, StringComparison.Ordinal)
             ? null

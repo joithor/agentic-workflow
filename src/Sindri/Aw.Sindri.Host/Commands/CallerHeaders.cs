@@ -28,10 +28,10 @@ internal sealed class CallerHeaders
 
     /// <summary>The headers for <paramref name="session"/>.</summary>
     /// <param name="session">How the CLI classed itself.</param>
-    /// <param name="tokens">Where the human token is read from, at each call (only for a human).</param>
+    /// <param name="tokens">Where the human token is read from, at each call (only for a human); none: no token is sent.</param>
     /// <param name="repo">The X-Sindri-Repo value, found once at the first call.</param>
     /// <returns>The headers.</returns>
-    internal static CallerHeaders For(AgentSession session, IHumanTokenStore tokens, Func<CancellationToken, ValueTask<RepoName?>> repo) =>
+    internal static CallerHeaders For(AgentSession session, IHumanTokenStore? tokens, Func<CancellationToken, ValueTask<RepoName?>> repo) =>
         new(session, tokens, repo);
 
     /// <summary>Adds the headers to <paramref name="request"/>.</summary>

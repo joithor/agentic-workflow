@@ -33,11 +33,15 @@ internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerialize
         return exitCode;
     }
 
-    /// <summary>Prints the error; exit 1 for 'not running' (attention), 2 for everything else.</summary>
+    /// <summary>
+    /// Prints the error; exit 1 for 'not running' (attention), 2 for everything else. 'Not running' gets the fix
+    /// 'sindri' unless it names one already, or asks for the human (an agent session never starts it).
+    /// </summary>
     public async Task<int> Error(Error error)
     {
         var notRunning = error.Code == SindriErrors.NotRunning.Code;
-        var fix = notRunning && !error.Message.Contains("fix:", StringComparison.Ordinal) ? " (fix: sindri)" : string.Empty;
+        var named = error.Message.Contains("fix:", StringComparison.Ordinal) || error.Message.Contains("ask the human", StringComparison.Ordinal);
+        var fix = notRunning && !named ? " (fix: sindri)" : string.Empty;
         await stderr.WriteLineAsync($"{error.Code} {error.Message}{fix}").ConfigureAwait(false);
         return notRunning ? 1 : 2;
     }
