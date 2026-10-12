@@ -59,6 +59,18 @@ public sealed class StopProcessTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task StopProcess_releases_the_lease_whatever_the_caller_cancels_once_the_grant_is_cleared()
+    {
+        _ = await _h.HoldLease();
+        var lease = new ScriptedLease(_h.Store);
+        using var caller = CancellationTokenSource.CreateLinkedTokenSource(Token);   // the request's RequestAborted
+
+        _ = await new StopProcessService(_h.Held, lease, _h.Store, _h.Events, _h.Shutdown, new InMemoryEndpointFile()).Handle(new StopProcessRequest(StopReason.Stop), caller.Token);
+
+        Assert.False(lease.ReleasedWith?.CanBeCanceled ?? true);   // why: a client that hangs up mid-stop must not leave the lease held
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task StopProcess_without_a_lease_still_shuts_down_and_writes_nothing()
     {
         var stopped = (await Service().Handle(new StopProcessRequest(StopReason.Signal), Token)).Value;
