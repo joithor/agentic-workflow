@@ -11,8 +11,8 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <summary>
 /// The 'context-docs-refresh' background service (context spec §5.2, §8.8): runs only when the profile names it, first
 /// at serve start, then on its cadence. It brings the repo-docs index up to date with each repo's HEAD and records
-/// 'context.sources.synced' with the counts, keyed by the run's slot. Until API P6, it is also the only way the
-/// index refreshes: the SyncSources row is pending:P6.
+/// 'context.sources.synced' with the counts, keyed by the run's slot. Until stage S-5B adds the SyncSources job
+/// (after API P6), it is the only way the index refreshes: that row is pending:S-5B.
 /// </summary>
 internal sealed class ContextDocsRefreshService(ContextScopes scopes, IContextEngine engine, ILedgerStore ledger, EventFactory events) : IScheduledService
 {

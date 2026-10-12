@@ -15,7 +15,7 @@ internal static class Usage
         "       sindri doctor [--json]        lease, ledger, profile and api checks; runs without the control plane",
         "       sindri context query <text> [--node K | --item I | --symbol S] [--depth N] [--budget N] [--draft] [--json]   cited context from the running control plane (exit 1: not running, unknown anchor, refused)",
         "       sindri context sources status [--json]   each context source's state and whether sessions may read context",
-        "       sindri context sources sync      pending:P6 (repo docs refresh through the context-docs-refresh service)",
+        "       sindri context sources sync      pending:S-5B (repo docs refresh through the context-docs-refresh service)",
         "       sindri recipe validate <file> [--json]   check a recipe in-process: rule lines, then its hash (exit 0 pass, 1 fail, 2 error)",
         "       sindri recipe eval <file> [--json]       run a recipe's eval cases in-process (exit 0 pass, 1 fail, 2 error)",
         "       sindri recipe eval --scaffold <file>     print a happy-path eval case for the recipe",
