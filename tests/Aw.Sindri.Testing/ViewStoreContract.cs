@@ -56,7 +56,7 @@ public abstract class ViewStoreContract
 
         Expect.True(applied.Stall is null);
         Expect.Equal(3L, applied.State.Cursor);
-        Expect.Equal<DateTimeOffset?>(at, applied.State.ProjectedAt);
+        Expect.Equal(at, applied.State.ProjectedAt);
         Expect.Sequence(["alpha", "beta"], (await reader.List<ServiceRow>(ViewNames.Services, Token)).Value.Select(r => r.Name.Value));
         Expect.Sequence(["alpha", "beta"], (await reader.List<ServiceRow>(ViewNames.Profile, Token)).Value.Select(r => r.Name.Value));
         Expect.Equal(3L, (await reader.State(Token)).Value?.Cursor);
