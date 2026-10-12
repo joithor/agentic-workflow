@@ -93,14 +93,13 @@ public sealed class CliNoStartTests : IDisposable
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("CLAUDECODE is set", false, true)]
-    [InlineData("parent process codex", false, true)]
-    [InlineData("CLAUDECODE is set", true, true)]      // the marker skips only the parent-process check, never a variable (API §6)
-    [InlineData(null, true, false)]
-    [InlineData(null, false, false)]
-    public void Serve_in_an_agent_session_is_refused_and_the_prover_marker_skips_only_the_parent_process_check(string? signal, bool prover, bool refused)
+    [InlineData("CLAUDECODE is set", true)]
+    [InlineData("parent process codex", true)]
+    [InlineData(null, false)]
+    public void Serve_is_refused_whenever_the_cli_saw_an_agent_signal(string? signal, bool refused)
     {
-        var refusal = StartCommand.ServeRefusal(new AgentSession(signal, Terminal: false, prover));
+        // The prover marker acts earlier, in AgentSession.Detect (CliCallerTests.Prover_marker_skips_the_parent_check_but_not_the_variables).
+        var refusal = StartCommand.ServeRefusal(new AgentSession(signal, Terminal: false, Prover: false));
 
         Assert.Equal(refused, refusal is not null);
         if (refusal is not null)
