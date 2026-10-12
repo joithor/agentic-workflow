@@ -19,6 +19,9 @@ internal sealed class ScriptedLease(ILease inner) : ILease
 
     public Action? BeforeRelease { get; set; }
 
+    /// <summary>The token the last release was given.</summary>
+    public CancellationToken? ReleasedWith { get; private set; }
+
     public ValueTask<Result<LeaseGrant>> Acquire(LeaseHolder candidate, CancellationToken cancellationToken) => inner.Acquire(candidate, cancellationToken);
 
     public async ValueTask<Result<LeaseGrant>> Renew(LeaseGrant grant, CancellationToken cancellationToken)
@@ -35,6 +38,7 @@ internal sealed class ScriptedLease(ILease inner) : ILease
     public ValueTask<Result<Unit>> Release(LeaseGrant grant, CancellationToken cancellationToken)
     {
         BeforeRelease?.Invoke();
+        ReleasedWith = cancellationToken;
         return inner.Release(grant, cancellationToken);
     }
 
