@@ -38,6 +38,15 @@ internal sealed class PaletteEntry : ObservableObject
         _ => Labels.CopyCli(Control.Cli),
     };
 
+    /// <summary>True while its command is being sent (the spinner; the label stays).</summary>
+    public bool IsSending { get; }
+
+    /// <summary>True after Sindri refused or failed its command: the code is its status and the detail shows under it.</summary>
+    public bool IsFailed { get; }
+
+    /// <summary>The refusal's detail as served, or empty.</summary>
+    public string ErrorDetail { get; } = string.Empty;
+
     /// <summary>True when it has a status.</summary>
     public bool HasStatus => Control is not null;
 

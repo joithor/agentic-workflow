@@ -132,16 +132,98 @@ public sealed class CommandPaletteViewModelTests
         Assert.Equal(["StopProcess"], _history, StringComparer.Ordinal);
     }
 
+    // F1: it opens, and every refilter shows, at the top (the first heading in view) with the first entry that runs
+    // selected; only the arrows make the list follow the selection.
     [Fact]
-    public async Task Rebuild_views_runs_once_and_closes()
+    public void Open_and_every_refilter_start_at_the_top_and_only_the_arrows_follow_the_selection()
     {
         _palette.Open();
+        Assert.Equal(("ApproveProfile", false), (_palette.Selected?.Id, _palette.FollowsSelection));
 
-        await _palette.Run(Entry("RebuildViews"), Token);
+        _palette.Move(1);
+        Assert.True(_palette.FollowsSelection);
+
+        _palette.Query = "o";
+        Assert.False(_palette.FollowsSelection);
+        Assert.Same(_palette.Entries.First(e => e.IsEnabled), _palette.Selected);
+
+        _palette.Move(1);
+        _palette.Close();
+        _palette.Open();
+        Assert.False(_palette.FollowsSelection);
+    }
+
+    // F2 (provisional default): a ready command keeps the palette open and its entry shows §4.1's lifecycle: sending
+    // (disabled, label kept), a second Enter does nothing, then done for 2 s, then ready again.
+    [Fact]
+    public async Task A_ready_entry_stays_open_and_shows_sending_then_done()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        var rebuild = Entry("RebuildViews");
+
+        var run = _palette.Run(rebuild, Token);
+
+        Assert.Equal((true, true, false, "Rebuild views", "Sending…"), (_palette.IsOpen, rebuild.IsSending, rebuild.IsEnabled, rebuild.Label, rebuild.Status));
+        await _palette.Run(rebuild, Token);
+        _server.RebuildGate.SetResult();
+        await run;
 
         Assert.Equal(1, _server.RebuildCalls);
-        Assert.False(_palette.IsOpen);
+        Assert.Equal((true, false, true, "Rebuild views: done"), (_palette.IsOpen, rebuild.IsSending, rebuild.IsEnabled, rebuild.Status));
+        Assert.Equal("Rebuild views, Rebuild views: done", rebuild.Name);
         Assert.Equal(["RebuildViews"], _history, StringComparer.Ordinal);
+        _clock.Advance(ControlViewModel.AcceptedFor);
+        Assert.Equal("ready", rebuild.Status);
+    }
+
+    // F2: a refusal shows Sindri's code as the entry's status and its detail as served; the palette stays open.
+    [Fact]
+    public async Task A_refused_ready_entry_shows_sindris_code_and_detail()
+    {
+        _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005",
+            "POST /sindri/views/rebuild failed with NotSupportedException; the control plane logged it");
+        _palette.Open();
+        var rebuild = Entry("RebuildViews");
+
+        await _palette.Run(rebuild, Token);
+
+        Assert.Equal((true, true, "SND-API-005"), (_palette.IsOpen, rebuild.IsFailed, rebuild.Status));
+        Assert.Equal("POST /sindri/views/rebuild failed with NotSupportedException; the control plane logged it", rebuild.ErrorDetail);
+        Assert.Equal("Rebuild views, SND-API-005: POST /sindri/views/rebuild failed with NotSupportedException; the control plane logged it", rebuild.Name);
+        Assert.True(rebuild.IsEnabled);
+    }
+
+    // F2: Esc closes the palette at any point; the command keeps running and its outcome lands on the control.
+    [Fact]
+    public async Task Esc_while_sending_closes_and_the_command_keeps_running()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        var rebuild = Entry("RebuildViews");
+        var run = _palette.Run(rebuild, Token);
+
+        _palette.Close();
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.Equal((false, 1, true), (_palette.IsOpen, _server.RebuildCalls, rebuild.Control!.IsAccepted));
+    }
+
+    // The policy's other side, so switching it is one line: close first, then send.
+    [Fact]
+    public async Task The_close_first_policy_closes_before_sending()
+    {
+        _palette.RunPolicy = PaletteRunPolicy.CloseFirst;
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+
+        var run = _palette.Run(Entry("RebuildViews"), Token);
+
+        Assert.False(_palette.IsOpen);
+        _server.RebuildGate.SetResult();
+        await run;
+        Assert.Equal(1, _server.RebuildCalls);
     }
 
     // A cli-only entry copies its CLI and says "Copied" for 1.5 s; the palette stays open.

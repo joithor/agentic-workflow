@@ -46,6 +46,15 @@ internal sealed class CommandPaletteViewModel : ObservableObject
     /// <summary>The line shown when nothing matches.</summary>
     public string NoMatches { get; } = Labels.NoMatches;
 
+    /// <summary>What Enter does with a ready command: the one place the palette's run policy is decided (U1 finding F2).</summary>
+    internal PaletteRunPolicy RunPolicy { get; set; } = PaletteRunPolicy.StayOpen;
+
+    /// <summary>
+    /// True when the list should scroll to keep the selection in view (after ↑/↓); false after it opens or refilters,
+    /// when the list starts at the top with its first section heading in view (U1 finding F1).
+    /// </summary>
+    public bool FollowsSelection { get; private set; }
+
     /// <summary>True while open.</summary>
     public bool IsOpen { get; private set => Set(ref field, value); }
 
