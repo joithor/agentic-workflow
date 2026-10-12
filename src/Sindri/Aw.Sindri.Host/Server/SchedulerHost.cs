@@ -8,17 +8,21 @@ using Aw.Sindri.Core.Scheduling;
 namespace Aw.Sindri.Host.Server;
 
 /// <summary>
-/// Runs the background services the approved profile names, on their cadence (factory addendum §17.29.1). It re-reads
-/// the approval once a second, so an approval takes effect without a restart; a failed run is logged and the next slot
-/// still runs, and an approval it can't read is logged once (SND-SCHED-001) while the current schedule keeps running.
-/// Nothing runs while the process holds no lease.
+/// Runs the background services the approved profile names, and the build's built-in services (engine spec §7.2 S1-D8),
+/// on their cadence (factory addendum §17.29.1). It re-reads the approval once a second, so an approval takes effect
+/// without a restart; a failed run is logged and the next slot still runs, and an approval it can't read is logged once
+/// (SND-SCHED-001) while the current schedule keeps running. Each service runs on its own loop (S1-D10): a run still in
+/// flight holds back no other service, and its own slots that come due meanwhile are skipped, never overlapped. Nothing
+/// runs while the process holds no lease; a stop waits for the runs in flight, which see the stop's cancellation.
 /// </summary>
 internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprovals approvals, HeldLease held, IEnumerable<BuiltInService> builtIns, TimeProvider clock, ILogger<SchedulerHost> log)
     : BackgroundService
 {
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
+    private readonly Dictionary<ServiceName, Task> _running = [];
     private IReadOnlyList<ServiceSchedule> _schedules = [];
     private ProfileHash? _profile;
+    private bool _loaded;
     private string? _problem;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -34,6 +38,21 @@ internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprov
 
             var next = grant is null || _schedules.Count == 0 ? _tick : _schedules.Min(s => s.NextSlot) - clock.GetUtcNow();
             await Delay(next < TimeSpan.Zero ? TimeSpan.Zero : next > _tick ? _tick : next, stoppingToken).ConfigureAwait(false);
+        }
+
+        await InFlight().ConfigureAwait(false);
+    }
+
+    /// <summary>Waits for the runs still in flight; they see the stop's cancellation.</summary>
+    private async Task InFlight()
+    {
+        try
+        {
+            await Task.WhenAll(_running.Values).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // a run the stop cancelled
         }
     }
 
@@ -62,20 +81,13 @@ internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprov
 
         _problem = null;
         var profile = approved.Value;
-        if (profile?.Hash != _profile)
+        if (!_loaded || profile?.Hash != _profile)
         {
+            _loaded = true;   // the first read loads the built-ins even with no approved profile (S1-D8)
             _profile = profile?.Hash;
-            _schedules = Schedules(profile);
+            _schedules = ServiceSchedule.From(profile?.Profile, builtIns, clock.GetUtcNow());
             LogSchedule(log, _profile?.Abbreviated ?? "none", _schedules.Count);
         }
-    }
-
-    /// <summary>Engine P4 unit (d) red: S1-D8 and S1-D10 are not built yet.</summary>
-    private IReadOnlyList<ServiceSchedule> Schedules(LoadedProfile? profile)
-    {
-        var builtIn = builtIns.ToList();
-        return builtIn.Count > 0 ? ServiceSchedule.From(profile?.Profile, builtIn, clock.GetUtcNow())
-            : profile is null ? [] : ServiceSchedule.From(profile.Profile, clock.GetUtcNow());
     }
 
     private async Task RunDue(LeaseGrant grant, CancellationToken ct)
@@ -90,7 +102,20 @@ internal sealed partial class SchedulerHost(IServiceScopeFactory scopes, IApprov
                 continue;
             }
 
-            await RunOne(schedule, new ScheduledRun(grant, schedule.NextSlot), ct).ConfigureAwait(false);
+            if (!_running.TryGetValue(schedule.Name, out var inFlight) || inFlight.IsCompleted)
+            {
+                var run = RunOne(schedule, new ScheduledRun(grant, schedule.NextSlot), ct);   // its own loop: not awaited here (S1-D10)
+                if (run.IsCompleted)
+                {
+                    await run.ConfigureAwait(false);
+                    _ = _running.Remove(schedule.Name);
+                }
+                else
+                {
+                    _running[schedule.Name] = run;
+                }
+            }
+
             advanced.Add(schedule.Advance(now));
         }
 

@@ -43,6 +43,7 @@ public sealed record ServiceSchedule(ServiceName Name, Cadence Cadence, DateTime
     public static IReadOnlyList<ServiceSchedule> From(SindriProfile? profile, IEnumerable<BuiltInService> builtIns, DateTimeOffset start)
     {
         ArgumentNullException.ThrowIfNull(builtIns);
-        throw new NotSupportedException($"engine P4 unit (d): built-in services (S1-D8) for {profile?.User} from {start:O}");
+        var named = profile is null ? [] : From(profile, start);
+        return [.. named, .. builtIns.Where(b => named.All(n => n.Name != b.Name)).Select(b => new ServiceSchedule(b.Name, b.Cadence, start))];
     }
 }

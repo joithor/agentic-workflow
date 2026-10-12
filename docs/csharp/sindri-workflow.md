@@ -468,3 +468,20 @@ other than `list` are stubs that throw `NotSupportedException`. A rejected Updat
 pins the interface that works at the contract: the desk task 1.1 with its declared outcomes through the Query,
 `allowedCommands`, the ledger key, and replay. `PhaseFourSignalTests` is phase 4 signal 1, and it is red until units
 (b) and (e) land.
+
+### The event bridge (engine P4 unit (d))
+
+Spec rev 8 §5.4, §7.2 S1-D8 and S1-D10. `EventBridge` is the built-in service `workflow-events` (a service name is
+kebab-case, so not `workflow.events`). It runs every 5 s without a profile entry; a profile entry of the same name sets
+its cadence. The scheduler gives every service its own loop: a run still in flight holds back no other service, and its
+own slots that come due meanwhile are skipped, never overlapped.
+
+| Part | Behaviour |
+|---|---|
+| Cursor | The last delivered ledger sequence, in the owner-only file `<home>/workflow/events.cursor`, written to a temporary name and moved into place. A missing file reads as 0. The cursor moves past an event once every target has it |
+| Accepted events | A registered `EventDescriptor` kind whose envelope actor is the descriptor's `producer`. Every other event signals nothing |
+| `route: item` | Every live instance of the event's item (a visibility query on `Item`). Temporal buffers the signal until the instance reaches the wait, so an early event isn't lost. The workflow drops a kind its recipe never waits for |
+| `route: causation` | Only the instance that the reply's causing event names (`ICommandOrigins`: the causing ledger event's `instance` field, until P6's `workflow_commands`) |
+| Trigger | `wait.satisfied` from `EventWaitSource(kind, sequence)`, the payload's `outcome` (one the descriptor declares) and the descriptor's facts from the payload's `facts` |
+| Idempotency | The ledger sequence is the key. `RecipeWorkflow.EventAsync` drops a sequence it has already taken, so a bridge that crashed between a signal and its cursor write re-sends harmlessly |
+| Failures | An instance that has ended is skipped. A Temporal or ledger failure ends the run with the cursor before that event, and the next run retries it |
