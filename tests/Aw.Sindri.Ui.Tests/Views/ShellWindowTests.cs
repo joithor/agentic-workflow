@@ -318,6 +318,116 @@ public sealed class ShellWindowTests : IDisposable
         }
     });
 
+    // R9 (§11.1, §11.3): one colour rule for glyphs: ✓ is Success wherever it means ok, ✕ is Error, every other glyph is
+    // InkMuted; the word beside each keeps its own colour.
+    [Fact]
+    public Task Glyph_colours_follow_one_rule() => OnUi(async () =>
+    {
+        var (down, _) = await Show(s => s.State == ShellState.NotRunning);
+        Assert.Equal(Brush("Error"), Named<StateIcon>(down, "PillGlyph").Foreground);
+
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.Equal(Brush("Success"), Named<StateIcon>(window, "PillGlyph").Foreground);
+        var profile = Named<ItemsControl>(window, "HealthCells").GetVisualDescendants().OfType<StateIcon>().Single(i => i.IsEffectivelyVisible);
+        Assert.Equal(Brush("Success"), profile.Foreground);
+        shell.GoTo(PageId.Health);
+        Settle(window);
+        Assert.Equal(Brush("Success"), Named<StateIcon>(window, "ProfileHeadGlyph").Foreground);
+
+        _server.FailPing = true;
+        _clock.Advance(ShellViewModel.StaleAfter);
+        await Until(() => shell.State == ShellState.Stale);
+        Settle(window);
+        Assert.Equal(Brush("InkMuted"), Named<StateIcon>(window, "PillGlyph").Foreground);
+        Assert.Equal(Brush("InkMuted"), Named<StateIcon>(window, "RefreshIcon").Foreground);
+    });
+
+    private static object? Brush(string token) =>
+        Application.Current!.TryGetResource("Brush." + token, Avalonia.Styling.ThemeVariant.Dark, out var brush) ? brush : null; // why: the headless session starts the app
+
+    // R11: the not-responding banner's content starts on the page's 24 px gutter, in line with the page title.
+    [Fact]
+    public Task The_banner_lines_up_with_the_page_gutter() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        _server.FailPing = true;
+        _clock.Advance(ShellViewModel.StaleAfter);
+        await Until(() => shell.State == ShellState.Stale);
+        _server.FailStatus = true;
+        for (var i = 0; i < 3; i++)
+        {
+            await shell.Health.Refresh(Token);
+        }
+
+        Settle(window);
+        var glyph = Named<Control>(window, "NotRespondingBanner").GetVisualDescendants().OfType<StateIcon>().First();
+        var title = Named<Control>(window, "HomePage").GetVisualDescendants().OfType<TextBlock>().First(t => t.Classes.Contains("page-title"));
+        Assert.Equal(title.TranslatePoint(default, window)!.Value.X, glyph.TranslatePoint(default, window)!.Value.X, 0.5); // why: both are in the window
+    });
+
+    // R12: on Health, each row's label and value share a baseline.
+    [Fact]
+    public Task Health_labels_and_values_share_a_baseline() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        _server.Push(A.Event(3));
+        var (window, shell) = await Show(s => s.State == ShellState.Normal && s.Health.LastEvent.EndsWith("#3", StringComparison.Ordinal));
+        shell.GoTo(PageId.Health);
+        Settle(window);
+
+        static double Baseline(TextBlock t, Window w) => t.TranslatePoint(default, w)!.Value.Y + t.TextLayout.Baseline; // why: in the window
+        var rows = Named<Control>(window, "HealthPage").GetVisualDescendants().OfType<Grid>().Where(g => g.Classes.Contains("row") && g.IsEffectivelyVisible).ToList();
+        Assert.NotEmpty(rows);
+        foreach (var row in rows)
+        {
+            var texts = row.Children.OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Take(2).ToList();
+            Assert.Equal(Baseline(texts[0], window), Baseline(texts[1], window), 1.0);
+        }
+    });
+
+    // R6 and R7 at the 900 px minimum and text scale 1.3: the strip's "." keycap is a visible cap (its glyph bold at Body
+    // size, the cap at least as wide as it is tall), and no strip value is trimmed (the pid shows whole).
+    [Theory]
+    [InlineData(1.0)]
+    [InlineData(1.3)]
+    public Task The_strip_shows_its_keycaps_and_whole_values_at_900_px(double scale) => OnUi(async () =>
+    {
+        await new Preferences(_preferences).Save(UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 900, 600) }, Token);
+        _records.Write(A.Record(pid: 1234567));
+        _server.Current = A.Status(pid: 1234567) with { ApiVersion = 1 };
+        _server.Pong = new(1234567, 7);
+        var (window, _) = await Show(s => s.State == ShellState.Normal);
+        var resources = Application.Current!.Resources;
+        TextScale.Apply(resources, scale);
+        try
+        {
+            Settle(window);
+            var dot = Named<TextBlock>(window, "HealthKeyText");
+            Assert.Equal(".", dot.Text);
+            Assert.True(dot.FontWeight >= FontWeight.Bold, "the . keycap's glyph isn't bold");
+            var cap = Named<Border>(window, "HealthKeyCap");
+            Assert.True(cap.Bounds.Width >= cap.Bounds.Height - 0.5, string.Create(CultureInfo.InvariantCulture, $"the . keycap is {cap.Bounds.Width} × {cap.Bounds.Height}"));
+
+            var strip = Box(window, "HealthStrip");
+            foreach (var value in Named<ItemsControl>(window, "HealthCells").GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible))
+            {
+                Assert.False(value.TextLayout.TextLines.Any(l => l.HasCollapsed), value.Text + " is trimmed");
+                var box = new Rect(value.TranslatePoint(default, window)!.Value, value.Bounds.Size); // why: in the window
+                Assert.True(box.Right <= strip.Right && box.Bottom <= strip.Bottom, value.Text + " runs out of the strip");
+            }
+
+            Assert.Contains(Named<ItemsControl>(window, "HealthCells").GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "Running · pid 1234567");
+            Frame(window, string.Create(CultureInfo.InvariantCulture, $"strip-900-{scale * 100:0}"));
+        }
+        finally
+        {
+            TextScale.Apply(resources, 1.0);
+            Settle(window);
+        }
+    });
+
     // I8 (states.html Connecting): Home's frame (title, the Needs-you panel's header, two half panels) with left-aligned
     // skeleton bars; static, so nothing moves under reduced motion.
     [Fact]
@@ -502,7 +612,17 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal((StateGlyph.Stale, Labels.Stale), (Glyph(window, "PillGlyph"), Text(window, "HealthPillText")));
         Assert.Equal(Labels.UpdatedAgo(ShellViewModel.StaleAfter), Text(window, "PillAgeText"));
         Assert.True(Visible(window, "RefreshButton"));
-        Assert.True(Visible(window, "PillDot"));
+
+        // R4: one mark per pill state, the glyph (§11.3); no dot beside it.
+        Assert.False(Visible(window, "PillDot"));
+        var pill = Named<Button>(window, "HealthPill").GetVisualDescendants().ToList();
+        _ = Assert.Single(pill.OfType<Avalonia.Controls.Shapes.Shape>().Concat<Control>(pill.OfType<StateIcon>()), c => c.IsEffectivelyVisible);
+
+        // R3: the strip's values are marked stale (⌛ and the word), and its name says so.
+        Assert.True(Visible(window, "StripStale"));
+        Assert.Equal(Labels.Stale, Text(window, "StripStaleText"));
+        Assert.Equal(StateGlyph.Stale, Glyph(window, "StripStaleGlyph"));
+        Assert.Equal(shell.Health.StripName, AutomationProperties.GetName(Named<Button>(window, "HealthStrip")));
         EveryControlIsNamed(window);
         Frame(window, "stale");
 
@@ -512,6 +632,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(before + 1, _server.StatusCalls);
         Assert.False(Visible(window, "RefreshButton"));
         Assert.Equal((StateGlyph.Ok, Labels.Running), (Glyph(window, "PillGlyph"), Text(window, "HealthPillText")));
+        Assert.False(Visible(window, "StripStale"));
     });
 
     // R1 (§11.3): every glyph the shell draws is a vector icon from Theme/Icons.axaml at the icon size (16 px, the Body
@@ -799,7 +920,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.True(Visible(window, "HealthChevron"));
         Assert.True(Visible(window, "HealthKeys"));
         var strip = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "HealthStrip");
-        Assert.Equal(shell.Health.HealthLine, AutomationProperties.GetName(strip));
+        Assert.Equal(shell.Health.StripName, AutomationProperties.GetName(strip));
         EveryControlIsNamed(window);
         Frame(window, "home-health-strip");
 

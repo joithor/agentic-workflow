@@ -41,6 +41,9 @@ internal sealed class HealthPill : ObservableObject
     /// <summary>Stale after three failed refreshes (§4.1): the shell shows "Sindri not responding: run sindri doctor" in a banner.</summary>
     public bool IsNotResponding { get; private set => Set(ref field, value); }
 
+    /// <summary>The views shown are stale (stub).</summary>
+    public bool IsDataStale { get; private set => Set(ref field, value); }
+
     /// <summary>Stale: the Refresh button beside the pill (§4.1).</summary>
     public bool IsRefreshShown => IsStale;
 

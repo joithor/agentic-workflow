@@ -183,6 +183,20 @@ public sealed class ShellStateTests
         return shell;
     }
 
+    // R3 (§4.1): while the views are stale (or unreadable, which keeps the last data) Home's strip says so: its name
+    // gains "stale" after the health line, and the strip shows ⌛ and the word.
+    [Fact]
+    public async Task The_health_strip_is_marked_stale_with_the_views()
+    {
+        var fresh = await Running(ShellState.Normal);
+        Assert.False(fresh.Pill.IsDataStale);
+        Assert.Equal(fresh.Health.HealthLine, fresh.Health.StripName);
+
+        var stale = await Stale();
+        Assert.True(stale.Pill.IsDataStale);
+        Assert.Equal(stale.Health.HealthLine + " · " + Labels.Stale, stale.Health.StripName);
+    }
+
     [Fact]
     public async Task Stale_is_the_hourglass_and_the_word_with_the_age_and_a_refresh()
     {
