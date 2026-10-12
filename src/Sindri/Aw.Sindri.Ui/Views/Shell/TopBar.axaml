@@ -96,7 +96,8 @@
         </Grid>
       </Border>
 
-      <!-- The health pill (§3.2, §11.3): a dot and a glyph before the state's word, then the age; it opens Health.
+      <!-- The health pill (§3.2, §11.3): the state's glyph before its word, then the age; it opens Health. R4: one mark per
+           state, the glyph, which §11.3 gives every state; a dot beside it only doubled it and cost the age its room.
            While stale, Refresh sits beside it (§4.1). -->
       <!-- After 300 ms in flight, "Sending…" is announced through this polite live region (§4.1); it takes no room in the
            bar, so the brand word never drops for the in-flight moment. -->
@@ -119,8 +120,6 @@
         <Button x:Name="HealthPill" Classes="health-pill" Click="OnHealthPill"
                 AutomationProperties.Name="{Binding Pill.Text}">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <Ellipse x:Name="PillDot" Classes="pill-dot" Classes.ok="{Binding Pill.IsHealthy}"
-                     Classes.stale="{Binding Pill.IsStale}" Classes.down="{Binding Pill.IsDown}" VerticalAlignment="Center" />
             <views:StateIcon x:Name="PillGlyph" Glyph="{Binding Pill.Glyph}" VerticalAlignment="Center" />
             <TextBlock x:Name="HealthPillText" Classes="body-strong" Text="{Binding Pill.Word}" VerticalAlignment="Center" />
             <Panel x:Name="PillAge" VerticalAlignment="Center">

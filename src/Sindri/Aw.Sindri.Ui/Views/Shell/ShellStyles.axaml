@@ -128,10 +128,20 @@
   <Style Selector="Border.search.compact TextBlock.search-text, Border.search.compact Border.search-key">
     <Setter Property="IsVisible" Value="False" />
   </Style>
+  <!-- Keycaps: at least as wide as they are tall (R6), their key centred. -->
   <Style Selector="Border.kbd">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
     <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
     <Setter Property="Padding" Value="4,1" />
+    <Setter Property="MinWidth" Value="{DynamicResource Size.Icon}" />
+  </Style>
+  <Style Selector="Border.kbd > TextBlock">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <!-- R6: a period is a speck at Kbd size; drawn bold at Body size it reads as a key. -->
+  <Style Selector="TextBlock.kbd.key-dot">
+    <Setter Property="FontSize" Value="{DynamicResource Type.Body.Size}" />
+    <Setter Property="FontWeight" Value="Bold" />
   </Style>
 
   <!-- The health pill: a word in a pill; it opens Health. -->
@@ -152,24 +162,6 @@
     </Setter>
   </Style>
 
-  <!-- The pill's dot: filled Success when healthy, hollow when stale, filled Error with nothing to follow; the glyph
-       and the word beside it say the same (§11.3, never colour alone). -->
-  <Style Selector="Ellipse.pill-dot">
-    <Setter Property="Width" Value="7" />
-    <Setter Property="Height" Value="7" />
-    <Setter Property="Fill" Value="{DynamicResource Brush.InkSubtle}" />
-  </Style>
-  <Style Selector="Ellipse.pill-dot.ok">
-    <Setter Property="Fill" Value="{DynamicResource Brush.Success}" />
-  </Style>
-  <Style Selector="Ellipse.pill-dot.stale">
-    <Setter Property="Fill" Value="Transparent" />
-    <Setter Property="Stroke" Value="{DynamicResource Brush.InkSubtle}" />
-    <Setter Property="StrokeThickness" Value="1" />
-  </Style>
-  <Style Selector="Ellipse.pill-dot.down">
-    <Setter Property="Fill" Value="{DynamicResource Brush.Error}" />
-  </Style>
   <!-- Refresh beside a stale pill: a quiet secondary button at the pill's height. -->
   <Style Selector="Button.refresh">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
@@ -242,6 +234,15 @@
   <Style Selector="Grid.row">
     <Setter Property="MinHeight" Value="24" />
   </Style>
+  <!-- R12: a row's label sits on its value's baseline: both top-aligned on the value's line height (Body, or Mono for
+       the last event), so the smaller label's half-leading lines its baseline up with the value's. -->
+  <Style Selector="Grid.row > TextBlock.row-label">
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Body.LineHeight}" />
+  </Style>
+  <Style Selector="Grid.row > TextBlock.row-label.on-mono">
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Mono.LineHeight}" />
+  </Style>
 
   <!-- A body the API doesn't serve yet: a quiet caption, never the brightest text in the panel, centred in the body
        (I3, states.html .empty). -->
@@ -282,11 +283,12 @@
     <Setter Property="Width" Value="16" />
     <Setter Property="Height" Value="16" />
   </Style>
+  <!-- R11: the banner's content starts on the page's 24 px gutter (Space.LG), in line with the page title. -->
   <Style Selector="Border.banner">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
-    <Setter Property="Padding" Value="16,10" />
+    <Setter Property="Padding" Value="24,10" />
   </Style>
 
   <!-- The detail sheet: Surface1 with a hairline left rule, 420–760 px; below 1100 px it covers the page ("covers"). -->

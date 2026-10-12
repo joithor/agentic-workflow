@@ -188,6 +188,7 @@ public sealed class ShellStateTests
     [Fact]
     public async Task The_health_strip_is_marked_stale_with_the_views()
     {
+        _records.Write(A.Record());
         var fresh = await Running(ShellState.Normal);
         Assert.False(fresh.Pill.IsDataStale);
         Assert.Equal(fresh.Health.HealthLine, fresh.Health.StripName);

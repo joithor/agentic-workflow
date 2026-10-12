@@ -96,52 +96,6 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
         }
     }
 
-    /// <summary>
-    /// Refresh (§4.1 Stale): reads the status again, a query. While it is in flight Refresh takes no click (a second one
-    /// does nothing), and after <see cref="SendingAfter"/> "Sending…" shows; both clear when the answer comes.
-    /// </summary>
-    /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>A task that completes when the answer is shown.</returns>
-    internal async Task Refresh(CancellationToken cancellationToken)
-    {
-        if (_url is not { } url || !CanRefresh)
-        {
-            return;
-        }
-
-        CanRefresh = false;
-        var attempt = ++_refreshes;
-        var sending = clock.CreateTimer(_ => OnUi(() => IsSending = !CanRefresh && attempt == _refreshes), state: null, SendingAfter, Timeout.InfiniteTimeSpan);
-        try
-        {
-            await using (sending.ConfigureAwait(true))
-            {
-                await Answer(url, cancellationToken).ConfigureAwait(true);
-            }
-        }
-        finally
-        {
-            IsSending = false;
-            CanRefresh = true;
-        }
-    }
-
-    private async Task Answer(Uri url, CancellationToken cancellationToken)
-    {
-        var status = await api.Status(url, cancellationToken).ConfigureAwait(true);
-        if (status.IsSuccess)
-        {
-            Show(url, status.Value);
-            return;
-        }
-
-        lock (_gate)
-        {
-            _failedRefreshes++;
-            Word();
-        }
-    }
-
     /// <summary>An event on the stream: the newest event, and the views are fresh.</summary>
     /// <param name="e">The event.</param>
     internal void Event(EventView e)
@@ -279,7 +233,11 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     }
 
     // The pill for the state now (under the gate): its age counts from the last event, status or answered ping.
-    private void Word() => Pill.Show(State, clock.GetUtcNow() - _heard, _failedRefreshes >= NotRespondingAfter);
+    private void Word()
+    {
+        Pill.Show(State, clock.GetUtcNow() - _heard, _failedRefreshes >= NotRespondingAfter);
+        StripName = Pill.IsDataStale ? HealthLine + " · " + Labels.Stale : HealthLine;
+    }
 
     // §4.1 Stale: "After 3 failed refreshes: Sindri not responding: run sindri doctor".
     private const int NotRespondingAfter = 3;

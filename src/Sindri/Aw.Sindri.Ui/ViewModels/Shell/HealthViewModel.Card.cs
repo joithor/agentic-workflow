@@ -6,8 +6,8 @@ internal sealed partial class HealthViewModel
     /// <summary>The polite announcement while a refresh is in flight (§4.1 "sending"): "Sending…" after 300 ms, else empty.</summary>
     public string SendingAnnouncement { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>Home's health strip's accessible name (stub).</summary>
-    public string StripName => HealthLine;
+    /// <summary>Home's health strip's accessible name (R3): the health line, then "stale" while the views are stale.</summary>
+    public string StripName { get; private set => Set(ref field, value); } = Labels.Connecting;
 
     /// <summary>Not running: the endpoint record's path, shortened, shown on its own line under the reason; or empty.</summary>
     public string ReasonPath { get; private set => Set(ref field, value); } = string.Empty;

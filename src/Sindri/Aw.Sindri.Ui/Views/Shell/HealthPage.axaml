@@ -26,7 +26,7 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:HealthCell">
                   <Grid Classes="row" ColumnDefinitions="140,*" AutomationProperties.Name="{Binding Label}">
-                    <TextBlock Classes="caption subtle" Text="{Binding Label}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Label}" />
+                    <TextBlock Classes="caption subtle row-label" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
                     <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextTrimming="CharacterEllipsis"
                                AutomationProperties.Name="{Binding Value}" />
                   </Grid>
@@ -69,7 +69,7 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:HealthCell">
                   <Grid Classes="row" ColumnDefinitions="140,*" AutomationProperties.Name="{Binding Label}">
-                    <TextBlock Classes="caption subtle" Text="{Binding Label}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Label}" />
+                    <TextBlock Classes="caption subtle row-label" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
                     <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextTrimming="PrefixCharacterEllipsis"
                                AutomationProperties.Name="{Binding Value}" ToolTip.Tip="{Binding Value}" />
                   </Grid>
@@ -85,8 +85,7 @@
 
         <Border Classes="section last">
           <Grid Classes="row" ColumnDefinitions="140,*">
-            <TextBlock Classes="eyebrow" Text="{Binding Text.LastEventCard}" AutomationProperties.Name="{Binding Text.LastEventCard}"
-                       VerticalAlignment="Center" />
+            <TextBlock Classes="eyebrow row-label on-mono" Text="{Binding Text.LastEventCard}" AutomationProperties.Name="{Binding Text.LastEventCard}" />
             <TextBlock x:Name="LastEventText" Grid.Column="1" Classes="mono" Text="{Binding LastEvent}" AutomationProperties.Name="{Binding LastEvent}" />
           </Grid>
         </Border>

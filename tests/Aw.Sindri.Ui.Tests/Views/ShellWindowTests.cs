@@ -408,7 +408,8 @@ public sealed class ShellWindowTests : IDisposable
             Assert.Equal(".", dot.Text);
             Assert.True(dot.FontWeight >= FontWeight.Bold, "the . keycap's glyph isn't bold");
             var cap = Named<Border>(window, "HealthKeyCap");
-            Assert.True(cap.Bounds.Width >= cap.Bounds.Height - 0.5, string.Create(CultureInfo.InvariantCulture, $"the . keycap is {cap.Bounds.Width} × {cap.Bounds.Height}"));
+            // Within the window's whole-pixel rounding.
+            Assert.True(cap.Bounds.Width >= cap.Bounds.Height - 1, string.Create(CultureInfo.InvariantCulture, $"the . keycap is {cap.Bounds.Width} × {cap.Bounds.Height}"));
 
             var strip = Box(window, "HealthStrip");
             foreach (var value in Named<ItemsControl>(window, "HealthCells").GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible))
