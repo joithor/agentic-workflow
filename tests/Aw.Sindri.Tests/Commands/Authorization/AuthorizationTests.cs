@@ -69,6 +69,17 @@ public sealed class AuthorizationTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_caller_class_the_table_does_not_know_is_refused_not_treated_as_a_service()
+    {
+        var unknown = A.Caller().Service("jobs").Build() with { Class = (CallerClass)99 };
+
+        var decision = Table.Decide(ActionClass.Request, unknown, Rows.Of(ActionClass.Request));
+
+        Assert.False(decision.Allowed);
+        Assert.Equal(SindriErrors.AuthRefused.Code, decision.Refusal?.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Service_host_may_stop_and_nothing_else_desk()
     {
         var host = A.Caller().Service("host").Build();
