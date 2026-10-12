@@ -27,6 +27,7 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
     private FileStream? _claim;
     private Socket? _listener;
     private Task _accepting = Task.CompletedTask;
+    private bool _ended;
 
     public async ValueTask<bool> TryClaim(CancellationToken cancellationToken)
     {
@@ -142,14 +143,30 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
 
     public async ValueTask DisposeAsync()
     {
+        // Ending twice is a no-op (SingleLaunch ends the instance it ran over; its owner may too).
+        if (_ended)
+        {
+            return;
+        }
+
+        _ended = true;
         await _stop.CancelAsync().ConfigureAwait(false);
         _listener?.Dispose();
         await _accepting.ConfigureAwait(false);
         if (_claim is not null)
         {
-            // While the lock is still held, so neither can be a later instance's.
-            File.Delete(paths.InstanceSocket);
-            File.Delete(paths.InstancePid);
+            // While the lock is still held, so neither can be a later instance's. A directory removed while the app ran
+            // (a temp home cleaned up, the home reset) is already cleaned up: the lock is released either way.
+            try
+            {
+                File.Delete(paths.InstanceSocket);
+                File.Delete(paths.InstancePid);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // Nothing left to remove.
+            }
+
             await _claim.DisposeAsync().ConfigureAwait(false);
         }
 
