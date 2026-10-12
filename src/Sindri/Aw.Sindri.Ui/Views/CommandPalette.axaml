@@ -1,0 +1,100 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:palette="using:Aw.Sindri.Ui.ViewModels.Palette"
+             x:Class="Aw.Sindri.Ui.Views.CommandPalette"
+             x:DataType="palette:CommandPaletteViewModel">
+  <!-- The command palette (UI spec §8, prototype.html): a scrim over the window and a Surface3 card with the query field
+       and its sections (Actions, Go to, Sindri). Each entry shows its label, its status (ready, "arrives in P3",
+       "Copy: sindri …") in InkSubtle and its key as a kbd chip. Focus stays in the field: ↑/↓ move the selection, Enter
+       runs it, Esc closes (CommandPalette.axaml.cs); Tab cycles inside the card. -->
+  <UserControl.Styles>
+    <Style Selector="Border.scrim">
+      <Setter Property="Background" Value="{DynamicResource Brush.Overlay}" />
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    <Style Selector="Border.palette">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.LG}" />
+    </Style>
+    <Style Selector="TextBox.palette-query">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="16,12" />
+    </Style>
+    <Style Selector="TextBlock.palette-heading">
+      <Setter Property="Margin" Value="16,10,16,4" />
+    </Style>
+    <Style Selector="Button.palette-entry">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="Margin" Value="4,0" />
+      <Setter Property="MinHeight" Value="{StaticResource Size.Row}" />
+    </Style>
+    <!-- The selection: PrimarySoft (the selected nav's background), since Surface2 barely shows on the Surface3 card. -->
+    <Style Selector="Button.palette-entry.selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.PrimarySoft}" />
+    </Style>
+    <!-- A pending entry is disabled, but its phase is information: it keeps InkSubtle, never the disabled ink. -->
+    <Style Selector="Button.palette-entry:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.palette-entry:disabled TextBlock.entry-label">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
+    </Style>
+    <Style Selector="Button.palette-entry TextBlock.entry-status">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel>
+    <Border x:Name="PaletteScrim" Classes="scrim" PointerPressed="OnScrim" />
+    <Border x:Name="PaletteCard" Classes="palette" Width="560" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,72,0,0"
+            KeyboardNavigation.TabNavigation="Cycle" AutomationProperties.Name="{Binding Title}">
+      <DockPanel>
+        <TextBox x:Name="PaletteQuery" DockPanel.Dock="Top" Classes="palette-query" Text="{Binding Query}"
+                 PlaceholderText="{Binding Placeholder}" AutomationProperties.Name="{Binding Title}" />
+        <!-- The polite live region: the selected entry's status ("Copied" after a copy). Never empty (Avalonia #22312). -->
+        <TextBlock x:Name="PaletteAnnouncer" DockPanel.Dock="Top" Classes="caption live-region live" Width="0" Height="0" Opacity="0"
+                   IsHitTestVisible="False" Text="{Binding Selected.Status, FallbackValue={x:Static x:String.Empty}}" />
+        <TextBlock x:Name="PaletteEmpty" DockPanel.Dock="Top" Classes="body subtle" Margin="16,12" Text="{Binding NoMatches}"
+                   IsVisible="{Binding IsEmpty}" AutomationProperties.Name="{Binding NoMatches}" />
+        <ScrollViewer x:Name="PaletteScroll" MaxHeight="440" Padding="0,0,0,8">
+          <ItemsControl x:Name="PaletteSections" ItemsSource="{Binding Sections}" AutomationProperties.Name="{Binding Title}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="palette:PaletteSection">
+                <StackPanel>
+                  <TextBlock Classes="eyebrow subtle palette-heading" Text="{Binding Heading}" AutomationProperties.Name="{Binding Heading}" />
+                  <ItemsControl ItemsSource="{Binding Entries}" AutomationProperties.Name="{Binding Heading}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="palette:PaletteEntry">
+                        <Button Classes="palette-entry" Classes.selected="{Binding IsSelected}" IsEnabled="{Binding IsEnabled}"
+                                Focusable="False" Click="OnEntry" AutomationProperties.Name="{Binding Name}">
+                          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{StaticResource Space.SM}">
+                            <TextBlock Classes="body entry-label" Text="{Binding Label}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Classes="caption entry-status" Text="{Binding Status}" IsVisible="{Binding HasStatus}"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="300" />
+                            <Border Grid.Column="2" Classes="kbd" IsVisible="{Binding HasKey}" VerticalAlignment="Center">
+                              <TextBlock Classes="kbd" Text="{Binding Key}" />
+                            </Border>
+                          </Grid>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Panel>
+</UserControl>

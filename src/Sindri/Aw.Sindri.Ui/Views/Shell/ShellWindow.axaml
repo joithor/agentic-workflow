@@ -5,6 +5,7 @@
         xmlns:views="using:Aw.Sindri.Ui.Views.Shell"
         xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
         xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+        xmlns:root="using:Aw.Sindri.Ui.Views"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
         x:DataType="shell:ShellViewModel"
         Title="{Binding Text.Sindri}"
@@ -242,5 +243,13 @@
         </Border>
       </Panel>
     </DockPanel>
+
+    <!-- The palette and the ? sheet (§8): layers over everything, shown by their view models; Esc closes the topmost. -->
+    <Panel x:Name="PaletteLayer" IsVisible="{Binding Palette.IsOpen}">
+      <root:CommandPalette x:Name="CommandPalette" DataContext="{Binding Palette}" />
+    </Panel>
+    <Panel x:Name="ShortcutsLayer" IsVisible="{Binding Shortcuts.IsOpen}">
+      <root:ShortcutsSheet x:Name="ShortcutsSheet" DataContext="{Binding Shortcuts}" />
+    </Panel>
   </Panel>
 </Window>

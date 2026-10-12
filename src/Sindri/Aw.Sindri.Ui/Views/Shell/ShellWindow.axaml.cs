@@ -32,6 +32,9 @@ internal sealed partial class ShellWindow : Window
     private NavigationMethod _lastMethod = NavigationMethod.Tab;
     private Control? _sheetOpener;
 
+    // What had focus when the palette or the ? sheet opened: it gets focus back when they close (§8, §11.2).
+    private Control? _overlayOpener;
+
     public ShellWindow()
     {
         InitializeComponent();
@@ -46,8 +49,12 @@ internal sealed partial class ShellWindow : Window
     protected override void OnDataContextChanged(EventArgs e)
     {
         _shell?.PropertyChanged -= OnShellChanged;
+        _shell?.Palette.PropertyChanged -= OnOverlayChanged;
+        _shell?.Shortcuts.PropertyChanged -= OnOverlayChanged;
         _shell = Shell;
         _shell?.PropertyChanged += OnShellChanged;
+        _shell?.Palette.PropertyChanged += OnOverlayChanged;
+        _shell?.Shortcuts.PropertyChanged += OnOverlayChanged;
         if (_shell?.Window is { } bounds)
         {
             WindowStartupLocation = WindowStartupLocation.Manual;
@@ -84,23 +91,41 @@ internal sealed partial class ShellWindow : Window
     /// <inheritdoc />
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        if (e.Key == Key.F6)
+        e.Handled = e.Key == Key.F6 ? CycleRegion(back: e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+            : e.Key == Key.Escape ? Escape()
+            : OpenByKey(e);
+        base.OnKeyDown(e);
+    }
+
+    // ⌘K opens the palette, `?` the shortcuts sheet (never while typing in a field, nor over the palette), ⌘, Settings.
+    private bool OpenByKey(KeyEventArgs e)
+    {
+        if (Shell is not { IsChromeVisible: true } shell)
         {
-            e.Handled = CycleRegion(back: e.KeyModifiers.HasFlag(KeyModifiers.Shift));
-        }
-        else if (e.Key == Key.Escape)
-        {
-            e.Handled = Escape();
-        }
-        else if (e.Key == Key.OemComma && e.KeyModifiers == _command && Shell is { } open)
-        {
-            open.GoTo(PageId.Settings);
-            // Like the sheet's heading (§11.2), opening Settings moves focus into it: its first control.
-            Dispatcher.UIThread.Post(() => FirstFocusable(this.Get<Control>("SettingsSlot"))?.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
-            e.Handled = true;
+            return false;
         }
 
-        base.OnKeyDown(e);
+        if (e.Key == Key.K && e.KeyModifiers == _command)
+        {
+            shell.Palette.Open();
+            return true;
+        }
+
+        if (IsQuestionMark(e) && e.Source is not TextBox && !shell.Palette.IsOpen)
+        {
+            shell.Shortcuts.Open();
+            return true;
+        }
+
+        if (e.Key != Key.OemComma || e.KeyModifiers != _command)
+        {
+            return false;
+        }
+
+        shell.GoTo(PageId.Settings);
+        // Like the sheet's heading (§11.2), opening Settings moves focus into it: its first control.
+        Dispatcher.UIThread.Post(() => FirstFocusable(this.Get<Control>("SettingsSlot"))?.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
+        return true;
     }
 
     // Esc closes the sheet, or Settings over the Not running card (focus then goes from its hidden control to the page
@@ -110,6 +135,18 @@ internal sealed partial class ShellWindow : Window
         if (Shell is not { } shell)
         {
             return false;
+        }
+
+        if (shell.Palette.IsOpen)
+        {
+            shell.Palette.Close();
+            return true;
+        }
+
+        if (shell.Shortcuts.IsOpen)
+        {
+            shell.Shortcuts.Close();
+            return true;
         }
 
         if (shell.IsSheetOpen)

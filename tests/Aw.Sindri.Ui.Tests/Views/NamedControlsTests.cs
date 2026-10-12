@@ -18,11 +18,13 @@ public sealed class NamedControlsTests
 {
     private static readonly XNamespace _x = "http://schemas.microsoft.com/winfx/2006/xaml";
 
-    public static TheoryData<string> Views => ["SettingsView", "Shell/ShellWindow", "Shell/TopBar", "Shell/HomePage", "Shell/HealthPage", "Shell/PlaceholderPage"];
+    public static TheoryData<string> Views => ["SettingsView", "CommandPalette", "ShortcutsSheet", "Shell/ShellWindow", "Shell/TopBar", "Shell/HomePage", "Shell/HealthPage", "Shell/PlaceholderPage"];
 
     private static Control Construct(string view) => view switch
     {
         "SettingsView" => new SettingsView(),
+        "CommandPalette" => new CommandPalette(),
+        "ShortcutsSheet" => new ShortcutsSheet(),
         "Shell/ShellWindow" => new ShellWindow(),
         "Shell/TopBar" => new TopBar(),
         "Shell/HomePage" => new HomePage(),
