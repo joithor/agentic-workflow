@@ -12,6 +12,7 @@ using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Theme;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Icons;
 using Aw.Sindri.Ui.Views.Shell;
 using Microsoft.Extensions.Time.Testing;
 
@@ -176,6 +177,34 @@ public sealed class TopBarTests : IDisposable
 
         Assert.Equal(PageId.Home, shell.CurrentPage);
         Assert.Equal(writes, _preferences.Writes);
+    });
+
+    // accessibility-tester-2 (§11.4: under reduced motion every duration is 0): a spinner already turning stops when
+    // reduced motion turns on mid-refresh, and stands still in the icon's place; it turns again when motion comes back.
+    [Fact]
+    public Task A_turning_spinner_stops_when_reduced_motion_turns_on_mid_refresh() => OnUi(async () =>
+    {
+        var (window, shell) = await Stale();
+        _server.StatusGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Named<Button>(window, "RefreshButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+        var spinner = Named<StateIcon>(window, "RefreshSpinner");
+        Assert.True(spinner.IsSpinning, "the spinner isn't turning");
+
+        Motion.Apply(Application.Current!.Resources, reduce: true);
+        Settle(window);
+        Assert.False(spinner.IsSpinning, "the spinner kept turning under reduced motion");
+        Assert.Equal(0, spinner.Angle);
+        Assert.True(spinner.IsEffectivelyVisible, "the still spinner left the icon's place");
+
+        Motion.Apply(Application.Current!.Resources, reduce: false);
+        Settle(window);
+        Assert.True(spinner.IsSpinning, "the spinner didn't turn again with motion back");
+
+        _server.StatusGate.SetResult();
+        await Until(() => shell.Health.CanRefresh);
+        Settle(window);
+        Assert.False(spinner.IsSpinning);
     });
 
     private static Color Colour(string key) =>
