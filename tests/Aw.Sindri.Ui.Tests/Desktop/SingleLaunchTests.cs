@@ -107,7 +107,8 @@ public sealed class SingleLaunchTests : IDisposable
 
         Assert.Equal(2, exit);
         Assert.False(ran);
-        Assert.Equal("sindri-ui: couldn't start (SND-UI-004); the log line above names the cause" + Environment.NewLine, _errors.ToString());
+        // Lead (1): true whether or not a log line printed (AW_LOG_LEVEL=none): the cause is named on the line itself.
+        Assert.Equal("sindri-ui: couldn't start (SND-UI-004: IOException)" + Environment.NewLine, _errors.ToString());
         var entry = Assert.Single(_log.Entries);
         Assert.Equal("SND-UI-004", entry.EventName);
         Assert.Contains("IOException", entry.Message, StringComparison.Ordinal);
