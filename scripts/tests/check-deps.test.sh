@@ -524,6 +524,11 @@ expect "route literals in test projects are not edges" 0 "deps: ok"
 d="$(http_fixture http-no-routes)"; edge "$d" Gamma Delta http planned; run "$d"
 expect "an http edge to a package with no routes fails" 1 "DEPS-KIND-004" "Gamma -> Delta (http)"
 
+# Review run 3 (kieran-typescript-reviewer-0): DEPS-KIND-004 depends only on the target, so an http edge from a shell
+# or mod node to a package with no routes fails too.
+d="$(http_fixture http-no-routes-shell)"; edge "$d" Hooks Delta http planned; run "$d"
+expect "an http edge from a shell node to a package with no routes fails" 1 "DEPS-KIND-004" "Hooks -> Delta (http)"
+
 d="$(http_fixture http-cycle)"; edge "$d" Gamma Beta http planned; edge "$d" Beta Gamma cli planned; run "$d"
 expect "http edges count in the cycle check" 1 "DEPS-CYCLE-001" "Beta -> Gamma -> Beta"
 
@@ -648,6 +653,13 @@ refuse "  ... and the excused cycle is not reported" "Alpha -> Beta -> Alpha"
 d="$(fixture cycle-excepted-two)"; edge "$d" Alpha Beta cli planned; edge "$d" Beta Delta cli planned; edge "$d" Delta Alpha cli planned; cyc "$d" Alpha Alpha Beta cli; run "$d"
 expect "a cycle exception whose edge closes two cycles covers neither" 1 "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha" "Alpha -> Beta -> Delta -> Alpha" "DEPS-EXC-002" "2 cycles pass through Alpha -> Beta (cli)" "fix: break the other cycle through Alpha -> Beta (cli)"
 refuse "  ... and its fix isn't to delete the exception" "fix: delete the DEPS-CYCLE-001 exception"
+
+# Review run 3 (kieran-typescript-reviewer-1): two exceptions on the same cycle (one per direction): either alone removes
+# the cycle, so the second suppresses nothing and fails DEPS-EXC-002 with its own measurement and fix.
+d="$(fixture cycle-excepted-both)"; edge "$d" Alpha Delta cli planned; edge "$d" Delta Alpha cli planned; cyc "$d" Alpha Alpha Delta cli
+perl -pi -e "s/^exceptions:\n/exceptions:\n  - rule: DEPS-CYCLE-001\n    subject: Delta\n    excuses:\n      from: Delta\n      to: Alpha\n      kind: cli\n    reason: test\n    recorded: 2026-10-10\n    expires: 2026-12-01\n/" "$d/deps.yaml"; run "$d"
+expect "a second exception on an already covered cycle suppresses nothing" 1 "DEPS-EXC-002" "is already covered by another DEPS-CYCLE-001 exception" "fix: delete one of the two exceptions on"
+refuse "  ... and the cycle itself stays covered" "FAIL DEPS-CYCLE-001 the declared graph has a cycle"
 
 d="$(fixture cycle-excepted-none)"; edge "$d" Delta Alpha cli planned; cyc "$d" Delta Delta Alpha cli; run "$d"
 expect "a cycle exception whose cycle doesn't exist suppresses nothing" 1 "DEPS-EXC-002" "DEPS-CYCLE-001 for Delta: no cycle passes through Delta -> Alpha (cli)" "fix: delete the DEPS-CYCLE-001 exception for Delta from deps.yaml"
