@@ -1,5 +1,7 @@
+using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.Tests.Shell;
 
@@ -30,6 +32,11 @@ public sealed class LabelsTests
             Assert.True(char.IsUpper(r[0]), r);
             Assert.DoesNotMatch("[0-9()]", r);
         });
+
+    // §12.4: the Not running card's last line states the follower's real retry wait, so the copy can't drift from it.
+    [Fact]
+    public void The_not_running_card_looks_again_as_often_as_the_follower_retries() =>
+        Assert.Equal(Labels.LooksAgain, string.Create(CultureInfo.InvariantCulture, $"Looks again every {HealthViewModel.RetryEvery.TotalSeconds} s"));
 
     [Theory]
     [InlineData(69190, 4, 69190, 0, "recorded pid 69190 · epoch 4, answering epoch 0")]

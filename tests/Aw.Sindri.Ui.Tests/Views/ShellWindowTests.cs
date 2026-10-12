@@ -533,7 +533,7 @@ public sealed class ShellWindowTests : IDisposable
     });
 
     [Fact]
-    public Task Not_running_shows_the_reason_and_the_sindri_fix() => OnUi(async () =>
+    public Task Not_running_shows_the_reason_the_sindri_fix_and_how_often_it_looks_again() => OnUi(async () =>
     {
         var (window, _) = await Show(s => s.State == ShellState.NotRunning);
 
@@ -541,6 +541,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.False(Visible(window, "Pages"));
         Assert.Equal(Labels.NoRecord, Text(window, "ReasonText"));
         Assert.Equal("sindri", Text(window, "FixText"));
+        Assert.Equal("Looks again every 2 s", Text(window, "LooksAgainText"));
         Assert.Equal(Labels.NotRunning, Text(window, "HealthPillText"));
         Assert.Equal(StateGlyph.Down, Glyph(window, "PillGlyph"));
         EveryControlIsNamed(window);

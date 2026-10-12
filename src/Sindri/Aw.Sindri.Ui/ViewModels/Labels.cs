@@ -94,6 +94,9 @@ internal static partial class Labels
     /// <summary>The not-running panel's fix prompt.</summary>
     internal const string StartIt = "Start it:";
 
+    /// <summary>The not-running panel's last line: how often the app looks for the control plane again (HealthViewModel.RetryEvery).</summary>
+    internal const string LooksAgain = "Looks again every 2 s";
+
     /// <summary>The unreadable banner's fix prompt.</summary>
     internal const string CheckIt = "Check it:";
 
