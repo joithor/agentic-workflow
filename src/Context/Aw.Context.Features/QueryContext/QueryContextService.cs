@@ -38,7 +38,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
         }
 
         var deadline = clock.GetUtcNow() + settings.Value.Deadline;
-        var sources = catalog.For(settings.Value, repos.Value);
+        var sources = catalog.For(settings.Value, repos.Value).Where(s => ScopeRules.MayRead(request.Scope.Caller, s.Describe())).ToList();
         var searched = await Search(sources, valid.Value.Terms, deadline, cancellationToken).ConfigureAwait(false);
         if (sources.Count > 0 && searched.Answers.Count == 0)
         {

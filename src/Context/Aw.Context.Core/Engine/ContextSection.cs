@@ -10,4 +10,5 @@ internal sealed record ContextSection(
     string? Deadline = null,
     int? MaxBudget = null,
     int? MinHits = null,
-    SessionsSection? Sessions = null);
+    SessionsSection? Sessions = null,
+    SourcesSection? Sources = null);

@@ -48,5 +48,10 @@ public static class ScopeRules
     /// <param name="caller">The caller.</param>
     /// <param name="source">The source.</param>
     /// <returns>True when the source may answer this caller.</returns>
-    public static bool MayRead(ContextCaller caller, SourceDescriptor source) => throw new NotSupportedException("red: MayRead");
+    public static bool MayRead(ContextCaller caller, SourceDescriptor source)
+    {
+        ArgumentNullException.ThrowIfNull(caller);
+        ArgumentNullException.ThrowIfNull(source);
+        return caller.Kind != ContextCallerKind.Session || source.Kind != SourceKind.Intent;
+    }
 }

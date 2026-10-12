@@ -113,14 +113,17 @@ public sealed class OnyxSettingsTests
     [Fact, Trait("Lane", "unit")]
     public void No_error_or_description_repeats_the_token()
     {
-        const string planted = "on_planted-key-55d1";
+        const string planted = "keychain:onyx/planted-key-55d1";
+        const string written = "on_planted-key-55d1";   // a key written into the profile instead of a pointer
 
+        var plainKey = OnyxSettings.Create("http://127.0.0.1:3000", written, "v4.9.0").Error.Message;
         var badUrl = OnyxSettings.Create("http://10.0.0.5:3000", planted, "v4.9.0").Error.Message;
         var badVersion = OnyxSettings.Create("http://127.0.0.1:3000", planted, "latest").Error.Message;
         var settings = OnyxSettings.Create("http://127.0.0.1:3000", planted, "v4.9.0").Value;
         var drift = settings.CheckVersion("v4.8.1").Error.Message;
 
         Assert.All([badUrl, badVersion, drift, settings.ToString()], text => Assert.DoesNotContain(planted, text, StringComparison.Ordinal));
+        Assert.DoesNotContain(written, plainKey, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]

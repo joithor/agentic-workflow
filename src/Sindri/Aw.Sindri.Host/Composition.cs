@@ -23,7 +23,7 @@ internal static class Composition
             .AddSindriInfrastructure(environment)
             .AddContextCore()
             .AddContextFeatures()
-            .AddContextInfrastructure(environment)   // context engine: $AW_SINDRI_HOME/context (compose edge)
+            .AddContextInfrastructure(ContextEnvironment(environment))   // context engine: $AW_SINDRI_HOME/context (compose edge); pointers resolve here
             .AddSindriHost();
 
     /// <summary>

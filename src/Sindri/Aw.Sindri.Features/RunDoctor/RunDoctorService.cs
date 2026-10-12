@@ -8,7 +8,7 @@ using Aw.Sindri.Core.Ledger;
 namespace Aw.Sindri.Features.RunDoctor;
 
 internal sealed class RunDoctorService(
-    ILease lease, IProcessProbe probe, ILedgerStore ledger, ProfileFacts profile, IControlPlaneProbe api, TimeProvider clock)
+    ILease lease, IProcessProbe probe, ILedgerStore ledger, ProfileFacts profile, IControlPlaneProbe api, OnyxDoctor onyx, TimeProvider clock)
     : IService<RunDoctorRequest, RunDoctorResponse>
 {
     public async ValueTask<Result<RunDoctorResponse>> Handle(RunDoctorRequest request, CancellationToken cancellationToken)
@@ -24,6 +24,7 @@ internal sealed class RunDoctorService(
             DoctorRules.Ledger(await ledger.Schema(cancellationToken).ConfigureAwait(false)),
             DoctorRules.Profile(live, saved, recorded),
             DoctorRules.Api(await api.Check(cancellationToken).ConfigureAwait(false), row, now),
+            await onyx.Check(saved.IsSuccess ? saved.Value : null, cancellationToken).ConfigureAwait(false),
         ];
         return new RunDoctorResponse(checks, DoctorRules.ExitCode(checks));
     }

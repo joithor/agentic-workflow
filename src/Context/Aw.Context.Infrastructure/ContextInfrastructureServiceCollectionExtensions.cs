@@ -4,6 +4,7 @@ using Aw.Context.Infrastructure.Docs;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Onyx;
 using Aw.Context.Infrastructure.Scrubbing;
+using Aw.Context.Infrastructure.Sources;
 using Aw.Context.Infrastructure.Store;
 using Aw.Redaction;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,7 +33,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton(new RedactionScrubber(Redactor.Default))
             .AddSingleton<IEgressScrubber>(static sp => sp.GetRequiredService<RedactionScrubber>())
             .AddSingleton<IIngestFilter>(static sp => sp.GetRequiredService<RedactionScrubber>())
-            .AddSingleton<ISourceCatalog, RepoDocsCatalog>()
+            .AddSingleton<ISourceCatalog, ContextSourceCatalog>()
             .AddSingleton<IDocIndex, SqliteDocIndex>()
             .AddSingleton(static _ => new OnyxVersionProbe(OnyxHttp.Client))
             .AddSingleton(sp => new OnyxSources(new OnyxSourceParts(

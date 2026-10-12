@@ -38,7 +38,7 @@ public sealed partial record OnyxSettings
     /// <param name="url">'context.sources.onyx.url'.</param>
     /// <param name="token">'context.sources.onyx.token', a secret pointer.</param>
     /// <param name="version">'context.sources.onyx.version', a release tag.</param>
-    /// <returns>The settings, SND-CONTEXT-055 for a URL or version that breaks the rules, or SND-CONTEXT-002 for no token.</returns>
+    /// <returns>The settings, SND-CONTEXT-055 for a URL or version that breaks the rules, or SND-CONTEXT-002 for no token or one that isn't a secret pointer (never repeated).</returns>
     public static Result<OnyxSettings> Create(string? url, string? token, string? version)
     {
         var baseUrl = CheckUrl(url);
@@ -51,6 +51,13 @@ public sealed partial record OnyxSettings
         {
             return ContextErrors.SourceNotConfigured.With(
                 $"{TokenKey}: required: a secret pointer to the Onyx API key (env:NAME, file:/path, keychain:service/account or op:vault/item/field).");
+        }
+
+        if (!PointerShape.IsMatch(token))
+        {
+            return ContextErrors.SourceNotConfigured.With(
+                $"{TokenKey}: isn't a secret pointer, so it isn't used or shown here. Keep the Onyx API key outside the profile and point to it: "
+                + "env:NAME, file:/path (mode 0600), keychain:service/account or op:vault/item/field (spec §4); rotate a key that was written into the profile.");
         }
 
         var pinned = CheckPinned(version);
@@ -134,6 +141,9 @@ public sealed partial record OnyxSettings
         var line = new string([.. text.Select(c => char.IsControl(c) ? ' ' : c)]);
         return line.Length <= MaxShown ? line : line[..MaxShown] + "…";
     }
+
+    [GeneratedRegex(@"^(env|file|keychain|op):\S+\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex PointerShape { get; }
 
     [GeneratedRegex(@"^v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ReleaseTag { get; }

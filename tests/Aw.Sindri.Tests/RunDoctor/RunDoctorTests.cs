@@ -15,7 +15,8 @@ public sealed class RunDoctorTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private RunDoctorService Service(ILedgerStore? ledger = null) =>
-        new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events), _api, _h.Clock);
+        new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events), _api,
+            new OnyxDoctor(SettingsOnlyContextEngine.Instance), _h.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task RunDoctor_is_green_when_running_approved_and_answering()
@@ -28,7 +29,7 @@ public sealed class RunDoctorTests
 
         var report = (await Service().Handle(new RunDoctorRequest(), Token)).Value;
 
-        Assert.Equal("lease,ledger,profile,api", string.Join(',', report.Checks.Select(c => c.Name)));
+        Assert.Equal("lease,ledger,profile,api,context:onyx", string.Join(',', report.Checks.Select(c => c.Name)));
         Assert.All(report.Checks, c => Assert.Equal(CheckState.Ok, c.State));
         Assert.Equal(0, report.ExitCode);
     }
