@@ -279,8 +279,8 @@ Either way `sindri` is the binary in a publish directory (framework-dependent: a
 `libAvaloniaNative`; without them it exits 2 with `SND-UI-004: TypeInitializationException`):
 `bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh <dir>` copies all of them. Or point
 `AW_SINDRI_UI` at it; under `dotnet run` the base directory is the host's build output, so set `AW_SINDRI_UI`. The app
-depends on nothing else about how `sindri` is built: it talks to the control plane only through `control.json` and the
-HTTP API.
+depends on nothing else about how `sindri` is built: it talks to the control plane only through the HTTP API and two files under its home, `control.json` and
+`auth/human.token`.
 
 **`opened` is only "started".** `sindri` starts `sindri-ui` detached with its output to `/dev/null` and reports
 `opened (sindri-ui, pid N)` as soon as the process starts, so the line can still claim success when that `sindri-ui`
@@ -291,7 +291,7 @@ see its exit code and standard error.
 **A declared edge with a cycle exception (owner decision, 2026-10-12).** Starting `sindri-ui` from `sindri` is the
 `Sindri -> SindriUi` cli edge in `deps.yaml`. It closes a cycle with the `SindriUi -> Sindri` http edge, so it carries a
 `DEPS-CYCLE-001` exception that names that edge: the launch only spawns a separate process, shares no code or data,
-and Sindri's HTTP API stays the app's only contract. The edge is `status: planned` only because check-deps doesn't
+and Sindri's HTTP API (with `control.json` and `auth/human.token`) stays the app's only contract. The edge is `status: planned` only because check-deps doesn't
 scan C# for cli edges (a current edge its scan can't find fails `DEPS-STALE-001`).
 
 ## Errors

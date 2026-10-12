@@ -101,8 +101,8 @@ and ports to native apps without a rewrite:
   trim- and AOT-safe.
 - **A client, not a second implementation:** the app talks to Sindri's host over its versioned HTTP API (factory
   addendum §17.27.1) and holds no logic of its own: no extra checks, shortcuts or UI-only state. It is its own
-  package (`SindriUi` in `deps.yaml`, above `Sindri`) and references no Sindri project: Sindri's HTTP contract (and the endpoint record it
-  finds the API by) is its only edge. The first UI PR (#184, which superseded #168) added the `http` edge kind to `deps.yaml`, the schema and
+  package (`SindriUi` in `deps.yaml`, above `Sindri`) and references no Sindri project: Sindri's HTTP contract (and two files under Sindri's
+  home: the endpoint record `control.json` it finds the API by, and the per-start human token `auth/human.token`) is its only edge. The first UI PR (#184, which superseded #168) added the `http` edge kind to `deps.yaml`, the schema and
   `check-deps.mjs`. Its own platform services (notifications, tray icon, opening
   apps for attach, passkeys) sit behind ports in `Aw.Sindri.Ui`, one adapter per platform in the heads.
 - **Dependencies:** the MIT-licensed Avalonia packages only (no Avalonia XPF or paid add-ons), under the same
@@ -247,7 +247,7 @@ declaration. The one allowed exception is a package cycle closed by a `cli` or `
 | 1 | `Judge`, `Packets`, `Readiness` | Tier 0 |
 | 2 | `Scorer`, `Evidence` (ui-evidence), `BugFix` | Tiers 0–1 (today they call judge, and scorer reads `judge.db`) |
 | 3 | `Sindri` | Tiers 0–2, **only through their `Core` contracts or their CLIs** (every package reaches a non-tier-0 package only through its `Core`; `deps.yaml` check DEPS-PROJ-007) |
-| 4 | `SindriUi` (the Avalonia app, §4a "UI") | Tier-0 project edges only (no Sindri project); Sindri's HTTP API (http edge) and its endpoint record `control.json` (file edge) |
+| 4 | `SindriUi` (the Avalonia app, §4a "UI") | Tier-0 project edges only (no Sindri project); Sindri's HTTP API (http edge), and its endpoint record `control.json` and human token `auth/human.token` (one file edge) |
 | — | Every `Host` | Its own package's projects, plus the tier-0 and lower-tier `Core`s it composes |
 
 - **Tier 0 is ordered inside:** it is the one tier with internal project references. `deps.yaml` gives each tier-0
