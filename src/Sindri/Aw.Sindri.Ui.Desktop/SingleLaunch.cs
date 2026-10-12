@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Sindri.Ui.Platform;
+using Microsoft.Extensions.Logging;
 using Aw.Sindri.Ui.Views;
 
 namespace Aw.Sindri.Ui.Desktop;
@@ -18,9 +19,12 @@ internal static class SingleLaunch
     /// <param name="args">The command line.</param>
     /// <param name="runApp">Runs the app until it quits; returns its exit code.</param>
     /// <param name="errors">Standard error.</param>
+    /// <param name="log">The head's log, for a failure before the app starts (SND-UI-004).</param>
     /// <returns>The exit code: the app's (2 when it failed), 0 when the running instance handled the message, 1 when it holds the claim but doesn't answer.</returns>
-    internal static int Run(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors)
+    internal static int Run(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors, ILogger log)
     {
+        ArgumentNullException.ThrowIfNull(log);
+
         // Before the UI starts, on the main thread with no synchronization context: blocking here deadlocks nothing.
         if (Claim(instance))
         {

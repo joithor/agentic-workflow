@@ -10,6 +10,7 @@ public sealed class SingleLaunchTests : IDisposable
 {
     private readonly FakeInstanceChannel _channel = new();
     private readonly StringWriter _errors = new();
+    private readonly RecordingLogger _log = new();
 
     public void Dispose() => _errors.Dispose();
 
@@ -18,7 +19,7 @@ public sealed class SingleLaunchTests : IDisposable
     {
         var first = new FakeSingleInstance(_channel);
 
-        Assert.Equal(7, SingleLaunch.Run(first, [], () => 7, _errors));
+        Assert.Equal(7, SingleLaunch.Run(first, [], () => 7, _errors, _log));
     }
 
     [Fact]
@@ -33,7 +34,7 @@ public sealed class SingleLaunchTests : IDisposable
         {
             ran = true;
             return 0;
-        }, _errors);
+        }, _errors, _log);
 
         Assert.Equal(0, exit);
         Assert.False(ran);
@@ -53,7 +54,7 @@ public sealed class SingleLaunchTests : IDisposable
         {
             ran = true;
             return 0;
-        }, _errors);
+        }, _errors, _log);
 
         Assert.Equal(1, exit);
         Assert.False(ran);
@@ -68,7 +69,7 @@ public sealed class SingleLaunchTests : IDisposable
         Assert.True(await first.TryClaim(TestContext.Current.CancellationToken));
         var second = new EndsHolderOnSend(new FakeSingleInstance(_channel), first);
 
-        Assert.Equal(7, SingleLaunch.Run(second, [], () => 7, _errors));
+        Assert.Equal(7, SingleLaunch.Run(second, [], () => 7, _errors, _log));
         Assert.Equal(string.Empty, _errors.ToString());
     }
 
@@ -85,9 +86,70 @@ public sealed class SingleLaunchTests : IDisposable
     [Fact]
     public void A_failed_start_up_exits_2_with_a_line_on_stderr()
     {
-        Assert.Equal(2, SingleLaunch.Run(new FakeSingleInstance(_channel), [], () => 2, _errors));
+        Assert.Equal(2, SingleLaunch.Run(new FakeSingleInstance(_channel), [], () => 2, _errors, _log));
 
         Assert.StartsWith("sindri-ui: couldn't start (SND-UI-004)", _errors.ToString(), StringComparison.Ordinal);
+    }
+
+    // A failure before the UI starts (the 'ui' directory can't be made: a file sits there) is the documented SND-UI-004:
+    // the code and the exception's type in the log, one line on standard error, exit 2. Never the path, which names the
+    // user's home, and never a stack trace.
+    [Fact]
+    public void A_failure_before_the_UI_starts_exits_2_with_SND_UI_004_and_no_path()
+    {
+        var ran = false;
+
+        var exit = SingleLaunch.Run(new FailsToClaim(new IOException("The file '/Users/someone/.agentic-workflow/sindri-app/ui' already exists.")), [], () =>
+        {
+            ran = true;
+            return 0;
+        }, _errors, _log);
+
+        Assert.Equal(2, exit);
+        Assert.False(ran);
+        Assert.Equal("sindri-ui: couldn't start (SND-UI-004); the log line above names the cause" + Environment.NewLine, _errors.ToString());
+        var entry = Assert.Single(_log.Entries);
+        Assert.Equal("SND-UI-004", entry.EventName);
+        Assert.Contains("IOException", entry.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("/Users/someone", entry.Message, StringComparison.Ordinal);
+        Assert.Null(entry.Exception);
+    }
+
+    // The same for a failure in the hand-over to the running instance (a socket it can't reach for a reason other than "nothing listens").
+    [Fact]
+    public void A_failure_handing_over_exits_2_with_SND_UI_004()
+    {
+        var exit = SingleLaunch.Run(new FailsToSend(new UnauthorizedAccessException("Access to the path '/Users/someone/ui/instance.sock' is denied.")), [], () => 0, _errors, _log);
+
+        Assert.Equal(2, exit);
+        Assert.DoesNotContain("/Users/someone", _errors.ToString(), StringComparison.Ordinal);
+        Assert.Equal("SND-UI-004", Assert.Single(_log.Entries).EventName);
+    }
+
+    private sealed class FailsToClaim(Exception failure) : ISingleInstance
+    {
+        public ValueTask<bool> TryClaim(CancellationToken cancellationToken) => ValueTask.FromException<bool>(failure);
+
+        public ValueTask<bool> Send(string message, CancellationToken cancellationToken) => ValueTask.FromResult(false);
+
+        public IAsyncEnumerable<string> Messages(CancellationToken cancellationToken) => AsyncEnumerable.Empty<string>();
+
+        public int? HolderProcessId() => null;
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    private sealed class FailsToSend(Exception failure) : ISingleInstance
+    {
+        public ValueTask<bool> TryClaim(CancellationToken cancellationToken) => ValueTask.FromResult(false);
+
+        public ValueTask<bool> Send(string message, CancellationToken cancellationToken) => ValueTask.FromException<bool>(failure);
+
+        public IAsyncEnumerable<string> Messages(CancellationToken cancellationToken) => AsyncEnumerable.Empty<string>();
+
+        public int? HolderProcessId() => null;
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
     // A later launch whose message arrives just as the holder ends.

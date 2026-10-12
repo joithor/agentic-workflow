@@ -18,7 +18,7 @@ internal static class Program
         };
         try
         {
-            return SingleLaunch.Run(platform.Instance, args, () => Composition.Compose(platform, TimeProvider.System).StartWithClassicDesktopLifetime(args), Console.Error);
+            return SingleLaunch.Run(platform.Instance, args, () => Composition.Compose(platform, TimeProvider.System).StartWithClassicDesktopLifetime(args), Console.Error, platform.Log);
         }
         finally
         {

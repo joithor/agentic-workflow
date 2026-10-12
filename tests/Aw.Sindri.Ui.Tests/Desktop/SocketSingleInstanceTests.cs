@@ -126,4 +126,21 @@ public sealed class SocketSingleInstanceTests : IDisposable
         var ack = new byte[1];
         return await socket.ReceiveAsync(ack, SocketFlags.None, Token) == 1 ? ack[0] : -1;
     }
+
+    // The prover's case: 'ui' is a plain file, so the instance directory can't be made. The launch ends with SND-UI-004
+    // and exit 2 instead of an unhandled exception (exit 134) whose stack names the path.
+    [Fact]
+    public async Task A_ui_path_that_is_a_file_ends_the_launch_with_SND_UI_004()
+    {
+        await File.WriteAllTextAsync(Path.Combine(_dir, "ui"), "not a directory", Token);
+        using var errors = new StringWriter();
+        var log = new RecordingLogger();
+        await using var instance = Launch();
+
+        var exit = SingleLaunch.Run(instance, [], () => 0, errors, log);
+
+        Assert.Equal(2, exit);
+        Assert.DoesNotContain(_dir, errors.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(_dir, Assert.Single(log.Entries).Message, StringComparison.Ordinal);
+    }
 }
