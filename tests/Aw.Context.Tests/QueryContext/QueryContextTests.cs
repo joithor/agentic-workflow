@@ -168,6 +168,33 @@ public sealed class QueryContextTests
         Assert.Empty(result.Value.Cites.Values.Where(c => c != cite).SelectMany(c => c.Aliases));
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("https://linear.app/fixture-labs/issue/SPL-103", "https://linear.app/fixture-labs/issue/SPL-103")]
+    [InlineData("https://linear.app/fixture-labs/issue/" + FakeScrubber.Secret, null)]
+    [InlineData("https://linear.app/fixture-labs/issue/" + FakeScrubber.BlockMe, null)]
+    public async Task A_permalink_is_scrubbed_like_every_field_and_dropped_when_the_scrub_changes_it(string link, string? shown)
+    {
+        var record = FakeContextSource.Doc("docs/decisions/0001-orientation-toggle.md", "Mirror", "orientation toggle", "o9");
+        var other = new FakeContextSource(_onyx, [record with { Ref = record.Ref with { Source = _onyx.Id, Permalink = new Uri(link) } }]);
+
+        var result = await Engines.Over(other).Query(new ContextQuery("orientation toggle"), Engines.Human(), CancellationToken.None);
+
+        var cite = result.Value.Cites["C1"];
+        Assert.Equal(shown, cite.Permalink?.OriginalString);
+        Assert.Equal(record.Ref.Canonical, cite.Key);   // the citation and its key stay
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_degraded_source_names_the_cause_code_when_it_is_not_010_itself()
+    {
+        var onyx = new FakeContextSource(_onyx, []) { Failure = ContextErrors.OnyxUnexpectedReply.With("Onyx answered with a body v4.9.0 doesn't send") };
+
+        var result = await Engines.Over(FakeContextSource.FixtureDocs(), onyx).Query(new ContextQuery("orientation"), Engines.Human(), CancellationToken.None);
+
+        var degraded = result.Value.Degraded.Single();
+        Assert.Equal(("SND-CONTEXT-010", "SND-CONTEXT-051: Onyx answered with a body v4.9.0 doesn't send"), (degraded.Code, degraded.Message));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Titles_are_fenced_and_capped()
     {

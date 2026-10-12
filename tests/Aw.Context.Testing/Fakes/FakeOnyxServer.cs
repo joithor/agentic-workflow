@@ -73,12 +73,16 @@ public sealed class FakeOnyxServer : IAsyncDisposable
         }
 
         var key = new OnyxKey(token, account, options.OnyxAdmin, options.OnyxVersion ?? PinnedVersion);
-        var server = await LoopbackServer.Start("fake-onyx", r => Handle(r, key), options.Delay).ConfigureAwait(false);
+        var plant = options.OnyxPlant;
+        var server = await LoopbackServer.Start("fake-onyx", r => Planted(Handle(r, key), plant), options.Delay).ConfigureAwait(false);
         return new FakeOnyxServer(server, token);
     }
 
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _server.DisposeAsync();
+
+    private static FakeHttpReply Planted(FakeHttpReply reply, Func<string, string>? plant) =>
+        plant is null ? reply : reply with { Body = JsonNode.Parse(plant(reply.Body.ToJsonString()))! };   // why: a plant returns JSON text
 
     private static FakeHttpReply Handle(FakeHttpRequest request, OnyxKey key)
     {

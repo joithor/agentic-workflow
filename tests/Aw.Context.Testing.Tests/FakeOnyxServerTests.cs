@@ -226,4 +226,15 @@ public sealed class FakeOnyxServerTests
         Assert.Equal(HttpStatusCode.OK, status);
         Assert.True(clock.Elapsed >= TimeSpan.FromMilliseconds(250), $"answered after {clock.ElapsedMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture)} ms");
     }
+
+    [Fact]
+    public async Task A_plant_rewrites_each_reply_as_it_is_sent()
+    {
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxPlant = json => json.Replace(FakeOnyxServer.PinnedVersion, "v0.0.1-planted", StringComparison.Ordinal) });
+
+        var (status, body) = await Http.Get(new Uri(onyx.Url, "api/version"), authorization: null);
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal("v0.0.1-planted", (string?)body!["backend_version"]);
+    }
 }

@@ -23,4 +23,10 @@ public sealed record FakeServerOptions
 
     /// <summary>How long the fake waits before it answers each request (to test a client's deadline); zero by default.</summary>
     public TimeSpan Delay { get; init; }
+
+    /// <summary>
+    /// Rewrites the JSON text of each reply the fake Onyx server sends, to plant what the fixture never holds (a
+    /// secret-shaped identifier in a link, a body in a shape v4.9.0 doesn't send); null sends the replies as they are.
+    /// </summary>
+    public Func<string, string>? OnyxPlant { get; init; }
 }

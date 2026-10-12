@@ -1,13 +1,17 @@
 using System.Net;
 using System.Runtime.Versioning;
+using System.Text;
 using System.Text.Json;
+using Aw.Context.Core.Results;
 using Aw.Context.Testing.Fakes;
 using Aw.Context.Testing.Fixtures;
+using Aw.Kernel.Json;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.RunDoctor;
+using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Tests.ApiGoldens;
 using Microsoft.Extensions.DependencyInjection;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
@@ -49,6 +53,22 @@ public sealed class OnyxContextTests : IDisposable
         Assert.Equal(CheckState.Ok, doctor.State);
         Assert.Contains("Onyx v4.9.0", doctor.Detail, StringComparison.Ordinal);
         Assert.DoesNotContain(onyx.Token, answer.Body + sources.Body + doctor.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task A_planted_identifier_in_a_permalink_is_never_in_json_text_or_http_and_a_clean_one_comes_through()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxPlant = json => json.Replace("/issue/SPL-103", "/issue/MRN-1234567", StringComparison.Ordinal) });
+        await using var host = await Approved(onyx, ct);
+
+        var answer = await host.Http.Ask(Get("/sindri/context/query?q=split%20pane%20orientation", Human(host.Token.Value)));
+        var text = ContextText.Render(AwJson.Deserialize<ContextResult>(Encoding.UTF8.GetBytes(answer.Body), SliceHarness.Json).Value);
+
+        Assert.Equal(HttpStatusCode.OK, answer.Status);   // the body is what 'context query --json' prints
+        Assert.Contains("linear:issue/0e5a1b00-0000-4000-8000-000000000103", answer.Body, StringComparison.Ordinal);   // the citation and its key stay
+        Assert.DoesNotContain("1234567", answer.Body + text, StringComparison.Ordinal);
+        Assert.Contains("\"permalink\":\"https://linear.app/fixture-labs/issue/SPL-", answer.Body, StringComparison.Ordinal);   // an unchanged allowed link still comes through
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
