@@ -3,6 +3,14 @@ set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/../locks.sh"
 
+# Hermetic: the cases below assume the default two heavy-job slots (the "every slot is held"
+# case holds slots 1 and 2), whatever the caller's shell exports (a box may set
+# AW_HEAVY_SLOTS=3). Each case passes its own lock paths; the rest of the lock env is cleared
+# and the state dir is a temp dir, so nothing falls back to the real ~/.agentic-workflow.
+export AW_HEAVY_SLOTS=2
+unset AW_HEAVY_JOB_LOCK AW_HEAVY_LOCK_HELD AW_QA_STACK_LOCK
+AW_STATE_DIR="$(mktemp -d)"; export AW_STATE_DIR
+
 test_with_stack_lock_releases_both_locks_even_on_failure() {
   local stack_lock heavy_lock
   stack_lock="$(mktemp -d)/qa-stack.lock"
