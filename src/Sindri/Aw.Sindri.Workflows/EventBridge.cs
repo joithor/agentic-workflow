@@ -6,8 +6,8 @@ using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Microsoft.Extensions.Logging;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -20,10 +20,12 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// 'route: causation' event only to the instance whose command caused it. Any other event, or one from another actor,
 /// signals nothing. The cursor moves past an event once every target has it; an instance that has ended meanwhile is
 /// skipped, and a Temporal or ledger failure ends the run with the cursor before that event, so the next run retries it.
+/// An item event also stays in the held window (<see cref="HeldItemEvents"/>) for 'workflow.eventHold': each run ends by
+/// re-sending it to a live instance of its item that visibility didn't list yet when it was first delivered.
 /// </summary>
 /// <param name="ledger">The ledger.</param>
 /// <param name="catalog">The registered events.</param>
-/// <param name="instances">The live instances, by a visibility query on 'Item'.</param>
+/// <param name="items">The live instances of an item (a visibility query on 'Item') and the held window.</param>
 /// <param name="origins">Which instance a command was written for.</param>
 /// <param name="runtime">Signals an instance.</param>
 /// <param name="cursor">The last delivered sequence.</param>
@@ -31,7 +33,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 internal sealed partial class EventBridge(
     ILedgerStore ledger,
     BlockCatalog catalog,
-    IWorkflowInstances instances,
+    HeldItemEvents items,
     ICommandOrigins origins,
     IInstanceRuntime runtime,
     EventBridgeCursor cursor,
@@ -63,7 +65,7 @@ internal sealed partial class EventBridge(
             var read = await ledger.ReadAfter(at, Batch, cancellationToken).ConfigureAwait(false);
             if (read.IsError || read.Value.Count == 0)
             {
-                return read.IsError ? read.Error : Unit.Value;
+                return read.IsError ? read.Error : await Redeliver(cancellationToken).ConfigureAwait(false);
             }
 
             foreach (var recorded in read.Value)
@@ -108,16 +110,62 @@ internal sealed partial class EventBridge(
             return Unit.Value;
         }
 
-        foreach (var target in targets.Value)
+        var sent = await SendAll(targets.Value, trigger, cancellationToken).ConfigureAwait(false);
+        if (sent.IsError)
         {
-            var signalled = await runtime.Signal(target, trigger, cancellationToken).ConfigureAwait(false);
-            if (signalled.IsError && signalled.Error.Code != WorkflowErrors.InstanceNotFound.Code)
+            return sent.Error;
+        }
+
+        if (descriptor.Route != EventRoute.Causation && recorded.Item is { Length: > 0 } item)
+        {
+            items.Hold(item, trigger, targets.Value);
+        }
+
+        return Unit.Value;
+    }
+
+    /// <summary>Re-sends each held item event to the live instances of its item that haven't had it (visibility lag, §5.4).</summary>
+    private async ValueTask<Result<Unit>> Redeliver(CancellationToken cancellationToken)
+    {
+        var owed = await items.Owed(cancellationToken).ConfigureAwait(false);
+        if (owed.IsError)
+        {
+            return owed.Error;
+        }
+
+        foreach (var (trigger, target) in owed.Value)
+        {
+            var signalled = await Send(target, trigger, cancellationToken).ConfigureAwait(false);
+            if (signalled.IsError)
+            {
+                return signalled.Error;
+            }
+
+            items.Delivered(trigger, target);
+        }
+
+        return Unit.Value;
+    }
+
+    private async ValueTask<Result<Unit>> SendAll(IReadOnlyList<InstanceAddress> targets, WaitSatisfied trigger, CancellationToken cancellationToken)
+    {
+        foreach (var target in targets)
+        {
+            var signalled = await Send(target, trigger, cancellationToken).ConfigureAwait(false);
+            if (signalled.IsError)
             {
                 return signalled.Error;
             }
         }
 
         return Unit.Value;
+    }
+
+    /// <summary>Signals one instance; one that has ended meanwhile is skipped.</summary>
+    private async ValueTask<Result<Unit>> Send(InstanceAddress target, WaitSatisfied trigger, CancellationToken cancellationToken)
+    {
+        var signalled = await runtime.Signal(target, trigger, cancellationToken).ConfigureAwait(false);
+        return signalled.IsError && signalled.Error.Code != WorkflowErrors.InstanceNotFound.Code ? signalled.Error : Unit.Value;
     }
 
     /// <summary>The instances <paramref name="recorded"/> routes to (spec §5.4): its item's live instances, or its command's instance.</summary>
@@ -146,10 +194,7 @@ internal sealed partial class EventBridge(
             return Array.Empty<InstanceAddress>();
         }
 
-        var live = await instances.List($"Item = '{item.Replace("'", "''", StringComparison.Ordinal)}'", ended: false, cancellationToken).ConfigureAwait(false);
-        return live.IsError
-            ? live.Error
-            : live.Value.Select(static row => InstanceAddress.TryFrom(row.Address, out var address) ? address : (InstanceAddress?)null).OfType<InstanceAddress>().ToList();
+        return await items.LiveOf(item, cancellationToken).ConfigureAwait(false);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "event {Sequence} ({Type}) was written by {Actor}, not its producer {Producer}; nothing was signalled")]

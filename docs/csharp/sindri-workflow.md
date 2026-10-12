@@ -550,6 +550,7 @@ own slots that come due meanwhile are skipped, never overlapped.
 | Part | Behaviour |
 |---|---|
 | Cursor | The last delivered ledger sequence, in the owner-only file `<home>/workflow/events.cursor`, written to a temporary name and moved into place. A missing file reads as 0. The cursor moves past an event once every target has it |
+| Held window | Visibility lags a start, so an instance started just before its item event can be missing from the item query when the event goes out. Every item event delivered within `workflow.eventHold` stays in an in-memory window (`HeldItemEvents`), and each run ends by sending it to a live instance of its item that hasn't had it; the workflow drops a repeat by its ledger sequence and expires one past the hold. The window covers the seconds visibility lags, not a serve restart |
 | Accepted events | A registered `EventDescriptor` kind whose envelope actor is the descriptor's `producer`. Every other event signals nothing |
 | `route: item` | Every live instance of the event's item (a visibility query on `Item`). Temporal buffers the signal until the instance reaches the wait, so an early event isn't lost. The workflow drops a kind its recipe never waits for |
 | `route: causation` | Only the instance that the reply's causing event names (`ICommandOrigins`: the causing ledger event's `instance` field, until P6's `workflow_commands`) |

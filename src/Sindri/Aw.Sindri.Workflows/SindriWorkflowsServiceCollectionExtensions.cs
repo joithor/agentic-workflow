@@ -42,6 +42,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<TemporalCommands>()                          // engine P4 unit (b): Send's answer, command and cancel paths
             .AddSingleton<IInstanceDirectory, TemporalInstanceDirectory>()   // engine P4 unit (b): attempts and bare items
             .AddSingleton<ProfileWorkflowTimes>()                    // engine P4 unit (e): S1-D11, workflow.deskTimeout and workflow.eventHold, read by LoadRecipe
+            .AddSingleton<HeldItemEvents>()                            // engine P4: the bridge's held window (visibility lag)
             .AddSingleton<EventBridgeCursor>()                         // engine P4 unit (d): the bridge's cursor file
             .AddScoped<IScheduledService, EventBridge>()               // engine P4 unit (d): the ledger-to-Temporal bridge
             .AddSingleton(EventBridge.BuiltIn);                        // engine P4 unit (d): runs without a profile entry (S1-D8)
