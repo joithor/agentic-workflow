@@ -39,7 +39,7 @@ public sealed class ServeStopTests : IDisposable
     /// <summary>
     /// The order through the real serve. Not the pin: once the stop requests the shutdown, serve's own fallback removal
     /// runs alongside the release and can hide a regression. The pin is the unit test
-    /// <see cref="StopProcess.StopProcessTests.StopProcess_removes_the_endpoint_record_before_it_releases_the_lease"/>.
+    /// <see cref="StopProcess.StopProcessTests.StopProcess_removes_the_endpoint_record_before_it_clears_the_grant_and_releases_the_lease"/>.
     /// </summary>
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_stop_removes_control_json_before_it_releases_the_lease()
