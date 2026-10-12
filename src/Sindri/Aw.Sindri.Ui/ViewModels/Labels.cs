@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Ui.Navigation;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
@@ -212,6 +213,20 @@ internal static class Labels
 
     /// <summary>The text size slider.</summary>
     internal const string TextSize = "Text size";
+
+    /// <summary>A page's name, as the top bar and the page region's accessible name say it (§11.2).</summary>
+    /// <param name="page">The page.</param>
+    /// <returns>The words.</returns>
+    internal static string Page(PageId page) => page switch
+    {
+        PageId.Home => Home,
+        PageId.Queue => Queue,
+        PageId.Decisions => Decisions,
+        PageId.Services => Services,
+        PageId.Health => Health,
+        PageId.Settings => Settings,
+        _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
+    };
 
     /// <summary>A scale as a percentage ("110%").</summary>
     /// <param name="scale">The scale (1.0 is 100%).</param>

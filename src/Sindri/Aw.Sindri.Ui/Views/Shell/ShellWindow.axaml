@@ -53,7 +53,7 @@
       </Border>
 
       <Panel>
-        <Border x:Name="Page" Classes="focus-region" Focusable="True" AutomationProperties.Name="{Binding Text.Home}">
+        <Border x:Name="Page" Classes="focus-region" Focusable="True" AutomationProperties.Name="{Binding PageName}">
           <Panel>
             <!-- Connecting (§4.1): the chrome and skeleton rows, first load only. -->
             <StackPanel x:Name="ConnectingSkeleton" IsVisible="{Binding IsConnecting}" Margin="32,24" Spacing="8">

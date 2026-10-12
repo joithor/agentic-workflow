@@ -24,7 +24,7 @@ internal sealed class ShellViewModel : ObservableObject
 
     private static readonly string[] _pageProperties =
     [
-        nameof(CurrentPage), nameof(SelectedNav), nameof(IsHome), nameof(IsQueue), nameof(IsDecisions), nameof(IsServices),
+        nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsQueue), nameof(IsDecisions), nameof(IsServices),
         nameof(IsHealth), nameof(IsSettings),
     ];
 
@@ -88,7 +88,7 @@ internal sealed class ShellViewModel : ObservableObject
     }
 
     /// <summary>The page region's accessible name: the page shown, in words.</summary>
-    public string PageName { get; } = Labels.Home;
+    public string PageName => Labels.Page(CurrentPage);
 
     /// <summary>True on Home.</summary>
     public bool IsHome => CurrentPage == PageId.Home;
