@@ -20,9 +20,10 @@ public abstract class TemporalProbes(TemporalServerFixture server)
 
     private readonly WorkflowEnvironment _env = server.Environment;
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task Update_validator_rejects_and_a_repeated_update_id_applies_once()
     {
+        var ct = TestContext.Current.CancellationToken;
         var queue = Queue("update");
         await Run(queue, new DeskTasks(), async () =>
         {
@@ -45,15 +46,16 @@ public abstract class TemporalProbes(TemporalServerFixture server)
         });
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task Async_completion_completes_the_activity_through_its_task_token()
     {
+        var ct = TestContext.Current.CancellationToken;
         var queue = Queue("async");
         var desk = new DeskTasks();
         await Run(queue, desk, async () =>
         {
             var handle = await _env.Client.StartWorkflowAsync((AsyncCompletionProbeWorkflow w) => w.RunAsync(), new WorkflowOptions($"async-{server.Kind}", queue));
-            var taskToken = await desk.WaitFor("1.1", Token);
+            var taskToken = await desk.WaitFor("1.1", ct);
 
             await _env.Client.GetAsyncActivityHandle(taskToken).CompleteAsync("done");
 
@@ -62,9 +64,10 @@ public abstract class TemporalProbes(TemporalServerFixture server)
         });
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task Signals_reach_the_workflow_and_wait_until_it_waits()
     {
+        var ct = TestContext.Current.CancellationToken;
         var queue = Queue("signal");
         await Run(queue, new DeskTasks(), async () =>
         {
@@ -77,9 +80,10 @@ public abstract class TemporalProbes(TemporalServerFixture server)
         });
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task Child_workflow_returns_its_result_to_the_parent()
     {
+        var ct = TestContext.Current.CancellationToken;
         var queue = Queue("child");
         await Run(queue, new DeskTasks(), async () =>
         {
@@ -89,9 +93,10 @@ public abstract class TemporalProbes(TemporalServerFixture server)
         });
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task DelayAsync_skips_time_only_on_the_time_skipping_server()
     {
+        var ct = TestContext.Current.CancellationToken;
         var queue = Queue("delay");
         await Run(queue, new DeskTasks(), async () =>
         {
@@ -116,6 +121,42 @@ public abstract class TemporalProbes(TemporalServerFixture server)
 
             TestContext.Current.SendDiagnosticMessage(string.Create(CultureInfo.InvariantCulture, $"{server.Kind}: DelayAsync({delay}) took {wall.Elapsed.TotalMilliseconds:F0} ms wall"));
         });
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task Worker_restart_mid_step_resumes_with_the_same_run_token()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var queue = Queue("resume");
+        var desk = new DeskTasks();
+        var ledger = await SpikeLedger.InMemory(ct);
+        var spike = new SpikeDesk(_env.Client, desk);
+        var id = $"RESUME-1/workflow.step/1-{server.Kind}";
+        WorkflowHandle<SpikeStepWorkflow, SpikeView>? handle = null;
+        await SpikeWorker.Run(_env.Client, SpikeWorker.Options(queue, desk, ledger), async () =>
+        {
+            handle = await spike.Start(id, queue, new SpikeRun("RESUME-1", SpikeEvals.WorkflowStep));
+            await spike.Opened(id, "1.1", ct);
+        }, ct);
+
+        // Worker A is gone, its sticky cache with it; a new worker picks the instance up from history.
+        var resumed = Stopwatch.StartNew();
+        await SpikeWorker.Run(_env.Client, SpikeWorker.Options(queue, desk, ledger), async () =>
+        {
+            await spike.Complete(id, "1.1", new SpikeReport("done", new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:output"] = "o" }), ct);
+            await spike.Opened(id, "2.1", ct);
+            resumed.Stop();
+            var view = await handle!.QueryAsync(w => w.View);
+            Assert.Equal(("checks", "2.1"), (view.State, view.Run));
+        }, ct);
+
+        var history = await handle!.FetchHistoryAsync();
+        var scheduled = history.Events.Where(e => e.EventType == EventType.ActivityTaskScheduled)
+            .Select(e => e.ActivityTaskScheduledEventAttributes.ActivityId).ToList();
+        Assert.Equal(["1.1", "2.1"], scheduled);
+        Assert.Equal(2, desk.Opened);
+        TestContext.Current.SendDiagnosticMessage(string.Create(CultureInfo.InvariantCulture,
+            $"{server.Kind}: restart to next run opened {resumed.Elapsed.TotalMilliseconds:F0} ms"));
     }
 
     private string Queue(string probe) => $"probe-{probe}-{server.Kind}";

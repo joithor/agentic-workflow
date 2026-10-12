@@ -14,6 +14,12 @@ internal sealed class DeskTasks
     /// <summary>How many times an activity recorded a task (a re-launch would count twice).</summary>
     public int Opened => Volatile.Read(ref _opened);
 
+    /// <summary>The key of an instance's run: '{address}#{run token}'.</summary>
+    /// <param name="address">The workflow id.</param>
+    /// <param name="token">The run token.</param>
+    /// <returns>The key.</returns>
+    public static string Key(string address, string token) => address + "#" + token;
+
     /// <summary>Records <paramref name="token"/>'s task token.</summary>
     /// <param name="token">The run token (activity id).</param>
     /// <param name="taskToken">The activity's task token.</param>

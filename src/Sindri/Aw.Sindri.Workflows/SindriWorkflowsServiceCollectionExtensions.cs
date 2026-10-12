@@ -12,5 +12,6 @@ public static class SindriWorkflowsServiceCollectionExtensions
         => services
             .AddSingleton<TemporalDevServer>()
             .AddSingleton<RunStepActivities>()
+            .AddSingleton<RecordEventActivities>()
             .AddSingleton(provider => SindriWorker.Options(provider.GetRequiredService<RunStepActivities>()));
 }
