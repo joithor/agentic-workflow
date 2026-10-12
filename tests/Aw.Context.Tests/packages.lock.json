@@ -193,11 +193,20 @@
       "aw.context.testing": {
         "type": "Project",
         "dependencies": {
-          "Aw.Kernel": "[1.0.0, )"
+          "Aw.Context.Core": "[1.0.0, )",
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Testing": "[1.0.0, )"
         }
       },
       "aw.kernel": {
         "type": "Project"
+      },
+      "aw.kernel.testing": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "xunit.v3.extensibility.core": "[4.0.1, 4.0.1]"
+        }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
         "type": "CentralTransitive",
