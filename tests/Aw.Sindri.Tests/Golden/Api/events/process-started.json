@@ -1,0 +1,10 @@
+{
+  "sequence": 1,
+  "type": "process.started",
+  "occurredAt": "2026-01-01T00:00:00.0000000Z",
+  "actor": "host:sindri",
+  "tenant": "local",
+  "ring": 0,
+  "epoch": 1,
+  "payload": "{\"host\":\"box\",\"pid\":4242,\"epoch\":1,\"profile\":null}"
+}
