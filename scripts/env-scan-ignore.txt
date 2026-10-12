@@ -17,6 +17,10 @@ GIT_CONFIG_GLOBAL # git's own variable; sindri onboard forwards it to the git it
 
 # Set by the host (Claude Code, Cursor) when it runs our hooks or installers.
 CLAUDECODE # set by Claude Code inside its sessions; the installer skips shell edits there, and sindri's CLI classes itself as a session
+CLAUDE_CODE_ENTRYPOINT # set by Claude Code inside its sessions; a pinned probe marker (sindri's CLI classes itself as a session)
+CLAUDE_CODE_EXECPATH # set by Claude Code inside its sessions; a pinned probe marker (sindri's CLI classes itself as a session)
+CLAUDE_CODE_SESSION_ID # set by Claude Code inside its sessions; a pinned probe marker (sindri's CLI classes itself as a session)
+CLAUDE_PID # set by Claude Code inside its sessions; a pinned probe marker (sindri's CLI classes itself as a session)
 CODEX_SANDBOX # set by Codex in its sandboxed sessions; sindri's CLI reads it to class itself as a session
 CURSOR_AGENT # set by Cursor's agent in its sessions (unverified); sindri's CLI reads it to class itself as a session
 CURSOR_PROJECT_DIR # set by Cursor for hook commands

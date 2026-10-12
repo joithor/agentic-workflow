@@ -115,6 +115,40 @@ history in the same format; it needs the server's instances (P4) and exits 2 unt
 | 1 | A case fails (`<case> fail at <file>:<line>: <detail>`) |
 | 2 | A usage error (no file, `--record` without an address and `--out`: `SND-CLI-003`; an unknown argument: `SND-CLI-001`; `--record` itself until P4: `SND-CLI-001 … needs the server (P4)`), or a tool error: the recipe can't be read (`SND-RECIPE-010`) or doesn't bind (`SND-RECIPE-001`, fix: `sindri recipe validate`), a listed eval file is missing, unreadable or outside the recipe's directory (`SND-RECIPE-008`), or a bug inside `sindri` (`SND-API-005 recipe eval failed inside sindri: …`) |
 
+## `sindri recipe approve` and `sindri recipe revoke`
+
+Both are `protected` (engine spec §4.2, §6.2, §6.3): only a human at a terminal gets past the command chain; a session
+or a CLI without a terminal gets `SND-AUTH-002` naming the agent variable or process it saw, and nothing is recorded but
+the audit row.
+
+`sindri recipe approve <file|id@hash>`:
+
+1. With a file, the CLI validates it in-process (`SND-RECIPE-001` if it fails) and checks every eval file its `evals:`
+   names is present beside it (`SND-RECIPE-008` otherwise; P4 runs them at approve). It registers the file if the server
+   doesn't know it yet.
+2. It asks `POST /sindri/workflow/challenges` for `approve <id> <version>` and prints the preview: id, version, hash and
+   base; the diff against the last approved version of the id (`nothing` for a first approval); the capability uses
+   (block, `from -> to`, capabilities and capability parameters); the effect kinds and their allowlist status; the pinned
+   blocks with their descriptor hashes and the pinned children; the eval files. A re-approval of an approved hash also
+   shows the blocks whose descriptor changed and the drift-parked instances it resumes.
+3. You type the action text, `approve workflow.step 1`. With a file, the CLI re-reads it first and refuses with
+   `SND-RECIPE-009` if it changed while you read.
+4. It prints `approved workflow.step@<hash12>`.
+
+The server refuses before any challenge when the hash is revoked (`SND-RECIPE-005`), the recipe declares no evals
+(`SND-RECIPE-008`), a child it starts has no approved hash to pin (`SND-RECIPE-003`), or it is already approved with the
+same pins (`SND-CLI-003`). A wrong typed text, a challenge for another action, an expired one (5 minutes) or one whose
+subject changed (another hash; for a re-approval, other pins) is `SND-RECIPE-009` and records nothing.
+
+`sindri recipe revoke <id@hash>` (the hash by 8 or more digits) previews the instances that will park, the takeovers it
+ends, the generated recipes approved from it (revoked with it, recursively) and the parents pinning it as a child
+(marked `child-stale`), asks for `revoke <id>@<hash12>`, and prints `revoked …; N instances parked` (N is 0 until P4's
+wake reaches instances).
+
+Each approval appends `recipe.approved` (keyed `recipe.approved:<hash>:after:<seq>`) and an approval row keyed by
+(id, version, hash) with its pins; each revoked hash appends `recipe.revoked` (keyed `recipe.revoked:<hash>`) and its row,
+and is sent to `IRecipeWake`. Challenges live in the server process and die on restart.
+
 ## Recipe reference (schema 1)
 
 JSON Schemas: `schemas/recipes/recipe.schema.json` is the long form, generated from the C# records by

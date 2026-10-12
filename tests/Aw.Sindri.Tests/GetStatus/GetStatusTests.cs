@@ -35,7 +35,7 @@ public sealed class GetStatusTests
         var approved = SliceHarness.Profile("5s");
         _h.Profiles.Live = approved;
         var grant = await _h.HoldLease();
-        _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events).Handle(new ApproveProfileRequest(approved.Hash, Confirmed: true), Token);
+        _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, _h.Challenges).Handle(new ApproveProfileRequest(approved.Hash, _h.Confirm(approved.Hash)), Token);
         _ = await new RecordHeartbeatService(_h.Store, _h.Events, _h.Clock).Handle(new RecordHeartbeatRequest(new ScheduledRun(grant, _h.Clock.GetUtcNow())), Token);
 
         var status = (await Service().Handle(new GetStatusRequest(), Token)).Value;

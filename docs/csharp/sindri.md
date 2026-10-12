@@ -22,8 +22,8 @@ One binary, `sindri`, is both the control plane and its CLI. It publishes framew
 | `sindri stop` | Stops it: records the stop, removes `control.json`, stops the Temporal worker (waiting at most 5 s for it) and then the dev server (the CLI waits 10 s for the answer; a dev server slow to exit can push past that, and the stop still completes), releases the lease, shuts down | 0; 1 when it isn't running (`SND-API-001`); 2 on any other error (e.g. the API refused this caller `SND-AUTH-002`, it didn't answer in time `SND-API-002`, the stop couldn't be recorded, or `control.json` couldn't be removed (the process still stops) `SND-LEDGER-002`, the dev server couldn't be stopped `SND-CLI-002`, answered an error without a code `SND-API-004`, or failed inside `SND-API-005`) |
 | `sindri profile validate [--json]` | Checks the live profile file and prints its hash | 0 valid and approved (it is the saved approval and the latest recorded `profile.approved` event names it, the rule every surface uses); 1 valid, not approved; 2 on any error: invalid (`SND-PROFILE-001/002`), the saved approval can't be read (`SND-PROFILE-006`) or the ledger can't be read (`SND-LEDGER-002`), neither of which is ever "not approved" |
 | `sindri profile approve` | `[--no-start]`: shows the live hash and the key paths changed since the latest approval; changes nothing | 0 when it already is approved; 1 when not approved yet, or when it isn't running and wasn't started (`SND-API-001`: `--no-start`, an agent session, no terminal); 2 on any other error (e.g. the API refused this caller `SND-AUTH-002`, which a running control plane does for an agent session or a CLI with no terminal because the preview is the protected ApproveProfile command; an invalid profile `SND-PROFILE-001/002`, a ledger it can't read `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
-| `sindri profile approve <hash>` | Approves: the hash must be the live one, and you type its first 6 characters at an interactive terminal. Starts the control plane first if it isn't running, unless `--no-start` (`sindri profile approve [--no-start] <hash>`) | 0; 1 when it isn't running and wasn't started (`SND-API-001`); 2 on any other error (e.g. the API refused this caller `SND-AUTH-002`, it couldn't start `SND-CLI-002`, a malformed hash `SND-CLI-003`, a stale hash `SND-PROFILE-003`, no terminal or a wrong confirmation `SND-PROFILE-004`, approvals that can't be written `SND-PROFILE-006`, a ledger it can't read or write `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
-| `sindri doctor [--json]` | One line per check, in order: `lease`, `ledger`, `profile`, `api`, `temporal` (the dev server on this home's `temporal.db`: reachable, its CLI version equal to the `binaries.lock` pin, namespace `sindri` present; `fail` with a fix otherwise), each `ok` / `warn` / `fail` with a fix. `profile` is `ok` only when approved by the one rule (see Profile); changed since the saved approval, or saved but not the latest recorded one, is a `warn` | 0 all ok, 1 any warn, 2 any fail |
+| `sindri profile approve <hash>` | Approves: the hash must be the live one; the CLI asks the server for an `approve profile <hash6>` challenge and you type that text back at an interactive terminal (engine spec §4.2, S1-D5). Starts the control plane first if it isn't running, unless `--no-start` (`sindri profile approve [--no-start] <hash>`) | 0; 1 when it isn't running and wasn't started (`SND-API-001`); 2 on any other error (e.g. the API refused this caller `SND-AUTH-002`, it couldn't start `SND-CLI-002`, a malformed hash `SND-CLI-003`, a stale hash `SND-PROFILE-003`, no terminal or a wrong confirmation `SND-PROFILE-004`, approvals that can't be written `SND-PROFILE-006`, a ledger it can't read or write `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
+| `sindri doctor [--json]` | One line per check, in order: `lease`, `ledger`, `profile`, `api`, `temporal` (the dev server on this home's `temporal.db`: reachable, its CLI version equal to the `binaries.lock` pin, namespace `sindri` present; `fail` with a fix otherwise), each `ok` / `warn` / `fail` with a fix, then one line per pinned harness (see "The harness probe"). `profile` is `ok` only when approved by the one rule (see Profile); changed since the saved approval, or saved but not the latest recorded one, is a `warn` | 0 all ok, 1 any warn, 2 any fail |
 | `sindri recipe validate <file> [--json]` | Validates a recipe in this process against the build's block catalog, never contacting the control plane: one line per finding (errors first; information and skipped findings labelled), then the recipe's hash. `--json` adds each finding's fields and the normalized long form. Reference: `docs/csharp/sindri-workflow.md` | 0 no errors; 1 any `RCP-*` error; 2 a usage error (no file, `SND-CLI-003`; an unknown `recipe` verb or extra arguments, `SND-CLI-001`), an unreadable file (`SND-RECIPE-010`) or a bug inside sindri (`SND-API-005`) |
 | `sindri recipe eval <file> [--json]` · `--scaffold <file>` · `--record <address> --out <file>` | Runs the recipe's eval cases in this process over the pure engine (P3): one line per case, `<case> pass` or `<case> fail at <file>:<line>: <detail>`, or `no evals declared`. `--scaffold` prints a passing happy-path case; `--record` needs the server (P4). Reference: `docs/csharp/sindri-workflow.md` | 0 every case passes or none declared; 1 a case fails; 2 a usage error (`SND-CLI-003`, `SND-CLI-001`, `--record` until P4), an unreadable or unbound recipe (`SND-RECIPE-010`, `SND-RECIPE-001`), a missing or unreadable eval file (`SND-RECIPE-008`) or a bug inside sindri (`SND-API-005`) |
 | `sindri workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--temporal <host:port>] [--no-wait]` | P4a (engine spec rev 8.1 "Phase 4a"; P4 moves it behind the API's `CompleteStep`): completes the open desk run `<token>` of the instance with the outcome and output files (each stored 0600 under `<home>/workflow/facts/` by its SHA-256), talking to the Temporal frontend that `control.json`'s `temporal` field records (`--temporal` overrides it). It prints `<address> run <token>: <outcome> -> <next state>`, or `-> sent; the instance moves on when a worker runs` with `--no-wait`, when no worker answers within 10 s, or when the instance is still on the run then (P4a: a report no transition takes reopens the run and also prints this; P4's Update validator refuses it instead) | 0; 1 when no dev server is recorded or it doesn't answer, the server has no `sindri` namespace (the run's task token is kept), or Temporal doesn't confirm the call (`SND-API-001`; the report may have landed); 2 on any other error (e.g. a bad address or option `SND-CLI-003`, a run that isn't open `SND-WF-005`, an output file missing or over 1 MiB `SND-WF-008`) |
@@ -160,7 +160,10 @@ foreign browser `Origin` a 403):
 | `GET /sindri/ping` | `PingProcess`: `{pid, epoch}` |
 | `GET /sindri/commands` | `ListCommands`: the command catalog (Command catalog, below) |
 | `POST /sindri/stop` | `StopProcess` |
-| `POST /sindri/profile/approve` | `ApproveProfile` (`{hash, confirmed}`) |
+| `POST /sindri/profile/approve` | `ApproveProfile` (`{hash, answer?}`: `answer` is `{challenge, typed}`, needed to approve) |
+| `POST /sindri/workflow/challenges` | `IssueChallenge` (`{action}`; issue, human at a terminal only): `approve <recipe> <version>` (or `approve <recipe>@<hash>`), `revoke <recipe>@<hash>`, `approve profile <hash6>`. Answers `{challenge, action, expiresAt, approve?, revoke?}`: a one-time challenge, valid 5 minutes, held in the server process, bound to the action and its subject (the recipe hash and version, plus the pins digest for a re-approval; the live profile hash), with the server's preview |
+| `POST /sindri/workflow/recipes/{id}@{hash}/approve` | `ApproveRecipe` (body `{challenge, typed}`; protected): the hash as `sha256:…` or its 64 digits |
+| `POST /sindri/workflow/recipes/{id}@{hash}/revoke` | `RevokeRecipe` (body `{challenge, typed}`; protected) |
 | `GET /sindri/events?after=N[&item=<id>\|&instance=<address>]` | `StreamEvents` as server-sent events: one event per ledger row (with `item`, that item's rows; with `instance`, the rows that instance mirrored; engine S1-D6), `id` = `seq`, `event` = type; resumes from `after` or `Last-Event-ID`; polls the ledger once a second; ends when the client goes away or a stop is requested, so a stop doesn't wait out Kestrel's 30 s graceful shutdown |
 
 A service's error is ProblemDetails with the `SND-*` code as `title`. The API's own failures carry a code too: an
@@ -168,8 +171,10 @@ unhandled exception in a handler is logged and answered 500 with `SND-API-005`, 
 binding refuses (JSON that doesn't read as the request, a malformed hash or id) is a 400 with `SND-CLI-003` and fixed
 text naming the method and path (a framework's message is logged, never answered). The loopback guard's 400 and 403, an
 unknown route's 404, a wrong method's 405 and a wrong `Content-Type`'s 415 carry no ProblemDetails body; the CLI
-reports an error answer without a code as `SND-API-004`, never as "not running". The approve route's `confirmed` is the CLI's claim that the human typed the
-confirmation. Since API P1 every request is classed from its caller headers and every command runs through the command
+reports an error answer without a code as `SND-API-004`, never as "not running". Every protected action confirms the same way (engine spec §4.2, S1-D5): the CLI
+asks `POST /sindri/workflow/challenges` for a challenge, shows its preview, reads the action text the human types and
+sends both back; a mistyped, expired, used or stale challenge is refused (`SND-RECIPE-009` for a recipe,
+`SND-PROFILE-004` for the profile) and records nothing. Since API P1 every request is classed from its caller headers and every command runs through the command
 chain (Callers and auth, Command chain, below): approving is a `protected` action, so only a `human` caller at a
 terminal with this start's token gets past the chain. The threat model guards honest mistakes (`docs/csharp/bugfix.md`).
 Device-bound approvals for the UI (passkeys, §17.21 D6) come with the UI's action forms.
@@ -212,16 +217,20 @@ composed by the host from the class and the client label, never taken from a hea
 The CLI calls as `human` only when stdin and stdout are a terminal **and** it sees no agent signal; otherwise it calls
 as `session` (API spec §6). An agent signal is either:
 
-- one of the agent-session variables, set to anything non-empty: `CLAUDECODE` (Claude Code), `AW_SINDRI_CHILD`
-  (Sindri's own children), `CODEX_SANDBOX` (Codex's sandbox), `CURSOR_AGENT` (Cursor's agent); or
-- an agent harness among the CLI's ancestors, nearest first, up to 32 levels: `claude`, `codex` or `cursor-agent`. Each
-  ancestor is named by the basename of its `argv[0]`, as `ps` shows it (macOS: `proc_pidinfo` for the parent pid and
-  `sysctl KERN_PROCARGS2` for `argv`; Linux: `/proc/<pid>/stat` and `/proc/<pid>/cmdline`), because the kernel's own
-  name is the executable's file: Claude Code runs as `~/.local/share/claude/versions/<version>`, invoked as `claude`.
-  An ancestry that can't be read (a sandbox refuses process info) is ignored; the variables still apply.
+- one of the agent-session variables, set to anything non-empty: the pinned harness probe's markers (below:
+  `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CLAUDE_CODE_EXECPATH`, `CLAUDE_CODE_SESSION_ID`, `CLAUDE_PID` for Claude
+  Code; `CODEX_SANDBOX` and `CURSOR_AGENT`, provisional until the owner probes), then `AW_SINDRI_CHILD` (Sindri's own
+  children); or
+- an agent harness among the CLI's ancestors, nearest first, up to 32 levels, by the probe's ancestry patterns: invoked
+  as `claude`, or an executable under `…/claude/versions/`; `codex` and `cursor-agent` (provisional). Each ancestor is
+  named by the basename of its `argv[0]`, as `ps` shows it (macOS: `proc_pidinfo` for the parent pid, `sysctl
+  KERN_PROCARGS2` for `argv` and `proc_pidpath` for the executable; Linux: `/proc/<pid>/stat`, `/proc/<pid>/cmdline`
+  and `/proc/<pid>/exe`), because the kernel's own name is the executable's file: Claude Code runs as
+  `~/.local/share/claude/versions/<version>`, invoked as `claude`. An ancestry that can't be read (a sandbox refuses
+  process info) is ignored; the variables still apply.
 
-Both lists are provisional until the engine's harness probe pins them in a golden (engine §6.2, P2).
-`AW_SINDRI_PROVER=1` (set by `scripts/sindri-prove.sh human`) skips the parent-process check, never the variables, and
+Both lists live in `Host/Commands/Probe/PinnedProbe.cs` and are golden-tested against the probe reports (engine §6.2,
+"The harness probe" below). `AW_SINDRI_PROVER=1` (set by `scripts/sindri-prove.sh human`) skips the parent-process check, never the variables, and
 labels a human CLI `X-Sindri-Client: prover`.
 
 What the CLI sends on every API call:
@@ -237,8 +246,9 @@ repo entries (real paths, `~` expanded) by whole path segments; the longest cont
 outside every entry the header is omitted. A missing token file means no token is sent, which the API refuses with
 `SND-AUTH-001`.
 
-A command the API refuses with `SND-AUTH-002` names why the CLI ran as a session: `(this CLI ran as a session:
-CLAUDECODE is set | parent process claude | no terminal)`. It exits 2.
+A command the API refuses with `SND-AUTH-002` names why the CLI ran as a session, the first variable or process it
+found: `(this CLI ran as a session: CLAUDE_CODE_ENTRYPOINT is set | parent process claude | parent process 2.1.296
+(~/.local/share/claude/versions/2.1.296) | no terminal)`. It exits 2.
 
 **Who starts the control plane** (API spec §7):
 
@@ -248,7 +258,7 @@ CLAUDECODE is set | parent process claude | no terminal)`. It exits 2.
 | `sindri serve` | Refused in an agent session (an agent variable is set, or a parent process is an agent harness without `AW_SINDRI_PROVER=1`): `SND-API-001 an agent session never starts Sindri (<signal>); ask the human to run 'sindri'`, exit 1 (P1 plan G6) |
 | `sindri profile approve [--no-start] [<hash>]` | A human at a terminal starts it, then approves; `--no-start` prints `SND-API-001` instead. A malformed hash and a hash without a terminal are refused first, before anything starts. In an agent session or without a terminal it never starts it (P1 plan G8) |
 | `sindri status`, `sindri stop` | Never start it: `not running`, exit 1 |
-| `sindri doctor`, `sindri profile validate` | Run locally |
+| `sindri doctor`, `sindri doctor --probe`, `sindri profile validate` | Run locally |
 
 A CLI without a terminal and without an agent signal (a script, launchd) still starts it with bare `sindri`, as in S1.
 
@@ -264,6 +274,67 @@ A CLI without a terminal and without an agent signal (a script, launchd) still s
 
 Codex also sets `CODEX_THREAD_ID`, `CODEX_SESSION_ID` and `CODEX_CI=1` in every mode, full access included: a candidate
 for the engine probe's list (not read in P1).
+
+### The harness probe
+
+`sindri doctor --probe [--harness <name>]` prints, as JSON and without calling the control plane, what this process
+sees (engine §6.2): the **names** of every environment variable set (never a value, so no secret is recorded), the
+whole ancestry up to launchd or init as `{name, executable}` (the home directory written `~`), whether stdin and stdout
+are a terminal, and the harness's version (from a `…/versions/<v>` executable path, else `<command> --version`).
+Without `--harness` it names the harness the pinned probe recognises (`unknown` when none).
+
+One golden per harness lives in `tests/Aw.Sindri.Tests/Golden/Probe/`, either a report or
+`{"harness": "...", "pending": "owner probe"}`. `PinnedProbe` reduces each report to markers and ancestry patterns, and
+`Agent_variables_match_the_probe` checks the reduction: every marker is in the harness's report and in no human
+terminal's; every other variable the harness adds over the plain terminal is listed as excluded with its reason (so a
+new variable fails the test until someone decides); every ancestry pattern matches the harness's ancestry and no human
+terminal's.
+
+| Golden | State | Source |
+|---|---|---|
+| `claude-code.json` | pinned (2026-10-12, Claude Code 2.1.296, its Bash tool in Warp) | `scripts/sindri-prove.sh doctor --probe` from an agent session, `SINDRI="$HOME/.dotnet/dotnet artifacts/bin/Aw.Sindri.Host/debug/sindri.dll"` |
+| `plain-terminal.json` | pinned (derived) | the variable names Claude Code was launched with (`ps eww` of the `claude` process: the owner's Warp shell's exported environment) and that shell's ancestry (`-zsh`, Warp, launchd). The owner may replace it with a real probe from a plain terminal |
+| `codex-read-only.json`, `codex-workspace-write.json`, `codex-danger-full-access.json` | pending: owner probe | — |
+| `cursor-agent.json`, `cursor-terminal.json` | pending: owner probe | — |
+
+**Excluded from Claude Code's markers** (it sets them, a plain terminal doesn't, but they don't mark it reliably):
+`AI_AGENT` (a cross-tool marker that an app hosting the human's terminal, like Cursor, may set there too; waits for the
+`cursor-terminal` probe); `CLAUDE_CODE_BRIDGE_SESSION_ID`, `CLAUDE_CODE_CHILD_SESSION`, `CLAUDE_CODE_MESSAGING_SOCKET`,
+`CLAUDE_CODE_MESSAGING_TOKEN`, `CLAUDE_CODE_SESSION_ATTENDED` (set only in some launch modes); `CLAUDE_EFFORT` (a setting
+a human may export); `COREPACK_ENABLE_AUTO_PIN`, `GIT_EDITOR`, `NoDefaultCurrentDirectoryInExePath` (other tools'
+settings humans set too); `AW_SINDRI_HOME`, `AW_SINDRI_PORT`, `SINDRI` (set by the prover for the run). Every variable
+of the plain terminal is excluded by definition: humans see it.
+
+**`sindri doctor`** adds one line per pinned harness. The harness it runs in is re-probed: `ok` when every marker is
+still set and the version matches, else `warn` naming the missing variable or the new version. Every other harness's
+installed version (`<command> --version`) is compared with the pinned one: `warn` on a mismatch, `ok` when equal or
+not installed. A pending owner probe is always `warn` (so `doctor` exits at least 1 until the owner probes Codex and
+Cursor).
+
+**Owner steps.** Build once (`dotnet build src/Sindri/Aw.Sindri.Host`), then in the repo root, inside each harness, ask
+it to run (Codex, Cursor's agent) or run yourself (Cursor's integrated terminal):
+
+```bash
+H=$(mktemp -d "${TMPDIR:-/tmp}/probe.XXXX")
+AW_SINDRI_HOME=$H SINDRI="$HOME/.dotnet/dotnet artifacts/bin/Aw.Sindri.Host/debug/sindri.dll" \
+  scripts/sindri-prove.sh doctor --probe --harness <name> | jq . > tests/Aw.Sindri.Tests/Golden/Probe/<file>.json
+```
+
+| Where | `<name>` | `<file>` |
+|---|---|---|
+| `codex exec -s read-only` (or `codex --sandbox read-only`) | `codex:read-only` | `codex-read-only` |
+| `codex exec -s workspace-write` | `codex:workspace-write` | `codex-workspace-write` |
+| `codex exec -s danger-full-access` | `codex:danger-full-access` | `codex-danger-full-access` |
+| Cursor's agent (its terminal tool, or `cursor-agent`) | `cursor-agent` | `cursor-agent` |
+| Cursor's integrated terminal, typed by you | `cursor-terminal` | `cursor-terminal` |
+
+Use the prover's **session** mode as written (not `sindri-prove.sh human`, which unsets the very variables being
+probed). In Codex's read-only sandbox the redirect can't write the file: let it print, and save the output yourself.
+Then, in `PinnedProbe.cs`, turn the entry's `Owner(...)` into a pinned entry: its version (the report's), its markers
+(variables the harness adds over `plain-terminal.json` that only it sets), its ancestry patterns, and every other added
+variable under `Excluded` with a reason. Add the new markers to `scripts/sindri-prove.sh`'s `human` unset line and to the host smoke's `unset` line
+(`src/Sindri/aot-smoke/run.sh`; a test checks each). `dotnet test --project tests/Aw.Sindri.Tests --filter-namespace "Aw.Sindri.Tests.Commands.Probe"` then
+says what is still undecided. Re-probe the same way when `sindri doctor` warns that a version changed.
 
 ## Command chain
 

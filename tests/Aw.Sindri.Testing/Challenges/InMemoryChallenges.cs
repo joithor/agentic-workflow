@@ -1,0 +1,49 @@
+using Aw.Kernel;
+using Aw.Sindri.Core.Challenges;
+
+namespace Aw.Sindri.Testing.Challenges;
+
+/// <summary>
+/// The server's challenges in memory (engine spec §4.2; <see cref="ChallengesContract"/> keeps it honest): one use, valid
+/// for <see cref="IssuedChallenge.Lifetime"/> on <paramref name="clock"/>, bound to the action and the subject.
+/// </summary>
+/// <param name="clock">The clock expiry is read from.</param>
+public sealed class InMemoryChallenges(TimeProvider clock) : IChallenges
+{
+    private readonly Dictionary<ChallengeId, IssuedChallenge> _open = [];
+    private readonly Lock _gate = new();
+    private int _next;
+
+    /// <inheritdoc/>
+    public IssuedChallenge Issue(ChallengeAction action, ChallengeSubject subject)
+    {
+        lock (_gate)
+        {
+            var id = ChallengeId.For(new Guid(++_next, 0, 0, new byte[8]));
+            var issued = new IssuedChallenge(id, action, subject, clock.GetUtcNow() + IssuedChallenge.Lifetime);
+            _open[id] = issued;
+            return issued;
+        }
+    }
+
+    /// <inheritdoc/>
+    public Result<IssuedChallenge> Redeem(ChallengeAnswer answer, ChallengeAction expected, ChallengeSubject current, ErrorDefinition stale)
+    {
+        ArgumentNullException.ThrowIfNull(answer);
+        ArgumentNullException.ThrowIfNull(stale);
+        lock (_gate)
+        {
+            if (!_open.Remove(answer.Challenge, out var issued))
+            {
+                return stale.With("That challenge is unknown or was already used; run it again");
+            }
+
+            var why = clock.GetUtcNow() >= issued.ExpiresAt ? "expired"
+                : issued.Action != expected ? $"was for '{issued.Action.Text}', not '{expected.Text}'"
+                : !string.Equals(answer.Typed, issued.Action.Text, StringComparison.Ordinal) ? $"needed '{issued.Action.Text}' typed exactly"
+                : issued.Subject != current ? "has a subject that changed since the preview"
+                : null;
+            return why is null ? issued : stale.With($"The challenge {why}; run it again and re-read the preview");
+        }
+    }
+}

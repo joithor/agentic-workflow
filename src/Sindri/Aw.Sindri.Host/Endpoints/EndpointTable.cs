@@ -17,13 +17,19 @@ internal static class EndpointTable
         _ = queries.MapGetStatus();
         _ = queries.MapListCommands();
         _ = queries.MapListServices();
+        _ = queries.MapListRecipes();
         _ = queries.MapPingProcess();
+        _ = queries.MapShowRecipe();
         _ = queries.MapStreamEvents();
 
         // ---- commands: one line per slice, sorted ----
         _ = commands.MapApproveProfile();
         _ = commands.MapRebuildViews();
         _ = commands.MapStopProcess();
+        _ = commands.MapApproveRecipe();
+        _ = commands.MapRevokeRecipe();
+        _ = commands.MapIssueChallenge();
+        _ = commands.MapRegisterRecipe();
         return app;
     }
 }

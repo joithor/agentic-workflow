@@ -1,0 +1,127 @@
+using System.Text;
+using Aw.Kernel;
+using Aw.Kernel.Json;
+using Aw.Kernel.Services;
+using Aw.Sindri.Core.Auth;
+using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Features.StartProcess;
+using Aw.Sindri.Host;
+using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.Ledger;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Aw.Sindri.Tests.Workflow.Cli;
+
+/// <summary>
+/// 'sindri recipe approve' and 'recipe revoke' against the real host (engine spec §4.2, §6.3, Phase 2's signal): the
+/// preview, the typed action, 'approved …' and 'revoked …; N instances parked'; a session is refused with the reason it
+/// called as one; a mistyped action is SND-RECIPE-009; a file whose eval is missing is SND-RECIPE-008.
+/// </summary>
+public sealed class RecipeApproveCliTests : IDisposable
+{
+    private readonly TempHome _home = new();
+    private readonly StringWriter _out = new();
+    private readonly StringWriter _error = new();
+
+    public void Dispose()
+    {
+        _out.Dispose();
+        _error.Dispose();
+        _home.Dispose();
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task Human_approves_with_the_preview_and_revokes_with_the_parked_count()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var app = await Started(ct);
+        var step = await Register(app, ct);
+        var name = $"workflow.step@{step.Hash.Display}";
+
+        var approved = await Commands(app, human: true, "approve workflow.step 1").Approve(name, ct);
+        var approveOut = _out.ToString();
+        var revoked = await Commands(app, human: true, $"revoke {name}").Revoke(name, ct);
+
+        Assert.True(approved == 0, _error.ToString());
+        Assert.Contains("diff against the last approved version: nothing\n", approveOut, StringComparison.Ordinal);
+        Assert.Contains("pinned blocks:\n  step.checks sha256:", approveOut, StringComparison.Ordinal);
+        Assert.Contains("evals    3 declared: evals/workflow.step/happy.jsonl", approveOut, StringComparison.Ordinal);
+        Assert.Contains("Type 'approve workflow.step 1' to confirm", approveOut, StringComparison.Ordinal);
+        Assert.EndsWith($"approved {name}\n", approveOut, StringComparison.Ordinal);
+        Assert.True(revoked == 0, _error.ToString());
+        Assert.EndsWith($"revoked {name}; 0 instances parked\n", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task Session_and_mistyped_approvals_exit_2_and_record_nothing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var app = await Started(ct);
+        var step = await Register(app, ct);
+        var name = $"workflow.step@{step.Hash.Display}";
+
+        var session = await Commands(app, human: false, "approve workflow.step 1").Approve(name, ct);
+        var sessionError = _error.ToString();
+        var mistyped = await Commands(app, human: true, "approve workflow.step").Approve(name, ct);
+
+        Assert.Equal((2, 2), (session, mistyped));
+        Assert.StartsWith("SND-AUTH-002 IssueChallenge is a human decision", sessionError, StringComparison.Ordinal);
+        Assert.Contains("(this CLI ran as a session: CLAUDECODE is set)", sessionError, StringComparison.Ordinal);
+        Assert.Contains("SND-RECIPE-009 ", _error.ToString(), StringComparison.Ordinal);
+        Assert.Null((await app.Services.GetRequiredService<IRecipeApprovals>().Latest(step.Id, 1, step.Hash, ct)).Value);
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task File_whose_eval_is_missing_is_SND_RECIPE_008_before_any_call()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var app = await Started(ct);
+        var file = Path.Combine(_home.Path, "workflow.step.yaml");
+        await File.WriteAllTextAsync(file, ShippedRecipes.Read("sindri/workflow.step.yaml"), ct);
+
+        var code = await Commands(app, human: true, "approve workflow.step 1").Approve(file, ct);
+
+        Assert.Equal(2, code);
+        Assert.StartsWith($"SND-RECIPE-008 {file} declares eval evals/workflow.step/happy.jsonl, which is missing", _error.ToString(), StringComparison.Ordinal);
+        Assert.Empty((await app.Services.GetRequiredService<IRecipeStore>().All(ct)).Value);
+    }
+
+    private RecipeDeskCommands Commands(WebApplication app, bool human, string typed)
+    {
+        var session = new AgentSession(human ? null : "CLAUDECODE is set", Terminal: true, Prover: false);
+        var client = new ControlPlaneClient(app.Services.GetRequiredService<IControlPlaneProbe>(), SliceHarness.Json,
+            CallerHeaders.For(session, app.Services.GetRequiredService<IHumanTokenStore>(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)));
+        var desk = new RecipeDesk(client, new StringReader(typed + "\n"), static _ => Task.FromResult<Error?>(null));
+        return new RecipeDeskCommands(desk, app.Services.CreateScope().ServiceProvider, new Output(_out, _error, SliceHarness.Json));
+    }
+
+    private static async Task<RegisteredRecipe> Register(WebApplication app, CancellationToken ct)
+    {
+        var document = RecipeReaderTests.Reader.Read(ShippedRecipes.Read("sindri/workflow.step.yaml"), "workflow.step.yaml").Document!;   // why: the shipped recipes bind (ShippedRecipesTests)
+        var text = Encoding.UTF8.GetString(AwJson.Serialize(document.Recipe with { Hash = null }, SliceHarness.Json));
+        return (await app.Services.GetRequiredService<IRecipeStore>().Add(
+            new RegisteredRecipe(document.Recipe.Id, document.Recipe.Version, document.Hash, text, Base: null, DateTimeOffset.UnixEpoch), ct)).Value.Recipe;
+    }
+
+    /// <summary>A control plane in the temp home, as CliEndToEndTests starts it: the lease held, this start's token minted and held, its endpoint recorded.</summary>
+    private async Task<WebApplication> Started(CancellationToken ct)
+    {
+        _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
+        await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), "schemaVersion: 1\nuser: thor\n", ct);
+        var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
+        _ = Pipeline.Configure(app);
+        Core.Lease.LeaseGrant grant;
+        await using (var scope = app.Services.CreateAsyncScope())
+        {
+            grant = (await scope.ServiceProvider.GetRequiredService<IService<StartProcessRequest, StartProcessResponse>>().Handle(new StartProcessRequest(), ct)).Value.Grant;
+        }
+
+        app.Services.GetRequiredService<HeldHumanToken>().Hold((await app.Services.GetRequiredService<IHumanTokenStore>().Mint(ct)).Value);
+        await app.StartAsync(ct);
+        _ = await app.Services.GetRequiredService<IEndpointFile>().Write(new ControlEndpoint(new Uri(app.Urls.First()), grant.Holder.Pid, grant.Epoch), ct);
+        return app;
+    }
+}

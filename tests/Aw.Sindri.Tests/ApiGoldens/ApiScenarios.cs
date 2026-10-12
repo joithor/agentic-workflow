@@ -56,18 +56,18 @@ internal static class ApiScenarios
     {
         var token = host.Token.Value;
         var hash = (await host.LiveHash(ct)).Value;
-        var approve = $"{{\"hash\":\"{hash}\",\"confirmed\":true}}";
+        var approve = $"{{\"hash\":\"{hash}\"}}";
         return scenario switch
         {
-            "preview" => await Ask(host, Post("/sindri/profile/approve", "{\"hash\":null,\"confirmed\":false}", Human(token))),
-            "approved" => await Ask(host, Post("/sindri/profile/approve", approve, Human(token))),
+            "preview" => await Ask(host, Post("/sindri/profile/approve", "{\"hash\":null}", Human(token))),
+            "approved" => await Ask(host, Post("/sindri/profile/approve", await Confirmed(host, hash), Human(token))),
             "already-approved" => await AfterApproval(host, () => Post("/sindri/profile/approve", approve, Human(token)), ct),
             "refused-session" => await Ask(host, Post("/sindri/profile/approve", approve, Session)),
             "refused-no-terminal" => await Ask(host, Post("/sindri/profile/approve", approve,
                 [(SindriHeaders.Caller, "human"), (SindriHeaders.Client, "cli"), (SindriHeaders.Token, token)])),
             "refused-origin" => await Ask(host, Post("/sindri/profile/approve", approve, [.. Human(token), Origin])),
             "stale-hash" => await Ask(host, Post("/sindri/profile/approve",
-                $"{{\"hash\":\"{SliceHarness.Profile("9s").Hash.Value}\",\"confirmed\":true}}", Human(token))),
+                $"{{\"hash\":\"{SliceHarness.Profile("9s").Hash.Value}\"}}", Human(token))),
             "bad-body" => await Ask(host, Post("/sindri/profile/approve", "{\"hash\":", Human(token))),
             _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such profile-approve scenario"),
         };
@@ -77,13 +77,22 @@ internal static class ApiScenarios
     private static async Task<string> AfterApproval(GoldenHost host, Func<HttpRequestMessage> request, CancellationToken ct)
     {
         var hash = (await host.LiveHash(ct)).Value;
-        var setup = await host.Http.Ask(Post("/sindri/profile/approve", $"{{\"hash\":\"{hash}\",\"confirmed\":true}}", Human(host.Token.Value)));
+        var setup = await host.Http.Ask(Post("/sindri/profile/approve", await Confirmed(host, hash), Human(host.Token.Value)));
         if (setup.Status != System.Net.HttpStatusCode.OK)
         {
             throw new InvalidOperationException($"the setup approval failed: {setup.Status} {setup.Body}");
         }
 
         return await Ask(host, request());
+    }
+
+    /// <summary>An approve body for <paramref name="hash"/> that answers a fresh 'approve profile &lt;hash6&gt;' challenge as the human typed it (S1-D5).</summary>
+    private static async Task<string> Confirmed(GoldenHost host, string hash)
+    {
+        var action = "approve profile " + hash[..6];
+        var issued = await host.Http.Ask(Post("/sindri/workflow/challenges", $"{{\"action\":\"{action}\"}}", Human(host.Token.Value)));
+        var challenge = System.Text.Json.JsonDocument.Parse(issued.Body).RootElement.GetProperty("challenge").GetString();
+        return $"{{\"hash\":\"{hash}\",\"answer\":{{\"challenge\":\"{challenge}\",\"typed\":\"{action}\"}}}}";
     }
 
     private static async Task<string> Ask(GoldenHost host, HttpRequestMessage request) => (await host.Http.Ask(request)).Body;

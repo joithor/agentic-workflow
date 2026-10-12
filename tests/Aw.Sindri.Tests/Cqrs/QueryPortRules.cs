@@ -4,16 +4,22 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Core.Workflow.Registry;
 
 namespace Aw.Sindri.Tests.Cqrs;
 
-/// <summary>ARCH-CQRS-002 (API spec §2.5): no query handler's constructor takes a write port (ILedgerStore, ILease, IApprovals, IViewStore).</summary>
+/// <summary>ARCH-CQRS-002 (API spec §2.5): no query handler's constructor takes a write port (ILedgerStore, ILease, IApprovals, IViewStore, the registry's stores).</summary>
 internal static class QueryPortRules
 {
     public const string Rule = "ARCH-CQRS-002";
 
-    /// <summary>The ports a query handler may not take: the ledger and lease writers, the approvals writer and the projection writer (IViewStore).</summary>
-    public static readonly IReadOnlyList<Type> WritePorts = [typeof(ILedgerStore), typeof(ILease), typeof(IApprovals), typeof(IViewStore)];
+    /// <summary>
+    /// The ports a query handler may not take: the ledger and lease writers, the approvals writer, the projection writer
+    /// (IViewStore), and the registry's stores, which write too (register, approve, revoke), so the registry queries read
+    /// them through Core's read-only domain services instead.
+    /// </summary>
+    public static readonly IReadOnlyList<Type> WritePorts =
+        [typeof(ILedgerStore), typeof(ILease), typeof(IApprovals), typeof(IViewStore), typeof(IRecipeStore), typeof(IRecipeApprovals), typeof(IRecipeWake)];
 
     /// <summary>S1's two queries read the ledger and approvals until P2's read-only ports land (P1 plan G1). Removed in P2 (C9).</summary>
     public static readonly IReadOnlySet<string> Allowlist = new HashSet<string>(StringComparer.Ordinal)

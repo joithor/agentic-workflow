@@ -2,6 +2,7 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Events;
@@ -22,7 +23,7 @@ public sealed class ApproveProfileTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private ApproveProfileService Service() => new(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events);
+    private ApproveProfileService Service() => new(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, _h.Challenges);
 
     [Fact, Trait("Lane", "unit")]
     public async Task ApproveProfile_without_a_hash_shows_the_hash_and_changes_and_records_nothing()
@@ -30,7 +31,7 @@ public sealed class ApproveProfileTests
         _h.Profiles.Live = SliceHarness.Profile("5s");
         _ = await _h.HoldLease();
 
-        var shown = (await Service().Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), Token)).Value;
+        var shown = (await Service().Handle(new ApproveProfileRequest(Hash: null, Answer: null), Token)).Value;
 
         Assert.Equal(_h.Profiles.Live.Value.Hash, shown.Hash);
         Assert.False(shown.Approved);
@@ -47,7 +48,7 @@ public sealed class ApproveProfileTests
         _h.Profiles.Live = live;
         _ = await _h.HoldLease();
 
-        var approved = (await Service().Handle(new ApproveProfileRequest(live.Hash, Confirmed: true), Token)).Value;
+        var approved = (await Service().Handle(new ApproveProfileRequest(live.Hash, _h.Confirm(live.Hash)), Token)).Value;
 
         Assert.True(approved.Approved);
         Assert.Equal(live.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);
@@ -66,11 +67,47 @@ public sealed class ApproveProfileTests
         _ = await _h.HoldLease();
         var hash = which == "live" ? live.Hash : SliceHarness.Profile("9s").Hash;
 
-        var refused = await Service().Handle(new ApproveProfileRequest(hash, confirmed), Token);
+        var refused = await Service().Handle(new ApproveProfileRequest(hash, confirmed ? _h.Confirm(hash) : null), Token);
 
         Assert.Equal(code, refused.Error.Code);
         Assert.Null((await _h.Profiles.Latest(Token)).Value);
         Assert.Empty(_h.Store.Events);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("mistyped")]
+    [InlineData("expired")]
+    [InlineData("used")]
+    public async Task ApproveProfile_with_a_stale_challenge_is_SND_PROFILE_004_and_records_nothing(string how)
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.HoldLease();
+        var answer = _h.Confirm(live.Hash);
+        answer = how switch
+        {
+            "mistyped" => answer with { Typed = live.Hash.Abbreviated },
+            "expired" => Expire(answer),
+            _ => Use(answer),
+        };
+
+        var refused = await Service().Handle(new ApproveProfileRequest(live.Hash, answer), Token);
+
+        Assert.Equal(SindriErrors.ProfileNeedsTerminal.Code, refused.Error.Code);
+        Assert.Null((await _h.Profiles.Latest(Token)).Value);
+        Assert.Empty(_h.Store.Events);
+    }
+
+    private ChallengeAnswer Expire(ChallengeAnswer answer)
+    {
+        _h.Clock.Advance(IssuedChallenge.Lifetime);
+        return answer;
+    }
+
+    private ChallengeAnswer Use(ChallengeAnswer answer)
+    {
+        _ = _h.Challenges.Redeem(answer, ChallengeAction.ApproveProfile(_h.Profiles.Live.Value.Hash), ChallengeSubject.ForProfile(_h.Profiles.Live.Value.Hash), SindriErrors.ProfileNeedsTerminal);
+        return answer;
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -78,7 +115,7 @@ public sealed class ApproveProfileTests
     {
         _h.Profiles.Live = SindriErrors.ProfileInvalid.With("/p.yaml: user: must be non-empty text");
 
-        Assert.Equal(SindriErrors.ProfileInvalid.Code, (await Service().Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), Token)).Error.Code);
+        Assert.Equal(SindriErrors.ProfileInvalid.Code, (await Service().Handle(new ApproveProfileRequest(Hash: null, Answer: null), Token)).Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -89,7 +126,7 @@ public sealed class ApproveProfileTests
         _ = await _h.HoldLease();
         _h.Held.Hold(new LeaseGrant(FakeProcessProbe.Holder(100), 99, KnownInstants.Epoch.AddMinutes(1)));   // an epoch the store doesn't hold
 
-        var refused = await Service().Handle(new ApproveProfileRequest(live.Hash, Confirmed: true), Token);
+        var refused = await Service().Handle(new ApproveProfileRequest(live.Hash, _h.Confirm(live.Hash)), Token);
 
         Assert.Equal(SindriErrors.LeaseStale.Code, refused.Error.Code);
         Assert.Null((await _h.Profiles.Latest(Token)).Value);
@@ -103,10 +140,10 @@ public sealed class ApproveProfileTests
         _h.Profiles.Live = live;
         _ = await _h.HoldLease();
         var approvals = new ReadFailingApprovals(_h.Profiles);
-        var service = new ApproveProfileService(_h.Profiles, approvals, _h.Held, _h.Store, _h.Events);
+        var service = new ApproveProfileService(_h.Profiles, approvals, _h.Held, _h.Store, _h.Events, _h.Challenges);
 
-        var preview = await service.Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), Token);
-        var approved = await service.Handle(new ApproveProfileRequest(live.Hash, Confirmed: true), Token);
+        var preview = await service.Handle(new ApproveProfileRequest(Hash: null, Answer: null), Token);
+        var approved = await service.Handle(new ApproveProfileRequest(live.Hash, _h.Confirm(live.Hash)), Token);
 
         Assert.Equal(ReadFailingApprovals.Failure, preview.Error);
         Assert.True(approved.Value.Approved);
@@ -121,9 +158,9 @@ public sealed class ApproveProfileTests
         var live = SliceHarness.Profile("5s");
         _h.Profiles.Live = live;
         _ = await _h.HoldLease();
-        var service = new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, new ReadFailingLedger(_h.Store), _h.Events);
+        var service = new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, new ReadFailingLedger(_h.Store), _h.Events, _h.Challenges);
 
-        var refused = await service.Handle(new ApproveProfileRequest(approving ? live.Hash : null, Confirmed: approving), Token);
+        var refused = await service.Handle(new ApproveProfileRequest(approving ? live.Hash : null, approving ? _h.Confirm(live.Hash) : null), Token);
 
         Assert.Equal(ReadFailingLedger.Failure, refused.Error);
         Assert.Null((await _h.Profiles.Latest(Token)).Value);
@@ -139,7 +176,7 @@ public sealed class ApproveProfileTests
         foreach (var profile in new[] { a, b, a, b, a })
         {
             _h.Profiles.Live = profile;
-            Assert.True((await Service().Handle(new ApproveProfileRequest(profile.Hash, Confirmed: true), Token)).Value.Approved);
+            Assert.True((await Service().Handle(new ApproveProfileRequest(profile.Hash, _h.Confirm(profile.Hash)), Token)).Value.Approved);
 
             Assert.Equal((true, false, true, CheckState.Ok, $"/home/profile.yaml (approved, hash {profile.Hash.Abbreviated})"), await Surfaces());
         }
@@ -159,11 +196,11 @@ public sealed class ApproveProfileTests
         _h.Profiles.Live = live;
         _ = await _h.HoldLease();
         var flaky = new SaveFailsOnce(_h.Profiles);
-        var service = new ApproveProfileService(_h.Profiles, flaky, _h.Held, _h.Store, _h.Events);
-        var request = new ApproveProfileRequest(live.Hash, Confirmed: true);
+        var service = new ApproveProfileService(_h.Profiles, flaky, _h.Held, _h.Store, _h.Events, _h.Challenges);
+        var request = new ApproveProfileRequest(live.Hash, _h.Confirm(live.Hash));
 
         var first = await service.Handle(request, Token);
-        var retry = await service.Handle(request, Token);
+        var retry = await service.Handle(request with { Answer = _h.Confirm(live.Hash) }, Token);
 
         Assert.Equal(SindriErrors.ApprovalsUnavailable.Code, first.Error.Code);
         Assert.True(retry.Value.Approved);
@@ -182,7 +219,7 @@ public sealed class ApproveProfileTests
 
         Assert.Equal((false, true, false, CheckState.Warn, NotLatest), await Surfaces());   // saved == live, no recorded event: every surface agrees
 
-        var approved = (await Service().Handle(new ApproveProfileRequest(live.Hash, Confirmed: true), Token)).Value;
+        var approved = (await Service().Handle(new ApproveProfileRequest(live.Hash, _h.Confirm(live.Hash)), Token)).Value;
 
         Assert.True(approved.Approved);
         Assert.Equal($"profile.approved:{live.Hash.Value}:after:0", Assert.Single(_h.Store.Events).IdempotencyKey);
@@ -194,10 +231,10 @@ public sealed class ApproveProfileTests
         var (a, b) = (SliceHarness.Profile("5s"), SliceHarness.Profile("9s"));
         _ = await _h.HoldLease();
         _h.Profiles.Live = a;
-        _ = await Service().Handle(new ApproveProfileRequest(a.Hash, Confirmed: true), Token);
+        _ = await Service().Handle(new ApproveProfileRequest(a.Hash, _h.Confirm(a.Hash)), Token);
         _h.Profiles.Live = b;
-        var flaky = new ApproveProfileService(_h.Profiles, new SaveFailsOnce(_h.Profiles), _h.Held, _h.Store, _h.Events);
-        Assert.Equal(SindriErrors.ApprovalsUnavailable.Code, (await flaky.Handle(new ApproveProfileRequest(b.Hash, Confirmed: true), Token)).Error.Code);
+        var flaky = new ApproveProfileService(_h.Profiles, new SaveFailsOnce(_h.Profiles), _h.Held, _h.Store, _h.Events, _h.Challenges);
+        Assert.Equal(SindriErrors.ApprovalsUnavailable.Code, (await flaky.Handle(new ApproveProfileRequest(b.Hash, _h.Confirm(b.Hash)), Token)).Error.Code);
 
         _h.Profiles.Live = a;   // edited back: A is still the saved approval, but B's event is the latest recorded one
 
@@ -213,7 +250,7 @@ public sealed class ApproveProfileTests
     /// </summary>
     private async Task<(bool Preview, bool StatusNeedsApproval, bool Validated, CheckState Doctor, string Summary)> Surfaces()
     {
-        var preview = (await Service().Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), Token)).Value;
+        var preview = (await Service().Handle(new ApproveProfileRequest(Hash: null, Answer: null), Token)).Value;
         var status = (await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, _h.Store, _h.Events).Handle(new GetStatusRequest(), Token)).Value;
         var validated = (await new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events).Handle(new ValidateProfileRequest(), Token)).Value;
         var doctor = (await new RunDoctorService(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, _h.Store, _h.Events), new FakeControlPlaneProbe(), new FakeTemporalServer(), _h.Clock)
