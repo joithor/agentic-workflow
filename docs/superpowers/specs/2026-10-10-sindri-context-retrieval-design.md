@@ -60,7 +60,7 @@ that graph plus rank fusion across adapters.
 | D3 | **Onyx is used for recall only; Sindri owns ranking** | Onyx's OpenSearch path fuses one vector and one keyword query by min-max normalization with fixed 0.5/0.5 weights, with no reranker, no recency and no document boost (read at Onyx `main` 268e4d5a3d, 2026-10-05: `backend/onyx/document_index/opensearch/search.py:81-93`, TODOs `:157-160`; `hybrid_alpha` and `recency_bias_multiplier` passed by `context/search/pipeline.py:317-318` but unused there). Re-checked against the pinned release in the Onyx phase |
 | D4 | A **native read-only Linear adapter** for project structure | Onyx's Linear connector reads issues and comments only (`connectors/linear/connector.py:231-341`): no projects, no Linear Documents (where the owner's PRDs and TDDs live), no project updates, no issue↔PR attachments |
 | D5 | One separable package, **`Aw.Context`**, with no Sindri imports, reached through **one facade port** in its Core (§4) | §17.3 Reuse, and the C# rule that another package is reached only through its Core |
-| D6 | **No rate limiting** in the adapter contract | Every source is on the machine: Onyx on loopback, repos, the index. A per-query deadline stays |
+| D6 | **No rate limiting for Local sources** in the adapter contract | Every source today is on the machine: Onyx on loopback, repos, the index. A per-query deadline stays. "No rate limiting" is a property of `Local` sources, not a global rule: a `Shared` source may declare `SourceLimits` (README X61), which nothing enforces yet |
 | D7 | `affects` (the cascade) is **computed at query time** over typed steps (§6.1), never stored | Stored, it goes stale on every edge change |
 | D8 | Human edits are an **override layer** that survives every rebuild and every key-scheme change | Ring 1 runs in `assist` mode: the extracted map is a draft until the owner confirms it |
 | D9 | **Decision** is its own node: Sindri's wording, citing a verbatim quote, with `supersedes` | What "what was decided about X?" must return |
@@ -179,7 +179,8 @@ public sealed record SourceRef(SourceId Source, ExternalId Id, SourceVersion Ver
 
 public interface IContextSource
 {
-    SourceDescriptor Describe();      // id, kind (Intent | Doc | Code), freshness (Live | Snapshot), as-of support
+    SourceDescriptor Describe();      // id, kind (Intent | Doc | Code), freshness (Live | Snapshot), as-of support,
+                                      // placement (Local | Shared, default Local) and limits (null for none; README X61)
     ValueTask<Result<IReadOnlyList<SourceHit>>> Search(SourceQuery query, CancellationToken ct);
     ValueTask<Result<SourceRecord>> Fetch(SourceRef reference, CancellationToken ct);
     ValueTask<Result<IReadOnlyList<SourceVersion>>> Versions(IReadOnlyList<SourceRef> refs, CancellationToken ct); // batched
@@ -201,7 +202,7 @@ public sealed record ChangePage(IReadOnlyList<SourceRef> Changed, IReadOnlyList<
 - **Read-only by construction.** Credentials are read-only and least-privilege (§8.8); `context sources status`
   reports the scope each token actually has where the source exposes it.
 - **Errors** (`Result<T>`): `Unavailable` (the query goes on without the source and reports `degraded`), `NotFound`,
-  `Fatal`. No `RateLimited` (D6).
+  `Fatal`. No `RateLimited` for Local sources (D6); a Shared source's declared limits are README X61's later work.
 - **Freshness:** every hit carries `AsOf`. `Search`, `Fetch` and `Versions` are live; `Changes` drives a scheduled sync.
   A source that can't cut to `AsOf` returns `Leaky = true`.
 - **Cursors** are persisted per source; a cursor advances only after the links from its page commit; replay is
