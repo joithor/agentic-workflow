@@ -196,6 +196,7 @@ public sealed class CommandChainTests : IAsyncDisposable
         var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Session);   // no lease held: no grant to write the row with
 
         Assert.Equal(SindriErrors.LedgerUnavailable.Code, refused.Error.Code);
+        Assert.StartsWith(SindriErrors.AuthRefused.Code + " ", refused.Error.Message, StringComparison.Ordinal);   // why: the refusal's own reason comes first
         Assert.Empty(_c.Events);
     }
 
