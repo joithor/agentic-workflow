@@ -56,8 +56,10 @@ internal sealed class AuditingService<TRequest, TResponse>(IService<TRequest, TR
             return result;
         }
 
-        return recorded.Error.Code == SindriErrors.LedgerUnavailable.Code ? recorded.Error
-            : SindriErrors.LedgerUnavailable.With($"the audit row for {row.Action.Value} couldn't be written: {recorded.Error.Code} {recorded.Error.Message}");
+        // The attempt's own reason comes first: a stop that failed has already cleared the grant the row needs.
+        var reason = result.Error;
+        return SindriErrors.LedgerUnavailable.With(
+            $"{reason.Code} {reason.Message}; and its audit row couldn't be written: {recorded.Error.Code} {recorded.Error.Message}");
     }
 
     /// <summary>
