@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # scripts/lib/with-tty.sh — with_tty CMD [ARGS…]: run a command with a pseudo-terminal as its stdin and stdout, the
-# way a human's terminal would be, and print its output with the CRs the terminal adds stripped. Source it; it defines
+# way a human's terminal would be, and print its output with the CRs the terminal adds and its control sequences
+# stripped (.NET's Console writes ESC[?1h ESC= to a terminal before its first output). Source it; it defines
 # functions only and sets no options. Used by scripts/sindri-prove.sh (human mode) and src/Sindri/aot-smoke/run.sh.
 #
 # - The pty comes from script(1): BSD `script -q /dev/null CMD…` (macOS) or util-linux `script -qec "<quoted CMD>"
@@ -20,7 +21,7 @@ with_tty() {
   if script --version 2>/dev/null | grep -q util-linux; then flavour=util-linux; fi
 
   if [ -t 0 ]; then
-    _with_tty_script "$flavour" "$@" | tr -d '\r'
+    _with_tty_script "$flavour" "$@" | _with_tty_clean
     return "${PIPESTATUS[0]}"
   fi
 
@@ -43,11 +44,18 @@ with_tty() {
       _with_tty_stop_feeder "$tmp"
       exit "$status"
     } |
-    tr -d '\r'
+    _with_tty_clean
   rc=${PIPESTATUS[1]}
   rm -f "$tmp/ready" "$tmp/pid"
   rmdir "$tmp" 2>/dev/null
   return "$rc"
+}
+
+# _with_tty_clean — the output without CRs, CSI sequences (ESC [ … letter) or keypad-mode switches (ESC = and ESC >).
+_with_tty_clean() {
+  local esc
+  esc="$(printf '\033')"
+  tr -d '\r' | sed -e "s/${esc}\[[0-9;?]*[A-Za-z]//g" -e "s/${esc}[=>]//g"
 }
 
 # _with_tty_stop_feeder TMP — stop the feeder once script(1) has returned (it may still be waiting on stdin).

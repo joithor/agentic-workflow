@@ -36,7 +36,7 @@ for v in CLAUDECODE AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT AW_SINDRI_PROVER 
   echo "$v=${!v-<unset>}"
 done
 if [ "${STUB_READ:-0}" = 1 ]; then IFS= read -r line; echo "stdin=[$line]"; fi
-if [ "${STUB_CR:-0}" = 1 ]; then printf 'carriage\r\n'; fi
+if [ "${STUB_CR:-0}" = 1 ]; then printf '\033[?1h\033=carriage\r\n\033[?1l\033>'; fi
 exit "${STUB_EXIT:-0}"
 EOF
 chmod +x "$STUB"
@@ -153,6 +153,8 @@ check "human_mode_unsets_agent_variables_sets_the_marker_and_has_a_tty: SINDRI's
 out="$(STUB_CR=1 prove "$H" human status 2>&1 </dev/null)"
 contains "human_mode_strips_cr: output arrives" "$out" "carriage"
 check "human_mode_strips_cr: no CR in the output" "$(printf '%s' "$out" | tr -cd '\r' | wc -c | tr -d ' ')" "0"
+check "human_mode_strips_cr: no terminal control sequences in the output" "$(printf '%s' "$out" | tr -cd '\033' | wc -c | tr -d ' ')" "0"
+check "human_mode_strips_cr: the line itself is kept" "$(printf '%s\n' "$out" | tail -1)" "carriage"
 
 # --- port_is_zero ---
 out="$(AW_SINDRI_PORT=7410 prove "$H" status 2>&1 </dev/null)"
