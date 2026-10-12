@@ -144,7 +144,7 @@ public sealed class FocusRingTests : IDisposable
         foreach (var target in expected)
         {
             FocusByTab(window, window.Get<Control>("TopBar"), target);
-            AssertRing(window, Focused(window), "topbar-" + target);
+            AssertRing(window, Focused(window), "topbar-" + target, round: target == "HealthPill");
         }
     });
 
@@ -159,7 +159,7 @@ public sealed class FocusRingTests : IDisposable
         var pill = Focused(window);
         var ring = AdornerLayer.GetAdornerLayer(pill)!.Children.OfType<Border>().Single(b => b.IsEffectivelyVisible && AdornerLayer.GetAdornedElement(b) == pill);
         Assert.Equal(((Button)pill).CornerRadius, ring.CornerRadius);
-        AssertRing(window, pill, "topbar-HealthPill-pill");
+        AssertRing(window, pill, "topbar-HealthPill-pill", round: true);
     });
 
     [Fact]
@@ -222,7 +222,8 @@ public sealed class FocusRingTests : IDisposable
     // quarter, a half and three quarters of its length: the pixel 3 px out from the edge (in the 2–4 px band) is the
     // ring's colour, and the pixel 1 px out (the 2 px gap) is not. A region that fills the window's width has no room
     // outside, so its ring sits 2 px inside its edge: the same check, mirrored.
-    private static void AssertRing(Window window, Control control, string frame, bool inside = false)
+    // round: a full pill's ring curves away from the corners, so its sides are sampled at mid-height only.
+    private static void AssertRing(Window window, Control control, string frame, bool inside = false, bool round = false)
     {
         Settle(window);
         using var bitmap = window.CaptureRenderedFrame() ?? throw new InvalidOperationException("no frame");
@@ -237,8 +238,12 @@ public sealed class FocusRingTests : IDisposable
         var wrong = new List<string>();
         foreach (var f in new[] { 0.25, 0.5, 0.75 })
         {
-            Side("left", box.Left, box.Top + (box.Height * f), -outward, 0);
-            Side("right", box.Right, box.Top + (box.Height * f), outward, 0);
+            if (!round || f == 0.5)
+            {
+                Side("left", box.Left, box.Top + (box.Height * f), -outward, 0);
+                Side("right", box.Right, box.Top + (box.Height * f), outward, 0);
+            }
+
             Side("top", box.Left + (box.Width * f), box.Top, 0, -outward);
             Side("bottom", box.Left + (box.Width * f), box.Bottom, 0, outward);
         }

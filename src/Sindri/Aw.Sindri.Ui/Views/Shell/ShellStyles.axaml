@@ -118,6 +118,15 @@
     <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}" />
     <Setter Property="Padding" Value="12,4" />
   </Style>
+  <!-- N3: the pill's ring follows its corner radius (Radius.Pill), not ControlCornerRadius (Theme/FluentOverrides.axaml). -->
+  <Style Selector="Button.health-pill">
+    <Setter Property="FocusAdorner">
+      <FocusAdornerTemplate>
+        <Border BorderBrush="{DynamicResource Brush.PrimaryHover}" BorderThickness="2" Margin="-4"
+                CornerRadius="{StaticResource Radius.Pill}" AdornerLayer.IsClipEnabled="False" />
+      </FocusAdornerTemplate>
+    </Setter>
+  </Style>
 
   <!-- The pill's dot: filled Success when healthy, hollow when stale, filled Error with nothing to follow; the glyph
        and the word beside it say the same (§11.3, never colour alone). -->
