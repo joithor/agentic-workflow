@@ -223,8 +223,8 @@ Aw.Context.Core.Graph.NodeAlias.NodeAlias(Aw.Context.Core.Graph.NodeKey Alias, A
 Aw.Context.Core.Graph.NodeAlias.Target.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Graph.NodeAlias.Target.init -> void
 Aw.Context.Core.Graph.NodeKey
-Aw.Context.Core.Graph.NodeKey.Equals(Aw.Context.Core.Graph.NodeKey other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Graph.NodeKey>! comparer) -> bool
 Aw.Context.Core.Graph.NodeKey.Equals(Aw.Context.Core.Graph.NodeKey other) -> bool
+Aw.Context.Core.Graph.NodeKey.Equals(Aw.Context.Core.Graph.NodeKey other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Graph.NodeKey>! comparer) -> bool
 Aw.Context.Core.Graph.NodeKey.GetTypeCode() -> System.TypeCode
 Aw.Context.Core.Graph.NodeKey.IsInitialized() -> bool
 Aw.Context.Core.Graph.NodeKey.Kind.get -> Aw.Context.Core.Graph.NodeKind
@@ -266,6 +266,7 @@ Aw.Context.Core.Map.IGraphStore.SaveCurrent(Aw.Context.Core.Map.MapImport! map, 
 Aw.Context.Core.Map.IGraphStore.Versions(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.MapVersion!>!>!>
 Aw.Context.Core.Map.IMapFileReader
 Aw.Context.Core.Map.IMapFileReader.Read(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapFile!>!>
+Aw.Context.Core.Map.MapAccess
 Aw.Context.Core.Map.MapCounts
 Aw.Context.Core.Map.MapCounts.<Clone>$() -> Aw.Context.Core.Map.MapCounts!
 Aw.Context.Core.Map.MapCounts.Aliases.get -> int
@@ -289,7 +290,7 @@ Aw.Context.Core.Map.MapDocument.Commit.get -> string?
 Aw.Context.Core.Map.MapDocument.Commit.init -> void
 Aw.Context.Core.Map.MapDocument.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>?
 Aw.Context.Core.Map.MapDocument.Decisions.init -> void
-Aw.Context.Core.Map.MapDocument.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Map.MapDocumentKind Kind, out string! Repo, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides, out int KeyVersion, out string? Commit, out int? MapVersion, out System.DateTimeOffset? ExportedAt) -> void
+Aw.Context.Core.Map.MapDocument.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Map.MapDocumentKind Kind, out string! Repo, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides, out int KeyVersion, out string? Commit, out int? MapVersion, out System.DateTimeOffset? ExportedAt, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Orphaned) -> void
 Aw.Context.Core.Map.MapDocument.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>?
 Aw.Context.Core.Map.MapDocument.Edges.init -> void
 Aw.Context.Core.Map.MapDocument.Equals(Aw.Context.Core.Map.MapDocument? other) -> bool
@@ -299,11 +300,13 @@ Aw.Context.Core.Map.MapDocument.KeyVersion.get -> int
 Aw.Context.Core.Map.MapDocument.KeyVersion.init -> void
 Aw.Context.Core.Map.MapDocument.Kind.get -> Aw.Context.Core.Map.MapDocumentKind
 Aw.Context.Core.Map.MapDocument.Kind.init -> void
-Aw.Context.Core.Map.MapDocument.MapDocument(int SchemaVersion, Aw.Context.Core.Map.MapDocumentKind Kind, string! Repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides = null, int KeyVersion = 1, string? Commit = null, int? MapVersion = null, System.DateTimeOffset? ExportedAt = null) -> void
+Aw.Context.Core.Map.MapDocument.MapDocument(int SchemaVersion, Aw.Context.Core.Map.MapDocumentKind Kind, string! Repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>? Edges = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeAlias!>? Aliases = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>? Decisions = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>? Overrides = null, int KeyVersion = 1, string? Commit = null, int? MapVersion = null, System.DateTimeOffset? ExportedAt = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Orphaned = null) -> void
 Aw.Context.Core.Map.MapDocument.MapVersion.get -> int?
 Aw.Context.Core.Map.MapDocument.MapVersion.init -> void
 Aw.Context.Core.Map.MapDocument.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>!
 Aw.Context.Core.Map.MapDocument.Nodes.init -> void
+Aw.Context.Core.Map.MapDocument.Orphaned.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>?
+Aw.Context.Core.Map.MapDocument.Orphaned.init -> void
 Aw.Context.Core.Map.MapDocument.Overrides.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>?
 Aw.Context.Core.Map.MapDocument.Overrides.init -> void
 Aw.Context.Core.Map.MapDocument.Repo.get -> string!
@@ -517,8 +520,8 @@ Aw.Context.Core.Overrides.OverrideAction.Reject = 1 -> Aw.Context.Core.Overrides
 Aw.Context.Core.Overrides.OverrideAction.Rename = 2 -> Aw.Context.Core.Overrides.OverrideAction
 Aw.Context.Core.Overrides.OverrideApplier
 Aw.Context.Core.Overrides.OverrideId
-Aw.Context.Core.Overrides.OverrideId.Equals(Aw.Context.Core.Overrides.OverrideId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Overrides.OverrideId>! comparer) -> bool
 Aw.Context.Core.Overrides.OverrideId.Equals(Aw.Context.Core.Overrides.OverrideId other) -> bool
+Aw.Context.Core.Overrides.OverrideId.Equals(Aw.Context.Core.Overrides.OverrideId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Overrides.OverrideId>! comparer) -> bool
 Aw.Context.Core.Overrides.OverrideId.GetTypeCode() -> System.TypeCode
 Aw.Context.Core.Overrides.OverrideId.IsInitialized() -> bool
 Aw.Context.Core.Overrides.OverrideId.OverrideId() -> void
@@ -619,8 +622,8 @@ Aw.Context.Core.Results.Provenance.Deterministic = 0 -> Aw.Context.Core.Results.
 Aw.Context.Core.Results.Provenance.Human = 2 -> Aw.Context.Core.Results.Provenance
 Aw.Context.Core.Results.Provenance.Model = 1 -> Aw.Context.Core.Results.Provenance
 Aw.Context.Core.Results.QueryId
-Aw.Context.Core.Results.QueryId.Equals(Aw.Context.Core.Results.QueryId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Results.QueryId>! comparer) -> bool
 Aw.Context.Core.Results.QueryId.Equals(Aw.Context.Core.Results.QueryId other) -> bool
+Aw.Context.Core.Results.QueryId.Equals(Aw.Context.Core.Results.QueryId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Results.QueryId>! comparer) -> bool
 Aw.Context.Core.Results.QueryId.GetTypeCode() -> System.TypeCode
 Aw.Context.Core.Results.QueryId.IsInitialized() -> bool
 Aw.Context.Core.Results.QueryId.QueryId() -> void
@@ -746,9 +749,9 @@ Aw.Context.Core.Results.Trust.Trusted = 0 -> Aw.Context.Core.Results.Trust
 Aw.Context.Core.Results.Trust.Untrusted = 1 -> Aw.Context.Core.Results.Trust
 Aw.Context.Core.Sources.ChangePage
 Aw.Context.Core.Sources.ChangePage.<Clone>$() -> Aw.Context.Core.Sources.ChangePage!
+Aw.Context.Core.Sources.ChangePage.ChangePage(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>! Changed, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.ExternalId>! Removed, Aw.Context.Core.Sources.SourceCursor Next) -> void
 Aw.Context.Core.Sources.ChangePage.Changed.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>!
 Aw.Context.Core.Sources.ChangePage.Changed.init -> void
-Aw.Context.Core.Sources.ChangePage.ChangePage(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>! Changed, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.ExternalId>! Removed, Aw.Context.Core.Sources.SourceCursor Next) -> void
 Aw.Context.Core.Sources.ChangePage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>! Changed, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.ExternalId>! Removed, out Aw.Context.Core.Sources.SourceCursor Next) -> void
 Aw.Context.Core.Sources.ChangePage.Equals(Aw.Context.Core.Sources.ChangePage? other) -> bool
 Aw.Context.Core.Sources.ChangePage.Next.get -> Aw.Context.Core.Sources.SourceCursor
@@ -756,8 +759,8 @@ Aw.Context.Core.Sources.ChangePage.Next.init -> void
 Aw.Context.Core.Sources.ChangePage.Removed.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.ExternalId>!
 Aw.Context.Core.Sources.ChangePage.Removed.init -> void
 Aw.Context.Core.Sources.ExternalId
-Aw.Context.Core.Sources.ExternalId.Equals(Aw.Context.Core.Sources.ExternalId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.ExternalId>! comparer) -> bool
 Aw.Context.Core.Sources.ExternalId.Equals(Aw.Context.Core.Sources.ExternalId other) -> bool
+Aw.Context.Core.Sources.ExternalId.Equals(Aw.Context.Core.Sources.ExternalId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.ExternalId>! comparer) -> bool
 Aw.Context.Core.Sources.ExternalId.ExternalId() -> void
 Aw.Context.Core.Sources.ExternalId.GetTypeCode() -> System.TypeCode
 Aw.Context.Core.Sources.ExternalId.IsInitialized() -> bool
@@ -772,8 +775,8 @@ Aw.Context.Core.Sources.IContextSource.Probe(System.Threading.CancellationToken 
 Aw.Context.Core.Sources.IContextSource.Search(Aw.Context.Core.Sources.SourceQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceHit!>!>!>
 Aw.Context.Core.Sources.IContextSource.Versions(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>! refs, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceVersion?>!>!>
 Aw.Context.Core.Sources.RecordKey
-Aw.Context.Core.Sources.RecordKey.Equals(Aw.Context.Core.Sources.RecordKey other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.RecordKey>! comparer) -> bool
 Aw.Context.Core.Sources.RecordKey.Equals(Aw.Context.Core.Sources.RecordKey other) -> bool
+Aw.Context.Core.Sources.RecordKey.Equals(Aw.Context.Core.Sources.RecordKey other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.RecordKey>! comparer) -> bool
 Aw.Context.Core.Sources.RecordKey.GetTypeCode() -> System.TypeCode
 Aw.Context.Core.Sources.RecordKey.IsInitialized() -> bool
 Aw.Context.Core.Sources.RecordKey.RecordKey() -> void
@@ -787,8 +790,8 @@ Aw.Context.Core.Sources.RecordKind.Issue = 1 -> Aw.Context.Core.Sources.RecordKi
 Aw.Context.Core.Sources.RecordKind.Message = 4 -> Aw.Context.Core.Sources.RecordKind
 Aw.Context.Core.Sources.RecordKind.Project = 3 -> Aw.Context.Core.Sources.RecordKind
 Aw.Context.Core.Sources.SourceCursor
-Aw.Context.Core.Sources.SourceCursor.Equals(Aw.Context.Core.Sources.SourceCursor other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.SourceCursor>! comparer) -> bool
 Aw.Context.Core.Sources.SourceCursor.Equals(Aw.Context.Core.Sources.SourceCursor other) -> bool
+Aw.Context.Core.Sources.SourceCursor.Equals(Aw.Context.Core.Sources.SourceCursor other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.SourceCursor>! comparer) -> bool
 Aw.Context.Core.Sources.SourceCursor.GetTypeCode() -> System.TypeCode
 Aw.Context.Core.Sources.SourceCursor.IsInitialized() -> bool
 Aw.Context.Core.Sources.SourceCursor.SourceCursor() -> void
@@ -837,8 +840,8 @@ Aw.Context.Core.Sources.SourceHit.SourceHit(Aw.Context.Core.Sources.SourceRef! R
 Aw.Context.Core.Sources.SourceHit.Title.get -> string!
 Aw.Context.Core.Sources.SourceHit.Title.init -> void
 Aw.Context.Core.Sources.SourceId
-Aw.Context.Core.Sources.SourceId.Equals(Aw.Context.Core.Sources.SourceId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.SourceId>! comparer) -> bool
 Aw.Context.Core.Sources.SourceId.Equals(Aw.Context.Core.Sources.SourceId other) -> bool
+Aw.Context.Core.Sources.SourceId.Equals(Aw.Context.Core.Sources.SourceId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.SourceId>! comparer) -> bool
 Aw.Context.Core.Sources.SourceId.GetTypeCode() -> System.TypeCode
 Aw.Context.Core.Sources.SourceId.IsInitialized() -> bool
 Aw.Context.Core.Sources.SourceId.SourceId() -> void
@@ -900,8 +903,8 @@ Aw.Context.Core.Sources.SourceState.Degraded = 1 -> Aw.Context.Core.Sources.Sour
 Aw.Context.Core.Sources.SourceState.Ok = 0 -> Aw.Context.Core.Sources.SourceState
 Aw.Context.Core.Sources.SourceState.Unavailable = 2 -> Aw.Context.Core.Sources.SourceState
 Aw.Context.Core.Sources.SourceVersion
-Aw.Context.Core.Sources.SourceVersion.Equals(Aw.Context.Core.Sources.SourceVersion other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.SourceVersion>! comparer) -> bool
 Aw.Context.Core.Sources.SourceVersion.Equals(Aw.Context.Core.Sources.SourceVersion other) -> bool
+Aw.Context.Core.Sources.SourceVersion.Equals(Aw.Context.Core.Sources.SourceVersion other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Sources.SourceVersion>! comparer) -> bool
 Aw.Context.Core.Sources.SourceVersion.GetTypeCode() -> System.TypeCode
 Aw.Context.Core.Sources.SourceVersion.IsInitialized() -> bool
 Aw.Context.Core.Sources.SourceVersion.SourceVersion() -> void
@@ -1131,11 +1134,11 @@ static Aw.Context.Core.Graph.KeyMigrations.Shipped.get -> System.Collections.Gen
 static Aw.Context.Core.Graph.NodeAlias.operator !=(Aw.Context.Core.Graph.NodeAlias? left, Aw.Context.Core.Graph.NodeAlias? right) -> bool
 static Aw.Context.Core.Graph.NodeAlias.operator ==(Aw.Context.Core.Graph.NodeAlias? left, Aw.Context.Core.Graph.NodeAlias? right) -> bool
 static Aw.Context.Core.Graph.NodeKey.From(string! value) -> Aw.Context.Core.Graph.NodeKey
-static Aw.Context.Core.Graph.NodeKey.operator !=(Aw.Context.Core.Graph.NodeKey left, Aw.Context.Core.Graph.NodeKey right) -> bool
-static Aw.Context.Core.Graph.NodeKey.operator ==(Aw.Context.Core.Graph.NodeKey left, Aw.Context.Core.Graph.NodeKey right) -> bool
 static Aw.Context.Core.Graph.NodeKey.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Graph.NodeKey
 static Aw.Context.Core.Graph.NodeKey.TryFrom(string? value, out Aw.Context.Core.Graph.NodeKey vo) -> bool
 static Aw.Context.Core.Graph.NodeKey.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Graph.NodeKey result) -> bool
+static Aw.Context.Core.Graph.NodeKey.operator !=(Aw.Context.Core.Graph.NodeKey left, Aw.Context.Core.Graph.NodeKey right) -> bool
+static Aw.Context.Core.Graph.NodeKey.operator ==(Aw.Context.Core.Graph.NodeKey left, Aw.Context.Core.Graph.NodeKey right) -> bool
 static Aw.Context.Core.Graph.NodeKinds.FromScheme(string! scheme) -> Aw.Context.Core.Graph.NodeKind
 static Aw.Context.Core.Graph.NodeKinds.HasValidSurfaceKind(Aw.Context.Core.Graph.NodeKey key) -> bool
 static Aw.Context.Core.Graph.NodeKinds.SurfaceKinds.get -> System.Collections.Generic.IReadOnlySet<string!>!
@@ -1143,6 +1146,9 @@ static Aw.Context.Core.Graph.RepoScope.NodesFor(Aw.Context.Core.Graph.GraphSnaps
 static Aw.Context.Core.Graph.TrustPolicy.For(Aw.Context.Core.Results.Provenance provenance, bool accepted) -> Aw.Context.Core.Results.Trust
 static Aw.Context.Core.Map.ExportedFile.operator !=(Aw.Context.Core.Map.ExportedFile? left, Aw.Context.Core.Map.ExportedFile? right) -> bool
 static Aw.Context.Core.Map.ExportedFile.operator ==(Aw.Context.Core.Map.ExportedFile? left, Aw.Context.Core.Map.ExportedFile? right) -> bool
+static Aw.Context.Core.Map.MapAccess.Export(Aw.Context.Core.Map.MapVersion! version, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.DateTimeOffset exportedAt) -> Aw.Context.Core.Map.MapDocument!
+static Aw.Context.Core.Map.MapAccess.Gate(Aw.Context.Core.Map.MapReader! reader) -> Aw.Kernel.Error?
+static Aw.Context.Core.Map.MapAccess.Visible(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, Aw.Context.Core.Map.MapReader! reader) -> Aw.Kernel.Result<(Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides)>!
 static Aw.Context.Core.Map.MapCounts.Of(Aw.Context.Core.Graph.GraphSnapshot! graph, int overrides) -> Aw.Context.Core.Map.MapCounts!
 static Aw.Context.Core.Map.MapCounts.operator !=(Aw.Context.Core.Map.MapCounts? left, Aw.Context.Core.Map.MapCounts? right) -> bool
 static Aw.Context.Core.Map.MapCounts.operator ==(Aw.Context.Core.Map.MapCounts? left, Aw.Context.Core.Map.MapCounts? right) -> bool
@@ -1183,11 +1189,11 @@ static Aw.Context.Core.Overrides.MapOverride.operator !=(Aw.Context.Core.Overrid
 static Aw.Context.Core.Overrides.MapOverride.operator ==(Aw.Context.Core.Overrides.MapOverride? left, Aw.Context.Core.Overrides.MapOverride? right) -> bool
 static Aw.Context.Core.Overrides.OverrideApplier.Apply(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> Aw.Context.Core.Overrides.AppliedMap!
 static Aw.Context.Core.Overrides.OverrideId.From(string! value) -> Aw.Context.Core.Overrides.OverrideId
-static Aw.Context.Core.Overrides.OverrideId.operator !=(Aw.Context.Core.Overrides.OverrideId left, Aw.Context.Core.Overrides.OverrideId right) -> bool
-static Aw.Context.Core.Overrides.OverrideId.operator ==(Aw.Context.Core.Overrides.OverrideId left, Aw.Context.Core.Overrides.OverrideId right) -> bool
 static Aw.Context.Core.Overrides.OverrideId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Overrides.OverrideId
 static Aw.Context.Core.Overrides.OverrideId.TryFrom(string? value, out Aw.Context.Core.Overrides.OverrideId vo) -> bool
 static Aw.Context.Core.Overrides.OverrideId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Overrides.OverrideId result) -> bool
+static Aw.Context.Core.Overrides.OverrideId.operator !=(Aw.Context.Core.Overrides.OverrideId left, Aw.Context.Core.Overrides.OverrideId right) -> bool
+static Aw.Context.Core.Overrides.OverrideId.operator ==(Aw.Context.Core.Overrides.OverrideId left, Aw.Context.Core.Overrides.OverrideId right) -> bool
 static Aw.Context.Core.Overrides.RejectionIdentity.For(Aw.Context.Core.Graph.GraphNode! node) -> string!
 static Aw.Context.Core.Results.BudgetUse.operator !=(Aw.Context.Core.Results.BudgetUse? left, Aw.Context.Core.Results.BudgetUse? right) -> bool
 static Aw.Context.Core.Results.BudgetUse.operator ==(Aw.Context.Core.Results.BudgetUse? left, Aw.Context.Core.Results.BudgetUse? right) -> bool
@@ -1200,11 +1206,11 @@ static Aw.Context.Core.Results.ContextResult.operator ==(Aw.Context.Core.Results
 static Aw.Context.Core.Results.DegradedSource.operator !=(Aw.Context.Core.Results.DegradedSource? left, Aw.Context.Core.Results.DegradedSource? right) -> bool
 static Aw.Context.Core.Results.DegradedSource.operator ==(Aw.Context.Core.Results.DegradedSource? left, Aw.Context.Core.Results.DegradedSource? right) -> bool
 static Aw.Context.Core.Results.QueryId.From(string! value) -> Aw.Context.Core.Results.QueryId
-static Aw.Context.Core.Results.QueryId.operator !=(Aw.Context.Core.Results.QueryId left, Aw.Context.Core.Results.QueryId right) -> bool
-static Aw.Context.Core.Results.QueryId.operator ==(Aw.Context.Core.Results.QueryId left, Aw.Context.Core.Results.QueryId right) -> bool
 static Aw.Context.Core.Results.QueryId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Results.QueryId
 static Aw.Context.Core.Results.QueryId.TryFrom(string? value, out Aw.Context.Core.Results.QueryId vo) -> bool
 static Aw.Context.Core.Results.QueryId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Results.QueryId result) -> bool
+static Aw.Context.Core.Results.QueryId.operator !=(Aw.Context.Core.Results.QueryId left, Aw.Context.Core.Results.QueryId right) -> bool
+static Aw.Context.Core.Results.QueryId.operator ==(Aw.Context.Core.Results.QueryId left, Aw.Context.Core.Results.QueryId right) -> bool
 static Aw.Context.Core.Results.RefreshReport.operator !=(Aw.Context.Core.Results.RefreshReport? left, Aw.Context.Core.Results.RefreshReport? right) -> bool
 static Aw.Context.Core.Results.RefreshReport.operator ==(Aw.Context.Core.Results.RefreshReport? left, Aw.Context.Core.Results.RefreshReport? right) -> bool
 static Aw.Context.Core.Results.RepoRefresh.operator !=(Aw.Context.Core.Results.RepoRefresh? left, Aw.Context.Core.Results.RepoRefresh? right) -> bool
@@ -1223,23 +1229,23 @@ static Aw.Context.Core.Results.SourcesView.operator ==(Aw.Context.Core.Results.S
 static Aw.Context.Core.Sources.ChangePage.operator !=(Aw.Context.Core.Sources.ChangePage? left, Aw.Context.Core.Sources.ChangePage? right) -> bool
 static Aw.Context.Core.Sources.ChangePage.operator ==(Aw.Context.Core.Sources.ChangePage? left, Aw.Context.Core.Sources.ChangePage? right) -> bool
 static Aw.Context.Core.Sources.ExternalId.From(string! value) -> Aw.Context.Core.Sources.ExternalId
-static Aw.Context.Core.Sources.ExternalId.operator !=(Aw.Context.Core.Sources.ExternalId left, Aw.Context.Core.Sources.ExternalId right) -> bool
-static Aw.Context.Core.Sources.ExternalId.operator ==(Aw.Context.Core.Sources.ExternalId left, Aw.Context.Core.Sources.ExternalId right) -> bool
 static Aw.Context.Core.Sources.ExternalId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.ExternalId
 static Aw.Context.Core.Sources.ExternalId.TryFrom(string? value, out Aw.Context.Core.Sources.ExternalId vo) -> bool
 static Aw.Context.Core.Sources.ExternalId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.ExternalId result) -> bool
+static Aw.Context.Core.Sources.ExternalId.operator !=(Aw.Context.Core.Sources.ExternalId left, Aw.Context.Core.Sources.ExternalId right) -> bool
+static Aw.Context.Core.Sources.ExternalId.operator ==(Aw.Context.Core.Sources.ExternalId left, Aw.Context.Core.Sources.ExternalId right) -> bool
 static Aw.Context.Core.Sources.RecordKey.From(string! value) -> Aw.Context.Core.Sources.RecordKey
-static Aw.Context.Core.Sources.RecordKey.operator !=(Aw.Context.Core.Sources.RecordKey left, Aw.Context.Core.Sources.RecordKey right) -> bool
-static Aw.Context.Core.Sources.RecordKey.operator ==(Aw.Context.Core.Sources.RecordKey left, Aw.Context.Core.Sources.RecordKey right) -> bool
 static Aw.Context.Core.Sources.RecordKey.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.RecordKey
 static Aw.Context.Core.Sources.RecordKey.TryFrom(string? value, out Aw.Context.Core.Sources.RecordKey vo) -> bool
 static Aw.Context.Core.Sources.RecordKey.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.RecordKey result) -> bool
+static Aw.Context.Core.Sources.RecordKey.operator !=(Aw.Context.Core.Sources.RecordKey left, Aw.Context.Core.Sources.RecordKey right) -> bool
+static Aw.Context.Core.Sources.RecordKey.operator ==(Aw.Context.Core.Sources.RecordKey left, Aw.Context.Core.Sources.RecordKey right) -> bool
 static Aw.Context.Core.Sources.SourceCursor.From(string! value) -> Aw.Context.Core.Sources.SourceCursor
-static Aw.Context.Core.Sources.SourceCursor.operator !=(Aw.Context.Core.Sources.SourceCursor left, Aw.Context.Core.Sources.SourceCursor right) -> bool
-static Aw.Context.Core.Sources.SourceCursor.operator ==(Aw.Context.Core.Sources.SourceCursor left, Aw.Context.Core.Sources.SourceCursor right) -> bool
 static Aw.Context.Core.Sources.SourceCursor.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.SourceCursor
 static Aw.Context.Core.Sources.SourceCursor.TryFrom(string? value, out Aw.Context.Core.Sources.SourceCursor vo) -> bool
 static Aw.Context.Core.Sources.SourceCursor.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.SourceCursor result) -> bool
+static Aw.Context.Core.Sources.SourceCursor.operator !=(Aw.Context.Core.Sources.SourceCursor left, Aw.Context.Core.Sources.SourceCursor right) -> bool
+static Aw.Context.Core.Sources.SourceCursor.operator ==(Aw.Context.Core.Sources.SourceCursor left, Aw.Context.Core.Sources.SourceCursor right) -> bool
 static Aw.Context.Core.Sources.SourceDescriptor.operator !=(Aw.Context.Core.Sources.SourceDescriptor? left, Aw.Context.Core.Sources.SourceDescriptor? right) -> bool
 static Aw.Context.Core.Sources.SourceDescriptor.operator ==(Aw.Context.Core.Sources.SourceDescriptor? left, Aw.Context.Core.Sources.SourceDescriptor? right) -> bool
 static Aw.Context.Core.Sources.SourceHealth.operator !=(Aw.Context.Core.Sources.SourceHealth? left, Aw.Context.Core.Sources.SourceHealth? right) -> bool
@@ -1247,11 +1253,11 @@ static Aw.Context.Core.Sources.SourceHealth.operator ==(Aw.Context.Core.Sources.
 static Aw.Context.Core.Sources.SourceHit.operator !=(Aw.Context.Core.Sources.SourceHit? left, Aw.Context.Core.Sources.SourceHit? right) -> bool
 static Aw.Context.Core.Sources.SourceHit.operator ==(Aw.Context.Core.Sources.SourceHit? left, Aw.Context.Core.Sources.SourceHit? right) -> bool
 static Aw.Context.Core.Sources.SourceId.From(string! value) -> Aw.Context.Core.Sources.SourceId
-static Aw.Context.Core.Sources.SourceId.operator !=(Aw.Context.Core.Sources.SourceId left, Aw.Context.Core.Sources.SourceId right) -> bool
-static Aw.Context.Core.Sources.SourceId.operator ==(Aw.Context.Core.Sources.SourceId left, Aw.Context.Core.Sources.SourceId right) -> bool
 static Aw.Context.Core.Sources.SourceId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.SourceId
 static Aw.Context.Core.Sources.SourceId.TryFrom(string? value, out Aw.Context.Core.Sources.SourceId vo) -> bool
 static Aw.Context.Core.Sources.SourceId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.SourceId result) -> bool
+static Aw.Context.Core.Sources.SourceId.operator !=(Aw.Context.Core.Sources.SourceId left, Aw.Context.Core.Sources.SourceId right) -> bool
+static Aw.Context.Core.Sources.SourceId.operator ==(Aw.Context.Core.Sources.SourceId left, Aw.Context.Core.Sources.SourceId right) -> bool
 static Aw.Context.Core.Sources.SourceQuery.operator !=(Aw.Context.Core.Sources.SourceQuery? left, Aw.Context.Core.Sources.SourceQuery? right) -> bool
 static Aw.Context.Core.Sources.SourceQuery.operator ==(Aw.Context.Core.Sources.SourceQuery? left, Aw.Context.Core.Sources.SourceQuery? right) -> bool
 static Aw.Context.Core.Sources.SourceRecord.operator !=(Aw.Context.Core.Sources.SourceRecord? left, Aw.Context.Core.Sources.SourceRecord? right) -> bool
@@ -1259,11 +1265,11 @@ static Aw.Context.Core.Sources.SourceRecord.operator ==(Aw.Context.Core.Sources.
 static Aw.Context.Core.Sources.SourceRef.operator !=(Aw.Context.Core.Sources.SourceRef? left, Aw.Context.Core.Sources.SourceRef? right) -> bool
 static Aw.Context.Core.Sources.SourceRef.operator ==(Aw.Context.Core.Sources.SourceRef? left, Aw.Context.Core.Sources.SourceRef? right) -> bool
 static Aw.Context.Core.Sources.SourceVersion.From(string! value) -> Aw.Context.Core.Sources.SourceVersion
-static Aw.Context.Core.Sources.SourceVersion.operator !=(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
-static Aw.Context.Core.Sources.SourceVersion.operator ==(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
 static Aw.Context.Core.Sources.SourceVersion.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.SourceVersion
 static Aw.Context.Core.Sources.SourceVersion.TryFrom(string? value, out Aw.Context.Core.Sources.SourceVersion vo) -> bool
 static Aw.Context.Core.Sources.SourceVersion.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.SourceVersion result) -> bool
+static Aw.Context.Core.Sources.SourceVersion.operator !=(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
+static Aw.Context.Core.Sources.SourceVersion.operator ==(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
 static Aw.Context.Core.Trust.ScrubbedField.operator !=(Aw.Context.Core.Trust.ScrubbedField? left, Aw.Context.Core.Trust.ScrubbedField? right) -> bool
 static Aw.Context.Core.Trust.ScrubbedField.operator ==(Aw.Context.Core.Trust.ScrubbedField? left, Aw.Context.Core.Trust.ScrubbedField? right) -> bool
 static readonly Aw.Context.Core.ContextErrors.AllSourcesUnavailable -> Aw.Kernel.ErrorDefinition!

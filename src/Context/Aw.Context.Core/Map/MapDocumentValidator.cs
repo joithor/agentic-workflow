@@ -54,6 +54,11 @@ public static class MapDocumentValidator
             problems.Invalid("repo", "the repo's short name is required");
         }
 
+        if (document.MapVersion is <= 0)
+        {
+            problems.Invalid("mapVersion", Fmt($"{document.MapVersion} isn't a map version (1 or more)"));
+        }
+
         if (document.KeyVersion < 1 || document.KeyVersion > keyVersion)
         {
             problems.Invalid("keyVersion", Fmt($"{document.KeyVersion} isn't supported (1 to {keyVersion})"));

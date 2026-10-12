@@ -20,6 +20,7 @@ namespace Aw.Context.Core.Map;
 /// <param name="Commit">The commit the map describes, or null.</param>
 /// <param name="MapVersion">The version it was exported from, or null.</param>
 /// <param name="ExportedAt">When it was exported, or null.</param>
+/// <param name="Orphaned">An export's overrides whose target no longer resolves (they are kept and re-imported; spec §6.1); informational, never read.</param>
 public sealed record MapDocument(
     int SchemaVersion,
     MapDocumentKind Kind,
@@ -32,4 +33,5 @@ public sealed record MapDocument(
     int KeyVersion = EntryKey.Version,
     string? Commit = null,
     int? MapVersion = null,
-    DateTimeOffset? ExportedAt = null);
+    DateTimeOffset? ExportedAt = null,
+    IReadOnlyList<OverrideId>? Orphaned = null);

@@ -58,6 +58,7 @@ public sealed class MapDocumentTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("schemaVersion: 2\nkind: authored\nrepo: r\nnodes: []\n", "schemaVersion: 2 isn't supported")]
     [InlineData("schemaVersion: 1\nkind: authored\nrepo: r\nkeyVersion: 9\nnodes: []\n", "keyVersion: 9 isn't supported")]
+    [InlineData("schemaVersion: 1\nkind: export\nrepo: r\nmapVersion: 0\nnodes: []\n", "mapVersion: 0 isn't a map version")]
     [InlineData(Header + "nodes:\n  - {key: \"surface:widget/x\", label: X}\n", "nodes[0].key: 'surface:widget/x' needs a surface kind")]
     [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: A}\n  - {key: \"feature:A\", label: A2}\n", "nodes[1].key: 'feature:a' is defined twice")]
     [InlineData(Header + "nodes:\n  - {key: \"feature:a\", label: \" \"}\n", "nodes[0].label: a label is required")]
