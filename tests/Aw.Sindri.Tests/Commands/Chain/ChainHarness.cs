@@ -39,6 +39,7 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton(H.Events)
             .AddSingleton(H.Callers)
             .AddSingleton<IShutdown>(H.Shutdown)
+            .AddSingleton<IEndpointFile>(new InMemoryEndpointFile())
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddSingleton<IApprovals>(H.Profiles)
             .AddSingleton<ICommandCatalog>(new InMemoryCommandCatalog([.. ShellRows.All, fixture]))

@@ -7,8 +7,9 @@ both. The design and its reasons are in the engine spec,
 this page summarizes, the spec wins. The app shell (the `sindri` binary, its home, the error catalogue) is in
 `docs/csharp/sindri.md`.
 
-Phase 1 (this page's scope) reads, normalizes, hashes and validates recipes in-process. Registering, approving and
-running them come in later phases (registry P2, engine and evals P3, store and desk Steps P4).
+This page covers reading, normalizing, hashing and validating recipes in-process (P1) and the pure engine's eval verb,
+`recipe eval` (P3). Registering and approving recipes (P2) and running instances on Temporal (the recipe interpreter,
+desk Steps and the bridge, P4; engine spec §0 and §5, revision 8) come in later phases.
 
 ## `sindri recipe validate`
 
@@ -44,8 +45,6 @@ reads the file and its child recipes, and writes nothing.
 
 Errors go to stderr as `CODE message (fix: …)`, or `CODE message (usage: …)` for a usage error, like every `sindri` verb.
 
-`sindri recipe eval <file>` (run a recipe's eval cases, spec §9.2) arrives with P3. Until then it exits 2 with
-`SND-CLI-001 'recipe eval' isn't in this build yet`.
 
 ```
 $ sindri recipe validate tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml
@@ -58,6 +57,63 @@ $ echo $?
 The golden files under `tests/Aw.Sindri.Tests/Workflow/Cli/Golden/` pin this output. After an intended change, re-pin
 them with `AW_GOLDEN_UPDATE=1 dotnet test --project tests/Aw.Sindri.Tests --filter-namespace Aw.Sindri.Tests.Workflow.Cli`
 (the run rewrites them and fails), review the diff, then run again without the variable.
+
+## recipe eval
+
+`sindri recipe eval <file> [--json]` runs a recipe's eval cases (spec §9.2) in this process, never contacting the
+control plane. It reads the recipe and its child recipes beside it, then folds the pure engine's decisions (P3) over
+each case listed in `evals:`, in order, with fake gates; the decisions read no clock. From P4 the same cases also run
+through the interpreter on Temporal's time-skipping test server, and the two must agree (spec Phase 3). Each case's path is relative to the recipe
+and stays inside its directory (`evals/<recipe id>/<case>.jsonl`).
+
+A case file is JSON lines, LF or CRLF:
+- line 1: `{"start":{"inputs":{"<fact>":"<value>",...}}}` (`"scaffold": true` marks a generated case);
+- each later line: `{"trigger":{"kind","outcome"?,"outputs"?,"park"?,"variant"?,"amount"?,"reason"?},"gates"?:{"<block>":"pass|fail|uncertain"},"expect":{"state","park"?,"outcome"?}}`.
+
+`kind` is a recipe trigger (`step.completed`, `step.failed`, `wait.satisfied`, `command.<verb>`), a child's change
+(`child.parked` with `park`, `child.resumed`, `child.escalated`; a child's end is `wait.satisfied` with its outcome),
+or an engine trigger: `answer` with a `variant` (`grant`, `grant-tokens`, `accept`, `reject`, `resume`, `text`; the
+grants take `amount`, a `text` answer's text is `outputs` `fact:answer`), `takeover`, `handback`, `cancel` and
+`deadline`. An answer wait is satisfied by an `answer` line with `variant` `text` (outcome `answered`), not by
+`wait.satisfied`. A `deadline` line fails until timers land (P5).
+
+A `step.failed` line takes an optional `reason`, what the Step reported as its failure. Left out, it is the constant
+`the Step failed`, the same on every line, so two `step.failed` lines in a loop are the same failure and park
+`no-progress` when the loop names `sameFailure` (spec §3.7). Give different reasons to make a round count as progress.
+`reason` on any other kind fails its line. `--record` writes each failure's reason from the event, so a recorded
+`sameFailure` park replays. `reason` isn't in the spec's §9.2 field list yet; the owner has been asked to add it there,
+and this page documents it in the meantime.
+
+Output, one line per case:
+
+```
+$ sindri recipe eval recipes/sindri/workflow.step.yaml
+happy pass
+no-progress pass
+rounds pass
+$ sindri recipe eval <copy with line 3 of happy.jsonl expecting checks>
+happy fail at evals/workflow.step/happy.jsonl:3: expected checks, got verify
+no-progress pass
+rounds pass
+```
+
+A line the engine rejects (an answer that doesn't fit the park, a grant of 0 or above the loop's cap, an undeclared
+outcome) or one out of the format (not JSON, an unknown `kind`, a `variant` that doesn't go with its kind) fails its case
+at that line, saying why. A recipe without `evals:` prints `no evals declared` and exits 0: nothing failed. Approval will refuse
+such a recipe (`SND-RECIPE-008`) once the registry lands (P2); this build has no approve path yet. `--json` prints `{"cases":[{"case","passed","line","detail"}],"scaffold":null,"passed"}`, where `"case"` is the eval file's path as `evals:` lists it (`evals/workflow.step/happy.jsonl`); the text output shows the bare name (`happy`).
+The same eval run twice prints the same output.
+
+`--scaffold <file>` prints a happy-path case for the recipe on stdout, marked `"scaffold": true` on line 1: the start
+with a placeholder for each input, then, from the initial state, the first of each state's declared outcomes whose
+transition moves into a state not yet visited, until a terminal state. Every gate passes, and each line expects what the
+engine did, so it passes once it is in the recipe's `evals:`. `--record <address> --out <file>` writes a live instance's
+history in the same format; it needs the server's instances (P4) and exits 2 until then.
+
+| Exit | When |
+|---|---|
+| 0 | Every case passes, or the recipe declares none |
+| 1 | A case fails (`<case> fail at <file>:<line>: <detail>`) |
+| 2 | A usage error (no file, `--record` without an address and `--out`: `SND-CLI-003`; an unknown argument: `SND-CLI-001`; `--record` itself until P4: `SND-CLI-001 … needs the server (P4)`), or a tool error: the recipe can't be read (`SND-RECIPE-010`) or doesn't bind (`SND-RECIPE-001`, fix: `sindri recipe validate`), a listed eval file is missing, unreadable or outside the recipe's directory (`SND-RECIPE-008`), or a bug inside `sindri` (`SND-API-005 recipe eval failed inside sindri: …`) |
 
 ## Recipe reference (schema 1)
 
@@ -170,6 +226,12 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`). A loop must be declared (`R
 
 - **Loops:** `loops: { <name>: { cap ≥ 1, noProgress } }`. `noProgress` defaults to `[findings, emptyDiff, sameFailure]`
   and can't be empty (`RCP-LOOP-003`). A looped state needs a transition back into it (`RCP-LOOP-002`).
+  **Until P8 (spec §3.7, owner decision 2026-10-11):** the engine sees a round's `fact:findings` only as a reference
+  and its SHA-256, and a Step report carries no diff, so P3–P7 detect no progress only from identical findings (the
+  digest of the whole findings value; a superset, keyed by file, check and normalized message, isn't detected) and a
+  repeated failure reason (`sameFailure`: a `step.failed`, or a gate refusal, repeats its reason). `emptyDiff` never
+  fires, so a loop that names only `emptyDiff` never parks early, and the validator doesn't say so. The agent runtime
+  (P8) adds finding keys and a diff signal to Step reports, and the full A §17.23.13 rule lands there.
 - **Budgets:** `budget: { tokens }` on an active state and on the recipe. Exhausting one parks the instance with `budget`.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
   `{state}`, `{user}`, `{child}`, `{loop.<name>}`, `{loop.<name>.cap}` and `{budget.tokens.left}` (`RCP-NEXT-001`).

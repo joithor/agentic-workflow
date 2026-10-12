@@ -19,13 +19,13 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 | `sindri --headless` | The same without the UI line (the UI is S1b) | as above |
 | `sindri serve` | Runs the control plane in the foreground: what bare `sindri` starts, and what launchd will keep alive later. Refused in an agent session; `AW_SINDRI_PROVER=1` skips only the parent-process check, never the variables | 0 on a clean stop; 1 when it is refused in an agent session (`SND-API-001`), or when another process holds the lease (`SND-LEASE-001`) or the lease was lost (`SND-LEASE-002`); 2 when the port is taken or refused, or the host fails to start listening (`SND-API-003`; the stop is recorded and the lease released), or `AW_SINDRI_PORT` isn't a port number 0..65535 (`SND-CLI-003`, checked before the lease is taken), or the ledger can't be opened (`SND-LEDGER-001/002`) |
 | `sindri status [--json]` | The running control plane's status, through the API | 0; 1 when it isn't running (`SND-API-001`) or the profile needs approval (`profile.needsApproval` in the response); 2 on any other error (e.g. it didn't answer in time `SND-API-002`, answered an error without a code `SND-API-004`, failed inside `SND-API-005`, or the ledger or the saved approval can't be read `SND-LEDGER-002`/`SND-PROFILE-006`) |
-| `sindri stop` | Stops it: records the stop, releases the lease, shuts down | 0; 1 when it isn't running (`SND-API-001`); 2 on any other error (e.g. the API refused this caller `SND-AUTH-002`, it didn't answer in time `SND-API-002`, the stop couldn't be recorded `SND-LEDGER-002`, answered an error without a code `SND-API-004`, or failed inside `SND-API-005`) |
+| `sindri stop` | Stops it: records the stop, removes `control.json`, releases the lease, shuts down | 0; 1 when it isn't running (`SND-API-001`); 2 on any other error (e.g. the API refused this caller `SND-AUTH-002`, it didn't answer in time `SND-API-002`, the stop couldn't be recorded, or `control.json` couldn't be removed (the process still stops) `SND-LEDGER-002`, answered an error without a code `SND-API-004`, or failed inside `SND-API-005`) |
 | `sindri profile validate [--json]` | Checks the live profile file and prints its hash | 0 valid and approved (it is the saved approval and the latest recorded `profile.approved` event names it, the rule every surface uses); 1 valid, not approved; 2 on any error: invalid (`SND-PROFILE-001/002`), the saved approval can't be read (`SND-PROFILE-006`) or the ledger can't be read (`SND-LEDGER-002`), neither of which is ever "not approved" |
 | `sindri profile approve` | `[--no-start]`: shows the live hash and the key paths changed since the latest approval; changes nothing | 0 when it already is approved; 1 when not approved yet, or when it isn't running and wasn't started (`SND-API-001`: `--no-start`, an agent session, no terminal); 2 on any other error (e.g. the API refused this caller `SND-AUTH-002`, which a running control plane does for an agent session or a CLI with no terminal because the preview is the protected ApproveProfile command; an invalid profile `SND-PROFILE-001/002`, a ledger it can't read `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
 | `sindri profile approve <hash>` | Approves: the hash must be the live one, and you type its first 6 characters at an interactive terminal. Starts the control plane first if it isn't running, unless `--no-start` (`sindri profile approve [--no-start] <hash>`) | 0; 1 when it isn't running and wasn't started (`SND-API-001`); 2 on any other error (e.g. the API refused this caller `SND-AUTH-002`, it couldn't start `SND-CLI-002`, a malformed hash `SND-CLI-003`, a stale hash `SND-PROFILE-003`, no terminal or a wrong confirmation `SND-PROFILE-004`, approvals that can't be written `SND-PROFILE-006`, a ledger it can't read or write `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
 | `sindri doctor [--json]` | One line per check, in order: `lease`, `ledger`, `profile`, `api`, each `ok` / `warn` / `fail` with a fix. `profile` is `ok` only when approved by the one rule (see Profile); changed since the saved approval, or saved but not the latest recorded one, is a `warn` | 0 all ok, 1 any warn, 2 any fail |
 | `sindri recipe validate <file> [--json]` | Validates a recipe in this process against the build's block catalog, never contacting the control plane: one line per finding (errors first; information and skipped findings labelled), then the recipe's hash. `--json` adds each finding's fields and the normalized long form. Reference: `docs/csharp/sindri-workflow.md` | 0 no errors; 1 any `RCP-*` error; 2 a usage error (no file, `SND-CLI-003`; an unknown `recipe` verb or extra arguments, `SND-CLI-001`), an unreadable file (`SND-RECIPE-010`) or a bug inside sindri (`SND-API-005`) |
-| `sindri recipe eval <file>` | Arrives with the engine's evals (P3); until then it refuses | 2 (`SND-CLI-001`) |
+| `sindri recipe eval <file> [--json]` · `--scaffold <file>` · `--record <address> --out <file>` | Runs the recipe's eval cases in this process over the pure engine (P3): one line per case, `<case> pass` or `<case> fail at <file>:<line>: <detail>`, or `no evals declared`. `--scaffold` prints a passing happy-path case; `--record` needs the server (P4). Reference: `docs/csharp/sindri-workflow.md` | 0 every case passes or none declared; 1 a case fails; 2 a usage error (`SND-CLI-003`, `SND-CLI-001`, `--record` until P4), an unreadable or unbound recipe (`SND-RECIPE-010`, `SND-RECIPE-001`), a missing or unreadable eval file (`SND-RECIPE-008`) or a bug inside sindri (`SND-API-005`) |
 
 Output: state is always a word, never colour; there is no colour at all, so `NO_COLOR` and redirected output need
 nothing special. Errors go to stderr as `SND-<AREA>-NNN message`, with `(fix: …)` where there is one, or `(usage: …)` for a
@@ -52,7 +52,7 @@ directory keeps its mode; files are 0600.
 | `ledger.db` | The ledger (SQLite, WAL, through `Aw.Kernel.Data`): `events`, `lease`, `outbox_commands` |
 | `approved/<hash>/profile.json`, `approved/latest` | Approved profile snapshots (canonical JSON) and the latest hash. Runtime reads only these, never the live file |
 | `auth/human.token` | This start's human token (0600, in a 0700 `auth/` folder): minted by `serve` after it takes the lease, removed on stop (see Callers and auth) |
-| `control.json` | The running control plane's endpoint: `url`, `pid`, `epoch`. Written once it listens, removed on stop. A client checks the pid and epoch against `/sindri/ping`, so a stale record reads as "not running" |
+| `control.json` | The running control plane's endpoint: `url`, `pid`, `epoch`. Written once it listens, removed on stop before the lease is released. A client checks the pid and epoch against `/sindri/ping`, so a stale record reads as "not running" |
 | `logs/serve.log` | The detached control plane's output (0600: written under umask 077, and an older log is narrowed after each start) |
 | `profile/profile.yaml` | The live profile (`AW_SINDRI_PROFILE` overrides the path) |
 
@@ -103,8 +103,11 @@ every 20 s.
   nobody took over, lost nothing to fencing). Once another process took the lease, renew fails with `SND-LEASE-002` and
   the process stops (exit 1): it must not write under a stale epoch. Any other renewal error (a busy or unreadable
   ledger) is logged and retried at the next tick, until the grant expires; past expiry the process stops too. A stop
-  clears the grant and requests the shutdown before releasing the lease; a renewal that finishes afterwards doesn't
-  hold the grant again, and one that lost to the release ends quietly (a stop, not a loss: exit 0).
+  records `process.stopped`, removes `control.json` while it still holds the grant, clears the grant, requests the
+  shutdown, and only then releases the lease. So `/sindri/ping` answers epoch 0 (after the clear, until the port
+  closes) only once `control.json` is gone, and no client finds `control.json` once the lease is free for another
+  process (unless removing it failed: the stop then answers that error, and serve removes it again on its way out). A renewal that finishes afterwards doesn't hold the grant again, and one that lost to the release ends
+  quietly (a stop, not a loss: exit 0).
 - **Fencing:** every ledger append checks, in its own transaction, that the writer's grant is the current epoch;
   otherwise `SND-LEASE-003` and nothing is written.
 
@@ -391,7 +394,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-RECIPE-009` | conflict | A recipe challenge expired, or its subject changed since the preview |
 | `SND-RECIPE-010` | notFound | The recipe file can't be read |
 | `SND-WF-001` | notFound | No such instance (`sindri workflow list`) |
-| `SND-WF-002` | conflict | The instance changed; re-read and retry |
+| `SND-WF-002` | — | Retired (engine spec rev 8): Updates serialize per workflow, so there is no version conflict |
 | `SND-WF-003` | conflict | The trigger isn't allowed here (`allowedCommands` in `status`) |
 | `SND-WF-004` | conflict | A gate refused; act on the reasons |
 | `SND-WF-005` | conflict | A stale run token; use the token in `status` |
@@ -406,7 +409,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-WF-014` | invalid | `--item` and `fact:item`'s `id` differ |
 
 `sindri recipe validate <file> [--json]` and `sindri recipe eval <file>` are local checker verbs (engine spec W27): exit
-0 pass, 1 fail, 2 usage or tool error; `eval` arrives with P3. The recipe reference, the `RCP-*` rule table and how to add
+0 pass, 1 fail, 2 usage or tool error. The recipe reference, the eval format, the `RCP-*` rule table and how to add
 a block are in `docs/csharp/sindri-workflow.md`.
 
 ## Hook contract

@@ -5,6 +5,8 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Evals;
+using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.EvalRecipe;
@@ -45,5 +47,8 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(BlockDescriptor))]
 [JsonSerializable(typeof(ValidateRecipeResponse))]
 [JsonSerializable(typeof(EvalRecipeResponse))]
+[JsonSerializable(typeof(WorkflowEvent))]
+[JsonSerializable(typeof(EvalStartLine))]
+[JsonSerializable(typeof(EvalStepLine))]
 [JsonSerializable(typeof(RecipeValidationView))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;
