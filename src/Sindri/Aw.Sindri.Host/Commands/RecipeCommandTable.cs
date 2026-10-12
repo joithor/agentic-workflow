@@ -34,10 +34,10 @@ internal static partial class RecipeCommandTable
             "recipe eval --record needs the server (P4): it reads a live instance's history from serve, which arrives with P4 (fix: write the case by hand, or start from sindri recipe eval --scaffold <file>)")),
         ["--record", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe eval --record needs an address and --out <file> ({EvalUsage})")),
         [] or ["--json"] or ["--scaffold"] => output.Error(SindriErrors.InvalidInput.With($"recipe eval needs a recipe file ({EvalUsage})")),
-        ["--scaffold", var file] when !IsFlag(file) => Eval(file, EvalMode.Scaffold, json: false, services, output, ct),
-        ["--json", var file] when !IsFlag(file) => Eval(file, EvalMode.Run, json: true, services, output, ct),
-        [var file, "--json"] when !IsFlag(file) => Eval(file, EvalMode.Run, json: true, services, output, ct),
-        [var file] when !IsFlag(file) => Eval(file, EvalMode.Run, json: false, services, output, ct),
+        ["--scaffold", var file] when !IsFlag(file) => Eval(new EvalRecipeRequest(file, EvalMode.Scaffold), json: false, services, output, ct),
+        ["--json", var file] when !IsFlag(file) => Eval(new EvalRecipeRequest(file, EvalMode.Run), json: true, services, output, ct),
+        [var file, "--json"] when !IsFlag(file) => Eval(new EvalRecipeRequest(file, EvalMode.Run), json: true, services, output, ct),
+        [var file] when !IsFlag(file) => Eval(new EvalRecipeRequest(file, EvalMode.Run), json: false, services, output, ct),
         _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", "eval", .. args])}' is not a sindri command ({EvalUsage})")),
     };
 
@@ -68,17 +68,17 @@ internal static partial class RecipeCommandTable
             : await output.Text(RecipeText.Validation(response), code).ConfigureAwait(false);
     }
 
-    private static async Task<int> Eval(string file, EvalMode mode, bool json, IServiceProvider services, Output output, CancellationToken ct)
+    private static async Task<int> Eval(EvalRecipeRequest request, bool json, IServiceProvider services, Output output, CancellationToken ct)
     {
         Result<EvalRecipeResponse> result;
         try
         {
             result = await services.GetRequiredService<IService<EvalRecipeRequest, EvalRecipeResponse>>()
-                .Handle(new EvalRecipeRequest(file, mode), ct).ConfigureAwait(false);
+                .Handle(request, ct).ConfigureAwait(false);
         }
         catch (Exception e) when (e is not OperationCanceledException)   // boundary: a bug in reading or folding is a tool error (W27 exit 2), not a crash
         {
-            return await ToolError(services, output, "recipe eval", e, file).ConfigureAwait(false);
+            return await ToolError(services, output, "recipe eval", e, request.Path).ConfigureAwait(false);
         }
 
         if (result.IsError)
@@ -87,7 +87,7 @@ internal static partial class RecipeCommandTable
         }
 
         var response = result.Value;
-        if (mode == EvalMode.Scaffold)
+        if (request.Mode == EvalMode.Scaffold)
         {
             return await output.Text(response.Scaffold ?? string.Empty, 0).ConfigureAwait(false);
         }

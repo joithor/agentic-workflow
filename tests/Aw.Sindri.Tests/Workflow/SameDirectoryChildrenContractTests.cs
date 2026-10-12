@@ -1,6 +1,5 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Validation;
-using Aw.Sindri.Features.ValidateRecipe;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow;
