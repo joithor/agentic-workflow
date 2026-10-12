@@ -11,7 +11,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Evals;
 /// <summary>
 /// 'recipe eval --scaffold' (spec §6.3, §9.2): a happy-path case for a new recipe, line 1 marked '"scaffold": true'.
 /// From each state it tries the source's declared outcomes in order (a Step's, an event's, the outcomes a child wait's
-/// transitions name) and keeps the first whose transition the engine applies into a state not yet visited, until a
+/// transitions name; an answer wait gets a 'text' answer) and keeps the first whose transition the engine applies into a state not yet visited, until a
 /// terminal state or a state nothing moves on from. Every gate passes. Each line's 'expect' is what the engine did, so
 /// the printed case passes.
 /// </summary>
@@ -88,6 +88,12 @@ public static class EvalScaffold
 
     private static IEnumerable<EvalTrigger> WaitCandidates(EvalSimulation simulation, WaitFor wait)
     {
+        if (wait.Answer is { } answer)
+        {
+            var text = new Dictionary<FactKey, JsonElement> { [FactKey.From("fact:answer")] = EvalFacts.OfText($"answer to {answer.Id.Value} for the scaffold") };
+            return [new EvalTrigger(TriggerNames.Answer, Outcome: null, text, Park: null, EvalVariant.Text)];
+        }
+
         IEnumerable<OutcomeName?> outcomes = wait.Event is { } kind && simulation.Catalog.FindEvent(kind) is { } e
             ? [.. e.Outcomes, null]
             : [.. simulation.Recipe.Transitions
