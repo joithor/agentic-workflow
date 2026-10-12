@@ -23,6 +23,10 @@ internal sealed class SqliteViewReader(ViewsDatabase database, JsonSerializerOpt
             ? await Read(rows => rows.List<TRow>(view, cancellationToken), cancellationToken).ConfigureAwait(false)
             : Results.Success<IReadOnlyList<TRow>>([]);
 
+    public ValueTask<Result<IReadOnlyList<TRow>>> Range<TRow>(string view, string afterKey, string? beforeKey, int max, CancellationToken cancellationToken)
+        where TRow : class =>
+        throw new NotSupportedException("SqliteViewReader.Range: P3 unit B makes Range_returns_keys_between_the_bounds_in_order pass");
+
     public async ValueTask<Result<ProjectorState?>> State(CancellationToken cancellationToken)
     {
         if (!database.Exists)
