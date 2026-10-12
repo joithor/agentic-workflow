@@ -1,0 +1,190 @@
+using System.Net;
+using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels.Controls;
+using Aw.Sindri.Ui.ViewModels.Queue;
+using Microsoft.Extensions.Time.Testing;
+
+namespace Aw.Sindri.Ui.Tests.Queue;
+
+/// <summary>
+/// The queue (UI spec §4.5) and Home's Running and Queued panels (§3.2, §4.2) over GET /sindri/queue: groups, order,
+/// empty sentences and actions all come from the API (§2 "no logic"); the app maps fields to words and visibility.
+/// </summary>
+[Lane(TestLane.Unit)]
+public sealed class QueueViewModelTests
+{
+    private static readonly Uri _api = new("http://127.0.0.1:7410/");
+    private readonly FakeTimeProvider _clock = new(A.Noon);
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog-p3") };
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private async Task<QueueViewModel> Queue()
+    {
+        var catalog = new CatalogViewModel(new FakeClipboard(), _clock);
+        catalog.Show(_api, _server, (await _server.Commands(_api, Token)).Value);
+        return new QueueViewModel(_server, catalog, _clock);
+    }
+
+    [Fact]
+    public async Task Groups_follow_the_apis_order_and_hide_the_empty_ones()
+    {
+        var queue = await Queue();
+
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal(["Waiting on you", "With you", "Running", "Queued"], queue.Groups.Select(g => g.Label), StringComparer.Ordinal);
+        Assert.Equal([1, 0, 0, 4], queue.Groups.Select(g => g.Count));
+        Assert.Equal([true, false, false, true], queue.Groups.Select(g => g.IsVisible));
+        Assert.Equal(["Stream limits 429 fallback", "Retry storm in outbox dispatcher", "Context map review for tabs.layout", "Try the queue"], queue.Groups[3].Rows.Select(r => r.Title), StringComparer.Ordinal);
+        Assert.Equal(5, queue.Total);
+        Assert.False(queue.IsEmpty);
+    }
+
+    // §4.5: each row is id, title, repo, state as a word, step and since, named with its id for the screen reader.
+    [Fact]
+    public async Task A_row_shows_the_apis_fields_as_words()
+    {
+        var queue = await Queue();
+
+        await queue.Refresh(_api, Token);
+
+        var row = queue.Groups[3].Rows[3];
+        Assert.Equal((A.NewItem, "Try the queue", "agentic-workflow", "New", "5m"), (row.Id, row.Title, row.Repo, row.StateWord, row.Age));
+        Assert.Equal(A.NewItem + " Try the queue, New", row.Name);
+        Assert.Equal("Needs decision", queue.Groups[0].Rows[0].StateWord);
+    }
+
+    // §4.5: the row's primary action is the catalog's control for the API's primaryAction (pending rows drawn disabled).
+    [Fact]
+    public async Task A_rows_primary_action_is_the_catalogs_control()
+    {
+        var queue = await Queue();
+
+        await queue.Refresh(_api, Token);
+
+        var decide = queue.Groups[0].Rows[0].PrimaryAction;
+        Assert.NotNull(decide);
+        Assert.Equal(("Decide", true), (decide.Label, decide.IsPending));
+        Assert.Equal("Decide " + A.DecisionItem + ", arrives in P4", decide.Name);
+        Assert.Null(queue.Groups[3].Rows[0].PrimaryAction);
+    }
+
+    // §4.5 Empty: every group hidden, and the view's own empty sentence as served.
+    [Fact]
+    public async Task An_empty_queue_shows_the_views_sentence()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "empty");
+        var queue = await Queue();
+
+        await queue.Refresh(_api, Token);
+
+        Assert.True(queue.IsEmpty);
+        Assert.Equal("Nothing in the queue. Add one with `sindri item add`.", queue.EmptyText);
+        Assert.All(queue.Groups, g => Assert.False(g.IsVisible));
+    }
+
+    // §4.2, E-18: Home's Running and With you panel (With you first) and Queued panel each show their group's sentence when empty.
+    [Fact]
+    public async Task Homes_panels_show_each_groups_own_empty_sentence()
+    {
+        var queue = await Queue();
+
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal(("RUNNING 0 · WITH YOU 0", "Nothing running.", 0), (queue.RunningHeader, queue.RunningEmpty, queue.RunningRows.Count));
+        Assert.Equal(("QUEUED 4", string.Empty, 4), (queue.QueuedHeader, queue.QueuedEmpty, queue.QueuedRows.Count));
+        Assert.False(queue.HasMoreRunning);
+    }
+
+    // §3.2 caps: Running and With you shows at most 5 rows, With you first, then "Show all N in Queue"; Queued shows 5.
+    [Fact]
+    public async Task Homes_panels_cap_at_five_rows_with_you_first()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "running");
+        var queue = await Queue();
+
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal("RUNNING 6 · WITH YOU 1", queue.RunningHeader);
+        Assert.Equal(["Taken over by hand", "Running item 1", "Running item 2", "Running item 3", "Running item 4"], queue.RunningRows.Select(r => r.Title), StringComparer.Ordinal);
+        Assert.Equal((true, "Show all 7 in Queue"), (queue.HasMoreRunning, queue.ShowAllRunning));
+        Assert.Equal(string.Empty, queue.RunningEmpty);
+
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "large");
+        await queue.Refresh(_api, Token);
+        Assert.Equal((5, true, "Show all 30 in Queue"), (queue.QueuedRows.Count, queue.HasMoreQueued, queue.ShowAllQueued));
+    }
+
+    // §3.3: G R and G W show the Queue filtered to one group; the group's own sentence when it's empty.
+    [Fact]
+    public async Task A_filter_shows_one_group_with_its_own_sentence()
+    {
+        var queue = await Queue();
+        await queue.Refresh(_api, Token);
+
+        queue.Filter(QueueFilter.Running);
+
+        Assert.Equal([false, false, true, false], queue.Groups.Select(g => g.IsVisible));
+        Assert.Equal(("Nothing running.", true), (queue.Groups[2].Empty, queue.Groups[2].ShowsEmpty));
+        Assert.False(queue.IsEmpty);
+
+        queue.Filter(QueueFilter.All);
+        Assert.Equal([true, false, false, true], queue.Groups.Select(g => g.IsVisible));
+    }
+
+    // §3.3: selection is kept by id across refreshes; a cleared row moves it to the next row and says so.
+    [Fact]
+    public async Task Selection_is_kept_by_id_and_a_cleared_row_moves_it_to_the_next()
+    {
+        var queue = await Queue();
+        await queue.Refresh(_api, Token);
+        queue.Select("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302");
+
+        await queue.Refresh(_api, Token);
+        Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302", queue.SelectedId);
+        Assert.Equal(string.Empty, queue.Announcement);
+
+        // The selected row cleared; another took its place in the group.
+        _server.QueueView = new RouteAnswer(HttpStatusCode.OK, GoldenFiles.SpecShaped("queue", "fixture").Replace("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302", "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff", StringComparison.Ordinal));
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff", queue.SelectedId);
+        Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302 cleared", queue.Announcement);
+    }
+
+    // §8: J and K move between the visible rows in the API's order.
+    [Fact]
+    public async Task Next_and_previous_move_through_the_visible_rows()
+    {
+        var queue = await Queue();
+        await queue.Refresh(_api, Token);
+
+        queue.Move(1);
+        Assert.Equal(A.DecisionItem, queue.SelectedId);
+        queue.Move(1);
+        Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a301", queue.SelectedId);
+        queue.Move(-1);
+        Assert.Equal(A.DecisionItem, queue.SelectedId);
+        queue.Move(-1);
+        Assert.Equal(A.DecisionItem, queue.SelectedId);
+        Assert.True(queue.Groups[0].Rows[0].IsSelected);
+    }
+
+    // §4.1: skeleton rows on the first load only; a failed read keeps the last rows, marked stale.
+    [Fact]
+    public async Task The_first_load_is_loading_and_a_failed_read_keeps_the_rows_marked_stale()
+    {
+        var queue = await Queue();
+        Assert.True(queue.IsLoading);
+
+        await queue.Refresh(_api, Token);
+        Assert.False(queue.IsLoading);
+
+        _server.QueueView = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)");
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal((5, true, false), (queue.Total, queue.IsStale, queue.IsLoading));
+    }
+}

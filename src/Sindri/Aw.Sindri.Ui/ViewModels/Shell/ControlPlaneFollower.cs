@@ -250,6 +250,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         health.Show(url, status.Value);
         var views = await api.Services(url, cancellationToken).ConfigureAwait(true);
         health.ShowViews(views.IsSuccess ? views.Value : null);   // before P2 there's no such route: no banner
+        await health.RefreshViews(url, cancellationToken).ConfigureAwait(true);   // the queue and the open item (U2)
         return true;
     }
 }

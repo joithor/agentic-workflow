@@ -2,7 +2,9 @@ using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Item;
 using Aw.Sindri.Ui.ViewModels.Palette;
+using Aw.Sindri.Ui.ViewModels.Queue;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -44,12 +46,20 @@ internal sealed partial class ShellViewModel : ObservableObject
     internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard? clipboard = null)
     {
         _store = preferences;
+        _clock = clock;
         Health = new HealthViewModel(records, api, clock, clipboard);
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;
         Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun);
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
+        Queue = new QueueViewModel(api, Health.Catalog, clock);
+        Item = new ItemSheetViewModel(api, Health.Catalog, clock);
+        Create = new CreateItemViewModel(Health.Catalog, () => Health.ApiUrl(), api);
+        Health.Follow(Queue.Refresh);
+        Health.Follow(Item.Refresh);
+        Queue.PropertyChanged += OnQueueChanged;
     }
+
 
     /// <summary>The command palette (§8: ⌘K).</summary>
     public CommandPaletteViewModel Palette { get; }
@@ -64,13 +74,7 @@ internal sealed partial class ShellViewModel : ObservableObject
     public HealthViewModel Health { get; }
 
     /// <summary>The top bar's segments, in order: Home, Queue, Decisions, Services.</summary>
-    public IReadOnlyList<NavEntry> Navigation { get; } =
-    [
-        new(PageId.Home, Labels.Home, "H", string.Empty),
-        new(PageId.Queue, Labels.Queue, "Q", string.Empty),
-        new(PageId.Decisions, Labels.Decisions, "D", string.Empty),
-        new(PageId.Services, Labels.Services, "S", string.Empty),
-    ];
+    public IReadOnlyList<NavEntry> Navigation { get; private set; } = Nav(queued: string.Empty);
 
     /// <summary>"Later ▾": Agents, Repos, Today, Automatic work, each "not served yet".</summary>
     public IReadOnlyList<LaterEntry> Later { get; } =
@@ -209,28 +213,6 @@ internal sealed partial class ShellViewModel : ObservableObject
         Remember(p => p with { LastPage = page.ToString() });
     }
 
-    /// <summary>Goes where a deep link points: a page, or the detail sheet with its subject.</summary>
-    /// <param name="link">The link.</param>
-    internal void Navigate(DeepLink link)
-    {
-        if (link.Kind == DeepLinkKind.HomeNeedsYou || link.Subject is null)
-        {
-            GoTo(PageId.Home);
-            return;
-        }
-
-        SheetSubject = link.Subject;
-        IsSheetOpen = true;
-        Changed(nameof(SheetSubject), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown));
-    }
-
-    /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
-    internal void CloseSheet()
-    {
-        IsSheetOpen = false;
-        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
-    }
-
     /// <summary>
     /// Esc on Settings over the Not running card: back to the page it was opened from, so the card shows again. While
     /// connected Settings is a page like any other, and Esc leaves it where it is.
@@ -245,18 +227,6 @@ internal sealed partial class ShellViewModel : ObservableObject
 
         GoTo(_beforeSettings);
         return true;
-    }
-
-    /// <summary>Opens the sheet again on its last subject (the edge tab).</summary>
-    internal void ReopenSheet()
-    {
-        if (!HasEdgeTab)
-        {
-            return;
-        }
-
-        IsSheetOpen = true;
-        Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 
     /// <summary>Follows the control plane until cancelled (S1b's loop: control.json, ping, status, events).</summary>
