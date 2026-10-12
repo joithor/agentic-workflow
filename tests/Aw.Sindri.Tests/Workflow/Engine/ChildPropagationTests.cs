@@ -41,7 +41,7 @@ public sealed class ChildPropagationTests
     {
         var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value;
 
-        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(EnteringKey.Value + ":child:T-3/item/1/step.4"));
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(EnteringKey.Value));
         var hex = start.Id.Value["WFI-".Length..];
         Assert.Equal(Convert.ToHexStringLower(digest)[..12], hex[..12]);
         Assert.Equal('8', hex[12]);
@@ -57,6 +57,17 @@ public sealed class ChildPropagationTests
 
         Assert.Equal("SND-RECIPE-002", ChildPropagation.Create(unpinned, Wait, Pinned, EnteringKey, Terminal).Error.Code);
         Assert.Equal("SND-RECIPE-002", ChildPropagation.Create(Waiting, Wait, InMemoryChildRecipes.None, EnteringKey, Terminal).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Create_refuses_a_child_whose_resolved_hash_is_not_the_one_the_parent_pinned()
+    {
+        var other = new InMemoryChildRecipes().With(new ChildRecipe(StepRecipe, RecipeHash.From("sha256:" + new string('6', 64))));
+
+        var refused = ChildPropagation.Create(Waiting, Wait, other, EnteringKey, Terminal);
+
+        Assert.Equal("SND-RECIPE-002", refused.Error.Code);
+        Assert.Contains(StepPin.Value, refused.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

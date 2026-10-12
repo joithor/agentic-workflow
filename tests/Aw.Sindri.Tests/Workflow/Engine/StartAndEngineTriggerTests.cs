@@ -82,6 +82,9 @@ public sealed class StartAndEngineTriggerTests
         Assert.Equal(3, applied.Changes.Count);
         var (root, child, grandchild) = (applied.Changes[0].After, applied.Changes[1].After, applied.Changes[2].After);
         Assert.Equal(3, new[] { root.Id, child.Id, grandchild.Id }.Distinct().Count());
+        Assert.Equal(ChildIdFor(NestedRequest(outer, middle).Key), child.Id);
+        Assert.Equal(ChildIdFor(TriggerKey.For(child.Id, "start")), grandchild.Id);
+        Assert.Equal(TriggerKey.For(child.Id, "start"), applied.Changes[2].Event.Trigger.Key);
         Assert.Equal((child.Id, root.Id), (root.Frame.Child, child.Parent));
         Assert.Equal((grandchild.Id, child.Id), (child.Frame.Child, grandchild.Parent));
         Assert.Equal(Step.Hash, child.Recipe.Children[Step.Id]);
@@ -100,6 +103,15 @@ public sealed class StartAndEngineTriggerTests
 
         Assert.Equal("SND-RECIPE-002", rejected.Error.Code);
         Assert.Contains("workflow.middle", rejected.Error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A child's id as spec §5.4 derives it: a UUIDv8 over SHA-256 of the creating trigger's key.</summary>
+    private static WorkflowInstanceId ChildIdFor(TriggerKey key)
+    {
+        var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key.Value))[..16];
+        bytes[6] = (byte)((bytes[6] & 0x0F) | 0x80);
+        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
+        return WorkflowInstanceId.For(new Guid(bytes, bigEndian: true));
     }
 
     /// <summary>A recipe whose initial state waits on a <paramref name="child"/> child.</summary>
