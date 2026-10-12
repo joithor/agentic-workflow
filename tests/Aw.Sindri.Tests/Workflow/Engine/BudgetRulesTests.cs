@@ -49,6 +49,18 @@ public sealed class BudgetRulesTests
         Assert.Equal(0, BudgetRules.Left(In("produce", spent: verdict.Spent), StepRecipe));
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("produce", 150_000, 150_000, 49_999, false)]
+    [InlineData("produce", 150_000, 150_000, 50_000, true)]
+    [InlineData("checks", 390_000, 150_000, 9_999, false)]
+    [InlineData("checks", 390_000, 150_000, 10_000, true)]
+    public void A_budget_parks_exactly_at_its_cap(string state, int total, int produce, int tokens, bool parks)
+    {
+        var verdict = BudgetRules.Spend(In(state, spent: Spent(total, produce)), StepRecipe, tokens);
+
+        Assert.Equal(parks, verdict.Park is not null);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Running_out_of_the_recipe_budget_parks_budget()
     {
