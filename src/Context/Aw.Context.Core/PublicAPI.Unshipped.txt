@@ -883,3 +883,8 @@ static Aw.Context.Core.Docs.RepoDocs.Id.get -> Aw.Context.Core.Sources.SourceId
 static Aw.Context.Core.Docs.RepoDocs.Key(string! repo, string! path) -> Aw.Context.Core.Sources.RecordKey
 static Aw.Context.Core.Engine.SettingsReader.Read(System.Text.Json.JsonElement? section) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ContextSettings!>!
 static Aw.Context.Core.Trust.Permalinks.Allowed(System.Uri? link) -> System.Uri?
+Aw.Context.Core.Engine.ContextSettings.Onyx.get -> Aw.Context.Core.Onyx.OnyxSettings?
+Aw.Context.Core.Engine.ContextSettings.Onyx.init -> void
+Aw.Context.Core.Engine.ContextSettings.LinearTeams.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Engine.ContextSettings.LinearTeams.init -> void
+static Aw.Context.Core.Engine.ScopeRules.MayRead(Aw.Context.Core.Engine.ContextCaller! caller, Aw.Context.Core.Sources.SourceDescriptor! source) -> bool

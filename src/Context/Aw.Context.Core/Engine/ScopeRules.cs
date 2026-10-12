@@ -1,3 +1,4 @@
+using Aw.Context.Core.Sources;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Engine;
@@ -38,4 +39,14 @@ public static class ScopeRules
             ? own
             : ContextErrors.UnknownAnchor.With("no context is mapped for this session's repo (X-Sindri-Repo)");
     }
+
+    /// <summary>
+    /// Whether <paramref name="caller"/> may read <paramref name="source"/> at all. A session reads no intent source
+    /// until the profile maps Linear teams to its repo ('context.repoTeams', spec §3, a later stage): without that map
+    /// no intent record is reachable from its repo.
+    /// </summary>
+    /// <param name="caller">The caller.</param>
+    /// <param name="source">The source.</param>
+    /// <returns>True when the source may answer this caller.</returns>
+    public static bool MayRead(ContextCaller caller, SourceDescriptor source) => throw new NotSupportedException("red: MayRead");
 }

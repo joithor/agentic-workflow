@@ -37,11 +37,13 @@ public sealed class GoldenHost : IAsyncDisposable
     private WebApplication? _app;
 
     private readonly string _profileYaml;
+    private readonly IReadOnlyDictionary<string, string>? _environment;
 
-    private GoldenHost(bool temporary, string profileYaml)
+    private GoldenHost(bool temporary, string profileYaml, IReadOnlyDictionary<string, string>? environment)
     {
         _elsewhere = temporary ? null : new TempHome();
         _profileYaml = profileYaml;
+        _environment = environment;
     }
 
     /// <summary>The token the host holds.</summary>
@@ -60,10 +62,12 @@ public sealed class GoldenHost : IAsyncDisposable
     /// <param name="temporary">Whether the home counts as temporary (honours the prover label).</param>
     /// <param name="ct">Cancellation.</param>
     /// <param name="profileYaml">The live profile it starts with (<see cref="ProfileYaml"/> unless a test needs another).</param>
+    /// <param name="environment">More environment variables the host reads (fixture secrets behind 'env:' pointers), or null.</param>
     /// <returns>The started host.</returns>
-    public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct, string profileYaml = ProfileYaml)
+    public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct, string profileYaml = ProfileYaml,
+        IReadOnlyDictionary<string, string>? environment = null)
     {
-        var host = new GoldenHost(temporary, profileYaml);
+        var host = new GoldenHost(temporary, profileYaml, environment);
         try
         {
             await host.Run(ct);
@@ -123,6 +127,6 @@ public sealed class GoldenHost : IAsyncDisposable
         "AW_SINDRI_HOME" => _home.Path,
         "TMPDIR" when _elsewhere is not null => Path.Combine(_elsewhere.Path, "tmp"),
         "AW_STATE_DIR" when _elsewhere is not null => Path.Combine(_elsewhere.Path, "state"),
-        _ => null,
+        _ => _environment is not null && _environment.TryGetValue(name, out var value) ? value : null,
     };
 }

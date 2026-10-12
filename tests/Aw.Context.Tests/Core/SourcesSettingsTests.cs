@@ -1,0 +1,90 @@
+using System.Text.Json;
+using Aw.Context.Core;
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Sources;
+using Aw.Kernel;
+
+namespace Aw.Context.Tests.Core;
+
+/// <summary>'context.sources' (spec §8.8): the onyx entry and the Linear teams its identifier aliases may name.</summary>
+public sealed class SourcesSettingsTests
+{
+    private const string Onyx = """{"url":"http://127.0.0.1:3000","token":"env:ONYX_KEY","version":"v4.9.0"}""";
+
+    private static string WithToken(string token) =>
+        """{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":""" + JsonSerializer.Serialize(token) + ""","version":"v4.9.0"}}}""";
+
+    private static Result<ContextSettings> Read(string json) => SettingsReader.Read(JsonDocument.Parse(json).RootElement.Clone());
+
+    [Fact, Trait("Lane", "unit")]
+    public void No_sources_means_no_onyx_and_no_teams()
+    {
+        var settings = Read("{}").Value;
+
+        Assert.Null(settings.Onyx);
+        Assert.Empty(settings.LinearTeams);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_onyx_entry_and_the_linear_teams_are_read_through_their_rules()
+    {
+        var settings = Read("""{"sources":{"onyx":""" + Onyx + ""","linear":{"teams":["SPL","APP"]}}}""").Value;
+
+        Assert.NotNull(settings.Onyx);
+        Assert.Equal(("127.0.0.1:3000", "env:ONYX_KEY", "v4.9.0"), (settings.Onyx.Address, settings.Onyx.Token, settings.Onyx.Version));
+        Assert.Equal(["SPL", "APP"], settings.LinearTeams, StringComparer.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("""{"sources":{"slack":{}}}""", "SND-CONTEXT-001", "context.sources.slack:")]
+    [InlineData("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"env:K","version":"v4.9.0","apiKey":"x"}}}""", "SND-CONTEXT-001", "context.sources.onyx.apiKey:")]
+    [InlineData("""{"sources":{"linear":{"teams":["SPL"],"token":"env:K"}}}""", "SND-CONTEXT-001", "context.sources.linear.token:")]
+    [InlineData("""{"sources":[]}""", "SND-CONTEXT-001", "context.sources:")]
+    [InlineData("""{"sources":{"onyx":"http://127.0.0.1:3000"}}""", "SND-CONTEXT-001", "context.sources.onyx:")]
+    [InlineData("""{"sources":{"linear":{"teams":["eng team"]}}}""", "SND-CONTEXT-001", "context.sources.linear.teams:")]
+    [InlineData("""{"sources":{"onyx":{"url":"http://10.0.0.5:3000","token":"env:K","version":"v4.9.0"}}}""", "SND-CONTEXT-055", "context.sources.onyx.url:")]
+    [InlineData("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"env:K","version":"latest"}}}""", "SND-CONTEXT-055", "context.sources.onyx.version:")]
+    [InlineData("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","version":"v4.9.0"}}}""", "SND-CONTEXT-002", "context.sources.onyx.token:")]
+    public void A_bad_sources_entry_is_refused_with_its_code_and_key_path(string json, string code, string keyPath)
+    {
+        var read = Read(json);
+
+        Assert.Equal(code, read.Error.Code);
+        Assert.StartsWith(keyPath, read.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("on_live-0123456789abcdef")]
+    [InlineData("ONYX_KEY")]
+    [InlineData("vault:onyx/sindri")]
+    public void A_token_that_isnt_a_secret_pointer_is_refused_without_repeating_it(string token)
+    {
+        var read = Read(WithToken(token));
+
+        Assert.Equal("SND-CONTEXT-002", read.Error.Code);
+        Assert.StartsWith("context.sources.onyx.token:", read.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(token, read.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("env:ONYX_KEY")]
+    [InlineData("file:/Users/me/.config/sindri/onyx.key")]
+    [InlineData("keychain:onyx/sindri-read")]
+    [InlineData("op:work/onyx/credential")]
+    public void Every_pointer_scheme_is_accepted(string token) => Assert.Equal(token, Read(WithToken(token)).Value.Onyx?.Token);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_session_reads_no_intent_source_until_the_profile_maps_teams_to_its_repo()
+    {
+        var onyx = new SourceDescriptor(SourceId.From("onyx"), SourceKind.Intent, SourceFreshness.Live, SupportsAsOf: false);
+        var docs = new SourceDescriptor(SourceId.From("repo-docs"), SourceKind.Doc, SourceFreshness.Snapshot, SupportsAsOf: false);
+        var session = new ContextCaller(ContextCallerKind.Session, "split-panes", ContextClient.Mcp);
+        var human = new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli);
+
+        Assert.Equal((false, true, true, true),
+            (ScopeRules.MayRead(session, onyx), ScopeRules.MayRead(session, docs), ScopeRules.MayRead(human, onyx), ScopeRules.MayRead(human, docs)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_settings_error_names_its_catalogue_entry() => Assert.Equal(ContextErrors.SourceNotConfigured.Code, Read("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","version":"v4.9.0"}}}""").Error.Code);
+}

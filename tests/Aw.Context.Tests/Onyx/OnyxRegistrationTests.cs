@@ -1,3 +1,5 @@
+using Aw.Context.Core.Docs;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Onyx;
 using Aw.Context.Infrastructure;
 using Aw.Context.Infrastructure.Onyx;
@@ -24,5 +26,27 @@ public sealed class OnyxRegistrationTests
         var source = provider.GetRequiredService<OnyxSources>().Create(settings, new HashSet<string>(StringComparer.Ordinal) { "SPL" });
 
         Assert.Equal("onyx", source.Describe().Id.Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_source_catalog_adds_the_onyx_source_after_repo_docs_when_the_profile_names_onyx()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<TimeProvider>(new FakeTimeProvider(OnyxSourceHarness.Now))
+            .AddSingleton(typeof(ILogger<>), typeof(NullLogger<>))
+            .AddContextInfrastructure(static name => name == "AW_SINDRI_HOME" ? "/nonexistent/sindri-home" : null);
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        var catalog = provider.GetRequiredService<ISourceCatalog>();
+        var repos = new[] { new ContextRepo("split-panes", "/nonexistent/split-panes") };
+        var plain = new ContextSettings();
+        var named = plain with
+        {
+            Onyx = OnyxSettings.Create("http://127.0.0.1:3000", OnyxSourceHarness.Pointer, "v4.9.0").Value,
+            LinearTeams = ["SPL"],
+        };
+
+        Assert.Equal(["repo-docs"], catalog.For(plain, repos).Select(s => s.Describe().Id.Value), StringComparer.Ordinal);
+        Assert.Equal(["repo-docs", "onyx"], catalog.For(named, repos).Select(s => s.Describe().Id.Value), StringComparer.Ordinal);
+        Assert.Equal(["onyx"], catalog.For(named, []).Select(s => s.Describe().Id.Value), StringComparer.Ordinal);
     }
 }

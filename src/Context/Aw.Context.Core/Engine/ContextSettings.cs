@@ -1,3 +1,5 @@
+using Aw.Context.Core.Onyx;
+
 namespace Aw.Context.Core.Engine;
 
 /// <summary>
@@ -26,4 +28,10 @@ public sealed record ContextSettings
 
     /// <summary>Whether session callers may read context at all, on any transport (spec §3). Off until approved.</summary>
     public bool SessionsEnabled { get; init; }
+
+    /// <summary>The checked 'context.sources.onyx' entry, or null when the profile names no onyx source.</summary>
+    public OnyxSettings? Onyx { get; init; }
+
+    /// <summary>The Linear team keys ('context.sources.linear.teams') an Onyx identifier alias may name; empty for none.</summary>
+    public IReadOnlyList<string> LinearTeams { get; init; } = [];
 }

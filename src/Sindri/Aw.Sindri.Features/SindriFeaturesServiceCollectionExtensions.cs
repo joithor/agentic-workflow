@@ -38,6 +38,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<RecordHeartbeatRequest, RecordHeartbeatResponse>, RecordHeartbeatService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddScoped<ProfileFacts>()
+            .AddScoped<OnyxDoctor>()
             .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>, RunDoctorService>()
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddScoped<ContextScopes>()
