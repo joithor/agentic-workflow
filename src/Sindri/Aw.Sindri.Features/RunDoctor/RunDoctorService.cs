@@ -8,11 +8,12 @@ using Aw.Sindri.Core.Ledger;
 namespace Aw.Sindri.Features.RunDoctor;
 
 internal sealed class RunDoctorService(
-    ILease lease, IProcessProbe probe, ILedgerStore ledger, ProfileFacts profile, IControlPlaneProbe api, TimeProvider clock)
+    ILease lease, IProcessProbe probe, ILedgerStore ledger, ProfileFacts profile, IControlPlaneProbe api, ITemporalServer temporal, TimeProvider clock)
     : IService<RunDoctorRequest, RunDoctorResponse>
 {
     public async ValueTask<Result<RunDoctorResponse>> Handle(RunDoctorRequest request, CancellationToken cancellationToken)
     {
+        _ = temporal;   // red: engine P0 unit (a) adds the temporal line
         var now = clock.GetUtcNow();
         var read = await lease.Read(cancellationToken).ConfigureAwait(false);
         var row = read.IsSuccess ? read.Value : null;

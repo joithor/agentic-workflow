@@ -84,6 +84,7 @@ public sealed class ServePortTests : IDisposable
         LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _files.Settings.Home, _ => null }, TimeProvider.System, services =>
         {
             _ = services.AddSindriServe();
+            NoTemporal.Use(services);
             configure?.Invoke(services);
         });
 

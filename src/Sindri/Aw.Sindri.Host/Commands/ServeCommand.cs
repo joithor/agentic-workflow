@@ -61,7 +61,7 @@ internal static class ServeCommand
                 return 2;
             }
 
-            return await RunUntilStopped(app, started.Value.Grant).ConfigureAwait(false);
+            return await RunUntilStopped(app, started.Value).ConfigureAwait(false);
         }
     }
 
@@ -86,11 +86,13 @@ internal static class ServeCommand
         }
     }
 
-    private static async Task<int> RunUntilStopped(WebApplication app, LeaseGrant grant)
+    private static async Task<int> RunUntilStopped(WebApplication app, StartProcessResponse started)
     {
+        var grant = started.Grant;
         var endpoints = app.Services.GetRequiredService<IEndpointFile>();
         var url = new Uri(app.Urls.First());
-        _ = await endpoints.Write(new ControlEndpoint(url, grant.Holder.Pid, grant.Epoch), CancellationToken.None).ConfigureAwait(false);
+        var endpoint = new ControlEndpoint(url, grant.Holder.Pid, grant.Epoch) { Temporal = started.Temporal };   // the dev server's pid and ports
+        _ = await endpoints.Write(endpoint, CancellationToken.None).ConfigureAwait(false);
         var shutdown = app.Services.GetRequiredService<ProcessShutdown>();
         using var either = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Stopping, app.Lifetime.ApplicationStopping);
         try

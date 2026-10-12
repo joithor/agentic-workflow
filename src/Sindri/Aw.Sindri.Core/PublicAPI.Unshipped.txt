@@ -3088,3 +3088,48 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger.PrintMembers(System.Text
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? other) -> bool
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Aw.Sindri.Core.Control.ControlEndpoint.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint?
+Aw.Sindri.Core.Control.ControlEndpoint.Temporal.init -> void
+Aw.Sindri.Core.Control.ITemporalServer
+Aw.Sindri.Core.Control.ITemporalServer.Ensure(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Control.TemporalEndpoint!>!>
+Aw.Sindri.Core.Control.ITemporalServer.Inspect(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Control.TemporalFacts!>
+Aw.Sindri.Core.Control.ITemporalServer.Stop(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Control.TemporalEndpoint
+Aw.Sindri.Core.Control.TemporalEndpoint.<Clone>$() -> Aw.Sindri.Core.Control.TemporalEndpoint!
+Aw.Sindri.Core.Control.TemporalEndpoint.Deconstruct(out int Pid, out int Port, out int UiPort) -> void
+Aw.Sindri.Core.Control.TemporalEndpoint.Equals(Aw.Sindri.Core.Control.TemporalEndpoint? other) -> bool
+Aw.Sindri.Core.Control.TemporalEndpoint.Pid.get -> int
+Aw.Sindri.Core.Control.TemporalEndpoint.Pid.init -> void
+Aw.Sindri.Core.Control.TemporalEndpoint.Port.get -> int
+Aw.Sindri.Core.Control.TemporalEndpoint.Port.init -> void
+Aw.Sindri.Core.Control.TemporalEndpoint.TemporalEndpoint(int Pid, int Port, int UiPort) -> void
+Aw.Sindri.Core.Control.TemporalEndpoint.UiPort.get -> int
+Aw.Sindri.Core.Control.TemporalEndpoint.UiPort.init -> void
+Aw.Sindri.Core.Control.TemporalFacts
+Aw.Sindri.Core.Control.TemporalFacts.<Clone>$() -> Aw.Sindri.Core.Control.TemporalFacts!
+Aw.Sindri.Core.Control.TemporalFacts.Deconstruct(out Aw.Sindri.Core.Control.TemporalEndpoint? Running, out string! Pinned, out string? Version, out bool Reachable, out bool NamespacePresent, out string? Problem) -> void
+Aw.Sindri.Core.Control.TemporalFacts.Equals(Aw.Sindri.Core.Control.TemporalFacts? other) -> bool
+Aw.Sindri.Core.Control.TemporalFacts.NamespacePresent.get -> bool
+Aw.Sindri.Core.Control.TemporalFacts.NamespacePresent.init -> void
+Aw.Sindri.Core.Control.TemporalFacts.Pinned.get -> string!
+Aw.Sindri.Core.Control.TemporalFacts.Pinned.init -> void
+Aw.Sindri.Core.Control.TemporalFacts.Problem.get -> string?
+Aw.Sindri.Core.Control.TemporalFacts.Problem.init -> void
+Aw.Sindri.Core.Control.TemporalFacts.Reachable.get -> bool
+Aw.Sindri.Core.Control.TemporalFacts.Reachable.init -> void
+Aw.Sindri.Core.Control.TemporalFacts.Running.get -> Aw.Sindri.Core.Control.TemporalEndpoint?
+Aw.Sindri.Core.Control.TemporalFacts.Running.init -> void
+Aw.Sindri.Core.Control.TemporalFacts.TemporalFacts(Aw.Sindri.Core.Control.TemporalEndpoint? Running, string! Pinned, string? Version, bool Reachable, bool NamespacePresent, string? Problem) -> void
+Aw.Sindri.Core.Control.TemporalFacts.Version.get -> string?
+Aw.Sindri.Core.Control.TemporalFacts.Version.init -> void
+override Aw.Sindri.Core.Control.TemporalEndpoint.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Control.TemporalEndpoint.GetHashCode() -> int
+override Aw.Sindri.Core.Control.TemporalEndpoint.ToString() -> string!
+override Aw.Sindri.Core.Control.TemporalFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Control.TemporalFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Control.TemporalFacts.ToString() -> string!
+static Aw.Sindri.Core.Control.TemporalEndpoint.operator !=(Aw.Sindri.Core.Control.TemporalEndpoint? left, Aw.Sindri.Core.Control.TemporalEndpoint? right) -> bool
+static Aw.Sindri.Core.Control.TemporalEndpoint.operator ==(Aw.Sindri.Core.Control.TemporalEndpoint? left, Aw.Sindri.Core.Control.TemporalEndpoint? right) -> bool
+static Aw.Sindri.Core.Control.TemporalFacts.operator !=(Aw.Sindri.Core.Control.TemporalFacts? left, Aw.Sindri.Core.Control.TemporalFacts? right) -> bool
+static Aw.Sindri.Core.Control.TemporalFacts.operator ==(Aw.Sindri.Core.Control.TemporalFacts? left, Aw.Sindri.Core.Control.TemporalFacts? right) -> bool
+static Aw.Sindri.Core.Doctor.DoctorRules.Temporal(Aw.Sindri.Core.Control.TemporalFacts! facts) -> Aw.Sindri.Core.Doctor.DoctorCheck!

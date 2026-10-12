@@ -93,6 +93,15 @@ public static class DoctorRules
             : new("api", CheckState.Warn, Text($"{endpoint.Url.Authority} answers at epoch {ping.Epoch}, but the lease is at {row?.Epoch ?? 0}"), "sindri stop, then sindri");
     }
 
+    /// <summary>
+    /// The Temporal dev server (engine spec rev 8 §0 "Operations"): it runs on this home's database, answers on loopback,
+    /// is the version binaries.lock pins, and has the 'sindri' namespace.
+    /// </summary>
+    /// <param name="facts">What the probe found.</param>
+    /// <returns>The check.</returns>
+    public static DoctorCheck Temporal(TemporalFacts facts) =>
+        throw new NotSupportedException("engine P0 unit (a): the doctor's temporal line");
+
     /// <summary>The exit code for a set of checks: 0 all ok, 1 any warn, 2 any fail.</summary>
     /// <param name="checks">The checks.</param>
     /// <returns>The exit code.</returns>
