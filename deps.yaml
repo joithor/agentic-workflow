@@ -29,10 +29,13 @@
 #           any kind. Fan-out (§4b.1a): limits.packageFanOut caps the packages one package declares project
 #           edges to; once C# projects exist, each project may reference at most limits.projectFanOut in-repo
 #           projects and limits.thirdPartyFanOut third-party packages (analyzers excluded; *.Host and *.Tests
-#           exempt). Only the fan-out rules take exceptions, each with a reason, at most
+#           exempt). Only the fan-out rules and the cycle rule take exceptions, each with a reason, at most
 #           limits.exceptionMaxDays long, and an exception that suppresses nothing fails. A DEPS-FANOUT-001
 #           exception may name the project edge it is attached to (`edge: <to>`): it then covers that one edge
-#           only, and fails (DEPS-EXC-004) when the edge isn't declared or points into test support.
+#           only, and fails (DEPS-EXC-004) when the edge isn't declared or points into test support. A
+#           DEPS-CYCLE-001 exception names the cli or http edge it is attached to (`edge: <to>`, required): it
+#           covers the one cycle through that edge, fails (DEPS-EXC-004) when no such cli or http edge is
+#           declared, and suppresses nothing (DEPS-EXC-002) when no cycle, or more than one, passes through it.
 # C# names  A project belongs to the package whose projectPrefix starts its name (longest wins), e.g.
 #           src/Judge/Aw.Judge.Core and tests/Aw.Judge.Tests both belong to Judge. Another package is
 #           reached only through its Core project (Aw.<Pkg>.Core) or a tier-0 package's library projects
@@ -245,7 +248,7 @@ packages:
     src: src/Sindri/Aw.Sindri.Ui
     bins: [sindri-ui]
     files: [sindri-app/ui/preferences.json, sindri-app/ui/instance.sock, sindri-app/ui/instance.lock, sindri-app/ui/instance.pid]
-    note: "the Avalonia desktop app (readiness spec §4a UI): Aw.Sindri.Ui (views, view models, the typed API client, platform ports) and the thin Aw.Sindri.Ui.Desktop head (NativeAOT, binary sindri-ui). It references no Sindri project and holds no logic: Sindri's HTTP API and its endpoint record (control.json) are its only contract (docs/csharp/sindri-ui.md). It owns its own files in a ui/ directory (0700) of Sindri's home: the local preferences and the single-instance lock and socket (instance.sock falls back to an owner-only temp directory when its path is too long for sun_path). Bare `sindri` starts sindri-ui; that Sindri -> SindriUi launch is NOT declared as a cli edge, because it would close a cycle with the http edge (DEPS-CYCLE-001) and check-deps does not scan C# for cli edges. Open owner question (PR #168): invert the launch, or record a reasoned cycle exception"
+    note: "the Avalonia desktop app (readiness spec §4a UI): Aw.Sindri.Ui (views, view models, the typed API client, platform ports) and the thin Aw.Sindri.Ui.Desktop head (NativeAOT, binary sindri-ui). It references no Sindri project and holds no logic: Sindri's HTTP API and its endpoint record (control.json) are its only contract (docs/csharp/sindri-ui.md). It owns its own files in a ui/ directory (0700) of Sindri's home: the local preferences and the single-instance lock and socket (instance.sock falls back to an owner-only temp directory when its path is too long for sun_path). Bare `sindri` starts sindri-ui: that Sindri -> SindriUi launch is declared as a cli edge (status planned only because check-deps does not scan C# for cli edges) and closes a cycle with the http edge, so it carries a DEPS-CYCLE-001 exception (owner decision 2026-10-12): the launch only spawns a separate process, shares no code or data, and the HTTP API stays the app's only contract"
 
   # ---- outside the tiers: code that stays bash or TypeScript and calls the CLIs (§4a) ----
   - id: Hooks
@@ -500,6 +503,11 @@ edges:
     kind: compose
     status: planned
     note: "Sindri's Host calls AddContextFeatures and AddContextInfrastructure (and nothing else from those projects) in Composition"
+  - from: Sindri
+    to: SindriUi
+    kind: cli
+    status: planned
+    note: "bare `sindri` starts the sindri-ui binary (Aw.Sindri.Host Commands/UiLauncher.cs); it closes a cycle with SindriUi's http edge, excused by the DEPS-CYCLE-001 exception below. The launch is in the source today, but check-deps does not scan C# for cli edges (a current edge the scan can't find fails DEPS-STALE-001), so it stays planned until it does"
 
   - from: SindriUi
     to: Kernel
@@ -524,11 +532,18 @@ edges:
 
 # Sindri's project fan-out is 4 (Kernel, KernelData, KernelTelemetry, Redaction; Packets and Readiness through their
 # CLIs, spec §4c, §8) plus Context: the context engine is one of Sindri's three engines by definition (addendum
-# §17.29.2), not a dependency of convenience. Renewed on review like every exception.
+# §17.29.2), not a dependency of convenience. Sindri -> SindriUi (cli) closes a cycle with SindriUi -> Sindri (http):
+# bare `sindri` only spawns the app's process. Renewed on review like every exception.
 exceptions:
   - rule: DEPS-FANOUT-001
     subject: Sindri
     edge: Context
     reason: "the context retrieval engine is one of Sindri's three engines by definition (addendum §17.29.2; context spec §4), reached through its IContextEngine facade; not a dependency of convenience"
     recorded: 2026-10-11
+    expires: 2027-04-12
+  - rule: DEPS-CYCLE-001
+    subject: Sindri
+    edge: SindriUi
+    reason: "the launch only spawns the separate sindri-ui process (owner decision 2026-10-12, PR #184): Sindri shares no code or data with the app, and Sindri's HTTP API (with its endpoint record, control.json) stays the app's only contract"
+    recorded: 2026-10-12
     expires: 2027-04-12
