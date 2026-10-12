@@ -11,7 +11,8 @@ namespace Aw.Context.Infrastructure.Git;
 /// Read-only git calls for the repo-docs source (spec §5.1 argument rules): shas match ^[0-9a-f]{7,64}$ and never start
 /// with '-', every path comes after '--', the arguments go through ArgumentList (no shell), and git runs with the
 /// caller's GIT_* variables removed. A process that misses its time (30 s, or the caller's token) is killed. A missing
-/// object is NotFound (SND-CONTEXT-003); any other git failure is SND-CONTEXT-010 (the repo can't be read).
+/// object named by a full sha (what ls-tree gives) is NotFound (SND-CONTEXT-003); any other git failure, an unknown
+/// abbreviated sha included, is SND-CONTEXT-010.
 /// </summary>
 internal sealed partial class GitCli
 {
@@ -76,7 +77,7 @@ internal sealed partial class GitCli
     /// <returns>Whether it is a sha.</returns>
     internal static bool IsSha(string text) => Sha.IsMatch(text);
 
-    /// <summary>Whether the blob exists: 'cat-file -e' exits 1 for a missing object and 128 when the repo itself can't be read.</summary>
+    /// <summary>Whether the blob exists: for a full sha 'cat-file -e' exits 1 when the object is missing, and 128 when the repo can't be read (or an abbreviated sha is unknown).</summary>
     private async ValueTask<Result<Unit>> Exists(string repo, string blob, CancellationToken cancellationToken)
     {
         if (!IsSha(blob))

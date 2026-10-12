@@ -50,7 +50,8 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
             var now = clock.GetUtcNow();
             return rows.IsError
                 ? Unavailable(rows.Error)
-                : rows.Value.Select((row, i) => new SourceHit(Ref(row), row.Title, i + 1, now, Leaky: false)).ToList();
+                : rows.Value.SelectMany(row => Ref(row) is { } reference ? [(Row: row, Ref: reference)] : Array.Empty<(HitRow Row, SourceRef Ref)>())
+                    .Select((hit, i) => new SourceHit(hit.Ref, hit.Row.Title, i + 1, now, Leaky: false)).ToList();
         }
     }
 
@@ -130,9 +131,14 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
         return new SourceHealth(SourceState.Ok, string.Create(CultureInfo.InvariantCulture, $"{repos.Count} repos readable"), Code: null);
     }
 
-    private static SourceRef Ref(HitRow row) => new(RepoDocs.Id,
-        ExternalId.From(string.Create(CultureInfo.InvariantCulture, $"{row.Repo}/{row.Path}#L{row.LineStart}-L{row.LineEnd}")),
-        SourceVersion.From(row.Blob), Permalink: null, RepoDocs.Key(ContextRepoName.From(row.Repo), row.Path));
+    /// <summary>The hit's reference, or null when its repo or path can't be carried by the ids (never indexed since S-1A's review, but an older row is skipped, never thrown).</summary>
+    private static SourceRef? Ref(HitRow row) =>
+        ContextRepoName.TryFrom(row.Repo, out var repo)
+        && RepoDocs.TryChunkId(repo, row.Path, row.LineStart, row.LineEnd, out var id)
+        && SourceVersion.TryFrom(row.Blob, out var version)
+        && RepoDocs.TryKey(repo, row.Path, out var key)
+            ? new SourceRef(RepoDocs.Id, id, version, Permalink: null, key)
+            : null;
 
     private (ContextRepo Repo, string Path, int Start, int End)? Parse(ExternalId id)
     {

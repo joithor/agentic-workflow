@@ -109,7 +109,7 @@ internal sealed class ContextDatabase : IDisposable
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            // the files were made 0600 when they were created; a later chmod that fails leaves them as they were
+            // the 0700 home is the guard; the 0600 file modes are defence in depth, and a filesystem that refuses chmod keeps the umask modes
         }
     }
 

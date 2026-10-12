@@ -2,10 +2,11 @@
   <!-- Aw.Context.Testing (stage S-FX): the split-panes fixture app with its recorded Linear and Onyx sources, the
        builder that makes the app a git repo with merged-PR history, the probe file, and fake Linear (GraphQL) and
        Onyx (HTTP) servers that replay the recordings on loopback (spec 2026-10-10 §10). Test support: only *.Tests
-       and *.Testing projects reference it. S-1A added Engine/: the port fakes (FakeContextSource,
-       FakeDocIndex, FakeScrubber, FixedSourceCatalog) and their contract bases (ContextSourceContract<TSource>,
-       DocIndexContract<TIndex>, ScrubberContract<TScrubber>). S-3a adds Map/: the hand-authored product map and the fakes and contract bases of the map
-       ports (FakeGraphStore, FakeExportStore, FakeMapFileReader). Everything here is synthetic. -->
+       and *.Testing projects reference it. S-1A added Engine/: one fake and one contract base per Context
+       port (FakeContextEngine, FakeContextSource, FakeDocIndex, FakeScrubber, FixedSourceCatalog, FakeChangeFeed,
+       FakeModelPort; ContextEngineContract, ContextSourceContract, DocIndexContract, ScrubberContract,
+       SourceCatalogContract, ChangeFeedContract, ModelPortContract). S-3a adds Map/: the hand-authored product map and the fakes and contract
+       bases of the map ports (FakeGraphStore, FakeExportStore, FakeMapFileReader). Everything here is synthetic. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Aw.Context.Testing</RootNamespace>

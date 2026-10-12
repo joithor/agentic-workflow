@@ -9,7 +9,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Core/Aw.Sindri.Core.csproj" />
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Features/Aw.Sindri.Features.csproj" />
-    <ProjectReference Include="../../src/Context/Aw.Context.Core/Aw.Context.Core.csproj" />
     <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
   </ItemGroup>
 

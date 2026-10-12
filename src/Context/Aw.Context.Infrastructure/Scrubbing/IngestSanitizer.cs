@@ -6,7 +6,9 @@ namespace Aw.Context.Infrastructure.Scrubbing;
 
 /// <summary>
 /// The first half of the ingest boundary (spec §7): removes HTML comments, invisible and control characters (tab and
-/// newline stay), encoded blobs over 200 characters, remote images (markdown and HTML), reference-style link definitions,
+/// newline stay), encoded blobs over 200 characters, images (markdown inline and reference-style, and HTML; an image
+/// never survives ingest, wherever its definition is), remote reference-style link definitions (a scheme or '//'
+/// destination, on the same or the next line, also inside block quotes and list items; their uses keep the text),
 /// autolinks, and link targets (the link text stays), repeating until the text is stable, at most
 /// <see cref="MaxPasses"/> times. The removal list is the TS sanitizeIngest's; the implementation is its own. Every
 /// removal keeps the newlines it covered, so a cleaned document has the same lines as the blob it came from and chunk
@@ -42,12 +44,30 @@ internal static partial class IngestSanitizer
         var cleaned = Comment.Replace(text, static m => Newlines(m.Value));
         cleaned = HtmlImage.Replace(cleaned, static m => Newlines(m.Value));
         cleaned = Image.Replace(cleaned, string.Empty);
-        cleaned = ReferenceDefinition.Replace(cleaned, string.Empty);
+        cleaned = ReferenceImage.Replace(cleaned, "${text}");
+        cleaned = RemoteReferences(cleaned);
         cleaned = Link.Replace(cleaned, "${text}");
-        cleaned = ReferenceLink.Replace(cleaned, "${text}");
         cleaned = Autolink.Replace(cleaned, string.Empty);
         cleaned = Blob.Replace(cleaned, "[encoded blob removed]");
         return Visible(cleaned);
+    }
+
+    /// <summary>
+    /// Removes reference definitions whose destination is remote ('[prd]: https://…', '//host/…', a scheme on the next
+    /// line, inside '&gt;' or a list item), keeping the lines, and reduces their uses ('[the PRD][prd]') to the link text.
+    /// The destination is one token with an optional quoted title, so prose ('[Note]: Warning: …') is not a definition.
+    /// Footnotes ('[^1]: …') and local definitions ('[x]: ./doc.md', 'c:\docs') stay.
+    /// </summary>
+    private static string RemoteReferences(string text)
+    {
+        var labels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var cleaned = RemoteDefinition.Replace(text, m =>
+        {
+            _ = labels.Add(m.Groups["label"].Value);
+            return Newlines(m.Value);
+        });
+        return labels.Count == 0 ? cleaned : ReferenceLink.Replace(cleaned, m =>
+            labels.Contains(m.Groups["label"].Value is { Length: > 0 } label ? label : m.Groups["text"].Value) ? m.Groups["text"].Value : m.Value);
     }
 
     /// <summary>Drops control, format (zero-width, bidi), private-use and unassigned characters; keeps '\n' and '\t'.</summary>
@@ -76,13 +96,16 @@ internal static partial class IngestSanitizer
     [GeneratedRegex("!\\[[^\\]\\n]{0,500}\\]\\([^)\\n]{0,2000}\\)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Image { get; }
 
-    [GeneratedRegex("^[ ]{0,3}\\[[^\\]\\n]{1,500}\\]:[ \\t]*\\S[^\\n]{0,2000}$", RegexOptions.CultureInvariant | RegexOptions.Multiline, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex ReferenceDefinition { get; }
+    [GeneratedRegex("^(?:[ ]{0,3}(?:>|[-*+]|[0-9]{1,9}[.)])[ \\t]?){0,10}[ ]{0,3}\\[(?<label>[^\\]^\\n][^\\]\\n]{0,499})\\]:[ \\t]*(?:\\n(?:[ ]{0,3}>)*[ \\t]*)?(?:<(?://|[a-z][a-z0-9+.-]{1,31}:)[^>\\n]{0,2000}>|(?://|[a-z][a-z0-9+.-]{1,31}:)[^\\s]{0,2000})(?:[ \\t]+(?:\"[^\"\\n]{0,500}\"|'[^'\\n]{0,500}'|\\([^)\\n]{0,500}\\)))?[ \\t]*$", RegexOptions.CultureInvariant | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex RemoteDefinition { get; }
 
     [GeneratedRegex("\\[(?<text>[^\\]\\n]{0,500})\\]\\([^)\\n]{0,2000}\\)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Link { get; }
 
-    [GeneratedRegex("\\[(?<text>[^\\]\\n]{1,500})\\]\\[[^\\]\\n]{0,500}\\]", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("!\\[(?<text>[^\\]\\n]{0,500})\\](?:\\[[^\\]\\n]{0,500}\\])?", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ReferenceImage { get; }
+
+    [GeneratedRegex("\\[(?<text>[^\\]\\n]{1,500})\\]\\[(?<label>[^\\]\\n]{0,500})\\]", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ReferenceLink { get; }
 
     [GeneratedRegex("<(?:https?|ftp|mailto):[^>\\s]{1,2000}>", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]

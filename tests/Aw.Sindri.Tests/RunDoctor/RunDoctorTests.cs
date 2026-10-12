@@ -1,3 +1,4 @@
+using Aw.Context.Testing.Engine;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Ledger;
@@ -15,7 +16,7 @@ public sealed class RunDoctorTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private RunDoctorService Service(ILedgerStore? ledger = null) =>
-        new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events), _api, _h.Clock, SettingsOnlyContextEngine.Instance);
+        new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events), _api, _h.Clock, FakeContextEngine.Instance);
 
     [Fact, Trait("Lane", "unit")]
     public async Task RunDoctor_is_green_when_running_approved_and_answering()
@@ -23,7 +24,7 @@ public sealed class RunDoctorTests
         var approved = SliceHarness.Profile();
         _h.Profiles.Live = approved;
         var grant = await _h.HoldLease();
-        _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, SettingsOnlyContextEngine.Instance).Handle(new ApproveProfileRequest(approved.Hash, Confirmed: true), Token);
+        _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, FakeContextEngine.Instance).Handle(new ApproveProfileRequest(approved.Hash, Confirmed: true), Token);
         _api.Answer = (new ControlEndpoint(new Uri("http://127.0.0.1:7410"), grant.Holder.Pid, grant.Epoch), new Ping(grant.Holder.Pid, grant.Epoch));
 
         var report = (await Service().Handle(new RunDoctorRequest(), Token)).Value;
