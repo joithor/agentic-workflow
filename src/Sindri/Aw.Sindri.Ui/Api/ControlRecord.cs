@@ -21,4 +21,7 @@ internal sealed record ControlRecord(Uri Url, int Pid, long Epoch)
             ? record.Value
             : null;
     }
+
+    /// <summary>Whether the recorded address is on this machine (loopback: 127.0.0.0/8, ::1 or localhost), the only kind the app follows.</summary>
+    internal bool IsOnThisMachine => Url.IsAbsoluteUri; // Red: not checked yet.
 }
