@@ -4,6 +4,11 @@ warn  ledger   no ledger yet (fix: sindri)
 fail  profile  not approved (fix: sindri profile approve)
 fail  api      unreachable: no control plane is recorded (fix: sindri)
 fail  temporal not running: no dev server on this home's temporal.db (fix: sindri)
+warn  codex:read-only pending: owner probe (fix: in that harness, sindri doctor --probe --harness codex:read-only > tests/Aw.Sindri.Tests/Golden/Probe/codex-read-only.json; docs/csharp/sindri.md, 'The harness probe')
+warn  codex:workspace-write pending: owner probe (fix: in that harness, sindri doctor --probe --harness codex:workspace-write > tests/Aw.Sindri.Tests/Golden/Probe/codex-workspace-write.json; docs/csharp/sindri.md, 'The harness probe')
+warn  codex:danger-full-access pending: owner probe (fix: in that harness, sindri doctor --probe --harness codex:danger-full-access > tests/Aw.Sindri.Tests/Golden/Probe/codex-danger-full-access.json; docs/csharp/sindri.md, 'The harness probe')
+warn  cursor-agent pending: owner probe (fix: in that harness, sindri doctor --probe --harness cursor-agent > tests/Aw.Sindri.Tests/Golden/Probe/cursor-agent.json; docs/csharp/sindri.md, 'The harness probe')
+warn  cursor-terminal pending: owner probe (fix: in that harness, sindri doctor --probe --harness cursor-terminal > tests/Aw.Sindri.Tests/Golden/Probe/cursor-terminal.json; docs/csharp/sindri.md, 'The harness probe')
 exit 2
 ## sindri --headless (human, terminal)
       _           _      _ 
@@ -56,6 +61,11 @@ ok    ledger   schema 4/4
 ok    profile  approved, hash HASH6
 fail  api      unreachable: no control plane is recorded (fix: sindri)
 fail  temporal not running: no dev server on this home's temporal.db (fix: sindri)
+warn  codex:read-only pending: owner probe (fix: in that harness, sindri doctor --probe --harness codex:read-only > tests/Aw.Sindri.Tests/Golden/Probe/codex-read-only.json; docs/csharp/sindri.md, 'The harness probe')
+warn  codex:workspace-write pending: owner probe (fix: in that harness, sindri doctor --probe --harness codex:workspace-write > tests/Aw.Sindri.Tests/Golden/Probe/codex-workspace-write.json; docs/csharp/sindri.md, 'The harness probe')
+warn  codex:danger-full-access pending: owner probe (fix: in that harness, sindri doctor --probe --harness codex:danger-full-access > tests/Aw.Sindri.Tests/Golden/Probe/codex-danger-full-access.json; docs/csharp/sindri.md, 'The harness probe')
+warn  cursor-agent pending: owner probe (fix: in that harness, sindri doctor --probe --harness cursor-agent > tests/Aw.Sindri.Tests/Golden/Probe/cursor-agent.json; docs/csharp/sindri.md, 'The harness probe')
+warn  cursor-terminal pending: owner probe (fix: in that harness, sindri doctor --probe --harness cursor-terminal > tests/Aw.Sindri.Tests/Golden/Probe/cursor-terminal.json; docs/csharp/sindri.md, 'The harness probe')
 exit 2
 ## sindri recipe validate ROOT/recipes/sindri/workflow.step.yaml
 hash sha256:HASH

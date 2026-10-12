@@ -15,7 +15,8 @@
 # masked) must equal expected.txt.
 # The apphost, not 'dotnet sindri.dll': start re-launches its own executable as 'serve' (Environment.ProcessPath), which
 # under 'dotnet sindri.dll' is the dotnet muxer.
-# Callers (API spec §6): the run unsets the agent variables (CLAUDECODE, AW_SINDRI_CHILD, CODEX_SANDBOX, CURSOR_AGENT)
+# Callers (API spec §6): the run unsets the agent variables (the pinned probe's markers, as sindri-prove.sh human does:
+# CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_EXECPATH, CLAUDE_CODE_SESSION_ID, CLAUDE_PID, AW_SINDRI_CHILD, CODEX_SANDBOX, CURSOR_AGENT)
 # and sets AW_SINDRI_PROVER=1, so the binary is the human; a "(human, terminal)" step runs under a pty
 # (scripts/lib/with-tty.sh: CRs and terminal control sequences stripped, stderr merged), a "(session)" step sets CLAUDECODE=1 with stdin from /dev/null.
 # Every invocation of the binary is bounded (30 s, perl's alarm); one that runs over prints 'exit 124'.
@@ -29,7 +30,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/../../.." && pwd)"
 # shellcheck source=../../../scripts/lib/with-tty.sh
 source "$root/scripts/lib/with-tty.sh"
-unset CLAUDECODE AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT
+unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_EXECPATH CLAUDE_CODE_SESSION_ID CLAUDE_PID AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT
 export AW_SINDRI_PROVER=1
 out="$root/artifacts/aot-sindri-smoke"
 mkdir -p "$out"
@@ -145,6 +146,7 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
 
 sed -E -e "s#$work#WORK#g" -e "s#$root#ROOT#g" -e "s#held by $(hostname -s)[^/ ]*#held by HOST#g" -e 's/[0-9a-f]{64}/HASH/g' -e 's/hash [0-9a-f]{6}/hash HASH6/g' -e 's/approve profile [0-9a-f]{6}/approve profile HASH6/g' \
   -e 's/pid [0-9]+/pid PID/g' -e 's#HOST/[0-9]+#HOST/PID#g' -e 's/127\.0\.0\.1:[0-9]+/127.0.0.1:PORT/g' \
-  -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z/TIME/g' -e 's/\(last [0-9:]{8}Z\)/(last TIME)/g' "$out/actual.raw" >"$out/actual.txt"
+  -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z/TIME/g' -e 's/\(last [0-9:]{8}Z\)/(last TIME)/g' \
+  -e '/^(ok|warn) +claude-code /d' "$out/actual.raw" >"$out/actual.txt"   # doctor's claude-code line depends on where it runs (re-probed inside Claude Code, else the installed version); the pending owner-probe lines are pinned
 diff -u "$here/expected.txt" "$out/actual.txt"
 echo "aot-sindri-smoke: ok (framework-dependent publish, $(du -sh "$pub" | cut -f1))"

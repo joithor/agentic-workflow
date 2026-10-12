@@ -73,6 +73,15 @@ public sealed class HarnessProbeGoldenTests
         Assert.All(AgentSession.Variables, v => Assert.Contains($"-u {v} ", line, StringComparison.Ordinal));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void The_host_smoke_unsets_every_agent_variable()
+    {
+        var script = File.ReadAllText(Path.Combine(RepoRoot(), "src", "Sindri", "aot-smoke", "run.sh"));
+        var unset = script.Split('\n').Single(l => l.StartsWith("unset ", StringComparison.Ordinal)).Split(' ').Skip(1).ToHashSet(StringComparer.Ordinal);
+
+        Assert.All(AgentSession.Variables, v => Assert.Contains(v, unset));
+    }
+
     private static string Text(PinnedHarness pinned) =>
         File.ReadAllText(Golden.SourcePath(typeof(HarnessProbeGoldenTests).Assembly, $"{Directory}/{pinned.GoldenFile}"));
 
