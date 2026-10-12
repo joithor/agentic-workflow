@@ -2,7 +2,7 @@
 # NativeAOT smoke for sindri (src/Sindri/Aw.Sindri.Host): publish it with PublishAot for the host RID, fail on any
 # trim/AOT (IL2xxx/IL3xxx) warning, then drive the native binary through the S1 journeys against a temp home: doctor
 # with nothing running, start headless with an unapproved profile, a second serve refused by the lease, the approve
-# preview and its non-terminal refusal, status, stop, and doctor again; then recipe validate on a shipped recipe (its hash)
+# preview and its non-terminal refusal, status, stop, and doctor again; then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it)
 # and on an invalid fixture (RCP-REACH-001, exit 1), the first verbs through the YAML reader and the recipe binding. The normalized output (pids, ports, hashes, times,
 # the host name and the temp path masked) must equal expected.txt.
 # Every invocation of the binary is bounded (30 s, perl's alarm); one that runs over prints 'exit 124'.
@@ -56,6 +56,7 @@ run() {
   run status
   run doctor
   run recipe validate "$root/recipes/sindri/workflow.step.yaml"
+  run recipe validate "$root/recipes/sindri/workflow.item.yaml"
   run recipe validate "$root/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml"
 } >"$out/actual.raw"
 
