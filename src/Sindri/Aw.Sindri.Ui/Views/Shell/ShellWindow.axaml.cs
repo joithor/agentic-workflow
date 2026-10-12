@@ -159,42 +159,65 @@ internal sealed partial class ShellWindow : Window
     private static InputElement? FirstFocusable(Visual within) => within.GetVisualDescendants().OfType<InputElement>()
         .FirstOrDefault(c => c.Focusable && c.IsEffectivelyVisible && c.IsEffectivelyEnabled);
 
-    // Below Size.SheetCoversBelow the sheet covers the page, with a back affordance; otherwise it keeps its width.
+    // Below Size.SheetCoversBelow the sheet covers the page, with a back affordance; otherwise it keeps its width. When
+    // an open sheet starts or stops covering (the window narrowed or widened), focus left on the page it now disables
+    // moves on (review run 4, accessibility-tester-1).
     private void Cover(double width)
     {
         var below = this.TryFindResource("Size.SheetCoversBelow", out var value) && value is double limit ? limit : 1100;
         var covers = width > 0 && width < below;
+        var changed = covers != SheetPanel.Classes.Contains("covers");
         SheetPanel.Classes.Set("covers", covers);
         SheetPanel.Width = covers ? double.NaN : Shell?.SheetWidth ?? double.NaN;
         CoverPage();
+        if (changed && Shell is { IsSheetShown: true })
+        {
+            Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
+        }
     }
 
     // While the sheet covers the page, the page and its controls leave the tab order, F6's cycle and hit-testing, so focus
     // never lands where it can't be seen (WCAG 2.4.3, 2.4.7). The sheet hides the page's disabled look. The page is
     // enabled again as soon as the sheet closes or stops covering, before focus returns to it (KeepFocus runs later).
-    private void CoverPage() => PagePanel.IsEnabled = !(SheetPanel.Classes.Contains("covers") && Shell is { IsSheetShown: true });
+    private void CoverPage() => PagePanel.IsEnabled = !(Covering && Shell is { IsSheetShown: true });
+
+    private bool Covering => SheetPanel.Classes.Contains("covers");
 
     private void OnShellChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (string.Equals(e.PropertyName, nameof(ShellViewModel.IsSheetShown), StringComparison.Ordinal) || string.Equals(e.PropertyName, nameof(ShellViewModel.State), StringComparison.Ordinal))
+        switch (e.PropertyName)
         {
-            CoverPage();
-        }
-
-        if (e.PropertyName == nameof(ShellViewModel.SheetWidth))
-        {
-            Cover(Bounds.Width);
-        }
-        else if (e.PropertyName == nameof(ShellViewModel.State) || (e.PropertyName == nameof(ShellViewModel.IsSheetShown) && Shell is { IsSheetShown: false }))
-        {
-            Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
-        }
-        else if (e.PropertyName == nameof(ShellViewModel.IsSheetShown) && Shell is { IsSheetShown: true } && SheetPanel.Classes.Contains("covers"))
-        {
-            // Covering the page, opening the sheet moves focus to its heading (§11.2).
-            Dispatcher.UIThread.Post(() => this.Get<TextBlock>("SheetTitle").Focus(), DispatcherPriority.Loaded);
+            case nameof(ShellViewModel.SheetWidth):
+                Cover(Bounds.Width);
+                break;
+            case nameof(ShellViewModel.State):
+                CoverPage();
+                Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
+                break;
+            case nameof(ShellViewModel.IsSheetShown):
+                CoverPage();
+                Dispatcher.UIThread.Post(Shell is { IsSheetShown: true } ? FocusOpenedSheet : KeepFocus, DispatcherPriority.Loaded);
+                break;
+            default:
+                break;
         }
     }
+
+    // Opening the sheet over the page (below 1100 px) moves focus to its heading (§11.2). Beside the page focus stays
+    // where it is, unless what had it hid as the sheet opened (the edge tab at 1100 px and wider; review run 4,
+    // accessibility-tester-0): then the heading gets it too, never a hidden control.
+    private void FocusOpenedSheet()
+    {
+        if (Shell is { IsSheetShown: true } && (Covering || !HasUsableFocus))
+        {
+            _ = this.Get<TextBlock>("SheetTitle").Focus(Method());
+        }
+    }
+
+    private bool HasUsableFocus => FocusManager?.GetFocusedElement() is Control { IsEffectivelyVisible: true, IsEffectivelyEnabled: true };
+
+    // A keyboard user's focus moves with its ring (Tab); a pointer user's without.
+    private NavigationMethod Method() => _lastMethod == NavigationMethod.Pointer ? NavigationMethod.Pointer : NavigationMethod.Tab;
 
     private void OnSheetDrag(object? sender, VectorEventArgs e) => SheetPanel.Width = SheetPanel.Bounds.Width - e.Vector.X;
 
@@ -217,24 +240,25 @@ internal sealed partial class ShellWindow : Window
         }
     }
 
-    // After a state change or a closed sheet: if the focused control is gone (hidden, disabled, or nothing has focus
-    // after something had it), focus its region's neighbour.
+    // After a state change, a closed sheet or a change in its covering: if the focused control is gone (hidden, disabled,
+    // or nothing has focus after something had it), focus its region's neighbour.
     private void KeepFocus()
     {
-        if (FocusManager?.GetFocusedElement() is Control { IsEffectivelyVisible: true, IsEffectivelyEnabled: true } || _lastFocused is not { } last)
+        if (HasUsableFocus || _lastFocused is not { } last)
         {
             return;
         }
 
         var target = Neighbour(last) ?? Usable(FirstFocusable(TopBar) as Control);
         _sheetOpener = null;
-        _ = target?.Focus(_lastMethod == NavigationMethod.Pointer ? NavigationMethod.Pointer : NavigationMethod.Tab);
+        _ = target?.Focus(Method());
     }
 
-    // The sheet's opener (the edge tab) or the page region for the sheet; the health pill for the top bar; the page region.
+    // The sheet's opener (the edge tab) or the page region for the sheet; the health pill for the top bar; the page
+    // region, or the sheet's heading while the sheet covers the page.
     private Control? Neighbour(Control last)
     {
-        var page = Usable(this.Get<Control>("Page"));
+        var page = Usable(this.Get<Control>("Page")) ?? (Covering ? Usable(this.Get<TextBlock>("SheetTitle")) : null);
         if (SheetPanel == last || SheetPanel.IsVisualAncestorOf(last))
         {
             return Usable(_sheetOpener) ?? page;

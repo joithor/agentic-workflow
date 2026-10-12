@@ -153,8 +153,10 @@ reaches the app only with fn held (fn+F6 and fn+Shift+F6). Ctrl+F6 isn't bound. 
 
 **Focus never goes nowhere (§11.2).** When the focused control disappears, focus moves to a neighbour: Refresh keeps
 focus through its in-flight phase and gets it back when the refresh fails; when Sindri answers and Refresh hides, the
-health pill gets it. Closing the sheet returns focus to the edge tab when the tab reopened it, otherwise (a deep link)
-to the page region. A state change that hides the focused control moves focus to its region's neighbour: the pill in
+health pill gets it. Reopening the sheet from its edge tab moves focus to the sheet's heading at every width (beside
+the page the tab hides as the sheet opens), as opening a covering sheet does. Closing the sheet returns focus to the edge
+tab when the tab reopened it, otherwise (a deep link) to the page region. Narrowing the window below 1100 px with the
+sheet open moves focus on the page (now disabled under the sheet) to the sheet's heading. A state change that hides the focused control moves focus to its region's neighbour: the pill in
 the top bar, the page region in the page (`ShellWindow.KeepFocus`, `TopBar.KeepRefreshFocus`).
 
 ### Settings and reduced motion (§3.3 ⌘,, §11.4, §14.2)
