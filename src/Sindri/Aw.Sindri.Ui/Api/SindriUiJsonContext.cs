@@ -8,4 +8,5 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(StatusView))]
 [JsonSerializable(typeof(EventView))]
 [JsonSerializable(typeof(PreferencesFile))]
+[JsonSerializable(typeof(ProblemView))]
 internal sealed partial class SindriUiJsonContext : JsonSerializerContext;

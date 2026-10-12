@@ -151,14 +151,18 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     }
 
     /// <summary>
-    /// A failed call: SND-UI-003 is an answer this build can't read (Unreadable, the last data kept); anything else is
-    /// Not running, led by SND-UI-002's sentence with the address on its own line (I7).
+    /// A failed call: SND-UI-003 is an answer this build can't read (Unreadable, the last data kept); a refusal (Sindri's
+    /// 403, e.g. SND-AUTH-001 for a missing or stale token) is Not running led by Sindri's code and detail as they are
+    /// (API §3.6), since the app can't follow a control plane that refuses it; anything else is Not running, led by
+    /// SND-UI-002's sentence. Both put the address on its own line (I7), and the app keeps looking every 2 s.
     /// </summary>
     /// <param name="error">The call's error.</param>
     /// <param name="api">The API the call went to.</param>
     /// <returns>Null: no API to follow.</returns>
     internal Uri? Failed(Error error, Uri api) =>
-        string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal) ? Unreadable(error) : NotRunning(Labels.NothingAnswered, api.Authority);
+        string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal) ? Unreadable(error)
+        : error.Kind == ErrorKind.Forbidden ? NotRunning($"{error.Code}: {error.Message}", api.Authority)
+        : NotRunning(Labels.NothingAnswered, api.Authority);
 
     /// <summary>Not running, and why.</summary>
     /// <param name="reason">The reason in words.</param>

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Net.ServerSentEvents;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -78,6 +79,11 @@ internal sealed class SindriApiClient(HttpClient http, IHumanTokenSource token, 
             using var request = await Request(new Uri(api, path), deadline.Token).ConfigureAwait(false);
             using var response = await http.SendAsync(request, deadline.Token).ConfigureAwait(false);
             var body = await response.Content.ReadAsByteArrayAsync(deadline.Token).ConfigureAwait(false);
+            if (Refusal(response.StatusCode, body) is { } refused)
+            {
+                return refused;
+            }
+
             if (!response.IsSuccessStatusCode)
             {
                 return SindriUiErrors.BadAnswer.With(string.Create(CultureInfo.InvariantCulture, $"{path} answered {(int)response.StatusCode}"));
@@ -103,6 +109,23 @@ internal sealed class SindriApiClient(HttpClient http, IHumanTokenSource token, 
             // The platform's message repeats the address in its own words ("Connection refused (127.0.0.1:61879)"): I7.
             return SindriUiErrors.Unreachable.With($"nothing answered at {api.Authority}");
         }
+    }
+
+    // A 403 with Sindri's ProblemDetails is a refusal (API §6: SND-AUTH-001 for a missing or stale token): Sindri's code
+    // and its detail as they are (API §3.6), so the window shows Sindri's own sentence and fix. Built like the CLI's
+    // reading of a problem (ControlPlaneClient): the code is Sindri's catalogue's, not the app's. Any other non-success,
+    // or a 403 without a title, stays SND-UI-003.
+    private static Error? Refusal(HttpStatusCode status, byte[] body)
+    {
+        if (status != HttpStatusCode.Forbidden)
+        {
+            return null;
+        }
+
+        var problem = AwJson.Deserialize<ProblemView>(body, Json);
+        return problem is { IsSuccess: true, Value.Title: { Length: > 0 } code }
+            ? new Error(code, ErrorKind.Forbidden, problem.Value.Detail is { Length: > 0 } detail ? detail : code)
+            : null;
     }
 
     // Every request says who the app is to the API (UI spec §9.1, API §6): a human, from the UI, with this start's token

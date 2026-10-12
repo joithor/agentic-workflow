@@ -1,4 +1,5 @@
 using System.Net;
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
@@ -54,6 +55,31 @@ public sealed class SindriApiClientTests
         Assert.Equal(("SND-UI-003", LogLevel.Warning), (entry.EventName, entry.Level));
         Assert.Contains("/sindri/status", entry.Message, StringComparison.Ordinal);
         Assert.Contains("BytePosition", entry.Message, StringComparison.Ordinal);
+    }
+
+    // API §6: a refused call never carries the token into its error or the log (the token goes only into its header).
+    [Fact]
+    public async Task A_refusal_names_no_token_in_its_error_or_the_log()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi { Refusal = ("SND-AUTH-001", "X-Sindri-Token isn't this start's token (fix: restart the app or rerun the command)") });
+        var log = new RecordingLogger();
+
+        var status = await new SindriApiClient(new HttpClient(handler), _token, TimeProvider.System, log).Status(_api, Token);
+
+        Assert.Equal(("SND-AUTH-001", ErrorKind.Forbidden), (status.Error.Code, status.Error.Kind));
+        Assert.DoesNotContain(A.HumanToken, status.Error.Message, StringComparison.Ordinal);
+        Assert.All(log.Entries, e => Assert.DoesNotContain(A.HumanToken, e.Message, StringComparison.Ordinal));
+    }
+
+    // Only a 403 with Sindri's ProblemDetails (a title) is a refusal; another 403 body is still an answer this build can't read.
+    [Fact]
+    public async Task A_403_without_a_problem_is_still_an_answer_the_app_cant_read()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi()) { Override = (HttpStatusCode.Forbidden, "<html>forbidden</html>") };
+
+        var ping = await new SindriApiClient(new HttpClient(handler), _token, TimeProvider.System).Ping(_api, Token);
+
+        Assert.Equal(("SND-UI-003", "/sindri/ping answered 403"), (ping.Error.Code, ping.Error.Message));
     }
 
     // I7: nothing listening is SND-UI-002 without the platform's exception text (it repeated the address in .NET's words).

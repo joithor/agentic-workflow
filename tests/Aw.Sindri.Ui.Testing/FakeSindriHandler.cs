@@ -39,6 +39,11 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             throw new HttpRequestException("Connection refused (127.0.0.1)");
         }
 
+        if (server.Refusal is { } refusal)
+        {
+            return Text(HttpStatusCode.Forbidden, Problem(refusal.Code, refusal.Detail, 403), "application/problem+json");
+        }
+
         if (Override is { } o)
         {
             return Text(o.Code, o.Body, "application/json");
@@ -93,6 +98,10 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     private static string ApiVersion(int? version) => version is { } v ? string.Create(CultureInfo.InvariantCulture, $",\"apiVersion\":{v}") : string.Empty;
 
     private static string Service(ServiceView v) => $$"""{"name":"{{v.Name}}","every":"{{v.Every}}","lastRun":{{Quoted(v.LastRun)}}}""";
+
+    // ASP.NET Core's ProblemDetails as Sindri's ApiProblems writes it: title = the SND code, detail = the sentence with its fix.
+    private static string Problem(string code, string detail, int status) => string.Create(CultureInfo.InvariantCulture,
+        $$"""{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.4","title":"{{code}}","status":{{status}},"detail":"{{detail}}"}""");
 
     private static string Bool(bool b) => b ? "true" : "false";
 

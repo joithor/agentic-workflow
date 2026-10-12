@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 
 namespace Aw.Sindri.Ui.Testing;
@@ -76,6 +77,22 @@ public abstract class SindriApiContract
         }
 
         Expect.Sequence([A.Event(2), A.Event(3, "profile.approved")], seen);
+    }
+
+    // API §6 and §3.6: a refused call (403 ProblemDetails, e.g. SND-AUTH-001 for a missing or stale token) is Sindri's
+    // code and detail as they are, a Forbidden error; never SND-UI-003, which is for answers this build can't read.
+    [Fact]
+    public async Task A_refused_call_is_sindris_code_and_detail_as_they_are()
+    {
+        var server = new FakeSindriApi { Refusal = A.NoTokenRefusal };
+        var api = Reach(server);
+
+        var ping = await api.Ping(_api, Token);
+        var status = await api.Status(_api, Token);
+
+        Expect.Equal(new Error(A.NoTokenRefusal.Code, ErrorKind.Forbidden, A.NoTokenRefusal.Detail), ping.Error);
+        Expect.Equal(new Error(A.NoTokenRefusal.Code, ErrorKind.Forbidden, A.NoTokenRefusal.Detail), status.Error);
+        Expect.Sequence([], await api.Events(_api, 0, Token).ToListAsync(Token));
     }
 
     [Fact]

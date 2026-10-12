@@ -52,6 +52,42 @@ public sealed class HealthViewModelTests : IDisposable
         Assert.False(_vm.IsRunning);
     }
 
+    // API §6, §3.6: a refused call (SND-AUTH-001, a missing or stale token) is neither "nothing answered" nor SND-UI-003:
+    // the reason is Sindri's code and detail as they are, with the address on its own line, and the app keeps looking
+    // every 2 s, reading the token again, so it recovers with no restart once the token is good.
+    [Fact]
+    public async Task A_refused_call_shows_sindris_detail_as_is_and_recovers_on_its_own()
+    {
+        _records.Write(A.Record());
+        _server.Refusal = A.NoTokenRefusal;
+        Start();
+
+        await Eventually(() => _vm.Reason.StartsWith("SND-AUTH-001", StringComparison.Ordinal), "the refusal");
+        Assert.Equal(("Not running", $"{A.NoTokenRefusal.Code}: {A.NoTokenRefusal.Detail}", "127.0.0.1:7410"), (_vm.Headline, _vm.Reason, _vm.ReasonDetail));
+        Assert.Equal(ShellState.NotRunning, _vm.State);
+
+        _server.Refusal = null;
+        _clock.Advance(HealthViewModel.RetryEvery);
+        await Eventually(() => _vm.IsRunning, "running again");
+        Assert.Equal(ShellState.Normal, _vm.State);
+    }
+
+    // A token removed or replaced while the app follows: the next ping's refusal ends the follow (a definite answer, not
+    // silence), so the window says why within one ping beat instead of only going stale.
+    [Fact]
+    public async Task A_ping_refused_while_following_shows_the_refusal()
+    {
+        _records.Write(A.Record());
+        Start();
+        await Eventually(() => _vm.IsRunning, "running");
+
+        _server.Refusal = A.NoTokenRefusal;
+        _clock.Advance(HealthViewModel.PingEvery);
+
+        await Eventually(() => _vm.State == ShellState.NotRunning, "the refusal");
+        Assert.Equal($"{A.NoTokenRefusal.Code}: {A.NoTokenRefusal.Detail}", _vm.Reason);
+    }
+
     // I7 (§4.1, §12.4): SND-UI-001's sentence leads; the record and the answer are one detail line under it.
     [Fact]
     public async Task A_record_for_another_process_reads_as_stale()

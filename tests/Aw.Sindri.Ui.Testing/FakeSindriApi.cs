@@ -39,6 +39,12 @@ internal sealed class FakeSindriApi : ISindriApi
     /// <summary>When set, each status call waits for it before it answers (a slow control plane); null answers at once.</summary>
     public TaskCompletionSource? StatusGate { get; set; }
 
+    /// <summary>
+    /// When set, the server refuses every call with 403 and this ProblemDetails title and detail (API §6: a human
+    /// without this start's token is SND-AUTH-001): pings and status calls fail with it, and streams end at once.
+    /// </summary>
+    public (string Code, string Detail)? Refusal { get; set; }
+
     /// <summary>When true, pings fail as unreachable while status calls and open streams carry on.</summary>
     public bool FailPing { get; set; }
 
@@ -99,7 +105,7 @@ internal sealed class FakeSindriApi : ISindriApi
     public Task<Result<PingView>> Ping(Uri api, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _pingCalls);
-        return Task.FromResult(Down || FailPing ? Unreachable<PingView>(api) : Pong);
+        return Task.FromResult(Refusal is { } refusal ? Refused<PingView>(refusal) : Down || FailPing ? Unreachable<PingView>(api) : Pong);
     }
 
     public async Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken)
@@ -110,14 +116,15 @@ internal sealed class FakeSindriApi : ISindriApi
             await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return Down || FailStatus ? Unreachable<StatusView>(api)
+        return Refusal is { } refusal ? Refused<StatusView>(refusal)
+            : Down || FailStatus ? Unreachable<StatusView>(api)
             : UnreadableStatus ? SindriUiErrors.BadAnswer.With(UnreadableReason)
             : Current;
     }
 
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        if (Down || StreamsEndAtOnce)
+        if (Down || StreamsEndAtOnce || Refusal is not null)
         {
             lock (_gate)
             {
@@ -144,6 +151,9 @@ internal sealed class FakeSindriApi : ISindriApi
             yield return e;
         }
     }
+
+    // The client's reading of a 403 ProblemDetails: Sindri's code and detail as they are (API §3.6, UI spec §2).
+    private static Result<T> Refused<T>((string Code, string Detail) refusal) => new Error(refusal.Code, ErrorKind.Forbidden, refusal.Detail);
 
     private static Result<T> Unreachable<T>(Uri api) => SindriUiErrors.Unreachable.With($"nothing answers at {api.Authority}");
 }
