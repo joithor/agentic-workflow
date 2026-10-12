@@ -146,9 +146,10 @@ public sealed class CommandChainTests : IAsyncDisposable
         _ = await _c.H.HoldLease();
         var first = _c.Start(new FixtureCommand("block"), Human);
         var second = _c.Start(new FixtureCommand("accept"), Human with { CommandId = Core.Ids.CommandId.From(new Guid(0xaa, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)) });
-        await Task.Delay(TimeSpan.FromMilliseconds(50), TimeProvider.System, TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, _c.Latch.Started);   // the second waits at the gate
+        // The chain runs synchronously up to the gate, so Start returns with the second parked there (or, without the
+        // gate, already inside the handler): no wait is needed to observe it.
+        Assert.Equal(1, _c.Latch.Started);
         _c.Latch.Release.SetResult();
         var results = await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
 
