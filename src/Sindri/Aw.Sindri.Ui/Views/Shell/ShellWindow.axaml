@@ -121,7 +121,7 @@
             </StackPanel>
 
             <!-- Not running (§4.1, states.html): a compact card centred in the page: the struck ◆ mark (the tray's
-                 not-running mark) and the word, the reason, and sindri to run. Settings (⌘,) shows over it; Esc returns. -->
+                 not-running mark) and the word, the reason, sindri to run, and how often the app looks again. Settings (⌘,) shows over it; Esc returns. -->
             <Border x:Name="NotRunningPanel" Classes="card state-card" IsVisible="{Binding IsNotRunningPanel}"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
               <StackPanel Spacing="{StaticResource Space.SM}">
@@ -145,6 +145,9 @@
                                AutomationProperties.Name="{Binding Text.StartFix}" />
                   </Border>
                 </StackPanel>
+                <!-- §12.4, states.html's help line: the follower's retry wait (HealthViewModel.RetryEvery), in caption type. -->
+                <TextBlock x:Name="LooksAgainText" Classes="caption subtle" Text="{Binding Text.LooksAgain}"
+                           AutomationProperties.Name="{Binding Text.LooksAgain}" />
               </StackPanel>
             </Border>
 
