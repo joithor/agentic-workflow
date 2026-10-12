@@ -24,7 +24,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
     /// <summary>The most fused items fetched (and so cited) per query.</summary>
     internal const int MaxItems = 20;
 
-    /// <summary>The most text taken from one record (spec §8.3: 64 KB).</summary>
+    /// <summary>The most text kept from one record after cleaning (spec §8.3: 64 KB).</summary>
     internal const int MaxRecordText = 64 * 1024;
 
     public async ValueTask<Result<ContextResult>> Handle(QueryContextRequest request, CancellationToken cancellationToken)
@@ -49,7 +49,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
         var degraded = searched.Degraded.ToList();
         var fused = RankFusion.Fuse(searched.Answers).Take(MaxItems).ToList();
         var fetched = await Fetch(fused, sources, deadline, degraded, cancellationToken).ConfigureAwait(false);
-        var versions = await Versions(fetched, deadline, cancellationToken).ConfigureAwait(false);
+        var versions = await Versions(fetched, sources, deadline, cancellationToken).ConfigureAwait(false);
         var assembly = new ResultAssembly(egress, QueryId.From("q_" + ids.NewId().ToString("N", CultureInfo.InvariantCulture)), clock.GetUtcNow());
         return assembly.Build(request.Query, valid.Value.Budget, fetched, versions, degraded);
     }
@@ -85,6 +85,11 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
         var fetched = new List<FetchedRecord>();
         foreach (var item in items)
         {
+            if (deadline - clock.GetUtcNow() <= TimeSpan.Zero)
+            {
+                break;   // no claim without a citation: what wasn't fetched in time isn't shown (search already answered)
+            }
+
             var hit = item.Hits[0];
             var source = sources.First(s => s.Describe().Id == hit.Ref.Source);
             var record = await SourceCalls.Within(source, deadline - clock.GetUtcNow(), t => source.Fetch(hit.Ref, t), ct).ConfigureAwait(false);
@@ -98,25 +103,29 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
                 continue;   // a record gone since the search, or a source that stopped answering: no claim without a citation
             }
 
-            var text = record.Value.Text.Length > MaxRecordText ? record.Value.Text[..MaxRecordText] : record.Value.Text;
-            fetched.Add(new FetchedRecord(item, source, ingest.Clean(record.Value.Title, singleLine: true), ingest.Clean(text, singleLine: false)));
+            var text = record.Value.Blocked   // the adapter's own whole-document clean withheld it: cite it as scrub-blocked
+                ? new ScrubbedField(string.Empty, Redacted: false, Blocked: true)
+                : ingest.Clean(record.Value.Text, singleLine: false);   // cleaned whole, then cut, so a cut never splits a secret
+            var cut = text.Text.Length > MaxRecordText ? text with { Text = text.Text[..MaxRecordText] } : text;
+            fetched.Add(new FetchedRecord(item, source, ingest.Clean(record.Value.Title, singleLine: true), cut));
         }
 
         return fetched;
     }
 
     /// <summary>One batched version check per source, under what is left of the deadline (spec §8.2 step 8).</summary>
-    private async Task<IReadOnlyDictionary<SourceRef, (bool Ran, SourceVersion? Current)>> Versions(IReadOnlyList<FetchedRecord> fetched, DateTimeOffset deadline,
-        CancellationToken ct)
+    private async Task<IReadOnlyDictionary<SourceRef, (bool Ran, SourceVersion? Current)>> Versions(IReadOnlyList<FetchedRecord> fetched,
+        IReadOnlyList<IContextSource> sources, DateTimeOffset deadline, CancellationToken ct)
     {
         var checkedRefs = new Dictionary<SourceRef, (bool, SourceVersion?)>();
-        foreach (var group in fetched.SelectMany(f => f.Item.Hits.Select(h => (f.Source, h.Ref))).GroupBy(p => p.Source))
+        foreach (var group in fetched.SelectMany(f => f.Item.Hits).Select(h => h.Ref).Distinct().GroupBy(r => r.Source))
         {
-            var refs = group.Select(p => p.Ref).Distinct().ToList();
+            var source = sources.First(s => s.Describe().Id == group.Key);   // each ref is checked by its own source
+            var refs = group.ToList();
             var left = deadline - clock.GetUtcNow();
             var versions = left <= TimeSpan.Zero
                 ? ContextErrors.SourceUnavailable.With("no time left for the version check")
-                : await SourceCalls.Within(group.Key, left, t => group.Key.Versions(refs, t), ct).ConfigureAwait(false);
+                : await SourceCalls.Within(source, left, t => source.Versions(refs, t), ct).ConfigureAwait(false);
             for (var i = 0; i < refs.Count; i++)
             {
                 checkedRefs[refs[i]] = versions.IsSuccess && versions.Value.Count == refs.Count ? (true, versions.Value[i]) : (false, null);

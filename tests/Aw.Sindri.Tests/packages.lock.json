@@ -553,6 +553,14 @@
           "OpenTelemetry": "[1.19.1, 1.19.1]"
         }
       },
+      "aw.kernel.telemetry.testing": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel.Telemetry": "[1.0.0, )",
+          "Aw.Kernel.Testing": "[1.0.0, )",
+          "xunit.v3.extensibility.core": "[4.0.1, 4.0.1]"
+        }
+      },
       "aw.kernel.testing": {
         "type": "Project",
         "dependencies": {

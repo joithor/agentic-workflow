@@ -8,4 +8,5 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Kept">Documents unchanged.</param>
 /// <param name="Blocked">Documents the scrubber withheld.</param>
 /// <param name="Code">The error code when the repo couldn't be refreshed.</param>
-public sealed record ContextRepoSynced(string Repo, string? Head, int Added, int Removed, int Kept, int Blocked, string? Code);
+/// <param name="Skipped">Documents not indexed this run: over the size cap, or unreadable (their earlier rows stay).</param>
+public sealed record ContextRepoSynced(string Repo, string? Head, int Added, int Removed, int Kept, int Blocked, string? Code, int Skipped = 0);

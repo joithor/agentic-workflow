@@ -36,14 +36,15 @@ internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, Da
 
     private ResultItem Item(FetchedRecord record, string marker)
     {
-        var title = egress.Scrub(record.Title.Text).Text;
-        var text = record.Text.Blocked ? null : UntrustedFence.Wrap(record.Source.Describe().Id.Value, author: null, egress.Scrub(record.Text.Text).Text);
+        var source = record.Source.Describe().Id.Value;
+        var title = UntrustedFence.Wrap(source, author: null, UntrustedFence.Cap(egress.Scrub(record.Title.Text).Text));   // titles are record text too (§7)
+        var text = record.Text.Blocked ? null : UntrustedFence.Wrap(source, author: null, egress.Scrub(record.Text.Text).Text);
         return new ResultItem("record", Node: null, title, text, Math.Round(record.Item.Score, 6, MidpointRounding.ToEven), record.Item.Why, Provenance.Deterministic,
             Confirmed: false, Trust.Untrusted, [marker])
         { Tokens = TokenEstimate.Of(title) + TokenEstimate.Of(text) };
     }
 
-    private static Citation Cite(FetchedRecord record, IReadOnlyDictionary<SourceRef, (bool Ran, SourceVersion? Current)> versions)
+    private Citation Cite(FetchedRecord record, IReadOnlyDictionary<SourceRef, (bool Ran, SourceVersion? Current)> versions)
     {
         var refs = new List<CitationRef>();
         var states = new List<CitationState>();
@@ -51,12 +52,15 @@ internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, Da
         {
             var (state, current) = CitationStates.Of(hit.Ref.Version, versions.GetValueOrDefault(hit.Ref, (false, null)), record.Text.Blocked);
             states.Add(state);
-            refs.Add(new CitationRef(hit.Ref.Source, hit.Ref.Id, hit.Ref.Version) { Current = current });
+            refs.Add(new CitationRef(hit.Ref.Source, ExternalId.From(Scrubbed(hit.Ref.Id.Value)), hit.Ref.Version) { Current = current });
         }
 
         var best = record.Item.Hits[0];
-        return new Citation(record.Item.Key, refs, Permalinks.Allowed(best.Ref.Permalink), Trust.Untrusted, Worst(states));
+        return new Citation(RecordKey.From(Scrubbed(record.Item.Key.Value)), refs, Permalinks.Allowed(best.Ref.Permalink), Trust.Untrusted, Worst(states));
     }
+
+    /// <summary>An id or key scrubbed like any other field; a blocked one keeps a fixed, valid placeholder.</summary>
+    private string Scrubbed(string value) => egress.Scrub(value) is { Blocked: false } scrubbed ? scrubbed.Text : "scrub:blocked";
 
     /// <summary>The citation's state is its worst reference's: blocked, then stale, then unchecked, then current.</summary>
     private static CitationState Worst(List<CitationState> states) =>

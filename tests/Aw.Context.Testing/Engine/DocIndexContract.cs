@@ -57,6 +57,34 @@ public abstract class DocIndexContract<TIndex> : IDisposable
         Check(status.LastSync is not null && status.Documents == 2 && status.Chunks >= 2 && status.Code is null, "the status reflects the refresh");
     }
 
+    /// <summary>The globs choose the documents: a glob that matches one of the two indexes one.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Only_the_documents_the_globs_match_are_indexed()
+    {
+        var refreshed = Expect(await Create().Refresh(Repo, ["docs/decisions/*.md"], CancellationToken.None));
+
+        Check(refreshed is { Added: 1, Kept: 0, Removed: 0 }, $"one document matches the glob (added {refreshed.Added.ToString(System.Globalization.CultureInfo.InvariantCulture)})");
+    }
+
+    /// <summary>A document deleted in a new commit is removed; an edited one is indexed again, not kept.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_deleted_document_is_removed_and_an_edited_one_added_again()
+    {
+        var index = Create();
+        _ = Expect(await index.Refresh(Repo, ["docs/**/*.md"], CancellationToken.None));
+        File.Delete(Path.Combine(_repo.Path, "docs", "architecture.md"));
+        await File.AppendAllTextAsync(Path.Combine(_repo.Path, "docs", "decisions", "0001-orientation-toggle.md"), "\nAn edit.\n", CancellationToken.None);
+        Commit("edit and delete");
+
+        var refreshed = Expect(await index.Refresh(Repo, ["docs/**/*.md"], CancellationToken.None));
+        var status = Expect(await index.Status(Repo, CancellationToken.None));
+
+        Check(refreshed is { Added: 1, Removed: 1, Kept: 0 }, "the deleted doc is removed and the edited one added again");
+        Check(status.Documents == 1, "one document is left");
+    }
+
     /// <summary>Deletes the fixture repo.</summary>
     /// <param name="disposing">True from Dispose.</param>
     protected virtual void Dispose(bool disposing)
@@ -65,6 +93,19 @@ public abstract class DocIndexContract<TIndex> : IDisposable
         {
             _repo.Dispose();
         }
+    }
+
+    private void Commit(string message)
+    {
+        var start = new System.Diagnostics.ProcessStartInfo("git") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        foreach (var arg in (string[])["-C", _repo.Path, "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid", "-c", "commit.gpgsign=false", "commit", "-q", "-am", message])
+        {
+            start.ArgumentList.Add(arg);
+        }
+
+        using var git = System.Diagnostics.Process.Start(start) ?? throw new InvalidOperationException("git didn't start");
+        git.WaitForExit();
+        Check(git.ExitCode == 0, "the fixture commit worked");
     }
 
     private static T Expect<T>(Result<T> result) =>

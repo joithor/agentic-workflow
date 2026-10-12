@@ -22,6 +22,6 @@ public sealed class RepoDocsSourceContractTests : ContextSourceContract<IContext
     {
         var repo = new ContextRepo(ContextRepoName.From("split-panes"), _repo.Path);
         _ = (await _home.Index.Refresh(repo, ["docs/**/*.md"], CancellationToken.None)).Value;
-        return new RepoDocsSource([repo], _home.Database, _home.Git, _home.Clock);
+        return new RepoDocsSource([repo], _home.Database, _home.Git, _home.Scrubber, _home.Clock);
     }
 }

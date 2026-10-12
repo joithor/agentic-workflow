@@ -12,7 +12,7 @@ namespace Aw.Context.Infrastructure.Docs;
 
 /// <summary>
 /// The repo-docs index in context.db (spec §5.2, §6.2): at each refresh, the documents the globs match at the repo's
-/// HEAD are read from git and cleaned at the ingest boundary first (sanitized and scrubbed, chunk by chunk), then written
+/// HEAD are read from git and cleaned at the ingest boundary first (sanitized and scrubbed as a whole, then chunked), then written
 /// in one short transaction, so text reaches the store only scrubbed and no sync waits on a long writer. A document
 /// whose blob didn't change is kept; one gone from HEAD or the globs is removed; one the scrubber blocks keeps its row
 /// without chunks. A repo git can't read records its code and is reported, not thrown.
@@ -20,7 +20,7 @@ namespace Aw.Context.Infrastructure.Docs;
 internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IIngestFilter ingest, TimeProvider clock) : IDocIndex
 {
     /// <summary>The largest document indexed (bigger ones are skipped).</summary>
-    internal const int MaxDocumentBytes = 1024 * 1024;
+    internal const long MaxDocumentBytes = 1024 * 1024;
 
     public async ValueTask<Result<RepoRefresh>> Refresh(ContextRepo repo, IReadOnlyList<string> globs, CancellationToken cancellationToken)
     {
@@ -46,14 +46,17 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
         var glob = new Glob(globs);
         var wanted = tree.Value.Where(e => glob.Matches(e.Key)).ToDictionary(StringComparer.Ordinal);
         var changed = wanted.Where(w => !stored.Value.TryGetValue(w.Key, out var blob) || !string.Equals(blob, w.Value, StringComparison.Ordinal)).ToList();
-        var prepared = await Prepare(repo, changed, cancellationToken).ConfigureAwait(false);
-        var removed = stored.Value.Keys.Where(p => !wanted.TryGetValue(p, out var blob) || !string.Equals(blob, stored.Value[p], StringComparison.Ordinal)).ToList();
+        var (prepared, unreadable) = await Prepare(repo, changed, cancellationToken).ConfigureAwait(false);
+        var removed = stored.Value.Keys.Where(p => !wanted.ContainsKey(p) || (!string.Equals(stored.Value[p], wanted[p], StringComparison.Ordinal) && !unreadable.Contains(p))).ToList();
         var written = await DocWriter.Write(writable.Value, new DocBatch(repo.Name.Value, head.Value, removed, prepared, clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
         database.RestrictFiles();
         return written.IsError
             ? ContextDatabase.Translate(written.Error)
-            : new RepoRefresh(repo.Name, SourceVersion.From(head.Value), prepared.Count(p => !p.Blocked),
-                removed.Count(p => !wanted.ContainsKey(p)), wanted.Count - changed.Count, prepared.Count(p => p.Blocked), Code: null);
+            : new RepoRefresh(repo.Name, SourceVersion.From(head.Value), prepared.Count(p => p is { Blocked: false, Oversized: false }),
+                removed.Count(p => !wanted.ContainsKey(p)), wanted.Count - changed.Count, prepared.Count(p => p.Blocked), Code: null)
+            {
+                Skipped = prepared.Count(p => p.Oversized) + unreadable.Count,
+            };
     }
 
     public async ValueTask<Result<DocIndexStatus>> Status(ContextRepo repo, CancellationToken cancellationToken)
@@ -78,28 +81,48 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
         }
     }
 
-    private async ValueTask<List<PreparedDoc>> Prepare(ContextRepo repo, List<KeyValuePair<string, string>> changed, CancellationToken cancellationToken)
+    /// <summary>
+    /// Reads and cleans each changed document. One over <see cref="MaxDocumentBytes"/> keeps a row without chunks (so it
+    /// counts as kept until it changes) and is reported skipped; one git can't read this run is skipped and its earlier
+    /// rows stay.
+    /// </summary>
+    private async ValueTask<(List<PreparedDoc> Prepared, HashSet<string> Unreadable)> Prepare(ContextRepo repo, List<KeyValuePair<string, string>> changed,
+        CancellationToken cancellationToken)
     {
         var prepared = new List<PreparedDoc>();
+        var unreadable = new HashSet<string>(StringComparer.Ordinal);
         foreach (var (path, blob) in changed)
         {
-            var text = await git.Blob(repo.Path, blob, cancellationToken).ConfigureAwait(false);
-            if (text.IsSuccess && text.Value.Length <= MaxDocumentBytes)
+            var size = await git.Size(repo.Path, blob, cancellationToken).ConfigureAwait(false);
+            var text = size is { IsSuccess: true, Value: <= MaxDocumentBytes } ? await git.Blob(repo.Path, blob, cancellationToken).ConfigureAwait(false) : null;
+            if (size.IsSuccess && size.Value > MaxDocumentBytes)
+            {
+                prepared.Add(new PreparedDoc(path, blob, path, Blocked: false, []) { Oversized = true });
+            }
+            else if (text is { IsSuccess: true })
             {
                 prepared.Add(Clean(path, blob, text.Value));
             }
+            else
+            {
+                _ = unreadable.Add(path);
+            }
         }
 
-        return prepared;
+        return (prepared, unreadable);
     }
 
+    /// <summary>Cleans the whole document once (line-preserving), then chunks the clean text and takes the title from it.</summary>
     private PreparedDoc Clean(string path, string blob, string text)
     {
-        var title = ingest.Clean(DocChunker.Title(text, path), singleLine: true);
-        var chunks = DocChunker.Split(text).Select(c => (Chunk: c, Clean: ingest.Clean(c.Text, singleLine: false))).ToList();
-        var blocked = title.Blocked || chunks.Exists(c => c.Clean.Blocked);
-        return new PreparedDoc(path, blob, blocked ? path : title.Text, blocked,
-            blocked ? [] : [.. chunks.Select(c => c.Chunk with { Text = c.Clean.Text })]);
+        var clean = ingest.Clean(text, singleLine: false);
+        if (clean.Blocked)
+        {
+            return new PreparedDoc(path, blob, path, Blocked: true, []);
+        }
+
+        var title = ingest.Clean(DocChunker.Title(clean.Text, path), singleLine: true);
+        return new PreparedDoc(path, blob, title.Blocked ? path : UntrustedFence.Cap(title.Text), Blocked: false, DocChunker.Split(clean.Text));
     }
 
     private static async ValueTask<Result<Dictionary<string, string>>> Stored(SqliteUnitOfWorkFactory sessions, ContextRepo repo, CancellationToken cancellationToken)

@@ -14,18 +14,25 @@ composes it through the `compose` edge. The user's guide is `docs/sindri/context
 | `Aw.Context.Features` | `ContextEngine` (the facade: one line per method, dispatching to a slice) and the slices `QueryContext`, `SourcesStatus`, `RefreshDocs` |
 | `Aw.Context.Infrastructure` | `Store.ContextDatabase` (context.db), `Docs.SqliteDocIndex` and `Docs.RepoDocsSource` (FTS5 over scrubbed chunks), `Git.GitCli`, `Scrubbing.IngestSanitizer` and `Scrubbing.RedactionScrubber` (both scrub ports over `Aw.Redaction`) |
 
+`context.repos` must name profile repos: an unknown name is `SND-CONTEXT-001` at validate, approve and query time.
+
 `deps.yaml`: Context → Kernel, KernelData and Redaction (Infrastructure only) are `project` edges. Sindri → Context is a
 `project` edge (Sindri's Features and Host use Core) plus a `compose` edge (Sindri's Host calls `AddContextFeatures` and
 `AddContextInfrastructure` in `Composition`, nothing else: ARCH-COMPOSE-001).
 
 **Sindri's side.** `SindriProfile.Context` is a `JsonElement?`, left out of the canonical JSON when absent. Validate and
 approve call `IContextEngine.CheckSettings`. The slice folder `Aw.Sindri.Features.ContextCalls` holds:
-- `ContextScopes`, the one mapping from the approved profile and `ICallerContextAccessor.Current` to `ContextScope`.
-  The engine's client comes from the actor: `…:cli` is cli, `…:mcp` is mcp, other HTTP is http, services are service.
+- `ContextScopes`, the one mapping from the approved profile (the read-only port `IApprovedProfile`, so the query
+  handlers hold no write port: ARCH-CQRS-002) and `ICallerContextAccessor.Current` to `ContextScope`. The engine's
+  client comes from the actor's label: `cli` and `mcp` are themselves, `ui`, `prover` and plain HTTP are http, services
+  are service.
 - The queries `QueryContextRequest` → `ContextResult` and `GetContextSourcesRequest` → `SourcesView`.
 - The scheduled service `ContextDocsRefreshService` (`context-docs-refresh`, event `context.sources.synced`).
 
-Every surface resolves those services, MCP included (S-1M). The routes are `GET /sindri/context/query` and
+Every surface resolves those services, MCP included (S-1M). `ContextCalls` is deliberately one slice folder for every
+context use case: `ContextScopes` is shared, it can't move to Sindri Core (only Features and Host may reference another
+package's Core, DEPS-PROJ-008), and ARCH-SLICE-001 forbids sharing it across slice folders. Later stages add their
+context services here. The routes are `GET /sindri/context/query` and
 `GET /sindri/context/sources`. The CLI verbs are `Host/Commands/ContextVerbs`, with text output in `ContextText`.
 `Host/Catalog/ContextRows` holds `SyncSources` (`job`, `pending:S-5B`, no route mapped until S-5B, after API P6).
 
@@ -38,27 +45,34 @@ Every surface resolves those services, MCP included (S-1M). The routes are `GET 
    missed deadline makes that source degraded (010); all of them failing is 011.
 4. `RankFusion.Fuse`: hits sharing a canonical key merge, keeping each source's best rank. Each source is re-ranked
    densely, then RRF with k = 60 runs across sources.
-5. The top 20 are fetched (raw), then cut to 64 KB and cleaned once by `IIngestFilter`: sanitize, collapse titles,
-   scrub.
-6. One batched `Versions` call per source gives each citation its state.
-7. `ResultAssembly`: one `record` item and one citation each. Every field is scrubbed again on egress (a blocked
-   field is `[REDACTED:blocked]` alone), untrusted text is fenced, and the items are packed into the budget.
+5. The top 20 are fetched in turn until the deadline (what isn't fetched in time isn't shown), cleaned whole by
+   `IIngestFilter` (sanitize, collapse titles, scrub; line-preserving), then cut to 64 KB.
+6. One batched `Versions` call per source, each with only its own references, gives each citation its state.
+7. `ResultAssembly`: one `record` item and one citation each. Every field, the citation's key and ids included, is
+   scrubbed again on egress (a blocked field is `[REDACTED:blocked]` alone). The title (at most 200 characters) and
+   the text are fenced as untrusted, and the items are packed into the budget.
 
 No model is called on the query path.
 
 ### Repo-docs
 
 - **Index.** `SqliteDocIndex.Refresh` lists the tree at HEAD (`git ls-tree -r -z`) and matches the globs (`Glob`). It
-  reads changed blobs, chunks them by heading (at most 40 lines or 2,000 characters; `DocChunker`) and cleans every
-  chunk and the title. Only then does one short transaction remove stale docs, write new ones and move the cursor
-  (`source_cursor`). A document the scrubber blocks keeps its `doc` row with `blocked = 1` and has no chunks. A repo
-  git can't read records `SND-CONTEXT-010` as its `last_error`, and the refresh reports it in its row.
+  reads changed blobs (their size first: over 1 MiB keeps a row without chunks and counts as skipped), cleans each
+  document whole and line-preserving (a redacted span keeps its newlines), then chunks the clean text by heading (at
+  most 40 lines or 2,000 characters; `DocChunker`), so a secret or a hidden comment that crosses a chunk boundary
+  can't slip through. Only then does one short transaction remove stale docs, write new ones and move the cursor
+  (`source_cursor`). A document the scrubber blocks keeps its `doc` row with `blocked = 1` and has no chunks; one git
+  can't read on this run is skipped and keeps its earlier rows. A repo git can't read records `SND-CONTEXT-010` as its
+  `last_error`, and the refresh reports it in its row.
 - **Source.** `RepoDocsSource` searches with each term as a quoted FTS5 phrase (`DocSql.Phrase`), OR-ed and ranked by
   `bm25`, filtered to the repos in scope. A record is a chunk, `<repo>/<path>#L<a>-L<b>`, at the blob sha. The
-  canonical key is the document, `repo:<repo>/<path>`. Fetch reads the blob from git at the cited sha and line span;
-  Versions makes one tree listing per repo.
+  canonical key is the document, `repo:<repo>/<path>`. Fetch reads the blob from git at the cited sha, cleans it whole
+  (as the index did) and cuts the line span; Versions makes one tree listing per repo.
 - **Git.** `GitCli` passes arguments through `ArgumentList` with no shell, removes the caller's `GIT_*` variables,
-  accepts shas only as `^[0-9a-f]{7,64}$` (never an option or a ref expression), and times out at 30 s.
+  accepts shas only as `^[0-9a-f]{7,64}$` (never an option or a ref expression), and kills a process that misses 30 s
+  or the caller's token. `cat-file -e` exiting 1 is a missing object (NotFound, `003`); any other failure is `010`.
+- **Logs.** No log line carries question or record text. Kernel telemetry keeps ASP.NET's request lines
+  (`Microsoft.AspNetCore.Hosting.Diagnostics`, which hold the `?q=` query string) at Warning and above, in every host.
 
 ### Store
 
