@@ -18,6 +18,8 @@ public sealed class EvalRecipeTests
     private const string Failed = """{"trigger":{"kind":"step.completed","outcome":"failed","outputs":{"fact:findings":"printed nothing"}},"expect":{"state":"produce"}}""";
     private const string FailedAgain = """{"trigger":{"kind":"step.completed","outcome":"failed","outputs":{"fact:findings":"printed nothing"}},"expect":{"state":"parked","park":"no-progress"}}""";
 
+    private const string AskStart = """{"start":{"inputs":{}}}""";
+
     private readonly InMemoryRecipeFiles _files = Shipped();
 
     [Fact, Trait("Lane", "unit")]
@@ -51,6 +53,31 @@ public sealed class EvalRecipeTests
 
         Assert.False(response.Passed);
         Assert.Equal("happy fail at evals/workflow.step/happy.jsonl:3: expected checks, got verify", response.Cases[0].ToLine());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_eval_case_passes_through_an_answer_wait_on_a_text_answer()
+    {
+        const string recipe = "dev/workflow.ask.yaml";
+        _ = _files.With(recipe, AnswerWaitTests.Yaml + "evals: [evals/workflow.ask/happy.jsonl]\n");
+        _ = _files.With("dev/evals/workflow.ask/happy.jsonl", AskStart + "\n" + """{"trigger":{"kind":"answer","variant":"text","outputs":{"fact:answer":"Only the CLI."}},"expect":{"state":"done","outcome":"resolved"}}""" + "\n");
+
+        var response = await Eval(recipe);
+
+        Assert.Equal(["happy pass"], response.Cases.Select(c => c.ToLine()), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_wait_satisfied_line_on_an_answer_wait_says_to_answer_with_text()
+    {
+        const string recipe = "dev/workflow.ask.yaml";
+        _ = _files.With(recipe, AnswerWaitTests.Yaml + "evals: [evals/workflow.ask/happy.jsonl]\n");
+        _ = _files.With("dev/evals/workflow.ask/happy.jsonl", AskStart + "\n" + """{"trigger":{"kind":"wait.satisfied","outcome":"answered"},"expect":{"state":"done","outcome":"resolved"}}""" + "\n");
+
+        var failed = (await Eval(recipe)).Cases[0];
+
+        Assert.False(failed.Passed);
+        Assert.Contains("'variant': 'text'", failed.ToLine(), StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
