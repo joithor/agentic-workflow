@@ -5,23 +5,46 @@ using System.Text.Json;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Validation;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
 /// <summary>The id and the input facts of a child a 'waitFor: { child }' creates (spec §5.7).</summary>
 internal static class ChildInputs
 {
-    /// <summary>The child's id: a UUIDv8 over SHA-256 of '{parent trigger key}:child', so a replayed Commit creates the same child.</summary>
+    /// <summary>
+    /// The child's id: a UUIDv8 over SHA-256 of '{parent trigger key}:child:{child address}', so a replayed Commit
+    /// creates the same child, and a grandchild created in the same Commit (under the same key) gets an id of its own.
+    /// </summary>
     /// <param name="key">The parent's trigger key.</param>
+    /// <param name="address">The child's address.</param>
     /// <returns>The child's id.</returns>
-    public static WorkflowInstanceId IdFor(TriggerKey key)
+    public static WorkflowInstanceId IdFor(TriggerKey key, InstanceAddress address)
     {
         Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
-        _ = SHA256.HashData(Encoding.UTF8.GetBytes(key.Value + ":child"), digest);
+        _ = SHA256.HashData(Encoding.UTF8.GetBytes(key.Value + ":child:" + address.Value), digest);
         var bytes = digest[..16];
         bytes[6] = (byte)((bytes[6] & 0x0F) | 0x80);
         bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
         return WorkflowInstanceId.For(new Guid(bytes, bigEndian: true));
+    }
+
+    /// <summary>The child's own pins: the hash of each recipe its child waits name, as the pinned resolver has it; one it lacks is left out, so creating that grandchild is SND-RECIPE-002.</summary>
+    /// <param name="recipe">The child recipe.</param>
+    /// <param name="pinned">The pinned child recipes.</param>
+    /// <returns>The pins by recipe id.</returns>
+    public static IReadOnlyDictionary<RecipeId, RecipeHash> Pins(Recipe recipe, IChildRecipeResolver pinned)
+    {
+        var pins = new Dictionary<RecipeId, RecipeHash>();
+        foreach (var id in recipe.States.Values.Select(static s => s.WaitFor?.Child?.Recipe).OfType<RecipeId>())
+        {
+            if (pinned.Resolve(id) is { } grandchild)
+            {
+                pins[id] = grandchild.Hash;
+            }
+        }
+
+        return pins;
     }
 
     /// <summary>

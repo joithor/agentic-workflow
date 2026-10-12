@@ -42,8 +42,8 @@ internal interface IEngineRules
     /// <summary><see cref="BudgetRules.Spend"/>.</summary>
     public BudgetVerdict Spend(WorkflowInstance instance, Recipe recipe, int tokens);
 
-    /// <summary><see cref="ChildPropagation.Create(WorkflowInstance, ChildWait, ChildRecipe, TriggerKey, string)"/>.</summary>
-    public StartRequest CreateChild(WorkflowInstance parent, ChildWait wait, ChildRecipe child, TriggerKey key, string actor);
+    /// <summary><see cref="ChildPropagation.Create"/>.</summary>
+    public Result<StartRequest> CreateChild(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor);
 
     /// <summary><see cref="ChildPropagation.ToParent"/>.</summary>
     public ParentEffect ToParent(WorkflowInstance parent, Recipe recipe, ChildChanged change);

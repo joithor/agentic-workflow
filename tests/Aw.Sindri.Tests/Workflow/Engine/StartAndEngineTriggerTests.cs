@@ -5,6 +5,8 @@ using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Validation;
+using Aw.Sindri.Testing.Workflow;
 using static Aw.Sindri.Tests.Workflow.Engine.EngineFixture;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
@@ -67,6 +69,68 @@ public sealed class StartAndEngineTriggerTests
 
         Assert.Equal((EngineStates.Cancelled, "cancelled"), (applied.Changes[0].After.State, applied.Changes[0].After.Outcome?.Value));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_grandchild_wait_creates_a_grandchild_with_an_id_of_its_own()
+    {
+        var middle = Nested("workflow.middle", "workflow.step");
+        var outer = Nested("workflow.outer", "workflow.middle");
+        var context = Context() with { Children = new InMemoryChildRecipes().With(middle).With(new ChildRecipe(Step, Step.Hash!.Value)) };
+
+        var applied = Assert.IsType<Applied>(TransitionDecision.Start(NestedRequest(outer, middle), outer.Recipe, context));
+
+        Assert.Equal(3, applied.Changes.Count);
+        var (root, child, grandchild) = (applied.Changes[0].After, applied.Changes[1].After, applied.Changes[2].After);
+        Assert.Equal(3, new[] { root.Id, child.Id, grandchild.Id }.Distinct().Count());
+        Assert.Equal((child.Id, root.Id), (root.Frame.Child, child.Parent));
+        Assert.Equal((grandchild.Id, child.Id), (child.Frame.Child, grandchild.Parent));
+        Assert.Equal(Step.Hash, child.Recipe.Children[Step.Id]);
+        Assert.Equal(("produce", RunToken.For(1, 1)), (grandchild.State, grandchild.Frame.Run?.Token));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_child_wait_the_pins_lack_is_rejected_not_thrown()
+    {
+        var middle = Nested("workflow.middle", "workflow.step");
+        var outer = Nested("workflow.outer", "workflow.middle");
+        var context = Context() with { Children = new InMemoryChildRecipes().With(middle).With(new ChildRecipe(Step, Step.Hash!.Value)) };
+        var unpinned = NestedRequest(outer, middle) with { Recipe = NestedRequest(outer, middle).Recipe with { Children = new Dictionary<RecipeId, RecipeHash>() } };
+
+        var rejected = Assert.IsType<Rejected>(TransitionDecision.Start(unpinned, outer.Recipe, context));
+
+        Assert.Equal("SND-RECIPE-002", rejected.Error.Code);
+        Assert.Contains("workflow.middle", rejected.Error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A recipe whose initial state waits on a <paramref name="child"/> child.</summary>
+    private static ChildRecipe Nested(string id, string child)
+    {
+        string[] lines =
+        [
+            "schema: 1",
+            $"id: {id}",
+            "version: 1",
+            "initial: running",
+            "states:",
+            "  running: { kind: wait, timeout: { after: 14d, then: park },",
+            $"             waitFor: {{ child: {{ recipe: {child}, inputs: {{ \"fact:spec\": {{ fact: fact:stepSpec }} }}, onParked: propagate }} }},",
+            "             next: \"Waiting for {child}.\" }",
+            "  done:    { kind: terminal, outcome: resolved }",
+            "  dropped: { kind: terminal, outcome: unresolved }",
+            "transitions:",
+            "  - { from: running, to: done,    on: wait.satisfied, when: { outcome: resolved } }",
+            "  - { from: running, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }",
+        ];
+        var yaml = string.Join('\n', lines) + "\n";
+        var document = RecipeComposition.ReadClean(yaml, id + ".yaml");
+        return new ChildRecipe(document.Recipe with { Hash = document.Hash }, document.Hash);
+    }
+
+    private static StartRequest NestedRequest(ChildRecipe outer, ChildRecipe middle) => Request() with
+    {
+        Address = InstanceAddress.Root(ItemKey.From("T-3"), outer.Recipe.Id, 1),
+        Recipe = new PinnedRecipe(outer.Recipe.Id, 1, outer.Hash, new Dictionary<RecipeId, RecipeHash> { [middle.Recipe.Id] = middle.Hash }),
+    };
 
     private static StartRequest Request() => new(
         TriggerKey.For(Id, "cmd:" + new string('c', 32) + ":start:" + Sha("start")),

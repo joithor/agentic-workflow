@@ -18,7 +18,7 @@ public static class FrameRules
     /// A real state entry (spec §5.1): a new frame with entry + 1, its state deadline armed at arm 1, a new run
     /// '{entry}.1' for an active state (on the desk runtime when the Step has no runtime and is deskCapable, with a
     /// timeout of at least the desk timeout). A Step with neither runtime opens no run (the decision parks with SND-WF-010).
-    /// The frame's child is left to the caller, who creates it with <see cref="ChildPropagation.Create(WorkflowInstance, ChildWait, Validation.ChildRecipe, TriggerKey, string)"/> (its id derives
+    /// The frame's child is left to the caller, who creates it with <see cref="ChildPropagation.Create"/> (its id derives
     /// from the trigger key). A terminal state sets the outcome.
     /// </summary>
     /// <param name="instance">The instance.</param>

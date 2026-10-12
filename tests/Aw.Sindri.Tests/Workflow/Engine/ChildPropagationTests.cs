@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
+using Aw.Sindri.Testing.Workflow;
 using static Aw.Sindri.Tests.Workflow.Engine.ChildFixture;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
@@ -15,12 +16,12 @@ namespace Aw.Sindri.Tests.Workflow.Engine;
 /// <summary>A child created in its parent's Commit, and what its park, resume or escalation does to the parent (spec §5.7).</summary>
 public sealed class ChildPropagationTests
 {
-    private static ChildRecipe Resolved => new(StepRecipe, StepPin);
+    private static InMemoryChildRecipes Pinned => new InMemoryChildRecipes().With(new ChildRecipe(StepRecipe, StepPin));
 
     [Fact, Trait("Lane", "unit")]
     public void Create_derives_the_child_from_the_parent_pin_address_and_key()
     {
-        var start = ChildPropagation.Create(Waiting, Wait, Resolved, EnteringKey, Terminal);
+        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value;
 
         Assert.Equal(EnteringKey, start.Key);
         Assert.Equal(InstanceAddress.From("T-3/item/1/step.4"), start.Address);
@@ -38,21 +39,30 @@ public sealed class ChildPropagationTests
     [Fact, Trait("Lane", "unit")]
     public void Create_hashes_the_parent_key_into_a_version_8_id()
     {
-        var start = ChildPropagation.Create(Waiting, Wait, Resolved, EnteringKey, Terminal);
+        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value;
 
-        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(EnteringKey.Value + ":child"));
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(EnteringKey.Value + ":child:T-3/item/1/step.4"));
         var hex = start.Id.Value["WFI-".Length..];
         Assert.Equal(Convert.ToHexStringLower(digest)[..12], hex[..12]);
         Assert.Equal('8', hex[12]);
         Assert.Contains(hex[16], "89ab");
-        Assert.Equal(start.Id, ChildPropagation.Create(Waiting, Wait, Resolved, EnteringKey, Terminal).Id);
-        Assert.NotEqual(start.Id, ChildPropagation.Create(Waiting, Wait, Resolved, TriggerKey.For(ParentId, "event:43"), Terminal).Id);
+        Assert.Equal(start.Id, ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value.Id);
+        Assert.NotEqual(start.Id, ChildPropagation.Create(Waiting, Wait, Pinned, TriggerKey.For(ParentId, "event:43"), Terminal).Value.Id);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Create_refuses_a_child_the_parent_does_not_pin_or_the_resolver_lacks()
+    {
+        var unpinned = Waiting with { Recipe = Waiting.Recipe with { Children = new Dictionary<RecipeId, RecipeHash>() } };
+
+        Assert.Equal("SND-RECIPE-002", ChildPropagation.Create(unpinned, Wait, Pinned, EnteringKey, Terminal).Error.Code);
+        Assert.Equal("SND-RECIPE-002", ChildPropagation.Create(Waiting, Wait, InMemoryChildRecipes.None, EnteringKey, Terminal).Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Create_copies_a_fact_input_from_the_parent()
     {
-        var start = ChildPropagation.Create(Waiting, Wait, Resolved, EnteringKey, Terminal);
+        var start = ChildPropagation.Create(Waiting, Wait, Pinned, EnteringKey, Terminal).Value;
 
         Assert.Equal(StepSpecValue, Assert.Single(start.Inputs, i => i.Key == Spec).Value);
     }
@@ -71,7 +81,7 @@ public sealed class ChildPropagationTests
             },
         };
 
-        var start = ChildPropagation.Create(Waiting, wait, Resolved, EnteringKey, Terminal);
+        var start = ChildPropagation.Create(Waiting, wait, Pinned, EnteringKey, Terminal).Value;
 
         var value = Assert.Single(start.Inputs).Value;
         Assert.Equal("literal:{\"rounds\":3}", value.Ref);

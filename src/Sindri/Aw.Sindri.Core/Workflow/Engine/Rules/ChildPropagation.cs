@@ -1,7 +1,7 @@
+using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
-using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
 
@@ -14,40 +14,36 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 public static class ChildPropagation
 {
     /// <summary>
-    /// The child a 'waitFor: { child }' creates (spec §5.7): from the parent's pinned hash, its inputs from the wait's
-    /// '{ fact }' and literals, its address '{parent}/{recipe name}.{parent entry}', its id derived from the parent's
-    /// trigger key, and the parent trigger's actor.
+    /// The child a 'waitFor: { child }' creates (spec §5.7): the child recipe as <paramref name="pinned"/> resolves it,
+    /// under the parent's pinned hash; its own pins (its child waits' recipes, as <paramref name="pinned"/> resolves
+    /// them), so a child that waits on a grandchild creates it the same way (RCP-CHILD-003 allows depth 4); its inputs
+    /// from the wait's '{ fact }' and literals; its address '{parent}/{recipe name}.{parent entry}'; its id derived
+    /// from the parent's trigger key and that address (§5.4), so each level gets an id of its own; and the parent
+    /// trigger's actor.
     /// </summary>
     /// <param name="parent">The parent, in the frame that entered the wait.</param>
     /// <param name="wait">The child wait.</param>
+    /// <param name="pinned">The pinned child recipes.</param>
     /// <param name="key">The parent's trigger key.</param>
     /// <param name="actor">The parent trigger's actor.</param>
-    /// <returns>The child's start.</returns>
-    /// <exception cref="NotSupportedException">Always: the child's version is the resolved recipe's, which this overload doesn't have.</exception>
-    public static StartRequest Create(WorkflowInstance parent, ChildWait wait, TriggerKey key, string actor) =>
-        throw new NotSupportedException("ChildPropagation.Create needs the resolved child recipe for the child's version; call Create(parent, wait, child, key, actor)");
-
-    /// <summary>
-    /// <see cref="Create(WorkflowInstance, ChildWait, TriggerKey, string)"/> with the version of the child recipe the
-    /// resolver found; the hash stays the parent's pin.
-    /// </summary>
-    /// <param name="parent">The parent, in the frame that entered the wait.</param>
-    /// <param name="wait">The child wait.</param>
-    /// <param name="child">The child recipe as resolved.</param>
-    /// <param name="key">The parent's trigger key.</param>
-    /// <param name="actor">The parent trigger's actor.</param>
-    /// <returns>The child's start.</returns>
-    public static StartRequest Create(WorkflowInstance parent, ChildWait wait, ChildRecipe child, TriggerKey key, string actor)
+    /// <returns>The child's start, or SND-RECIPE-002 when the child isn't resolved or isn't in the parent's pins.</returns>
+    public static Result<StartRequest> Create(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor)
     {
         ArgumentNullException.ThrowIfNull(parent);
         ArgumentNullException.ThrowIfNull(wait);
-        ArgumentNullException.ThrowIfNull(child);
-        var pin = new PinnedRecipe(wait.Recipe, child.Recipe.Version, parent.Recipe.Children[wait.Recipe], new Dictionary<RecipeId, RecipeHash>());
+        ArgumentNullException.ThrowIfNull(pinned);
+        if (pinned.Resolve(wait.Recipe) is not { } child || !parent.Recipe.Children.TryGetValue(wait.Recipe, out var hash))
+        {
+            return WorkflowErrors.RecipeNotFound.With(
+                $"child recipe {wait.Recipe.Value} isn't pinned for {parent.Recipe.Id.Value} (fix: re-approve {parent.Recipe.Id.Value})");
+        }
+
+        var address = parent.Address.Child(wait.Recipe, parent.Frame.Entry);
         return new StartRequest(
             key,
-            ChildInputs.IdFor(key),
-            parent.Address.Child(wait.Recipe, parent.Frame.Entry),
-            pin,
+            ChildInputs.IdFor(key, address),
+            address,
+            new PinnedRecipe(wait.Recipe, child.Recipe.Version, hash, ChildInputs.Pins(child.Recipe, pinned)),
             parent.Item,
             parent.Attempt,
             parent.Id,

@@ -103,7 +103,13 @@ public static partial class TransitionDecision
                 $"child recipe {wait.Recipe.Value} isn't pinned for {scope.Recipe.Id.Value} (fix: re-approve {scope.Recipe.Id.Value})");
         }
 
-        var request = scope.Rules.CreateChild(entered, wait, child, scope.Key, scope.Actor);
+        var creating = scope.Rules.CreateChild(entered, wait, scope.Context.Children, scope.Key, scope.Actor);
+        if (creating.IsError)
+        {
+            return creating.Error;
+        }
+
+        var request = creating.Value;
         return Start(request, child.Recipe, scope.Context, scope.Rules) switch
         {
             Applied started => new Entered(

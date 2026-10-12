@@ -104,7 +104,7 @@ internal sealed class FakeEngineRules : IEngineRules
             : null);
     }
 
-    public StartRequest CreateChild(WorkflowInstance parent, ChildWait wait, ChildRecipe child, TriggerKey key, string actor) => new(
+    public Result<StartRequest> CreateChild(WorkflowInstance parent, ChildWait wait, IChildRecipeResolver pinned, TriggerKey key, string actor) => new StartRequest(
         key,
         EngineFixture.ChildId,
         parent.Address.Child(wait.Recipe, parent.Frame.Entry),
