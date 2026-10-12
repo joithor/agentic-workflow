@@ -1,7 +1,6 @@
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
-using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
@@ -33,7 +32,7 @@ internal sealed class ChainHarness : IAsyncDisposable
         var fixture = Authorization.Rows.Of(ActionClass.Desk, "FixtureCommand", typeof(FixtureCommand));
         _provider = new ServiceCollection()
             .AddSingleton<TimeProvider>(H.Clock)
-            .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
+            .AddSingleton<IIdGenerator>(H.Ids)
             .AddSingleton(Ledger)
             .AddSingleton<ILease>(H.Store)
             .AddSingleton(H.Held)

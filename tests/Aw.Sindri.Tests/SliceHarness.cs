@@ -17,14 +17,16 @@ internal sealed class SliceHarness
     public SliceHarness()
     {
         Store = new InMemorySindriStore(Clock, Probe);
-        var ids = new SequentialIdGenerator();
-        Callers = new AsyncLocalCallerContextAccessor(ids);
-        Events = new EventFactory(EventScope.ControlPlane, Clock, ids, Json, Callers);
+        Callers = new AsyncLocalCallerContextAccessor(Ids);
+        Events = new EventFactory(EventScope.ControlPlane, Clock, Ids, Json, Callers);
     }
 
     public static JsonSerializerOptions Json { get; } = AwJson.CreateOptions(SindriJsonContext.Default);
 
     public FakeTimeProvider Clock { get; } = new(KnownInstants.Epoch);
+
+    /// <summary>The one id source, as the host has: the callers, the events and anything a test wires in share it.</summary>
+    public SequentialIdGenerator Ids { get; } = new();
 
     public FakeProcessProbe Probe { get; } = new();
 

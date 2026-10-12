@@ -79,7 +79,8 @@ public sealed class CommandChainTests : IAsyncDisposable
     {
         _ = await _c.H.HoldLease();
         using var service = _c.H.Callers.EnterService("jobs");   // one service context, as a scheduler run holds it
-        var correlation = _c.H.Callers.Current!.CorrelationId;
+        var run = _c.H.Callers.Current!;
+        var correlation = run.CorrelationId;
 
         _ = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), caller: null);
         _ = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), caller: null);
@@ -87,6 +88,8 @@ public sealed class CommandChainTests : IAsyncDisposable
         Assert.Equal(2, _c.Handled.Count);   // each attempt has its own command id, so the second isn't a replay
         Assert.NotEqual(_c.Handled[0].CommandId, _c.Handled[1].CommandId);
         Assert.All(_c.Events, e => Assert.Equal(correlation.Value, e.Envelope.CorrelationId));
+        Assert.Same(run, _c.H.Callers.Current);   // the run's context is back after each attempt
+        Assert.DoesNotContain(_c.Handled, h => h.CommandId == run.CommandId);
     }
 
     [Fact, Trait("Lane", "unit")]
