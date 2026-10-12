@@ -49,6 +49,6 @@ public sealed class ApiGoldenTests
     [InlineData("/sindri/items/{itemId}", "items-id")]
     [InlineData("/sindri/items/{id:long}", "items-id")]
     [InlineData("/sindri/workflow/instances/{instanceId}/nonce", "workflow-instances-id-nonce")]
-    public void Route_slug_is_the_path_after_sindri_with_slashes_as_dashes_and_params_by_name(string route, string slug) =>
+    public void Route_slug_is_the_path_after_sindri_with_slashes_as_dashes_and_each_parameter_as_id(string route, string slug) =>
         Assert.Equal(slug, ApiGolden.Slug(route));
 }
