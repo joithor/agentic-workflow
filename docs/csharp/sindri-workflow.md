@@ -276,3 +276,30 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
 5. **A behaviour change bumps `Version`** in the descriptor, in the reviewed change that makes it. Once approvals pin
    blocks (P2), a changed descriptor parks the instances of every recipe approved against the old one until it is
    re-approved (`SND-RECIPE-006`).
+
+## Temporal spike (P0)
+
+Engine rev 8 runs recipe instances on Temporal (engine spec §0, §5; README X53). Phase 0 is a three-day spike that
+gates P4: each pass line below is written here with its measurement, or the line that failed and why. The pass lines
+are copied from the spec ("Phase 0: the Temporal spike") and are not tuned; the verification plan is
+`~/.agentic-workflow/jthorare-agentic-workflow/proof/sindri-wf-p0/verification-plan.md`. The spike's code is thrown away
+afterwards except `binaries.lock`, the `Temporalio` pin and this section.
+
+**Pins.** `Temporalio` 1.19.0 (`Directory.Packages.props`), referenced only by `src/Sindri/Aw.Sindri.Workflows`
+(`AwAotCompatible=false`, temporalio/sdk-dotnet#286). `binaries.lock` pins the `temporal` CLI (1.9.1, the dev server)
+and the time-skipping `temporal-test-server` (1.39.0) for darwin-arm64, darwin-x64, linux-x64 and linux-arm64.
+`scripts/binaries-lock.sh fetch <name>` installs one for this platform under
+`${AW_STATE_DIR:-~/.agentic-workflow}/cache/bin/<name>-<version>/` after checking its sha256;
+`scripts/binaries-lock.sh check` validates the file (`scripts/tests/binaries-lock.test.sh`).
+
+**Status:** contract unit committed red (`TemporalDevServerTests`, integration lane). Units (a)–(d) fill the lines.
+
+| # | Pass line | Measurement | Result |
+|---|---|---|---|
+| 1 | The server starts and stops with `sindri serve`, loopback only, its file under `$AW_SINDRI_HOME`, and survives a host sleep with the instance intact | listen addresses: _ · db path and owning pid: _ · pid in `control.json`: _ · stop takes the server down: _ · sleep (simulated with `kill -STOP`/`-CONT`, _ min): _ | _ |
+| 2 | Async completion, timers and the kill-and-resume case work as stated; the eval cases pass on the time-skipping server in under 10 s total | `complete --run 1.1` moves `produce -> checks`: _ · `4h` timeout wall time: _ · kill -9 mid-Step, same run token after restart: _ · eval cases (`happy`, `no-progress`, `rounds`) total: _ s | _ |
+| 3 | The ledger holds one `workflow.transition` per transition after a replay (no duplicates) | transitions in history: _ · ledger rows before replay: _ · after replay: _ | _ |
+| 4 | Dev server RSS ≤ 300 MB idle and ≤ 500 MB with ten instances; worker overhead inside `sindri serve` ≤ 150 MB; server ready in ≤ 5 s | dev server RSS idle: _ MB · with 10 instances: _ MB · `sindri serve` RSS minus no-worker baseline: _ MB · start-to-ready ×5: _ s (max) · samples: 60 min at 60 s, Ollama running, CSV at _ | _ |
+| 5 | The AOT split builds with zero warnings and the host publishes framework-dependent; the Avalonia app still publishes NativeAOT | `dotnet build -warnaserror`: _ warnings, `IL*` outside `Aw.Sindri.Workflows`: _ · host framework-dependent publish: _ · Avalonia app NativeAOT publish: _ | _ |
+
+**Verdict:** _ (pass, or the failed line and the owner's decision: rev 7's §5 returns, cut down, per the spec's "Fail").

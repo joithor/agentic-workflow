@@ -121,6 +121,10 @@ scripts/sync-rules.sh --check           # Exit 1 if links or the Rules Index are
 node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, compose (DEPS-COMPOSE-001), undeclared cli/db/file edges; exit 1 on drift
 node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid graph and the edge list (added/removed vs F)
 
+# Pinned external binaries (binaries.lock: the temporal CLI and the time-skipping test server; engine spec rev 8 §0)
+scripts/binaries-lock.sh check          # Shape of binaries.lock: six fields, one version per name, all four platforms
+scripts/binaries-lock.sh fetch <name>   # Download this platform's row, verify its sha256, install under $AW_STATE_DIR/cache/bin/<name>-<version>/
+
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
 node scripts/check-rules.mjs [--json]   # Every §4b rule has a record; every active check exists; pending ones wait on their PR
 
@@ -139,6 +143,7 @@ bash scripts/tests/check-deps.test.sh
 bash scripts/tests/check-rules.test.sh
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/check-env-example.test.sh
+bash scripts/tests/binaries-lock.test.sh
 bash scripts/tests/denylist-check.test.sh
 bash scripts/tests/owner-check.test.sh
 bash scripts/tests/repo-templates.test.sh
