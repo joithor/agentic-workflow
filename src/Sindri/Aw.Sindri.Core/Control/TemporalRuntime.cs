@@ -24,13 +24,20 @@ public sealed class TemporalRuntime(ITemporalServer server, TimeProvider clock)
     }
 
     /// <summary>
-    /// Stops the dev server. Call it after the shutdown is requested.
+    /// Waits for the tracked worker to stop (at most <see cref="WorkerStopWait"/>), then stops the dev server. Call it
+    /// after the shutdown is requested: that is what stops the worker.
     /// </summary>
     /// <param name="cancellationToken">Cancels the waits.</param>
     /// <returns>Success, or why the server couldn't be stopped.</returns>
-    public ValueTask<Result<Unit>> Stop(CancellationToken cancellationToken)
+    public async ValueTask<Result<Unit>> Stop(CancellationToken cancellationToken)
     {
-        _ = clock;
-        return server.Stop(cancellationToken);
+        using (var wait = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+        {
+            // WhenAny never throws: a worker that faulted has stopped too, and serve reports its fault when it awaits it
+            _ = await Task.WhenAny(Volatile.Read(ref _worker), Task.Delay(WorkerStopWait, clock, wait.Token)).ConfigureAwait(false);
+            await wait.CancelAsync().ConfigureAwait(false);   // drops the timer
+        }
+
+        return await server.Stop(cancellationToken).ConfigureAwait(false);
     }
 }
