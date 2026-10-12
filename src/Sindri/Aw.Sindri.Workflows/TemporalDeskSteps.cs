@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
@@ -54,6 +55,11 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, T
             tokens.Remove(address, report.Run.Value);
             return WorkflowErrors.StaleRunToken.With($"run {report.Run.Value} of {address} is no longer open: {e.Message}");
         }
+        catch (RpcException e)
+        {
+            return SindriErrors.NotRunning.With($"Temporal didn't take the report for run {report.Run.Value} of {address}: {e.Message} "
+                + "(fix: sindri doctor, then run the same complete again)");
+        }
 
         tokens.Remove(address, report.Run.Value);
         return report.Wait
@@ -61,7 +67,10 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, T
             : new DeskOutcome(State: null, Run: null);
     }
 
-    /// <summary>Waits until the instance has left the run: the 'GetInstance' Query shows another run token or an end.</summary>
+    /// <summary>
+    /// Waits until the instance has left the run: the 'GetInstance' Query shows another run token or an end. The report has
+    /// already landed, so a query nobody answers within the patience (no worker runs) is "sent", not an error.
+    /// </summary>
     private static async Task<Result<DeskOutcome>> Next(ITemporalClient client, string address, string run, CancellationToken cancellationToken)
     {
         var handle = client.GetWorkflowHandle<RecipeWorkflow>(address);
@@ -69,7 +78,16 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, T
         InstanceSnapshot? last = null;
         while (DateTimeOffset.UtcNow < deadline)
         {
-            last = await handle.QueryAsync(static wf => wf.GetInstance()).ConfigureAwait(false);
+            try
+            {
+                var rpc = new RpcOptions { CancellationToken = cancellationToken, Timeout = deadline - DateTimeOffset.UtcNow };
+                last = await handle.QueryAsync(static wf => wf.GetInstance(), new WorkflowQueryOptions { Rpc = rpc }).ConfigureAwait(false);
+            }
+            catch (Exception e) when (e is RpcException or WorkflowQueryFailedException) // the report landed; no worker answered
+            {
+                return new DeskOutcome(State: null, Run: null);
+            }
+
             if (last.Run != run || last.Outcome is not null)
             {
                 return new DeskOutcome(last.State, last.Run is { } open ? RunToken.From(open) : null);
