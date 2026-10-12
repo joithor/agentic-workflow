@@ -7,7 +7,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Desk;
 /// <param name="Run">The open run's token.</param>
 /// <param name="Outcome">One of the Step's declared outcomes.</param>
 /// <param name="Outputs">Each output fact and the file holding its content.</param>
-/// <param name="Temporal">The Temporal frontend ('host:port'); null for the dev server's default, 127.0.0.1:7233.</param>
+/// <param name="Temporal">The Temporal frontend ('host:port'); null for the one control.json's 'temporal' field records.</param>
 /// <param name="Wait">Whether to wait for the instance to leave the run ('--no-wait' doesn't: no worker may be running).</param>
 public sealed record DeskReport(
     InstanceAddress Address,

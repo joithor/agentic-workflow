@@ -95,6 +95,11 @@ internal static class ServeCommand
         _ = await endpoints.Write(endpoint, CancellationToken.None).ConfigureAwait(false);
         var shutdown = app.Services.GetRequiredService<ProcessShutdown>();
         using var either = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Stopping, app.Lifetime.ApplicationStopping);
+
+        // engine P0 spike: the Temporal worker polls the dev server until serve stops, and stops before the lease goes
+        var worker = started.Temporal is { } temporal
+            ? app.Services.GetRequiredService<ITemporalWorker>().Run(temporal, either.Token)
+            : Task.CompletedTask;
         try
         {
             await Task.Delay(Timeout.Infinite, either.Token).ConfigureAwait(false);
@@ -103,6 +108,8 @@ internal static class ServeCommand
         {
             // a stop request, a signal or a lost lease
         }
+
+        await worker.ConfigureAwait(false);
 
         if (app.Services.GetRequiredService<HeldLease>().Current is not null)
         {

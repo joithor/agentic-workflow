@@ -20,8 +20,11 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// deterministic: no I/O, clock or random except through 'Workflow.*'; every decision is P3's pure
 /// <see cref="TransitionDecision"/>. Engine P0 spike: the throwaway interpreter for 'workflow.step': it loads the recipe
 /// through the 'LoadRecipe' local activity, enters the initial state, and runs each active state's Step as a 'RunStep'
-/// activity (desk runtime: async completion, the run token in the activity id) until a terminal state. Parks, waits,
-/// answers, gates, effects and the ledger mirror are P4's; a park here waits for ever.
+/// activity (desk runtime: async completion, the run token in the activity id) until a terminal state. It mirrors the
+/// start and every transition into the ledger through the 'RecordEvent' local activity (spec rev 8.1 §5.6) and upserts
+/// the 'Item', 'Recipe', 'State' and 'NeedsYou' search attributes 'workflow list' queries. Parks, waits, answers, gates
+/// and effects are P4's; a park here waits for ever. (Rev 8.1 §5.3: P4 replaces the async-completion desk activity with
+/// a short activity that records the open task and the validated 'complete' Update.)
 /// </summary>
 [Workflow("RecipeWorkflow")]
 internal sealed class RecipeWorkflow
@@ -48,6 +51,8 @@ internal sealed class RecipeWorkflow
         var context = new DecisionContext(ApprovalCheck.Holds, new BlockCatalog(loaded.Blocks, []), new HashSet<BlockId>(), NoChildRecipes.Instance);
         var instance = Started(TransitionDecision.Start(StartOf(address, run, recipe), recipe, context));
         _instance = instance;
+        var item = address.Value.Split('/')[0];
+        await Mirror(new WorkflowEventRecord(address.Value, "workflow.started", item, string.Empty, instance.State, "start", Outcome: null, Run: null), recipeId, NeedsYou(instance)).ConfigureAwait(true);
         while (!instance.Ended)
         {
             if (instance.Suspension is not null || instance.Frame.Run is not { } open)
@@ -57,12 +62,41 @@ internal sealed class RecipeWorkflow
             }
 
             var trigger = await RunStep(address, instance.Frame, open, recipe.States[instance.Frame.State]).ConfigureAwait(true);
+            var before = instance;
             instance = After(instance, TransitionDecision.Decide(new DecisionInput(instance, recipe, trigger, GateAnswers.None, context)));
             _instance = instance;
+            if (!ReferenceEquals(before, instance))
+            {
+                var (kind, outcome) = trigger switch
+                {
+                    StepCompleted c => (TriggerNames.StepCompleted, c.Outcome.Value),
+                    StepFailed => (TriggerNames.StepFailed, null),
+                    _ => (TriggerNames.Deadline, null),
+                };
+                var record = new WorkflowEventRecord(address.Value, "workflow.transition", item, before.State, instance.State, kind, outcome, open.Token.Value);
+                await Mirror(record, recipeId, NeedsYou(instance)).ConfigureAwait(true);
+            }
         }
 
         return new RecipeResult(instance.State, instance.Outcome?.Value);
     }
+
+    /// <summary>
+    /// Mirrors one event into the ledger ('RecordEvent', a local activity keyed by its own activity id; rev 8.1 §5.6),
+    /// then upserts the search attributes the instance is found by.
+    /// </summary>
+    private static async Task Mirror(WorkflowEventRecord record, string recipeId, bool needsYou)
+    {
+        _ = await Workflow.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(record), RecordEventActivities.LocalOptions).ConfigureAwait(true);
+        Workflow.UpsertTypedSearchAttributes(
+            SindriTemporal.ItemKey.ValueSet(record.Item),
+            SindriTemporal.RecipeKey.ValueSet(recipeId),
+            SindriTemporal.StateKey.ValueSet(record.To),
+            SindriTemporal.NeedsYouKey.ValueSet(needsYou));
+    }
+
+    /// <summary>A desk run waits on a human: the instance is in an active state with an open run.</summary>
+    private static bool NeedsYou(WorkflowInstance instance) => !instance.Ended && instance.Frame.Run is not null;
 
     /// <summary>The instance as status shows it (the 'GetInstance' Query, spec §5.1).</summary>
     /// <returns>The state, the open run token and the outcome.</returns>

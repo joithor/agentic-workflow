@@ -1,4 +1,5 @@
 using Temporalio.Api.Enums.V1;
+using Temporalio.Common;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -31,4 +32,16 @@ internal static class SindriTemporal
         ("Tenant", IndexedValueType.Keyword),
         ("Ring", IndexedValueType.Keyword),
     ];
+
+    /// <summary>The 'Item' search attribute: the work item.</summary>
+    public static SearchAttributeKey<string> ItemKey { get; } = SearchAttributeKey.CreateKeyword("Item");
+
+    /// <summary>The 'Recipe' search attribute: the recipe id.</summary>
+    public static SearchAttributeKey<string> RecipeKey { get; } = SearchAttributeKey.CreateKeyword("Recipe");
+
+    /// <summary>The 'State' search attribute: the state the instance is in.</summary>
+    public static SearchAttributeKey<string> StateKey { get; } = SearchAttributeKey.CreateKeyword("State");
+
+    /// <summary>The 'NeedsYou' search attribute: a desk run waits on a human.</summary>
+    public static SearchAttributeKey<bool> NeedsYouKey { get; } = SearchAttributeKey.CreateBool("NeedsYou");
 }

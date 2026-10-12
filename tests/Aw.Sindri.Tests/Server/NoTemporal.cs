@@ -11,15 +11,24 @@ namespace Aw.Sindri.Tests.Server;
 /// </summary>
 internal static class NoTemporal
 {
-    /// <summary>Registers a new <see cref="FakeTemporalServer"/> as the <see cref="ITemporalServer"/>.</summary>
+    /// <summary>Registers a new <see cref="FakeTemporalServer"/> as the <see cref="ITemporalServer"/>, and a worker that polls nothing.</summary>
     /// <param name="services">The host's services.</param>
     public static void Use(IServiceCollection services) => Use(services, new FakeTemporalServer());
 
-    /// <summary>Registers <paramref name="fake"/> as the <see cref="ITemporalServer"/>.</summary>
+    /// <summary>Registers <paramref name="fake"/> as the <see cref="ITemporalServer"/>, and a worker that polls nothing.</summary>
     /// <param name="services">The host's services.</param>
     /// <param name="fake">The fake to use.</param>
-    public static void Use(IServiceCollection services, FakeTemporalServer fake) =>
-        services.Replace(ServiceDescriptor.Singleton<ITemporalServer>(fake));
+    public static void Use(IServiceCollection services, FakeTemporalServer fake)
+    {
+        _ = services.Replace(ServiceDescriptor.Singleton<ITemporalServer>(fake));
+        _ = services.Replace(ServiceDescriptor.Singleton<ITemporalWorker>(new NoWorker()));
+    }
+
+    /// <summary>A worker that polls nothing: the fake server has no frontend.</summary>
+    private sealed class NoWorker : ITemporalWorker
+    {
+        public Task Run(TemporalEndpoint endpoint, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
 
     /// <summary>A new fake, then <paramref name="more"/>.</summary>
     /// <param name="more">The test's own configuration.</param>

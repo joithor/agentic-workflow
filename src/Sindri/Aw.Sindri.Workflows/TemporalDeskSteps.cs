@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using Aw.Kernel;
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
@@ -11,15 +10,16 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
 /// <see cref="IDeskSteps"/> over Temporal's async activity completion (engine spec rev 8 §5.3). Engine P0 spike: the CLI
-/// talks to Temporal directly (no 'serve' route yet): it stores each output file under the home, finds the run's task
-/// token in <see cref="TaskTokens"/>, completes the RunStep activity with the report, and waits on the 'GetInstance'
-/// Query until the instance has left the run.
+/// talks to Temporal directly (no 'serve' route yet), at the frontend control.json records unless '--temporal' names
+/// one: it stores each output file under the home, finds the run's task token in <see cref="TaskTokens"/>, completes
+/// the RunStep activity with the report, and waits on the 'GetInstance' Query until the instance has left the run.
+/// (Engine spec rev 8.1 §5.3: P4 replaces the async completion with the 'complete' Update.)
 /// </summary>
 /// <param name="home">Where the facts go.</param>
 /// <param name="tokens">The run-token-to-task-token map.</param>
-internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens) : IDeskSteps
+/// <param name="frontend">Finds the dev server.</param>
+internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, TemporalFrontend frontend) : IDeskSteps
 {
-    private const string DefaultFrontend = "127.0.0.1:7233";
     private const int MaxOutputBytes = 1024 * 1024;
     private static readonly TimeSpan _patience = TimeSpan.FromSeconds(10);
 
@@ -27,6 +27,12 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens) :
     {
         ArgumentNullException.ThrowIfNull(report);
         var address = report.Address.Value;
+        var client = await frontend.Connect(report.Temporal, cancellationToken).ConfigureAwait(false);
+        if (client.IsError)
+        {
+            return client.Error;
+        }
+
         if (tokens.Find(address, report.Run.Value) is not { } taskToken)
         {
             return WorkflowErrors.StaleRunToken.With(
@@ -37,12 +43,6 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens) :
         if (outputs.IsError)
         {
             return outputs.Error;
-        }
-
-        var client = await Connect(report.Temporal).ConfigureAwait(false);
-        if (client.IsError)
-        {
-            return client.Error;
         }
 
         try
@@ -79,19 +79,6 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens) :
         }
 
         return new DeskOutcome(last?.State, Run: null);
-    }
-
-    private static async Task<Result<ITemporalClient>> Connect(string? frontend)
-    {
-        var target = frontend ?? DefaultFrontend;
-        try
-        {
-            return await TemporalClient.ConnectAsync(new TemporalClientConnectOptions(target) { Namespace = SindriTemporal.Namespace }).ConfigureAwait(false);
-        }
-        catch (Exception e) when (e is RpcException or InvalidOperationException) // boundary: an unreachable frontend is an expected failure
-        {
-            return SindriErrors.NotRunning.With($"Temporal at {target} doesn't answer: {e.Message} (fix: start sindri serve, or pass --temporal <host:port>)");
-        }
     }
 
     private async Task<Result<IReadOnlyDictionary<string, FactValue>>> StoreAll(DeskReport report, CancellationToken cancellationToken)

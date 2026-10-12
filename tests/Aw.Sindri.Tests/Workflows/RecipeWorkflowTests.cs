@@ -48,7 +48,8 @@ public sealed class RecipeWorkflowTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         await using var env = await StartDevServer();
         await using var sindri = Sindri();
-        using var worker = new TemporalWorker(env.Client, SindriWorker.Options(sindri.GetRequiredService<RunStepActivities>()));
+        await HoldLease(sindri, ct);
+        using var worker = new TemporalWorker(env.Client, SindriWorker.Options(sindri.GetRequiredService<RunStepActivities>(), sindri.GetRequiredService<RecordEventActivities>()));
 
         await worker.ExecuteAsync(async () =>
         {
@@ -82,16 +83,19 @@ public sealed class RecipeWorkflowTests : IDisposable
         await using var env = await StartDevServer();
         await using (var first = Sindri())
         {
-            using var worker = new TemporalWorker(env.Client, SindriWorker.Options(first.GetRequiredService<RunStepActivities>()));
+            await HoldLease(first, ct);
+            using var worker = new TemporalWorker(env.Client, SindriWorker.Options(first.GetRequiredService<RunStepActivities>(), first.GetRequiredService<RecordEventActivities>()));
             await worker.ExecuteAsync(async () => { _ = await Until(await StartStep(env.Client), static s => IsOpen(s, "produce", "1.1")); }, ct);
+            _ = await first.GetRequiredService<ILease>().Release(first.GetRequiredService<HeldLease>().Current!, ct);   // the first "serve" stops
         }
 
         await using var second = Sindri();
+        await HoldLease(second, ct);
         var run = await Cli(second, "complete", Address, "--run", "1.1", "--outcome", "done",
             "--output", "fact:output=" + Output("written while the worker was down"), "--temporal", Target(env), "--no-wait");
         Assert.Equal((0, $"{Address} run 1.1: done -> sent; the instance moves on when a worker runs\n", string.Empty), run);
 
-        using var restarted = new TemporalWorker(env.Client, SindriWorker.Options(second.GetRequiredService<RunStepActivities>()));
+        using var restarted = new TemporalWorker(env.Client, SindriWorker.Options(second.GetRequiredService<RunStepActivities>(), second.GetRequiredService<RecordEventActivities>()));
         await restarted.ExecuteAsync(async () =>
         {
             var handle = env.Client.GetWorkflowHandle<RecipeWorkflow>(Address);

@@ -6,19 +6,23 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// The 'workflow' verb group (engine spec rev 8 §6.3). Engine P0 spike: 'complete' only, and it talks to Temporal
-/// directly through <see cref="IDeskSteps"/> (no 'serve' route yet); '--temporal host:port' names the dev server's
-/// frontend (default 127.0.0.1:7233). Prints what happened: 'T-1/step/1 run 1.1: done -> checks'.
+/// The 'workflow' verb group (engine spec rev 8 §6.3). Engine P0 spike: 'complete' and 'list', which talk to Temporal
+/// directly through <see cref="IDeskSteps"/> and <see cref="IWorkflowInstances"/> (no 'serve' route yet), at the
+/// frontend control.json's 'temporal' field records; '--temporal host:port' overrides it. 'complete' prints what
+/// happened ('T-1/step/1 run 1.1: done -> checks'); 'list' prints one open instance a line ('T-1/step/1  checks  needs-you').
 /// </summary>
 internal static class WorkflowCommandTable
 {
     private const string CompleteUsage =
         "usage: sindri workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--temporal <host:port>] [--no-wait]";
 
+    private const string ListUsage = "usage: sindri workflow list [--query <visibility query>] [--temporal <host:port>]";
+
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch
     {
         ["complete", var address, .. var rest] => Complete(address, rest, services, output, ct),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["workflow", .. args])}' is not a sindri command ({CompleteUsage})")),
+        ["list", .. var rest] => List(rest, services, output, ct),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["workflow", .. args])}' is not a sindri command ({CompleteUsage}; {ListUsage})")),
     };
 
     private static async Task<int> Complete(string address, string[] rest, IServiceProvider services, Output output, CancellationToken ct)
@@ -37,6 +41,25 @@ internal static class WorkflowCommandTable
 
         var next = done.Value.State ?? "sent; the instance moves on when a worker runs";
         return await output.Text($"{report.Address.Value} run {report.Run.Value}: {report.Outcome.Value} -> {next}\n", 0).ConfigureAwait(false);
+    }
+
+    private static async Task<int> List(string[] rest, IServiceProvider services, Output output, CancellationToken ct)
+    {
+        var options = rest.Chunk(2).ToList();
+        if (options.FirstOrDefault(static o => o is not [("--query" or "--temporal"), _]) is { } bad)
+        {
+            return await output.Error(SindriErrors.InvalidInput.With($"'{string.Join(' ', bad)}' isn't an option ({ListUsage})")).ConfigureAwait(false);
+        }
+
+        string? Value(string flag) => options.LastOrDefault(o => o[0] == flag)?[1];
+        var listed = await services.GetRequiredService<IWorkflowInstances>().List(Value("--query"), Value("--temporal"), ct).ConfigureAwait(false);
+        if (listed.IsError)
+        {
+            return await output.Error(listed.Error).ConfigureAwait(false);
+        }
+
+        var lines = listed.Value.Select(static r => $"{r.Address}  {r.State ?? "?"}{(r.NeedsYou ? "  needs-you" : string.Empty)}\n");
+        return await output.Text(string.Concat(lines), 0).ConfigureAwait(false);
     }
 
     private static (DeskReport? Report, string? Problem) Parse(string address, string[] rest)
