@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Kernel;
 
@@ -5,7 +6,7 @@ namespace Aw.Context.Core.Facade;
 
 /// <summary>
 /// The map part of the facade (spec Phase 3, stage S-3a): import, export, status, the doctor checks and the purge.
-/// IContextEngine extends it; Sindri calls these through IContextEngine only.
+/// IContextEngine extends it; Sindri calls these through IContextEngine only. Reads take the same ContextScope as the rest of the engine.
 /// </summary>
 public interface IContextMap
 {
@@ -24,16 +25,16 @@ public interface IContextMap
 
     /// <summary>Exports the current version (with the override layer) to the exports folder.</summary>
     /// <param name="path">A name or path under the exports folder, or null.</param>
-    /// <param name="reader">The caller and settings: a session's export holds only its repo's scope.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller: a session's export holds only its repo's scope.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The file, or SND-CONTEXT-003/005/020/030/033.</returns>
-    public ValueTask<Result<MapExported>> ExportMap(string? path, MapReader reader, CancellationToken cancellationToken);
+    /// <returns>The file, or SND-CONTEXT-001/003/005/020/030/033.</returns>
+    public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>The current version and its counts.</summary>
-    /// <param name="reader">The caller and settings: a session sees its repo's scope only.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller: a session sees its repo's scope only.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The status, or SND-CONTEXT-003/020/030.</returns>
-    public ValueTask<Result<MapStatusView>> MapStatus(MapReader reader, CancellationToken cancellationToken);
+    /// <returns>The status, or SND-CONTEXT-001/003/020/030.</returns>
+    public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>Doctor 'context:map': whether there is a current map and whether overrides are orphaned.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>

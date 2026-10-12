@@ -1,6 +1,6 @@
 using Aw.Context.Core.Map;
 using Aw.Context.Infrastructure.Map;
-using Aw.Context.Infrastructure.State;
+using Aw.Context.Infrastructure.Store;
 using Aw.Context.Testing.Map;
 
 namespace Aw.Context.Tests.Map;

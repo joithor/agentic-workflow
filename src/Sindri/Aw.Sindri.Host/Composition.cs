@@ -1,3 +1,6 @@
+using Aw.Context.Core;
+using Aw.Context.Features;
+using Aw.Context.Infrastructure;
 using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
 using Aw.Sindri.Core.Registration;
@@ -18,5 +21,8 @@ internal static class Composition
             .AddSindriCore()
             .AddSindriFeatures()
             .AddSindriInfrastructure(environment)
+            .AddContextCore()
+            .AddContextFeatures()
+            .AddContextInfrastructure(environment)   // context engine: $AW_SINDRI_HOME/context (compose edge)
             .AddSindriHost();
 }

@@ -15,7 +15,7 @@ internal sealed class ExportMapService(IGraphStore store, IExportStore exports, 
 {
     public async ValueTask<Result<MapExported>> Handle(ExportMapRequest request, CancellationToken cancellationToken)
     {
-        if (MapAccess.Gate(request.Reader) is { } refused)
+        if (MapAccess.Gate(request.Scope) is { } refused)
         {
             return refused;
         }
@@ -33,7 +33,7 @@ internal sealed class ExportMapService(IGraphStore store, IExportStore exports, 
             return graph.IsError ? graph.Error : overrides.Error;
         }
 
-        var visible = MapAccess.Visible(graph.Value, overrides.Value, request.Reader);
+        var visible = MapAccess.Visible(graph.Value, overrides.Value, request.Scope.Caller);
         if (visible.IsError)
         {
             return visible.Error;

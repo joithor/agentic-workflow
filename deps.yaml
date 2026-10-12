@@ -385,9 +385,7 @@ edges:
     kind: project
     status: current
     note: "the aw-readiness host starts Kernel telemetry in Compose (§4b.4)"
-  # Context's tier-0 edges (context spec §4: Aw.Kernel, Aw.Kernel.Data, Redaction). Stage S-FX declares the Kernel one,
-  # which its test support (tests/Aw.Context.Testing, AwJson for the fixture files) already needs; S-1A flips it to
-  # current with the package's own projects and adds the other two.
+  # Context's tier-0 edges (context spec §4: Aw.Kernel, Aw.Kernel.Data, Redaction), current since stage S-1A.
   - from: Context
     to: Kernel
     kind: project
@@ -397,7 +395,12 @@ edges:
     to: KernelData
     kind: project
     status: current
-    note: "context.db (stage S-3a: the graph store, migrations through MigrationRunner, connections through SqliteConnectionFactory)"
+    note: "context.db: migrations, connections and sessions (Aw.Context.Infrastructure only; S-1A repo docs, S-3a graph store)"
+  - from: Context
+    to: Redaction
+    kind: project
+    status: current
+    note: "the ingest and egress scrubbers (Aw.Context.Infrastructure only; context spec D14)"
   - from: Scorer
     to: Kernel
     kind: project
@@ -468,16 +471,16 @@ edges:
     kind: cli
     status: planned
     note: "scorer's labeler moves into scorer's Core; sindri calls it through scorer's CLI instead of copying it (§4b.1a)"
-  # ---- the context engine (context spec §4, stage S-1C; S-1A flips both to current) ----
+  # ---- the context engine (context spec §4, stage S-1C; current since S-1A) ----
   - from: Sindri
     to: Context
     kind: project
-    status: planned
+    status: current
     note: "Sindri's Features and Host use the IContextEngine facade and its records in Aw.Context.Core"
   - from: Sindri
     to: Context
     kind: compose
-    status: planned
+    status: current
     note: "Sindri's Host calls AddContextFeatures and AddContextInfrastructure (and nothing else from those projects) in Composition"
 
 exceptions: []

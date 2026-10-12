@@ -1,6 +1,6 @@
 using Aw.Context.Core.Map;
 using Aw.Context.Infrastructure.Graph;
-using Aw.Context.Infrastructure.State;
+using Aw.Context.Infrastructure.Store;
 using Aw.Context.Testing.Map;
 using Microsoft.Extensions.Time.Testing;
 
@@ -10,7 +10,7 @@ namespace Aw.Context.Tests.Map;
 public sealed class SqliteGraphStoreContractTests : GraphStoreContract, IDisposable
 {
     private readonly TempHome _home = new();
-    private readonly List<GraphDatabase> _databases = [];
+    private readonly List<ContextDatabase> _databases = [];
 
     public void Dispose()
     {
@@ -20,7 +20,7 @@ public sealed class SqliteGraphStoreContractTests : GraphStoreContract, IDisposa
 
     protected override IGraphStore CreateStore()
     {
-        var database = new GraphDatabase(SettingsFromEnvironment.Read(_home.Environment), new FakeTimeProvider());
+        var database = new ContextDatabase(SettingsFromEnvironment.Read(_home.Environment), new FakeTimeProvider());
         _databases.Add(database);
         return new SqliteGraphStore(database);
     }

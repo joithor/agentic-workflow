@@ -164,8 +164,7 @@
         "dependencies": {
           "Aw.Context.Core": "[1.0.0, )",
           "Aw.Kernel": "[1.0.0, )",
-          "Aw.Kernel.Testing": "[1.0.0, )",
-          "xunit.v3.extensibility.core": "[4.0.1, 4.0.1]"
+          "Aw.Kernel.Testing": "[1.0.0, )"
         }
       },
       "aw.kernel": {

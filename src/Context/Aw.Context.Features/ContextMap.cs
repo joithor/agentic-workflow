@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Map;
 using Aw.Context.Features.CheckMap;
@@ -28,11 +29,11 @@ internal sealed class ContextMap(
     public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, CancellationToken cancellationToken) =>
         import.Handle(new ImportMapRequest(path, confirmedHash), cancellationToken);
 
-    public ValueTask<Result<MapExported>> ExportMap(string? path, MapReader reader, CancellationToken cancellationToken) =>
-        export.Handle(new ExportMapRequest(path, reader), cancellationToken);
+    public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) =>
+        export.Handle(new ExportMapRequest(path, scope), cancellationToken);
 
-    public ValueTask<Result<MapStatusView>> MapStatus(MapReader reader, CancellationToken cancellationToken) =>
-        status.Handle(new ShowMapStatusRequest(reader), cancellationToken);
+    public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken) =>
+        status.Handle(new ShowMapStatusRequest(scope), cancellationToken);
 
     public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) =>
         checkMap.Handle(new CheckMapRequest(), cancellationToken);

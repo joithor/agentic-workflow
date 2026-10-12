@@ -2,12 +2,13 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Kernel;
+using Aw.Context.Infrastructure.Store;
 using Aw.Kernel.Data;
 
 namespace Aw.Context.Infrastructure.Graph;
 
 /// <summary>The graph store in context.db: versions are written in batches as 'building', then made current in one short transaction.</summary>
-internal sealed class SqliteGraphStore(GraphDatabase database) : IGraphStore
+internal sealed class SqliteGraphStore(ContextDatabase database) : IGraphStore
 {
     private const int BatchSize = 500;
 
@@ -25,34 +26,29 @@ internal sealed class SqliteGraphStore(GraphDatabase database) : IGraphStore
 
     public async ValueTask<Result<GraphSnapshot>> Read(int version, CancellationToken cancellationToken)
     {
-        if (!database.Exists)
+        var open = await database.Readable(cancellationToken).ConfigureAwait(false);
+        if (open.IsError || open.Value is not { } sessions)
         {
-            return GraphSnapshot.Empty;
+            return open.IsError ? open.Error : GraphSnapshot.Empty;
         }
 
-        var open = await database.Open(cancellationToken).ConfigureAwait(false);
-        if (open.IsError)
-        {
-            return open.Error;
-        }
-
-        var read = await open.Value.BeginRead(cancellationToken).ConfigureAwait(false);
+        var read = await sessions.BeginRead(cancellationToken).ConfigureAwait(false);
         if (read.IsError)
         {
-            return GraphDatabase.Translate(read.Error);
+            return ContextDatabase.Translate(read.Error);
         }
 
         await using (read.Value.ConfigureAwait(false))
         {
             var graph = await GraphReads.Version(read.Value, version, cancellationToken).ConfigureAwait(false);
-            return graph.IsError ? GraphDatabase.Translate(graph.Error) : graph;
+            return graph.IsError ? ContextDatabase.Translate(graph.Error) : graph;
         }
     }
 
     public async ValueTask<Result<MapVersion>> SaveCurrent(MapImport map, DateTimeOffset created, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(map);
-        var open = await database.Open(cancellationToken).ConfigureAwait(false);
+        var open = await database.Writable(cancellationToken).ConfigureAwait(false);
         if (open.IsError)
         {
             return open.Error;
@@ -86,18 +82,18 @@ internal sealed class SqliteGraphStore(GraphDatabase database) : IGraphStore
     public async ValueTask<Result<int>> Delete(IReadOnlyList<int> versions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(versions);
-        if (versions.Count == 0 || !database.Exists)
+        if (versions.Count == 0)
         {
             return 0;
         }
 
-        var open = await database.Open(cancellationToken).ConfigureAwait(false);
-        if (open.IsError)
+        var open = await database.Readable(cancellationToken).ConfigureAwait(false);
+        if (open.IsError || open.Value is not { } sessions)
         {
-            return open.Error;
+            return open.IsError ? open.Error : 0;
         }
 
-        var deleted = await Run(open.Value, [.. versions.Select(v => Delete(v))], returnsId: false, cancellationToken).ConfigureAwait(false);
+        var deleted = await Run(sessions, [.. versions.Select(v => Delete(v))], returnsId: false, cancellationToken).ConfigureAwait(false);
         return deleted.IsError ? deleted.Error : (int)deleted.Value;
     }
 
@@ -109,7 +105,7 @@ internal sealed class SqliteGraphStore(GraphDatabase database) : IGraphStore
         var begun = await sessions.BeginSession(cancellationToken).ConfigureAwait(false);
         if (begun.IsError)
         {
-            return GraphDatabase.Translate(begun.Error);
+            return ContextDatabase.Translate(begun.Error);
         }
 
         await using (begun.Value.ConfigureAwait(false))
@@ -122,40 +118,35 @@ internal sealed class SqliteGraphStore(GraphDatabase database) : IGraphStore
                     : (await SqliteQueries.Execute(begun.Value, statement, cancellationToken).ConfigureAwait(false)).Map(n => (long)n);
                 if (step.IsError)
                 {
-                    return GraphDatabase.Translate(step.Error);
+                    return ContextDatabase.Translate(step.Error);
                 }
 
                 total = returnsId ? step.Value : total + step.Value;
             }
 
             var committed = await begun.Value.Commit(cancellationToken).ConfigureAwait(false);
-            return committed.IsError ? GraphDatabase.Translate(committed.Error) : total;
+            return committed.IsError ? ContextDatabase.Translate(committed.Error) : total;
         }
     }
 
     private async ValueTask<Result<IReadOnlyList<T>>> Query<T>(SqlStatement statement, IRowMapper<T> mapper, CancellationToken cancellationToken)
     {
-        if (!database.Exists)
+        var open = await database.Readable(cancellationToken).ConfigureAwait(false);
+        if (open.IsError || open.Value is not { } sessions)
         {
-            return Results.Success<IReadOnlyList<T>>([]);
+            return open.IsError ? open.Error : Results.Success<IReadOnlyList<T>>([]);
         }
 
-        var open = await database.Open(cancellationToken).ConfigureAwait(false);
-        if (open.IsError)
-        {
-            return open.Error;
-        }
-
-        var read = await open.Value.BeginRead(cancellationToken).ConfigureAwait(false);
+        var read = await sessions.BeginRead(cancellationToken).ConfigureAwait(false);
         if (read.IsError)
         {
-            return GraphDatabase.Translate(read.Error);
+            return ContextDatabase.Translate(read.Error);
         }
 
         await using (read.Value.ConfigureAwait(false))
         {
             var rows = await SqliteQueries.List(read.Value, statement, mapper, cancellationToken).ConfigureAwait(false);
-            return rows.IsError ? GraphDatabase.Translate(rows.Error) : rows;
+            return rows.IsError ? ContextDatabase.Translate(rows.Error) : rows;
         }
     }
 }

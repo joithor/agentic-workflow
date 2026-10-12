@@ -12,7 +12,7 @@ internal sealed class ShowMapStatusService(IGraphStore store) : IService<ShowMap
 {
     public async ValueTask<Result<MapStatusView>> Handle(ShowMapStatusRequest request, CancellationToken cancellationToken)
     {
-        if (MapAccess.Gate(request.Reader) is { } refused)
+        if (MapAccess.Gate(request.Scope) is { } refused)
         {
             return refused;
         }
@@ -30,7 +30,7 @@ internal sealed class ShowMapStatusService(IGraphStore store) : IService<ShowMap
             return graph.IsError ? graph.Error : overrides.Error;
         }
 
-        var visible = MapAccess.Visible(graph.Value, overrides.Value, request.Reader);
+        var visible = MapAccess.Visible(graph.Value, overrides.Value, request.Scope.Caller);
         if (visible.IsError)
         {
             return visible.Error;
@@ -39,7 +39,7 @@ internal sealed class ShowMapStatusService(IGraphStore store) : IService<ShowMap
         var (shown, layer) = visible.Value;
         var orphaned = OverrideApplier.Apply(shown, layer).Orphaned.Count;
         var retained = versions.Value.Count(v => v.Status == MapVersionStatus.Retained);
-        var scope = request.Reader.Caller.Kind == ContextCallerKind.Session ? request.Reader.Caller.Repo : null;
+        var scope = request.Scope.Caller.Kind == ContextCallerKind.Session ? request.Scope.Caller.Repo : null;
         return new MapStatusView(version, MapCounts.Of(shown, layer.Count), orphaned, retained, scope);
     }
 }

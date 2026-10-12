@@ -1,5 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Overrides;
 using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
 using Aw.Kernel.Json;
@@ -71,7 +72,7 @@ public sealed class ExportMapTests : IDisposable
     {
         var withOrphan = Maps.Fixture() with
         {
-            Overrides = [.. Maps.Fixture().Overrides!, new(Core.Overrides.OverrideAction.Rename, Maps.Key("feature:gone"), "avery", SampleMap.At, Label: "Gone")],
+            Overrides = [.. Maps.Fixture().Overrides!, new(OverrideAction.Rename, Maps.Key("feature:gone"), "avery", SampleMap.At, Label: "Gone")],
         };
         _world.Reader.Put(MapWorld.MapPath, withOrphan, "with orphan");
         _ = await _world.ImportFixture();

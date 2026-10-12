@@ -7,60 +7,50 @@ namespace Aw.Context.Core.Map;
 
 /// <summary>
 /// Who may read which part of the map (spec §3): humans and services see all of it; a session only while
-/// 'context.sessions.enabled' is on (SND-CONTEXT-020), and only the nodes its repo implements, with what lies between
-/// them. A repo that implements nothing answers SND-CONTEXT-003, like any unknown anchor.
+/// 'context.sessions.enabled' is on (SND-CONTEXT-020), for a repo the profile maps, and only the nodes that repo implements,
+/// with what lies between them. A repo that implements nothing answers SND-CONTEXT-003, like any unknown anchor.
 /// </summary>
 public static class MapAccess
 {
-    /// <summary>The part of <paramref name="graph"/> and its overrides <paramref name="reader"/> may see.</summary>
+    /// <summary>The part of <paramref name="graph"/> and its overrides <paramref name="caller"/> may see (run <see cref="Gate"/> first).</summary>
     /// <param name="graph">The stored graph.</param>
     /// <param name="overrides">Every override.</param>
-    /// <param name="reader">The caller and settings.</param>
-    /// <returns>The visible graph and overrides, or SND-CONTEXT-003/020.</returns>
+    /// <param name="caller">The caller.</param>
+    /// <returns>The visible graph and overrides, or SND-CONTEXT-003 when a session's repo implements nothing in the map.</returns>
     public static Result<(GraphSnapshot Graph, IReadOnlyList<MapOverride> Overrides)> Visible(
-        GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, MapReader reader)
+        GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextCaller caller)
     {
         ArgumentNullException.ThrowIfNull(graph);
-        ArgumentNullException.ThrowIfNull(reader);
-        if (reader.Caller.Kind != ContextCallerKind.Session)
+        ArgumentNullException.ThrowIfNull(caller);
+        if (caller.Kind != ContextCallerKind.Session)
         {
             return (graph, overrides);
         }
 
-        if (Gate(reader) is { } refused)
-        {
-            return refused;
-        }
-
-        var repo = reader.Caller.Repo!;   // why: Gate refuses a session without a repo
+        var repo = caller.Repo ?? string.Empty;
         var scoped = graph.ScopedTo(repo);
         if (scoped.Nodes.Count == 0)
         {
-            return ContextErrors.UnknownAnchor.With($"nothing in the map for repo '{repo}' (fix: context map status)");
+            return ContextErrors.UnknownAnchor.With("no map nodes are implemented in this session's repo (X-Sindri-Repo)");
         }
 
         return (scoped, [.. overrides.Where(o => scoped.Resolve(o.Target) is not null)]);
     }
 
-    /// <summary>The checks that need no map: a session needs sessions on and a repo.</summary>
-    /// <param name="reader">The caller and settings.</param>
-    /// <returns>Null when the caller may read, otherwise SND-CONTEXT-020 or SND-CONTEXT-003.</returns>
-    public static Error? Gate(MapReader reader)
+    /// <summary>The checks that need no map, the same ones every engine read makes: the context section is valid (001), and a session needs sessions on (020) and a repo the profile maps (003).</summary>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <returns>Null when the caller may read, otherwise the error.</returns>
+    public static Error? Gate(ContextScope scope)
     {
-        ArgumentNullException.ThrowIfNull(reader);
-        if (reader.Caller.Kind != ContextCallerKind.Session)
+        ArgumentNullException.ThrowIfNull(scope);
+        var settings = SettingsReader.Read(scope.Settings);
+        if (settings.IsError)
         {
-            return null;
+            return settings.Error;
         }
 
-        if (!reader.Settings.SessionsEnabled)
-        {
-            return ContextErrors.SessionsDisabled.With("session reads of the map are off (fix: set context.sessions.enabled: true in the profile, then profile approve)");
-        }
-
-        return string.IsNullOrWhiteSpace(reader.Caller.Repo)
-            ? ContextErrors.UnknownAnchor.With("a session read needs its repo (X-Sindri-Repo)")
-            : null;
+        var repos = ScopeRules.Resolve(settings.Value, scope.Repos, scope.Caller);
+        return repos.IsError ? repos.Error : null;
     }
 
     /// <summary>The export document for a version's visible graph: decision nodes and 'quotes' edges are left to the decisions, which imply them.</summary>

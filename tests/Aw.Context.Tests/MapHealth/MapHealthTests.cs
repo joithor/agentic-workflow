@@ -1,3 +1,4 @@
+using Aw.Context.Core;
 using Aw.Context.Core.Map;
 using Aw.Context.Tests.Map;
 
@@ -34,7 +35,7 @@ public sealed class MapHealthTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Context_map_fails_when_the_store_cant_open()
     {
-        _world.Store.Failure = Core.ContextErrors.StoreUnavailable.With("AW-DATA-001: locked");
+        _world.Store.Failure = ContextErrors.StoreUnavailable.With("AW-DATA-001: locked");
 
         var check = (await _world.Map.CheckMap(MapWorld.None)).Value;
 

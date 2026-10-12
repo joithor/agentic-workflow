@@ -1,14 +1,14 @@
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Map;
-using Aw.Context.Infrastructure.State;
+using Aw.Context.Infrastructure.Store;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 
 namespace Aw.Context.Infrastructure.Map;
 
 /// <summary>The exports folder: JSON files written by temp file and rename at 0600 in a 0700 folder, nowhere else.</summary>
-internal sealed class FileExportStore(ContextSettings settings, JsonSerializerOptions options) : IExportStore
+internal sealed class FileExportStore(ContextStoreSettings settings, JsonSerializerOptions options) : IExportStore
 {
     public ValueTask<Result<string>> Write(string? path, string defaultName, MapDocument document, CancellationToken cancellationToken)
     {
@@ -26,7 +26,7 @@ internal sealed class FileExportStore(ContextSettings settings, JsonSerializerOp
 
         try
         {
-            OwnerOnly.EnsureDirectory(Path.GetDirectoryName(folder)!);   // why: folder is an absolute path under the state directory
+            OwnerOnly.EnsureDirectory(settings.Home);
             OwnerOnly.EnsureDirectory(folder);
             OwnerOnly.EnsureDirectory(Path.GetDirectoryName(target)!);   // why: target is an absolute file path inside folder
             OwnerOnly.WriteAtomically(target, AwJson.Serialize(document, options));

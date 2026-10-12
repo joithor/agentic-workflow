@@ -1,3 +1,4 @@
+using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
@@ -42,6 +43,7 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton(endpoints ?? new InMemoryEndpointFile())
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddSingleton<IApprovals>(H.Profiles)
+            .AddSingleton<IContextEngine>(SettingsOnlyContextEngine.Instance)
             .AddSingleton<ICommandCatalog>(new InMemoryCommandCatalog([.. ShellRows.All, fixture]))
             .AddSingleton(Latch)
             .AddSingleton<ILogger<AuditTrail>>(Log)
