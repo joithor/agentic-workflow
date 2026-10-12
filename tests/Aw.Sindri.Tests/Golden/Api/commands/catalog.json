@@ -110,6 +110,22 @@
       "shortcut": null
     },
     {
+      "action": "ApplyCommand:command",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/workflow/instances/{instanceId}/commands",
+      "cli": "sindri workflow command <address> <verb>",
+      "ui": "pending:WF-P4",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "ApplyCommand:handback",
       "class": "desk",
       "allowedCallers": [

@@ -22,6 +22,16 @@ public sealed class EngineRowTests
         });
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void One_command_row_serves_every_recipe_verb_with_the_verb_in_the_payload()
+    {
+        var row = Assert.Single(new CommandCatalog().Rows, r => r.Action.Value == "ApplyCommand:command");
+
+        Assert.Equal(
+            ("command", ActionClass.Desk, false, false, false, "POST", "/sindri/workflow/instances/{instanceId}/commands", "sindri workflow command <address> <verb>"),
+            (row.Variant, row.Class, row.NeedsTerminal, row.Destructive, row.ReadsViews, row.Method, row.Route, row.Cli.Text));
+    }
+
     private static readonly (string Action, ActionClass Class, string Ui)[] _expected =
     [
         ("RegisterRecipe", ActionClass.Desk, "pending:WF-P2"),
@@ -39,6 +49,7 @@ public sealed class EngineRowTests
         ("ApplyCommand:takeover", ActionClass.Pause, "pending:WF-P5"),
         ("ApplyCommand:handback", ActionClass.Desk, "pending:WF-P5"),
         ("ApplyCommand:cancel", ActionClass.Desk, "pending:WF-P4"),
+        ("ApplyCommand:command", ActionClass.Desk, "pending:WF-P4"),
         ("CompleteStep", ActionClass.Desk, "pending:WF-P4"),
     ];
 }

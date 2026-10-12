@@ -152,21 +152,23 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
         return current.IsError ? current.Error : (parsed.Value, current.Value);
     }
 
-    /// <summary>The block pins from this build, and each child's latest approved hash (spec §4.1: a child is created from the hash its parent pinned).</summary>
+    /// <summary>
+    /// The block pins from this build, and each child's latest approved hash (PinRules.Pins; spec §4.1: a child is created
+    /// from the hash its parent pinned). A child with no approved version refuses the approval.
+    /// </summary>
     private Result<RecipePins> Pins(RegisteredRecipe recipe, Recipe parsed, IReadOnlyList<RecipeApproval> current)
     {
-        var children = new List<ChildPin>();
-        foreach (var child in parsed.States.Values.Select(static s => s.WaitFor?.Child?.Recipe).OfType<RecipeId>().Distinct().OrderBy(static c => c.Value, StringComparer.Ordinal))
-        {
-            if (current.Where(a => a.Id == child).MaxBy(static a => a.Version) is not { } approved)
-            {
-                return WorkflowErrors.RecipeNotApproved.With($"{Name(recipe)} starts child {child.Value}, which has no approved version to pin; approve {child.Value} first");
-            }
-
-            children.Add(new ChildPin(child, approved.Hash));
-        }
-
-        return new RecipePins(PinRules.Blocks(parsed, catalog, json), children);
+        var unpinned = parsed.States.Values
+            .Select(static s => s.WaitFor?.Child?.Recipe)
+            .OfType<RecipeId>()
+            .Distinct()
+            .Where(child => !current.Any(a => a.Id == child))
+            .OrderBy(static c => c.Value, StringComparer.Ordinal)
+            .Cast<RecipeId?>()
+            .FirstOrDefault();
+        return unpinned is { } child
+            ? WorkflowErrors.RecipeNotApproved.With($"{Name(recipe)} starts child {child.Value}, which has no approved version to pin; approve {child.Value} first")
+            : PinRules.Pins(parsed, catalog, current, json);
     }
 
     /// <summary>The diff against the last approved version of the same id (another hash), or null when there is none.</summary>
