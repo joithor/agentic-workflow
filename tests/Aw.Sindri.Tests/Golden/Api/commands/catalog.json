@@ -168,7 +168,7 @@
       "method": "POST",
       "route": "/sindri/workflow/recipes/{id}@{hash}/approve",
       "cli": "sindri recipe approve <recipe>",
-      "ui": "pending:WF-P2",
+      "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -298,7 +298,7 @@
       "method": "POST",
       "route": "/sindri/workflow/challenges",
       "cli": "sindri recipe approve <recipe>",
-      "ui": "pending:WF-P2",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -459,7 +459,7 @@
       "method": "POST",
       "route": "/sindri/workflow/recipes/{id}@{hash}/revoke",
       "cli": "sindri recipe revoke <recipe>",
-      "ui": "pending:WF-P2",
+      "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
       "shortcut": null

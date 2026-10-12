@@ -3,6 +3,8 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.RegistryLedger;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Core.Registration;
@@ -23,5 +25,8 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<ICallerContextAccessor, AsyncLocalCallerContextAccessor>()
             .AddSingleton<HeldLease>()
             .AddSingleton<HeldHumanToken>()
-            .AddSingleton<BlockCatalog>();
+            .AddSingleton<BlockCatalog>()
+            .AddScoped<RecipeApprovalPlanner>()
+            .AddScoped<RecipeRevokePlanner>()
+            .AddScoped<RecipeRegistryWrites>();
 }

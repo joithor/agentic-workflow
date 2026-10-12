@@ -1,7 +1,9 @@
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Features.ApproveProfile;
+using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Host;
@@ -98,8 +100,10 @@ public sealed class CommandTableTests : IDisposable
             using var human = services.GetRequiredService<ICallerContextAccessor>().Enter(A.Caller().AtTerminal().Client(ClientLabel.Cli).Build());   // approve is protected
             _ = await services.GetRequiredService<IService<StartProcessRequest, StartProcessResponse>>().Handle(new StartProcessRequest(), ct);
             var approve = services.GetRequiredService<IService<ApproveProfileRequest, ApproveProfileResponse>>();
-            var hash = (await approve.Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), ct)).Value.Hash;
-            Assert.True((await approve.Handle(new ApproveProfileRequest(hash, Confirmed: true), ct)).Value.Approved);
+            var hash = (await approve.Handle(new ApproveProfileRequest(Hash: null, Answer: null), ct)).Value.Hash;
+            var issued = (await services.GetRequiredService<IService<IssueChallengeRequest, IssueChallengeResponse>>()
+                .Handle(new IssueChallengeRequest("approve profile " + hash.Abbreviated), ct)).Value;
+            Assert.True((await approve.Handle(new ApproveProfileRequest(hash, new ChallengeAnswer(issued.Challenge, issued.Action)), ct)).Value.Approved);
             _ = await services.GetRequiredService<IService<StopProcessRequest, StopProcessResponse>>().Handle(new StopProcessRequest(StopReason.Stop), ct);
         }
     }

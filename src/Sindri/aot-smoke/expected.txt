@@ -25,14 +25,13 @@ changed since the last approval: api.port, schemaVersion, services.heartbeat.eve
 to approve: sindri profile approve HASH
 exit 1
 ## sindri profile approve HASH
-SND-PROFILE-004 approving needs an interactive terminal: run it yourself and type the first 6 characters of the hash
+SND-PROFILE-004 approving needs an interactive terminal: run it yourself and type the action the challenge asks for
 exit 2
 ## sindri profile approve HASH (session, terminal)
-Type the first 6 characters of HASH to approve it: HASH6
 SND-AUTH-002 ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve [<hash>] (this CLI ran as a session: CLAUDECODE is set)
 exit 2
 ## sindri profile approve HASH (human, terminal)
-Type the first 6 characters of HASH to approve it: HASH6
+Type 'approve profile HASH6' to approve it: approve profile HASH6
 Approved HASH
 ## sindri status
   profile   WORK/home/profile/profile.yaml (approved, hash HASH6)
@@ -52,7 +51,7 @@ SND-API-001 not running: no control plane is recorded (fix: sindri)
 exit 1
 ## sindri doctor
 ok    lease    free (last epoch 1)
-ok    ledger   schema 3/3
+ok    ledger   schema 4/4
 ok    profile  approved, hash HASH6
 fail  api      unreachable: no control plane is recorded (fix: sindri)
 exit 2

@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
@@ -42,6 +43,7 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton(endpoints ?? new InMemoryEndpointFile())
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddSingleton<IApprovals>(H.Profiles)
+            .AddSingleton<IChallenges>(H.Challenges)
             .AddSingleton<ICommandCatalog>(new InMemoryCommandCatalog([.. ShellRows.All, fixture]))
             .AddSingleton(Latch)
             .AddSingleton<ILogger<AuditTrail>>(Log)

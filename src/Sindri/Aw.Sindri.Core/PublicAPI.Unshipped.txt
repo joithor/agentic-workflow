@@ -3744,7 +3744,6 @@ Aw.Sindri.Core.Workflow.Registry.RevokePreview
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.<Clone>$() -> Aw.Sindri.Core.Workflow.Registry.RevokePreview!
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.Cascade.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeRef!>!
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.Cascade.init -> void
-Aw.Sindri.Core.Workflow.Registry.RevokePreview.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out int Version, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! Parks, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! TakeoversEnded, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeRef!>! Cascade) -> void
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.Equals(Aw.Sindri.Core.Workflow.Registry.RevokePreview? other) -> bool
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.Hash.get -> Aw.Sindri.Core.Workflow.Ids.RecipeHash
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.Hash.init -> void
@@ -3752,7 +3751,6 @@ Aw.Sindri.Core.Workflow.Registry.RevokePreview.Id.get -> Aw.Sindri.Core.Workflow
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.Id.init -> void
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.Parks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>!
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.Parks.init -> void
-Aw.Sindri.Core.Workflow.Registry.RevokePreview.RevokePreview(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, int Version, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! Parks, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! TakeoversEnded, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeRef!>! Cascade) -> void
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.TakeoversEnded.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>!
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.TakeoversEnded.init -> void
 Aw.Sindri.Core.Workflow.Registry.RevokePreview.Version.get -> int
@@ -3899,3 +3897,93 @@ override Aw.Sindri.Core.Workflow.Registry.RecipeSummary.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ToString() -> string!
 static Aw.Sindri.Core.Workflow.Registry.RecipeSummary.operator !=(Aw.Sindri.Core.Workflow.Registry.RecipeSummary? left, Aw.Sindri.Core.Workflow.Registry.RecipeSummary? right) -> bool
 static Aw.Sindri.Core.Workflow.Registry.RecipeSummary.operator ==(Aw.Sindri.Core.Workflow.Registry.RecipeSummary? left, Aw.Sindri.Core.Workflow.Registry.RecipeSummary? right) -> bool
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.<Clone>$() -> Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Action.get -> Aw.Sindri.Core.Challenges.ChallengeAction!
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Action.init -> void
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.ApprovalPlan(Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe! Recipe, Aw.Sindri.Core.Workflow.Registry.ApprovalPreview! Preview, Aw.Sindri.Core.Workflow.Registry.RecipeApproval? Latest, Aw.Sindri.Core.Challenges.ChallengeAction! Action, Aw.Sindri.Core.Challenges.ChallengeSubject! Subject) -> void
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Deconstruct(out Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe! Recipe, out Aw.Sindri.Core.Workflow.Registry.ApprovalPreview! Preview, out Aw.Sindri.Core.Workflow.Registry.RecipeApproval? Latest, out Aw.Sindri.Core.Challenges.ChallengeAction! Action, out Aw.Sindri.Core.Challenges.ChallengeSubject! Subject) -> void
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Equals(Aw.Sindri.Core.Workflow.Registry.ApprovalPlan? other) -> bool
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Latest.get -> Aw.Sindri.Core.Workflow.Registry.RecipeApproval?
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Latest.init -> void
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Preview.get -> Aw.Sindri.Core.Workflow.Registry.ApprovalPreview!
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Preview.init -> void
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Reapproval.get -> bool
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Recipe.get -> Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe!
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Recipe.init -> void
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Subject.get -> Aw.Sindri.Core.Challenges.ChallengeSubject!
+Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Subject.init -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner
+Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, Aw.Sindri.Core.Workflow.Ids.RecipeHash hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
+Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, int version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
+Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, string! hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
+Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner.Approve(Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe! recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
+Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner.RecipeApprovalPlanner(Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.Registry.IRecipeWake! wake, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, System.Text.Json.JsonSerializerOptions! json) -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeRevokePlanner
+Aw.Sindri.Core.Workflow.Registry.RecipeRevokePlanner.RecipeRevokePlanner(Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.Registry.IRecipeWake! wake) -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeRevokePlanner.Revoke(Aw.Sindri.Core.Workflow.Ids.RecipeId id, string! hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.RevokePlan!>!>
+Aw.Sindri.Core.Workflow.Registry.RecipeRevokePlanner.Revoke(Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe! recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.RevokePlan!>!>
+Aw.Sindri.Core.Workflow.Registry.RevokePlan
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.<Clone>$() -> Aw.Sindri.Core.Workflow.Registry.RevokePlan!
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Action.get -> Aw.Sindri.Core.Challenges.ChallengeAction!
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Action.init -> void
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Cascade.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeApproval!>!
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Cascade.init -> void
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Deconstruct(out Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe! Recipe, out Aw.Sindri.Core.Workflow.Registry.RevokePreview! Preview, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeApproval!>! Cascade, out Aw.Sindri.Core.Challenges.ChallengeAction! Action, out Aw.Sindri.Core.Challenges.ChallengeSubject! Subject) -> void
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Equals(Aw.Sindri.Core.Workflow.Registry.RevokePlan? other) -> bool
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Preview.get -> Aw.Sindri.Core.Workflow.Registry.RevokePreview!
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Preview.init -> void
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Recipe.get -> Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe!
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Recipe.init -> void
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.RevokePlan(Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe! Recipe, Aw.Sindri.Core.Workflow.Registry.RevokePreview! Preview, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeApproval!>! Cascade, Aw.Sindri.Core.Challenges.ChallengeAction! Action, Aw.Sindri.Core.Challenges.ChallengeSubject! Subject) -> void
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Subject.get -> Aw.Sindri.Core.Challenges.ChallengeSubject!
+Aw.Sindri.Core.Workflow.Registry.RevokePlan.Subject.init -> void
+Aw.Sindri.Core.Workflow.Registry.RevokePreview.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out int Version, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! Parks, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! TakeoversEnded, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeRef!>! Cascade, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeRef!>! Parents) -> void
+Aw.Sindri.Core.Workflow.Registry.RevokePreview.Parents.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeRef!>!
+Aw.Sindri.Core.Workflow.Registry.RevokePreview.Parents.init -> void
+Aw.Sindri.Core.Workflow.Registry.RevokePreview.RevokePreview(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, int Version, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! Parks, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! TakeoversEnded, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeRef!>! Cascade, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeRef!>! Parents) -> void
+override Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Registry.RevokePlan.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Registry.RevokePlan.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Registry.RevokePlan.ToString() -> string!
+static Aw.Sindri.Core.Challenges.ChallengeAction.ApproveProfile(Aw.Sindri.Core.Ids.ProfileHash hash) -> Aw.Sindri.Core.Challenges.ChallengeAction!
+static Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.operator !=(Aw.Sindri.Core.Workflow.Registry.ApprovalPlan? left, Aw.Sindri.Core.Workflow.Registry.ApprovalPlan? right) -> bool
+static Aw.Sindri.Core.Workflow.Registry.ApprovalPlan.operator ==(Aw.Sindri.Core.Workflow.Registry.ApprovalPlan? left, Aw.Sindri.Core.Workflow.Registry.ApprovalPlan? right) -> bool
+static Aw.Sindri.Core.Workflow.Registry.RevokePlan.operator !=(Aw.Sindri.Core.Workflow.Registry.RevokePlan? left, Aw.Sindri.Core.Workflow.Registry.RevokePlan? right) -> bool
+static Aw.Sindri.Core.Workflow.Registry.RevokePlan.operator ==(Aw.Sindri.Core.Workflow.Registry.RevokePlan? left, Aw.Sindri.Core.Workflow.Registry.RevokePlan? right) -> bool
+Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten
+Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.<Clone>$() -> Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten!
+Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.Approval.get -> Aw.Sindri.Core.Workflow.Registry.RecipeApproval!
+Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.Approval.init -> void
+Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.ApprovalWritten(Aw.Sindri.Core.Workflow.Registry.RecipeApproval! Approval, long Sequence) -> void
+Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.Deconstruct(out Aw.Sindri.Core.Workflow.Registry.RecipeApproval! Approval, out long Sequence) -> void
+Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.Equals(Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten? other) -> bool
+Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.Sequence.get -> long
+Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.Sequence.init -> void
+Aw.Sindri.Core.Workflow.RegistryLedger.RecipeRegistryWrites
+Aw.Sindri.Core.Workflow.RegistryLedger.RecipeRegistryWrites.Approve(Aw.Sindri.Core.Workflow.Registry.ApprovalPlan! plan, string! actor, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten!>!>
+Aw.Sindri.Core.Workflow.RegistryLedger.RecipeRegistryWrites.RecipeRegistryWrites(Aw.Sindri.Core.Ledger.ILedgerStore! ledger, Aw.Sindri.Core.Lease.HeldLease! held, Aw.Sindri.Core.Events.EventFactory! events, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.Registry.IRecipeWake! wake, System.TimeProvider! clock) -> void
+Aw.Sindri.Core.Workflow.RegistryLedger.RecipeRegistryWrites.Revoke(Aw.Sindri.Core.Workflow.Registry.RevokePlan! plan, string! actor, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten!>!>
+Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten
+Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.<Clone>$() -> Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten!
+Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.Cascade.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeRevocation!>!
+Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.Cascade.init -> void
+Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.Deconstruct(out Aw.Sindri.Core.Workflow.Registry.RecipeRevocation! Revocation, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeRevocation!>! Cascade, out long Sequence) -> void
+Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.Equals(Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten? other) -> bool
+Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.Revocation.get -> Aw.Sindri.Core.Workflow.Registry.RecipeRevocation!
+Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.Revocation.init -> void
+Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.RevokeWritten(Aw.Sindri.Core.Workflow.Registry.RecipeRevocation! Revocation, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeRevocation!>! Cascade, long Sequence) -> void
+Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.Sequence.get -> long
+Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.Sequence.init -> void
+override Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.ToString() -> string!
+override Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.ToString() -> string!
+static Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.operator !=(Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten? left, Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten? right) -> bool
+static Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten.operator ==(Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten? left, Aw.Sindri.Core.Workflow.RegistryLedger.ApprovalWritten? right) -> bool
+static Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.operator !=(Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten? left, Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten? right) -> bool
+static Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten.operator ==(Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten? left, Aw.Sindri.Core.Workflow.RegistryLedger.RevokeWritten? right) -> bool

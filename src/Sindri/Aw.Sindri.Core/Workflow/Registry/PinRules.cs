@@ -1,4 +1,7 @@
+using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using Aw.Kernel.Json;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -20,7 +23,7 @@ public static class PinRules
     {
         ArgumentNullException.ThrowIfNull(descriptor);
         ArgumentNullException.ThrowIfNull(options);
-        throw new NotSupportedException(Pending);
+        return DescriptorHash.From(Sha256(JsonNode.Parse(AwJson.Serialize(descriptor, options))));
     }
 
     /// <summary>The block pins of <paramref name="recipe"/>: each block it names with its descriptor hash in <paramref name="catalog"/>, sorted by id.</summary>
@@ -33,7 +36,12 @@ public static class PinRules
         ArgumentNullException.ThrowIfNull(recipe);
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(options);
-        throw new NotSupportedException(Pending);
+        return [.. Named(recipe)
+            .Distinct()
+            .Select(catalog.Find)
+            .OfType<BlockDescriptor>()
+            .OrderBy(static d => d.Id.Value, StringComparer.Ordinal)
+            .Select(d => new BlockPin(d.Id, Hash(d, options)))];
     }
 
     /// <summary>The digest a drift approval's challenge binds (spec §4.2): SHA-256 over the canonical JSON of <paramref name="pins"/>.</summary>
@@ -44,8 +52,16 @@ public static class PinRules
     {
         ArgumentNullException.ThrowIfNull(pins);
         ArgumentNullException.ThrowIfNull(options);
-        throw new NotSupportedException(Pending);
+        return Sha256(JsonNode.Parse(AwJson.Serialize(pins, options)));
     }
+
+    /// <summary>Every block id the recipe names: its Steps and their inputs, then its gates and effects.</summary>
+    private static IEnumerable<BlockId> Named(Recipe recipe) =>
+        recipe.States.Values.Select(static s => s.Step).OfType<StepUse>()
+            .SelectMany(static step => step.Inputs.Select(static i => i.Use).Prepend(step.Use))
+            .Concat(recipe.Transitions.SelectMany(static t => t.Gates.Select(static g => g.Use).Concat(t.Effects.Select(static e => e.Use))));
+
+    private static string Sha256(JsonNode? node) => "sha256:" + Convert.ToHexStringLower(SHA256.HashData(CanonicalJson.Of(node)));
 
     /// <summary>RCP-CAP-003: the approval holds when it exists, isn't revoked, and its block pins equal <paramref name="build"/>.</summary>
     /// <param name="approval">The latest approval of the key, or null.</param>

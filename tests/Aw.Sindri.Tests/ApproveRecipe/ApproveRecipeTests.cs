@@ -1,9 +1,16 @@
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Testing.Workflow.Registry;
 using Aw.Sindri.Tests.Workflow;
 
 namespace Aw.Sindri.Tests.ApproveRecipe;
@@ -33,4 +40,123 @@ public sealed class ApproveRecipeTests
         Assert.Equal(approval.Pins, preview.Pins);
         Assert.Equal(approval, (await registry.Approvals.Latest(step.Id, 1, step.Hash, TestContext.Current.CancellationToken)).Value);
     }
+    [Fact, Trait("Lane", "unit")]
+    public async Task Approval_appends_recipe_approved_with_its_pins_through_the_ledger()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var step = await r.Shipped("sindri/workflow.step.yaml");
+
+        var approved = (await r.Approve(step)).Value;
+
+        var recorded = Assert.Single(r.Events(EventTypes.RecipeApproved));
+        var payload = r.H.Events.Payload<RecipeApproved>(recorded).Value;
+        Assert.Equal((step.Id, step.Hash, ApprovalVia.Desk, false, "human:cli"), (payload.Id, payload.Hash, payload.Via, payload.Drift, recorded.Envelope.Actor));
+        Assert.Equal(approved.Approval.Pins.Blocks, payload.Pins.Blocks);
+        Assert.Equal(recorded.Sequence, approved.Accepted.Sequence);
+        Assert.Equal([BlockId.From("step.checks"), BlockId.From("step.produce"), BlockId.From("step.verify")], approved.Preview.Pins.Blocks.Select(b => b.Block));
+        Assert.Null(approved.Preview.Diff);
+        Assert.Contains("3 declared", approved.Preview.Evals, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Approving_the_same_pins_again_is_refused_as_nothing_to_do()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var step = await r.Shipped("sindri/workflow.step.yaml");
+        _ = await r.Approve(step);
+
+        var again = await r.Issue("approve workflow.step 1");
+
+        Assert.Equal(SindriErrors.InvalidInput.Code, again.Error.Code);
+        Assert.Contains("already approved with these pins", again.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Drift_reapproval_of_the_same_hash_appends_a_row_and_event_with_the_new_pins_and_wakes_its_instances()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var step = await r.Shipped("sindri/workflow.step.yaml");
+        _ = await r.Approvals.Approve(RegistryData.Approval(step, Stale()), Token);
+        var parked = WorkflowInstanceId.For(new Guid(7, 0, 0, new byte[8]));
+        r.Wake.Run(step.Hash, parked);
+
+        var issued = (await r.Issue("approve workflow.step 1")).Value;
+        var approved = await r.Run<ApproveRecipeRequest, ApproveRecipeResponse>(
+            new ApproveRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), RegistryHarness.Human);
+
+        Assert.True(approved.IsSuccess, approved.IsError ? approved.Error.ToString() : null);
+        Assert.True(issued.Approve!.IsDrift);   // why: an approval's challenge carries its preview
+        Assert.Equal(_blocks, issued.Approve.Changed.Select(c => c.Block.Value), StringComparer.Ordinal);
+        Assert.Equal([parked], approved.Value.Resumed);
+        var history = (await r.Approvals.History(step.Id, 1, step.Hash, Token)).Value;
+        Assert.Equal(2, history.Count);
+        Assert.Equal(approved.Value.Preview.Pins.Blocks, history[1].Pins.Blocks);
+        Assert.True(r.H.Events.Payload<RecipeApproved>(Assert.Single(r.Events(EventTypes.RecipeApproved))).Value.Drift);
+        Assert.Equal(RecipeWakeKind.Approved, Assert.Single(r.Wake.Sent).Kind);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Drift_challenge_binds_pins_digest()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var step = await r.Shipped("sindri/workflow.step.yaml");
+        _ = await r.Approvals.Approve(RegistryData.Approval(step, Stale()), Token);
+        var unbound = r.Challenges.Issue(ChallengeAction.Approve(step.Id, 1), ChallengeSubject.ForRecipe(step.Hash, 1, pinsDigest: null));
+        var otherPins = r.Challenges.Issue(ChallengeAction.Approve(step.Id, 1), ChallengeSubject.ForRecipe(step.Hash, 1, PinRules.Digest(Stale(), SliceHarness.Json)));
+
+        foreach (var stale in new[] { unbound, otherPins })
+        {
+            var refused = await r.Run<ApproveRecipeRequest, ApproveRecipeResponse>(
+                new ApproveRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(stale.Id, stale.Action.Text)), RegistryHarness.Human);
+            Assert.Equal(WorkflowErrors.RecipeChallengeStale.Code, refused.Error.Code);
+        }
+
+        _ = Assert.Single((await r.Approvals.History(step.Id, 1, step.Hash, Token)).Value);
+        Assert.Empty(r.Events(EventTypes.RecipeApproved));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Parent_pins_its_childs_approved_hash_and_waits_for_the_child_to_be_approved()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var step = await r.Shipped("sindri/workflow.step.yaml");
+        var item = await r.Shipped("sindri/workflow.item.yaml");
+
+        var early = await r.Issue("approve workflow.item 1");
+        _ = await r.Approve(step);
+        var approved = (await r.Approve(item)).Value;
+
+        Assert.Equal(WorkflowErrors.RecipeNotApproved.Code, early.Error.Code);
+        Assert.Contains("approve workflow.step first", early.Error.Message, StringComparison.Ordinal);
+        Assert.Equal([new ChildPin(step.Id, step.Hash)], approved.Approval.Pins.Children);
+        Assert.Equal(["effect.claim.ref"], approved.Preview.Effects.Select(e => e.Kind.Value), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Preview_of_a_new_version_diffs_against_the_last_approved_one()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var step = await r.Shipped("sindri/workflow.step.yaml");
+        _ = await r.Approve(step);
+        _ = await r.Register(RegistryHarness.Parse(step) with { Version = 2 });
+
+        var preview = (await r.Issue("approve workflow.step 2")).Value.Approve!;   // why: an approval's challenge carries its preview
+
+        Assert.StartsWith($"--- workflow.step@{step.Hash.Display} (approved, version 1)\n+++ workflow.step@", preview.Diff, StringComparison.Ordinal);
+        Assert.Contains("\n-  \"version\": 1,\n+  \"version\": 2,\n", preview.Diff, StringComparison.Ordinal);
+    }
+
+    /// <summary>Pins as an older build saw them: the same blocks with other descriptor hashes.</summary>
+    private static RecipePins Stale() =>
+        new([.. _blocks.Select(b => new BlockPin(BlockId.From(b), RegistryData.Descriptor("old " + b)))], []);
+
+    private static readonly string[] _blocks = ["step.checks", "step.produce", "step.verify"];
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
 }

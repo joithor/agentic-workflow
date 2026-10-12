@@ -105,8 +105,8 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   human profile approve </dev/null
   hash="$({ bounded "$bin" profile validate --json </dev/null || true; } | sed -E 's/.*"hash":"([0-9a-f]{64})".*/\1/')"
   run profile approve "$hash"
-  printf '%s\n' "${hash:0:6}" | session_tty profile approve "$hash"
-  printf '%s\n' "${hash:0:6}" | human profile approve "$hash"
+  printf '%s\n' "approve profile ${hash:0:6}" | session_tty profile approve "$hash"
+  printf '%s\n' "approve profile ${hash:0:6}" | human profile approve "$hash"
   run status
   echo "## sindri status --json | jq '{running, apiVersion}'"
   json="$({ bounded "$bin" status --json </dev/null 2>&1 || true; })"
@@ -120,7 +120,7 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   run recipe validate "$root/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml"
 } >"$out/actual.raw"
 
-sed -E -e "s#$work#WORK#g" -e "s#$root#ROOT#g" -e "s#held by $(hostname -s)[^/ ]*#held by HOST#g" -e 's/[0-9a-f]{64}/HASH/g' -e 's/hash [0-9a-f]{6}/hash HASH6/g' -e 's/(to approve it: )[0-9a-f]{6}/\1HASH6/' \
+sed -E -e "s#$work#WORK#g" -e "s#$root#ROOT#g" -e "s#held by $(hostname -s)[^/ ]*#held by HOST#g" -e 's/[0-9a-f]{64}/HASH/g' -e 's/hash [0-9a-f]{6}/hash HASH6/g' -e 's/approve profile [0-9a-f]{6}/approve profile HASH6/g' \
   -e 's/pid [0-9]+/pid PID/g' -e 's#HOST/[0-9]+#HOST/PID#g' -e 's/127\.0\.0\.1:[0-9]+/127.0.0.1:PORT/g' \
   -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z/TIME/g' -e 's/\(last [0-9:]{8}Z\)/(last TIME)/g' "$out/actual.raw" >"$out/actual.txt"
 diff -u "$here/expected.txt" "$out/actual.txt"

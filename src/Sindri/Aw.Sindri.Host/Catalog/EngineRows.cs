@@ -23,9 +23,9 @@ internal static class EngineRows
     [
         // ---- P2: the registry (bound) ----
         Bound("RegisterRecipe", typeof(RegisterRecipeRequest), ActionClass.Desk, "POST /sindri/workflow/recipes", "sindri recipe register <file>"),
-        Protected("ApproveRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/approve", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(ApproveRecipeRequest) },
-        Protected("RevokeRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/revoke", "sindri recipe revoke <recipe>", "WF-P2") with { CommandType = typeof(RevokeRecipeRequest) },
-        Protected("IssueChallenge", "POST /sindri/workflow/challenges", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(IssueChallengeRequest), Class = ActionClass.Issue },
+        Protected("ApproveRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/approve", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(ApproveRecipeRequest), Ui = TypedConfirmation },
+        Protected("RevokeRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/revoke", "sindri recipe revoke <recipe>", "WF-P2") with { CommandType = typeof(RevokeRecipeRequest), Ui = TypedConfirmation },
+        Protected("IssueChallenge", "POST /sindri/workflow/challenges", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(IssueChallengeRequest), Class = ActionClass.Issue, Ui = "ready" },
 
         // ---- P4 and P5: instances (pending, no type yet) ----
         Pending("StartInstance", ActionClass.Desk, "POST /sindri/workflow/instances", "sindri workflow start <recipe> --item <itemId>", "WF-P4"),

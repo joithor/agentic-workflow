@@ -20,10 +20,6 @@ static Aw.Sindri.Features.GetStatus.GetStatusResponse.operator ==(Aw.Sindri.Feat
 static Aw.Sindri.Features.SindriFeaturesServiceCollectionExtensions.AddSindriFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest
 Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.<Clone>$() -> Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest!
-Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.ApproveProfileRequest(Aw.Sindri.Core.Ids.ProfileHash? Hash, bool Confirmed) -> void
-Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Confirmed.get -> bool
-Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Confirmed.init -> void
-Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Hash, out bool Confirmed) -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Equals(Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest? other) -> bool
 Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Hash.get -> Aw.Sindri.Core.Ids.ProfileHash?
 Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Hash.init -> void
@@ -622,3 +618,7 @@ Aw.Sindri.Features.ListRecipes.ListRecipesResponse.Recipes.get -> System.Collect
 Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Registry.RecipeSummary! Recipe, out Aw.Sindri.Core.Workflow.Registry.ApprovalPreview! Preview) -> void
 Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.Recipe.get -> Aw.Sindri.Core.Workflow.Registry.RecipeSummary!
 Aw.Sindri.Features.ShowRecipe.ShowRecipeResponse.ShowRecipeResponse(Aw.Sindri.Core.Workflow.Registry.RecipeSummary! Recipe, Aw.Sindri.Core.Workflow.Registry.ApprovalPreview! Preview) -> void
+Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer?
+Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Answer.init -> void
+Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Hash, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer) -> void
+Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.ApproveProfileRequest(Aw.Sindri.Core.Ids.ProfileHash? Hash, Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer = null) -> void

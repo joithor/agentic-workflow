@@ -17,8 +17,13 @@ internal static partial class RecipeCommandTable
 {
     private const string ValidateUsage = "usage: sindri recipe validate <file> [--json]";
     private const string EvalUsage = "usage: sindri recipe eval <file> [--json] | --scaffold <file> | --record <address> --out <file>";
+    private const string ApproveUsage = "usage: sindri recipe approve <file|id@hash>";
+    private const string RevokeUsage = "usage: sindri recipe revoke <id@hash>";
 
-    internal static Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch
+    internal static Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct) => Run(args, services, output, desk: null, ct);
+
+    /// <summary>Runs a 'recipe' verb; the registry's server verbs (approve, revoke) need <paramref name="desk"/>.</summary>
+    internal static Task<int> Run(string[] args, IServiceProvider services, Output output, RecipeDesk? desk, CancellationToken ct) => args switch
     {
         ["validate", "--json"] or ["validate"] => output.Error(SindriErrors.InvalidInput.With($"recipe validate needs a recipe file ({ValidateUsage})")),
         ["validate", var file] => Validate(file, json: false, services, output, ct),
@@ -28,8 +33,10 @@ internal static partial class RecipeCommandTable
         ["register", ..] => Pending("register", "(b)", output),
         ["show", ..] => Pending("show", "(b)", output),
         ["list", ..] => Pending("list", "(b)", output),
-        ["approve", ..] => Pending("approve", "(c)", output),
-        ["revoke", ..] => Pending("revoke", "(c)", output),
+        ["approve", var target] when !IsFlag(target) && desk is not null => new RecipeDeskCommands(desk, services, output).Approve(target, ct),
+        ["approve", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe approve needs one recipe file or id@hash ({ApproveUsage})")),
+        ["revoke", var target] when target.Contains('@', StringComparison.Ordinal) && desk is not null => new RecipeDeskCommands(desk, services, output).Revoke(target, ct),
+        ["revoke", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe revoke needs one id@hash ({RevokeUsage})")),
         _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", .. args])}' is not a sindri command ({ValidateUsage}; {EvalUsage})")),
     };
 

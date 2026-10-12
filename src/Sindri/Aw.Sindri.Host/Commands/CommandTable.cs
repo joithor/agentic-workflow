@@ -74,7 +74,7 @@ internal static class CommandTable
                 .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
             ["doctor", "--probe", ..] => await output.Error(SindriErrors.UnknownVerb.With(HarnessProbe.Pending)).ConfigureAwait(false),
             ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct).ConfigureAwait(false),
-            ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
+            ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
             ["help" or "--help" or "-h"] => await output.Text(Usage.Text + "\n", 0).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };

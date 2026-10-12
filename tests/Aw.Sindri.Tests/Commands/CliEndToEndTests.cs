@@ -64,9 +64,9 @@ public sealed class CliEndToEndTests : IDisposable
         using var client = Client(app, new AgentSession(Signal: null, Terminal: true, Prover: false));
         var verbs = Verbs(app, client, scope.ServiceProvider);
 
-        var staleCode = await verbs.Approve(stale.Value, interactive: true, new StringReader(stale.Abbreviated + "\n"), ct);
+        var staleCode = await verbs.Approve(stale.Value, interactive: true, new StringReader("approve profile " + stale.Abbreviated + "\n"), ct);
         var staleError = _error.ToString();
-        var approved = await verbs.Approve(hash.Value, interactive: true, new StringReader(hash.Abbreviated + "\n"), ct);
+        var approved = await verbs.Approve(hash.Value, interactive: true, new StringReader("approve profile " + hash.Abbreviated + "\n"), ct);
 
         Assert.Equal(2, staleCode);
         Assert.StartsWith("SND-PROFILE-003 ", staleError, StringComparison.Ordinal);   // the service answered: the middleware let the human in

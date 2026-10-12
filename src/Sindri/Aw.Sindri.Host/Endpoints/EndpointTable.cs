@@ -21,6 +21,9 @@ internal static class EndpointTable
         // ---- commands: one line per slice, sorted ----
         _ = commands.MapApproveProfile();
         _ = commands.MapStopProcess();
+        _ = commands.MapApproveRecipe();
+        _ = commands.MapRevokeRecipe();
+        _ = commands.MapIssueChallenge();
         return app;
     }
 }
