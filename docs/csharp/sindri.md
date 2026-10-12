@@ -153,7 +153,46 @@ Filled by API P1's units B (the headers, the per-start human token, the `Origin`
 
 ## Command chain
 
-Filled by API P1's unit A (the decorators, outermost first, and what `command.handled` records).
+Every command (`ICommand<T>`) and issue (`IIssue<T>`) is registered through `AddCommand`/`AddIssue`
+(`Features/Commands/SindriCommandServiceCollectionExtensions.cs`), so none can skip the chain. Outermost first:
+
+| # | Decorator | What it does |
+|---|---|---|
+| 1 | `CommandGate` | One command at a time, process-wide. A command that waits 5 s for the gate fails with `SND-API-009` (503) and writes nothing. Records `sindri.command.gate_wait` (seconds) |
+| 2 | `AuditingService` | After the rest of the chain ran, appends one `command.handled {commandId, command, class, caller, outcome, code?}` keyed `command.handled:<commandId>`, under the lease, with the caller's actor and correlation. Outcome: `accepted`; `refused` (`SND-AUTH-*`); `invalid` (an `invalid`-kind error); `failed` (any other error, with its code). A `sindri.command <action>` span and the `sindri.commands` counter carry class, caller and outcome |
+| 3 | `AuthorizingService` | Classifies the attempt (`ActionClassifier`) and checks the caller against the authorization table (`Authorization`, below) before validation. A refusal is `SND-AUTH-002 <Command> is a human decision. Ask the human to run it in a terminal or the Sindri app: <cli>` (protected rows: "in a terminal: <cli>") |
+| 4 | `ValidatingService` (Kernel) | The slice's `IValidator` (`AcceptAllValidator<T>` when it has no rule) |
+
+Queries (`IQuery<T>`, `AddQuery`) get a `sindri.query <name>` span around validation, and nothing else.
+
+- **Self-audited:** `StopProcess`'s accepted path writes no `command.handled`: it releases the lease, and its
+  `process.stopped` is the audit. A refused stop is audited like any other command.
+- **No caller context** (nothing set it) is refused and audited as caller `none`. `ServeCommand` calls `StopProcess` as
+  `service:host`, the one service the catalog grants a desk command.
+- **The audit can't be written:** after an accepted command the result stands and the host logs `SND-LEDGER-002`; on any
+  other outcome the caller gets `SND-LEDGER-002` (503). Without a held lease no row can be written, so a refusal while the
+  process holds no lease answers `SND-LEDGER-002`.
+- **Not audited:** requests the host can't bind (400/415), and the refusals before the chain (`SND-AUTH-001`,
+  `SND-API-007`, `SND-API-008`); they are logged.
+
+**Classification (fail-closed, UI spec E-12):** a plain command runs as its one catalog row. A command implementing
+`IClassifiedCommand` runs as `<Command>:<Variant>`; an unknown variant, protected fields on a row that isn't protected,
+or a command with no row of its own run as `protected` (a human at a terminal only).
+
+**Authorization table (API spec §4.2):**
+
+| Class | human + terminal | human (app) | session | service |
+|---|---|---|---|---|
+| `request`, `pause` | yes | yes | yes | yes |
+| `job` | yes | yes | no | yes |
+| `decision` | yes | yes | no | no |
+| `desk` | yes | yes | no | only a service the row grants (`service:host` → `StopProcess`) |
+| `protected` | yes | no | no | no |
+| `issue` | yes | yes | yes | no |
+| `step-report` | no (the launched session only, once P10's launch proof exists) | no | no | no |
+| `local` | never through the API | | | |
+
+A row with `NeedsTerminal` narrows any class to a human at a terminal.
 
 ## Command catalog
 
