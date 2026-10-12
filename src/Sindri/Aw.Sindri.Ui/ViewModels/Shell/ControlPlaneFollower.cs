@@ -8,7 +8,7 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// S1b's loop behind <see cref="HealthViewModel"/>: it finds the control plane through its endpoint record, checks the
 /// record against /sindri/ping (a stale record reads as not running), reads the catalog (/sindri/commands) and
 /// /sindri/status, and after each event on /sindri/events re-reads every view it shows (the status and, for the
-/// stalled and rebuilding banners, /sindri/services): it never applies an event's payload (UI spec §9.2). While it follows, it pings every 10 s: a quiet control plane (nothing scheduled) sends
+/// stalled and rebuilding banners, /sindri/services), at most once per view per 250 ms: it never applies an event's payload (UI spec §9.2). While it follows, it pings every 10 s: a quiet control plane (nothing scheduled) sends
 /// no events, and an answer from the process it connected to keeps the views fresh (UI spec §4.1: stale is "no event or
 /// ping for 30 s"; the stream sends no keep-alive). When the stream ends, a refresh fails or the record changes, it looks
 /// again every 2 s.
@@ -164,7 +164,9 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         return events;
     }
 
-    // One status refresh per burst of events: the signal holds at most one pending refresh. A failed refresh ends the follow.
+    // Each view re-read at most once per RefreshEvery (§9.2): the first event of a burst re-reads at once, and the
+    // events that arrive in the next RefreshEvery collapse into the signal's one pending refresh, run when it ends. A
+    // failed refresh ends the follow.
     private async Task RefreshOnSignal(Uri url, ChannelReader<bool> dirty, CancellationTokenSource stop)
     {
         try
@@ -175,7 +177,10 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
                 if (!await Refresh(url, stop.Token).ConfigureAwait(true))
                 {
                     await stop.CancelAsync().ConfigureAwait(true);
+                    return;
                 }
+
+                await Task.Delay(HealthViewModel.RefreshEvery, clock, stop.Token).ConfigureAwait(true);
             }
         }
         catch (OperationCanceledException)
