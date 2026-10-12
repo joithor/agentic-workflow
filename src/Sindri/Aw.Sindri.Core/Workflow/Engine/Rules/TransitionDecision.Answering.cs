@@ -42,9 +42,10 @@ public static partial class TransitionDecision
         }
 
         var popped = popping.Value;
-        return popped.Pending is { } pending
+        var resumed = popped.Pending is { } pending
             ? d.Commit(d.Rules.Suspend(popped.Instance, new SuspendOutcome(pending.Suspension, pending.Resume), d.Now))
-            : Recorded(Resume(d, popped.Instance, fit.Value), answer, fit.Value);
+            : Resume(d, popped.Instance, fit.Value);
+        return Recorded(resumed, answer, fit.Value);
     }
 
     /// <summary>The answer's own event carries the grant or the override it made (§5.2).</summary>
@@ -103,8 +104,8 @@ public static partial class TransitionDecision
             ResumeKind.Transition when withheld?.Transition is { } index => Apply(d.Withholding(withheld.Trigger), instance, index, Records.None),
             ResumeKind.Reevaluate or ResumeKind.Override or ResumeKind.Refuse when withheld?.Transition is { } index =>
                 Reevaluate(d.Withholding(withheld.Trigger), instance, index, resume),
-            ResumeKind.Rerun => RerunAfterAnswer(d, instance, countsRound: true),
-            ResumeKind.Restart when instance.Frame.Run is not null => RerunAfterAnswer(d, instance, countsRound: false),
+            ResumeKind.Rerun => RerunAfterAnswer(d, instance, resume),
+            ResumeKind.Restart when instance.Frame.Run is not null => RerunAfterAnswer(d, instance, resume),
             ResumeKind.Restart => Restart(d, instance),
             ResumeKind.None => new Rejected(d.Key, WorkflowErrors.TriggerNotAllowed.With(
                 $"nothing resumes {instance.Address.Value} (fix: cancel it with sindri workflow cancel {instance.Address.Value})")),
@@ -127,13 +128,23 @@ public static partial class TransitionDecision
         return records.Refused ? Refuse(d, instance, index, records) : Apply(d, instance, index, records);
     }
 
-    /// <summary>A new run of the Step in the same entry (§5.8 rerun, restart); a rerun counts a round of the state's loop.</summary>
-    private static Applied RerunAfterAnswer(Deciding d, WorkflowInstance instance, bool countsRound)
+    /// <summary>
+    /// A new run of the Step in the same entry (§5.8 rerun, restart). A rerun counts a round of the state's loop, so at
+    /// the loop's allowed rounds it parks with rounds (kind refusal, the withheld trigger kept) instead of running:
+    /// '--grant n' is the only way past the cap (§3.7, §3.8, W7).
+    /// </summary>
+    private static Applied RerunAfterAnswer(Deciding d, WorkflowInstance instance, ResumeAction resume)
     {
         var state = d.Recipe.States[instance.State];
         if (instance.Frame.Run is not { } run || state.Step is not { } step)
         {
             return d.Commit(instance);
+        }
+
+        var countsRound = resume.Kind == ResumeKind.Rerun;
+        if (countsRound && state.Loop is { } capped && d.Rules.AtCap(instance, d.Recipe, instance.State))
+        {
+            return d.Commit(d.Rules.Suspend(instance, AtCapPark(capped, step.Use, resume, d.Trigger.Actor), d.Now));
         }
 
         var next = run with { Token = RunToken.For(run.Token.Entry, run.Token.Number + 1), Launch = null };
@@ -144,6 +155,11 @@ public static partial class TransitionDecision
         var applied = d.Commit(after);
         return applied with { FollowUps = [new FollowUp(FollowUpKind.StartRun, instance.Id, next.Token, step.Use, Answer: null)] };
     }
+
+    private static SuspendOutcome AtCapPark(string loop, BlockId step, ResumeAction resume, string actor) => new(
+        new Suspension(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Refusal, Escalation: null,
+            $"{loop} used all its rounds; {step.Value} runs again only with more rounds", actor, Mirrors: null),
+        new ResumeAction(ResumeKind.Rerun, resume.Withheld, Gate: null, Effect: null));
 
     /// <summary>
     /// An SND-WF-010 park's restart (§5.8): its frame never opened a run, so the Step's run opens now, as a real entry
