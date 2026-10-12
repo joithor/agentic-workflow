@@ -12,7 +12,9 @@ using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Settings;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views;
 using Aw.Sindri.Ui.Views.Shell;
 using Microsoft.Extensions.Time.Testing;
 
@@ -334,6 +336,31 @@ public sealed class ShellWindowTests : IDisposable
         shell.GoTo(PageId.Settings);
         Settle(window);
         Assert.Equal(Labels.Settings, AutomationProperties.GetName(window.Get<Border>("Page")));
+    });
+
+    // Settings sits at the same left inset as every other page, so switching pages doesn't shift the title sideways.
+    [Fact]
+    public Task Settings_title_sits_where_every_page_title_does() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        var settings = new SettingsViewModel(new Preferences(_preferences), new FakeMotionPreference(), _ => { });
+        window.SettingsSlot.Content = new SettingsView { DataContext = settings };
+        Point Title() => window.GetVisualDescendants().OfType<TextBlock>()
+            .First(t => t.IsEffectivelyVisible && t.Classes.Contains("page-title")) is var title
+            ? title.TranslatePoint(new Point(0, 0), window) ?? default : default;
+
+        var home = Title();
+        shell.GoTo(PageId.Health);
+        Settle(window);
+        var health = Title();
+        shell.GoTo(PageId.Settings);
+        Settle(window);
+        var onSettings = Title();
+
+        Assert.Equal(home.X, health.X);
+        Assert.Equal(home.X, onSettings.X);
+        Frame(window, "settings");
     });
 
     private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "HealthPill"];
