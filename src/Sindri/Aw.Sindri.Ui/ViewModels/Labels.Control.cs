@@ -9,5 +9,6 @@ internal static partial class Labels
     /// </summary>
     /// <param name="authority">The recorded address (host and port).</param>
     /// <returns>The reason.</returns>
-    internal static string NotOnThisMachine(string authority) => throw new NotSupportedException();
+    internal static string NotOnThisMachine(string authority) =>
+        $"its address {authority} isn't on this machine (the app follows only 127.0.0.1, ::1 or localhost)";
 }

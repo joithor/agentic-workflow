@@ -92,6 +92,11 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
             return health.NotRunning(Labels.RecordUnreadable, StatusText.ShortPath(records.Location));
         }
 
+        if (!record.IsOnThisMachine)
+        {
+            return health.NotRunning(Labels.RecordUnreadableBecause(Labels.NotOnThisMachine(record.Url.Authority)), StatusText.ShortPath(records.Location));
+        }
+
         var ping = await api.Ping(record.Url, cancellationToken).ConfigureAwait(true);
         if (ping.IsError)
         {
