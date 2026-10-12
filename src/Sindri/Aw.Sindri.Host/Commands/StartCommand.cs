@@ -57,11 +57,12 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
         return found.IsError ? found.Error : null;
     }
 
-    /// <summary>Why 'sindri serve' won't run here: inside an agent session, unless AW_SINDRI_PROVER=1 (P1 plan G6); null when it may.</summary>
+    /// <summary>Why 'sindri serve' won't run here: inside an agent session (API §7); null when it may. AW_SINDRI_PROVER=1 has
+    /// already dropped the parent-process signal in <see cref="AgentSession.Detect"/>, never a variable (API §6, P1 plan G6).</summary>
     /// <param name="session">How the CLI classed itself.</param>
     /// <returns>The refusal, or null.</returns>
     internal static Error? ServeRefusal(AgentSession session) =>
-        session is { Signal: { } signal, Prover: false }
+        session is { Signal: { } signal }
             ? SindriErrors.NotRunning.With($"an agent session never starts Sindri ({signal}); ask the human to run 'sindri'")
             : null;
 
