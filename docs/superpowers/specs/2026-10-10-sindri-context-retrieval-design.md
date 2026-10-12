@@ -402,8 +402,8 @@ build at a time.
 { "schemaVersion": 1, "queryId": "q_01JC…", "query": {...}, "anchors": [...], "mapVersion": "v12@a41b07d",
   "asOf": "2026-10-10T18:02:11Z",
   "sections": [
-    { "name": "affects", "items": [{ "kind": "feature", "node": "feature:tabs.layout-restore", "depth": 1,
-      "path": ["feature:layout.split-pane.orientation", "writes thing:pane-layout", "reads action:tabs.restore-layout"],
+    { "name": "affects", "items": [{ "kind": "feature", "node": "feature:tabs.tab-manager", "depth": 1,
+      "path": ["feature:layout.split-pane.orientation", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"],
       "provenance": "deterministic", "confirmed": true, "trust": "trusted", "cites": ["C4"] }] },
     { "name": "decisions", "items": [{ "kind": "decision", "node": "decision:…", "text": "…", "score": 0.031,
       "why": ["decides→feature:layout.split-pane.orientation", "rrf:linear#1,onyx#2"],
