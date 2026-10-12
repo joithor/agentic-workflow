@@ -131,6 +131,26 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
         });
     }
 
+    [Fact]
+    public async Task An_item_event_seen_before_its_instance_is_visible_still_reaches_it_within_the_hold()
+    {
+        await Serve(async sindri =>
+        {
+            _ = await Append(sindri, "item.routed", Router, "T-45", """{"outcome":"startable"}""");
+            await Bridge(sindri);   // why: visibility lists no instance of T-45 yet (it lags the start), so the cursor moves past the event
+
+            var relay = await Start(sindri, "workflow.relay", "T-45", attempt: 1);
+            await Visible(sindri, "T-45", 1);
+            await Bridge(sindri);   // the held window re-delivers it to the instance it missed
+
+            var view = await WorkflowsHarness.Until(relay, static v => v.State != "routed");
+            Assert.Equal("claimed", view.State);
+            Assert.Equal(1, await Signals(relay));
+            await Bridge(sindri);   // and only once
+            Assert.Equal(1, await Signals(relay));
+        });
+    }
+
     /// <summary>Composes Sindri over the test's home with both recipes, holds the lease, names the dev server in control.json and runs the worker around <paramref name="body"/>.</summary>
     private async Task Serve(Func<ServiceProvider, Task> body)
     {
