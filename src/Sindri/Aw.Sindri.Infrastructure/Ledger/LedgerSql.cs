@@ -32,5 +32,7 @@ internal static class LedgerSql
 
     internal const string SelectAfter = "SELECT " + EventColumns + " FROM events WHERE seq > $seq ORDER BY seq LIMIT $max";
 
+    internal const string SelectHead = "SELECT COALESCE(MAX(seq), 0) FROM events";
+
     internal const string SelectLatest = "SELECT " + EventColumns + " FROM events WHERE type = $type ORDER BY seq DESC LIMIT 1";
 }

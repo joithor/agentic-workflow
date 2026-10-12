@@ -1,5 +1,6 @@
 using Aw.Kernel.Ids;
 using Aw.Kernel.Json;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -23,9 +24,10 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="scope">Who the process acts as.</param>
 /// <param name="clock">The clock.</param>
 /// <param name="ids">The envelope id source.</param>
-internal sealed class RecordEventActivities(ILedgerStore ledger, HeldLease lease, EventScope scope, TimeProvider clock, IIdGenerator ids)
+/// <param name="callers">The caller of the code running now (API P1, S1-D7); the worker runs as the control plane.</param>
+internal sealed class RecordEventActivities(ILedgerStore ledger, HeldLease lease, EventScope scope, TimeProvider clock, IIdGenerator ids, ICallerContextAccessor callers)
 {
-    private readonly EventFactory _events = new(scope, clock, ids, AwJson.CreateOptions(WorkflowsJsonContext.Default));
+    private readonly EventFactory _events = new(scope, clock, ids, AwJson.CreateOptions(WorkflowsJsonContext.Default), callers);
 
     /// <summary>
     /// How the interpreter runs it: a local activity with unbounded retries and backoff, so the workflow does not move on

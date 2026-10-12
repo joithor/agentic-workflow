@@ -112,7 +112,7 @@ bash src/BugFix/aot-smoke/run.sh         # bugfix-state under NativeAOT: publish
 dotnet run --project src/Sindri/Aw.Sindri.Host -- [--headless | serve | status | stop | profile validate|approve | doctor]   # the C# Sindri app (S1 app shell, docs/csharp/sindri.md); state in AW_SINDRI_HOME (default $AW_STATE_DIR/sindri-app); exit 0 ok, 1 attention, 2 error
 dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe validate <file> [--json]   # check a workflow recipe in-process, no serve needed (docs/csharp/sindri-workflow.md); exit 0 pass, 1 fail, 2 usage or tool error
 dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe eval <file> [--json] | --scaffold <file>   # run a recipe's eval cases over the pure engine (docs/csharp/sindri-workflow.md); exit 0 pass, 1 a case fails, 2 usage or tool error; --record needs the server (P4)
-bash src/Sindri/aot-smoke/run.sh         # sindri under NativeAOT: publish (on a copy), drive start, a refused second serve, the approve preview and its non-terminal refusal, status, stop and doctor in a temp home, then recipe validate on the shipped recipes and an invalid fixture (each call bounded to 30 s), compare with expected.txt
+bash src/Sindri/aot-smoke/run.sh         # sindri under NativeAOT: publish (on a copy), drive start, a refused second serve, the approve preview and its non-terminal refusal, a session's approve and stop refused (SND-AUTH-002), the human's typed approval and stop under a pty, status (and --json's apiVersion), stop and doctor in a temp home, then recipe validate on the shipped recipes and an invalid fixture (each call bounded to 30 s), compare with expected.txt
 
 # Rules (edit .agents/rules/, then regenerate)
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index
@@ -153,6 +153,7 @@ bash scripts/tests/find-duplicate-skills.test.sh
 bash scripts/tests/dotnet-verify-packages.test.sh
 bash scripts/tests/install-scorer-audit.test.sh
 bash scripts/tests/install-sindri.test.sh
+bash scripts/tests/sindri-prove.test.sh
 bash scripts/tests/readiness-baseline.test.sh
 bash scripts/tests/agent-token.test.sh
 bash scripts/tests/ci-changed-areas.test.sh

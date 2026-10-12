@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -23,7 +24,7 @@ internal sealed record SpikeLedger(ILedgerStore Ledger, CountingRecorder Recorde
     {
         var held = new HeldLease();
         held.Hold((await stores.Lease.Acquire(probe.Self(), cancellationToken)).Value);
-        var activities = new RecordEventActivities(stores.Ledger, held, EventScope.ControlPlane, clock, new SequentialIdGenerator());
+        var activities = new RecordEventActivities(stores.Ledger, held, EventScope.ControlPlane, clock, new SequentialIdGenerator(), new AsyncLocalCallerContextAccessor(new SequentialIdGenerator()));
         return new SpikeLedger(stores.Ledger, new CountingRecorder(activities));
     }
 

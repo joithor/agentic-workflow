@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 
 namespace Aw.Sindri.Features.ApproveProfile;
@@ -9,4 +10,4 @@ namespace Aw.Sindri.Features.ApproveProfile;
 /// </summary>
 /// <param name="Hash">The hash to approve, or null to see the live hash and the changes.</param>
 /// <param name="Confirmed">True only after the human's typed confirmation.</param>
-public sealed record ApproveProfileRequest(ProfileHash? Hash, bool Confirmed);
+public sealed record ApproveProfileRequest(ProfileHash? Hash, bool Confirmed) : ICommand<ApproveProfileResponse>;

@@ -99,6 +99,21 @@ public abstract class LedgerStoreContract
         Expect.True((await ledger.Latest("never", Token)).Value is null);
     }
 
+    /// <summary>The head is the last recorded sequence: 0 before anything is written, and a replayed key doesn't move it.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Head_is_the_last_sequence_and_zero_when_empty()
+    {
+        var (lease, ledger) = await Create(Clock, Probe);
+        Expect.Equal(0L, (await ledger.Head(Token)).Value);
+        var grant = (await lease.Acquire(Probe.Self(), Token)).Value;
+        _ = await ledger.Append(Entry("other", "k1"), grant, Token);
+        var second = (await ledger.Append(Entry("other", "k2"), grant, Token)).Value;
+        _ = await ledger.Append(Entry("other", "k1"), grant, Token);
+
+        Expect.Equal(second.Sequence, (await ledger.Head(Token)).Value);
+    }
+
     /// <summary>Once anything is written, the store reports its schema as current.</summary>
     /// <returns>The test.</returns>
     [Fact]

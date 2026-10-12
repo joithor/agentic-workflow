@@ -6,10 +6,13 @@ using Aw.Sindri.Core.Ledger;
 
 namespace Aw.Sindri.Testing;
 
-/// <summary>The in-memory lease and ledger, for unit tests; passes <see cref="LeaseContract"/> and <see cref="LedgerStoreContract"/>.</summary>
+/// <summary>
+/// The in-memory lease and ledger, for unit tests; passes <see cref="LeaseContract"/>, <see cref="LedgerStoreContract"/>
+/// and, as its own reader, <see cref="LedgerReaderContract"/>.
+/// </summary>
 /// <param name="clock">The clock leases expire by.</param>
 /// <param name="probe">What the store may learn about a holder's process.</param>
-public sealed class InMemorySindriStore(TimeProvider clock, IProcessProbe probe) : ILease, ILedgerStore
+public sealed class InMemorySindriStore(TimeProvider clock, IProcessProbe probe) : ILease, ILedgerStore, ILedgerReader
 {
     private readonly Lock _gate = new();
     private readonly List<LedgerEvent> _events = [];
@@ -98,7 +101,7 @@ public sealed class InMemorySindriStore(TimeProvider clock, IProcessProbe probe)
         }
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc cref="ILedgerStore.ReadAfter"/>
     public ValueTask<Result<IReadOnlyList<LedgerEvent>>> ReadAfter(long sequence, int max, CancellationToken cancellationToken)
     {
         lock (_gate)
@@ -108,13 +111,22 @@ public sealed class InMemorySindriStore(TimeProvider clock, IProcessProbe probe)
         }
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc cref="ILedgerStore.Latest"/>
     public ValueTask<Result<LedgerEvent?>> Latest(string type, CancellationToken cancellationToken)
     {
         lock (_gate)
         {
             return ValueTask.FromResult<Result<LedgerEvent?>>(
                 _events.LastOrDefault(e => string.Equals(e.Envelope.Type, type, StringComparison.Ordinal)));
+        }
+    }
+
+    /// <inheritdoc cref="ILedgerStore.Head"/>
+    public ValueTask<Result<long>> Head(CancellationToken cancellationToken)
+    {
+        lock (_gate)
+        {
+            return ValueTask.FromResult<Result<long>>(_events.Count == 0 ? 0 : _events[^1].Sequence);
         }
     }
 
