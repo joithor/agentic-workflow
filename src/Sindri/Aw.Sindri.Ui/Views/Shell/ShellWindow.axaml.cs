@@ -103,8 +103,9 @@ internal sealed partial class ShellWindow : Window
         base.OnKeyDown(e);
     }
 
-    // Esc closes the sheet, or Settings over the Not running card (focus then goes from its hidden control to the page
-    // region); otherwise it does nothing here.
+    // Esc closes the sheet when it shows, or Settings over the Not running card (focus then goes from its hidden control
+    // to the page region); otherwise it does nothing here. A sheet hidden while Sindri isn't running stays open, so the
+    // keypress isn't spent on what the user can't see and the sheet is back when Sindri is.
     private bool Escape()
     {
         if (Shell is not { } shell)
@@ -112,7 +113,7 @@ internal sealed partial class ShellWindow : Window
             return false;
         }
 
-        if (shell.IsSheetOpen)
+        if (shell.IsSheetShown)
         {
             shell.CloseSheet();
             return true;
