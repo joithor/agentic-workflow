@@ -508,8 +508,10 @@ printf 'var s = await http.GetAsync($"/beta/status?x={x}", ct);\n' > "$d/src/Bet
 expect "a declared http edge the C# source has passes; tier 4 is allowed; the server's own routes are no edge" 0 "deps: ok" "cli/db/file/http edges"
 
 d="$(http_fixture http-undeclared)"
-printf '// GET /beta/status is fine in a comment\nconst string Path = "/beta/status";\n' > "$d/src/Beta/Aw.Beta.Ui/Client.cs"; run "$d"
-expect "an undeclared http edge fails with where it was found" 1 "DEPS-EDGE-001" "Gamma -> Beta (http)" "src/Beta/Aw.Beta.Ui/Client.cs:2"
+printf '// GET "/beta/status" is fine in a comment\n    /// <see cref="x"/> "/beta/x"\nconst string Path = "/beta/status";\n' > "$d/src/Beta/Aw.Beta.Ui/Client.cs"; run "$d"
+expect "an undeclared http edge fails with where it was found" 1 "DEPS-EDGE-001" "Gamma -> Beta (http)" "src/Beta/Aw.Beta.Ui/Client.cs:3"
+refuse "  ... and a quoted route in a whole-line // or /// comment is skipped" "Client.cs:1"
+refuse "  ... (the /// line too)" "Client.cs:2"
 
 d="$(http_fixture http-stale)"; edge "$d" Gamma Beta http current; run "$d"
 expect "a current http edge with no route literal in the client is stale" 1 "DEPS-STALE-001" "Gamma -> Beta (http)" "no string literal naming Beta's routes (/beta/)"
@@ -545,6 +547,10 @@ expect "a declared C# file edge passes when the segments sit on separate lines o
 d="$(http_fixture cs-file-whole-path)"
 printf 'var p = Path.Combine(home, "alpha/outbox");\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
 expect "a single literal holding the whole state path is a file edge" 1 "DEPS-EDGE-001" "Gamma -> Alpha (file)"
+
+d="$(http_fixture cs-file-commented)"
+printf '// var p = Path.Combine(home, "alpha", "outbox");\n    /// Path.Combine(home, "alpha", "outbox")\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
+expect "a state path in whole-line // and /// comments is no file edge" 0 "deps: ok"
 
 d="$(http_fixture cs-file-partial)"
 printf 'var p = "outbox";\n' > "$d/src/Beta/Aw.Beta.Ui/Paths.cs"; run "$d"
