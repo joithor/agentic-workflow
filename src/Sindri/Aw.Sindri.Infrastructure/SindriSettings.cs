@@ -8,6 +8,9 @@ internal sealed record SindriSettings(string Home, string ProfilePath)
     /// <summary>The ledger database.</summary>
     public string LedgerPath => Path.Combine(Home, "ledger.db");
 
+    /// <summary>The views database (derived from the ledger; deleting it rebuilds it).</summary>
+    public string ViewsPath => Path.Combine(Home, "views.db");
+
     /// <summary>Approved profile snapshots, one directory per hash.</summary>
     public string ApprovalsDirectory => Path.Combine(Home, "approved");
 

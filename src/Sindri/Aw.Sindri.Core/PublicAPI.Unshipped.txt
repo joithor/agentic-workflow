@@ -3536,6 +3536,9 @@ Aw.Sindri.Core.Views.IProjection.Handles(string! eventType) -> bool
 Aw.Sindri.Core.Views.IProjection.Views.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Views.IProjectorControl
 Aw.Sindri.Core.Views.IProjectorControl.RequestRebuild() -> void
+Aw.Sindri.Core.Views.IProjectorFeed
+Aw.Sindri.Core.Views.IProjectorFeed.Publish(Aw.Sindri.Core.Views.ViewsStatus! status) -> void
+Aw.Sindri.Core.Views.IProjectorFeed.TakeRebuildRequest() -> bool
 Aw.Sindri.Core.Views.IProjectorStatus
 Aw.Sindri.Core.Views.IProjectorStatus.Current.get -> Aw.Sindri.Core.Views.ViewsStatus!
 Aw.Sindri.Core.Views.IProjectorStatus.WaitFor(long sequence, System.TimeSpan limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
