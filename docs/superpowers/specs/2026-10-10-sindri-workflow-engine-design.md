@@ -1,6 +1,6 @@
 # Sindri workflow engine: recipes, blocks, validator and engine
 
-**Status:** design, revision 7 (revision 6 after five /autoplan passes, then the epic reconciliation with the API surface and context retrieval specs, 2026-10-11; revision 7.1 applies the owner's decisions of 2026-10-11 from PR #179's review: absent optional fields stay `null` in the hash (§3.1), block ids take an optional area (§3.3), and names are restricted by `RCP-NAME-001` (§3.4, §9.1)), awaiting approval · **Date:** 2026-10-10 · **Builds:**
+**Status:** design, revision 7 (revision 6 after five /autoplan passes, then the epic reconciliation with the API surface and context retrieval specs, 2026-10-11; revision 7.1 applies the owner's decisions of 2026-10-11 from PR #179's review: absent optional fields stay `null` in the hash (§3.1), block ids take an optional area (§3.3), and names are restricted by `RCP-NAME-001` (§3.4, §9.1); revision 7.2 applies the owner's decisions of 2026-10-11 from PR #180's review: a child created while an instance starts takes its id from that instance's start key (§5.4), an answer's re-run past the loop cap parks `rounds` (§3.8, §5.8), `--reject` on a command's escalation pops it with `SND-WF-004` (§3.8, §5.8), `--scaffold`'s rule (§6.3), and no progress detected from identical findings and a repeated failure reason until P8 (§3.7, Phase 8)), awaiting approval · **Date:** 2026-10-10 · **Builds:**
 factory addendum §17.28 (one workflow state machine) and §17.29.4 step 2 · **Next:** `/specToProvenPR` takes the
 Phases at the end to PRs.
 
@@ -214,7 +214,10 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
 ### 3.7 Loops, budgets, `next`
 
 - **Loops:** `{ cap ≥ 1, noProgress }`. `noProgress` defaults to `[findings, emptyDiff, sameFailure]` and can't be
-  empty; the rule is A §17.23.13. Popping a frame never counts a round.
+  empty; the rule is A §17.23.13. Popping a frame never counts a round. **P3–P7 (owner decision, 2026-10-11, rev
+  7.2):** no progress is detected only from identical findings (the digest of the whole findings value) and a repeated
+  failure reason (a `step.failed` or a gate refusal); there is no superset check, and `emptyDiff` never fires. The
+  agent runtime (P8) adds finding keys and a diff signal to Step reports, and the full A §17.23.13 rule lands there.
 - **Budgets:** exhausting one is `→ parked(budget)`.
 - **Recipe `next` variables:** `{item}`, `{instance}`, `{state}`, `{user}`, `{child}`, `{loop.<n>}`,
   `{loop.<n>.cap}`, `{budget.tokens.left}`.
@@ -229,8 +232,8 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
 | State | Entered by | `next` | Ways out (resume action, §5.8) |
 |---|---|---|---|
 | `parked` (`rounds`, `no-progress`) | A loop cap or no progress, either on the transition back into a looped state (kind `loop`) or on a gate refusal at the cap (kind `refusal`); the frame records which | "Parked ({reason}): {question}. Grant more rounds at a terminal, or cancel." | `answer --grant n` (protected): kind `loop` performs the withheld loop transition, and kind `refusal` re-runs the Step. Either way, the round it starts is the first of the n. `answer --text` on `no-progress`: the same, once per loop (§13). `takeover`, `cancel` |
-| `parked` (`budget`) | A budget, or a `gate.budget.*` refusal | "Parked (budget): {question}. Grant tokens at a terminal, or cancel." | `answer --grant-tokens n` (protected): re-runs the Step, or re-evaluates the withheld transition. `takeover`, `cancel` |
-| `parked` (`needs-answer`, Step) | A refusal without a loop, `step.failed` | "Parked (needs-answer): {question}. Answer with --text; the Step runs again with your answer." | `answer --text`: re-runs the Step with `fact:answer`. `takeover`, `cancel` |
+| `parked` (`budget`) | A budget, or a `gate.budget.*` refusal | "Parked (budget): {question}. Grant tokens at a terminal, or cancel." | `answer --grant-tokens n` (protected): re-runs the Step, or re-evaluates the withheld transition. A re-run that would pass the loop's cap parks `rounds` (kind `refusal`) instead; `--grant n` is the way on (W7, §5.1, §13). `takeover`, `cancel` |
+| `parked` (`needs-answer`, Step) | A refusal without a loop, `step.failed` | "Parked (needs-answer): {question}. Answer with --text; the Step runs again with your answer." | `answer --text`: re-runs the Step with `fact:answer`. A re-run that would pass the loop's cap parks `rounds` (kind `refusal`) instead; `--grant n` is the way on (W7, §5.1, §13). `takeover`, `cancel` |
 | `parked` (`needs-answer`, wait) | A gate refused the transition out of a wait | "Parked: {gate} refused {from} -> {to} ({reasons}). Fix the cause, then resume to check again, or cancel." | `answer --resume [--text]`: re-checks every gate and evidence at the current head under the answer's key (§5.8). `takeover`, `cancel` |
 | `parked` (`timeout`) | `then: park` | "Parked (timeout): {state} ran past {after}. Resume to give it the full time again, or cancel." | `answer --resume`: back to the frame (the same run token) with a fresh deadline. `takeover`, `cancel` |
 | `parked` (`spec-conflict`: revoked) | `recipe revoke` of this instance's own recipe | "{recipe} was revoked. Cancel, then start a new attempt from an approved version." | `cancel` |
@@ -238,7 +241,7 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
 | `parked` (`spec-conflict`: drift) | A pinned block changed in this build | "{block} changed since {recipe} was approved. Re-approve it (`sindri recipe approve {recipe}`, shown as `id@hash12`); the approval resumes this instance." | The drift approval resumes every instance it lists, and re-sends any of their commands refused for the drift (§4.1). `cancel` |
 | `parked` (`spec-conflict`: dispatch) | `outbox.refused` with `SND-WF-011` (not allowlisted) | "{effect} isn't on the profile's effect allowlist. Add it and approve the profile, then resume to send it again." | `answer --resume`: re-emits the effect. `cancel` |
 | `parked` (`SND-WF-010`) | A Step or resource with no runtime | "No runtime for {block} in this build. Cancel, or resume in a build that has it." | `answer --resume`: starts the Step again (a new run), or waits for the resource again. `cancel` |
-| `escalated` (gate) | A top-rung gate below threshold or uncertain | "Escalated: {gate} scored {score}, below {threshold}. Accept to override it (the other checks still run before {to}), or reject (the Step re-runs within its loop, otherwise this parks)." | `--accept` (protected) overrides only that gate, then evaluates the remaining gates and evidence at the current head. `--reject` is a refusal. `cancel` |
+| `escalated` (gate) | A top-rung gate below threshold or uncertain | "Escalated: {gate} scored {score}, below {threshold}. Accept to override it (the other checks still run before {to}), or reject (the Step re-runs within its loop, otherwise this parks)." | `--accept` (protected) overrides only that gate, then evaluates the remaining gates and evidence at the current head. `--reject` is a refusal. On a command's escalation, `--reject` (or an `--accept` another check refuses) pops the escalation and the command is refused with `SND-WF-004`. `cancel` |
 | `escalated` (timeout) | `then: escalate` | "Escalated: {state} ran past {after}. Resume to give it the full time again, or cancel." | `--resume`, `cancel` |
 | `escalated` (child) | The child escalated | "Escalated in {child}: {childNext}" | The child's `answer` variants, forwarded (§5.7), and shown as the child's `allowedCommands`. `cancel` and `takeover` act on the parent |
 | `taken-over` | `takeover` (allowed on a parked or escalated instance as well) | "With you since {since}. Run `sindri workflow handback {instance}` when you're done." | `handback` (pops back to whatever it covered), `cancel` |
@@ -438,7 +441,9 @@ gets `SND-WF-002`.
 - **Every key is `wf:{instance}:{trigger}`**, and only decisions are recorded under it (W12). **Ids derive from the
   key:** a created child's instance id and every outbox command id are UUIDv8 over SHA-256 of the parent trigger's
   key (and the effect index), so a replay of the same trigger reproduces the same child and the same commands, and
-  a decision needs no id generator.
+  a decision needs no id generator. A child created while instance X starts takes its id from `wf:{X}:start`: a
+  root's own start key, or, for a grandchild, the child's own start. The child's `workflow.started` event still
+  records its parent's trigger key (owner decision, 2026-10-11, rev 7.2).
 
 - **Nonces** are 128-bit random values, stored in `workflow_nonces (nonce, instance, version, expiresAt)`. They live
   for 10 minutes and are consumed in the `Commit` whether the command applies or is refused. The timers service
@@ -537,15 +542,15 @@ Each suspended frame stores a **resume action**. Its answer, once accepted, pops
 | Park or escalation | Resume action |
 |---|---|
 | `rounds`, `no-progress` | `transition`: performs the withheld loop transition (for example `checks -> produce`) into a new entry and a new run, with the findings and any `fact:answer`. With `--grant n`, this is the first of the n granted rounds |
-| `budget` from a Step | `rerun`, under the raised allowance |
+| `budget` from a Step | `rerun`, under the raised allowance; a re-run that would pass the loop's cap parks `rounds` (kind `refusal`) instead, and `--grant n` is the way on |
 | `budget` from a `gate.budget.*` refusal | `reevaluate`: from a Step, the withheld transition with the stored Step result; from a resource wait, `rewait` |
-| `needs-answer` from a Step (refusal without a loop, `step.failed`) | `rerun`, with `fact:answer` |
+| `needs-answer` from a Step (refusal without a loop, `step.failed`) | `rerun`, with `fact:answer`; a re-run that would pass the loop's cap parks `rounds` (kind `refusal`) instead, and `--grant n` is the way on |
 | `needs-answer` from a wait refusal | `reevaluate` the withheld transition with its stored event (a resource wait does `rewait`), and `fact:answer` |
 | `timeout`, `escalated (timeout)` | `rearm`: back to the frame (the same run, the same desk task) with a fresh deadline |
 | `spec-conflict: drift` | `rearm`: restores the frame. A frame parked by a Step trigger also re-evaluates that trigger. A startup wake has no trigger, so it only restores |
 | `SND-WF-010` | `restart`: a new run of the Step, or `rewait` for a resource |
 | `spec-conflict: dispatch` | `reemit`: the refused effect, as a new command with the same effect identity |
-| `escalated (gate)` | `--accept`: the withheld transition, with that gate overridden. `--reject`: the §5.5 refusal path |
+| `escalated (gate)` | `--accept`: the withheld transition, with that gate overridden. `--reject`: the §5.5 refusal path. On a command's escalation, `--reject` (or an `--accept` another check refuses) pops the escalation and the command is refused with `SND-WF-004` |
 | A mirrored child frame | Forwarded (§5.7) |
 
 Every resume commits under the **answer's own key** (`cmd:{nonce}:…`), so the stored trigger's key is never
@@ -632,7 +637,7 @@ process it found, so a human in an IDE terminal knows why. The table is honest-m
 | Verb | Class | Prints |
 |---|---|---|
 | `recipe validate <file> [--json]` | local | Rule lines, then the hash |
-| `recipe eval <file> [--json]` · `--scaffold <file>` · `--record <address> --out <file>` | local · local · query | Case results · a generated happy-path eval (first matching transitions, first declared outcome) · an instance's history as an eval |
+| `recipe eval <file> [--json]` · `--scaffold <file>` · `--record <address> --out <file>` | local · local · query | Case results · a generated happy-path eval: from the initial state, the first declared outcome whose transition the engine applies into a state not yet visited, until a terminal state or one nothing moves on from (an answer wait is answered with a `text` line) · an instance's history as an eval |
 | `recipe register <file>` | desk | `registered workflow.step@9ab2d40c1e77 (unapproved)` |
 | `recipe show <id@hash>` | query | The preview |
 | `recipe approve <file\|id@hash>` | protected | The preview, the challenge, then `approved …` |
@@ -1510,7 +1515,8 @@ parallel phases the one that merges second renumbers at rebase.
 
 - **Goal:** a Step runs in a launched agent session that reports its own result; the factory line runs unattended.
 - **Files:** the agent runtime and its post-commit launch; the `step-report` token check; `session.launched` and
-  `session.ended`; usage from the target's usage reader; the `workflow.agent.target` profile key; docs.
+  `session.ended`; usage from the target's usage reader; the `workflow.agent.target` profile key; finding keys and a
+  diff signal in Step reports, and with them the full A §17.23.13 no-progress rule (§3.7); docs.
 - **Size:** M.
 - **Depends on:** P7, API P10 (`ILauncher` and §8.1), Judge's provider port (#156). This phase adds Sindri's
   `deps.yaml` edge to Judge with a recorded fan-out exception (Sindri is at 4), reviewed like Context's.

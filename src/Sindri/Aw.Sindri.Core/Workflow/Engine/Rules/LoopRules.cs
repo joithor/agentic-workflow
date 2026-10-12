@@ -10,8 +10,9 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// looped state, no-progress between rounds, and '--grant n'. P3 unit (c).
 /// </summary>
 /// <remarks>
-/// No-progress is P3's part of A §17.23.13 (<see cref="NoProgress"/>): identical findings and the same failure; a
-/// findings superset and an empty diff wait on the Step report carrying finding keys and a diff signal.
+/// No-progress until P8 (<see cref="NoProgress"/>, spec §3.7, owner decision rev 7.2): identical findings and a repeated
+/// failure reason only. The agent runtime (P8) adds finding keys and a diff signal to Step reports, and with them the
+/// findings superset and the empty diff of A §17.23.13.
 /// A round is counted on the transition back into the looped state (<see cref="Reenter"/>) and on a re-run after a
 /// refusal (the decision bumps it, §5.5); popping a frame never counts one (§5.1). A park this class decides carries
 /// no actor and no withheld trigger: the decision that matched the trigger sets both.
@@ -69,10 +70,11 @@ internal static partial class LoopRules
 
     /// <summary>
     /// Whether <paramref name="current"/> made no progress over <paramref name="previous"/> on a signal <paramref name="loop"/>
-    /// names: P3's part of A §17.23.13. Findings are compared by the digest of the whole 'fact:findings' value, so they
-    /// count as the same only when they are identical; a superset of the last round's isn't detected, because the
-    /// engine sees no finding keys. The same failure is a 'step.failed' with the same reason. An empty diff never fires:
-    /// a Step report carries no diff signal, so <see cref="ProgressMark.EmptyDiff"/> is always false (docs/csharp/sindri-workflow.md).
+    /// names, as P3–P7 detect it (spec §3.7; the full A §17.23.13 rule lands with P8). Findings are compared by the digest
+    /// of the whole 'fact:findings' value, so they count as the same only when they are identical; a superset of the last
+    /// round's isn't detected, because the engine sees no finding keys. The same failure is a 'step.failed', or a gate
+    /// refusal, with the same reason. An empty diff never fires: a Step report carries no diff signal until P8, so
+    /// <see cref="ProgressMark.EmptyDiff"/> is always false (docs/csharp/sindri-workflow.md).
     /// </summary>
     /// <param name="loop">The loop.</param>
     /// <param name="previous">The last round's mark; null for the first round.</param>

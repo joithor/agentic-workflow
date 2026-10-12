@@ -218,11 +218,12 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`). A loop must be declared (`R
 
 - **Loops:** `loops: { <name>: { cap ≥ 1, noProgress } }`. `noProgress` defaults to `[findings, emptyDiff, sameFailure]`
   and can't be empty (`RCP-LOOP-003`). A looped state needs a transition back into it (`RCP-LOOP-002`).
-  **P3 limit:** the pure engine sees a round's `fact:findings` only as a reference and its SHA-256, and a Step report
-  carries no diff, so it implements part of A §17.23.13. `findings` fires only when a round's findings are identical to
-  the last round's (a superset, keyed by file, check and normalized message, isn't detected), `sameFailure` when a
-  `step.failed`, or a gate refusal, repeats its reason, and `emptyDiff` never fires. A loop that names only `emptyDiff` therefore never parks
-  early, and the validator doesn't say so. The rest waits on the report carrying finding keys and a diff signal.
+  **Until P8 (spec §3.7, owner decision 2026-10-11):** the engine sees a round's `fact:findings` only as a reference
+  and its SHA-256, and a Step report carries no diff, so P3–P7 detect no progress only from identical findings (the
+  digest of the whole findings value; a superset, keyed by file, check and normalized message, isn't detected) and a
+  repeated failure reason (`sameFailure`: a `step.failed`, or a gate refusal, repeats its reason). `emptyDiff` never
+  fires, so a loop that names only `emptyDiff` never parks early, and the validator doesn't say so. The agent runtime
+  (P8) adds finding keys and a diff signal to Step reports, and the full A §17.23.13 rule lands there.
 - **Budgets:** `budget: { tokens }` on an active state and on the recipe. Exhausting one parks the instance with `budget`.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
   `{state}`, `{user}`, `{child}`, `{loop.<name>}`, `{loop.<name>.cap}` and `{budget.tokens.left}` (`RCP-NEXT-001`).
