@@ -126,7 +126,7 @@ only, never the message, which can name the home), with a line that names the ex
 
 The pre-API states (`ShellState`, highest first): **version mismatch** (the status's `apiVersion` differs from
 `AppApiVersion`: a full-window panel with both versions and "quit both and run" around `sindri` in the command chip, no top bar), **not running**
-(S1b's panel and reasons), **connecting** (skeleton rows, first load only), **unreadable** (`SND-UI-003`: a banner with
+(S1b's panel and reasons, closing with "Looks again every 2 s", the follower's retry wait), **connecting** (skeleton rows, first load only), **unreadable** (`SND-UI-003`: a banner with
 the code and `sindri doctor`; the page keeps its last data and the pill reads "Unreadable · stale"), **stale** (30 s
 without an event, a status or an answered ping, on the injected clock: the pill reads "⌛ stale · updated Ns ago" with
 **Refresh** beside it; otherwise "✓ Running · updated Ns ago", re-worded every second). Refresh follows §4.1's command
