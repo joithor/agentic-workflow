@@ -11,7 +11,7 @@ namespace Aw.Sindri.Ui.Desktop;
 /// lock on instance.lock (the OS drops it when the process dies, so a crash leaves no claim behind), and the channel a
 /// Unix domain socket, instance.sock (0600; AF_UNIX on Windows 10 and later too; in an owner-only directory under the
 /// user's temp directory when the home is too deep for sun_path, <see cref="UiStatePaths.SocketIn"/>). Whoever holds the
-/// lock removes a socket left by a crash, listens, and records its process id in instance.pid (0600). A later launch
+/// lock records its process id in instance.pid (0600), then removes a socket left by a crash and listens. A later launch
 /// connects and sends one message (<see cref="InstanceWire"/>); the holder answers 1 only once its reader has handled it
 /// (came back for the next one), within 1.5 s of its arrival; the sender waits 2 s. A message nothing handled in time,
 /// or whose sender has gone, is dropped, never handed over late.
@@ -47,19 +47,22 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
             return false;
         }
 
+        // The process id first, so a launch that finds the lock held never reads a crashed predecessor's id (it names the
+        // id when the holder doesn't answer).
         try
         {
+            await File.WriteAllTextAsync(paths.InstancePid, Environment.ProcessId.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+            OwnerOnly.Restrict(paths.InstancePid);
             _listener = Listen();
         }
         catch
         {
+            File.Delete(paths.InstancePid); // while the lock is still held, so it can't be a later instance's
             await claim.DisposeAsync().ConfigureAwait(false);
             throw;
         }
 
         _claim = claim;
-        await File.WriteAllTextAsync(paths.InstancePid, Environment.ProcessId.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
-        OwnerOnly.Restrict(paths.InstancePid);
         _accepting = Accept(_listener, _stop.Token);
         return true;
     }
