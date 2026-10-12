@@ -819,27 +819,30 @@ stacks on that branch).
 | **S-1A** | Phase 1a: `Aw.Context` package, facade, contract, sanitizer, egress scrubber, repo-docs, planner skeleton, HTTP and CLI | S1 merged · API P1 merged (the chain) · S-1C · S-FX | 1 |
 | **S-1M** | Phase 1b: the `/sindri/mcp` host (shared with API P8), `context_query` and `context_sources`, doctor checks, per-repo registration docs | S-1A | 2 |
 | **S-2W** | Wiring `context.scrub.extraPatterns` into `Aw.Context` (XS) | S-1A · S-2R | 2 |
-| **S-3** | Phase 3 without its MCP tools: graph store, overrides, cascade, `node`/`neighbors`/`path`, probe runner | S-1A | 2 |
+| **S-3a** | Phase 3, first half: graph store, keys and aliases, overrides, `ImportMap`/`ExportMap` (protected), map status, doctor `context:map` and `context:retention`, purge (split from S-3 for size, 2026-10-12) | S-1A | 2 |
+| **S-3b** | Phase 3, second half: the cascade, `node`/`neighbors`/`path`, the `node` shape with `graph` and `affects`, `text` anchors, the probe runner; carries the Phase 3 signal | S-3a | 2 |
 | **S-5A** | Phase 5, first half: `onyx` adapter (search, fetch, UUID canonical keys and identifier aliases, contract tests against `FakeOnyxServer`), secret-pointer resolution, Onyx setup doc and doctor `context:onyx` | S-1A · S-2R · S-FX; **merges after S-2W** | 2 |
-| **S-3M** | Phase 3's MCP tools `context_node`, `context_neighbors` (XS) | S-1M · S-3 | 3 |
-| **S-4** | Phase 4: extractor, file-level `implements`, map review | S-3 · API P6 merged (jobs: `map build` runs as a job, never inside the command gate) | 3 |
-| **S-5B** | Phase 5, second half: sync, rules-first linking, decisions from issue and comment records, intent-vs-intent conflicts, the `item` shape | S-3 · S-5A · API P6 merged (jobs: `sources sync`) | 3 |
-| **S-6** | Phase 6: native `linear` adapter (hand-written GraphQL, D18): projects, Linear Documents, project updates, issue↔PR attachments; dedup with Onyx's records; links and decisions from documents through S-5B's linker | S-5B | 4 |
-| **S-7A** | Phase 7, harness: corpus builder, per-sample as-of maps (from the extractor), arms runner, reports, on the fixture corpus | S-3 · S-4 · S-FX | 4 |
+| **S-3M** | Phase 3's MCP tools `context_node`, `context_neighbors` (XS) | S-1M · S-3b | 3 |
+| **S-4** | Phase 4: extractor, file-level `implements`, map review. Starts on S-3b; `map build` runs as an API P6 job, so its job route is added when P6 merges (owner, 2026-10-12) | S-3b · API P6 (job route only) | 3 |
+| **S-5B** | Phase 5, second half: sync, rules-first linking, decisions from issue and comment records, intent-vs-intent conflicts, the `item` shape. Starts on S-3b and S-5A; `sources sync` runs as an API P6 job, so its job route (and flipping S-1A's pending `SyncSources` row to ready) is added when P6 merges (owner, 2026-10-12) | S-3b · S-5A · API P6 (job route only) | 3 |
+| **S-6** | Phase 6: native `linear` adapter (hand-written GraphQL, D18): projects, Linear Documents, project updates, issue↔PR attachments; dedup with Onyx's records. Starts on S-1A and S-5A; links and decisions from documents through S-5B's linker are added when S-5B merges (owner, 2026-10-12) | S-1A · S-5A · S-5B (linker only) | 3 |
+| **S-7A** | Phase 7, harness: corpus builder, per-sample as-of maps (from the extractor), arms runner, reports, on the fixture corpus | S-3b · S-4 · S-FX | 4 |
 | **S-CF** | Intent-vs-file conflicts: a decision citing a file the map says implements something else (S) | S-4 · S-5B | 4 |
 | **S-7B** | Phase 7 on the owner's corpus: eligible-sample count, the real backtest and probes. **Owner-run** (below) | S-4 · S-6 · S-7A | 5 |
 | **S-8** | Phase 8: ranker features and the rerank arm (code on fixtures; the arm decision from an owner-run backtest) | S-7B | 6 |
 | **S-9** | Phase 9: code adapter and symbol-level links | the code index block | blocked |
 | **S-10** | Phase 10: the `input.context.retrieve` block | engine P4 (the `StepInput` runtime) | after engine P4 |
 
-Critical path: S-1A → S-3 → S-5B → S-6 → S-7B → S-8 (S-4 → S-7A runs beside it).
+Critical path: S-1A → S-3a → S-3b → S-5B → S-7B → S-8 (S-4 → S-7A and S-6 run beside it).
+
+**Owner decisions, 2026-10-12 (delivery only; no behaviour change):** each context stage ships as one PR even when it measures L, built from layered commits (Core → Infrastructure → Features → Host), each layer green on its own; only S-3 is split, into S-3a and S-3b. A stage may stack up to three deep while the goal is to finish this week (S-1A was stacked on API P1 before it merged). S-4, S-5B and S-6 start before their last dependency and add the dependent part (the P6 job routes, the linker link) when it merges.
 
 ```mermaid
 flowchart LR
   S1[S1 merged] --> P1[API P1 chain]
   P1 --> S1A
-  P6[API P6 jobs] --> S4
-  P6 --> S5B
+  P6[API P6 jobs] -. job route .-> S4
+  P6 -. job route .-> S5B
   WF4[engine P4] --> S10[S-10 context.retrieve]
   S1C[S-1C compose edge] --> S1A
   SFX[S-FX fixture app] --> S1A
@@ -849,16 +852,18 @@ flowchart LR
   S2R --> S5A
   S1A[S-1A engine + CLI/HTTP] --> S1M[S-1M MCP]
   S1A --> S2W[S-2W scrub wiring]
-  S1A --> S3[S-3 graph]
+  S1A --> S3a[S-3a graph store]
+  S3a --> S3b[S-3b cascade + probes]
   S1A --> S5A[S-5A Onyx adapter]
   S2W -. merges before .-> S5A
   S1M --> S3M[S-3M MCP graph tools]
-  S3 --> S3M
-  S3 --> S4[S-4 extractor]
-  S3 --> S5B[S-5B links + decisions]
+  S3b --> S3M
+  S3b --> S4[S-4 extractor]
+  S3b --> S5B[S-5B links + decisions]
   S5A --> S5B
-  S5B --> S6[S-6 native Linear]
-  S3 --> S7A[S-7A eval harness]
+  S5A --> S6[S-6 native Linear]
+  S5B -. linker .-> S6
+  S3b --> S7A[S-7A eval harness]
   S4 --> S7A
   S4 --> SCF[S-CF intent-vs-file]
   S5B --> SCF
@@ -967,7 +972,7 @@ team ever reads work data:
 |---|---|
 | `context.db` migrations | **Named, not pre-numbered.** A stage's migration file is `NNNN_<stage>_<name>.sql` (the loader's form: four digits, letters, digits and
 `_` only, e.g. `0003_s5a_linear_cursor.sql`) with `NNNN` set to the next free number **on the branch it sits on**, and renumbered when it rebases onto a new base (a stage's migrations stay contiguous on top of its base, as `Aw.Kernel.Data`'s gap check requires). Number and content freeze at merge. Only throwaway homes ever ran an unmerged migration, so renumbering never touches a real `context.db` |
-| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3/S-3M `030–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`. §8.6 follows these ranges |
+| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3a `030–034`, S-3b/S-3M `035–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`. §8.6 follows these ranges |
 | `deps.yaml`, `Directory.Packages.props`, `AgenticWorkflow.slnx`, `.env.example` | Append-only edits within the stage's own block; the later PR's rebase resolves conflicts |
 | `PublicAPI.Unshipped.txt`, Sindri's `EndpointTable`, `CommandTable`, JSON context, MCP tool list | One line or one block per slice; the later rebase keeps both |
 | `docs/sindri/context.md`, `docs/csharp/sindri-context.md` | One section per stage, headed by the stage id |
@@ -1040,7 +1045,7 @@ on the fixture app.
   the cascade (§6.1) with fixtures; `node` shape, `graph` and `affects` sections; anchor resolution for `text`;
   routes, verbs, MCP `context_node` and `context_neighbors` (these two tools are stage S-3M, after S-1M); doctor `context:map` and `context:retention`; the probe
   runner (`eval probes`) and probe file format.
-- **Size:** M.
+- **Size:** L as measured, so two stages (owner, 2026-10-12): **S-3a** (store, keys, overrides, import and export, map status, doctor, purge) and **S-3b** (cascade, `node`/`neighbors`/`path`, anchors, probe runner; carries the signal).
 - **S1:** `IScheduledService` (purge).
 - **Signal:** after `$SINDRI context map import ~/…/product-map.yaml`, `$SINDRI context query --node
   feature:layout.split-pane.orientation --json` returns its subtree and an `affects` section with paths;
