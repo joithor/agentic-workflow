@@ -65,4 +65,36 @@ public abstract class ChallengesContract
         Expect.True(challenges.Redeem(new ChallengeAnswer(challenges.Issue(_approve, _subject).Id, _approve.Text), other, _subject, WorkflowErrors.RecipeChallengeStale).IsError);
         Expect.True(challenges.Redeem(new ChallengeAnswer(challenges.Issue(_approve, _subject).Id, _approve.Text), _approve, moved, WorkflowErrors.RecipeChallengeStale).IsError);
     }
+
+    /// <summary>The typed text is compared after trimming the whitespace a terminal adds around it.</summary>
+    [Fact]
+    public void Typed_text_is_compared_after_trimming()
+    {
+        var challenges = Create();
+        var issued = challenges.Issue(_approve, _subject);
+
+        Expect.Equal(issued, challenges.Redeem(new ChallengeAnswer(issued.Id, " approve workflow.step 1 "), _approve, _subject, WorkflowErrors.RecipeChallengeStale).Value);
+    }
+
+    /// <summary>Any attempt uses the challenge up: a refused one can't be retried with the right text.</summary>
+    [Fact]
+    public void A_refused_attempt_uses_the_challenge_up()
+    {
+        var challenges = Create();
+        var issued = challenges.Issue(_approve, _subject);
+        _ = challenges.Redeem(new ChallengeAnswer(issued.Id, "approve workflow.step"), _approve, _subject, WorkflowErrors.RecipeChallengeStale);
+
+        Expect.True(challenges.Redeem(new ChallengeAnswer(issued.Id, _approve.Text), _approve, _subject, WorkflowErrors.RecipeChallengeStale).IsError);
+    }
+
+    /// <summary>A challenge still redeems one tick before it expires.</summary>
+    [Fact]
+    public void A_challenge_redeems_just_before_it_expires()
+    {
+        var challenges = Create();
+        var issued = challenges.Issue(_approve, _subject);
+        Clock.Advance(IssuedChallenge.Lifetime - TimeSpan.FromTicks(1));
+
+        Expect.True(challenges.Redeem(new ChallengeAnswer(issued.Id, _approve.Text), _approve, _subject, WorkflowErrors.RecipeChallengeStale).IsSuccess);
+    }
 }
