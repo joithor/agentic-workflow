@@ -7,8 +7,8 @@
        until U1's palette) and the health pill, which opens Health. The ⌘K field's column is a star column that outweighs the
        spacer and stops at 300 px plus its margins: with room it is 300 px wide at the right, and as the window narrows it
        gives way down to 160 px. Below that the bar steps down (TopBar.axaml.cs): first the ⌘K field folds to its
-       magnifier, then the pill's age drops (its accessible name keeps it), so the navigation and the pill's word fit at
-       the 900 px minimum in every state and at text scale 1.3. -->
+       magnifier, then the pill's age drops (its accessible name keeps it), then the brand keeps its mark alone, so the
+       navigation and the pill's word fit at the 900 px minimum in every state and at text scale 1.3. -->
   <Border Classes="topbar focus-region" Focusable="True" AutomationProperties.Name="{Binding Text.Sindri}">
     <Grid x:Name="BarGrid" VerticalAlignment="Center">
       <Grid.ColumnDefinitions>
@@ -21,7 +21,7 @@
       </Grid.ColumnDefinitions>
       <StackPanel x:Name="Brand" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,20,0">
         <TextBlock Classes="detail-title brand" Text="◆" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-        <TextBlock Classes="body-strong" Text="{Binding Text.Sindri}" VerticalAlignment="Center"
+        <TextBlock x:Name="BrandWord" Classes="body-strong" Text="{Binding Text.Sindri}" VerticalAlignment="Center"
                    AutomationProperties.Name="{Binding Text.Sindri}" />
       </StackPanel>
 
@@ -94,8 +94,13 @@
       <!-- The health pill (§3.2, §11.3): a dot and a glyph before the state's word, then the age; it opens Health.
            While stale, Refresh sits beside it (§4.1). -->
       <StackPanel x:Name="PillGroup" Grid.Column="5" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <Button x:Name="RefreshButton" Classes="refresh" IsVisible="{Binding Pill.IsRefreshShown}" Click="OnRefresh"
-                AutomationProperties.Name="{Binding Text.Refresh}">
+        <!-- §4.1 "sending": while a refresh is in flight Refresh is disabled with its label kept, and after 300 ms
+             "Sending…" shows beside it, announced politely. -->
+        <TextBlock x:Name="RefreshSending" Classes="caption subtle" Text="{Binding Text.Sending}" IsVisible="{Binding Health.IsSending}"
+                   VerticalAlignment="Center" AutomationProperties.Name="{Binding Text.Sending}"
+                   AutomationProperties.LiveSetting="Polite" />
+        <Button x:Name="RefreshButton" Classes="refresh" IsVisible="{Binding Pill.IsRefreshShown}" IsEnabled="{Binding Health.CanRefresh}"
+                Click="OnRefresh" AutomationProperties.Name="{Binding Text.Refresh}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <TextBlock Classes="caption subtle" Text="⟳" AutomationProperties.AccessibilityView="Raw" />
             <TextBlock Classes="caption" Text="{Binding Text.Refresh}" />

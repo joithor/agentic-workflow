@@ -22,6 +22,9 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>How long without an event, a status or an answered ping before the views are stale (§4.1, API §2.4).</summary>
     internal static readonly TimeSpan StaleAfter = TimeSpan.FromSeconds(30);
 
+    /// <summary>How long a refresh is in flight before "Sending…" shows (§4.1 "sending").</summary>
+    internal static readonly TimeSpan SendingAfter = TimeSpan.FromMilliseconds(300);
+
     /// <summary>How often the follow pings the control plane it follows, well inside <see cref="StaleAfter"/>.</summary>
     internal static readonly TimeSpan PingEvery = TimeSpan.FromSeconds(10);
 
@@ -33,6 +36,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     private DateTimeOffset _heard;
     private Uri? _url;
     private int _failedRefreshes;
+    private int _refreshes;
     private SynchronizationContext? _ui;
 
     /// <summary>The app's copy, for the view.</summary>
@@ -66,10 +70,10 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     public bool IsNotRunning { get; private set => Set(ref field, value); }
 
     /// <summary>Refresh takes a click: false while one is in flight (§4.1 "sending": disabled, its label kept; a second click does nothing).</summary>
-    public bool CanRefresh { get; } = true;
+    public bool CanRefresh { get; private set => Set(ref field, value); } = true;
 
     /// <summary>A refresh has been in flight for 300 ms: "Sending…" shows beside Refresh and is announced politely (§4.1).</summary>
-    public bool IsSending { get; }
+    public bool IsSending { get; private set => Set(ref field, value); }
 
     /// <summary>The newest event seen on the stream.</summary>
     public string LastEvent { get; private set => Set(ref field, value); } = "none yet";
@@ -87,16 +91,38 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
         }
     }
 
-    /// <summary>Refresh (§4.1 Stale): reads the status again, a query.</summary>
+    /// <summary>
+    /// Refresh (§4.1 Stale): reads the status again, a query. While it is in flight Refresh takes no click (a second one
+    /// does nothing), and after <see cref="SendingAfter"/> "Sending…" shows; both clear when the answer comes.
+    /// </summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>A task that completes when the answer is shown.</returns>
     internal async Task Refresh(CancellationToken cancellationToken)
     {
-        if (_url is not { } url)
+        if (_url is not { } url || !CanRefresh)
         {
             return;
         }
 
+        CanRefresh = false;
+        var attempt = ++_refreshes;
+        var sending = clock.CreateTimer(_ => OnUi(() => IsSending = !CanRefresh && attempt == _refreshes), state: null, SendingAfter, Timeout.InfiniteTimeSpan);
+        try
+        {
+            await using (sending.ConfigureAwait(true))
+            {
+                await Answer(url, cancellationToken).ConfigureAwait(true);
+            }
+        }
+        finally
+        {
+            IsSending = false;
+            CanRefresh = true;
+        }
+    }
+
+    private async Task Answer(Uri url, CancellationToken cancellationToken)
+    {
         var status = await api.Status(url, cancellationToken).ConfigureAwait(true);
         if (status.IsSuccess)
         {

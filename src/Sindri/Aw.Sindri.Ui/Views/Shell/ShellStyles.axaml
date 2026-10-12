@@ -163,6 +163,14 @@
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Padding" Value="10,4" />
   </Style>
+  <!-- In flight (§4.1 "sending"): its label kept, dimmed to InkTertiary (§11.1's disabled text) on its own surface. -->
+  <Style Selector="Button.refresh:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+  </Style>
+  <Style Selector="Button.refresh:disabled TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
+  </Style>
 
   <!-- Home's health strip (home.html .strip): a panel that is a button (it opens Health), Surface2 on hover. -->
   <Style Selector="Button.health-strip">
