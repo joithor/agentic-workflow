@@ -72,3 +72,6 @@ static Aw.Sindri.Ui.Platform.TrayView.operator !=(Aw.Sindri.Ui.Platform.TrayView
 static Aw.Sindri.Ui.Platform.TrayView.operator ==(Aw.Sindri.Ui.Platform.TrayView? left, Aw.Sindri.Ui.Platform.TrayView? right) -> bool
 static Aw.Sindri.Ui.Views.SindriApp.Create(Aw.Sindri.Ui.Platform.SindriPlatform! platform, System.TimeProvider! clock) -> Aw.Sindri.Ui.Views.SindriApp!
 const Aw.Sindri.Ui.Views.SindriApp.FailedExitCode = 2 -> int
+Aw.Sindri.Ui.Views.AppTrayIcons
+static Aw.Sindri.Ui.Views.AppTrayIcons.Add(Avalonia.Controls.TrayIcon! icon) -> void
+static Aw.Sindri.Ui.Views.AppTrayIcons.Remove(Avalonia.Controls.TrayIcon! icon) -> void

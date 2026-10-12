@@ -1,12 +1,14 @@
 using Avalonia.Controls;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.Views;
 
 namespace Aw.Sindri.Ui.Desktop;
 
 /// <summary>
 /// The desktop adapter of <see cref="ITray"/>: Avalonia's TrayIcon (on GNOME it needs the AppIndicator extension, UI spec
-/// §18.2). It is created on the first <see cref="Show"/>, on the UI thread, and removed when Quit is picked, before the
-/// app hears it, so no icon outlives the app. Menu labels escape '_' (an access-key marker in native menus); the tooltip
+/// §18.2). It is created on the first <see cref="Show"/>, on the UI thread, and registered with the app
+/// (<see cref="AppTrayIcons"/>): Avalonia makes the native icon only for a TrayIcon in the app's list, never for one
+/// that is merely created. It is removed when Quit is picked, before the app hears it, so no icon outlives the app. Menu labels escape '_' (an access-key marker in native menus); the tooltip
 /// is shown as given.
 /// </summary>
 internal sealed class AvaloniaTray : ITray
@@ -34,6 +36,9 @@ internal sealed class AvaloniaTray : ITray
         _open!.Header = Escape(view.OpenLabel); // why: Build sets both items before the icon exists
         _quit!.Header = Escape(view.QuitLabel); // why: as above
         icon.IsVisible = true;
+
+        // Registered once it is complete: Avalonia then makes the native icon with this image, tooltip and menu.
+        AppTrayIcons.Add(icon);
         Shown = view;
     }
 
@@ -55,8 +60,13 @@ internal sealed class AvaloniaTray : ITray
 
     private void Quit()
     {
-        Icon?.Dispose();
-        Icon = null;
+        if (Icon is { } icon)
+        {
+            AppTrayIcons.Remove(icon);
+            icon.Dispose();
+            Icon = null;
+        }
+
         QuitRequested?.Invoke(this, EventArgs.Empty);
     }
 }
