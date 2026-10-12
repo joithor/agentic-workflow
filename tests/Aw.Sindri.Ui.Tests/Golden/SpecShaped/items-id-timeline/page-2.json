@@ -1,0 +1,19 @@
+{
+  "entries": [
+    {
+      "sequence": 57,
+      "time": "2026-10-11T11:59:30.0000000Z",
+      "type": "item.state-changed",
+      "actor": "human:ui",
+      "line": "new → done (version 2)"
+    }
+  ],
+  "next": null,
+  "asOf": {
+    "cursor": 57,
+    "ledgerHead": 57,
+    "projectedAt": "2026-10-11T11:59:58.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

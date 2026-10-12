@@ -41,4 +41,40 @@ internal interface ISindriApi
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The accepted command, the API's refusal (title and detail as served), or SND-UI-002/003.</returns>
     public Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/queue (API P3): every group in its fixed order, with its EmptyText sentence (E-18).</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The view, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<QueueView>> Queue(Uri api, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/items/{itemId} (API P3).</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="itemId">The item's id.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The item, SND-ITEM-404, another refusal, or SND-UI-002/003.</returns>
+    public Task<Result<ItemView>> Item(Uri api, string itemId, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/items/{itemId}/timeline?after=N (API P3): one page.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="itemId">The item's id.</param>
+    /// <param name="after">The page's cursor (0 for the first, then the previous page's 'next').</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The page, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<TimelineView>> Timeline(Uri api, string itemId, long after, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/items (CreateItem, desk, API P3): sent once, never retried by the app.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="request">The form.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The new id with the accepted command, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<ItemCreatedView>> CreateItem(Uri api, CreateItemRequest request, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/items/{itemId}/close (CloseItem, desk, API P3): with the version the human saw; sent once.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="itemId">The item's id.</param>
+    /// <param name="request">The reason and the version.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The accepted command, SND-ITEM-409 when the item changed, another refusal, or SND-UI-002/003.</returns>
+    public Task<Result<CommandAcceptedView>> CloseItem(Uri api, string itemId, CloseItemRequest request, CancellationToken cancellationToken);
 }

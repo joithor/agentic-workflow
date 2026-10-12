@@ -26,4 +26,20 @@ internal static class A
         new(Running: true, pid, epoch, Noon.AddSeconds(60), profile ?? Approved(), services.Length == 0 ? [Heartbeat(Noon)] : services);
 
     internal static EventView Event(long sequence, string type = "service.heartbeat", DateTimeOffset? at = null) => new(sequence, type, at ?? Noon.AddSeconds(sequence));
+
+    /// <summary>The fixture's newest queued item ("Try the queue", version 1): its detail and timeline are served.</summary>
+    internal const string NewItem = "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a304";
+
+    /// <summary>The fixture's needs-decision item.</summary>
+    internal const string DecisionItem = "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a305";
+
+    /// <summary>An id no fixture serves: GET /sindri/items/{id} answers SND-ITEM-404.</summary>
+    internal const string MissingItem = "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a399";
+
+    /// <summary>A spec-shaped refusal's detail as the golden serves it (tests key off the golden, never a copy of its sentence).</summary>
+    /// <param name="slug">The route's slug.</param>
+    /// <param name="scenario">The scenario.</param>
+    /// <returns>The detail.</returns>
+    internal static string Detail(string slug, string scenario) =>
+        System.Text.Json.JsonDocument.Parse(GoldenFiles.SpecShaped(slug, scenario)).RootElement.GetProperty("detail").GetString()!;
 }

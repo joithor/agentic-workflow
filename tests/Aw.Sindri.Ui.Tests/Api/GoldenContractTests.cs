@@ -23,6 +23,11 @@ public sealed class GoldenContractTests
         ["commands"] = As<CommandList>,
         ["services"] = As<ServiceList>,
         ["views-rebuild"] = As<CommandAcceptedView>,
+        ["queue"] = As<QueueView>,
+        ["items-id"] = As<ItemView>,
+        ["items-id-timeline"] = As<TimelineView>,
+        ["items"] = As<ItemCreatedView>,
+        ["items-id-close"] = As<CommandAcceptedView>,
     };
 
     // Routes the app never calls: stop is Health's (U4), and profile approve is protected (the app shows the CLI, §6.5).

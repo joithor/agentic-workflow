@@ -136,4 +136,96 @@ public abstract class SindriApiContract
 
         Expect.Equal(("SND-API-009", "Sindri is busy with another command (fix: retry)"), (refused.Error.Code, refused.Error.Message));
     }
+
+    // GET /sindri/queue (API P3, spec-shaped): every group in the API's order, empty ones included with their own sentence (E-18).
+    [Fact]
+    public async Task Queue_answers_every_group_in_order_with_its_own_empty_sentence()
+    {
+        var queue = (await Reach(new FakeSindriApi()).Queue(_api, Token)).Value;
+
+        Expect.Sequence(["waitingOnYou", "withYou", "running", "queued"], queue.Groups.Select(g => g.Group));
+        Expect.Sequence([1, 0, 0, 4], queue.Groups.Select(g => g.Items.Count));
+        Expect.Equal("Nothing running.", queue.Groups[2].Empty);
+        Expect.Equal(expected: null, queue.Groups[3].Empty);
+        Expect.Equal(("new", "Try the queue"), (queue.Groups[3].Items[3].State, queue.Groups[3].Items[3].Title));
+    }
+
+    // An empty queue: the view's own sentence, and each group's.
+    [Fact]
+    public async Task An_empty_queue_answers_the_views_sentence()
+    {
+        var queue = (await Reach(new FakeSindriApi { QueueView = RouteAnswer.SpecShaped("queue", "empty") }).Queue(_api, Token)).Value;
+
+        Expect.True(queue.Groups.All(g => g.Items.Count == 0 && g.Empty is { Length: > 0 }));
+        Expect.Equal("Nothing in the queue. Add one with `sindri item add`.", queue.Empty);
+    }
+
+    // GET /sindri/items/{id} (API P3, spec-shaped): the version CloseItem sends back, and the actions allowed now.
+    [Fact]
+    public async Task An_item_answers_its_version_and_actions()
+    {
+        var item = (await Reach(new FakeSindriApi()).Item(_api, A.NewItem, Token)).Value;
+
+        Expect.Equal((A.NewItem, 1L, "human:cli"), (item.Id, item.Version, item.CreatedBy));
+        Expect.Sequence(["CloseItem:done", "CloseItem:cancelled"], item.Actions);
+    }
+
+    // UI spec §4.9 Item detail: an unknown item is the API's SND-ITEM-404 with its detail as served.
+    [Fact]
+    public async Task An_unknown_item_is_the_apis_SND_ITEM_404()
+    {
+        var missing = await Reach(new FakeSindriApi()).Item(_api, A.MissingItem, Token);
+
+        Expect.Equal(("SND-ITEM-404", A.Detail("items-id", "not-found")), (missing.Error.Code, missing.Error.Message));
+    }
+
+    // GET /sindri/items/{id}/timeline?after= (API P3, spec-shaped): a page and the cursor of the next; the last page has none.
+    [Fact]
+    public async Task The_timeline_pages_by_its_next_cursor()
+    {
+        var api = Reach(new FakeSindriApi());
+
+        var first = (await api.Timeline(_api, A.NewItem, after: 0, Token)).Value;
+        var second = (await api.Timeline(_api, A.NewItem, after: first.Next!.Value, Token)).Value;
+
+        Expect.Sequence([52L, 53L], first.Entries.Select(e => e.Sequence));
+        Expect.Equal(53L, first.Next);
+        Expect.Sequence([57L], second.Entries.Select(e => e.Sequence));
+        Expect.Equal(expected: null, second.Next);
+    }
+
+    // POST /sindri/items (CreateItem, desk, API P3): the body as sent, and the new id with the accepted sequence.
+    [Fact]
+    public async Task Create_item_sends_the_form_and_answers_the_new_id()
+    {
+        var server = new FakeSindriApi();
+
+        var created = (await Reach(server).CreateItem(_api, new CreateItemRequest("Proof: appears live", "agentic-workflow", "A body", Link: null), Token)).Value;
+
+        Expect.Equal(("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a306", 58L), (created.ItemId, created.Accepted.Sequence));
+        Expect.Sequence([new CreateItemRequest("Proof: appears live", "agentic-workflow", "A body", Link: null)], server.Created);
+    }
+
+    // POST /sindri/items/{id}/close (CloseItem, desk, API P3): the reason and the version the human saw.
+    [Fact]
+    public async Task Close_item_sends_the_reason_and_the_version_seen()
+    {
+        var server = new FakeSindriApi();
+
+        var accepted = (await Reach(server).CloseItem(_api, A.NewItem, new CloseItemRequest("cancelled", 1), Token)).Value;
+
+        Expect.Equal(59L, accepted.Sequence);
+        Expect.Sequence([(A.NewItem, new CloseItemRequest("cancelled", 1))], server.Closed);
+    }
+
+    // UI spec §9.1: a stale version is the API's SND-ITEM-409 with its detail as served.
+    [Fact]
+    public async Task Close_with_a_stale_version_is_the_apis_SND_ITEM_409()
+    {
+        var server = new FakeSindriApi { Close = RouteAnswer.Problem("items-id-close", "stale-version") };
+
+        var refused = await Reach(server).CloseItem(_api, A.NewItem, new CloseItemRequest("done", 1), Token);
+
+        Expect.Equal(("SND-ITEM-409", A.Detail("items-id-close", "stale-version")), (refused.Error.Code, refused.Error.Message));
+    }
 }

@@ -1,0 +1,32 @@
+{
+  "groups": [
+    {
+      "group": "waitingOnYou",
+      "items": [],
+      "empty": "Nothing is waiting on you."
+    },
+    {
+      "group": "withYou",
+      "items": [],
+      "empty": "Nothing is with you."
+    },
+    {
+      "group": "running",
+      "items": [],
+      "empty": "Nothing running."
+    },
+    {
+      "group": "queued",
+      "items": [],
+      "empty": "Nothing queued."
+    }
+  ],
+  "empty": "Nothing in the queue. Add one with `sindri item add`.",
+  "asOf": {
+    "cursor": 57,
+    "ledgerHead": 57,
+    "projectedAt": "2026-10-11T11:59:58.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

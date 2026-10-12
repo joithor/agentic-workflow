@@ -81,6 +81,23 @@ public sealed class SindriApiClientHeaderTests
             handler.Requests.Select(r => (r.Method, r.Path, r.After)));
     }
 
+    // API §2.4 for CreateItem: its answer nests the accepted command, whose sequence the next query waits for.
+    [Fact]
+    public async Task The_query_after_a_created_item_waits_for_its_sequence()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi());
+        var client = new SindriApiClient(new HttpClient(handler), TimeProvider.System, new InMemoryHumanTokens { Text = "tok-1" });
+
+        _ = await client.CreateItem(_api, new CreateItemRequest("A title", Repo: null, Body: null, Link: null), Token);
+        _ = await client.Queue(_api, Token);
+        _ = await client.CloseItem(_api, A.NewItem, new CloseItemRequest("done", 1), Token);
+        _ = await client.Item(_api, A.NewItem, Token);
+
+        Assert.Equal(
+            [("POST", "/sindri/items", null), ("GET", "/sindri/queue", "58"), ("POST", "/sindri/items/" + A.NewItem + "/close", null), ("GET", "/sindri/items/" + A.NewItem, "59")],
+            handler.Requests.Select(r => (r.Method, r.Path, r.After)));
+    }
+
     // A command is a human's from the UI like every call: never X-Sindri-Terminal (protected stays at the CLI), never Origin.
     [Fact]
     public async Task A_command_says_human_from_the_ui_and_never_terminal_or_origin()

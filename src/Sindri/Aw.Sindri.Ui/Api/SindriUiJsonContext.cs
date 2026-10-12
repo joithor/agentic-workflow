@@ -12,4 +12,10 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(ServiceList))]
 [JsonSerializable(typeof(CommandAcceptedView))]
 [JsonSerializable(typeof(ProblemView))]
+[JsonSerializable(typeof(QueueView))]
+[JsonSerializable(typeof(ItemView))]
+[JsonSerializable(typeof(TimelineView))]
+[JsonSerializable(typeof(CreateItemRequest))]
+[JsonSerializable(typeof(ItemCreatedView))]
+[JsonSerializable(typeof(CloseItemRequest))]
 internal sealed partial class SindriUiJsonContext : JsonSerializerContext;

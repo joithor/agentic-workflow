@@ -1,0 +1,26 @@
+{
+  "entries": [
+    {
+      "sequence": 52,
+      "time": "2026-10-11T11:55:00.0000000Z",
+      "type": "item.created",
+      "actor": "human:cli",
+      "line": "Created “Try the queue” in agentic-workflow"
+    },
+    {
+      "sequence": 53,
+      "time": "2026-10-11T11:55:02.0000000Z",
+      "type": "item.linked",
+      "actor": "human:cli",
+      "line": "Linked linear:issue/ENG-142 as ENG-142"
+    }
+  ],
+  "next": 53,
+  "asOf": {
+    "cursor": 57,
+    "ledgerHead": 57,
+    "projectedAt": "2026-10-11T11:59:58.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

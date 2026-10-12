@@ -72,8 +72,33 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/commands" => Answer(Counted(await server.Commands(uri, cancellationToken), server.Catalog)),
             "/sindri/services" => Answer(Counted(await server.Services(uri, cancellationToken), server.ServiceView)),
             "/sindri/views/rebuild" when request.Method == HttpMethod.Post => Answer(Counted(await server.RebuildViews(uri, cancellationToken), server.Rebuild)),
+            "/sindri/queue" => Answer(Counted(await server.Queue(uri, cancellationToken), server.QueueView)),
+            "/sindri/items" when request.Method == HttpMethod.Post =>
+                Answer(Counted(await server.CreateItem(uri, await Body<CreateItemRequest>(request, cancellationToken), cancellationToken), server.Create)),
+            var path when path.StartsWith("/sindri/items/", StringComparison.Ordinal) => await Item(request, path["/sindri/items/".Length..], cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
+    }
+
+    // /sindri/items/{id}, /sindri/items/{id}/timeline and POST /sindri/items/{id}/close (API P3).
+    private async Task<HttpResponseMessage> Item(HttpRequestMessage request, string rest, CancellationToken cancellationToken)
+    {
+        var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
+        var parts = rest.Split('/');
+        return parts switch
+        {
+            [var id] => Answer(Counted(await server.Item(uri, id, cancellationToken), server.ItemAnswer(id))),
+            [var id, "timeline"] => Answer(Counted(await server.Timeline(uri, id, After(uri), cancellationToken), server.TimelineAnswer(After(uri)))),
+            [var id, "close"] when request.Method == HttpMethod.Post =>
+                Answer(Counted(await server.CloseItem(uri, id, await Body<CloseItemRequest>(request, cancellationToken), cancellationToken), server.Close)),
+            _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
+        };
+    }
+
+    private static async Task<T> Body<T>(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var bytes = await request.Content!.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false); // why: the client always sends a body on these POSTs
+        return Aw.Kernel.Json.AwJson.Deserialize<T>(bytes, SindriApiClient.Json).Value;
     }
 
     // The route's golden text as served; the call above went through the model so its counts and gates hold.
