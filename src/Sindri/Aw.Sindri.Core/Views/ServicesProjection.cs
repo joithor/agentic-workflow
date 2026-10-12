@@ -32,5 +32,10 @@ internal sealed class ServicesProjection(EventFactory events) : IProjection
     /// <param name="recorded">The recorded event (its time and sequence).</param>
     /// <returns>The new row.</returns>
     public static ServiceRow Fold(ServiceRow? row, ServiceRan ran, LedgerEvent recorded)
-        => throw new NotSupportedException("ServicesProjection.Fold: P2 unit C");
+    {
+        ArgumentNullException.ThrowIfNull(ran);
+        ArgumentNullException.ThrowIfNull(recorded);
+        var last = new LastRun(ran.Slot, ran.Outcome, ran.Code, recorded.Envelope.OccurredAt);
+        return new ServiceRow(ran.Service, last, row?.Paused ?? false, recorded.Sequence);
+    }
 }

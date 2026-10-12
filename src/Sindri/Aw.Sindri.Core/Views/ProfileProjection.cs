@@ -41,7 +41,20 @@ internal sealed class ProfileProjection(EventFactory events) : IProjection
     /// <param name="recorded">The recorded event.</param>
     /// <returns>The new row.</returns>
     public static ProfileRow Fold(ProfileRow? row, ProfileApproved approved, LedgerEvent recorded)
-        => throw new NotSupportedException("ProfileProjection.Fold: P2 unit C");
+    {
+        ArgumentNullException.ThrowIfNull(approved);
+        ArgumentNullException.ThrowIfNull(recorded);
+        var before = row ?? Empty;
+        var changed = before.Live is { } live && live != approved.Hash;   // recomputed against the last live hash a check saw
+        return before with
+        {
+            Approved = approved.Hash,
+            ApprovedAt = recorded.Envelope.OccurredAt,
+            Changed = changed,
+            ChangedPaths = changed ? before.ChangedPaths : [],
+            Sequence = recorded.Sequence,
+        };
+    }
 
     /// <summary>The row after a check.</summary>
     /// <param name="row">The row so far, or null.</param>
@@ -49,5 +62,20 @@ internal sealed class ProfileProjection(EventFactory events) : IProjection
     /// <param name="recorded">The recorded event.</param>
     /// <returns>The new row.</returns>
     public static ProfileRow Fold(ProfileRow? row, ProfileChecked check, LedgerEvent recorded)
-        => throw new NotSupportedException("ProfileProjection.Fold: P2 unit C");
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        ArgumentNullException.ThrowIfNull(recorded);
+        return (row ?? Empty) with
+        {
+            Approved = check.Approved,
+            Live = check.Live,
+            CheckedAt = recorded.Envelope.OccurredAt,
+            Changed = check.Drifted,
+            ChangedPaths = check.Drifted ? check.ChangedPaths : [],
+            ApprovedServices = check.ApprovedServices,
+            Sequence = recorded.Sequence,
+        };
+    }
+
+    private static ProfileRow Empty { get; } = new(Approved: null, ApprovedAt: null, Live: null, CheckedAt: null, Changed: false, [], [], Sequence: 0);
 }
