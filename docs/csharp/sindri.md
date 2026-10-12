@@ -46,6 +46,7 @@ directory keeps its mode; files are 0600.
 |---|---|
 | `ledger.db` | The ledger (SQLite, WAL, through `Aw.Kernel.Data`): `events`, `lease`, `outbox_commands` |
 | `approved/<hash>/profile.json`, `approved/latest` | Approved profile snapshots (canonical JSON) and the latest hash. Runtime reads only these, never the live file |
+| `auth/human.token` | This start's human token (0600, in a 0700 `auth/` folder): minted by `serve` after it takes the lease, removed on stop (see Callers and auth) |
 | `control.json` | The running control plane's endpoint: `url`, `pid`, `epoch`. Written once it listens, removed on stop. A client checks the pid and epoch against `/sindri/ping`, so a stale record reads as "not running" |
 | `logs/serve.log` | The detached control plane's output (0600: written under umask 077, and an older log is narrowed after each start) |
 | `profile/profile.yaml` | The live profile (`AW_SINDRI_PROFILE` overrides the path) |
@@ -148,8 +149,37 @@ mistakes (`docs/csharp/bugfix.md`), and approval stays terminal-bound in the CLI
 
 ## Callers and auth
 
-Filled by API P1's units B (the headers, the per-start human token, the `Origin` refusal, `Sindri-Api-Version`) and D
-(how the CLI classes itself: the agent variables, the parent-process check, the no-start rule).
+Every request is classed from its headers before any handler runs (API spec §6). The actor on the events it records is
+composed by the host from the class and the client label, never taken from a header.
+
+| Header | Values | Effect |
+|---|---|---|
+| `X-Sindri-Caller` | `human`; `session` or missing; anything else | `human` or `session` (the default). Any other value, or two values, is 400 `SND-API-007` (logged) |
+| `X-Sindri-Terminal` | `1` | Honoured only with `human` |
+| `X-Sindri-Client` | `cli`, `ui`, `prover`, `mcp` | Names the actor: `human:cli`, `human:ui`, `human:prover`, else `human:http`; `session:cli`, `session:mcp`, else `session:http`. An unknown label counts as none (logged) |
+| `X-Sindri-Repo` | a repo name | Scopes the caller (enforced from P3); a malformed name is 400 `SND-API-007` |
+| `X-Sindri-Token` | the per-start token | Required with `human`, on queries too: missing or stale is 403 `SND-AUTH-001` ("restart the app or rerun the command"), never a silent downgrade to `session` |
+
+- **The human token.** `sindri serve` mints `auth/human.token` under the home (32 random bytes, base64url; the file
+  0600 in a 0700 `auth/` folder) right after it takes the lease, so a refused second `serve` never replaces the running
+  one's token. It removes the file with `control.json` on the way out. The CLI and the app read the file and send it.
+- **The prover label.** `X-Sindri-Client: prover` from a `human` caller is honoured only when the process's home, with
+  every symbolic link resolved, lies inside the temp directory (`TMPDIR`, else the platform's) or inside a proof folder
+  `<state root>/<repo slug>/proof/…` (the state root is `AW_STATE_DIR`, else `~/.agentic-workflow`). Elsewhere, such
+  as the owner's real home, it is 403 `SND-AUTH-001`. The label is the only way the server sees the prover marker.
+- **`Origin` on a command.** Every command route (the `commands` route group, later the issue routes) refuses any
+  `Origin` header with 403 `SND-API-008` (logged), before the body is bound, so a malformed body still gets the 403.
+  Queries keep S1's loopback guard: a loopback `Origin` is answered, any other is the guard's bare 403.
+- **Not audited.** `SND-API-007`, `SND-AUTH-001` and `SND-API-008` are refused before the command chain, so they are
+  logged, never written as `command.handled`.
+- **`Sindri-Api-Version: 1`** is on every answer past the loopback guard, problems included, and `GET /sindri/status`
+  reports `apiVersion: 1`.
+- **In-process callers.** `serve` makes every call it runs itself (start, the stop on Ctrl-C, SIGTERM or a failed
+  listen) as `service:host`, the only place that caller is set; the scheduler runs each service as `service:<name>`
+  (`service:heartbeat`). Events written with no caller keep `host:sindri`.
+
+How the CLI classes itself (the agent variables, the parent-process check, the no-start rule) is filled by API P1's
+unit D.
 
 ## Command chain
 
