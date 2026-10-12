@@ -224,11 +224,13 @@ the tree from the click (`!Health.CanRefresh`), is live (`Polite`, through its `
 ## How it finds the control plane
 
 Every call carries this start's human token (`IHumanTokenSource`, read at each call; see the caller headers
-above). A call Sindri refuses (403 with its ProblemDetails, `SND-AUTH-001` for a missing or stale token) reads as
-"Not running" with Sindri's code and `detail` as they are ("SND-AUTH-001: A human caller needs this start's token in
-X-Sindri-Token (fix: restart the app or rerun the command)") and the address on its own line; the app keeps looking
-every 2 s and recovers on its own once the token is good. A ping refused while following ends the follow, so the
-window names the refusal within one ping beat (10 s).
+above). A call Sindri refuses with 403 `SND-AUTH-001` (a missing or stale token) is retried exactly once with the token
+read again from `auth/human.token`, since a restarted control plane has minted a new one; there is never a third call.
+A call refused after that retry (or any other 403 with Sindri's ProblemDetails) is the **unreadable** banner with
+Sindri's code and `detail` as they are ("SND-AUTH-001: A human caller needs this start's token in X-Sindri-Token (fix:
+restart the app or rerun the command)"), never the token. The app keeps looking every 2 s and recovers on its own once
+the token is good. A ping refused while following ends the follow, so the window names the refusal within one ping
+beat (10 s).
 
 1. The endpoint-record port (`IEndpointRecordSource`) reads `control.json`. The desktop adapter reads it from
    `AW_SINDRI_HOME`, else `$AW_STATE_DIR/sindri-app`, else `~/.agentic-workflow/sindri-app`, the same place the control
@@ -295,8 +297,8 @@ scan C# for cli edges (a current edge its scan can't find fails `DEPS-STALE-001`
 ## Errors
 
 The app shows the first three as words in the window, never a dialog or a crash. A call Sindri refuses (a 403 with
-its ProblemDetails, such as `SND-AUTH-001`) is none of these: the window shows Sindri's own code and detail as they are
-(API spec §3.6), as the Not running reason.
+its ProblemDetails, such as `SND-AUTH-001`, after the one retry) keeps Sindri's own code: the unreadable banner shows
+that code and its detail as they are (API spec §3.6).
 
 | Code | When |
 |---|---|

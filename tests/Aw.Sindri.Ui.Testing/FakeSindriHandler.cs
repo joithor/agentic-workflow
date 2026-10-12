@@ -18,6 +18,9 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
 
     private readonly List<SeenRequest> _requests = [];
 
+    /// <summary>When set, the token Sindri holds: a request without it is refused with 403 SND-AUTH-001, as Sindri's caller check does.</summary>
+    public string? RequiredToken { get; set; }
+
     /// <summary>When set, every route answers this status with this body instead.</summary>
     public (HttpStatusCode Code, string Body)? Override { get; set; }
 
@@ -39,9 +42,9 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             throw new HttpRequestException("Connection refused (127.0.0.1)");
         }
 
-        if (server.Refusal is { } refusal)
+        if (Refused(request) is { } refused)
         {
-            return Text(HttpStatusCode.Forbidden, Problem(refusal.Code, refusal.Detail, 403), "application/problem+json");
+            return refused;
         }
 
         if (Override is { } o)
@@ -62,6 +65,21 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/events" => Events(After(uri), cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
+    }
+
+    // Sindri's caller check (a human without this start's token), then the model's own refusal: 403 with ProblemDetails.
+    private HttpResponseMessage? Refused(HttpRequestMessage request)
+    {
+        var sent = Header(request, "X-Sindri-Token");
+        if (RequiredToken is { } held && !string.Equals(held, sent, StringComparison.Ordinal))
+        {
+            var detail = sent is null
+                ? "A human caller needs this start's token in X-Sindri-Token (fix: restart the app or rerun the command)"
+                : "X-Sindri-Token isn't this start's token (fix: restart the app or rerun the command)";
+            return Text(HttpStatusCode.Forbidden, Problem("SND-AUTH-001", detail, 403), "application/problem+json");
+        }
+
+        return server.Refusal is { } refusal ? Text(HttpStatusCode.Forbidden, Problem(refusal.Code, refusal.Detail, 403), "application/problem+json") : null;
     }
 
     private static string? Header(HttpRequestMessage request, string name) =>

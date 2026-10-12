@@ -71,6 +71,39 @@ public sealed class SindriApiClientTests
         Assert.All(log.Entries, e => Assert.DoesNotContain(A.HumanToken, e.Message, StringComparison.Ordinal));
     }
 
+    // Orchestrator decision (PR #184): a 403 SND-AUTH-001 is retried exactly once with the token read again from
+    // auth/human.token, since a restarted host has minted a new one: a stale token, then the fresh one, is one retry and
+    // the answer.
+    [Fact]
+    public async Task A_stale_token_is_read_again_and_the_call_retried_once()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi()) { RequiredToken = "fresh-start-token" };
+        _token.Then("stale-start-token", "fresh-start-token");
+        var client = new SindriApiClient(new HttpClient(handler), _token, TimeProvider.System);
+
+        var status = await client.Status(_api, Token);
+
+        Assert.True(status.IsSuccess);
+        Assert.Equal(["stale-start-token", "fresh-start-token"], handler.Requests.Select(r => r.Token), StringComparer.Ordinal);
+    }
+
+    // Refused twice: Sindri's code and detail as they are (the window's Unreadable banner), with no third call; the
+    // event stream does the same and ends.
+    [Fact]
+    public async Task Refused_twice_is_sindris_code_and_detail_with_no_third_call()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi()) { RequiredToken = "fresh-start-token" };
+        var client = new SindriApiClient(new HttpClient(handler), _token, TimeProvider.System);
+
+        var ping = await client.Ping(_api, Token);
+        var events = await client.Events(_api, 0, Token).ToListAsync(Token);
+
+        Assert.Equal(new Error("SND-AUTH-001", ErrorKind.Forbidden, "X-Sindri-Token isn't this start's token (fix: restart the app or rerun the command)"), ping.Error);
+        Assert.Empty(events);
+        Assert.Equal(["/sindri/ping", "/sindri/ping", "/sindri/events", "/sindri/events"], handler.Requests.Select(r => r.Path), StringComparer.Ordinal);
+        Assert.Equal(4, _token.Reads);
+    }
+
     // Only a 403 with Sindri's ProblemDetails (a title) is a refusal; another 403 body is still an answer this build can't read.
     [Fact]
     public async Task A_403_without_a_problem_is_still_an_answer_the_app_cant_read()

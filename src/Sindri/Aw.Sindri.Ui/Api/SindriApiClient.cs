@@ -76,17 +76,16 @@ internal sealed class SindriApiClient(HttpClient http, IHumanTokenSource token, 
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
-            using var request = await Request(new Uri(api, path), deadline.Token).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, deadline.Token).ConfigureAwait(false);
-            var body = await response.Content.ReadAsByteArrayAsync(deadline.Token).ConfigureAwait(false);
-            if (Refusal(response.StatusCode, body) is { } refused)
+            var (code, body) = await Exchange(new Uri(api, path), deadline.Token).ConfigureAwait(false);
+
+            if (Refusal(code, body) is { } refused)
             {
                 return refused;
             }
 
-            if (!response.IsSuccessStatusCode)
+            if (code is < HttpStatusCode.OK or >= HttpStatusCode.MultipleChoices)
             {
-                return SindriUiErrors.BadAnswer.With(string.Create(CultureInfo.InvariantCulture, $"{path} answered {(int)response.StatusCode}"));
+                return SindriUiErrors.BadAnswer.With(string.Create(CultureInfo.InvariantCulture, $"{path} answered {(int)code}"));
             }
 
             var value = AwJson.Deserialize<T>(body, Json);
@@ -110,6 +109,29 @@ internal sealed class SindriApiClient(HttpClient http, IHumanTokenSource token, 
             return SindriUiErrors.Unreachable.With($"nothing answered at {api.Authority}");
         }
     }
+
+    // A call, and its one retry when the token was stale.
+    private async Task<(HttpStatusCode Code, byte[] Body)> Exchange(Uri url, CancellationToken cancellationToken)
+    {
+        var answer = await Send(url, cancellationToken).ConfigureAwait(false);
+        return StaleToken(answer.Code, answer.Body) ? await Send(url, cancellationToken).ConfigureAwait(false) : answer;
+    }
+
+    // One call: the request with the token as it is now, and the answer's status and body.
+    private async Task<(HttpStatusCode Code, byte[] Body)> Send(Uri url, CancellationToken cancellationToken)
+    {
+        using var request = await Request(url, cancellationToken).ConfigureAwait(false);
+        using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        return (response.StatusCode, await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false));
+    }
+
+    // SND-AUTH-001 (API §6: a human call without this start's token): a restarted host has minted a new token, so the
+    // call is retried exactly once with the token read again from auth/human.token (orchestrator decision, PR #184). A
+    // second refusal is the answer.
+    private static bool StaleToken(HttpStatusCode code, byte[] body) =>
+        string.Equals(Refusal(code, body)?.Code, TokenRefused, StringComparison.Ordinal);
+
+    private const string TokenRefused = "SND-AUTH-001";
 
     // A 403 with Sindri's ProblemDetails is a refusal (API §6: SND-AUTH-001 for a missing or stale token): Sindri's code
     // and its detail as they are (API §3.6), so the window shows Sindri's own sentence and fix. Built like the CLI's
@@ -164,16 +186,25 @@ internal sealed class SindriApiClient(HttpClient http, IHumanTokenSource token, 
     {
         try
         {
-            using var request = await Request(url, cancellationToken).ConfigureAwait(false);
-            request.Headers.Accept.ParseAdd("text/event-stream");
-            var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-            if (response.IsSuccessStatusCode)
+            for (var attempt = 1; ; attempt++)
             {
-                return response;
-            }
+                using var request = await Request(url, cancellationToken).ConfigureAwait(false);
+                request.Headers.Accept.ParseAdd("text/event-stream");
+                var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                if (response.IsSuccessStatusCode)
+                {
+                    return response;
+                }
 
-            response.Dispose();
-            return null;
+                // A stale token is retried once with the token read again, as Get's calls are; anything else ends the stream.
+                using (response)
+                {
+                    if (attempt > 1 || !StaleToken(response.StatusCode, await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false)))
+                    {
+                        return null;
+                    }
+                }
+            }
         }
         catch (HttpRequestException)
         {

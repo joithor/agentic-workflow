@@ -20,6 +20,21 @@ internal sealed class InMemoryHumanToken(string? contents = null) : IHumanTokenS
     /// <param name="contents">The text, or null.</param>
     public void Write(string? contents) => Volatile.Write(ref _contents, contents);
 
+    /// <summary>Queues what the next reads return, one each, in order; after the queue the last one stays.</summary>
+    /// <param name="reads">The token file's text at each read, null for none.</param>
+    public void Then(params string?[] reads)
+    {
+        lock (_queue)
+        {
+            foreach (var read in reads)
+            {
+                _queue.Enqueue(read);
+            }
+        }
+    }
+
+    private readonly Queue<string?> _queue = new();
+
     /// <summary>Makes every read throw, as a token file the platform can't read does (no permission, a directory).</summary>
     /// <param name="error">The exception, or null to read again.</param>
     public void FailReads(Exception? error) => Volatile.Write(ref _fail, error);
@@ -30,6 +45,14 @@ internal sealed class InMemoryHumanToken(string? contents = null) : IHumanTokenS
         if (Volatile.Read(ref _fail) is { } error)
         {
             throw error;
+        }
+
+        lock (_queue)
+        {
+            if (_queue.TryDequeue(out var next))
+            {
+                Volatile.Write(ref _contents, next);
+            }
         }
 
         var text = Volatile.Read(ref _contents)?.Trim();

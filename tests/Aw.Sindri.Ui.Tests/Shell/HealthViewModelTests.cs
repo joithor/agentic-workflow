@@ -52,9 +52,9 @@ public sealed class HealthViewModelTests : IDisposable
         Assert.False(_vm.IsRunning);
     }
 
-    // API §6, §3.6: a refused call (SND-AUTH-001, a missing or stale token) is neither "nothing answered" nor SND-UI-003:
-    // the reason is Sindri's code and detail as they are, with the address on its own line, and the app keeps looking
-    // every 2 s, reading the token again, so it recovers with no restart once the token is good.
+    // API §6, §3.6 and the orchestrator's decision (PR #184): a call refused even after its one retry (SND-AUTH-001, a
+    // missing or stale token) is the Unreadable banner with Sindri's code and detail as they are, never "nothing
+    // answered"; the app keeps looking every 2 s, reading the token again, so it recovers with no restart.
     [Fact]
     public async Task A_refused_call_shows_sindris_detail_as_is_and_recovers_on_its_own()
     {
@@ -62,9 +62,8 @@ public sealed class HealthViewModelTests : IDisposable
         _server.Refusal = A.NoTokenRefusal;
         Start();
 
-        await Eventually(() => _vm.Reason.StartsWith("SND-AUTH-001", StringComparison.Ordinal), "the refusal");
-        Assert.Equal(("Not running", $"{A.NoTokenRefusal.Code}: {A.NoTokenRefusal.Detail}", "127.0.0.1:7410"), (_vm.Headline, _vm.Reason, _vm.ReasonDetail));
-        Assert.Equal(ShellState.NotRunning, _vm.State);
+        await Eventually(() => _vm.State == ShellState.Unreadable, "the refusal");
+        Assert.Equal($"{A.NoTokenRefusal.Code}: {A.NoTokenRefusal.Detail}", _vm.Reason);
 
         _server.Refusal = null;
         _clock.Advance(HealthViewModel.RetryEvery);
@@ -84,7 +83,7 @@ public sealed class HealthViewModelTests : IDisposable
         _server.Refusal = A.NoTokenRefusal;
         _clock.Advance(HealthViewModel.PingEvery);
 
-        await Eventually(() => _vm.State == ShellState.NotRunning, "the refusal");
+        await Eventually(() => _vm.State == ShellState.Unreadable, "the refusal");
         Assert.Equal($"{A.NoTokenRefusal.Code}: {A.NoTokenRefusal.Detail}", _vm.Reason);
     }
 
