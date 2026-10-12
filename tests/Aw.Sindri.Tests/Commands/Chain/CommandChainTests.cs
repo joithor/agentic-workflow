@@ -145,7 +145,7 @@ public sealed class CommandChainTests : IAsyncDisposable
     {
         _ = await _c.H.HoldLease();
         var first = _c.Start(new FixtureCommand("block"), Human);
-        var second = _c.Start(new FixtureCommand("accept"), Human);
+        var second = _c.Start(new FixtureCommand("accept"), Human with { CommandId = Core.Ids.CommandId.From(new Guid(0xaa, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)) });
         await Task.Delay(TimeSpan.FromMilliseconds(50), TimeProvider.System, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, _c.Latch.Started);   // the second waits at the gate

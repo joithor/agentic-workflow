@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Aw.Sindri.Features.Commands;
 
@@ -51,12 +52,27 @@ public static class SindriCommandServiceCollectionExtensions
     private static IServiceCollection AddChained<TRequest, TResponse, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
         where TRequest : notnull
         where TService : class, IService<TRequest, TResponse>
-        => services
-            .AddSingleton<AuditTrail>()
+    {
+        services.TryAddSingleton<CommandGateLock>();
+        services.TryAddSingleton<AuditTrail>();
+        return services
             .AddScoped<TService>()
-            .AddScoped<IService<TRequest, TResponse>>(static sp =>
-                new CommandGate<TRequest, TResponse>(
-                    new AuditingService<TRequest, TResponse>(
-                        new AuthorizingService<TRequest, TResponse>(
-                            new ValidatingService<TRequest, TResponse>(sp.GetRequiredService<TService>(), sp.GetRequiredService<IValidator<TRequest>>())))));
+            .AddScoped<IService<TRequest, TResponse>>(static sp => Chain<TRequest, TResponse, TService>(sp));
+    }
+
+    /// <summary>Resolves and constructs one command's chain (no logic: the order is the point).</summary>
+    private static CommandGate<TRequest, TResponse> Chain<TRequest, TResponse, TService>(IServiceProvider sp)
+        where TRequest : notnull
+        where TService : class, IService<TRequest, TResponse>
+    {
+        var callers = sp.GetRequiredService<ICallerContextAccessor>();
+        var catalog = sp.GetRequiredService<ICommandCatalog>();
+        return new CommandGate<TRequest, TResponse>(
+            new AuditingService<TRequest, TResponse>(
+                new AuthorizingService<TRequest, TResponse>(
+                    new ValidatingService<TRequest, TResponse>(sp.GetRequiredService<TService>(), sp.GetRequiredService<IValidator<TRequest>>()),
+                    callers, catalog),
+                sp.GetRequiredService<AuditTrail>(), callers, catalog),
+            sp.GetRequiredService<CommandGateLock>(), sp.GetRequiredService<TimeProvider>());
+    }
 }
