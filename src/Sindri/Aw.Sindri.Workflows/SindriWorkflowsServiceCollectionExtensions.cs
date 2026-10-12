@@ -24,6 +24,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<TemporalDevServer>()
             .AddSingleton<ITemporalServer, DevServerTemporal>()
             .AddSingleton<RunStepActivities>()
+            .AddSingleton<RecordEventActivities>()
             .AddSingleton(provider => SindriWorker.Options(provider.GetRequiredService<RunStepActivities>()))
             .AddSingleton<TaskTokens>()
             .AddSingleton<IDeskSteps, TemporalDeskSteps>();
