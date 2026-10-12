@@ -5,7 +5,8 @@ Status:
   settings" (Settings, while the OS reduces motion) and "Looks again every 2 s" (the Not running card); §15's deps cycle
   row is decided (a `DEPS-CYCLE-001` exception). Lane decisions relayed by the orchestrator (2026-10-12): §7 and §18.1
 say engine P2 registers every engine catalog row and WF P4/P5 flip them to ready, and the engine's queries stay off the
-catalog; §4.4, §7 and E-12 name `answer-grant-tokens` beside `answer-grant` (API §2.1, X30). Nothing else changes.
+catalog; §4.4, §7 and E-12 name `answer-grant-tokens` beside `answer-grant` (API §2.1, X30); §4.1's Unreadable row also
+covers a Sindri refusal after one token re-read and retry. Nothing else changes.
 - **Revision 7 note (owner, 2026-10-11; README X55):** tmux owns every agent session and Warp attaches to it, so
   **Attach joins the live agent** and the human can type into whatever Step is running; the earlier "Sindri can't see
   inside Warp" limit in §6.2 and §6.6 no longer applies, and the `process` target kind is retired (API §8.1 rev 8).
@@ -182,7 +183,7 @@ Every view is in exactly one of these states, taken from the API, in this priori
 | **Version mismatch** | `Sindri-Api-Version` (or `/status.apiVersion`) differs from the app's | A full-window panel: "Sindri and the app are different versions" (API §9), both versions, and the fix "quit both and run `sindri`". No data views, no actions |
 | **Not running** | No usable `control.json`, or ping fails (S1b's `SND-UI-001/002`) | The S1b panel: "Not running", the reason, and `sindri` to copy. The app keeps looking every 2 s (S1b) |
 | **Connecting** | First load, before `/status` answers | The window chrome and skeleton rows (first load only, never on refresh) |
-| **Unreadable** | `SND-UI-003`: the API answered with something this build doesn't read | A banner with the code and `sindri doctor` to copy; the last good data stays, marked stale |
+| **Unreadable** | `SND-UI-003`: the API answered with something this build doesn't read; or Sindri refused the call (a 403 with its own code, such as `SND-AUTH-001` after the app re-read the token and retried once) | A banner with the code and `sindri doctor` to copy (for a refusal, Sindri's code and detail as they are); the last good data stays, marked stale |
 | **Stalled** | `asOf.stalled = true` | An error banner across the list: the view's `empty` sentence ("Views are stalled at N: run `sindri views rebuild`") and a **Rebuild views** button (`RebuildViews`, desk, §7). Rows still show, marked stale |
 | **Rebuilding** | `asOf.rebuilding = true` | A progress banner with the `empty` sentence ("Rebuilding views (cursor N of M)…"); rows show as they come back; actions that read views are disabled with "retry after the rebuild" (`SND-API-010`) |
 | **Stale** | No event or ping for 30 s, or a refresh failed while the process still answers ping | "updated Ns ago" turns into a word: **stale**, with a refresh button. After 3 failed refreshes: "Sindri not responding: run `sindri doctor`" (DB §5) |
