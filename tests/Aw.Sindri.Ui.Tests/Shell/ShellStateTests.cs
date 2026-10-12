@@ -208,21 +208,46 @@ public sealed class ShellStateTests
         Assert.False(shell.Pill.IsRefreshShown);
     }
 
+    // §4.1 Stale: after 3 failed refreshes the screen says "Sindri not responding: run sindri doctor". The sentence is
+    // too long for the pill at the 900 px minimum, so it shows in full in a banner under the top bar; the pill keeps
+    // ⌛ stale and its Refresh.
     [Fact]
-    public async Task After_three_failed_refreshes_the_pill_says_Sindri_is_not_responding()
+    public async Task After_three_failed_refreshes_a_banner_says_Sindri_is_not_responding()
     {
         var shell = await Stale();
         _server.FailStatus = true;
 
         await shell.Health.Refresh(Token);
         await shell.Health.Refresh(Token);
-        Assert.Equal(Labels.Stale, shell.Pill.Word);
+        Assert.False(shell.IsNotRespondingBanner);
         await shell.Health.Refresh(Token);
 
         Assert.Equal(ShellState.Stale, shell.State);
-        Assert.Equal(("⌛", Labels.NotResponding), (shell.Pill.Glyph, shell.Pill.Word));
+        Assert.True(shell.IsNotRespondingBanner);
+        Assert.Equal(("⌛", Labels.Stale), (shell.Pill.Glyph, shell.Pill.Word));
+        Assert.True(shell.Pill.IsRefreshShown);
         _clock.Advance(TimeSpan.FromSeconds(1));
-        Assert.Equal(Labels.NotResponding, shell.Pill.Word);
+        Assert.True(shell.IsNotRespondingBanner);
+    }
+
+    [Fact]
+    public async Task The_not_responding_banner_clears_when_Sindri_answers_again()
+    {
+        var shell = await Stale();
+        _server.FailStatus = true;
+        for (var i = 0; i < 3; i++)
+        {
+            await shell.Health.Refresh(Token);
+        }
+
+        var changed = new List<string>();
+        shell.PropertyChanged += (_, e) => changed.Add(e.PropertyName ?? string.Empty);
+        _server.FailStatus = false;
+        await shell.Health.Refresh(Token);
+
+        Assert.Equal(ShellState.Normal, shell.State);
+        Assert.False(shell.IsNotRespondingBanner);
+        Assert.Contains(nameof(ShellViewModel.IsNotRespondingBanner), changed, StringComparer.Ordinal);
     }
 
     [Fact]

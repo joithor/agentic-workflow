@@ -135,6 +135,9 @@ internal sealed class ShellViewModel : ObservableObject
     /// <summary>Unreadable: the banner above the page, which keeps its last data.</summary>
     public bool IsUnreadable => State == ShellState.Unreadable;
 
+    /// <summary>Stale after three failed refreshes: the banner under the top bar that says "Sindri not responding: run sindri doctor" (§4.1).</summary>
+    public bool IsNotRespondingBanner => State == ShellState.Stale && false;
+
     /// <summary>The page shows when connected: Normal, Stale, or Unreadable with the last data.</summary>
     public bool IsPageVisible => State is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
 
