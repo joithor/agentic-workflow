@@ -55,6 +55,12 @@ internal sealed class ItemRowViewModel : ObservableObject
     /// <summary>True when the row has a primary action to show.</summary>
     public bool HasPrimaryAction => PrimaryAction is not null;
 
+    /// <summary>Red stub: the parked badge.</summary>
+    public string Badge { get; } = string.Empty;
+
+    /// <summary>Red stub.</summary>
+    public bool HasBadge { get; }
+
     /// <summary>True while the row is the selected one (J/K, a click).</summary>
     public bool IsSelected { get; set => Set(ref field, value); }
 }

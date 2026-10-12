@@ -19,14 +19,14 @@ internal sealed partial class FakeSindriApi
     public Dictionary<string, RouteAnswer> Items { get; } = new(StringComparer.Ordinal)
     {
         [A.NewItem] = RouteAnswer.SpecShaped("items-id", "new"),
-        [A.DecisionItem] = RouteAnswer.SpecShaped("items-id", "needs-decision"),
+        [A.DecisionItem] = RouteAnswer.SpecShaped("items-id", "extra-p4-needs-decision"),
     };
 
     /// <summary>GET /sindri/items/{id}/timeline's page per 'after' (any item).</summary>
     public Dictionary<long, RouteAnswer> TimelinePages { get; } = new()
     {
         [0] = RouteAnswer.SpecShaped("items-id-timeline", "fixture"),
-        [53] = RouteAnswer.SpecShaped("items-id-timeline", "page-2"),
+        [151] = RouteAnswer.SpecShaped("items-id-timeline", "page-2"),
     };
 
     /// <summary>POST /sindri/items' answer.</summary>

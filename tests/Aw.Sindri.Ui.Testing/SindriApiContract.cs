@@ -161,8 +161,10 @@ public abstract class SindriApiContract
         var queue = (await Reach(new FakeSindriApi()).Queue(_api, Token)).Value;
 
         Expect.Sequence(["waitingOnYou", "withYou", "running", "queued"], queue.Groups.Select(g => g.Group));
-        Expect.Sequence([1, 0, 0, 4], queue.Groups.Select(g => g.Items.Count));
+        Expect.Sequence([0, 0, 0, 4], queue.Groups.Select(g => g.Items.Count));
+        Expect.Equal("Nothing is waiting on you.", queue.Groups[0].Empty);
         Expect.Equal("Nothing running.", queue.Groups[2].Empty);
+        Expect.True(queue.Groups.SelectMany(g => g.Items).All(i => i.PrimaryAction is null));
         Expect.Equal(expected: null, queue.Groups[3].Empty);
         Expect.Equal(("new", "Try the queue"), (queue.Groups[3].Items[3].State, queue.Groups[3].Items[3].Title));
     }
@@ -185,6 +187,7 @@ public abstract class SindriApiContract
 
         Expect.Equal((A.NewItem, 1L, "human:cli"), (item.Id, item.Version, item.CreatedBy));
         Expect.Sequence(["CloseItem:done", "CloseItem:cancelled"], item.Actions);
+        Expect.Equal(("Check the queue shows a new item without a click.", "linear:issue/ENG-142"), (item.Body, item.Link));
     }
 
     // UI spec §4.9 Item detail: an unknown item is the API's SND-ITEM-404 with its detail as served.
@@ -205,9 +208,9 @@ public abstract class SindriApiContract
         var first = (await api.Timeline(_api, A.NewItem, after: 0, Token)).Value;
         var second = (await api.Timeline(_api, A.NewItem, after: first.Next!.Value, Token)).Value;
 
-        Expect.Sequence([52L, 53L], first.Entries.Select(e => e.Sequence));
-        Expect.Equal(53L, first.Next);
-        Expect.Sequence([57L], second.Entries.Select(e => e.Sequence));
+        Expect.Equal(100, first.Entries.Count);
+        Expect.Equal(151L, first.Next);
+        Expect.Sequence([152L], second.Entries.Select(e => e.Sequence));
         Expect.Equal(expected: null, second.Next);
     }
 

@@ -28,7 +28,7 @@ public sealed class QueueFramesTests : IDisposable
     private readonly List<Window> _windows = [];
     private readonly CancellationTokenSource _stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
     private readonly InMemoryEndpointRecords _records = new();
-    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog-p3") };
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog") };
     private readonly FakeTimeProvider _clock = new(A.Noon);
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -124,11 +124,11 @@ public sealed class QueueFramesTests : IDisposable
 
         var page = Named<Control>(window, "QueuePage");
         var headers = page.GetVisualDescendants().OfType<ToggleButton>().Where(t => t.Name == "GroupHeader" && t.IsEffectivelyVisible).Select(AutomationProperties.GetName).ToList();
-        Assert.Equal(["Waiting on you 1", "Queued 4"], headers, StringComparer.Ordinal);
+        Assert.Equal(["Queued 4"], headers, StringComparer.Ordinal);
         var rows = page.GetVisualDescendants().OfType<Ui.Views.Queue.ItemRow>().Where(r => r.IsEffectivelyVisible).Select(r => r.ItemId).ToList();
-        Assert.Equal(5, rows.Count);
+        Assert.Equal(4, rows.Count);
         Assert.Equal(A.NewItem, rows[^1]);
-        Assert.Equal("5", shell.Navigation[1].Count);
+        Assert.Equal("4", shell.Navigation[1].Count);
         Frame(window, "queue-populated");
     });
 
@@ -164,7 +164,7 @@ public sealed class QueueFramesTests : IDisposable
     [Fact]
     public Task Homes_queue_panels_cap_their_rows() => OnUi(async () =>
     {
-        _server.QueueView = RouteAnswer.SpecShaped("queue", "running");
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
         var (window, _) = await Connected(s => !s.Queue.IsLoading);
 
         var running = Named<Control>(window, "RunningRows").GetVisualDescendants().OfType<Ui.Views.Queue.CompactItemRow>().ToList();
@@ -187,7 +187,7 @@ public sealed class QueueFramesTests : IDisposable
 
         Named<Button>(window, "LoadMoreButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Until(window, () => !shell.Item.HasMore);
-        Assert.Equal(3, Named<Control>(window, "TimelineList").GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("timeline-row")));
+        Assert.Equal(101, Named<Control>(window, "TimelineList").GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("timeline-row")));
         Frame(window, "item-timeline");
     });
 
@@ -258,5 +258,31 @@ public sealed class QueueFramesTests : IDisposable
         await Until(window, () => _server.Created.Count == 1);
         Assert.Equal("Proof: appears live", _server.Created[0].Title);
         Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a306", shell.Create.CreatedId);
+    });
+
+    // §4.5 (owner, 2026-10-12): a parked item shows in Waiting on you with a "parked" badge, from its state.
+    [Fact]
+    public Task A_parked_item_shows_its_badge_in_waiting_on_you() => OnUi(async () =>
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-parked");
+        var (window, shell) = await Connected(s => !s.Queue.IsLoading);
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+
+        var badges = Named<Control>(window, "QueuePage").GetVisualDescendants().OfType<TextBlock>()
+            .Where(t => t.Name == "BadgeText" && t.IsEffectivelyVisible).Select(t => t.Text).ToList();
+        Assert.Equal(["parked"], badges, StringComparer.Ordinal);
+        Frame(window, "queue-parked");
+    });
+
+    // §4.6 (owner, 2026-10-12): the sheet shows the item's body and link.
+    [Fact]
+    public Task The_item_sheet_shows_the_body_and_link() => OnUi(async () =>
+    {
+        var (window, _) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+
+        Assert.Equal("Check the queue shows a new item without a click.", Named<TextBlock>(window, "ItemBodyText").Text);
+        Assert.Equal("linear:issue/ENG-142", Named<TextBlock>(window, "ItemLinkText").Text);
+        Frame(window, "item-body");
     });
 }

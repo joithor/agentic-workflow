@@ -15,7 +15,7 @@ public sealed class ItemSheetViewModelTests
 {
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
     private readonly FakeTimeProvider _clock = new(A.Noon);
-    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog-p3") };
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog") };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -35,9 +35,23 @@ public sealed class ItemSheetViewModelTests
 
         Assert.Equal((A.NewItem, "Try the queue", "agentic-workflow", "New", "version 1", "5m"), (sheet.ItemId, sheet.Title, sheet.Repo, sheet.StateWord, sheet.VersionText, sheet.Age));
         Assert.Equal(("human:cli", false, false), (sheet.CreatedBy, sheet.HasWaitingOn, sheet.IsNotFound));
-        Assert.Equal(["item.created", "item.linked"], sheet.Timeline.Select(e => e.Type), StringComparer.Ordinal);
+        Assert.Equal(["item.created", "item.linked"], sheet.Timeline.Take(2).Select(e => e.Type), StringComparer.Ordinal);
+        Assert.Equal(100, sheet.Timeline.Count);
         Assert.Equal(("11:55:00", "human:cli", "Created “Try the queue” in agentic-workflow"), (sheet.Timeline[0].Time, sheet.Timeline[0].Actor, sheet.Timeline[0].Line));
         Assert.True(sheet.HasMore);
+    }
+
+    // §4.6 (owner, 2026-10-12): the sheet shows the item's body and link as GET /items/{itemId} serves them.
+    [Fact]
+    public async Task The_sheet_shows_the_items_body_and_link()
+    {
+        var sheet = await Sheet();
+
+        await sheet.Open(_api, A.NewItem, Token);
+        Assert.Equal((true, "Check the queue shows a new item without a click.", true, "linear:issue/ENG-142"), (sheet.HasBody, sheet.Body, sheet.HasLink, sheet.Link));
+
+        await sheet.Open(_api, A.DecisionItem, Token);
+        Assert.Equal((false, false), (sheet.HasBody, sheet.HasLink));
     }
 
     // §4.6: the timeline is paged by 'next'; Load more appends the next page and goes once there is none.
@@ -49,7 +63,7 @@ public sealed class ItemSheetViewModelTests
 
         await sheet.LoadMore(Token);
 
-        Assert.Equal([52L, 53L, 57L], sheet.Timeline.Select(e => e.Sequence));
+        Assert.Equal((101, 152L), (sheet.Timeline.Count, sheet.Timeline[^1].Sequence));
         Assert.False(sheet.HasMore);
     }
 

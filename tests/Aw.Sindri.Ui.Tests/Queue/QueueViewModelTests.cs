@@ -16,7 +16,8 @@ public sealed class QueueViewModelTests
 {
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
     private readonly FakeTimeProvider _clock = new(A.Noon);
-    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog-p3") };
+    // P3 serves no waitingOnYou rows; the P4 extra adds the needs-decision row (a pending Decide) these behaviours need.
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog"), QueueView = RouteAnswer.SpecShaped("queue", "extra-p4-waiting") };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -40,6 +41,20 @@ public sealed class QueueViewModelTests
         Assert.Equal(["Stream limits 429 fallback", "Retry storm in outbox dispatcher", "Context map review for tabs.layout", "Try the queue"], queue.Groups[3].Rows.Select(r => r.Title), StringComparer.Ordinal);
         Assert.Equal(5, queue.Total);
         Assert.False(queue.IsEmpty);
+    }
+
+    // P3's own queue: only queued items, every other group empty with its served sentence, no primary action yet.
+    [Fact]
+    public async Task P3s_queue_shows_only_the_queued_group()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "fixture");
+        var queue = await Queue();
+
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal([false, false, false, true], queue.Groups.Select(g => g.IsVisible));
+        Assert.Equal((4, "Nothing is waiting on you."), (queue.Total, queue.Groups[0].Empty));
+        Assert.All(queue.Groups[3].Rows, r => Assert.Null(r.PrimaryAction));
     }
 
     // §4.5: each row is id, title, repo, state as a word, step and since, named with its id for the screen reader.
@@ -69,6 +84,21 @@ public sealed class QueueViewModelTests
         Assert.Equal(("Decide", true), (decide.Label, decide.IsPending));
         Assert.Equal("Decide " + A.DecisionItem + ", arrives in P4", decide.Name);
         Assert.Null(queue.Groups[3].Rows[0].PrimaryAction);
+    }
+
+    // §4.5 (owner, 2026-10-12): four groups; a parked item sits in Waiting on you with a "parked" badge from its state.
+    [Fact]
+    public async Task A_parked_item_carries_a_parked_badge_in_waiting_on_you()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-parked");
+        var queue = await Queue();
+
+        await queue.Refresh(_api, Token);
+
+        var waiting = queue.Groups[0].Rows;
+        Assert.Equal((true, "parked", "Parked"), (waiting[0].HasBadge, waiting[0].Badge, waiting[0].StateWord));
+        Assert.False(waiting[1].HasBadge);
+        Assert.All(queue.Groups[3].Rows, r => Assert.False(r.HasBadge));
     }
 
     // §4.5 Empty: every group hidden, and the view's own empty sentence as served.
@@ -102,7 +132,7 @@ public sealed class QueueViewModelTests
     [Fact]
     public async Task Homes_panels_cap_at_five_rows_with_you_first()
     {
-        _server.QueueView = RouteAnswer.SpecShaped("queue", "running");
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
         var queue = await Queue();
 
         await queue.Refresh(_api, Token);

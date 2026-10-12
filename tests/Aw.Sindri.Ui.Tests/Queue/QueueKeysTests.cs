@@ -15,7 +15,8 @@ public sealed class QueueKeysTests
 {
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
     private readonly FakeTimeProvider _clock = new(A.Noon);
-    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog-p3") };
+    // P3 serves no waitingOnYou rows; the P4 extra adds the needs-decision row (a pending Decide) these behaviours need.
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog"), QueueView = RouteAnswer.SpecShaped("queue", "extra-p4-waiting") };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -35,7 +36,7 @@ public sealed class QueueKeysTests
         var queue = await Queue();
         queue.Hold(holding: true);
 
-        _server.QueueView = RouteAnswer.SpecShaped("queue", "running");
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
         await queue.Refresh(_api, Token);
 
         Assert.Equal((5, true, "7 new"), (queue.Total, queue.HasHeld, queue.HeldText));
@@ -50,7 +51,7 @@ public sealed class QueueKeysTests
     {
         var queue = await Queue();
         queue.Hold(holding: true);
-        _server.QueueView = RouteAnswer.SpecShaped("queue", "running");
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
         await queue.Refresh(_api, Token);
 
         queue.ShowHeld();

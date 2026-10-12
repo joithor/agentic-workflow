@@ -50,6 +50,18 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     /// <summary>The engine step, or empty before S2.</summary>
     public string Step { get; private set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>Red stub: the body.</summary>
+    public string Body { get; } = string.Empty;
+
+    /// <summary>Red stub.</summary>
+    public bool HasBody { get; }
+
+    /// <summary>Red stub: the link.</summary>
+    public string Link { get; } = string.Empty;
+
+    /// <summary>Red stub.</summary>
+    public bool HasLink { get; }
+
     /// <summary>Who created it, as the API names the actor.</summary>
     public string CreatedBy { get; private set => Set(ref field, value); } = string.Empty;
 

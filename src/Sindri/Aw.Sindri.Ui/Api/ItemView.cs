@@ -12,6 +12,8 @@ namespace Aw.Sindri.Ui.Api;
 /// <param name="Since">When it entered its state.</param>
 /// <param name="PrimaryAction">Its next action id, or null.</param>
 /// <param name="Actions">The action ids allowed now.</param>
+/// <param name="Body">The body text, scrubbed by the API, or null (only this route serves it).</param>
+/// <param name="Link">The tracker record key it's linked to ('linear:issue/…'), or null.</param>
 /// <param name="Version">The version the human sees, sent back with CloseItem.</param>
 /// <param name="CreatedBy">The actor that created it ('human:cli', 'session:…').</param>
 /// <param name="WaitingOn">The decision it waits on, or null.</param>
@@ -28,6 +30,8 @@ internal sealed record ItemView(
     DateTimeOffset Since,
     string? PrimaryAction,
     IReadOnlyList<string> Actions,
+    string? Body,
+    string? Link,
     long Version,
     string CreatedBy,
     string? WaitingOn,

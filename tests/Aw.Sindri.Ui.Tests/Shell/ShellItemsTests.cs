@@ -16,7 +16,8 @@ namespace Aw.Sindri.Ui.Tests.Shell;
 public sealed class ShellItemsTests
 {
     private readonly InMemoryEndpointRecords _records = new();
-    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog-p3") };
+    // P3 serves no waitingOnYou rows; the P4 extra adds the needs-decision row (a pending Decide) these behaviours need.
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog"), QueueView = RouteAnswer.SpecShaped("queue", "extra-p4-waiting") };
     private readonly FakeTimeProvider _clock = new(A.Noon);
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -49,7 +50,7 @@ public sealed class ShellItemsTests
         Assert.Equal(5, shell.Queue.Total);
         Assert.Equal("5", shell.Navigation[1].Count);
 
-        _server.QueueView = RouteAnswer.SpecShaped("queue", "running");
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
         _server.Push(A.Event(58, "item.created"));
 
         await Until(() => shell.Queue.Total == 12);

@@ -10,6 +10,8 @@
     "CloseItem:done",
     "CloseItem:cancelled"
   ],
+  "body": "Check the queue shows a new item without a click.",
+  "link": "linear:issue/ENG-142",
   "version": 1,
   "createdBy": "human:cli",
   "waitingOn": null,

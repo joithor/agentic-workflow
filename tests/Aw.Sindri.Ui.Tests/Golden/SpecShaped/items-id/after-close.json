@@ -7,6 +7,8 @@
   "since": "2026-10-11T11:59:30.0000000Z",
   "primaryAction": null,
   "actions": [],
+  "body": "Check the queue shows a new item without a click.",
+  "link": "linear:issue/ENG-142",
   "version": 2,
   "createdBy": "human:cli",
   "waitingOn": null,
