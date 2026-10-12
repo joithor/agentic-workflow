@@ -192,6 +192,19 @@
   <Style Selector="Border.phead > TextBlock">
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
+  <!-- The Health page's sections: 16 px insets, a hairline between them; label/value rows 28 px apart. -->
+  <Style Selector="Border.section">
+    <Setter Property="Padding" Value="{StaticResource Space.MD.Thickness}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.section.last">
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Grid.row">
+    <Setter Property="MinHeight" Value="24" />
+  </Style>
+
   <!-- A body the API doesn't serve yet: a quiet caption, never the brightest text in the panel. -->
   <Style Selector="TextBlock.quiet">
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
