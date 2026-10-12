@@ -1,5 +1,8 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
@@ -98,6 +101,90 @@ public sealed class RecipeWorkflowTests : IDisposable
         }, ct);
     }
 
+    /// <summary>
+    /// The worker 'sindri serve' runs (ITemporalWorker) moves the instance; 'workflow complete' without '--temporal'
+    /// finds the frontend in control.json's 'temporal' field; every start and transition is one ledger row keyed by the
+    /// RecordEvent activity id (spec rev 8.1 §5.6); 'workflow list' finds the instance by its search attributes.
+    /// </summary>
+    [Fact]
+    public async Task Serve_worker_moves_the_instance_with_the_frontend_from_control_json_mirrors_it_and_lists_it()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var env = await StartDevServer();
+        await using var sindri = Sindri();
+        await HoldLease(sindri, ct);
+        var temporal = new TemporalEndpoint(Pid: Environment.ProcessId, Port: PortOf(env), UiPort: 0);
+        var control = new ControlEndpoint(new Uri("http://127.0.0.1:9"), Environment.ProcessId, Epoch: 1) { Temporal = temporal };
+        Assert.False((await sindri.GetRequiredService<IEndpointFile>().Write(control, ct)).IsError);
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var worker = sindri.GetRequiredService<ITemporalWorker>().Run(temporal, stop.Token);
+        try
+        {
+            var handle = await StartStep(env.Client);
+            _ = await Until(handle, static s => IsOpen(s, "produce", "1.1"));
+            Assert.Equal($"{Address}  produce  needs-you\n", await Listed(sindri, "NeedsYou = true", ct));
+
+            var completed = await Cli(sindri, "complete", Address, "--run", "1.1", "--outcome", "done", "--output", "fact:output=" + Output("served"));
+
+            Assert.Equal((0, $"{Address} run 1.1: done -> checks\n", string.Empty), completed);
+            Assert.Equal($"{Address}  checks  needs-you\n", await Listed(sindri, "State = 'checks'", ct));
+            var runId = (await handle.DescribeAsync()).RunId;
+            var rows = (await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 100, ct)).Value
+                .Where(static e => e.Envelope.Type.StartsWith("workflow.", StringComparison.Ordinal)).ToList();
+            Assert.Equal(["workflow.started", "workflow.transition"], [.. rows.Select(static e => e.Envelope.Type)]);
+            Assert.All(rows, e => Assert.StartsWith($"workflow:{Address}:{runId}:", e.IdempotencyKey, StringComparison.Ordinal));
+            Assert.Equal(2, rows.Select(static e => e.IdempotencyKey).Distinct(StringComparer.Ordinal).Count());
+            await handle.TerminateAsync("test over");
+        }
+        finally
+        {
+            await stop.CancelAsync();
+            await worker;
+        }
+    }
+
+    [Fact]
+    public async Task Complete_without_temporal_and_without_a_serve_says_sindri_is_not_running()
+    {
+        await using var sindri = Sindri();
+
+        var (exit, stdout, stderr) = await Cli(sindri, "complete", Address, "--run", "1.1", "--outcome", "done");
+
+        Assert.Equal((1, string.Empty), (exit, stdout));
+        Assert.StartsWith("SND-API-001 ", stderr, StringComparison.Ordinal);
+        Assert.Contains("control.json", stderr, StringComparison.Ordinal);
+    }
+
+    /// <summary>'workflow list --query', retried while visibility catches up (it is eventually consistent).</summary>
+    private static async Task<string> Listed(IServiceProvider sindri, string query, CancellationToken ct)
+    {
+        var deadline = DateTime.UtcNow + _patience;
+        var last = (Exit: -1, Stdout: string.Empty, Stderr: string.Empty);
+        while (DateTime.UtcNow < deadline)
+        {
+            last = await Cli(sindri, "list", "--query", query);
+            if (last.Exit != 0 || last.Stdout.Length > 0)
+            {
+                break;
+            }
+
+            await Task.Delay(200, ct);
+        }
+
+        Assert.Equal((0, string.Empty), (last.Exit, last.Stderr));
+        return last.Stdout;
+    }
+
+    private static async Task HoldLease(IServiceProvider sindri, CancellationToken ct)
+    {
+        var grant = await sindri.GetRequiredService<ILease>().Acquire(sindri.GetRequiredService<IProcessProbe>().Self(), ct);
+        Assert.False(grant.IsError, grant.IsError ? grant.Error.Message : null);
+        sindri.GetRequiredService<HeldLease>().Hold(grant.Value);
+    }
+
+    private static int PortOf(WorkflowEnvironment env) =>
+        int.Parse(Target(env).Split(':')[^1], System.Globalization.CultureInfo.InvariantCulture);
+
     private static bool IsOpen(InstanceSnapshot snapshot, string state, string run) =>
         string.Equals(snapshot.State, state, StringComparison.Ordinal) && string.Equals(snapshot.Run, run, StringComparison.Ordinal);
 
@@ -132,7 +219,13 @@ public sealed class RecipeWorkflowTests : IDisposable
         {
             Namespace = SindriTemporal.Namespace,
             UI = false,
-            DevServerOptions = new DevServerOptions { ExistingPath = PinnedTemporal() },
+            DevServerOptions = new DevServerOptions
+            {
+                ExistingPath = PinnedTemporal(),
+
+                // the search attributes serve registers on its server (SindriTemporal.SearchAttributes); the interpreter upserts them
+                ExtraArgs = [.. SindriTemporal.SearchAttributes.SelectMany(static a => new[] { "--search-attribute", $"{a.Name}={a.Type}" })],
+            },
         });
 
     private static string Target(WorkflowEnvironment env) => env.Client.Connection.Options.TargetHost!;

@@ -3171,3 +3171,23 @@ static Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.operator !=(Aw.Sindri.Cor
 static Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome.operator ==(Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome? left, Aw.Sindri.Core.Workflow.Engine.Desk.DeskOutcome? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.operator !=(Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport? left, Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport.operator ==(Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport? left, Aw.Sindri.Core.Workflow.Engine.Desk.DeskReport? right) -> bool
+Aw.Sindri.Core.Control.ITemporalWorker
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.NeedsYou.get -> bool
+override Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.ToString() -> string!
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.NeedsYou.init -> void
+static Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.operator !=(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow? left, Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.operator ==(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow? left, Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow? right) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.GetHashCode() -> int
+Aw.Sindri.Core.Workflow.Engine.Desk.IWorkflowInstances
+override Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Equals(object? obj) -> bool
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.State.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Equals(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Address.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.State.init -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Deconstruct(out string! Address, out string? State, out bool NeedsYou) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Address.init -> void
+Aw.Sindri.Core.Control.ITemporalWorker.Run(Aw.Sindri.Core.Control.TemporalEndpoint! endpoint, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Aw.Sindri.Core.Workflow.Engine.Desk.IWorkflowInstances.List(string? query, string? temporal, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>!>!>
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.InstanceRow(string! Address, string? State, bool NeedsYou) -> void
