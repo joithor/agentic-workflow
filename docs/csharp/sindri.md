@@ -270,8 +270,9 @@ Queries (`IQuery<T>`, `AddQuery`) get a `sindri.query <name>` span around valida
 - **No caller context** (nothing set it) is refused and audited as caller `none`. `ServeCommand` calls `StopProcess` as
   `service:host`, the one service the catalog grants a desk command.
 - **The audit can't be written:** after an accepted command the result stands and the host logs `SND-LEDGER-002`; on any
-  other outcome the caller gets `SND-LEDGER-002` (503). Without a held lease no row can be written, so a refusal while the
-  process holds no lease answers `SND-LEDGER-002`.
+  other outcome the caller gets `SND-LEDGER-002` (503), whose message starts with the attempt's own code and reason and
+  then says why its row wasn't written. Without a held lease no row can be written, so a refusal while the process holds
+  no lease answers `SND-LEDGER-002`.
 - **Not audited:** requests the host can't bind (400/415), and the refusals before the chain (`SND-AUTH-001`,
   `SND-API-007`, `SND-API-008`); they are logged.
 
