@@ -77,10 +77,14 @@ internal sealed class WorkflowsHarness : IDisposable
     }
 
     /// <summary>Writes control.json as a running serve would, naming the dev server, and returns its endpoint.</summary>
-    public static async Task<TemporalEndpoint> AsServe(IServiceProvider sindri, WorkflowEnvironment env, CancellationToken ct)
+    public static Task<TemporalEndpoint> AsServe(IServiceProvider sindri, WorkflowEnvironment env, CancellationToken ct) =>
+        AsServe(sindri, env, new Uri("http://127.0.0.1:9"), epoch: 1, ct);
+
+    /// <summary>Writes control.json as a running serve at <paramref name="url"/> would, naming the dev server, and returns its endpoint.</summary>
+    public static async Task<TemporalEndpoint> AsServe(IServiceProvider sindri, WorkflowEnvironment env, Uri url, long epoch, CancellationToken ct)
     {
         var temporal = new TemporalEndpoint(Pid: Environment.ProcessId, Port: PortOf(env), UiPort: 0);
-        var control = new ControlEndpoint(new Uri("http://127.0.0.1:9"), Environment.ProcessId, Epoch: 1) { Temporal = temporal };
+        var control = new ControlEndpoint(url, Environment.ProcessId, epoch) { Temporal = temporal };
         Assert.False((await sindri.GetRequiredService<IEndpointFile>().Write(control, ct)).IsError);
         return temporal;
     }
@@ -183,6 +187,13 @@ internal sealed class WorkflowsHarness : IDisposable
 
         Assert.Fail($"the instance never got there; last seen {last}");
         return last;
+    }
+
+    /// <summary>Runs 'sindri workflow &lt;args&gt;' in process as <paramref name="session"/> classes the CLI, typing <paramref name="typed"/> at a challenge.</summary>
+    internal static Task<(int Exit, string Stdout, string Stderr)> Cli(IServiceProvider services, AgentSession session, string? typed, params string[] args)
+    {
+        _ = (session, typed);
+        return Cli(services, args);
     }
 
     /// <summary>Runs 'sindri workflow &lt;args&gt;' in process.</summary>

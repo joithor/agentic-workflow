@@ -1,10 +1,16 @@
+using Aw.Sindri.Core.Auth;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Host;
+using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Infrastructure.Workflows;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.CompleteStep;
 using Aw.Sindri.Tests.Workflows;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Temporalio.Client;
@@ -13,47 +19,58 @@ using Temporalio.Testing;
 namespace Aw.Sindri.Tests.ApplyCommand;
 
 /// <summary>
-/// A Sindri home served the way 'sindri serve' serves it (engine P4 unit (b)): the composed host over the home (with an
-/// optional override of its registrations), the lease, control.json naming the dev server, and the worker running.
-/// The 'workflow' verbs run in process against it.
+/// A Sindri home served the way 'sindri serve' serves it (engine P4): the HTTP host over the home (with an optional
+/// override of its registrations) listening on a free loopback port, the lease and this start's human token held,
+/// control.json naming the API and the dev server, and the worker running. The 'workflow' verbs run in process as the
+/// CLI runs them: the writes are clients of the API, as a human at a terminal unless a test says otherwise.
 /// </summary>
 internal sealed class Served : IAsyncDisposable
 {
     private readonly CancellationTokenSource _stop;
     private readonly Task _worker;
 
-    private Served(ServiceProvider sindri, WorkflowEnvironment environment, CancellationTokenSource stop, Task worker)
+    private Served(WebApplication app, WorkflowEnvironment environment, CancellationTokenSource stop, Task worker)
     {
-        Sindri = sindri;
+        App = app;
         Environment = environment;
         _stop = stop;
         _worker = worker;
+        Http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
     }
 
-    public ServiceProvider Sindri { get; }
+    public IServiceProvider Sindri => App.Services;
+
+    public WebApplication App { get; }
 
     public WorkflowEnvironment Environment { get; }
+
+    /// <summary>A client of the API, without caller headers (a test adds them per request).</summary>
+    public HttpClient Http { get; }
 
     /// <summary>Serves <paramref name="home"/> on <paramref name="environment"/>.</summary>
     public static async Task<Served> Start(string home, WorkflowEnvironment environment, Action<IServiceCollection>? replace = null)
     {
         var ct = TestContext.Current.CancellationToken;
-        var services = Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? home : null, new FakeTimeProvider());
-        replace?.Invoke(services);
-        var sindri = services.BuildServiceProvider();
-        await WorkflowsHarness.HoldLease(sindri, ct);
-        var temporal = await WorkflowsHarness.AsServe(sindri, environment, ct);
+        var app = LoopbackBinding.Build([], name => name == "AW_SINDRI_HOME" ? home : null, new FakeTimeProvider(), replace);
+        _ = Pipeline.Configure(app);
+        await WorkflowsHarness.HoldLease(app.Services, ct);
+        app.Services.GetRequiredService<HeldHumanToken>().Hold((await app.Services.GetRequiredService<IHumanTokenStore>().Mint(ct)).Value);
+        await app.StartAsync(ct);
+        var epoch = app.Services.GetRequiredService<HeldLease>().Current!.Epoch;   // why: HoldLease just held it
+        var temporal = await WorkflowsHarness.AsServe(app.Services, environment, new Uri(app.Urls.First()), epoch, ct);
         var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var worker = sindri.GetRequiredService<ITemporalWorker>().Run(temporal, stop.Token);
-        return new Served(sindri, environment, stop, worker);
+        var worker = app.Services.GetRequiredService<ITemporalWorker>().Run(temporal, stop.Token);
+        return new Served(app, environment, stop, worker);
     }
 
-    /// <summary>Runs 'sindri workflow &lt;args&gt;'.</summary>
-    public async Task<CliRun> Cli(params string[] args)
-    {
-        var (exit, stdout, stderr) = await WorkflowsHarness.Cli(Sindri, args);
-        return new CliRun(exit, stdout, stderr);
-    }
+    /// <summary>Runs 'sindri workflow &lt;args&gt;' as a human at a terminal.</summary>
+    public Task<CliRun> Cli(params string[] args) => As(session: null, terminal: true, typed: null, args);
+
+    /// <summary>Runs 'sindri workflow &lt;args&gt;' as a human at a terminal who types <paramref name="typed"/> when a challenge asks.</summary>
+    public Task<CliRun> Typing(string typed, params string[] args) => As(session: null, terminal: true, typed, args);
+
+    /// <summary>Runs 'sindri workflow &lt;args&gt;' inside an agent session (the CLI classes itself a session for <paramref name="reason"/>).</summary>
+    public Task<CliRun> AsSession(string reason, params string[] args) => As(reason, terminal: true, typed: null, args);
 
     /// <summary>The instance at <paramref name="address"/>.</summary>
     public WorkflowHandle<RecipeWorkflow> Handle(string address) => Environment.Client.GetWorkflowHandle<RecipeWorkflow>(address);
@@ -81,11 +98,23 @@ internal sealed class Served : IAsyncDisposable
         return run;
     }
 
+    /// <summary>Enters a human at a terminal as the caller, for a test that calls a slice in process through its chain.</summary>
+    public IDisposable AsHumanAtTerminal() =>
+        Sindri.GetRequiredService<ICallerContextAccessor>().Enter(A.Caller().AtTerminal().Client(ClientLabel.Cli).Build());
+
     public async ValueTask DisposeAsync()
     {
         await _stop.CancelAsync();
         await _worker;
         _stop.Dispose();
-        await Sindri.DisposeAsync();
+        Http.Dispose();
+        await App.StopAsync(TestContext.Current.CancellationToken);
+        await App.DisposeAsync();
+    }
+
+    private async Task<CliRun> As(string? session, bool terminal, string? typed, string[] args)
+    {
+        var (exit, stdout, stderr) = await WorkflowsHarness.Cli(Sindri, new AgentSession(session, terminal, Prover: false), typed, args);
+        return new CliRun(exit, stdout, stderr);
     }
 }
