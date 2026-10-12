@@ -303,7 +303,7 @@ public sealed class ShellWindowTests : IDisposable
             var path = Named<TextBlock>(window, "ReasonPathText");
             Assert.StartsWith("Sindri", reason.Text, StringComparison.Ordinal);
             Assert.DoesNotContain("/", reason.Text, StringComparison.Ordinal);
-            Assert.Equal("/var/…/aw-sindri-home-1234567890/sindri/ui/control.json", path.Text);
+            Assert.Equal("/var/…/sindri/ui/control.json", path.Text);
             Assert.Contains("mono", path.Classes, StringComparer.Ordinal);
             Assert.Equal(TextWrapping.NoWrap, path.TextWrapping);
             Assert.True(path.Bounds.Height < path.LineHeight * 1.5, string.Create(CultureInfo.InvariantCulture, $"the path takes {path.Bounds.Height} px"));

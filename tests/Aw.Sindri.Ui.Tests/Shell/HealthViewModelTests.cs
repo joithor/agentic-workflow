@@ -48,7 +48,7 @@ public sealed class HealthViewModelTests : IDisposable
 
         await Eventually(() => _vm.Headline == "Not running", "headline");
         Assert.Equal("sindri", _vm.Fix);
-        Assert.Contains("memory:control.json", _vm.Reason, StringComparison.Ordinal);
+        Assert.Equal(("memory:control.json", Labels.NoRecord), (_vm.ReasonPath, _vm.Reason));
         Assert.False(_vm.IsRunning);
     }
 

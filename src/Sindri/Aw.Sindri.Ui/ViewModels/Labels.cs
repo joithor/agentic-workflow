@@ -200,24 +200,16 @@ internal static partial class Labels
     /// <summary>The control plane answers but holds no lease.</summary>
     internal const string NoLease = "the control plane answers but holds no lease";
 
-    /// <summary>Not running: no control.json (stub).</summary>
-    internal const string NoRecord = "no endpoint record at";
+    /// <summary>Not running: no control.json. The card shows the record's path on its own line after these words (I7).</summary>
+    internal const string NoRecord = "Sindri hasn't started, or it stopped: no endpoint record at";
 
-    /// <summary>Not running: no control.json.</summary>
-    /// <param name="location">Where the record is read from.</param>
-    /// <returns>The reason.</returns>
-    internal static string NoRecordAt(string location) => $"no endpoint record at {location}: Sindri hasn't started, or it stopped";
-
-    /// <summary>Not running: control.json doesn't parse, or its url isn't absolute http(s).</summary>
-    /// <param name="location">Where the record is read from.</param>
-    /// <returns>The reason.</returns>
-    internal static string RecordUnreadable(string location) => $"the endpoint record at {location} can't be read";
+    /// <summary>Not running: control.json doesn't parse, or its url isn't absolute http(s); its path follows on its own line.</summary>
+    internal const string RecordUnreadable = "The endpoint record can't be read";
 
     /// <summary>Not running: the platform couldn't read control.json (a directory, no permission).</summary>
-    /// <param name="location">Where the record is read from.</param>
     /// <param name="why">The platform's reason.</param>
-    /// <returns>The reason.</returns>
-    internal static string RecordUnreadable(string location, string why) => $"the endpoint record at {location} can't be read: {why}";
+    /// <returns>The reason; the record's path follows on its own line.</returns>
+    internal static string RecordUnreadableBecause(string why) => $"{RecordUnreadable}: {why}";
 
     /// <summary>Not running: control.json names another process or epoch than the one answering.</summary>
     /// <param name="pid">The record's pid.</param>

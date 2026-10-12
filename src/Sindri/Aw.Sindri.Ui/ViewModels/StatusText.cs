@@ -86,15 +86,44 @@ internal static class StatusText
 
         if (p.Source is { } source)
         {
-            yield return new(Labels.RowFile, Home(source));
+            yield return new(Labels.RowFile, ShortPath(source));
         }
     }
 
     /// <summary>The longest path <see cref="ShortPath"/> shows.</summary>
     internal const int ShortPathLength = 48;
 
-    // A path as the app shows it (I5, I7): ~ for home, then a middle ellipsis (stub).
-    internal static string ShortPath(string path) => Home(path);
+    // A path as the app shows it (I5, I7): ~ for home, then, past ShortPathLength, its first segment, an ellipsis and as
+    // many whole trailing segments as fit; a file name longer than that keeps its end.
+    internal static string ShortPath(string path)
+    {
+        var whole = Home(path);
+        if (whole.Length <= ShortPathLength)
+        {
+            return whole;
+        }
+
+        var separator = whole.IndexOf('/', 1);
+        var head = (separator > 0 ? whole[..separator] : string.Empty) + "/…";
+        var room = ShortPathLength - head.Length;
+        var tail = whole[(whole.LastIndexOf('/') + 1)..];
+        if (tail.Length + 1 > room)
+        {
+            return head + "/" + tail[^(room - 1)..];
+        }
+
+        foreach (var segment in whole.Split('/').Reverse().Skip(1))
+        {
+            if (segment.Length + 1 + tail.Length + 1 > room)
+            {
+                break;
+            }
+
+            tail = segment + "/" + tail;
+        }
+
+        return head + "/" + tail;
+    }
 
     // A path under the user's home directory, written from ~.
     internal static string Home(string path)

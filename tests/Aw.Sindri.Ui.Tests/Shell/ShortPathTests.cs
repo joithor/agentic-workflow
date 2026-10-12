@@ -23,7 +23,7 @@ public sealed class ShortPathTests
     {
         var shown = StatusText.ShortPath("/var/folders/07/k3x9q2m1n8b7v6c5x4z3/T/aw-sindri-home-1234567890/sindri/ui/control.json");
 
-        Assert.Equal("/var/…/aw-sindri-home-1234567890/sindri/ui/control.json", shown);
+        Assert.Equal("/var/…/sindri/ui/control.json", shown);
         Assert.True(shown.Length <= StatusText.ShortPathLength);
     }
 

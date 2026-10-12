@@ -60,9 +60,6 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>Why it isn't running, the two versions, or the unreadable answer's code and message; empty otherwise.</summary>
     public string Reason { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>The command that fixes "not running".</summary>
-    public string Fix { get; } = Labels.StartFix;
-
     /// <summary>True while a control plane answers.</summary>
     public bool IsRunning { get; private set => Set(ref field, value); }
 
@@ -204,14 +201,16 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
 
     /// <summary>Not running, and why.</summary>
     /// <param name="reason">The reason in words.</param>
+    /// <param name="path">The endpoint record's path the reason names, shown shortened on its own line (I7); or null.</param>
     /// <returns>Null: no API to follow.</returns>
-    internal Uri? NotRunning(string reason)
+    internal Uri? NotRunning(string reason, string? path = null)
     {
         lock (_gate)
         {
             Headline = Labels.NotRunning;
             HealthLine = Labels.NotRunning;
             Reason = reason;
+            ReasonPath = path is null ? string.Empty : StatusText.ShortPath(path);
             IsRunning = false;
             IsNotRunning = true;
             State = ShellState.NotRunning;

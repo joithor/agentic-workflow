@@ -9,6 +9,9 @@ internal sealed partial class HealthViewModel
     /// <summary>Not running: the endpoint record's path, shortened, shown on its own line under the reason; or empty.</summary>
     public string ReasonPath { get; private set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>The command that fixes "not running".</summary>
+    public string Fix { get; } = Labels.StartFix;
+
     /// <summary>Running: the lease line.</summary>
     public string Lease { get; private set => Set(ref field, value); } = string.Empty;
 
