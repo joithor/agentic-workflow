@@ -314,20 +314,35 @@ public sealed class HealthViewModelTests : IDisposable
         Assert.Contains("holds no lease", _vm.Reason, StringComparison.Ordinal);
     }
 
+    // Review run 3 (security-sentinel-0): the card says why in the app's own words, never the platform's message, which
+    // carries the record's full path; the path shows only shortened, on its own line (I5, I7).
     [Fact]
     public async Task A_record_the_platform_cant_read_reads_as_not_running_and_the_app_keeps_trying()
     {
         _records.Write(A.Record());
-        _records.FailNextRead(new UnauthorizedAccessException("Access to the path is denied."));
+        _records.FailNextRead(new UnauthorizedAccessException("Access to the path '/Users/someone/.agentic-workflow/sindri-app/control.json' is denied."));
         Start();
 
         await Eventually(() => _vm.Headline == "Not running", "not running");
-        Assert.Contains("Access to the path is denied.", _vm.Reason, StringComparison.Ordinal);
+        Assert.Equal(Labels.RecordUnreadableBecause(Labels.RecordNoPermission), _vm.Reason);
+        Assert.DoesNotContain("/Users/someone", _vm.Reason + _vm.ReasonDetail, StringComparison.Ordinal);
         await Eventually(() =>
         {
             _clock.Advance(HealthViewModel.RetryEvery);
             return _vm.Headline == "Running";
         }, "recovered on the next try");
+    }
+
+    [Fact]
+    public async Task A_record_the_platform_fails_to_read_says_so_in_the_apps_words()
+    {
+        _records.Write(A.Record());
+        _records.FailNextRead(new IOException("Is a directory : '/Users/someone/.agentic-workflow/sindri-app/control.json'"));
+        Start();
+
+        await Eventually(() => _vm.Headline == "Not running", "not running");
+        Assert.Equal(Labels.RecordUnreadableBecause(Labels.RecordIoError), _vm.Reason);
+        Assert.DoesNotContain("/Users/someone", _vm.Reason + _vm.ReasonDetail, StringComparison.Ordinal);
     }
 
     [Fact]

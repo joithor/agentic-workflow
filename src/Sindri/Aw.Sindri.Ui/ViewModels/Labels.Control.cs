@@ -11,4 +11,10 @@ internal static partial class Labels
     /// <returns>The reason.</returns>
     internal static string NotOnThisMachine(string authority) =>
         $"its address {authority} isn't on this machine (the app follows only 127.0.0.1, ::1 or localhost)";
+
+    /// <summary>Why the platform refused to read control.json: no permission (the app's words, never the platform's message, which names the path).</summary>
+    internal const string RecordNoPermission = "red: not worded yet";
+
+    /// <summary>Why the platform couldn't read control.json otherwise (a directory in its place, an I/O error).</summary>
+    internal const string RecordIoError = "red: not worded yet";
 }
