@@ -140,6 +140,14 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
       continue;
     }
     if (x.expires < today) { fail("DEPS-EXC-001", "expired exception", `${x.rule} for ${x.subject} expired ${x.expires} (today ${today})`, "an exception is valid until its expires date", "fix the violation, or renew the exception in a reviewed PR with a new reason and dates"); continue; }
+    if (x.excuses) { // DEPS-CYCLE-001: the one declared cli or http edge it excuses, leaving its subject; covered at the cycle check
+      const at = `${x.excuses.from} -> ${x.excuses.to} (${x.excuses.kind})`;
+      const why = x.excuses.from !== x.subject ? `${at} does not leave ${x.subject}` : !seenEdges.has(`${x.excuses.from}|${x.excuses.to}|${x.excuses.kind}`) ? `${at} is not a declared edge` : null;
+      if (why) { fail("DEPS-EXC-005", "cycle exception excuses an edge it can't", `${x.rule} for ${x.subject}: ${why}`, "a DEPS-CYCLE-001 exception excuses one declared cli or http edge leaving its subject", `declare (from: ${x.subject}, to: <package>, kind: cli or http) and name it under excuses, or fix the exception's excuses`); continue; }
+      active.push({ ...x, used: false, measured: null });
+      info.push(`exception ${x.rule} ${at} (expires ${x.expires}): ${x.reason}`);
+      continue;
+    }
     active.push({ ...x, used: false, measured: null });
     info.push(`exception ${x.rule} ${x.subject} (expires ${x.expires}): ${x.reason}`);
   }
@@ -177,7 +185,20 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
   for (const e of edges.filter((x) => x.kind === "compose" && !misplaced.has(edgeKey(x)) && !seenEdges.has(`${x.from}|${x.to}|project`))) {
     fail("DEPS-COMPOSE-001", "compose edge without a project edge", `${edgeText(e)}: no project edge ${e.from} -> ${e.to}`, "a compose edge sits beside a project edge to the same package: the Host and Features reach the target's Core through the project edge, and the compose edge adds only the Add…() registration calls", `declare the project edge too (the Host and Features reference ${e.to}'s Core):\n${yamlEdge(e.from, e.to, "project", e.status)}`);
   }
-  for (const c of findCycles(edges)) fail("DEPS-CYCLE-001", "the declared graph has a cycle", c.join(" -> "), "the graph is acyclic across every edge kind (§4b.1a)", "delete one edge of the cycle in deps.yaml, or move the shared part into a lower tier");
+  // A cycle exception covers the cycle its excused edge closes: the one cycle that goes away without that edge.
+  const cycles = findCycles(edges);
+  const coveredCycles = new Set();
+  for (const x of active.filter((a) => a.excuses)) {
+    const { from, to, kind } = x.excuses;
+    const at = `${from} -> ${to} (${kind})`;
+    const without = new Set(findCycles(edges.filter((e) => !(e.from === from && e.to === to && e.kind === kind))).map((c) => c.join(">")));
+    const closes = cycles.filter((c) => !without.has(c.join(">")));
+    if (closes.length === 1) { x.used = true; coveredCycles.add(closes[0]); }
+    x.measured = closes.length === 1 ? closes[0].join(" -> ")
+      : closes.length > 1 ? `${closes.length} cycles pass through ${at} (${closes.map((c) => c.join(" -> ")).join("; ")}), more than the one an exception covers`
+      : cycles.some((c) => c.some((n, i) => n === from && c[i + 1] === to)) ? `every cycle through ${at} also has another ${from} -> ${to} edge` : `no cycle passes through ${at}`;
+  }
+  for (const c of cycles.filter((x) => !coveredCycles.has(x))) fail("DEPS-CYCLE-001", "the declared graph has a cycle", c.join(" -> "), "the graph is acyclic across every edge kind (§4b.1a); a DEPS-CYCLE-001 exception covers the one cycle its excused cli or http edge closes", "delete one edge of the cycle in deps.yaml, or move the shared part into a lower tier");
 
   // ---- cli/db/file edges in the source ----
   const declared = new Map(edges.map((e) => [edgeKey(e), e]));

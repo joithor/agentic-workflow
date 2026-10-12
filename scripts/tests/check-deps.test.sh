@@ -645,6 +645,9 @@ expect "a cycle exception whose edge closes two cycles covers neither" 1 "DEPS-C
 d="$(fixture cycle-excepted-none)"; edge "$d" Delta Alpha cli planned; cyc "$d" Delta Delta Alpha cli; run "$d"
 expect "a cycle exception whose cycle doesn't exist suppresses nothing" 1 "DEPS-EXC-002" "DEPS-CYCLE-001 for Delta: no cycle passes through Delta -> Alpha (cli)"
 
+d="$(fixture cycle-excepted-parallel)"; edge "$d" Alpha Beta cli planned; edge "$d" Alpha Beta file planned; cyc "$d" Alpha Alpha Beta cli; run "$d"
+expect "a cycle exception covers nothing when another edge of the same pair still closes the cycle" 1 "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha" "DEPS-EXC-002" "every cycle through Alpha -> Beta (cli) also has another Alpha -> Beta edge"
+
 d="$(fixture cycle-excepted-missing)"; edge "$d" Alpha Beta cli planned; cyc "$d" Alpha Alpha Beta http; run "$d"
 expect "a cycle exception excusing an edge that isn't declared fails, and the cycle with it" 1 "DEPS-EXC-005" "Alpha -> Beta (http) is not a declared edge" "DEPS-CYCLE-001" "Alpha -> Beta -> Alpha"
 
