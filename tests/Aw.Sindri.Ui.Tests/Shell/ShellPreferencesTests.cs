@@ -3,6 +3,7 @@ using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Settings;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Microsoft.Extensions.Time.Testing;
 
@@ -80,6 +81,29 @@ public sealed class ShellPreferencesTests
 
         var stored = await Stored();
         Assert.Equal((1.2, true, 600d), (stored.TextScale, stored.ReduceMotion, stored.SheetWidth));
+    }
+
+    // Settings and the shell write through one queue: each reads the file only after the other's write, so neither
+    // writes back what it read before the other changed it.
+    [Fact]
+    public async Task A_Settings_change_and_a_shell_change_made_together_both_land()
+    {
+        var store = new GatedPreferencesStore();
+        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), store);
+        await shell.Restore(Token);
+        using var settings = new SettingsViewModel(new Preferences(store), new FakeMotionPreference(), _ => { });
+        store.HoldReads();
+
+        settings.ReduceMotion = true;
+        shell.ResizeSheet(600);
+        store.ReleaseReads();
+        for (var i = 0; i < 500 && store.Writes < 2; i++)
+        {
+            await Task.Delay(10, Token);
+        }
+
+        var stored = await new Preferences(store).Load(Token);
+        Assert.Equal((true, 600d), (stored.ReduceMotion, stored.SheetWidth));
     }
 
     [Fact]
