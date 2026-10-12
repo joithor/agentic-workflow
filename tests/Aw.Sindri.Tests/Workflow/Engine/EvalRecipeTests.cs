@@ -83,6 +83,23 @@ public sealed class EvalRecipeTests
         Assert.Contains(detail, failed.Detail, StringComparison.Ordinal);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("""{"trigger":{"kind":"step.completed","outcome":"done",""", 2)]
+    [InlineData("""{"start":{"inputs":""", 1)]
+    public async Task A_line_that_isnt_JSON_fails_at_that_line_without_the_parser_internals(string bad, int line)
+    {
+        var text = line == 1 ? bad + "\n" : Start + "\n" + bad + "\n";
+        _ = _files.With(StepHappy, text);
+
+        var failed = (await Eval(Step)).Cases[0];
+
+        Assert.Equal((false, line), (failed.Passed, failed.Line));
+        Assert.DoesNotContain("BytePositionInLine", failed.Detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("LineNumber", failed.Detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("EvalStepLine", failed.Detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("EvalStartLine", failed.Detail, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Grants_takeovers_and_cancels_are_written_as_evals()
     {
