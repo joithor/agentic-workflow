@@ -39,6 +39,12 @@ internal static class EngineRows
         Pending("ApplyCommand:takeover", ActionClass.Pause, Commands, "sindri workflow takeover <address>", "WF-P5"),
         Pending("ApplyCommand:handback", ActionClass.Desk, Commands, "sindri workflow handback <address>", "WF-P5"),
         Pending("ApplyCommand:cancel", ActionClass.Desk, Commands, "sindri workflow cancel <address>", "WF-P4") with { Destructive = true },
+
+        // One row serves every recipe verb ('on: command.<verb>'): the verb is a field of the request's payload, so the
+        // row's action stays 'ApplyCommand:command' whatever the recipe names (owner ruling, cross-lane). It is desk,
+        // not destructive, and reads no views. A verb that needs another class or the destructive flag gets its own
+        // 'ApplyCommand:command-<verb>' row instead (engine spec §6.2).
+        Pending("ApplyCommand:command", ActionClass.Desk, Commands, "sindri workflow command <address> <verb>", "WF-P4"),
         Pending("CompleteStep", ActionClass.Desk, "POST /sindri/workflow/instances/{instanceId}/runs/{run}/complete",
             "sindri workflow complete <address> --run <token> --outcome <outcome>", "WF-P4"),
     ];

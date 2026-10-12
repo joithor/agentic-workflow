@@ -45,7 +45,7 @@ public sealed class ProtectedCommandTests
     public void No_client_references_a_protected_request_or_route()
     {
         var rows = Catalog().Rows.Where(r => r.Class == ActionClass.Protected).ToList();
-        var types = rows.Select(r => r.CommandType?.FullName).OfType<string>().Append(typeof(ChallengeAnswer).FullName!).ToHashSet(StringComparer.Ordinal);
+        var types = rows.Select(r => r.CommandType?.FullName).OfType<string>().Append(typeof(ChallengeAnswer).FullName).ToHashSet(StringComparer.Ordinal);
         var routes = rows.Select(r => r.Route).OfType<string>().SelectMany(r => new[] { r, r.Replace("/sindri", string.Empty, StringComparison.Ordinal) }).ToHashSet(StringComparer.Ordinal);
 
         var found = Production.Architecture.Types

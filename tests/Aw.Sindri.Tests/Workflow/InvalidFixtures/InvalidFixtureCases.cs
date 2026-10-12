@@ -180,7 +180,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-VERSION-001"] = new(
             FixtureSetup.Registry,
-            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is OWNHASH at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
+            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is 0f811d6c0e23 at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
             []),
         ["RCP-VERSION-002"] = new(
             FixtureSetup.Registry,
