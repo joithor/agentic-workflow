@@ -463,6 +463,41 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal((Labels.GlyphOk, Labels.Running), (Text(window, "PillGlyph"), Text(window, "HealthPillText")));
     });
 
+    // §4.1 "sending" (§12.4): while a refresh is in flight Refresh is disabled and keeps its label, "Sending…" shows beside
+    // it after 300 ms as a polite live region, and a second click does nothing.
+    [Fact]
+    public Task While_a_refresh_is_in_flight_Refresh_is_disabled_keeps_its_label_and_says_Sending() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        _server.FailPing = true;
+        _clock.Advance(ShellViewModel.StaleAfter);
+        await Until(() => shell.State == ShellState.Stale);
+        _server.StatusGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var before = _server.StatusCalls;
+        var refresh = Named<Button>(window, "RefreshButton");
+
+        refresh.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        _clock.Advance(TimeSpan.FromMilliseconds(300));
+        await Until(() => shell.Health.IsSending);
+        Settle(window);
+
+        Assert.False(refresh.IsEffectivelyEnabled);
+        Assert.Contains(refresh.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Text == Labels.Refresh);
+        Assert.True(Visible(window, "RefreshSending"));
+        Assert.Equal(Labels.Sending, Text(window, "RefreshSending"));
+        Assert.Equal(AutomationLiveSetting.Polite, AutomationProperties.GetLiveSetting(Named<TextBlock>(window, "RefreshSending")));
+        refresh.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal(before + 1, _server.StatusCalls);
+        EveryControlIsNamed(window);
+        Frame(window, "refresh-sending");
+
+        _server.StatusGate.SetResult();
+        await Until(() => shell.State == ShellState.Normal);
+        Settle(window);
+        Assert.False(Visible(window, "RefreshSending"));
+    });
+
     // B2 on the Health page: stale reads ⌛ stale at the process section's head.
     [Fact]
     public Task Stale_says_so_on_the_Health_page() => OnUi(async () =>
@@ -593,6 +628,9 @@ public sealed class ShellWindowTests : IDisposable
         /// <summary>Stale after three failed refreshes.</summary>
         NotResponding,
 
+        /// <summary>Stale, with a refresh in flight past 300 ms: "Sending…" beside Refresh.</summary>
+        Sending,
+
         /// <summary>Not running.</summary>
         NotRunning,
 
@@ -640,24 +678,37 @@ public sealed class ShellWindowTests : IDisposable
                 TopBarFits(window, state, scale);
             }
 
-            if (state == BarState.NotResponding)
-            {
-                var banner = Named<Control>(window, "NotRespondingBanner");
-                Assert.True(banner.IsEffectivelyVisible, "the not-responding banner is hidden");
-                AllInside(window, banner, state, scale);
-                var words = banner.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible && t.Text is { Length: > 1 }).Select(t => t.Text);
-                Assert.Equal(Labels.NotResponding, string.Join(' ', words));
-                Assert.Equal(Labels.NotResponding, AutomationProperties.GetName(banner));
-            }
+            StateWords(window, state, scale);
 
             Frame(window, string.Create(CultureInfo.InvariantCulture, $"min-width-{state.ToString().ToLowerInvariant()}-{scale * 100:0}"));
         }
         finally
         {
             TextScale.Apply(resources, 1.0);
+            _ = _server.StatusGate?.TrySetResult();
             Settle(window);
         }
     });
+
+    // Sending… beside Refresh, and the not-responding sentence in full in its banner.
+    private static void StateWords(Window window, BarState state, double scale)
+    {
+        if (state == BarState.Sending)
+        {
+            Assert.True(Visible(window, "RefreshSending"), "Sending… is hidden");
+            Assert.Equal(Labels.Sending, Text(window, "RefreshSending"));
+        }
+
+        if (state == BarState.NotResponding)
+        {
+            var banner = Named<Control>(window, "NotRespondingBanner");
+            Assert.True(banner.IsEffectivelyVisible, "the not-responding banner is hidden");
+            AllInside(window, banner, state, scale);
+            var words = banner.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible && t.Text is { Length: > 1 }).Select(t => t.Text);
+            Assert.Equal(Labels.NotResponding, string.Join(' ', words));
+            Assert.Equal(Labels.NotResponding, AutomationProperties.GetName(banner));
+        }
+    }
 
     // The window in one of the minimum-width test's states.
     private async Task<ShellWindow> ShowIn(BarState state)
@@ -679,12 +730,29 @@ public sealed class ShellWindowTests : IDisposable
             : state == BarState.VersionMismatch ? ShellState.VersionMismatch
             : ShellState.Normal;
         var (window, shell) = await Show(s => s.State == expected);
-        if (state is BarState.Stale or BarState.NotResponding)
+        if (state is BarState.Stale or BarState.NotResponding or BarState.Sending)
         {
-            _server.FailPing = true;
-            _clock.Advance(ShellViewModel.StaleAfter);
-            await Until(() => shell.State == ShellState.Stale);
-            Assert.Equal(ShellState.Stale, shell.State);
+            await GoStale(window, shell, state);
+        }
+
+        Settle(window);
+        return window;
+    }
+
+    // Stale (no ping for 30 s); then a refresh in flight past 300 ms, or three failed refreshes.
+    private async Task GoStale(Window window, ShellViewModel shell, BarState state)
+    {
+        _server.FailPing = true;
+        _clock.Advance(ShellViewModel.StaleAfter);
+        await Until(() => shell.State == ShellState.Stale);
+        Assert.Equal(ShellState.Stale, shell.State);
+        if (state is BarState.Sending)
+        {
+            _server.StatusGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            Named<Button>(window, "RefreshButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            _clock.Advance(TimeSpan.FromMilliseconds(300));
+            await Until(() => shell.Health.IsSending);
+            Assert.True(shell.Health.IsSending);
         }
 
         if (state is BarState.NotResponding)
@@ -695,9 +763,6 @@ public sealed class ShellWindowTests : IDisposable
                 await shell.Health.Refresh(Token);
             }
         }
-
-        Settle(window);
-        return window;
     }
 
     private static void TopBarFits(Window window, BarState state, double scale)
@@ -791,7 +856,7 @@ public sealed class ShellWindowTests : IDisposable
         Frame(window, "settings");
     });
 
-    private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "RefreshButton", "HealthPill"];
+    private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "RefreshSending", "RefreshButton", "HealthPill"];
 
     private static Rect Box(Window window, string name)
     {

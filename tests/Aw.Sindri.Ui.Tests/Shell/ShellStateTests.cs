@@ -208,6 +208,52 @@ public sealed class ShellStateTests
         Assert.False(shell.Pill.IsRefreshShown);
     }
 
+    // §4.1 "sending": while a refresh is in flight Refresh is disabled and a second click does nothing; "Sending…" shows
+    // after 300 ms (so a quick answer never flashes it), and both clear when the answer comes.
+    [Fact]
+    public async Task While_a_refresh_is_in_flight_Refresh_is_disabled_and_a_second_click_does_nothing()
+    {
+        var shell = await Stale();
+        var before = _server.StatusCalls;
+        _server.StatusGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var first = shell.Health.Refresh(Token);
+        Assert.False(shell.Health.CanRefresh);
+        Assert.False(shell.Health.IsSending);
+        var second = shell.Health.Refresh(Token);
+        Assert.True(second.IsCompleted);
+        Assert.Equal(before + 1, _server.StatusCalls);
+
+        _clock.Advance(TimeSpan.FromMilliseconds(299));
+        Assert.False(shell.Health.IsSending);
+        _clock.Advance(TimeSpan.FromMilliseconds(1));
+        await Eventually(() => shell.Health.IsSending);
+
+        _server.StatusGate.SetResult();
+        await first;
+        Assert.True(shell.Health.CanRefresh);
+        Assert.False(shell.Health.IsSending);
+        Assert.Equal(ShellState.Normal, shell.State);
+    }
+
+    [Fact]
+    public async Task A_failed_refresh_takes_a_click_again_and_a_quick_one_never_says_Sending()
+    {
+        var shell = await Stale();
+        _server.FailStatus = true;
+        var changed = new List<string>();
+        shell.Health.PropertyChanged += (_, e) => changed.Add(e.PropertyName ?? string.Empty);
+
+        await shell.Health.Refresh(Token);
+        _clock.Advance(TimeSpan.FromSeconds(1));
+
+        Assert.True(shell.Health.CanRefresh);
+        Assert.False(shell.Health.IsSending);
+        Assert.Contains(nameof(HealthViewModel.CanRefresh), changed, StringComparer.Ordinal);
+        Assert.DoesNotContain(nameof(HealthViewModel.IsSending), changed, StringComparer.Ordinal);
+        Assert.Equal(ShellState.Stale, shell.State);
+    }
+
     // §4.1 Stale: after 3 failed refreshes the screen says "Sindri not responding: run sindri doctor". The sentence is
     // too long for the pill at the 900 px minimum, so it shows in full in a banner under the top bar; the pill keeps
     // ⌛ stale and its Refresh.

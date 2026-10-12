@@ -96,6 +96,9 @@ internal sealed class ShellText
     /// <summary><see cref="Labels.SearchKey"/>.</summary>
     public string SearchKey { get; } = Labels.SearchKey;
 
+    /// <summary><see cref="Labels.Sending"/>.</summary>
+    public string Sending { get; } = Labels.Sending;
+
     /// <summary><see cref="Labels.Services"/>.</summary>
     public string Services { get; } = Labels.Services;
 

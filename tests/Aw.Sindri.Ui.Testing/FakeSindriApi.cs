@@ -33,6 +33,9 @@ internal sealed class FakeSindriApi : ISindriApi
     /// <summary>When true, status calls answer SND-UI-003 (an answer this build can't read) while pings carry on.</summary>
     public bool UnreadableStatus { get; set; }
 
+    /// <summary>When set, each status call waits for it before it answers (a slow control plane); null answers at once.</summary>
+    public TaskCompletionSource? StatusGate { get; set; }
+
     /// <summary>When true, pings fail as unreachable while status calls and open streams carry on.</summary>
     public bool FailPing { get; set; }
 
@@ -96,13 +99,17 @@ internal sealed class FakeSindriApi : ISindriApi
         return Task.FromResult(Down || FailPing ? Unreachable<PingView>(api) : Pong);
     }
 
-    public Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken)
+    public async Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken)
     {
         StatusCalls++;
-        return Task.FromResult(
-            Down || FailStatus ? Unreachable<StatusView>(api)
+        if (StatusGate is { } gate)
+        {
+            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return Down || FailStatus ? Unreachable<StatusView>(api)
             : UnreadableStatus ? SindriUiErrors.BadAnswer.With("/sindri/status answered 500")
-            : Current);
+            : Current;
     }
 
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)

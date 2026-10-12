@@ -194,6 +194,9 @@ internal static partial class Labels
     /// <summary>The Refresh button beside a stale pill (§4.1 Stale).</summary>
     internal const string Refresh = "Refresh";
 
+    /// <summary>A command in flight for 300 ms (§4.1 "sending", §12.4): shown beside the control and announced politely.</summary>
+    internal const string Sending = "Sending…";
+
     /// <summary>The freshness word after 30 s with no event or ping.</summary>
     internal const string Stale = "stale";
 

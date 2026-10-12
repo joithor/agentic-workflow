@@ -14,7 +14,7 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// <param name="records">Where the control plane recorded its endpoint.</param>
 /// <param name="api">Its API.</param>
 /// <param name="clock">The clock for retry waits and freshness.</param>
-internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock) : ObservableObject
+internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock) : ObservableObject
 {
     /// <summary>How long to wait before looking for the control plane again.</summary>
     internal static readonly TimeSpan RetryEvery = TimeSpan.FromSeconds(2);
@@ -65,45 +65,11 @@ internal sealed class HealthViewModel(IEndpointRecordSource records, ISindriApi 
     /// <summary>True once it's known that none does.</summary>
     public bool IsNotRunning { get; private set => Set(ref field, value); }
 
-    /// <summary>Running: the lease line.</summary>
-    public string Lease { get; private set => Set(ref field, value); } = string.Empty;
+    /// <summary>Refresh takes a click: false while one is in flight (§4.1 "sending": disabled, its label kept; a second click does nothing).</summary>
+    public bool CanRefresh { get; } = true;
 
-    /// <summary>Where the API listens.</summary>
-    public string Api { get; private set => Set(ref field, value); } = string.Empty;
-
-    /// <summary>The profile's state in words.</summary>
-    public string ProfileState { get; private set => Set(ref field, value); } = string.Empty;
-
-    /// <summary>The profile's hash and file.</summary>
-    public string ProfileDetail { get; private set => Set(ref field, value); } = string.Empty;
-
-    /// <summary>The command that fixes the profile's state, or empty.</summary>
-    public string ProfileFix
-    {
-        get;
-        private set
-        {
-            Set(ref field, value);
-            OnChanged(nameof(HasProfileFix));
-        }
-    } = string.Empty;
-
-    /// <summary>True when the profile needs a command.</summary>
-    public bool HasProfileFix => ProfileFix.Length > 0;
-
-    /// <summary>The scheduled services.</summary>
-    public IReadOnlyList<ServiceRow> Services
-    {
-        get;
-        private set
-        {
-            Set(ref field, value);
-            OnChanged(nameof(HasServices));
-        }
-    } = [];
-
-    /// <summary>True when any service is scheduled.</summary>
-    public bool HasServices => Services.Count > 0;
+    /// <summary>A refresh has been in flight for 300 ms: "Sending…" shows beside Refresh and is announced politely (§4.1).</summary>
+    public bool IsSending { get; }
 
     /// <summary>The newest event seen on the stream.</summary>
     public string LastEvent { get; private set => Set(ref field, value); } = "none yet";
