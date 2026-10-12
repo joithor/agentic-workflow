@@ -148,6 +148,20 @@ public sealed class FocusRingTests : IDisposable
         }
     });
 
+    // N3: the pill's ring follows the pill's own corner radius (a full pill), not ControlCornerRadius's rounded rectangle.
+    [Fact]
+    public Task The_health_pills_ring_is_a_pill() => OnUi(async () =>
+    {
+        var (window, _) = await Running();
+        FocusByTab(window, window.Get<Control>("TopBar"), "HealthPill");
+        Settle(window);
+
+        var pill = Focused(window);
+        var ring = AdornerLayer.GetAdornerLayer(pill)!.Children.OfType<Border>().Single(b => b.IsEffectivelyVisible && AdornerLayer.GetAdornedElement(b) == pill);
+        Assert.Equal(((Button)pill).CornerRadius, ring.CornerRadius);
+        AssertRing(window, pill, "topbar-HealthPill-pill");
+    });
+
     [Fact]
     public Task The_Home_health_strip_shows_the_ring() => OnUi(async () =>
     {
