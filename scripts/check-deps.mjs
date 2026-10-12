@@ -221,6 +221,12 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
     } else if (d.status === "planned") fail("DEPS-STALE-002", "planned edge found in source", `${edgeText(d)}: ${h.where} ${h.what}`, "an edge the source has today is status: current", `set status: current on ${edgeText(d)} in deps.yaml`);
   }
   for (const e of edges.filter((x) => x.status === "current" && !linked(x.kind) && !found.has(edgeKey(x)))) {
+    // Only the C# scan finds http calls, so an http edge from a shell or mod node can't be checked (review run 4).
+    const from = byId.get(e.from);
+    if (e.kind === "http" && from.kind !== "package") {
+      info.push(`${edgeText(e)}: not scanned (http calls from ${from.kind} sources are not detected)`);
+      continue;
+    }
     const where = e.kind === "http"
       ? `no string literal naming ${e.to}'s routes (${byId.get(e.to).routes?.join(", ") ?? "none"}) in ${e.from}'s C# projects`
       : `no match under ${byId.get(e.from).scan?.join(", ") ?? "(no scan dirs)"} or in ${e.from}'s C# projects`;
