@@ -16,11 +16,15 @@ public interface ISingleInstance : IAsyncDisposable
     /// <summary>Sends a message to the running instance (from a launch whose claim failed).</summary>
     /// <param name="message"><see cref="InstanceMessages.Focus"/> or a deep link's text.</param>
     /// <param name="cancellationToken">Cancels the send.</param>
-    /// <returns>True when the running instance received it; false when none answers.</returns>
+    /// <returns>True once the running instance has handled it; false when none answers within 2 s (none runs, or it holds the claim but doesn't read its messages).</returns>
     public ValueTask<bool> Send(string message, CancellationToken cancellationToken);
 
     /// <summary>The messages later launches send, in order, while this process holds the claim.</summary>
     /// <param name="cancellationToken">Ends the stream.</param>
     /// <returns>Each message's text, unparsed.</returns>
     public IAsyncEnumerable<string> Messages(CancellationToken cancellationToken);
+
+    /// <summary>The process id of the instance that holds the claim, when one does and it is known.</summary>
+    /// <returns>The id, or null.</returns>
+    public int? HolderProcessId();
 }

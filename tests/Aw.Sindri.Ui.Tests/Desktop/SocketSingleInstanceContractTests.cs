@@ -10,8 +10,11 @@ namespace Aw.Sindri.Ui.Tests.Desktop;
 public sealed class SocketSingleInstanceContractTests : SingleInstanceContract, IDisposable
 {
     private readonly string _dir = Directory.CreateTempSubdirectory("sindri-ui-").FullName;
+    private readonly FakeTimeProvider _clock = new();
 
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
-    protected override ISingleInstance Launch() => new SocketSingleInstance(UiStatePaths.In(Path.Combine(_dir, "ui")), new FakeTimeProvider());
+    protected override ISingleInstance Launch() => new SocketSingleInstance(UiStatePaths.In(Path.Combine(_dir, "ui")), _clock);
+
+    protected override void Elapse(TimeSpan by) => _clock.Advance(by);
 }

@@ -109,6 +109,8 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
         }
     }
 
+    public int? HolderProcessId() => null;
+
     public async ValueTask DisposeAsync()
     {
         await _stop.CancelAsync().ConfigureAwait(false);

@@ -5,12 +5,19 @@ namespace Aw.Sindri.Ui.Testing;
 
 /// <summary>One launch of the app over a shared <see cref="FakeInstanceChannel"/>.</summary>
 /// <param name="channel">The channel every launch of the user shares.</param>
-internal sealed class FakeSingleInstance(FakeInstanceChannel channel) : ISingleInstance
+/// <param name="processId">The process id this launch stands for.</param>
+internal sealed class FakeSingleInstance(FakeInstanceChannel channel, int processId = 4242) : ISingleInstance
 {
+    /// <summary>The process id this launch stands for.</summary>
+    public int ProcessId { get; } = processId;
+
     public ValueTask<bool> TryClaim(CancellationToken cancellationToken) => ValueTask.FromResult(channel.TryClaim(this));
 
-    public ValueTask<bool> Send(string message, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(message.Length is > 0 and <= InstanceMessages.MaxLength && channel.Deliver(message));
+    // Handled only while the holder reads its messages; with nobody reading, the fake answers no at once (the adapter
+    // after its 2 s timeout).
+    public async ValueTask<bool> Send(string message, CancellationToken cancellationToken) =>
+        message.Length is > 0 and <= InstanceMessages.MaxLength
+        && await channel.Deliver(message).WaitAsync(cancellationToken).ConfigureAwait(false);
 
     public async IAsyncEnumerable<string> Messages([EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -19,11 +26,28 @@ internal sealed class FakeSingleInstance(FakeInstanceChannel channel) : ISingleI
             yield break;
         }
 
-        await foreach (var message in inbox.ReadAllAsync(cancellationToken))
+        try
         {
-            yield return message;
+            await foreach (var delivery in inbox.ReadAllAsync(cancellationToken))
+            {
+                try
+                {
+                    yield return delivery.Message;
+                }
+                finally
+                {
+                    // The reader came back for the next one, or stopped after this one: either way it handled it.
+                    _ = delivery.Handled.TrySetResult(true);
+                }
+            }
+        }
+        finally
+        {
+            channel.StopReading(this);
         }
     }
+
+    public int? HolderProcessId() => channel.HolderProcessId;
 
     public ValueTask DisposeAsync()
     {

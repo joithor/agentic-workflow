@@ -2,6 +2,7 @@ using System.Net.Sockets;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Desktop;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.Testing;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Desktop;
@@ -32,6 +33,7 @@ public sealed class SocketSingleInstanceTests : IDisposable
         await using var second = Launch();
 
         Assert.True(await first.TryClaim(Token));
+        await using var reader = new InstanceReader(first, Token);
         Assert.True(await second.Send(InstanceMessages.Focus, Token));
     }
 
@@ -47,6 +49,7 @@ public sealed class SocketSingleInstanceTests : IDisposable
 
             Assert.True(await first.TryClaim(Token));
             Assert.False(await second.TryClaim(Token));
+            await using var reader = new InstanceReader(first, Token);
             Assert.True(await second.Send(InstanceMessages.Focus, Token));
             Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, Mode(socketDirectory));
         }
@@ -67,6 +70,20 @@ public sealed class SocketSingleInstanceTests : IDisposable
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, Mode(Paths.Directory));
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, Mode(Paths.InstanceSocket));
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, Mode(Paths.InstanceLock));
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, Mode(Paths.InstancePid));
+    }
+
+    [Fact]
+    public async Task The_holder_records_its_own_process_id_and_removes_it_on_exit()
+    {
+        var first = Launch();
+        await using var second = Launch();
+        Assert.True(await first.TryClaim(Token));
+
+        Assert.Equal(Environment.ProcessId, second.HolderProcessId());
+
+        await first.DisposeAsync();
+        Assert.False(File.Exists(Paths.InstancePid));
     }
 
     [Fact]
@@ -90,13 +107,12 @@ public sealed class SocketSingleInstanceTests : IDisposable
         await using var first = Launch();
         await using var second = Launch();
         Assert.True(await first.TryClaim(Token));
+        await using var reader = new InstanceReader(first, Token);
 
         Assert.Equal(0, await RawSend([.. Enumerable.Repeat(fill, length)]));
         Assert.True(await second.Send(InstanceMessages.Focus, Token));
 
-        await using var messages = first.Messages(Token).GetAsyncEnumerator(Token);
-        Assert.True(await messages.MoveNextAsync());
-        Assert.Equal(InstanceMessages.Focus, messages.Current);
+        Assert.Equal([InstanceMessages.Focus], await reader.Take(1));
     }
 
     private async Task<int> RawSend(byte[] bytes)

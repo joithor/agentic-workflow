@@ -13,6 +13,9 @@ namespace Aw.Sindri.Ui.Desktop;
 /// <param name="InstanceLock">The file whose lock is the single instance's claim.</param>
 internal sealed record UiStatePaths(string Directory, string Preferences, string InstanceSocket, string InstanceLock)
 {
+    /// <summary>The claim holder's process id (a later launch names it when the holder doesn't answer).</summary>
+    internal string InstancePid => Path.Combine(Directory, "instance.pid");
+
     /// <summary>The longest socket path used as is: sun_path holds 104 bytes on macOS and 108 on Linux, with room to spare.</summary>
     internal const int MaxSocketPath = 100;
 

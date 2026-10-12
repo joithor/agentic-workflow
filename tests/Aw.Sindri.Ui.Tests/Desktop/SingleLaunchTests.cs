@@ -26,6 +26,7 @@ public sealed class SingleLaunchTests : IDisposable
     {
         var first = new FakeSingleInstance(_channel);
         Assert.True(await first.TryClaim(TestContext.Current.CancellationToken));
+        await using var reader = new InstanceReader(first, TestContext.Current.CancellationToken);
         var ran = false;
 
         var exit = SingleLaunch.Run(new FakeSingleInstance(_channel), [], () =>
@@ -36,9 +37,39 @@ public sealed class SingleLaunchTests : IDisposable
 
         Assert.Equal(0, exit);
         Assert.False(ran);
-        await using var messages = first.Messages(TestContext.Current.CancellationToken).GetAsyncEnumerator(TestContext.Current.CancellationToken);
-        Assert.True(await messages.MoveNextAsync());
-        Assert.Equal(InstanceMessages.Focus, messages.Current);
+        Assert.Equal([InstanceMessages.Focus], await reader.Take(1));
+    }
+
+    // The running instance holds the claim but doesn't handle the message (a failed start-up, a wedged app): the later
+    // launch doesn't report success, and names the process to quit.
+    [Fact]
+    public async Task A_second_launch_to_an_instance_that_does_not_answer_exits_1_naming_its_process()
+    {
+        var first = new FakeSingleInstance(_channel, processId: 4242);
+        Assert.True(await first.TryClaim(TestContext.Current.CancellationToken));
+        var ran = false;
+
+        var exit = SingleLaunch.Run(new FakeSingleInstance(_channel), [], () =>
+        {
+            ran = true;
+            return 0;
+        }, _errors);
+
+        Assert.Equal(1, exit);
+        Assert.False(ran);
+        Assert.Equal("sindri-ui: Sindri app is running but not answering (pid 4242): quit it or kill it" + Environment.NewLine, _errors.ToString());
+    }
+
+    // The holder ended between this launch's claim and its message: this launch claims after all and runs the app.
+    [Fact]
+    public async Task A_second_launch_takes_over_when_the_holder_ends_before_it_answers()
+    {
+        var first = new FakeSingleInstance(_channel);
+        Assert.True(await first.TryClaim(TestContext.Current.CancellationToken));
+        var second = new EndsHolderOnSend(new FakeSingleInstance(_channel), first);
+
+        Assert.Equal(7, SingleLaunch.Run(second, [], () => 7, _errors));
+        Assert.Equal(string.Empty, _errors.ToString());
     }
 
     [Theory]
@@ -57,5 +88,23 @@ public sealed class SingleLaunchTests : IDisposable
         Assert.Equal(2, SingleLaunch.Run(new FakeSingleInstance(_channel), [], () => 2, _errors));
 
         Assert.StartsWith("sindri-ui: couldn't start (SND-UI-004)", _errors.ToString(), StringComparison.Ordinal);
+    }
+
+    // A later launch whose message arrives just as the holder ends.
+    private sealed class EndsHolderOnSend(ISingleInstance inner, ISingleInstance holder) : ISingleInstance
+    {
+        public ValueTask<bool> TryClaim(CancellationToken cancellationToken) => inner.TryClaim(cancellationToken);
+
+        public async ValueTask<bool> Send(string message, CancellationToken cancellationToken)
+        {
+            await holder.DisposeAsync();
+            return await inner.Send(message, cancellationToken);
+        }
+
+        public IAsyncEnumerable<string> Messages(CancellationToken cancellationToken) => inner.Messages(cancellationToken);
+
+        public int? HolderProcessId() => inner.HolderProcessId();
+
+        public ValueTask DisposeAsync() => inner.DisposeAsync();
     }
 }

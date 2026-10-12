@@ -4,7 +4,9 @@ namespace Aw.Sindri.Ui.Testing;
 
 /// <summary>
 /// The contract every <see cref="ISingleInstance"/> passes: the fake, and the desktop adapter over a temp directory. A
-/// binding's <see cref="Launch"/> stands for one more launch of the app by the same user (the same channel).
+/// binding's <see cref="Launch"/> stands for one more launch of the app by the same user (the same channel). A send is
+/// acknowledged only once the running instance has handled the message (its reader came back for the next one), never
+/// merely because a lock is held: a later launch must not report success to a wedged instance.
 /// </summary>
 public abstract class SingleInstanceContract
 {
@@ -13,6 +15,25 @@ public abstract class SingleInstanceContract
     /// <summary>One more launch of the app by the same user.</summary>
     /// <returns>Its instance port.</returns>
     protected abstract ISingleInstance Launch();
+
+    /// <summary>Moves the binding's clock on (the adapter's 2 s answer timeout); a binding with no clock does nothing.</summary>
+    /// <param name="by">How far.</param>
+    protected virtual void Elapse(TimeSpan by)
+    {
+    }
+
+    // Sends, moving the clock on while the send waits, so a timeout on the binding's clock can fire.
+    private async Task<bool> SendWhileTimePasses(ISingleInstance sender, string message)
+    {
+        var sending = sender.Send(message, Token).AsTask();
+        for (var i = 0; i < 500 && !sending.IsCompleted; i++)
+        {
+            Elapse(TimeSpan.FromSeconds(1));
+            await Task.Delay(10, Token);
+        }
+
+        return await sending;
+    }
 
     [Fact]
     public async Task The_first_launch_claims_and_a_second_does_not()
@@ -30,11 +51,42 @@ public abstract class SingleInstanceContract
         await using var first = Launch();
         await using var second = Launch();
         Expect.True(await first.TryClaim(Token));
+        await using var reader = new InstanceReader(first, Token);
 
         Expect.True(await second.Send(InstanceMessages.Focus, Token));
         Expect.True(await second.Send("item/ITM-01JC8", Token));
 
-        Expect.Sequence([InstanceMessages.Focus, "item/ITM-01JC8"], await Take(first, 2));
+        Expect.Sequence([InstanceMessages.Focus, "item/ITM-01JC8"], await reader.Take(2));
+    }
+
+    // The instance holds the claim but nothing reads its messages (a start-up that failed, a wedged app): the send isn't
+    // acknowledged, and the message isn't handed over later either.
+    [Fact]
+    public async Task A_message_the_running_instance_never_reads_is_not_acknowledged_or_delivered_later()
+    {
+        await using var first = Launch();
+        await using var second = Launch();
+        Expect.True(await first.TryClaim(Token));
+
+        Expect.True(!await SendWhileTimePasses(second, "item/ITM-STALE"));
+
+        await using var reader = new InstanceReader(first, Token);
+        Expect.True(await SendWhileTimePasses(second, InstanceMessages.Focus));
+        Expect.Sequence([InstanceMessages.Focus], await reader.Take(1));
+    }
+
+    [Fact]
+    public async Task A_later_launch_sees_the_running_instances_process_id_and_none_once_it_ends()
+    {
+        var first = Launch();
+        await using var second = Launch();
+        Expect.True(second.HolderProcessId() is null);
+
+        Expect.True(await first.TryClaim(Token));
+        Expect.True(second.HolderProcessId() is > 0);
+
+        await first.DisposeAsync();
+        Expect.True(second.HolderProcessId() is null);
     }
 
     [Fact]
@@ -51,11 +103,12 @@ public abstract class SingleInstanceContract
         await using var first = Launch();
         await using var second = Launch();
         Expect.True(await first.TryClaim(Token));
+        await using var reader = new InstanceReader(first, Token);
 
         Expect.True(!await second.Send(new string('x', InstanceMessages.MaxLength + 1), Token));
         Expect.True(await second.Send(InstanceMessages.Focus, Token));
 
-        Expect.Sequence([InstanceMessages.Focus], await Take(first, 1));
+        Expect.Sequence([InstanceMessages.Focus], await reader.Take(1));
     }
 
     [Fact]
@@ -78,29 +131,5 @@ public abstract class SingleInstanceContract
         Expect.True(!await second.TryClaim(Token));
 
         Expect.Sequence([], await second.Messages(Token).ToListAsync(Token));
-    }
-
-    private static async Task<List<string>> Take(ISingleInstance instance, int count)
-    {
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(Token);
-        deadline.CancelAfter(TimeSpan.FromSeconds(5));
-        var seen = new List<string>();
-        try
-        {
-            await foreach (var message in instance.Messages(deadline.Token))
-            {
-                seen.Add(message);
-                if (seen.Count == count)
-                {
-                    break;
-                }
-            }
-        }
-        catch (OperationCanceledException) when (!Token.IsCancellationRequested)
-        {
-            // Fewer than count arrived within 5 s; the caller's check names what did.
-        }
-
-        return seen;
     }
 }
