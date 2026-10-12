@@ -312,7 +312,7 @@ Tests key off the code and the golden's `detail`, never a copy of the sentence.
 **What the app shows.**
 - **Queue page** (`G Q`; `Views/Queue/QueuePage`): the API's groups as collapsible sections with counts; empty groups
   hidden, a filtered group (`G R` running, `G W` with you) shows its own sentence; the view's `empty` when every group
-  is empty; skeleton rows on the first load only. Rows (`ItemRow`): id, title, repo, the state as a word, step, age,
+  is empty; skeleton rows on the first load only. Rows (`ItemRow`; Home uses `CompactItemRow`): id, title, repo, the state as a word, step, age,
   and the API's `primaryAction` as the catalog's control (pending rows draw disabled with their phase). A row sends
   nothing itself: Enter or a title click opens its sheet.
 - **Home** (`HomePage`): Running and With you (With you first, at most five, then "Show all N in Queue", which opens
