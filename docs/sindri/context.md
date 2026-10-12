@@ -45,7 +45,7 @@ without `context:` keeps its hash.
 ### Keeping repo docs fresh
 
 The repo-docs index holds the documents the globs match at each repo's HEAD, chunked by heading and **scrubbed before
-they are stored**: each document is cleaned whole (hidden comments, remote images and link targets removed; secrets become `[REDACTED:<rule>]`) and only then chunked, so nothing that spans a chunk boundary slips through. A document the scrubber blocks keeps its row without text; one over 1 MiB, or one git can't read on a run, is counted as skipped. The
+they are stored**: each document is cleaned whole (hidden comments, images, remote link definitions and link targets removed; secrets become `[REDACTED:<rule>]`) and only then chunked, so nothing that spans a chunk boundary slips through. A document the scrubber blocks keeps its row without text; one over 1 MiB, one git can't read on a run, or one whose path holds a control or invisible character (or is near 1 KB long) is counted as skipped. A path like that is never indexed, so its skip shows on every refresh until the file is renamed. The
 `context-docs-refresh` service brings it up to date, at serve start and on its cadence, and records
 `context.sources.synced` in the ledger. Name it under `services:`, or nothing is indexed.
 

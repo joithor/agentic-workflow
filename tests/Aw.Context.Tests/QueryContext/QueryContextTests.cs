@@ -59,7 +59,7 @@ public sealed class QueryContextTests
         var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero));
         var engine = Engines.Over(new FixedSourceCatalog(FakeContextSource.FixtureDocs(), slow), time: clock);
 
-        var result = await Engines.Advancing(clock, () => engine.Query(new ContextQuery("orientation"), Engines.Human("""{"deadline":"2s"}"""), CancellationToken.None).AsTask());
+        var result = await Engines.Advancing(clock, () => engine.Query(new ContextQuery("orientation"), Engines.Human("""{"deadline":"2s"}"""), TestContext.Current.CancellationToken).AsTask());
 
         Assert.Equal("onyx", result.Value.Degraded.Single().Source.Value);
         Assert.Contains("deadline", result.Value.Degraded.Single().Message, StringComparison.Ordinal);
@@ -171,7 +171,7 @@ public sealed class QueryContextTests
         var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero));
         var engine = Engines.Over(new FixedSourceCatalog(docs), time: clock);
 
-        var result = await Engines.Advancing(clock, () => engine.Query(new ContextQuery("orientation"), Engines.Human("""{"deadline":"2s"}"""), CancellationToken.None).AsTask());
+        var result = await Engines.Advancing(clock, () => engine.Query(new ContextQuery("orientation"), Engines.Human("""{"deadline":"2s"}"""), TestContext.Current.CancellationToken).AsTask());
 
         Assert.Equal("repo-docs", result.Value.Degraded.Single().Source.Value);
         Assert.Empty(result.Value.Cites);

@@ -20,8 +20,16 @@ public sealed class TextRulesTests
     [InlineData("a fact[^1]\n[^1]: The orientation flag came after ADR-0003.", "a fact[^1]\n[^1]: The orientation flag came after ADR-0003.")]
     [InlineData("see [the PRD][prd]\n[prd]: ./PRD-layout.md", "see [the PRD][prd]\n[prd]: ./PRD-layout.md")]
     [InlineData("see [prd][]\n[prd]: <https://evil.example/prd>", "see prd\n")]
-    [InlineData("![x][p]\n[p]: //evil.example/p.png?d=1", "!x\n")]
-    [InlineData("![x][p]\n[p]:\n    https://evil.example/p.png?d=1", "!x\n\n")]
+    [InlineData("![x][p]\n[p]: //evil.example/p.png?d=1", "x\n")]
+    [InlineData("![x][p]\n[p]:\n    https://evil.example/p.png?d=1", "x\n\n")]
+    [InlineData("![x][p]\n\n> [p]: https://evil.example/p.png?d=1", "x\n\n")]
+    [InlineData("![x][p]\n- [p]: https://evil.example/p.png?d=1", "x\n")]
+    [InlineData("![x][p]\n1. > [p]: https://evil.example/p.png \"t\"", "x\n")]
+    [InlineData("see [the PRD][prd]\n> [prd]: https://evil.example/prd", "see the PRD\n")]
+    [InlineData("an ![orphan][nowhere] and ![bare]", "an orphan and bare")]
+    [InlineData("[Note]: Warning: the orientation flag must stay on", "[Note]: Warning: the orientation flag must stay on")]
+    [InlineData("[Decision]:\nStatus: accepted", "[Decision]:\nStatus: accepted")]
+    [InlineData("[x]: c:\\docs\\a.md", "[x]: c:\\docs\\a.md")]
     [InlineData("a<!-- one\ntwo\nthree -->b", "a\n\nb")]
     public void The_sanitizer_removes_what_ingest_must_not_keep(string input, string expected) =>
         Assert.Equal(expected, IngestSanitizer.Clean(input));

@@ -50,7 +50,8 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
             var now = clock.GetUtcNow();
             return rows.IsError
                 ? Unavailable(rows.Error)
-                : rows.Value.Select(Ref).OfType<SourceRef>().Select((reference, i) => new SourceHit(reference, Title(rows.Value, reference), i + 1, now, Leaky: false)).ToList();
+                : rows.Value.SelectMany(row => Ref(row) is { } reference ? [(Row: row, Ref: reference)] : Array.Empty<(HitRow Row, SourceRef Ref)>())
+                    .Select((hit, i) => new SourceHit(hit.Ref, hit.Row.Title, i + 1, now, Leaky: false)).ToList();
         }
     }
 
@@ -133,14 +134,11 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
     /// <summary>The hit's reference, or null when its repo or path can't be carried by the ids (never indexed since S-1A's review, but an older row is skipped, never thrown).</summary>
     private static SourceRef? Ref(HitRow row) =>
         ContextRepoName.TryFrom(row.Repo, out var repo)
-        && ExternalId.TryFrom(string.Create(CultureInfo.InvariantCulture, $"{row.Repo}/{row.Path}#L{row.LineStart}-L{row.LineEnd}"), out var id)
+        && RepoDocs.TryChunkId(repo, row.Path, row.LineStart, row.LineEnd, out var id)
         && SourceVersion.TryFrom(row.Blob, out var version)
-        && RecordKey.TryFrom($"repo:{repo.Value}/{row.Path}", out _)
-            ? new SourceRef(RepoDocs.Id, id, version, Permalink: null, RepoDocs.Key(repo, row.Path))
+        && RepoDocs.TryKey(repo, row.Path, out var key)
+            ? new SourceRef(RepoDocs.Id, id, version, Permalink: null, key)
             : null;
-
-    private static string Title(IReadOnlyList<HitRow> rows, SourceRef reference) =>
-        rows.First(r => reference.Id.Value.StartsWith($"{r.Repo}/{r.Path}#", StringComparison.Ordinal)).Title;
 
     private (ContextRepo Repo, string Path, int Start, int End)? Parse(ExternalId id)
     {

@@ -48,7 +48,8 @@ public static class ScopeRules
 
     /// <summary>
     /// The profile's repos the engine can address. A name that isn't a <see cref="ContextRepoName"/> is left out; with a
-    /// 'context:' section, <see cref="CheckRepos"/> refuses such a name in scope at validate and approve.
+    /// 'context:' section, <see cref="SettingsReader.Check(System.Text.Json.JsonElement?, IReadOnlyList{ProfileRepoEntry})"/>
+    /// refuses such a name in scope at validate and approve.
     /// </summary>
     /// <param name="repos">The profile's repos as written.</param>
     /// <returns>The repos with usable names, in profile order.</returns>

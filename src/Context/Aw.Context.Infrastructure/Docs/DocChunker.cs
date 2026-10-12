@@ -8,6 +8,9 @@ namespace Aw.Context.Infrastructure.Docs;
 internal static class DocChunker
 {
     internal const int MaxLines = 40;
+
+    /// <summary>The largest line number a chunk id carries ('#L&lt;a&gt;-L&lt;b&gt;' takes up to 7 digits).</summary>
+    internal const int MaxLine = 9_999_999;
     internal const int MaxChars = 2_000;
 
     internal static IReadOnlyList<DocChunk> Split(string text)

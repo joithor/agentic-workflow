@@ -49,7 +49,9 @@ context services here. The routes are `GET /sindri/context/query` and
 4. `RankFusion.Fuse`: hits sharing a canonical key merge, keeping each source's best rank. Each source is re-ranked
    densely, then RRF with k = 60 runs across sources.
 5. The top 20 are fetched in turn until the deadline (what isn't fetched in time isn't shown), cleaned whole by
-   `IIngestFilter` (sanitize, collapse titles, scrub; line-preserving), then cut to 64 KB.
+   `IIngestFilter` (sanitize, collapse titles, scrub; line-preserving), then cut to 64 KB. The sanitizer drops inline and
+   HTML images and reduces reference-style ones to their text, so no image survives ingest wherever its definition sits, and removes
+   remote reference definitions also inside block quotes and list items (one-token destination, optional title).
 6. One batched `Versions` call per source, each with only its own references, gives each citation its state.
 7. `ResultAssembly`: one `record` item and one citation each. Every field, the citation's key and ids included, is
    scrubbed again on egress (a blocked field is `[REDACTED:blocked]` alone). The title (at most 200 characters) and
@@ -65,7 +67,9 @@ No model is called on the query path.
   most 40 lines or 2,000 characters; `DocChunker`), so a secret or a hidden comment that crosses a chunk boundary
   can't slip through. Only then does one short transaction remove stale docs, write new ones and move the cursor
   (`source_cursor`). A document the scrubber blocks keeps its `doc` row with `blocked = 1` and has no chunks; one git
-  can't read on this run is skipped and keeps its earlier rows. A repo git can't read records `SND-CONTEXT-010` as its
+  can't read on this run is skipped and keeps its earlier rows. A path the ids can't carry (`RepoDocs.TryKey` and
+  `TryChunkId` refuse it: a control or format character, or near 1 KB) is never indexed and counts as skipped on every
+  refresh. A repo git can't read records `SND-CONTEXT-010` as its
   `last_error`, and the refresh reports it in its row.
 - **Source.** `RepoDocsSource` searches with each term as a quoted FTS5 phrase (`DocSql.Phrase`), OR-ed and ranked by
   `bm25`, filtered to the repos in scope. A record is a chunk, `<repo>/<path>#L<a>-L<b>`, at the blob sha. The

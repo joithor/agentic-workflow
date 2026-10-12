@@ -28,7 +28,11 @@ internal static class Engines
 
     internal static IContextEngine Over(params IContextSource[] sources) => Over(new FixedSourceCatalog(sources));
 
-    /// <summary>Runs <paramref name="query"/> while advancing <paramref name="clock"/> a second at a time, so a deadline on the query's clock passes without real waiting.</summary>
+    /// <summary>
+    /// Runs <paramref name="query"/> while advancing <paramref name="clock"/> a second at a time, so a deadline on the
+    /// query's clock passes without real waiting. A query still running after that fails the test within 10 s of real
+    /// time instead of hanging the lane.
+    /// </summary>
     internal static async Task<T> Advancing<T>(FakeTimeProvider clock, Func<Task<T>> query)
     {
         var running = query();
@@ -38,7 +42,7 @@ internal static class Engines
             await Task.Yield();
         }
 
-        return await running;
+        return await running.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
     }
 
     internal static ContextScope Human(string? settingsJson = null) =>

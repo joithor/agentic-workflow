@@ -84,7 +84,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
 
     /// <summary>True when the path fits a chunk id and a record key (no control or format characters, not too long), so a hit on it can be cited.</summary>
     private static bool Citable(ContextRepo repo, string path) =>
-        ExternalId.TryFrom($"{repo.Name.Value}/{path}#L9999999-L9999999", out _) && RecordKey.TryFrom($"repo:{repo.Name.Value}/{path}", out _);
+        RepoDocs.TryChunkId(repo.Name, path, DocChunker.MaxLine, DocChunker.MaxLine, out _) && RepoDocs.TryKey(repo.Name, path, out _);
 
     /// <summary>
     /// Reads and cleans each changed document. One over <see cref="MaxDocumentBytes"/> keeps a row without chunks (so it
