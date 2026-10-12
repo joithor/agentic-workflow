@@ -14,4 +14,8 @@ public sealed class InstanceMessage(string text, CancellationToken withdrawn)
 
     /// <summary>Cancelled once the sender's wait has ended: too late to act on.</summary>
     public CancellationToken Withdrawn { get; } = withdrawn;
+
+    /// <summary>Claims the message for acting on it.</summary>
+    /// <returns>True for the one claim that wins while the sender still waits.</returns>
+    public bool TryAct() => throw new NotSupportedException();
 }

@@ -94,3 +94,4 @@ Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadable
 Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(string! message) -> void
 Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(string! message, System.Exception! innerException) -> void
 Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.Reason.get -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.InstanceMessage.TryAct() -> bool
