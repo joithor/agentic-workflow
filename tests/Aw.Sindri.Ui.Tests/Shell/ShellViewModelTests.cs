@@ -139,7 +139,7 @@ public sealed class ShellViewModelTests
 
         // I7: the reason's words lead; the record's path is its own value, shortened.
         Assert.Equal(Labels.NoRecord, shell.Reason);
-        Assert.Equal(StatusText.ShortPath(_records.Location), shell.ReasonPath);
+        Assert.Equal(StatusText.ShortPath(_records.Location), shell.ReasonDetail);
         Assert.Equal(Labels.NotRunning, shell.Pill.Text);
     }
 

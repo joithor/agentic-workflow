@@ -115,8 +115,8 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>The state's reason in words: why it isn't running, the two versions, the unreadable answer's code and message; empty when Normal.</summary>
     public string Reason => Health.Reason;
 
-    /// <summary>The not-running reason's path, shortened, or empty.</summary>
-    public string ReasonPath => Health.ReasonPath;
+    /// <summary>The not-running reason's detail line (a path, an address, a pid and epoch), or empty.</summary>
+    public string ReasonDetail => Health.ReasonDetail;
 
     /// <summary>The health pill's parts: its dot, glyph, word and age, and Refresh while stale.</summary>
     public HealthPill Pill => Health.Pill;
@@ -233,7 +233,7 @@ internal sealed partial class ShellViewModel : ObservableObject
                 Changed(_stateProperties);
                 break;
             case nameof(HealthViewModel.Reason):
-            case nameof(HealthViewModel.ReasonPath):
+            case nameof(HealthViewModel.ReasonDetail):
                 OnChanged(e.PropertyName);
                 break;
             default:

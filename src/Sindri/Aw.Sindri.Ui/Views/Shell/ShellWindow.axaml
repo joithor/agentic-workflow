@@ -133,10 +133,11 @@
                 </StackPanel>
                 <TextBlock x:Name="ReasonText" Classes="body muted" Text="{Binding Reason}" TextWrapping="Wrap"
                            AutomationProperties.Name="{Binding Reason}" />
-                <!-- I7: the record's path, shortened (~, a middle ellipsis), on its own mono line; never wrapped mid-path. -->
-                <TextBlock x:Name="ReasonPathText" Classes="mono subtle" Text="{Binding ReasonPath}" TextWrapping="NoWrap"
-                           TextTrimming="PrefixCharacterEllipsis" IsVisible="{Binding ReasonPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                           AutomationProperties.Name="{Binding ReasonPath}" />
+                <!-- I7: the reason's detail on its own mono line: the record's path shortened (~, a middle ellipsis), the address, or
+                     the record against the answer; never wrapped mid-path. -->
+                <TextBlock x:Name="ReasonDetailText" Classes="mono subtle" Text="{Binding ReasonDetail}" TextWrapping="NoWrap"
+                           TextTrimming="PrefixCharacterEllipsis" IsVisible="{Binding ReasonDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           AutomationProperties.Name="{Binding ReasonDetail}" />
                 <StackPanel Orientation="Horizontal" Spacing="10">
                   <TextBlock Classes="body subtle" Text="{Binding Text.StartIt}" AutomationProperties.Name="{Binding Text.StartIt}" VerticalAlignment="Center" />
                   <Border Classes="command">

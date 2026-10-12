@@ -59,7 +59,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
     // The platform couldn't read the record (a directory, no permission): say so, and keep trying.
     private bool RecordUnreadable(Exception e)
     {
-        _ = health.NotRunning(Labels.RecordUnreadableBecause(e.Message), records.Location);
+        _ = health.NotRunning(Labels.RecordUnreadableBecause(e.Message), StatusText.ShortPath(records.Location));
         return true;
     }
 
@@ -83,13 +83,13 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         var bytes = await records.Read(cancellationToken).ConfigureAwait(true);
         if (bytes is null)
         {
-            return health.NotRunning(Labels.NoRecord, records.Location);
+            return health.NotRunning(Labels.NoRecord, StatusText.ShortPath(records.Location));
         }
 
         var record = ControlRecord.Usable(bytes, SindriApiClient.Json);
         if (record is null)
         {
-            return health.NotRunning(Labels.RecordUnreadable, records.Location);
+            return health.NotRunning(Labels.RecordUnreadable, StatusText.ShortPath(records.Location));
         }
 
         var ping = await api.Ping(record.Url, cancellationToken).ConfigureAwait(true);

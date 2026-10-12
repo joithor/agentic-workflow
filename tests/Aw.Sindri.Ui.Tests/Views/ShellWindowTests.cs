@@ -301,14 +301,14 @@ public sealed class ShellWindowTests : IDisposable
         {
             Settle(window);
             var reason = Named<TextBlock>(window, "ReasonText");
-            var path = Named<TextBlock>(window, "ReasonPathText");
+            var path = Named<TextBlock>(window, "ReasonDetailText");
             Assert.StartsWith("Sindri", reason.Text, StringComparison.Ordinal);
             Assert.DoesNotContain("/", reason.Text, StringComparison.Ordinal);
             Assert.Equal("/var/…/sindri/ui/control.json", path.Text);
             Assert.Contains("mono", path.Classes, StringComparer.Ordinal);
             Assert.Equal(TextWrapping.NoWrap, path.TextWrapping);
             Assert.True(path.Bounds.Height < path.LineHeight * 1.5, string.Create(CultureInfo.InvariantCulture, $"the path takes {path.Bounds.Height} px"));
-            Assert.True(Box(window, "ReasonPathText").Top >= Box(window, "ReasonText").Bottom, "the path isn't on its own line");
+            Assert.True(Box(window, "ReasonDetailText").Top >= Box(window, "ReasonText").Bottom, "the path isn't on its own line");
             Assert.True(path.TextLayout.WidthIncludingTrailingWhitespace <= path.Bounds.Width + 0.5, "the path is clipped");
             Frame(window, string.Create(CultureInfo.InvariantCulture, $"not-running-path-{scale * 100:0}"));
         }

@@ -9,8 +9,8 @@ internal sealed partial class HealthViewModel
     /// <summary>Home's health strip's accessible name (R3): the health line, then "stale" while the views are stale.</summary>
     public string StripName { get; private set => Set(ref field, value); } = Labels.Connecting;
 
-    /// <summary>Not running: the endpoint record's path, shortened, shown on its own line under the reason; or empty.</summary>
-    public string ReasonPath { get; private set => Set(ref field, value); } = string.Empty;
+    /// <summary>Not running: the reason's detail, on its own mono line under it (the endpoint record's path, shortened, the address, or the record against the answer); or empty.</summary>
+    public string ReasonDetail { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The command that fixes "not running".</summary>
     public string Fix { get; } = Labels.StartFix;
