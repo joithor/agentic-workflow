@@ -64,6 +64,10 @@ public sealed class RecipeWorkflowTests : IDisposable
             var (againExit, _, againStderr) = await Cli(sindri, "complete", Address, "--run", "1.1", "--outcome", "done", "--temporal", Target(env));
             Assert.Equal(2, againExit);
             Assert.Contains("SND-WF-005", againStderr, StringComparison.Ordinal);
+
+            var replayed = await new WorkflowReplayer(new WorkflowReplayerOptions().AddWorkflow<RecipeWorkflow>())
+                .ReplayWorkflowAsync(await handle.FetchHistoryAsync(), throwOnReplayFailure: false, ct);
+            Assert.Null(replayed.ReplayFailure);
             await handle.TerminateAsync("test over");
         }, ct);
     }
