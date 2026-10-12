@@ -3196,3 +3196,4 @@ Aw.Sindri.Core.Control.TemporalRuntime.Stop(System.Threading.CancellationToken c
 Aw.Sindri.Core.Control.TemporalRuntime.TemporalRuntime(Aw.Sindri.Core.Control.ITemporalServer! server, System.TimeProvider! clock) -> void
 Aw.Sindri.Core.Control.TemporalRuntime.Track(System.Threading.Tasks.Task! worker) -> void
 static Aw.Sindri.Core.Control.TemporalRuntime.WorkerStopWait.get -> System.TimeSpan
+Aw.Sindri.Core.Control.TemporalRuntime.WaitForWorker(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask

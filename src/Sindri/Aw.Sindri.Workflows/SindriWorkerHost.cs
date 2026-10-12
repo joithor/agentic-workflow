@@ -42,10 +42,17 @@ internal sealed partial class SindriWorkerHost(RunStepActivities steps, RecordEv
         {
             // serve is stopping
         }
+        catch (Exception e) when (e is not OperationCanceledException) // boundary: the worker stops; serve runs on and stops cleanly
+        {
+            Stopped(logger, target, e.Message);
+        }
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "worker polls task queue {Queue} on {Target}")]
     private static partial void Polling(ILogger logger, string target, string queue);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "the worker on {Target} stopped: {Problem}")]
+    private static partial void Stopped(ILogger logger, string target, string problem);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "no worker: Temporal at {Target} doesn't answer: {Problem}")]
     private static partial void NoWorker(ILogger logger, string target, string problem);

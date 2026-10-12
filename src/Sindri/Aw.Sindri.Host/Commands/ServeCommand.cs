@@ -100,7 +100,8 @@ internal static class ServeCommand
         var worker = started.Temporal is { } temporal
             ? app.Services.GetRequiredService<ITemporalWorker>().Run(temporal, either.Token)
             : Task.CompletedTask;
-        app.Services.GetRequiredService<TemporalRuntime>().Track(worker);   // StopProcess waits for it before it stops the dev server
+        var runtime = app.Services.GetRequiredService<TemporalRuntime>();
+        runtime.Track(worker);   // StopProcess waits for it before it stops the dev server
         try
         {
             await Task.Delay(Timeout.Infinite, either.Token).ConfigureAwait(false);
@@ -110,7 +111,7 @@ internal static class ServeCommand
             // a stop request, a signal or a lost lease
         }
 
-        await worker.ConfigureAwait(false);
+        await runtime.WaitForWorker(CancellationToken.None).ConfigureAwait(false);   // bounded, and a worker fault is the worker's to log
 
         if (app.Services.GetRequiredService<HeldLease>().Current is not null)
         {
