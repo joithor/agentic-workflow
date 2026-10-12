@@ -22,14 +22,18 @@
 # The guard runs first, for every mode: AW_SINDRI_HOME must be set and its real path strictly inside
 # realpath(${TMPDIR:-/tmp}) or inside a proof folder, <AW_STATE_DIR or ~/.agentic-workflow>/<repo slug>/proof/…,
 # the same homes the server honours X-Sindri-Client: prover for (src/Sindri/Aw.Sindri.Infrastructure/ProverHome.cs).
-# Anything else exits 2, so a prover can never reach the owner's real ledger. AW_SINDRI_PORT=0 is exported (a free
-# port, recorded in control.json).
+# Parts of the home that don't exist yet are judged as written. Anything else exits 2, so a prover can never reach the
+# owner's real ledger. AW_SINDRI_PORT=0 is exported (a free port, recorded in control.json).
 #
 # SINDRI is the command line of the C# CLI, split on spaces. Default: dotnet run --project src/Sindri/Aw.Sindri.Host --
 # (rebuilds per call, and a signal reaches dotnet, not sindri); a built binary is recommended for proofs. Never the
 # `sindri` on PATH, which is the TS CLI.
 #
+# Seeding an approved profile: write the profile, H=$($SINDRI profile validate --json | jq -r .hash), then
+#   printf '%s\n' "${H:0:6}" | scripts/sindri-prove.sh human profile approve "$H"
+#
 # Exit 2: the guard, a usage error, or curl/url mode with no control.json or no token file.
+# Tests: bash scripts/tests/sindri-prove.test.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
