@@ -29,7 +29,7 @@ internal sealed partial class ShellWindow
     }
 
     // A key that opened a field moves focus into it: C the create form's title, / the Queue page's filter.
-    private void FocusOpenedField(Aw.Sindri.Ui.ViewModels.Shell.ShellViewModel shell, string key)
+    private void FocusOpenedField(ViewModels.Shell.ShellViewModel shell, string key)
     {
         if (shell.Create.IsOpen)
         {
