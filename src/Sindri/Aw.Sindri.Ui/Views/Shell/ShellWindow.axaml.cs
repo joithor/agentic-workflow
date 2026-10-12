@@ -82,23 +82,28 @@ internal sealed partial class ShellWindow : Window
         else if (e.Key == Key.OemComma && e.KeyModifiers == _command && Shell is { } open)
         {
             open.GoTo(PageId.Settings);
+            // Like the sheet's heading (§11.2), opening Settings moves focus into it: its first control.
+            Dispatcher.UIThread.Post(() => FirstFocusable(this.Get<Control>("SettingsSlot"))?.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
             e.Handled = true;
         }
 
         base.OnKeyDown(e);
     }
 
-    // F6 (§11.2): the next region (top bar, page, sheet when open) gets focus, on its first focusable control or itself.
+    // F6 (§11.2): the next region (top bar, page, sheet when open) gets focus: the region itself, so Tab then moves
+    // inside it (or its first focusable control when the region itself can't take focus).
     private bool CycleRegion(bool back)
     {
         Control[] regions = [.. _regions.Select(this.Get<Control>).Where(c => c.IsEffectivelyVisible)];
         var focused = FocusManager?.GetFocusedElement() as Visual;
         var current = Array.FindIndex(regions, r => focused is not null && (r == focused || r.IsVisualAncestorOf(focused)));
         var next = regions[(current + (back ? regions.Length - 1 : 1) + regions.Length) % regions.Length];
-        var target = next.GetVisualDescendants().OfType<InputElement>()
-            .FirstOrDefault(c => c.Focusable && c.IsEffectivelyVisible && c.IsEffectivelyEnabled) ?? next;
+        var target = next.Focusable ? next : FirstFocusable(next) ?? next;
         return target.Focus(NavigationMethod.Tab);
     }
+
+    private static InputElement? FirstFocusable(Visual within) => within.GetVisualDescendants().OfType<InputElement>()
+        .FirstOrDefault(c => c.Focusable && c.IsEffectivelyVisible && c.IsEffectivelyEnabled);
 
     // Below Size.SheetCoversBelow the sheet covers the page, with a back affordance; otherwise it keeps its width.
     private void Cover(double width)

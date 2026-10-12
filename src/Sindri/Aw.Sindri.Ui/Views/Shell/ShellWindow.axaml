@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aw.Sindri.Ui.ViewModels"
         xmlns:shell="using:Aw.Sindri.Ui.ViewModels.Shell"
         xmlns:views="using:Aw.Sindri.Ui.Views.Shell"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
@@ -14,19 +15,25 @@
   </Window.Styles>
 
   <Panel>
-    <!-- Version mismatch: a full-window panel, no data, no actions (§4.1). -->
-    <Border x:Name="VersionMismatchPanel" IsVisible="{Binding IsVersionMismatch}" Classes="card"
-            HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560">
-      <StackPanel Spacing="12">
-        <TextBlock Classes="eyebrow" Text="{Binding Text.ControlPlaneCard}" AutomationProperties.Name="{Binding Text.ControlPlaneCard}" />
-        <TextBlock x:Name="VersionMismatchText" Classes="page-title" TextWrapping="Wrap"
+    <!-- Version mismatch (§4.1, states.html): a full-window card, no data, no actions: the sentence, both versions as
+         labelled rows, and the fix as a sentence. -->
+    <Border x:Name="VersionMismatchPanel" IsVisible="{Binding IsVersionMismatch}" Classes="card state-card"
+            HorizontalAlignment="Center" VerticalAlignment="Center">
+      <StackPanel Spacing="{StaticResource Space.SM}">
+        <TextBlock x:Name="VersionMismatchText" Classes="detail-title" TextWrapping="Wrap"
                    Text="{Binding Text.VersionMismatch}" AutomationProperties.Name="{Binding Text.VersionMismatch}" />
-        <TextBlock x:Name="VersionsText" Classes="body muted" TextWrapping="Wrap" Text="{Binding Reason}"
-                   AutomationProperties.Name="{Binding Reason}" />
-        <Border Classes="command">
-          <TextBlock x:Name="VersionFixText" Classes="mono" Text="{Binding Text.VersionMismatchFix}"
-                     AutomationProperties.Name="{Binding Text.VersionMismatchFix}" />
-        </Border>
+        <ItemsControl x:Name="VersionRows" ItemsSource="{Binding Health.Detail.Versions}" AutomationProperties.Name="{Binding Reason}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:HealthCell">
+              <Grid ColumnDefinitions="80,*" AutomationProperties.Name="{Binding Label}">
+                <TextBlock Classes="caption subtle" Text="{Binding Label}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Label}" />
+                <TextBlock Grid.Column="1" Classes="mono" Text="{Binding Value}" AutomationProperties.Name="{Binding Value}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock x:Name="VersionFixText" Classes="body muted" TextWrapping="Wrap" Text="{Binding Text.VersionMismatchFix}"
+                   AutomationProperties.Name="{Binding Text.VersionMismatchFix}" />
       </StackPanel>
     </Border>
 
@@ -55,24 +62,50 @@
       <Panel>
         <Border x:Name="Page" Classes="focus-region" Focusable="True" AutomationProperties.Name="{Binding PageName}">
           <Panel>
-            <!-- Connecting (§4.1): the chrome and skeleton rows, first load only. -->
-            <StackPanel x:Name="ConnectingSkeleton" IsVisible="{Binding IsConnecting}" Margin="32,24" Spacing="8">
-              <TextBlock x:Name="ConnectingText" Classes="caption subtle" Text="{Binding Text.Connecting}"
-                         AutomationProperties.Name="{Binding Text.Connecting}" />
-              <Border Classes="skeleton" Width="280" />
-              <Border Classes="skeleton" />
-              <Border Classes="skeleton" />
-              <Border Classes="skeleton" />
-              <Border Classes="skeleton" Width="420" />
+            <!-- Connecting (§4.1, states.html): Home's frame with static, left-aligned skeleton bars, first load only. -->
+            <StackPanel x:Name="ConnectingSkeleton" IsVisible="{Binding IsConnecting}" Margin="{StaticResource Space.LG.Thickness}"
+                        Spacing="{StaticResource Size.PanelGap}">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.SM}">
+                <TextBlock Classes="page-title" Text="{Binding Text.Home}" AutomationProperties.Name="{Binding Text.Home}" />
+                <Border Classes="skeleton" Width="180" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Classes="panel">
+                <StackPanel>
+                  <Border Classes="phead">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Classes="eyebrow" Text="{Binding Text.NeedsYouPanel}" VerticalAlignment="Center"
+                                 AutomationProperties.Name="{Binding Text.NeedsYouPanel}" />
+                      <TextBlock x:Name="ConnectingText" Grid.Column="1" Classes="caption subtle" Text="{Binding Text.Connecting}"
+                                 VerticalAlignment="Center" AutomationProperties.Name="{Binding Text.Connecting}" />
+                    </Grid>
+                  </Border>
+                  <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="420" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+                  <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="52" /><Border Grid.Column="1" Classes="skeleton" Width="330" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+                  <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="64" /><Border Grid.Column="1" Classes="skeleton" Width="480" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+                  <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="48" /><Border Grid.Column="1" Classes="skeleton" Width="270" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+                </StackPanel>
+              </Border>
+              <Grid ColumnDefinitions="*,16,*">
+                <Border Classes="panel" Padding="{StaticResource Space.MD.Thickness}">
+                  <Border Classes="skeleton" Width="240" />
+                </Border>
+                <Border Grid.Column="2" Classes="panel" Padding="{StaticResource Space.MD.Thickness}">
+                  <Border Classes="skeleton" Width="180" />
+                </Border>
+              </Grid>
             </StackPanel>
 
-            <!-- Not running (§4.1): S1b's panel: the word, the reason, and sindri to copy. -->
-            <Border x:Name="NotRunningPanel" Classes="card" IsVisible="{Binding IsNotRunning}" Margin="32,24"
-                    VerticalAlignment="Top">
-              <StackPanel Spacing="12">
-                <TextBlock Classes="eyebrow" Text="{Binding Text.ControlPlaneCard}" AutomationProperties.Name="{Binding Text.ControlPlaneCard}" />
-                <TextBlock x:Name="NotRunningText" Classes="page-title" Text="{Binding Text.NotRunning}"
-                           AutomationProperties.Name="{Binding Text.NotRunning}" />
+            <!-- Not running (§4.1, states.html): a compact card centred in the page: the struck ◆ mark (the tray's
+                 not-running mark) and the word, the reason, and sindri to run. -->
+            <Border x:Name="NotRunningPanel" Classes="card state-card" IsVisible="{Binding IsNotRunning}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+              <StackPanel Spacing="{StaticResource Space.SM}">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.XS}">
+                  <Path x:Name="NotRunningMark" Classes="struck-mark" Data="M8,2 L14,8 L8,14 L2,8 Z M2,2 L14,14"
+                        VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                  <TextBlock x:Name="NotRunningText" Classes="detail-title" Text="{Binding Text.NotRunning}"
+                             AutomationProperties.Name="{Binding Text.NotRunning}" />
+                </StackPanel>
                 <TextBlock x:Name="ReasonText" Classes="body muted" Text="{Binding Reason}" TextWrapping="Wrap"
                            AutomationProperties.Name="{Binding Reason}" />
                 <StackPanel Orientation="Horizontal" Spacing="10">
@@ -87,7 +120,7 @@
 
             <!-- The pages (§3.3), each shown by the view model's page flag. -->
             <ScrollViewer x:Name="Pages" IsVisible="{Binding IsPageVisible}">
-              <Panel x:Name="PageContent" Margin="{StaticResource Space.LG.Thickness}">
+              <Panel x:Name="PageContent" Classes="page-content" Classes.edge="{Binding IsEdgeTabShown}">
                 <views:HomePage x:Name="HomePage" IsVisible="{Binding IsHome}" />
                 <views:PlaceholderPage x:Name="QueuePage" Title="{Binding Text.Queue}" IsVisible="{Binding IsQueue}" />
                 <views:PlaceholderPage x:Name="DecisionsPage" Title="{Binding Text.Decisions}" IsVisible="{Binding IsDecisions}" />
@@ -130,8 +163,13 @@
                 <TextBlock x:Name="SheetTitle" Grid.Column="1" Classes="detail-title mono" Focusable="True"
                            Text="{Binding SheetSubject}" AutomationProperties.Name="{Binding SheetSubject}"
                            VerticalAlignment="Center" />
-                <Button x:Name="SheetClose" Grid.Column="2" Content="{Binding Text.CloseSheet}" Click="OnCloseSheet"
-                        AutomationProperties.Name="{Binding Text.CloseSheet}" />
+                <Button x:Name="SheetClose" Grid.Column="2" Click="OnCloseSheet" Margin="12,0,0,0"
+                        AutomationProperties.Name="{Binding Text.CloseSheet}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Classes="caption subtle" Text="✕" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                    <TextBlock Text="{Binding Text.CloseSheet}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
               </Grid>
               <TextBlock x:Name="SheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}"
                          AutomationProperties.Name="{Binding Text.NotServedYet}" />

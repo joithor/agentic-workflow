@@ -210,11 +210,36 @@
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
     <Setter Property="Margin" Value="16" />
   </Style>
+  <!-- Skeleton bars (states.html .sk): 10 px, Surface3, left-aligned at their own widths; static, no shimmer, so
+       reduced motion has nothing to stop. -->
   <Style Selector="Border.skeleton">
-    <Setter Property="Height" Value="{StaticResource Size.Row}" />
-    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
-    <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
-    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Height" Value="10" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Grid.skrow">
+    <Setter Property="Margin" Value="16,12" />
+  </Style>
+  <!-- The page's gutter (Space.LG); while the closed sheet's edge tab shows, the right gutter grows to Space.XXL so the
+       tab keeps a gap from the panels. -->
+  <Style Selector="Panel.page-content">
+    <Setter Property="Margin" Value="{StaticResource Space.LG.Thickness}" />
+  </Style>
+  <Style Selector="Panel.page-content.edge">
+    <Setter Property="Margin" Value="24,24,48,24" />
+  </Style>
+  <!-- A pre-API state's card (states.html .card): compact and centred. -->
+  <Style Selector="Border.state-card">
+    <Setter Property="MaxWidth" Value="520" />
+    <Setter Property="MinWidth" Value="420" />
+  </Style>
+  <!-- The not-running mark: the hollow ◆ struck through, as the tray draws it. -->
+  <Style Selector="Path.struck-mark">
+    <Setter Property="Stroke" Value="{DynamicResource Brush.InkMuted}" />
+    <Setter Property="StrokeThickness" Value="1.4" />
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
   </Style>
   <Style Selector="Border.banner">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
