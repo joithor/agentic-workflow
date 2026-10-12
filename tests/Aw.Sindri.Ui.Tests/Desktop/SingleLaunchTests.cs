@@ -82,13 +82,14 @@ public sealed class SingleLaunchTests : IDisposable
     public void A_later_launch_sends_its_deep_link_or_focus(string[] args, string message) =>
         Assert.Equal(message, SingleLaunch.MessageFor(args));
 
-    // The app ends with 2 when its start-up failed (SindriApp logs the cause); the launch says so on standard error.
+    // The app ends with 2 when it failed (SindriApp logs the cause); the launch says so on standard error. Review run 4
+    // (code-reviewer-1): the words are neutral ("failed"), since the app may have run normally before it failed.
     [Fact]
-    public void A_failed_start_up_exits_2_with_a_line_on_stderr()
+    public void A_failed_app_exits_2_with_a_line_on_stderr()
     {
         Assert.Equal(2, SingleLaunch.Run(new FakeSingleInstance(_channel), [], () => 2, _errors, _log));
 
-        Assert.StartsWith("sindri-ui: couldn't start (SND-UI-004)", _errors.ToString(), StringComparison.Ordinal);
+        Assert.Equal("sindri-ui: failed (SND-UI-004); the log names the cause unless AW_LOG_LEVEL is none" + Environment.NewLine, _errors.ToString());
     }
 
     // A failure before the UI starts (the 'ui' directory can't be made: a file sits there) is the documented SND-UI-004:
@@ -108,10 +109,10 @@ public sealed class SingleLaunchTests : IDisposable
         Assert.Equal(2, exit);
         Assert.False(ran);
         // Lead (1): true whether or not a log line printed (AW_LOG_LEVEL=none): the cause is named on the line itself.
-        Assert.Equal("sindri-ui: couldn't start (SND-UI-004: IOException)" + Environment.NewLine, _errors.ToString());
+        Assert.Equal("sindri-ui: failed (SND-UI-004: IOException)" + Environment.NewLine, _errors.ToString());
         var entry = Assert.Single(_log.Entries);
         Assert.Equal("SND-UI-004", entry.EventName);
-        Assert.Contains("IOException", entry.Message, StringComparison.Ordinal);
+        Assert.Equal("SND-UI-004 the Sindri app failed (IOException) and exits with code 2", entry.Message);
         Assert.DoesNotContain("/Users/someone", entry.Message, StringComparison.Ordinal);
         Assert.Null(entry.Exception);
     }
@@ -139,7 +140,7 @@ public sealed class SingleLaunchTests : IDisposable
 
         Assert.Equal(2, exit);
         Assert.True(instance.Ended);
-        Assert.Equal("sindri-ui: couldn't start (SND-UI-004: DirectoryNotFoundException)" + Environment.NewLine, _errors.ToString());
+        Assert.Equal("sindri-ui: failed (SND-UI-004: DirectoryNotFoundException)" + Environment.NewLine, _errors.ToString());
         Assert.Equal("SND-UI-004", Assert.Single(_log.Entries).EventName);
         Assert.DoesNotContain("/Users/someone", Assert.Single(_log.Entries).Message, StringComparison.Ordinal);
     }
@@ -152,15 +153,16 @@ public sealed class SingleLaunchTests : IDisposable
         var exit = SingleLaunch.Run(() => throw new UnauthorizedAccessException("Access to the path '/Users/someone/ui' is denied."), [], _ => 0, _errors, _log);
 
         Assert.Equal(2, exit);
-        Assert.Equal("sindri-ui: couldn't start (SND-UI-004: UnauthorizedAccessException)" + Environment.NewLine, _errors.ToString());
+        Assert.Equal("sindri-ui: failed (SND-UI-004: UnauthorizedAccessException)" + Environment.NewLine, _errors.ToString());
         Assert.Equal("SND-UI-004", Assert.Single(_log.Entries).EventName);
     }
 
     [Fact]
-    public void The_launch_runs_the_app_over_the_platform_it_composed_and_ends_its_instance()
+    public void The_launch_runs_the_app_over_the_platform_it_composed_and_ends_its_instance_and_motion_poll()
     {
         var instance = new FailsToEnd(new FakeSingleInstance(_channel), failure: null);
-        var platform = new SindriPlatform(new InMemoryEndpointRecords(), new InMemoryHumanToken(), new InMemoryPreferencesStore(), new FakeMotionPreference(), instance, new FakeTray());
+        var motion = new EndsMotion(failure: null);
+        var platform = new SindriPlatform(new InMemoryEndpointRecords(), new InMemoryHumanToken(), new InMemoryPreferencesStore(), motion, instance, new FakeTray());
         SindriPlatform? ran = null;
 
         var exit = SingleLaunch.Run(() => platform, [], p =>
@@ -172,6 +174,49 @@ public sealed class SingleLaunchTests : IDisposable
         Assert.Equal(7, exit);
         Assert.Same(platform, ran);
         Assert.True(instance.Ended);
+        Assert.True(motion.Ended);
+    }
+
+    // Review run 4 (pattern-recognition-specialist-4): ending the motion poll is inside the SND-UI-004 boundary too, so a
+    // failure there is the documented line and exit 2, never an unhandled exception out of Main.
+    [Fact]
+    public void A_failure_ending_the_motion_poll_exits_2_with_SND_UI_004()
+    {
+        var motion = new EndsMotion(new InvalidOperationException("the poll's timer is gone"));
+        var platform = new SindriPlatform(new InMemoryEndpointRecords(), new InMemoryHumanToken(), new InMemoryPreferencesStore(), motion, new FakeSingleInstance(_channel), new FakeTray());
+
+        var exit = SingleLaunch.Run(() => platform, [], _ => 0, _errors, _log);
+
+        Assert.Equal(2, exit);
+        Assert.True(motion.Ended);
+        Assert.Equal("sindri-ui: failed (SND-UI-004: InvalidOperationException)" + Environment.NewLine, _errors.ToString());
+        Assert.Equal("SND-UI-004", Assert.Single(_log.Entries).EventName);
+    }
+
+    // A motion poll the launch ends (the desktop's polls the OS on a timer), whose end fails or not, and says whether it
+    // was ended.
+    private sealed class EndsMotion(Exception? failure) : IMotionPreference, IDisposable
+    {
+        private readonly FakeMotionPreference _inner = new();
+
+        public event EventHandler? Changed
+        {
+            add => _inner.Changed += value;
+            remove => _inner.Changed -= value;
+        }
+
+        public bool Ended { get; private set; }
+
+        public bool ReduceMotion => _inner.ReduceMotion;
+
+        public void Dispose()
+        {
+            Ended = true;
+            if (failure is not null)
+            {
+                throw failure;
+            }
+        }
     }
 
     // An instance whose end fails (or not, with no failure), and says whether it was ended.
