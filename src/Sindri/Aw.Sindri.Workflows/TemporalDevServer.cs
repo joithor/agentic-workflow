@@ -37,15 +37,19 @@ internal sealed class TemporalDevServer
                 return found with { Adopted = true };
             }
 
-            await Kill(found.ProcessId, cancellationToken).ConfigureAwait(false);   // ours by its database, but it doesn't answer: replace it
+            await Kill(found.ProcessId).ConfigureAwait(false);   // ours by its database, but it doesn't answer: replace it
         }
 
         return await Launch(start.Executable, home, database, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Stops a server: SIGTERM, then SIGKILL if it hasn't exited within 10 s.</summary>
+    /// <summary>
+    /// Stops a server: SIGTERM, then SIGKILL if it hasn't exited within 10 s. A cancelled stop doesn't leave it running:
+    /// the server is detached (setsid), so it would outlive serve and its caller; cancelling cuts the SIGTERM grace short
+    /// and kills it at once, and only then does the cancellation propagate.
+    /// </summary>
     /// <param name="server">The server.</param>
-    /// <param name="cancellationToken">Cancels the wait for its exit.</param>
+    /// <param name="cancellationToken">Cuts the wait for a clean exit short.</param>
     /// <returns>A task that completes when the process has exited.</returns>
     public async Task StopAsync(RunningTemporalServer server, CancellationToken cancellationToken)
     {
@@ -55,9 +59,20 @@ internal sealed class TemporalDevServer
         }
 
         DevServerProcesses.Signal(server.ProcessId, "TERM");
-        if (!await Exited(server.ProcessId, _stopWait, cancellationToken).ConfigureAwait(false))
+        bool exited;
+        try
         {
-            await Kill(server.ProcessId, cancellationToken).ConfigureAwait(false);
+            exited = await Exited(server.ProcessId, _stopWait, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            await Kill(server.ProcessId).ConfigureAwait(false);
+            throw;
+        }
+
+        if (!exited)
+        {
+            await Kill(server.ProcessId).ConfigureAwait(false);
         }
     }
 
@@ -100,7 +115,7 @@ internal sealed class TemporalDevServer
 
             if (waited.Elapsed > _readyWait)
             {
-                await Kill(pid, cancellationToken).ConfigureAwait(false);
+                await Kill(pid).ConfigureAwait(false);
                 throw new TimeoutException(string.Create(CultureInfo.InvariantCulture, $"the dev server on {frontend} didn't answer within {_readyWait.TotalSeconds:0} s: {problem}"));
             }
 
@@ -124,10 +139,11 @@ internal sealed class TemporalDevServer
             : throw new InvalidOperationException($"/bin/sh didn't print the dev server's pid (it printed '{printed}')");
     }
 
-    private async Task Kill(int pid, CancellationToken cancellationToken)
+    /// <summary>SIGKILL, then waits (at most 10 s, not cancellable: the signal is sent and the exit follows at once) for the exit.</summary>
+    private async Task Kill(int pid)
     {
         DevServerProcesses.Signal(pid, "KILL");
-        _ = await Exited(pid, _stopWait, cancellationToken).ConfigureAwait(false);
+        _ = await Exited(pid, _stopWait, CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <summary>Waits up to <paramref name="wait"/> for <paramref name="pid"/> to exit (it is never this process's child, so it is polled).</summary>

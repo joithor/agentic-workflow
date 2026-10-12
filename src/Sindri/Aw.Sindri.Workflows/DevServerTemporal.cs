@@ -35,9 +35,17 @@ internal sealed class DevServerTemporal(TemporalSettings settings, TemporalDevSe
         {
             foreach (var running in TemporalDevServer.Find(settings.Home))
             {
-                await server.StopAsync(running, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await server.StopAsync(running, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // StopAsync killed it before it gave up; the others go too, then the cancellation propagates
+                }
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             return Unit.Value;
         }
         catch (Exception e) when (!cancellationToken.IsCancellationRequested)
