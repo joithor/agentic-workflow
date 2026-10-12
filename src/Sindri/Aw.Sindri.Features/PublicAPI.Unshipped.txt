@@ -299,18 +299,14 @@ Aw.Sindri.Features.EvalRecipe.EvalCaseResult.Passed.get -> bool
 Aw.Sindri.Features.EvalRecipe.EvalCaseResult.Passed.init -> void
 Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest
 Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest.<Clone>$() -> Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest!
-Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest.Deconstruct(out string! Path) -> void
 Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest.Equals(Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest? other) -> bool
-Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest.EvalRecipeRequest(string! Path) -> void
 Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest.Path.get -> string!
 Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest.Path.init -> void
 Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse
 Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.<Clone>$() -> Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse!
 Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Cases.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.EvalCaseResult!>!
 Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Cases.init -> void
-Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.EvalCaseResult!>! Cases) -> void
 Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Equals(Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse? other) -> bool
-Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.EvalRecipeResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.EvalCaseResult!>! Cases) -> void
 Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Passed.get -> bool
 Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest
 Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest.<Clone>$() -> Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest!
@@ -360,5 +356,18 @@ static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest.operator !=(Aw.Si
 static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest.operator ==(Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest? left, Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest? right) -> bool
 static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.operator !=(Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? left, Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? right) -> bool
 static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.operator ==(Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? left, Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? right) -> bool
+Aw.Sindri.Features.EvalRecipe.EvalCaseResult.Name.get -> string!
+Aw.Sindri.Features.EvalRecipe.EvalCaseResult.ToLine() -> string!
+Aw.Sindri.Features.EvalRecipe.EvalMode
+Aw.Sindri.Features.EvalRecipe.EvalMode.Run = 1 -> Aw.Sindri.Features.EvalRecipe.EvalMode
+Aw.Sindri.Features.EvalRecipe.EvalMode.Scaffold = 2 -> Aw.Sindri.Features.EvalRecipe.EvalMode
+Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest.Deconstruct(out string! Path, out Aw.Sindri.Features.EvalRecipe.EvalMode Mode) -> void
+Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest.EvalRecipeRequest(string! Path, Aw.Sindri.Features.EvalRecipe.EvalMode Mode = Aw.Sindri.Features.EvalRecipe.EvalMode.Run) -> void
+Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest.Mode.get -> Aw.Sindri.Features.EvalRecipe.EvalMode
+Aw.Sindri.Features.EvalRecipe.EvalRecipeRequest.Mode.init -> void
+Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.EvalCaseResult!>! Cases, out string? Scaffold) -> void
+Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.EvalRecipeResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.EvalCaseResult!>! Cases, string? Scaffold = null) -> void
+Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Scaffold.get -> string?
+Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Scaffold.init -> void
 Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.Normalized.get -> Aw.Sindri.Core.Workflow.Recipes.Recipe?
 Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.Normalized.init -> void

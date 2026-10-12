@@ -1,9 +1,10 @@
 using Aw.Sindri.Core.Workflow.Validation;
+using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.ValidateRecipe;
 
 namespace Aw.Sindri.Host.Commands.Recipe;
 
-/// <summary>The 'recipe validate' text output (spec §6.3: rule lines, then the hash). Pure: RecipeCommandTable writes it.</summary>
+/// <summary>The 'recipe validate' and 'recipe eval' text output (spec §6.3). Pure: RecipeCommandTable writes it.</summary>
 internal static class RecipeText
 {
     /// <summary>
@@ -32,4 +33,12 @@ internal static class RecipeText
         FindingSeverity.Skipped => "skipped: ",
         _ => throw new ArgumentOutOfRangeException(nameof(severity), severity, "Not a finding severity."),
     };
+
+    /// <summary>'recipe eval': one line per case ('happy pass', or 'happy fail at &lt;file&gt;:&lt;line&gt;: &lt;detail&gt;'), or the empty state.</summary>
+    /// <param name="response">The eval results.</param>
+    /// <returns>The text, each line ending in '\n'.</returns>
+    internal static string Eval(EvalRecipeResponse response) =>
+        response.Cases.Count == 0
+            ? "no evals declared\n"
+            : string.Concat(response.Cases.Select(static c => c.ToLine() + "\n"));
 }

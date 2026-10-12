@@ -25,7 +25,7 @@ One NativeAOT binary, `sindri`, is both the control plane and its CLI.
 | `sindri profile approve <hash>` | Approves: the hash must be the live one, and you type its first 6 characters at an interactive terminal | 0; 1 when it isn't running (`SND-API-001`); 2 on any other error (e.g. a malformed hash `SND-CLI-003`, a stale hash `SND-PROFILE-003`, no terminal or a wrong confirmation `SND-PROFILE-004`, approvals that can't be written `SND-PROFILE-006`, a ledger it can't read or write `SND-LEDGER-002`, no answer in time `SND-API-002`, an API error without a code `SND-API-004` or from inside `SND-API-005`) |
 | `sindri doctor [--json]` | One line per check, in order: `lease`, `ledger`, `profile`, `api`, each `ok` / `warn` / `fail` with a fix. `profile` is `ok` only when approved by the one rule (see Profile); changed since the saved approval, or saved but not the latest recorded one, is a `warn` | 0 all ok, 1 any warn, 2 any fail |
 | `sindri recipe validate <file> [--json]` | Validates a recipe in this process against the build's block catalog, never contacting the control plane: one line per finding (errors first; information and skipped findings labelled), then the recipe's hash. `--json` adds each finding's fields and the normalized long form. Reference: `docs/csharp/sindri-workflow.md` | 0 no errors; 1 any `RCP-*` error; 2 a usage error (no file, `SND-CLI-003`; an unknown `recipe` verb or extra arguments, `SND-CLI-001`), an unreadable file (`SND-RECIPE-010`) or a bug inside sindri (`SND-API-005`) |
-| `sindri recipe eval <file>` | Arrives with the engine's evals (P3); until then it refuses | 2 (`SND-CLI-001`) |
+| `sindri recipe eval <file> [--json]` · `--scaffold <file>` · `--record <address> --out <file>` | Runs the recipe's eval cases in this process over the pure engine (P3): one line per case, `<case> pass` or `<case> fail at <file>:<line>: <detail>`, or `no evals declared`. `--scaffold` prints a passing happy-path case; `--record` needs the server (P4). Reference: `docs/csharp/sindri-workflow.md` | 0 every case passes or none declared; 1 a case fails; 2 a usage error (`SND-CLI-003`, `SND-CLI-001`, `--record` until P4), an unreadable or unbound recipe (`SND-RECIPE-010`, `SND-RECIPE-001`), a missing or unreadable eval file (`SND-RECIPE-008`) or a bug inside sindri (`SND-API-005`) |
 
 Output: state is always a word, never colour; there is no colour at all, so `NO_COLOR` and redirected output need
 nothing special. Errors go to stderr as `SND-<AREA>-NNN message`, with `(fix: …)` where there is one, or `(usage: …)` for a usage error. `--json` prints
@@ -201,7 +201,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-RECIPE-009` | conflict | A recipe challenge expired, or its subject changed since the preview |
 | `SND-RECIPE-010` | notFound | The recipe file can't be read |
 | `SND-WF-001` | notFound | No such instance (`sindri workflow list`) |
-| `SND-WF-002` | conflict | The instance changed; re-read and retry |
+| `SND-WF-002` | — | Retired (engine spec rev 8): Updates serialize per workflow, so there is no version conflict |
 | `SND-WF-003` | conflict | The trigger isn't allowed here (`allowedCommands` in `status`) |
 | `SND-WF-004` | conflict | A gate refused; act on the reasons |
 | `SND-WF-005` | conflict | A stale run token; use the token in `status` |
@@ -216,7 +216,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-WF-014` | invalid | `--item` and `fact:item`'s `id` differ |
 
 `sindri recipe validate <file> [--json]` and `sindri recipe eval <file>` are local checker verbs (engine spec W27): exit
-0 pass, 1 fail, 2 usage or tool error; `eval` arrives with P3. The recipe reference, the `RCP-*` rule table and how to add
+0 pass, 1 fail, 2 usage or tool error. The recipe reference, the eval format, the `RCP-*` rule table and how to add
 a block are in `docs/csharp/sindri-workflow.md`.
 
 ## Hook contract
