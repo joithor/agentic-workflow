@@ -12,6 +12,11 @@ public static class RankFusion
     /// <summary>The RRF constant.</summary>
     public const int K = 60;
 
+    /// <summary>The hits ordered by their dense per-source rank (from 'rrf:&lt;source&gt;#&lt;rank&gt;'), ties by source id, so Hits[0] is the best.</summary>
+    private static List<Sources.SourceHit> BestFirst(List<Sources.SourceHit> hits, List<string> why) =>
+        [.. hits.Select((h, i) => (Hit: h, Rank: int.Parse(why[i].AsSpan(why[i].LastIndexOf('#') + 1), CultureInfo.InvariantCulture)))
+            .OrderBy(x => x.Rank).ThenBy(x => x.Hit.Ref.Source.Value, StringComparer.Ordinal).Select(x => x.Hit)];
+
     /// <summary>Fuses <paramref name="answers"/>.</summary>
     /// <param name="answers">Each source's hits.</param>
     /// <returns>One item per canonical key, best score first (ties by key, ordinal).</returns>
@@ -39,7 +44,7 @@ public static class RankFusion
         }
 
         return [.. items
-            .Select(i => new FusedItem(i.Value.Hits[0].Ref.Canonical, i.Value.Score, i.Value.Hits, i.Value.Why))
+            .Select(i => new FusedItem(i.Value.Hits[0].Ref.Canonical, i.Value.Score, BestFirst(i.Value.Hits, i.Value.Why), i.Value.Why))
             .OrderByDescending(i => i.Score)
             .ThenBy(i => i.Key.Value, StringComparer.Ordinal)];
     }

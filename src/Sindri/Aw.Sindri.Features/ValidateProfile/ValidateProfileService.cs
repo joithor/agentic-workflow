@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -18,7 +19,7 @@ internal sealed class ValidateProfileService(IProfileSource live, IApprovals app
             return loaded.Error;
         }
 
-        if (context.CheckSettings(loaded.Value.Profile.Context) is { IsError: true } invalid)
+        if (Checked(loaded.Value.Profile) is { IsError: true } invalid)
         {
             return invalid.Error;   // SND-CONTEXT-001 with its key path (context spec §4)
         }
@@ -38,4 +39,10 @@ internal sealed class ValidateProfileService(IProfileSource live, IApprovals app
         var approved = ProfileRules.IsApproved(saved.Value?.Hash, recorded.Value?.Hash, loaded.Value.Hash);
         return new ValidateProfileResponse(loaded.Value.Hash, loaded.Value.Source, approved);
     }
+
+    /// <summary>The context section checked by the engine, and its 'repos' against the profile's repos (SND-CONTEXT-001).</summary>
+    private Result<IReadOnlyList<ContextRepo>> Checked(SindriProfile profile) =>
+        context.CheckSettings(profile.Context).Bind(settings => ScopeRules.Resolve(settings,
+            [.. (profile.Repos ?? []).Where(r => ContextRepoName.TryFrom(r.Name, out _)).Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path))],
+            new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli)));
 }

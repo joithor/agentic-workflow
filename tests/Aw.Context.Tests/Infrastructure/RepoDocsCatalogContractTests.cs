@@ -11,5 +11,5 @@ public sealed class RepoDocsCatalogContractTests : SourceCatalogContract<ISource
 
     public void Dispose() => _home.Dispose();
 
-    protected override ISourceCatalog Create() => new RepoDocsCatalog(_home.Database, _home.Git, _home.Clock);
+    protected override ISourceCatalog Create() => new RepoDocsCatalog(_home.Database, _home.Git, _home.Scrubber, _home.Clock);
 }

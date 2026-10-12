@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -102,10 +103,19 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
         _ => null,
     };
 
-    /// <summary>The live profile, refused when its context section doesn't check: an invalid section is never approved (SND-CONTEXT-001).</summary>
+    /// <summary>The live profile, refused when its context section doesn't check, its repos included: an invalid section is never approved (SND-CONTEXT-001).</summary>
     private async ValueTask<Result<LoadedProfile>> Load(CancellationToken cancellationToken)
     {
         var loaded = await live.Load(cancellationToken).ConfigureAwait(false);
-        return loaded.IsError ? loaded : context.CheckSettings(loaded.Value.Profile.Context) is { IsError: true } invalid ? invalid.Error : loaded;
+        if (loaded.IsError)
+        {
+            return loaded;
+        }
+
+        var profile = loaded.Value.Profile;
+        var repos = (profile.Repos ?? []).Where(r => ContextRepoName.TryFrom(r.Name, out _)).Select(r => new ContextRepo(ContextRepoName.From(r.Name), r.Path)).ToList();
+        var checkedContext = context.CheckSettings(profile.Context)
+            .Bind(settings => ScopeRules.Resolve(settings, repos, new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli)));
+        return checkedContext.IsError ? checkedContext.Error : loaded;
     }
 }

@@ -26,6 +26,19 @@ public static class UntrustedFence
         return fenced.Append('>').Append(Escape(body)).Append("</untrusted>").ToString();
     }
 
+    /// <summary>The longest title an item carries (spec §7: titles are collapsed to one line; this also bounds them).</summary>
+    public const int MaxTitle = 200;
+
+    /// <summary><paramref name="text"/> cut to <paramref name="max"/> characters, with '…' when cut.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="max">The most characters kept.</param>
+    /// <returns>The capped text.</returns>
+    public static string Cap(string text, int max = MaxTitle)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return text.Length <= max ? text : string.Concat(text.AsSpan(0, max - 1), "…");
+    }
+
     /// <summary>Escapes '&amp;', '&lt;', '&gt;' and '"', so the text can't open, close or extend a fence.</summary>
     /// <param name="text">The text.</param>
     /// <returns>The escaped text.</returns>

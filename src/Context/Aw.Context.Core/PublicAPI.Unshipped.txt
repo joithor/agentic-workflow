@@ -862,3 +862,5 @@ static Aw.Context.Core.Engine.ContextRepoName.operator ==(Aw.Context.Core.Engine
 static Aw.Context.Core.Engine.ContextRepoName.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Engine.ContextRepoName
 static Aw.Context.Core.Engine.ContextRepoName.TryFrom(string? value, out Aw.Context.Core.Engine.ContextRepoName vo) -> bool
 static Aw.Context.Core.Engine.ContextRepoName.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Engine.ContextRepoName result) -> bool
+const Aw.Context.Core.Trust.UntrustedFence.MaxTitle = 200 -> int
+static Aw.Context.Core.Trust.UntrustedFence.Cap(string! text, int max = 200) -> string!

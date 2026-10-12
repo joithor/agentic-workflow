@@ -38,5 +38,51 @@ internal static class ProfileReading
     /// <param name="profile">The checked profile.</param>
     /// <param name="options">The package's AwJson options.</param>
     /// <returns>The UTF-8 JSON.</returns>
-    internal static byte[] Canonical(SindriProfile profile, JsonSerializerOptions options) => AwJson.Serialize(profile, options);
+    internal static byte[] Canonical(SindriProfile profile, JsonSerializerOptions options) =>
+        AwJson.Serialize(profile.Context is { } context ? profile with { Context = Sorted(context) } : profile, options);
+
+    /// <summary>
+    /// The 'context:' section with every object's keys in ordinal order, so the hash doesn't depend on how the section
+    /// was written (the rest of the canonical JSON is a typed record, already in a fixed order).
+    /// </summary>
+    private static JsonElement Sorted(JsonElement element)
+    {
+        using var buffer = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            Write(writer, element);
+        }
+
+        using var sorted = JsonDocument.Parse(buffer.ToArray());
+        return sorted.RootElement.Clone();
+    }
+
+    private static void Write(Utf8JsonWriter writer, JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            writer.WriteStartObject();
+            foreach (var property in element.EnumerateObject().OrderBy(p => p.Name, StringComparer.Ordinal))
+            {
+                writer.WritePropertyName(property.Name);
+                Write(writer, property.Value);
+            }
+
+            writer.WriteEndObject();
+        }
+        else if (element.ValueKind == JsonValueKind.Array)
+        {
+            writer.WriteStartArray();
+            foreach (var item in element.EnumerateArray())
+            {
+                Write(writer, item);
+            }
+
+            writer.WriteEndArray();
+        }
+        else
+        {
+            element.WriteTo(writer);
+        }
+    }
 }

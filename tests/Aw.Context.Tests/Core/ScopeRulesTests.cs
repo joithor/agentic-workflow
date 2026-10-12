@@ -44,4 +44,13 @@ public sealed class ScopeRulesTests
 
         Assert.Equal(["split-panes"], scoped.Value.Select(r => r.Name.Value), StringComparer.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_context_repos_name_the_profile_lacks_is_001()
+    {
+        var scoped = ScopeRules.Resolve(new ContextSettings { Repos = [ContextRepoName.From("work_app")] }, _repos, new(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
+
+        Assert.Equal(ContextErrors.SettingsInvalid.Code, scoped.Error.Code);
+        Assert.StartsWith("context.repos: 'work_app' is not a profile repo", scoped.Error.Message, StringComparison.Ordinal);
+    }
 }

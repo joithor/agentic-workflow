@@ -13,12 +13,19 @@ public static class ScopeRules
     /// <param name="settings">The checked settings (its 'repos' narrows the profile's).</param>
     /// <param name="repos">The profile's repos.</param>
     /// <param name="caller">The caller.</param>
-    /// <returns>The repos in scope, in profile order; or SND-CONTEXT-020 / 003.</returns>
+    /// <returns>The repos in scope, in profile order; or SND-CONTEXT-001 (context.repos names a repo the profile doesn't have), 020 or 003.</returns>
     public static Result<IReadOnlyList<ContextRepo>> Resolve(ContextSettings settings, IReadOnlyList<ContextRepo> repos, ContextCaller caller)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(repos);
         ArgumentNullException.ThrowIfNull(caller);
+        var unknown = (settings.Repos ?? []).Where(n => !repos.Any(r => r.Name == n)).Select(n => n.Value).ToList();
+        if (unknown.Count > 0)
+        {
+            return ContextErrors.SettingsInvalid.With(
+                $"context.repos: '{unknown[0]}' is not a profile repo (repos: {string.Join(", ", repos.Select(r => r.Name.Value))})");
+        }
+
         var mapped = settings.Repos is { } names
             ? repos.Where(r => names.Contains(r.Name)).ToList()
             : [.. repos];
