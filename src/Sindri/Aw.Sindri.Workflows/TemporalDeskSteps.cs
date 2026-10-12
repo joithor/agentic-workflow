@@ -68,6 +68,12 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, T
             await client.GetAsyncActivityHandle(taskToken).CompleteAsync(new StepReport(report.Outcome.Value, outputs), new AsyncActivityCompleteOptions { Rpc = rpc })
                 .ConfigureAwait(false);
         }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound && e.Message.Contains("namespace", StringComparison.OrdinalIgnoreCase))
+        {
+            // not serve's Temporal: this says nothing about the run, so its token stays
+            return SindriErrors.NotRunning.With($"Temporal at {client.Connection.Options.TargetHost} has no '{SindriTemporal.Namespace}' namespace: {e.Message} "
+                + "(fix: point --temporal at serve's dev server, or drop it to use control.json's)");
+        }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)
         {
             tokens.Remove(address, report.Run.Value);
@@ -75,8 +81,8 @@ internal sealed class TemporalDeskSteps(WorkflowsHome home, TaskTokens tokens, T
         }
         catch (RpcException e)
         {
-            return SindriErrors.NotRunning.With($"Temporal didn't take the report for run {report.Run.Value} of {address}: {e.Message} "
-                + "(fix: sindri doctor, then run the same complete again)");
+            return SindriErrors.NotRunning.With($"Temporal didn't confirm the report for run {report.Run.Value} of {address}: {e.Message} "
+                + "(fix: sindri doctor; it may have landed, so check sindri workflow list before running the same complete again)");
         }
 
 
