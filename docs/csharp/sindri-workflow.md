@@ -91,7 +91,9 @@ JSON Schemas: `schemas/recipes/recipe.schema.json` is the long form, generated f
 | `loops: { r: { cap: 3 } }` | `loops: { r: { cap: 3, noProgress: [findings, emptyDiff, sameFailure] } }` |
 
 **Hash:** `sha256:` over the RFC 8785 (JCS) canonical JSON of the normalized long form without `hash`. A `hash` written in
-the file is checked (`RCP-HASH-001`). Listings show the first 12 hex digits.
+the file is checked (`RCP-HASH-001`). Listings show the first 12 hex digits. The long form writes every absent optional
+field as `null` (owner decision, 2026-10-11), so adding an optional field to the format re-hashes every recipe, and each
+needs re-approval.
 
 ### Top level
 
@@ -115,7 +117,7 @@ the file is checked (`RCP-HASH-001`). Listings show the first 12 hex digits.
 | Value | Form |
 |---|---|
 | Fact key | `fact:<name>` or `evidence:<kind>@<base\|head>` |
-| Block id | `<kind>.<name>` or `<kind>.<area>.<name>`, kind one of `gate`, `step`, `effect`, `evidence`, `input` (`step.produce`, `gate.budget.available`) |
+| Block id | `<gate\|step\|effect\|evidence\|input>.[<area>.]<name>`, kebab-case, at most 64 characters (`step.produce`, `gate.budget.available`; spec §3.3) |
 | Event kind | `<area>.<name>`, registered with `AddEvent` (this build: `claim.created`, `item.routed`, `notify.delivered`) |
 | Duration | `<n>m`, `<n>h` or `<n>d`, at least `1m` (`RCP-DUR-001`) |
 | Tokens | An integer, or with a `k` or `M` suffix |
@@ -123,7 +125,8 @@ the file is checked (`RCP-HASH-001`). Listings show the first 12 hex digits.
 
 ### States
 
-Every state has `kind: active | wait | terminal`.
+Every state has `kind: active | wait | terminal`. State, loop and parameter (`with:` key) names match
+`[a-z][a-z0-9-]{0,63}` (`RCP-NAME-001`).
 
 | Field | `active` | `wait` | `terminal` |
 |---|---|---|---|
@@ -192,6 +195,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-SCHEMA-002` | Each value has the right type and form (an enum is exactly one of its names), and a transition's `from` and `to` name states of the recipe | Write the form the message names |
 | `RCP-SCHEMA-003` | No refused YAML (see Reading) | Write the value out in full |
 | `RCP-STATE-001` | No state uses a reserved name, and the recipe has an active or wait state and a terminal state | Rename the state |
+| `RCP-NAME-001` | Every state, loop and parameter (`with:` key) name matches `[a-z][a-z0-9-]{0,63}`; each bad name is reported once, where it is written | Rename it |
 | `RCP-INIT-001` | `initial` names an active or wait state | Point `initial` at one |
 | `RCP-DUR-001` | Durations are `<n>m/h/d`, at least `1m` | Write a whole number and m, h or d |
 | `RCP-BLOCK-001` | Every block a recipe names is registered | Name a registered block, or fix the id |
@@ -218,7 +222,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-EXIT-001` | Every non-terminal state has a path to a terminal state | Add a transition towards a terminal state |
 | `RCP-TIME-001` | Every active and wait state has a timeout | Add `timeout: { after, then }` |
 | `RCP-TIME-002` | A child wait doesn't `retry` | Use `park` or `escalate` |
-| `RCP-LOOP-001` | A state's `loop` is declared, every loop's `cap` is at least 1, and every cycle of step and wait transitions passes through a state with a `loop` (a cycle closed by a `command.<verb>` is a human's, and a cycle with no way out is `RCP-EXIT-001`'s) | Declare it under `loops`, or add `loop` to a state on the cycle |
+| `RCP-LOOP-001` | A state's `loop` is declared, every loop's `cap` is at least 1, and every cycle of step and wait transitions passes through a state with a `loop` (a cycle closed by a `command.<verb>` or by the answer to an `answer` wait is a human's, and a cycle with no way out is `RCP-EXIT-001`'s) | Declare it under `loops`, or add `loop` to a state on the cycle |
 | `RCP-LOOP-002` | A looped state has a transition back into it | Add it, or remove `loop` |
 | `RCP-LOOP-003` | `noProgress` isn't empty | Name a signal, or leave it out |
 | `RCP-TRIG-001` | `on` is a known trigger, a command verb matches the pattern, and `on` fits the `from` state's kind | Use the trigger the message lists |
