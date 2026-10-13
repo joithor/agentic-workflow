@@ -63,6 +63,15 @@ describe("write guard", () => {
       { index: 2, target: "saveChanges" },
     ]);
   });
+  it("reads the accessible name or text of role:/text: targets", () => {
+    const steps = [click("role:button|Save"), click("role:option|Unit 4200"), click("text:Delete shift"), click("role:tab|Targets"), click("role:button|Save changes")];
+    expect(findWriteSteps(steps).map((w) => w.index)).toEqual([0, 2, 4]);
+    expect(guardWrites([click("role:button|Save")], false)).toEqual({ ok: false, error: "refusing write-looking steps without --allow-writes: #1 click role:button|Save" });
+    expect(guardWrites([click("role:button|Save")], true)).toEqual({ ok: true });
+  });
+  it("does not read the role word of a role: target as the label", () => {
+    expect(findWriteSteps([click("role:button|Unit switcher")])).toEqual([]);
+  });
   it("does not trip on words that merely contain a write word", () => {
     expect(findWriteSteps([click("preview-manage-staffing-toggle"), click("postal-code-help"), click("address-line")])).toEqual([]);
   });

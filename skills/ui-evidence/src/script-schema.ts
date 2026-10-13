@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { parseStepTarget } from "./step-target.js";
+
 // A machine-checkable post-step expectation. Free-form prose can't be
 // asserted, so the planner must emit one of these shapes; runStep checks it
 // after every step, and a step whose expectation fails is never a pass.
@@ -17,6 +19,10 @@ export const ScriptStepSchema = z.object({
   target: z.string(),
   value: z.string().optional(),
   expectedState: ExpectedStateSchema,
+}).superRefine((step, ctx) => {
+  if (step.action !== "click" && step.action !== "fill") return;
+  const parsed = parseStepTarget(step.target);
+  if ("error" in parsed) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["target"], message: parsed.error });
 });
 export type ScriptStep = z.infer<typeof ScriptStepSchema>;
 

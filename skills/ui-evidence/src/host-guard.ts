@@ -2,6 +2,7 @@
 // functions: the CLI and the browser drivers call them before anything
 // touches the network.
 import type { ScriptStep } from "./script-schema.js";
+import { targetLabel } from "./step-target.js";
 
 export const DEFAULT_HOST = "http://localhost:3000";
 // Only per-PR living previews: pr-<number>.vitalize.build. dev/staging/prod
@@ -70,7 +71,7 @@ export function isSameOriginPath(target: string): boolean {
 /** Best-effort: click steps (and goto paths) whose words read like a save/submit/update/delete control. */
 export function findWriteSteps(steps: ScriptStep[]): Array<{ index: number; target: string }> {
   return steps.flatMap((s, index) => {
-    const label = s.action === "click" ? s.target : s.action === "goto" ? (s.target.split("?")[0] as string) : null;
+    const label = s.action === "click" ? targetLabel(s.target) : s.action === "goto" ? (s.target.split("?")[0] as string) : null;
     return label !== null && words(label).some(isWriteWord) ? [{ index, target: s.target }] : [];
   });
 }

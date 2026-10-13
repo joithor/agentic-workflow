@@ -1,12 +1,13 @@
 // skills/ui-evidence/src/step-exec.ts — per-step execution against a real
 // Playwright Page. Covered by the local-fixture browser tests
 // (tests/browser/), not by unit coverage.
-import type { Page } from "playwright";
+import type { Locator, Page } from "playwright";
 
 import { isSameOriginPath } from "./host-guard.js";
 import { assertExpectedState } from "./expected-state.js";
 import { candidateFits, resolveCandidate, type Candidate, type RepairProposal } from "./repair.js";
 import { describeExpectedState, type ScriptStep } from "./script-schema.js";
+import { isPrefixedTarget, parseStepTarget } from "./step-target.js";
 
 const INTERACTIVE = "button, a, input, [role], [data-testid]";
 const MAX_REPAIR_ATTEMPTS = 2;
@@ -15,15 +16,26 @@ export type StepOutcome = "passed" | "failed" | "broken";
 
 export type RepairFn = (brokenSelector: string, step: string, candidates: Candidate[]) => Promise<RepairProposal | null>;
 
+/**
+ * Playwright locators are strict: a locator matching several elements throws on click/fill, so an
+ * ambiguous role/text target fails loudly instead of acting on the first match.
+ */
+function locateTarget(page: Page, target: string): Locator {
+  const parsed = parseStepTarget(target);
+  if ("error" in parsed) throw new Error(parsed.error);
+  if (parsed.kind === "role") return page.getByRole(parsed.role as Parameters<Page["getByRole"]>[0], { name: parsed.name, exact: true });
+  return parsed.kind === "text" ? page.getByText(parsed.text, { exact: true }) : page.getByTestId(parsed.testId);
+}
+
 export async function performAction(page: Page, step: ScriptStep, host: string, timeout = 5000): Promise<void> {
   if (step.action === "goto") {
     // Defence in depth behind guardWrites: never let a target rewrite the host (`@evil.com`, `//evil.com`).
     if (!isSameOriginPath(step.target)) throw new Error(`goto target must be a path on the host: ${step.target}`);
     await page.goto(`${host}${step.target}`);
   } else if (step.action === "click") {
-    await page.getByTestId(step.target).click({ timeout });
+    await locateTarget(page, step.target).click({ timeout });
   } else if (step.action === "fill") {
-    await page.getByTestId(step.target).fill(step.value ?? "", { timeout });
+    await locateTarget(page, step.target).fill(step.value ?? "", { timeout });
   } else {
     await page.getByText(step.target).locator("visible=true").first().waitFor({ state: "visible", timeout });
   }
@@ -61,6 +73,8 @@ export async function executeStep(page: Page, step: ScriptStep, host: string, re
     await performAction(page, step, host, timeout);
   } catch {
     if (step.action !== "click" && step.action !== "fill") return "broken";
+    // An explicit role/text locator that misses or is ambiguous is the planner's to fix; a model never picks a replacement.
+    if (isPrefixedTarget(step.target)) return "broken";
     return (await repairAndRun(page, step, step.action, repair, timeout)) ? "passed" : "broken";
   }
   try {
