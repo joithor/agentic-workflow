@@ -155,6 +155,11 @@ describe("executeStep role/text targets", () => {
     await expect(performAction(page, click("text:Twin", saved), fixture.host, T)).rejects.toThrow(/strict mode violation/);
   });
 
+  it("fails text: substrings and ambiguous fills", async () => {
+    expect(await executeStep(page, click("text:Do", { kind: "text-visible", text: "Schedule" }), fixture.host, never, T)).toBe("broken");
+    expect(await executeStep(page, { action: "fill", target: "role:textbox|Dup", value: "x", expectedState: { kind: "testid-visible", testId: "note-input" } }, fixture.host, never, T)).toBe("broken");
+  });
+
   it("never asks the judge to repair a missing role/text target", async () => {
     const repair = vi.fn(async () => null);
     expect(await executeStep(page, click("role:button|Nope", saved), fixture.host, repair, T)).toBe("broken");

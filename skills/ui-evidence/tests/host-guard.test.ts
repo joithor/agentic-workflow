@@ -69,6 +69,9 @@ describe("write guard", () => {
     expect(guardWrites([click("role:button|Save")], false)).toEqual({ ok: false, error: "refusing write-looking steps without --allow-writes: #1 click role:button|Save" });
     expect(guardWrites([click("role:button|Save")], true)).toEqual({ ok: true });
   });
+  it("catches fused and upper-case write names, and ignores fill steps", () => {
+    expect(findWriteSteps([click("role:button|SaveChanges"), click("text:DELETE"), { ...click("role:button|Save"), action: "fill" as const }]).map((w) => w.index)).toEqual([0, 1]);
+  });
   it("does not read the role word of a role: target as the label", () => {
     expect(findWriteSteps([click("role:button|Unit switcher")])).toEqual([]);
   });

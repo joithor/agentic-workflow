@@ -52,6 +52,6 @@ describe("parseUiScript", () => {
     expect("error" in withTarget("click", "text:Unit 4200")).toBe(false);
   });
   it("rejects a malformed role: or text: target", () => {
-    for (const bad of ["role:button", "role:|Save", "role:button|", "text:"]) expect(withTarget("click", bad)).toHaveProperty("error");
+    for (const bad of ["role:button", "role:|Save", "role:button|", "text:", "Text:Save", "role:Button|Save"]) expect(withTarget("click", bad)).toHaveProperty("error");
   });
 });

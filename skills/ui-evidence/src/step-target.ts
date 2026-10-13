@@ -11,16 +11,18 @@ const TEXT_PREFIX = "text:";
 export const isPrefixedTarget = (target: string): boolean => target.startsWith(ROLE_PREFIX) || target.startsWith(TEXT_PREFIX);
 
 export function parseStepTarget(target: string): StepTarget | { error: string } {
+  // "Role:button|Save" or " text:Save" would silently become a test id and miss: reject the near-miss.
+  if (!isPrefixedTarget(target) && /^\s*(role|text):/i.test(target)) return { error: `target prefix must be exactly lower-case "role:" or "text:" with no leading space: ${target}` };
   if (target.startsWith(ROLE_PREFIX)) {
     const rest = target.slice(ROLE_PREFIX.length);
     const bar = rest.indexOf("|");
     const role = bar < 0 ? "" : rest.slice(0, bar).trim();
     const name = bar < 0 ? "" : rest.slice(bar + 1);
-    return role === "" || name === "" ? { error: `role target must be "role:<role>|<accessible name>": ${target}` } : { kind: "role", role, name };
+    return !/^[a-z]+$/.test(role) || name.trim() === "" ? { error: `role target must be "role:<lower-case role>|<accessible name>": ${target}` } : { kind: "role", role, name };
   }
   if (target.startsWith(TEXT_PREFIX)) {
     const text = target.slice(TEXT_PREFIX.length);
-    return text === "" ? { error: `text target must be "text:<text>": ${target}` } : { kind: "text", text };
+    return text.trim() === "" ? { error: `text target must be "text:<text>": ${target}` } : { kind: "text", text };
   }
   return { kind: "testId", testId: target };
 }

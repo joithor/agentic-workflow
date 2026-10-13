@@ -14,7 +14,7 @@ describe("parseStepTarget", () => {
     expect(parseStepTarget("text:Unit 4200")).toEqual({ kind: "text", text: "Unit 4200" });
   });
   it("reports malformed prefixed targets", () => {
-    for (const bad of ["role:button", "role:|x", "role:button|", "text:"]) expect(parseStepTarget(bad)).toHaveProperty("error");
+    for (const bad of ["role:button", "role:|x", "role:button|", "text:", "role:button|  ", "text:  ", "role:Button|Save", "Role:button|Save", " text:Save"]) expect(parseStepTarget(bad)).toHaveProperty("error");
   });
   it("labels prefixed targets by their name or text", () => {
     expect(targetLabel("role:button|Save")).toBe("Save");
