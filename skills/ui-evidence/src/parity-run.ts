@@ -10,7 +10,7 @@ import { chromium, type Locator, type Page } from "playwright";
 import { PNG } from "pngjs";
 
 import { signIn } from "./login.js";
-import { isOffOriginNavigation, provenanceFor, readCredentials, redact } from "./host-guard.js";
+import { browserLaunchArgs, isOffOriginNavigation, provenanceFor, readCredentials, redact } from "./host-guard.js";
 import {
   buildParityEntry,
   checkBoxes,
@@ -133,8 +133,7 @@ export async function runParity(m: DesignManifest, runDir: string, opts: ParityR
 
   const browser = await chromium.launch({
     headless: true,
-    // Previews sit behind private-network preflights headless Chrome otherwise blocks.
-    args: opts.hostKind === "preview" ? ["--disable-features=LocalNetworkAccessChecks,PrivateNetworkAccessRespectPreflightResults,BlockInsecurePrivateNetworkRequests"] : [],
+    args: browserLaunchArgs(opts.hostKind),
   });
   try {
     const context = await browser.newContext({ viewport: { width: m.viewport.w, height: m.viewport.h }, deviceScaleFactor: 1, userAgent: desktopChromeUserAgent(browser.version()) });

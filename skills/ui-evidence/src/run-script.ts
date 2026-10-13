@@ -8,7 +8,7 @@ import path from "node:path";
 import { chromium, type Page } from "playwright";
 
 import { signIn } from "./login.js";
-import { readCredentials, redact } from "./host-guard.js";
+import { browserLaunchArgs, isLocalHost, readCredentials, redact } from "./host-guard.js";
 import { runJudge } from "./judge-exec.js";
 import type { UiScript } from "./script-schema.js";
 import { lintPage, type PageSnapshot } from "./lint-page.js";
@@ -69,7 +69,7 @@ export async function runScript(script: UiScript, runDir: string, mainBaselineSc
   }
   const secrets = creds === null ? [] : [creds.email, creds.password];
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, args: browserLaunchArgs(isLocalHost(host) ? "local" : "preview") });
   const browserVersion = browser.version();
   const steps: RunStep[] = [];
   const lintFindings: RunSummary["lintFindings"] = [];

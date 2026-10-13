@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_HOST, findWriteSteps, guardWrites, isLocalHost, isOffOriginNavigation, isSameOriginPath, provenanceFor, readCredentials, redact, resolveHost } from "../src/host-guard.js";
+import { browserLaunchArgs, DEFAULT_HOST, findWriteSteps, guardWrites, isLocalHost, isOffOriginNavigation, isSameOriginPath, provenanceFor, readCredentials, redact, resolveHost } from "../src/host-guard.js";
 import type { ScriptStep } from "../src/script-schema.js";
 
 const goto = (target: string): ScriptStep => ({ action: "goto", target, expectedState: { kind: "url-path", path: "/" } });
@@ -124,5 +124,15 @@ describe("provenanceFor", () => {
   });
   it("only localhost counts as a local host", () => {
     expect([isLocalHost(undefined), isLocalHost("http://localhost:3000"), isLocalHost("http://127.0.0.1:4000"), isLocalHost("https://pr-1.vitalize.build")]).toEqual([true, true, true, false]);
+  });
+});
+
+describe("browserLaunchArgs", () => {
+  it("passes the private-network flags only for preview hosts", () => {
+    expect(browserLaunchArgs("preview")).toEqual(["--disable-features=LocalNetworkAccessChecks,PrivateNetworkAccessRespectPreflightResults,BlockInsecurePrivateNetworkRequests"]);
+    expect(browserLaunchArgs("local")).toEqual([]);
+  });
+  it("returns a fresh array each call", () => {
+    expect(browserLaunchArgs("preview")).not.toBe(browserLaunchArgs("preview"));
   });
 });
