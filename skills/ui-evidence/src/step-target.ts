@@ -12,10 +12,11 @@ export const isPrefixedTarget = (target: string): boolean => target.startsWith(R
 
 /** A trailing `#<n>` (1-based) picks the nth of several matches; without it exactly one must match. */
 function splitNth(label: string): { label: string; nth?: number } | { error: string } {
-  const m = /^(.*)#(\d+)$/s.exec(label);
+  // "Shift #12" (space before #) is a plain name; the index must hug the name: "Day#2".
+  const m = /^(.*\S)#(\d+)$/s.exec(label);
   if (m === null) return { label };
   const nth = Number(m[2]);
-  return nth < 1 ? { error: `#<n> is 1-based: ${label}` } : { label: m[1] as string, nth };
+  return !Number.isSafeInteger(nth) || nth < 1 ? { error: `#<n> must be a 1-based integer: ${label}` } : { label: m[1] as string, nth };
 }
 
 export function parseStepTarget(target: string): StepTarget | { error: string } {

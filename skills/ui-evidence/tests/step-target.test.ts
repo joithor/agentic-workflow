@@ -14,6 +14,10 @@ describe("parseStepTarget", () => {
     expect(parseStepTarget("role:option|07:00-19:30 Day#2")).toEqual({ kind: "role", role: "option", name: "07:00-19:30 Day", nth: 2 });
     expect(parseStepTarget("text:Twin#1")).toEqual({ kind: "text", text: "Twin", nth: 1 });
     expect(parseStepTarget("role:option|A#0")).toHaveProperty("error");
+    expect(parseStepTarget("text:Shift #12")).toEqual({ kind: "text", text: "Shift #12" });
+    expect(parseStepTarget("role:option|Room #4#1")).toEqual({ kind: "role", role: "option", name: "Room #4", nth: 1 });
+    expect(parseStepTarget("role:option|A#99999999999999999999")).toHaveProperty("error");
+    expect(parseStepTarget("text:#2")).toEqual({ kind: "text", text: "#2" });
     expect(parseStepTarget("save#2")).toEqual({ kind: "testId", testId: "save#2" });
     expect(targetLabel("role:option|Delete shift#2")).toBe("Delete shift");
   });
