@@ -160,6 +160,14 @@ describe("executeStep role/text targets", () => {
     expect(await executeStep(page, { action: "fill", target: "role:textbox|Dup", value: "x", expectedState: { kind: "testid-visible", testId: "note-input" } }, fixture.host, never, T)).toBe("broken");
   });
 
+  it("picks the nth of duplicate matches with #<n> and fails clearly when out of range", async () => {
+    const twin = (n: number): ScriptStep => click(`role:button|Twin#${n}`, { kind: "text-visible", text: "Twin" });
+    expect(await executeStep(page, twin(2), fixture.host, never, T)).toBe("passed");
+    expect(await out()).toBe("Twin");
+    expect(await executeStep(page, twin(3), fixture.host, never, T)).toBe("broken");
+    await expect(performAction(page, twin(3), fixture.host, T)).rejects.toThrow(/asked for match #3 but only 2 found/);
+  });
+
   it("never asks the judge to repair a missing role/text target", async () => {
     const repair = vi.fn(async () => null);
     expect(await executeStep(page, click("role:button|Nope", saved), fixture.host, repair, T)).toBe("broken");

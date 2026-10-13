@@ -18,13 +18,22 @@ export type RepairFn = (brokenSelector: string, step: string, candidates: Candid
 
 /**
  * Playwright locators are strict: a locator matching several elements throws on click/fill, so an
- * ambiguous role/text target fails loudly instead of acting on the first match.
+ * ambiguous role/text target fails loudly instead of acting on the first match. An explicit `#<n>`
+ * suffix picks the nth match and fails clearly when fewer than n exist.
  */
-function locateTarget(page: Page, target: string): Locator {
+async function locateTarget(page: Page, target: string, timeout: number): Promise<Locator> {
   const parsed = parseStepTarget(target);
   if ("error" in parsed) throw new Error(parsed.error);
-  if (parsed.kind === "role") return page.getByRole(parsed.role as Parameters<Page["getByRole"]>[0], { name: parsed.name, exact: true });
-  return parsed.kind === "text" ? page.getByText(parsed.text, { exact: true }) : page.getByTestId(parsed.testId);
+  if (parsed.kind === "testId") return page.getByTestId(parsed.testId);
+  const all = parsed.kind === "role" ? page.getByRole(parsed.role as Parameters<Page["getByRole"]>[0], { name: parsed.name, exact: true }) : page.getByText(parsed.text, { exact: true });
+  if (parsed.nth === undefined) return all;
+  const picked = all.nth(parsed.nth - 1);
+  try {
+    await picked.waitFor({ state: "attached", timeout });
+  } catch {
+    throw new Error(`${target}: asked for match #${parsed.nth} but only ${await all.count()} found`);
+  }
+  return picked;
 }
 
 export async function performAction(page: Page, step: ScriptStep, host: string, timeout = 5000): Promise<void> {
@@ -33,9 +42,9 @@ export async function performAction(page: Page, step: ScriptStep, host: string, 
     if (!isSameOriginPath(step.target)) throw new Error(`goto target must be a path on the host: ${step.target}`);
     await page.goto(`${host}${step.target}`);
   } else if (step.action === "click") {
-    await locateTarget(page, step.target).click({ timeout });
+    await (await locateTarget(page, step.target, timeout)).click({ timeout });
   } else if (step.action === "fill") {
-    await locateTarget(page, step.target).fill(step.value ?? "", { timeout });
+    await (await locateTarget(page, step.target, timeout)).fill(step.value ?? "", { timeout });
   } else {
     await page.getByText(step.target).locator("visible=true").first().waitFor({ state: "visible", timeout });
   }

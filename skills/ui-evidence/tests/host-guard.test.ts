@@ -72,6 +72,9 @@ describe("write guard", () => {
   it("catches fused and upper-case write names, and ignores fill steps", () => {
     expect(findWriteSteps([click("role:button|SaveChanges"), click("text:DELETE"), { ...click("role:button|Save"), action: "fill" as const }]).map((w) => w.index)).toEqual([0, 1]);
   });
+  it("reads the name without a #<n> suffix", () => {
+    expect(findWriteSteps([click("role:button|Save#2"), click("role:option|Day#2")]).map((w) => w.index)).toEqual([0]);
+  });
   it("does not read the role word of a role: target as the label", () => {
     expect(findWriteSteps([click("role:button|Unit switcher")])).toEqual([]);
   });

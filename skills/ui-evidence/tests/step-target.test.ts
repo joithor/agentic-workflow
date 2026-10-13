@@ -10,6 +10,13 @@ describe("parseStepTarget", () => {
     expect(parseStepTarget("role:button|Save")).toEqual({ kind: "role", role: "button", name: "Save" });
     expect(parseStepTarget("role:option|A | B")).toEqual({ kind: "role", role: "option", name: "A | B" });
   });
+  it("parses a trailing #<n> as a 1-based nth and keeps the label clean", () => {
+    expect(parseStepTarget("role:option|07:00-19:30 Day#2")).toEqual({ kind: "role", role: "option", name: "07:00-19:30 Day", nth: 2 });
+    expect(parseStepTarget("text:Twin#1")).toEqual({ kind: "text", text: "Twin", nth: 1 });
+    expect(parseStepTarget("role:option|A#0")).toHaveProperty("error");
+    expect(parseStepTarget("save#2")).toEqual({ kind: "testId", testId: "save#2" });
+    expect(targetLabel("role:option|Delete shift#2")).toBe("Delete shift");
+  });
   it("parses text:<text>", () => {
     expect(parseStepTarget("text:Unit 4200")).toEqual({ kind: "text", text: "Unit 4200" });
   });

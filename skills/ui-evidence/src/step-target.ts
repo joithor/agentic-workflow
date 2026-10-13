@@ -2,13 +2,21 @@
 // Pure parsing lives here so the schema, the write guard and the executor agree on one grammar.
 export type StepTarget =
   | { kind: "testId"; testId: string }
-  | { kind: "role"; role: string; name: string }
-  | { kind: "text"; text: string };
+  | { kind: "role"; role: string; name: string; nth?: number }
+  | { kind: "text"; text: string; nth?: number };
 
 const ROLE_PREFIX = "role:";
 const TEXT_PREFIX = "text:";
 
 export const isPrefixedTarget = (target: string): boolean => target.startsWith(ROLE_PREFIX) || target.startsWith(TEXT_PREFIX);
+
+/** A trailing `#<n>` (1-based) picks the nth of several matches; without it exactly one must match. */
+function splitNth(label: string): { label: string; nth?: number } | { error: string } {
+  const m = /^(.*)#(\d+)$/s.exec(label);
+  if (m === null) return { label };
+  const nth = Number(m[2]);
+  return nth < 1 ? { error: `#<n> is 1-based: ${label}` } : { label: m[1] as string, nth };
+}
 
 export function parseStepTarget(target: string): StepTarget | { error: string } {
   // "Role:button|Save" or " text:Save" would silently become a test id and miss: reject the near-miss.
@@ -17,12 +25,14 @@ export function parseStepTarget(target: string): StepTarget | { error: string } 
     const rest = target.slice(ROLE_PREFIX.length);
     const bar = rest.indexOf("|");
     const role = bar < 0 ? "" : rest.slice(0, bar).trim();
-    const name = bar < 0 ? "" : rest.slice(bar + 1);
-    return !/^[a-z]+$/.test(role) || name.trim() === "" ? { error: `role target must be "role:<lower-case role>|<accessible name>": ${target}` } : { kind: "role", role, name };
+    const split = splitNth(bar < 0 ? "" : rest.slice(bar + 1));
+    if ("error" in split) return split;
+    return !/^[a-z]+$/.test(role) || split.label.trim() === "" ? { error: `role target must be "role:<lower-case role>|<accessible name>[#<n>]": ${target}` } : { kind: "role", role, name: split.label, ...(split.nth === undefined ? {} : { nth: split.nth }) };
   }
   if (target.startsWith(TEXT_PREFIX)) {
-    const text = target.slice(TEXT_PREFIX.length);
-    return text.trim() === "" ? { error: `text target must be "text:<text>": ${target}` } : { kind: "text", text };
+    const split = splitNth(target.slice(TEXT_PREFIX.length));
+    if ("error" in split) return split;
+    return split.label.trim() === "" ? { error: `text target must be "text:<text>[#<n>]": ${target}` } : { kind: "text", text: split.label, ...(split.nth === undefined ? {} : { nth: split.nth }) };
   }
   return { kind: "testId", testId: target };
 }
