@@ -168,3 +168,23 @@ describe("executeStep scroll", () => {
     expect(repair).not.toHaveBeenCalled();
   });
 });
+
+describe("executeStep index", () => {
+  it("index 1 clicks the second of several repeated test ids", async () => {
+    const step: ScriptStep = { action: "click", target: "row-open", index: 1, expectedState: { kind: "text-visible", text: "Opened 1" } };
+    expect(await executeStep(page, step, fixture.host, never, T)).toBe("passed");
+    expect(await out()).toBe("Opened 1");
+  });
+
+  it("without index a duplicated test id is not clicked and still goes to repair", async () => {
+    const repair: RepairFn = vi.fn(async () => null);
+    expect(await executeStep(page, click("row-open", { kind: "text-visible", text: "Opened 0" }), fixture.host, repair, T)).toBe("broken");
+    expect(repair).toHaveBeenCalled();
+    expect(await out()).toBe("");
+  }, 20_000);
+
+  it("an index past the last match is broken", async () => {
+    const step: ScriptStep = { action: "click", target: "row-open", index: 5, expectedState: { kind: "text-visible", text: "Opened 1" } };
+    expect(await executeStep(page, step, fixture.host, async () => null, T)).toBe("broken");
+  }, 20_000);
+});

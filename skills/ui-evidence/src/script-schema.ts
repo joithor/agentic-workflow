@@ -22,9 +22,14 @@ export const ScriptStepSchema = z
     action: z.enum(["goto", "click", "fill", "expect-visible", "scroll"]),
     target: z.string(),
     value: z.string().optional(),
+    /** Picks the nth match (0-based) when a data-testid repeats; click, fill and scroll only. */
+    index: z.number().int().nonnegative().optional(),
     expectedState: ExpectedStateSchema,
   })
   .superRefine((step, ctx) => {
+    if (step.index !== undefined && step.action !== "click" && step.action !== "fill" && step.action !== "scroll") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["index"], message: "index is only allowed for click, fill and scroll steps" });
+    }
     if (step.action === "scroll" && step.value !== undefined && !SCROLL_VALUE.test(step.value)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["value"], message: 'scroll value must be "end", "start", "bottom", "top" or a non-negative integer pixel offset' });
     }

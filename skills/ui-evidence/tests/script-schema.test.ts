@@ -18,6 +18,18 @@ describe("scroll step", () => {
   });
 });
 
+describe("step index", () => {
+  it.each(["click", "fill", "scroll"])("accepts index 0 and 3 on %s", (action) => {
+    for (const index of [0, 3]) expect(parseUiScript(scriptWith({}, [{ action, target: "c", index, expectedState: exp }]))).not.toHaveProperty("error");
+  });
+  it.each(["goto", "expect-visible"])("rejects index on %s", (action) => {
+    expect(parseUiScript(scriptWith({}, [{ action, target: "/c", index: 1, expectedState: exp }]))).toHaveProperty("error");
+  });
+  it.each([-1, 1.5, "1"])("rejects index %j", (index) => {
+    expect(parseUiScript(scriptWith({}, [{ action: "click", target: "c", index, expectedState: exp }]))).toHaveProperty("error");
+  });
+});
+
 describe("script login", () => {
   it("parses the env-var-only form with web-app defaults and an explicit form", () => {
     const r = parseUiScript(scriptWith({ login: { emailEnv: "ADMIN_EMAIL", passwordEnv: "ADMIN_PASSWORD" } }, [{ action: "goto", target: "/x", expectedState: exp }, { action: "scroll", target: "schedule-view-scroll-container", value: "end", expectedState: exp }]));
