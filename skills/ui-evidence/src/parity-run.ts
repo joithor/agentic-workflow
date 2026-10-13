@@ -9,6 +9,7 @@ import path from "node:path";
 import { chromium, type Locator, type Page } from "playwright";
 import { PNG } from "pngjs";
 
+import { signIn } from "./login.js";
 import { isOffOriginNavigation, provenanceFor, readCredentials, redact } from "./host-guard.js";
 import {
   buildParityEntry,
@@ -62,18 +63,6 @@ async function prepareCapture(page: Page, m: DesignManifest): Promise<void> {
     });
   });
   await settle(page, m.settleMs);
-}
-
-async function signIn(page: Page, m: DesignManifest, host: string, secrets: { email: string; password: string }): Promise<void> {
-  const l = m.login!;
-  await page.goto(host, { waitUntil: "load", timeout: 120_000 });
-  await page.locator(l.emailSelector).waitFor({ state: "visible", timeout: 120_000 });
-  await page.locator(l.emailSelector).fill(secrets.email);
-  if (l.nextSelector !== undefined) await page.locator(l.nextSelector).click();
-  await page.locator(l.passwordSelector).waitFor({ state: "visible", timeout: 60_000 });
-  await page.locator(l.passwordSelector).fill(secrets.password);
-  await page.locator(l.submitSelector).click({ force: true });
-  await page.waitForURL((u) => !u.pathname.includes(l.loginPath), { timeout: 60_000 });
 }
 
 async function measure(page: Page, selectors: Selector[], timeout: number): Promise<Map<string, Box | null>> {
@@ -154,7 +143,7 @@ export async function runParity(m: DesignManifest, runDir: string, opts: ParityR
     const page = await context.newPage();
     const frames: Record<string, ParityEntry> = {};
     try {
-      if (creds !== null) await signIn(page, m, opts.host, creds);
+      if (creds !== null) await signIn(page, m.login!, opts.host, creds);
       await page.goto(`${opts.host}${m.route}`, { waitUntil: "load", timeout: 120_000 });
       // A text-absent check straight after goto would pass on the loading spinner; wait for a known-present element first.
       await locate(page, m.ready).waitFor({ state: "visible", timeout: m.timeoutMs });

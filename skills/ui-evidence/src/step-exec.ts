@@ -24,9 +24,30 @@ export async function performAction(page: Page, step: ScriptStep, host: string, 
     await page.getByTestId(step.target).click({ timeout });
   } else if (step.action === "fill") {
     await page.getByTestId(step.target).fill(step.value ?? "", { timeout });
+  } else if (step.action === "scroll") {
+    await scrollContainer(page, step, timeout);
   } else {
     await page.getByText(step.target).locator("visible=true").first().waitFor({ state: "visible", timeout });
   }
+}
+
+const SCROLL_SETTLE_MS = 300;
+
+/** Scrolls the data-testid container (read-only), then lets lazy layout settle. A missing target throws, so the step is broken. */
+async function scrollContainer(page: Page, step: ScriptStep, timeout: number): Promise<void> {
+  if (step.target === "") throw new Error("scroll needs a data-testid target");
+  const position = step.value ?? "end";
+  const el = page.getByTestId(step.target);
+  await el.waitFor({ state: "visible", timeout });
+  await el.evaluate((node, pos) => {
+    if (pos === "end") node.scrollLeft = node.scrollWidth;
+    else if (pos === "start") node.scrollLeft = 0;
+    else if (pos === "bottom") node.scrollTop = node.scrollHeight;
+    else if (pos === "top") node.scrollTop = 0;
+    else node.scrollLeft = Number(pos);
+  }, position);
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+  await page.waitForTimeout(SCROLL_SETTLE_MS);
 }
 
 /** Currently-visible interactive elements; `index` is the DOM-order position. */

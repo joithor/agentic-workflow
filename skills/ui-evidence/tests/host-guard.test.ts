@@ -66,6 +66,11 @@ describe("write guard", () => {
   it("does not trip on words that merely contain a write word", () => {
     expect(findWriteSteps([click("preview-manage-staffing-toggle"), click("postal-code-help"), click("address-line")])).toEqual([]);
   });
+  it("never flags a read-only scroll step, whatever its target reads like", () => {
+    const exp = { kind: "testid-visible" as const, testId: "y" };
+    expect(findWriteSteps([{ action: "scroll", target: "save-panel-scroll", value: "end", expectedState: exp }])).toEqual([]);
+    expect(guardWrites([{ action: "scroll", target: "schedule-view-scroll-container", expectedState: exp }], false)).toEqual({ ok: true });
+  });
   it("refuses with the offending steps unless writes are allowed", () => {
     const steps = [click("a"), click("submit-form")];
     expect(guardWrites(steps, false)).toEqual({ ok: false, error: "refusing write-looking steps without --allow-writes: #2 click submit-form" });

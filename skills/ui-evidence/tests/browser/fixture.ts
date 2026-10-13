@@ -9,6 +9,7 @@ const PAGE = `<!doctype html><html><body>
 <button data-testid="save-renamed" onclick="document.getElementById('out').textContent='Saved!'">Save</button>
 <button data-testid="noop" onclick="void 0">Do nothing</button>
 <button data-testid="hidden-btn" style="display:none" onclick="document.getElementById('out').textContent='Saved!'">Hidden save</button>
+<div data-testid="hscroll" style="width:200px;height:60px;overflow:auto"><div style="width:1000px;height:300px">wide</div></div>
 <div id="out"></div>
 </body></html>`;
 

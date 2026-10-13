@@ -130,3 +130,41 @@ describe("executeStep selector repair", () => {
     expect(await executeStep(page, brokenClick, fixture.host, repair, T)).toBe("broken");
   }, 20_000);
 });
+
+describe("executeStep scroll", () => {
+  const scroll = (target: string, value: string | undefined, expectedState: ScriptStep["expectedState"] = { kind: "testid-visible", testId: "hscroll" }): ScriptStep => ({ action: "scroll", target, ...(value !== undefined ? { value } : {}), expectedState });
+  const pos = (): Promise<{ left: number; top: number; max: number; maxTop: number }> =>
+    page.getByTestId("hscroll").evaluate((n) => ({ left: n.scrollLeft, top: n.scrollTop, max: n.scrollWidth - n.clientWidth, maxTop: n.scrollHeight - n.clientHeight }));
+
+  it("scrolls to the end by default and for \"end\"", async () => {
+    expect(await executeStep(page, scroll("hscroll", undefined), fixture.host, never, T)).toBe("passed");
+    const p = await pos();
+    expect(p.max).toBeGreaterThan(0);
+    expect(p.left).toBe(p.max);
+  });
+
+  it("scrolls back to start, to a pixel offset, to the bottom and to the top", async () => {
+    await executeStep(page, scroll("hscroll", "end"), fixture.host, never, T);
+    await executeStep(page, scroll("hscroll", "start"), fixture.host, never, T);
+    expect((await pos()).left).toBe(0);
+    await executeStep(page, scroll("hscroll", "120"), fixture.host, never, T);
+    expect((await pos()).left).toBe(120);
+    await executeStep(page, scroll("hscroll", "bottom"), fixture.host, never, T);
+    const p = await pos();
+    expect(p.maxTop).toBeGreaterThan(0);
+    expect(p.top).toBe(p.maxTop);
+    await executeStep(page, scroll("hscroll", "top"), fixture.host, never, T);
+    expect((await pos()).top).toBe(0);
+  });
+
+  it("FAILS when the expected state does not hold after the scroll", async () => {
+    expect(await executeStep(page, scroll("hscroll", "end", { kind: "text-visible", text: "Nope" }), fixture.host, never, T)).toBe("failed");
+  });
+
+  it("is broken (and never repaired) for a missing or empty target", async () => {
+    const repair: RepairFn = vi.fn(async () => null);
+    expect(await executeStep(page, scroll("no-such-container", "end"), fixture.host, repair, T)).toBe("broken");
+    expect(await executeStep(page, scroll("", "end"), fixture.host, repair, T)).toBe("broken");
+    expect(repair).not.toHaveBeenCalled();
+  });
+});

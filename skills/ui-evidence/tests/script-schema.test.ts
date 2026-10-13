@@ -2,6 +2,43 @@ import { describe, expect, it } from "vitest";
 
 import { describeExpectedState, parseUiScript } from "../src/script-schema.js";
 
+const exp = { kind: "testid-visible", testId: "y" };
+const scriptWith = (extra: object, steps: unknown[] = [{ action: "goto", target: "/x", expectedState: exp }]): unknown => ({ route: "/", role: "manager", viewports: ["desktop"], steps, ...extra });
+
+describe("scroll step", () => {
+  it.each([undefined, "end", "start", "top", "bottom", "0", "480"])("accepts value %s", (value) => {
+    const step = { action: "scroll", target: "schedule-view-scroll-container", ...(value !== undefined ? { value } : {}), expectedState: exp };
+    expect(parseUiScript(scriptWith({}, [step]))).not.toHaveProperty("error");
+  });
+  it.each(["middle", "-5", "1.5", "", "10px"])("rejects value %j", (value) => {
+    expect(parseUiScript(scriptWith({}, [{ action: "scroll", target: "c", value, expectedState: exp }]))).toHaveProperty("error");
+  });
+  it("leaves other actions' values unconstrained", () => {
+    expect(parseUiScript(scriptWith({}, [{ action: "fill", target: "c", value: "middle", expectedState: exp }]))).not.toHaveProperty("error");
+  });
+});
+
+describe("script login", () => {
+  it("parses the env-var-only form with web-app defaults and an explicit form", () => {
+    const r = parseUiScript(scriptWith({ login: { emailEnv: "ADMIN_EMAIL", passwordEnv: "ADMIN_PASSWORD" } }, [{ action: "goto", target: "/x", expectedState: exp }, { action: "scroll", target: "schedule-view-scroll-container", value: "end", expectedState: exp }]));
+    expect(r).toMatchObject({ login: { emailSelector: 'input[name="contact"]', passwordSelector: 'input[name="password"]', nextSelector: 'button[type="submit"]', submitSelector: 'button[type="submit"]', loginPath: "/login" } });
+    const full = { emailEnv: "E", passwordEnv: "P", emailSelector: "a", passwordSelector: "b", nextSelector: "n", submitSelector: "s", loginPath: "/signin" };
+    expect(parseUiScript(scriptWith({ login: full }))).toMatchObject({ login: full });
+  });
+  it.each([
+    ["a literal email as the env name", { emailEnv: "me@x.com", passwordEnv: "P" }],
+    ["a lower-case env name", { emailEnv: "E", passwordEnv: "p" }],
+    ["a missing password env", { emailEnv: "E" }],
+    ["a misspelt key", { emailEnv: "E", passwordEnv: "P", loginpath: "/x" }],
+    ["a literal password key", { emailEnv: "E", passwordEnv: "P", password: "hunter2" }],
+  ])("rejects %s", (_n, login) => {
+    expect(parseUiScript(scriptWith({ login }))).toHaveProperty("error");
+  });
+  it("is optional", () => {
+    expect(parseUiScript(scriptWith({}))).not.toHaveProperty("login");
+  });
+});
+
 describe("parseUiScript", () => {
   it("parses a valid script", () => {
     const result = parseUiScript({
