@@ -104,3 +104,19 @@ full width under 1100 px, note it in a comment), optimize (no fonts beyond the t
 - "1 (exit 1)" → "1 · exit 1"; "escalate TO fired" → "escalate timeout fired".
 - The services placeholder becomes the real services table header line with "5/6 ok · 1 failed (index)".
 - Initial focus on "Run again" stays (it is the fix).
+
+## Wave 3: the second critique's P1s (owner, 2026-10-14)
+
+Source: `impeccable-critique.md`, run 2. Apply in every file where the element appears.
+
+1. **Attach means one thing.** Under every Attach button the fixture sentence; Home's "Attach pauses automation (a
+   takeover)" and Agents' legend line are replaced by it. Take over keeps its own button where the action set has it.
+2. **Not-yet-wired actions use one pattern.** The decision row's sentence becomes the fixture's; Accept stays live.
+   Any other control that waits on an API phase is disabled with the dashed pending chip (as Run again is).
+3. **Fixture drift.** Recipes gains `workflow.project` as the first row (nav count Recipes 8 in all eleven files, page
+   title and totals per fixture.md); the inspector's list behind gains the same row; the engine table has the eight
+   rows and `activities 4 running`; `code index ✕ 03:00` on Context, the file map and System's graph and impact panel;
+   INC-14's NOW and `PRD-exports.md` per fixture.md in the lists behind both workflow sheets.
+4. **One behind-sheet rule.** Workflows (behind workflow-project and workflow-incident), Work (behind item-sheet) and
+   Recipes (behind recipe-inspector) all reflow to the narrow live list: id · title · state, full-width headers, no
+   scrim, no `inert`, no sliced columns.

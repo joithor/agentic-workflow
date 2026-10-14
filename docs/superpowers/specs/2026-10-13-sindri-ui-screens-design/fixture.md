@@ -11,7 +11,7 @@ repeats it). "Healthy" appears nowhere in this fixture.
 
 ## Navigation counts
 
-Home · Workflows **12** · Work **12** · Recipes **7** · Context · Agents **4** · System
+Home · Workflows **12** · Work **12** · Recipes **8** · Context · Agents **4** · System
 
 ## Items (Work = 12 items)
 
@@ -82,21 +82,19 @@ Home's Workflows strip: `WORKFLOWS 12 open`, rows INC-14, sentry #8812, PRJ-sync
 separately. Waiting on you: ITM-01JC8 (parked), ITM-01JB4 (escalated). Budget today: Claude Code $3.10 / $8.00,
 Codex $1.02 / $4.00, Cursor $0.00 / $2.00 (cursor not found on this host), total $4.12 / $14.00.
 
-## Recipes (7)
+## Recipes (8)
 
-As drawn in the spec §4.3; `scoping.project` is "changed since approval" (pinned block step.scope.draft v2 → v3).
+As drawn in the spec §4.3 plus **`workflow.project`** (the root recipe the three Linear projects run: `● approved · open 3 · runs 9 · done 5 · failed 1 · human 67% · median 2d 4h · tokens/run 1.9M · last change 10-06 v12`), listed first. `scoping.project` is "changed since approval" (pinned block step.scope.draft v2 → v3). The page title reads `Recipes 8 · 30 days · 193 runs · 80% done without you`.
 
 ## Context
 
 Map v13 current, draft v14 (46 proposals: 31 deterministic, 15 model; 3 orphaned links). Anchor
 `feature:tabs.tab-manager`. Sources: linear ● synced 2m ago; linear:doc ● 2m ago; slack ◐ 2h behind; onyx ◐ 2h
-behind; git ● 12:21 (code index ✕ nightly failed SND-INDEX-012; symbols lens "index not built until CTX phase 9").
+behind; git ● 12:21 (last fetch). The **code index failed at the 03:00 nightly build** (SND-INDEX-012, graphify timed out): every page says `code index ✕ 03:00`, never 12:21; the symbols lens reads "index not built until CTX phase 9".
 
 ## System
 
-Degraded: code index ✕ (nightly 03:00, SND-INDEX-012), Onyx ◐ 2h behind, cursor ○ not found. Engine: 4 open on
-Temporal (ITM-01JE7, ITM-01JE9, ITM-01JC8, ITM-01JB4) plus the roots PRJ-sync, PRJ-tabs, PRJ-exports, INC-14 and
-the triage instances; the engine table lists the six rows drawn in §4.6 with ITM-01JD9 and ITM-01JD6 added.
+Degraded: code index ✕ (nightly 03:00, SND-INDEX-012), Onyx ◐ 2h behind, cursor ○ not found. Engine: the worker line reads `activities 4 running` (JE7, JD9, JE9, JD6); the engine table has eight rows: ITM-01JE7, ITM-01JD9, ITM-01JE9, ITM-01JD6, ITM-01JC8, ITM-01JB4, PRJ-tabs, INC-14 (the other roots are collapsed as `… 4 more open`).
 
 ## Glyph vocabulary (one legend, every page)
 
@@ -112,3 +110,16 @@ A locked secondary button: lock glyph, the verb, a middle dot, "terminal": `⌂ 
 `⌂ Accept · terminal`, `⌂ Approve · terminal`, `⌂ Re-approve · terminal`, `⌂ Promote · terminal`. Its `title` is
 "Needs a typed confirmation at a terminal"; the copyable `$ sindri …` line sits under it where the row has room.
 Never prose, never a dash.
+
+## Sentences that must read the same on every page
+
+- **Attach** (the spec's X55 rule): `Attach joins the live session; your first keystroke takes it over.` That line sits under
+  every Attach button, on Home, Agents and the sheets. Take over is a separate button that pauses the automation at once.
+- **The decision row** (REQ-01JD4): `Accept records your decision now; the engine acts on it when the workflow runs.` Accept
+  stays a live primary (recording is API P4, served); a control whose API phase hasn't landed uses the pending pattern
+  (disabled, with the dashed "Available with API Pn" chip), never a live-looking button.
+- **INC-14's NOW**: `agent rolling back in ITM-01JG2 · comms posting`, everywhere the row appears (Home strip, Workflows,
+  and the lists behind the sheets).
+- **PRJ-exports' input**: `PRD-exports.md`, never `PRD-exports`.
+- **Behind a sheet** (one rule): the list reflows to a narrow live list (id, title, state) with no scrim and no slicing;
+  headers never cut mid-word. The same on Workflows, Work and Recipes.
