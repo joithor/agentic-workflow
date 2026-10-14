@@ -656,7 +656,7 @@ one API §6 reads. The probe records the whole process ancestry, not just names:
 Cursor's app hosts both the human's terminal and its agent, so the parent-process check matches the ancestry pattern
 the probe pinned. A variable that humans also see is excluded. `sindri doctor` re-probes Claude Code, and **warns**
 (never `ok`) when the Codex or Cursor version differs from the pinned probe; those probes are **(owner)** steps in P2,
-run with `sindri-prove.sh human doctor --probe` inside each harness. A refusal (`SND-AUTH-002`) names the variable or
+run with `sindri-prove.sh doctor --probe` inside each harness. A refusal (`SND-AUTH-002`) names the variable or
 process it found, so a human in an IDE terminal knows why. The table is honest-mistake grade (A 17.28.3).
 
 ### 6.3 Verbs

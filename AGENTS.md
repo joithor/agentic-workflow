@@ -164,6 +164,7 @@ bash scripts/tests/ci-changed-areas.test.sh
 bash scripts/tests/ci-bash-tests.test.sh
 bash scripts/tests/ci-lane-budgets.test.sh
 bash scripts/tests/ci-no-any.test.sh
+bash scripts/tests/sindri-smoke-normalize.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh

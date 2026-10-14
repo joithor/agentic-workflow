@@ -53,10 +53,13 @@ internal static partial class EndpointCqrsRules
     /// <summary>'METHOD /route' with parameter names dropped ('{itemId}' → '{}').</summary>
     public static IEnumerable<string> Routes(RouteEndpoint endpoint)
     {
-        var route = Parameter.Replace(endpoint.RoutePattern.RawText ?? string.Empty, "{}");
+        var route = Normalize(endpoint.RoutePattern.RawText ?? string.Empty);
         var methods = endpoint.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods ?? ["*"];
         return methods.Select(method => method + " " + route);
     }
+
+    /// <summary>A route with each '{parameter}' written as '{}', so a catalog row's route compares with the mapped pattern.</summary>
+    public static string Normalize(string route) => Parameter.Replace(route, "{}");
 
     private static IEnumerable<string> Violations(RouteEndpoint endpoint, ICommandCatalog catalog)
     {

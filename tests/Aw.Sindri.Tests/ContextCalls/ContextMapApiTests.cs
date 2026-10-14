@@ -116,7 +116,7 @@ public sealed class ContextMapApiTests
             + $"context:\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n";
         var host = await GoldenHost.Start(temporary: true, ct, yaml);
         var hash = (await host.LiveHash(ct)).Value;
-        var approved = await host.Http.Ask(Post("/sindri/profile/approve", $"{{\"hash\":\"{hash}\",\"confirmed\":true}}", Human(host.Token.Value)));
+        var approved = await host.Http.Ask(Post("/sindri/profile/approve", await ApiScenarios.Confirmed(host, hash), Human(host.Token.Value)));   // the S1-D5 challenge
         Assert.Equal(HttpStatusCode.OK, approved.Status);
         return host;
     }

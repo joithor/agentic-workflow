@@ -18,14 +18,20 @@ internal static class EndpointTable
         _ = queries.MapGetContextSources();
         _ = queries.MapGetStatus();
         _ = queries.MapListCommands();
+        _ = queries.MapListRecipes();
         _ = queries.MapPingProcess();
         _ = queries.MapQueryContext();
+        _ = queries.MapShowRecipe();
         _ = queries.MapStreamEvents();
 
         // ---- commands: one line per slice, sorted ----
         _ = commands.MapApproveProfile();
         _ = commands.MapImportContextMap();
         _ = commands.MapStopProcess();
+        _ = commands.MapApproveRecipe();
+        _ = commands.MapRevokeRecipe();
+        _ = commands.MapIssueChallenge();
+        _ = commands.MapRegisterRecipe();
         return app;
     }
 }

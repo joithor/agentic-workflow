@@ -279,8 +279,9 @@ days), never the store or the ledger. It is a query because the API spec lists i
 command or event describes; a later file-writing route should not take it as a precedent without the same reasons.
 Import and preview refuse a session-kind caller in the engine too (SND-CONTEXT-020), whatever surface reaches them.
 
-**Not on this base:** the API lane's shared challenge. The import is shaped like `profile approve` (human, terminal,
-content hash, `confirmed`) and adopts the challenge when that lane ships it.
+**Still to adopt:** the engine's shared challenge, which shipped with engine P2 (`POST /sindri/workflow/challenges`;
+`profile approve` uses it). The import still confirms with a human at a terminal, the content hash and `confirmed`;
+moving it onto the challenge is a follow-up, and `ProtectedCommandTests` names it as the one exemption until then.
 
 ### Store
 
