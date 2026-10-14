@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -17,14 +18,29 @@ namespace Aw.Architecture.Tests;
 public sealed class ProtectedCommandTests
 {
     /// <summary>
-    /// Protected rows that confirm another way, each with its reason. ImportContextMap (context spec S-3a, merged after
-    /// S1-D5) confirms with the previewed hash and a 'confirmed' flag; moving it onto the server challenge is the owner's
-    /// call (PR #191, needs owner). It is still terminal-bound, which the first assertion checks.
+    /// Protected rows that don't redeem the challenge yet, each with its owning lane, its reason and the date the waiver
+    /// ends. ImportContextMap: X30 (docs/sindri/README.md) makes map import 'protected' with the shared challenge, but the
+    /// context lane's S-3a request (merged after S1-D5) still confirms with the previewed hash and a 'confirmed' flag
+    /// (ImportContextMapRequest). The context lane owns that code, so the engine lanes don't change it; this waiver lets the
+    /// rest of the rule hold meanwhile. It is still terminal-bound, which the first assertion checks, and
+    /// <see cref="Every_waiver_is_still_open"/> fails once its date passes, so it can't outlive the fix silently.
     /// </summary>
-    private static readonly Dictionary<string, string> _confirmsOtherwise = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, Waiver> _waived = new(StringComparer.Ordinal)
     {
-        ["ImportContextMap"] = "confirms the previewed map hash with 'confirmed' (context spec S-3a); the S1-D5 challenge for it is an owner decision",
+        ["ImportContextMap"] = new(
+            Owner: "context lane (context spec S-3a, §8.7)",
+            Reason: "confirms the previewed map hash with 'confirmed', not the S1-D5 challenge X30 requires",
+            Until: new DateOnly(2026, 10, 27)),
     };
+
+    [Fact]
+    public void Every_waiver_is_still_open()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var lapsed = _waived.Where(w => w.Value.Until < today).Select(w => $"{w.Key} (owner: {w.Value.Owner}; lapsed {w.Value.Until.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)})").ToList();
+
+        Assert.True(lapsed.Count == 0, $"challenge waivers past their date: [{string.Join(", ", lapsed)}]. Fix: the owning lane moves the request onto {nameof(ChallengeAnswer)}, then drop the waiver");
+    }
 
     [Fact]
     public void Every_protected_engine_command_requires_the_challenge()
@@ -33,7 +49,7 @@ public sealed class ProtectedCommandTests
 
         var unbound = rows.Where(r => !r.NeedsTerminal).Select(r => $"{r.Action.Value} isn't terminal-bound").ToList();
         var unchallenged = rows
-            .Where(r => r.CommandType is { } type && !Redeems(type) && !_confirmsOtherwise.ContainsKey(r.Action.Value))
+            .Where(r => r.CommandType is { } type && !Redeems(type) && !_waived.ContainsKey(r.Action.Value))
             .Select(r => r.Action.Value)
             .Order(StringComparer.Ordinal)
             .ToList();
@@ -96,4 +112,10 @@ public sealed class ProtectedCommandTests
 
         return strings;
     }
+
+    /// <summary>A protected row's time-boxed exemption from the challenge rule.</summary>
+    /// <param name="Owner">The lane that owns the request and its fix.</param>
+    /// <param name="Reason">Why it doesn't redeem the challenge yet.</param>
+    /// <param name="Until">The last day the waiver holds.</param>
+    private sealed record Waiver(string Owner, string Reason, DateOnly Until);
 }
