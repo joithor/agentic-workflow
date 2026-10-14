@@ -517,13 +517,13 @@ Engine spec rev 8.1 §5.1–§5.6, "Phase 4". The P4 contract fixes the interfac
 | Ledger mirror (§5.6) | `RecordEvent`, a local activity keyed `workflow:{workflow id}:{run id}:{activity id}` | `RecordEventActivities` |
 | Client port | `IInstanceRuntime`: `Start` (UseExisting), `Get` (the Query), `Send` (the Update the trigger names, with the nonce as its id), `Signal` (the bridge) | Core port; `TemporalInstanceRuntime` |
 | Items | `IItems.Resolve` (an ItemId or a tracker alias). The stub `SelfItems` stands in until API P3 lands | Core port; `Aw.Sindri.Workflows` |
-| Approved recipes | `IApprovedRecipes` (`Latest`, `Find`, `Check`) is a minimal read port, used because P2's `IRecipeApprovals` isn't on main yet. The stub `HomeApprovedRecipes` reads `<home>/recipes/<id>.yaml` and treats each file as approved | same |
+| Approved recipes | `IApprovedRecipes` (`Latest`, `Find`, `Check`) is the minimal read port the interpreter and the start and command slices use. `RegistryApprovedRecipes` implements it over P2's registry (`IRecipeStore`, `IRecipeApprovals`): a recipe starts only when it is registered and its latest approval isn't revoked (`SND-RECIPE-003`) | `Aw.Sindri.Core/Workflow/Registry` |
 
-At the contract, the bodies of the Updates and validators, the `IInstanceRuntime` methods, and the `workflow` verbs
-other than `list` are stubs that throw `NotSupportedException`. A rejected Update records nothing. `RecipeWorkflowTests`
-pins the interface that works at the contract: the desk task 1.1 with its declared outcomes through the Query,
-`allowedCommands`, the ledger key, and replay. `PhaseFourSignalTests` is phase 4 signal 1, and it is red until units
-(b) and (e) land.
+The Updates, their validators, the `IInstanceRuntime` methods and every `workflow` verb are built. The one stub left on
+this path is the `takeover` / `handback` Update, which `TemporalInstanceRuntime.Send` refuses until P5. A rejected
+Update records nothing. `RecipeWorkflowTests` pins the interface (the desk task 1.1 with its declared outcomes through
+the Query, `allowedCommands`, the ledger key, and replay), and `PhaseFourSignalTests` (integration) is phase 4 signal 1:
+start `workflow.step` on an item, then status shows the desk task with run 1.1.
 
 **The state loop (unit (a)).** `RunAsync` loads the recipe, enters `initial`, then repeats until a terminal state: an
 active state runs its desk Step (`RunDeskStep`, unit (c)); a wait state, a park, an escalation or a takeover waits
@@ -554,7 +554,7 @@ Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and 
 | Verb | Slice | What it reads | Prints |
 |---|---|---|---|
 | `workflow status <address> [--json]` | `GetInstance` | the `GetInstance` Query (`TemporalInstanceRuntime.Get`); an ended instance answers too | the §6.4 layout, or the `InstanceView` as JSON. Exit 2 with `SND-WF-001` for no such instance, `SND-API-002` when no worker answers in 10 s |
-| `workflow list [--needs-me \| --item <id> \| --state <s>] [--query <q>] [--json]` | `ListInstances` | a visibility query on the search attributes, then each row's `GetInstance` | one status header per line; `--needs-me` prints **Decisions** (parks, escalations, takeovers) then **Tasks** (open desk tasks), each under its heading. Empty: `nothing needs you` (`--needs-me`) or `no instances match`; exit 0 |
+| `workflow list [--needs-me \| --item <id> \| --state <s>] [--query <q>] [--json]` | `ListInstances` | a visibility query on the search attributes, then each row's `GetInstance` | one status header per line; `--needs-me` prints **Decisions** (parks and escalations; a takeover isn't listed, since `NeedsYou` is false while taken over, until P5's idle takeover sets it) then **Tasks** (open desk tasks), each under its heading. Empty: `nothing needs you` (`--needs-me`) or `no instances match`; exit 0 |
 | `workflow events <address> [--follow] [--json]` | `GetInstanceEvents` | the ledger through `ILedgerReader`, never Temporal's history | one line per event: `seq  MM-dd HH:mm:ss  type  from -> to  trigger outcome  run r  actor`; `no events`. `--follow` reads after its cursor every second until interrupted |
 
 - **`--needs-me` is a stand-in.** `GET /needs-you` (API P4) isn't built yet, so `ListInstances` serves it with the
@@ -590,8 +590,9 @@ Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and 
   duration (`1m`, `4h`, `2d`); a profile without a `workflow:` block keeps the canonical JSON (and so the hash) it had.
   The worker reads them through `ProfileWorkflowTimes`: `LoadRecipe` reads both when an instance starts, so the desk
   floor (unit (c)) and the interpreter's `eventHold` expiry come from history and a replay sees the same values. The dev profile sets `deskTimeout: 1m`.
-- **Not yet:** approving a recipe runs its evals once engine P2's approval lands: the named hook is the Core port `IApprovalEvals` (SND-RECIPE-008 when an eval is missing or failing), which P2's `ApproveRecipe` calls before it
-  records the approval; it is bound when that slice lands, by moving `EvalRecipe`'s case running into Core.
+- **Not yet:** approval doesn't run a recipe's evals. P2's `ApproveRecipe` only checks that the recipe declares them
+  (`SND-RECIPE-008`); the Core port `IApprovalEvals` names the hook and has no implementation or caller yet. Binding it
+  (moving `EvalRecipe`'s case running into Core) is a later phase's work.
   `workflow events` reads the ledger directly until API P3's item timeline exists.
 
 ## The event bridge (engine P4 unit (d))
@@ -635,8 +636,7 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   an answer prints the resume action it ran (`resumed (transition): -> produce`).
 - **In the workflow**, each validator runs P3's pure `TransitionDecision` on the instance as it stands and rejects what
   it rejects (an answer that doesn't fit is `SND-WF-003`, its fix naming the answer that does), so nothing is recorded.
-  An accepted Update hands its trigger to the loop through `Submit` (unit (a)'s seam; `RecipeWorkflow.Loop.cs` is unit
-  (b)'s stand-in with (a)'s names). The desk wait wakes for a submitted command as well as for the report. An answer
+  An accepted Update hands its trigger to the loop through `Submit` (`RecipeWorkflow.Loop.cs`). The desk wait wakes for a submitted command as well as for the report. An answer
   that ends a suspension clears the desk deadline, so `--resume` on a timeout park re-arms it from the answer.
 - **`IssueNonce`** returns a nonce for an existing instance (class issue). API P1 has no nonce table yet, so the
   `POST /workflow/instances/{instanceId}/nonce` route issues them from unit (c)'s `HomeCommandNonces` stand-in.
