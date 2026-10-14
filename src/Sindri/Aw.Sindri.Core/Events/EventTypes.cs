@@ -28,6 +28,8 @@ public static class EventTypes
 
     /// <summary>A recipe hash was revoked, directly or by a cascade (engine spec §4.1).</summary>
     public const string RecipeRevoked = "recipe.revoked";
+    /// <summary>The context engine refreshed its snapshot sources (context spec §3; the context-docs-refresh service).</summary>
+    public const string ContextSourcesSynced = "context.sources.synced";
 
     /// <summary>A command attempt reached the chain: its audit row (not public).</summary>
     public const string CommandHandled = "command.handled";

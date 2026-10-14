@@ -36,6 +36,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<ILease, SqliteLease>()
             .AddSingleton<IProfileSource, YamlProfileSource>()
             .AddSingleton<IApprovals, FileApprovals>()
+            .AddSingleton<IApprovedProfile>(static sp => sp.GetRequiredService<IApprovals>())
             .AddSingleton<IEndpointFile, FileEndpoint>()
             .AddSingleton<IControlPlaneProbe, HttpControlPlaneProbe>()
             .AddSingleton<IControlPlaneLauncher, ServeLauncher>()

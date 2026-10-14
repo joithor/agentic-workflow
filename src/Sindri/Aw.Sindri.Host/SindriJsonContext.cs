@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
@@ -76,4 +77,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(IssueChallengeResponse))]
 [JsonSerializable(typeof(HarnessProbeReport))]
 [JsonSerializable(typeof(ChallengeAnswer))]
+[JsonSerializable(typeof(ContextResult))]
+[JsonSerializable(typeof(SourcesView))]
+[JsonSerializable(typeof(ContextSourcesSynced))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

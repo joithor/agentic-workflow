@@ -544,6 +544,23 @@
       "shortcut": null
     },
     {
+      "action": "SyncSources",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/context/sources/sync",
+      "cli": "sindri context sources sync",
+      "ui": "pending:S-5B",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "ValidateProfile",
       "class": "local",
       "allowedCallers": [],

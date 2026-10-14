@@ -82,10 +82,12 @@ repos:                    # optional
 services:                 # optional: background services by name, each with a cadence
   heartbeat: { every: 30s }   # <n>s|m|h, 5s to 24h
 api: { port: 7410 }       # optional, default 7410; 0 (a free port) or 1024..65535; AW_SINDRI_PORT overrides it
+context: { ... }          # optional: the context engine's section, checked by the engine (docs/sindri/context.md)
 ```
 
-The approval hash is SHA-256 over the canonical JSON (the checked record, repos and services sorted), so comments and
-key order don't change it. An approval snapshot whose content no longer matches its hash isn't trusted.
+The approval hash is SHA-256 over the canonical JSON (the checked record, repos and services sorted, and the
+`context:` section's keys sorted at every level), so comments and key order don't change it. A profile without
+`context:` leaves it out of the JSON entirely. An approval snapshot whose content no longer matches its hash isn't trusted.
 
 Approving appends the `profile.approved` event first and saves the snapshot second. A failed append changes nothing;
 a retry after a failed save finds the latest recorded approval already naming that hash, appends nothing and only saves. "Approved" means saved
@@ -416,8 +418,8 @@ phase (`CatalogRules.ShippedPhases`, which each phase extends); every non-pendin
 is in `EventCatalog`, and `command.handled` is flagged non-public there (the stream filters on it from P5). The architecture rules (API spec §2.5) run in `Aw.Sindri.Tests`
 because they need Host internals: `ARCH-CQRS-001` (every GET serves an `IQuery`, every POST an `ICommand`, or an `IIssue`
 on the four carve-out routes with `issue` rows; over the endpoint data source), `ARCH-CQRS-002` (no query handler takes
-`ILedgerStore`, `ILease` or `IApprovals`; `GetStatusService` and `StreamEventsService` are allowlisted until P2's
-read-only ports) and `ARCH-CQRS-003` (every command and issue has its row; a classified command has variant rows).
+`ILedgerStore`, `ILease` or `IApprovals`, also through a handler's own Features helpers, followed one level; `GetStatusService` and `StreamEventsService` are allowlisted until P2's
+`ILedgerReader`; the read-only approvals port is `IApprovedProfile`, which the context query handlers already take) and `ARCH-CQRS-003` (every command and issue has its row; a classified command has variant rows).
 
 ## Proving it
 
