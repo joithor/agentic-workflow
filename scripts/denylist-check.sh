@@ -2,8 +2,8 @@
 # denylist-check.sh <file>... — finds work identifiers in PR text without revealing them.
 #
 # The denylist is injected, never passed as an argument and never a path baked into code or briefs, so the check
-# works unchanged when a module runs as its own service or container. AW_DENYLIST is a pointer in the forms Sindri's
-# context secret pointers use:
+# works unchanged when a module runs as its own service or container (mount the file as the process user with mode
+# 0400 or 0600, or use env:). AW_DENYLIST is a pointer in two of the forms Sindri's context secret pointers use:
 #   file:<absolute path>  a mounted file; refused unless it is a regular file, mode 0600 or stricter (no group, other
 #                         or execute bits), owned by the current user
 #   env:<VAR>             the entries are in that environment variable, newline-separated
@@ -34,9 +34,10 @@ for f in "$@"; do
   [ -f "$f" ] && [ -r "$f" ] || die "$f is not a readable file"
 done
 
+raw=""; entries=""
+trap 'rm -f "$raw" "$entries"' EXIT
 raw="$(mktemp "${TMPDIR:-/tmp}/denylist-check.XXXXXX")" || exit 2
 entries="$(mktemp "${TMPDIR:-/tmp}/denylist-check.XXXXXX")" || exit 2
-trap 'rm -f "$raw" "$entries"' EXIT
 chmod 600 "$raw" "$entries"
 
 # Mode (octal) and owner uid of a path, following links: GNU stat first, then BSD/macOS.
@@ -69,12 +70,14 @@ case "$ptr" in
     case "$var" in
       ""|[0-9]*|*[!A-Za-z0-9_]*) die "AW_DENYLIST env: pointer needs a variable name (env:<VAR>)" ;;
     esac
-    [ -n "${!var:-}" ] || die "the environment variable $var named by AW_DENYLIST is unset or empty (failing closed)"
-    printf '%s\n' "${!var}" >"$raw" || exit 2
+    [ "$var" != "AW_DENYLIST" ] || die "AW_DENYLIST env: pointer cannot name AW_DENYLIST itself (env:<VAR>)"
+    # printenv sees only the exported environment, never this script's own variables.
+    val="$(printenv "$var")" && [ -n "$val" ] || die "the environment variable $var named by AW_DENYLIST is unset, empty or not exported (failing closed)"
+    printf '%s\n' "$val" >"$raw" || exit 2
     src="$raw"
     ;;
   *)
-    die "AW_DENYLIST must be file:<absolute path> or env:<VAR>; a bare path is refused (failing closed)"
+    die "AW_DENYLIST must be file:<absolute path> or env:<VAR>; a bare path or any other scheme is refused (failing closed)"
     ;;
 esac
 

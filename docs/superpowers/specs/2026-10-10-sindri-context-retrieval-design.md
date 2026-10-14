@@ -957,10 +957,11 @@ team ever reads work data:
 - Before marking a PR ready, the stage owner runs `scripts/denylist-check.sh <files…>` over the PR title,
   body and commit messages (written to files) and `evidence.md` and `owner-check.md`. The denylist is a file the owner
   writes once outside every repo (team keys, the Slack workspace domain, `linear.app/<workspace>`, project names) and
-  injects through `AW_DENYLIST` (`file:<absolute path>`, mode 0600, or `env:<VAR>`; no path in any brief; owner, 2026-10-12);
+  injects through `AW_DENYLIST` (`file:<absolute path>`, mode 0600 or stricter and owned by the owner, or
+  `env:<VAR>`; no path in any brief; owner, 2026-10-12);
   the lead passes nothing. The script prints only `file:line` and a hit count, never the matched words, and fails when
-  `AW_DENYLIST` is unset or invalid or the list is missing or empty, so no agent ever reads the work identifiers. Owners never open the file; a hit is
-  removed by rewording the flagged line. The script lands in S-1C.
+  `AW_DENYLIST` is unset or invalid or the list is missing or empty, so no agent ever reads the work identifiers.
+  Owners never open the file; a hit is removed by rewording the flagged line. The script lands in S-1C.
 
 ### Keeping agents busy
 
