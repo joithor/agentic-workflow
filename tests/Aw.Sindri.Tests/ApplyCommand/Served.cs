@@ -52,10 +52,14 @@ internal sealed class Served : IAsyncDisposable
     public HttpClient Http { get; }
 
     /// <summary>Serves <paramref name="home"/> on <paramref name="environment"/>.</summary>
-    public static async Task<Served> Start(string home, WorkflowEnvironment environment, Action<IServiceCollection>? replace = null)
+    public static Task<Served> Start(string home, WorkflowEnvironment environment, Action<IServiceCollection>? replace = null) =>
+        Start(home, environment, static _ => null, replace);
+
+    /// <summary>Serves <paramref name="home"/> on <paramref name="environment"/>, reading the other variables from <paramref name="variables"/>.</summary>
+    public static async Task<Served> Start(string home, WorkflowEnvironment environment, Func<string, string?> variables, Action<IServiceCollection>? replace = null)
     {
         var ct = TestContext.Current.CancellationToken;
-        var app = LoopbackBinding.Build([], name => name == "AW_SINDRI_HOME" ? home : null, new FakeTimeProvider(), replace);
+        var app = LoopbackBinding.Build([], name => name == "AW_SINDRI_HOME" ? home : variables(name), new FakeTimeProvider(), replace);
         _ = Pipeline.Configure(app);
         await WorkflowsHarness.HoldLease(app.Services, ct);
         app.Services.GetRequiredService<HeldHumanToken>().Hold((await app.Services.GetRequiredService<IHumanTokenStore>().Mint(ct)).Value);

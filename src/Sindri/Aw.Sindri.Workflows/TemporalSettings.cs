@@ -10,6 +10,18 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Executable">The pinned 'temporal' CLI.</param>
 internal sealed record TemporalSettings(string Home, string Executable)
 {
+    /// <summary>The namespace when AW_SINDRI_TEMPORAL_NAMESPACE is unset.</summary>
+    public const string DefaultNamespace = "sindri";
+
+    /// <summary>The task queue when AW_SINDRI_TEMPORAL_TASK_QUEUE is unset.</summary>
+    public const string DefaultTaskQueue = "sindri";
+
+    /// <summary>The namespace the dev server creates and the worker and clients use.</summary>
+    public string Namespace { get; init; } = DefaultNamespace;
+
+    /// <summary>The task queue the worker polls and instances start on.</summary>
+    public string TaskQueue { get; init; } = DefaultTaskQueue;
+
     /// <summary>Reads the settings.</summary>
     /// <param name="environment">Reads an environment variable.</param>
     /// <returns>The settings.</returns>
