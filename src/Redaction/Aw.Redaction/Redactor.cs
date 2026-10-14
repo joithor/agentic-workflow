@@ -167,6 +167,10 @@ public sealed class Redactor : IRedactor
         return _tiers[tier] ??= new CompiledRules(_rules, RuleIds, Cap(_matchTimeout.TotalMilliseconds * (1L << tier)));
     }
 
+    /// <summary>The per-pattern match timeout for a text of <paramref name="length"/> characters: <paramref name="baseTimeout"/>
+    /// up to one window, doubled for each doubling of the text, capped like every timeout.</summary>
+    internal static TimeSpan MatchTimeoutFor(TimeSpan baseTimeout, int length) => throw new NotSupportedException();
+
     // Regex refuses a timeout past int.MaxValue - 1 ms (about 24.8 days); a longer budget is capped there.
     private static TimeSpan Cap(double milliseconds) => TimeSpan.FromMilliseconds(Math.Min(milliseconds, int.MaxValue - 1));
 

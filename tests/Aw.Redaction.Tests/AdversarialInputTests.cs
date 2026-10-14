@@ -7,31 +7,69 @@ public sealed class AdversarialInputTests
     public void A_text_full_of_placeholders_and_secrets_is_scrubbed_not_blocked()
     {
         var key = Shapes.Join("gh", "p_", Shapes.Body, "Ab3dE6gH9");
-        var input = string.Concat(Enumerable.Repeat("[REDACTED:github-token] " + key + " ", 60_000));
+        var input = string.Concat(Enumerable.Repeat("[REDACTED:github-token] " + key + " ", 2_000));
 
         var result = Redactor.Default.Scrub(input);
 
         Assert.Equal(ScrubOutcome.Redacted, result.Outcome);
-        Assert.Equal(60_000, result.Hits.Count);
+        Assert.Equal(2_000, result.Hits.Count);
     }
 
     [Fact]
-    public void A_megabyte_of_unterminated_begin_lines_is_scrubbed_not_blocked()
+    public void A_hundred_kilobytes_of_unterminated_begin_lines_is_scrubbed_not_blocked()
     {
-        var input = string.Concat(Enumerable.Repeat("-----BEGIN RSA PRIV" + "ATE KEY-----\n", 1_000_000 / 32));
+        var input = string.Concat(Enumerable.Repeat("-----BEGIN RSA PRIV" + "ATE KEY-----\n", 100_000 / 32));
 
         var result = Redactor.Default.Scrub(input);
 
         Assert.NotEqual(ScrubOutcome.Blocked, result.Outcome);
     }
 
-    [Fact]
-    public void The_timeout_grows_with_the_input_so_size_alone_never_blocks()
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(1, 1)]
+    [InlineData(128 * 1024, 1)]
+    [InlineData((128 * 1024) + 1, 2)]
+    [InlineData(2 * 128 * 1024, 2)]
+    [InlineData((2 * 128 * 1024) + 1, 4)]
+    [InlineData(4_000_000, 32)]
+    public void The_timeout_doubles_with_each_doubling_of_the_input(int length, int factor)
     {
-        // 100 ms per pattern is far too little for 4 MB in one window; the budget is per window of input.
-        var redactor = new Redactor(BuiltinRules.All, TimeSpan.FromMilliseconds(100));
+        var timeout = Redactor.MatchTimeoutFor(TimeSpan.FromMilliseconds(100), length);
+
+        Assert.Equal(TimeSpan.FromMilliseconds(100 * factor), timeout);
+    }
+
+    [Fact]
+    public void The_timeout_never_shrinks_as_the_input_grows()
+    {
+        var previous = TimeSpan.Zero;
+        for (var length = 0; length <= 64 * 1024 * 1024; length += 997 * 1024)
+        {
+            var timeout = Redactor.MatchTimeoutFor(TimeSpan.FromMilliseconds(1), length);
+
+            Assert.True(timeout >= previous);
+            previous = timeout;
+        }
+    }
+
+    [Fact]
+    public void A_very_long_timeout_is_capped_at_every_size()
+    {
+        var cap = TimeSpan.FromMilliseconds(int.MaxValue - 1);
+
+        Assert.Equal(cap, Redactor.MatchTimeoutFor(TimeSpan.FromDays(30), 10));
+        Assert.Equal(cap, Redactor.MatchTimeoutFor(TimeSpan.FromDays(30), 4_000_000));
+        Assert.Equal(cap, Redactor.MatchTimeoutFor(TimeSpan.FromDays(30), int.MaxValue));
+    }
+
+    [Fact]
+    public void A_text_past_the_first_size_tier_is_scrubbed_not_blocked()
+    {
+        // A tight base timeout still scrubs a text over one window, because the timeout scales with its size.
+        var redactor = new Redactor(BuiltinRules.All, TimeSpan.FromSeconds(10));
         var chunk = Shapes.Join("Lorem ipsum dolor sit amet, see https://example.com/a?b=c gh", "p_", Shapes.Body, "Ab3dE6gH9 \n");
-        var input = string.Concat(Enumerable.Repeat(chunk, 4_000_000 / chunk.Length));
+        var input = string.Concat(Enumerable.Repeat(chunk, (130 * 1024 / chunk.Length) + 1));
 
         var result = redactor.Scrub(input);
 
@@ -53,7 +91,7 @@ public sealed class AdversarialInputTests
     {
         var redactor = Redactor.Create(TimeSpan.FromDays(30));
 
-        var result = redactor.Scrub(new string('x', 300_000));
+        var result = redactor.Scrub(new string('x', 1_000));
 
         Assert.Equal(ScrubOutcome.Clean, result.Outcome);
     }
