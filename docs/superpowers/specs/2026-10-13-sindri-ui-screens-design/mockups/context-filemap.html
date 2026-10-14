@@ -286,11 +286,21 @@ body{min-width:1280px}
 .view button[aria-pressed="true"]{background:var(--s3);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
 
 /* ===== Context · file map (the files lens in its tree form) ===== */
-.phead .meta.show{gap:12px}
-.phead .meta.show .lens{font-size:12px}
-.fm-h,.fm{display:grid;grid-template-columns:300px 360px minmax(0,1fr) auto;gap:12px;align-items:center;padding:4px 16px}
-.fm-h{height:30px;color:var(--ink-subtle);font-size:11px;font-weight:500;letter-spacing:.3px;border-bottom:1px solid var(--line1)}
-.fm{min-height:30px;padding-top:3px;padding-bottom:3px;border-top:1px solid var(--line1)}
+.sh .show{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--ink-subtle)}
+.sh .show .lens{font-size:12px}
+.sh .meta .mono{color:var(--ink-muted)}
+/* the file map is one band (s1); the two collapsed lens bands are sections in the bands that follow, canvas then s1.
+   The shell's .band alternates by nth-of-type, so inside .bands the first band is s1 explicitly. */
+.bands{margin-top:8px}
+.bands>.band{background:var(--s1);padding-left:16px;padding-right:16px}
+.bands>.band:nth-of-type(even){background:var(--canvas)}
+.bands>.band.collapsed{padding-top:20px;padding-bottom:20px}
+.collapsed .section{margin-top:0}
+.collapsed .section>.sh{margin-bottom:0;align-items:center}
+.collapsed .sh .meta{margin-left:auto}
+.fm-h,.fm{display:grid;grid-template-columns:300px 360px minmax(0,1fr) auto;column-gap:16px;align-items:center;padding:4px 16px}
+.fm-h{height:32px;color:var(--ink-subtle);font-size:12px;font-weight:500;border-bottom:1px solid var(--line1)}
+.fm{min-height:40px;border-top:1px solid var(--line1)}
 .fm-h + .fm{border-top:0}
 .fm:hover{background:var(--s2)}
 /* the tree column: indentation in px per level (--d) plus a disclosure glyph; nothing depends on a character grid */
@@ -302,21 +312,20 @@ body{min-width:1280px}
 .fm .keys{font-family:var(--mono);font-size:12px;letter-spacing:-.1px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fm .keys i{font-style:normal;color:var(--ink-subtle);margin:0 2px}
 .fm .keys .dim,.fm .cnt .dim{color:var(--ink-subtle)}
-.fm .cnt{color:var(--ink-muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fm .nointent{color:var(--ink);font-weight:500;display:inline-flex;gap:4px;align-items:center}
-.fm .nointent span{color:var(--attn)}
+.fm .cnt{color:var(--ink-subtle);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fm .acts{gap:6px}
 .fm.anchor-row{background:var(--s3)}
+.fm.dir.unmapped .acts .btn{height:24px}
 .fm.sugg .keys{color:var(--ink-muted)}
 .fm.unmapped .tree{color:var(--ink-subtle)}
-.fm.tests{border-top:1px dashed var(--line2)}
-.disc{width:18px;height:18px;flex:none;border-radius:4px;color:var(--ink-subtle);display:inline-grid;place-items:center;font-size:11px}
+.fm.tests{border-top:1px solid var(--line1)}
+.disc{width:18px;height:18px;flex:none;border-radius:4px;color:var(--ink-subtle);display:inline-grid;place-items:center;font-size:12px}
 .disc:hover{background:var(--s3);color:var(--ink)}
 .disc:active{background:var(--s4)}
 /* the other two bands, collapsed to their header lines while the file map has the page */
-.band-collapsed{margin-top:8px}
-.band-collapsed .phead{border-bottom:0}
-.band-collapsed .phead .meta{margin-left:auto}
+.footnote{padding:12px 16px 0;color:var(--ink-subtle);font-size:12px}
+.split .btn.sm.main{border-radius:8px 0 0 8px}
+.split .btn.sm.chev{border-radius:0 8px 8px 0;padding:0 6px}
 /* adapt: the mockup renders at 1280. At the 900 × 600 minimum the page scrolls; under 1100 px the implements column narrows first
    (300 / 280 / 1fr), the intent column keeps its words, and the lens row wraps under the anchor field. */
 </style>
@@ -345,7 +354,7 @@ body{min-width:1280px}
 <main class="page">
   <div class="pagehead">
     <div style="display:flex;align-items:baseline;gap:14px">
-      <h1>Context</h1>
+      <h1 class="page-title">Context</h1>
       <div class="sub">
         <span>map <b>v13</b> current</span>
         <span>·</span><span>draft <b>v14</b> (46 proposals)</span>
@@ -375,55 +384,54 @@ body{min-width:1280px}
     <div class="view" role="group" aria-label="Files lens form: graph or tree"><button aria-pressed="false">graph</button><button aria-pressed="true">tree</button></div>
   </div>
 
-  <!-- FILE MAP -->
-  <section class="panel" aria-labelledby="fm-h">
-    <div class="phead">
-      <h2 class="eyebrow" id="fm-h">File map</h2>
-      <span class="mono" style="color:var(--ink-muted)">agentic-workflow @ 7c3e1a2</span><span class="count">·</span><span class="mono" style="color:var(--ink-muted)">map v13</span>
-      <div class="meta show" role="group" aria-label="Show">
-        <span>show</span>
-        <label class="lens"><input type="checkbox" checked>features</label>
-        <label class="lens"><input type="checkbox" checked>intent counts</label>
-        <label class="lens off"><input type="checkbox">unmapped only</label>
+  <!-- FILE MAP: one band; below it the other two lens bands, collapsed to a section heading with their counts -->
+  <div class="bands">
+  <section class="band" aria-labelledby="fm-h">
+    <div class="section">
+      <div class="sh">
+        <h2 id="fm-h">File map</h2>
+        <span class="meta"><span class="mono">agentic-workflow @ 7c3e1a2</span> · <span class="mono">map v13</span></span>
+        <div class="show" role="group" aria-label="Show">
+          <span>show</span>
+          <label class="lens"><input type="checkbox" checked>features</label>
+          <label class="lens"><input type="checkbox" checked>intent counts</label>
+          <label class="lens off"><input type="checkbox">unmapped only</label>
+        </div>
       </div>
-    </div>
 
-    <div class="fm-h"><span>path</span><span>implements</span><span>intent</span><span></span></div>
+      <div class="fm-h"><span>path</span><span>implements</span><span>intent</span><span></span></div>
 
-    <!-- the tree: one row per path, indentation by level, ▾ open · ▸ closed on directories, a blank slot on files so names align -->
-    <div class="fm dir"><span class="tree" style="--d:0"><button class="disc" aria-expanded="true" aria-label="Collapse src/">▾</button><span class="name">src/</span></span><span class="keys"></span><span class="cnt"></span><span></span></div>
-    <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse layout/">▾</button><span class="name">layout/</span></span><span class="keys">feature:layout</span><span class="cnt">ENG 4 · PRD 2</span><span></span></div>
-    <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">SplitPane.ts</span></span><span class="keys">feature:layout.split-pane <i>·</i> .orientation</span><span class="cnt">ENG-482 · PRD-tabs §3</span><span></span></div>
-    <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">paneStore.ts</span></span><span class="keys">thing:pane-layout</span><span class="cnt">PRD-tabs §3</span><span></span></div>
-    <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Resize.ts</span></span><span class="keys">feature:layout.split-pane.resize</span><span class="cnt"><span class="nointent"><span aria-hidden="true">⚠</span> no intent</span></span><span></span></div>
-    <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse tabs/">▾</button><span class="name">tabs/</span></span><span class="keys"></span><span class="cnt"></span><span></span></div>
-    <div class="fm anchor-row" aria-current="true"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Manager.ts</span></span><span class="keys">feature:tabs.tab-manager <i>·</i> action:…restore-layout</span><span class="cnt">ENG-482 · #tabs-design</span><span></span></div>
-    <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Strip.tsx</span></span><span class="keys">surface:screen/tab-strip</span><span class="cnt">PRD-tabs §2</span><span></span></div>
-    <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse session/">▾</button><span class="name">session/</span></span><span class="keys"></span><span class="cnt"></span><span></span></div>
-    <div class="fm sugg"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">restore.ts</span></span><span class="keys"><span class="dim">◇</span> feature:session.restore <span class="dim">(suggested 0.74)</span></span><span class="cnt">—</span>
-      <span class="acts"><button class="btn sm" title="Writes one map_override row">Accept</button><button class="btn sm" title="Writes one map_override row">Reject</button></span></div>
-    <div class="fm dir unmapped"><span class="tree" style="--d:1"><button class="disc" aria-expanded="false" aria-label="Expand billing/, 14 files">▸</button><span class="name">billing/</span></span><span class="keys"><span class="dim">░ unmapped</span> · 14 files</span><span class="cnt"></span>
-      <span class="acts"><button class="btn sm">Propose features</button></span></div>
-    <div class="fm tests"><span class="tree" style="--d:0"><i class="nodisc" aria-hidden="true"></i><span class="name">tests/tabs/restore.test.ts</span></span><span class="keys"><span class="dim">tests →</span> action:tab-manager.restore-layout</span><span class="cnt"></span><span></span></div>
+      <!-- the tree: one row per path, indentation by level, ▾ open · ▸ closed on directories, a blank slot on files so names align -->
+      <div class="fm dir"><span class="tree" style="--d:0"><button class="disc" aria-expanded="true" aria-label="Collapse src/">▾</button><span class="name">src/</span></span><span class="keys"></span><span class="cnt"></span><span></span></div>
+      <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse layout/">▾</button><span class="name">layout/</span></span><span class="keys">feature:layout</span><span class="cnt">ENG 4 · PRD 2</span><span></span></div>
+      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">SplitPane.ts</span></span><span class="keys">feature:layout.split-pane <i>·</i> .orientation</span><span class="cnt">ENG-482 · PRD-tabs §3</span><span></span></div>
+      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">paneStore.ts</span></span><span class="keys">thing:pane-layout</span><span class="cnt">PRD-tabs §3</span><span></span></div>
+      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Resize.ts</span></span><span class="keys">feature:layout.split-pane.resize</span><span class="cnt"><span class="chip attn">No intent</span></span><span></span></div>
+      <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse tabs/">▾</button><span class="name">tabs/</span></span><span class="keys"></span><span class="cnt"></span><span></span></div>
+      <div class="fm anchor-row" aria-current="true"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Manager.ts</span></span><span class="keys">feature:tabs.tab-manager <i>·</i> action:…restore-layout</span><span class="cnt">ENG-482 · #tabs-design</span><span></span></div>
+      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Strip.tsx</span></span><span class="keys">surface:screen/tab-strip</span><span class="cnt">PRD-tabs §2</span><span></span></div>
+      <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse session/">▾</button><span class="name">session/</span></span><span class="keys"></span><span class="cnt"></span><span></span></div>
+      <div class="fm sugg"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">restore.ts</span></span><span class="keys"><span class="dim">◇</span> feature:session.restore <span class="dim">(suggested 0.74)</span></span><span class="cnt">no intent cites it</span>
+        <span class="acts"><span class="split"><button class="btn sm main" title="Writes one map_override row">Accept</button><button class="btn sm chev" aria-label="Reject">▾</button></span></span></div>
+      <div class="fm dir unmapped"><span class="tree" style="--d:1"><button class="disc" aria-expanded="false" aria-label="Expand billing/, 14 files">▸</button><span class="name">billing/</span></span><span class="keys"><span class="dim">░ unmapped</span> · 14 files</span><span class="cnt"></span>
+        <span class="acts"><button class="btn sm">Propose features</button></span></div>
+      <div class="fm tests"><span class="tree" style="--d:0"><i class="nodisc" aria-hidden="true"></i><span class="name">tests/tabs/restore.test.ts</span></span><span class="keys"><span class="dim">tests →</span> action:tab-manager.restore-layout</span><span class="cnt"></span><span></span></div>
 
-    <div class="qfoot"><span>Each Accept or Reject is one <span class="mono">map_override</span> row; the next map build reads them.</span><span><kbd>J</kbd><kbd>K</kbd> Move · <kbd>↵</kbd> Node · <kbd>A</kbd> Accept · <kbd>X</kbd> Reject</span></div>
-  </section>
-
-  <!-- the other two bands keep the lens-stack rendering (context.html); here they are collapsed to their header lines with their counts -->
-  <section class="panel band-collapsed" aria-labelledby="int-h">
-    <div class="phead">
-      <button class="disc" aria-expanded="false" aria-label="Expand the intent band">▸</button>
-      <h2 class="eyebrow" id="int-h">Intent · Linear · Slack · Onyx</h2>
-      <div class="meta">5 records · 2 decisions · 1 conflict</div>
+      <p class="footnote">Each Accept or Reject is one <span class="mono">map_override</span> row; the next map build reads them.</p>
     </div>
   </section>
-  <section class="panel band-collapsed" aria-labelledby="prod-h">
-    <div class="phead">
-      <button class="disc" aria-expanded="false" aria-label="Expand the product graph band">▸</button>
-      <h2 class="eyebrow" id="prod-h">Product graph · features · surfaces · actions · things · flows</h2>
-      <div class="meta">own scope 7 · affects 3 at depth ≤ 2</div>
+
+  <section class="band collapsed" aria-labelledby="int-h">
+    <div class="section">
+      <div class="sh"><button class="disc" aria-expanded="false" aria-label="Expand the intent band">▸</button><h2 id="int-h">Intent · Linear · Slack · Onyx</h2><span class="meta">5 records · 2 decisions · 1 conflict</span></div>
     </div>
   </section>
+  <section class="band collapsed" aria-labelledby="prod-h">
+    <div class="section">
+      <div class="sh"><button class="disc" aria-expanded="false" aria-label="Expand the product graph band">▸</button><h2 id="prod-h">Product graph · features · surfaces · actions · things · flows</h2><span class="meta">own scope 7 · affects 3 at depth ≤ 2</span></div>
+    </div>
+  </section>
+  </div>
 </main>
 
 <div class="caption">Context · file map · design reference, not implementation</div>

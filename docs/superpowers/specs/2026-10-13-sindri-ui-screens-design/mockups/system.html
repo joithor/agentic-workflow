@@ -263,75 +263,88 @@ body{min-width:1280px}
 .nt .dim{fill:var(--ink-subtle)}
 .nt .b{font-family:var(--sans);font-weight:600;letter-spacing:.3px;font-size:12px}
 .edge{stroke:var(--line3);fill:none;stroke-width:1}
-/* edge and node labels at 12 (the meta size); 11 stays for eyebrows and kbd only */
+/* edge and node labels at 12 (the meta size) */
 .el{font-family:var(--sans);font-size:12px;fill:var(--ink-subtle)}
 .el.m{font-family:var(--mono);font-size:12px}
 .arrow{fill:var(--line3)}
 
 /* ===== System ===== */
-.cols{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:8px;align-items:start}
-.graphbody{padding:8px 16px 10px}
+/* four bands: graph | impact (s1), engine (canvas), history (s1), services (canvas). The shell's .band alternates by nth-of-type,
+   so inside .bands the first band is s1 explicitly. */
+.bands{margin-top:8px}
+.bands>.band{background:var(--s1);padding-left:16px;padding-right:16px}
+.bands>.band:nth-of-type(even){background:var(--canvas)}
+.bands>.band.last{padding-top:20px;padding-bottom:20px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.cols>.section{margin-top:0}
+.section.impact{border-left:1px solid var(--line2)}
+.sh .meta b{color:var(--ink-muted);font-weight:500}
+.sh .meta .mono,.sh .mono{color:var(--ink-muted)}
+.sh .act{margin-left:auto}
+.graphbody{padding:0 16px}
 .graphbody svg{display:block}
 .gn{outline:none}
 .gn:hover rect{stroke:var(--line3)}
 .gn:focus-visible rect{stroke:var(--focus);stroke-width:2}
-/* health glyphs in the graph follow the one vocabulary: ✓ ok in success, ◐ degraded in ink, ✕ failed in error, ○ absent in subtle ink */
+/* health glyphs inside the drawing follow the one vocabulary: ✓ ok in success, ◐ degraded in ink, ✕ failed in error, ○ absent in subtle ink */
 .nt .ok{fill:var(--success)}
 .nt .deg{fill:var(--ink)}
 .nt .fail{fill:var(--error)}
 .nt .abs{fill:var(--ink-subtle)}
-.gnote{padding:10px 2px 0;color:var(--ink-subtle);font-size:12px;border-top:1px solid var(--line1);margin-top:2px;display:flex;gap:6px;align-items:center;white-space:nowrap}
-/* the legend partial, one line under both panels (its two rows side by side as columns), serving the graph and the engine table */
-.imp{padding:10px 16px 12px;border-top:1px solid var(--line1)}
-.imp:first-of-type{border-top:0}
-.imp h3{font-size:12px;font-weight:500;color:var(--ink);display:flex;gap:6px;align-items:baseline}
-.imp h3 .g{width:14px}
+.gnote{padding:12px 0 0;color:var(--ink-subtle);font-size:12px}
+/* impact: blocks separated by hairlines; the state is a chip, the subject the row title */
+.imp{padding:12px 16px 16px;border-top:1px solid var(--line1)}
+.imp:first-of-type{border-top:0;padding-top:0}
+.imp h3{font-size:14px;font-weight:500;color:var(--ink);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .imp h3 .dim{color:var(--ink-subtle);font-weight:400;font-size:12px}
-.imp ul{list-style:none;margin-top:4px}
+.imp ul{list-style:none;margin-top:8px}
 /* each consequence is one block-level line: the arrow is a fixed slot, the sentence wraps inside its own span */
-.imp li{display:flex;gap:4px;align-items:flex-start;color:var(--ink-muted);font-size:12px;padding:2px 0;line-height:1.4}
+.imp li{display:flex;gap:4px;align-items:flex-start;color:var(--ink-muted);font-size:13px;padding:2px 0;line-height:1.4}
 .imp li::before{content:"→";color:var(--ink-subtle);flex:none;width:14px}
 .imp li>span{min-width:0}
-.imp code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--canvas);border:1px solid var(--line2);border-radius:4px;padding:0 4px}
+.imp code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--s2);border-radius:4px;padding:0 4px}
 .imp .mono{color:var(--ink)}
-.imp .note{color:var(--ink-subtle);font-size:12px;margin-top:4px;padding-left:18px}
-.imp .acts{margin-top:8px}
-.worker{display:flex;gap:8px;align-items:center;padding:8px 16px;color:var(--ink-subtle);font-size:12px;border-bottom:1px solid var(--line1);white-space:nowrap}
+.imp .note{color:var(--ink-subtle);font-size:12px;margin-top:6px;padding-left:18px}
+.imp .acts{margin-top:12px;justify-content:flex-start}
+.worker{display:flex;gap:8px;align-items:center;padding:0 16px 12px;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
 .worker .mono{color:var(--ink-muted)}
 .worker .r{margin-left:auto}
-.en-h,.en{display:grid;grid-template-columns:92px 168px 156px minmax(0,1fr) 164px 74px 60px;gap:12px;align-items:center;padding:4px 16px}
-.en-h{height:30px;color:var(--ink-subtle);font-size:11px;font-weight:500;letter-spacing:.3px;border-bottom:1px solid var(--line1)}
-.en{min-height:34px;padding-top:5px;padding-bottom:5px;border-top:1px solid var(--line1);font-size:12px}
+/* engine table: its columns stay; ids stay visible (.id.keep); the state column is a chip plus the step */
+.en-h,.en{display:grid;grid-template-columns:96px 168px 214px minmax(0,1fr) 164px 70px 60px;column-gap:16px;align-items:center;padding:4px 16px}
+.en-h{height:32px;color:var(--ink-subtle);font-size:12px;font-weight:500;border-bottom:1px solid var(--line1)}
+.en{min-height:40px;border-top:1px solid var(--line1);font-size:12px}
 .en-h + .en{border-top:0}
 .en:hover{background:var(--s2)}
 .en.sel{background:var(--s3)}
-.en .id{font-family:var(--mono);font-size:12px;color:var(--ink)}
+.en .id{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--ink)}
 .en .mono{color:var(--ink-muted);font-size:12px}
-.en .st{color:var(--ink);font-weight:500;white-space:nowrap}
-.en .st .g{margin-right:4px}
+.en .st{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:13px;font-weight:500;white-space:nowrap;min-width:0}
+.en .st .chip{align-self:center;flex:none}
 .en .wait,.en .tim,.en .rt{color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .en .rt .null{color:var(--ink-subtle)}
 .en .hist{color:var(--ink-subtle);text-align:right;white-space:nowrap}
-.en.more{min-height:30px;border-top:1px solid var(--line1)}
+.en.more{min-height:32px}
 .pend-line{display:flex;gap:10px;align-items:center;padding:8px 16px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px}
 .pend-line .mono{color:var(--ink-muted)}
 .pend-line .r{margin-left:auto;display:flex;gap:10px;align-items:center}
-.hr{display:grid;grid-template-columns:62px 236px 118px minmax(0,1fr) auto;gap:12px;align-items:center;padding:5px 16px;border-top:1px solid var(--line1);font-family:var(--mono);font-size:12px;letter-spacing:-.1px;color:var(--ink-muted)}
+/* history */
+.hr{display:grid;grid-template-columns:62px 236px 118px minmax(0,1fr) auto;column-gap:16px;align-items:center;min-height:40px;padding:5px 16px;border-top:1px solid var(--line1);font-family:var(--mono);font-size:12px;letter-spacing:-.1px;color:var(--ink-muted)}
 .hr:first-of-type{border-top:0}
+.sh + .hr{border-top:0}
 .hr:hover{background:var(--s2)}
 .hr .ts{color:var(--ink-subtle)}
 .hr .ev{color:var(--ink)}
 .hr .dt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hr .led{color:var(--ink-subtle);white-space:nowrap}
 .hr.more{grid-template-columns:1fr auto;color:var(--ink-subtle);font-family:var(--sans)}
-.disc{width:18px;height:18px;flex:none;border-radius:4px;color:var(--ink-subtle);display:inline-grid;place-items:center;font-size:11px}
+.disc{width:18px;height:18px;flex:none;border-radius:4px;color:var(--ink-subtle);display:inline-grid;place-items:center;font-size:12px}
 .disc:hover{background:var(--s3);color:var(--ink)}
 .disc:active{background:var(--s4)}
-/* the services table, collapsed to its header line */
-.svc .phead{border-bottom:0}
-.svc .sum{display:inline-flex;gap:10px;align-items:center;color:var(--ink-muted);font-size:12px;margin-left:4px}
-.svc .sum span{display:inline-flex;gap:5px;align-items:center}
-.svc .sum .g{width:auto}
+/* the services line, collapsed to its heading: the page's last section */
+.svc .sh{align-items:center;margin-bottom:0}
+.svc .sh .meta{margin-left:auto}
+.svc .sum{display:inline-flex;gap:8px;align-items:center}
+.pagesum{margin-top:2px;color:var(--ink-subtle);font-size:12px}
 /* adapt: the mockup renders at 1280. At the 900 × 600 minimum the page scrolls both ways (the dependency drawing keeps its width);
    under 1100 px the Impact column drops under the graph and the engine table hides Timers and Retries behind the row's sheet. */
 </style>
@@ -359,29 +372,18 @@ body{min-width:1280px}
 
 <main class="page">
   <div class="pagehead">
-    <div style="display:flex;align-items:baseline;gap:14px">
-      <h1>System</h1>
-      <div class="sub">
-        <span class="attn-word"><span class="g h-deg" aria-hidden="true">◐</span>Degraded</span>
-        <span>·</span><span>code index <b>failed</b></span>
-        <span>·</span><span>Onyx <b>2h behind</b></span>
-        <span>·</span><span>engine <b>4</b> open</span>
-        <span>·</span><span>views <b>2s ago</b></span>
-      </div>
-    </div>
-    <div class="hints" aria-label="Keyboard shortcuts">
-      <span><kbd>G</kbd><kbd>.</kbd> System</span>
-      <span><kbd>J</kbd><kbd>K</kbd> Move</span>
-      <span><kbd>↵</kbd> Doctor check</span>
-      <span><kbd>E</kbd> Engine</span>
-      <span><kbd>?</kbd> Shortcuts</span>
+    <div>
+      <h1 class="page-title">System</h1>
+      <p class="pagesum">Sindri is degraded: the code index failed at the 03:00 build and Onyx is 2h behind. 4 engine instances open; views updated 2s ago.</p>
     </div>
   </div>
 
   <!-- DEPENDENCIES | IMPACT -->
+  <div class="bands">
+  <section class="band" aria-label="Dependencies and impact">
   <div class="cols">
-    <section class="panel" aria-labelledby="dep-h">
-      <div class="phead"><h2 class="eyebrow" id="dep-h">Dependencies</h2><div class="meta" style="margin-left:4px;margin-right:auto">what depends on what · health on the edge</div></div>
+    <div class="section" aria-labelledby="dep-h">
+      <div class="sh"><h2 id="dep-h">Dependencies</h2><span class="meta">what depends on what · health on the edge</span></div>
       <div class="graphbody">
         <svg width="806" height="392" viewBox="0 0 806 392" role="group" aria-label="Dependency graph, layered. Sources: Linear API ok, Slack ok and Onyx 3000 degraded 2h behind feed CONTEXT; Ollama 11434 ok and the code index, failed at 03:00, feed CONTEXT; graphify ok and git ok feed the code index. CONTEXT feeds ENGINE through input.context.retrieve. recipes, 8 registered, feed ENGINE; Temporal dev 7233 ok with temporal.db feeds ENGINE; ENGINE mirrors into ledger.db ok, head 4236, views 4236. ENGINE feeds SESSIONS; tmux ok with 3 sessions feeds SESSIONS; launch targets Warp ok, claude 2.1.3 ok, codex ok, cursor absent. SESSIONS feed the API at 127.0.0.1:47811 v1, which serves the UI, the CLI and MCP at /sindri/mcp, 212 queries in 7 days. Enter on a node opens its doctor check.">
           <defs><marker id="ah" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8z" class="arrow"/></marker></defs>
@@ -400,7 +402,7 @@ body{min-width:1280px}
           <path class="edge" d="M700 148 H660 V123" marker-end="url(#ah)"/>
           <!-- CONTEXT -> ENGINE -->
           <path class="edge" d="M360 84 V170" marker-end="url(#ah)"/>
-          <text class="el m" x="368" y="132">input.context.retrieve</text>
+          <text class="el m" x="368" y="152">input.context.retrieve</text>
           <!-- recipes, Temporal -> ENGINE; Temporal - temporal.db -->
           <path class="edge" d="M132 188 H297" marker-end="url(#ah)"/>
           <path class="edge" d="M450 188 H423" marker-end="url(#ah)"/>
@@ -429,7 +431,7 @@ body{min-width:1280px}
           <a href="#" class="gn" aria-label="ENGINE, the workflow engine. Open its doctor check"><rect class="hub" x="300" y="172" width="120" height="32" rx="7"/><text class="nt b" x="360" y="192" text-anchor="middle">ENGINE</text></a>
           <a href="#" class="gn" aria-label="Temporal dev 7233, ok, 12 milliseconds. Open its doctor check"><rect class="node" x="450" y="174" width="218" height="28" rx="6"/><text class="nt" x="462" y="192"><tspan class="ok">✓</tspan> Temporal dev 7233 <tspan class="dim">(12 ms)</tspan></text></a>
           <a href="#" class="gn" aria-label="temporal.db, ok. Open its doctor check"><rect class="node" x="690" y="174" width="116" height="28" rx="6"/><text class="nt" x="700" y="192"><tspan class="ok">✓</tspan> temporal.db</text></a>
-          <a href="#" class="gn" aria-label="ledger.db, ok, WAL, head 4236, views 4236, 0 behind. Open its doctor check"><rect class="node" x="440" y="226" width="366" height="28" rx="6"/><text class="nt" x="452" y="244"><tspan class="ok">✓</tspan> ledger.db <tspan class="dim" style="font-size:11px">wal · head 4236 · views 4236 (0 behind)</tspan></text></a>
+          <a href="#" class="gn" aria-label="ledger.db, ok, WAL, head 4236, views 4236, 0 behind. Open its doctor check"><rect class="node" x="440" y="226" width="366" height="28" rx="6"/><text class="nt" x="452" y="244"><tspan class="ok">✓</tspan> ledger.db <tspan class="dim">wal · head 4236 · views 4236</tspan></text></a>
 
           <a href="#" class="gn" aria-label="tmux, ok, 3 sessions. Open its doctor check"><rect class="node" x="20" y="274" width="112" height="28" rx="6"/><text class="nt" x="32" y="292"><tspan class="ok">✓</tspan> tmux <tspan class="dim">3</tspan></text></a>
           <a href="#" class="gn" aria-label="SESSIONS. Open its doctor check"><rect class="hub" x="300" y="272" width="120" height="32" rx="7"/><text class="nt b" x="360" y="292" text-anchor="middle">SESSIONS</text></a>
@@ -443,15 +445,15 @@ body{min-width:1280px}
           <a href="#" class="gn" aria-label="CLI"><rect class="node" x="636" y="342" width="38" height="28" rx="6"/><text class="nt" x="646" y="360">CLI</text></a>
           <a href="#" class="gn" aria-label="MCP at /sindri/mcp, 212 queries in 7 days"><rect class="node" x="682" y="342" width="124" height="28" rx="6"/><text class="nt" x="692" y="360">MCP <tspan class="dim">/sindri/mcp</tspan></text><text class="el m" x="682" y="386">212 queries / 7 d</text></a>
         </svg>
-        <div class="gnote"><kbd>↵</kbd><span>on a node opens its doctor check and fix. The graph is drawn from deps.yaml and the profile's sources.</span></div>
+        <p class="gnote">Open a node for its doctor check and fix. The graph is drawn from deps.yaml and the profile's sources.</p>
       </div>
-    </section>
+    </div>
 
-    <section class="panel" aria-labelledby="imp-h">
-      <div class="phead"><h2 class="eyebrow" id="imp-h">Impact</h2><div class="meta" style="margin-left:4px;margin-right:auto">of the failures now</div><span class="count-attn">3</span></div>
+    <div class="section impact" aria-labelledby="imp-h">
+      <div class="sh"><h2 id="imp-h">Impact</h2><span class="meta">of the failures now · 3</span></div>
 
       <div class="imp">
-        <h3><span class="g h-fail" aria-label="failed">✕</span>code index <span class="dim">(nightly 03:00, SND-INDEX-012)</span></h3>
+        <h3><span class="chip fail">Failed</span>code index <span class="dim">nightly 03:00</span></h3>
         <ul>
           <li><span>context: symbols lens stale since 10-12</span></li>
           <li><span>scoping: the <code>code</code> source reads the old index</span></li>
@@ -463,7 +465,7 @@ body{min-width:1280px}
       </div>
 
       <div class="imp">
-        <h3><span class="g h-deg" aria-label="degraded">◐</span>Onyx sync <span class="dim">2h behind</span></h3>
+        <h3><span class="chip">Degraded</span>Onyx sync <span class="dim">2h behind</span></h3>
         <ul>
           <li><span>intent lens: Slack and Linear comments may be stale; the native Linear adapter is unaffected</span></li>
         </ul>
@@ -471,49 +473,51 @@ body{min-width:1280px}
       </div>
 
       <div class="imp">
-        <h3><span class="g h-abs" aria-label="absent">○</span>cursor <span class="dim">not found</span></h3>
+        <h3><span class="chip">Absent</span>cursor <span class="dim">not found</span></h3>
         <ul>
           <li><span>launch target hidden in every Open ▾ menu</span></li>
           <li><span>no run affected</span></li>
         </ul>
       </div>
-    </section>
+    </div>
   </div>
-
-  <!-- the legend partial (fixture.md): one line, both rows side by side, under the graph and above the engine table it also serves -->
+  </section>
 
   <!-- ENGINE -->
-  <section class="panel" aria-labelledby="eng-h" style="margin-top:6px">
-    <div class="phead"><h2 class="eyebrow" id="eng-h">Engine</h2><span class="mono" style="color:var(--ink-muted)">Temporal dev 7233 · namespace sindri</span><div class="meta"><span><kbd>E</kbd></span></div></div>
+  <section class="band" aria-labelledby="eng-h">
+   <div class="section">
+    <div class="sh"><h2 id="eng-h">Engine</h2><span class="meta"><span class="mono">Temporal dev 7233 · namespace sindri</span></span></div>
     <div class="worker">
       <span>worker <span class="mono">1</span> · <span class="mono">sindri-48211</span></span><span>·</span>
       <span>task queue <span class="mono">sindri</span></span><span>·</span>
-      <span class="state live"><span class="g g-live">●</span>polling</span><span>·</span>
+      <span class="chip ok">Polling</span><span>·</span>
       <span>activities <span class="mono">4</span> running · <span class="mono">0</span> backlog</span><span>·</span>
       <span>last heartbeat <span class="mono">1s</span></span>
       <span class="r">mirror lag <span class="mono">0 events (0 ms)</span></span>
     </div>
     <div class="en-h"><span>Instance</span><span>Recipe@hash</span><span>State</span><span>Waiting on</span><span>Timers</span><span>Retries</span><span style="text-align:right">History</span></div>
 
-    <div class="en"><span class="id">ITM-01JE7</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-live">●</span>produce r2/3</span><span class="wait">activity <span class="mono">step.produce</span> (async, 6m)</span><span class="tim">timeout 1d 23h</span><span class="rt">0</span><span class="hist"><a href="#">412 ev</a></span></div>
-    <div class="en"><span class="id">ITM-01JD9</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-live">●</span>produce r1/3</span><span class="wait">activity <span class="mono">step.produce</span> (async, 1m)</span><span class="tim">timeout 1d 23h</span><span class="rt">0</span><span class="hist"><a href="#">36 ev</a></span></div>
-    <div class="en sel" aria-current="true"><span class="id">ITM-01JE9</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-live">●</span>checks</span><span class="wait">activity <span class="mono">step.checks</span> (2m)</span><span class="tim">produce timeout 12:30</span><span class="rt">1 · exit 1</span><span class="hist"><a href="#">88 ev</a></span></div>
-    <div class="en"><span class="id">ITM-01JD6</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-live">●</span>checks</span><span class="wait">activity <span class="mono">step.checks</span> (0m)</span><span class="tim">produce timeout 12:56</span><span class="rt">0</span><span class="hist"><a href="#">24 ev</a></span></div>
-    <div class="en"><span class="id">ITM-01JC8</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-park">▌</span>parked no-progress</span><span class="wait">signal <span class="mono">answer</span> (grant)</span><span class="tim">none</span><span class="rt"><span class="null">—</span></span><span class="hist"><a href="#">640 ev</a></span></div>
-    <div class="en"><span class="id">ITM-01JB4</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-esc">▲</span>escalated gate</span><span class="wait">signal <span class="mono">answer</span> (accept/reject)</span><span class="tim">escalate timeout fired</span><span class="rt"><span class="null">—</span></span><span class="hist"><a href="#">301 ev</a></span></div>
-    <div class="en"><span class="id">PRJ-tabs</span><span class="mono">workflow.project@a8c2</span><span class="st"><span class="g g-live">●</span>scoping → child</span><span class="wait">child <span class="mono">PRJ-tabs/scoping/1</span></span><span class="tim">parks in 1h 14m</span><span class="rt">0</span><span class="hist"><a href="#">57 ev</a></span></div>
-    <div class="en"><span class="id">INC-14</span><span class="mono">incident.response@5d9</span><span class="st"><span class="g g-live">●</span>mitigate r1/3</span><span class="wait">child <span class="mono">ITM-01JG2</span> · activity</span><span class="tim">escalates in 36m</span><span class="rt">0</span><span class="hist"><a href="#">120 ev</a></span></div>
-    <div class="en more"><span class="id"></span><span style="color:var(--ink-subtle)">… 4 more open</span></div>
+    <div class="en"><span class="id keep">ITM-01JE7</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="chip ok">Running</span>produce r2/3</span><span class="wait">activity <span class="mono">step.produce</span> (async, 6m)</span><span class="tim">timeout 1d 23h</span><span class="rt">0</span><span class="hist"><a href="#">412 ev</a></span></div>
+    <div class="en"><span class="id keep">ITM-01JD9</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="chip ok">Running</span>produce r1/3</span><span class="wait">activity <span class="mono">step.produce</span> (async, 1m)</span><span class="tim">timeout 1d 23h</span><span class="rt">0</span><span class="hist"><a href="#">36 ev</a></span></div>
+    <div class="en sel" aria-current="true"><span class="id keep">ITM-01JE9</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="chip ok">Running</span>checks</span><span class="wait">activity <span class="mono">step.checks</span> (2m)</span><span class="tim">produce timeout 12:30</span><span class="rt">1 · exit 1</span><span class="hist"><a href="#">88 ev</a></span></div>
+    <div class="en"><span class="id keep">ITM-01JD6</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="chip ok">Running</span>checks</span><span class="wait">activity <span class="mono">step.checks</span> (0m)</span><span class="tim">produce timeout 12:56</span><span class="rt">0</span><span class="hist"><a href="#">24 ev</a></span></div>
+    <div class="en"><span class="id keep">ITM-01JC8</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="chip attn">Parked</span>no-progress</span><span class="wait">signal <span class="mono">answer</span> (grant)</span><span class="tim">none</span><span class="rt"><span class="null">—</span></span><span class="hist"><a href="#">640 ev</a></span></div>
+    <div class="en"><span class="id keep">ITM-01JB4</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="chip attn">Escalated</span>gate</span><span class="wait">signal <span class="mono">answer</span> (accept/reject)</span><span class="tim">escalate timeout fired</span><span class="rt"><span class="null">—</span></span><span class="hist"><a href="#">301 ev</a></span></div>
+    <div class="en"><span class="id keep">PRJ-tabs</span><span class="mono">workflow.project@a8c2</span><span class="st"><span class="chip">Child</span>scoping</span><span class="wait">child <span class="mono">PRJ-tabs/scoping/1</span></span><span class="tim">parks in 1h 14m</span><span class="rt">0</span><span class="hist"><a href="#">57 ev</a></span></div>
+    <div class="en"><span class="id keep">INC-14</span><span class="mono">incident.response@5d9</span><span class="st"><span class="chip ok">Running</span>mitigate r1/3</span><span class="wait">child <span class="mono">ITM-01JG2</span> · activity</span><span class="tim">escalates in 36m</span><span class="rt">0</span><span class="hist"><a href="#">120 ev</a></span></div>
+    <div class="en more"><span></span><span style="color:var(--ink-subtle)">… 4 more open</span></div>
 
     <div class="pend-line">
       <span>pending</span><span>updates <span class="mono">0</span> · signals <span class="mono">0</span> · stuck &gt; 5 min: <span class="mono">0</span> · <span title="Temporal: a workflow that restarted its own history to stay small">continue-as-new</span>: <span class="mono">0</span></span>
       <span class="r"><span>dev server up <span class="mono">3d 4h</span> · temporal.db <span class="mono">48 MB</span></span><a class="btn sm" href="#" aria-label="Open Temporal UI, opens the dev server's loopback UI">Open Temporal UI ↗</a></span>
     </div>
+   </div>
   </section>
 
   <!-- HISTORY of the selected instance -->
-  <section class="panel" aria-labelledby="hist-h" style="margin-top:8px">
-    <div class="phead"><h2 class="eyebrow" id="hist-h">ITM-01JE9 · history</h2><span class="count">last 8 of 88</span><div class="meta">newest first · each row names the ledger sequence it mirrored into</div></div>
+  <section class="band" aria-labelledby="hist-h">
+   <div class="section">
+    <div class="sh"><h2 id="hist-h"><span class="id keep">ITM-01JE9</span> history</h2><span class="meta">last 8 of 88 · newest first · each row names the ledger sequence it mirrored into</span></div>
     <div class="hr"><span class="ts">12:26:10</span><span class="ev">ActivityTaskScheduled</span><span class="tg">step.checks</span><span class="dt">attempt 2 · retry after exit 1 ("checks runner: ECONNRESET") · backoff 10 s</span><span class="led"></span></div>
     <div class="hr"><span class="ts">12:26:00</span><span class="ev">ActivityTaskFailed</span><span class="tg">step.checks</span><span class="dt">attempt 1 · exit 1</span><span class="led"></span></div>
     <div class="hr"><span class="ts">12:25:50</span><span class="ev">ActivityTaskStarted</span><span class="tg">step.checks</span><span class="dt">worker sindri-48211</span><span class="led"></span></div>
@@ -522,15 +526,21 @@ body{min-width:1280px}
     <div class="hr more"><span>… 83 earlier events</span><span><a class="btn sm" href="#" aria-label="Full history, opens in the Temporal UI">Full history ↗</a></span></div>
   </section>
 
-  <!-- the revision-7 services table and the process · views · profile strip, collapsed to the table's header line -->
-  <section class="panel svc" style="margin-top:8px" aria-labelledby="svc-h">
-    <div class="phead">
-      <button class="disc" aria-expanded="false" aria-label="Expand the services table and the process, views and profile strip">▸</button>
-      <h2 class="eyebrow" id="svc-h">Services</h2><span class="count">6</span>
-      <div class="sum"><span><span class="g h-ok" aria-hidden="true">✓</span>5/6 ok</span><span>·</span><span><span class="g h-fail" aria-hidden="true">✕</span>1 failed (index)</span></div>
-      <div class="meta">process <span class="mono">sindri-48211</span> · views <b>2s ago</b> · profile <b>changed</b> since approval, 2 keys</div>
+   </div>
+  </section>
+
+  <!-- the revision-7 services table and the process · views · profile strip, collapsed to the table's heading: the page's last section -->
+  <section class="band last svc" aria-labelledby="svc-h">
+    <div class="section">
+      <div class="sh">
+        <button class="disc" aria-expanded="false" aria-label="Expand the services table and the process, views and profile strip">▸</button>
+        <h2 id="svc-h">Services</h2>
+        <span class="sum"><span class="chip ok">5/6 OK</span><span class="chip fail">1 Failed</span><span class="meta">index</span></span>
+        <span class="meta">process <span class="mono">sindri-48211</span> · views <b>2s ago</b> · profile <b>changed</b> since approval, 2 keys</span>
+      </div>
     </div>
   </section>
+  </div>
 </main>
 
 <div class="caption">System · design reference, not implementation</div>

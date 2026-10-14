@@ -94,37 +94,6 @@ svg{flex:none}
 .hints{display:flex;gap:12px;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
 .hints span{display:flex;align-items:center;gap:4px}
 
-/* panels */
-.panel{background:transparent;border:0;border-radius:0;box-shadow:none}
-.phead{display:flex;align-items:center;gap:8px;min-height:32px;padding:4px 16px;border:0}
-.eyebrow{font-size:15px;font-weight:500;letter-spacing:-.1px;color:var(--ink)}
-.phead .meta{margin-left:auto;color:var(--ink-subtle);font-size:12px;display:flex;gap:10px;align-items:center}
-.phead .meta a{color:var(--brand-hover)}
-.row2{display:grid;grid-template-columns:1.5fr 1fr;gap:8px;margin-top:8px}
-
-/* needs-you rows: a full-row tint plus the chip and the word, no stripe (fixes.md 3) */
-.ny{display:grid;grid-template-columns:104px minmax(0,1fr) 60px 492px;gap:12px;align-items:center;
-  padding:6px 16px;border-top:1px solid var(--line1)}
-.ny:first-of-type{border-top:0}
-.ny:hover{background:var(--s2)}
-.ny.sel{background:var(--s3)}
-.ny.pulse,.ny.colour{background:var(--attn-soft)}
-.ny.pulse .chip{color:var(--attn)}
-.kind{display:flex;flex-direction:column;gap:3px}
-.what{min-width:0}
-.what .line1{display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap}
-.what .line1>*{flex:none}
-.what .line1 .title{flex:0 1 auto;min-width:0}
-.what .line1 .rest{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--ink-subtle)}
-.id{color:var(--ink-subtle);white-space:nowrap}
-.what .title{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.what .line2{color:var(--ink-subtle);margin-top:2px;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}
-.what .line2 .reason{color:var(--ink-muted);overflow:hidden;text-overflow:ellipsis}
-.tag{font-size:12px;line-height:1.2;border:0;border-radius:0;padding:0;color:var(--ink-subtle);display:inline-flex;align-items:center;white-space:nowrap;flex:none}
-.since{color:var(--ink-subtle);font-size:12px;text-align:right;line-height:1.4;white-space:nowrap}
-.since b{display:block;color:var(--ink-muted);font-weight:500;font-size:12px}
-.acts{display:flex;align-items:center;gap:6px;justify-content:flex-end}
-
 /* buttons */
 .btn{height:28px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;
   border:1px solid var(--line2);background:var(--s3);color:var(--ink-muted);white-space:nowrap}
@@ -150,37 +119,6 @@ svg{flex:none}
 .cmd button{padding:4px 8px;border-left:1px solid var(--line1);color:var(--ink-subtle);display:flex;align-items:center;gap:4px;font-size:12px}
 .cmd button:hover{color:var(--ink);background:var(--s3)}
 .pending{font-size:12px;line-height:1.2;color:var(--ink-subtle);border:1px dashed var(--line2);border-radius:4px;padding:2px 6px;white-space:nowrap}
-
-/* running */
-.run{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 14px;padding:5px 16px;border-top:1px solid var(--line1);align-items:center}
-.run:first-of-type{border-top:0}
-.run:hover{background:var(--s2)}
-.run .step{display:flex;gap:6px;align-items:center;color:var(--ink-subtle);margin-top:2px;white-space:nowrap;overflow:hidden;font-size:12px}
-.run .step .mono{color:var(--ink-muted)}
-.state{display:inline-flex;align-items:center;gap:5px;font-weight:500;color:var(--ink);font-size:12px;white-space:nowrap}
-.run .hint{grid-column:1/-1;color:var(--ink-subtle);font-size:12px}
-.budget{grid-column:1/-1;display:flex;align-items:center;gap:10px;color:var(--ink-subtle);font-size:12px}
-.budget .track{flex:1;height:3px;border-radius:2px;background:var(--line1);overflow:hidden}
-.budget .fill{height:100%;background:var(--ink-subtle)}
-.subgroup{display:flex;align-items:center;gap:8px;padding:6px 16px 4px;font-size:12px;color:var(--ink-subtle);border-top:1px solid var(--line1)}
-.subgroup:first-of-type{border-top:0}
-
-/* queued */
-.q{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;padding:5px 16px;border-top:1px solid var(--line1);align-items:center}
-.q:first-of-type{border-top:0}
-.q:hover{background:var(--s2)}
-.q .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.q .t b{font-weight:500}
-.q .sub{color:var(--ink-subtle);font-size:12px}
-.q .r{color:var(--ink-subtle);font-size:12px;text-align:right;white-space:nowrap}
-.qfoot{padding:8px 16px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px;display:flex;justify-content:space-between}
-
-/* label/value cell (no health strip any more; Context's coverage row still uses it) */
-.cell{flex:1 1 auto;padding:6px 12px;min-width:0}
-.cell .k{font-size:12px;color:var(--ink-subtle);display:block}
-.cell .v{display:flex;align-items:center;gap:6px;color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;font-size:12px}
-.cell .v .mono{font-weight:400;color:var(--ink-muted)}
-.cell .v.warn{color:var(--ink-muted)}
 
 /* sheet */
 .sheet-tab{position:fixed;right:0;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;
@@ -238,70 +176,61 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
 /* (g) the health strip is one sentence */
 .hsent{margin-top:32px;padding:0 16px;font-size:12px;line-height:1.4;color:var(--ink-subtle)}
 
-/* ---- 2026-10-13 §4.2: workflows list ---- */
-.toolbar{display:flex;align-items:center;gap:8px}
-.toolbar .gap{width:8px}
-.ghead{display:flex;align-items:center;gap:8px;height:32px;padding:4px 16px;border-top:1px solid var(--line1);background:var(--s2)}
-.ghead:first-of-type{border-top:0;border-radius:12px 12px 0 0}
-.ghead .rname{font-family:var(--mono);font-size:12px;letter-spacing:-.1px;font-weight:500;color:var(--ink)}
-.ghead .rdesc{color:var(--ink-subtle);font-size:12px}
-.ghead .rdesc::before{content:"·";margin-right:8px}
-.ghead.collapsed{height:34px;border-bottom:0;border-radius:0 0 12px 12px}
-.ghead.collapsed .rdesc::before{content:none}
-.ghead.collapsed .sepdot{color:var(--ink-subtle);padding:0 4px}
-.ghead.collapsed .btn{margin-left:auto}
-table.st{width:100%;border-collapse:collapse}
-.st th{font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);text-align:left;
-  padding:5px 8px;white-space:nowrap;border-bottom:1px solid var(--line1)}
-.st th.stage{text-transform:none;letter-spacing:-.1px;font-family:var(--mono);font-size:12px;color:var(--ink-muted);font-weight:400}
-.st th.subject{width:214px}
-.st th.inputs{width:124px}
-.st th.now{width:184px}
-.st td{padding:5px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--line1);height:30px;vertical-align:middle}
-.st tbody tr:first-child td{border-top:0}
-.st tbody tr:hover td{background:var(--s2)}
-.st th:first-child,.st td:first-child{padding-left:16px}
-.st th:last-child,.st td:last-child{padding-right:16px}
-.st td.subject{font-weight:500;color:var(--ink)}
-.st td.subject .team{color:var(--ink-subtle)}
-.st td.inputs{color:var(--ink-muted);font-size:12px}
-.st td.inputs .ok{color:var(--success)}
-.st td.inputs .mono{color:var(--ink-muted)}
-.st td.stage{color:var(--ink-muted);font-size:12px}
-.st td.stage .g{display:inline-block;width:12px;margin-right:3px}
-.st td.stage .b{color:var(--ink-subtle)}
-.st td.stage .b.mono{color:var(--ink-muted)}
-.st td.stage.badge{color:var(--ink)}
-.st td.stage.badge .mono{color:var(--ink-muted)}
-.st td.stage.badge .reason{color:var(--ink-subtle)}
-.st td.now{color:var(--ink-subtle);font-size:12px}
-.st td.now .mono{color:var(--ink-muted)}
-.legend{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 16px 0;font-size:12px;color:var(--ink-subtle)}
-.legend .keys{display:flex;gap:14px;white-space:nowrap}
-.legend .keys span{display:inline-flex;align-items:center;gap:4px}
-.legend .keys span b{font-weight:500;color:var(--ink-muted)}
 
-/* ---- wave 2 (fixes.md, workflows): page overrides appended after the shell ---- */
-/* layout: INPUTS fits "PRD-exports.md ✓"; NOW fits the fixture's longest shortened sentence without losing a word */
-.st th.inputs{width:132px}
-.st th.now{width:240px}
-/* harden: initial focus is the first row (a read action: ↵ opens it); the ring sits inside the panel */
-.st tbody tr[aria-current="true"] td{background:var(--s3)}
-.st tbody tr.is-focused{outline-offset:-2px}
-/* the collapsed tail of a group: a link, no row chrome */
-.st tbody tr.more td{height:28px;padding-top:3px;padding-bottom:5px;font-size:12px;color:var(--ink-subtle)}
-.st tbody tr.more a{color:var(--ink-subtle)}
-.st tbody tr.more a:hover{color:var(--ink-muted)}
-.st tbody tr.more:hover td{background:transparent}
-/* animate: hover and press only, 120 ms, ease-out-quart; colour properties only, nothing moves on load */
-.btn,.st tbody td,.st tbody tr.more a,.seg a{
-  transition:background-color 120ms cubic-bezier(.25,1,.5,1),border-color 120ms cubic-bezier(.25,1,.5,1),color 120ms cubic-bezier(.25,1,.5,1)}
+/* ---- the calm pass, page rules (home and workflows share these) ---- */
+.pagehead{align-items:flex-end;padding:16px 0 0}
+.band{margin-inline:-16px;padding:32px 16px}
+.band>.section,.band>.cols{padding-inline:8px}
+.ph-l{display:flex;align-items:baseline;gap:16px}
+.pagehead .sub{margin:0;font-size:13px;color:var(--ink-subtle)}
+.attn-word{color:var(--attn);font-weight:500}
+.sh .more{margin-left:auto;font-size:12px;color:var(--ink-subtle)}
+a.more:hover{color:var(--ink-muted)}
+.rows{display:block}
+.row{min-height:40px;padding-top:4px;padding-bottom:4px}
+.row:hover{background:rgba(247,248,248,.04)}
+.row .chip{align-self:center;justify-self:start}
+.row .t{min-width:0;display:flex;align-items:baseline;gap:8px}
+.row .row-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
+.row .id{white-space:nowrap}
+.row .tag{font-size:12px;color:var(--ink-subtle);white-space:nowrap;flex:none}
+.row .m{font-size:12px;line-height:1.35;color:var(--ink-subtle);min-width:0}
+.row .w{font-size:12px;color:var(--ink-subtle);text-align:right;white-space:nowrap}
+.row .a{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.row .key{color:var(--ink-subtle);font-weight:400;margin-left:2px}
+.row .recipe{font-family:var(--mono);font-size:12px;letter-spacing:-.1px;color:var(--ink-subtle);white-space:nowrap;flex:none}
+.row .mono{font-size:12px}
+.pb{display:flex;align-items:center;gap:12px;min-width:0}
+.bar{display:flex;gap:2px;width:84px;height:4px;flex:none}
+.bar i{flex:1;border-radius:1px;background:var(--line2)}
+.bar i.on{background:var(--ink-subtle)}
+.bar i.cur{background:var(--ink)}
+.bar.attn i.cur{background:var(--attn)}
+.stage{font-size:12px;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage .b{color:var(--ink-subtle)}
+.btn.chev{width:28px;padding:0;justify-content:center}
+.btn.sm.chev{width:24px}
+.mwrap{position:relative;display:inline-flex}
+.mwrap .menu{right:0;top:32px}
+.btn,.row,a.more{transition:background-color 120ms cubic-bezier(.25,1,.5,1),border-color 120ms cubic-bezier(.25,1,.5,1),color 120ms cubic-bezier(.25,1,.5,1)}
 .btn:active{background:var(--s2);border-color:var(--line3)}
 .btn.term:active{background:var(--s1)}
-/* adapt: desktop first at 1280 × 800; the 900 × 600 minimum scrolls. Under 1100 the stage columns keep their
-   width (they are the recipe's states; squeezing them loses the glyph's word) and the list scrolls sideways
-   inside its panel; the page head wraps its toolbar under the counts. */
-@media (max-width:1100px){.panel{overflow-x:auto}.pagehead{flex-wrap:wrap}}
+
+/* workflows */
+.toolbar{display:flex;align-items:center;gap:8px}
+.wr{grid-template-columns:96px minmax(0,200px) 244px minmax(0,1fr) 56px 156px}
+.wr.is-focused{background:var(--s3);outline-offset:-2px}
+.sh.solo{margin-bottom:0}
+.sh.solo h2{font-weight:500}
+.row.more{min-height:32px;font-size:12px;padding-left:16px;display:block;border-top:1px solid var(--line1)}
+.row.more a{color:var(--ink-subtle)}
+.row.more a:hover{color:var(--ink-muted)}
+.row.more:hover{background:transparent}
+@media (max-width:1100px){
+  .pagehead{flex-wrap:wrap}
+  .wr{grid-template-columns:96px minmax(0,1fr) 244px 56px}
+  .wr .now,.wr .a{display:none}
+}
 </style>
 </head>
 <body>
@@ -324,94 +253,108 @@ table.st{width:100%;border-collapse:collapse}
     <span class="sep" aria-hidden="true">·</span><span>profile changed</span>
   </button>
 </header>
+<div class="attn-band" role="presentation"></div>
 
 <main class="page">
-  <div class="pagehead">
-    <div style="display:flex;align-items:baseline;gap:14px">
-      <h1>Workflows</h1>
-      <div class="sub">
-        <span><b>12</b> open</span>
-        <span>·</span><span class="attn-word"><i aria-hidden="true"></i>3 need you</span>
-        <span>·</span><span><b>2</b> running at a desk</span>
-      </div>
+  <!-- empty (0 open): one line, "Nothing open. intake.linear polls every 15m; Start… runs a recipe now." with Start… focused, the only time it takes the initial focus. -->
+  <!-- X on the focused row: its NOW cell becomes the one-line confirm, e.g. "Cancel INC-14? The mitigation agent is
+       stopped and the comms child closes. [Cancel instance] [Keep]"; Esc keeps. -->
+  <header class="pagehead">
+    <div class="ph-l">
+      <h1 class="page-title">Workflows</h1>
+      <p class="sub"><span>12 open</span><span>·</span><span class="attn-word">3 need you</span><span>·</span><span>2 running at a desk</span></p>
     </div>
     <div class="toolbar">
       <button class="btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by recipe">Recipe <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
       <button class="btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by subject">Subject <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
-      <span class="gap" aria-hidden="true"></span>
-      <button class="btn primary" aria-label="Start a workflow (Command N)">Start… <kbd>⌘N</kbd></button>
+      <button class="btn ghost" aria-label="Keyboard shortcuts"><kbd>?</kbd> Shortcuts</button>
+      <button class="btn primary" aria-label="Start a workflow">Start…</button>
     </div>
-  </div>
+  </header>
 
-  <!-- ROOT INSTANCES, grouped by recipe; each group's columns are its recipe's states in path order (§5.1) -->
-  <!-- empty (0 open): the panel holds one line, "Nothing open. intake.linear polls every 15m; Start… ⌘N runs a recipe now."
-       with Start… focused, the only time it takes the initial focus. -->
-  <!-- X on the focused row: its NOW cell becomes the one-line confirm, e.g. "Cancel INC-14? The mitigation agent is
-       stopped and the comms child closes. [Cancel instance] [Keep]"; Esc keeps. -->
-  <section class="panel" aria-label="Open workflows by recipe">
-    <div class="ghead"><span class="rname">workflow.project</span><span class="rdesc">Linear projects</span><span class="count">3</span></div>
-    <table class="st" aria-label="workflow.project instances">
-      <thead><tr>
-        <th scope="col" class="subject">Subject</th><th scope="col" class="inputs">Inputs</th>
-        <th scope="col" class="stage">intake</th>
-        <th scope="col" class="stage">studio</th>
-        <th scope="col" class="stage">scoping</th>
-        <th scope="col" class="stage">design</th>
-        <th scope="col" class="stage">build</th>
-        <th scope="col" class="stage">verify</th>
-        <th scope="col" class="stage">ship</th>
-        <th scope="col" class="now">Now</th>
-      </tr></thead>
-      <tbody>
-      <tr class="is-focused" tabindex="0" aria-current="true"><td class="subject"><span class="team">ENG ·</span> Tab manager v2</td><td class="inputs"><span class="mono">PRD-tabs.md</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">r2/3</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="now">challenger round 2 · <span class="mono">84k / 600k</span></td></tr>
-      <tr><td class="subject"><span class="team">ENG ·</span> Billing exports</td><td class="inputs"><span class="mono">PRD-exports.md</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">desk</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="now">with you: import the design output</td></tr>
-      <tr><td class="subject"><span class="team">APP ·</span> Offline sync</td><td class="inputs"><span class="mono">PRD-sync.md</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">4/9</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="now"><span class="mono">ITM-01JD6</span> checks · 1 parked</td></tr>
-      </tbody>
-    </table>
-    <div class="ghead"><span class="rname">triage.alert</span><span class="rdesc">webhooks</span><span class="count">6</span></div>
-    <table class="st" aria-label="triage.alert instances">
-      <thead><tr>
-        <th scope="col" class="subject">Subject</th><th scope="col" class="inputs">Inputs</th>
-        <th scope="col" class="stage">received</th>
-        <th scope="col" class="stage">classify</th>
-        <th scope="col" class="stage">route</th>
-        <th scope="col" class="stage">done</th>
-        <th scope="col" class="now">Now</th>
-      </tr></thead>
-      <tbody>
-      <tr><td class="subject">sentry #8812 TypeError</td><td class="inputs"><span class="mono">payload</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">desk</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="now">needs your severity</td></tr>
-      <tr><td class="subject">sentry #8809 429s</td><td class="inputs"><span class="mono">payload</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span> <span class="b">→ <span class="mono">ITM-01JF0</span> queued</span></td><td class="now">done 12m</td></tr>
-      <tr><td class="subject">pagerduty P-2211</td><td class="inputs"><span class="mono">payload</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage badge" colspan="3"><span class="g g-esc" role="img" aria-label="escalated">▲</span> escalated: <span class="mono">gate.severity</span> <span class="reason">0.91 → <span class="mono">INC-14</span> opened</span></td><td class="now"><button class="btn sm term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button></td></tr>
-      <tr class="more"><td colspan="7"><a href="#" aria-label="3 more done triage.alert instances: sentry #8801, #8797, #8790; expands the group">… 3 more done · sentry #8801, #8797, #8790</a></td></tr>
-      </tbody>
-    </table>
-    <div class="ghead"><span class="rname">incident.response</span><span class="count">1</span></div>
-    <table class="st" aria-label="incident.response instances">
-      <thead><tr>
-        <th scope="col" class="subject">Subject</th><th scope="col" class="inputs">Inputs</th>
-        <th scope="col" class="stage">detected</th>
-        <th scope="col" class="stage">triage</th>
-        <th scope="col" class="stage">mitigate ⇄ verify</th>
-        <th scope="col" class="stage">comms</th>
-        <th scope="col" class="stage">postmortem</th>
-        <th scope="col" class="stage">closed</th>
-        <th scope="col" class="now">Now</th>
-      </tr></thead>
-      <tbody>
-      <tr><td class="subject"><span class="mono">INC-14</span> Outbox retry storm</td><td class="inputs"><span class="mono">P-2211</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">r1/3</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">child</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="now">agent rolling back in <span class="mono">ITM-01JG2</span> · comms posting</td></tr>
-      </tbody>
-    </table>
-    <div class="ghead collapsed"><span class="rname">intake.linear</span><span class="count">2</span><span class="rdesc">last 12:15 · 2 new items</span><span class="sepdot" aria-hidden="true">·</span><span class="rname">scoping.project</span><span class="rdesc">(standalone)</span><span class="count">0</span><button class="btn ghost sm" aria-expanded="false" aria-label="Show all recipe groups">show all <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
+  <section class="band" aria-labelledby="g-workflow.project">
+    <div class="section">
+      <div class="sh"><h2 id="g-workflow.project">workflow.project</h2><span class="meta">Linear projects · 3</span></div>
+      <div class="rows" role="list" aria-label="workflow.project instances">
+<div class="row wr is-focused" tabindex="0" aria-current="true" aria-label="Tab manager v2">
+  <span class="chip ok">Running</span>
+  <div class="t"><span class="row-title">Tab manager v2</span></div>
+  <span class="pb"><span class="bar " role="img" aria-label="scoping, step 3 of 7"><i class="on"></i><i class="on"></i><i class="cur"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span><span class="stage">scoping <span class="b">r2/3</span></span></span>
+  <span class="m now">challenger round 2 · <span class="mono">84k / 600k</span></span>
+  <span class="w">46m</span>
+  <div class="a"></div>
+</div>
+<div class="row wr" aria-label="Billing exports">
+  <span class="chip ">With you</span>
+  <div class="t"><span class="row-title">Billing exports</span></div>
+  <span class="pb"><span class="bar " role="img" aria-label="design, step 4 of 7"><i class="on"></i><i class="on"></i><i class="on"></i><i class="cur"></i><i class=""></i><i class=""></i><i class=""></i></span><span class="stage">design <span class="b">· desk</span></span></span>
+  <span class="m now">with you: import the design output</span>
+  <span class="w">20h</span>
+  <div class="a"></div>
+</div>
+<div class="row wr" aria-label="Offline sync">
+  <span class="chip ok">Running</span>
+  <div class="t"><span class="row-title">Offline sync</span></div>
+  <span class="pb"><span class="bar " role="img" aria-label="build, step 5 of 7"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="cur"></i><i class=""></i><i class=""></i></span><span class="stage">build <span class="b">4/9</span></span></span>
+  <span class="m now"><span class="id mono">ITM-01JD6</span> checks · 4 done · 1 running · 1 parked · 3 queued</span>
+  <span class="w">3h 12m</span>
+  <div class="a"></div>
+</div>
+      </div>
+    </div>
   </section>
-
-  <div class="legend">
-    <div class="keys" aria-label="Keyboard shortcuts">
-      <span><kbd>↵</kbd> opens</span>
-      <span><kbd>A</kbd> answer</span>
-      <span><kbd>B</kbd> hand back</span>
-      <span><kbd>X</kbd> cancel, then confirm</span>
+  <section class="band" aria-labelledby="g-triage.alert">
+    <div class="section">
+      <div class="sh"><h2 id="g-triage.alert">triage.alert</h2><span class="meta">webhooks · 6</span></div>
+      <div class="rows" role="list" aria-label="triage.alert instances">
+<div class="row wr" aria-label="sentry #8812 TypeError">
+  <span class="chip attn">Decision</span>
+  <div class="t"><span class="row-title">sentry #8812 TypeError</span></div>
+  <span class="pb"><span class="bar attn" role="img" aria-label="classify, step 2 of 4"><i class="on"></i><i class="cur"></i><i class=""></i><i class=""></i></span><span class="stage">classify <span class="b">· desk</span></span></span>
+  <span class="m now">needs your severity</span>
+  <span class="w">4m</span>
+  <div class="a"><button class="btn sm" aria-label="Answer: classify sentry #8812">Answer</button></div>
+</div>
+<div class="row wr" aria-label="sentry #8809 429s">
+  <span class="chip ">Done</span>
+  <div class="t"><span class="row-title">sentry #8809 429s</span></div>
+  <span class="pb"><span class="bar " role="img" aria-label="done, step 4 of 4"><i class="on"></i><i class="on"></i><i class="on"></i><i class="cur"></i></span><span class="stage">done</span></span>
+  <span class="m now">→ <span class="mono">ITM-01JF0</span> queued</span>
+  <span class="w">12m</span>
+  <div class="a"></div>
+</div>
+<div class="row wr" aria-label="pagerduty P-2211">
+  <span class="chip attn">Escalated</span>
+  <div class="t"><span class="row-title">pagerduty P-2211</span></div>
+  <span class="pb"><span class="bar attn" role="img" aria-label="classify, step 2 of 4"><i class="on"></i><i class="cur"></i><i class=""></i><i class=""></i></span><span class="stage">classify</span></span>
+  <span class="m now">gate.severity 0.91 → INC-14 opened</span>
+  <span class="w">1h 24m</span>
+  <div class="a"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button></div>
+</div>
+        <div class="row more"><a href="#" aria-label="3 more done triage.alert instances: sentry #8801, #8797, #8790; expands the group">… 3 more done</a></div>
+      </div>
     </div>
-  </div>
+  </section>
+  <section class="band" aria-labelledby="g-incident.response">
+    <div class="section">
+      <div class="sh"><h2 id="g-incident.response">incident.response</h2><span class="meta">1</span></div>
+      <div class="rows" role="list" aria-label="incident.response instances">
+<div class="row wr" aria-label="Outbox retry storm">
+  <span class="chip ok">Running</span>
+  <div class="t"><span class="row-title">Outbox retry storm</span></div>
+  <span class="pb"><span class="bar " role="img" aria-label="mitigate, step 3 of 6"><i class="on"></i><i class="on"></i><i class="cur"></i><i class=""></i><i class=""></i><i class=""></i></span><span class="stage">mitigate <span class="b">⇄ verify</span></span></span>
+  <span class="m now">agent rolling back in <span class="mono">ITM-01JG2</span> · comms posting</span>
+  <span class="w">1h 24m</span>
+  <div class="a"></div>
+</div>
+      </div>
+    </div>
+  </section>
+  <section class="band" aria-label="Other recipes">
+    <div class="section">
+      <div class="sh solo"><h2>intake.linear</h2><span class="meta">2 · last 12:15 · 2 new items</span><h2>scoping.project</h2><span class="meta">standalone · 0</span><button class="btn ghost sm more" aria-expanded="false" aria-label="Show all recipe groups">show all <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
+    </div>
+  </section>
 </main>
 
 <button class="sheet-tab" aria-label="Detail sheet, closed. Last opened: INC-14">
