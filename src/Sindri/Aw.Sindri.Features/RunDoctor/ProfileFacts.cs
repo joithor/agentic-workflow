@@ -10,7 +10,7 @@ namespace Aw.Sindri.Features.RunDoctor;
 /// Reads what the doctor's profile check judges: the live profile, the saved approval and the latest recorded one; and
 /// the context rows that hang off the approved profile.
 /// </summary>
-internal sealed class ProfileFacts(IProfileSource live, IApprovals approvals, ILedgerStore ledger, EventFactory events, ContextChecks context)
+internal sealed class ProfileFacts(IProfileSource live, IApprovals approvals, ILedgerStore ledger, EventFactory events, ContextEngineChecks context)
 {
     public async ValueTask<(Result<LoadedProfile> Live, Result<LoadedProfile?> Saved, Result<RecordedApproval?> Recorded)> Read(CancellationToken cancellationToken)
     {

@@ -219,7 +219,7 @@ public sealed class ApproveProfileTests
         var status = (await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, _h.Store, _h.Events).Handle(new GetStatusRequest(), Token)).Value;
         var validated = (await new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events, FakeContextEngine.Instance).Handle(new ValidateProfileRequest(), Token)).Value;
         var doctor = (await new RunDoctorService(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, _h.Store, _h.Events,
-            new ContextChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))))),
+            new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))))),
             new FakeControlPlaneProbe(), new FakeTemporalServer(), _h.Clock)
             .Handle(new RunDoctorRequest(), Token)).Value.Checks.Single(c => c.Name == "profile");
         var summary = SummaryText.Render(status, new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 1, 1), showUi: false)

@@ -4,9 +4,7 @@ using Aw.Context.Testing.Fixtures;
 using Aw.Kernel.Telemetry;
 using Aw.Kernel.Telemetry.Testing;
 using Aw.Sindri.Core.Events;
-using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.ApiGoldens;
 using Microsoft.Extensions.DependencyInjection;
@@ -92,19 +90,6 @@ public sealed class ContextApiTests : IDisposable
         Assert.DoesNotContain("focused pane", sink.Text, StringComparison.Ordinal);
     }
 
-    /// <summary>A host whose profile maps the fixture repo, approved by the human, with one context-docs-refresh run done.</summary>
-    private async Task<GoldenHost> Approved(bool sessions, CancellationToken ct, Action<IServiceCollection>? extra = null)
-    {
-        var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: split-panes, path: \"{_repo.Path}\" }}\n"
-            + $"context:\n  docs: {{ globs: [\"docs/**/*.md\"] }}\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n";
-        var host = await GoldenHost.Start(temporary: true, ct, yaml, extra: extra);
-        var hash = (await host.LiveHash(ct)).Value;
-        var approved = await host.Http.Ask(Post("/sindri/profile/approve", $"{{\"hash\":\"{hash}\",\"confirmed\":true}}", Human(host.Token.Value)));
-        Assert.Equal(HttpStatusCode.OK, approved.Status);
-        await using var scope = host.App.Services.CreateAsyncScope();
-        var refresh = scope.ServiceProvider.GetServices<IScheduledService>().Single(s => s.Identity().Value == "context-docs-refresh");
-        var grant = host.App.Services.GetRequiredService<HeldLease>().Current!;   // why: the started host holds the lease
-        Assert.True((await refresh.Run(new ScheduledRun(grant, DateTimeOffset.UnixEpoch), ct)).IsSuccess);
-        return host;
-    }
+    private Task<GoldenHost> Approved(bool sessions, CancellationToken ct, Action<IServiceCollection>? extra = null) =>
+        ContextHosts.Approved(_repo, sessions, ct, extra);
 }

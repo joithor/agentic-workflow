@@ -12,7 +12,7 @@ namespace Aw.Sindri.Features.RunDoctor;
 /// </summary>
 /// <param name="context">The context engine.</param>
 /// <param name="onyx">The onyx check.</param>
-internal sealed class ContextChecks(IContextEngine context, OnyxDoctor onyx)
+internal sealed class ContextEngineChecks(IContextEngine context, OnyxDoctor onyx)
 {
     /// <summary>The checks, in the order doctor prints them.</summary>
     /// <param name="approved">The approved profile, or null.</param>

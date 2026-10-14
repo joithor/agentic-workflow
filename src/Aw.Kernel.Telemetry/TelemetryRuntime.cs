@@ -27,6 +27,11 @@ public sealed class TelemetryRuntime : IDisposable
         _logs = new JsonLinesLoggerProvider(sink, scrubber, options.Clock, withheld);
         var filter = new LoggerFilterOptions { MinLevel = options.MinimumLevel };
         filter.Rules.Add(new LoggerFilterRule(providerName: null, RequestLineCategory, options.MinimumLevel > LogLevel.Warning ? options.MinimumLevel : LogLevel.Warning, filter: null));
+        foreach (var category in options.TraceCappedCategories)
+        {
+            filter.Rules.Add(new LoggerFilterRule(providerName: null, category, options.MinimumLevel > LogLevel.Debug ? options.MinimumLevel : LogLevel.Debug, filter: null));
+        }
+
         var factory = new LoggerFactory([], filter);
         factory.AddProvider(_logs);
         LoggerFactory = factory;

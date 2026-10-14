@@ -19,7 +19,7 @@ public sealed class RunDoctorTests
 
     private RunDoctorService Service(ILedgerStore? ledger = null) =>
         new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events,
-            new ContextChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))))),
+            new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))))),
             _api, _temporal, _h.Clock);
 
     [Fact, Trait("Lane", "unit")]

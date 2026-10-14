@@ -11,7 +11,7 @@ using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.RunDoctor;
-using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Host.Text;
 using Aw.Sindri.Tests.ApiGoldens;
 using Microsoft.Extensions.DependencyInjection;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
@@ -141,7 +141,9 @@ public sealed class OnyxContextTests : IDisposable
             Assert.StartsWith("SND-SECRET-003: ", doctor.Detail, StringComparison.Ordinal);
             Assert.Contains($"chmod 600 {Path.GetFullPath(file)}", doctor.Detail, StringComparison.Ordinal);
             Assert.DoesNotContain(onyx.Token, doctor.Detail + doctor.Fix, StringComparison.Ordinal);
-            Assert.Empty(onyx.Requests);   // refused before any call to Onyx
+            // refused before any call that carries the key; only the public, unauthenticated version route is asked
+            // (by S-1M's context:sources row, which reads the sources status)
+            Assert.All(onyx.Requests, r => Assert.Equal("version", r.Operation));
         }
         finally
         {

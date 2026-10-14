@@ -3,7 +3,7 @@ using System.Text;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 
-namespace Aw.Sindri.Host.Commands;
+namespace Aw.Sindri.Host.Text;
 
 /// <summary>
 /// The text form of context results (context spec §8.4 "Text output"): a header with the anchors and map version, a

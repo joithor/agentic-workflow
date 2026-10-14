@@ -131,6 +131,8 @@ public sealed class GoldenHost : IAsyncDisposable
     private string? Environment(string name) => name switch
     {
         "AW_SINDRI_HOME" => _home.Path,
+        "HOME" => Path.Combine(_home.Path, "provider-home"),            // doctor's provider files: never the real ones
+        "AW_SINDRI_CLAUDE_BIN" => Path.Combine(_home.Path, "no-claude"),  // mcp register --apply: never the real claude
         "TMPDIR" when _elsewhere is not null => Path.Combine(_elsewhere.Path, "tmp"),
         "AW_STATE_DIR" when _elsewhere is not null => Path.Combine(_elsewhere.Path, "state"),
         _ => _environment is not null && _environment.TryGetValue(name, out var value) ? value : null,

@@ -3625,6 +3625,75 @@ override Aw.Sindri.Core.Events.WorkflowEventPayload.GetHashCode() -> int
 override Aw.Sindri.Core.Events.WorkflowEventPayload.ToString() -> string!
 static Aw.Sindri.Core.Events.WorkflowEventPayload.operator !=(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
 static Aw.Sindri.Core.Events.WorkflowEventPayload.operator ==(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
+Aw.Sindri.Core.Mcp.ClaudeRun
+Aw.Sindri.Core.Mcp.ClaudeRun.<Clone>$() -> Aw.Sindri.Core.Mcp.ClaudeRun!
+Aw.Sindri.Core.Mcp.ClaudeRun.ClaudeRun(int ExitCode, string! ErrorTail) -> void
+Aw.Sindri.Core.Mcp.ClaudeRun.Deconstruct(out int ExitCode, out string! ErrorTail) -> void
+Aw.Sindri.Core.Mcp.ClaudeRun.Equals(Aw.Sindri.Core.Mcp.ClaudeRun? other) -> bool
+Aw.Sindri.Core.Mcp.ClaudeRun.ErrorTail.get -> string!
+Aw.Sindri.Core.Mcp.ClaudeRun.ErrorTail.init -> void
+Aw.Sindri.Core.Mcp.ClaudeRun.ExitCode.get -> int
+Aw.Sindri.Core.Mcp.ClaudeRun.ExitCode.init -> void
+Aw.Sindri.Core.Mcp.IClaudeCli
+Aw.Sindri.Core.Mcp.IClaudeCli.Run(System.Collections.Generic.IReadOnlyList<string!>! arguments, string! workingDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Mcp.ClaudeRun?>
+Aw.Sindri.Core.Mcp.IProviderFiles
+Aw.Sindri.Core.Mcp.IProviderFiles.Read(Aw.Sindri.Core.Mcp.ProviderFile file, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Mcp.ProviderFileRead!>
+Aw.Sindri.Core.Mcp.McpRegistration
+Aw.Sindri.Core.Mcp.McpScope
+Aw.Sindri.Core.Mcp.McpScopeFinding
+Aw.Sindri.Core.Mcp.McpScopeFinding.<Clone>$() -> Aw.Sindri.Core.Mcp.McpScopeFinding!
+Aw.Sindri.Core.Mcp.McpScopeFinding.Deconstruct(out Aw.Sindri.Core.Mcp.ProviderFile File, out string! Path, out Aw.Sindri.Core.Mcp.McpScopeState State, out string? Problem) -> void
+Aw.Sindri.Core.Mcp.McpScopeFinding.Equals(Aw.Sindri.Core.Mcp.McpScopeFinding? other) -> bool
+Aw.Sindri.Core.Mcp.McpScopeFinding.File.get -> Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.McpScopeFinding.File.init -> void
+Aw.Sindri.Core.Mcp.McpScopeFinding.McpScopeFinding(Aw.Sindri.Core.Mcp.ProviderFile File, string! Path, Aw.Sindri.Core.Mcp.McpScopeState State, string? Problem) -> void
+Aw.Sindri.Core.Mcp.McpScopeFinding.Path.get -> string!
+Aw.Sindri.Core.Mcp.McpScopeFinding.Path.init -> void
+Aw.Sindri.Core.Mcp.McpScopeFinding.Problem.get -> string?
+Aw.Sindri.Core.Mcp.McpScopeFinding.Problem.init -> void
+Aw.Sindri.Core.Mcp.McpScopeFinding.State.get -> Aw.Sindri.Core.Mcp.McpScopeState
+Aw.Sindri.Core.Mcp.McpScopeFinding.State.init -> void
+Aw.Sindri.Core.Mcp.McpScopeState
+Aw.Sindri.Core.Mcp.McpScopeState.Unreadable = 1 -> Aw.Sindri.Core.Mcp.McpScopeState
+Aw.Sindri.Core.Mcp.McpScopeState.UserWide = 0 -> Aw.Sindri.Core.Mcp.McpScopeState
+Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.ProviderFile.Claude = 0 -> Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.ProviderFile.Codex = 1 -> Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.ProviderFile.Cursor = 2 -> Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.ProviderFileRead
+Aw.Sindri.Core.Mcp.ProviderFileRead.<Clone>$() -> Aw.Sindri.Core.Mcp.ProviderFileRead!
+Aw.Sindri.Core.Mcp.ProviderFileRead.Deconstruct(out Aw.Sindri.Core.Mcp.ProviderFile File, out string! Path, out string? Text, out string? Problem) -> void
+Aw.Sindri.Core.Mcp.ProviderFileRead.Equals(Aw.Sindri.Core.Mcp.ProviderFileRead? other) -> bool
+Aw.Sindri.Core.Mcp.ProviderFileRead.File.get -> Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.ProviderFileRead.File.init -> void
+Aw.Sindri.Core.Mcp.ProviderFileRead.Path.get -> string!
+Aw.Sindri.Core.Mcp.ProviderFileRead.Path.init -> void
+Aw.Sindri.Core.Mcp.ProviderFileRead.Problem.get -> string?
+Aw.Sindri.Core.Mcp.ProviderFileRead.Problem.init -> void
+Aw.Sindri.Core.Mcp.ProviderFileRead.ProviderFileRead(Aw.Sindri.Core.Mcp.ProviderFile File, string! Path, string? Text, string? Problem) -> void
+Aw.Sindri.Core.Mcp.ProviderFileRead.Text.get -> string?
+Aw.Sindri.Core.Mcp.ProviderFileRead.Text.init -> void
+const Aw.Sindri.Core.Mcp.McpScope.ServerName = "sindri" -> string!
+override Aw.Sindri.Core.Mcp.ClaudeRun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Mcp.ClaudeRun.GetHashCode() -> int
+override Aw.Sindri.Core.Mcp.ClaudeRun.ToString() -> string!
+override Aw.Sindri.Core.Mcp.McpScopeFinding.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Mcp.McpScopeFinding.GetHashCode() -> int
+override Aw.Sindri.Core.Mcp.McpScopeFinding.ToString() -> string!
+override Aw.Sindri.Core.Mcp.ProviderFileRead.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Mcp.ProviderFileRead.GetHashCode() -> int
+override Aw.Sindri.Core.Mcp.ProviderFileRead.ToString() -> string!
+static Aw.Sindri.Core.Mcp.ClaudeRun.operator !=(Aw.Sindri.Core.Mcp.ClaudeRun? left, Aw.Sindri.Core.Mcp.ClaudeRun? right) -> bool
+static Aw.Sindri.Core.Mcp.ClaudeRun.operator ==(Aw.Sindri.Core.Mcp.ClaudeRun? left, Aw.Sindri.Core.Mcp.ClaudeRun? right) -> bool
+static Aw.Sindri.Core.Mcp.McpRegistration.Arguments(Aw.Sindri.Core.Ids.RepoName repo, int port) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Mcp.McpRegistration.Port(System.Uri? running, int? profilePort) -> int
+static Aw.Sindri.Core.Mcp.McpScope.Judge(Aw.Sindri.Core.Mcp.ProviderFileRead! read) -> Aw.Sindri.Core.Mcp.McpScopeFinding?
+static Aw.Sindri.Core.Mcp.McpScopeFinding.operator !=(Aw.Sindri.Core.Mcp.McpScopeFinding? left, Aw.Sindri.Core.Mcp.McpScopeFinding? right) -> bool
+static Aw.Sindri.Core.Mcp.McpScopeFinding.operator ==(Aw.Sindri.Core.Mcp.McpScopeFinding? left, Aw.Sindri.Core.Mcp.McpScopeFinding? right) -> bool
+static Aw.Sindri.Core.Mcp.ProviderFileRead.operator !=(Aw.Sindri.Core.Mcp.ProviderFileRead? left, Aw.Sindri.Core.Mcp.ProviderFileRead? right) -> bool
+static Aw.Sindri.Core.Mcp.ProviderFileRead.operator ==(Aw.Sindri.Core.Mcp.ProviderFileRead? left, Aw.Sindri.Core.Mcp.ProviderFileRead? right) -> bool
+Aw.Sindri.Core.Doctor.IDoctorChecks
+Aw.Sindri.Core.Doctor.IDoctorChecks.Run(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>!>
 Aw.Sindri.Core.Events.ContextRepoSynced.ContextRepoSynced(string! Repo, string? Head, int Added, int Removed, int Kept, int Blocked, string? Code, int Skipped = 0, int Recleaned = 0) -> void
 Aw.Sindri.Core.Events.ContextRepoSynced.Deconstruct(out string! Repo, out string? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code, out int Skipped, out int Recleaned) -> void
 Aw.Sindri.Core.Events.ContextRepoSynced.Recleaned.get -> int
