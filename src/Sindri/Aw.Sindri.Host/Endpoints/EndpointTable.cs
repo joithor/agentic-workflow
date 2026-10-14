@@ -16,6 +16,8 @@ internal static class EndpointTable
         _ = queries.MapExportContextMap();
         _ = queries.MapGetContextMap();
         _ = queries.MapGetContextSources();
+        _ = queries.MapGetInstance();
+        _ = queries.MapGetInstanceEvents();
         _ = queries.MapGetProfile();
         _ = queries.MapGetStatus();
         _ = queries.MapListCommands();

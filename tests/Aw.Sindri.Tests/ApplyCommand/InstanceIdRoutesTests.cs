@@ -57,6 +57,30 @@ public sealed class InstanceIdRoutesTests(DevServer server) : IClassFixture<DevS
         Assert.Equal(("SND-WF-001", false), (notFound.GetProperty("title").GetString(), missing == HttpStatusCode.OK));
     }
 
+    [Fact]
+    public async Task The_instance_and_its_events_are_read_by_id_and_a_bare_item_works_in_the_cli()
+    {
+        await using var served = await Served.Start(_harness.Home, server.Environment);
+        _ = await served.Cli("start", "workflow.step", "--item", "T-52", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
+        _ = await served.Until("T-52/step/1", static v => v.Task is not null);
+        var id = WorkflowInstanceId.Of(InstanceAddress.From("T-52/step/1")).Value;
+
+        var (got, instance) = await Send(served, HttpMethod.Get, $"/sindri/workflow/instances/{id}");
+        var (read, events) = await Send(served, HttpMethod.Get, $"/sindri/workflow/instances/{id}/events?after=0");
+        var (_, unknown) = await Send(served, HttpMethod.Get, $"/sindri/workflow/instances/WFI-{new string('0', 32)}/events");
+        var (address, _) = await Send(served, HttpMethod.Get, "/sindri/workflow/instances/" + Uri.EscapeDataString("T-52/step/1"));
+        var bare = await served.Cli("status", "T-52");
+        var bareEvents = await served.Cli("events", "T-52");
+
+        Assert.Equal((HttpStatusCode.OK, "T-52/step/1"), (got, instance.GetProperty("instance").GetProperty("address").GetString()));
+        Assert.Equal(HttpStatusCode.OK, read);
+        Assert.True(events.GetProperty("cursor").GetInt64() > 0);
+        Assert.Equal("SND-WF-001", unknown.GetProperty("title").GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, address);
+        Assert.Equal(0, bare.Exit);
+        Assert.Equal(0, bareEvents.Exit);
+    }
+
     private static async Task<(HttpStatusCode Status, JsonElement Body)> Send(Served served, HttpMethod method, string route)
     {
         using var request = new HttpRequestMessage(method, route).AsHuman(served.App, terminal: true);

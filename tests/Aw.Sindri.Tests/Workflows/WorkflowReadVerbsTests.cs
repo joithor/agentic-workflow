@@ -89,10 +89,24 @@ public sealed class WorkflowReadVerbsTests : IDisposable
     }
 
     [Theory]
+    [InlineData("status")]
+    [InlineData("events")]
+    public async Task A_reference_that_is_neither_an_address_nor_an_item_is_SND_WF_001_and_exit_2(string verb)
+    {
+        await using var sindri = _harness.Sindri();
+
+        var (exit, stdout, stderr) = await WorkflowsHarness.Cli(sindri, verb, "not-an-address");
+
+        Assert.Equal((2, string.Empty), (exit, stdout));
+        Assert.StartsWith("SND-WF-001 ", stderr, StringComparison.Ordinal);
+    }
+
+    [Theory]
     [InlineData("list", "--needs-me", "--item", "T-1")]
     [InlineData("list", "--state", "Not A State")]
     [InlineData("list", "--colour", "blue")]
-    [InlineData("status", "not-an-address")]
+    [InlineData("status")]
+    [InlineData("status", "--json")]
     [InlineData("events")]
     public async Task Malformed_read_verbs_are_SND_CLI_003_and_exit_2(params string[] args)
     {

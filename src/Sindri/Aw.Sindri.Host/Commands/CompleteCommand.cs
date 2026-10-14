@@ -79,15 +79,15 @@ internal static class CompleteCommand
         }
 
         var (run, outcome, nonce) = fields.Value;
-        return (new CompleteStepRequest(instance.Value, run, outcome, outputs, nonce), json, null);
+        return (new CompleteStepRequest(instance, run, outcome, outputs, nonce), json, null);
     }
 
     /// <summary>The address and the '--flag value' pairs, each flag one this verb takes.</summary>
-    private static Result<(InstanceAddress Instance, List<(string Flag, string Value)> Flags)> Options(string[] args)
+    private static Result<(string Instance, List<(string Flag, string Value)> Flags)> Options(string[] args)
     {
-        if (args is not [var address, .. var pairs] || !InstanceAddress.TryFrom(address, out var instance))
+        if (args is not [{ Length: > 0 } instance, .. var pairs] || instance.StartsWith("--", StringComparison.Ordinal))
         {
-            return SindriErrors.InvalidInput.With($"the first argument is the instance address ('{{item}}/{{recipe}}/{{attempt}}') ({Usage})");
+            return SindriErrors.InvalidInput.With($"the first argument is the instance: its address ('{{item}}/{{recipe}}/{{attempt}}') or a bare item ({Usage})");
         }
 
         if (pairs.Length % 2 != 0)

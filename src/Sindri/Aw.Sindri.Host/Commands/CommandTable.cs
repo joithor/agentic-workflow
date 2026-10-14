@@ -61,7 +61,8 @@ internal static class CommandTable
         using var client = new ControlPlaneClient(probe, options, Headers(session, services));
         var start = new StartCommand(probe, services.GetRequiredService<IControlPlaneLauncher>(), client, output, services.GetRequiredService<TimeProvider>(), session);
         var verbs = new Verbs(client, probe, output, services);
-        var ct = CancellationToken.None;
+        using var interrupt = Interrupt.For(args);   // Ctrl-C ends 'workflow events --follow' with exit 0; no other verb listens
+        var ct = interrupt.Token;
         var harnesses = new ProbeCommands(services.GetRequiredService<IProcessAncestry>(), services.GetRequiredService<IHarnessVersions>(), environment, Interactive());
         return args switch
         {

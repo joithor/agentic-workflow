@@ -832,11 +832,11 @@ static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.operator !=(
 static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.operator ==(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? right) -> bool
 Aw.Sindri.Features.GetInstance.GetInstanceRequest
 Aw.Sindri.Features.GetInstance.GetInstanceRequest.<Clone>$() -> Aw.Sindri.Features.GetInstance.GetInstanceRequest!
-Aw.Sindri.Features.GetInstance.GetInstanceRequest.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
-Aw.Sindri.Features.GetInstance.GetInstanceRequest.Address.init -> void
-Aw.Sindri.Features.GetInstance.GetInstanceRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address) -> void
+Aw.Sindri.Features.GetInstance.GetInstanceRequest.Instance.get -> string!
+Aw.Sindri.Features.GetInstance.GetInstanceRequest.Instance.init -> void
+Aw.Sindri.Features.GetInstance.GetInstanceRequest.Deconstruct(out string! Instance) -> void
 Aw.Sindri.Features.GetInstance.GetInstanceRequest.Equals(Aw.Sindri.Features.GetInstance.GetInstanceRequest? other) -> bool
-Aw.Sindri.Features.GetInstance.GetInstanceRequest.GetInstanceRequest(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address) -> void
+Aw.Sindri.Features.GetInstance.GetInstanceRequest.GetInstanceRequest(string! Instance) -> void
 Aw.Sindri.Features.GetInstance.GetInstanceResponse
 Aw.Sindri.Features.GetInstance.GetInstanceResponse.<Clone>$() -> Aw.Sindri.Features.GetInstance.GetInstanceResponse!
 Aw.Sindri.Features.GetInstance.GetInstanceResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! Instance) -> void
@@ -846,13 +846,13 @@ Aw.Sindri.Features.GetInstance.GetInstanceResponse.Instance.get -> Aw.Sindri.Cor
 Aw.Sindri.Features.GetInstance.GetInstanceResponse.Instance.init -> void
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.<Clone>$() -> Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest!
-Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
-Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.Address.init -> void
+Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.Instance.get -> string!
+Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.Instance.init -> void
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.After.get -> long
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.After.init -> void
-Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out long After) -> void
+Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.Deconstruct(out string! Instance, out long After) -> void
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.Equals(Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest? other) -> bool
-Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.GetInstanceEventsRequest(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, long After = 0) -> void
+Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsRequest.GetInstanceEventsRequest(string! Instance, long After = 0) -> void
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsResponse
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsResponse.<Clone>$() -> Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsResponse!
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsResponse.Cursor.get -> long
