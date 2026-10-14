@@ -15,7 +15,7 @@ public sealed class ServiceAttemptTests : IAsyncDisposable
     {
         _ = await _c.H.HoldLease();
         using var service = _c.H.Callers.EnterService("jobs");   // one service context, as a scheduler run holds it
-        var run = _c.H.Callers.Current!;
+        var run = _c.H.Callers.Current;
 
         var first = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), caller: null);
         var second = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), caller: null);
