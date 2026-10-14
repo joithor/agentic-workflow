@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Validation;
 
@@ -18,4 +19,11 @@ public sealed record DecisionContext(
     ApprovalCheck Approval,
     BlockCatalog Catalog,
     IReadOnlySet<BlockId> Runtimes,
-    IChildRecipeResolver Children);
+    IChildRecipeResolver Children)
+{
+    /// <summary>
+    /// The profile's 'workflow.deskTimeout' (W20): a desk Step's timer runs at least this long, and the park its expiry
+    /// leaves names the time the Step had.
+    /// </summary>
+    public TimeSpan DeskTimeout { get; init; } = DeskTimeouts.DefaultFloor;
+}

@@ -4835,3 +4835,5 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.OpenLaunch.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Action(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant answer, int? amount) -> Aw.Sindri.Core.Challenges.ChallengeAction!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Subject(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> Aw.Sindri.Core.Challenges.ChallengeSubject!
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.get -> System.TimeSpan
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.init -> void
