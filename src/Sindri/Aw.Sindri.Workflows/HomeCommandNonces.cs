@@ -25,7 +25,7 @@ internal sealed class HomeCommandNonces(WorkflowsHome home, TimeProvider clock) 
 
     public CommandNonce Issue() => CommandNonce.From(Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16)));
 
-    public async ValueTask<Result<bool>> Claim(CommandNonce nonce, string subject, CancellationToken cancellationToken)
+    public async ValueTask<Result<NonceClaim>> Claim(CommandNonce nonce, string subject, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(subject);
         var digest = Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(subject)));   // one line, whatever the subject holds
@@ -35,7 +35,7 @@ internal sealed class HomeCommandNonces(WorkflowsHome home, TimeProvider clock) 
             _ = OperatingSystem.IsWindows() ? Directory.CreateDirectory(home.NoncesDirectory) : Directory.CreateDirectory(home.NoncesDirectory, OwnerDirectory);
             if (await TryCreate(FileOf(nonce), $"{digest}\n{now.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture)}\n", cancellationToken).ConfigureAwait(false))
             {
-                return false;
+                return NonceClaim.Fresh;
             }
 
             var lines = await File.ReadAllLinesAsync(FileOf(nonce), cancellationToken).ConfigureAwait(false);
@@ -50,7 +50,7 @@ internal sealed class HomeCommandNonces(WorkflowsHome home, TimeProvider clock) 
             }
 
             return string.Equals(claimed, digest, StringComparison.Ordinal)
-                ? lines.Contains(AppliedMark, StringComparer.Ordinal)
+                ? (lines.Contains(AppliedMark, StringComparer.Ordinal) ? NonceClaim.Applied : NonceClaim.Fresh)   // red: Pending is not told apart yet
                 : WorkflowErrors.NonceRefused.With($"nonce {nonce.Value} was used for another command (fix: run the command again; the CLI fetches a new nonce)");
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) // boundary: an unwritable home is an expected failure
@@ -59,7 +59,7 @@ internal sealed class HomeCommandNonces(WorkflowsHome home, TimeProvider clock) 
         }
     }
 
-    public async ValueTask<Result<Unit>> Applied(CommandNonce nonce, CancellationToken cancellationToken)
+    public async ValueTask<Result<Unit>> Applied(CommandNonce nonce, string subject, CancellationToken cancellationToken)
     {
         try
         {

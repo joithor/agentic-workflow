@@ -32,7 +32,7 @@ public abstract class CommandNoncesContract
         Expect.Equal(5, issued.Distinct(StringComparer.Ordinal).Count());
     }
 
-    /// <summary>A fresh claim hasn't applied anything; after Applied, the same command again is 'already applied'.</summary>
+    /// <summary>A fresh claim is Fresh; the same command again before Applied is Pending; after Applied it is Applied.</summary>
     /// <returns>The test.</returns>
     [Fact]
     public async Task The_same_command_again_after_it_applied_is_already_applied()
@@ -41,12 +41,12 @@ public abstract class CommandNoncesContract
 
         var first = await nonces.Claim(_nonce, "subject-1", Token);
         var beforeApplied = await nonces.Claim(_nonce, "subject-1", Token);
-        _ = await nonces.Applied(_nonce, Token);
+        _ = await nonces.Applied(_nonce, "subject-1", Token);
         var again = await nonces.Claim(_nonce, "subject-1", Token);
 
-        Expect.Equal((true, false), (first.IsSuccess, first.Value));
-        Expect.Equal((true, false), (beforeApplied.IsSuccess, beforeApplied.Value));
-        Expect.Equal((true, true), (again.IsSuccess, again.Value));
+        Expect.Equal((true, NonceClaim.Fresh), (first.IsSuccess, first.Value));
+        Expect.Equal((true, NonceClaim.Pending), (beforeApplied.IsSuccess, beforeApplied.Value));
+        Expect.Equal((true, NonceClaim.Applied), (again.IsSuccess, again.Value));
     }
 
     /// <summary>A nonce claimed for one command refuses another with SND-WF-009.</summary>
@@ -56,7 +56,7 @@ public abstract class CommandNoncesContract
     {
         var nonces = Create(new FakeTimeProvider());
         _ = await nonces.Claim(_nonce, "subject-1", Token);
-        _ = await nonces.Applied(_nonce, Token);
+        _ = await nonces.Applied(_nonce, "subject-1", Token);
 
         var other = await nonces.Claim(_nonce, "subject-2", Token);
 
@@ -89,6 +89,40 @@ public abstract class CommandNoncesContract
         _ = await nonces.Release(_nonce, Token);
         var other = await nonces.Claim(_nonce, "subject-2", Token);
 
-        Expect.Equal((true, false), (other.IsSuccess, other.IsSuccess && other.Value));
+        Expect.Equal((true, NonceClaim.Fresh), (other.IsSuccess, other.Value));
+    }
+
+    /// <summary>An Applied for a claim that is gone (given back, swept) is not lost: the claim is recreated as applied.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Applied_for_a_claim_that_is_gone_recreates_it_as_applied()
+    {
+        var nonces = Create(new FakeTimeProvider());
+        _ = await nonces.Claim(_nonce, "subject-1", Token);
+        _ = await nonces.Release(_nonce, Token);
+
+        var applied = await nonces.Applied(_nonce, "subject-1", Token);
+        var again = await nonces.Claim(_nonce, "subject-1", Token);
+        var other = await nonces.Claim(_nonce, "subject-2", Token);
+
+        Expect.True(applied.IsSuccess);
+        Expect.Equal((true, NonceClaim.Applied), (again.IsSuccess, again.Value));
+        Expect.Equal("SND-WF-009", other.IsError ? other.Error.Code : "accepted");
+    }
+
+    /// <summary>A second request on a pending nonce is Pending too, and a late Release never takes back an applied claim.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_late_Release_never_takes_back_an_applied_claim()
+    {
+        var nonces = Create(new FakeTimeProvider());
+        _ = await nonces.Claim(_nonce, "subject-1", Token);
+        var second = await nonces.Claim(_nonce, "subject-1", Token);
+        _ = await nonces.Applied(_nonce, "subject-1", Token);
+        _ = await nonces.Release(_nonce, Token);
+        var third = await nonces.Claim(_nonce, "subject-1", Token);
+
+        Expect.Equal((true, NonceClaim.Pending), (second.IsSuccess, second.Value));
+        Expect.Equal((true, NonceClaim.Applied), (third.IsSuccess, third.Value));
     }
 }

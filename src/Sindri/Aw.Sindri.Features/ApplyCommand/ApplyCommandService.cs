@@ -63,13 +63,13 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
             return claim.Error;
         }
 
-        if (!claim.Value && await Check(request, address.Value, trigger, cancellationToken).ConfigureAwait(false) is { IsError: true } refused)
+        if (claim.Value != NonceClaim.Applied && await Check(request, address.Value, trigger, cancellationToken).ConfigureAwait(false) is { IsError: true } refused)
         {
             _ = await nonces.Release(nonce, cancellationToken).ConfigureAwait(false);
             return refused.Error;
         }
 
-        return await Send(address.Value, nonce, trigger, alreadyApplied: claim.Value, cancellationToken).ConfigureAwait(false);
+        return await Send(address.Value, nonce, trigger, alreadyApplied: claim.Value == NonceClaim.Applied, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Sends the Update with the nonce as its id; a refusal gives the nonce back, so a refused command consumes nothing (W12).</summary>
@@ -86,7 +86,7 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
             return sent.Error;   // unavailable or timed out: it may have applied, so the claim stays and a retry with this nonce is deduplicated
         }
 
-        var applied = await nonces.Applied(nonce, cancellationToken).ConfigureAwait(false);
+        var applied = await nonces.Applied(nonce, string.Empty, cancellationToken).ConfigureAwait(false);
         return applied.IsError ? applied.Error : new ApplyCommandResponse(sent.Value, nonce, alreadyApplied);
     }
 
@@ -160,7 +160,7 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
     };
 
     /// <summary>The SHA-256 of the command's canonical arguments, so two different commands never share a nonce's subject.</summary>
-    private static string ArgumentsSha(ApplyCommandRequest request)
+    internal static string ArgumentsSha(ApplyCommandRequest request)
     {
         var text = string.Create(CultureInfo.InvariantCulture,
             $"kind {request.Kind}\nanswer {request.Answer}\namount {request.Amount}\nverb {request.Verb?.Value}\ntext {(request.Text is { } t ? Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(t))) : string.Empty)}\n");

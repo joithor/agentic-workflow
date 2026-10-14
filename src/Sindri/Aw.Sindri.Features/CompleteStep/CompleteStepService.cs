@@ -60,11 +60,11 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
         var stored = await Store(request, cancellationToken).ConfigureAwait(false);
         if (stored.IsError)
         {
-            return await GiveBack(nonce, claim.Value, stored.Error, cancellationToken).ConfigureAwait(false);
+            return await GiveBack(nonce, claim.Value == NonceClaim.Applied, stored.Error, cancellationToken).ConfigureAwait(false);
         }
 
         var report = new StepCompleted(caller.Actor, request.Run, request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, reportSha);
-        return await Send(address, nonce, report, alreadyApplied: claim.Value, cancellationToken).ConfigureAwait(false);
+        return await Send(address, nonce, report, alreadyApplied: claim.Value == NonceClaim.Applied, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Sends the report as the Update keyed by the nonce; a refusal gives the claim back, an unconfirmed send keeps it.</summary>
@@ -78,7 +78,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
                 : await GiveBack(nonce, alreadyApplied, sent.Error, cancellationToken).ConfigureAwait(false);
         }
 
-        var applied = await nonces.Applied(nonce, cancellationToken).ConfigureAwait(false);
+        var applied = await nonces.Applied(nonce, string.Empty, cancellationToken).ConfigureAwait(false);
         return applied.IsError ? applied.Error : new CompleteStepResponse(sent.Value, nonce, alreadyApplied);
     }
 

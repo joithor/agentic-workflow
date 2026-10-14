@@ -25,18 +25,24 @@ public interface ICommandNonces
     /// <param name="subject">The command's digest.</param>
     /// <param name="cancellationToken">Cancels the claim.</param>
     /// <returns>
-    /// Whether this same command was already applied with it (the CLI prints 'already applied'); SND-WF-009 when the
-    /// nonce was claimed for another command or is older than <see cref="Lifetime"/>.
+    /// <see cref="NonceClaim.Fresh"/> when this call created the claim, <see cref="NonceClaim.Pending"/> when the same command
+    /// holds it but isn't recorded as applied (a send may have gone out), <see cref="NonceClaim.Applied"/> when it applied
+    /// (the CLI prints 'already applied'); SND-WF-009 when the nonce was claimed for another command or is older than
+    /// <see cref="Lifetime"/>.
     /// </returns>
-    public ValueTask<Result<bool>> Claim(CommandNonce nonce, string subject, CancellationToken cancellationToken);
+    public ValueTask<Result<NonceClaim>> Claim(CommandNonce nonce, string subject, CancellationToken cancellationToken);
 
     /// <summary>Records that the command claimed with <paramref name="nonce"/> was applied.</summary>
     /// <param name="nonce">The nonce.</param>
+    /// <param name="subject">The command's digest, as given to <see cref="Claim"/>; the claim is recreated as applied if it is gone.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>Done.</returns>
-    public ValueTask<Result<Unit>> Applied(CommandNonce nonce, CancellationToken cancellationToken);
+    public ValueTask<Result<Unit>> Applied(CommandNonce nonce, string subject, CancellationToken cancellationToken);
 
-    /// <summary>Gives back a claim whose command was refused, so a rejected command consumes nothing (spec §5.2, W12).</summary>
+    /// <summary>
+    /// Gives back a claim whose command was refused, so a rejected command consumes nothing (spec §5.2, W12). Only the call
+    /// whose <see cref="Claim"/> was <see cref="NonceClaim.Fresh"/> may, and only while nothing it sent is unconfirmed.
+    /// </summary>
     /// <param name="nonce">The nonce.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>Done.</returns>
