@@ -14,7 +14,7 @@ namespace Aw.Context.Testing.Engine;
 public abstract class ContextSourceContract<TSource>
     where TSource : IContextSource
 {
-    private static readonly SourceQuery _orientation = new(["orientation"], AsOf: null, Limit: 50, TimeSpan.FromSeconds(10));
+    private static readonly SourceQuery _orientation = new(["orientation"], AsOf: null, Limit: 50, TimeSpan.FromSeconds(30));   // only bounds a hang: a real source on a loaded machine must not miss it
 
     /// <summary>A fresh source over the fixture's docs.</summary>
     /// <returns>The source.</returns>

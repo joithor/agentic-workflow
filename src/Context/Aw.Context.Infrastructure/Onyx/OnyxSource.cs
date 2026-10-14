@@ -22,7 +22,8 @@ namespace Aw.Context.Infrastructure.Onyx;
 /// <param name="client">The client (key, allowlist, error mapping).</param>
 /// <param name="teams">The Linear team keys an identifier alias may name.</param>
 /// <param name="clock">The clock: a hit's AsOf is when Onyx answered.</param>
-internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, TimeProvider clock) : IContextSource
+/// <param name="callDeadline">How long Onyx gets to answer each fetch and probe call.</param>
+internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, TimeProvider clock, TimeSpan callDeadline) : IContextSource
 {
     private const string SearchRoute = "/api/admin/search";
     private const string SizeRoute = "/api/document/document-size-info";
@@ -32,7 +33,6 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
     private const int MaxRemembered = 1024;
     private static readonly SourceId _id = SourceId.From("onyx");
     private static readonly SourceVersion _unversioned = SourceVersion.From("unversioned");
-    private static readonly TimeSpan _callDeadline = TimeSpan.FromSeconds(4);
     private readonly ConcurrentDictionary<string, OnyxHitFacts> _seen = new(StringComparer.Ordinal);
 
     /// <inheritdoc />
@@ -63,7 +63,7 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
     {
         ArgumentNullException.ThrowIfNull(reference);
         var document = reference.Id.Value;
-        var size = await client.Call<OnyxDocumentSizeReply>(OnyxCall.Get(SizeRoute, ("document_id", document)), _callDeadline, cancellationToken).ConfigureAwait(false);
+        var size = await client.Call<OnyxDocumentSizeReply>(OnyxCall.Get(SizeRoute, ("document_id", document)), callDeadline, cancellationToken).ConfigureAwait(false);
         if (size.IsError)
         {
             return size.Error;
@@ -88,13 +88,13 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
     /// <inheritdoc />
     public async ValueTask<SourceHealth> Probe(CancellationToken cancellationToken)
     {
-        var version = await new OnyxVersionProbe(client.Http).Check(client.Settings, _callDeadline, cancellationToken).ConfigureAwait(false);
+        var version = await new OnyxVersionProbe(client.Http).Check(client.Settings, callDeadline, cancellationToken).ConfigureAwait(false);
         if (version.State != SourceState.Ok)
         {
             return version;
         }
 
-        var me = await client.Call<OnyxMeReply>(OnyxCall.Get(MeRoute), _callDeadline, cancellationToken).ConfigureAwait(false);
+        var me = await client.Call<OnyxMeReply>(OnyxCall.Get(MeRoute), callDeadline, cancellationToken).ConfigureAwait(false);
         return me.IsError
             ? new SourceHealth(SourceState.Unavailable, $"{version.Detail}; the key check failed: {me.Error.Message}", me.Error.Code)
             : Role(version.Detail, me.Value);
@@ -172,7 +172,7 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
         for (var chunk = 0; chunk < chunks && bytes < MaxTextBytes; chunk++)
         {
             var call = OnyxCall.Get(ChunkRoute, ("document_id", document), ("chunk_id", chunk.ToString(CultureInfo.InvariantCulture)));
-            var reply = await client.Call<OnyxChunkReply>(call, _callDeadline, cancellationToken).ConfigureAwait(false);
+            var reply = await client.Call<OnyxChunkReply>(call, callDeadline, cancellationToken).ConfigureAwait(false);
             if (reply.IsError)
             {
                 return reply.Error;

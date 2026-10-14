@@ -15,5 +15,5 @@ internal sealed class OnyxSources(OnyxSourceParts parts)
     /// <param name="teams">The Linear team keys an identifier alias may name ('context.sources.linear.teams').</param>
     /// <returns>The source.</returns>
     public IContextSource Create(OnyxSettings settings, IReadOnlySet<string> teams) =>
-        new OnyxSource(new OnyxClient(settings, parts), teams, parts.Clock);
+        new OnyxSource(new OnyxClient(settings, parts), teams, parts.Clock, parts.CallDeadline);
 }

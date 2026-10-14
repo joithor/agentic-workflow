@@ -25,7 +25,7 @@ internal sealed class OnyxSourceHarness : IDisposable
     public OnyxSourceHarness(Uri url, Func<string, string?> environment)
     {
         Settings = OnyxSettings.Create(url.ToString(), Pointer, FakeOnyxServer.PinnedVersion).Value;
-        Sources = new OnyxSources(new OnyxSourceParts(Http, environment, new FakeTimeProvider(Now), Log));
+        Sources = new OnyxSources(new OnyxSourceParts(Http, environment, new FakeTimeProvider(Now), Log) { CallDeadline = Patient });
         Source = Sources.Create(Settings, _teams);
     }
 
@@ -42,7 +42,13 @@ internal sealed class OnyxSourceHarness : IDisposable
 
     public HttpClient Http { get; } = new(new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false });
 
-    public static SourceQuery Query(params string[] terms) => new(terms, AsOf: null, Limit: 10, TimeSpan.FromSeconds(5));
+    /// <summary>
+    /// The deadline every call gets unless a test exercises the deadline itself: long enough that a loaded machine can't
+    /// turn an answer into SND-CONTEXT-010 (OnyxVersionRequestTests and OnyxSourceFailureTests pin the expiry).
+    /// </summary>
+    public static readonly TimeSpan Patient = TimeSpan.FromSeconds(30);
+
+    public static SourceQuery Query(params string[] terms) => new(terms, AsOf: null, Limit: 10, Patient);
 
     public void Dispose() => Http.Dispose();
 }

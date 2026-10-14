@@ -19,7 +19,7 @@ public sealed class OnyxVersionRequestTests
         using var http = new HttpClient(handler);
         http.DefaultRequestHeaders.Authorization = null;
 
-        var health = await new OnyxVersionProbe(http).Check(_pinned, TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        var health = await new OnyxVersionProbe(http).Check(_pinned, TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
 
         var request = Assert.Single(handler.Requests);
         Assert.Equal(SourceState.Ok, health.State);
@@ -55,7 +55,7 @@ public sealed class OnyxVersionRequestTests
         var handler = new ScriptedHandler((_, _) => Task.FromResult(Reply(status, body)));
         using var http = new HttpClient(handler);
 
-        var health = await new OnyxVersionProbe(http).Check(_pinned, TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        var health = await new OnyxVersionProbe(http).Check(_pinned, TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
 
         Assert.Equal(SourceState.Unavailable, health.State);
         Assert.Equal(ContextErrors.SourceUnavailable.Code, health.Code);
@@ -75,7 +75,7 @@ public sealed class OnyxVersionRequestTests
         await cancel.CancelAsync();
 
         _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            async () => await new OnyxVersionProbe(http).Check(_pinned, TimeSpan.FromSeconds(5), cancel.Token));
+            async () => await new OnyxVersionProbe(http).Check(_pinned, TimeSpan.FromSeconds(30), cancel.Token));
     }
 
     private static HttpResponseMessage Reply(HttpStatusCode status, string body) =>
