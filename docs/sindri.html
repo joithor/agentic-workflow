@@ -255,7 +255,7 @@ svg .dim { opacity: .25; }
   <h1>Sindri grows Sindri.</h1>
   <p class="lede">Sindri is a local, always-on harness that picks up work, sizes it, starts agent sessions with cited context, keeps them on track and ships them through a fixed recipe. It asks the human only when it has to. Named after the dwarf smith who forged Draupnir, the ring that multiplies itself.</p>
   <div class="quote">The human approves direction. Sindri does the finding, the building and the proving. <span class="ref">§17 core tenet</span></div>
-  <p><b>New here?</b> Start with the interactive course, <a href="sindri-course/index.html">How Sindri Works</a>: six short modules with animations, real code and quizzes. These pages are the full reference.</p>
+  <p><b>New here?</b> Start with the interactive course, <a href="sindri-course/index.html">How Sindri Works</a>: six short modules with animations, real code and quizzes. To see how the pieces connect and what using it looks like step by step, open <a href="sindri-architecture.html">How Sindri fits together</a>. These pages are the full reference.</p>
   <p>Part of the finding is looking outward. Sindri {{field harvest|harvests other software factories}}: it reads their designs, checks each practice against its own spec, and builds the ones it lacks through its own factory. <a href="#c-field">See chapter 22</a>. <span class="ref">§17.25</span></p>
   <p>It started from a measurement. A transcript audit of one month of work (406 sessions, 2,911 human turns) found that the human's effort went mostly to the <em>least</em> judgment-heavy parts of agent work. <span class="ref">§1</span></p>
   <figure class="dia">
@@ -328,6 +328,7 @@ svg .dim { opacity: .25; }
     </svg>
     <div class="detail" id="archDetail" aria-live="polite"><p class="hint">Select a component to see what it does, its status and the PRs that build it.</p></div>
   </figure>
+  <p>Play the flows through this picture, from starting your day to shipping a recipe change: <a href="sindri-architecture.html">How Sindri fits together</a>.</p>
   <h3>Built new, not ported <span class="ref">§17.29 · Q7 · readiness §4c</span></h3>
   <p>The TypeScript <code>sindri/</code> package is a guide to <em>what</em> each part does, never to <em>how</em>. The C# app keeps no byte or state compatibility with it, and no TS state is migrated. The one exception is the hook contract: the commands, JSON fields, exit codes and files that the bash hooks and statusline rely on stay frozen until {{the switch}}, checked in CI by running the real hook scripts against the C# binaries. Until then nothing in <code>setup.sh</code>, the providers, MCP registration or launchd points at the C# build, and every proof runs in a temp home through <code>scripts/sindri-prove.sh</code>.</p>
   <h3>Recipes, blocks and Temporal <span class="ref">§17.28 · engine §0, §5 · Q8</span></h3>

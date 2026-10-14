@@ -17,11 +17,15 @@ internal static class EndpointTable
         _ = queries.MapGetItemTimeline();
         _ = queries.MapGetProfile();
         _ = queries.MapGetQueue();
+        _ = queries.MapExportContextMap();
+        _ = queries.MapGetContextMap();
+        _ = queries.MapGetContextSources();
         _ = queries.MapGetStatus();
         _ = queries.MapListCommands();
         _ = queries.MapListItems();
         _ = queries.MapListServices();
         _ = queries.MapPingProcess();
+        _ = queries.MapQueryContext();
         _ = queries.MapStreamEvents();
 
         // ---- commands: one line per slice, sorted ----
@@ -29,6 +33,7 @@ internal static class EndpointTable
         _ = commands.MapCloseItem();
         _ = commands.MapCreateItem();
         _ = commands.MapRebuildViews();
+        _ = commands.MapImportContextMap();
         _ = commands.MapStopProcess();
         return app;
     }

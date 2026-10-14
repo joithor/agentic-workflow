@@ -39,7 +39,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IViewReader, SqliteViewReader>()
             .AddSingleton<IProfileSource, YamlProfileSource>()
             .AddSingleton<IApprovals, FileApprovals>()
-            .AddSingleton<IApprovalReader>(static sp => sp.GetRequiredService<IApprovals>())
+            .AddSingleton<IApprovedProfile>(static sp => sp.GetRequiredService<IApprovals>())
             .AddSingleton<IEndpointFile, FileEndpoint>()
             .AddSingleton<IControlPlaneProbe, HttpControlPlaneProbe>()
             .AddSingleton<IControlPlaneLauncher, ServeLauncher>()

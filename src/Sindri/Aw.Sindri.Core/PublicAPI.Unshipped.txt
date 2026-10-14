@@ -328,7 +328,6 @@ Aw.Sindri.Core.Profile.SindriProfile
 Aw.Sindri.Core.Profile.SindriProfile.<Clone>$() -> Aw.Sindri.Core.Profile.SindriProfile!
 Aw.Sindri.Core.Profile.SindriProfile.Api.get -> Aw.Sindri.Core.Profile.ApiSettings?
 Aw.Sindri.Core.Profile.SindriProfile.Api.init -> void
-Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api) -> void
 Aw.Sindri.Core.Profile.SindriProfile.Equals(Aw.Sindri.Core.Profile.SindriProfile? other) -> bool
 Aw.Sindri.Core.Profile.SindriProfile.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>?
 Aw.Sindri.Core.Profile.SindriProfile.Repos.init -> void
@@ -336,7 +335,6 @@ Aw.Sindri.Core.Profile.SindriProfile.SchemaVersion.get -> int
 Aw.Sindri.Core.Profile.SindriProfile.SchemaVersion.init -> void
 Aw.Sindri.Core.Profile.SindriProfile.Services.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>?
 Aw.Sindri.Core.Profile.SindriProfile.Services.init -> void
-Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null) -> void
 Aw.Sindri.Core.Profile.SindriProfile.Tenant.get -> string!
 Aw.Sindri.Core.Profile.SindriProfile.Tenant.init -> void
 Aw.Sindri.Core.Profile.SindriProfile.User.get -> string!
@@ -3430,8 +3428,6 @@ Aw.Sindri.Core.Ledger.ILedgerReader.Head(System.Threading.CancellationToken canc
 Aw.Sindri.Core.Ledger.ILedgerReader.Latest(string! type, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ledger.LedgerEvent?>!>
 Aw.Sindri.Core.Ledger.ILedgerReader.ReadAfter(long sequence, int max, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ledger.LedgerEvent!>!>!>
 Aw.Sindri.Core.Ledger.ILedgerStore.Head(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
-Aw.Sindri.Core.Profile.IApprovalReader
-Aw.Sindri.Core.Profile.IApprovalReader.Latest(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile?>!>
 Aw.Sindri.Core.Events.ProfileChecked
 Aw.Sindri.Core.Events.ProfileChecked.<Clone>$() -> Aw.Sindri.Core.Events.ProfileChecked!
 Aw.Sindri.Core.Events.ProfileChecked.Approved.get -> Aw.Sindri.Core.Ids.ProfileHash?
@@ -3807,6 +3803,55 @@ static Aw.Sindri.Core.Ids.RecordKey.TryFrom(string? value, out Aw.Sindri.Core.Id
 static Aw.Sindri.Core.Ids.RecordKey.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.RecordKey result) -> bool
 Aw.Sindri.Core.Profile.ProfileCheck
 static Aw.Sindri.Core.Profile.ProfileCheck.Decide(Aw.Sindri.Core.Events.ProfileChecked? previous, Aw.Sindri.Core.Profile.LoadedProfile? approved, Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>! live, Aw.Sindri.Core.Ids.CommandId commandId) -> Aw.Sindri.Core.Events.ProfileChecked?
+Aw.Sindri.Core.Events.ContextRepoSynced
+Aw.Sindri.Core.Events.ContextRepoSynced.<Clone>$() -> Aw.Sindri.Core.Events.ContextRepoSynced!
+Aw.Sindri.Core.Events.ContextRepoSynced.Added.get -> int
+Aw.Sindri.Core.Events.ContextRepoSynced.Added.init -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Blocked.get -> int
+Aw.Sindri.Core.Events.ContextRepoSynced.Blocked.init -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Code.get -> string?
+Aw.Sindri.Core.Events.ContextRepoSynced.Code.init -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Equals(Aw.Sindri.Core.Events.ContextRepoSynced? other) -> bool
+Aw.Sindri.Core.Events.ContextRepoSynced.Head.get -> string?
+Aw.Sindri.Core.Events.ContextRepoSynced.Head.init -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Kept.get -> int
+Aw.Sindri.Core.Events.ContextRepoSynced.Kept.init -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Removed.get -> int
+Aw.Sindri.Core.Events.ContextRepoSynced.Removed.init -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Repo.get -> string!
+Aw.Sindri.Core.Events.ContextRepoSynced.Repo.init -> void
+Aw.Sindri.Core.Events.ContextSourcesSynced
+Aw.Sindri.Core.Events.ContextSourcesSynced.<Clone>$() -> Aw.Sindri.Core.Events.ContextSourcesSynced!
+Aw.Sindri.Core.Events.ContextSourcesSynced.ContextSourcesSynced(string! Source, System.DateTimeOffset Slot, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.ContextRepoSynced!>! Repos) -> void
+Aw.Sindri.Core.Events.ContextSourcesSynced.Deconstruct(out string! Source, out System.DateTimeOffset Slot, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.ContextRepoSynced!>! Repos) -> void
+Aw.Sindri.Core.Events.ContextSourcesSynced.Equals(Aw.Sindri.Core.Events.ContextSourcesSynced? other) -> bool
+Aw.Sindri.Core.Events.ContextSourcesSynced.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.ContextRepoSynced!>!
+Aw.Sindri.Core.Events.ContextSourcesSynced.Repos.init -> void
+Aw.Sindri.Core.Events.ContextSourcesSynced.Slot.get -> System.DateTimeOffset
+Aw.Sindri.Core.Events.ContextSourcesSynced.Slot.init -> void
+Aw.Sindri.Core.Events.ContextSourcesSynced.Source.get -> string!
+Aw.Sindri.Core.Events.ContextSourcesSynced.Source.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.Context.get -> System.Text.Json.JsonElement?
+Aw.Sindri.Core.Profile.SindriProfile.Context.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api, out System.Text.Json.JsonElement? Context) -> void
+Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null, System.Text.Json.JsonElement? Context = null) -> void
+const Aw.Sindri.Core.Events.EventTypes.ContextSourcesSynced = "context.sources.synced" -> string!
+override Aw.Sindri.Core.Events.ContextRepoSynced.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ContextRepoSynced.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ContextRepoSynced.ToString() -> string!
+override Aw.Sindri.Core.Events.ContextSourcesSynced.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ContextSourcesSynced.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ContextSourcesSynced.ToString() -> string!
+static Aw.Sindri.Core.Events.ContextRepoSynced.operator !=(Aw.Sindri.Core.Events.ContextRepoSynced? left, Aw.Sindri.Core.Events.ContextRepoSynced? right) -> bool
+static Aw.Sindri.Core.Events.ContextRepoSynced.operator ==(Aw.Sindri.Core.Events.ContextRepoSynced? left, Aw.Sindri.Core.Events.ContextRepoSynced? right) -> bool
+static Aw.Sindri.Core.Events.ContextSourcesSynced.operator !=(Aw.Sindri.Core.Events.ContextSourcesSynced? left, Aw.Sindri.Core.Events.ContextSourcesSynced? right) -> bool
+static Aw.Sindri.Core.Events.ContextSourcesSynced.operator ==(Aw.Sindri.Core.Events.ContextSourcesSynced? left, Aw.Sindri.Core.Events.ContextSourcesSynced? right) -> bool
+Aw.Sindri.Core.Profile.IApprovedProfile
+Aw.Sindri.Core.Profile.IApprovedProfile.Latest(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile?>!>
+Aw.Sindri.Core.Events.ContextRepoSynced.ContextRepoSynced(string! Repo, string? Head, int Added, int Removed, int Kept, int Blocked, string? Code, int Skipped = 0) -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Deconstruct(out string! Repo, out string? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code, out int Skipped) -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Skipped.get -> int
+Aw.Sindri.Core.Events.ContextRepoSynced.Skipped.init -> void
 Aw.Sindri.Core.Control.ControlEndpoint.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint?
 Aw.Sindri.Core.Control.ControlEndpoint.Temporal.init -> void
 Aw.Sindri.Core.Control.ITemporalServer
@@ -4193,3 +4238,26 @@ override Aw.Sindri.Core.Items.ItemSummary.ToString() -> string!
 static Aw.Sindri.Core.Items.ItemSummaries.From(Aw.Sindri.Core.Views.ItemRow! row) -> Aw.Sindri.Core.Items.ItemSummary!
 static Aw.Sindri.Core.Items.ItemSummary.operator !=(Aw.Sindri.Core.Items.ItemSummary? left, Aw.Sindri.Core.Items.ItemSummary? right) -> bool
 static Aw.Sindri.Core.Items.ItemSummary.operator ==(Aw.Sindri.Core.Items.ItemSummary? left, Aw.Sindri.Core.Items.ItemSummary? right) -> bool
+Aw.Sindri.Core.Events.ContextMapImported
+Aw.Sindri.Core.Events.ContextMapImported.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapImported!
+Aw.Sindri.Core.Events.ContextMapImported.ContextMapImported(int Version, string! Repo, string! Hash, int Nodes, int Edges, int Overrides) -> void
+Aw.Sindri.Core.Events.ContextMapImported.Deconstruct(out int Version, out string! Repo, out string! Hash, out int Nodes, out int Edges, out int Overrides) -> void
+Aw.Sindri.Core.Events.ContextMapImported.Edges.get -> int
+Aw.Sindri.Core.Events.ContextMapImported.Edges.init -> void
+Aw.Sindri.Core.Events.ContextMapImported.Equals(Aw.Sindri.Core.Events.ContextMapImported? other) -> bool
+Aw.Sindri.Core.Events.ContextMapImported.Hash.get -> string!
+Aw.Sindri.Core.Events.ContextMapImported.Hash.init -> void
+Aw.Sindri.Core.Events.ContextMapImported.Nodes.get -> int
+Aw.Sindri.Core.Events.ContextMapImported.Nodes.init -> void
+Aw.Sindri.Core.Events.ContextMapImported.Overrides.get -> int
+Aw.Sindri.Core.Events.ContextMapImported.Overrides.init -> void
+Aw.Sindri.Core.Events.ContextMapImported.Repo.get -> string!
+Aw.Sindri.Core.Events.ContextMapImported.Repo.init -> void
+Aw.Sindri.Core.Events.ContextMapImported.Version.get -> int
+Aw.Sindri.Core.Events.ContextMapImported.Version.init -> void
+const Aw.Sindri.Core.Events.EventTypes.ContextMapImported = "context.map.imported" -> string!
+override Aw.Sindri.Core.Events.ContextMapImported.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ContextMapImported.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ContextMapImported.ToString() -> string!
+static Aw.Sindri.Core.Events.ContextMapImported.operator !=(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool
+static Aw.Sindri.Core.Events.ContextMapImported.operator ==(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool

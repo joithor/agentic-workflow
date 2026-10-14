@@ -575,6 +575,39 @@ static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.operator !=(A
 static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest.operator ==(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunRequest? right) -> bool
 static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.operator !=(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? right) -> bool
 static Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.operator ==(Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? left, Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse? right) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest!
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.GetContextSourcesRequest() -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.QueryContextRequest!
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.get -> int?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out int? Depth, out int? Budget, out bool Draft) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Depth.get -> int?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Depth.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Equals(Aw.Sindri.Features.ContextCalls.QueryContextRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Item.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Item.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Node.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Node.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Q.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Q.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, int? Depth = null, int? Budget = null, bool Draft = false) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Symbol.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Symbol.init -> void
+override Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.QueryContextRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.QueryContextRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.QueryContextRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? left, Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? left, Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.QueryContextRequest.operator !=(Aw.Sindri.Features.ContextCalls.QueryContextRequest? left, Aw.Sindri.Features.ContextCalls.QueryContextRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.QueryContextRequest.operator ==(Aw.Sindri.Features.ContextCalls.QueryContextRequest? left, Aw.Sindri.Features.ContextCalls.QueryContextRequest? right) -> bool
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out Aw.Sindri.Core.Ids.ProfileHash? Profile, out Aw.Sindri.Core.Control.TemporalEndpoint! Temporal) -> void
 Aw.Sindri.Features.StartProcess.StartProcessResponse.StartProcessResponse(Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ProfileHash? Profile, Aw.Sindri.Core.Control.TemporalEndpoint! Temporal) -> void
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint!
@@ -790,3 +823,56 @@ static Aw.Sindri.Features.ListItems.ListItemsRequest.operator !=(Aw.Sindri.Featu
 static Aw.Sindri.Features.ListItems.ListItemsRequest.operator ==(Aw.Sindri.Features.ListItems.ListItemsRequest? left, Aw.Sindri.Features.ListItems.ListItemsRequest? right) -> bool
 static Aw.Sindri.Features.ListItems.ListItemsResponse.operator !=(Aw.Sindri.Features.ListItems.ListItemsResponse? left, Aw.Sindri.Features.ListItems.ListItemsResponse? right) -> bool
 static Aw.Sindri.Features.ListItems.ListItemsResponse.operator ==(Aw.Sindri.Features.ListItems.ListItemsResponse? left, Aw.Sindri.Features.ListItems.ListItemsResponse? right) -> bool
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ExportContextMapRequest!
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Deconstruct(out string? Path) -> void
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Equals(Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.ExportContextMapRequest(string? Path) -> void
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Path.get -> string?
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Path.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextMapRequest
+Aw.Sindri.Features.ContextCalls.GetContextMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextMapRequest!
+Aw.Sindri.Features.ContextCalls.GetContextMapRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextMapRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextMapRequest.GetContextMapRequest() -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ImportContextMapRequest!
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Confirmed.get -> bool
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Confirmed.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Deconstruct(out string! Path, out string? Hash, out bool Confirmed) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Equals(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Hash.get -> string?
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Hash.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.ImportContextMapRequest(string! Path, string? Hash = null, bool Confirmed = false) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Path.get -> string!
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Path.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ImportContextMapResponse!
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Deconstruct(out Aw.Context.Core.Map.MapFilePreview! Preview, out Aw.Context.Core.Map.MapImported? Imported, out long? Sequence) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Equals(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? other) -> bool
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.ImportContextMapResponse(Aw.Context.Core.Map.MapFilePreview! Preview, Aw.Context.Core.Map.MapImported? Imported, long? Sequence) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Imported.get -> Aw.Context.Core.Map.MapImported?
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Imported.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Preview.get -> Aw.Context.Core.Map.MapFilePreview!
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Preview.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Sequence.get -> long?
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Sequence.init -> void
+override Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.GetContextMapRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextMapRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextMapRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.operator !=(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? left, Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? right) -> bool
+static Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.operator ==(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? left, Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? right) -> bool
