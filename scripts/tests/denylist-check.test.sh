@@ -63,7 +63,7 @@ echo "denylist-check.sh: refusals (all exit 2, never an entry in the output)"
 
 runu "$T/clean.md"
 expect "AW_DENYLIST unset fails closed" 2 "AW_DENYLIST"
-AW_DENYLIST="" run "" "$T/clean.md"
+run "" "$T/clean.md"
 expect "AW_DENYLIST empty fails closed" 2 "AW_DENYLIST"
 
 runu "$T/deny.txt" "$T/clean.md"
@@ -89,6 +89,12 @@ expect "mode 0640 is refused" 2 "0600"
 cp "$T/deny.txt" "$T/deny-0700.txt"; chmod 700 "$T/deny-0700.txt"
 run "file:$T/deny-0700.txt" "$T/hit.md"
 expect "mode 0700 (an execute bit) is refused" 2 "0600"
+
+run "$F" "$T/deny.txt"
+expect "the list itself named as an input file is refused" 2 "AW_DENYLIST"
+mkdir "$T/fakebin"; printf '#!/bin/sh\necho 99999\n' > "$T/fakebin/id"; chmod 755 "$T/fakebin/id"
+set +e; OUT="$(PATH="$T/fakebin:$PATH" AW_DENYLIST="$F" bash "$SCRIPT" "$T/clean.md" 2>&1)"; CODE=$?; set -e
+expect "a file owned by another user is refused" 2 "owned by the current user"
 
 run "file:$T/nope.txt" "$T/clean.md"
 expect "a missing file is refused" 2 "denylist" "missing"

@@ -56,6 +56,9 @@ case "$ptr" in
       die "the denylist file must be mode 0600 or stricter (chmod 600 it); it is $mode, so it was not read"
     fi
     [ "$owner" = "$(id -u)" ] || die "the denylist file must be owned by the current user, so it was not read"
+    for f in "$@"; do
+      [ "$f" -ef "$path" ] && die "the denylist is injected through AW_DENYLIST; it is not an input file (the old form <denylist> <file>... is gone)"
+    done
     src="$path"
     ;;
   file:*)
