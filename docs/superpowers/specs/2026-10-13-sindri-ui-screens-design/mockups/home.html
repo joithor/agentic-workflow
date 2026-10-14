@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sindri Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#010102;
+  --s1:#0f1011; --s2:#141516; --s3:#18191a; --s4:#191a1b;
+  --line1:#23252a; --line2:#34343a; --line3:#3e3e44;
+  --ink:#f7f8f8; --ink-muted:#d0d6e0; --ink-subtle:#8a8f98; --ink-tertiary:#62666d;
+  --on-primary:#fbfbfd; /* tinted near-white, never pure white: 4.6:1 on --brand (--ink lands at 4.4:1) */
+  --brand:#5e6ad2; --brand-hover:#828fff; --focus:#828fff;
+  --brand-hover-fill:#535fc6; --brand-pressed:#4c57be; --brand-deep:#535db9; --error:#eb5757;
+  --success:#27a644;
+  --attn:#f2994a; --attn-soft:rgba(242,153,74,.14);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+/* type scale (fixes.md wave 4, rule 5): page title 20/600 · section heading 15/500 · row title 14/500 · body 13 · meta 12 · chip 11/500 uppercase. Nothing else at 11. */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--canvas);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.4;
+  -webkit-font-smoothing:antialiased;font-feature-settings:"cv01","ss03"}
+body{overflow-x:hidden;position:relative;min-height:100vh}
+button,input,textarea{font:inherit;color:inherit;background:none;border:0}
+button{cursor:pointer}
+a{color:var(--brand-hover);text-decoration:none}
+:focus-visible,.is-focused{outline:2px solid var(--focus);outline-offset:2px}
+.mono{font-family:var(--mono);font-size:12px;letter-spacing:-.1px}
+kbd{font-family:var(--sans);font-size:12px;font-weight:500;color:var(--ink-subtle);line-height:1.2;
+  border:1px solid var(--line2);border-radius:4px;padding:2px 6px;min-width:18px;
+  display:inline-flex;align-items:center;justify-content:center;background:var(--s2)}
+small{font-size:12px}
+svg{flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* glyph vocabulary (fixture.md): one class set, the same glyph and colour everywhere, always beside a word.
+   Work state: ● done (g-done) or live (g-live) · ◐ in progress · ○ not started or queued · ◎ with you ·
+   ▌ parked · ▲ escalated · ◌ model call, no session · ⇄ loop · ▣ current state · ◆ changed since approval.
+   Health: ✓ ok · ◐ degraded · ✕ failed · ○ absent. */
+.g-done{color:var(--ink-muted)}
+.g-live{color:var(--success)}
+.g-prog{color:var(--ink)}
+.g-todo{color:var(--ink-subtle)}
+.g-you{color:var(--ink-muted)}
+.g-park,.g-esc,.g-chg{color:var(--attn)}
+.g-model{color:var(--ink-subtle)}
+.g-loop{color:var(--ink-subtle)}
+.g-cur{color:var(--ink)}
+.h-ok{color:var(--success)}
+.h-deg{color:var(--ink)}
+.h-fail{color:var(--error)}
+.h-abs{color:var(--ink-subtle)}
+
+/* top bar (fits 1280: the search flexes, the health pill never shrinks) */
+.topbar{height:48px;display:flex;align-items:center;gap:8px;padding:0 16px;
+  border-bottom:1px solid var(--line1);background:var(--canvas);position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;letter-spacing:-.2px;flex:none}
+.brand-mark{width:20px;height:20px;border-radius:5px;background:var(--brand);color:var(--on-primary);display:grid;place-items:center}
+.seg{display:flex;align-items:center;gap:2px;padding:2px;background:var(--s1);border:1px solid var(--line1);border-radius:8px;flex:none}
+.seg a{display:flex;align-items:center;gap:6px;height:26px;padding:2px 8px;border-radius:6px;
+  color:var(--ink-subtle);font-weight:500;font-size:13px;white-space:nowrap}
+.seg a:hover{color:var(--ink-muted);background:var(--s2)}
+.seg a[aria-current="page"]{color:var(--ink);background:var(--s3);box-shadow:inset 0 0 0 1px var(--line2)}
+.seg a[aria-current="page"]::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--brand)}
+.count-attn{font-size:12px;font-weight:600;line-height:1.2;color:var(--attn);background:var(--attn-soft);
+  border-radius:4px;padding:2px 6px;display:inline-flex;align-items:center}
+.count{font-size:12px;font-weight:500;color:var(--ink-subtle)}
+.search{margin-left:auto;display:flex;align-items:center;gap:6px;flex:1 1 160px;min-width:120px;max-width:260px;white-space:nowrap;height:30px;padding:4px 8px 4px 10px;
+  border:1px solid var(--line1);border-radius:8px;background:var(--s1);color:var(--ink-subtle)}
+.search span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.search kbd{flex:none}
+.health{display:flex;align-items:center;gap:6px;height:30px;padding:4px 10px;border:1px solid var(--line1);flex:none;
+  border-radius:8px;background:var(--s1);white-space:nowrap;font-size:12px;color:var(--ink-muted)}
+.health .word{display:inline-flex;align-items:center;gap:5px;color:var(--attn);font-weight:500;font-size:13px}  /* Degraded in --attn, the chip table's colour */
+.health .word .g{color:inherit}
+.health .sep{color:var(--ink-subtle)}
+.health .age{color:var(--ink-subtle)}
+/* static here; in the real app it pulses once when the needs-you count changes */
+
+/* page */
+.page{max-width:1264px;margin:0 auto;padding:0 40px 48px 16px}
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;padding:10px 0 10px;gap:16px}
+.pagehead h1{font-size:20px;font-weight:600;letter-spacing:-.4px;display:flex;align-items:center;gap:8px}
+.pagehead h1 .crumb{color:var(--ink-subtle);font-weight:500}
+.pagehead .sub{color:var(--ink-subtle);margin-top:2px;display:flex;gap:8px;align-items:center}
+.pagehead .sub b{color:var(--ink-muted);font-weight:500}
+.attn-word{color:var(--ink);font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.attn-word i{width:6px;height:6px;border-radius:50%;background:var(--attn)}
+.hints{display:flex;gap:12px;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
+.hints span{display:flex;align-items:center;gap:4px}
+
+/* buttons */
+.btn{height:28px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--line2);background:var(--s3);color:var(--ink-muted);white-space:nowrap}
+.btn:hover{background:var(--s4);border-color:var(--line3);color:var(--ink)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-primary)}
+.btn.primary:hover{background:var(--brand-hover-fill);border-color:var(--brand-hover-fill)}
+.btn.primary:active{background:var(--brand-pressed);border-color:var(--brand-pressed)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink-subtle)}
+.btn.ghost:hover{color:var(--ink-muted);background:var(--s2)}
+.btn[disabled]{color:var(--ink-tertiary);background:var(--s2);border-color:var(--line1);cursor:not-allowed}
+.btn kbd{margin-left:1px}
+.btn.primary kbd{color:var(--on-primary);opacity:.85;border-color:transparent;background:var(--brand-deep)}
+.btn.term{background:var(--s2);color:var(--ink)}
+.btn.term svg{color:var(--ink-subtle)}
+.btn.sm{height:24px;padding:0 8px;font-size:12px}
+.split{position:relative;display:inline-flex}
+.split .main{border-radius:8px 0 0 8px}
+.split .chev{border-radius:0 8px 8px 0;border-left-color:var(--line1);padding:0 6px;margin-left:-1px}
+.warp{width:12px;height:12px;border-radius:3px;background:var(--s4);border:1px solid var(--line3);display:inline-grid;place-items:center}
+.cmd{display:inline-flex;align-items:stretch;margin-top:4px;min-height:24px;border:1px solid var(--line1);border-radius:6px;background:var(--canvas);max-width:100%}
+.cmd .prompt{font-family:var(--mono);font-size:12px;color:var(--ink-subtle);padding:4px 0 4px 8px;display:flex;align-items:center}
+.cmd code{font-family:var(--mono);font-size:12px;color:var(--ink-muted);padding:4px 8px 4px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center}
+.cmd button{padding:4px 8px;border-left:1px solid var(--line1);color:var(--ink-subtle);display:flex;align-items:center;gap:4px;font-size:12px}
+.cmd button:hover{color:var(--ink);background:var(--s3)}
+.pending{font-size:12px;line-height:1.2;color:var(--ink-subtle);border:1px dashed var(--line2);border-radius:4px;padding:2px 6px;white-space:nowrap}
+
+/* sheet */
+.sheet-tab{position:fixed;right:0;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;
+  background:var(--s2);border:1px solid var(--line2);border-right:0;border-radius:8px 0 0 8px;
+  padding:10px 4px;color:var(--ink-subtle);font-size:12px;display:flex;gap:6px;align-items:center;z-index:15}
+.sheet{position:fixed;top:48px;right:0;bottom:0;width:520px;background:var(--s1);border-left:1px solid var(--line2);z-index:25;
+  display:flex;flex-direction:column}
+
+/* absolute to the page, not fixed, so captures never cover content (fixes.md 10) */
+.caption{position:absolute;right:16px;bottom:12px;font-size:12px;color:var(--ink-subtle);background:var(--canvas);
+  border:1px solid var(--line1);border-radius:6px;padding:2px 8px;z-index:40}
+
+/* menu (closed by default) */
+.menu{position:absolute;right:0;top:32px;z-index:30;width:320px;background:var(--s3);border:1px solid var(--line2);
+  border-radius:8px;padding:4px;box-shadow:inset 0 1px 0 rgba(247,248,248,.04)}
+.menu[hidden]{display:none}
+.menu .mi{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 8px;border-radius:6px;color:var(--ink);width:100%;text-align:left}
+.menu .mi small{color:var(--ink-subtle);font-size:12px}
+.menu .mi:hover{background:var(--s4)}
+.menu .mi[aria-disabled="true"]{color:var(--ink-tertiary)}
+.menu .cap{padding:6px 8px 4px;font-size:12px;color:var(--ink-subtle)}
+
+/* ===== the calm pass, shared shell (fixes.md wave 4a) ===== */
+/* (a) type scale */
+h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.2}
+.section>h2,.section>.sh>h2{font-size:15px;font-weight:500;letter-spacing:-.1px;line-height:1.3;color:var(--ink)}
+.row-title,.what .title,.wf .subj{font-size:14px;font-weight:500;line-height:1.3;color:var(--ink)}
+.meta{font-size:12px;line-height:1.4;color:var(--ink-subtle)}
+/* (b) chips state: one uppercase word in tinted ink, no border, no glyph */
+.chip{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;padding:2px 6px;border:0;border-radius:4px;
+  background:var(--s2);color:var(--ink-muted);font-size:11px;font-weight:500;line-height:1.2;letter-spacing:.04em;
+  text-transform:uppercase;white-space:nowrap}
+.chip.attn{color:var(--attn)}
+.chip.fail{color:var(--error)}
+.chip.ok{color:var(--success)}
+/* (c) sections by surface: heading, 24 px, rows; bands alternate canvas / surface-1 at the page column's full width */
+.section{margin-top:32px}
+.section>h2,.section>.sh{margin-bottom:24px;padding:0 16px}
+.section>.sh{display:flex;align-items:baseline;gap:12px}
+.section>.sh>h2{margin:0}
+.band{background:var(--canvas);border:0;border-radius:0;box-shadow:none;margin-top:0;padding:32px 0}
+.band:nth-of-type(even){background:var(--s1)}
+.band.attn,.band.attn:nth-of-type(even){background:var(--attn-soft)}
+.band>.section{margin-top:0}
+/* (d) ids recede: shown on row hover and focus, always in a sheet header, a copyable command, or when marked .keep */
+.id{display:none}
+:is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li):is(:hover,:focus-within) .id,
+.sheet-head .id,.cmd .id,.id.keep{display:inline}
+/* ids at rest (fixes.md wave 5, item 2): one mechanism. .id.at-rest is never display:none: mono, tertiary ink at rest,
+   subtle ink on row hover and focus, a fixed slot where the row gives it a column, so nothing shifts */
+.id.at-rest{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:400;letter-spacing:-.1px;color:var(--ink-subtle);white-space:nowrap}
+:is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li,.en,.child,.ag,.op):is(:hover,:focus-within) .id.at-rest{display:inline-block;color:var(--ink-muted)}
+/* (e) 40 px rows, 16 px gutters, hairlines only between rows */
+.row{display:grid;align-items:center;column-gap:16px;padding:4px 16px;border-top:1px solid var(--line1)}
+.row:first-child{border-top:0}
+.row,.ny,.run,.q,.wf{min-height:40px;column-gap:16px}
+.ny{padding-top:4px;padding-bottom:4px}
+.run,.q{padding-top:4px;padding-bottom:4px}
+/* (g) the health strip is one sentence */
+.hsent{margin-top:32px;padding:0 16px;font-size:12px;line-height:1.4;color:var(--ink-subtle)}
+.hsent .d{color:var(--attn)}
+.hsent .f{color:var(--error)}
+
+
+/* ---- the calm pass, page rules (home and workflows share these) ---- */
+.pagehead{align-items:flex-end;padding:16px 0 0}
+.band{margin-inline:-16px;padding:32px 16px}
+.band>.section,.band>.cols{padding-inline:8px}
+.ph-l{display:flex;align-items:baseline;gap:16px}
+.pagehead .sub{margin:0;font-size:13px;color:var(--ink-subtle)}
+.attn-word{color:var(--attn);font-weight:500}
+.sh .more{margin-left:auto;font-size:12px;color:var(--ink-subtle)}
+a.more:hover{color:var(--ink-muted)}
+.rows{display:block}
+.row{min-height:40px;padding-top:4px;padding-bottom:4px}
+.row:hover{background:rgba(247,248,248,.04)}
+.row .chip{align-self:center;justify-self:start}
+.row .t{min-width:0;display:flex;align-items:baseline;gap:8px}
+.row .row-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
+.row .id{white-space:nowrap}
+.row .tag{font-size:12px;color:var(--ink-subtle);white-space:nowrap;flex:none}
+.row .m{font-size:12px;line-height:1.35;color:var(--ink-subtle);min-width:0}
+.row .w{font-size:12px;color:var(--ink-subtle);text-align:right;white-space:nowrap}
+.row .a{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.row .key{color:var(--ink-subtle);font-weight:400;margin-left:2px}
+.row .recipe{font-family:var(--mono);font-size:12px;letter-spacing:-.1px;color:var(--ink-subtle);white-space:nowrap;flex:none}
+.row .mono{font-size:12px}
+.pb{display:flex;align-items:center;gap:12px;min-width:0}
+.bar{display:flex;gap:2px;width:84px;height:4px;flex:none}
+.bar i{flex:1;border-radius:1px;background:var(--line2)}
+.bar i.on{background:var(--ink-subtle)}
+.bar i.cur{background:var(--ink)}
+.bar.attn i.cur{background:var(--attn)}
+.stage{font-size:12px;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage .b{color:var(--ink-subtle)}
+.btn.chev{width:28px;padding:0;justify-content:center}
+.btn.sm.chev{width:24px}
+.mwrap{position:relative;display:inline-flex}
+.mwrap .menu{right:0;top:32px}
+.btn,.row,a.more{transition:background-color 120ms cubic-bezier(.25,1,.5,1),border-color 120ms cubic-bezier(.25,1,.5,1),color 120ms cubic-bezier(.25,1,.5,1)}
+.btn:active{background:var(--s2);border-color:var(--line3)}
+.btn.term:active{background:var(--s1)}
+
+/* home */
+.ny{grid-template-columns:96px minmax(0,1fr) 240px 40px 264px}
+.wf{grid-template-columns:96px minmax(0,280px) 244px minmax(0,1fr) 56px 76px}
+.lr{grid-template-columns:76px minmax(0,1fr) 36px auto}
+.lr .id.at-rest,.ny .t .id.at-rest:first-child{width:66px;flex:none}
+.attach-note{margin:8px 0 0;padding:0 16px;font-size:12px;line-height:1.4;color:var(--ink-subtle)}
+.lr .tag{flex:none}
+.cols{display:grid;grid-template-columns:1.25fr 1fr;gap:24px}
+.cols .section{margin-top:0}
+@media (max-width:1100px){
+  .ny{grid-template-columns:96px minmax(0,1fr) 40px}
+  .ny .m{display:none}
+  .ny .a{grid-column:2/-1;justify-content:flex-start;flex-wrap:wrap}
+  .wf{grid-template-columns:96px minmax(0,1fr) 244px 56px}
+  .wf .now,.wf .a{display:none}
+  .cols{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 9.5 6 2l4 7.5H7.4L6 6.8 4.6 9.5z" fill="currentColor"/></svg></span>Sindri</div>
+  <nav class="seg" aria-label="Primary">
+    <a href="#" aria-current="page">Home</a>
+    <a href="#">Workflows <span class="count">12</span></a>
+    <a href="#">Work <span class="count">12</span></a>
+    <a href="#">Recipes <span class="count">8</span></a>
+    <a href="#">Context</a>
+    <a href="#">Agents <span class="count">4</span></a>
+    <a href="#">System</a>
+  </nav>
+  <div class="search" role="search"><svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><circle cx="6" cy="6" r="4.2" stroke="currentColor" fill="none" stroke-width="1.4"/><path d="m9.2 9.2 3 3" stroke="currentColor" stroke-width="1.4"/></svg><span>Search or run a command</span><kbd>⌘K</kbd></div>
+  <button class="health" aria-label="Health: Degraded, updated 2s ago, index failed, profile changed">
+    <span class="word"><span class="g h-deg" aria-hidden="true">◐</span>Degraded</span>
+    <span class="sep" aria-hidden="true">·</span><span class="age">updated 2s ago</span>
+    <span class="sep" aria-hidden="true">·</span><span>index failed</span>
+    <span class="sep" aria-hidden="true">·</span><span>profile changed</span>
+  </button>
+</header>
+
+<main class="page">
+  <header class="pagehead">
+    <div class="ph-l">
+      <h1 class="page-title">Home</h1>
+      <p class="sub"><span class="attn-word">5 need you</span><span>·</span><span>4 running</span><span>·</span><span>1 with you</span><span>·</span><span>4 queued</span></p>
+    </div>
+  </header>
+
+  <!-- empty (0 need you): the band is absent and one untinted row reads "Nothing needs you. Last cleared 11:12."
+       after Mark all seen: the tint clears and the heading reads "5 marked seen · Undo" for 10 s. -->
+  <section class="band attn" aria-labelledby="ny-h">
+    <div class="section">
+      <div class="sh"><h2 id="ny-h">Needs you</h2><button class="btn ghost sm more" aria-label="Mark all seen">Mark all seen</button></div>
+      <div class="rows">
+<div class="row ny" aria-label="Needs you: parked, ITM-01JC8">
+  <span class="chip attn">Parked</span>
+  <div class="t"><span class="id at-rest mono">ITM-01JC8</span><span class="row-title">Retry storm in outbox dispatcher</span></div>
+  <span class="m">checks failed twice with the same findings</span>
+  <span class="w">12m</span>
+  <div class="a"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button><span class="mwrap"><button class="btn ghost chev is-focused" aria-label="More for ITM-01JC8" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="More for ITM-01JC8" hidden><div class="cap">Open in</div><button class="mi" role="menuitem">Open in Claude Code</button><button class="mi" role="menuitem">Open in Codex</button><div class="cap">Copy command</div><button class="mi" role="menuitem"><span class="mono">$ sindri workflow answer ITM-01JC8 --grant 1</span><small>Copy command</small></button><div class="cap">Destructive</div><button class="mi" role="menuitem">Cancel ITM-01JC8…<small>Asks first: "Cancel ITM-01JC8? The parked round is discarded. [Cancel item] [Keep]"</small></button></div></span></div>
+</div>
+<div class="row ny" aria-label="Needs you: decision on ITM-01JD2">
+  <span class="chip attn">Decision</span>
+  <div class="t"><span class="id at-rest mono">REQ-01JD4</span><span class="row-title">Re-scope: drop the iOS head from this item</span><span class="tag">sindri-app</span></div>
+  <span class="m">filed by a session</span>
+  <span class="w">26m</span>
+  <div class="a"><button class="btn primary" title="Accept records your decision now; the engine acts on it when the workflow runs.">Accept</button><button class="btn">Decline</button><span class="mwrap"><button class="btn ghost chev" aria-label="More for ITM-01JD2" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="More for ITM-01JD2" hidden><div class="cap">Accept records your decision now; the engine acts on it when the workflow runs.</div><button class="mi" role="menuitem">Open in Claude Code</button><button class="mi" role="menuitem">Open in Codex</button></div></span></div>
+</div>
+<div class="row ny" aria-label="Needs you: escalated gate, ITM-01JB4">
+  <span class="chip attn">Escalated</span>
+  <div class="t"><span class="id at-rest mono">ITM-01JB4</span><span class="row-title">Context map review for tabs.layout</span></div>
+  <span class="m">judge 0.62, below 0.80</span>
+  <span class="w">2h</span>
+  <div class="a"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button><span class="mwrap"><button class="btn ghost chev" aria-label="More for ITM-01JB4" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="More for ITM-01JB4" hidden><button class="mi" role="menuitem">Reject</button><div class="cap">Open in</div><button class="mi" role="menuitem">Open in Codex</button><button class="mi" role="menuitem">Open in Claude Code</button><div class="cap">Copy command</div><button class="mi" role="menuitem"><span class="mono">$ sindri workflow answer ITM-01JB4 --accept</span><small>Copy command</small></button></div></span></div>
+</div>
+<div class="row ny" aria-label="Needs you: failed, service index">
+  <span class="chip fail">Failed</span>
+  <div class="t"><span class="row-title">Nightly index build</span><span class="id at-rest mono">SND-INDEX-012</span></div>
+  <span class="m">graphify timed out</span>
+  <span class="w">9h</span>
+  <div class="a"><span class="pending">Available with API P6</span><button class="btn" disabled title="Available with API P6 · sindri services run index">Run again</button><span class="mwrap"><button class="btn ghost chev" aria-label="More for the index service" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="More for the index service" hidden><div class="cap">Copy command</div><button class="mi" role="menuitem"><span class="mono">$ sindri services run index</span><small>Copy command</small></button></div></span></div>
+</div>
+<div class="row ny" aria-label="Needs you: profile changed">
+  <span class="chip attn">Profile</span>
+  <div class="t"><span class="row-title">Profile changed since approval · 2 keys</span></div>
+  <span class="m"><span class="mono">services.index.every, context.maxBudget</span></span>
+  <span class="w">2h</span>
+  <div class="a"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Approve · terminal</button><span class="mwrap"><button class="btn ghost chev" aria-label="More for the profile" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="More for the profile" hidden><div class="cap">Copy command</div><button class="mi" role="menuitem"><span class="mono">$ sindri profile approve 3f1c09</span><small>Copy command</small></button></div></span></div>
+</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="wf-h">
+    <div class="section">
+      <div class="sh"><h2 id="wf-h">Workflows</h2><span class="meta">12 open</span><a class="more" href="#" aria-label="All 12 open workflows, opens Workflows">all 12 →</a></div>
+      <div class="rows">
+<div class="row wf" aria-label="Outbox retry storm, incident.response">
+  <span class="chip ok">Running</span>
+  <div class="t"><span class="row-title">Outbox retry storm</span><span class="recipe">incident.response</span></div>
+  <span class="pb"><span class="bar " role="img" aria-label="mitigate, step 3 of 6"><i class="on"></i><i class="on"></i><i class="cur"></i><i class=""></i><i class=""></i><i class=""></i></span><span class="stage">mitigate <span class="b">r1/3</span></span></span>
+  <span class="m now">agent rolling back in <span class="mono">ITM-01JG2</span> · comms posting</span>
+  <span class="w">1h 24m</span>
+  <div class="a"></div>
+</div>
+<div class="row wf" aria-label="sentry #8812 TypeError, triage.alert">
+  <span class="chip attn">Decision</span>
+  <div class="t"><span class="row-title">sentry #8812 TypeError</span><span class="recipe">triage.alert</span></div>
+  <span class="pb"><span class="bar attn" role="img" aria-label="classify, step 2 of 4"><i class="on"></i><i class="cur"></i><i class=""></i><i class=""></i></span><span class="stage">classify <span class="b">· desk</span></span></span>
+  <span class="m now">needs your severity</span>
+  <span class="w">4m</span>
+  <div class="a"><button class="btn sm" aria-label="Answer: classify sentry #8812">Answer</button></div>
+</div>
+<div class="row wf" aria-label="Offline sync, workflow.project">
+  <span class="chip ok">Running</span>
+  <div class="t"><span class="row-title">Offline sync</span><span class="recipe">workflow.project</span></div>
+  <span class="pb"><span class="bar " role="img" aria-label="build, step 5 of 7"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="cur"></i><i class=""></i><i class=""></i></span><span class="stage">build <span class="b">4/9</span></span></span>
+  <span class="m now"><span class="mono">ITM-01JD6</span> checks · 4 done · 1 running · 1 parked · 3 queued</span>
+  <span class="w">3h 12m</span>
+  <div class="a"></div>
+</div>
+<div class="row wf" aria-label="Billing exports, workflow.project">
+  <span class="chip">With you</span>
+  <div class="t"><span class="row-title">Billing exports</span><span class="recipe">workflow.project</span></div>
+  <span class="pb"><span class="bar " role="img" aria-label="design, step 4 of 7"><i class="on"></i><i class="on"></i><i class="on"></i><i class="cur"></i><i class=""></i><i class=""></i><i class=""></i></span><span class="stage">design <span class="b">· desk</span></span></span>
+  <span class="m now">with you: import the design output</span>
+  <span class="w">20h</span>
+  <div class="a"></div>
+</div>
+<div class="row wf" aria-label="Tab manager v2, workflow.project">
+  <span class="chip ok">Running</span>
+  <div class="t"><span class="row-title">Tab manager v2</span><span class="recipe">workflow.project</span></div>
+  <span class="pb"><span class="bar " role="img" aria-label="scoping, step 3 of 7"><i class="on"></i><i class="on"></i><i class="cur"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span><span class="stage">scoping <span class="b">r2/3</span></span></span>
+  <span class="m now">challenger round 2 · <span class="mono">84k / 600k</span></span>
+  <span class="w">46m</span>
+  <div class="a"></div>
+</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" aria-label="Running and queued">
+    <div class="cols">
+      <div class="section" aria-labelledby="run-h">
+        <div class="sh"><h2 id="run-h">Running</h2><span class="meta">4 live · 1 with you</span><a class="more" href="#" aria-label="All 5 in Work">all 5 →</a></div>
+        <div class="rows">
+<div class="row lr" aria-label="With you: ITM-01JA1">
+  <span class="chip ">With you</span>
+  <div class="t"><span class="id at-rest mono">ITM-01JA1</span><span class="row-title">Onyx adapter secret pointers</span><span class="tag">sindri-app</span></div>
+  <span class="w">25m</span>
+  <div class="a"><button class="btn sm">Hand back</button></div>
+</div>
+<div class="row lr" aria-label="Running: ITM-01JE7">
+  <span class="chip ok">Running</span>
+  <div class="t"><span class="id at-rest mono">ITM-01JE7</span><span class="row-title">Add needs-you ack route</span></div>
+  <span class="w">6m</span>
+  <div class="a"><span class="mwrap"><button class="btn sm" aria-label="Attach ITM-01JE7" aria-haspopup="menu" aria-expanded="false">Attach <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="Attach ITM-01JE7" hidden><div class="cap">Attach joins the live session; your first keystroke takes it over.</div><button class="mi" role="menuitem">Attach in Warp</button><button class="mi" role="menuitem">Take over</button></div></span></div>
+</div>
+<div class="row lr" aria-label="Running: ITM-01JE9">
+  <span class="chip ok">Running</span>
+  <div class="t"><span class="id at-rest mono">ITM-01JE9</span><span class="row-title">Tester: decision race integration test</span></div>
+  <span class="w">2m</span>
+  <div class="a"><span class="mwrap"><button class="btn sm" aria-label="Open instance ITM-01JE9" aria-haspopup="menu" aria-expanded="false">Open instance <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="Open instance ITM-01JE9" hidden><button class="mi" role="menuitem">Open instance</button><button class="mi" role="menuitem">Open in Claude Code</button><button class="mi" role="menuitem">Open in Codex</button></div></span></div>
+</div>
+<div class="row lr" aria-label="Running: ITM-01JD9">
+  <span class="chip ok">Running</span>
+  <div class="t"><span class="id at-rest mono">ITM-01JD9</span><span class="row-title">Judge outbox drain on shutdown</span></div>
+  <span class="w">1m</span>
+  <div class="a"><span class="mwrap"><button class="btn sm" aria-label="Attach ITM-01JD9" aria-haspopup="menu" aria-expanded="false">Attach <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="Attach ITM-01JD9" hidden><div class="cap">Attach joins the live session; your first keystroke takes it over.</div><button class="mi" role="menuitem">Attach in Warp</button><button class="mi" role="menuitem">Take over</button></div></span></div>
+</div>
+<div class="row lr" aria-label="Running: ITM-01JD6">
+  <span class="chip ok">Running</span>
+  <div class="t"><span class="id at-rest mono">ITM-01JD6</span><span class="row-title">Services page job panel</span><span class="tag">sindri-app</span></div>
+  <span class="w">0m</span>
+  <div class="a"><span class="mwrap"><button class="btn sm" aria-label="Open instance ITM-01JD6" aria-haspopup="menu" aria-expanded="false">Open instance <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="Open instance ITM-01JD6" hidden><button class="mi" role="menuitem">Open instance</button><button class="mi" role="menuitem">Open in Claude Code</button><button class="mi" role="menuitem">Open in Codex</button></div></span></div>
+</div>
+        </div>
+        <p class="attach-note">Attach joins the live session; your first keystroke takes it over.</p>
+      </div>
+      <div class="section" aria-labelledby="q-h">
+        <div class="sh"><h2 id="q-h">Queued</h2><span class="meta">4</span><a class="more" href="#" aria-label="All 4 queued in Work">all 4 →</a></div>
+        <div class="rows">
+<div class="row lr" aria-label="Queued: ITM-01JF0">
+  <span class="chip ">Queued</span>
+  <div class="t"><span class="id at-rest mono">ITM-01JF0</span><span class="row-title">Stream limits 429 fallback</span><span class="tag">agentic-workflow</span></div>
+  <span class="w">1h</span>
+  <div class="a"><span class="mwrap"><button class="btn sm" aria-label="Open ITM-01JF0" aria-haspopup="menu" aria-expanded="false">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="Open ITM-01JF0" hidden><button class="mi" role="menuitem">Open in Claude Code</button><button class="mi" role="menuitem">Open in Codex</button></div></span></div>
+</div>
+<div class="row lr" aria-label="Queued: ITM-01JF3">
+  <span class="chip ">Queued</span>
+  <div class="t"><span class="id at-rest mono">ITM-01JF3</span><span class="row-title">doctor views line</span></div>
+  <span class="w">52m</span>
+  <div class="a"><span class="mwrap"><button class="btn sm" aria-label="Open ITM-01JF3" aria-haspopup="menu" aria-expanded="false">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="Open ITM-01JF3" hidden><button class="mi" role="menuitem">Open in Claude Code</button><button class="mi" role="menuitem">Open in Codex</button></div></span></div>
+</div>
+<div class="row lr" aria-label="Queued: ITM-01JF4">
+  <span class="chip ">Queued</span>
+  <div class="t"><span class="id at-rest mono">ITM-01JF4</span><span class="row-title">Tray badge on Linux</span></div>
+  <span class="w">40m</span>
+  <div class="a"><span class="mwrap"><button class="btn sm" aria-label="Open ITM-01JF4" aria-haspopup="menu" aria-expanded="false">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="Open ITM-01JF4" hidden><button class="mi" role="menuitem">Open in Claude Code</button><button class="mi" role="menuitem">Open in Codex</button></div></span></div>
+</div>
+<div class="row lr" aria-label="Queued: ITM-01JF8">
+  <span class="chip ">Queued</span>
+  <div class="t"><span class="id at-rest mono">ITM-01JF8</span><span class="row-title">Receipt verify route</span></div>
+  <span class="w">12m</span>
+  <div class="a"><span class="mwrap"><button class="btn sm" aria-label="Open ITM-01JF8" aria-haspopup="menu" aria-expanded="false">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+<div class="menu" role="menu" aria-label="Open ITM-01JF8" hidden><button class="mi" role="menuitem">Open in Claude Code</button><button class="mi" role="menuitem">Open in Codex</button></div></span></div>
+</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="hsent" aria-label="Sindri health">Sindri is <span class="d">degraded</span>: the code index <span class="f">failed</span> at the 03:00 build, the profile changed since approval, and Onyx is 2h behind. Updated 2s ago.</p>
+</main>
+
+<button class="sheet-tab" aria-label="Detail sheet, closed. Last opened: ITM-01JC8">
+  <kbd style="writing-mode:horizontal-tb">↵</kbd> Detail · ITM-01JC8
+</button>
+
+<div class="caption">Home · design reference, not implementation</div>
+</body>
+</html>
