@@ -116,6 +116,7 @@ in-memory store and the SQLite adapter). Append-only, idempotent and fenced.
 | `id`, `type`, `schema_version`, `occurred_at`, `actor`, `tenant`, `ring`, `correlation_id`, `causation_id`, `trace_id` | the §17.21 envelope (`Aw.Kernel.Events.EventEnvelope`) |
 | `item` | the work item, when there is one (S2+) |
 | `epoch` | the writer's lease epoch |
+| `temporal_event_id` | nullable integer (workflow-engine spec §5.6, UI screens E-30). The Temporal history event id a mirrored `workflow.*` or `recipe.*` row was written for; null on every other row. Added with the interpreter's mirror (engine phase P4) and indexed where not null, so `GET /engine/instances/{address}/history` can link a history line to its ledger sequence. Part of `RecordEvent`'s idempotency `(workflow id, run id, history event id)` |
 | `idempotency_key` | unique: a second append with the same key writes nothing and returns the first event's position |
 | `payload_json` | the payload record, through AwJson |
 
