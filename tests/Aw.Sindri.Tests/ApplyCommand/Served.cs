@@ -1,8 +1,8 @@
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
-using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
@@ -27,14 +27,18 @@ namespace Aw.Sindri.Tests.ApplyCommand;
 internal sealed class Served : IAsyncDisposable
 {
     private readonly CancellationTokenSource _stop;
-    private readonly Task _worker;
+    private readonly TemporalEndpoint _temporal;
+    private CancellationTokenSource _workerStop;
+    private Task _worker;
 
-    private Served(WebApplication app, WorkflowEnvironment environment, CancellationTokenSource stop, Task worker)
+    private Served(WebApplication app, WorkflowEnvironment environment, TemporalEndpoint temporal, CancellationTokenSource stop)
     {
         App = app;
         Environment = environment;
         _stop = stop;
-        _worker = worker;
+        _temporal = temporal;
+        _workerStop = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
+        _worker = app.Services.GetRequiredService<ITemporalWorker>().Run(temporal, _workerStop.Token);
         Http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
     }
 
@@ -58,9 +62,7 @@ internal sealed class Served : IAsyncDisposable
         await app.StartAsync(ct);
         var epoch = app.Services.GetRequiredService<HeldLease>().Current!.Epoch;   // why: HoldLease just held it
         var temporal = await WorkflowsHarness.AsServe(app.Services, environment, new Uri(app.Urls.First()), epoch, ct);
-        var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var worker = app.Services.GetRequiredService<ITemporalWorker>().Run(temporal, stop.Token);
-        return new Served(app, environment, stop, worker);
+        return new Served(app, environment, temporal, CancellationTokenSource.CreateLinkedTokenSource(ct));
     }
 
     /// <summary>Runs 'sindri workflow &lt;args&gt;' as a human at a terminal.</summary>
@@ -98,6 +100,16 @@ internal sealed class Served : IAsyncDisposable
         return run;
     }
 
+    /// <summary>Stops the worker and starts a new one, as a serve restart's worker would.</summary>
+    public async Task RestartWorker()
+    {
+        await _workerStop.CancelAsync();
+        await _worker;
+        _workerStop.Dispose();
+        _workerStop = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
+        _worker = Sindri.GetRequiredService<ITemporalWorker>().Run(_temporal, _workerStop.Token);
+    }
+
     /// <summary>Enters a human at a terminal as the caller, for a test that calls a slice in process through its chain.</summary>
     public IDisposable AsHumanAtTerminal() =>
         Sindri.GetRequiredService<ICallerContextAccessor>().Enter(A.Caller().AtTerminal().Client(ClientLabel.Cli).Build());
@@ -106,6 +118,7 @@ internal sealed class Served : IAsyncDisposable
     {
         await _stop.CancelAsync();
         await _worker;
+        _workerStop.Dispose();
         _stop.Dispose();
         Http.Dispose();
         await App.StopAsync(TestContext.Current.CancellationToken);

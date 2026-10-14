@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Control;
+using Aw.Sindri.Tests.ApplyCommand;
 using Aw.Sindri.Tests.Workflows;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -130,22 +130,12 @@ public sealed class CompleteStepTests(DevServer server) : IClassFixture<DevServe
     public async Task After_the_worker_restarts_the_open_desk_task_keeps_its_run_token_and_complete_works()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var sindri = _harness.Sindri();
-        await WorkflowsHarness.HoldLease(sindri, ct);
-        var temporal = await WorkflowsHarness.AsServe(sindri, server.Environment, ct);
-        var worker = sindri.GetRequiredService<ITemporalWorker>();
-        var handle = await WorkflowsHarness.Start(server.Environment.Client, await WorkflowsHarness.StepStart(sindri, "T-6", ct));
-        var desk = new DeskInstance(sindri, handle);
-        using (var first = CancellationTokenSource.CreateLinkedTokenSource(ct))
-        {
-            var running = worker.Run(temporal, first.Token);
-            _ = await desk.Until(static v => v.Task is not null);
-            await first.CancelAsync();
-            await running;
-        }
+        await using var served = await Served.Start(_harness.Home, server.Environment);
+        var handle = await WorkflowsHarness.Start(server.Environment.Client, await WorkflowsHarness.StepStart(served.Sindri, "T-6", ct));
+        var desk = new DeskInstance(served.Sindri, handle);
+        _ = await desk.Until(static v => v.Task is not null);
 
-        using var second = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var restarted = worker.Run(temporal, second.Token);
+        await served.RestartWorker();
         try
         {
             var view = await desk.Until(static v => v.Task is not null);
@@ -158,8 +148,6 @@ public sealed class CompleteStepTests(DevServer server) : IClassFixture<DevServe
         finally
         {
             await handle.TerminateAsync("test over");
-            await second.CancelAsync();
-            await restarted;
         }
     }
 
@@ -171,15 +159,11 @@ public sealed class CompleteStepTests(DevServer server) : IClassFixture<DevServe
     private async Task Run(string item, Func<DeskInstance, Task> body)
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var sindri = _harness.Sindri();
-        await WorkflowsHarness.HoldLease(sindri, ct);
-        var temporal = await WorkflowsHarness.AsServe(sindri, server.Environment, ct);
-        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var worker = sindri.GetRequiredService<ITemporalWorker>().Run(temporal, stop.Token);
-        var handle = await WorkflowsHarness.Start(server.Environment.Client, await WorkflowsHarness.StepStart(sindri, item, ct));
+        await using var served = await Served.Start(_harness.Home, server.Environment);
+        var handle = await WorkflowsHarness.Start(server.Environment.Client, await WorkflowsHarness.StepStart(served.Sindri, item, ct));
         try
         {
-            var desk = new DeskInstance(sindri, handle);
+            var desk = new DeskInstance(served.Sindri, handle);
             _ = await desk.Until(static v => v.Task is not null);
             await body(desk);
         }
@@ -189,9 +173,6 @@ public sealed class CompleteStepTests(DevServer server) : IClassFixture<DevServe
             {
                 await handle.TerminateAsync("test over");
             }
-
-            await stop.CancelAsync();
-            await worker;
         }
     }
 }

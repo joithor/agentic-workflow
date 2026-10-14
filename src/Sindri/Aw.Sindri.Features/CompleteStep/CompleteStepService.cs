@@ -4,6 +4,7 @@ using System.Text;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
@@ -22,7 +23,8 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// <param name="runtime">The instances on Temporal.</param>
 /// <param name="facts">Where the outputs are stored.</param>
 /// <param name="nonces">The nonce table.</param>
-internal sealed class CompleteStepService(IInstanceRuntime runtime, IFactStore facts, ICommandNonces nonces)
+/// <param name="callers">The caller the API chain classed: its actor reports.</param>
+internal sealed class CompleteStepService(IInstanceRuntime runtime, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers)
     : IService<CompleteStepRequest, CompleteStepResponse>
 {
     public async ValueTask<Result<CompleteStepResponse>> Handle(CompleteStepRequest request, CancellationToken cancellationToken)
@@ -31,6 +33,11 @@ internal sealed class CompleteStepService(IInstanceRuntime runtime, IFactStore f
         if (request.Outputs.Where(static o => o.Value.Length > IFactStore.MaxBytes).Select(static o => o.Key.Value).FirstOrDefault() is { } large)
         {
             return SindriErrors.InvalidInput.With($"{large} is larger than 1 MiB (fix: report a smaller file; outputs travel as content, at most 1 MiB each)");
+        }
+
+        if (callers.Current is not { } caller)
+        {
+            return SindriErrors.AuthRefused.With("CompleteStep needs a caller");
         }
 
         var nonce = request.Nonce ?? nonces.Issue();
@@ -48,7 +55,7 @@ internal sealed class CompleteStepService(IInstanceRuntime runtime, IFactStore f
             return await GiveBack(nonce, claim.Value, stored.Error, cancellationToken).ConfigureAwait(false);
         }
 
-        var report = new StepCompleted(request.Actor, request.Run, request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, reportSha);
+        var report = new StepCompleted(caller.Actor, request.Run, request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, reportSha);
         var sent = await runtime.Send(request.Address, nonce, report, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
         {

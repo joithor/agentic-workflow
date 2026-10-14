@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -12,11 +13,9 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// <param name="Outcome">One of the Step's declared outcomes.</param>
 /// <param name="Outputs">Each output fact's content.</param>
 /// <param name="Nonce">The command's nonce; null to have one issued.</param>
-/// <param name="Actor">Who reports ('human:cli').</param>
 public sealed record CompleteStepRequest(
     InstanceAddress Address,
     RunToken Run,
     OutcomeName Outcome,
     IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> Outputs,
-    CommandNonce? Nonce,
-    string Actor);
+    CommandNonce? Nonce = null) : ICommand<CompleteStepResponse>;

@@ -1,17 +1,12 @@
-using System.Globalization;
-using Aw.Sindri.Core.Challenges;
-using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 namespace Aw.Sindri.Features.ApplyCommand;
 
 /// <summary>
-/// The action class and the §4.2 challenge of a command (engine spec §4.2, §6.2): '--grant n', '--grant-tokens n' and
-/// '--accept' are protected and need a challenge whose action text is 'grant n &lt;address&gt;', 'grant-tokens n
-/// &lt;address&gt;' or 'accept &lt;address&gt;'; every other answer, a recipe command and a cancel are desk. The challenge
-/// is bound to the instance's address and version (spec §4.2 "address and version"): the version is the count of events
-/// it has mirrored, so a challenge goes stale once anything else has happened to the instance.
+/// The action class of a command (engine spec §4.2, §6.2): '--grant n', '--grant-tokens n' and '--accept' are protected
+/// and need a challenge (its text and subject are <see cref="InstanceChallenge"/>'s); every other answer, a recipe
+/// command and a cancel are desk.
 /// </summary>
 public static class ApplyCommandChallenge
 {
@@ -21,33 +16,4 @@ public static class ApplyCommandChallenge
     /// <returns>True for a grant, a token grant or an accept.</returns>
     public static bool IsProtected(ApplyCommandKind kind, AnswerVariant? answer) =>
         kind == ApplyCommandKind.Answer && answer is AnswerVariant.Grant or AnswerVariant.GrantTokens or AnswerVariant.Accept;
-
-    /// <summary>The action text the human types back for a protected answer.</summary>
-    /// <param name="address">The instance.</param>
-    /// <param name="answer">The variant.</param>
-    /// <param name="amount">The grant's amount.</param>
-    /// <returns>'grant 1 T-1/step/1', 'grant-tokens 100 T-1/step/1' or 'accept T-1/step/1'.</returns>
-    public static ChallengeAction Action(InstanceAddress address, AnswerVariant answer, int? amount)
-    {
-        var n = amount?.ToString(CultureInfo.InvariantCulture) ?? "?";
-        return new ChallengeAction(answer switch
-        {
-            AnswerVariant.Grant => $"grant {n} {address.Value}",
-            AnswerVariant.GrantTokens => $"grant-tokens {n} {address.Value}",
-            AnswerVariant.Accept => "accept " + address.Value,
-            AnswerVariant.Text or AnswerVariant.Reject or AnswerVariant.Resume or _ =>
-                throw new ArgumentOutOfRangeException(nameof(answer), answer, "only a grant, a token grant or an accept is protected"),
-        });
-    }
-
-    /// <summary>What a protected answer's challenge is bound to: the instance's address and version as the preview showed them.</summary>
-    /// <param name="view">The instance.</param>
-    /// <returns>'instance:&lt;address&gt;@v&lt;version&gt;'.</returns>
-    public static ChallengeSubject Subject(InstanceView view)
-    {
-        ArgumentNullException.ThrowIfNull(view);
-        return new ChallengeSubject(
-            string.Create(CultureInfo.InvariantCulture, $"instance:{view.Address.Value}@v{view.Version}"),
-            Digest: null);
-    }
 }

@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Features.StartInstance;
@@ -11,10 +12,8 @@ namespace Aw.Sindri.Features.StartInstance;
 /// <param name="Item">The item: an ItemId or one of its tracker-key aliases.</param>
 /// <param name="NextAttempt">'--attempt next': a new attempt after the latest, refused while that one is live.</param>
 /// <param name="Facts">The input facts by key, each with the file name it came from and its content.</param>
-/// <param name="Actor">Who starts it ('human:cli').</param>
 public sealed record StartInstanceRequest(
     string Recipe,
     string Item,
     bool NextAttempt,
-    IReadOnlyDictionary<FactKey, StartFact> Facts,
-    string Actor);
+    IReadOnlyDictionary<FactKey, StartFact> Facts) : ICommand<StartInstanceResponse>;

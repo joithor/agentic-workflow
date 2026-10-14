@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Workflow;
@@ -189,22 +190,26 @@ internal sealed class WorkflowsHarness : IDisposable
         return last;
     }
 
-    /// <summary>Runs 'sindri workflow &lt;args&gt;' in process as <paramref name="session"/> classes the CLI, typing <paramref name="typed"/> at a challenge.</summary>
-    internal static Task<(int Exit, string Stdout, string Stderr)> Cli(IServiceProvider services, AgentSession session, string? typed, params string[] args)
-    {
-        _ = (session, typed);
-        return Cli(services, args);
-    }
-
-    /// <summary>Runs 'sindri workflow &lt;args&gt;' in process.</summary>
-    public static async Task<(int Exit, string Stdout, string Stderr)> Cli(IServiceProvider services, params string[] args)
+    /// <summary>
+    /// Runs 'sindri workflow &lt;args&gt;' in process as <paramref name="session"/> classes the CLI, typing
+    /// <paramref name="typed"/> at a challenge. The writes are clients of the API control.json names, as the real CLI's are.
+    /// </summary>
+    internal static async Task<(int Exit, string Stdout, string Stderr)> Cli(IServiceProvider services, AgentSession session, string? typed, params string[] args)
     {
         var stdout = new StringWriter();
         var stderr = new StringWriter();
-        var output = new Output(stdout, stderr, services.GetRequiredService<JsonSerializerOptions>());
-        var exit = await WorkflowCommandTable.Run(args, services, output, TestContext.Current.CancellationToken);
+        var json = services.GetRequiredService<JsonSerializerOptions>();
+        var output = new Output(stdout, stderr, json);
+        using var client = new ControlPlaneClient(services.GetRequiredService<IControlPlaneProbe>(), json,
+            CallerHeaders.For(session, services.GetRequiredService<IHumanTokenStore>(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)), TimeSpan.FromSeconds(30));
+        var desk = new RecipeDesk(client, new StringReader(typed is null ? string.Empty : typed + "\n"), static _ => Task.FromResult<Kernel.Error?>(null));
+        var exit = await WorkflowCommandTable.Run(args, services, output, desk, TestContext.Current.CancellationToken);
         return (exit, stdout.ToString(), stderr.ToString());
     }
+
+    /// <summary>Runs 'sindri workflow &lt;args&gt;' in process as a human at a terminal.</summary>
+    public static Task<(int Exit, string Stdout, string Stderr)> Cli(IServiceProvider services, params string[] args) =>
+        Cli(services, new AgentSession(Signal: null, Terminal: true, Prover: false), typed: null, args);
 
     /// <summary>A file under the work directory holding <paramref name="content"/>.</summary>
     public string File(string name, string content)

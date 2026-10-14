@@ -34,7 +34,7 @@ public sealed class ApplyCommandChallengeTests
 
         Assert.Equal(
             ["grant 3 T-1/step/1", "grant-tokens 100000 T-1/step/1", "accept T-1/step/1"],
-            [ApplyCommandChallenge.Action(address, AnswerVariant.Grant, 3).Text, ApplyCommandChallenge.Action(address, AnswerVariant.GrantTokens, 100_000).Text, ApplyCommandChallenge.Action(address, AnswerVariant.Accept, amount: null).Text]);
+            [InstanceChallenge.Action(address, AnswerVariant.Grant, 3).Text, InstanceChallenge.Action(address, AnswerVariant.GrantTokens, 100_000).Text, InstanceChallenge.Action(address, AnswerVariant.Accept, amount: null).Text]);
     }
 
     [Fact]
@@ -46,10 +46,10 @@ public sealed class ApplyCommandChallengeTests
 
         // why: the owner's decision (P4 integration): the subject is "address and version" (spec §4.2); a challenge
         // issued for v4 is stale once the instance has mirrored another event, whatever its state or since show
-        Assert.Equal("instance:T-1/step/1@v4", ApplyCommandChallenge.Subject(parked).Key);
-        Assert.Equal(ApplyCommandChallenge.Subject(parked), ApplyCommandChallenge.Subject(moved));
-        Assert.NotEqual(ApplyCommandChallenge.Subject(parked), ApplyCommandChallenge.Subject(later));
-        Assert.NotEqual(ApplyCommandChallenge.Subject(parked), ApplyCommandChallenge.Subject(View("T-2/step/1", "parked", version: 4, since: 1_000)));
+        Assert.Equal("instance:T-1/step/1@v4", InstanceChallenge.Subject(parked).Key);
+        Assert.Equal(InstanceChallenge.Subject(parked), InstanceChallenge.Subject(moved));
+        Assert.NotEqual(InstanceChallenge.Subject(parked), InstanceChallenge.Subject(later));
+        Assert.NotEqual(InstanceChallenge.Subject(parked), InstanceChallenge.Subject(View("T-2/step/1", "parked", version: 4, since: 1_000)));
     }
 
     private static InstanceView View(string address, string state, int version, long since) => new(

@@ -4832,3 +4832,6 @@ static Aw.Sindri.Core.Workflow.Engine.Rules.StateTimers.Timeout(Aw.Sindri.Core.W
 static Aw.Sindri.Core.Workflow.Engine.Rules.StateTimers.Between(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.TimeSpan deskFloor) -> Aw.Sindri.Core.Workflow.Engine.Runtime.TimerAction!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.OpenLaunch.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.OpenLaunch.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Action(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant answer, int? amount) -> Aw.Sindri.Core.Challenges.ChallengeAction!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Subject(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> Aw.Sindri.Core.Challenges.ChallengeSubject!
