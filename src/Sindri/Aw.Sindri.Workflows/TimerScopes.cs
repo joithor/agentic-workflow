@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Temporalio.Workflows;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -49,23 +50,75 @@ internal sealed class TimerScopes(string actor)
         }
     }
 
+    private Action? _cancel;
+    private DeadlineFired? _fired;
+    private DateTimeOffset? _firesAt;
+    private int _armed;
+
+    /// <summary>Whether a state or retry timer ran out and waits for <see cref="Take"/>: the loop's waits wake for it.</summary>
+    public bool Fired => _fired is not null;
+
     /// <summary>Cancels the running state scope, if any, and arms <paramref name="kind"/> to fire after <paramref name="after"/> in a new one. Unit (a).</summary>
     /// <param name="kind">The state timer or the retry timer.</param>
     /// <param name="entry">The frame entry it is armed in.</param>
     /// <param name="after">How long until it fires.</param>
-    public void Arm(DeadlineKind kind, int entry, TimeSpan after) =>
-        throw new NotSupportedException(string.Create(CultureInfo.InvariantCulture, $"engine P5 unit (a): arm the {kind} timer of entry {entry} for {after} ({actor})"));
+    public void Arm(DeadlineKind kind, int entry, TimeSpan after)
+    {
+        Stop();
+        var arming = ++_armed;
+        var span = after > TimeSpan.Zero ? after : TimeSpan.FromMilliseconds(1);
+        _firesAt = new DateTimeOffset(Workflow.UtcNow, TimeSpan.Zero) + span;
+        _ = RunAsync(new DeadlineFired(actor, entry, kind), span, arming);
+    }
 
-    /// <summary>Cancels the running state scope with no remainder (a park, an escalation, an end). Unit (a).</summary>
-    public void Stop() => throw new NotSupportedException($"engine P5 unit (a): stop the state timer ({actor})");
+    /// <summary>Cancels the running state scope with no remainder (a park, an escalation, an end), and drops a fired timer not yet taken. Unit (a).</summary>
+    public void Stop()
+    {
+        _armed++;   // a delay that completes in the same task as its cancel is from an old scope
+        var cancel = _cancel;
+        _cancel = null;
+        _fired = null;
+        _firesAt = null;
+        cancel?.Invoke();
+    }
 
     /// <summary>The timer that ran out, taken: a state or retry timer of the current entry, or 'takeoverIdle'; null when none has. Unit (a).</summary>
     /// <returns>The trigger for the loop to decide.</returns>
-    public DeadlineFired? Take() => throw new NotSupportedException($"engine P5 unit (a): take a fired timer ({actor})");
+    public DeadlineFired? Take()
+    {
+        var fired = _fired;
+        _fired = null;
+        return fired;
+    }
 
     /// <summary>When the running state timer fires, for status's 'timeout' line and the desk task; null when none runs. Unit (a).</summary>
     /// <returns>The time, from 'Workflow.UtcNow' at arming.</returns>
-    public DateTimeOffset? FiresAt() => throw new NotSupportedException($"engine P5 unit (a): the state timer's deadline ({actor})");
+    public DateTimeOffset? FiresAt() => _firesAt;
+
+    /// <summary>
+    /// One arming: 'Workflow.DelayAsync' in its own cancellation scope (a timer in history). Cancelled, it never fires;
+    /// run out, it leaves its trigger for the loop, unless a later arming or a stop has replaced it.
+    /// </summary>
+    private async Task RunAsync(DeadlineFired fired, TimeSpan after, int arming)
+    {
+        using var scope = new CancellationTokenSource();
+        _cancel = scope.Cancel;   // finding F3: Cancel, not CancelAsync, in workflow code
+        try
+        {
+            await Workflow.DelayAsync(after, scope.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            return;   // the scope was cancelled: a park, a stop, a re-arm, or the workflow's own cancellation
+        }
+
+        if (arming == _armed)
+        {
+            _cancel = null;
+            _firesAt = null;
+            _fired = fired;
+        }
+    }
 
     /// <summary>
     /// A takeover (spec §5.5): cancels the running state scope, measures what was left from 'Workflow.UtcNow', and arms

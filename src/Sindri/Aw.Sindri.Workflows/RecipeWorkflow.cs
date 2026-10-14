@@ -44,9 +44,7 @@ internal sealed partial class RecipeWorkflow
     private Interpreting? _context;
     private WorkflowInstance? _instance;
     private DateTimeOffset _since;
-    private DateTimeOffset? _timeoutAt;
     private TimeSpan _deskTimeout;
-    private TimeSpan _waited;
     private string? _repo;
     private string? _recorded;
     private StepCompleted? _report;
@@ -98,7 +96,7 @@ internal sealed partial class RecipeWorkflow
         _recipe = new InterpretedRecipe(loaded.Version, loaded.Recipe, catalog, start.Inputs);
         _deskTimeout = loaded.DeskTimeout;
         _eventHold = loaded.EventHold;
-        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance);
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
         var instance = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
@@ -114,7 +112,7 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt) with { Version = _mirrored }
+            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt()) with { Version = _mirrored }
             : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null);
     }
 
@@ -167,20 +165,31 @@ internal sealed partial class RecipeWorkflow
         null => instance.Frame.Run is { Runtime: StepRuntime.Desk },
     };
 
+    /// <summary>
+    /// Takes <paramref name="instance"/> as the instance after a decided change, and does what the change asks of the
+    /// timers (spec §5.5, <see cref="StateTimers.Between"/>): a new entry or run, or an answer that ended a park, arms the
+    /// state's full timeout; a park, escalation or end stops it; a 'then: retry' arms the retry timer. The first entry
+    /// arms its state's timeout unless it parked at once.
+    /// </summary>
     private void Enter(WorkflowInstance instance)
     {
-        if (_instance is null || !string.Equals(_instance.State, instance.State, StringComparison.Ordinal) || _instance.Frame.Entry != instance.Frame.Entry)
+        var before = _instance;
+        if (before is null || !string.Equals(before.State, instance.State, StringComparison.Ordinal) || before.Frame.Entry != instance.Frame.Entry)
         {
             _since = Now;
         }
 
-        if (_instance?.Suspension is not null && instance.Suspension is null)
-        {
-            _timeoutAt = null;   // an answer ended the suspension: its resume re-arms the desk deadline from now (§5.8 'rearm'; unit (b))
-        }
-
         _instance = instance;
+        var recipe = _context!.Recipe; // why: Begin sets the context before the first entry
+        var action = before is null ? First(instance, recipe, _deskTimeout) : StateTimers.Between(before, instance, recipe, _deskTimeout);
+        _ = _timers.Apply(action, instance.Frame.Entry);
     }
+
+    /// <summary>The first entry's timer: its state's timeout, unless it ended or parked at once.</summary>
+    private static TimerAction First(WorkflowInstance instance, Core.Workflow.Recipes.Recipe recipe, TimeSpan deskFloor) =>
+        instance is { Ended: false, Suspension: null } && StateTimers.Timeout(recipe.States[instance.Frame.State], instance.Frame.Run, deskFloor) is { } after
+            ? new TimerAction(TimerActionKind.Arm, DeadlineKind.State, after)
+            : TimerAction.Stop;
 
     /// <summary>The workflow's deterministic clock, as an offset in UTC.</summary>
     private static DateTimeOffset Now => new(Workflow.UtcNow, TimeSpan.Zero);

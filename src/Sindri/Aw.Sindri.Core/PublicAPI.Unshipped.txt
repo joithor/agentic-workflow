@@ -4837,3 +4837,7 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Action(Aw.Sindri
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Subject(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> Aw.Sindri.Core.Challenges.ChallengeSubject!
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.get -> System.TimeSpan
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.Frame.EnteredBy.get -> int?
+Aw.Sindri.Core.Workflow.Engine.Instances.Frame.EnteredBy.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.Frame.Retried.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Instances.Frame.Retried.init -> void

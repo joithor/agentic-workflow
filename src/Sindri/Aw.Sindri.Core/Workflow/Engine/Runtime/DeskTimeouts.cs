@@ -36,12 +36,21 @@ public static class DeskTimeouts
             return instance;
         }
 
-        var park = new Suspension(
-            SuspensionKind.Park, ParkReason.Timeout, ParkKind: null, Escalation: null,
-            $"{instance.Frame.State} ran past {Text(waited)}", actor, Mirrors: null,
-            new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effect: null));
+        var park = TimeoutPark(instance.Frame.State, waited, actor);
         return instance with { Suspension = park };
     }
+
+    /// <summary>The 'timeout' park (spec §3.8): '{state} ran past {after}'; '--resume' goes back to the frame with a fresh deadline.</summary>
+    /// <param name="state">The state that ran past its timeout.</param>
+    /// <param name="after">How long it had.</param>
+    /// <param name="actor">The timer's actor.</param>
+    /// <returns>The park.</returns>
+    internal static Suspension TimeoutPark(string state, TimeSpan after, string actor) => new(
+        SuspensionKind.Park, ParkReason.Timeout, ParkKind: null, Escalation: null, RanPast(state, after), actor, Mirrors: null,
+        new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effect: null));
+
+    /// <summary>What a timeout park or escalation says (spec §3.8): '{state} ran past {after}'.</summary>
+    internal static string RanPast(string state, TimeSpan after) => $"{state} ran past {Text(after)}";
 
     /// <summary>A duration as status writes it (spec §6.4): '2d', '2d 1h', '4h 30m', or '40s' under a minute.</summary>
     private static string Text(TimeSpan span)

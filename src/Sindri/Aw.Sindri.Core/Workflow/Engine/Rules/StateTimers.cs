@@ -30,7 +30,12 @@ public static class StateTimers
     public static TimeSpan? Timeout(RecipeState state, OpenRun? run, TimeSpan deskFloor)
     {
         ArgumentNullException.ThrowIfNull(state);
-        throw new NotSupportedException($"engine P5 unit (a): the state timeout of a {state.Kind} state (run {run?.Token.Value ?? "none"}, desk floor {deskFloor})");
+        if (state.Kind == StateKind.Terminal || state.Timeout is not { } timeout)
+        {
+            return null;
+        }
+
+        return run is { Runtime: StepRuntime.Desk } ? DeskTimeouts.Wait(timeout, deskFloor) : timeout.After.Span;
     }
 
     /// <summary>
@@ -54,6 +59,11 @@ public static class StateTimers
     {
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(after);
+        if (before.Suspension?.Kind != SuspensionKind.Takeover && after.Suspension?.Kind != SuspensionKind.Takeover)
+        {
+            return null;   // not a takeover's change: unit (a)'s entries decide it
+        }
+
         throw new NotSupportedException($"engine P5 unit (b): the takeover timers of {after.Address.Value} ({before.State} -> {after.State})");
     }
 
@@ -66,6 +76,31 @@ public static class StateTimers
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(after);
         ArgumentNullException.ThrowIfNull(recipe);
-        throw new NotSupportedException($"engine P5 unit (a): the state timers of {after.Address.Value} ({before.State} -> {after.State}, {recipe.Id.Value}, desk floor {deskFloor})");
+        if (after.Ended || (after.Suspension is not null && (before.Suspension is null || NewRun(before, after))))
+        {
+            return TimerAction.Stop;   // a park, an escalation or an end; a new entry that parked at once runs no timer either
+        }
+
+        if (after.Suspension is not null)
+        {
+            return TimerAction.Keep;   // still suspended: the park's timer stays stopped
+        }
+
+        if (before.Suspension is not null || NewRun(before, after))
+        {
+            return Full(after, recipe, deskFloor, DeadlineKind.State);   // a new entry or run, or an answer that ended a park ('rearm')
+        }
+
+        return after.Frame.Retried && !before.Frame.Retried ? Full(after, recipe, deskFloor, DeadlineKind.Retry) : TimerAction.Keep;
     }
+
+    /// <summary>A new entry, or a new run in the same entry.</summary>
+    private static bool NewRun(WorkflowInstance before, WorkflowInstance after) =>
+        before.Frame.Entry != after.Frame.Entry || before.Frame.Run?.Token != after.Frame.Run?.Token;
+
+    /// <summary>Arms <paramref name="timer"/> with the state's full timeout; stops the timer of a state that has none.</summary>
+    private static TimerAction Full(WorkflowInstance instance, Recipe recipe, TimeSpan deskFloor, DeadlineKind timer) =>
+        recipe.States.TryGetValue(instance.Frame.State, out var state) && Timeout(state, instance.Frame.Run, deskFloor) is { } after
+            ? new TimerAction(TimerActionKind.Arm, timer, after)
+            : TimerAction.Stop;
 }

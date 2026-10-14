@@ -1,7 +1,10 @@
 using System.Globalization;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
+using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
@@ -19,8 +22,44 @@ public static partial class TransitionDecision
     /// 'timeout'. In desk mode every 'then' parks (W20). A timer of an entry that has ended, or of a suspended instance,
     /// is absorbed. Unit (a).
     /// </summary>
-    private static Decision Expired(Deciding d, WorkflowInstance instance, DeadlineFired fired) =>
-        throw new NotSupportedException(string.Create(CultureInfo.InvariantCulture, $"engine P5 unit (a): the {fired.Kind} timer of entry {fired.Entry} on {instance.Address.Value} ({d.Key.Value})"));
+    private static Decision Expired(Deciding d, WorkflowInstance instance, DeadlineFired fired)
+    {
+        if (instance.Ended || instance.Suspension is not null || fired.Entry != instance.Frame.Entry
+            || d.Recipe.States.GetValueOrDefault(instance.Frame.State) is not { Timeout: { } timeout } state)
+        {
+            return new Absorbed(d.Key, string.Create(CultureInfo.InvariantCulture,
+                $"the {fired.Kind} timer of entry {fired.Entry} has nothing to time: {instance.Address.Value} is {instance.State} in entry {instance.Frame.Entry}"));
+        }
+
+        var after = StateTimers.Timeout(state, instance.Frame.Run, d.Context.DeskTimeout) ?? timeout.After.Span;
+        var desk = instance.Frame.Run is { Runtime: StepRuntime.Desk };
+        var retried = fired.Kind == DeadlineKind.Retry || instance.Frame.Retried;
+        var then = desk || (retried && timeout.Then == TimeoutAction.Retry) ? TimeoutAction.Park : timeout.Then;
+        return then switch
+        {
+            TimeoutAction.Escalate => d.Changed(d.Rules.Suspend(instance, new Suspension(
+                SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Timeout, DeskTimeouts.RanPast(instance.Frame.State, after),
+                fired.Actor, Mirrors: null, new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effect: null)))),
+            TimeoutAction.Retry => Retry(d, instance),
+            TimeoutAction.Park or _ => d.Changed(d.Rules.Suspend(instance, DeskTimeouts.TimeoutPark(instance.Frame.State, after, fired.Actor))),
+        };
+    }
+
+    /// <summary>
+    /// 'then: retry' (spec §3.4, §5.7): the same entry, run and inbox, marked retried so the interpreter arms the retry
+    /// timer; the transition that entered the state has its effects re-emitted under the same identities, which their
+    /// existence checks make harmless. The initial state was entered by no transition, so it re-emits nothing.
+    /// </summary>
+    private static Applied Retry(Deciding d, WorkflowInstance instance)
+    {
+        var retried = instance with { Frame = instance.Frame with { Retried = true } };
+        var effects = instance.Frame.EnteredBy is { } index && index < d.Recipe.Transitions.Count
+            ? Effects(d.Recipe.Transitions[index], instance.Id, instance.Frame.Entry)
+            : [];
+        var own = d.Change(retried, WorkflowEventType.Transition, Records.None);
+        own = own with { Event = own.Event with { Effects = [.. effects.Select(static e => e.Identity)] } };
+        return new Applied(d.Key, [own], effects, []);
+    }
 
     /// <summary>
     /// The takeover's idle reminder fired (spec §5.5, §6.3): while still taken over, one 'workflow.notified' and one

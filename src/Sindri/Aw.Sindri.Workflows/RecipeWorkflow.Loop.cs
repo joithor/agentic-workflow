@@ -42,21 +42,26 @@ internal sealed partial class RecipeWorkflow
     }
 
     /// <summary>
-    /// Waits for the next trigger and decides it (§5.4, §5.8): in a wait state, the first delivered event that fits its
-    /// 'waitFor' or a submitted command, whichever is first; parked, escalated or taken over, a submitted command. Wait
-    /// timeouts are P5's. A child wait is P7's: the child isn't started yet, so only its delivered end or a command moves it.
+    /// Waits for the next trigger and decides it (§5.4, §5.5, §5.8): in a wait state, the first delivered event that fits
+    /// its 'waitFor', a submitted command, or its timer running out, whichever is first; parked, escalated or taken over,
+    /// a submitted command (a park stops the timer). A child wait is P7's: the child isn't started yet, so only its
+    /// delivered end, a command or its timer moves it.
     /// </summary>
     private async Task<WorkflowInstance> Wait(WorkflowInstance instance, Interpreting context)
     {
         var wait = instance.Suspension is null && context.Recipe.States.TryGetValue(instance.Frame.State, out var state) ? state.WaitFor : null;
-        if (!await WaitHolding(() => _submitted.Count > 0 || _delivered.Any(e => Fits(e, wait, instance.Frame)), instance).ConfigureAwait(true))
+        if (!await WaitHolding(() => _submitted.Count > 0 || _timers.Fired || _delivered.Any(e => Fits(e, wait, instance.Frame)), instance).ConfigureAwait(true))
         {
             return instance;   // woke only to expire a held event (§5.4); wait again
         }
 
-        return _submitted.TryDequeue(out var submission)
-            ? await Apply(instance, submission, context).ConfigureAwait(true)
-            : await Apply(instance, new Submission(Ticket: 0, Take(wait, instance.Frame)), context).ConfigureAwait(true);
+        if (_submitted.TryDequeue(out var submission))
+        {
+            return await Apply(instance, submission, context).ConfigureAwait(true);
+        }
+
+        Trigger next = _delivered.Any(e => Fits(e, wait, instance.Frame)) ? Take(wait, instance.Frame) : _timers.Take()!; // why: WaitHolding woke for an event that fits or a fired timer
+        return await Apply(instance, new Submission(Ticket: 0, next), context).ConfigureAwait(true);
     }
 
     /// <summary>

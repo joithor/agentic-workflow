@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Tests.CompleteStep;
 using Microsoft.Extensions.DependencyInjection;
+using Temporalio.Api.Enums.V1;
 using Temporalio.Client;
 using Temporalio.Worker;
 
@@ -127,10 +128,12 @@ public sealed class StateTimerTests(SindriTimeSkippingServer server) : IClassFix
             }, ct);
         }
 
-        await env.DelayAsync(TimeSpan.FromHours(3), ct);   // the worker is down well past the 10m timeout (X58)
+        var down = env.DelayAsync(TimeSpan.FromHours(3), ct);   // no worker runs while the server skips past the 10m timeout (X58)
+        await TimerFired(handle!, ct); // why: the first worker's run set it before it returned
         using var after = new TemporalWorker(env.Client, options);
         await after.ExecuteAsync(async () =>
         {
+            await down;
             var desk = new DeskInstance(sindri, handle!); // why: the first worker's run set it before it returned
             var parked = await desk.Until(static v => v.State == "parked");
             await env.DelayAsync(TimeSpan.FromHours(1), ct);
@@ -140,6 +143,24 @@ public sealed class StateTimerTests(SindriTimeSkippingServer server) : IClassFix
             Assert.Equal("parked", (await desk.Until(static _ => true)).State);
             await desk.Handle.TerminateAsync("test over");
         }, ct);
+    }
+
+    /// <summary>Waits until the instance's history shows a fired timer: it fired server-side while no worker ran.</summary>
+    private static async Task TimerFired(WorkflowHandle handle, CancellationToken ct)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        while (DateTime.UtcNow < deadline)
+        {
+            var history = await handle.FetchHistoryAsync();
+            if (history.Events.Any(static e => e.EventType == EventType.TimerFired))
+            {
+                return;
+            }
+
+            await Task.Delay(100, ct);
+        }
+
+        Assert.Fail("the timer never fired while the worker was down");
     }
 
     /// <summary>Starts the 'then: <paramref name="then"/>' recipe on <paramref name="item"/>, skips past its 10m timeout and reads the result.</summary>
