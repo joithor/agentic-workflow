@@ -1089,6 +1089,40 @@ Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.Instance.init -> void
 Aw.Sindri.Features.StartInstance.StartInstanceRequest.Deconstruct(out string! Recipe, out string! Item, out bool NextAttempt, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Features.StartInstance.StartFact!>! Facts) -> void
 Aw.Sindri.Features.StartInstance.StartInstanceRequest.StartInstanceRequest(string! Recipe, string! Item, bool NextAttempt, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Features.StartInstance.StartFact!>! Facts) -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.ApplyCommandRequest(string! Instance, Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer = null, string? Text = null, int? Amount = null, Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb = null, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce = null, Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge = null) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.<Clone>$() -> Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest!
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Apply.get -> bool
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Apply.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Deconstruct(out string! Directory, out string? Repo, out bool Apply) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Directory.get -> string!
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Directory.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Equals(Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? other) -> bool
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.RegisterMcpRequest(string! Directory, string? Repo, bool Apply) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Repo.get -> string?
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Repo.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.<Clone>$() -> Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse!
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Applied.get -> bool
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Applied.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Arguments.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Arguments.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Checkout.get -> string!
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Checkout.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Deconstruct(out Aw.Sindri.Core.Ids.RepoName Repo, out string! Checkout, out System.Collections.Generic.IReadOnlyList<string!>! Arguments, out bool Applied) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Equals(Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse? other) -> bool
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.RegisterMcpResponse(Aw.Sindri.Core.Ids.RepoName Repo, string! Checkout, System.Collections.Generic.IReadOnlyList<string!>! Arguments, bool Applied) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Repo.get -> Aw.Sindri.Core.Ids.RepoName
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Repo.init -> void
+override Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.GetHashCode() -> int
+override Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.ToString() -> string!
+override Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.GetHashCode() -> int
+override Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.ToString() -> string!
+static Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.operator !=(Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? left, Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? right) -> bool
+static Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.operator ==(Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? left, Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? right) -> bool
+static Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.operator !=(Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse? left, Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse? right) -> bool
+static Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.operator ==(Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse? left, Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse? right) -> bool
 Aw.Sindri.Features.ContextCalls.ExportContextMapRequest
 Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ExportContextMapRequest!
 Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Deconstruct(out string? Path) -> void
