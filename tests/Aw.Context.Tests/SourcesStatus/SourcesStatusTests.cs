@@ -40,6 +40,25 @@ public sealed class SourcesStatusTests
         Assert.Equal((SourceState.Unavailable, "SND-CONTEXT-004"), (failed.Value.Sources.Single().State, failed.Value.Sources.Single().Code));
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task After_the_patterns_change_the_repo_is_degraded_until_a_refresh_cleans_it_again()
+    {
+        const string acme = """{"scrub":{"extraPatterns":[{"id":"acme-customer-id","pattern":"ACME-[0-9]{6}"}]}}""";
+        using var repo = FixtureRepo.Build();
+        var engine = Engines.Over(new FixedSourceCatalog(), new FakeDocIndex(new FakeTimeProvider()));
+        var repos = new[] { new ContextRepo(ContextRepoName.From("split-panes"), repo.Path) };
+
+        _ = await engine.Refresh(Engines.Human() with { Repos = repos }, CancellationToken.None);
+        var changed = await engine.Sources(Engines.Human(acme) with { Repos = repos }, CancellationToken.None);
+        var report = await engine.Refresh(Engines.Human(acme) with { Repos = repos }, CancellationToken.None);
+        var cleaned = await engine.Sources(Engines.Human(acme) with { Repos = repos }, CancellationToken.None);
+
+        Assert.Equal(SourceState.Degraded, changed.Value.Sources.Single().State);
+        Assert.StartsWith("2 of 2 documents wait for the next refresh", changed.Value.Sources.Single().Detail, StringComparison.Ordinal);
+        Assert.Equal(2, report.Value.Repos.Single().Recleaned);
+        Assert.Equal(SourceState.Ok, cleaned.Value.Sources.Single().State);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Live_sources_report_their_probe_and_sessions_are_gated()
     {

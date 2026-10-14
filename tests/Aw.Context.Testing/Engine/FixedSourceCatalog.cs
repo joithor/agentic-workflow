@@ -1,6 +1,7 @@
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Sources;
+using Aw.Context.Core.Trust;
 
 namespace Aw.Context.Testing.Engine;
 
@@ -11,10 +12,14 @@ public sealed class FixedSourceCatalog(params IContextSource[] sources) : ISourc
     /// <summary>The repos of the last call.</summary>
     public IReadOnlyList<ContextRepo> LastRepos { get; private set; } = [];
 
+    /// <summary>The scrubbers of the last call.</summary>
+    public Scrubbers? LastScrubbers { get; private set; }
+
     /// <inheritdoc />
-    public IReadOnlyList<IContextSource> For(ContextSettings settings, IReadOnlyList<ContextRepo> repos)
+    public IReadOnlyList<IContextSource> For(ContextSettings settings, IReadOnlyList<ContextRepo> repos, Scrubbers scrubbers)
     {
         LastRepos = repos;
+        LastScrubbers = scrubbers;
         return repos.Count == 0 ? [] : sources;
     }
 }

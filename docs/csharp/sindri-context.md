@@ -10,9 +10,9 @@ composes it through the `compose` edge. The user's guide is `docs/sindri/context
 
 | Project | Holds |
 |---|---|
-| `Aw.Context.Core` | `Facade.IContextEngine` (`CheckSettings`, `Query`, `Sources`, `Refresh`) and its records (`Engine.ContextScope`, `ContextQuery`, `ContextCaller`, `ContextSettings`); the source contract (`Sources.IContextSource`, `IChangeFeed`, `SourceRef` with `Canonical`, the typed ids `SourceId`, `ExternalId`, `SourceVersion`, `RecordKey`, `SourceCursor`); the result records (`Results.*`, spec §8.4); ports `Trust.IEgressScrubber`, `Trust.IIngestFilter`, `Docs.ISourceCatalog`, `Docs.IDocIndex`, `Models.IModelPort` (README X18: every model call; adapted in Sindri's Host over Judge's provider port by the stage that first calls a model); pure rules: `ScopeRules`, `SettingsReader`, `QueryRules`, `RankFusion`, `Packer`, `TokenEstimate`, `CitationStates`, `UntrustedFence`, `Permalinks` |
+| `Aw.Context.Core` | `Facade.IContextEngine` (`CheckSettings`, `Query`, `Sources`, `Refresh`) and its records (`Engine.ContextScope`, `ContextQuery`, `ContextCaller`, `ContextSettings`); the source contract (`Sources.IContextSource`, `IChangeFeed`, `SourceRef` with `Canonical`, the typed ids `SourceId`, `ExternalId`, `SourceVersion`, `RecordKey`, `SourceCursor`); the result records (`Results.*`, spec §8.4); ports `Trust.IEgressScrubber`, `Trust.IIngestFilter`, `Trust.IScrubberFactory` (S-2W), `Docs.ISourceCatalog`, `Docs.IDocIndex`, `Models.IModelPort` (README X18: every model call; adapted in Sindri's Host over Judge's provider port by the stage that first calls a model); pure rules: `ScopeRules`, `SettingsReader`, `QueryRules`, `RankFusion`, `Packer`, `TokenEstimate`, `CitationStates`, `UntrustedFence`, `Permalinks` |
 | `Aw.Context.Features` | `ContextEngine` (the facade: one line per method, dispatching to a slice) and the slices `QueryContext`, `SourcesStatus`, `RefreshDocs` |
-| `Aw.Context.Infrastructure` | `Store.ContextDatabase` (context.db), `Docs.SqliteDocIndex` and `Docs.RepoDocsSource` (FTS5 over scrubbed chunks), `Git.GitCli`, `Scrubbing.IngestSanitizer` and `Scrubbing.RedactionScrubber` (both scrub ports over `Aw.Redaction`) |
+| `Aw.Context.Infrastructure` | `Store.ContextDatabase` (context.db), `Docs.SqliteDocIndex` and `Docs.RepoDocsSource` (FTS5 over scrubbed chunks), `Git.GitCli`, `Scrubbing.IngestSanitizer`, `Scrubbing.RedactionScrubber` (both scrub ports over `Aw.Redaction`) and `Scrubbing.RedactionScrubberFactory` (S-2W) |
 
 `context.repos` must name profile repos, and with a `context:` section every repo in scope needs a name the engine can
 use (`ContextRepoName`): otherwise `SND-CONTEXT-001` at validate and approve (`IContextEngine.CheckSettings(section,
@@ -133,6 +133,77 @@ In `tests/Aw.Sindri.Tests/ContextCalls`:
 - the caller mapping, and validate and approve refusing a bad `context:` section or repo;
 - the CLI's argument parsing and text output.
 
+## S-2W: extra scrub patterns, per call
+
+Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatterns` reach every scrub the engine does.
+
+- **Settings.** `SettingsReader` reads `scrub: { extraPatterns: [{ id, pattern }] }` into
+  `ContextSettings.ExtraPatterns` (`Trust.ScrubPattern(Rule, Pattern)`, as written). Unknown keys are refused by the
+  section records, a null entry with `context.scrub.extraPatterns[i]`. Core can't check a regex (ARCH-DIR-005 keeps
+  `Aw.Redaction` out of Core and Features), so the entries are checked behind a port.
+- **`Trust.IScrubberFactory.For(extraPatterns) -> Result<Scrubbers>`.** `Scrubbers(Ingest, Egress, Ruleset)` are one
+  call's ports. `RedactionScrubberFactory` (Infrastructure, singleton) builds them with
+  `Redactor.Create(extras, Redactor.DefaultMatchTimeout, TimeProvider)` (so the whole-scan deadline runs on the host's
+  clock) and maps the first `ExtraPatternError` to `SND-CONTEXT-001` at
+  `context.scrub.extraPatterns[<Index>].id|pattern`, with Redaction's message (which never quotes the pattern). It
+  keeps the last build, keyed by ruleset, so calls under an unchanged profile don't compile again.
+- **Per call.** There is no scrubber singleton any more. `QueryContextService`, `RefreshDocsService` and
+  `SourcesStatusService` read the settings, then `For(settings.ExtraPatterns)`; `ISourceCatalog.For(settings, repos,
+  scrubbers)` hands them to the sources (`RepoDocsSource` cleans fetched documents with them),
+  `IDocIndex.Refresh(repo, globs, scrubbers, ct)` cleans and records with them, and `IDocIndex.Status(repo, ruleset,
+  ct)` counts what is outdated. `ContextEngine.CheckSettings` reads the keys, then builds the scrubbers, then checks
+  the repos, so `profile validate` and `approve` refuse a pattern Redaction refuses. The approved profile can change
+  at run time (the scheduler re-reads approvals), and the next call picks it up.
+- **`Trust.ScrubRuleset`** (Vogen, 16–64 lowercase hex): the first 32 hex characters of SHA-256 over
+  `IngestSanitizer.Version`, the text of every sanitizer regex (`IngestSanitizer.Rules`) and the built redactor's
+  `Redactor.RulesDigest` (every rule it applies, extra patterns included, with ids, patterns, options and the scan
+  engine, so a widened rule under the same id counts), length-prefixed. The factory caches the last build by the
+  patterns as written. Changing a regex therefore re-cleans by itself; raise `IngestSanitizer.Version` too
+  with any change to what the sanitizer removes in code (S-2W made it 7).
+- **A ruleset per stored doc.** Migration `0003_s2w_scrub_ruleset.sql` adds `doc.ruleset` (default `''`, so every
+  row S-1A wrote is outdated). A refresh treats a document as current only when its blob **and** ruleset match; one
+  stored under another ruleset is cleaned again (`RepoRefresh.Recleaned` counts those indexed with text, so they are
+  among `Added`; one the new rules block or one over the size cap counts as blocked or skipped instead; Sindri carries
+  it on `ContextRepoSynced`). Search filters `d.ruleset = @ruleset`, so a chunk cleaned with other rules is never a hit
+  until it is cleaned again, and `DocIndexStatus.Outdated` turns the repo's status row `degraded` with the count.
+- **Sanitizer (S-1A review run 5 deferrals).** `HtmlImage` removes `img`, `image` and `style`, and the elements that can fetch
+  when they carry an attribute (`meta`, `iframe`, `frame`, `object`, `embed`, `link`, `base`, `script`, SVG `set` and
+  `animate…`);
+  `HtmlTag` + `RemoteAttribute` remove any other start tag carrying `src`, `srcset`, `imagesrcset`, `srcdoc`, `lowsrc`,
+  `dynsrc`, `poster`, `background`, `href`, `data`, `action`, `formaction`, `style` or `ping` anywhere in the tag. Both
+  read quoted values (which may hold `>`) first, then the tag raw up to its first `>` (`RawFetchingTag`, `RawTag`), so
+  a tag whose quotes don't balance or whose value is too long is removed, not kept; a raw read ends at its first `>`
+  or a blank line (the part before it is removed). Markdown image and link text may run across line breaks (not a
+  blank line). `Clean` returns null when the text still changes after `MaxPasses` passes and a confirming one (a later
+  removal could have joined a tag), and `RedactionScrubber` blocks it, as it does on a regex timeout. `<style>` start
+  tags go like `<img>` (the CSS after one is plain text; a whole-block rule deleted the rest of any doc that mentioned
+  `<style>`). `RedactionScrubber` turns CRLF into LF before cleaning, so a blank line reads the same everywhere. Image
+  rules leave a regex lookaround (`(?<![0-9])`) alone unless a `(` or `]` follows it. The remote
+  definition's label takes backslash escapes and one line break (not a blank line), and labels are matched as
+  CommonMark does (whitespace runs collapsed, case ignored), so `[x][p q]` meets `[p\nq]: https://…`.
+- **Not here: the map's text.** S-3a's map export and status (and S-3b's `node`/`affects` answers) don't scrub yet;
+  they must build `Scrubbers` per call through `IScrubberFactory` and pass every text field through `Egress`, as the
+  repo-docs pipeline does (follow-up for S-3b).
+- **Not here: telemetry.** Telemetry's redactor stays `Redactor.Default`: log lines and spans carry codes, counts and hashes,
+  never record or query text (§7), and the telemetry redactor is fixed at start while the profile changes at run time.
+
+### Tests (S-2W)
+
+- `ScrubberFactoryContract<T>` (`Aw.Context.Testing`), bound to `FakeScrubberFactory` and `RedactionScrubberFactory`
+  (unit): an extra pattern on both ports, the ruleset follows the list, refusals at their key paths.
+- `DocIndexContract<T>` gains "a document stored under another ruleset is cleaned again" (fake and SQLite).
+- `RedactionScrubberFactoryTests`: Redaction's refusals (Unicode class, empty-matching, built-in or reserved id, nulls)
+  at their key paths without the pattern; the last build reused; the fingerprint is length-prefixed.
+- `RepoDocsTests`: with a pattern added, nothing stored under the old rules is a hit, the refresh re-cleans both docs,
+  `doc_chunk` loses the raw id and gains the placeholder, and a fetch answers the placeholder.
+- `RepoDocsTests.Rows_an_S1A_store_wrote_are_outdated_after_the_upgrade_and_cleaned_again`: migration 0003 on a real
+  migration-2 store with an S-1A row (outdated, unsearchable, cleaned again).
+- `StoredDocsTests`: a blocked or oversized re-clean isn't counted as `Recleaned`. `Aw.Redaction.Tests/RulesDigestTests`:
+  the digest follows ids, patterns and options, not the timeout, and the scan engine's behaviour is pinned with
+  `EngineVersion`.
+- `QueryContextTests`, `SourcesStatusTests`, `SettingsReaderTests`, `TextRulesTests` (the HTML carriers and labels,
+  including unbalanced quotes and values too long for the quote-aware read),
+  and `ContextEngineContract` (an extra pattern that doesn't parse is 001 at its key path).
 ## S-3a: the product graph store, map import / export, map status, doctor, purge
 
 ### Shape

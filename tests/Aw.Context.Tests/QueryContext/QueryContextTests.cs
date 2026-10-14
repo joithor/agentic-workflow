@@ -109,6 +109,27 @@ public sealed class QueryContextTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task The_profiles_extra_patterns_scrub_this_calls_records_and_a_bad_one_refuses_the_query()
+    {
+        const string acme = """{"scrub":{"extraPatterns":[{"id":"acme-customer-id","pattern":"ACME-[0-9]{6}"}]}}""";
+        var docs = new FakeContextSource(FakeContextSource.FixtureDocs().Describe(),
+            [FakeContextSource.Doc("docs/a.md", "Customer ACME-123456", "orientation for customer ACME-123456", "v1")]);
+        var catalog = new FixedSourceCatalog(docs);
+        var engine = Engines.Over(catalog);
+
+        var plain = await engine.Query(new ContextQuery("orientation"), Engines.Human(), CancellationToken.None);
+        var scrubbed = await engine.Query(new ContextQuery("orientation"), Engines.Human(acme), CancellationToken.None);
+        var bad = await engine.Query(new ContextQuery("orientation"), Engines.Human(acme.Replace("[0-9]{6}", "[0-9", StringComparison.Ordinal)), CancellationToken.None);
+
+        var item = scrubbed.Value.Sections.Single().Items.Single();
+        Assert.Contains("ACME-123456", plain.Value.Sections.Single().Items.Single().Text, StringComparison.Ordinal);
+        Assert.Equal(("<untrusted source=\"repo-docs\">Customer [REDACTED:acme-customer-id]</untrusted>", false), (item.Title, item.Text!.Contains("ACME-123456", StringComparison.Ordinal)));
+        Assert.Contains("[REDACTED:acme-customer-id]", item.Text, StringComparison.Ordinal);
+        Assert.Equal(new FakeScrubberFactory().For([new("acme-customer-id", "ACME-[0-9]{6}")]).Value.Ruleset, catalog.LastScrubbers?.Ruleset);
+        Assert.Equal((ContextErrors.SettingsInvalid.Code, true), (bad.Error.Code, bad.Error.Message.StartsWith("context.scrub.extraPatterns[0].pattern:", StringComparison.Ordinal)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Items_past_the_budget_are_listed_as_references_only()
     {
         var result = await Engines.Over(FakeContextSource.FixtureDocs()).Query(new ContextQuery("layout orientation", Budget: 60), Engines.Human(), CancellationToken.None);
