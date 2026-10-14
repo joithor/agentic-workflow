@@ -29,10 +29,11 @@ internal static class CompleteCommand
             return await output.Error(problem ?? SindriErrors.InvalidInput.With(Usage)).ConfigureAwait(false);
         }
 
-        var nonce = await ApplyCommandVerbs.NonceFor(desk, request.Address.Value, request.Nonce, ct).ConfigureAwait(false);
-        var route = $"/sindri/workflow/instances/{InstanceRoute.Segment(request.Address.Value)}/runs/{InstanceRoute.Segment(request.Run.Value)}/complete";
-        var done = nonce.IsError ? nonce.Error
-            : await desk.Client.Post<CompleteStepRequest, CompleteStepResponse>(route, request with { Nonce = nonce.Value }, ct).ConfigureAwait(false);
+        var target = await InstanceTarget.Resolve(desk, request.Instance, request.Nonce, ct).ConfigureAwait(false);
+        var done = target.IsError ? target.Error
+            : await desk.Client.Post<CompleteStepRequest, CompleteStepResponse>(
+                $"/sindri/workflow/instances/{target.Value.Id.Value}/runs/{InstanceRoute.Segment(request.Run.Value)}/complete",
+                request with { Nonce = target.Value.Nonce }, ct).ConfigureAwait(false);
         if (done.IsError)
         {
             return await output.Error(done.Error).ConfigureAwait(false);
@@ -78,7 +79,7 @@ internal static class CompleteCommand
         }
 
         var (run, outcome, nonce) = fields.Value;
-        return (new CompleteStepRequest(instance, run, outcome, outputs, nonce), json, null);
+        return (new CompleteStepRequest(instance.Value, run, outcome, outputs, nonce), json, null);
     }
 
     /// <summary>The address and the '--flag value' pairs, each flag one this verb takes.</summary>

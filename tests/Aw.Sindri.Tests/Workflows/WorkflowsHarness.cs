@@ -52,11 +52,11 @@ internal sealed class WorkflowsHarness : IDisposable
     public ServiceProvider Sindri() =>
         Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider(DateTimeOffset.UtcNow)).BuildServiceProvider();
 
-    /// <summary>The 'temporal' dev server pinned in binaries.lock, with Sindri's namespace and search attributes.</summary>
-    public static Task<WorkflowEnvironment> StartDevServer() =>
+    /// <summary>The 'temporal' dev server pinned in binaries.lock, with Sindri's namespace (or <paramref name="namespace"/>) and search attributes.</summary>
+    public static Task<WorkflowEnvironment> StartDevServer(string @namespace = TemporalSettings.DefaultNamespace) =>
         WorkflowEnvironment.StartLocalAsync(new WorkflowEnvironmentStartLocalOptions
         {
-            Namespace = SindriTemporal.Namespace,
+            Namespace = @namespace,
             UI = false,
             DevServerOptions = new DevServerOptions
             {
@@ -168,7 +168,7 @@ internal sealed class WorkflowsHarness : IDisposable
     }
 
     public static async Task<WorkflowHandle<RecipeWorkflow, RecipeResult>> Start(ITemporalClient client, InstanceStart start) =>
-        await client.StartWorkflowAsync((RecipeWorkflow wf) => wf.RunAsync(start), new WorkflowOptions(id: start.WorkflowId().Value, taskQueue: SindriTemporal.TaskQueue));
+        await client.StartWorkflowAsync((RecipeWorkflow wf) => wf.RunAsync(start), new WorkflowOptions(id: start.WorkflowId().Value, taskQueue: TemporalSettings.DefaultTaskQueue));
 
     /// <summary>Queries 'GetInstance' until <paramref name="holds"/>, failing the test after the patience runs out.</summary>
     public static async Task<InstanceView> Until(WorkflowHandle<RecipeWorkflow> handle, Func<InstanceView, bool> holds)

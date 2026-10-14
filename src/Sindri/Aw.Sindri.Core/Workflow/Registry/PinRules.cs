@@ -89,7 +89,7 @@ public static class PinRules
     public static RecipePins Pins(Recipe recipe, BlockCatalog catalog, IEnumerable<RecipeApproval> current, JsonSerializerOptions options) =>
         new(Blocks(recipe, catalog, options), Children(recipe, current));
 
-    /// <summary>The digest a drift approval's challenge binds (spec §4.2): SHA-256 over the canonical JSON of <paramref name="pins"/>.</summary>
+    /// <summary>The digest every approval's challenge binds (spec §4.2, bound on first approvals too since review run 1): SHA-256 over the canonical JSON of <paramref name="pins"/>.</summary>
     /// <param name="pins">The pins the approval will record.</param>
     /// <param name="options">The package's AwJson options.</param>
     /// <returns>'sha256:' and 64 hex digits.</returns>

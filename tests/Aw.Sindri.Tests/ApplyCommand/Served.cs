@@ -52,10 +52,14 @@ internal sealed class Served : IAsyncDisposable
     public HttpClient Http { get; }
 
     /// <summary>Serves <paramref name="home"/> on <paramref name="environment"/>.</summary>
-    public static async Task<Served> Start(string home, WorkflowEnvironment environment, Action<IServiceCollection>? replace = null)
+    public static Task<Served> Start(string home, WorkflowEnvironment environment, Action<IServiceCollection>? replace = null) =>
+        Start(home, environment, static _ => null, replace);
+
+    /// <summary>Serves <paramref name="home"/> on <paramref name="environment"/>, reading the other variables from <paramref name="variables"/>.</summary>
+    public static async Task<Served> Start(string home, WorkflowEnvironment environment, Func<string, string?> variables, Action<IServiceCollection>? replace = null)
     {
         var ct = TestContext.Current.CancellationToken;
-        var app = LoopbackBinding.Build([], name => name == "AW_SINDRI_HOME" ? home : null, new FakeTimeProvider(), replace);
+        var app = LoopbackBinding.Build([], name => name == "AW_SINDRI_HOME" ? home : variables(name), new FakeTimeProvider(), replace);
         _ = Pipeline.Configure(app);
         await WorkflowsHarness.HoldLease(app.Services, ct);
         app.Services.GetRequiredService<HeldHumanToken>().Hold((await app.Services.GetRequiredService<IHumanTokenStore>().Mint(ct)).Value);
@@ -98,6 +102,13 @@ internal sealed class Served : IAsyncDisposable
         var run = await Cli(output is { } o ? [.. args, "--output", $"{o.Fact}={o.File}"] : args);
         Assert.True(run.Exit == 0, run.Stderr);
         return run;
+    }
+
+    /// <summary>Stops the worker, as a serve whose worker died would run on without one.</summary>
+    public async Task StopWorker()
+    {
+        await _workerStop.CancelAsync();
+        await _worker;
     }
 
     /// <summary>Stops the worker and starts a new one, as a serve restart's worker would.</summary>

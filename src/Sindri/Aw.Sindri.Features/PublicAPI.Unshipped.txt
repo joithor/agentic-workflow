@@ -618,12 +618,43 @@ Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Answer.get -> Aw.Sindri.
 Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Answer.init -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Hash, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer) -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.ApproveProfileRequest(Aw.Sindri.Core.Ids.ProfileHash? Hash, Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest!
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.GetContextSourcesRequest() -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.QueryContextRequest!
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.get -> int?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out int? Depth, out int? Budget, out bool Draft) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Depth.get -> int?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Depth.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Equals(Aw.Sindri.Features.ContextCalls.QueryContextRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Item.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Item.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Node.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Node.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Q.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Q.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, int? Depth = null, int? Budget = null, bool Draft = false) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Symbol.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Symbol.init -> void
+override Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.QueryContextRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.QueryContextRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.QueryContextRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? left, Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? left, Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.QueryContextRequest.operator !=(Aw.Sindri.Features.ContextCalls.QueryContextRequest? left, Aw.Sindri.Features.ContextCalls.QueryContextRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.QueryContextRequest.operator ==(Aw.Sindri.Features.ContextCalls.QueryContextRequest? left, Aw.Sindri.Features.ContextCalls.QueryContextRequest? right) -> bool
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out Aw.Sindri.Core.Ids.ProfileHash? Profile, out Aw.Sindri.Core.Control.TemporalEndpoint! Temporal) -> void
 Aw.Sindri.Features.StartProcess.StartProcessResponse.StartProcessResponse(Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ProfileHash? Profile, Aw.Sindri.Core.Control.TemporalEndpoint! Temporal) -> void
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint!
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.init -> void
-Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
-Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Address.init -> void
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Run.get -> Aw.Sindri.Core.Workflow.Engine.RunToken
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Run.init -> void
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName
@@ -863,11 +894,9 @@ Aw.Sindri.Features.GetInstanceEvents.InstanceEventView.Type.get -> string!
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventView.Type.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.<Clone>$() -> Aw.Sindri.Features.ListInstances.ListInstancesRequest!
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out bool NeedsMe, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out string? State, out string? Query) -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Equals(Aw.Sindri.Features.ListInstances.ListInstancesRequest? other) -> bool
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Item.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Item.init -> void
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.ListInstancesRequest(bool NeedsMe = false, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, string? State = null, string? Query = null) -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.NeedsMe.get -> bool
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.NeedsMe.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Query.get -> string?
@@ -1055,10 +1084,69 @@ Aw.Sindri.Features.IssueNonce.IssueNonceRequest.IssueNonceRequest(string! Instan
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.CarriesProtectedFields.get -> bool
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Deconstruct(out string! Instance, out Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, out Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, out string? Text, out int? Amount, out Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge) -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Variant.get -> string!
-Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce) -> void
 Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.Instance.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView?
 Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.Instance.init -> void
 Aw.Sindri.Features.StartInstance.StartInstanceRequest.Deconstruct(out string! Recipe, out string! Item, out bool NextAttempt, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Features.StartInstance.StartFact!>! Facts) -> void
 Aw.Sindri.Features.StartInstance.StartInstanceRequest.StartInstanceRequest(string! Recipe, string! Item, bool NextAttempt, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Features.StartInstance.StartFact!>! Facts) -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.ApplyCommandRequest(string! Instance, Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer = null, string? Text = null, int? Amount = null, Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb = null, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce = null, Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge = null) -> void
-Aw.Sindri.Features.CompleteStep.CompleteStepRequest.CompleteStepRequest(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce = null) -> void
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ExportContextMapRequest!
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Deconstruct(out string? Path) -> void
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Equals(Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.ExportContextMapRequest(string? Path) -> void
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Path.get -> string?
+Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Path.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextMapRequest
+Aw.Sindri.Features.ContextCalls.GetContextMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextMapRequest!
+Aw.Sindri.Features.ContextCalls.GetContextMapRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextMapRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextMapRequest.GetContextMapRequest() -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ImportContextMapRequest!
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Confirmed.get -> bool
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Confirmed.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Deconstruct(out string! Path, out string? Hash, out bool Confirmed) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Equals(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Hash.get -> string?
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Hash.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.ImportContextMapRequest(string! Path, string? Hash = null, bool Confirmed = false) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Path.get -> string!
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Path.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ImportContextMapResponse!
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Deconstruct(out Aw.Context.Core.Map.MapFilePreview! Preview, out Aw.Context.Core.Map.MapImported? Imported, out long? Sequence) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Equals(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? other) -> bool
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.ImportContextMapResponse(Aw.Context.Core.Map.MapFilePreview! Preview, Aw.Context.Core.Map.MapImported? Imported, long? Sequence) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Imported.get -> Aw.Context.Core.Map.MapImported?
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Imported.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Preview.get -> Aw.Context.Core.Map.MapFilePreview!
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Preview.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Sequence.get -> long?
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Sequence.init -> void
+override Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.GetContextMapRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextMapRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextMapRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.operator !=(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? left, Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? right) -> bool
+static Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.operator ==(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? left, Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? right) -> bool
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.CompleteStepRequest(string! Instance, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce = null) -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Deconstruct(out string! Instance, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce) -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Instance.get -> string!
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Instance.init -> void
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.Address.get -> string?
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.Address.init -> void
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out bool NeedsMe, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out string? State, out string? Query, out string? Address) -> void
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.ListInstancesRequest(bool NeedsMe = false, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null) -> void

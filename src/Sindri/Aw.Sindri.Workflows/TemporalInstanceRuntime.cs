@@ -21,7 +21,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="deskReports">The 'complete' Update (unit (c)).</param>
 /// <param name="frontend">Finds the dev server serve keeps (Start, unit (b); Get, unit (e); the 'event' signal, unit (d)).</param>
 /// <param name="commands">The answer, command and cancel Updates (unit (b)).</param>
-internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, TemporalDeskReports deskReports, TemporalCommands commands) : IInstanceRuntime
+/// <param name="settings">The task queue instances start on.</param>
+/// <param name="known">The ids this process has seen: every instance it starts or shows.</param>
+internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, TemporalDeskReports deskReports, TemporalCommands commands, TemporalSettings settings, KnownInstances known) : IInstanceRuntime
 {
     /// <summary>How long a Query waits for a worker to answer; past it, status says no worker answered.</summary>
     internal static readonly TimeSpan QueryPatience = TimeSpan.FromSeconds(10);
@@ -48,7 +50,7 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         {
             _ = await client.Value.StartWorkflowAsync(
                 (RecipeWorkflow wf) => wf.RunAsync(start),
-                new WorkflowOptions(address.Value, SindriTemporal.TaskQueue)
+                new WorkflowOptions(address.Value, settings.TaskQueue)
                 {
                     IdConflictPolicy = WorkflowIdConflictPolicy.UseExisting,
                     IdReusePolicy = WorkflowIdReusePolicy.RejectDuplicate,
@@ -58,6 +60,10 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         catch (WorkflowAlreadyStartedException) // boundary: the attempt ended; RejectDuplicate keeps its id, and Get shows it as it ended
         {
             return await Get(address, cancellationToken).ConfigureAwait(false);
+        }
+        catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal
+        {
+            return TemporalUpdates.NotServes(client.Value, e);
         }
 
         for (var poll = 1; ; poll++)
@@ -87,9 +93,15 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
 
         try
         {
-            return await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value)
+            var view = await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value)
                 .QueryAsync(static wf => wf.GetInstance(), new WorkflowQueryOptions { Rpc = new RpcOptions { Timeout = QueryPatience, CancellationToken = cancellationToken } })
                 .ConfigureAwait(false);
+            known.Remember(view.Address);
+            return view;
+        }
+        catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal; says nothing about the instance
+        {
+            return TemporalUpdates.NotServes(client.Value, e);
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound) // boundary: no such execution is the caller's input
         {
@@ -138,6 +150,10 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
                 wf => wf.EventAsync(delivered),
                 new WorkflowSignalOptions { Rpc = new RpcOptions { CancellationToken = cancellationToken } }).ConfigureAwait(false);
             return Unit.Value;
+        }
+        catch (RpcException e) when (TemporalUpdates.NoNamespace(e))   // boundary: not serve's Temporal
+        {
+            return TemporalUpdates.NotServes(client.Value, e);
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)   // boundary: no such instance, or it has ended
         {

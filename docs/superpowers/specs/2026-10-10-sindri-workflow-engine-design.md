@@ -10,7 +10,9 @@ eval format, §9.2). **Revision 8.1** (2026-10-12) applies the owner's decisions
 there is no spike; the code written to measure it lands as **P4a, the Temporal foundation**, whose acceptance checks
 carry the measured numbers (Phases), and P4 builds on it; a desk Step is a short activity and the report is the
 `complete` Update (§5.3); the ledger mirror is keyed by the `RecordEvent` activity id (§5.6); the Temporal test
-findings F1–F3 are in §11. Each is marked *rev 8.1* inline
+findings F1–F3 are in §11. Each is marked *rev 8.1* inline. **Revision 8.2** (2026-10-13) records what P4 settled:
+a desk timeout parks with reason `timeout` (§5.3), and the `Repo` search attribute comes from `fact:item`'s `repo`
+(§5.1). Each is marked *rev 8.2* inline
 · **Date:** 2026-10-10 · **Builds:** factory addendum §17.28 (one workflow
 state machine) and §17.29.4 step 2 · **Next:** P4a (the Temporal foundation), then `/specToProvenPR` takes the Phases at
 the end to PRs.
@@ -430,7 +432,9 @@ what the interpreter must do; the **mechanism** is Temporal's. Rev 7's text is i
 - **Determinism.** Workflow code calls no I/O, clock or random except through `Workflow.*`. Every read of a store, every
   gate, every effect and every ledger write is an activity. The SDK's analyzer and the replayer test (§10) enforce it.
 - **Search attributes**, set on start and on every transition: `Item`, `Recipe`, `State`, `NeedsYou` (true while
-  parked, escalated or holding an open desk task), `Repo`, `Tenant`, `Ring`.
+  parked, escalated or holding an open desk task), `Repo`, `Tenant`, `Ring`. *Rev 8.2:* `Repo` is the `repo` field of
+  the instance's `fact:item`, read once on start; an instance without that fact, or whose item names no repo, leaves
+  `Repo` unset.
 - **Queries.** `GetInstance` (§6.3) is a workflow **Query** returning the state, the rendered `next`, `allowedCommands`,
   the open question or task with the Step's declared outcomes and outputs, the run token and the children.
 
@@ -467,7 +471,9 @@ stays a public counter in `status` and in the CLI.
   synchronously like every other command: a stale run token is `SND-WF-005`, a malformed report `SND-WF-008`, and a
   rejected report records nothing. The human reports with `sindri workflow complete <address> --run <token> --outcome
   <o> --output …`; the API sends the Update. The state's timeout, at least `workflow.deskTimeout` in desk mode, is the
-  wait's `Workflow.DelayAsync` (§5.5); expiry is `step.failed(timeout)` and follows §3.4. *Why:* finding F1
+  wait's `Workflow.DelayAsync` (§5.5); expiry always parks with reason `timeout` (W20, §3.8), whatever the state's
+  `then:` says (*rev 8.2*; rev 8.1 said `step.failed(timeout)`, which would let an agent-sized timeout fail the
+  human's own work). *Why:* finding F1
   (§11): the time-skipping server skips no time while an activity is open, so a desk Step held open as an
   async-completion activity can't have its timeout tested there; with the Update the 4 h timeout fired in 3 ms of wall
   time. Rev 8 stored the task token on `step.started` and completed the activity through it; that is gone. The shipped

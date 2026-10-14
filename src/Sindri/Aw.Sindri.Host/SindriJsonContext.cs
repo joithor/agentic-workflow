@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using Aw.Context.Core.Map;
+using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
@@ -17,6 +19,7 @@ using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.CompleteStep;
+using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.GetInstance;
 using Aw.Sindri.Features.GetInstanceEvents;
@@ -116,4 +119,15 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(IssueChallengeResponse))]
 [JsonSerializable(typeof(HarnessProbeReport))]
 [JsonSerializable(typeof(ChallengeAnswer))]
+[JsonSerializable(typeof(ContextResult))]
+[JsonSerializable(typeof(SourcesView))]
+[JsonSerializable(typeof(ContextSourcesSynced))]
+[JsonSerializable(typeof(ContextMapImported))]
+[JsonSerializable(typeof(MapDocument))]
+[JsonSerializable(typeof(MapStatusView))]
+[JsonSerializable(typeof(MapExported))]
+[JsonSerializable(typeof(MapHealth))]
+[JsonSerializable(typeof(PurgeReport))]
+[JsonSerializable(typeof(ImportContextMapRequest))]
+[JsonSerializable(typeof(ImportContextMapResponse))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

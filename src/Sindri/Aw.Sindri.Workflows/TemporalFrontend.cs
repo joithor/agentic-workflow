@@ -11,9 +11,10 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// '--temporal host:port' override when given, else the frontend control.json's 'temporal' field records.
 /// </summary>
 /// <param name="endpoints">control.json.</param>
-internal sealed class TemporalFrontend(IEndpointFile endpoints)
+/// <param name="settings">The namespace.</param>
+internal sealed class TemporalFrontend(IEndpointFile endpoints, TemporalSettings settings)
 {
-    /// <summary>Connects to the frontend, on the 'sindri' namespace.</summary>
+    /// <summary>Connects to the frontend, on the settings' namespace.</summary>
     /// <param name="flag">The '--temporal host:port' override, or null.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The client, or SND-API-001 when serve's server isn't recorded or doesn't answer.</returns>
@@ -39,7 +40,7 @@ internal sealed class TemporalFrontend(IEndpointFile endpoints)
 
         try
         {
-            return await TemporalClient.ConnectAsync(new TemporalClientConnectOptions(target) { Namespace = SindriTemporal.Namespace }).ConfigureAwait(false);
+            return await TemporalClient.ConnectAsync(new TemporalClientConnectOptions(target) { Namespace = settings.Namespace }).ConfigureAwait(false);
         }
         catch (Exception e) when (e is RpcException or InvalidOperationException) // boundary: an unreachable frontend is an expected failure
         {

@@ -6,18 +6,18 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Core.Challenges;
 
 /// <summary>
-/// What a challenge is bound to (engine spec §4.2): the recipe hash and version, plus the pins digest for a drift
-/// approval; the instance and its version (a forwarded answer adds the child's); or the profile hash (S1-D5). If the
+/// What a challenge is bound to (engine spec §4.2): the recipe hash and version, plus the pins digest on every
+/// approval (the spec's §4.2 says drift approvals; review run 1 bound it on first approvals too); the instance and its version (a forwarded answer adds the child's); or the profile hash (S1-D5). If the
 /// subject changes before the answer, the challenge is refused.
 /// </summary>
 /// <param name="Key">The subject, for example 'recipe:sha256:…@1'.</param>
-/// <param name="Digest">The pins digest of a drift approval, or null.</param>
+/// <param name="Digest">The pins digest of a recipe approval (every approval binds it), or null for a revoke or the profile.</param>
 public sealed record ChallengeSubject(string Key, string? Digest)
 {
     /// <summary>A recipe approval or revoke.</summary>
     /// <param name="hash">The recipe hash.</param>
     /// <param name="version">Its version.</param>
-    /// <param name="pinsDigest">The pins digest for a drift approval, else null.</param>
+    /// <param name="pinsDigest">The pins digest for an approval (always bound), or null for a revoke.</param>
     /// <returns>The subject.</returns>
     public static ChallengeSubject ForRecipe(RecipeHash hash, int version, string? pinsDigest) =>
         new(string.Create(CultureInfo.InvariantCulture, $"recipe:{hash.Value}@{version}"), pinsDigest);

@@ -19,7 +19,7 @@ internal sealed class DevServerTemporal(TemporalSettings settings, TemporalDevSe
 
         try
         {
-            var running = await server.StartAsync(new TemporalServerStart(settings.Executable, settings.Home), cancellationToken).ConfigureAwait(false);
+            var running = await server.StartAsync(new TemporalServerStart(settings.Executable, settings.Home, settings.Namespace), cancellationToken).ConfigureAwait(false);
             return new TemporalEndpoint(running.ProcessId, running.Frontend.Port, running.UiPort);
         }
         catch (Exception e) when (!cancellationToken.IsCancellationRequested)
@@ -61,7 +61,7 @@ internal sealed class DevServerTemporal(TemporalSettings settings, TemporalDevSe
             return new TemporalFacts(Running: null, SindriTemporal.PinnedVersion, Version: null, Reachable: false, NamespacePresent: false, Problem: null);
         }
 
-        var (answer, problem) = await DevServerProbe.Ask(running.Frontend, _inspectWait, cancellationToken).ConfigureAwait(false);
+        var (answer, problem) = await DevServerProbe.Ask(running.Frontend, settings.Namespace, _inspectWait, cancellationToken).ConfigureAwait(false);
         return new TemporalFacts(new TemporalEndpoint(running.ProcessId, running.Frontend.Port, running.UiPort), SindriTemporal.PinnedVersion,
             DevServerProcesses.Version(running.Executable), Reachable: answer != DevServerAnswer.Unreachable, NamespacePresent: answer == DevServerAnswer.Ready, problem);
     }

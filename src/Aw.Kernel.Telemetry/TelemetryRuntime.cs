@@ -25,13 +25,21 @@ public sealed class TelemetryRuntime : IDisposable
         _withheld = withheld;
         var scrubber = new Scrubber(options.Redactor);
         _logs = new JsonLinesLoggerProvider(sink, scrubber, options.Clock, withheld);
-        var factory = new LoggerFactory([], new LoggerFilterOptions { MinLevel = options.MinimumLevel });
+        var filter = new LoggerFilterOptions { MinLevel = options.MinimumLevel };
+        filter.Rules.Add(new LoggerFilterRule(providerName: null, RequestLineCategory, options.MinimumLevel > LogLevel.Warning ? options.MinimumLevel : LogLevel.Warning, filter: null));
+        var factory = new LoggerFactory([], filter);
         factory.AddProvider(_logs);
         LoggerFactory = factory;
         (_tracer, ExportProcessorCount) = BuildTracer(options, scrubber, withheld);
         _meter = options.MetricExporter is { } metricExporter ? BuildMeter(options, metricExporter, scrubber, withheld) : null;
         IsExporting = ExportProcessorCount > 0 || _meter is not null;
     }
+
+    /// <summary>
+    /// ASP.NET Core's request lines ('Request starting GET …?q=…') carry the URL with its query string, which may hold
+    /// user text or secrets that no scrubber rule recognizes. This category logs at Warning and above only, in every host.
+    /// </summary>
+    internal const string RequestLineCategory = "Microsoft.AspNetCore.Hosting.Diagnostics";
 
     /// <summary>Creates loggers that write scrubbed JSON lines.</summary>
     public ILoggerFactory LoggerFactory { get; }

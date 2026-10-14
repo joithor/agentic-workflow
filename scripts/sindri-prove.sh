@@ -10,7 +10,7 @@
 #                                         AW_SINDRI_CHILD) unset, AW_SINDRI_PROVER=1, under a pty
 #                                         (scripts/lib/with-tty.sh), stdin passed through, CRs and terminal control
 #                                         sequences stripped; stdout and stderr arrive merged on stdout. Exit: the CLI's.
-#                                         e.g. printf '%s\n' "${H:0:6}" | sindri-prove.sh human profile approve "$H"
+#                                         e.g. printf 'approve profile %s\n' "${H:0:6}" | sindri-prove.sh human profile approve "$H"
 #   sindri-prove.sh curl [--no-terminal] [--no-token | --token T] [-H 'Name: value']… <METHOD> <path> [json]
 #                                         a human request to the running process: the URL from
 #                                         $AW_SINDRI_HOME/control.json, headers X-Sindri-Caller: human,
@@ -33,7 +33,7 @@
 # `sindri` on PATH, which is the TS CLI.
 #
 # Seeding an approved profile: write the profile, H=$($SINDRI profile validate --json | jq -r .hash), then
-#   printf '%s\n' "${H:0:6}" | scripts/sindri-prove.sh human profile approve "$H"
+#   printf 'approve profile %s\n' "${H:0:6}" | scripts/sindri-prove.sh human profile approve "$H"
 #
 # Exit 2: the guard, a usage error, curl or url mode with no control.json, or curl mode with no token file (unless
 # --no-token or --token).

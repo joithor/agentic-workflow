@@ -99,4 +99,23 @@ public abstract class RecipeApprovalsContract
         Expect.Sequence([item.Hash], (await approvals.Pinning(step.Hash, Token)).Value.Select(a => a.Hash));
         Expect.Sequence(["workflow.item", "workflow.step", "workflow.step-gen"], (await approvals.Current(Token)).Value.Select(a => a.Id.Value));
     }
+
+    /// <summary>GeneratedFrom lists every generated recipe approved from a base, revoked ones too: the edges a revoke walks through.</summary>
+    [Fact]
+    public async Task Generated_listing_keeps_revoked_rows()
+    {
+        var approvals = Create();
+        var step = RegistryData.Recipe("workflow.step");
+        var generated = RegistryData.Recipe("workflow.step-gen", baseRecipe: new RecipeRef(step.Id, step.Hash));
+        var revokedGenerated = RegistryData.Recipe("workflow.step-old", baseRecipe: new RecipeRef(step.Id, step.Hash));
+        foreach (var recipe in new[] { step, generated, revokedGenerated })
+        {
+            _ = await approvals.Approve(RegistryData.Approval(recipe), Token);
+        }
+
+        _ = await approvals.Revoke(RegistryData.Revocation(revokedGenerated, step.Hash), Token);
+
+        Expect.Sequence([generated.Hash, revokedGenerated.Hash], (await approvals.GeneratedFrom(step.Hash, Token)).Value.Select(a => a.Hash));
+        Expect.Sequence([], (await approvals.GeneratedFrom(generated.Hash, Token)).Value.Select(a => a.Hash));
+    }
 }

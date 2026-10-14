@@ -103,7 +103,7 @@ internal sealed class RevokeRecipeService(
             return stored.Error;
         }
 
-        var notice = new RecipeWakeNotice(revocation.Hash, RecipeWakeKind.Revoked, appended.Value.Sequence, revocation.RevokedBy);
+        var notice = new RecipeWakeNotice(revocation.Hash, RecipeWakeKind.Revoked, appended.Value.Sequence, stored.Value.RevokedBy);   // a resumed revoke replays the first revoker's
         var woken = await wake.Wake(notice, cancellationToken).ConfigureAwait(false);
         return woken.IsError ? woken.Error : (stored.Value, appended.Value.Sequence);
     }

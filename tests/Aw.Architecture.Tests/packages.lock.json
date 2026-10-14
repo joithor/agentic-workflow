@@ -396,6 +396,33 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
         }
       },
+      "aw.context.core": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Vogen": "[8.0.7, 8.0.7]"
+        }
+      },
+      "aw.context.features": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Context.Core": "[1.0.0, )",
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
+        }
+      },
+      "aw.context.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Context.Core": "[1.0.0, )",
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Data": "[1.0.0, )",
+          "Aw.Redaction": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "YamlDotNet": "[18.1.0, 18.1.0]"
+        }
+      },
       "aw.evidence.core": {
         "type": "Project",
         "dependencies": {
@@ -496,6 +523,7 @@
       "aw.sindri.features": {
         "type": "Project",
         "dependencies": {
+          "Aw.Context.Core": "[1.0.0, )",
           "Aw.Kernel": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
@@ -546,6 +574,9 @@
       "sindri": {
         "type": "Project",
         "dependencies": {
+          "Aw.Context.Core": "[1.0.0, )",
+          "Aw.Context.Features": "[1.0.0, )",
+          "Aw.Context.Infrastructure": "[1.0.0, )",
           "Aw.Kernel": "[1.0.0, )",
           "Aw.Kernel.Telemetry": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",

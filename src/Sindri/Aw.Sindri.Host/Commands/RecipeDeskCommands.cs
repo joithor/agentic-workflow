@@ -16,7 +16,8 @@ namespace Aw.Sindri.Host.Commands;
 /// 'recipe approve &lt;file|id@hash&gt;' and 'recipe revoke &lt;id@hash&gt;' (engine spec §4.2, §6.3; protected): ask the
 /// server for a challenge, print its preview, read the action text the human types, and send it back. With a file the CLI
 /// first checks it validates and that its eval files are present (SND-RECIPE-008), registers it if the server doesn't
-/// know it, and refuses with SND-RECIPE-009 if the file changed while the human read the preview.
+/// know it, refuses before the preview when its id and version are registered with other content (SND-RECIPE-007), and
+/// refuses with SND-RECIPE-009 if the file changed while the human read the preview.
 /// </summary>
 /// <param name="desk">The API client, the terminal input and the start rule.</param>
 /// <param name="services">The scope the local validation resolves from.</param>
@@ -43,6 +44,11 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
         if (issued.IsError || issued.Value.Approve is not { } preview)
         {
             return await output.Error(issued.IsError ? issued.Error : SindriErrors.ApiNoCode.With("the challenge came back without an approval preview")).ConfigureAwait(false);
+        }
+
+        if (await Unregistered(file, preview.Hash, ct).ConfigureAwait(false) is { } edited)
+        {
+            return await output.Error(edited).ConfigureAwait(false);
         }
 
         await output.Out.WriteAsync(RecipePreviewText.Approve(preview, file?.Evals)).ConfigureAwait(false);
@@ -86,14 +92,37 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
         }
 
         var issued = await Issue(action, ct).ConfigureAwait(false);
-        if (file is null || issued.IsSuccess || issued.Error.Code != WorkflowErrors.RecipeNotFound.Code)
+        if (file is null || issued.IsSuccess)
         {
             return issued;
         }
 
+        // Registering the file names the real reason when its id and version hold other content (SND-RECIPE-007), even
+        // where the server refused the registered content first (already approved, revoked); a file it doesn't know yet is
+        // registered and asked for again.
         var registered = await desk.Client.Post<RegisterRecipeRequest, RegisterRecipeResponse>("/sindri/workflow/recipes",
             new RegisterRecipeRequest(file.Text, file.File), ct).ConfigureAwait(false);
-        return registered.IsError ? registered.Error : await Issue(action, ct).ConfigureAwait(false);
+        return registered.IsError && registered.Error.Code == WorkflowErrors.RecipeVersionTaken.Code ? registered.Error
+            : issued.Error.Code != WorkflowErrors.RecipeNotFound.Code ? issued
+            : registered.IsError ? registered.Error
+            : await Issue(action, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Null unless the file's id and version are registered with other content (it was edited without raising its version): the
+    /// register call names the real reason (SND-RECIPE-007 with its RCP-VERSION-001 line) before any preview or prompt.
+    /// </summary>
+    private async Task<Error?> Unregistered(LocalRecipe? file, RecipeHash registered, CancellationToken ct)
+    {
+        if (file is null || file.Hash == registered)
+        {
+            return null;
+        }
+
+        var refused = await desk.Client.Post<RegisterRecipeRequest, RegisterRecipeResponse>("/sindri/workflow/recipes",
+            new RegisterRecipeRequest(file.Text, file.File), ct).ConfigureAwait(false);
+        return refused.IsError ? refused.Error : WorkflowErrors.RecipeChallengeStale.With(string.Create(CultureInfo.InvariantCulture,
+            $"{file.Path} hashes to {file.Hash.Display}, not {registered.Display} as registered for {file.Id.Value} version {file.Version}; run it again"));
     }
 
     private async Task<Result<IssueChallengeResponse>> Issue(string action, CancellationToken ct)

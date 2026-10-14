@@ -20,11 +20,12 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// refused report consumes nothing. A report already applied with this nonce returns the first outcome, marked
 /// 'already applied'. Without a nonce one is issued (the stand-in for API P1's IssueNonce).
 /// </summary>
+/// <param name="directory">Resolves the instance the request names.</param>
 /// <param name="runtime">The instances on Temporal.</param>
 /// <param name="facts">Where the outputs are stored.</param>
 /// <param name="nonces">The nonce table.</param>
 /// <param name="callers">The caller the API chain classed: its actor reports.</param>
-internal sealed class CompleteStepService(IInstanceRuntime runtime, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers)
+internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers)
     : IService<CompleteStepRequest, CompleteStepResponse>
 {
     public async ValueTask<Result<CompleteStepResponse>> Handle(CompleteStepRequest request, CancellationToken cancellationToken)
@@ -40,10 +41,17 @@ internal sealed class CompleteStepService(IInstanceRuntime runtime, IFactStore f
             return SindriErrors.AuthRefused.With("CompleteStep needs a caller");
         }
 
+        var resolved = await directory.Resolve(request.Instance, cancellationToken).ConfigureAwait(false);
+        if (resolved.IsError)
+        {
+            return resolved.Error;
+        }
+
+        var address = resolved.Value;
         var nonce = request.Nonce ?? nonces.Issue();
         var shas = request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span)));
         var reportSha = ReportSha(request, shas);
-        var claim = await nonces.Claim(nonce, request.Address.Value + "\n" + reportSha, cancellationToken).ConfigureAwait(false);
+        var claim = await nonces.Claim(nonce, address.Value + "\n" + reportSha, cancellationToken).ConfigureAwait(false);
         if (claim.IsError)
         {
             return claim.Error;
@@ -56,16 +64,22 @@ internal sealed class CompleteStepService(IInstanceRuntime runtime, IFactStore f
         }
 
         var report = new StepCompleted(caller.Actor, request.Run, request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, reportSha);
-        var sent = await runtime.Send(request.Address, nonce, report, cancellationToken).ConfigureAwait(false);
+        return await Send(address, nonce, report, alreadyApplied: claim.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Sends the report as the Update keyed by the nonce; a refusal gives the claim back, an unconfirmed send keeps it.</summary>
+    private async ValueTask<Result<CompleteStepResponse>> Send(InstanceAddress address, CommandNonce nonce, StepCompleted report, bool alreadyApplied, CancellationToken cancellationToken)
+    {
+        var sent = await runtime.Send(address, nonce, report, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
         {
             return sent.Error.Kind is ErrorKind.Unavailable or ErrorKind.Timeout
                 ? sent.Error   // it may have applied: keep the claim, so the retry with this nonce is deduplicated
-                : await GiveBack(nonce, claim.Value, sent.Error, cancellationToken).ConfigureAwait(false);
+                : await GiveBack(nonce, alreadyApplied, sent.Error, cancellationToken).ConfigureAwait(false);
         }
 
         var applied = await nonces.Applied(nonce, cancellationToken).ConfigureAwait(false);
-        return applied.IsError ? applied.Error : new CompleteStepResponse(sent.Value, nonce, claim.Value);
+        return applied.IsError ? applied.Error : new CompleteStepResponse(sent.Value, nonce, alreadyApplied);
     }
 
     /// <summary>A refused report consumes nothing (spec §5.2, W12): the claim is given back, unless the nonce had already applied it.</summary>
