@@ -7,8 +7,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <summary>
 /// The desk runtime's timeout (engine spec W20, §3.4, §3.8): a desk Step's wait is at least the profile's
 /// 'workflow.deskTimeout' (default 2d), and its expiry always parks with 'timeout'; 'then: retry' and 'then: escalate'
-/// are replaced by 'park' in desk mode. Pure, so the interpreter and its unit tests call the same code. Engine P4 unit
-/// (c); the agent runtime's timers and 'then: retry' are P5's.
+/// are replaced by 'park' in desk mode. Pure, so the interpreter and its unit tests call the same code. Whether a timer
+/// has expired is decided by TransitionDecision.Expired, which builds its park with <see cref="TimeoutPark"/>.
 /// </summary>
 public static class DeskTimeouts
 {
@@ -21,24 +21,6 @@ public static class DeskTimeouts
     /// <returns>The wait.</returns>
     public static TimeSpan Wait(TimeoutSpec? timeout, TimeSpan floor) =>
         timeout is { After: var after } && after.Span > floor ? after.Span : floor;
-
-    /// <summary>The instance after its desk wait of <paramref name="waited"/> expired: parked with 'timeout', the same run left open.</summary>
-    /// <param name="instance">The instance, in an active state with an open desk run.</param>
-    /// <param name="waited">How long it waited (<see cref="Wait"/>).</param>
-    /// <param name="actor">The timer's actor ('service:workflow.timers').</param>
-    /// <returns>The parked instance; the same instance when it is already suspended or ended.</returns>
-    public static WorkflowInstance Expire(WorkflowInstance instance, TimeSpan waited, string actor)
-    {
-        ArgumentNullException.ThrowIfNull(instance);
-        ArgumentNullException.ThrowIfNull(actor);
-        if (instance.Ended || instance.Suspension is not null)
-        {
-            return instance;
-        }
-
-        var park = TimeoutPark(instance.Frame.State, waited, actor);
-        return instance with { Suspension = park };
-    }
 
     /// <summary>The 'timeout' park (spec §3.8): '{state} ran past {after}'; '--resume' goes back to the frame with a fresh deadline.</summary>
     /// <param name="state">The state that ran past its timeout.</param>

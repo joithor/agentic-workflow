@@ -13,7 +13,7 @@ namespace Aw.Sindri.Tests.Workflow.Engine;
 
 /// <summary>
 /// The takeover's timers and triggers (engine spec §3.8, §5.2, §5.5, §5.8; UI spec E-6), over the real rules: a
-/// takeover pauses the running timer and a handback resumes what it kept; a takeover over a park pauses nothing and the
+/// takeover pauses the running timer and a handback resumes what it kept; a takeover over a park has no timer to pause and the
 /// handback returns to the park; a park that arrives while taken over waits as the pending park; a state timer during a
 /// takeover changes nothing; 'takeoverIdle' records one 'workflow.notified' and changes nothing; an 'open-request' is the
 /// engine's takeover, a no-op when already taken over.
@@ -38,7 +38,7 @@ public sealed class TakeoverTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_takeover_over_a_park_pauses_nothing_and_the_handback_returns_to_the_park_with_no_timer()
+    public void A_takeover_over_a_park_has_no_timer_to_pause_and_the_handback_returns_to_the_park_with_no_timer()
     {
         var parked = Applied(Agent(At(Step, "verify", entry: 3)), new DeadlineFired(Timers, 3, DeadlineKind.State));
         var taken = Applied(parked, Takeover());
@@ -152,5 +152,5 @@ public sealed class TakeoverTests
     private static RecipeVersion Version() => new(Step.Id, Step.Version, RecipeHash.From("sha256:" + new string('0', 64)));
 
     private static WorkflowInstance Applied(WorkflowInstance instance, Trigger trigger) =>
-        _ = Assert.IsType<Applied>(Real(instance, Step, trigger)).Changes[0].After;
+        Assert.IsType<Applied>(Real(instance, Step, trigger)).Changes[0].After;
 }

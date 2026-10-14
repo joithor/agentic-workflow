@@ -75,7 +75,7 @@ A case file is JSON lines, LF or CRLF:
 or an engine trigger: `answer` with a `variant` (`grant`, `grant-tokens`, `accept`, `reject`, `resume`, `text`; the
 grants take `amount`, a `text` answer's text is `outputs` `fact:answer`), `takeover`, `handback`, `cancel` and
 `deadline`. An answer wait is satisfied by an `answer` line with `variant` `text` (outcome `answered`), not by
-`wait.satisfied`. A `deadline` line fails until timers land (P5).
+`wait.satisfied`. A `deadline` line fires the running timer: `takeoverIdle` while taken over, the retry timer after a `then: retry` re-armed the state, otherwise the state timer. It fails when no timer runs (parked, escalated or ended).
 
 A `step.failed` line takes an optional `reason`, what the Step reported as its failure. Left out, it is the constant
 `the Step failed`, the same on every line, so two `step.failed` lines in a loop are the same failure and park
@@ -511,16 +511,16 @@ Engine spec rev 8.1 §5.1–§5.6, "Phase 4". The P4 contract fixes the interfac
 | Workflow input | `InstanceStart`: the recipe `RecipeVersion (id, version, hash)`, the item, the attempt, the input facts (`InputFact`: the file name status shows, and the stored `FactValue`), the tenant and the ring | `Aw.Sindri.Core/Workflow/Engine/Runtime` |
 | Workflow id | The address, `InstanceStart.WorkflowId()` (`{item}/{recipe-name}/{attempt}`) | same |
 | `GetInstance` Query | `InstanceView`: the state, its detail and since, `next`, `allowedCommands` as `AllowedCommand` (`{ actionId, cli }`, UI E-13), the open `OpenQuestion` or `DeskTask` (the Step's declared outcomes and outputs, the inputs, when the timeout fires), the run token, the children and the outcome. `InstanceViews.Of` builds it, and it is pure | same |
-| Updates (§5.2) | `complete(StepCompleted)`, `answer(AnswerGiven)`, `command(CommandFired)`, `cancel(CancelRequested)`, `takeover(TakeoverRequested)`, `handback(HandbackRequested)`. Each has a `[WorkflowUpdateValidator]` and returns `CommandResult` (the view after the command, and what happened). The update id is the nonce | `RecipeWorkflow` |
+| Updates (§5.2) | `complete(StepCompleted)`, `answer(AnswerGiven)`, `command(CommandFired)`, `cancel(CancelRequested)`, `takeover(TakeoverRequested)`, `handback(HandbackRequested)`, `open-request(OpenRequested)` (update id `wf:{instance}:open:{launch}`, from the engine). Each has a `[WorkflowUpdateValidator]` and returns `CommandResult` (the view after the command, and what happened). The update id is the nonce | `RecipeWorkflow` |
 | Desk Step (rev 8.1 §5.3) | `RunStep` is a short activity with id `run:{token}:{n}`. The workflow then waits for the `complete` Update, bounded by the state's timeout | `RecipeWorkflow.RunStep`, `RunStepActivities` |
 | Events (§5.4) | The `event` signal carries a `WaitSatisfied` | `RecipeWorkflow.EventAsync` |
 | Ledger mirror (§5.6) | `RecordEvent`, a local activity keyed `workflow:{workflow id}:{run id}:{activity id}` | `RecordEventActivities` |
-| Client port | `IInstanceRuntime`: `Start` (UseExisting), `Get` (the Query), `Send` (the Update the trigger names, with the nonce as its id), `Signal` (the bridge) | Core port; `TemporalInstanceRuntime` |
+| Client port | `IInstanceRuntime`: `Start` (UseExisting), `Get` (the Query), `Send` (the Update the trigger names, with the nonce as its id), `OpenRequest` (the engine's takeover, id `wf:{instance}:open:{launch}`), `Signal` (the bridge) | Core port; `TemporalInstanceRuntime` |
 | Items | `IItems.Resolve` (an ItemId or a tracker alias). The stub `SelfItems` stands in until API P3 lands | Core port; `Aw.Sindri.Workflows` |
 | Approved recipes | `IApprovedRecipes` (`Latest`, `Find`, `Check`) is the minimal read port the interpreter and the start and command slices use. `RegistryApprovedRecipes` implements it over P2's registry (`IRecipeStore`, `IRecipeApprovals`): a recipe starts only when it is registered and its latest approval isn't revoked (`SND-RECIPE-003`) | `Aw.Sindri.Core/Workflow/Registry` |
 
-The Updates, their validators, the `IInstanceRuntime` methods and every `workflow` verb are built. The one stub left on
-this path is the `takeover` / `handback` Update, which `TemporalInstanceRuntime.Send` refuses until P5. A rejected
+The Updates, their validators, the `IInstanceRuntime` methods and every `workflow` verb are built. Every Update on this path is built,
+including `takeover`, `handback` and the engine's `open-request` (P5). A rejected
 Update records nothing. `RecipeWorkflowTests` pins the interface (the desk task 1.1 with its declared outcomes through
 the Query, `allowedCommands`, the ledger key, and replay), and `PhaseFourSignalTests` (integration) is phase 4 signal 1:
 start `workflow.step` on an item, then status shows the desk task with run 1.1.
@@ -533,7 +533,7 @@ Update), or a delivered `event` signal whose source fits the wait's `waitFor` (i
 child's end). A delivered event that fits no wait yet stays buffered until one does. An applied or refused trigger writes
 one ledger event (`workflow.transition` or `workflow.refused`) and sets the search attributes; a rejected one records
 nothing. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
-refusal follows §5.8's precedence. Wait timeouts are P5's (P3 doesn't decide `DeadlineFired`), and a child wait doesn't
+refusal follows §5.8's precedence. A wait state's timer wakes the wait like a delivered event, and `TransitionDecision.Expired` decides the expiry (park, escalate, or retry once); a child wait doesn't
 start its child until P7.
 
 | Search attribute | Value |
@@ -554,7 +554,7 @@ Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and 
 | Verb | Slice | What it reads | Prints |
 |---|---|---|---|
 | `workflow status <address> [--json]` | `GetInstance` | the `GetInstance` Query (`TemporalInstanceRuntime.Get`); an ended instance answers too | the §6.4 layout, or the `InstanceView` as JSON. Exit 2 with `SND-WF-001` for no such instance, `SND-API-002` when no worker answers in 10 s |
-| `workflow list [--needs-me \| --item <id> \| --state <s>] [--query <q>] [--json]` | `ListInstances` | a visibility query on the search attributes, then each row's `GetInstance` | one status header per line; `--needs-me` prints **Decisions** (parks and escalations; a takeover isn't listed, since `NeedsYou` is false while taken over, until P5's idle takeover sets it) then **Tasks** (open desk tasks), each under its heading. Empty: `nothing needs you` (`--needs-me`) or `no instances match`; exit 0 |
+| `workflow list [--needs-me \| --item <id> \| --state <s>] [--query <q>] [--json]` | `ListInstances` | a visibility query on the search attributes, then each row's `GetInstance` | one status header per line; `--needs-me` prints **Decisions** (parks and escalations; a takeover is never listed, since `NeedsYou` is false while taken over. `takeoverIdle` records a `workflow.notified` row, which P6 delivers as `notify.desk`; listing idle takeovers under `--needs-me` isn't built yet, an owner item for the API / P6) then **Tasks** (open desk tasks), each under its heading. Empty: `nothing needs you` (`--needs-me`) or `no instances match`; exit 0 |
 | `workflow events <address> [--follow] [--json]` | `GetInstanceEvents` | the ledger through `ILedgerReader`, never Temporal's history | one line per event: `seq  MM-dd HH:mm:ss  type  from -> to  trigger outcome  run r  actor`; `no events`. `--follow` reads after its cursor every second until interrupted |
 
 - **`--needs-me` is a stand-in.** `GET /needs-you` (API P4) isn't built yet, so `ListInstances` serves it with the
@@ -637,7 +637,7 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
 - **In the workflow**, each validator runs P3's pure `TransitionDecision` on the instance as it stands and rejects what
   it rejects (an answer that doesn't fit is `SND-WF-003`, its fix naming the answer that does), so nothing is recorded.
   An accepted Update hands its trigger to the loop through `Submit` (`RecipeWorkflow.Loop.cs`). The desk wait wakes for a submitted command as well as for the report. An answer
-  that ends a suspension clears the desk deadline, so `--resume` on a timeout park re-arms it from the answer.
+  that ends a suspension arms the state's full timeout again (`StateTimers.Between`), so `--resume` on a timeout park gets a fresh timeout from the answer.
 - **`IssueNonce`** returns a nonce for an existing instance (class issue). API P1 has no nonce table yet, so the
   `POST /workflow/instances/{instanceId}/nonce` route issues them from unit (c)'s `HomeCommandNonces` stand-in.
 - **Routes and ids (§6.3).** The write verbs are clients of the API's command chain: `POST /workflow/instances`
@@ -669,9 +669,9 @@ Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
   over, are `SND-WF-003` from the validator and record nothing.
 - **Timers.** A takeover cancels the state timer's scope and keeps what was left (`RemainingTimer`, from
   `Workflow.UtcNow`) on the takeover's suspension; status shows it as `paused  timeout 40s left`
-  (`InstanceView.paused`). Nothing fires while taken over. The handback re-arms that timer with what was left
-  (`StateTimers.Between` decides `pause`, `resume`, `keep` or `stop`; `TimerScopes` applies it). A takeover over a park
-  pauses nothing and the handback returns to the park; a park that arrives while taken over waits as the pending park
+  (`InstanceView.paused`). No state timer fires while taken over (`StateTimers.Between` decides `arm`, `pause`, `resume`, `keep` or `stop`). The handback re-arms that timer with what was left
+  (`TimerScopes` applies the decision). A takeover over a park
+  has no timer to pause and the handback returns to the park; a park that arrives while taken over waits as the pending park
   and takes effect on the handback. A cancel while taken over stops every timer.
 - **takeoverIdle.** A takeover arms a 2 h timer in its own scope. When it fires while still taken over the engine
   records one `workflow.notified` row and clears it; it never hands back. P6 delivers it as `notify.desk`

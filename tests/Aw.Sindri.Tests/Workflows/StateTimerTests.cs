@@ -57,14 +57,16 @@ public sealed class StateTimerTests(SindriTimeSkippingServer server) : IClassFix
             var desk = new DeskInstance(sindri, handle);
             _ = await desk.Until(static v => v.State == "waiting");
 
-            await env.DelayAsync(TimeSpan.FromMinutes(11), ct);
-            var retried = await desk.Until(static v => v.State == "waiting");
+            await env.DelayAsync(TimeSpan.FromMinutes(11), ct);   // the first 10m timeout fired at 10m and re-armed once
             var once = await Rows(desk, 2);
-            await env.DelayAsync(TimeSpan.FromMinutes(10), ct);
+            await env.DelayAsync(TimeSpan.FromMinutes(8), ct);   // 19 m in; the retry timer fires at 20 m
+            _ = await desk.Until(static v => v.State == "waiting");
+            var stillOnce = await Rows(desk, 2);
+            await env.DelayAsync(TimeSpan.FromMinutes(2), ct);   // 21 m in
             var parked = await desk.Until(static v => v.State == "parked");
 
-            Assert.Null(retried.Question);
             Assert.Equal(["workflow.started", "workflow.transition"], once);
+            Assert.Equal(["workflow.started", "workflow.transition"], stillOnce);
             Assert.Equal((ParkReason.Timeout, "waiting ran past 10m"), (parked.Question?.Reason, parked.Question?.Question));
             Assert.Equal(["workflow.started", "workflow.transition", "workflow.transition"], await Rows(desk, 3));
             Assert.Null((await InterpreterEvalTests.Replay(handle, ct)).ReplayFailure);
@@ -100,6 +102,49 @@ public sealed class StateTimerTests(SindriTimeSkippingServer server) : IClassFix
             var again = await desk.Until(static v => v.State == "parked");
 
             Assert.Equal((ParkReason.Timeout, "hold ran past 1m", "1.1"), (parked.Question?.Reason, parked.Question?.Question, parked.Run?.Value));
+            Assert.Equal(("hold", "1.1", true), (resumed.Instance.State, resumed.Instance.Run?.Value, resumed.Instance.Task is not null));
+            Assert.Equal(("hold", "1.1", null), (waiting.State, waiting.Run?.Value, waiting.Question));
+            Assert.Equal((ParkReason.Timeout, "1.1"), (again.Question?.Reason, again.Run?.Value));
+            await handle.TerminateAsync("test over");
+        }, ct);
+    }
+
+    [Fact]
+    public async Task A_takeover_over_a_timeout_park_leaves_the_park_alone_and_resume_afterwards_gives_the_full_minute()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var env = server.Environment;
+        var profile = Directory.CreateDirectory(Path.Combine(_harness.Home, "profile")).FullName;
+        await File.WriteAllTextAsync(Path.Combine(profile, "profile.yaml"), WorkflowsHarness.Shipped("dev/profile.yaml"), ct);
+        _harness.Recipe("workflow.dev-timeout", WorkflowsHarness.Shipped("dev/workflow.dev-timeout.yaml"));
+        await using var sindri = _harness.Sindri();
+        await WorkflowsHarness.HoldLease(sindri, ct);
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.RecipeStart(sindri, "workflow.dev-timeout", "T-46", ct));
+            var desk = new DeskInstance(sindri, handle);
+            _ = await desk.Until(static v => v.Task is not null);
+            await env.DelayAsync(TimeSpan.FromSeconds(75), ct);
+            var parked = await desk.Until(static v => v.State == "parked");
+            var rows = await Rows(desk, 2);
+
+            var taken = await handle.ExecuteUpdateAsync(wf => wf.TakeoverAsync(new TakeoverRequested("human:cli", Stamp('1'))), new WorkflowUpdateOptions(new string('1', 32)));
+            await env.DelayAsync(TimeSpan.FromHours(3), ct);
+            var back = await handle.ExecuteUpdateAsync(wf => wf.HandbackAsync(new HandbackRequested("human:cli", Stamp('2'))), new WorkflowUpdateOptions(new string('2', 32)));
+            var resume = new AnswerGiven("human:cli", Stamp('3'), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
+            var resumed = await handle.ExecuteUpdateAsync(wf => wf.AnswerAsync(resume), new WorkflowUpdateOptions(new string('3', 32)));
+            await env.DelayAsync(TimeSpan.FromSeconds(50), ct);
+            var waiting = await desk.Until(static v => v.Task is not null);
+            await env.DelayAsync(TimeSpan.FromSeconds(15), ct);
+            var again = await desk.Until(static v => v.State == "parked");
+
+            Assert.Equal(["workflow.started", "workflow.transition"], rows);
+            Assert.Equal(("taken-over", null), (taken.Instance.State, taken.Instance.Paused));
+            Assert.Equal((ParkReason.Timeout, "hold ran past 1m", "1.1"), (back.Instance.Question?.Reason, back.Instance.Question?.Question, back.Instance.Run?.Value));
+            Assert.Null(back.Instance.Paused);
+            Assert.Equal(parked.Question, back.Instance.Question);
             Assert.Equal(("hold", "1.1", true), (resumed.Instance.State, resumed.Instance.Run?.Value, resumed.Instance.Task is not null));
             Assert.Equal(("hold", "1.1", null), (waiting.State, waiting.Run?.Value, waiting.Question));
             Assert.Equal((ParkReason.Timeout, "1.1"), (again.Question?.Reason, again.Run?.Value));
@@ -144,6 +189,8 @@ public sealed class StateTimerTests(SindriTimeSkippingServer server) : IClassFix
             await desk.Handle.TerminateAsync("test over");
         }, ct);
     }
+
+    private static CommandStamp Stamp(char digit) => new(CommandNonce.From(new string(digit, 32)), new string('0', 64));
 
     /// <summary>Waits until the instance's history shows a fired timer: it fired server-side while no worker ran.</summary>
     private static async Task TimerFired(WorkflowHandle handle, CancellationToken ct)

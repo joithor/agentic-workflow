@@ -25,6 +25,9 @@ public sealed class TakeoverCommandTests(DevServer server) : IClassFixture<DevSe
 {
     private const string Launch = "LCH-0123456789abcdef0123456789abcdef";
 
+    /// <summary>The first state of workflow.step is a desk Step; a desk wait is at least the 2d desk floor (W20).</summary>
+    private static readonly TimeSpan _deskWait = TimeSpan.FromDays(2);
+
     private readonly WorkflowsHarness _harness = new();
 
     public void Dispose() => _harness.Dispose();
@@ -99,9 +102,15 @@ public sealed class TakeoverCommandTests(DevServer server) : IClassFixture<DevSe
 
         Assert.True(started.Exit == 0, started.Stderr);
         Assert.Null(view.Task);
-        Assert.True(view.Paused is not null);
+        Assert.Equal(_deskWait, view.Paused);
         var row = Assert.Single(read.Value, static e => e.Envelope.Type == "workflow.started" && e.Envelope.Payload.Contains("\"T-63/step/1\"", StringComparison.Ordinal));
         Assert.Contains($"\"causation\":\"{Launch}\"", row.Envelope.Payload, StringComparison.Ordinal);
+
+        var back = await served.Cli("handback", "T-63/step/1");
+        var open = await served.Until("T-63/step/1", static v => v.Task is not null);
+        Assert.True(back.Exit == 0, back.Stderr);
+        var left = Assert.IsType<DateTimeOffset>(open.Task!.TimeoutAt) - DateTimeOffset.UtcNow;
+        Assert.InRange(left, _deskWait - TimeSpan.FromMinutes(5), _deskWait);
     }
 
     private async Task<string> Started(Served served, string item)
