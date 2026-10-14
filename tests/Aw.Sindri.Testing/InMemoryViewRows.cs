@@ -37,7 +37,7 @@ internal sealed class InMemoryViewRows(Dictionary<string, SortedDictionary<strin
         }
 
         var row = AwJson.Deserialize<TRow>(Encoding.UTF8.GetBytes(text), options);
-        return ValueTask.FromResult(row.IsError ? Results.Failure<TRow?>(row.Error) : Results.Success((TRow?)row.Value));
+        return ValueTask.FromResult(row.IsError ? row.Error : Found(row.Value));
     }
 
     /// <summary>Every row of <paramref name="view"/>, ordered by key.</summary>
@@ -89,6 +89,9 @@ internal sealed class InMemoryViewRows(Dictionary<string, SortedDictionary<strin
         _ = table.Remove(key);
         return ValueTask.FromResult<Result<Unit>>(Unit.Value);
     }
+
+    private static Result<TRow?> Found<TRow>(TRow? row)
+        where TRow : class => row;
 
     private static Error Unknown(string view) => SindriErrors.InvalidInput.With($"'{view}' isn't a view");
 }

@@ -7,6 +7,8 @@ import path from "node:path";
 
 import { chromium, type Page } from "playwright";
 
+import { signIn } from "./login.js";
+import { browserLaunchArgs, isLocalHost, readCredentials, redact } from "./host-guard.js";
 import { runJudge } from "./judge-exec.js";
 import type { UiScript } from "./script-schema.js";
 import { lintPage, type PageSnapshot } from "./lint-page.js";
@@ -58,7 +60,16 @@ export async function runScript(script: UiScript, runDir: string, mainBaselineSc
   // Every repair call is timed at the judge boundary (usage is unknown to the CLI).
   const repair: RepairFn = (b, s, c) => timed("selector-repair", record, () => judgeRepair(b, s, c));
 
-  const browser = await chromium.launch({ headless: true });
+  // Credentials come only from the environment; a missing variable fails before a browser starts.
+  let creds: { email: string; password: string } | null = null;
+  if (script.login !== undefined) {
+    const c = readCredentials(process.env, script.login.emailEnv, script.login.passwordEnv);
+    if ("error" in c) throw new Error(c.error);
+    creds = c;
+  }
+  const secrets = creds === null ? [] : [creds.email, creds.password];
+
+  const browser = await chromium.launch({ headless: true, args: browserLaunchArgs(isLocalHost(host) ? "local" : "preview") });
   const browserVersion = browser.version();
   const steps: RunStep[] = [];
   const lintFindings: RunSummary["lintFindings"] = [];
@@ -72,6 +83,14 @@ export async function runScript(script: UiScript, runDir: string, mainBaselineSc
     });
     await context.tracing.start({ screenshots: true, snapshots: true });
     const page = await context.newPage();
+    if (script.login !== undefined && creds !== null) {
+      try {
+        await signIn(page, script.login, host, creds);
+      } catch (e) {
+        await browser.close();
+        throw new Error(redact(e instanceof Error ? e.message : String(e), secrets));
+      }
+    }
 
     let i = 0;
     for (const step of script.steps) {
@@ -104,7 +123,7 @@ export async function runScript(script: UiScript, runDir: string, mainBaselineSc
     promptVersion: VISUAL_PROMPT_VERSION,
     model: process.env.AW_VISUAL_MODEL ?? "judge-default",
     appBuild: opts.appBuild ?? null,
-    scenario: hashJson({ route: script.route, role: script.role, steps: script.steps, viewports: script.viewports }),
+    scenario: hashJson({ route: script.route, role: script.role, steps: script.steps, viewports: script.viewports, ...(script.login !== undefined ? { login: script.login } : {}) }),
     fixtures: opts.fixtures ?? null,
     viewport: script.viewports.join(","),
     browserVersion,

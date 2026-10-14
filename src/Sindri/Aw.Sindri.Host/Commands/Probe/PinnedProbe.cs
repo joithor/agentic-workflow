@@ -31,7 +31,7 @@ internal static class PinnedProbe
     /// <summary>Every pinned harness, in the order 'doctor' prints them.</summary>
     internal static IReadOnlyList<PinnedHarness> All { get; } =
     [
-        new("claude-code", "claude-code", Human: false, Pending: false, "claude", "2.1.296",
+        new("claude-code", "claude-code", Human: false, Pending: false, "claude", "2.1.299",
             ["CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CODE_EXECPATH", "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID"],
             [new HarnessProcess("claude", ExecutablePart: null), new HarnessProcess(Name: null, "/claude/versions/")],
             _claudeExcluded),

@@ -10,6 +10,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.Commands;
 using Aw.Sindri.Features.StopProcess;
@@ -23,16 +24,17 @@ namespace Aw.Sindri.Tests.Commands.Chain;
 
 /// <summary>
 /// The real command chain (AddCommand) over in-memory ports: StopProcess, ApproveProfile and the fixture command, with
-/// the shell's catalog rows plus the fixture's desk row.
+/// the shell's catalog rows plus the fixture's desk row (reading views when asked).
 /// </summary>
 internal sealed class ChainHarness : IAsyncDisposable
 {
     private readonly ServiceProvider _provider;
 
-    public ChainHarness(Func<ILedgerStore, ILedgerStore>? ledger = null, IEndpointFile? endpoints = null)
+    public ChainHarness(Func<ILedgerStore, ILedgerStore>? ledger = null, IEndpointFile? endpoints = null, bool fixtureReadsViews = false)
     {
         Ledger = ledger?.Invoke(H.Store) ?? H.Store;
-        var fixture = Authorization.Rows.Of(ActionClass.Desk, "FixtureCommand", typeof(FixtureCommand));
+        Progress = new ProjectorProgress(H.Clock);
+        var fixture = Authorization.Rows.Of(ActionClass.Desk, "FixtureCommand", typeof(FixtureCommand)) with { ReadsViews = fixtureReadsViews };
         _provider = new ServiceCollection()
             .AddSingleton<TimeProvider>(H.Clock)
             .AddSingleton<IIdGenerator>(H.Ids)
@@ -51,6 +53,7 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton<IContextEngine>(FakeContextEngine.Instance)
             .AddSingleton<ICommandCatalog>(new InMemoryCommandCatalog([.. ShellRows.All, fixture]))
             .AddSingleton(Latch)
+            .AddSingleton<IProjectorStatus>(Progress)
             .AddSingleton<ILogger<AuditTrail>>(Log)
             .AddScoped<IValidator<FixtureCommand>, FixtureValidator>().AddCommand<FixtureCommand, CommandAccepted, FixtureService>()
             .AddScoped<IValidator<StopProcessRequest>, AcceptAllValidator<StopProcessRequest>>().AddCommand<StopProcessRequest, StopProcessResponse, StopProcessService>()
@@ -61,6 +64,9 @@ internal sealed class ChainHarness : IAsyncDisposable
     public SliceHarness H { get; } = new();
 
     public ILedgerStore Ledger { get; }
+
+    /// <summary>The projector's progress the chain waits on (nothing publishes it unless a test does).</summary>
+    public ProjectorProgress Progress { get; }
 
     public FixtureLatch Latch { get; } = new();
 

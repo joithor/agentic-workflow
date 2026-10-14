@@ -10,7 +10,7 @@ namespace Aw.Sindri.Features.StreamEvents;
 /// <see cref="StreamEventsRequest.Max"/> matching events or reaches the head, and reports how far it read.
 /// </summary>
 /// <param name="ledger">The ledger.</param>
-internal sealed class StreamEventsService(ILedgerStore ledger) : IService<StreamEventsRequest, StreamEventsResponse>
+internal sealed class StreamEventsService(ILedgerReader ledger) : IService<StreamEventsRequest, StreamEventsResponse>
 {
     public async ValueTask<Result<StreamEventsResponse>> Handle(StreamEventsRequest request, CancellationToken cancellationToken)
     {

@@ -177,8 +177,8 @@ $SINDRI context map import ~/maps/product-map.yaml
 Import is shaped like `profile approve`: only you, at an interactive terminal, can do it (a session, a script or the
 app gets `SND-AUTH-002`), and it is bound to the file's content hash, so a file changed after you saw its hash is
 refused with `SND-CONTEXT-034`. The new version becomes `current`, the previous one `retained`, and the ledger records
-`context.map.imported`. The API lane's shared challenge isn't on this base yet; the import adopts it when that lane
-ships it. HTTP: `POST /sindri/context/map/import` with `{"path", "hash", "confirmed"}`; without a hash it only previews.
+`context.map.imported`. The engine's shared challenge has shipped (engine P2, `POST /sindri/workflow/challenges`, which `profile approve`
+and the recipe verbs use); the import still confirms with `confirmed` until it moves onto that challenge (a follow-up). HTTP: `POST /sindri/context/map/import` with `{"path", "hash", "confirmed"}`; without a hash it only previews.
 
 ### Status and export
 
