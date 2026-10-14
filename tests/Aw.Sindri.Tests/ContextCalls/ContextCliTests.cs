@@ -2,6 +2,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Host.Text;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 

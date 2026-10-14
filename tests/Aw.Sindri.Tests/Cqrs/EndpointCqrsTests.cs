@@ -30,6 +30,9 @@ public sealed class EndpointCqrsTests : IDisposable
 
         Assert.True(violations.Count == 0, CatalogRules.Lines(violations));
         Assert.Contains("GET /sindri/commands", endpoints.Endpoints.OfType<RouteEndpoint>().SelectMany(EndpointCqrsRules.Routes), StringComparer.Ordinal);
+        var mcp = endpoints.Endpoints.OfType<RouteEndpoint>().Where(e => (e.RoutePattern.RawText ?? string.Empty).StartsWith("/sindri/mcp", StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(mcp);
+        Assert.All(mcp, e => Assert.True(EndpointCqrsRules.IsMcp(e), e.RoutePattern.RawText));   // why: the exemption covers /sindri/mcp itself, no route under it
     }
 
     [Fact, Trait("Lane", "integration")]

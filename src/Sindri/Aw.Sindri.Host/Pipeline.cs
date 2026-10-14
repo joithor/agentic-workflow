@@ -1,4 +1,5 @@
 using Aw.Sindri.Host.Endpoints;
+using Aw.Sindri.Host.Mcp;
 
 namespace Aw.Sindri.Host;
 
@@ -10,6 +11,6 @@ namespace Aw.Sindri.Host;
 internal static class Pipeline
 {
     internal static WebApplication Configure(WebApplication app)
-        => app.UseLoopbackGuard().UseApiVersionHeader().UseApiProblems().UseCallerContext().UseReadYourWrites()
-            .UseCommandOriginRefusal().UseValueObjectValidation().MapSindriEndpoints();
+        => app.UseLoopbackGuard().UseApiVersionHeader().UseApiProblems().UseMcpCaller().UseCallerContext().UseReadYourWrites()
+            .UseCommandOriginRefusal().UseValueObjectValidation().MapSindriEndpoints().MapSindriMcp();
 }

@@ -3,6 +3,7 @@ using Aw.Context.Core.Results;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveProfile;
@@ -27,6 +28,7 @@ using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RecordServiceRun;
+using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
@@ -60,7 +62,11 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddScoped<ProfileFacts>()
-            .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>, RunDoctorService>()
+            .AddScoped<RunDoctorService>()
+            .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
+                new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
+            .AddScoped<IDoctorChecks, ContextDoctorChecks>()
+            .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddScoped<ContextScopes>()
             .AddScoped<IScheduledService, ContextDocsRefreshService>()

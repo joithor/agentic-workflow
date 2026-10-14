@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
+using Aw.Sindri.Host.Mcp;
 using Aw.Sindri.Host.Server;
 
 namespace Aw.Sindri.Host;
@@ -43,6 +44,7 @@ internal static class LoopbackBinding
         _ = Composition.Compose(builder.Services, environment, clock);
         configure?.Invoke(builder.Services);
         _ = builder.Services.ConfigureHttpJsonOptions(o => CopyProfile(o.SerializerOptions));
+        _ = builder.Services.AddSindriMcp();   // /sindri/mcp needs the web host's services, so only the web app registers it
         _ = builder.Services.AddProblemDetails();   // its post-configure step adds ProblemDetails' JSON context to the chain
         var app = builder.Build();
         _ = app.Services.GetRequiredService<TelemetryRuntime>();   // resolved here, so the container disposes it with the app (Program.cs and every test)
