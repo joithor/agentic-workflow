@@ -26,7 +26,8 @@ public sealed record FakeServerOptions
 
     /// <summary>
     /// Rewrites the JSON text of each reply the fake Onyx server sends, to plant what the fixture never holds (a
-    /// secret-shaped identifier in a link, a body in a shape v4.9.0 doesn't send); null sends the replies as they are.
+    /// secret-shaped identifier in a link, a hidden document, another reported version); it must return valid JSON. Null sends
+    /// the replies as they are.
     /// </summary>
     public Func<string, string>? OnyxPlant { get; init; }
 }

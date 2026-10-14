@@ -401,14 +401,19 @@ context:
 
 | Pointer | Resolves to |
 |---|---|
-| `env:NAME` | the environment variable `NAME` of the `sindri` process (fixtures and tests) |
+| `env:NAME` | the environment variable `NAME`: for queries and `sources status`, of the control plane (`sindri serve`) as it was when it started; for `sindri doctor`, of the calling shell (fixtures and tests; beyond them use `keychain:` or `file:`, which read the same in both) |
 | `file:/absolute/path` | the file's contents without a trailing newline; the file must be a regular file (not a symbolic link) with mode `0600` or stricter |
 | `keychain:service/account` | `security find-generic-password -s service -a account -w` (store it with `security add-generic-password -s onyx -a sindri-read -w`) |
 | `op:vault/item/field` | `op read op://vault/item/field` (1Password CLI) |
 
 Sindri resolves the pointer in its host (`Composition`), once per query (not per Onyx request); the context engine never reads the
-keychain or a file. `sindri profile validate` checks only the pointer's form, never resolves it (resolving can prompt
-the keychain or run `op`), so `env:NO_SUCH_VAR` passes validate. At run time a pointer that doesn't resolve shows as
+keychain or a file. The resolution runs under the query's deadline: a keychain that is locked or an `op` waiting for a
+sign-in degrades onyx with `SND-CONTEXT-010` on time instead of holding the answer, and the next query tries again.
+`sindri profile validate` checks only the pointer's scheme and that a target follows; it neither parses the target nor
+resolves it (resolving can prompt the keychain or run `op`), so `env:NO_SUCH_VAR` and `keychain:onyx` (no account)
+pass validate. A target's grammar: an `env:` name is letters, digits and `_`, not starting with a digit; `file:` is an
+absolute path; `keychain:` has exactly two `/`-separated segments and `op:` exactly three; no segment is empty or
+starts with `-`. At run time a pointer that doesn't resolve shows as
 `SND-CONTEXT-002` in the onyx row and a query's `degraded` entry, naming the pointer's scheme only; `sindri doctor`
 resolves it first and shows the reason: `SND-SECRET-001` (malformed), `002` (doesn't resolve: names the variable, file
 or entry) or `003` (an unsafe `file:`: names the file and the `chmod 600` fix), never a value
@@ -419,7 +424,9 @@ or entry) or `003` (an unsafe `file:`: names the file and the `chmod 600` fix), 
 `sindri context query` fuses Onyx's hits with repo-docs (reciprocal rank fusion). Onyx's Linear issues key on Linear's UUID
 (`linear:issue/<uuid>`, with its identifier alias, `ENG-482`, when its team is listed). The aliases are in the
 citation: `cites.<n>.aliases` in `--json` and HTTP (every alias of the record, merged across its refs, each scrubbed
-like a title), and the first one beside the key in the text form (`linear:issue/<uuid> (ENG-482)`). Onyx v4.9.0 has no route that returns a
+like a title), and the first one beside the key in the text form (`linear:issue/<uuid> (ENG-482)`). Documents Onyx marks `hidden` are dropped
+(the admin search returns them), so Sindri sees what a standard Onyx search would, and hiding a document in Onyx's admin
+UI removes it from Sindri's answers. Onyx v4.9.0 has no route that returns a
 document's `updated_at` by id, so **onyx citations stay `unchecked`** (version unchecked) instead of `current` or
 `stale`. A citation's `permalink` is scrubbed like every other field: a link the scrub changes at all (redacted or
 blocked) is left out, and the citation keeps its key and aliases. Onyx's titles, text, aliases and permalinks are
@@ -459,13 +466,18 @@ on each Onyx version change.
 
 ```bash
 export AW_SINDRI_HOME="$(mktemp -d)"            # throwaway state
+$SINDRI stop                                    # if a control plane is already running, so the next one sees the key
 export SINDRI_ONYX_KEY='on_…'                   # the service account's admin key (or use keychain:onyx/sindri-read)
-# add to $AW_SINDRI_HOME/profile/profile.yaml:
-#   repos: [{ name: work-app, path: /path/to/work-app }]
-#   context:
-#     sources:
-#       onyx: { url: "http://127.0.0.1:3000", token: "env:SINDRI_ONYX_KEY", version: "v4.9.0" }
-#       linear: { teams: [ENG] }
+mkdir -p "$AW_SINDRI_HOME/profile"
+cat >"$AW_SINDRI_HOME/profile/profile.yaml" <<'YAML'
+schemaVersion: 1
+user: me
+repos: [{ name: work-app, path: /path/to/work-app }]
+context:
+  sources:
+    onyx: { url: "http://127.0.0.1:3000", token: "env:SINDRI_ONYX_KEY", version: "v4.9.0" }
+    linear: { teams: [ENG] }
+YAML
 $SINDRI profile validate                        # prints the hash; exit 1 = valid, not approved yet
 $SINDRI profile approve <hash>                  # type its first 6 characters; also starts the control plane
 $SINDRI doctor                                  # context:onyx

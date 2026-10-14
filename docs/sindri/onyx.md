@@ -79,7 +79,9 @@ Sindri only ever sends the five requests in §7; its Onyx adapter refuses any ot
 test proves it. Keep the key for Sindri alone, on its own service account: doctor reads the key's account through
 `GET /api/me` and warns (`SND-CONTEXT-053`) when the admin key belongs to a person's account.
 
-Store it by pointer, never in the profile:
+Store it by pointer, never in the profile. Add the `context:` section below to your profile
+(`$AW_SINDRI_HOME/profile/profile.yaml`, which already starts with `schemaVersion: 1` and `user:`; a new profile needs
+both, and `docs/sindri/context.md` "Trying it in a throwaway profile" writes a whole one):
 
 ```bash
 security add-generic-password -s onyx -a sindri-read -w      # prompts for the key
@@ -94,15 +96,21 @@ context:
 
 Pointers Sindri accepts: `keychain:<service>/<account>`, `env:<VAR>`, `op:<vault>/<item>/<field>` (1Password CLI) and
 `file:<absolute path>` (a regular file, not a symbolic link, mode 0600 or stricter). A value without one of these
-schemes is refused (`SND-CONTEXT-002`). Then, at a terminal:
+schemes is refused (`SND-CONTEXT-002`). An `env:` pointer is for fixtures and tests: queries read the variable from the
+control plane's environment as it was when `$SINDRI serve` started (export it first, `$SINDRI stop` a running one),
+while doctor reads the calling shell's, so the two can disagree; `keychain:` and `file:` read the same in both. Then,
+at a terminal:
 
 ```bash
 $SINDRI profile validate          # prints the profile's hash; exit 1 means valid but not approved yet
 $SINDRI profile approve <hash>    # type the hash's first 6 characters; this also starts the control plane
 ```
 
-Validate checks the pointer's form only; it doesn't resolve it, so an unset variable or a file at the wrong mode shows
-up in `$SINDRI doctor` (step 6) as `SND-SECRET-002` or `003` with the fix.
+Validate checks only the pointer's scheme and that a target follows; it neither parses the target nor resolves it, so a
+malformed target (`keychain:onyx` without an account), an unset variable or a file at the wrong mode shows up in
+`$SINDRI doctor` (step 6) as `SND-SECRET-001`, `002` or `003` with the fix. A query resolves the pointer under its
+deadline: a locked keychain or an `op` waiting for a sign-in degrades onyx (`SND-CONTEXT-010`) instead of holding the
+answer.
 
 ## 6. Check it
 
@@ -113,6 +121,7 @@ $SINDRI context sources status
 
 | Code | Meaning | Fix |
 |---|---|---|
+| `SND-SECRET-001`..`003` | The key's pointer is malformed (`001`), doesn't resolve (`002`, naming the variable, file or entry), or is an unsafe `file:` (`003`) | Fix the pointer or the secret as the line says (§5) |
 | `SND-CONTEXT-050` | Onyx refused the key (403: missing, wrong, or not admin) | Recreate the key as in §5 and update the pointer |
 | `SND-CONTEXT-053` | The admin key isn't a service account's | Create a service account for Sindri (§5) |
 | `SND-CONTEXT-055` | `onyx.url` isn't loopback, or Onyx reports a version other than the pinned one | §1, §2 |
@@ -130,7 +139,7 @@ loopback only.
 
 | Request | Why |
 |---|---|
-| `POST /api/admin/search` `{query, filters: {}}` (each term quoted as a phrase; no filter is sent: an as-of query marks a hit updated after its cut, or undated, as possibly leaked) | Candidates: document ids, titles, links, `updated_at` |
+| `POST /api/admin/search` `{query, filters: {}}` (each term quoted as a phrase; no filter is sent: an as-of query marks a hit updated after its cut, or undated, as possibly leaked; documents Onyx marks `hidden` are dropped, so Sindri sees what a standard search would) | Candidates: document ids, titles, links, `updated_at` |
 | `GET /api/document/document-size-info?document_id=` and `GET /api/document/chunk-info?document_id=&chunk_id=` | A cited record's text |
 | `GET /api/version` | Doctor's version check (no key sent) |
 | `GET /api/me` | Doctor shows the key's role and account type |

@@ -340,7 +340,8 @@ routes through the real pipeline (preview, protected import and its refusals, ev
 ### Routes and allowlist
 
 The adapter can send only these requests to Onyx v4.9.0; `OnyxRequests` refuses anything else before it reaches the
-network (tested), and the client has no proxy and follows no redirects.
+network (tested), and the client has no proxy and follows no redirects. `Search` drops every document Onyx marks
+`hidden` (`OnyxSearchDoc.Hidden`; the admin search returns them), so Sindri sees what a standard Onyx search would.
 
 | Route | Use | Key |
 |---|---|---|
@@ -379,7 +380,10 @@ An onyx failure during a query is always the `degraded` entry `SND-CONTEXT-010` 
 answer's own error is `011` only when repo-docs is down too. The pointer errors are Sindri's: `SND-SECRET-001`
 (malformed), `002` (doesn't resolve) and `003` (unsafe `file:`), in `docs/csharp/sindri.md`; through the context
 environment a pointer that fails resolves to nothing, which the onyx client reports as `SND-CONTEXT-002` naming only
-the pointer's scheme and pointing to `sindri doctor`. Doctor's `OnyxDoctor` resolves the pointer through
+the pointer's scheme and pointing to `sindri doctor`. `OnyxClient` resolves the pointer once per client (one source,
+one query) as a task started off the calling thread and awaited under the call's linked deadline and cancellation, so
+a locked keychain or an `op` sign-in degrades onyx with `SND-CONTEXT-010` within the deadline; a resolution that
+failed or timed out lives only as long as that source, and the next query tries again. Doctor's `OnyxDoctor` resolves the pointer through
 `ISecretPointers` before the probe and fails with that `SND-SECRET-00x` code and message. A query never checks the
 version (§8.8 makes it a doctor check; §5.1's errors are Unavailable, NotFound and Fatal): `055` shows in doctor and
 the row, and a reply the pinned shape can't read degrades onyx (`010` with cause `051`).

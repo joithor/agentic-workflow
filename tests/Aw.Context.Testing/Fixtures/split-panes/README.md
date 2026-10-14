@@ -184,8 +184,8 @@ pinned to **Onyx v4.9.0** (`FakeOnyxServer.PinnedVersion`; checked against the r
 - **`FakeServerOptions.Delay`** holds every answer back, so a client's deadline can be tested.
 - **`FakeServerOptions.OnyxPlant`** rewrites the JSON text of every reply before it is sent, to plant what the
   fixture never holds: a document Onyx marks `hidden` (`OnyxSourceContractTests`), a secret-shaped identifier in a
-  link (Sindri's `OnyxContextTests`) or a body in a shape v4.9.0 doesn't send; `FakeOnyxServerTests` checks the rewrite
-  itself. Null, the default, sends the replies as they are.
+  link (Sindri's `OnyxContextTests`) or another reported version (`FakeOnyxServerTests`, which checks the rewrite
+  itself). The plant must return valid JSON (the server parses it). Null, the default, sends the replies as they are.
 
 There is no change feed (§12: none for a read key) and no route that gives a document's `updated_at` by id.
 
