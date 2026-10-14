@@ -36,6 +36,20 @@ public sealed class TextRulesTests
     [InlineData("see [the PRD][p]\n[p]: &#104;ttps://evil.example/x", "see the PRD\n")]
     [InlineData("a <image src=\"https://evil.example/p.png\"> b", "a  b")]
     [InlineData("a<!-- one\ntwo\nthree -->b", "a\n\nb")]
+    [InlineData("a <input type=\"image\" src=\"https://evil.example/p.png\"> b", "a  b")]
+    [InlineData("a <video controls poster=\"https://evil.example/p.png\"></video> b", "a </video> b")]
+    [InlineData("a <picture><source srcset=\"https://evil.example/p.png 2x\"></picture> b", "a <picture></picture> b")]
+    [InlineData("<svg><image href=\"https://evil.example/p.png\"/></svg>", "<svg></svg>")]
+    [InlineData("<svg><use xlink:href=\"https://evil.example/s.svg#x\"/></svg>", "<svg></svg>")]
+    [InlineData("a <div style=\"background:url(https://evil.example/p.png)\">x</div>", "a x</div>")]
+    [InlineData("a <table background=\"https://evil.example/p.png\"> b", "a  b")]
+    [InlineData("a <img alt=\"a>b\" src=\"https://evil.example/p.png\"> b", "a  b")]
+    [InlineData("a<style>\nbody { background: url(https://evil.example/p.png) }\n</style>b", "a\n\nb")]
+    [InlineData("read <a href=\"https://evil.example/prd\">the PRD</a>", "read the PRD</a>")]
+    [InlineData("a <b>bold</b> and <span class=\"x\">kept</span>", "a <b>bold</b> and <span class=\"x\">kept</span>")]
+    [InlineData("see [the PRD][a\\]b]\n[a\\]b]: https://evil.example/prd", "see the PRD\n")]
+    [InlineData("see [the PRD][p q]\n[p\nq]: https://evil.example/prd", "see the PRD\n\n")]
+    [InlineData("[a\n\nb]: https://example.com/x", "[a\n\nb]: https://example.com/x")]
     public void The_sanitizer_removes_what_ingest_must_not_keep(string input, string expected) =>
         Assert.Equal(expected, IngestSanitizer.Clean(input));
 

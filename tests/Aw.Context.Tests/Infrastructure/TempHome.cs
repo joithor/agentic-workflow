@@ -3,7 +3,7 @@ using Aw.Context.Infrastructure.Docs;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Scrubbing;
 using Aw.Context.Infrastructure.Store;
-using Aw.Redaction;
+using Aw.Context.Core.Trust;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Context.Tests.Infrastructure;
@@ -17,7 +17,9 @@ internal sealed class TempHome : IDisposable
     {
         Settings = SettingsFromEnvironment.Read(name => name == "AW_SINDRI_HOME" ? _root : null);
         Database = new ContextDatabase(Settings, Clock);
-        Index = new SqliteDocIndex(Database, Git, Scrubber, Clock);
+        Index = new SqliteDocIndex(Database, Git, Clock);
+        Factory = new RedactionScrubberFactory(Clock);
+        Scrubbers = Factory.For([]).Value;
     }
 
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero));
@@ -28,7 +30,10 @@ internal sealed class TempHome : IDisposable
 
     public GitCli Git { get; } = new();
 
-    public RedactionScrubber Scrubber { get; } = new(Redactor.Default);
+    public RedactionScrubberFactory Factory { get; }
+
+    /// <summary>The scrubbers with no extra pattern.</summary>
+    public Scrubbers Scrubbers { get; }
 
     public SqliteDocIndex Index { get; }
 

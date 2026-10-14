@@ -20,10 +20,10 @@ internal static class Engines
     internal static IContextEngine Over(FixedSourceCatalog catalog, FakeDocIndex? index = null, FakeTimeProvider? time = null)
     {
         var clock = time ?? new FakeTimeProvider(new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero));
-        var scrubber = new FakeScrubber();
+        var scrubbers = new FakeScrubberFactory();
         var docs = index ?? new FakeDocIndex(clock);
-        return new ContextEngine(new QueryContextService(catalog, scrubber, scrubber, new SequentialIdGenerator(), clock),
-            new SourcesStatusService(docs, catalog, clock), new RefreshDocsService(docs));
+        return new ContextEngine(new QueryContextService(catalog, scrubbers, new SequentialIdGenerator(), clock),
+            new SourcesStatusService(docs, catalog, scrubbers, clock), new RefreshDocsService(docs, scrubbers), scrubbers);
     }
 
     internal static IContextEngine Over(params IContextSource[] sources) => Over(new FixedSourceCatalog(sources));

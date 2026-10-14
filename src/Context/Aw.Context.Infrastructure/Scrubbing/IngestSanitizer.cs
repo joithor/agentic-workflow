@@ -7,8 +7,12 @@ namespace Aw.Context.Infrastructure.Scrubbing;
 /// <summary>
 /// The first half of the ingest boundary (spec §7): removes HTML comments, invisible and control characters (tab and
 /// newline stay), encoded blobs over 200 characters, images (markdown inline and reference-style, wherever the
-/// definition is, and HTML '&lt;img&gt;' and '&lt;image&gt;' tags), remote reference-style link definitions (a scheme or '//'
-/// destination, on the same or the next line, also inside block quotes and list items; their uses keep the text),
+/// definition is, and HTML '&lt;img&gt;' and '&lt;image&gt;' tags), every other HTML tag that can fetch or point at a
+/// remote resource (one with a 'src', 'srcset', 'poster', 'background', 'href', 'data', 'action', 'formaction' or
+/// 'style' attribute, such as '&lt;input type=image&gt;', '&lt;video poster&gt;', '&lt;source srcset&gt;', SVG '&lt;use href&gt;'
+/// and inline CSS 'url()'; the text between tags stays) and '&lt;style&gt;' blocks, remote reference-style link
+/// definitions (a scheme or '//' destination, on the same or the next line, also inside block quotes and list items,
+/// with escaped brackets or a label over two lines; their uses keep the text),
 /// autolinks, and link targets (the link text stays), repeating until the text is stable, at most
 /// <see cref="MaxPasses"/> times. The removal list is the TS sanitizeIngest's; the implementation is its own. Every
 /// removal keeps the newlines it covered, so a cleaned document has the same lines as the blob it came from and chunk
@@ -17,6 +21,12 @@ namespace Aw.Context.Infrastructure.Scrubbing;
 internal static partial class IngestSanitizer
 {
     internal const int MaxPasses = 5;
+
+    /// <summary>
+    /// What the sanitizer removes, as a number: part of every stored document's scrub ruleset, so a change here cleans
+    /// the stored documents again at the next refresh. Raise it with any change to what is removed.
+    /// </summary>
+    internal const int Version = 2;
 
     internal static string Clean(string text)
     {
@@ -43,6 +53,7 @@ internal static partial class IngestSanitizer
     {
         var cleaned = Comment.Replace(text, static m => Newlines(m.Value));
         cleaned = HtmlImage.Replace(cleaned, static m => Newlines(m.Value));
+        _ = HtmlTag; _ = RemoteAttribute; _ = StyleBlock; _ = Unquoted(string.Empty);
         cleaned = Image.Replace(cleaned, string.Empty);
         cleaned = ReferenceImage.Replace(cleaned, "${text}");
         cleaned = RemoteReferences(cleaned);
@@ -64,12 +75,18 @@ internal static partial class IngestSanitizer
         var labels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var cleaned = RemoteDefinition.Replace(text, m =>
         {
-            _ = labels.Add(m.Groups["label"].Value);
+            _ = labels.Add(Label(m.Groups["label"].Value));
             return Newlines(m.Value);
         });
         return labels.Count == 0 ? cleaned : ReferenceLink.Replace(cleaned, m =>
-            labels.Contains(m.Groups["label"].Value is { Length: > 0 } label ? label : m.Groups["text"].Value) ? m.Groups["text"].Value : m.Value);
+            labels.Contains(Label(m.Groups["label"].Value is { Length: > 0 } label ? label : m.Groups["text"].Value)) ? m.Groups["text"].Value + Newlines(m.Value) : m.Value);
     }
+
+    /// <summary>A label as CommonMark matches it: whitespace runs (a line break too) are one space, ends trimmed (case is ignored by the set).</summary>
+    private static string Label(string label) => string.Join(' ', label.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+    /// <summary>A tag with its quoted attribute values blanked, so an attribute name is only matched outside a value.</summary>
+    private static string Unquoted(string tag) => QuotedValue.Replace(tag, "\"\"");
 
     /// <summary>Drops control, format (zero-width, bidi), private-use and unassigned characters; keeps '\n' and '\t'.</summary>
     private static string Visible(string text)
@@ -91,13 +108,26 @@ internal static partial class IngestSanitizer
     [GeneratedRegex("<!--.*?(?:-->|\\z)", RegexOptions.CultureInvariant | RegexOptions.Singleline, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Comment { get; }
 
-    [GeneratedRegex("<(?:img|image)\\b[^>]{0,4000}>", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("<(?:img|image)\\b(?>(?:\"[^\"]{0,4000}\"|'[^']{0,4000}'|[^'\">]){0,4000})>", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]
     private static partial Regex HtmlImage { get; }
+
+    /// <summary>A start tag (quoted values may hold '&gt;'), checked by <see cref="RemoteAttribute"/> before it is removed.</summary>
+    [GeneratedRegex("<[a-z][a-z0-9:-]{0,40}(?=[ \\t\\r\\n\\f/])(?>(?:\"[^\"]{0,4000}\"|'[^']{0,4000}'|[^'\">]){0,4000})>", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex HtmlTag { get; }
+
+    [GeneratedRegex("[ \\t\\r\\n\\f/\"':](?:src|srcset|lowsrc|dynsrc|poster|background|href|data|action|formaction|style|ping)[ \\t\\r\\n\\f]{0,20}=", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex RemoteAttribute { get; }
+
+    [GeneratedRegex("\"[^\"]{0,4000}\"|'[^']{0,4000}'", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex QuotedValue { get; }
+
+    [GeneratedRegex("<style\\b[^>]{0,4000}>.*?(?:</style[ \\t\\r\\n\\f]{0,20}>|\\z)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex StyleBlock { get; }
 
     [GeneratedRegex("!\\[[^\\]\\n]{0,500}\\]\\([^)\\n]{0,2000}\\)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Image { get; }
 
-    [GeneratedRegex("^(?>(?:[ ]{0,3}(?:>|[-*+]|[0-9]{1,9}[.)])[ \\t]?){0,10})[ ]{0,3}\\[(?<label>[^\\]^\\n][^\\]\\n]{0,499})\\]:[ \\t]*(?:\\n(?:[ ]{0,3}>)*[ \\t]*)?(?:<(?://|&|[a-z][a-z0-9+.-]{1,31}:)[^>\\n]{0,2000}>|(?://|&|[a-z][a-z0-9+.-]{1,31}:)[^ \\t\\n]{0,2000})(?:[ \\t]*$|[ \\t]+[\"'(][^\\n]{0,2000}$)", RegexOptions.CultureInvariant | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("^(?>(?:[ ]{0,3}(?:>|[-*+]|[0-9]{1,9}[.)])[ \\t]?){0,10})[ ]{0,3}\\[(?<label>(?!\\^)(?:\\\\[^\\n]|[^\\]\\\\\\n]|\\n(?![ \\t]*\\n)){1,500})\\]:[ \\t]*(?:\\n(?:[ ]{0,3}>)*[ \\t]*)?(?:<(?://|&|[a-z][a-z0-9+.-]{1,31}:)[^>\\n]{0,2000}>|(?://|&|[a-z][a-z0-9+.-]{1,31}:)[^ \\t\\n]{0,2000})(?:[ \\t]*$|[ \\t]+[\"'(][^\\n]{0,2000}$)", RegexOptions.CultureInvariant | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex RemoteDefinition { get; }
 
     [GeneratedRegex("\\[(?<text>[^\\]\\n]{0,500})\\]\\([^)\\n]{0,2000}\\)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
@@ -106,7 +136,7 @@ internal static partial class IngestSanitizer
     [GeneratedRegex("!\\[(?<text>[^\\]\\n]{0,500})\\](?:\\[[^\\]\\n]{0,500}\\])?", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ReferenceImage { get; }
 
-    [GeneratedRegex("\\[(?<text>[^\\]\\n]{1,500})\\]\\[(?<label>[^\\]\\n]{0,500})\\]", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("\\[(?<text>[^\\]\\n]{1,500})\\]\\[(?<label>(?:\\\\[^\\n]|[^\\]\\\\\\n]|\\n(?![ \\t]*\\n)){0,500})\\]", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ReferenceLink { get; }
 
     [GeneratedRegex("<(?:https?|ftp|mailto):[^>\\s]{1,2000}>", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]

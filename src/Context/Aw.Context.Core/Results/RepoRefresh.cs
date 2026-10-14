@@ -15,4 +15,7 @@ public sealed record RepoRefresh(ContextRepoName Repo, SourceVersion? Head, int 
 {
     /// <summary>Documents the globs match but that weren't indexed: over the size cap, or unreadable this run (their earlier rows are kept).</summary>
     public int Skipped { get; init; }
+
+    /// <summary>Documents whose blob didn't change but that were stored under another scrub ruleset, so were cleaned again (counted in <see cref="Added"/> too).</summary>
+    public int Recleaned { get; init; }
 }

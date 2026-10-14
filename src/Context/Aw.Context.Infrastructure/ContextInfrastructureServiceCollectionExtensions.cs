@@ -4,7 +4,6 @@ using Aw.Context.Infrastructure.Docs;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Scrubbing;
 using Aw.Context.Infrastructure.Store;
-using Aw.Redaction;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Context.Infrastructure;
@@ -14,7 +13,8 @@ public static class ContextInfrastructureServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the context store (context.db under $AW_SINDRI_HOME/context), git, the repo-docs index and source catalog,
-    /// and both scrubbing ports over Aw.Redaction's built-in rules. Needs a TimeProvider (the host registers it).
+    /// and the scrubber factory over Aw.Redaction (each call's scrubbers carry the profile's extra patterns). Needs a
+    /// TimeProvider (the host registers it).
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
@@ -24,9 +24,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton(SettingsFromEnvironment.Read(environment))
             .AddSingleton<ContextDatabase>()
             .AddSingleton<GitCli>()
-            .AddSingleton(new RedactionScrubber(Redactor.Default))
-            .AddSingleton<IEgressScrubber>(static sp => sp.GetRequiredService<RedactionScrubber>())
-            .AddSingleton<IIngestFilter>(static sp => sp.GetRequiredService<RedactionScrubber>())
+            .AddSingleton<IScrubberFactory, RedactionScrubberFactory>()
             .AddSingleton<ISourceCatalog, RepoDocsCatalog>()
             .AddSingleton<IDocIndex, SqliteDocIndex>();
 }
