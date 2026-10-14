@@ -15,4 +15,7 @@ check "the home path is WORK" "  profile   /tmp/smoke-work/home/profile/profile.
 check "the pid is a fixed word" "  lease     held by pid 4242, epoch 1" "  lease     held by pid PID, epoch 1"
 check "the port is a fixed word" "  api       127.0.0.1:60237" "  api       127.0.0.1:PORT"
 check "doctor's claude-code line is dropped" "$(printf 'ok    claude-code re-probed: the markers are set, version 2.1.296\nwarn  cursor-agent pending: owner probe')" "warn  cursor-agent pending: owner probe"
+check "this host's name is HOST" "  lease     held by $(hostname -s)/4242 since 2026-10-14T12:00:00Z (epoch 1)" "  lease     held by HOST/PID since TIME (epoch 1)"
+check "a full hash is HASH before its 6-digit form" "hash $(printf 'a%.0s' $(seq 64)) (approve profile abcdef)" "hash HASH (approve profile HASH6)"
+check "the repo root is ROOT" "## sindri recipe validate /tmp/smoke-root/recipes/sindri/workflow.step.yaml" "## sindri recipe validate ROOT/recipes/sindri/workflow.step.yaml"
 [ "$fail" -eq 0 ] && echo "PASS: sindri-smoke-normalize tests" || { echo "FAIL: sindri-smoke-normalize tests"; exit 1; }

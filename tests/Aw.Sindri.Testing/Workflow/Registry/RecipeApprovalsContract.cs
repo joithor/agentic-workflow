@@ -77,7 +77,7 @@ public abstract class RecipeApprovalsContract
 
     /// <summary>Pinning lists the parents of a child hash and Current the live approvals; both skip revoked rows.</summary>
     [Fact]
-    public async Task Cascade_and_child_listings_skip_revoked_rows()
+    public async Task Pinning_and_current_listings_skip_revoked_rows()
     {
         var approvals = Create();
         var step = RegistryData.Recipe("workflow.step");
