@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Host.Catalog;
 
@@ -13,6 +14,9 @@ internal static class ContextRows
 {
     internal static IReadOnlyList<CommandRow> All { get; } =
     [
+        new(ActionId.From("ImportContextMap"), typeof(ImportContextMapRequest), Variant: null, ActionClass.Protected, ServiceGrants: [],
+            NeedsTerminal: true, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
+            "POST", "/sindri/context/map/import", ShellRows.Form("sindri context map import <file>"), "cli-only:typed-confirmation"),
         new(ActionId.From("SyncSources"), CommandType: null, Variant: null, ActionClass.Job, ServiceGrants: [],
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             "POST", "/sindri/context/sources/sync", ShellRows.Form("sindri context sources sync"), "pending:S-5B"),
