@@ -46,15 +46,25 @@ public sealed class Redactor : IRedactor
     public IReadOnlyList<string> RuleIds { get; }
 
     /// <summary>
-    /// A fingerprint of what the rules match: SHA-256 (64 lowercase hex characters) over every rule's id, pattern and
-    /// options in order, each part length-prefixed. It changes whenever a rule does, even under the same id, so a caller
+    /// A fingerprint of what the rules match: SHA-256 (64 lowercase hex characters) over the scan engine's version, the
+    /// homoglyph table, the options every rule gets and every rule's id, pattern and options in order, each part
+    /// length-prefixed. It changes whenever a rule does, even under the same id, so a caller
     /// that stores scrubbed text can tell it was scrubbed under other rules (the context engine cleans such text again).
     /// </summary>
     public string RulesDigest { get; }
 
+    /// <summary>
+    /// The scan engine's version, part of <see cref="RulesDigest"/>: raise it with any change to how a text is scanned
+    /// beyond the rules themselves (FoldedText's folding and escapes, the invisible characters, how hits merge, the
+    /// placeholder skip, the 'v' group). The homoglyph table and the options every rule gets are hashed as they are.
+    /// </summary>
+    internal const int EngineVersion = 1;
+
     private static string Digest(IReadOnlyList<RedactionRule> rules)
     {
-        var text = new StringBuilder();
+        var text = new StringBuilder()
+            .Append(System.Globalization.CultureInfo.InvariantCulture, $"engine:{EngineVersion}:{(int)CompiledRules.Always}\n")
+            .Append(Homoglyphs.Pairs.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(':').Append(Homoglyphs.Pairs).Append('\n');
         foreach (var rule in rules)
         {
             var options = ((int)rule.Options).ToString(System.Globalization.CultureInfo.InvariantCulture);

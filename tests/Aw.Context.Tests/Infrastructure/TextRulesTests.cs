@@ -56,6 +56,11 @@ public sealed class TextRulesTests
     [InlineData("<link rel=preload as=image imagesrcset=\"https://evil.example/x.png 1x\"> b", " b")]
     [InlineData("<iframe srcdoc=\"&lt;img src=https://evil.example/x&gt;\"></iframe> b", "</iframe> b")]
     [InlineData("<meta http-equiv=refresh content=\"0;url=https://evil.example/\"> b", " b")]
+    [InlineData("see ![Architecture diagram of the context\nengine](https://evil.example/d.png?q=1) here", "see \n here")]
+    [InlineData("read [the\nPRD](https://evil.example/) now", "read the\nPRD now")]
+    [InlineData("a <video poster                         =\"https://evil.example/x.png\"> b", "a  b")]
+    [InlineData("use `IEnumerable<object>` and a <link> or <set>", "use `IEnumerable<object>` and a <link> or <set>")]
+    [InlineData("a <set of things\n\nmore text> b", "a <set of things\n\nmore text> b")]
     [InlineData("<svg><use><set attributeName=\"href\" to=\"https://evil.example/x.svg#a\"/></use></svg>", "<svg><use></use></svg>")]
     public void The_sanitizer_removes_what_ingest_must_not_keep(string input, string expected) =>
         Assert.Equal(expected, IngestSanitizer.Clean(input));
@@ -68,6 +73,11 @@ public sealed class TextRulesTests
         Assert.Equal("a  b", IngestSanitizer.Clean("a <img src=\"" + value + "\"> b"));
         Assert.Equal("a  b", IngestSanitizer.Clean("a <video poster=\"" + value + "\"> b"));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Text_still_changing_after_the_last_pass_is_refused_not_kept() =>
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() =>
+            IngestSanitizer.Clean("<im[[[[[](a)](a)](a)](a)](a)g src=\"https://evil.example/x.png\">"));
 
     [Fact, Trait("Lane", "unit")]
     public void Encoded_blobs_over_200_characters_are_removed() =>

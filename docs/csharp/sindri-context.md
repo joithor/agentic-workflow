@@ -165,12 +165,15 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   among `Added`; one the new rules block or one over the size cap counts as blocked or skipped instead; Sindri carries
   it on `ContextRepoSynced`). Search filters `d.ruleset = @ruleset`, so a chunk cleaned with other rules is never a hit
   until it is cleaned again, and `DocIndexStatus.Outdated` turns the repo's status row `degraded` with the count.
-- **Sanitizer (S-1A review run 5 deferrals).** `HtmlImage` removes the elements that fetch whatever their attributes
-  (`img`, `image`, `meta`, `iframe`, `frame`, `object`, `embed`, `link`, `base`, `script`, SVG `set` and `animate…`);
+- **Sanitizer (S-1A review run 5 deferrals).** `HtmlImage` removes `img` and `image`, and the elements that can fetch
+  when they carry an attribute (`meta`, `iframe`, `frame`, `object`, `embed`, `link`, `base`, `script`, SVG `set` and
+  `animate…`);
   `HtmlTag` + `RemoteAttribute` remove any other start tag carrying `src`, `srcset`, `imagesrcset`, `srcdoc`, `lowsrc`,
   `dynsrc`, `poster`, `background`, `href`, `data`, `action`, `formaction`, `style` or `ping` anywhere in the tag. Both
   read quoted values (which may hold `>`) first, then the tag raw up to its first `>` (`RawFetchingTag`, `RawTag`), so
-  a tag whose quotes don't balance or whose value is too long is removed, not kept. `StyleBlock` removes
+  a tag whose quotes don't balance or whose value is too long is removed, not kept; no tag read crosses a blank line.
+  Markdown image and link text may wrap onto one more line. `Clean` throws `RegexMatchTimeoutException` when the text
+  still changes after `MaxPasses` (a later removal could have joined a tag), so `RedactionScrubber` blocks it. `StyleBlock` removes
   `<style>…</style>`. The remote
   definition's label takes backslash escapes and one line break (not a blank line), and labels are matched as
   CommonMark does (whitespace runs collapsed, case ignored), so `[x][p q]` meets `[p\nq]: https://…`.
@@ -189,7 +192,12 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   at their key paths without the pattern; the last build reused; the fingerprint is length-prefixed.
 - `RepoDocsTests`: with a pattern added, nothing stored under the old rules is a hit, the refresh re-cleans both docs,
   `doc_chunk` loses the raw id and gains the placeholder, and a fetch answers the placeholder.
-- `QueryContextTests`, `SourcesStatusTests`, `SettingsReaderTests`, `TextRulesTests` (the HTML carriers and labels),
+- `RepoDocsTests.Rows_an_S1A_store_wrote_are_outdated_after_the_upgrade_and_cleaned_again`: migration 0003 on a real
+  migration-2 store with an S-1A row (outdated, unsearchable, cleaned again).
+- `StoredDocsTests`: a blocked or oversized re-clean isn't counted as `Recleaned`. `Aw.Redaction.Tests/RulesDigestTests`:
+  the digest follows patterns and options, not ids or the timeout.
+- `QueryContextTests`, `SourcesStatusTests`, `SettingsReaderTests`, `TextRulesTests` (the HTML carriers and labels,
+  including unbalanced quotes and values too long for the quote-aware read),
   and `ContextEngineContract` (an extra pattern that doesn't parse is 001 at its key path).
 ## S-3a: the product graph store, map import / export, map status, doctor, purge
 

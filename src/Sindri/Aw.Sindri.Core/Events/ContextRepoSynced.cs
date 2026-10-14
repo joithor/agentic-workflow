@@ -9,5 +9,5 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Blocked">Documents the scrubber withheld.</param>
 /// <param name="Code">The error code when the repo couldn't be refreshed.</param>
 /// <param name="Skipped">Documents not indexed this run: over the size cap, or unreadable (their earlier rows stay).</param>
-/// <param name="Recleaned">Documents cleaned again because the scrub rules changed (counted in Added too).</param>
+/// <param name="Recleaned">Documents cleaned again because the scrub rules changed and indexed with text (so among Added); one the new rules block or one over the size cap counts as Blocked or Skipped instead.</param>
 public sealed record ContextRepoSynced(string Repo, string? Head, int Added, int Removed, int Kept, int Blocked, string? Code, int Skipped = 0, int Recleaned = 0);

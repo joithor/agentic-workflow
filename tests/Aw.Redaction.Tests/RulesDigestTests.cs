@@ -21,4 +21,14 @@ public sealed class RulesDigestTests
         Assert.True(extra.IsValid);
         Assert.False(string.Equals(Redactor.Default.RulesDigest, extra.Redactor!.RulesDigest, StringComparison.Ordinal));   // why: IsValid holds, so a redactor was built
     }
+
+    [Fact]
+    public void The_digest_pins_the_scan_engine_version_and_the_homoglyph_table()
+    {
+        // The digest hashes EngineVersion and the homoglyph table besides the rules (Redactor.Digest). Raising the version
+        // with a change to the fold or the merge is a review step; this test names it, so the change touches this file too.
+        Assert.Equal(1, Redactor.EngineVersion);
+        Assert.Contains("а", Homoglyphs.Pairs, StringComparison.Ordinal);   // Cyrillic a: the table is hashed as it is
+        Assert.Matches("^[0-9a-f]{64}$", Redactor.Default.RulesDigest);
+    }
 }
