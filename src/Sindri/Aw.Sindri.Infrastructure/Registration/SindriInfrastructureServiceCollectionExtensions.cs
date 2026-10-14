@@ -1,4 +1,5 @@
 using Aw.Kernel.Ids;
+using Aw.Redaction;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
@@ -51,5 +52,5 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IRepoLocator, GitRepoLocator>()
             .AddSingleton<IRecipeReader, YamlRecipeReader>()
             .AddSingleton<IRecipeFiles, FileRecipeFiles>()
-            .AddSingleton<ITextScrubber, RedactingScrubber>();
+            .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
 }

@@ -454,8 +454,8 @@ edges:
   - from: Sindri
     to: Redaction
     kind: project
-    status: planned
-    note: "replaces sindri's copy of the scrubbing patterns"
+    status: current
+    note: "the text scrubber adapter (Infrastructure/Text/RedactingScrubber); replaces sindri's copy of the scrubbing patterns"
   - from: Sindri
     to: Packets
     kind: cli
