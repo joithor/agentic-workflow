@@ -29,6 +29,7 @@ public static partial class TransitionDecision
             AnswerGiven answer => Answer(d, instance, answer),
             CancelRequested => new Rejected(d.Key, NotAllowed(d.Trigger, instance)),
             OutboxRefused refused => OutboxRefusal(d, instance, refused),
+            RecipeWake wake => Woken(d, instance, wake),
             _ => throw new NotSupportedException($"{d.Trigger.Name} is decided by the engine-owned rules its phase adds (P5: timers; P2: recipe wakes; UI E-6: open-requests)."),
         };
     }

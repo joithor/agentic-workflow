@@ -41,14 +41,12 @@ public static partial class TransitionDecision
         var recipe = d.Recipe.Id.Value;
         if (string.Equals(refused.Code, WorkflowErrors.RecipeRevoked.Code, StringComparison.Ordinal))
         {
-            return SpecConflict(ParkKind.Revoked, $"{recipe} was revoked. Cancel, then start a new attempt from an approved version.",
-                new ResumeAction(ResumeKind.None, Withheld: null, Gate: null, Effect: null), d.Trigger.Actor);
+            return RevokedPark(recipe, d.Trigger.Actor);
         }
 
         if (string.Equals(refused.Code, WorkflowErrors.RecipePinDrift.Code, StringComparison.Ordinal))
         {
-            return SpecConflict(ParkKind.Drift, $"A block pinned by {recipe} changed since it was approved. Re-approve it; the approval resumes this instance.",
-                new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, effect), d.Trigger.Actor);
+            return DriftPark(recipe, effect, d.Trigger.Actor);
         }
 
         var question = string.Equals(refused.Code, WorkflowErrors.NoRuntime.Code, StringComparison.Ordinal)
@@ -57,6 +55,15 @@ public static partial class TransitionDecision
         return SpecConflict(ParkKind.Dispatch, question,
             new ResumeAction(ResumeKind.Reemit, Withheld: null, Gate: null, effect), d.Trigger.Actor);
     }
+
+    private static Suspension RevokedPark(string recipe, string actor) =>
+        SpecConflict(ParkKind.Revoked, $"{recipe} was revoked. Cancel, then start a new attempt from an approved version.",
+            new ResumeAction(ResumeKind.None, Withheld: null, Gate: null, Effect: null), actor);
+
+    /// <summary>The drift park; <paramref name="effect"/> is the one refused for the drift, which the re-approval re-sends.</summary>
+    private static Suspension DriftPark(string recipe, RefusedEffect? effect, string actor) =>
+        SpecConflict(ParkKind.Drift, $"A block pinned by {recipe} changed since it was approved. Re-approve it; the approval resumes this instance.",
+            new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, effect), actor);
 
     private static Suspension SpecConflict(ParkKind kind, string question, ResumeAction resume, string actor) =>
         new(SuspensionKind.Park, ParkReason.SpecConflict, kind, Escalation: null, question, actor, Mirrors: null, resume);

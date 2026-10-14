@@ -159,6 +159,56 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
         }, Token);
     }
 
+    /// <summary>The drift approval's wake reaches the parked instance through Temporal: the park ends and the refused effect is sent again (§3.8, §4.1).</summary>
+    [Fact]
+    public async Task A_drift_reapproval_wakes_the_parked_instance_and_resends_the_refused_effect()
+    {
+        var env = server.Environment;
+        var recipe = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
+        await Allow(_notify);
+        await using var sindri = Sindri();
+        await WorkflowsHarness.HoldLease(sindri, Token);
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            _ = await WorkflowsHarness.AsServe(sindri, env, Token);
+            var handle = await Completed(sindri, "T-96");
+            await Armed(handle, timers: 1);
+            var original = await Pins(sindri, recipe);
+            await Drift(sindri, recipe);
+            await env.DelayAsync(_delay + TimeSpan.FromSeconds(1), Token);
+            var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));
+            _ = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
+
+            await Pins(sindri, recipe, original);   // the re-approval: the pins match this build again
+            var woken = await sindri.GetRequiredService<IRecipeWake>().Wake(new RecipeWakeNotice(recipe.Hash, RecipeWakeKind.Approved, Sequence: 99, "human:cli"), Token);
+            _ = await WorkflowsHarness.Until(handle, static v => v.State == "sent");
+            await Armed(handle, timers: 2);
+            await env.DelayAsync(_delay + TimeSpan.FromSeconds(1), Token);
+            var dispatched = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Dispatched, CommandOrigin.Recipe));
+
+            Assert.True(woken.IsSuccess);
+            Assert.Equal(refused.Identity, dispatched.Identity);
+            Assert.Equal([refused.Identity], _desk.RecipePerformed);
+            await handle.TerminateAsync("test over");
+        }, Token);
+    }
+
+    /// <summary>The pins of the latest approval of <paramref name="recipe"/>; with <paramref name="set"/>, a newer approval carrying those pins.</summary>
+    private static async Task<RecipePins> Pins(IServiceProvider sindri, RegisteredRecipe recipe, RecipePins? set = null)
+    {
+        var approvals = sindri.GetRequiredService<IRecipeApprovals>();
+        var latest = (await approvals.Latest(recipe.Id, recipe.Version, recipe.Hash, Token)).Value!;
+        if (set is { } pins)
+        {
+            var approved = await approvals.Approve(latest with { Pins = pins, ApprovedAt = latest.ApprovedAt.AddMinutes(1) }, Token);
+            Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);
+        }
+
+        return latest.Pins;
+    }
+
     [Fact]
     public async Task The_engines_desk_notice_is_never_refused_even_on_a_revoked_recipe_without_an_allowlist()
     {
@@ -177,11 +227,13 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
     }
 
     /// <summary>The host over the harness home, with the fake desk block and <see cref="_profiles"/> as the approved profile.</summary>
-    private ServiceProvider Sindri() => _harness.Sindri(services =>
-    {
-        _desk.Replace(services);
-        _ = services.AddSingleton<IApprovedProfile>(_profiles);
-    });
+    private ServiceProvider Sindri() => _harness.Sindri(
+        services =>
+        {
+            _desk.Replace(services);
+            _ = services.AddSingleton<IApprovedProfile>(_profiles);
+        },
+        name => name == "AW_SINDRI_TEMPORAL_NAMESPACE" ? server.Environment.Client.Options.Namespace : null);   // the registry's wake signals in the server's namespace
 
     /// <summary>Approves a profile whose 'workflow.effects' lists <paramref name="kinds"/> (none: no allowlist at all).</summary>
     private async Task Allow(params BlockId[] kinds)

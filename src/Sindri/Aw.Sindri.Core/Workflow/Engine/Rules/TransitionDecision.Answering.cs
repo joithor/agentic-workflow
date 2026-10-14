@@ -113,7 +113,7 @@ public static partial class TransitionDecision
             ResumeKind.Restart => Restart(d, instance),
             ResumeKind.None => new Rejected(d.Key, WorkflowErrors.TriggerNotAllowed.With(
                 $"nothing resumes {instance.Address.Value} (fix: cancel it with sindri workflow cancel {instance.Address.Value})")),
-            ResumeKind.Reemit => Reemit(d, instance, resume),
+            ResumeKind.Reemit or ResumeKind.Rearm when resume.Effect is not null => Reemit(d, instance, resume),   // a drift approval re-sends the effect refused for the drift
             ResumeKind.Transition or ResumeKind.Reevaluate or ResumeKind.Override or ResumeKind.Refuse or ResumeKind.Rearm
                 or ResumeKind.Rewait or ResumeKind.Restart or ResumeKind.Return or ResumeKind.Forward or _ => d.Changed(instance),
         };
