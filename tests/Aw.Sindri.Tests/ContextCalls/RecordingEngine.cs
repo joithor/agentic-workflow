@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +38,21 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     public ValueTask<Result<SourcesView>> Sources(ContextScope scope, CancellationToken cancellationToken) => inner.Sources(scope, cancellationToken);
 
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) => inner.Refresh(scope, cancellationToken);
+
+    public ValueTask<Result<MapFilePreview>> PreviewMap(string path, ContextScope scope, CancellationToken cancellationToken) => inner.PreviewMap(path, scope, cancellationToken);
+
+    public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.ImportMap(path, confirmedHash, scope, cancellationToken);
+
+    public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) => inner.ExportMap(path, scope, cancellationToken);
+
+    public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken) => inner.MapStatus(scope, cancellationToken);
+
+    public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) => inner.CheckMap(cancellationToken);
+
+    public ValueTask<Result<MapHealth>> CheckRetention(CancellationToken cancellationToken) => inner.CheckRetention(cancellationToken);
+
+    public ValueTask<Result<PurgeReport>> PurgeExpired(CancellationToken cancellationToken) => inner.PurgeExpired(cancellationToken);
 
     private static IContextEngine Resolve(ServiceDescriptor original, IServiceProvider services) =>
         (IContextEngine)(original.ImplementationInstance

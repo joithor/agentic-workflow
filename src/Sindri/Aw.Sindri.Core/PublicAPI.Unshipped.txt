@@ -3674,3 +3674,26 @@ static Aw.Sindri.Core.Mcp.ProviderFileRead.operator !=(Aw.Sindri.Core.Mcp.Provid
 static Aw.Sindri.Core.Mcp.ProviderFileRead.operator ==(Aw.Sindri.Core.Mcp.ProviderFileRead? left, Aw.Sindri.Core.Mcp.ProviderFileRead? right) -> bool
 Aw.Sindri.Core.Doctor.IDoctorChecks
 Aw.Sindri.Core.Doctor.IDoctorChecks.Run(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>!>
+Aw.Sindri.Core.Events.ContextMapImported
+Aw.Sindri.Core.Events.ContextMapImported.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapImported!
+Aw.Sindri.Core.Events.ContextMapImported.ContextMapImported(int Version, string! Repo, string! Hash, int Nodes, int Edges, int Overrides) -> void
+Aw.Sindri.Core.Events.ContextMapImported.Deconstruct(out int Version, out string! Repo, out string! Hash, out int Nodes, out int Edges, out int Overrides) -> void
+Aw.Sindri.Core.Events.ContextMapImported.Edges.get -> int
+Aw.Sindri.Core.Events.ContextMapImported.Edges.init -> void
+Aw.Sindri.Core.Events.ContextMapImported.Equals(Aw.Sindri.Core.Events.ContextMapImported? other) -> bool
+Aw.Sindri.Core.Events.ContextMapImported.Hash.get -> string!
+Aw.Sindri.Core.Events.ContextMapImported.Hash.init -> void
+Aw.Sindri.Core.Events.ContextMapImported.Nodes.get -> int
+Aw.Sindri.Core.Events.ContextMapImported.Nodes.init -> void
+Aw.Sindri.Core.Events.ContextMapImported.Overrides.get -> int
+Aw.Sindri.Core.Events.ContextMapImported.Overrides.init -> void
+Aw.Sindri.Core.Events.ContextMapImported.Repo.get -> string!
+Aw.Sindri.Core.Events.ContextMapImported.Repo.init -> void
+Aw.Sindri.Core.Events.ContextMapImported.Version.get -> int
+Aw.Sindri.Core.Events.ContextMapImported.Version.init -> void
+const Aw.Sindri.Core.Events.EventTypes.ContextMapImported = "context.map.imported" -> string!
+override Aw.Sindri.Core.Events.ContextMapImported.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ContextMapImported.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ContextMapImported.ToString() -> string!
+static Aw.Sindri.Core.Events.ContextMapImported.operator !=(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool
+static Aw.Sindri.Core.Events.ContextMapImported.operator ==(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool

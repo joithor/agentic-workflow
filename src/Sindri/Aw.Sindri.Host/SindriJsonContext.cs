@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Aw.Sindri.Core.Commands;
@@ -10,6 +11,7 @@ using Aw.Sindri.Core.Workflow.Engine.Evals;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.ApproveProfile;
+using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.ListCommands;
@@ -61,4 +63,12 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(McpSourcesAnswer))]
 [JsonSerializable(typeof(RegisterMcpResponse))]
 [JsonSerializable(typeof(ContextSourcesSynced))]
+[JsonSerializable(typeof(ContextMapImported))]
+[JsonSerializable(typeof(MapDocument))]
+[JsonSerializable(typeof(MapStatusView))]
+[JsonSerializable(typeof(MapExported))]
+[JsonSerializable(typeof(MapHealth))]
+[JsonSerializable(typeof(PurgeReport))]
+[JsonSerializable(typeof(ImportContextMapRequest))]
+[JsonSerializable(typeof(ImportContextMapResponse))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

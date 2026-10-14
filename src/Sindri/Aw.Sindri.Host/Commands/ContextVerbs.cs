@@ -24,7 +24,7 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
         ["sources", "status", "--json"] => Sources(json: true, ct),
         ["sources", "sync"] => output.Error(SindriErrors.UnknownVerb.With(
             "'context sources sync' is pending:S-5B (a job: it ships with stage S-5B, after API P6's job runtime); repo docs refresh through the context-docs-refresh service: name it under services: in the profile")),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'context {string.Join(' ', args)}' is not a context command: context query <text> | context sources status | context sources sync")),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'context {string.Join(' ', args)}' is not a context command: context query <text> | context sources status | context sources sync | context map import|export|status")),
     };
 
     private async Task<int> Query(string[] rest, CancellationToken ct)
