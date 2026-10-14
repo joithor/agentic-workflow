@@ -1,6 +1,5 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Infrastructure.Workflows;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,14 +48,15 @@ public sealed class QueuedUpdateTests(SindriTimeSkippingServer server) : IClassF
         // why: with no worker running, both Updates wait on the server and reach the next worker in one activation
         var cancel = new CancelRequested("human:cli", CancelOrigin.Command, Stamp('c'), Sequence: null, Parent: null);
         var takeover = new TakeoverRequested("human:cli", Stamp('d'));
-        var cancelling = await handle.StartUpdateAsync(wf => wf.CancelAsync(cancel), new WorkflowUpdateStartOptions(new string('c', 32), WorkflowUpdateStage.Admitted));
-        var takingOver = await handle.StartUpdateAsync(wf => wf.TakeoverAsync(takeover), new WorkflowUpdateStartOptions(new string('d', 32), WorkflowUpdateStage.Admitted));
+        var cancelling = handle.ExecuteUpdateAsync(wf => wf.CancelAsync(cancel), new WorkflowUpdateOptions(new string('c', 32)));
+        var takingOver = handle.ExecuteUpdateAsync(wf => wf.TakeoverAsync(takeover), new WorkflowUpdateOptions(new string('d', 32)));
+        await Task.Delay(TimeSpan.FromSeconds(1), ct);   // let the server queue both
 
         using var second = new TemporalWorker(client, options);
         await second.ExecuteAsync(async () =>
         {
-            var cancelled = await cancelling.GetResultAsync().WaitAsync(_patience, ct);
-            var refused = await Assert.ThrowsAsync<WorkflowUpdateFailedException>(() => takingOver.GetResultAsync().WaitAsync(_patience, ct));
+            var cancelled = await cancelling.WaitAsync(_patience, ct);
+            var refused = await Assert.ThrowsAsync<WorkflowUpdateFailedException>(() => takingOver.WaitAsync(_patience, ct));
             var ended = await handle.GetResultAsync().WaitAsync(_patience, ct);
 
             Assert.Equal("cancelled", cancelled.Instance.State);
@@ -76,12 +76,13 @@ public sealed class QueuedUpdateTests(SindriTimeSkippingServer server) : IClassF
         var start = await WorkflowsHarness.RecipeStart(sindri, "workflow.dev-timeout", "T-32", ct);
         var handle = await WorkflowsHarness.Start(client, start);   // no worker yet: the instance is still starting when the Update arrives
         var open = new OpenRequested("service:engine", Launch);
-        var opening = await handle.StartUpdateAsync(wf => wf.OpenRequestAsync(open), new WorkflowUpdateStartOptions(InstanceIds.OpenRequestUpdate(start.WorkflowId(), open), WorkflowUpdateStage.Admitted));
+        var opening = handle.ExecuteUpdateAsync(wf => wf.OpenRequestAsync(open), new WorkflowUpdateOptions(InstanceIds.OpenRequestUpdate(start.WorkflowId(), open)));
+        await Task.Delay(TimeSpan.FromSeconds(1), ct);   // let the server queue it
 
         using var worker = new TemporalWorker(client, sindri.GetRequiredService<TemporalWorkerOptions>());
         await worker.ExecuteAsync(async () =>
         {
-            var taken = await opening.GetResultAsync().WaitAsync(_patience, ct);
+            var taken = await opening.WaitAsync(_patience, ct);
 
             Assert.Equal(EngineStates.TakenOver, taken.Instance.State);
             await handle.TerminateAsync("test over");
