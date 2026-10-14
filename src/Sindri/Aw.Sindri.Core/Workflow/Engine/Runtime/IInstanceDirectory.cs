@@ -18,11 +18,14 @@ public interface IInstanceDirectory
     public ValueTask<Result<AttemptState?>> Latest(ItemKey item, RecipeId recipe, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The instance <paramref name="reference"/> names (spec §6.1): an address as given, or for a bare item the root of
-    /// its latest attempt.
+    /// The instance <paramref name="reference"/> names (spec §6.1, §6.3): its opaque id ('WFI-…', the API's routes), an
+    /// address as given, or for a bare item the root of its latest attempt.
     /// </summary>
-    /// <param name="reference">'T-3/step/1', or a bare 'T-3'.</param>
+    /// <param name="reference">'WFI-…', 'T-3/step/1', or a bare 'T-3'.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The address; SND-WF-001 when the item has no instance; SND-WF-006, listing the candidates, when it has roots of more than one recipe.</returns>
+    /// <returns>
+    /// The address; SND-WF-001 when no instance has that id or the item has no instance; SND-WF-006, listing the
+    /// candidates, when the item has roots of more than one recipe.
+    /// </returns>
     public ValueTask<Result<InstanceAddress>> Resolve(string reference, CancellationToken cancellationToken);
 }

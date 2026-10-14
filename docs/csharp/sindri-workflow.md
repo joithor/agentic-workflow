@@ -638,5 +638,22 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   An accepted Update hands its trigger to the loop through `Submit` (unit (a)'s seam; `RecipeWorkflow.Loop.cs` is unit
   (b)'s stand-in with (a)'s names). The desk wait wakes for a submitted command as well as for the report. An answer
   that ends a suspension clears the desk deadline, so `--resume` on a timeout park re-arms it from the answer.
-- **`IssueNonce`** returns a nonce for an existing instance (class issue). Until API P1's nonce table and route land,
-  the nonces are unit (c)'s `HomeCommandNonces`, and the CLI calls the slices in process.
+- **`IssueNonce`** returns a nonce for an existing instance (class issue). API P1 has no nonce table yet, so the
+  `POST /workflow/instances/{instanceId}/nonce` route issues them from unit (c)'s `HomeCommandNonces` stand-in.
+- **Routes and ids (§6.3).** The write verbs are clients of the API's command chain: `POST /workflow/instances`
+  (start), `/{instanceId}/nonce`, `/{instanceId}/commands` and `/{instanceId}/runs/{run}/complete`. `{instanceId}` is
+  the instance's opaque id, `WFI-` and 32 hex digits: a UUIDv8 over the SHA-256 of its address
+  (`WorkflowInstanceId.Of`, the same rule P3 uses for a child), so the same instance always has the same id. Start, list
+  and get return it (`InstanceView.id`). A CLI address travels only in `GET /workflow/instances?address=<address or
+  item>`, which answers the one instance it names; the CLI resolves there first, then calls the id routes. An address in
+  a route is a 400 (`SND-CLI-003`); an id no instance has is `SND-WF-001`. The server finds an id among the instances it
+  has started or shown (`KnownInstances`), else by minting the id of every instance visibility lists.
+- **Failures of an Update (§5.2, §5.3).** Each Update waits at most 4 s for a worker (`TemporalUpdates.Patience`): a
+  command that first waited the 5 s command gate still answers inside the CLI's 10 s HTTP timeout. No worker in that
+  time is `SND-API-002`, naming the nonce: the Update may still apply once a worker runs, so the claim stays and the same
+  command with `--nonce <n>` is deduplicated. A Temporal without the settings' namespace is `SND-API-001`, not a missing
+  instance. The same nonce after the instance ended (`cancel` twice) prints `already applied (-> cancelled)`: Temporal
+  keeps the first outcome of an update id on a closed workflow.
+- **Namespace and task queue** come from `AW_SINDRI_TEMPORAL_NAMESPACE` and `AW_SINDRI_TEMPORAL_TASK_QUEUE` (each
+  `sindri` when unset; README X61). A Step's activity runs on its instance's queue; `StepTaskQueue.For` is the seam a
+  later phase uses to route a Step elsewhere.

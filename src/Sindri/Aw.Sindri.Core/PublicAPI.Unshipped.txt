@@ -4855,3 +4855,4 @@ override Aw.Sindri.Core.Events.ContextMapImported.GetHashCode() -> int
 override Aw.Sindri.Core.Events.ContextMapImported.ToString() -> string!
 static Aw.Sindri.Core.Events.ContextMapImported.operator !=(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapImported.operator ==(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Id.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId

@@ -33,6 +33,9 @@ public sealed record InstanceView(
     IReadOnlyList<ChildView> Children,
     OutcomeName? Outcome)
 {
+    /// <summary>The instance's opaque id (spec §6.3), minted from <see cref="Address"/>: what the API's instance routes take.</summary>
+    public WorkflowInstanceId Id => WorkflowInstanceId.Of(Address);
+
     /// <summary>
     /// The instance's version, 'v&lt;n&gt;' in the status header: the count of events the interpreter has mirrored into the
     /// ledger (the start and every transition). Temporal keeps no row version, so the mirror count stands in for it.

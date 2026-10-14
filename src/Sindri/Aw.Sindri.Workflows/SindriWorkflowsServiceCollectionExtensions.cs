@@ -31,6 +31,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<ItemFactActivities>()
             .AddSingleton(provider => SindriWorker.Options(settings, provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(), provider.GetRequiredService<ItemFactActivities>()))
             .AddSingleton<TemporalFrontend>()
+            .AddSingleton<KnownInstances>()                            // engine P4: the opaque ids this process has seen (spec §6.3)
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items
             .AddSingleton<IInstanceRuntime, TemporalInstanceRuntime>()
             .AddSingleton<IWorkflowInstances, TemporalWorkflowInstances>()

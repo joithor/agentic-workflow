@@ -655,8 +655,6 @@ Aw.Sindri.Features.StartProcess.StartProcessResponse.Deconstruct(out Aw.Sindri.C
 Aw.Sindri.Features.StartProcess.StartProcessResponse.StartProcessResponse(Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ProfileHash? Profile, Aw.Sindri.Core.Control.TemporalEndpoint! Temporal) -> void
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint!
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.init -> void
-Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
-Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Address.init -> void
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Run.get -> Aw.Sindri.Core.Workflow.Engine.RunToken
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Run.init -> void
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName
@@ -896,11 +894,9 @@ Aw.Sindri.Features.GetInstanceEvents.InstanceEventView.Type.get -> string!
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventView.Type.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.<Clone>$() -> Aw.Sindri.Features.ListInstances.ListInstancesRequest!
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out bool NeedsMe, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out string? State, out string? Query) -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Equals(Aw.Sindri.Features.ListInstances.ListInstancesRequest? other) -> bool
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Item.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Item.init -> void
-Aw.Sindri.Features.ListInstances.ListInstancesRequest.ListInstancesRequest(bool NeedsMe = false, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, string? State = null, string? Query = null) -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.NeedsMe.get -> bool
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.NeedsMe.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Query.get -> string?
@@ -1088,13 +1084,11 @@ Aw.Sindri.Features.IssueNonce.IssueNonceRequest.IssueNonceRequest(string! Instan
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.CarriesProtectedFields.get -> bool
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Deconstruct(out string! Instance, out Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, out Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, out string? Text, out int? Amount, out Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge) -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Variant.get -> string!
-Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce) -> void
 Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.Instance.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView?
 Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.Instance.init -> void
 Aw.Sindri.Features.StartInstance.StartInstanceRequest.Deconstruct(out string! Recipe, out string! Item, out bool NextAttempt, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Features.StartInstance.StartFact!>! Facts) -> void
 Aw.Sindri.Features.StartInstance.StartInstanceRequest.StartInstanceRequest(string! Recipe, string! Item, bool NextAttempt, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Features.StartInstance.StartFact!>! Facts) -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.ApplyCommandRequest(string! Instance, Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer = null, string? Text = null, int? Amount = null, Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb = null, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce = null, Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge = null) -> void
-Aw.Sindri.Features.CompleteStep.CompleteStepRequest.CompleteStepRequest(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce = null) -> void
 Aw.Sindri.Features.ContextCalls.ExportContextMapRequest
 Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ExportContextMapRequest!
 Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.Deconstruct(out string? Path) -> void
@@ -1148,3 +1142,11 @@ static Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.operator !=(Aw.Si
 static Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.operator !=(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? left, Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? right) -> bool
 static Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.operator ==(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? left, Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? right) -> bool
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.CompleteStepRequest(string! Instance, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce = null) -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Deconstruct(out string! Instance, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce) -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Instance.get -> string!
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Instance.init -> void
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.Address.get -> string?
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.Address.init -> void
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out bool NeedsMe, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out string? State, out string? Query, out string? Address) -> void
+Aw.Sindri.Features.ListInstances.ListInstancesRequest.ListInstancesRequest(bool NeedsMe = false, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null) -> void

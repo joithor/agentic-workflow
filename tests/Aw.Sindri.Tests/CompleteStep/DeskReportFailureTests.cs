@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
@@ -64,6 +63,6 @@ public sealed class DeskReportFailureTests(DevServer server) : IClassFixture<Dev
 
     private static StepCompleted Report(RunToken run, FactValue? output) =>
         new("human:test", run, OutcomeName.From("done"),
-            output is { } o ? new Dictionary<FactKey, FactValue> { [FactKey.From("fact:output")] = o } : new Dictionary<FactKey, FactValue>(),
+            output is { } o ? new Dictionary<FactKey, FactValue> { [FactKey.From("fact:output")] = o } : [],
             Tokens: 0, StepRuntime.Desk, new string('c', 64));
 }
