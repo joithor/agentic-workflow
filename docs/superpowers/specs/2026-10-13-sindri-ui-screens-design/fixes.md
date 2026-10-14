@@ -207,3 +207,25 @@ Sindri   Running · pid 48211 · epoch 7 · API v1 · views 2s ago · 5 ok, 1 fa
 - context.html, context-filemap.html: the three bands stay (they are the design) but lose their panel borders: the
   band backgrounds alternate instead; node card, map review and sources become sections.
 - system.html: the graph and impact lose their panel borders (alternating bands); engine table keeps its columns.
+
+## Wave 5: consistency (the third critique's P1s and P2s; owner rule 2026-10-14: one label-to-colour mapping)
+
+1. **Chips from the table.** Every `.chip` on every page uses fixture.md "State chips" verbatim (word and class);
+   `LIVE` becomes `RUNNING`; behind-sheet rows keep the page's chip and carry the stage as a tag; Home's Workflows
+   strip rows get the chip column; the health pill and Home's health sentence use the same colours.
+2. **Ids at rest.** Ids inside prose are never hidden. Rows on Work, Agents, Workflows and the engine table draw the
+   id in a fixed-width mono slot in `--ink-tertiary` at rest, `--ink-subtle` on hover and focus, so nothing shifts.
+   Ids stay hidden only on Home's needs-you band and Workflows strip, where titles are unique. One mechanism (`.id`
+   with `.at-rest`), no `.key` exception.
+3. **Run again** is the pending pattern (disabled, dashed "Available with API P6", the copyable command) on both Home
+   and System until API P6; System's initial focus moves to Sync now.
+4. **Recipes** gets Failed, Tokens/run (p50) and a four-week spark back as mono columns; the action column is `auto`;
+   the footnote matches the columns.
+5. **Counts**: the inspector's band and Open list include every workflow.item instance in the fixture (JE7, JD9,
+   JA1 with you, JE9, JC8, JB4; "◐ 2" at produce); System's history heading reads "last 5 of 88" and the page line
+   "12 instances open · 4 activities running".
+6. **Agents** shows the token meter at rest in `--ink-tertiary`, brighter on hover.
+7. **Workflows**: action column `auto`; Start… carries ⌘N; "Other recipes" is its own heading with two rows; one order
+   rule everywhere (most urgent first, then oldest), written here: INC-14, sentry #8812, PRJ-sync, PRJ-exports,
+   PRJ-tabs for the strip; within a Workflows group, most urgent first.
+8. **Words with every glyph**: `✕ 03:00 failed` on Context and System; `checks ◐ r1 failed` not `●`.

@@ -123,3 +123,34 @@ Never prose, never a dash.
 - **PRJ-exports' input**: `PRD-exports.md`, never `PRD-exports`.
 - **Behind a sheet** (one rule): the list reflows to a narrow live list (id, title, state) with no scrim and no slicing;
   headers never cut mid-word. The same on Workflows, Work and Recipes.
+
+## State chips: one mapping of word to colour (owner, 2026-10-14)
+
+Every state chip on every page uses exactly this table: the word, the colour class, nothing else. A row keeps its
+page's chip when it appears behind a sheet (the stage goes in the tag, never in the chip). No page invents a word.
+
+| Chip word | Class | Colour | Meaning | Where |
+|---|---|---|---|---|
+| `PARKED` | `chip attn` | `--attn` text | an instance waits for a person's answer | needs-you rows, Work, Agents waiting, children, engine table |
+| `ESCALATED` | `chip attn` | `--attn` | a gate or timeout escalated; a person decides | same |
+| `DECISION` | `chip attn` | `--attn` | a request or decision waits for a person | needs-you rows, Workflows triage rows |
+| `PROFILE` | `chip attn` | `--attn` | the profile changed since approval | needs-you row |
+| `CHANGED` | `chip attn` | `--attn` | a recipe changed since approval | Recipes |
+| `ORPHANED` | `chip attn` | `--attn` | a map link lost its node | Context map review |
+| `DEGRADED` | `chip attn` | `--attn` | a source or service runs behind | Context sources, System |
+| `FAILED` | `chip fail` | `--error` | a service, job or check failed | needs-you row, System, sources |
+| `RUNNING` | `chip ok` | `--success` | an agent or tool is working now (whether or not a terminal exists; Attach shows that) | Home, Work, Workflows, Agents, children, inspector, engine table |
+| `OK` | `chip ok` | `--success` | healthy | System services, sources |
+| `WITH YOU` | `chip` | `--ink-muted` on `--s2` | a person holds the instance (taken over) | Home, Work, Workflows, Agents |
+| `QUEUED` | `chip` | neutral | waiting for a run slot | Home, Work, children |
+| `DONE` | `chip` | neutral | finished | Workflows, children, Recipes stats |
+| `DRAFT` | `chip` | neutral | never approved | Recipes, Context map version |
+| `APPROVED` | `chip` | neutral | approved recipe | Recipes |
+| `DETERMINISTIC`, `MODEL` | `chip` | neutral | a map proposal's provenance; also MODEL for a model call with no session on Agents | Context map review, Agents |
+| `CHILD` | `chip` | neutral | a state waiting on children | engine table |
+| `POLLING` | `chip` | neutral | the worker polls | System worker line |
+| `ABSENT` | `chip` | `--ink-subtle` | a dependency not found on this host | System |
+
+Retired words: `LIVE` (now `RUNNING`; the Attach action says a terminal exists), `CLASSIFY`, `BUILD 4/9` and every
+other stage name used as a chip (stages are tags). The page's health word uses the same colours: `Degraded` in
+`--attn`, `Healthy` in `--success`, `Stalled` and `Not running` in `--error`.
