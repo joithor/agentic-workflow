@@ -192,7 +192,7 @@ internal sealed partial class ShellWindow : Window
                 break;
             case nameof(ShellViewModel.State):
                 CoverPage();
-                Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
+                Dispatcher.UIThread.Post(Shell is { IsVersionMismatch: true } ? FocusMismatchCard : KeepFocus, DispatcherPriority.Loaded);
                 break;
             case nameof(ShellViewModel.IsSheetShown):
                 CoverPage();
@@ -211,6 +211,17 @@ internal sealed partial class ShellWindow : Window
         if (Shell is { IsSheetShown: true } && (Covering || !HasUsableFocus))
         {
             _ = this.Get<TextBlock>("SheetTitle").Focus(Method());
+        }
+    }
+
+    // The version-mismatch card replaces the whole shell (it can appear mid-session), so whatever had focus is hidden and
+    // there is no neighbour: focus goes into the card, to its heading, which is spoken with the card's live region
+    // (review run 5, accessibility-tester-0).
+    private void FocusMismatchCard()
+    {
+        if (Shell is { IsVersionMismatch: true })
+        {
+            _ = this.Get<TextBlock>("VersionMismatchText").Focus(Method());
         }
     }
 

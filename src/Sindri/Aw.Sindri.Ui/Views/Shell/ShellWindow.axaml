@@ -26,7 +26,7 @@
     <Border x:Name="VersionMismatchPanel" IsVisible="{Binding IsVersionMismatch}" Classes="card state-card"
             HorizontalAlignment="Center" VerticalAlignment="Center">
       <StackPanel Spacing="{StaticResource Space.SM}">
-        <TextBlock x:Name="VersionMismatchText" Classes="detail-title" TextWrapping="Wrap"
+        <TextBlock x:Name="VersionMismatchText" Classes="detail-title" TextWrapping="Wrap" Focusable="True"
                    Text="{Binding Text.VersionMismatch}" AutomationProperties.Name="{Binding Text.VersionMismatch}" />
         <ItemsControl x:Name="VersionRows" ItemsSource="{Binding Health.Detail.Versions}" AutomationProperties.Name="{Binding Reason}">
           <ItemsControl.ItemTemplate>
@@ -239,6 +239,10 @@
     <TextBlock x:Name="NotRespondingLive" Classes="live-region" Classes.live="{Binding IsNotRespondingBanner}" Text="{Binding NotRespondingAnnouncement}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <TextBlock x:Name="NotRunningLive" Classes="live-region" Classes.live="{Binding IsNotRunning}" Text="{Binding NotRunningAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <TextBlock x:Name="MismatchLive" Classes="live-region" Classes.live="{Binding IsVersionMismatch}" Text="{Binding MismatchAnnouncement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <TextBlock x:Name="RunningLive" Classes="live-region" Classes.live="{Binding IsRecovered}" Text="{Binding RecoveredAnnouncement}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
   </Panel>
 </Window>
