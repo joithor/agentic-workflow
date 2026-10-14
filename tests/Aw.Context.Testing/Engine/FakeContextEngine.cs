@@ -10,12 +10,14 @@ namespace Aw.Context.Testing.Engine;
 
 /// <summary>
 /// The in-memory <see cref="IContextEngine"/>, for callers (Sindri's tests) that don't query context: it checks settings with the engine's own
-/// pure rules (SettingsReader, ScopeRules for the repos), and answers every query or refresh with SND-CONTEXT-011. It
+/// pure rules (SettingsReader, ScopeRules for the repos) and the extra scrub patterns with <see cref="FakeScrubberFactory"/>, and answers every query or refresh with SND-CONTEXT-011. It
 /// passes ContextEngineContract. The real engine and its fakes
 /// are tested in Aw.Context.Tests.
 /// </summary>
 public sealed class FakeContextEngine : IContextEngine
 {
+    private readonly FakeScrubberFactory _scrubbers = new();
+
     private FakeContextEngine()
     {
     }
@@ -25,7 +27,7 @@ public sealed class FakeContextEngine : IContextEngine
 
     /// <inheritdoc />
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
-        SettingsReader.Check(section, repos);
+        SettingsReader.Read(section).Bind(read => _scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
 
     /// <inheritdoc />
     public ValueTask<Result<ContextResult>> Query(ContextQuery query, ContextScope scope, CancellationToken cancellationToken) =>

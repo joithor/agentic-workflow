@@ -15,10 +15,11 @@ namespace Aw.Context.Infrastructure.Docs;
 
 /// <summary>
 /// The repo-docs source over the repos in a call's scope (spec §5.2): lexical search in the scrubbed FTS5 chunks
-/// (each term a quoted phrase, never query syntax), fetch from git at the cited blob and line span, and versions from one tree listing per repo at HEAD. Its records are chunks
+/// (each term a quoted phrase, never query syntax; only documents stored under the call's scrub ruleset, so nothing
+/// cleaned with other rules is a hit), fetch from git at the cited blob and line span, and versions from one tree listing per repo at HEAD. Its records are chunks
 /// ('&lt;repo&gt;/&lt;path&gt;#L&lt;a&gt;-L&lt;b&gt;'); the canonical key is the document, so chunks of one document merge.
 /// </summary>
-internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, ContextDatabase database, GitCli git, IIngestFilter ingest, TimeProvider clock)
+internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, ContextDatabase database, GitCli git, Scrubbers scrubbers, TimeProvider clock)
     : IContextSource
 {
     private static readonly SourceDescriptor _descriptor = new(RepoDocs.Id, SourceKind.Doc, SourceFreshness.Snapshot, SupportsAsOf: false);
@@ -45,6 +46,7 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
             var rows = await SqliteQueries.List(read.Value, new SqlStatement(DocSql.Search, c => c
                     .Bind("@match", string.Join(" OR ", query.Terms.Select(DocSql.Phrase)))
                     .Bind("@repos", RepoList())
+                    .Bind("@ruleset", scrubbers.Ruleset.Value)
                     .Bind("@limit", Math.Clamp(query.Limit, 1, 200))), DocMappers.Hit, cancellationToken)
                 .ConfigureAwait(false);
             var now = clock.GetUtcNow();
@@ -72,7 +74,7 @@ internal sealed partial class RepoDocsSource(IReadOnlyList<ContextRepo> repos, C
         // The whole document is cleaned before the span is cut (line-preserving), the same way it was indexed, so a
         // secret or comment that crosses the span's edge can't come back half-scrubbed. The engine cleans the slice
         // again at its own boundary, which changes nothing.
-        var clean = ingest.Clean(blob.Value.Replace("\r\n", "\n", StringComparison.Ordinal), singleLine: false);
+        var clean = scrubbers.Ingest.Clean(blob.Value.Replace("\r\n", "\n", StringComparison.Ordinal), singleLine: false);
         var lines = clean.Text.Split('\n');
         var start = Math.Clamp(at.Start, 1, lines.Length);
         var text = clean.Blocked ? clean.Text : string.Join('\n', lines[(start - 1)..Math.Clamp(at.End, start, lines.Length)]);
