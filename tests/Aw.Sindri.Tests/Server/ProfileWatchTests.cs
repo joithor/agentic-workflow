@@ -59,7 +59,7 @@ public sealed class ProfileWatchTests
     {
         await using var provider = new ServiceCollection()
             .AddSingleton<IProfileSource>(_h.Profiles)
-            .AddSingleton<IApprovalReader>(_h.Profiles)
+            .AddSingleton<IApprovedProfile>(_h.Profiles)
             .AddSingleton<ILedgerStore>(_h.Store)
             .AddSingleton(_h.Events)
             .AddSingleton(_h.Callers)

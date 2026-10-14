@@ -167,7 +167,7 @@ public sealed class CatalogFramesTests : IDisposable
         Assert.False(pendingRun.IsEffectivelyEnabled);
 
         var blocks = page.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "CliText" && t.IsEffectivelyVisible).Select(t => t.Text).ToList();
-        Assert.Equal(["sindri profile approve [<hash>]", "sindri doctor", "sindri profile validate"], blocks, StringComparer.Ordinal);
+        Assert.Equal(["sindri profile approve [<hash>]", "sindri context map import <file>", "sindri doctor", "sindri profile validate"], blocks, StringComparer.Ordinal);
         Assert.Contains(page.GetVisualDescendants().OfType<TextBlock>(), t => t.Name == "CopyNoteText" && t.IsEffectivelyVisible && t.Text == Labels.TypedConfirmation);
 
         Assert.True(lines[0].Focus(NavigationMethod.Tab));
