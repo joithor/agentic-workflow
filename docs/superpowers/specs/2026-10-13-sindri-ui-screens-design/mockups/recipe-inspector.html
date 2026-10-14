@@ -76,7 +76,8 @@ svg{flex:none}
 .search kbd{flex:none}
 .health{display:flex;align-items:center;gap:6px;height:30px;padding:4px 10px;border:1px solid var(--line1);flex:none;
   border-radius:8px;background:var(--s1);white-space:nowrap;font-size:12px;color:var(--ink-muted)}
-.health .word{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-weight:500;font-size:13px}
+.health .word{display:inline-flex;align-items:center;gap:5px;color:var(--attn);font-weight:500;font-size:13px}  /* Degraded in --attn, the chip table's colour */
+.health .word .g{color:inherit}
 .health .sep{color:var(--ink-subtle)}
 .health .age{color:var(--ink-subtle)}
 /* static here; in the real app it pulses once when the needs-you count changes */
@@ -229,6 +230,10 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
 .id{display:none}
 :is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li):is(:hover,:focus-within) .id,
 .sheet-head .id,.cmd .id,.id.keep{display:inline}
+/* ids at rest (fixes.md wave 5, item 2): one mechanism. .id.at-rest is never display:none: mono, tertiary ink at rest,
+   subtle ink on row hover and focus, a fixed slot where the row gives it a column, so nothing shifts */
+.id.at-rest{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:400;letter-spacing:-.1px;color:var(--ink-subtle);white-space:nowrap}
+:is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li,.en,.child,.ag,.op):is(:hover,:focus-within) .id.at-rest{display:inline-block;color:var(--ink-muted)}
 /* (e) 40 px rows, 16 px gutters, hairlines only between rows */
 .row{display:grid;align-items:center;column-gap:16px;padding:4px 16px;border-top:1px solid var(--line1)}
 .row:first-child{border-top:0}
@@ -330,8 +335,6 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
 .bl.sel,.bl.sel:hover{background:var(--s3)}
 .bl:hover{background:var(--s2)}
 
-/* the design-reference caption sits bottom left here so it never covers the sheet's last line */
-.caption{right:auto;left:16px}
 
 /* motion: hover and press only, 120 ms ease-out, colour properties only (nothing that lays out animates) */
 .btn,.row{transition:background-color 120ms ease-out,border-color 120ms ease-out,color 120ms ease-out}
@@ -378,14 +381,14 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
   </div>
 
   <section class="band" aria-label="Recipes, 30 days">
-    <div class="row bl" role="row" aria-label="Recipe workflow.project, approved"><span class="chip ok">approved</span><span class="row-title">workflow.project</span><span class="meta">open 3 · runs 9</span></div>
-    <div class="row bl sel" role="row" aria-label="Recipe workflow.item, approved"><span class="chip ok">approved</span><span class="row-title">workflow.item</span><span class="meta">open 4 · runs 112</span></div>
-    <div class="row bl" role="row" aria-label="Recipe workflow.step, approved"><span class="chip ok">approved</span><span class="row-title">workflow.step</span><span class="meta">open 6 · no runs yet</span></div>
-    <div class="row bl" role="row" aria-label="Recipe builder.feature, approved"><span class="chip ok">approved</span><span class="row-title">builder.feature</span><span class="meta">open 9 · runs 38</span></div>
-    <div class="row bl" role="row" aria-label="Recipe triage.alert, approved"><span class="chip ok">approved</span><span class="row-title">triage.alert</span><span class="meta">open 3 · runs 24</span></div>
-    <div class="row bl" role="row" aria-label="Recipe incident.response, approved"><span class="chip ok">approved</span><span class="row-title">incident.response</span><span class="meta">open 1 · runs 3</span></div>
-    <div class="row bl" role="row" aria-label="Recipe scoping.project, changed"><span class="chip attn">changed</span><span class="row-title">scoping.project</span><span class="meta">open 1 · runs 7</span></div>
-    <div class="row bl" role="row" aria-label="Recipe intake.linear, draft"><span class="chip">draft</span><span class="row-title">intake.linear</span><span class="meta">no runs yet</span></div>
+    <div class="row bl" role="row" aria-label="Recipe workflow.project, approved"><span class="chip">Approved</span><span class="row-title">workflow.project</span><span class="meta">open 3 · runs 9</span></div>
+    <div class="row bl sel" role="row" aria-label="Recipe workflow.item, approved"><span class="chip">Approved</span><span class="row-title">workflow.item</span><span class="meta">open 6 · runs 112</span></div>
+    <div class="row bl" role="row" aria-label="Recipe workflow.step, approved"><span class="chip">Approved</span><span class="row-title">workflow.step</span><span class="meta">open 6 · no runs yet</span></div>
+    <div class="row bl" role="row" aria-label="Recipe builder.feature, approved"><span class="chip">Approved</span><span class="row-title">builder.feature</span><span class="meta">open 9 · runs 38</span></div>
+    <div class="row bl" role="row" aria-label="Recipe triage.alert, approved"><span class="chip">Approved</span><span class="row-title">triage.alert</span><span class="meta">open 3 · runs 24</span></div>
+    <div class="row bl" role="row" aria-label="Recipe incident.response, approved"><span class="chip">Approved</span><span class="row-title">incident.response</span><span class="meta">open 1 · runs 3</span></div>
+    <div class="row bl" role="row" aria-label="Recipe scoping.project, changed"><span class="chip attn">Changed</span><span class="row-title">scoping.project</span><span class="meta">open 1 · runs 7</span></div>
+    <div class="row bl" role="row" aria-label="Recipe intake.linear, draft"><span class="chip">Draft</span><span class="row-title">intake.linear</span><span class="meta">no runs yet</span></div>
   </section>
 </main>
 
@@ -411,12 +414,12 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
     <section class="band" aria-labelledby="st-h">
       <div class="section">
         <div class="sh"><h2 id="st-h">States</h2><span class="meta">open instances on them</span></div>
-        <!-- the four open instances placed on the band: ITM-01JE7 produce, ITM-01JC8 parked at produce, ITM-01JE9 checks, ITM-01JB4 escalated at the gate.
-             Two or more in progress on one state render as the glyph and a count ("◐ 2"), never a doubled glyph -->
+        <!-- the six open workflow.item instances placed on the band: ITM-01JE7 and ITM-01JD9 produce (◐ 2), ITM-01JC8 parked at produce, ITM-01JA1 with you at produce,
+             ITM-01JE9 checks, ITM-01JB4 escalated at the gate. Two or more in progress on one state render as the glyph and a count ("◐ 2"), never a doubled glyph -->
         <!-- ten states: the band wraps; each link travels with the node it leads to (.hop in the CSS), so the second row starts with its link and no row ends on a dangling line -->
         <div class="states-band" aria-label="States band">
           <div class="node"><span class="nm">intake <span class="g g-done" role="img" aria-label="done">●</span></span></div>
-          <div class="hop"><span class="link" aria-hidden="true"></span><div class="node"><span class="nm">produce <span class="g g-prog" role="img" aria-label="1 in progress">◐</span></span><span class="sub"><span class="g g-park" aria-hidden="true">▌</span>1 parked</span></div></div>
+          <div class="hop"><span class="link" aria-hidden="true"></span><div class="node"><span class="nm">produce <span class="g g-prog" role="img" aria-label="2 in progress">◐ 2</span></span><span class="sub"><span class="g g-park" aria-hidden="true">▌</span>1 parked</span><span class="sub"><span class="g g-you" aria-hidden="true">◎</span>1 with you</span></div></div>
           <div class="hop lp"><span class="loop" role="img" aria-label="loop">⇄</span><div class="node"><span class="nm">checks <span class="g g-prog" role="img" aria-label="1 in progress">◐</span></span></div></div>
           <div class="hop"><span class="link" aria-hidden="true"></span><div class="node"><span class="nm">gate.verify.judge</span><span class="sub"><span class="g g-esc" aria-hidden="true">▲</span>1 escalated</span></div></div>
           <div class="hop"><span class="link" aria-hidden="true"></span><div class="node"><span class="nm">review <span class="g g-todo" role="img" aria-label="not started">○</span> <small>desk</small></span></div></div>
@@ -470,17 +473,19 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
 
     <section class="band" aria-labelledby="op-h">
       <div class="section">
-        <div class="sh"><h2 id="op-h">Open</h2><span class="meta">4</span></div>
-        <div class="op" role="row"><span class="chip">running</span><span class="row-title">Add needs-you ack route<span class="tag">produce</span></span><span class="num w">6m</span><span class="act"><button class="btn" aria-haspopup="menu" aria-expanded="false" aria-label="Open ITM-01JE7">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></span></div>
-        <div class="op" role="row"><span class="chip">running</span><span class="row-title">Tester: decision race integration test<span class="tag">checks</span></span><span class="num w">2m</span><span class="act"><button class="btn" aria-haspopup="menu" aria-expanded="false" aria-label="Open ITM-01JE9">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></span></div>
-        <div class="op" role="row"><span class="chip attn">parked</span><span class="row-title">Retry storm in outbox dispatcher<span class="tag">no-progress</span></span><span class="num w">12m</span><span class="act"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button></span></div>
-        <div class="op" role="row"><span class="chip attn">escalated</span><span class="row-title">Context map review for tabs.layout<span class="tag">gate 0.62</span></span><span class="num w">2h 56m</span><span class="act"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button></span></div>
+        <div class="sh"><h2 id="op-h">Open</h2><span class="meta">6</span></div>
+        <div class="op" role="row"><span class="chip attn">Escalated</span><span class="row-title">Context map review for tabs.layout<span class="tag">gate 0.62</span></span><span class="num w">2h 56m</span><span class="act"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button></span></div>
+        <div class="op" role="row"><span class="chip attn">Parked</span><span class="row-title">Retry storm in outbox dispatcher<span class="tag">no-progress</span></span><span class="num w">12m</span><span class="act"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button></span></div>
+        <div class="op" role="row"><span class="chip">With you</span><span class="row-title">Onyx adapter secret pointers<span class="tag">produce</span></span><span class="num w">25m</span><span class="act"><button class="btn">Hand back</button></span></div>
+        <div class="op" role="row"><span class="chip ok">Running</span><span class="row-title">Add needs-you ack route<span class="tag">produce</span></span><span class="num w">6m</span><span class="act"><button class="btn" aria-haspopup="menu" aria-expanded="false" aria-label="Open ITM-01JE7">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></span></div>
+        <div class="op" role="row"><span class="chip ok">Running</span><span class="row-title">Tester: decision race integration test<span class="tag">checks</span></span><span class="num w">2m</span><span class="act"><button class="btn" aria-haspopup="menu" aria-expanded="false" aria-label="Open ITM-01JE9">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></span></div>
+        <div class="op" role="row"><span class="chip ok">Running</span><span class="row-title">Judge outbox drain on shutdown<span class="tag">produce</span></span><span class="num w">1m</span><span class="act"><button class="btn" aria-haspopup="menu" aria-expanded="false" aria-label="Open ITM-01JD9">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></span></div>
       </div>
     </section>
 
     <section class="band" aria-labelledby="ev-h">
       <div class="section ev">
-        <div class="sh"><h2 id="ev-h">Evals</h2><span class="chip ok">12/12 ✓</span><span class="meta">last run today · recorded against v7 · 3 cases recorded from real runs (<span class="mono">--record</span>)</span></div>
+        <div class="sh"><h2 id="ev-h">Evals</h2><span class="meta"><span class="g h-ok" aria-hidden="true">✓</span> 12 of 12 pass</span><span class="meta">last run today · recorded against v7 · 3 cases recorded from real runs (<span class="mono">--record</span>)</span></div>
         <div class="cases"><span><span class="g h-ok" aria-hidden="true">✓</span>01 happy-path</span><span><span class="g h-ok" aria-hidden="true">✓</span>02 checks-fail-once</span><span><span class="g h-ok" aria-hidden="true">✓</span>03 budget-park</span><span class="dash">… 9 more</span></div>
         <p class="meta" style="margin-top:12px"><b style="font-weight:500;color:var(--ink-muted)">blocks</b> 7 pinned: <span class="mono">step.produce</span> v3 · <span class="mono">gate.verify.judge</span> v2 · … &nbsp;·&nbsp; <b style="font-weight:500;color:var(--ink-muted)">definition</b> states 5 · transitions 8 · effects 3</p>
       </div>

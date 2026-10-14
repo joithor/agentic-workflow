@@ -76,7 +76,8 @@ svg{flex:none}
 .search kbd{flex:none}
 .health{display:flex;align-items:center;gap:6px;height:30px;padding:4px 10px;border:1px solid var(--line1);flex:none;
   border-radius:8px;background:var(--s1);white-space:nowrap;font-size:12px;color:var(--ink-muted)}
-.health .word{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-weight:500;font-size:13px}
+.health .word{display:inline-flex;align-items:center;gap:5px;color:var(--attn);font-weight:500;font-size:13px}  /* Degraded in --attn, the chip table's colour */
+.health .word .g{color:inherit}
 .health .sep{color:var(--ink-subtle)}
 .health .age{color:var(--ink-subtle)}
 /* static here; in the real app it pulses once when the needs-you count changes */
@@ -229,6 +230,10 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
 .id{display:none}
 :is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li):is(:hover,:focus-within) .id,
 .sheet-head .id,.cmd .id,.id.keep{display:inline}
+/* ids at rest (fixes.md wave 5, item 2): one mechanism. .id.at-rest is never display:none: mono, tertiary ink at rest,
+   subtle ink on row hover and focus, a fixed slot where the row gives it a column, so nothing shifts */
+.id.at-rest{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:400;letter-spacing:-.1px;color:var(--ink-subtle);white-space:nowrap}
+:is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li,.en,.child,.ag,.op):is(:hover,:focus-within) .id.at-rest{display:inline-block;color:var(--ink-muted)}
 /* (e) 40 px rows, 16 px gutters, hairlines only between rows */
 .row{display:grid;align-items:center;column-gap:16px;padding:4px 16px;border-top:1px solid var(--line1)}
 .row:first-child{border-top:0}
@@ -358,7 +363,7 @@ body{min-width:1280px}
       <div class="sub">
         <span>map <b>v13</b> current</span>
         <span>·</span><span>draft <b>v14</b> (46 proposals)</span>
-        <span>·</span><span>code index <span class="x" aria-label="failed">✕</span> <b>03:00</b></span>
+        <span>·</span><span>code index <span class="x">✕</span> <b>03:00 failed</b></span>
         <span>·</span><span>intent <b>2h behind</b></span>
       </div>
     </div>
@@ -406,7 +411,7 @@ body{min-width:1280px}
       <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse layout/">▾</button><span class="name">layout/</span></span><span class="keys">feature:layout</span><span class="cnt">ENG 4 · PRD 2</span><span></span></div>
       <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">SplitPane.ts</span></span><span class="keys">feature:layout.split-pane <i>·</i> .orientation</span><span class="cnt">ENG-482 · PRD-tabs §3</span><span></span></div>
       <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">paneStore.ts</span></span><span class="keys">thing:pane-layout</span><span class="cnt">PRD-tabs §3</span><span></span></div>
-      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Resize.ts</span></span><span class="keys">feature:layout.split-pane.resize</span><span class="cnt"><span class="chip attn">No intent</span></span><span></span></div>
+      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Resize.ts</span></span><span class="keys">feature:layout.split-pane.resize</span><span class="cnt"><span class="tag" style="color:var(--attn)">No intent</span></span><span></span></div>
       <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse tabs/">▾</button><span class="name">tabs/</span></span><span class="keys"></span><span class="cnt"></span><span></span></div>
       <div class="fm anchor-row" aria-current="true"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Manager.ts</span></span><span class="keys">feature:tabs.tab-manager <i>·</i> action:…restore-layout</span><span class="cnt">ENG-482 · #tabs-design</span><span></span></div>
       <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Strip.tsx</span></span><span class="keys">surface:screen/tab-strip</span><span class="cnt">PRD-tabs §2</span><span></span></div>

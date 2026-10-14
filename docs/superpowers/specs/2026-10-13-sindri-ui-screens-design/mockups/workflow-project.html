@@ -76,7 +76,8 @@ svg{flex:none}
 .search kbd{flex:none}
 .health{display:flex;align-items:center;gap:6px;height:30px;padding:4px 10px;border:1px solid var(--line1);flex:none;
   border-radius:8px;background:var(--s1);white-space:nowrap;font-size:12px;color:var(--ink-muted)}
-.health .word{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-weight:500;font-size:13px}
+.health .word{display:inline-flex;align-items:center;gap:5px;color:var(--attn);font-weight:500;font-size:13px}  /* Degraded in --attn, the chip table's colour */
+.health .word .g{color:inherit}
 .health .sep{color:var(--ink-subtle)}
 .health .age{color:var(--ink-subtle)}
 /* static here; in the real app it pulses once when the needs-you count changes */
@@ -229,6 +230,10 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
 .id{display:none}
 :is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li):is(:hover,:focus-within) .id,
 .sheet-head .id,.cmd .id,.id.keep{display:inline}
+/* ids at rest (fixes.md wave 5, item 2): one mechanism. .id.at-rest is never display:none: mono, tertiary ink at rest,
+   subtle ink on row hover and focus, a fixed slot where the row gives it a column, so nothing shifts */
+.id.at-rest{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:400;letter-spacing:-.1px;color:var(--ink-subtle);white-space:nowrap}
+:is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li,.en,.child,.ag,.op):is(:hover,:focus-within) .id.at-rest{display:inline-block;color:var(--ink-muted)}
 /* (e) 40 px rows, 16 px gutters, hairlines only between rows */
 .row{display:grid;align-items:center;column-gap:16px;padding:4px 16px;border-top:1px solid var(--line1)}
 .row:first-child{border-top:0}
@@ -391,7 +396,7 @@ body{min-width:1280px}
 .qt .tr .tt{display:flex;align-items:baseline;gap:8px;min-width:0;font-size:14px;font-weight:500;line-height:1.3;color:var(--ink);white-space:nowrap}
 .qt .tr .tt .tx{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .qt .tr .tt .tag{flex:0 100 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:400}
-.qt .tr .tt .id{flex:none;font-weight:400}
+.qt .tr .tt .id{flex:none;font-weight:400;margin-left:auto}
 .qt .tr .when{font-size:12px;color:var(--ink-subtle);white-space:nowrap;text-align:right}
 .qt .tr.more{color:var(--ink-subtle);font-size:12px}
 .toolbar{display:flex;align-items:center;gap:8px}
@@ -434,32 +439,34 @@ body{min-width:1280px}
   </div>
 
   <div class="qt" aria-label="Open workflows by recipe">
-  <section class="band" aria-label="workflow.project">
+  <section class="band" aria-label="incident.response">
     <div class="section">
-      <div class="sh"><h2>workflow.project</h2><span class="meta">Linear projects · 3</span></div>
-      <div class="tr sel" role="row" aria-label="PRJ-sync, build 4/9" aria-selected="true"><span class="chip ">Build 4/9</span><span class="tt"><span class="tx">Offline sync</span><span class="id mono">PRJ-sync</span></span><span class="when">3h</span></div>
-      <div class="tr" role="row" aria-label="PRJ-exports, with you"><span class="chip ">With you</span><span class="tt"><span class="tx">Billing exports</span><span class="tag meta">import the design output</span><span class="id mono">PRJ-exports</span></span><span class="when">20h</span></div>
-      <div class="tr" role="row" aria-label="PRJ-tabs, scoping 2/3"><span class="chip ">Scoping 2/3</span><span class="tt"><span class="tx">Tab manager v2</span><span class="id mono">PRJ-tabs</span></span><span class="when">46m</span></div>
+      <div class="sh"><h2>incident.response</h2><span class="meta">1</span></div>
+      <div class="tr" role="row" aria-label="INC-14, running, mitigate r1/3"><span class="chip ok">Running</span><span class="tt"><span class="tx">Outbox retry storm</span><span class="tag meta">mitigate r1/3</span><span class="id at-rest mono">INC-14</span></span><span class="when">1h</span></div>
     </div>
   </section>
   <section class="band" aria-label="triage.alert">
     <div class="section">
       <div class="sh"><h2>triage.alert</h2><span class="meta">webhooks · 6</span></div>
-      <div class="tr" role="row" aria-label="sentry #8812, classify"><span class="chip attn">Classify</span><span class="tt"><span class="tx">TypeError in tabs.layout</span><span class="tag meta">needs your severity</span><span class="id mono">sentry #8812</span></span><span class="when">4m</span></div>
-      <div class="tr" role="row" aria-label="sentry #8809, done"><span class="chip ">Done</span><span class="tt"><span class="tx">429s on stream</span><span class="id mono">sentry #8809</span></span><span class="when">12m</span></div>
-      <div class="tr" role="row" aria-label="P-2211, escalated"><span class="chip attn">Escalated</span><span class="tt"><span class="tx">PagerDuty P-2211</span><span class="tag meta">accept at a terminal</span></span><span class="when">1h</span></div>
+      <div class="tr" role="row" aria-label="sentry #8812, decision, classify"><span class="chip attn">Decision</span><span class="tt"><span class="tx">TypeError in tabs.layout</span><span class="tag meta">classify</span><span class="id at-rest mono">sentry #8812</span></span><span class="when">4m</span></div>
+      <div class="tr" role="row" aria-label="P-2211, escalated"><span class="chip attn">Escalated</span><span class="tt"><span class="tx">PagerDuty P-2211</span><span class="tag meta">classify</span></span><span class="when">1h</span></div>
+      <div class="tr" role="row" aria-label="sentry #8809, done"><span class="chip">Done</span><span class="tt"><span class="tx">429s on stream</span><span class="id at-rest mono">sentry #8809</span></span><span class="when">12m</span></div>
       <div class="tr more" role="row"><span></span><span>… 3 more done</span><span></span></div>
     </div>
   </section>
-  <section class="band" aria-label="incident.response">
+  <section class="band" aria-label="workflow.project">
     <div class="section">
-      <div class="sh"><h2>incident.response</h2><span class="meta">1</span></div>
-      <div class="tr" role="row" aria-label="INC-14, mitigate r1/3"><span class="chip ">Mitigate r1/3</span><span class="tt"><span class="tx">Outbox retry storm</span><span class="tag meta">rolling back</span><span class="id mono">INC-14</span></span><span class="when">1h</span></div>
+      <div class="sh"><h2>workflow.project</h2><span class="meta">Linear projects · 3</span></div>
+      <div class="tr sel" role="row" aria-label="PRJ-sync, running, build 4/9" aria-selected="true"><span class="chip ok">Running</span><span class="tt"><span class="tx">Offline sync</span><span class="tag meta">build 4/9</span><span class="id at-rest mono">PRJ-sync</span></span><span class="when">3h</span></div>
+      <div class="tr" role="row" aria-label="PRJ-exports, with you, design"><span class="chip">With you</span><span class="tt"><span class="tx">Billing exports</span><span class="tag meta">design</span><span class="id at-rest mono">PRJ-exports</span></span><span class="when">20h</span></div>
+      <div class="tr" role="row" aria-label="PRJ-tabs, running, scoping 2/3"><span class="chip ok">Running</span><span class="tt"><span class="tx">Tab manager v2</span><span class="tag meta">scoping 2/3</span><span class="id at-rest mono">PRJ-tabs</span></span><span class="when">46m</span></div>
     </div>
   </section>
-  <section class="band" aria-label="intake.linear">
+  <section class="band" aria-label="Other recipes">
     <div class="section">
-      <div class="sh"><h2>intake.linear</h2><span class="meta">polling every 15m · LIN-ENG, LIN-APP · 2</span></div>
+      <div class="sh"><h2>Other recipes</h2><span class="meta">2</span></div>
+      <div class="tr" role="row" aria-label="intake.linear, polling"><span></span><span class="tt"><span class="tx">intake.linear</span><span class="tag meta">polling every 15m · 2 new items</span></span><span class="when">12:15</span></div>
+      <div class="tr" role="row" aria-label="scoping.project, standalone"><span></span><span class="tt"><span class="tx">scoping.project</span><span class="tag meta">standalone · none open</span></span><span class="when"></span></div>
     </div>
   </section>
   </div>
@@ -511,7 +518,6 @@ body{min-width:1280px}
         <div class="krow"><span class="k">next</span><span class="v ink">Build runs each packet task as a child item; verify opens for you when every child is done.</span></div>
         <div class="ctl">
           <div class="stat"><span class="kv"><span>budget</span><span class="mono">1.2M / 3M</span><span class="bar4" role="img" aria-label="40 percent of this state's budget used"><i style="width:40%"></i></span><span>this state</span></span><span>·</span><span class="kv"><span>timeout</span><span class="mono">parks in 2d 4h</span></span></div>
-          <div class="acts"><button class="btn">Take over <kbd>T</kbd></button></div>
         </div>
       </div>
     </section>
@@ -532,9 +538,9 @@ body{min-width:1280px}
     <section class="section" aria-labelledby="ch-h">
 <div class="sh"><h2 id="ch-h">Children</h2><span class="meta">9 · <span class="mono">builder.feature</span>, by packet workstream</span></div>
       <div class="children">
-        <div class="child" aria-label="ITM-01JD6 running checks"><span class="chip ">Running</span><span class="ttl">Services page job panel<span class="tag meta">ws-2 Store</span><span class="id mono">ITM-01JD6</span></span><span class="when">0m</span><div class="acts"><div class="split"><button class="btn sm main " aria-label="Open ITM-01JD6">Open</button><button class="btn sm chev" aria-label="More actions for ITM-01JD6" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div></div>
-        <div class="child" aria-label="ITM-01JD7 parked, needs you"><span class="chip attn">Parked</span><span class="ttl">Background sync (iOS)<span class="tag meta">ws-3 Mobile</span><span class="id mono">ITM-01JD7</span></span><span class="when"></span><div class="acts"><div class="split"><button class="btn sm main term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button><button class="btn sm chev" aria-label="More actions for ITM-01JD7" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div></div>
-        <div class="child" aria-label="ITM-01JF3 queued"><span class="chip ">Queued</span><span class="ttl">doctor views line<span class="tag meta">ws-3 Mobile</span><span class="id mono">ITM-01JF3</span></span><span class="when">52m</span><div class="acts"><div class="split"><button class="btn sm main " aria-label="Open ITM-01JF3">Open</button><button class="btn sm chev" aria-label="More actions for ITM-01JF3" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div></div>
+        <div class="child" aria-label="ITM-01JD6 running checks"><span class="chip ok">Running</span><span class="ttl">Services page job panel<span class="tag meta">ws-2 Store</span><span class="id at-rest mono">ITM-01JD6</span></span><span class="when">0m</span><div class="acts"><div class="split"><button class="btn sm main " aria-label="Open ITM-01JD6">Open</button><button class="btn sm chev" aria-label="More actions for ITM-01JD6" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div></div>
+        <div class="child" aria-label="ITM-01JD7 parked, needs you"><span class="chip attn">Parked</span><span class="ttl">Background sync (iOS)<span class="tag meta">ws-3 Mobile</span><span class="id at-rest mono">ITM-01JD7</span></span><span class="when"></span><div class="acts"><div class="split"><button class="btn sm main term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button><button class="btn sm chev" aria-label="More actions for ITM-01JD7" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div></div>
+        <div class="child" aria-label="ITM-01JF3 queued"><span class="chip ">Queued</span><span class="ttl">doctor views line<span class="tag meta">ws-3 Mobile</span><span class="id at-rest mono">ITM-01JF3</span></span><span class="when">52m</span><div class="acts"><div class="split"><button class="btn sm main " aria-label="Open ITM-01JF3">Open</button><button class="btn sm chev" aria-label="More actions for ITM-01JF3" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div></div>
       </div>
       <div class="cfoot"><span>… 6 more · 4 done · 2 queued</span><a href="#">Open all in Work ▸</a></div>
     </section>

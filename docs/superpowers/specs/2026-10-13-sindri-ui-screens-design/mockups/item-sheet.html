@@ -76,7 +76,8 @@ svg{flex:none}
 .search kbd{flex:none}
 .health{display:flex;align-items:center;gap:6px;height:30px;padding:4px 10px;border:1px solid var(--line1);flex:none;
   border-radius:8px;background:var(--s1);white-space:nowrap;font-size:12px;color:var(--ink-muted)}
-.health .word{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-weight:500;font-size:13px}
+.health .word{display:inline-flex;align-items:center;gap:5px;color:var(--attn);font-weight:500;font-size:13px}  /* Degraded in --attn, the chip table's colour */
+.health .word .g{color:inherit}
 .health .sep{color:var(--ink-subtle)}
 .health .age{color:var(--ink-subtle)}
 /* static here; in the real app it pulses once when the needs-you count changes */
@@ -229,6 +230,10 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
 .id{display:none}
 :is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li):is(:hover,:focus-within) .id,
 .sheet-head .id,.cmd .id,.id.keep{display:inline}
+/* ids at rest (fixes.md wave 5, item 2): one mechanism. .id.at-rest is never display:none: mono, tertiary ink at rest,
+   subtle ink on row hover and focus, a fixed slot where the row gives it a column, so nothing shifts */
+.id.at-rest{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:400;letter-spacing:-.1px;color:var(--ink-subtle);white-space:nowrap}
+:is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li,.en,.child,.ag,.op):is(:hover,:focus-within) .id.at-rest{display:inline-block;color:var(--ink-muted)}
 /* (e) 40 px rows, 16 px gutters, hairlines only between rows */
 .row{display:grid;align-items:center;column-gap:16px;padding:4px 16px;border-top:1px solid var(--line1)}
 .row:first-child{border-top:0}
@@ -443,38 +448,38 @@ body{min-width:1280px}
   <section class="band attn" aria-label="Waiting on you">
     <div class="section">
       <div class="sh"><h2>Waiting on you</h2><span class="meta">2</span></div>
-      <div class="tr" role="row" aria-label="Needs you now: ITM-01JB4, escalated gate"><span class="chip attn">Escalated</span><span class="tt"><span class="tx">Context map review for tabs.layout</span><span class="id mono">ITM-01JB4</span></span><span class="when">3h</span></div>
-      <div class="tr" role="row" aria-label="Needs you now: ITM-01JD2, needs a decision"><span class="chip attn">Decision</span><span class="tt"><span class="tx">Re-scope: drop the iOS head from this item</span><span class="id mono">ITM-01JD2</span></span><span class="when">26m</span></div>
+      <div class="tr" role="row" aria-label="Needs you now: ITM-01JB4, escalated gate"><span class="chip attn">Escalated</span><span class="tt"><span class="tx">Context map review for tabs.layout</span><span class="id at-rest mono">ITM-01JB4</span></span><span class="when">3h</span></div>
+      <div class="tr" role="row" aria-label="Needs you now: ITM-01JD2, needs a decision"><span class="chip attn">Decision</span><span class="tt"><span class="tx">Re-scope: drop the iOS head from this item</span><span class="id at-rest mono">ITM-01JD2</span></span><span class="when">26m</span></div>
     </div>
   </section>
   <section class="band" aria-label="With you">
     <div class="section">
       <div class="sh"><h2>With you</h2><span class="meta">1</span></div>
-      <div class="tr" role="row" aria-label="With you: ITM-01JA1"><span class="chip ">With you</span><span class="tt"><span class="tx">Onyx adapter secret pointers</span><span class="id mono">ITM-01JA1</span></span><span class="when">25m</span></div>
+      <div class="tr" role="row" aria-label="With you: ITM-01JA1"><span class="chip ">With you</span><span class="tt"><span class="tx">Onyx adapter secret pointers</span><span class="id at-rest mono">ITM-01JA1</span></span><span class="when">25m</span></div>
     </div>
   </section>
   <section class="band" aria-label="Parked">
     <div class="section">
       <div class="sh"><h2>Parked</h2><span class="meta">1</span></div>
-      <div class="tr" role="row" aria-label="Parked: ITM-01JC8, no-progress"><span class="chip attn">Parked</span><span class="tt"><span class="tx">Retry storm in outbox dispatcher</span><span class="id mono">ITM-01JC8</span></span><span class="when">12m</span></div>
+      <div class="tr" role="row" aria-label="Parked: ITM-01JC8, no-progress"><span class="chip attn">Parked</span><span class="tt"><span class="tx">Retry storm in outbox dispatcher</span><span class="id at-rest mono">ITM-01JC8</span></span><span class="when">12m</span></div>
     </div>
   </section>
   <section class="band" aria-label="Running">
     <div class="section">
       <div class="sh"><h2>Running</h2><span class="meta">4</span></div>
-      <div class="tr sel" role="row" aria-label="Running: ITM-01JE7, selected" aria-selected="true"><span class="chip ok">Live</span><span class="tt"><span class="tx">Add needs-you ack route</span><span class="id mono">ITM-01JE7</span></span><span class="when">6m</span></div>
-      <div class="tr" role="row" aria-label="Running: ITM-01JE9"><span class="chip ">Running</span><span class="tt"><span class="tx">Tester: decision race integration test</span><span class="id mono">ITM-01JE9</span></span><span class="when">2m</span></div>
-      <div class="tr" role="row" aria-label="Running: ITM-01JD9"><span class="chip ">Running</span><span class="tt"><span class="tx">Judge outbox drain on shutdown</span><span class="id mono">ITM-01JD9</span></span><span class="when">1m</span></div>
-      <div class="tr" role="row" aria-label="Running: ITM-01JD6"><span class="chip ">Running</span><span class="tt"><span class="tx">Services page job panel</span><span class="tag meta">sindri-app</span><span class="id mono">ITM-01JD6</span></span><span class="when">0m</span></div>
+      <div class="tr sel" role="row" aria-label="Running: ITM-01JE7, selected" aria-selected="true"><span class="chip ok">Running</span><span class="tt"><span class="tx">Add needs-you ack route</span><span class="id at-rest mono">ITM-01JE7</span></span><span class="when">6m</span></div>
+      <div class="tr" role="row" aria-label="Running: ITM-01JE9"><span class="chip ok">Running</span><span class="tt"><span class="tx">Tester: decision race integration test</span><span class="id at-rest mono">ITM-01JE9</span></span><span class="when">2m</span></div>
+      <div class="tr" role="row" aria-label="Running: ITM-01JD9"><span class="chip ok">Running</span><span class="tt"><span class="tx">Judge outbox drain on shutdown</span><span class="id at-rest mono">ITM-01JD9</span></span><span class="when">1m</span></div>
+      <div class="tr" role="row" aria-label="Running: ITM-01JD6"><span class="chip ok">Running</span><span class="tt"><span class="tx">Services page job panel</span><span class="tag meta">sindri-app</span><span class="id at-rest mono">ITM-01JD6</span></span><span class="when">0m</span></div>
     </div>
   </section>
   <section class="band" aria-label="Queued">
     <div class="section">
       <div class="sh"><h2>Queued</h2><span class="meta">4</span></div>
-      <div class="tr" role="row" aria-label="Queued: ITM-01JF0"><span class="chip ">Queued</span><span class="tt"><span class="tx">Stream limits 429 fallback</span><span class="tag meta">agentic-workflow</span><span class="id mono">ITM-01JF0</span></span><span class="when">1h</span></div>
-      <div class="tr" role="row" aria-label="Queued: ITM-01JF3"><span class="chip ">Queued</span><span class="tt"><span class="tx">doctor views line</span><span class="id mono">ITM-01JF3</span></span><span class="when">52m</span></div>
-      <div class="tr" role="row" aria-label="Queued: ITM-01JF4"><span class="chip ">Queued</span><span class="tt"><span class="tx">Tray badge on Linux</span><span class="id mono">ITM-01JF4</span></span><span class="when">40m</span></div>
-      <div class="tr" role="row" aria-label="Queued: ITM-01JF8"><span class="chip ">Queued</span><span class="tt"><span class="tx">Receipt verify route</span><span class="id mono">ITM-01JF8</span></span><span class="when">12m</span></div>
+      <div class="tr" role="row" aria-label="Queued: ITM-01JF0"><span class="chip ">Queued</span><span class="tt"><span class="tx">Stream limits 429 fallback</span><span class="tag meta">agentic-workflow</span><span class="id at-rest mono">ITM-01JF0</span></span><span class="when">1h</span></div>
+      <div class="tr" role="row" aria-label="Queued: ITM-01JF3"><span class="chip ">Queued</span><span class="tt"><span class="tx">doctor views line</span><span class="id at-rest mono">ITM-01JF3</span></span><span class="when">52m</span></div>
+      <div class="tr" role="row" aria-label="Queued: ITM-01JF4"><span class="chip ">Queued</span><span class="tt"><span class="tx">Tray badge on Linux</span><span class="id at-rest mono">ITM-01JF4</span></span><span class="when">40m</span></div>
+      <div class="tr" role="row" aria-label="Queued: ITM-01JF8"><span class="chip ">Queued</span><span class="tt"><span class="tx">Receipt verify route</span><span class="id at-rest mono">ITM-01JF8</span></span><span class="when">12m</span></div>
     </div>
   </section>
   </div>
@@ -513,7 +518,7 @@ body{min-width:1280px}
       <div class="path" aria-label="States in path order">
         <span class="step"><span class="node"><b>intake</b><span class="g g-done">●</span></span></span>
         <span class="step"><span class="link" aria-hidden="true">──</span><span class="node cur" aria-current="step"><span class="g g-cur">▣</span><b>produce</b><span class="g g-prog">◐</span><span class="badge mono">r2/3</span></span></span>
-        <span class="step"><span class="link loop" role="img" aria-label="loops with">⇄</span><span class="node"><b>checks</b><span class="g g-done">●</span><span class="badge mono">r1 failed</span></span></span>
+        <span class="step"><span class="link loop" role="img" aria-label="loops with">⇄</span><span class="node"><b>checks</b><span class="g g-prog">◐</span><span class="badge mono">r1 failed</span></span></span>
         <span class="step"><span class="link" aria-hidden="true">──</span><span class="node todo"><b class="mono" style="font-size:12px">gate.verify.judge</b><span class="g g-todo">○</span><span class="badge mono">≥ 0.80</span></span></span>
         <span class="step"><span class="link" aria-hidden="true">──</span><span class="node todo"><b>review</b><span class="g g-todo">○</span><span class="badge">desk</span></span></span>
         <span class="step"><span class="link" aria-hidden="true">──</span><span class="node todo"><b>done</b><span class="g g-todo">○</span></span></span>
