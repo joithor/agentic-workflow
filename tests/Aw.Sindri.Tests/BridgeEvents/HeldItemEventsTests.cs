@@ -99,7 +99,7 @@ public sealed class HeldItemEventsTests
             Queries.Add(query ?? string.Empty);
             var item = query!.Split('\'')[1]; // why: the bridge's query is "Item = '<item>'"
             IReadOnlyList<InstanceRow> rows = [.. Rows.Where(r => r.Address.Contains(item, StringComparison.Ordinal))];
-            return ValueTask.FromResult(Results.Success<IReadOnlyList<InstanceRow>>(rows));
+            return ValueTask.FromResult(Results.Success(rows));
         }
     }
 }

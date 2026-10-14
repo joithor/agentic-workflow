@@ -19,9 +19,10 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// instance of its item (Temporal buffers it until the instance reaches the wait, so an early event isn't lost), a
 /// 'route: causation' event only to the instance whose command caused it. Any other event, or one from another actor,
 /// signals nothing. The cursor moves past an event once every target has it; an instance that has ended meanwhile is
-/// skipped, and a Temporal or ledger failure ends the run with the cursor before that event, so the next run retries it.
-/// An item event also stays in the held window (<see cref="HeldItemEvents"/>) for 'workflow.eventHold': each run ends by
-/// re-sending it to a live instance of its item that visibility didn't list yet when it was first delivered.
+/// skipped, and a Temporal outage or timeout, or a ledger failure, ends the run with the cursor before that event, so the next run retries it;
+/// an event that can't be delivered for good (its item isn't an item key, Temporal refuses the query) is logged and passed.
+/// An item event also stays in the held window (<see cref="HeldItemEvents"/>) for the visibility lag: each run ends by
+/// re-sending it to an instance that started before it and that visibility didn't list yet when it was first delivered.
 /// </summary>
 /// <param name="ledger">The ledger.</param>
 /// <param name="catalog">The registered events.</param>
@@ -68,18 +69,49 @@ internal sealed partial class EventBridge(
                 return read.IsError ? read.Error : await Redeliver(cancellationToken).ConfigureAwait(false);
             }
 
-            foreach (var recorded in read.Value)
+            var delivered = await DeliverBatch(read.Value, cancellationToken).ConfigureAwait(false);
+            if (delivered is { } failure)
             {
-                var delivered = await Deliver(recorded, cancellationToken).ConfigureAwait(false);
-                var moved = delivered.IsError ? delivered : await cursor.Advance(recorded.Sequence, cancellationToken).ConfigureAwait(false);
-                if (moved.IsError)
-                {
-                    return moved.Error;
-                }
-
-                at = recorded.Sequence;
+                return failure;
             }
+
+            at = read.Value[^1].Sequence;
         }
+    }
+
+    /// <summary>
+    /// Delivers a batch in order and moves the cursor once, past the last event handled. An event whose failure may pass
+    /// (Temporal unavailable, a timeout) stops the batch with the cursor before it; one that can't (an invalid query) is
+    /// logged and passed, so it can't stall every event behind it.
+    /// </summary>
+    private async ValueTask<Error?> DeliverBatch(IReadOnlyList<LedgerEvent> batch, CancellationToken cancellationToken)
+    {
+        long last = 0;
+        Error? failure = null;
+        foreach (var recorded in batch)
+        {
+            var delivered = await Deliver(recorded, cancellationToken).ConfigureAwait(false);
+            if (delivered.IsError && delivered.Error.Kind is ErrorKind.Unavailable or ErrorKind.Timeout)
+            {
+                failure = delivered.Error;
+                break;
+            }
+
+            if (delivered.IsError)
+            {
+                Refused(logger, recorded.Sequence, recorded.Envelope.Type, delivered.Error.Code, delivered.Error.Message);
+            }
+
+            last = recorded.Sequence;
+        }
+
+        if (last > 0)
+        {
+            var moved = await cursor.Advance(last, cancellationToken).ConfigureAwait(false);
+            failure ??= moved.IsError ? moved.Error : null;
+        }
+
+        return failure;
     }
 
     /// <summary>Signals <paramref name="recorded"/> to every instance it routes to; nothing when it isn't a registered event from its producer.</summary>
@@ -116,7 +148,7 @@ internal sealed partial class EventBridge(
             return sent.Error;
         }
 
-        if (descriptor.Route != EventRoute.Causation && recorded.Item is { Length: > 0 } item)
+        if (descriptor.Route != EventRoute.Causation && recorded.Item is { Length: > 0 } item && ItemKey.TryFrom(item, out _))
         {
             items.Hold(item, trigger, targets.Value);
         }
@@ -194,11 +226,20 @@ internal sealed partial class EventBridge(
             return Array.Empty<InstanceAddress>();
         }
 
+        if (!ItemKey.TryFrom(item, out _))
+        {
+            NoRoute(logger, recorded.Sequence, recorded.Envelope.Type, "its item isn't an item key");
+            return Array.Empty<InstanceAddress>();
+        }
+
         return await items.LiveOf(item, cancellationToken).ConfigureAwait(false);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "event {Sequence} ({Type}) was written by {Actor}, not its producer {Producer}; nothing was signalled")]
     private static partial void NotFromProducer(ILogger logger, long sequence, string type, string actor, string producer);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "event {Sequence} ({Type}) can't be delivered and is passed over: {Code} {Why}")]
+    private static partial void Refused(ILogger logger, long sequence, string type, string code, string why);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "event {Sequence} ({Type}) routes to no instance: {Why}")]
     private static partial void NoRoute(ILogger logger, long sequence, string type, string why);
