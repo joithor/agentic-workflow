@@ -17,9 +17,11 @@ namespace Aw.Architecture.Tests;
 public sealed class ProtectedCommandTests
 {
     /// <summary>
-    /// Protected rows that confirm another way, each with its reason. ImportContextMap (context spec S-3a, merged after
-    /// S1-D5) confirms with the previewed hash and a 'confirmed' flag; moving it onto the server challenge is the owner's
-    /// call (PR #191, needs owner). It is still terminal-bound, which the first assertion checks.
+    /// Protected rows that still confirm another way, each with its reason; a list that only shrinks (a stale entry fails).
+    /// ImportContextMap (context spec S-3a, merged before this challenge reached main) confirms with the previewed hash and
+    /// a 'confirmed' flag; the context spec has it adopt the engine's challenge once that ships, which this PR does, so the
+    /// move is the context lane's scheduled follow-up (needs owner for the timing, PR #191). It is still terminal-bound,
+    /// which the first assertion checks.
     /// </summary>
     private static readonly Dictionary<string, string> _confirmsOtherwise = new(StringComparer.Ordinal)
     {
@@ -38,11 +40,18 @@ public sealed class ProtectedCommandTests
             .Order(StringComparer.Ordinal)
             .ToList();
 
+        var stale = _confirmsOtherwise.Keys
+            .Where(a => !rows.Exists(r => r.Action.Value == a && r.CommandType is { } type && !Redeems(type)))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        var exempted = string.Join("; ", _confirmsOtherwise.Select(e => $"{e.Key}: {e.Value}"));
+
         Assert.True(unbound.Count == 0, string.Join(Environment.NewLine, unbound) + ". Fix: set NeedsTerminal on every protected row (engine spec §6.2)");
+        Assert.True(stale.Count == 0, $"stale exemptions: [{string.Join(", ", stale)}]. Fix: remove them from _confirmsOtherwise (exempted: {exempted})");
         Assert.True(
             unchallenged.Count == 0,
             $"protected requests without a {nameof(ChallengeAnswer)}: [{string.Join(", ", unchallenged)}]. "
-            + $"Fix: give the request a {nameof(ChallengeAnswer)} it redeems (engine spec §4.2)");
+            + $"Fix: give the request a {nameof(ChallengeAnswer)} it redeems (engine spec §4.2). Exempted: {exempted}");
     }
 
     [Fact]

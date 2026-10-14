@@ -91,6 +91,11 @@ internal static class ApiScenarios
     {
         var action = "approve profile " + hash[..6];
         var issued = await host.Http.Ask(Post("/sindri/workflow/challenges", $"{{\"action\":\"{action}\"}}", Human(host.Token.Value)));
+        if (issued.Status != System.Net.HttpStatusCode.OK)
+        {
+            throw new InvalidOperationException($"issuing '{action}' failed: {issued.Status} {issued.Body}");
+        }
+
         var challenge = System.Text.Json.JsonDocument.Parse(issued.Body).RootElement.GetProperty("challenge").GetString();
         return $"{{\"hash\":\"{hash}\",\"answer\":{{\"challenge\":\"{challenge}\",\"typed\":\"{action}\"}}}}";
     }

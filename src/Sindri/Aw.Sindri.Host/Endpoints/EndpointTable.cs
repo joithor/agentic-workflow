@@ -20,8 +20,8 @@ internal static class EndpointTable
         _ = queries.MapListCommands();
         _ = queries.MapListRecipes();
         _ = queries.MapPingProcess();
-        _ = queries.MapShowRecipe();
         _ = queries.MapQueryContext();
+        _ = queries.MapShowRecipe();
         _ = queries.MapStreamEvents();
 
         // ---- commands: one line per slice, sorted ----
