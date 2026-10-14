@@ -27,7 +27,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// writes 'outbox.refused' and hands the instance an 'OutboxRefused' trigger. Kernel's 'outbox_commands' is not used.
 /// <para>
 /// 'RunEffect' keys what it writes by the effect identity, not by its activity: the dispatched row
-/// 'effect:{identity}:dispatched' and the reply 'effect:{identity}:reply', each with an envelope id derived from its key.
+/// 'workflow:{address}:effect:{identity}:dispatched' and the reply '…:reply' (under the instance's address, so 'workflow events' lists them), each with an envelope id derived from its key.
 /// An activity retry or a re-emission (a new command id, the same identity) therefore writes nothing twice, and its reply
 /// still names the first dispatched row as its causation.
 /// </para>
@@ -118,7 +118,7 @@ internal sealed class EffectActivities(
 
         var row = new EffectRow(identity, run.CommandId, run.Command.Effect, run.Command.Origin, EffectState.Dispatched, InstanceAddress.From(run.WorkflowId),
             Reason: done.Value.Existed ? "already sent" : null);
-        var dispatched = Keyed(events.Entry(OutboxEvents.Dispatched, row, $"effect:{identity}:dispatched", run.Item));
+        var dispatched = Keyed(events.Entry(OutboxEvents.Dispatched, row, $"workflow:{run.WorkflowId}:effect:{identity}:dispatched", run.Item));
         var at = await Append(dispatched, cancel).ConfigureAwait(false);
         if (done.Value.Reply is { } outcome)
         {
@@ -141,7 +141,7 @@ internal sealed class EffectActivities(
                 $"{run.Command.Effect.Value} replied '{outcome.Value}', which {replies.Count} registered reply events declare (one must)", nonRetryable: true);
         }
 
-        var entry = Keyed(events.Entry(reply.Kind.Value, new EffectReply(outcome.Value, run.Command.Identity.Text), $"effect:{run.Command.Identity.Text}:reply", run.Item));
+        var entry = Keyed(events.Entry(reply.Kind.Value, new EffectReply(outcome.Value, run.Command.Identity.Text), $"workflow:{run.WorkflowId}:effect:{run.Command.Identity.Text}:reply", run.Item));
         return entry with { Envelope = entry.Envelope with { Actor = reply.Producer, CausationId = causation } };
     }
 

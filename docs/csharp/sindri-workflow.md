@@ -697,7 +697,7 @@ Unit (a), as built:
   notices skip the delay and the recheck. The instance returns only once every effect it emitted has settled.
 - **One run per identity:** an identity already dispatched, or still on its way, is skipped, so a `retry` re-emission
   (`RecipeWorkflow.Reemit`, over `EffectRules.Reemitted`) writes nothing twice. `RunEffect` keys its rows by identity
-  (`effect:{identity}:dispatched`, `effect:{identity}:reply`, envelope ids derived from the keys), so an activity retry
+  (`workflow:{address}:effect:{identity}:dispatched`, `…:reply`, under the instance's address so `workflow events` lists them; envelope ids derived from the keys), so an activity retry
   writes nothing twice either.
 - **The reply** is the one causation-routed event that declares the block's outcome, appended as its producer
   (`system:dispatcher`) with the dispatched row as its causation; payload `EffectReply` (`outcome`, `effect`).
