@@ -23,6 +23,7 @@ internal static class Usage
         "       sindri recipe list [--stale] [--json]    one line per registered recipe; --stale: approved ones that drifted or pin a stale child",
         "       sindri workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--temporal <host:port>] [--no-wait]   report an open desk run (exit 0 ok, 1 Temporal not running, 2 error)",
         "       sindri workflow list [--query <q>] [--temporal <host:port>]   the open instances, one a line",
+        "       sindri outbox list [--pending | --dispatched] [--json]   one line per effect, from the ledger's effect rows",
     ];
 
     internal static readonly string Text = string.Join('\n', [.. _verbs, "exit codes: 0 ok, 1 attention needed, 2 error"]);

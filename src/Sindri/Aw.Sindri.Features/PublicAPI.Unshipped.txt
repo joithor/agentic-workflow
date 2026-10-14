@@ -1066,3 +1066,55 @@ Aw.Sindri.Features.StartInstance.StartFact.StartFact(string! Name, System.ReadOn
 Aw.Sindri.Features.StartInstance.StartInstanceRequest.StartInstanceRequest(string! Recipe, string! Item, bool NextAttempt, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Features.StartInstance.StartFact!>! Facts, string! Actor) -> void
 Aw.Sindri.Features.IssueNonce.IssueNonceResponse.IssueNonceResponse(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, Aw.Sindri.Core.Workflow.Engine.CommandNonce Nonce) -> void
 Aw.Sindri.Features.IssueNonce.IssueNonceRequest.IssueNonceRequest(string! Instance) -> void
+Aw.Sindri.Features.ListOutbox.ListOutboxRequest
+Aw.Sindri.Features.ListOutbox.ListOutboxRequest.<Clone>$() -> Aw.Sindri.Features.ListOutbox.ListOutboxRequest!
+Aw.Sindri.Features.ListOutbox.ListOutboxRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Effects.EffectState? State) -> void
+Aw.Sindri.Features.ListOutbox.ListOutboxRequest.Equals(Aw.Sindri.Features.ListOutbox.ListOutboxRequest? other) -> bool
+Aw.Sindri.Features.ListOutbox.ListOutboxRequest.ListOutboxRequest(Aw.Sindri.Core.Workflow.Engine.Effects.EffectState? State = null) -> void
+Aw.Sindri.Features.ListOutbox.ListOutboxRequest.State.get -> Aw.Sindri.Core.Workflow.Engine.Effects.EffectState?
+Aw.Sindri.Features.ListOutbox.ListOutboxRequest.State.init -> void
+Aw.Sindri.Features.ListOutbox.ListOutboxResponse
+Aw.Sindri.Features.ListOutbox.ListOutboxResponse.<Clone>$() -> Aw.Sindri.Features.ListOutbox.ListOutboxResponse!
+Aw.Sindri.Features.ListOutbox.ListOutboxResponse.Commands.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListOutbox.OutboxCommandView!>!
+Aw.Sindri.Features.ListOutbox.ListOutboxResponse.Commands.init -> void
+Aw.Sindri.Features.ListOutbox.ListOutboxResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListOutbox.OutboxCommandView!>! Commands) -> void
+Aw.Sindri.Features.ListOutbox.ListOutboxResponse.Equals(Aw.Sindri.Features.ListOutbox.ListOutboxResponse? other) -> bool
+Aw.Sindri.Features.ListOutbox.ListOutboxResponse.ListOutboxResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListOutbox.OutboxCommandView!>! Commands) -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.<Clone>$() -> Aw.Sindri.Features.ListOutbox.OutboxCommandView!
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.At.get -> System.DateTimeOffset
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.At.init -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Code.get -> string?
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Code.init -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Command.get -> string!
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Command.init -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Deconstruct(out long Sequence, out System.DateTimeOffset At, out string! Identity, out string! Command, out Aw.Sindri.Core.Workflow.Ids.BlockId Kind, out Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, out Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out string? Code) -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Equals(Aw.Sindri.Features.ListOutbox.OutboxCommandView? other) -> bool
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Identity.get -> string!
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Identity.init -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Instance.init -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Kind.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Kind.init -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Origin.get -> Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Origin.init -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.OutboxCommandView(long Sequence, System.DateTimeOffset At, string! Identity, string! Command, Aw.Sindri.Core.Workflow.Ids.BlockId Kind, Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, string? Code) -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Sequence.get -> long
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.Sequence.init -> void
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.State.get -> Aw.Sindri.Core.Workflow.Engine.Effects.EffectState
+Aw.Sindri.Features.ListOutbox.OutboxCommandView.State.init -> void
+override Aw.Sindri.Features.ListOutbox.ListOutboxRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListOutbox.ListOutboxRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ListOutbox.ListOutboxRequest.ToString() -> string!
+override Aw.Sindri.Features.ListOutbox.ListOutboxResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListOutbox.ListOutboxResponse.GetHashCode() -> int
+override Aw.Sindri.Features.ListOutbox.ListOutboxResponse.ToString() -> string!
+override Aw.Sindri.Features.ListOutbox.OutboxCommandView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListOutbox.OutboxCommandView.GetHashCode() -> int
+override Aw.Sindri.Features.ListOutbox.OutboxCommandView.ToString() -> string!
+static Aw.Sindri.Features.ListOutbox.ListOutboxRequest.operator !=(Aw.Sindri.Features.ListOutbox.ListOutboxRequest? left, Aw.Sindri.Features.ListOutbox.ListOutboxRequest? right) -> bool
+static Aw.Sindri.Features.ListOutbox.ListOutboxRequest.operator ==(Aw.Sindri.Features.ListOutbox.ListOutboxRequest? left, Aw.Sindri.Features.ListOutbox.ListOutboxRequest? right) -> bool
+static Aw.Sindri.Features.ListOutbox.ListOutboxResponse.operator !=(Aw.Sindri.Features.ListOutbox.ListOutboxResponse? left, Aw.Sindri.Features.ListOutbox.ListOutboxResponse? right) -> bool
+static Aw.Sindri.Features.ListOutbox.ListOutboxResponse.operator ==(Aw.Sindri.Features.ListOutbox.ListOutboxResponse? left, Aw.Sindri.Features.ListOutbox.ListOutboxResponse? right) -> bool
+static Aw.Sindri.Features.ListOutbox.OutboxCommandView.operator !=(Aw.Sindri.Features.ListOutbox.OutboxCommandView? left, Aw.Sindri.Features.ListOutbox.OutboxCommandView? right) -> bool
+static Aw.Sindri.Features.ListOutbox.OutboxCommandView.operator ==(Aw.Sindri.Features.ListOutbox.OutboxCommandView? left, Aw.Sindri.Features.ListOutbox.OutboxCommandView? right) -> bool

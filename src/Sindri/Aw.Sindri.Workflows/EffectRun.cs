@@ -1,0 +1,12 @@
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
+
+namespace Aw.Sindri.Infrastructure.Workflows;
+
+/// <summary>What the 'RunEffect' activity runs (engine spec §5.7; engine P6 unit (a)).</summary>
+/// <param name="WorkflowId">The workflow id: the instance address.</param>
+/// <param name="Item">The work item.</param>
+/// <param name="Attempt">The instance's attempt.</param>
+/// <param name="Command">The effect, its stable identity, origin and arguments.</param>
+/// <param name="CommandId">This emission's command id (new on each re-emission; the identity stays).</param>
+/// <param name="Text">An engine notice's rendered text; null for a recipe effect.</param>
+internal sealed record EffectRun(string WorkflowId, string Item, int Attempt, EffectCommand Command, string CommandId, string? Text);

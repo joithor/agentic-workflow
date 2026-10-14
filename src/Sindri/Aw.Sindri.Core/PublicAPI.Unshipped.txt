@@ -967,20 +967,11 @@ Aw.Sindri.Core.Workflow.Blocks.EffectContext
 Aw.Sindri.Core.Workflow.Blocks.EffectContext.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.EffectContext!
 Aw.Sindri.Core.Workflow.Blocks.EffectContext.Arguments.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>!
 Aw.Sindri.Core.Workflow.Blocks.EffectContext.Arguments.init -> void
-Aw.Sindri.Core.Workflow.Blocks.EffectContext.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Effect, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts) -> void
 Aw.Sindri.Core.Workflow.Blocks.EffectContext.Effect.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Core.Workflow.Blocks.EffectContext.Effect.init -> void
-Aw.Sindri.Core.Workflow.Blocks.EffectContext.EffectContext(Aw.Sindri.Core.Workflow.Ids.BlockId Effect, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts) -> void
 Aw.Sindri.Core.Workflow.Blocks.EffectContext.Equals(Aw.Sindri.Core.Workflow.Blocks.EffectContext? other) -> bool
 Aw.Sindri.Core.Workflow.Blocks.EffectContext.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>!
 Aw.Sindri.Core.Workflow.Blocks.EffectContext.Facts.init -> void
-Aw.Sindri.Core.Workflow.Blocks.EffectPayload
-Aw.Sindri.Core.Workflow.Blocks.EffectPayload.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.EffectPayload!
-Aw.Sindri.Core.Workflow.Blocks.EffectPayload.Body.get -> System.Text.Json.JsonElement
-Aw.Sindri.Core.Workflow.Blocks.EffectPayload.Body.init -> void
-Aw.Sindri.Core.Workflow.Blocks.EffectPayload.Deconstruct(out System.Text.Json.JsonElement Body) -> void
-Aw.Sindri.Core.Workflow.Blocks.EffectPayload.EffectPayload(System.Text.Json.JsonElement Body) -> void
-Aw.Sindri.Core.Workflow.Blocks.EffectPayload.Equals(Aw.Sindri.Core.Workflow.Blocks.EffectPayload? other) -> bool
 Aw.Sindri.Core.Workflow.Blocks.EventDescriptor
 Aw.Sindri.Core.Workflow.Blocks.EventDescriptor.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.EventDescriptor!
 Aw.Sindri.Core.Workflow.Blocks.EventDescriptor.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.EventKind Kind, out string! Producer, out Aw.Sindri.Core.Workflow.Blocks.EventRoute Route, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Facts) -> void
@@ -1054,7 +1045,6 @@ Aw.Sindri.Core.Workflow.Blocks.GateVerdict.Uncertain = 3 -> Aw.Sindri.Core.Workf
 Aw.Sindri.Core.Workflow.Blocks.IDescribedBlock
 Aw.Sindri.Core.Workflow.Blocks.IDescribedBlock.Descriptor.get -> Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor!
 Aw.Sindri.Core.Workflow.Blocks.IEffectKind
-Aw.Sindri.Core.Workflow.Blocks.IEffectKind.Build(Aw.Sindri.Core.Workflow.Blocks.EffectContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Workflow.Blocks.EffectPayload!>
 Aw.Sindri.Core.Workflow.Blocks.IEvidenceProvider
 Aw.Sindri.Core.Workflow.Blocks.IEvidenceProvider.Collect(Aw.Sindri.Core.Workflow.Blocks.EvidenceContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Workflow.Blocks.EvidenceResult!>
 Aw.Sindri.Core.Workflow.Blocks.IGate
@@ -1257,8 +1247,6 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.With.get -> System.Collec
 Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand.With.init -> void
 Aw.Sindri.Core.Workflow.Engine.EffectIdentity
 Aw.Sindri.Core.Workflow.Engine.EffectIdentity.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.EffectIdentity!
-Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out int Entry, out int Index) -> void
-Aw.Sindri.Core.Workflow.Engine.EffectIdentity.EffectIdentity(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, int Entry, int Index) -> void
 Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Entry.get -> int
 Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Entry.init -> void
 Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Equals(Aw.Sindri.Core.Workflow.Engine.EffectIdentity? other) -> bool
@@ -2604,9 +2592,6 @@ override Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Blocks.EffectContext.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Blocks.EffectContext.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Blocks.EffectContext.ToString() -> string!
-override Aw.Sindri.Core.Workflow.Blocks.EffectPayload.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Workflow.Blocks.EffectPayload.GetHashCode() -> int
-override Aw.Sindri.Core.Workflow.Blocks.EffectPayload.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Blocks.EventDescriptor.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Blocks.EventDescriptor.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Blocks.EventDescriptor.ToString() -> string!
@@ -3059,8 +3044,6 @@ static Aw.Sindri.Core.Workflow.Blocks.BlockServiceCollectionExtensions.AddStep<T
 static Aw.Sindri.Core.Workflow.Blocks.BlockServiceCollectionExtensions.AddStepInput<T>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Sindri.Core.Workflow.Blocks.EffectContext.operator !=(Aw.Sindri.Core.Workflow.Blocks.EffectContext? left, Aw.Sindri.Core.Workflow.Blocks.EffectContext? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.EffectContext.operator ==(Aw.Sindri.Core.Workflow.Blocks.EffectContext? left, Aw.Sindri.Core.Workflow.Blocks.EffectContext? right) -> bool
-static Aw.Sindri.Core.Workflow.Blocks.EffectPayload.operator !=(Aw.Sindri.Core.Workflow.Blocks.EffectPayload? left, Aw.Sindri.Core.Workflow.Blocks.EffectPayload? right) -> bool
-static Aw.Sindri.Core.Workflow.Blocks.EffectPayload.operator ==(Aw.Sindri.Core.Workflow.Blocks.EffectPayload? left, Aw.Sindri.Core.Workflow.Blocks.EffectPayload? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.EventDescriptor.operator !=(Aw.Sindri.Core.Workflow.Blocks.EventDescriptor? left, Aw.Sindri.Core.Workflow.Blocks.EventDescriptor? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.EventDescriptor.operator ==(Aw.Sindri.Core.Workflow.Blocks.EventDescriptor? left, Aw.Sindri.Core.Workflow.Blocks.EventDescriptor? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.EvidenceContext.operator !=(Aw.Sindri.Core.Workflow.Blocks.EvidenceContext? left, Aw.Sindri.Core.Workflow.Blocks.EvidenceContext? right) -> bool
@@ -4659,13 +4642,11 @@ Aw.Sindri.Core.Profile.SindriProfile.Workflow.get -> Aw.Sindri.Core.Profile.Work
 Aw.Sindri.Core.Profile.SindriProfile.Workflow.init -> void
 Aw.Sindri.Core.Profile.WorkflowSettings
 Aw.Sindri.Core.Profile.WorkflowSettings.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowSettings!
-Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.DeskTimeout.get -> string?
 Aw.Sindri.Core.Profile.WorkflowSettings.DeskTimeout.init -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.Equals(Aw.Sindri.Core.Profile.WorkflowSettings? other) -> bool
 Aw.Sindri.Core.Profile.WorkflowSettings.EventHold.get -> string?
 Aw.Sindri.Core.Profile.WorkflowSettings.EventHold.init -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null) -> void
 Aw.Sindri.Core.Profile.WorkflowTimes
 Aw.Sindri.Core.Profile.WorkflowTimes.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowTimes!
 Aw.Sindri.Core.Profile.WorkflowTimes.Deconstruct(out System.TimeSpan DeskTimeout, out System.TimeSpan EventHold) -> void
@@ -4782,3 +4763,146 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.IInstanceDirectory.Resolve(string! refere
 Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.AttemptState(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, int Attempt, bool Live) -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSatisfied.OccurredAt.get -> System.DateTimeOffset?
 Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSatisfied.OccurredAt.init -> void
+Aw.Sindri.Core.Profile.EffectSettings
+Aw.Sindri.Core.Profile.EffectSettings.<Clone>$() -> Aw.Sindri.Core.Profile.EffectSettings!
+Aw.Sindri.Core.Profile.EffectSettings.Allowlist.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>?
+Aw.Sindri.Core.Profile.EffectSettings.Allowlist.init -> void
+Aw.Sindri.Core.Profile.EffectSettings.Deconstruct(out System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>? Allowlist, out System.TimeSpan DispatchDelay) -> void
+Aw.Sindri.Core.Profile.EffectSettings.DispatchDelay.get -> System.TimeSpan
+Aw.Sindri.Core.Profile.EffectSettings.DispatchDelay.init -> void
+Aw.Sindri.Core.Profile.EffectSettings.EffectSettings(System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>? Allowlist, System.TimeSpan DispatchDelay) -> void
+Aw.Sindri.Core.Profile.EffectSettings.Equals(Aw.Sindri.Core.Profile.EffectSettings? other) -> bool
+Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.DispatchDelay.get -> string?
+Aw.Sindri.Core.Profile.WorkflowSettings.DispatchDelay.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Effects.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Profile.WorkflowSettings.Effects.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null) -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Attempt.get -> int
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Attempt.init -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Command.get -> string!
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Command.init -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Effect, out string! Identity, out string! Command, out bool FromEngine, out string! Instance, out string! Item, out int Attempt, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts, out string? Text) -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.EffectContext(Aw.Sindri.Core.Workflow.Ids.BlockId Effect, string! Identity, string! Command, bool FromEngine, string! Instance, string! Item, int Attempt, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts, string? Text) -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.FromEngine.get -> bool
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.FromEngine.init -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Identity.get -> string!
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Identity.init -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Instance.get -> string!
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Instance.init -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Item.get -> string!
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Item.init -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Text.get -> string?
+Aw.Sindri.Core.Workflow.Blocks.EffectContext.Text.init -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectDone
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.EffectDone!
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Reply, out bool Existed) -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.EffectDone(Aw.Sindri.Core.Workflow.Ids.OutcomeName? Reply, bool Existed) -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.Equals(Aw.Sindri.Core.Workflow.Blocks.EffectDone? other) -> bool
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.Existed.get -> bool
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.Existed.init -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.Reply.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName?
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.Reply.init -> void
+Aw.Sindri.Core.Workflow.Blocks.IEffectKind.Dispatch(Aw.Sindri.Core.Workflow.Blocks.EffectContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Blocks.EffectDone!>!>
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out int Entry, out int Index, out int? Notice) -> void
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.EffectIdentity(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, int Entry, int Index, int? Notice = null) -> void
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Notice.get -> int?
+Aw.Sindri.Core.Workflow.Engine.EffectIdentity.Notice.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice!
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.At.get -> System.DateTimeOffset
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.At.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Class.get -> Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Class.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Deconstruct(out string! Identity, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out Aw.Sindri.Core.Workflow.Engine.ItemKey Item, out Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class, out string! Text, out System.DateTimeOffset At) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.DeskNotice(string! Identity, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, Aw.Sindri.Core.Workflow.Engine.ItemKey Item, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class, string! Text, System.DateTimeOffset At) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Equals(Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Identity.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Identity.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Instance.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Item.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Item.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Text.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Text.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow!
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Code.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Code.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Command.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Command.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Deconstruct(out string! Identity, out string! Command, out Aw.Sindri.Core.Workflow.Ids.BlockId Kind, out Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, out Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out string? Code, out string? Reason) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.EffectRow(string! Identity, string! Command, Aw.Sindri.Core.Workflow.Ids.BlockId Kind, Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin Origin, Aw.Sindri.Core.Workflow.Engine.Effects.EffectState State, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, string? Code = null, string? Reason = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Equals(Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Identity.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Identity.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Instance.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Kind.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Kind.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Origin.get -> Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Origin.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Reason.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Reason.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.State.get -> Aw.Sindri.Core.Workflow.Engine.Effects.EffectState
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.State.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectRules
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectState
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectState.Dispatched = 2 -> Aw.Sindri.Core.Workflow.Engine.Effects.EffectState
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectState.Pending = 1 -> Aw.Sindri.Core.Workflow.Engine.Effects.EffectState
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectState.Refused = 3 -> Aw.Sindri.Core.Workflow.Engine.Effects.EffectState
+Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices
+Aw.Sindri.Core.Workflow.Engine.Effects.IDeskNotices
+Aw.Sindri.Core.Workflow.Engine.Effects.IDeskNotices.Send(Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice! notice, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Sindri.Core.Workflow.Engine.Effects.IWorkflowClaims
+Aw.Sindri.Core.Workflow.Engine.Effects.IWorkflowClaims.Take(Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim! claim, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim!>!>
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass.Info = 2 -> Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass.Interrupt = 1 -> Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass
+Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents
+Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim
+Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim!
+Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.Attempt.get -> int
+Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.Attempt.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.ItemKey Item, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Owner, out int Attempt) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.Equals(Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.Item.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey
+Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.Item.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.Owner.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.Owner.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.WorkflowClaim(Aw.Sindri.Core.Workflow.Engine.ItemKey Item, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Owner, int Attempt) -> void
+const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Dispatched = "outbox.dispatched" -> string!
+const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Pending = "outbox.pending" -> string!
+const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Refused = "outbox.refused" -> string!
+override Aw.Sindri.Core.Profile.EffectSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.EffectSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.EffectSettings.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Blocks.EffectDone.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Blocks.EffectDone.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Blocks.EffectDone.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.ToString() -> string!
+static Aw.Sindri.Core.Profile.EffectSettings.DefaultDispatchDelay.get -> System.TimeSpan
+static Aw.Sindri.Core.Profile.EffectSettings.Of(Aw.Sindri.Core.Profile.SindriProfile! profile) -> Aw.Sindri.Core.Profile.EffectSettings!
+static Aw.Sindri.Core.Profile.EffectSettings.operator !=(Aw.Sindri.Core.Profile.EffectSettings? left, Aw.Sindri.Core.Profile.EffectSettings? right) -> bool
+static Aw.Sindri.Core.Profile.EffectSettings.operator ==(Aw.Sindri.Core.Profile.EffectSettings? left, Aw.Sindri.Core.Profile.EffectSettings? right) -> bool
+static Aw.Sindri.Core.Workflow.Blocks.EffectDone.operator !=(Aw.Sindri.Core.Workflow.Blocks.EffectDone? left, Aw.Sindri.Core.Workflow.Blocks.EffectDone? right) -> bool
+static Aw.Sindri.Core.Workflow.Blocks.EffectDone.operator ==(Aw.Sindri.Core.Workflow.Blocks.EffectDone? left, Aw.Sindri.Core.Workflow.Blocks.EffectDone? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.EffectIdentity.ForNotice(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId instance, int entry, int version) -> Aw.Sindri.Core.Workflow.Engine.EffectIdentity!
+static Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.operator !=(Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice? left, Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.operator ==(Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice? left, Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.operator !=(Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? left, Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.operator ==(Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? left, Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Effects.EffectRules.Recheck(Aw.Sindri.Core.Workflow.Engine.Decisions.CommandOrigin origin, Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck approval, Aw.Sindri.Core.Profile.EffectSettings! effects, Aw.Sindri.Core.Workflow.Ids.BlockId kind) -> string?
+static Aw.Sindri.Core.Workflow.Engine.Effects.EffectRules.Reemitted(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand!>!
+static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.For(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, int version, bool deskTaskNotified) -> System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>!
+static Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Of(Aw.Sindri.Core.Workflow.Engine.Effects.EffectState state) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.operator !=(Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim? left, Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.operator ==(Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim? left, Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim? right) -> bool

@@ -29,7 +29,10 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<RunStepActivities>()
             .AddSingleton<RecordEventActivities>()
             .AddSingleton<ItemFactActivities>()
-            .AddSingleton(provider => SindriWorker.Options(provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(), provider.GetRequiredService<ItemFactActivities>()))
+            .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
+            .AddSingleton(provider => SindriWorker.Options(
+                provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(),
+                provider.GetRequiredService<ItemFactActivities>(), provider.GetRequiredService<EffectActivities>()))
             .AddSingleton<TemporalFrontend>()
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items
             .AddSingleton<IInstanceRuntime, TemporalInstanceRuntime>()

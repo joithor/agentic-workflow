@@ -620,3 +620,32 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   that ends a suspension clears the desk deadline, so `--resume` on a timeout park re-arms it from the answer.
 - **`IssueNonce`** returns a nonce for an existing instance (class issue). Until API P1's nonce table and route land,
   the nonces are unit (c)'s `HomeCommandNonces`, and the CLI calls the slices in process.
+
+## Effects as activities (engine P6)
+
+Engine spec rev 8.1 §5.7. A transition's effects run after the transition's ledger event, each on its own path in
+`RecipeWorkflow.Effects.cs`: `RecordEffect` writes its `outbox.pending` row (a local activity keyed like `RecordEvent`),
+`Workflow.DelayAsync(workflow.dispatchDelay)` waits out the undo window (cancelled with the instance), `RecheckEffect`
+(a local activity) checks the recipe's approval and the approved profile's `workflow.effects`, and then `RunEffect`
+(a regular activity) calls the block's `IEffectKind.Dispatch`, writes `outbox.dispatched` and appends the reply event
+(`notify.delivered`, `claim.created`) with that row as its causation, so the bridge routes it to this instance only.
+A refusal writes `outbox.refused` and hands the instance an `OutboxRefused` trigger: it parks with `spec-conflict` of
+the code's kind, or is absorbed when the same revoke already parked it.
+
+- **Effect rows are ledger events**, payload `EffectRow` (identity, command id, kind, origin `recipe` or `engine`, state
+  `pending`, `dispatched` or `refused`, instance, code, reason). `outbox list` folds them by command. Kernel's
+  `outbox_commands` and `IOutbox` are not used by the engine.
+- **Identity** is `{instance id}:{entry}:{index}`; an engine notice's is `{instance id}:{entry}:n{version}`
+  (`EffectIdentity.ForNotice`); `effect.claim.ref` keys by item through `workflow_claims`. A re-emission (a `retry`, a
+  resumed dispatch park) gets a new command id under the same identity, and the block's existence check makes it harmless.
+- **Profile keys (S1-D11):** `workflow.effects` (the allowlist) and `workflow.dispatchDelay` (default 10 s; the dev
+  profile sets `[effect.notify.desk]` and `60s`), read through `EffectSettings`.
+
+| Unit | Owns |
+|---|---|
+| (a) | `EffectActivities.RecordAsync`, `RunAsync`; `RecipeWorkflow.Dispatch` and its call from `Apply`; the dispatch delay from `LoadedRecipe.DispatchDelay`; `EffectRules.Reemitted` (the `retry` re-emission, which P5's retry arm calls); the effect ids in the transition's payload |
+| (b) | `EffectRules.Recheck`; `EffectActivities.RecheckAsync`; `TransitionDecision.OutboxRefusal` (the `outbox.refused` park or absorb) and `Reemit` (`--resume` on a dispatch park) |
+| (c) | `NotifyDeskEffect`, `IDeskNotices` and its adapter (`notifications.jsonl`, macOS notifications); `EngineNotices.For` and the engine-origin notices; `ListOutbox`, `GET /outbox?state=`, `OutboxCommandTable` lines |
+| (d) | `ClaimRefEffect`, `IWorkflowClaims` and the `workflow_claims` migration (ledger.db, version 5 or the next free); `EffectSettings.Of`, the two keys in `ProfileRules` and `ProfileDiff`, RCP-EFFECT-001 against the allowlist, `workflow.dispatchDelay` in `LoadRecipe` |
+
+The contract's red test is `PhaseSixSignalTests` (Phase 6 signal 1 on the time-skipping server).

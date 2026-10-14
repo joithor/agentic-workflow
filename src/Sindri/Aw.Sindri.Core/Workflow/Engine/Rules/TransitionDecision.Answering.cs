@@ -113,7 +113,7 @@ public static partial class TransitionDecision
             ResumeKind.Restart => Restart(d, instance),
             ResumeKind.None => new Rejected(d.Key, WorkflowErrors.TriggerNotAllowed.With(
                 $"nothing resumes {instance.Address.Value} (fix: cancel it with sindri workflow cancel {instance.Address.Value})")),
-            ResumeKind.Reemit => throw new NotSupportedException("A reemit resume is decided by the outbox rules (P6)."),
+            ResumeKind.Reemit => Reemit(d, instance, resume),
             ResumeKind.Transition or ResumeKind.Reevaluate or ResumeKind.Override or ResumeKind.Refuse or ResumeKind.Rearm
                 or ResumeKind.Rewait or ResumeKind.Restart or ResumeKind.Return or ResumeKind.Forward or _ => d.Changed(instance),
         };
@@ -195,5 +195,15 @@ public static partial class TransitionDecision
             Input = Input with { Trigger = withheld },
             Answered = Answered ?? Input.Trigger as AnswerGiven,
         };
+    }
+
+    /// <summary>
+    /// '--resume' on a spec-conflict dispatch park (§3.8; engine P6 unit (b)): ends the park and re-emits the refused
+    /// effect (<see cref="ResumeAction.Effect"/>) as a new command with the same effect identity.
+    /// </summary>
+    private static Decision Reemit(Deciding d, WorkflowInstance instance, ResumeAction resume)
+    {
+        _ = (d, instance, resume);
+        throw new NotSupportedException("engine P6 unit (b): the reemit resume of a spec-conflict dispatch park");
     }
 }

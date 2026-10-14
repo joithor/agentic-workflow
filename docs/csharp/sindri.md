@@ -79,9 +79,11 @@ repos:                    # optional
 services:                 # optional: background services by name, each with a cadence
   heartbeat: { every: 30s }   # <n>s|m|h, 5s to 24h
 api: { port: 7410 }       # optional, default 7410; 0 (a free port) or 1024..65535; AW_SINDRI_PORT overrides it
-workflow:                 # optional (engine S1-D11); each a duration <n>m|h|d
+workflow:                 # optional (engine S1-D11); the times are durations <n>m|h|d
   deskTimeout: 2d         # default 2d: the floor of every desk Step's timeout
   eventHold: 24h          # default 24h: how long a buffered event waits for its wait
+  effects: [effect.notify.desk]   # engine P6: the effect allowlist; absent, RCP-EFFECT-001 is skipped and every recipe effect is refused (SND-WF-011)
+  dispatchDelay: 10s      # engine P6: default 10s, the undo window before each effect runs (<n>s allowed; checked by P6 unit (d))
 ```
 
 A profile without a `workflow:` block serializes without it, so its hash (and any approval of it) is unchanged.

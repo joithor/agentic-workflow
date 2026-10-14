@@ -18,6 +18,7 @@ using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.IssueNonce;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListInstances;
+using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.PingProcess;
@@ -96,6 +97,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<GetInstanceEventsRequest>, AcceptAllValidator<GetInstanceEventsRequest>>().AddQuery<GetInstanceEventsRequest, GetInstanceEventsResponse, GetInstanceEventsService>();
         _ = services.AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>();
         _ = services.AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, ShowRecipeResponse, ShowRecipeService>();
+        _ = services.AddScoped<IValidator<ListOutboxRequest>, AcceptAllValidator<ListOutboxRequest>>().AddQuery<ListOutboxRequest, ListOutboxResponse, ListOutboxService>();   // engine P6 unit (c)
         return services;
     }
 }
