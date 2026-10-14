@@ -1,6 +1,6 @@
 namespace Aw.Context.Infrastructure.Docs;
 
-/// <summary>The repo-docs SQL (context.db, migrations 0001_s1a_repo_docs and 0002_s2w_scrub_ruleset). Engine-specific parts (FTS5, bm25, json_each, upserts) stay here.</summary>
+/// <summary>The repo-docs SQL (context.db, migrations 0001_s1a_repo_docs and 0003_s2w_scrub_ruleset). Engine-specific parts (FTS5, bm25, json_each, upserts) stay here.</summary>
 internal static class DocSql
 {
     internal const string Source = "repo-docs";

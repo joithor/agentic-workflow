@@ -105,7 +105,7 @@ and the status reads "never refreshed".
 | `SND-CONTEXT-002` | Invalid (400) | 2 | A configured source isn't set up, or its secret pointer doesn't resolve (later stages) |
 | `SND-CONTEXT-003` | NotFound (404) | 1 | Unknown anchor, or a record outside a session's repo scope (the same answer) |
 | `SND-CONTEXT-004` | Unavailable (503) | 2 | The store can't be opened or migrated (the message keeps the AW-DATA code) |
-| `SND-CONTEXT-005` | Invalid (400) | 1 | An output path inside a git worktree (later stages) |
+| `SND-CONTEXT-005` | Invalid (400) | 1 | A map file or an output path inside a git worktree (links resolved) |
 | `SND-CONTEXT-006` | Invalid (400) | 1 | The question is invalid: no words, two shapes, depth or budget out of range |
 | `SND-CONTEXT-010` | Unavailable | — | One source is unavailable: a `degraded` entry, never the answer's error |
 | `SND-CONTEXT-011` | Unavailable (503) | 2 | Every source is unavailable |
@@ -157,7 +157,7 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
 - **`Trust.ScrubRuleset`** (Vogen, 16–64 lowercase hex): the first 32 hex characters of SHA-256 over
   `IngestSanitizer.Version`, the built-in rule ids and each extra (id, pattern), length-prefixed. Raise
   `IngestSanitizer.Version` with any change to what the sanitizer removes (S-2W made it 2).
-- **A ruleset per stored doc.** Migration `0002_s2w_scrub_ruleset.sql` adds `doc.ruleset` (default `''`, so every
+- **A ruleset per stored doc.** Migration `0003_s2w_scrub_ruleset.sql` adds `doc.ruleset` (default `''`, so every
   row S-1A wrote is outdated). A refresh treats a document as current only when its blob **and** ruleset match; one
   stored under another ruleset is cleaned again (`RepoRefresh.Recleaned`, also counted in `Added`; Sindri carries it
   on `ContextRepoSynced`). Search filters `d.ruleset = @ruleset`, so a chunk cleaned with other rules is never a hit
@@ -181,3 +181,58 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   `doc_chunk` loses the raw id and gains the placeholder, and a fetch answers the placeholder.
 - `QueryContextTests`, `SourcesStatusTests`, `SettingsReaderTests`, `TextRulesTests` (the HTML carriers and labels),
   and `ContextEngineContract` (an extra pattern that doesn't parse is 001 at its key path).
+## S-3a: the product graph store, map import / export, map status, doctor, purge
+
+### Shape
+
+| Project | Adds |
+|---|---|
+| `Aw.Context.Core` | `Graph`: `NodeKey` (typed id; the kind is the scheme), `NodeKind`, `NodeKinds` (surface kinds), `EdgeType`, `EdgeRules` (the §6.1 edge table), `EvidenceRef`, `GraphNode`, `GraphEdge`, `NodeAlias`, `DecisionRow` (`ToKey()`: `decision:` + SHA-256 of record and quote), `GraphSnapshot` (`Resolve`, `ScopedTo`), `RepoScope`, `TrustPolicy`, `EntryKey` (version 1, golden-tested), `IKeyMigration`, `KeyMigrations`. `Overrides`: `MapOverride` (`ToId()`: a content hash, so a re-import keeps one row), `OverrideId`, `OverrideAction`, `RejectionIdentity`, `OverrideApplier` (pure; orphaned overrides kept). `Map`: `MapDocument` (the file), `MapDocumentValidator` (all or nothing, 031/032 with key paths, key migration), `MapAccess` (the read gate and scope, the export document), `MapRetention`, the result records, and the ports `IGraphStore`, `IMapFileReader`, `IExportStore`. `Facade.IContextMap` (`PreviewMap`, `ImportMap`, `ExportMap`, `MapStatus`, `CheckMap`, `CheckRetention`, `PurgeExpired`); `IContextEngine : IContextMap` |
+| `Aw.Context.Features` | `ContextMap` (one line per method) over the slices `PreviewMap`, `ImportMap`, `ExportMap`, `ShowMapStatus`, `CheckMap`, `CheckRetention`, `PurgeMap`; `ContextEngine` delegates the map methods to it |
+| `Aw.Context.Infrastructure` | `Graph.SqliteGraphStore` (over `Store.ContextDatabase`), `Map.MapFileReader` (YamlDotNet's parser and representation model to JSON, then AwJson; no reflection serializer), `Map.FileExportStore`, `Map.Worktrees` |
+
+**Sindri's side** (`Aw.Sindri.Features.ContextCalls`): the queries `GetContextMapRequest` → `MapStatusView`
+(`GET /sindri/context/map`) and `ExportContextMapRequest` → `MapExported` (`GET /sindri/context/map/export?path=`);
+the command `ImportContextMapRequest(Path, Hash?, Confirmed)` → `ImportContextMapResponse`
+(`POST /sindri/context/map/import`; catalog row `ImportContextMap`: `protected`, terminal only,
+`cli-only:typed-confirmation`), which appends `context.map.imported` (`ContextMapImported`: version, repo, hash,
+counts); the scheduled service `ContextPurgeService` (`context-purge`); doctor rows `context:map` and
+`context:retention` in `RunDoctorService`. CLI: `Host/Commands/ContextMapVerbs` and `ContextMapText`. The map JSON
+types are in `SindriJsonContext`; the reader and the exports folder take its `JsonSerializerOptions`.
+
+`GET /sindri/context/map/export` is the one query that writes: a file under `exports/` (owner-only, purged after 14
+days), never the store or the ledger. It is a query because the API spec lists it as one, and it changes no state a
+command or event describes; a later file-writing route should not take it as a precedent without the same reasons.
+Import and preview refuse a session-kind caller in the engine too (SND-CONTEXT-020), whatever surface reaches them.
+
+**Not on this base:** the API lane's shared challenge. The import is shaped like `profile approve` (human, terminal,
+content hash, `confirmed`) and adopts the challenge when that lane ships it.
+
+### Store
+
+Migration `0002_s3a_graph.sql` (after S-1A's `0001`): `map_version` (status `building|draft|current|retained`, one
+`current` by a partial unique index), `node`, `node_evidence`, `node_alias`, `edge`, `edge_evidence`, `decision`
+(wording and quote only: the record it quotes is its `quotes` edge) and `map_override` (outlives versions; ids are
+content hashes, `ON CONFLICT DO NOTHING`). Trust is stored as computed from provenance, never read from a file. A save
+writes a `building` version in batches of 500 statements, then makes it `current` and the old one `retained` (with
+the file's overrides) in one transaction; a failed batch deletes the building version.
+
+### Errors
+
+| Code | Kind (HTTP) | CLI exit | Meaning |
+|---|---|---|---|
+| `SND-CONTEXT-030` | NotFound (404) | 1 | No map yet |
+| `SND-CONTEXT-031` | Invalid (400) | 1 | The map file is invalid (schema version, shape, unknown kind, disallowed edge, unreadable); key paths given; nothing written |
+| `SND-CONTEXT-032` | Invalid (400) | 1 | The map file refers to a node it doesn't define (edge end, alias target); nothing written |
+| `SND-CONTEXT-033` | Invalid (400) | 1 | Export path outside `$AW_SINDRI_HOME/context/exports/` |
+| `SND-CONTEXT-034` | Conflict (409) | 1 | The map file changed since its hash was confirmed; nothing written |
+
+### Tests
+
+`tests/Aw.Context.Tests`: `Map/` (keys and the `EntryKey` golden snapshot, the validator, key migration with a
+synthetic v2 and "no override orphaned", the override layer, repo scope, the port contracts bound to fakes and real
+adapters, the store's file modes and the YAML → store round trip); `ImportMap/`, `ExportMap/` (with the golden export
+`ExportMap/Golden/fixture-export.json`), `MapStatus/`, `MapHealth/`, `PurgeMap/` through the facade over the fakes.
+`tests/Aw.Context.Testing/Map`: `FakeGraphStore`, `FakeExportStore`, `FakeMapFileReader` and their contract bases,
+`SampleMap`, `FixtureMap` (the split-panes product map). `tests/Aw.Sindri.Tests/ContextCalls/ContextMapApiTests`: the
+routes through the real pipeline (preview, protected import and its refusals, event, export, session scope, purge).

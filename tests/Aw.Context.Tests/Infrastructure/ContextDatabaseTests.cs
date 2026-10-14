@@ -42,5 +42,5 @@ public sealed class ContextDatabaseTests
 
     [Fact, Trait("Lane", "unit")]
     public void The_migrations_are_named_for_their_stage() =>
-        Assert.All(ContextDatabase.Migrations, m => Assert.Matches("^s[0-9][a-z0-9]{0,3}_", m.Name));
+        Assert.All(ContextDatabase.Migrations, m => Assert.Matches("^s[0-9]+[a-z]?_", m.Name));
 }
