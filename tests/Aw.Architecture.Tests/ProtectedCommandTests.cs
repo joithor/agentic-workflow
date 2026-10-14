@@ -16,6 +16,16 @@ namespace Aw.Architecture.Tests;
 [Trait("Lane", "unit")]
 public sealed class ProtectedCommandTests
 {
+    /// <summary>
+    /// Protected rows that confirm another way, each with its reason. ImportContextMap (context spec S-3a, merged after
+    /// S1-D5) confirms with the previewed hash and a 'confirmed' flag; moving it onto the server challenge is the owner's
+    /// call (PR #191, needs owner). It is still terminal-bound, which the first assertion checks.
+    /// </summary>
+    private static readonly Dictionary<string, string> _confirmsOtherwise = new(StringComparer.Ordinal)
+    {
+        ["ImportContextMap"] = "confirms the previewed map hash with 'confirmed' (context spec S-3a); the S1-D5 challenge for it is an owner decision",
+    };
+
     [Fact]
     public void Every_protected_engine_command_requires_the_challenge()
     {
@@ -23,7 +33,7 @@ public sealed class ProtectedCommandTests
 
         var unbound = rows.Where(r => !r.NeedsTerminal).Select(r => $"{r.Action.Value} isn't terminal-bound").ToList();
         var unchallenged = rows
-            .Where(r => r.CommandType is { } type && !Redeems(type))
+            .Where(r => r.CommandType is { } type && !Redeems(type) && !_confirmsOtherwise.ContainsKey(r.Action.Value))
             .Select(r => r.Action.Value)
             .Order(StringComparer.Ordinal)
             .ToList();
