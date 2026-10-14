@@ -130,3 +130,65 @@ Passes the product slop test: one shell, one button vocabulary, one glyph set wi
 1. If Attach is read-only until a keystroke, why does Home call it a takeover; if it is a takeover, why is it the pre-focused read action? Which sentence should the owner believe at 2 am?
 2. Is a `⌂ · terminal` button that does nothing the honest rendering of the protected class, or should it open Warp with the command typed?
 3. Has "dense, calm, exact" become "uniform"? Where on each page is the one element allowed to be louder than 13 px?
+
+
+---
+
+# Critique run 3: Sindri UI revision-8 mockups, after the calm pass
+
+Target: `docs/superpowers/specs/2026-10-13-sindri-ui-screens-design/mockups/` at c613c97e (11 files, re-captured renders). Independent assessment A (blind to runs 1 and 2 and to the fix list) plus the detector (B): 10 files clean, the inspector with the em-dash advisory on tabular nulls only; "Overused font: Inter" ignored as a false positive.
+
+## Design Health Score
+
+| # | Heuristic | Score | Key issue |
+|---|---|---|---|
+| 1 | Visibility of system status | 3 | The same index failure is a disabled pending control on Home and a live, pre-focused Run again on System; no loading or refusal state drawn |
+| 2 | Match system / real world | 3 | "2 running at a desk"; `gate.verify.judge ≥ 0.80` as a state name |
+| 3 | User control and freedom | 3 | Attach's first-keystroke takeover has no undo but Hand back; 10 s to undo 31 writes |
+| 4 | Consistency and standards | 2 | Running is green on three pages and grey on three; chip words change between a page and its behind-sheet list; the band on 4 of 11 files; "pagerduty" vs "PagerDuty"; group order differs between Workflows, Home and the behind lists |
+| 5 | Error prevention | 3 | Protected verbs locked, read-first focus, pending controls dashed; Attach's keystroke and the bulk undo window are the holes |
+| 6 | Recognition rather than recall | 2 | Ids hidden where the engineer types them; Live vs Running undefined; the Agents meter hidden at rest; Take over and Cancel behind unlabeled chevrons; no legend for the glyphs that remain |
+| 7 | Flexibility and efficiency | 3 | Chords, palette, copyable commands, three bulk verbs; no multi-select |
+| 8 | Aesthetic and minimalist design | 3 | Home, the sheets, Context and System earn their pixels; Workflows and Recipes reserve empty action columns and Recipes leaves 45 % of the viewport blank |
+| 9 | Error recovery | 3 | The incident Cancel confirm and System's Impact column are exemplary; Home's failure row names no doctor check |
+| 10 | Help and documentation | 2 | `? Shortcuts` on three pages only; Recipes' footnote defines columns the table no longer has |
+| **Total** | | **27/40** | **Acceptable, top of the band** |
+
+## Anti-Patterns Verdict
+
+Passes every ban: no stripes, gradient text, glass, hero metrics, card grids, modals or em dashes. The remaining tells are structural: subtitle bead chains of `·`-separated fragments, one rhythm (32/24/40) applied regardless of content so Workflows and Recipes read half-loaded, and a glyph vocabulary that travels without its legend. It reads as a Linear-family tool whose density dial was set once and never per page.
+
+## What's Working
+
+- The instance frame: states path, the expanded state's declaration, the NEXT sentence in plain English, Facts as key · line · action, Children, four keyed tabs; identical on the project, the incident and the item.
+- Home's needs-you band: five rows, one verb each, the verb's class visible before the click; the five-second test passes.
+- System and Context as engineering surfaces, both keeping ids visible, which is the right call there.
+
+## Priority Issues
+
+- **[P1] State chips drift across pages.** Running is `chip ok` on Home, Workflows, System and plain on Work, Agents, the inspector; JE7 is "Live" and JD9 "Running" though both have Attach; behind a sheet the chip word becomes the stage; the Home strip rows have no chip. *Fix:* one chip table in fixture.md, applied verbatim; define Live or merge it. **clarify**
+- **[P1] Run again disabled on Home, live and pre-focused on System** for the same failure. One page lies. **harden**
+- **[P1] Recipes no longer answers its question.** Runs, done-without-you and median only; the footnote defines columns that are gone; the action column is empty on 7 of 8 rows; 45 % of the viewport blank. *Fix:* Failed, tokens/run p50 and a four-week spark back as mono columns, action column `auto`, footnote rewritten. **layout**
+- **[P1] Hidden ids break sentences and shift layout.** `ITM-01JD6` inside the NOW sentence is hidden, so the sentence loses its subject; hovering inserts text before the title; Work and Agents hide ids while System and the sheets show them. *Fix:* ids inside prose are never hidden; a fixed-width id slot per row in `--ink-tertiary` at rest, brighter on hover; hide only on Home's strip and needs-you band. **polish**
+- **[P2] The inspector under-counts the fixture** (JD9 and JA1 are workflow.item instances too; "◐ 2" promised in a comment). **harden**
+- **[P2] System text defects**: "last 8 of 88" above five rows; "4 engine instances open" against a 12-row table. **clarify**
+- **[P2] Agents hides the token meter at rest**, leaving a blank column. **polish**
+- **[P2] Workflows reads sparse and drifts**: empty action column, group order, Start… without its ⌘N, "Other recipes" folded into one line. **layout**
+
+## Cognitive Load
+
+3 of 8 failed (moderate): minimal choices (the nav plus Context's eight-control lens row), working memory (Live vs Running, the chip remapping behind sheets, ids hidden on the pages that need them), single focus on Context (two incompatible states drawn at once).
+
+## Persona Red Flags
+
+**The owner:** the id they need in Warp is three interactions away on Home; Run again is fixable on one page and not the other; Live vs Running on Agents; Recipes doesn't answer "where do my recipes stall". **Alex:** Attach's reflexive keystroke; the bulk accept with no preview; no multi-select. **Sam:** `display:none` ids and `visibility:hidden` meters survive only through aria-labels; Context's graph nodes are rects, not links; the 10 s undo is a timed action; the incident mockup draws focus on Attach while the comment says Keep. **Riley:** every empty state is a comment; no needs-you cap at 40 rows; Context draws two incompatible states.
+
+## Minor Observations
+
+Take over offered on a children state with no session; `checks ● r1 failed` uses the done glyph; the Home strip's "… 7 more" vs "all 12 →"; `.key` vs `.id.keep` for the one kept id; the sheet edge tab on two pages only; hint placement varies; the caption pill bottom-left on the inspector only; Cursor's 3 sessions against "not found"; the Build draft hint under two buttons; `✕ 03:00` without a word; the adapt story lives in comments; the Services arithmetic excludes Onyx.
+
+## Questions to Consider
+
+1. The engineer's job ends with an id in a terminal; the pass hid ids on the pages where that happens. What is lost by drawing them at rest in tertiary ink?
+2. Calm was implemented as one rhythm. Is calm a rhythm, or a density target per page?
+3. Live and Running both mean an agent is working, and Running is green on three pages and grey on three. Is there a third state, or should there be one word?
