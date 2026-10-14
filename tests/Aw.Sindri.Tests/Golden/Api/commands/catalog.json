@@ -42,8 +42,8 @@
       "terminal": false,
       "method": "POST",
       "route": "/sindri/items/{itemId}/close",
-      "cli": "sindri item close <itemId> --cancelled",
-      "ui": "pending:P3",
+      "cli": "sindri item close <itemId> --cancelled [--version <n>]",
+      "ui": "ready",
       "destructive": true,
       "readsViews": true,
       "shortcut": null
@@ -58,8 +58,8 @@
       "terminal": false,
       "method": "POST",
       "route": "/sindri/items/{itemId}/close",
-      "cli": "sindri item close <itemId>",
-      "ui": "pending:P3",
+      "cli": "sindri item close <itemId> [--version <n>]",
+      "ui": "ready",
       "destructive": false,
       "readsViews": true,
       "shortcut": null
@@ -75,7 +75,7 @@
       "method": "POST",
       "route": "/sindri/items",
       "cli": "sindri item add <title> [--repo <repo>]",
-      "ui": "pending:P3",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
