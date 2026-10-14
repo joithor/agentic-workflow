@@ -10,9 +10,12 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Tests.Notifications;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
 using Temporalio.Client;
 using Temporalio.Testing;
@@ -37,6 +40,9 @@ internal sealed class WorkflowsHarness : IDisposable
 
     public string Home => _home.Path;
 
+    /// <summary>The OS notifications the composed host showed: every composition here replaces the real one, so no test fires a notification.</summary>
+    public FakeOsNotifier Notifier { get; } = new();
+
     public void Dispose()
     {
         _home.Dispose();
@@ -52,10 +58,18 @@ internal sealed class WorkflowsHarness : IDisposable
     public ServiceProvider Sindri() => Sindri(static _ => { });
 
     /// <summary>The host composed over this home, with <paramref name="replace"/> applied last (a fake block runtime).</summary>
-    public ServiceProvider Sindri(Action<IServiceCollection> replace)
+    public ServiceProvider Sindri(Action<IServiceCollection> replace) => Sindri(replace, static _ => null);
+
+    /// <summary>
+    /// The host composed over this home, reading the other variables from <paramref name="variables"/> (the time-skipping
+    /// server's namespace for the bridge, which connects on its own), with <paramref name="replace"/> applied last.
+    /// </summary>
+    public ServiceProvider Sindri(Action<IServiceCollection> replace, Func<string, string?> variables)
     {
         ArgumentNullException.ThrowIfNull(replace);
-        var services = Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider(DateTimeOffset.UtcNow));
+        ArgumentNullException.ThrowIfNull(variables);
+        var services = Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : variables(name), new FakeTimeProvider(DateTimeOffset.UtcNow));
+        _ = services.Replace(ServiceDescriptor.Singleton<IOsNotifier>(Notifier));
         replace(services);
         return services.BuildServiceProvider();
     }

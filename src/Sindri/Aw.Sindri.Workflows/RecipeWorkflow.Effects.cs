@@ -1,7 +1,9 @@
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
+using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Temporalio.Workflows;
 
@@ -55,15 +57,26 @@ internal sealed partial class RecipeWorkflow
     /// §5.5): P5's retry arm calls this. Each one already dispatched is skipped.
     /// </summary>
     /// <param name="instance">The instance whose timeout retries.</param>
-    internal void Reemit(WorkflowInstance instance) => Emit(before: null, instance, EffectRules.Reemitted(instance, _context!.Recipe)); // why: the loop runs only after Begin set _context
+    internal void Reemit(WorkflowInstance instance)
+    {
+        var effects = EffectRules.Reemitted(instance, _context!.Recipe); // why: the loop runs only after Begin set _context
+        if (effects.Count > 0)
+        {
+            _effects.Add(Dispatch(instance, effects));   // the recipe's effects only: a re-emission sends no engine notice (P6 unit (c))
+        }
+    }
 
     /// <summary>
     /// Starts the effects of a change just mirrored: the recipe's effects for this instance and the engine's own notices.
     /// A change that cancels the instance aborts every effect still in its delay.
     /// </summary>
-    private void Emit(WorkflowInstance? before, WorkflowInstance after, IReadOnlyList<EffectCommand> effects)
+    /// <param name="before">The instance before the change (null at start or for a re-emission).</param>
+    /// <param name="after">The instance after it.</param>
+    /// <param name="effects">The recipe effects the change runs.</param>
+    /// <param name="change">The type of the change's ledger event: a 'workflow.notified' one is takeoverIdle's (P5).</param>
+    private void Emit(WorkflowInstance? before, WorkflowInstance after, IReadOnlyList<EffectCommand> effects, WorkflowEventType change = WorkflowEventType.Transition)
     {
-        List<EffectCommand> all = [.. effects.Where(e => e.Identity.Instance == after.Id), .. Notices(before, after)];
+        List<EffectCommand> all = [.. effects.Where(e => e.Identity.Instance == after.Id), .. Notices(before, after, change)];
         if (all.Count > 0)
         {
             _effects.Add(Dispatch(after, all));
@@ -93,21 +106,19 @@ internal sealed partial class RecipeWorkflow
     /// <summary>
     /// The engine's own notices for a change (§5.7 origin 'engine'): parks, escalations, takeoverIdle and desk tasks.
     /// </summary>
-    private IReadOnlyList<EffectCommand> Notices(WorkflowInstance? before, WorkflowInstance after)
+    private IReadOnlyList<EffectCommand> Notices(WorkflowInstance? before, WorkflowInstance after, WorkflowEventType change)
     {
-        IReadOnlyList<(EffectCommand Command, NoticeClass Class)> notices;
-        try
-        {
-            notices = EngineNotices.For(before, after, _mirrored, _deskTaskNotified);
-        }
-        catch (NotSupportedException)
-        {
-            return [];   // boundary: engine P6 unit (c) builds EngineNotices.For; until it lands the instance sends no engine notice
-        }
-
-        _deskTaskNotified |= notices.Count > 0 && after.Frame.Run is { Runtime: StepRuntime.Desk };
+        var notices = EngineNotices.For(before, after, _mirrored, _deskTaskNotified, change);
+        _deskTaskNotified |= EngineNotices.NoticedDeskTask(after, notices);
         return [.. notices.Select(static n => n.Command)];
     }
+
+    /// <summary>
+    /// A recipe effect's text (P6 unit (c)): the rendered 'next' of the state its transition entered. An engine notice
+    /// carries its own text in its arguments, so it has none here.
+    /// </summary>
+    private string? TextOf(WorkflowInstance after, EffectCommand effect) =>
+        effect.Origin == CommandOrigin.Recipe && _recipe is { } recipe ? InstanceViews.Of(after, recipe, _since, timeoutAt: null).Next : null;
 
     /// <summary>Waits until every effect the instance emitted has settled (the run's end), surfacing a failed one.</summary>
     private async Task Settle()
@@ -131,7 +142,7 @@ internal sealed partial class RecipeWorkflow
                 return;
             }
 
-            var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, Text: null, after.Facts);
+            var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts);
             var options = (ActivityOptions)EffectActivities.RunOptions.Clone();
             options.TaskQueue = Workflow.Info.TaskQueue;   // the instance's queue, from settings (never a constant)
             _ = await Workflow.ExecuteActivityAsync((EffectActivities a) => a.RunAsync(run), options).ConfigureAwait(true);

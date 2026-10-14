@@ -1,5 +1,7 @@
+using System.Globalization;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Features.ListOutbox;
 
@@ -44,10 +46,31 @@ internal static class OutboxCommandTable
         return json ? await output.Json(read.Value, 0).ConfigureAwait(false) : await output.Text(Lines(read.Value.Commands), 0).ConfigureAwait(false);
     }
 
-    /// <summary>One line per effect ('seq  time  state  kind  origin  instance  identity  code'), or 'no commands'. Engine P6 unit (c).</summary>
-    private static string Lines(IReadOnlyList<OutboxCommandView> commands)
+    /// <summary>
+    /// One line per effect ('seq  time  state  kind  origin  instance  identity'; a refusal's state names its code, as
+    /// 'refused (SND-RECIPE-005)'), or 'no commands'. Engine P6 unit (c).
+    /// </summary>
+    internal static string Lines(IReadOnlyList<OutboxCommandView> commands)
     {
         ArgumentNullException.ThrowIfNull(commands);
-        throw new NotSupportedException("engine P6 unit (c): the outbox list lines");
+        return commands.Count == 0 ? "no commands\n" : string.Concat(commands.Select(static c => Line(c) + "\n"));
     }
+
+    private static string Line(OutboxCommandView c) => string.Join("  ",
+        c.Sequence.ToString(CultureInfo.InvariantCulture),
+        c.At.UtcDateTime.ToString("MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+        c.Code is { } code ? $"{State(c.State)} ({code})" : State(c.State),
+        c.Kind.Value,
+        c.Origin == CommandOrigin.Engine ? "engine" : "recipe",
+        c.Instance.Value,
+        c.Identity);
+
+    private static string State(EffectState state) => state switch
+    {
+        EffectState.Pending => "pending",
+        EffectState.Dispatched => "dispatched",
+        EffectState.Refused => "refused",
+        EffectState.Cancelled => "cancelled",
+        _ => state.ToString(),
+    };
 }

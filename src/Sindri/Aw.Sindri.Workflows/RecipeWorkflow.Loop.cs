@@ -71,7 +71,7 @@ internal sealed partial class RecipeWorkflow
         {
             Enter(after);
             await Mirror(Record(instance, change, submission.Trigger), NeedsYou(after)).ConfigureAwait(true);
-            Emit(instance, after, EffectsOf(decision));
+            Emit(instance, after, EffectsOf(decision), change.Event.Type);   // a takeoverIdle row (P5) is an engine notice
         }
 
         if (submission.Ticket != 0)

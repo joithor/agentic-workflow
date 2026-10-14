@@ -14,6 +14,7 @@ using Aw.Sindri.Infrastructure.Challenges;
 using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Infrastructure.Lease;
 using Aw.Sindri.Infrastructure.Ledger;
+using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Profile;
 using Aw.Sindri.Infrastructure.Workflow;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,5 +57,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IWorkflowClaims, SqliteWorkflowClaims>()   // engine P6 unit (d): workflow_claims in ledger.db
             .AddSingleton<IClaimRefs, GitClaimRefs>()                // engine P6 unit (d): the claim's marker ref
             .AddSingleton<IChallenges, ProcessChallenges>()
-            .AddSingleton<IHarnessVersions, CommandHarnessVersions>();
+            .AddSingleton<IHarnessVersions, CommandHarnessVersions>()
+            .AddSingleton<IOsNotifier, OsascriptNotifier>()          // engine P6 unit (c): the only OS notifier (README X5, X50)
+            .AddSingleton<IDeskNotices, FileDeskNotices>();          // engine P6 unit (c): notifications.jsonl
 }
