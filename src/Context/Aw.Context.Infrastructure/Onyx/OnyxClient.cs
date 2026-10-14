@@ -12,7 +12,9 @@ namespace Aw.Context.Infrastructure.Onyx;
 /// Sends the onyx adapter's calls with the key and reads Onyx v4.9.0's replies into typed records. The key comes from
 /// calling the environment with the settings' pointer text (Sindri resolves pointers, spec §4), once per client: a
 /// client belongs to one source, which serves one query, so a keychain: or op: pointer starts one process per query,
-/// not one per request, and a pointer that didn't resolve is tried again by the next query. The key goes only into
+/// not one per request, and a pointer that didn't resolve is tried again by the next query. The resolution runs off the
+/// calling thread and is awaited under the call's deadline and the caller's cancellation, so a locked keychain or an op
+/// sign-in makes the call 010 on time (the tool itself ends at its own timeout in the background). The key goes only into
 /// the Authorization header, never into an error or a log line. Failures map to the catalogue: no usable key 002, no
 /// answer in time or a 5xx 010, a 403 050, a 404 on a document route 052, any other status or shape 051.
 /// </summary>
@@ -22,7 +24,7 @@ internal sealed partial class OnyxClient(OnyxSettings settings, OnyxSourceParts 
 {
     private const string TokenKey = "context.sources.onyx.token";
     private readonly OnyxSourceParts _parts = parts;
-    private readonly Lazy<string?> _key = new(() => parts.Environment(settings.Token));
+    private readonly Lazy<Task<string?>> _key = new(() => Task.Run(() => parts.Environment(settings.Token)));
 
     /// <summary>The checked settings.</summary>
     public OnyxSettings Settings { get; } = settings;
@@ -39,26 +41,29 @@ internal sealed partial class OnyxClient(OnyxSettings settings, OnyxSourceParts 
     public async ValueTask<Result<T>> Call<T>(OnyxCall call, TimeSpan deadline, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(call);
-        var key = _key.Value;
-        if (string.IsNullOrEmpty(key) || key.Any(c => char.IsControl(c) || char.IsWhiteSpace(c)))
-        {
-            return Failed(call, ContextErrors.SourceNotConfigured.With(
-                $"{TokenKey}: the {Scheme(Settings.Token)}: secret pointer doesn't resolve to a usable Onyx key (none, or one with spaces or "
-                + "control characters); 'sindri doctor' shows why (its SND-SECRET code names the target and the fix). "
-                + "Point it at a dedicated service account's admin key (spec §8.8)."), status: null);
-        }
-
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(deadline);
         try
         {
+            var key = await _key.Value.WaitAsync(timeout.Token).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(key) || key.Any(c => char.IsControl(c) || char.IsWhiteSpace(c)))
+            {
+                return Failed(call, ContextErrors.SourceNotConfigured.With(
+                    $"{TokenKey}: the {Scheme(Settings.Token)}: secret pointer doesn't resolve to a usable Onyx key (none, or one with spaces or "
+                    + "control characters); 'sindri doctor' shows why (its SND-SECRET code names the target and the fix). "
+                    + "Point it at a dedicated service account's admin key (spec §8.8)."), status: null);
+            }
+
             var reply = await OnyxRequests.Send(_parts.Http, Settings.Url, call, key, timeout.Token).ConfigureAwait(false);
             return Read<T>(call, reply);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
+            var what = _key.Value.IsCompleted
+                ? $"didn't answer {call.Route}"
+                : $"wasn't called: the {TokenKey} pointer didn't resolve (a locked keychain, or op waiting for a sign-in?)";
             return Failed(call, Unavailable(string.Create(CultureInfo.InvariantCulture,
-                $"didn't answer {call.Route} within {deadline.TotalSeconds:0.###} s")), status: null);
+                $"{what} within {deadline.TotalSeconds:0.###} s")), status: null);
         }
         catch (HttpRequestException e)
         {
