@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Infrastructure.Auth;
@@ -52,6 +53,8 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IRecipeWake, NoOpRecipeWake>()
             .AddSingleton<IRecipeStore, SqliteRecipeStore>()
             .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>()
+            .AddSingleton<IWorkflowClaims, SqliteWorkflowClaims>()   // engine P6 unit (d): workflow_claims in ledger.db
+            .AddSingleton<IClaimRefs, GitClaimRefs>()                // engine P6 unit (d): the claim's marker ref
             .AddSingleton<IChallenges, ProcessChallenges>()
             .AddSingleton<IHarnessVersions, CommandHarnessVersions>();
 }

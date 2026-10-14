@@ -18,7 +18,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </summary>
 /// <param name="frontend">Finds the dev server serve keeps.</param>
 /// <param name="known">The ids this process has seen.</param>
-internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, KnownInstances known) : IInstanceDirectory
+internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, KnownInstances known) : IInstanceDirectory, IInstanceLiveness
 {
     public async ValueTask<Result<AttemptState?>> Latest(ItemKey item, RecipeId recipe, CancellationToken cancellationToken)
     {
@@ -47,6 +47,9 @@ internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, Known
             }
         }
     }
+
+    public ValueTask<Result<bool>> IsLive(InstanceAddress address, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("engine P6 unit (d)");
 
     public async ValueTask<Result<InstanceAddress>> Resolve(string reference, CancellationToken cancellationToken)
     {

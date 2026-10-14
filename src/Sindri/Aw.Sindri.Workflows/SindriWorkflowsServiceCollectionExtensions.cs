@@ -42,11 +42,15 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IInstanceRuntime, TemporalInstanceRuntime>()
             .AddSingleton<IWorkflowInstances, TemporalWorkflowInstances>()
             .AddSingleton<ITemporalWorker, SindriWorkerHost>()
-            .AddSingleton<IFactStore, HomeFactStore>()               // engine P4 unit (c): facts stored 0600 before the report
+            .AddSingleton<HomeFactStore>()
+            .AddSingleton<IFactStore>(static sp => sp.GetRequiredService<HomeFactStore>())   // engine P4 unit (c): facts stored 0600 before the report
+            .AddSingleton<IFactContents>(static sp => sp.GetRequiredService<HomeFactStore>()) // engine P6 unit (d): read back for effect.claim.ref
             .AddSingleton<ICommandNonces, HomeCommandNonces>()           // engine P4 unit (c): the nonce table (stand-in until API's IssueNonce)
             .AddSingleton<TemporalDeskReports>()                     // engine P4 unit (c): Send's 'complete' path
             .AddSingleton<TemporalCommands>()                          // engine P4 unit (b): Send's answer, command and cancel paths
-            .AddSingleton<IInstanceDirectory, TemporalInstanceDirectory>()   // engine P4 unit (b): attempts and bare items
+            .AddSingleton<TemporalInstanceDirectory>()
+            .AddSingleton<IInstanceDirectory>(static sp => sp.GetRequiredService<TemporalInstanceDirectory>())   // engine P4 unit (b): attempts and bare items
+            .AddSingleton<IInstanceLiveness>(static sp => sp.GetRequiredService<TemporalInstanceDirectory>())    // engine P6 unit (d): a claim holder's liveness
             .AddSingleton<ProfileWorkflowTimes>()                    // engine P4 unit (e): S1-D11, workflow.deskTimeout and workflow.eventHold, read by LoadRecipe
             .AddSingleton<HeldItemEvents>()                            // engine P4: the bridge's held window (visibility lag)
             .AddSingleton<EventBridgeCursor>()                         // engine P4 unit (d): the bridge's cursor file

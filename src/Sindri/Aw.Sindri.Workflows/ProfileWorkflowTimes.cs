@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Core.Profile;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -9,7 +10,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// doesn't load gives the defaults (2d, 24h): serve refuses to run on an invalid profile before any instance starts.
 /// </summary>
 /// <param name="profiles">The live profile.</param>
-internal sealed class ProfileWorkflowTimes(IProfileSource profiles)
+/// <param name="approved">The approved profile: 'workflow.dispatchDelay' (S1-D11, engine P6 unit (d)).</param>
+internal sealed class ProfileWorkflowTimes(IProfileSource profiles, IApprovedProfile approved)
 {
     /// <summary>The times the profile sets, each key's default where it sets none.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -18,5 +20,14 @@ internal sealed class ProfileWorkflowTimes(IProfileSource profiles)
     {
         var loaded = await profiles.Load(cancellationToken).ConfigureAwait(false);
         return loaded.IsError ? WorkflowTimes.Defaults : WorkflowTimes.Of(loaded.Value.Profile);
+    }
+
+    /// <summary>The approved profile's 'workflow.dispatchDelay', or its default (10s) when none is approved or it sets none.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The delay; an error when the approvals can't be read.</returns>
+    public ValueTask<Result<TimeSpan>> DispatchDelay(CancellationToken cancellationToken)
+    {
+        _ = (approved, cancellationToken);
+        throw new NotSupportedException("engine P6 unit (d)");
     }
 }

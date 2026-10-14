@@ -12,7 +12,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// name and moved into place, so a reader never sees half of one.
 /// </summary>
 /// <param name="home">Where the facts directory is.</param>
-internal sealed class HomeFactStore(WorkflowsHome home) : IFactStore
+internal sealed class HomeFactStore(WorkflowsHome home) : IFactStore, IFactContents
 {
     private const UnixFileMode OwnerFile = UnixFileMode.UserRead | UnixFileMode.UserWrite;
     private const UnixFileMode OwnerDirectory = OwnerFile | UnixFileMode.UserExecute;
@@ -51,4 +51,7 @@ internal sealed class HomeFactStore(WorkflowsHome home) : IFactStore
             return SindriErrors.ApiInternal.With($"the fact {sha} can't be stored under {home.FactsDirectory}: {e.Message} (fix: check the Sindri home's permissions and free space)");
         }
     }
+
+    public ValueTask<Result<ReadOnlyMemory<byte>>> Read(FactValue fact, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("engine P6 unit (d)");
 }
