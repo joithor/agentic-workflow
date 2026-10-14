@@ -47,6 +47,13 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             : await output.Text(string.Create(CultureInfo.InvariantCulture, $"stopped (pid {stopped.Value.Value.Pid}, epoch {stopped.Value.Value.Epoch} released)\n"), 0).ConfigureAwait(false);
     }
 
+    /// <summary>'sindri views rebuild'.</summary>
+    internal Task<int> RebuildViews(CancellationToken ct)
+    {
+        _ = (client, ct);
+        throw new NotSupportedException("views rebuild: make CliViewsRebuildTests pass");
+    }
+
     internal async Task<int> Validate(bool json, CancellationToken ct)
     {
         var valid = await scope.GetRequiredService<IService<ValidateProfileRequest, ValidateProfileResponse>>().Handle(new ValidateProfileRequest(), ct).ConfigureAwait(false);
