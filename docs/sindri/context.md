@@ -249,7 +249,7 @@ context:
 | `keychain:service/account` | `security find-generic-password -s service -a account -w` (store it with `security add-generic-password -s onyx -a sindri-read -w`) |
 | `op:vault/item/field` | `op read op://vault/item/field` (1Password CLI) |
 
-Sindri resolves the pointer in its host (`Composition`), on each Onyx call; the context engine never reads the
+Sindri resolves the pointer in its host (`Composition`), once per query (not per Onyx request); the context engine never reads the
 keychain or a file. `sindri profile validate` checks only the pointer's form, never resolves it (resolving can prompt
 the keychain or run `op`), so `env:NO_SUCH_VAR` passes validate. At run time a pointer that doesn't resolve shows as
 `SND-CONTEXT-002` in the onyx row and a query's `degraded` entry, naming the pointer's scheme only; `sindri doctor`

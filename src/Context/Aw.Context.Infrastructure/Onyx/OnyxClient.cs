@@ -10,8 +10,10 @@ namespace Aw.Context.Infrastructure.Onyx;
 
 /// <summary>
 /// Sends the onyx adapter's calls with the key and reads Onyx v4.9.0's replies into typed records. The key comes from
-/// calling the environment with the settings' pointer text (Sindri resolves pointers, spec §4); it goes only into the
-/// Authorization header, never into an error or a log line. Failures map to the catalogue: no usable key 002, no
+/// calling the environment with the settings' pointer text (Sindri resolves pointers, spec §4), once per client: a
+/// client belongs to one source, which serves one query, so a keychain: or op: pointer starts one process per query,
+/// not one per request, and a pointer that didn't resolve is tried again by the next query. The key goes only into
+/// the Authorization header, never into an error or a log line. Failures map to the catalogue: no usable key 002, no
 /// answer in time or a 5xx 010, a 403 050, a 404 on a document route 052, any other status or shape 051.
 /// </summary>
 /// <param name="settings">The checked settings.</param>
@@ -20,6 +22,7 @@ internal sealed partial class OnyxClient(OnyxSettings settings, OnyxSourceParts 
 {
     private const string TokenKey = "context.sources.onyx.token";
     private readonly OnyxSourceParts _parts = parts;
+    private readonly Lazy<string?> _key = new(() => parts.Environment(settings.Token));
 
     /// <summary>The checked settings.</summary>
     public OnyxSettings Settings { get; } = settings;
@@ -36,7 +39,7 @@ internal sealed partial class OnyxClient(OnyxSettings settings, OnyxSourceParts 
     public async ValueTask<Result<T>> Call<T>(OnyxCall call, TimeSpan deadline, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(call);
-        var key = _parts.Environment(Settings.Token);
+        var key = _key.Value;
         if (string.IsNullOrEmpty(key) || key.Any(c => char.IsControl(c) || char.IsWhiteSpace(c)))
         {
             return Failed(call, ContextErrors.SourceNotConfigured.With(
