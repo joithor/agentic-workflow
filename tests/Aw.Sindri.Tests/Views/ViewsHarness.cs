@@ -1,0 +1,40 @@
+using Aw.Sindri.Core.Views;
+using Aw.Sindri.Testing;
+
+namespace Aw.Sindri.Tests.Views;
+
+/// <summary>
+/// The views a query slice reads, in memory: the slice harness, an in-memory views store folded through the real
+/// projections, and the projector's progress, published after each fold as the projector does after a page.
+/// </summary>
+internal sealed class ViewsHarness
+{
+    private readonly IReadOnlyList<IProjection> _projections;
+    private long _sequence;
+
+    public ViewsHarness()
+    {
+        Progress = new ProjectorProgress(Slice.Clock);
+        _projections = [new ServicesProjection(Slice.Events), new ProfileProjection(Slice.Events)];
+    }
+
+    public SliceHarness Slice { get; } = new();
+
+    public InMemoryViewStore Views { get; } = new(SliceHarness.Json);
+
+    public ProjectorProgress Progress { get; }
+
+    /// <summary>Folds one recorded <paramref name="type"/> event through the projections, then publishes the cursor at it.</summary>
+    public async Task Fold<TPayload>(string type, TPayload payload)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _ = (await Views.Open(ViewSchema.Version, ct)).Value;
+        var applied = (await Views.Apply([Recorded.Of(Slice.Events, type, payload, ++_sequence)], _projections, Slice.Clock.GetUtcNow(), ct)).Value;
+        Assert.Null(applied.Stall);
+        Publish(stalledAt: null);
+    }
+
+    /// <summary>Publishes the projector at the last folded sequence, fresh or stalled at <paramref name="stalledAt"/>.</summary>
+    public void Publish(long? stalledAt) => Progress.Publish(new ViewsStatus(_sequence, Math.Max(_sequence, stalledAt ?? 0), Slice.Clock.GetUtcNow(),
+        Rebuilding: false, Stalled: stalledAt is not null, stalledAt, stalledAt is null ? null : "service.ran"));
+}

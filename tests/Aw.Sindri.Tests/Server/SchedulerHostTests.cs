@@ -1,10 +1,12 @@
 using System.Text.Json;
+using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.RecordHeartbeat;
+using Aw.Sindri.Features.RecordServiceRun;
 using Aw.Sindri.Host.Server;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -140,6 +142,61 @@ public sealed class SchedulerHostTests
         Assert.Equal(1, stuck.Started);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task Every_run_appends_service_ran_ok_or_failed_with_its_code()
+    {
+        _ = await _h.Profiles.Save(SliceHarness.ProfileOf("thor", ("heartbeat", "5s"), ("sour", "5s")), Token);
+        _ = await _h.HoldLease();
+
+        await Run(new CountingApprovals(_h.Profiles), () => Runs("sour").Count >= 2 && Runs("heartbeat").Count >= 2);
+
+        Assert.All(Runs("heartbeat"), r => Assert.True(r is { Outcome: ServiceOutcome.Ok, Code: null }));
+        Assert.All(Runs("sour"), r => Assert.Equal((ServiceOutcome.Failed, FailingService.Failure.Code), (r.Outcome, r.Code)));
+        var slots = Runs("heartbeat").Select(r => r.Slot).Take(2).ToList();
+        Assert.Equal(slots[0].AddSeconds(5), slots[1]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_throwing_service_is_recorded_failed_SND_SCHED_001()
+    {
+        _ = await _h.Profiles.Save(SliceHarness.ProfileOf("thor", ("boom", "5s"), ("heartbeat", "5s")), Token);
+        _ = await _h.HoldLease();
+
+        await Run(new CountingApprovals(_h.Profiles), () => Runs("boom").Count >= 1);
+
+        Assert.Equal((ServiceOutcome.Failed, "SND-SCHED-001"), (Runs("boom")[0].Outcome, Runs("boom")[0].Code));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_unknown_service_is_recorded_failed()
+    {
+        _ = await _h.Profiles.Save(SliceHarness.ProfileOf("thor", ("ghost", "5s"), ("heartbeat", "5s")), Token);
+        _ = await _h.HoldLease();
+
+        await Run(new CountingApprovals(_h.Profiles), () => Runs("ghost").Count >= 2);
+
+        Assert.All(Runs("ghost"), r => Assert.Equal((ServiceOutcome.Failed, "SND-SCHED-001"), (r.Outcome, r.Code)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Service_ran_carries_the_service_actor()
+    {
+        _ = await _h.Profiles.Save(SliceHarness.Profile("5s"), Token);
+        _ = await _h.HoldLease();
+
+        await Run(new CountingApprovals(_h.Profiles), () => Runs("heartbeat").Count >= 2);
+
+        var ran = _h.Store.Events.Where(e => e.Envelope.Type == EventTypes.ServiceRan).ToList();
+        Assert.All(ran, e => Assert.Equal("service:heartbeat", e.Envelope.Actor));
+        Assert.All(ran, e => Assert.StartsWith("service.ran:heartbeat:", e.IdempotencyKey, StringComparison.Ordinal));
+        Assert.Equal(ran.Count, Runs("heartbeat").Select(r => r.CommandId).Distinct().Count());   // each run is its own command
+    }
+
+    private List<ServiceRan> Runs(string service) => [.. _h.Store.Events
+        .Where(e => e.Envelope.Type == EventTypes.ServiceRan)
+        .Select(e => _h.Events.Payload<ServiceRan>(e).Value)
+        .Where(r => string.Equals(r.Service.Value, service, StringComparison.Ordinal))];
+
     private static string HeartbeatType => EventTypes.ServiceRun(HeartbeatService.ServiceId);
 
     private int Heartbeats() => _h.Store.Events.Count(e => e.Envelope.Type == HeartbeatType);
@@ -157,10 +214,14 @@ public sealed class SchedulerHostTests
             .AddSingleton<ILedgerStore>(_h.Store)
             .AddSingleton(_h.Events)
             .AddSingleton<TimeProvider>(_h.Clock)
+            .AddSingleton(_h.Callers)
+            .AddSingleton<IIdGenerator>(_h.Ids)
             .AddScoped<IService<RecordHeartbeatRequest, RecordHeartbeatResponse>, RecordHeartbeatService>()
+            .AddScoped<IService<RecordServiceRunRequest, RecordServiceRunResponse>, RecordServiceRunService>()
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddScoped<IScheduledService, ThrowingService>()
             .AddScoped<IScheduledService, TimingOutService>()
+            .AddScoped<IScheduledService, FailingService>()
             .BuildServiceProvider();
         var clock = new SteppedClock(_h.Clock);
         using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), approvals, _h.Held, _h.Callers, builtIns ?? [], clock, _log);

@@ -3537,7 +3537,6 @@ Aw.Sindri.Core.Workflow.Registry.ChildPin.Recipe.get -> Aw.Sindri.Core.Workflow.
 Aw.Sindri.Core.Workflow.Registry.ChildPin.Recipe.init -> void
 Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals
 Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals.Approve(Aw.Sindri.Core.Workflow.Registry.RecipeApproval! approval, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.RecipeApproval!>!>
-Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals.ApprovedFrom(Aw.Sindri.Core.Workflow.Ids.RecipeHash baseHash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeApproval!>!>!>
 Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals.GeneratedFrom(Aw.Sindri.Core.Workflow.Ids.RecipeHash baseHash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeApproval!>!>!>
 Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals.Current(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeApproval!>!>!>
 Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals.History(Aw.Sindri.Core.Workflow.Ids.RecipeId id, int version, Aw.Sindri.Core.Workflow.Ids.RecipeHash hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeApproval!>!>!>
@@ -4039,8 +4038,6 @@ static Aw.Sindri.Core.Events.ContextSourcesSynced.operator !=(Aw.Sindri.Core.Eve
 static Aw.Sindri.Core.Events.ContextSourcesSynced.operator ==(Aw.Sindri.Core.Events.ContextSourcesSynced? left, Aw.Sindri.Core.Events.ContextSourcesSynced? right) -> bool
 Aw.Sindri.Core.Profile.IApprovedProfile
 Aw.Sindri.Core.Profile.IApprovedProfile.Latest(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile?>!>
-Aw.Sindri.Core.Events.ContextRepoSynced.ContextRepoSynced(string! Repo, string? Head, int Added, int Removed, int Kept, int Blocked, string? Code, int Skipped = 0) -> void
-Aw.Sindri.Core.Events.ContextRepoSynced.Deconstruct(out string! Repo, out string? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code, out int Skipped) -> void
 Aw.Sindri.Core.Events.ContextRepoSynced.Skipped.get -> int
 Aw.Sindri.Core.Events.ContextRepoSynced.Skipped.init -> void
 Aw.Sindri.Core.Control.ControlEndpoint.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint?
@@ -4490,6 +4487,9 @@ Aw.Sindri.Core.Views.IProjection.Handles(string! eventType) -> bool
 Aw.Sindri.Core.Views.IProjection.Views.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Views.IProjectorControl
 Aw.Sindri.Core.Views.IProjectorControl.RequestRebuild() -> void
+Aw.Sindri.Core.Views.IProjectorFeed
+Aw.Sindri.Core.Views.IProjectorFeed.Publish(Aw.Sindri.Core.Views.ViewsStatus! status) -> void
+Aw.Sindri.Core.Views.IProjectorFeed.TakeRebuildRequest() -> bool
 Aw.Sindri.Core.Views.IProjectorStatus
 Aw.Sindri.Core.Views.IProjectorStatus.Current.get -> Aw.Sindri.Core.Views.ViewsStatus!
 Aw.Sindri.Core.Views.IProjectorStatus.WaitFor(long sequence, System.TimeSpan limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -4970,6 +4970,81 @@ static Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.operator !=(Aw.Sindri.
 static Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.operator ==(Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply? left, Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply? right) -> bool
 Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api, out Aw.Sindri.Core.Profile.WorkflowSettings? Workflow, out System.Text.Json.JsonElement? Context) -> void
 Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null, Aw.Sindri.Core.Profile.WorkflowSettings? Workflow = null, System.Text.Json.JsonElement? Context = null) -> void
+Aw.Sindri.Core.Profile.ProfileCheck
+static Aw.Sindri.Core.Profile.ProfileCheck.Decide(Aw.Sindri.Core.Events.ProfileChecked? previous, Aw.Sindri.Core.Profile.LoadedProfile? approved, Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>! live, Aw.Sindri.Core.Ids.CommandId commandId) -> Aw.Sindri.Core.Events.ProfileChecked?
+Aw.Sindri.Core.Mcp.ClaudeRun
+Aw.Sindri.Core.Mcp.ClaudeRun.<Clone>$() -> Aw.Sindri.Core.Mcp.ClaudeRun!
+Aw.Sindri.Core.Mcp.ClaudeRun.ClaudeRun(int ExitCode, string! ErrorTail) -> void
+Aw.Sindri.Core.Mcp.ClaudeRun.Deconstruct(out int ExitCode, out string! ErrorTail) -> void
+Aw.Sindri.Core.Mcp.ClaudeRun.Equals(Aw.Sindri.Core.Mcp.ClaudeRun? other) -> bool
+Aw.Sindri.Core.Mcp.ClaudeRun.ErrorTail.get -> string!
+Aw.Sindri.Core.Mcp.ClaudeRun.ErrorTail.init -> void
+Aw.Sindri.Core.Mcp.ClaudeRun.ExitCode.get -> int
+Aw.Sindri.Core.Mcp.ClaudeRun.ExitCode.init -> void
+Aw.Sindri.Core.Mcp.IClaudeCli
+Aw.Sindri.Core.Mcp.IClaudeCli.Run(System.Collections.Generic.IReadOnlyList<string!>! arguments, string! workingDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Mcp.ClaudeRun?>
+Aw.Sindri.Core.Mcp.IProviderFiles
+Aw.Sindri.Core.Mcp.IProviderFiles.Read(Aw.Sindri.Core.Mcp.ProviderFile file, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Mcp.ProviderFileRead!>
+Aw.Sindri.Core.Mcp.McpRegistration
+Aw.Sindri.Core.Mcp.McpScope
+Aw.Sindri.Core.Mcp.McpScopeFinding
+Aw.Sindri.Core.Mcp.McpScopeFinding.<Clone>$() -> Aw.Sindri.Core.Mcp.McpScopeFinding!
+Aw.Sindri.Core.Mcp.McpScopeFinding.Deconstruct(out Aw.Sindri.Core.Mcp.ProviderFile File, out string! Path, out Aw.Sindri.Core.Mcp.McpScopeState State, out string? Problem) -> void
+Aw.Sindri.Core.Mcp.McpScopeFinding.Equals(Aw.Sindri.Core.Mcp.McpScopeFinding? other) -> bool
+Aw.Sindri.Core.Mcp.McpScopeFinding.File.get -> Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.McpScopeFinding.File.init -> void
+Aw.Sindri.Core.Mcp.McpScopeFinding.McpScopeFinding(Aw.Sindri.Core.Mcp.ProviderFile File, string! Path, Aw.Sindri.Core.Mcp.McpScopeState State, string? Problem) -> void
+Aw.Sindri.Core.Mcp.McpScopeFinding.Path.get -> string!
+Aw.Sindri.Core.Mcp.McpScopeFinding.Path.init -> void
+Aw.Sindri.Core.Mcp.McpScopeFinding.Problem.get -> string?
+Aw.Sindri.Core.Mcp.McpScopeFinding.Problem.init -> void
+Aw.Sindri.Core.Mcp.McpScopeFinding.State.get -> Aw.Sindri.Core.Mcp.McpScopeState
+Aw.Sindri.Core.Mcp.McpScopeFinding.State.init -> void
+Aw.Sindri.Core.Mcp.McpScopeState
+Aw.Sindri.Core.Mcp.McpScopeState.Unreadable = 1 -> Aw.Sindri.Core.Mcp.McpScopeState
+Aw.Sindri.Core.Mcp.McpScopeState.UserWide = 0 -> Aw.Sindri.Core.Mcp.McpScopeState
+Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.ProviderFile.Claude = 0 -> Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.ProviderFile.Codex = 1 -> Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.ProviderFile.Cursor = 2 -> Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.ProviderFileRead
+Aw.Sindri.Core.Mcp.ProviderFileRead.<Clone>$() -> Aw.Sindri.Core.Mcp.ProviderFileRead!
+Aw.Sindri.Core.Mcp.ProviderFileRead.Deconstruct(out Aw.Sindri.Core.Mcp.ProviderFile File, out string! Path, out string? Text, out string? Problem) -> void
+Aw.Sindri.Core.Mcp.ProviderFileRead.Equals(Aw.Sindri.Core.Mcp.ProviderFileRead? other) -> bool
+Aw.Sindri.Core.Mcp.ProviderFileRead.File.get -> Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.ProviderFileRead.File.init -> void
+Aw.Sindri.Core.Mcp.ProviderFileRead.Path.get -> string!
+Aw.Sindri.Core.Mcp.ProviderFileRead.Path.init -> void
+Aw.Sindri.Core.Mcp.ProviderFileRead.Problem.get -> string?
+Aw.Sindri.Core.Mcp.ProviderFileRead.Problem.init -> void
+Aw.Sindri.Core.Mcp.ProviderFileRead.ProviderFileRead(Aw.Sindri.Core.Mcp.ProviderFile File, string! Path, string? Text, string? Problem) -> void
+Aw.Sindri.Core.Mcp.ProviderFileRead.Text.get -> string?
+Aw.Sindri.Core.Mcp.ProviderFileRead.Text.init -> void
+const Aw.Sindri.Core.Mcp.McpScope.ServerName = "sindri" -> string!
+override Aw.Sindri.Core.Mcp.ClaudeRun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Mcp.ClaudeRun.GetHashCode() -> int
+override Aw.Sindri.Core.Mcp.ClaudeRun.ToString() -> string!
+override Aw.Sindri.Core.Mcp.McpScopeFinding.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Mcp.McpScopeFinding.GetHashCode() -> int
+override Aw.Sindri.Core.Mcp.McpScopeFinding.ToString() -> string!
+override Aw.Sindri.Core.Mcp.ProviderFileRead.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Mcp.ProviderFileRead.GetHashCode() -> int
+override Aw.Sindri.Core.Mcp.ProviderFileRead.ToString() -> string!
+static Aw.Sindri.Core.Mcp.ClaudeRun.operator !=(Aw.Sindri.Core.Mcp.ClaudeRun? left, Aw.Sindri.Core.Mcp.ClaudeRun? right) -> bool
+static Aw.Sindri.Core.Mcp.ClaudeRun.operator ==(Aw.Sindri.Core.Mcp.ClaudeRun? left, Aw.Sindri.Core.Mcp.ClaudeRun? right) -> bool
+static Aw.Sindri.Core.Mcp.McpRegistration.Arguments(Aw.Sindri.Core.Ids.RepoName repo, int port) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Mcp.McpRegistration.Port(System.Uri? running, int? profilePort) -> int
+static Aw.Sindri.Core.Mcp.McpScope.Judge(Aw.Sindri.Core.Mcp.ProviderFileRead! read) -> Aw.Sindri.Core.Mcp.McpScopeFinding?
+static Aw.Sindri.Core.Mcp.McpScopeFinding.operator !=(Aw.Sindri.Core.Mcp.McpScopeFinding? left, Aw.Sindri.Core.Mcp.McpScopeFinding? right) -> bool
+static Aw.Sindri.Core.Mcp.McpScopeFinding.operator ==(Aw.Sindri.Core.Mcp.McpScopeFinding? left, Aw.Sindri.Core.Mcp.McpScopeFinding? right) -> bool
+static Aw.Sindri.Core.Mcp.ProviderFileRead.operator !=(Aw.Sindri.Core.Mcp.ProviderFileRead? left, Aw.Sindri.Core.Mcp.ProviderFileRead? right) -> bool
+static Aw.Sindri.Core.Mcp.ProviderFileRead.operator ==(Aw.Sindri.Core.Mcp.ProviderFileRead? left, Aw.Sindri.Core.Mcp.ProviderFileRead? right) -> bool
+Aw.Sindri.Core.Doctor.IDoctorChecks
+Aw.Sindri.Core.Doctor.IDoctorChecks.Run(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>!>
+Aw.Sindri.Core.Events.ContextRepoSynced.ContextRepoSynced(string! Repo, string? Head, int Added, int Removed, int Kept, int Blocked, string? Code, int Skipped = 0, int Recleaned = 0) -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Deconstruct(out string! Repo, out string? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code, out int Skipped, out int Recleaned) -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Recleaned.get -> int
+Aw.Sindri.Core.Events.ContextRepoSynced.Recleaned.init -> void
 Aw.Sindri.Core.Events.ContextMapImported
 Aw.Sindri.Core.Events.ContextMapImported.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapImported!
 Aw.Sindri.Core.Events.ContextMapImported.ContextMapImported(int Version, string! Repo, string! Hash, int Nodes, int Edges, int Overrides) -> void
@@ -5026,3 +5101,4 @@ static Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.ProfileFacts(Aw.Sin
 static Aw.Sindri.Core.Profile.EffectSettings.IsEffectId(string! entry) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.For(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, int version, bool deskTaskNotified, Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType change) -> System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>!
 static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.NoticedDeskTask(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>! notices) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Id.init -> void

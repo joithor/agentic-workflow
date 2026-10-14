@@ -34,6 +34,7 @@ using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.RebuildViews;
+using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
@@ -45,6 +46,7 @@ using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Features.ValidateRecipe;
 using Aw.Sindri.Host.Commands.Probe;
 using Aw.Sindri.Host.Commands.Recipe;
+using Aw.Sindri.Host.Mcp;
 
 namespace Aw.Sindri.Host;
 
@@ -127,6 +129,9 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ChallengeAnswer))]
 [JsonSerializable(typeof(ContextResult))]
 [JsonSerializable(typeof(SourcesView))]
+[JsonSerializable(typeof(McpToolError))]
+[JsonSerializable(typeof(McpSourcesAnswer))]
+[JsonSerializable(typeof(RegisterMcpResponse))]
 [JsonSerializable(typeof(ContextSourcesSynced))]
 [JsonSerializable(typeof(ContextMapImported))]
 [JsonSerializable(typeof(MapDocument))]

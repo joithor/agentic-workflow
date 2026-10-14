@@ -9,7 +9,9 @@
 # brings up the pinned Temporal dev server, so the temporal CLI must be installed: scripts/binaries-lock.sh fetch
 # temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
 # the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
-# approval, status (text and --json's apiVersion), a session's stop refused, the human's stop, status and doctor again;
+# approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client,
+# a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
+# context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
 # fixture (RCP-REACH-001, exit 1). The normalized output (pids, ports, hashes, times, the host name and the temp path
 # masked) must equal expected.txt.
@@ -116,6 +118,15 @@ session() { # an agent session (CLAUDECODE set), no terminal
   CLAUDECODE=1 bounded "$bin" "$@" </dev/null 2>&1 || rc=$?
   exit_line "$rc"
 }
+doctor() { # doctor reads the providers' user-wide MCP files: point it at an empty scratch home, never the real one
+  HOME="$work/fakehome" CLAUDE_CONFIG_DIR="" CODEX_HOME="" run doctor
+}
+mcp() { # $1 = JSON-RPC method, $2 = params: one stateless /sindri/mcp call as an MCP client sends it (no Origin)
+  local url
+  url="$(jq -r '.url' "$AW_SINDRI_HOME/control.json")"
+  curl -s -m 30 -X POST "${url%/}/sindri/mcp" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+    -H 'X-Sindri-Repo: smoke' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$1\",\"params\":$2}" | sed -n 's/^data: //p'
+}
 session_tty() { # an agent session at a terminal (the CLI's own terminal check passes, so the server decides)
   echo "## sindri $* (session, terminal)"
   local rc=0
@@ -123,7 +134,7 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   exit_line "$rc"
 }
 {
-  run doctor
+  doctor
   human --headless </dev/null
   run serve
   human profile approve </dev/null
@@ -135,19 +146,18 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   echo "## sindri status --json | jq '{running, apiVersion}'"
   json="$({ bounded "$bin" status --json </dev/null 2>&1 || true; })"
   jq -c '{running, apiVersion}' <<<"$json" 2>/dev/null || printf '%s\n' "$json"
+  echo "## /sindri/mcp initialize, then tools/list (stateless)"
+  mcp initialize '{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"1"}}' | jq -c '.result.serverInfo.name'
+  mcp tools/list '{}' | jq -c '[.result.tools[].name]'
   session stop
   human stop </dev/null
   run status
-  run doctor
+  doctor
   run recipe validate "$root/recipes/sindri/workflow.step.yaml"
   run recipe validate "$root/recipes/sindri/workflow.item.yaml"
   run recipe validate "$root/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml"
 } >"$out/actual.raw"
 
-sed -E -e "s#$work#WORK#g" -e "s#$root#ROOT#g" -e "s#held by $(hostname -s)[^/ ]*#held by HOST#g" -e 's/[0-9a-f]{64}/HASH/g' -e 's/hash [0-9a-f]{6}/hash HASH6/g' -e 's/approve profile [0-9a-f]{6}/approve profile HASH6/g' \
-  -e 's/pid [0-9]+/pid PID/g' -e 's#HOST/[0-9]+#HOST/PID#g' -e 's/127\.0\.0\.1:[0-9]+/127.0.0.1:PORT/g' \
-  -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z/TIME/g' -e 's/\(last [0-9:]{8}Z\)/(last TIME)/g' \
-  -e 's/^(  services  heartbeat every [0-9]+s) \(last TIME\)$/\1/' \
-  -e '/^(ok|warn) +claude-code /d' "$out/actual.raw" >"$out/actual.txt"   # doctor's claude-code line depends on where it runs (re-probed inside Claude Code, else the installed version); the pending owner-probe lines are pinned
+bash "$here/normalize.sh" "$work" "$root" <"$out/actual.raw" >"$out/actual.txt"
 diff -u "$here/expected.txt" "$out/actual.txt"
 echo "aot-sindri-smoke: ok (framework-dependent publish, $(du -sh "$pub" | cut -f1))"

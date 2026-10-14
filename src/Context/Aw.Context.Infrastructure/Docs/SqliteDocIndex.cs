@@ -13,17 +13,19 @@ namespace Aw.Context.Infrastructure.Docs;
 /// <summary>
 /// The repo-docs index in context.db (spec §5.2, §6.2): at each refresh, the documents the globs match at the repo's
 /// HEAD are read from git and cleaned at the ingest boundary first (sanitized and scrubbed as a whole, then chunked), then written
-/// in one short transaction, so text reaches the store only scrubbed and no sync waits on a long writer. A document
-/// whose blob didn't change is kept; one gone from HEAD or the globs is removed; one the scrubber blocks keeps its row
-/// without chunks. A repo git can't read records its code and is reported, not thrown.
+/// in one short transaction, so text reaches the store only scrubbed and no sync waits on a long writer. Every document
+/// records the call's scrub ruleset: one whose blob and ruleset didn't change is kept; one stored under another ruleset
+/// is cleaned again (S-2W); one gone from HEAD or the globs is removed; one the scrubber blocks keeps its row without
+/// chunks. A repo git can't read records its code and is reported, not thrown.
 /// </summary>
-internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IIngestFilter ingest, TimeProvider clock) : IDocIndex
+internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, TimeProvider clock) : IDocIndex
 {
     /// <summary>The largest document indexed (bigger ones are skipped).</summary>
     internal const long MaxDocumentBytes = 1024 * 1024;
 
-    public async ValueTask<Result<RepoRefresh>> Refresh(ContextRepo repo, IReadOnlyList<string> globs, CancellationToken cancellationToken)
+    public async ValueTask<Result<RepoRefresh>> Refresh(ContextRepo repo, IReadOnlyList<string> globs, Scrubbers scrubbers, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(scrubbers);
         var writable = await database.Writable(cancellationToken).ConfigureAwait(false);
         if (writable.IsError)
         {
@@ -46,10 +48,12 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
         var glob = new Glob(globs);
         var matched = tree.Value.Where(e => glob.Matches(e.Key)).ToList();
         var wanted = matched.Where(e => Citable(repo, e.Key)).ToDictionary(StringComparer.Ordinal);   // a path the ids can't carry is never indexed
-        var changed = wanted.Where(w => !stored.Value.TryGetValue(w.Key, out var blob) || !string.Equals(blob, w.Value, StringComparison.Ordinal)).ToList();
-        var (prepared, unreadable) = await Prepare(repo, changed, cancellationToken).ConfigureAwait(false);
-        var removed = stored.Value.Keys.Where(p => !wanted.ContainsKey(p) || (!string.Equals(stored.Value[p], wanted[p], StringComparison.Ordinal) && !unreadable.Contains(p))).ToList();
-        var written = await DocWriter.Write(writable.Value, new DocBatch(repo.Name.Value, head.Value, removed, prepared, clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
+        var ruleset = scrubbers.Ruleset.Value;
+        var changed = wanted.Where(w => !stored.Value.Current(w.Key, w.Value, ruleset)).ToList();
+        var (prepared, unreadable) = await Prepare(repo, changed, scrubbers.Ingest, cancellationToken).ConfigureAwait(false);
+        var removed = stored.Value.Docs.Keys.Where(p => !wanted.TryGetValue(p, out var blob) || (!stored.Value.Current(p, blob, ruleset) && !unreadable.Contains(p))).ToList();
+        var written = await DocWriter.Write(writable.Value, new DocBatch(repo.Name.Value, head.Value, ruleset, removed, prepared, clock.GetUtcNow()), cancellationToken)
+            .ConfigureAwait(false);
         database.RestrictFiles();
         return written.IsError
             ? ContextDatabase.Translate(written.Error)
@@ -57,10 +61,11 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
                 removed.Count(p => !wanted.ContainsKey(p)), wanted.Count - changed.Count, prepared.Count(p => p.Blocked), Code: null)
             {
                 Skipped = prepared.Count(p => p.Oversized) + unreadable.Count + (matched.Count - wanted.Count),
+                Recleaned = prepared.Count(stored.Value.Recleaned),
             };
     }
 
-    public async ValueTask<Result<DocIndexStatus>> Status(ContextRepo repo, CancellationToken cancellationToken)
+    public async ValueTask<Result<DocIndexStatus>> Status(ContextRepo repo, ScrubRuleset ruleset, CancellationToken cancellationToken)
     {
         var readable = await database.Readable(cancellationToken).ConfigureAwait(false);
         if (readable.IsError || readable.Value is not { } sessions)
@@ -77,7 +82,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
         await using (read.Value.ConfigureAwait(false))
         {
             var status = await SqliteQueries.One(read.Value, new SqlStatement(DocSql.Status,
-                c => c.Bind("@source", DocSql.Source).Bind("@repo", repo.Name.Value)), DocMappers.Status, cancellationToken).ConfigureAwait(false);
+                c => c.Bind("@source", DocSql.Source).Bind("@repo", repo.Name.Value).Bind("@ruleset", ruleset.Value)), DocMappers.Status, cancellationToken).ConfigureAwait(false);
             return status.IsError ? ContextDatabase.Translate(status.Error) : status.Value;
         }
     }
@@ -92,7 +97,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
     /// rows stay.
     /// </summary>
     private async ValueTask<(List<PreparedDoc> Prepared, HashSet<string> Unreadable)> Prepare(ContextRepo repo, List<KeyValuePair<string, string>> changed,
-        CancellationToken cancellationToken)
+        IIngestFilter ingest, CancellationToken cancellationToken)
     {
         var prepared = new List<PreparedDoc>();
         var unreadable = new HashSet<string>(StringComparer.Ordinal);
@@ -106,7 +111,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
             }
             else if (text is { IsSuccess: true })
             {
-                prepared.Add(Clean(path, blob, text.Value));
+                prepared.Add(Clean(ingest, path, blob, text.Value));
             }
             else
             {
@@ -118,7 +123,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
     }
 
     /// <summary>Cleans the whole document once (line-preserving), then chunks the clean text and takes the title from it.</summary>
-    private PreparedDoc Clean(string path, string blob, string text)
+    private static PreparedDoc Clean(IIngestFilter ingest, string path, string blob, string text)
     {
         var clean = ingest.Clean(text, singleLine: false);
         if (clean.Blocked)
@@ -130,7 +135,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
         return new PreparedDoc(path, blob, title.Blocked ? path : UntrustedFence.Cap(title.Text), Blocked: false, DocChunker.Split(clean.Text));
     }
 
-    private static async ValueTask<Result<Dictionary<string, string>>> Stored(SqliteUnitOfWorkFactory sessions, ContextRepo repo, CancellationToken cancellationToken)
+    private static async ValueTask<Result<StoredDocs>> Stored(SqliteUnitOfWorkFactory sessions, ContextRepo repo, CancellationToken cancellationToken)
     {
         var read = await sessions.BeginRead(cancellationToken).ConfigureAwait(false);
         if (read.IsError)
@@ -142,7 +147,7 @@ internal sealed class SqliteDocIndex(ContextDatabase database, GitCli git, IInge
         {
             var rows = await SqliteQueries.List(read.Value, new SqlStatement(DocSql.StoredDocs, c => c.Bind("@repo", repo.Name.Value)), DocMappers.Stored, cancellationToken)
                 .ConfigureAwait(false);
-            return rows.Map(r => r.ToDictionary(d => d.Path, d => d.Blob, StringComparer.Ordinal));
+            return rows.Map(r => new StoredDocs(r.ToDictionary(d => d.Path, StringComparer.Ordinal)));
         }
     }
 

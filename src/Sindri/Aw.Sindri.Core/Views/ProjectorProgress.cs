@@ -1,24 +1,102 @@
+using System.Globalization;
 using Aw.Kernel;
 
 namespace Aw.Sindri.Core.Views;
 
 /// <summary>
 /// The projector's progress in memory: the projector publishes its status here, queries wait on it and RebuildViews
-/// requests a rebuild through it. A stub until P2 unit B (ProjectorStatusContract is red until then).
+/// requests a rebuild through it. Waits time out on <paramref name="clock"/>; each publish pulses the waiters.
 /// </summary>
-internal sealed class ProjectorProgress : IProjectorStatus, IProjectorControl
+/// <param name="clock">The only clock.</param>
+internal sealed class ProjectorProgress(TimeProvider clock) : IProjectorStatus, IProjectorControl, IProjectorFeed
 {
-    /// <inheritdoc/>
-    public ViewsStatus Current => throw new NotSupportedException("ProjectorProgress: P2 unit B makes ProjectorStatusContract pass");
-
-    /// <summary>Publishes the projector's status and wakes the waiters.</summary>
-    /// <param name="status">The status.</param>
-    public void Publish(ViewsStatus status) => throw new NotSupportedException("ProjectorProgress: P2 unit B makes ProjectorStatusContract pass");
+    private readonly Lock _gate = new();
+    private ViewsStatus _current = new(0, 0, ProjectedAt: null, Rebuilding: false, Stalled: false, StalledAt: null, StalledType: null);
+    private TaskCompletionSource _pulse = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private bool _rebuildRequested;
 
     /// <inheritdoc/>
-    public ValueTask<Result<Unit>> WaitFor(long sequence, TimeSpan limit, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("ProjectorProgress: P2 unit B makes ProjectorStatusContract pass");
+    public ViewsStatus Current
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _current;
+            }
+        }
+    }
 
     /// <inheritdoc/>
-    public void RequestRebuild() => throw new NotSupportedException("ProjectorProgress: P2 unit B makes ProjectorStatusContract pass");
+    public void Publish(ViewsStatus status)
+    {
+        ArgumentNullException.ThrowIfNull(status);
+        TaskCompletionSource pulse;
+        lock (_gate)
+        {
+            _current = _rebuildRequested ? status with { Rebuilding = true } : status;
+            pulse = _pulse;
+            _pulse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        _ = pulse.TrySetResult();
+    }
+
+    /// <inheritdoc/>
+    public bool TakeRebuildRequest()
+    {
+        lock (_gate)
+        {
+            var requested = _rebuildRequested;
+            _rebuildRequested = false;
+            return requested;
+        }
+    }
+
+    /// <inheritdoc/>
+    public void RequestRebuild()
+    {
+        lock (_gate)
+        {
+            _rebuildRequested = true;
+            _current = _current with { Rebuilding = true };
+        }
+    }
+
+    /// <inheritdoc/>
+    public async ValueTask<Result<Unit>> WaitFor(long sequence, TimeSpan limit, CancellationToken cancellationToken)
+    {
+        var deadline = clock.GetUtcNow() + limit;
+        while (true)
+        {
+            ViewsStatus status;
+            Task pulse;
+            lock (_gate)
+            {
+                (status, pulse) = (_current, _pulse.Task);
+            }
+
+            var remaining = deadline - clock.GetUtcNow();
+            if (status.Cursor >= sequence || status.Stalled || remaining <= TimeSpan.Zero)
+            {
+                return status.Cursor >= sequence ? Unit.Value : Behind(status, sequence);
+            }
+
+            await Pulse(pulse, remaining, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task Pulse(Task pulse, TimeSpan remaining, CancellationToken cancellationToken)
+    {
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var timeout = Task.Delay(remaining, clock, stop.Token);
+        _ = await Task.WhenAny(pulse, timeout).ConfigureAwait(false);
+        await stop.CancelAsync().ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+    }
+
+    private static Error Behind(ViewsStatus status, long sequence) => SindriErrors.ViewsBehind.With(status.Stalled
+        ? string.Create(CultureInfo.InvariantCulture,
+            $"views stalled at {status.StalledAt} ({status.StalledType}) with the cursor at {status.Cursor}, waiting for {sequence}: run sindri views rebuild")
+        : string.Create(CultureInfo.InvariantCulture, $"views at cursor {status.Cursor}, waiting for {sequence}"));
 }

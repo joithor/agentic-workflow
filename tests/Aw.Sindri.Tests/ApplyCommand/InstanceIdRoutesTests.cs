@@ -30,7 +30,7 @@ public sealed class InstanceIdRoutesTests(DevServer server) : IClassFixture<DevS
 
         var (listed, list) = await Send(served, HttpMethod.Get, "/sindri/workflow/instances?address=" + Uri.EscapeDataString("T-50/step/1"));
         var instance = list.GetProperty("instances")[0];
-        var id = instance.GetProperty("id").GetString()!;
+        var id = instance.GetProperty("id").GetString();
         var (issued, nonce) = await Send(served, HttpMethod.Post, $"/sindri/workflow/instances/{id}/nonce");
         var cancel = await served.Cli("cancel", "T-50/step/1");
 

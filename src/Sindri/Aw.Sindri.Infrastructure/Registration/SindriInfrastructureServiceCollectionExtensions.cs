@@ -4,7 +4,9 @@ using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -15,7 +17,9 @@ using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Infrastructure.Lease;
 using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Infrastructure.Notifications;
+using Aw.Sindri.Infrastructure.Mcp;
 using Aw.Sindri.Infrastructure.Profile;
+using Aw.Sindri.Infrastructure.Views;
 using Aw.Sindri.Infrastructure.Workflow;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,7 +28,7 @@ namespace Aw.Sindri.Infrastructure.Registration;
 /// <summary>Registers Aw.Sindri.Infrastructure's adapters and settings. A second technology for a port gets its own AddSindri&lt;Tech&gt;Infrastructure method.</summary>
 public static class SindriInfrastructureServiceCollectionExtensions
 {
-    /// <summary>Adds the Sindri adapters (SQLite ledger and lease, YAML profile and recipes, files, the process probe, process ancestry, git repo resolution) and their settings.</summary>
+    /// <summary>Adds the Sindri adapters (SQLite ledger, lease and views, YAML profile and recipes, files, the process probe, process ancestry, git repo resolution, the claude CLI and the providers' MCP files) and their settings.</summary>
     /// <param name="services">The service collection.</param>
     /// <remarks>The profile and approval adapters take the package's AwJson options, which Compose registers.</remarks>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
@@ -38,6 +42,9 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<ILedgerStore, SqliteLedger>()
             .AddSingleton<ILedgerReader, SqliteLedgerReader>()
             .AddSingleton<ILease, SqliteLease>()
+            .AddSingleton<ViewsDatabase>()
+            .AddSingleton<IViewStore, SqliteViewStore>()
+            .AddSingleton<IViewReader, SqliteViewReader>()
             .AddSingleton<IProfileSource, YamlProfileSource>()
             .AddSingleton<IApprovals, FileApprovals>()
             .AddSingleton<IApprovedProfile>(static sp => sp.GetRequiredService<IApprovals>())
@@ -59,5 +66,8 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IChallenges, ProcessChallenges>()
             .AddSingleton<IHarnessVersions, CommandHarnessVersions>()
             .AddSingleton<IOsNotifier, OsascriptNotifier>()          // engine P6 unit (c): the only OS notifier (README X5, X50)
-            .AddSingleton<IDeskNotices, FileDeskNotices>();          // engine P6 unit (c): notifications.jsonl
+            .AddSingleton<IDeskNotices, FileDeskNotices>()           // engine P6 unit (c): notifications.jsonl
+            .AddSingleton(McpSettings.Read(environment))
+            .AddSingleton<IClaudeCli, ProcessClaudeCli>()
+            .AddSingleton<IProviderFiles, ProviderConfigFiles>();
 }

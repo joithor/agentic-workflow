@@ -65,5 +65,5 @@ public sealed class ApplyCommandChallengeTests
         Run: null,
         Children: [],
         Outcome: null)
-    { Version = version };
+    { Id = WorkflowInstanceId.Of(InstanceAddress.From(address)), Version = version };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_HOST, findWriteSteps, guardWrites, isLocalHost, isOffOriginNavigation, isSameOriginPath, provenanceFor, readCredentials, redact, resolveHost } from "../src/host-guard.js";
+import { browserLaunchArgs, DEFAULT_HOST, findWriteSteps, guardWrites, isLocalHost, isOffOriginNavigation, isSameOriginPath, provenanceFor, readCredentials, redact, resolveHost } from "../src/host-guard.js";
 import type { ScriptStep } from "../src/script-schema.js";
 
 const goto = (target: string): ScriptStep => ({ action: "goto", target, expectedState: { kind: "url-path", path: "/" } });
@@ -66,6 +66,11 @@ describe("write guard", () => {
   it("does not trip on words that merely contain a write word", () => {
     expect(findWriteSteps([click("preview-manage-staffing-toggle"), click("postal-code-help"), click("address-line")])).toEqual([]);
   });
+  it("never flags a read-only scroll step, whatever its target reads like", () => {
+    const exp = { kind: "testid-visible" as const, testId: "y" };
+    expect(findWriteSteps([{ action: "scroll", target: "save-panel-scroll", value: "end", expectedState: exp }])).toEqual([]);
+    expect(guardWrites([{ action: "scroll", target: "schedule-view-scroll-container", expectedState: exp }], false)).toEqual({ ok: true });
+  });
   it("refuses with the offending steps unless writes are allowed", () => {
     const steps = [click("a"), click("submit-form")];
     expect(guardWrites(steps, false)).toEqual({ ok: false, error: "refusing write-looking steps without --allow-writes: #2 click submit-form" });
@@ -119,5 +124,15 @@ describe("provenanceFor", () => {
   });
   it("only localhost counts as a local host", () => {
     expect([isLocalHost(undefined), isLocalHost("http://localhost:3000"), isLocalHost("http://127.0.0.1:4000"), isLocalHost("https://pr-1.vitalize.build")]).toEqual([true, true, true, false]);
+  });
+});
+
+describe("browserLaunchArgs", () => {
+  it("passes the private-network flags only for preview hosts", () => {
+    expect(browserLaunchArgs("preview")).toEqual(["--disable-features=LocalNetworkAccessChecks,PrivateNetworkAccessRespectPreflightResults,BlockInsecurePrivateNetworkRequests"]);
+    expect(browserLaunchArgs("local")).toEqual([]);
+  });
+  it("returns a fresh array each call", () => {
+    expect(browserLaunchArgs("preview")).not.toBe(browserLaunchArgs("preview"));
   });
 });

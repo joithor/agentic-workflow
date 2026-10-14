@@ -75,9 +75,9 @@ public abstract class RecipeApprovalsContract
         Expect.Equal(WorkflowErrors.RecipeNotApproved.Code, (await approvals.Revoke(RegistryData.Revocation(RegistryData.Recipe("workflow.item")), Token)).Error.Code);
     }
 
-    /// <summary>ApprovedFrom lists the generated recipes approved from a base; Pinning lists the parents of a child hash; both skip revoked rows.</summary>
+    /// <summary>Pinning lists the parents of a child hash and Current the live approvals; both skip revoked rows.</summary>
     [Fact]
-    public async Task Cascade_and_child_listings_skip_revoked_rows()
+    public async Task Pinning_and_current_listings_skip_revoked_rows()
     {
         var approvals = Create();
         var step = RegistryData.Recipe("workflow.step");
@@ -95,7 +95,6 @@ public abstract class RecipeApprovalsContract
 
         _ = await approvals.Revoke(RegistryData.Revocation(revokedGenerated, step.Hash), Token);
 
-        Expect.Sequence([generated.Hash], (await approvals.ApprovedFrom(step.Hash, Token)).Value.Select(a => a.Hash));
         Expect.Sequence([item.Hash], (await approvals.Pinning(step.Hash, Token)).Value.Select(a => a.Hash));
         Expect.Sequence(["workflow.item", "workflow.step", "workflow.step-gen"], (await approvals.Current(Token)).Value.Select(a => a.Id.Value));
     }
@@ -113,9 +112,13 @@ public abstract class RecipeApprovalsContract
             _ = await approvals.Approve(RegistryData.Approval(recipe), Token);
         }
 
+        var repinned = RegistryData.Approval(generated, new RecipePins([], [new ChildPin(step.Id, step.Hash)]));
+        _ = await approvals.Approve(repinned, Token);   // a drift re-approval: the same key, a newer row
         _ = await approvals.Revoke(RegistryData.Revocation(revokedGenerated, step.Hash), Token);
 
-        Expect.Sequence([generated.Hash, revokedGenerated.Hash], (await approvals.GeneratedFrom(step.Hash, Token)).Value.Select(a => a.Hash));
+        var listed = (await approvals.GeneratedFrom(step.Hash, Token)).Value;
+        Expect.Sequence([generated.Hash, revokedGenerated.Hash], listed.Select(a => a.Hash));   // each key once …
+        Expect.Equal(repinned.Pins, listed[0].Pins);                                            // … at its latest row
         Expect.Sequence([], (await approvals.GeneratedFrom(generated.Hash, Token)).Value.Select(a => a.Hash));
     }
 }

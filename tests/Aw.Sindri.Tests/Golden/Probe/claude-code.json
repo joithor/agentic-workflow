@@ -75,7 +75,7 @@
     },
     {
       "name": "claude",
-      "executable": "~/.local/share/claude/versions/2.1.296"
+      "executable": "~/.local/share/claude/versions/2.1.299"
     },
     {
       "name": "-zsh",
@@ -95,5 +95,5 @@
     }
   ],
   "terminal": false,
-  "version": "2.1.296"
+  "version": "2.1.299"
 }

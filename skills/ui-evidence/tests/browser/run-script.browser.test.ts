@@ -90,4 +90,38 @@ describe("runScript", () => {
     const s = await runScript(failing, path.join(tmp, "run6"), undefined, { host: fixture.host, appBuild: "b1", cacheManifest: path.join(tmp, "shared-manifest.json") });
     expect(s.steps.at(-1)?.status).toBe("failed");
   }, 60_000);
+
+  it("signs in from env credentials before the first step, scrolls, and never writes the secrets or errors them out", async () => {
+    // The fixture page has no real login form: these selectors just exercise the sign-in path.
+    const login = { emailEnv: "RS_TEST_EMAIL", passwordEnv: "RS_TEST_PASSWORD", emailSelector: "[data-testid=note-input]", passwordSelector: "[data-testid=note-input]", nextSelector: "[data-testid=noop]", submitSelector: "[data-testid=noop]", loginPath: "/never" };
+    const withLogin: UiScript = {
+      ...script,
+      login,
+      steps: [{ action: "scroll", target: "hscroll", value: "end", expectedState: { kind: "testid-visible", testId: "hscroll" } }],
+    };
+    delete process.env.RS_TEST_EMAIL;
+    delete process.env.RS_TEST_PASSWORD;
+    await expect(runScript(withLogin, path.join(tmp, "run7"), undefined, { host: fixture.host })).rejects.toThrow("missing credentials in environment: RS_TEST_EMAIL, RS_TEST_PASSWORD");
+
+    process.env.RS_TEST_EMAIL = "pat@example.com";
+    process.env.RS_TEST_PASSWORD = "hunter2-secret";
+    try {
+      const dir = path.join(tmp, "run8");
+      const s = await runScript(withLogin, dir, undefined, { host: fixture.host });
+      expect(s.steps.map((x) => x.status)).toEqual(["passed"]);
+      const written = fs.readFileSync(path.join(dir, "summary.json"), "utf8");
+      for (const secret of ["pat@example.com", "hunter2-secret"]) {
+        expect(written).not.toContain(secret);
+        expect(JSON.stringify(s)).not.toContain(secret);
+      }
+      // A sign-in that fails with an error echoing a secret (here via the selector) must not leak it.
+      const bad = { ...withLogin, login: { ...login, passwordSelector: "[data-testid=pat@example.com]" } };
+      const err = await runScript(bad, path.join(tmp, "run9"), undefined, { host: fixture.host }).catch((e: Error) => e);
+      expect((err as Error).message).toContain("[redacted]");
+      expect((err as Error).message).not.toMatch(/pat@example\.com|hunter2-secret/);
+    } finally {
+      delete process.env.RS_TEST_EMAIL;
+      delete process.env.RS_TEST_PASSWORD;
+    }
+  }, 150_000);
 });
