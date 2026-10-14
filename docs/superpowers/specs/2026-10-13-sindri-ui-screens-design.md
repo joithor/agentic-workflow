@@ -542,6 +542,7 @@ word, stripes removed, read-first focus with Cancel behind a confirm, 760 px for
 | `agents.html` | §4.5: sessions under their recipe state, the action menu open on one row, budgets |
 | `context.html`, `context-filemap.html` | §4.4: the lens stack with computed cross-band edges and the undo toast; the file map as a tree |
 | `system.html` | §4.6: the dependency graph with the impact panel, the engine table and a history |
+| `prototype.html` (+ `prototype-*.png`) | A clickable prototype of the whole app over the same fixture: the seven pages, the G chords and hash deep links, every sheet, every §4.4 answer (protected ones reveal the command), the launch flow, Take over and Hand back, Cancel behind its confirm, map review with the undo toast, jobs that stream, the palette and the `?` sheet, and a controls panel for the shared states, reduced motion, text scale and the large fixture. Scripted click-throughs with assertions live beside the build tooling; the PNGs are its page captures |
 
 ## 5. The recipe-driven rendering contract
 
