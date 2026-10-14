@@ -72,7 +72,7 @@ public sealed class TemporalDevServerTests : IDisposable
             Assert.NotEqual(stuck.ProcessId, replacement.ProcessId);
             Assert.False(replacement.Adopted);
             Assert.True(DevServerProcesses.Gone(stuck.ProcessId), "the stuck server still runs");
-            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(replacement.Frontend, TimeSpan.FromSeconds(5), ct)).Answer);
+            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(replacement.Frontend, TemporalSettings.DefaultNamespace, TimeSpan.FromSeconds(5), ct)).Answer);
         }
         finally
         {
@@ -96,7 +96,7 @@ public sealed class TemporalDevServerTests : IDisposable
         try
         {
             Assert.False(restarted.Adopted);
-            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(restarted.Frontend, TimeSpan.FromSeconds(5), ct)).Answer);
+            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(restarted.Frontend, TemporalSettings.DefaultNamespace, TimeSpan.FromSeconds(5), ct)).Answer);
             var listed = await Temporalio.Client.TemporalConnection.CreateLazy(new(restarted.Frontend.ToString())).OperatorService
                 .ListSearchAttributesAsync(new() { Namespace = TemporalSettings.DefaultNamespace }, new() { CancellationToken = ct });
             Assert.All(SindriTemporal.SearchAttributes, a => Assert.Equal(a.Type, listed.CustomAttributes[a.Name]));
