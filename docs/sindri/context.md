@@ -168,10 +168,10 @@ overrides:                                  # human decisions that outlive rebui
 ```bash
 $SINDRI context map import ~/maps/product-map.yaml
 # map file /Users/you/maps/product-map.yaml
-# repo aw-split-panes, authored: 19 nodes, 19 edges, 1 aliases, 1 decisions, 2 overrides
+# repo aw-split-panes, authored: 20 nodes, 21 edges, 1 aliases, 1 decisions, 2 overrides
 # hash 3f0c…
 # Type the first 6 characters of 3f0c… to import it: 3f0c9a
-# Imported map v1 (current) for aw-split-panes: 19 nodes, 19 edges, 1 aliases, 1 decisions, 2 overrides
+# Imported map v1 (current) for aw-split-panes: 20 nodes, 21 edges, 1 aliases, 1 decisions, 2 overrides
 ```
 
 Import is shaped like `profile approve`: only you, at an interactive terminal, can do it (a session, a script or the
@@ -185,7 +185,7 @@ ships it. HTTP: `POST /sindri/context/map/import` with `{"path", "hash", "confir
 ```bash
 $SINDRI context map status [--json]
 # map v2 current · aw-split-panes · created 2026-10-12T17:02:11.0000000+00:00
-# 19 nodes, 19 edges, 1 aliases, 1 decisions, 2 overrides; 0 orphaned overrides; 1 retained versions
+# 20 nodes, 21 edges, 1 aliases, 1 decisions, 2 overrides; 0 orphaned overrides; 1 retained versions
 $SINDRI context map export [<name-or-path>] [--json]
 # Exported map v2 to $AW_SINDRI_HOME/context/exports/map-v2-20261012T170400Z.json: 19 nodes, …
 ```

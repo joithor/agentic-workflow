@@ -46,7 +46,7 @@ public sealed class ContextMapApiTests
         Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (unconfirmed.Status, unconfirmed.Code));
         Assert.Equal(HttpStatusCode.OK, imported.Status);
         Assert.Contains("\"status\":\"current\"", imported.Body, StringComparison.Ordinal);
-        Assert.Contains("\"nodes\":19", status.Body, StringComparison.Ordinal);
+        Assert.Contains("\"nodes\":20", status.Body, StringComparison.Ordinal);
         Assert.Contains(hash, recorded.Value!.Envelope.Payload, StringComparison.Ordinal);
     }
 
