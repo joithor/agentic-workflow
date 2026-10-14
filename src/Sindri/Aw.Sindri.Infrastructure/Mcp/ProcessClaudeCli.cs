@@ -55,9 +55,12 @@ internal sealed class ProcessClaudeCli(McpSettings settings) : IClaudeCli
         timeout.CancelAfter(budget);
         var output = claude.StandardOutput.ReadToEndAsync(timeout.Token);
         var error = claude.StandardError.ReadToEndAsync(timeout.Token);
+        string errors;
         try
         {
             await claude.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+            _ = await output.ConfigureAwait(false);   // a child claude left behind can hold the pipes open past exit: still bounded
+            errors = await error.ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -70,8 +73,7 @@ internal sealed class ProcessClaudeCli(McpSettings settings) : IClaudeCli
             return new ClaudeRun(124, string.Create(CultureInfo.InvariantCulture, $"claude didn't finish within {budget.TotalSeconds:0} s"));
         }
 
-        _ = await output.ConfigureAwait(false);
-        var lines = (await error.ConfigureAwait(false)).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var lines = errors.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         return new ClaudeRun(claude.ExitCode, lines.Length == 0 ? string.Empty : lines[^1]);
     }
 

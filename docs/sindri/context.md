@@ -183,7 +183,8 @@ only. Answer: *pending the S-1M owner check*.
 `$SINDRI doctor` adds two rows:
 
 - `context:sources`: the context engine read in-process from the same home and approved profile serve uses, so it
-  works with the process stopped. `ok` when every source is ok (it says whether session reads are on; off means MCP
+  works with the process stopped. It reports each source as of its last refresh (the `context-docs-refresh`
+  service), not a live probe: a repo moved away shows only after the next refresh. `ok` when every source is ok (it says whether session reads are on; off means MCP
   calls answer `020`), `warn` when some are degraded (`SND-CONTEXT-010`), `fail` when every source is down (`011`) or
   the store can't open; `warn` with no approved profile, `ok` with no `context:` section.
 - `context:mcp-scope`: warns (`SND-CONTEXT-026`) on a user-wide `sindri` entry in Claude Code's `~/.claude.json`
