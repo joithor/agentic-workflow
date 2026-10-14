@@ -33,6 +33,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<TemporalFrontend>()
             .AddSingleton<KnownInstances>()                            // engine P4: the opaque ids this process has seen (spec §6.3)
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items
+            .AddSingleton<ILaunchRequests>(NoLaunchRequests.Instance)  // engine P5 unit (b): stub until API P10a's launches (UI E-19)
             .AddSingleton<IInstanceRuntime, TemporalInstanceRuntime>()
             .AddSingleton<IWorkflowInstances, TemporalWorkflowInstances>()
             .AddSingleton<ITemporalWorker, SindriWorkerHost>()

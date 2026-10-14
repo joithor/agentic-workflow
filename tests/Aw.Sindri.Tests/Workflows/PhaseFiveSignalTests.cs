@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
@@ -12,8 +13,8 @@ namespace Aw.Sindri.Tests.Workflows;
 /// plan journeys 1–4 and 9), with the dev profile's 'workflow.deskTimeout: 1m': 'workflow.dev-timeout' on T-2 parks
 /// 'timeout' once its minute runs out; a second instance on T-8, taken over at 20 s, shows 'taken-over' with its timer
 /// paused at 40 s left, nothing fires while it stays taken over, and after 'handback' it parks after roughly the 40 s
-/// that remained; 'answer --resume' puts T-2 back in its desk task with the same run token. Red at the P5 contract: the
-/// takeover and handback Updates (unit (b)) and the timer scopes (units (a), (b)) are stubs.
+/// that remained; 'answer --resume' puts T-2 back in its desk task with the same run token. The three cases take under a
+/// second of wall clock (the signal's last sentence).
 /// </summary>
 [Lane(TestLane.Integration)]
 public sealed class PhaseFiveSignalTests(SindriTimeSkippingServer server) : IClassFixture<SindriTimeSkippingServer>, IDisposable
@@ -33,7 +34,10 @@ public sealed class PhaseFiveSignalTests(SindriTimeSkippingServer server) : ICla
         await WorkflowsHarness.HoldLease(sindri, ct);
         using var worker = new TemporalWorker(server.Environment.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
 
+        var clock = Stopwatch.StartNew();
         await worker.ExecuteAsync(() => ThreeCases(sindri, ct), ct);
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(1), $"the three cases took {clock.ElapsedMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture)} ms of wall clock; the time-skipping server should run them in under a second");
     }
 
     /// <summary>The signal's three cases: T-2 parks; T-8 is taken over at 20 s, handed back at 80 s and parks at about 120 s; T-2 resumes.</summary>

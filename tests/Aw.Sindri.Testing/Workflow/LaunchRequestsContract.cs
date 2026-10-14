@@ -1,0 +1,29 @@
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Xunit;
+
+namespace Aw.Sindri.Testing.Workflow;
+
+/// <summary>
+/// The contract every <see cref="ILaunchRequests"/> honours (UI spec E-19): an item with no launch in flight reads none,
+/// so a start runs as it always did. Until API P10a's launches projection lands the adapter reads none for every item.
+/// </summary>
+public abstract class LaunchRequestsContract
+{
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    /// <summary>The launches.</summary>
+    /// <returns>The port under test, with no launch requested.</returns>
+    protected abstract ILaunchRequests Create();
+
+    /// <summary>An item with no launch in flight reads none.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task An_item_with_no_launch_in_flight_reads_none()
+    {
+        var read = await Create().Requested(ItemKey.From("T-1"), Token);
+
+        Expect.True(!read.IsError);
+        Expect.True(read.Value is null);
+    }
+}

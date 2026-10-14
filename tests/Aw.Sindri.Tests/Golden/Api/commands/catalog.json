@@ -136,7 +136,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/commands",
       "cli": "sindri workflow handback <address>",
-      "ui": "pending:WF-P5",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -154,7 +154,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/commands",
       "cli": "sindri workflow takeover <address>",
-      "ui": "pending:WF-P5",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
