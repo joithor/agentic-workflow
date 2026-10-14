@@ -196,14 +196,4 @@ public static partial class TransitionDecision
             Answered = Answered ?? Input.Trigger as AnswerGiven,
         };
     }
-
-    /// <summary>
-    /// '--resume' on a spec-conflict dispatch park (§3.8; engine P6 unit (b)): ends the park and re-emits the refused
-    /// effect (<see cref="ResumeAction.Effect"/>) as a new command with the same effect identity.
-    /// </summary>
-    private static Decision Reemit(Deciding d, WorkflowInstance instance, ResumeAction resume)
-    {
-        _ = (d, instance, resume);
-        throw new NotSupportedException("engine P6 unit (b): the reemit resume of a spec-conflict dispatch park");
-    }
 }

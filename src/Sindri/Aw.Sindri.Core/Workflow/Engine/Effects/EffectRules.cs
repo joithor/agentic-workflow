@@ -9,9 +9,13 @@ namespace Aw.Sindri.Core.Workflow.Engine.Effects;
 /// <summary>The pure effect decisions (engine spec §3.4, §5.7; engine P6): the dispatch recheck and the 'retry' re-emission.</summary>
 public static class EffectRules
 {
+    /// <summary>The one effect the engine's own origin may send (§5.7): its desk notice.</summary>
+    private static readonly BlockId _engineNotice = BlockId.From("effect.notify.desk");
+
     /// <summary>
     /// The recheck before an effect's activity (§5.7; unit (b)): null when it may run, else the refusal's code. An
-    /// engine-origin effect is exempt from both checks; a recipe effect needs its recipe's approval to hold
+    /// engine-origin effect is exempt from both checks, but only 'effect.notify.desk' may be engine-origin (any other
+    /// kind is SND-WF-011); a recipe effect needs its recipe's approval to hold
     /// (SND-RECIPE-005 revoked, SND-RECIPE-006 drifted) and its kind on the allowlist (SND-WF-011).
     /// </summary>
     /// <param name="origin">The effect's origin.</param>
@@ -22,8 +26,22 @@ public static class EffectRules
     public static string? Recheck(CommandOrigin origin, ApprovalCheck approval, EffectSettings effects, BlockId kind)
     {
         ArgumentNullException.ThrowIfNull(effects);
-        _ = (origin, approval, kind);
-        throw new NotSupportedException("engine P6 unit (b): EffectRules.Recheck (approval still holds, kind still allowlisted)");
+        if (origin == CommandOrigin.Engine)
+        {
+            return kind == _engineNotice ? null : WorkflowErrors.EffectNotAllowed.Code;   // Engine_origin_limited_to_notify_desk (§10)
+        }
+
+        if (approval == ApprovalCheck.Revoked)
+        {
+            return WorkflowErrors.RecipeRevoked.Code;
+        }
+
+        if (approval == ApprovalCheck.Drifted)
+        {
+            return WorkflowErrors.RecipePinDrift.Code;
+        }
+
+        return effects.Allowlist?.Contains(kind) == true ? null : WorkflowErrors.EffectNotAllowed.Code;
     }
 
     /// <summary>

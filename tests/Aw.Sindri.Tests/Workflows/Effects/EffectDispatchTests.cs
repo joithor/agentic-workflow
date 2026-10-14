@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
@@ -7,6 +8,7 @@ using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Infrastructure.Workflows;
+using Aw.Sindri.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Temporalio.Api.Enums.V1;
 using Temporalio.Client;
@@ -17,8 +19,9 @@ namespace Aw.Sindri.Tests.Workflows.Effects;
 /// <summary>
 /// Effects are activities (engine spec rev 8.1 §5.7; engine P6 unit (a)), on the time-skipping server: a transition's
 /// effect writes 'outbox.pending' after the transition's ledger event, waits out 'workflow.dispatchDelay' (10 s by default)
-/// on a workflow timer, then runs; a cancel within the delay aborts it; an engine notice skips the delay. The recheck is
-/// unit (b)'s and 'effect.notify.desk' unit (c)'s: <see cref="PassingRecheck"/> and <see cref="FakeDeskEffect"/> stand in.
+/// on a workflow timer, then runs; a cancel within the delay aborts it; an engine notice skips the delay. The shipped
+/// recheck runs against an approved profile that allowlists 'effect.notify.desk' (<see cref="InMemoryProfiles"/>);
+/// 'effect.notify.desk' is unit (c)'s, so <see cref="FakeDeskEffect"/> stands in.
 /// </summary>
 [Lane(TestLane.Integration)]
 public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClassFixture<SindriTimeSkippingServer>, IDisposable
@@ -26,6 +29,7 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
     private static readonly TimeSpan _delay = EffectSettings.DefaultDispatchDelay;
     private readonly WorkflowsHarness _harness = new();
     private readonly FakeDeskEffect _desk = new();
+    private readonly InMemoryProfiles _profiles = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -36,9 +40,9 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
     {
         var env = server.Environment;
         _harness.Recipe("workflow.dev-notify", WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
-        await using var sindri = _harness.Sindri(_desk.Replace);
+        await using var sindri = Sindri();
         await WorkflowsHarness.HoldLease(sindri, Token);
-        using var worker = new TemporalWorker(env.Client, PassingRecheck.Options(sindri));
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
 
         await worker.ExecuteAsync(async () =>
         {
@@ -65,9 +69,9 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
     {
         var env = server.Environment;
         _harness.Recipe("workflow.dev-notify", WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
-        await using var sindri = _harness.Sindri(_desk.Replace);
+        await using var sindri = Sindri();
         await WorkflowsHarness.HoldLease(sindri, Token);
-        using var worker = new TemporalWorker(env.Client, PassingRecheck.Options(sindri));
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
 
         await worker.ExecuteAsync(async () =>
         {
@@ -97,9 +101,9 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
     public async Task An_engine_notice_is_dispatched_without_the_delay()
     {
         var env = server.Environment;
-        await using var sindri = _harness.Sindri(_desk.Replace);
+        await using var sindri = Sindri();
         await WorkflowsHarness.HoldLease(sindri, Token);
-        using var worker = new TemporalWorker(env.Client, PassingRecheck.Options(sindri));
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
 
         await worker.ExecuteAsync(async () =>
         {
@@ -111,6 +115,18 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
             Assert.DoesNotContain(await Timers(handle), static t => t == _delay);
             await handle.TerminateAsync("test over");
         }, Token);
+    }
+
+    /// <summary>The host with the fake desk block and an approved profile whose 'workflow.effects' allowlists 'effect.notify.desk'.</summary>
+    private ServiceProvider Sindri()
+    {
+        var profile = new SindriProfile(SindriProfile.CurrentSchemaVersion, "tester", Workflow: new WorkflowSettings(Effects: ["effect.notify.desk"]));
+        _ = _profiles.Save(new LoadedProfile(profile, ProfileHash.From(new string('b', 64)), "/home/profile.yaml"), Token).AsTask().GetAwaiter().GetResult();
+        return _harness.Sindri(services =>
+        {
+            _desk.Replace(services);
+            _ = services.AddSingleton<IApprovedProfile>(_profiles);
+        });
     }
 
     /// <summary>Starts 'workflow.dev-notify' on <paramref name="item"/> and completes its desk Step: 'ask -> sent' with 'effect.notify.desk'.</summary>

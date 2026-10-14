@@ -3,9 +3,13 @@ using System.Text;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Temporalio.Activities;
 using Temporalio.Common;
@@ -33,10 +37,16 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="events">The control plane's event factory.</param>
 /// <param name="catalog">The registered events: a block's reply outcome names the reply event that declares it.</param>
 /// <param name="dispatch">Runs an effect block's runtime, by its id.</param>
-internal sealed class EffectActivities(ILedgerStore ledger, HeldLease lease, EventFactory events, BlockCatalog catalog, EffectDispatch dispatch)
+/// <param name="recipes">The recipe approvals now (P2's IRecipeApprovals and PinRules.Check), for the recheck.</param>
+/// <param name="profile">The approved profile snapshot (never the live file), whose 'workflow.effects' the recheck reads.</param>
+internal sealed class EffectActivities(
+    ILedgerStore ledger, HeldLease lease, EventFactory events, BlockCatalog catalog, EffectDispatch dispatch, IApprovedRecipes recipes, IApprovedProfile profile)
 {
     /// <summary>'RecordEffect' and 'RecheckEffect' run as local activities that retry without bound (the ledger must have the row).</summary>
     public static LocalActivityOptions LocalOptions => RecordEventActivities.LocalOptions;
+
+    /// <summary>No allowlist: an engine-origin recheck reads no profile, and the engine's desk notice needs none.</summary>
+    private static readonly EffectSettings _noEffects = new(Allowlist: null, EffectSettings.DefaultDispatchDelay);
 
     /// <summary>
     /// 'RunEffect' runs as a regular activity: retried with backoff and without bound, since the block's existence check
@@ -60,14 +70,35 @@ internal sealed class EffectActivities(ILedgerStore ledger, HeldLease lease, Eve
         return await Append(entry, activity.CancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>The recheck: the recipe's approval and the approved profile's allowlist, now. Engine P6 unit (b).</summary>
+    /// <summary>
+    /// The recheck after the dispatch delay (§5.7, §4.3 W11): the recipe's approval and the approved profile's
+    /// 'workflow.effects', read now. An engine-origin effect reads neither (only its kind is checked). A read that fails
+    /// throws, so the local activity retries it.
+    /// </summary>
     /// <param name="recheck">The recipe, the effect and its origin.</param>
-    /// <returns>Null, or the refusal's code.</returns>
+    /// <returns>Null, or the refusal's code and message.</returns>
     [Activity("RecheckEffect")]
-    public Task<EffectRecheckResult> RecheckAsync(EffectRecheck recheck)
+    public async Task<EffectRecheckResult> RecheckAsync(EffectRecheck recheck)
     {
         ArgumentNullException.ThrowIfNull(recheck);
-        throw Unbuilt("unit (b): the RecheckEffect local activity");
+        if (recheck.Origin == CommandOrigin.Engine)
+        {
+            return Answer(EffectRules.Recheck(recheck.Origin, ApprovalCheck.Holds, _noEffects, recheck.Kind), recheck);
+        }
+
+        var cancel = ActivityExecutionContext.Current.CancellationToken;
+        var approval = await recipes.Check(recheck.Recipe, cancel).ConfigureAwait(false);
+        var approved = await profile.Latest(cancel).ConfigureAwait(false);
+        if (approved.IsError || (approval.IsError && approval.Error.Code != WorkflowErrors.RecipeNotApproved.Code))
+        {
+            var error = approved.IsError ? approved.Error : approval.Error;
+            throw new InvalidOperationException($"{error.Code}: {error.Message}");   // retried: the recheck must read both
+        }
+
+        // A running instance's recipe with no approval row at all is treated like a revoked one: it no longer holds.
+        var check = approval.IsError ? ApprovalCheck.Revoked : approval.Value;
+        var settings = new EffectSettings(Allowlist(approved.Value), EffectSettings.DefaultDispatchDelay);
+        return Answer(EffectRules.Recheck(recheck.Origin, check, settings, recheck.Kind), recheck);
     }
 
     /// <summary>Performs the effect through its block, writes 'outbox.dispatched' and appends its reply.</summary>
@@ -127,5 +158,34 @@ internal sealed class EffectActivities(ILedgerStore ledger, HeldLease lease, Eve
             : appended.Value;
     }
 
-    private NotSupportedException Unbuilt(string what) => new($"engine P6 {what} is not built yet ({GetType().Name})");
+    /// <summary>
+    /// The approved profile's 'workflow.effects' as block ids; null when none is approved or it sets none. Unit (d)
+    /// validates the key (RCP-EFFECT-001), so an id that doesn't parse is simply not allowlisted here.
+    /// </summary>
+    private static HashSet<BlockId>? Allowlist(LoadedProfile? approved)
+    {
+        if (approved?.Profile.Workflow?.Effects is not { } ids)
+        {
+            return null;
+        }
+
+        HashSet<BlockId> allowed = [];
+        foreach (var id in ids)
+        {
+            if (BlockId.TryFrom(id, out var block))
+            {
+                _ = allowed.Add(block);
+            }
+        }
+
+        return allowed;
+    }
+
+    private static EffectRecheckResult Answer(string? code, EffectRecheck recheck) => new(code, code switch
+    {
+        null => null,
+        _ when code == WorkflowErrors.RecipeRevoked.Code => $"{recheck.Recipe.Id.Value}@{recheck.Recipe.Hash.Display} was revoked within the dispatch delay",
+        _ when code == WorkflowErrors.RecipePinDrift.Code => $"a block pinned by {recheck.Recipe.Id.Value}@{recheck.Recipe.Hash.Display} changed since it was approved",
+        _ => $"{recheck.Kind.Value} isn't on the approved profile's effect allowlist (workflow.effects)",
+    });
 }

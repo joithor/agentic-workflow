@@ -28,7 +28,7 @@ internal sealed partial class RecipeWorkflow
     /// <summary>
     /// Runs <paramref name="effects"/> of the change that left the instance as <paramref name="after"/>: each through
     /// 'RecordEffect' (pending); a recipe effect then waits 'workflow.dispatchDelay' (cancelled if the instance is) and
-    /// passes 'RecheckEffect' (unit (b)), or is refused ('RecordEffect' refused, then an 'OutboxRefused' trigger); then
+    /// passes 'RecheckEffect', or is refused ('RecordEffect' refused, then an 'OutboxRefused' trigger); then
     /// 'RunEffect'. An engine notice skips the delay and the recheck: a park interrupts at once.
     /// </summary>
     /// <param name="after">The instance after the change.</param>
@@ -144,14 +144,15 @@ internal sealed partial class RecipeWorkflow
     }
 
     /// <summary>
-    /// A recipe effect's undo window and recheck (§5.7): false when a cancel aborted it within the delay or the recheck
-    /// refused it, each with its 'outbox.refused' row.
+    /// A recipe effect's undo window and recheck (§5.7): false when a cancel aborted it within the delay (an
+    /// 'outbox.cancelled' row; no recheck runs) or the recheck refused it (an 'outbox.refused' row with the code, then
+    /// the 'OutboxRefused' trigger carrying the effect, so the park names it and a resume re-sends it).
     /// </summary>
     private async Task<bool> Cleared(EffectRow row, EffectCommand effect)
     {
         if (!await Delayed().ConfigureAwait(true))
         {
-            _ = await Record(row with { State = EffectState.Refused, Reason = "cancelled: the instance was cancelled within the dispatch delay" }).ConfigureAwait(true);
+            _ = await Record(row with { State = EffectState.Cancelled, Reason = "cancelled: the instance was cancelled within the dispatch delay" }).ConfigureAwait(true);
             return false;
         }
 
@@ -162,7 +163,7 @@ internal sealed partial class RecipeWorkflow
             return true;
         }
 
-        var refused = await Record(row with { State = EffectState.Refused, Code = code }).ConfigureAwait(true);
+        var refused = await Record(row with { State = EffectState.Refused, Code = code, Reason = checkedNow.Reason }).ConfigureAwait(true);
         await Refuse(new OutboxRefused(Dispatcher, new RefusedEffect(effect.Effect, effect.Identity, effect.With), code, refused.Sequence)).ConfigureAwait(true);
         return false;
     }
@@ -187,7 +188,7 @@ internal sealed partial class RecipeWorkflow
         }
     }
 
-    /// <summary>Hands a recheck refusal to the loop (unit (b) decides it), unless the instance has ended meanwhile.</summary>
+    /// <summary>Hands a recheck refusal to the loop (TransitionDecision's 'outbox.refused' park), unless the instance has ended meanwhile.</summary>
     private async Task Refuse(OutboxRefused refused)
     {
         var ticket = ++_tickets;

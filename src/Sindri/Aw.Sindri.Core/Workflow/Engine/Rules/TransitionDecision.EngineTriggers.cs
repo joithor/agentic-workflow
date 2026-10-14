@@ -33,17 +33,6 @@ public static partial class TransitionDecision
         };
     }
 
-    /// <summary>
-    /// 'outbox.refused' (§5.7, §3.8; engine P6 unit (b)): the recheck refused one of the instance's effects. It parks with
-    /// spec-conflict of the code's kind (SND-RECIPE-005 revoked, SND-RECIPE-006 drift, SND-WF-011 dispatch, whose
-    /// '--resume' re-emits the effect), or is absorbed when the instance is already parked for the same revoke.
-    /// </summary>
-    private static Decision OutboxRefusal(Deciding d, WorkflowInstance instance, OutboxRefused refused)
-    {
-        _ = (d, instance, refused);
-        throw new NotSupportedException("engine P6 unit (b): the outbox.refused park (spec-conflict of the refusal's kind, or absorbed)");
-    }
-
     /// <summary>'handback' (§3.8): ends the takeover; the park it covered, or one that arrived meanwhile, takes effect again.</summary>
     private static Decision Handback(Deciding d, WorkflowInstance instance)
     {

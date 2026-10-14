@@ -691,7 +691,8 @@ Unit (a), as built:
 
 - **Dispatch** runs as a workflow task the loop doesn't await, started after every mirrored change (start, `Apply`,
   the desk report). Recipe effects wait `LoadedRecipe.DispatchDelay` in a cancellation scope; a `cancel` within the delay
-  aborts the effect with an `outbox.refused` row whose code is null and whose reason starts `cancelled`. Engine-origin
+  aborts the effect with an `outbox.cancelled` row (state `cancelled`, no code, reason starting `cancelled`; changed by
+  unit (b): a cancel is not a refusal, and no recheck runs). Engine-origin
   notices skip the delay and the recheck. The instance returns only once every effect it emitted has settled.
 - **One run per identity:** an identity already dispatched, or still on its way, is skipped, so a `retry` re-emission
   (`RecipeWorkflow.Reemit`, over `EffectRules.Reemitted`) writes nothing twice. `RunEffect` keys its rows by identity
@@ -702,3 +703,29 @@ Unit (a), as built:
 - **Blocks by id:** `AddEffect` also registers the block keyed by its id; `RunEffect` resolves it in its own scope
   through the `EffectDispatch` registration.
 - The transition's ledger payload lists its effect ids (`effects`, left out when there are none).
+
+Unit (b), as built:
+
+- **`RecheckEffect`** (`EffectActivities.RecheckAsync`, a local activity) reads the recipe's approval through
+  `IApprovedRecipes.Check` (P2's `IRecipeApprovals` and `PinRules.Check`) and the **approved** profile snapshot through
+  `IApprovedProfile.Latest`, never the live file. It reads `workflow.effects` straight from `WorkflowSettings.Effects`
+  (unit (d) validates the key; an id that doesn't parse is not allowlisted). A read that fails throws, so the local
+  activity retries; a running recipe with no approval row is treated as revoked. Engine-origin effects read neither.
+- **`EffectRules.Recheck`** is pure: an engine-origin `effect.notify.desk` passes; any other engine-origin kind is
+  `SND-WF-011` (`Engine_origin_limited_to_notify_desk`); a recipe effect is `SND-RECIPE-005` when revoked,
+  `SND-RECIPE-006` when drifted, and `SND-WF-011` when its kind isn't allowlisted or the approved profile has no
+  `workflow.effects` (or none is approved).
+- **The refusal** writes `outbox.refused` (code and reason) and hands the loop `OutboxRefused`, which carries the
+  effect as it was emitted (`RefusedEffect`: kind, identity, `with`), so the park names it and a resume re-sends it
+  without looking it up in the recipe, even after the instance has entered another frame. `ResumeAction.Effect` is a
+  `RefusedEffect` too.
+- **`TransitionDecision.OutboxRefusal`**: `SND-RECIPE-005` parks `spec-conflict (revoked)` with resume `none` (only
+  `cancel`), absorbed when already parked for a revoke; `SND-RECIPE-006` parks `spec-conflict (drift)` with resume
+  `rearm` and the effect kept on it, absorbed when already parked for drift; `SND-WF-011` parks
+  `spec-conflict (dispatch)` with resume `reemit`. A refusal reaching an ended instance is absorbed: the
+  `outbox.refused` row records it, and `workflow.effect-refused` stays unused.
+- **`Reemit`** (`answer --resume` on a dispatch park) ends the park and returns the effect as a new command under the
+  same identity (a new command id, a new `outbox.pending` row, the delay and the recheck again), listed on the
+  answer's event.
+- **Gap for the integrator (P2's path):** a drift approval that resumes an instance parked by a drift refusal should
+  re-send `ResumeAction.Effect`; the approval resume doesn't do that yet.

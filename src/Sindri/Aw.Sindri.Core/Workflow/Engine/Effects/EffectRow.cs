@@ -12,10 +12,10 @@ namespace Aw.Sindri.Core.Workflow.Engine.Effects;
 /// <param name="Command">This emission's command id: a re-emission (a 'retry', a resumed dispatch park) gets a new one under the same identity.</param>
 /// <param name="Kind">The effect block ('effect.notify.desk', 'effect.claim.ref').</param>
 /// <param name="Origin">'engine' or 'recipe': the origin decides the exemption from the recheck, not the kind.</param>
-/// <param name="State">Pending, dispatched or refused.</param>
+/// <param name="State">Pending, dispatched, refused (the recheck), or cancelled (a cancel of the instance within the dispatch delay; no recheck ran).</param>
 /// <param name="Instance">The instance address.</param>
 /// <param name="Code">The refusal's code (SND-RECIPE-005, SND-RECIPE-006, SND-WF-011); null unless refused.</param>
-/// <param name="Reason">The refusal's message, or a dispatched effect's note ('already sent'); null when there is none.</param>
+/// <param name="Reason">The refusal's message, a cancelled row's 'cancelled: …', or a dispatched effect's note ('already sent'); null when there is none.</param>
 public sealed record EffectRow(
     string Identity,
     string Command,
