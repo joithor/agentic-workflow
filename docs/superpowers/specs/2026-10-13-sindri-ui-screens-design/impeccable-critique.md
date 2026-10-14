@@ -192,3 +192,67 @@ Take over offered on a children state with no session; `checks ● r1 failed` us
 1. The engineer's job ends with an id in a terminal; the pass hid ids on the pages where that happens. What is lost by drawing them at rest in tertiary ink?
 2. Calm was implemented as one rhythm. Is calm a rhythm, or a density target per page?
 3. Live and Running both mean an agent is working, and Running is green on three pages and grey on three. Is there a third state, or should there be one word?
+
+
+---
+
+# Critique run 4: Sindri UI revision-8 mockups, after the consistency pass
+
+Target: `docs/superpowers/specs/2026-10-13-sindri-ui-screens-design/mockups/` at cbae68b6 (11 files, re-captured renders). Independent assessment A (blind to runs 1-3 and the fix list) plus the detector (B): clean except the em-dash advisory on tabular nulls in two files; "Overused font: Inter" ignored.
+
+## Design Health Score
+
+| # | Heuristic | Score | Key issue |
+|---|---|---|---|
+| 1 | Visibility of system status | 4 | Every row carries age, chip and bar; the pending pattern names its API phase; only the sheets' Timeline shows 2 of 41 with no "more" |
+| 2 | Match system / real world | 3 | `desk`, `no-progress`, `Child`, `Polling`, "2 running at a desk" need context nobody is given |
+| 3 | User control and freedom | 3 | The decision Accept is a one-click primary with no confirm or undo; filters have no active or clear state |
+| 4 | Consistency and standards | 2 | "need you" and "waiting on you" name different sets on Home, Workflows, Work and Agents; the band on 3 of 11 pages; Home's health sentence names index and profile, System's names index and Onyx |
+| 5 | Error prevention | 3 | Protected locks, inline confirms, read-first focus, bulk undo; the decision Accept is the hole |
+| 6 | Recognition rather than recall | 3 | Home's needs-you ids hidden until hover on exactly the rows resolved by a terminal command |
+| 7 | Flexibility and efficiency | 3 | Chords, palette, bulk verbs; no multi-select, no filter persistence |
+| 8 | Aesthetic and minimalist design | 3 | The calm pass landed; noise remains where a page draws several states at once (Agents, Context) |
+| 9 | Error recovery | 3 | System's Impact column is the best moment in the set; no refused or failed action is drawn |
+| 10 | Help and documentation | 2 | `? Shortcuts` on three pages; no glossary for `desk` or `no-progress` |
+| **Total** | | **29/40** | **Good: solid foundation, address the weak areas** |
+
+## Anti-Patterns Verdict
+
+Not slop: no ban fires, and a Linear-fluent user would trust it. The content is unmistakably a control plane, which clears the "generic Linear clone" anti-reference on information architecture. The second-order reflex ("engineer's control plane, therefore dark Linear") stands as an accepted decision from DESIGN.md, not a failure.
+
+## What's Working
+
+- One frame for the project, the incident and the item: reading one sheet teaches the other two.
+- System's Impact column and engine table: cause, consequences, the fix with its API phase and copyable command, retries matching the history rows.
+- Numbers that reconcile where checked: Work 2+1+1+4+4 = 12; Recipes' runs sum to 193; engine 8 + 4 = 12; PRJ-sync's children sum to 9.
+
+## Priority Issues
+
+- **[P1] One label, two sets.** "5 need you" (Home) is the union; "3 need you" (Workflows) has two attention rows; "2 waiting on you" is escalated + decision on Work and parked + escalated on Agents. *Fix:* one definition in the fixture; every header count derived from its rows. **clarify**
+- **[P1] Recipes' percentages don't reconcile with the inspector.** 81% on the row is 81 of 112 (72%) in the inspector; the page total isn't the weighted mean. *Fix:* one source in the fixture. **harden**
+- **[P1] The band and the health sentence differ by page.** Band on three pages while needs-you is 5 everywhere; Home and System give different reasons. *Fix:* band on all or none (drop it: the pill carries the state); one sentence from the pill's reasons. **polish**
+- **[P1] The Attach sentence is missing under the primaries.** Present only in menus or under one group. *Fix:* one `.attach-note` under every control row that offers Attach. **clarify**
+- **[P2] Render defects:** Home's queued tag shrinks to one letter; fixed sheets stop at 900 px in full-page captures; Timeline shows 2 of 41 with no count link. **polish**
+- **[P2] Drawn-open states contradict their page:** Context's toast beside "31 pending" and "46"; Agents' open menu, confirm and focused primary at once. **distill**
+- **[P2] Needs-you ids hidden at rest** on the rows resolved by a command. **polish**
+- **[P3] "soft 80%" in attention colour on a 29% fill.** **quieter**
+
+## Cognitive Load
+
+3 of 8 failed (moderate): chunking (Context's ten-control lens row, Recipes' nine columns), progressive disclosure (Context shows everything at once, 1,894 px), working memory (two "since" values per item; "waiting on you" changing membership; 81% vs 81 of 112).
+
+## Persona Red Flags
+
+**Alex:** hover-only ids on needs-you rows; "Open instance ▾" is a menu to reach its default; no multi-select; Accept has no key; Run evals only inside the inspector. **Sam:** `role="row"` without a table ancestor behind the sheets; `display:none` ids outside aria-labelled rows; the vertical sheet tab has no landmark; the open menu has no focus management. **Riley:** title truncation order undefined; a ten-state path can start a line with a bare link; no pager for 460 proposals or 41 events; empty states only in comments. **The owner:** five-second test passes; the red row has the weakest affordance; "3 need you" against two chips; pill vs System reasons; "$4.12 / $14 soft 80%" reads as over the limit.
+
+## Minor Observations
+
+Lowercase chip words in source on Agents; "all 12 →" vs the fixture's "… 7 more"; a 76 px empty action column on the Home strip; the P-2211 row's empty id slot; the item sheet's `checks ◐` while the trace says checks finished; "workflow.step · open 6 · no runs yet"; "human rate 19%" not derivable; "$14" vs "$14.00"; `◐` in ink on the graph and in attention in the pill; the middle lens band on s1 reads as selected; the Build draft helper under two buttons; "No intent" as an attention word outside a chip; tabs' kbd 1-4 not listed in Shortcuts; Google Fonts in the mockups, so the Avalonia build must bundle Inter and JetBrains Mono or the renders shift.
+
+**Calm or sparse?** Home, Workflows, Agents, System and the three sheets read calm and scannable. Recipes reads sparse. Context reads long rather than loud.
+
+## Questions to Consider
+
+1. If "need you", "waiting on you" and "with you" cannot share one definition across four pages, does the owner have one queue of human work or four, and which one does the pulse count?
+2. The Recipes table says 81% and the inspector says 81 of 112. What in the pipeline guarantees they are the same number, and why is that not already a check like `sync-rules.sh --check`?
+3. Every page draws its most useful state open at once. When the Avalonia build shows one state at a time, which affordances will the owner discover without the mockup: a reason to keep the keyboard model, or to put the verbs back on the rows?
