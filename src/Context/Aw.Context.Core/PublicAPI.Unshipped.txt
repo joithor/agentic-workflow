@@ -73,6 +73,8 @@ Aw.Context.Core.Engine.ContextScope.Settings.get -> System.Text.Json.JsonElement
 Aw.Context.Core.Engine.ContextScope.Settings.init -> void
 Aw.Context.Core.Engine.ContextSettings
 Aw.Context.Core.Engine.ContextSettings.<Clone>$() -> Aw.Context.Core.Engine.ContextSettings!
+Aw.Context.Core.Engine.ContextSettings.CascadeDepth.get -> int
+Aw.Context.Core.Engine.ContextSettings.CascadeDepth.init -> void
 Aw.Context.Core.Engine.ContextSettings.ContextSettings() -> void
 Aw.Context.Core.Engine.ContextSettings.Deadline.get -> System.TimeSpan
 Aw.Context.Core.Engine.ContextSettings.Deadline.init -> void
@@ -97,10 +99,213 @@ Aw.Context.Core.Engine.ValidQuery.Equals(Aw.Context.Core.Engine.ValidQuery? othe
 Aw.Context.Core.Engine.ValidQuery.Terms.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Engine.ValidQuery.Terms.init -> void
 Aw.Context.Core.Engine.ValidQuery.ValidQuery(System.Collections.Generic.IReadOnlyList<string!>! Terms, int Budget) -> void
+Aw.Context.Core.Eval.IProbeFileReader
+Aw.Context.Core.Eval.IProbeFileReader.Read(string? path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.ProbeFile!>!>
+Aw.Context.Core.Eval.IProbeReportStore
+Aw.Context.Core.Eval.IProbeReportStore.Latest(string! probeFileHash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.ProbeReport?>!>
+Aw.Context.Core.Eval.IProbeReportStore.Write(Aw.Context.Core.Eval.ProbeReport! report, System.DateTimeOffset runAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Context.Core.Eval.ProbeCase
+Aw.Context.Core.Eval.ProbeCase.<Clone>$() -> Aw.Context.Core.Eval.ProbeCase!
+Aw.Context.Core.Eval.ProbeCase.Deconstruct(out Aw.Context.Core.Eval.ProbeId Id, out string! Question, out Aw.Context.Core.Eval.ProbeExpect! Expect) -> void
+Aw.Context.Core.Eval.ProbeCase.Equals(Aw.Context.Core.Eval.ProbeCase? other) -> bool
+Aw.Context.Core.Eval.ProbeCase.Expect.get -> Aw.Context.Core.Eval.ProbeExpect!
+Aw.Context.Core.Eval.ProbeCase.Expect.init -> void
+Aw.Context.Core.Eval.ProbeCase.Id.get -> Aw.Context.Core.Eval.ProbeId
+Aw.Context.Core.Eval.ProbeCase.Id.init -> void
+Aw.Context.Core.Eval.ProbeCase.ProbeCase(Aw.Context.Core.Eval.ProbeId Id, string! Question, Aw.Context.Core.Eval.ProbeExpect! Expect) -> void
+Aw.Context.Core.Eval.ProbeCase.Question.get -> string!
+Aw.Context.Core.Eval.ProbeCase.Question.init -> void
+Aw.Context.Core.Eval.ProbeDecision
+Aw.Context.Core.Eval.ProbeDecision.<Clone>$() -> Aw.Context.Core.Eval.ProbeDecision!
+Aw.Context.Core.Eval.ProbeDecision.ConflictsWith.get -> string?
+Aw.Context.Core.Eval.ProbeDecision.ConflictsWith.init -> void
+Aw.Context.Core.Eval.ProbeDecision.Deconstruct(out string! Record, out string! Quote, out string! Status, out string? ConflictsWith) -> void
+Aw.Context.Core.Eval.ProbeDecision.Equals(Aw.Context.Core.Eval.ProbeDecision? other) -> bool
+Aw.Context.Core.Eval.ProbeDecision.ProbeDecision(string! Record, string! Quote, string! Status, string? ConflictsWith = null) -> void
+Aw.Context.Core.Eval.ProbeDecision.Quote.get -> string!
+Aw.Context.Core.Eval.ProbeDecision.Quote.init -> void
+Aw.Context.Core.Eval.ProbeDecision.Record.get -> string!
+Aw.Context.Core.Eval.ProbeDecision.Record.init -> void
+Aw.Context.Core.Eval.ProbeDecision.Status.get -> string!
+Aw.Context.Core.Eval.ProbeDecision.Status.init -> void
+Aw.Context.Core.Eval.ProbeExpect
+Aw.Context.Core.Eval.ProbeExpect.<Clone>$() -> Aw.Context.Core.Eval.ProbeExpect!
+Aw.Context.Core.Eval.ProbeExpect.AbsentNodes.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Context.Core.Eval.ProbeExpect.AbsentNodes.init -> void
+Aw.Context.Core.Eval.ProbeExpect.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeDecision!>?
+Aw.Context.Core.Eval.ProbeExpect.Decisions.init -> void
+Aw.Context.Core.Eval.ProbeExpect.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Nodes, out System.Collections.Generic.IReadOnlyList<string!>? AbsentNodes, out System.Collections.Generic.IReadOnlyList<string!>? Records, out System.Collections.Generic.IReadOnlyList<string!>? Files, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeDecision!>? Decisions) -> void
+Aw.Context.Core.Eval.ProbeExpect.Equals(Aw.Context.Core.Eval.ProbeExpect? other) -> bool
+Aw.Context.Core.Eval.ProbeExpect.Files.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Context.Core.Eval.ProbeExpect.Files.init -> void
+Aw.Context.Core.Eval.ProbeExpect.Nodes.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Context.Core.Eval.ProbeExpect.Nodes.init -> void
+Aw.Context.Core.Eval.ProbeExpect.ProbeExpect(System.Collections.Generic.IReadOnlyList<string!>? Nodes = null, System.Collections.Generic.IReadOnlyList<string!>? AbsentNodes = null, System.Collections.Generic.IReadOnlyList<string!>? Records = null, System.Collections.Generic.IReadOnlyList<string!>? Files = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeDecision!>? Decisions = null) -> void
+Aw.Context.Core.Eval.ProbeExpect.Records.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Context.Core.Eval.ProbeExpect.Records.init -> void
+Aw.Context.Core.Eval.ProbeFile
+Aw.Context.Core.Eval.ProbeFile.<Clone>$() -> Aw.Context.Core.Eval.ProbeFile!
+Aw.Context.Core.Eval.ProbeFile.Deconstruct(out string! Path, out string! Hash, out Aw.Context.Core.Eval.ProbeSet! Set) -> void
+Aw.Context.Core.Eval.ProbeFile.Equals(Aw.Context.Core.Eval.ProbeFile? other) -> bool
+Aw.Context.Core.Eval.ProbeFile.Hash.get -> string!
+Aw.Context.Core.Eval.ProbeFile.Hash.init -> void
+Aw.Context.Core.Eval.ProbeFile.Path.get -> string!
+Aw.Context.Core.Eval.ProbeFile.Path.init -> void
+Aw.Context.Core.Eval.ProbeFile.ProbeFile(string! Path, string! Hash, Aw.Context.Core.Eval.ProbeSet! Set) -> void
+Aw.Context.Core.Eval.ProbeFile.Set.get -> Aw.Context.Core.Eval.ProbeSet!
+Aw.Context.Core.Eval.ProbeFile.Set.init -> void
+Aw.Context.Core.Eval.ProbeId
+Aw.Context.Core.Eval.ProbeId.Equals(Aw.Context.Core.Eval.ProbeId other) -> bool
+Aw.Context.Core.Eval.ProbeId.Equals(Aw.Context.Core.Eval.ProbeId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Eval.ProbeId>! comparer) -> bool
+Aw.Context.Core.Eval.ProbeId.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Eval.ProbeId.IsInitialized() -> bool
+Aw.Context.Core.Eval.ProbeId.ProbeId() -> void
+Aw.Context.Core.Eval.ProbeId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Eval.ProbeId.Value.get -> string!
+Aw.Context.Core.Eval.ProbeReport
+Aw.Context.Core.Eval.ProbeReport.<Clone>$() -> Aw.Context.Core.Eval.ProbeReport!
+Aw.Context.Core.Eval.ProbeReport.Deconstruct(out int SchemaVersion, out string! ProbeFile, out string! ProbeFileHash, out string? MapVersion, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeScore!>! Probes, out Aw.Context.Core.Eval.ProbeTotals! Totals, out Aw.Context.Core.Eval.ProbeTotals? Previous, out bool Regressed) -> void
+Aw.Context.Core.Eval.ProbeReport.Equals(Aw.Context.Core.Eval.ProbeReport? other) -> bool
+Aw.Context.Core.Eval.ProbeReport.MapVersion.get -> string?
+Aw.Context.Core.Eval.ProbeReport.MapVersion.init -> void
+Aw.Context.Core.Eval.ProbeReport.Previous.get -> Aw.Context.Core.Eval.ProbeTotals?
+Aw.Context.Core.Eval.ProbeReport.Previous.init -> void
+Aw.Context.Core.Eval.ProbeReport.ProbeFile.get -> string!
+Aw.Context.Core.Eval.ProbeReport.ProbeFile.init -> void
+Aw.Context.Core.Eval.ProbeReport.ProbeFileHash.get -> string!
+Aw.Context.Core.Eval.ProbeReport.ProbeFileHash.init -> void
+Aw.Context.Core.Eval.ProbeReport.ProbeReport(int SchemaVersion, string! ProbeFile, string! ProbeFileHash, string? MapVersion, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeScore!>! Probes, Aw.Context.Core.Eval.ProbeTotals! Totals, Aw.Context.Core.Eval.ProbeTotals? Previous, bool Regressed) -> void
+Aw.Context.Core.Eval.ProbeReport.Probes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeScore!>!
+Aw.Context.Core.Eval.ProbeReport.Probes.init -> void
+Aw.Context.Core.Eval.ProbeReport.Regressed.get -> bool
+Aw.Context.Core.Eval.ProbeReport.Regressed.init -> void
+Aw.Context.Core.Eval.ProbeReport.SchemaVersion.get -> int
+Aw.Context.Core.Eval.ProbeReport.SchemaVersion.init -> void
+Aw.Context.Core.Eval.ProbeReport.Totals.get -> Aw.Context.Core.Eval.ProbeTotals!
+Aw.Context.Core.Eval.ProbeReport.Totals.init -> void
+Aw.Context.Core.Eval.ProbeRunner
+Aw.Context.Core.Eval.ProbeScore
+Aw.Context.Core.Eval.ProbeScore.<Clone>$() -> Aw.Context.Core.Eval.ProbeScore!
+Aw.Context.Core.Eval.ProbeScore.AbsentReturned.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.ProbeScore.AbsentReturned.init -> void
+Aw.Context.Core.Eval.ProbeScore.CitationCorrectness.get -> double
+Aw.Context.Core.Eval.ProbeScore.CitationCorrectness.init -> void
+Aw.Context.Core.Eval.ProbeScore.Deconstruct(out Aw.Context.Core.Eval.ProbeId Id, out double PrecisionAt5, out double CitationCorrectness, out System.Collections.Generic.IReadOnlyList<string!>! Top, out System.Collections.Generic.IReadOnlyList<string!>! Hits, out System.Collections.Generic.IReadOnlyList<string!>! AbsentReturned, out string? Error) -> void
+Aw.Context.Core.Eval.ProbeScore.Equals(Aw.Context.Core.Eval.ProbeScore? other) -> bool
+Aw.Context.Core.Eval.ProbeScore.Error.get -> string?
+Aw.Context.Core.Eval.ProbeScore.Error.init -> void
+Aw.Context.Core.Eval.ProbeScore.Hits.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.ProbeScore.Hits.init -> void
+Aw.Context.Core.Eval.ProbeScore.Id.get -> Aw.Context.Core.Eval.ProbeId
+Aw.Context.Core.Eval.ProbeScore.Id.init -> void
+Aw.Context.Core.Eval.ProbeScore.PrecisionAt5.get -> double
+Aw.Context.Core.Eval.ProbeScore.PrecisionAt5.init -> void
+Aw.Context.Core.Eval.ProbeScore.ProbeScore(Aw.Context.Core.Eval.ProbeId Id, double PrecisionAt5, double CitationCorrectness, System.Collections.Generic.IReadOnlyList<string!>! Top, System.Collections.Generic.IReadOnlyList<string!>! Hits, System.Collections.Generic.IReadOnlyList<string!>! AbsentReturned, string? Error = null) -> void
+Aw.Context.Core.Eval.ProbeScore.Top.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.ProbeScore.Top.init -> void
+Aw.Context.Core.Eval.ProbeScoring
+Aw.Context.Core.Eval.ProbeSet
+Aw.Context.Core.Eval.ProbeSet.<Clone>$() -> Aw.Context.Core.Eval.ProbeSet!
+Aw.Context.Core.Eval.ProbeSet.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeCase!>! Probes, out int? SchemaVersion) -> void
+Aw.Context.Core.Eval.ProbeSet.Equals(Aw.Context.Core.Eval.ProbeSet? other) -> bool
+Aw.Context.Core.Eval.ProbeSet.ProbeSet(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeCase!>! Probes, int? SchemaVersion = null) -> void
+Aw.Context.Core.Eval.ProbeSet.Probes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeCase!>!
+Aw.Context.Core.Eval.ProbeSet.Probes.init -> void
+Aw.Context.Core.Eval.ProbeSet.SchemaVersion.get -> int?
+Aw.Context.Core.Eval.ProbeSet.SchemaVersion.init -> void
+Aw.Context.Core.Eval.ProbeTotals
+Aw.Context.Core.Eval.ProbeTotals.<Clone>$() -> Aw.Context.Core.Eval.ProbeTotals!
+Aw.Context.Core.Eval.ProbeTotals.CitationCorrectness.get -> double
+Aw.Context.Core.Eval.ProbeTotals.CitationCorrectness.init -> void
+Aw.Context.Core.Eval.ProbeTotals.Deconstruct(out double PrecisionAt5, out double CitationCorrectness, out int Probes, out System.DateTimeOffset RunAt) -> void
+Aw.Context.Core.Eval.ProbeTotals.Equals(Aw.Context.Core.Eval.ProbeTotals? other) -> bool
+Aw.Context.Core.Eval.ProbeTotals.PrecisionAt5.get -> double
+Aw.Context.Core.Eval.ProbeTotals.PrecisionAt5.init -> void
+Aw.Context.Core.Eval.ProbeTotals.ProbeTotals(double PrecisionAt5, double CitationCorrectness, int Probes, System.DateTimeOffset RunAt) -> void
+Aw.Context.Core.Eval.ProbeTotals.Probes.get -> int
+Aw.Context.Core.Eval.ProbeTotals.Probes.init -> void
+Aw.Context.Core.Eval.ProbeTotals.RunAt.get -> System.DateTimeOffset
+Aw.Context.Core.Eval.ProbeTotals.RunAt.init -> void
 Aw.Context.Core.Facade.IContextEngine
 Aw.Context.Core.Facade.IContextEngine.Query(Aw.Context.Core.Engine.ContextQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>
 Aw.Context.Core.Facade.IContextEngine.Refresh(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.RefreshReport!>!>
 Aw.Context.Core.Facade.IContextEngine.Sources(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.SourcesView!>!>
+Aw.Context.Core.Graph.AffectedNode
+Aw.Context.Core.Graph.AffectedNode.<Clone>$() -> Aw.Context.Core.Graph.AffectedNode!
+Aw.Context.Core.Graph.AffectedNode.AffectedNode(Aw.Context.Core.Graph.NodeKey Node, int Depth, System.Collections.Generic.IReadOnlyList<string!>! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>! Edges) -> void
+Aw.Context.Core.Graph.AffectedNode.Deconstruct(out Aw.Context.Core.Graph.NodeKey Node, out int Depth, out System.Collections.Generic.IReadOnlyList<string!>! Path, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>! Edges) -> void
+Aw.Context.Core.Graph.AffectedNode.Depth.get -> int
+Aw.Context.Core.Graph.AffectedNode.Depth.init -> void
+Aw.Context.Core.Graph.AffectedNode.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>!
+Aw.Context.Core.Graph.AffectedNode.Edges.init -> void
+Aw.Context.Core.Graph.AffectedNode.Equals(Aw.Context.Core.Graph.AffectedNode? other) -> bool
+Aw.Context.Core.Graph.AffectedNode.Node.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Graph.AffectedNode.Node.init -> void
+Aw.Context.Core.Graph.AffectedNode.Path.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Graph.AffectedNode.Path.init -> void
+Aw.Context.Core.Graph.AnchorMatch
+Aw.Context.Core.Graph.Cascade
+Aw.Context.Core.Graph.CascadeResult
+Aw.Context.Core.Graph.CascadeResult.<Clone>$() -> Aw.Context.Core.Graph.CascadeResult!
+Aw.Context.Core.Graph.CascadeResult.Affected.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.AffectedNode!>!
+Aw.Context.Core.Graph.CascadeResult.Affected.init -> void
+Aw.Context.Core.Graph.CascadeResult.CascadeResult(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! OwnScope, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.AffectedNode!>! Affected) -> void
+Aw.Context.Core.Graph.CascadeResult.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! OwnScope, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.AffectedNode!>! Affected) -> void
+Aw.Context.Core.Graph.CascadeResult.Equals(Aw.Context.Core.Graph.CascadeResult? other) -> bool
+Aw.Context.Core.Graph.CascadeResult.OwnScope.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.Graph.CascadeResult.OwnScope.init -> void
+Aw.Context.Core.Graph.GraphPath
+Aw.Context.Core.Graph.GraphPath.<Clone>$() -> Aw.Context.Core.Graph.GraphPath!
+Aw.Context.Core.Graph.GraphPath.Deconstruct(out Aw.Context.Core.Graph.NodeKey From, out Aw.Context.Core.Graph.NodeKey To, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.PathStep!>! Steps) -> void
+Aw.Context.Core.Graph.GraphPath.Equals(Aw.Context.Core.Graph.GraphPath? other) -> bool
+Aw.Context.Core.Graph.GraphPath.From.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Graph.GraphPath.From.init -> void
+Aw.Context.Core.Graph.GraphPath.GraphPath(Aw.Context.Core.Graph.NodeKey From, Aw.Context.Core.Graph.NodeKey To, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.PathStep!>! Steps) -> void
+Aw.Context.Core.Graph.GraphPath.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.PathStep!>!
+Aw.Context.Core.Graph.GraphPath.Steps.init -> void
+Aw.Context.Core.Graph.GraphPath.To.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Graph.GraphPath.To.init -> void
+Aw.Context.Core.Graph.GraphWalk
+Aw.Context.Core.Graph.NeighborNode
+Aw.Context.Core.Graph.NeighborNode.<Clone>$() -> Aw.Context.Core.Graph.NeighborNode!
+Aw.Context.Core.Graph.NeighborNode.Deconstruct(out Aw.Context.Core.Graph.GraphNode! Node, out int Depth) -> void
+Aw.Context.Core.Graph.NeighborNode.Depth.get -> int
+Aw.Context.Core.Graph.NeighborNode.Depth.init -> void
+Aw.Context.Core.Graph.NeighborNode.Equals(Aw.Context.Core.Graph.NeighborNode? other) -> bool
+Aw.Context.Core.Graph.NeighborNode.NeighborNode(Aw.Context.Core.Graph.GraphNode! Node, int Depth) -> void
+Aw.Context.Core.Graph.NeighborNode.Node.get -> Aw.Context.Core.Graph.GraphNode!
+Aw.Context.Core.Graph.NeighborNode.Node.init -> void
+Aw.Context.Core.Graph.Neighborhood
+Aw.Context.Core.Graph.Neighborhood.<Clone>$() -> Aw.Context.Core.Graph.Neighborhood!
+Aw.Context.Core.Graph.Neighborhood.Center.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Graph.Neighborhood.Center.init -> void
+Aw.Context.Core.Graph.Neighborhood.Deconstruct(out Aw.Context.Core.Graph.NodeKey Center, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NeighborNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>! Edges) -> void
+Aw.Context.Core.Graph.Neighborhood.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>!
+Aw.Context.Core.Graph.Neighborhood.Edges.init -> void
+Aw.Context.Core.Graph.Neighborhood.Equals(Aw.Context.Core.Graph.Neighborhood? other) -> bool
+Aw.Context.Core.Graph.Neighborhood.Neighborhood(Aw.Context.Core.Graph.NodeKey Center, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NeighborNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>! Edges) -> void
+Aw.Context.Core.Graph.Neighborhood.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NeighborNode!>!
+Aw.Context.Core.Graph.Neighborhood.Nodes.init -> void
+Aw.Context.Core.Graph.PathStep
+Aw.Context.Core.Graph.PathStep.<Clone>$() -> Aw.Context.Core.Graph.PathStep!
+Aw.Context.Core.Graph.PathStep.Deconstruct(out Aw.Context.Core.Graph.GraphEdge! Edge, out bool Forward, out Aw.Context.Core.Graph.NodeKey Node) -> void
+Aw.Context.Core.Graph.PathStep.Edge.get -> Aw.Context.Core.Graph.GraphEdge!
+Aw.Context.Core.Graph.PathStep.Edge.init -> void
+Aw.Context.Core.Graph.PathStep.Equals(Aw.Context.Core.Graph.PathStep? other) -> bool
+Aw.Context.Core.Graph.PathStep.Forward.get -> bool
+Aw.Context.Core.Graph.PathStep.Forward.init -> void
+Aw.Context.Core.Graph.PathStep.Node.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Graph.PathStep.Node.init -> void
+Aw.Context.Core.Graph.PathStep.PathStep(Aw.Context.Core.Graph.GraphEdge! Edge, bool Forward, Aw.Context.Core.Graph.NodeKey Node) -> void
+Aw.Context.Core.Graph.TextAnchors
+Aw.Context.Core.Graph.TextAnchors.<Clone>$() -> Aw.Context.Core.Graph.TextAnchors!
+Aw.Context.Core.Graph.TextAnchors.Anchors.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.Graph.TextAnchors.Anchors.init -> void
+Aw.Context.Core.Graph.TextAnchors.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Anchors, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Suggested) -> void
+Aw.Context.Core.Graph.TextAnchors.Equals(Aw.Context.Core.Graph.TextAnchors? other) -> bool
+Aw.Context.Core.Graph.TextAnchors.Suggested.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.Graph.TextAnchors.Suggested.init -> void
+Aw.Context.Core.Graph.TextAnchors.TextAnchors(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Anchors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Suggested) -> void
 Aw.Context.Core.Models.IModelPort
 Aw.Context.Core.Models.IModelPort.Ask(Aw.Context.Core.Models.ModelRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Models.ModelAnswer!>!>
 Aw.Context.Core.Models.ModelAnswer
@@ -576,6 +781,10 @@ const Aw.Context.Core.Engine.QueryRules.DefaultBudget = 8000 -> int
 const Aw.Context.Core.Engine.QueryRules.MaxDepth = 4 -> int
 const Aw.Context.Core.Engine.QueryRules.MaxTerms = 16 -> int
 const Aw.Context.Core.Engine.QueryRules.MaxTextLength = 2000 -> int
+const Aw.Context.Core.Eval.ProbeReport.CurrentSchemaVersion = 1 -> int
+const Aw.Context.Core.Eval.ProbeScoring.K = 5 -> int
+const Aw.Context.Core.Graph.GraphWalk.MaxDepth = 4 -> int
+const Aw.Context.Core.Graph.GraphWalk.MaxPathLength = 8 -> int
 const Aw.Context.Core.Ranking.RankFusion.K = 60 -> int
 const Aw.Context.Core.Results.ContextResult.CurrentSchemaVersion = 1 -> int
 override Aw.Context.Core.Docs.DocIndexStatus.Equals(object? obj) -> bool
@@ -599,6 +808,54 @@ override Aw.Context.Core.Engine.ContextSettings.ToString() -> string!
 override Aw.Context.Core.Engine.ValidQuery.Equals(object? obj) -> bool
 override Aw.Context.Core.Engine.ValidQuery.GetHashCode() -> int
 override Aw.Context.Core.Engine.ValidQuery.ToString() -> string!
+override Aw.Context.Core.Eval.ProbeCase.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.ProbeCase.GetHashCode() -> int
+override Aw.Context.Core.Eval.ProbeCase.ToString() -> string!
+override Aw.Context.Core.Eval.ProbeDecision.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.ProbeDecision.GetHashCode() -> int
+override Aw.Context.Core.Eval.ProbeDecision.ToString() -> string!
+override Aw.Context.Core.Eval.ProbeExpect.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.ProbeExpect.GetHashCode() -> int
+override Aw.Context.Core.Eval.ProbeExpect.ToString() -> string!
+override Aw.Context.Core.Eval.ProbeFile.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.ProbeFile.GetHashCode() -> int
+override Aw.Context.Core.Eval.ProbeFile.ToString() -> string!
+override Aw.Context.Core.Eval.ProbeId.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.ProbeId.GetHashCode() -> int
+override Aw.Context.Core.Eval.ProbeId.ToString() -> string!
+override Aw.Context.Core.Eval.ProbeReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.ProbeReport.GetHashCode() -> int
+override Aw.Context.Core.Eval.ProbeReport.ToString() -> string!
+override Aw.Context.Core.Eval.ProbeScore.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.ProbeScore.GetHashCode() -> int
+override Aw.Context.Core.Eval.ProbeScore.ToString() -> string!
+override Aw.Context.Core.Eval.ProbeSet.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.ProbeSet.GetHashCode() -> int
+override Aw.Context.Core.Eval.ProbeSet.ToString() -> string!
+override Aw.Context.Core.Eval.ProbeTotals.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.ProbeTotals.GetHashCode() -> int
+override Aw.Context.Core.Eval.ProbeTotals.ToString() -> string!
+override Aw.Context.Core.Graph.AffectedNode.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.AffectedNode.GetHashCode() -> int
+override Aw.Context.Core.Graph.AffectedNode.ToString() -> string!
+override Aw.Context.Core.Graph.CascadeResult.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.CascadeResult.GetHashCode() -> int
+override Aw.Context.Core.Graph.CascadeResult.ToString() -> string!
+override Aw.Context.Core.Graph.GraphPath.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.GraphPath.GetHashCode() -> int
+override Aw.Context.Core.Graph.GraphPath.ToString() -> string!
+override Aw.Context.Core.Graph.NeighborNode.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.NeighborNode.GetHashCode() -> int
+override Aw.Context.Core.Graph.NeighborNode.ToString() -> string!
+override Aw.Context.Core.Graph.Neighborhood.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.Neighborhood.GetHashCode() -> int
+override Aw.Context.Core.Graph.Neighborhood.ToString() -> string!
+override Aw.Context.Core.Graph.PathStep.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.PathStep.GetHashCode() -> int
+override Aw.Context.Core.Graph.PathStep.ToString() -> string!
+override Aw.Context.Core.Graph.TextAnchors.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.TextAnchors.GetHashCode() -> int
+override Aw.Context.Core.Graph.TextAnchors.ToString() -> string!
 override Aw.Context.Core.Models.ModelAnswer.Equals(object? obj) -> bool
 override Aw.Context.Core.Models.ModelAnswer.GetHashCode() -> int
 override Aw.Context.Core.Models.ModelAnswer.ToString() -> string!
@@ -1423,6 +1680,40 @@ override Aw.Context.Core.Overrides.MapOverride.ToString() -> string!
 override Aw.Context.Core.Overrides.OverrideId.Equals(object? obj) -> bool
 override Aw.Context.Core.Overrides.OverrideId.GetHashCode() -> int
 override Aw.Context.Core.Overrides.OverrideId.ToString() -> string!
+static Aw.Context.Core.ContextErrors.Attention.get -> System.Collections.Generic.IReadOnlySet<string!>!
+static Aw.Context.Core.Eval.ProbeCase.operator !=(Aw.Context.Core.Eval.ProbeCase? left, Aw.Context.Core.Eval.ProbeCase? right) -> bool
+static Aw.Context.Core.Eval.ProbeCase.operator ==(Aw.Context.Core.Eval.ProbeCase? left, Aw.Context.Core.Eval.ProbeCase? right) -> bool
+static Aw.Context.Core.Eval.ProbeDecision.operator !=(Aw.Context.Core.Eval.ProbeDecision? left, Aw.Context.Core.Eval.ProbeDecision? right) -> bool
+static Aw.Context.Core.Eval.ProbeDecision.operator ==(Aw.Context.Core.Eval.ProbeDecision? left, Aw.Context.Core.Eval.ProbeDecision? right) -> bool
+static Aw.Context.Core.Eval.ProbeExpect.operator !=(Aw.Context.Core.Eval.ProbeExpect? left, Aw.Context.Core.Eval.ProbeExpect? right) -> bool
+static Aw.Context.Core.Eval.ProbeExpect.operator ==(Aw.Context.Core.Eval.ProbeExpect? left, Aw.Context.Core.Eval.ProbeExpect? right) -> bool
+static Aw.Context.Core.Eval.ProbeFile.operator !=(Aw.Context.Core.Eval.ProbeFile? left, Aw.Context.Core.Eval.ProbeFile? right) -> bool
+static Aw.Context.Core.Eval.ProbeFile.operator ==(Aw.Context.Core.Eval.ProbeFile? left, Aw.Context.Core.Eval.ProbeFile? right) -> bool
+static Aw.Context.Core.Eval.ProbeId.From(string! value) -> Aw.Context.Core.Eval.ProbeId
+static Aw.Context.Core.Eval.ProbeId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Eval.ProbeId
+static Aw.Context.Core.Eval.ProbeId.TryFrom(string? value, out Aw.Context.Core.Eval.ProbeId vo) -> bool
+static Aw.Context.Core.Eval.ProbeId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Eval.ProbeId result) -> bool
+static Aw.Context.Core.Eval.ProbeId.operator !=(Aw.Context.Core.Eval.ProbeId left, Aw.Context.Core.Eval.ProbeId right) -> bool
+static Aw.Context.Core.Eval.ProbeId.operator ==(Aw.Context.Core.Eval.ProbeId left, Aw.Context.Core.Eval.ProbeId right) -> bool
+static Aw.Context.Core.Eval.ProbeReport.operator !=(Aw.Context.Core.Eval.ProbeReport? left, Aw.Context.Core.Eval.ProbeReport? right) -> bool
+static Aw.Context.Core.Eval.ProbeReport.operator ==(Aw.Context.Core.Eval.ProbeReport? left, Aw.Context.Core.Eval.ProbeReport? right) -> bool
+static Aw.Context.Core.Eval.ProbeRunner.Check(Aw.Context.Core.Eval.ProbeSet! set) -> Aw.Kernel.Error?
+static Aw.Context.Core.Eval.ProbeRunner.Run(Aw.Context.Core.Eval.ProbeFile! file, System.Func<Aw.Context.Core.Eval.ProbeCase!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>>! ask, Aw.Context.Core.Eval.ProbeReport? previous, System.DateTimeOffset runAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.ProbeReport!>!>
+static Aw.Context.Core.Eval.ProbeScore.operator !=(Aw.Context.Core.Eval.ProbeScore? left, Aw.Context.Core.Eval.ProbeScore? right) -> bool
+static Aw.Context.Core.Eval.ProbeScore.operator ==(Aw.Context.Core.Eval.ProbeScore? left, Aw.Context.Core.Eval.ProbeScore? right) -> bool
+static Aw.Context.Core.Eval.ProbeScoring.Keys(Aw.Context.Core.Results.ContextResult! result) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Eval.ProbeScoring.Score(Aw.Context.Core.Eval.ProbeCase! probe, Aw.Context.Core.Results.ContextResult! result) -> Aw.Context.Core.Eval.ProbeScore!
+static Aw.Context.Core.Eval.ProbeSet.operator !=(Aw.Context.Core.Eval.ProbeSet? left, Aw.Context.Core.Eval.ProbeSet? right) -> bool
+static Aw.Context.Core.Eval.ProbeSet.operator ==(Aw.Context.Core.Eval.ProbeSet? left, Aw.Context.Core.Eval.ProbeSet? right) -> bool
+static Aw.Context.Core.Eval.ProbeTotals.operator !=(Aw.Context.Core.Eval.ProbeTotals? left, Aw.Context.Core.Eval.ProbeTotals? right) -> bool
+static Aw.Context.Core.Eval.ProbeTotals.operator ==(Aw.Context.Core.Eval.ProbeTotals? left, Aw.Context.Core.Eval.ProbeTotals? right) -> bool
+static Aw.Context.Core.Graph.AffectedNode.operator !=(Aw.Context.Core.Graph.AffectedNode? left, Aw.Context.Core.Graph.AffectedNode? right) -> bool
+static Aw.Context.Core.Graph.AffectedNode.operator ==(Aw.Context.Core.Graph.AffectedNode? left, Aw.Context.Core.Graph.AffectedNode? right) -> bool
+static Aw.Context.Core.Graph.AnchorMatch.FromText(Aw.Context.Core.Graph.GraphSnapshot! graph, string! question) -> Aw.Context.Core.Graph.TextAnchors!
+static Aw.Context.Core.Graph.AnchorMatch.Resolve(Aw.Context.Core.Graph.GraphSnapshot! graph, string! name) -> Aw.Kernel.Result<Aw.Context.Core.Graph.GraphNode!>!
+static Aw.Context.Core.Graph.Cascade.Affects(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey anchor, int depth) -> Aw.Context.Core.Graph.CascadeResult!
+static Aw.Context.Core.Graph.CascadeResult.operator !=(Aw.Context.Core.Graph.CascadeResult? left, Aw.Context.Core.Graph.CascadeResult? right) -> bool
+static Aw.Context.Core.Graph.CascadeResult.operator ==(Aw.Context.Core.Graph.CascadeResult? left, Aw.Context.Core.Graph.CascadeResult? right) -> bool
 static Aw.Context.Core.Graph.DecisionRow.KeyFor(Aw.Context.Core.Sources.RecordKey record, string! quote) -> Aw.Context.Core.Graph.NodeKey
 static Aw.Context.Core.Graph.DecisionRow.operator !=(Aw.Context.Core.Graph.DecisionRow? left, Aw.Context.Core.Graph.DecisionRow? right) -> bool
 static Aw.Context.Core.Graph.DecisionRow.operator ==(Aw.Context.Core.Graph.DecisionRow? left, Aw.Context.Core.Graph.DecisionRow? right) -> bool
@@ -1435,11 +1726,19 @@ static Aw.Context.Core.Graph.GraphEdge.operator !=(Aw.Context.Core.Graph.GraphEd
 static Aw.Context.Core.Graph.GraphEdge.operator ==(Aw.Context.Core.Graph.GraphEdge? left, Aw.Context.Core.Graph.GraphEdge? right) -> bool
 static Aw.Context.Core.Graph.GraphNode.operator !=(Aw.Context.Core.Graph.GraphNode? left, Aw.Context.Core.Graph.GraphNode? right) -> bool
 static Aw.Context.Core.Graph.GraphNode.operator ==(Aw.Context.Core.Graph.GraphNode? left, Aw.Context.Core.Graph.GraphNode? right) -> bool
+static Aw.Context.Core.Graph.GraphPath.operator !=(Aw.Context.Core.Graph.GraphPath? left, Aw.Context.Core.Graph.GraphPath? right) -> bool
+static Aw.Context.Core.Graph.GraphPath.operator ==(Aw.Context.Core.Graph.GraphPath? left, Aw.Context.Core.Graph.GraphPath? right) -> bool
 static Aw.Context.Core.Graph.GraphSnapshot.Empty.get -> Aw.Context.Core.Graph.GraphSnapshot!
 static Aw.Context.Core.Graph.GraphSnapshot.operator !=(Aw.Context.Core.Graph.GraphSnapshot? left, Aw.Context.Core.Graph.GraphSnapshot? right) -> bool
 static Aw.Context.Core.Graph.GraphSnapshot.operator ==(Aw.Context.Core.Graph.GraphSnapshot? left, Aw.Context.Core.Graph.GraphSnapshot? right) -> bool
+static Aw.Context.Core.Graph.GraphWalk.Neighbors(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey center, int depth) -> Aw.Context.Core.Graph.Neighborhood!
+static Aw.Context.Core.Graph.GraphWalk.ShortestPath(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey from, Aw.Context.Core.Graph.NodeKey to) -> Aw.Context.Core.Graph.GraphPath?
 static Aw.Context.Core.Graph.KeyMigrations.Apply(Aw.Context.Core.Graph.GraphSnapshot! graph, int from, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.IKeyMigration!>! chain) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, int Version)
 static Aw.Context.Core.Graph.KeyMigrations.Shipped.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.IKeyMigration!>!
+static Aw.Context.Core.Graph.NeighborNode.operator !=(Aw.Context.Core.Graph.NeighborNode? left, Aw.Context.Core.Graph.NeighborNode? right) -> bool
+static Aw.Context.Core.Graph.NeighborNode.operator ==(Aw.Context.Core.Graph.NeighborNode? left, Aw.Context.Core.Graph.NeighborNode? right) -> bool
+static Aw.Context.Core.Graph.Neighborhood.operator !=(Aw.Context.Core.Graph.Neighborhood? left, Aw.Context.Core.Graph.Neighborhood? right) -> bool
+static Aw.Context.Core.Graph.Neighborhood.operator ==(Aw.Context.Core.Graph.Neighborhood? left, Aw.Context.Core.Graph.Neighborhood? right) -> bool
 static Aw.Context.Core.Graph.NodeAlias.operator !=(Aw.Context.Core.Graph.NodeAlias? left, Aw.Context.Core.Graph.NodeAlias? right) -> bool
 static Aw.Context.Core.Graph.NodeAlias.operator ==(Aw.Context.Core.Graph.NodeAlias? left, Aw.Context.Core.Graph.NodeAlias? right) -> bool
 static Aw.Context.Core.Graph.NodeKey.From(string! value) -> Aw.Context.Core.Graph.NodeKey
@@ -1451,7 +1750,11 @@ static Aw.Context.Core.Graph.NodeKey.operator ==(Aw.Context.Core.Graph.NodeKey l
 static Aw.Context.Core.Graph.NodeKinds.FromScheme(string! scheme) -> Aw.Context.Core.Graph.NodeKind
 static Aw.Context.Core.Graph.NodeKinds.HasValidSurfaceKind(Aw.Context.Core.Graph.NodeKey key) -> bool
 static Aw.Context.Core.Graph.NodeKinds.SurfaceKinds.get -> System.Collections.Generic.IReadOnlySet<string!>!
+static Aw.Context.Core.Graph.PathStep.operator !=(Aw.Context.Core.Graph.PathStep? left, Aw.Context.Core.Graph.PathStep? right) -> bool
+static Aw.Context.Core.Graph.PathStep.operator ==(Aw.Context.Core.Graph.PathStep? left, Aw.Context.Core.Graph.PathStep? right) -> bool
 static Aw.Context.Core.Graph.RepoScope.NodesFor(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Engine.ContextRepoName repo) -> System.Collections.Generic.IReadOnlySet<string!>!
+static Aw.Context.Core.Graph.TextAnchors.operator !=(Aw.Context.Core.Graph.TextAnchors? left, Aw.Context.Core.Graph.TextAnchors? right) -> bool
+static Aw.Context.Core.Graph.TextAnchors.operator ==(Aw.Context.Core.Graph.TextAnchors? left, Aw.Context.Core.Graph.TextAnchors? right) -> bool
 static Aw.Context.Core.Graph.TrustPolicy.For(Aw.Context.Core.Results.Provenance provenance, bool accepted) -> Aw.Context.Core.Results.Trust
 static Aw.Context.Core.Map.ExportedFile.operator !=(Aw.Context.Core.Map.ExportedFile? left, Aw.Context.Core.Map.ExportedFile? right) -> bool
 static Aw.Context.Core.Map.ExportedFile.operator ==(Aw.Context.Core.Map.ExportedFile? left, Aw.Context.Core.Map.ExportedFile? right) -> bool
@@ -1499,8 +1802,12 @@ static Aw.Context.Core.Overrides.OverrideId.TryParse(string? s, System.IFormatPr
 static Aw.Context.Core.Overrides.OverrideId.operator !=(Aw.Context.Core.Overrides.OverrideId left, Aw.Context.Core.Overrides.OverrideId right) -> bool
 static Aw.Context.Core.Overrides.OverrideId.operator ==(Aw.Context.Core.Overrides.OverrideId left, Aw.Context.Core.Overrides.OverrideId right) -> bool
 static Aw.Context.Core.Overrides.RejectionIdentity.For(Aw.Context.Core.Graph.GraphNode! node) -> string!
+static readonly Aw.Context.Core.ContextErrors.AmbiguousAnchor -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.ExportOutsideHome -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.MapFileChanged -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.MapFileInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.MapNodeUndefined -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.NoMap -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.NoProbeFile -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.ProbeFileInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.ProbesRegressed -> Aw.Kernel.ErrorDefinition!

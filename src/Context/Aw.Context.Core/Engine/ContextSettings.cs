@@ -26,6 +26,9 @@ public sealed record ContextSettings
     /// <summary>Below this many fused items a query reformulates once (Phase 8).</summary>
     public int MinHits { get; init; } = 3;
 
+    /// <summary>The cascade's depth cap ('context.cascadeDepth', spec §6.1): 0 to 4, default 2; a query's depth overrides it.</summary>
+    public int CascadeDepth { get; init; } = 2;
+
     /// <summary>Whether session callers may read context at all, on any transport (spec §3). Off until approved.</summary>
     public bool SessionsEnabled { get; init; }
 
