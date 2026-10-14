@@ -25,7 +25,7 @@ internal sealed class GitRunner(string repo, string emptyConfig, FixtureAuthor a
         }
 
         using var git = Process.Start(start) ?? throw new InvalidOperationException("git did not start.");
-        var stderr = git.StandardError.ReadToEndAsync();
+        var stderr = git.StandardError.ReadToEndAsync(CancellationToken.None);
         var stdout = git.StandardOutput.ReadToEnd();
         git.WaitForExit();
         return git.ExitCode == 0

@@ -1,3 +1,4 @@
+using Aw.Context.Testing.Engine;
 using Aw.Sindri.Features.ValidateProfile;
 
 namespace Aw.Sindri.Tests.ValidateProfile;
@@ -14,7 +15,7 @@ public sealed class ValidateProfileTests
         var live = SliceHarness.Profile("5s");
         _h.Profiles.Live = live;
         _ = await _h.Profiles.Save(live, Token);
-        var service = new ValidateProfileService(_h.Profiles, _h.Profiles, new ReadFailingLedger(_h.Store), _h.Events);
+        var service = new ValidateProfileService(_h.Profiles, _h.Profiles, new ReadFailingLedger(_h.Store), _h.Events, FakeContextEngine.Instance);
 
         var validated = await service.Handle(new ValidateProfileRequest(), Token);
 
@@ -25,7 +26,7 @@ public sealed class ValidateProfileTests
     public async Task ValidateProfile_returns_the_error_when_the_saved_approval_cant_be_read()
     {
         _h.Profiles.Live = SliceHarness.Profile("5s");
-        var service = new ValidateProfileService(_h.Profiles, new ReadFailingApprovals(_h.Profiles), _h.Store, _h.Events);
+        var service = new ValidateProfileService(_h.Profiles, new ReadFailingApprovals(_h.Profiles), _h.Store, _h.Events, FakeContextEngine.Instance);
 
         var validated = await service.Handle(new ValidateProfileRequest(), Token);
 

@@ -38,6 +38,9 @@ internal static class Packages
         "Aw.Sindri.Host",
         "Aw.Sindri.Ui",
         "Aw.Sindri.Ui.Desktop",
+        "Aw.Context.Core",
+        "Aw.Context.Features",
+        "Aw.Context.Infrastructure",
         "Aw.Sindri.Workflows",
     ];
 

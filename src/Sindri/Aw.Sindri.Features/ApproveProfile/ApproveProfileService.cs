@@ -1,4 +1,6 @@
 using System.Globalization;
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -16,12 +18,12 @@ namespace Aw.Sindri.Features.ApproveProfile;
 /// approval's key names the event it follows ('profile.approved:&lt;hash&gt;:after:&lt;seq&gt;'), so approving A, B,
 /// A, B records every step and a retry computes the same key.
 /// </summary>
-internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events)
+internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events, IContextEngine context)
     : IService<ApproveProfileRequest, ApproveProfileResponse>
 {
     public async ValueTask<Result<ApproveProfileResponse>> Handle(ApproveProfileRequest request, CancellationToken cancellationToken)
     {
-        var loaded = await live.Load(cancellationToken).ConfigureAwait(false);
+        var loaded = await Load(cancellationToken).ConfigureAwait(false);
         if (loaded.IsError)
         {
             return loaded.Error;
@@ -100,4 +102,18 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
             "approving needs you at an interactive terminal: run 'sindri profile approve <hash>' and type the first 6 characters"),
         _ => null,
     };
+
+    /// <summary>The live profile, refused when its context section doesn't check, its repos included: an invalid section is never approved (SND-CONTEXT-001).</summary>
+    private async ValueTask<Result<LoadedProfile>> Load(CancellationToken cancellationToken)
+    {
+        var loaded = await live.Load(cancellationToken).ConfigureAwait(false);
+        if (loaded.IsError)
+        {
+            return loaded;
+        }
+
+        var profile = loaded.Value.Profile;
+        var checkedContext = context.CheckSettings(profile.Context, [.. (profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path))]);
+        return checkedContext.IsError ? checkedContext.Error : loaded;
+    }
 }
