@@ -14,8 +14,8 @@ trap 'rm -rf "$T"' EXIT
 ok()   { PASS=$((PASS + 1)); echo "  ok   $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
 # run <pointer> <args>... runs with AW_DENYLIST=<pointer>; runu <args>... runs with AW_DENYLIST unset.
-run()  { local ptr="$1"; shift; set +e; OUT="$(AW_DENYLIST="$ptr" bash "$SCRIPT" "$@" 2>&1)"; CODE=$?; set -e; }
-runu() { set +e; OUT="$(env -u AW_DENYLIST bash "$SCRIPT" "$@" 2>&1)"; CODE=$?; set -e; }
+run()  { local ptr="$1"; shift; set +e; OUT="$(AW_DENYLIST="$ptr" "$BASH" "$SCRIPT" "$@" 2>&1)"; CODE=$?; set -e; }
+runu() { set +e; OUT="$(env -u AW_DENYLIST "$BASH" "$SCRIPT" "$@" 2>&1)"; CODE=$?; set -e; }
 expect() { # expect <name> <code> <substring>...
   local name="$1" code="$2" good=1 s; shift 2
   [ "$CODE" = "$code" ] || good=0
@@ -93,7 +93,7 @@ expect "mode 0700 (an execute bit) is refused" 2 "0600"
 run "$F" "$T/deny.txt"
 expect "the list itself named as an input file is refused" 2 "AW_DENYLIST"
 mkdir "$T/fakebin"; printf '#!/bin/sh\necho 99999\n' > "$T/fakebin/id"; chmod 755 "$T/fakebin/id"
-set +e; OUT="$(PATH="$T/fakebin:$PATH" AW_DENYLIST="$F" bash "$SCRIPT" "$T/clean.md" 2>&1)"; CODE=$?; set -e
+set +e; OUT="$(PATH="$T/fakebin:$PATH" AW_DENYLIST="$F" "$BASH" "$SCRIPT" "$T/clean.md" 2>&1)"; CODE=$?; set -e
 expect "a file owned by another user is refused" 2 "owned by the current user"
 
 run "file:$T/nope.txt" "$T/clean.md"
