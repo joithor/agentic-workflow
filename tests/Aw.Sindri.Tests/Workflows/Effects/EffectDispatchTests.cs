@@ -61,7 +61,7 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
     }
 
     [Fact]
-    public async Task A_cancel_within_the_dispatch_delay_aborts_the_effect()
+    public async Task A_cancel_within_the_dispatch_delay_aborts_the_effect_with_an_outbox_cancelled_row()
     {
         var env = server.Environment;
         _harness.Recipe("workflow.dev-notify", WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
@@ -77,12 +77,13 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
             var cancel = new CancelRequested("human:cli", CancelOrigin.Command, new CommandStamp(nonce, new string('0', 64)), Sequence: null, Parent: null);
             _ = await handle.ExecuteUpdateAsync(wf => wf.CancelAsync(cancel), new WorkflowUpdateOptions(nonce.Value));
             var ended = await handle.GetResultAsync();
-            var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));
+            var aborted = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Cancelled, CommandOrigin.Recipe));
             var pending = Assert.Single(await EffectRows.Of(sindri, OutboxEvents.Pending, CommandOrigin.Recipe));
 
             Assert.Equal("cancelled", ended.State);
-            Assert.Equal((pending.Identity, EffectState.Refused, null), (refused.Identity, refused.State, refused.Code));
-            Assert.StartsWith("cancelled", refused.Reason, StringComparison.Ordinal);
+            Assert.Equal((pending.Identity, pending.Command, EffectState.Cancelled, null), (aborted.Identity, aborted.Command, aborted.State, aborted.Code));
+            Assert.StartsWith("cancelled", aborted.Reason, StringComparison.Ordinal);
+            Assert.Empty(await EffectRows.Of(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));
             Assert.Empty(await EffectRows.Of(sindri, OutboxEvents.Dispatched, CommandOrigin.Recipe));
             Assert.Empty(_desk.Calls);
         }, Token);

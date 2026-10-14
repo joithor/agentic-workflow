@@ -163,7 +163,7 @@ internal sealed partial class RecipeWorkflow
         }
 
         var refused = await Record(row with { State = EffectState.Refused, Code = code }).ConfigureAwait(true);
-        await Refuse(new OutboxRefused(Dispatcher, effect.Identity, code, refused.Sequence)).ConfigureAwait(true);
+        await Refuse(new OutboxRefused(Dispatcher, new RefusedEffect(effect.Effect, effect.Identity, effect.With), code, refused.Sequence)).ConfigureAwait(true);
         return false;
     }
 

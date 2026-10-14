@@ -17,4 +17,8 @@ public enum EffectState
     /// <summary>The recheck refused it (SND-RECIPE-005, SND-RECIPE-006 or SND-WF-011): nothing was performed.</summary>
     [JsonStringEnumMemberName("refused")]
     Refused = 3,
+
+    /// <summary>A cancel of the instance aborted it within the dispatch delay: nothing was performed, and no recheck ran.</summary>
+    [JsonStringEnumMemberName("cancelled")]
+    Cancelled = 4,
 }
