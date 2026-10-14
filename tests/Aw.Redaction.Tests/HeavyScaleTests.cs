@@ -9,8 +9,9 @@ public sealed class HeavyScaleTests
     [Fact]
     public void The_timeout_grows_with_the_input_so_size_alone_never_blocks()
     {
-        // 100 ms per pattern is far too little for 4 MB in one window; the budget is per window of input.
-        var redactor = new Redactor(BuiltinRules.All, TimeSpan.FromMilliseconds(100));
+        // 4 MB takes seconds, over twice 500 ms but inside its 32 windows of it (16 s): the budget is per window of
+        // input. The margin is wide on purpose, so a loaded machine doesn't block a legitimate scrub.
+        var redactor = new Redactor(BuiltinRules.All, TimeSpan.FromMilliseconds(500));
         var chunk = Shapes.Join("Lorem ipsum dolor sit amet, see https://example.com/a?b=c gh", "p_", Shapes.Body, "Ab3dE6gH9 \n");
         var input = string.Concat(Enumerable.Repeat(chunk, 4_000_000 / chunk.Length));
 

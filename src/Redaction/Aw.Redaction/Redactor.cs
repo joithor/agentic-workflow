@@ -10,10 +10,11 @@ public sealed class Redactor : IRedactor
     // timeout, and each doubling of the text doubles it, so input size alone never blocks; only a pathological match
     // does (spec §4c). The rules are compiled once per size tier, on first use.
     private const int Window = 128 * 1024;
+    private const int TierCount = 24;
 
     private readonly IReadOnlyList<RedactionRule> _rules;
     private readonly TimeSpan _matchTimeout;
-    private readonly CompiledRules?[] _tiers = new CompiledRules?[24];
+    private readonly CompiledRules?[] _tiers = new CompiledRules?[TierCount];
     private readonly Regex _secretName;
     private readonly TimeProvider? _clock;
 
@@ -158,18 +159,25 @@ public sealed class Redactor : IRedactor
 
     private CompiledRules RulesFor(int length)
     {
-        var tier = 0;
-        while (tier < _tiers.Length - 1 && (long)Window << tier < length)
-        {
-            tier++;
-        }
-
-        return _tiers[tier] ??= new CompiledRules(_rules, RuleIds, Cap(_matchTimeout.TotalMilliseconds * (1L << tier)));
+        var tier = TierFor(length);
+        return _tiers[tier] ??= new CompiledRules(_rules, RuleIds, MatchTimeoutFor(_matchTimeout, length));
     }
 
     /// <summary>The per-pattern match timeout for a text of <paramref name="length"/> characters: <paramref name="baseTimeout"/>
     /// up to one window, doubled for each doubling of the text, capped like every timeout.</summary>
-    internal static TimeSpan MatchTimeoutFor(TimeSpan baseTimeout, int length) => throw new NotSupportedException();
+    internal static TimeSpan MatchTimeoutFor(TimeSpan baseTimeout, int length) =>
+        Cap(baseTimeout.TotalMilliseconds * (1L << TierFor(length)));
+
+    private static int TierFor(int length)
+    {
+        var tier = 0;
+        while (tier < TierCount - 1 && (long)Window << tier < length)
+        {
+            tier++;
+        }
+
+        return tier;
+    }
 
     // Regex refuses a timeout past int.MaxValue - 1 ms (about 24.8 days); a longer budget is capped there.
     private static TimeSpan Cap(double milliseconds) => TimeSpan.FromMilliseconds(Math.Min(milliseconds, int.MaxValue - 1));

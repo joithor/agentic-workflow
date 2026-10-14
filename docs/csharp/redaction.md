@@ -154,7 +154,10 @@ token shapes that matter (JWTs, `ya29.`) have their own rules.
 
 Every pattern is a `Regex` with a match timeout. The timeout is a budget per window of input: up to 128 K characters
 get the redactor's timeout (1 s for `Default`), and each doubling of the text doubles it (the rules are compiled once per
-size tier), so a large ordinary input is scrubbed and only a pathological match blocks. A timeout returns `ScrubOutcome.Blocked` with
+size tier), so a large ordinary input is scrubbed and only a pathological match blocks. The scaling rule is a pure function
+(`Redactor.MatchTimeoutFor`), which the unit lane tests as arithmetic (`AdversarialInputTests`); the cases that scrub
+megabytes against real regex timeouts are in `HeavyScaleTests` (the heavy lane, run nightly), because their wall clock
+depends on machine load. A timeout returns `ScrubOutcome.Blocked` with
 `Text = "[REDACTED:blocked]"` and `BlockCode = "AW-REDACT-001"`: the input is withheld, never passed on. The caller
 logs the block (Redaction has no logger) and refuses the commit, write or egress.
 
