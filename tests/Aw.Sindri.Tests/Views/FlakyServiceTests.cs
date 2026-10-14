@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http.Json;
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
@@ -10,6 +12,7 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Server;
@@ -26,7 +29,8 @@ namespace Aw.Sindri.Tests.Views;
 /// <summary>
 /// Phase signal 4 (API spec P2 row): a test service that fails once then succeeds shows 'failed', then 'ok', in the
 /// services view. The real host in a temp home, with a fake service added through <see cref="LoopbackBinding"/>'s
-/// configure seam (plan Q1, option b); the scheduler and the projector are driven on the fake clock.
+/// configure seam (plan Q1, option b); the scheduler and the projector are driven on the fake clock, and each step is
+/// read both from the services view and through GET /sindri/services.
 /// </summary>
 public sealed class FlakyServiceTests : IDisposable
 {
@@ -44,6 +48,7 @@ public sealed class FlakyServiceTests : IDisposable
     public async Task A_test_service_that_fails_once_then_succeeds_shows_failed_then_ok()
     {
         await using var app = await Start();
+        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };
         var reader = app.Services.GetRequiredService<IViewReader>();
         var clock = new SteppedClock(_clock);
         using var scheduler = ActivatorUtilities.CreateInstance<SchedulerHost>(app.Services, clock);
@@ -51,14 +56,19 @@ public sealed class FlakyServiceTests : IDisposable
 
         await StepUntil(clock, runs: 1);
         var first = await Row(app, reader);
+        var firstListed = await Listed(http);
         await StepUntil(clock, runs: 2);
         var second = await Row(app, reader);
+        var secondListed = await Listed(http);
         await scheduler.StopAsync(Token);
+        await app.StopAsync(Token);
 
         Assert.Equal((ServiceOutcome.Failed, FlakyService.Failure.Code), (first.LastRun!.Outcome, first.LastRun.Code));
         Assert.Equal(ServiceOutcome.Ok, second.LastRun!.Outcome);
         Assert.Null(second.LastRun.Code);
         Assert.Equal(first.LastRun.Slot.AddSeconds(5), second.LastRun.Slot);
+        Assert.Equal((first.LastRun, first.LastRun.Slot.AddSeconds(5)), (firstListed.LastRun, firstListed.NextSlot));
+        Assert.Equal((second.LastRun, second.LastRun.Slot.AddSeconds(5)), (secondListed.LastRun, secondListed.NextSlot));
     }
 
     private async Task<WebApplication> Start()
@@ -81,6 +91,8 @@ public sealed class FlakyServiceTests : IDisposable
 
         var live = (await app.Services.GetRequiredService<IProfileSource>().Load(Token)).Value;
         _ = (await app.Services.GetRequiredService<IApprovals>().Save(live, Token)).Value;
+        _ = Pipeline.Configure(app);
+        await app.StartAsync(Token);
         return app;
     }
 
@@ -101,6 +113,17 @@ public sealed class FlakyServiceTests : IDisposable
     {
         Assert.Equal(ProjectorPass.CaughtUp, await app.Services.GetRequiredService<Projector>().CatchUp(Token));
         return (await reader.Get<ServiceRow>(ViewNames.Services, _flaky.Value, Token)).Value!;
+    }
+
+    /// <summary>The flaky service as GET /sindri/services lists it (a query, so a session reads it).</summary>
+    private static async Task<ServiceView> Listed(HttpClient http)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("/sindri/services", UriKind.Relative)).AsSession();
+        using var answer = await http.SendAsync(request, Token);
+        Assert.Equal(HttpStatusCode.OK, answer.StatusCode);
+        var body = await answer.Content.ReadFromJsonAsync(HttpJson.Info<ListServicesResponse>(), Token);
+        Assert.Null(body!.Empty);
+        return Assert.Single(body.Services, s => s.Name == _flaky);
     }
 
     /// <summary>A service named 'flaky' whose first run returns an error and every later run succeeds.</summary>
