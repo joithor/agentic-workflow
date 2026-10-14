@@ -8,8 +8,9 @@ namespace Aw.Sindri.Ui.Testing;
 /// <summary>The in-memory endpoint record: whatever bytes the test put there, or none.</summary>
 internal sealed class InMemoryEndpointRecords : IEndpointRecordSource
 {
+    private const int NoFailure = -1;
     private byte[]? _bytes;
-    private EndpointRecordUnreadableException? _fail;
+    private int _fail = NoFailure;   // an EndpointRecordFailure, or NoFailure
 
     /// <summary>Gets or sets where the record is said to live (a long temp path in the Not running card's test).</summary>
     public string Location { get; set; } = "memory:control.json";
@@ -25,16 +26,16 @@ internal sealed class InMemoryEndpointRecords : IEndpointRecordSource
 
     /// <summary>Makes the next read fail the way the port says a record the platform can't read does (no permission, a directory in its place).</summary>
     /// <param name="why">Why it can't be read.</param>
-    public void FailNextRead(EndpointRecordFailure why) => _fail = new EndpointRecordUnreadableException(why, innerException: null);
+    public void FailNextRead(EndpointRecordFailure why) => _fail = (int)why;
 
     /// <summary>Removes the record, as a clean stop does.</summary>
     public void Remove() => _bytes = null;
 
     public ValueTask<EndpointRecordRead> Read(CancellationToken cancellationToken)
     {
-        if (Interlocked.Exchange(ref _fail, value: null) is { } error)
+        if (Interlocked.Exchange(ref _fail, NoFailure) is not NoFailure and var why)
         {
-            throw error;
+            return ValueTask.FromResult(EndpointRecordRead.Unreadable((EndpointRecordFailure)why));
         }
 
         return ValueTask.FromResult(_bytes is null ? EndpointRecordRead.None : EndpointRecordRead.Found([.. _bytes]));

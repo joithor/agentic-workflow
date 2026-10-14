@@ -94,10 +94,4 @@ Aw.Sindri.Ui.Platform.EndpointRecordRead.Failure.get -> Aw.Sindri.Ui.Platform.En
 static Aw.Sindri.Ui.Platform.EndpointRecordRead.Found(byte[]! bytes) -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
 static Aw.Sindri.Ui.Platform.EndpointRecordRead.None.get -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
 static Aw.Sindri.Ui.Platform.EndpointRecordRead.Unreadable(Aw.Sindri.Ui.Platform.EndpointRecordFailure why) -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException() -> void
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(Aw.Sindri.Ui.Platform.EndpointRecordFailure reason, System.Exception? innerException) -> void
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(string! message) -> void
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(string! message, System.Exception! innerException) -> void
-Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.Reason.get -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
 Aw.Sindri.Ui.Platform.InstanceMessage.TryAct() -> bool

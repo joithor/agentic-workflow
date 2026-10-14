@@ -249,7 +249,7 @@ beat (10 s). A refused Refresh click counts only as a failed refresh; the next p
    plane stopped or was killed), a status refresh fails, or `control.json` changes (checked every 2 s; a stopping
    control plane can hold its stream open), the app looks again, every 2 s while nothing answers. A record the
    platform can't read, or one with a relative `url`, reads as "can't be read" with the reason, and the app keeps trying. The port
-says why in its own terms (`EndpointRecordUnreadableException` with an `EndpointRecordFailure`: `NoPermission`, `NotAFile`
+says why in its own terms, as a value and not an exception (`IEndpointRecordSource.Read` returns an `EndpointRecordRead`: the bytes, none, or an `EndpointRecordFailure`: `NoPermission`, `NotAFile`
 or `Unreadable`; `EndpointRecordSourceContract` binds the desktop adapter to a real directory and a mode-000 file), since
 .NET on macOS and Linux throws the same `UnauthorizedAccessException` for both; the desktop adapter checks for a
 directory at the path first. The reason is the app's own words ("this user has no permission to read it", "it isn't a
