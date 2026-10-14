@@ -20,6 +20,9 @@ public static class EventTypes
     /// <summary>A human approved a profile hash.</summary>
     public const string ProfileApproved = "profile.approved";
 
+    /// <summary>The context engine refreshed its snapshot sources (context spec §3; the context-docs-refresh service).</summary>
+    public const string ContextSourcesSynced = "context.sources.synced";
+
     /// <summary>A command attempt reached the chain: its audit row (not public).</summary>
     public const string CommandHandled = "command.handled";
 

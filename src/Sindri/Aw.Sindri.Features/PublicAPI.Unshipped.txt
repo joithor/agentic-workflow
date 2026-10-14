@@ -432,6 +432,39 @@ Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Scaffold.get -> string?
 Aw.Sindri.Features.EvalRecipe.EvalRecipeResponse.Scaffold.init -> void
 Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.Normalized.get -> Aw.Sindri.Core.Workflow.Recipes.Recipe?
 Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.Normalized.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest!
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.GetContextSourcesRequest() -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.QueryContextRequest!
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.get -> int?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out int? Depth, out int? Budget, out bool Draft) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Depth.get -> int?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Depth.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Equals(Aw.Sindri.Features.ContextCalls.QueryContextRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Item.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Item.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Node.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Node.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Q.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Q.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, int? Depth = null, int? Budget = null, bool Draft = false) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Symbol.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Symbol.init -> void
+override Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.QueryContextRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.QueryContextRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.QueryContextRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? left, Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? left, Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.QueryContextRequest.operator !=(Aw.Sindri.Features.ContextCalls.QueryContextRequest? left, Aw.Sindri.Features.ContextCalls.QueryContextRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.QueryContextRequest.operator ==(Aw.Sindri.Features.ContextCalls.QueryContextRequest? left, Aw.Sindri.Features.ContextCalls.QueryContextRequest? right) -> bool
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out Aw.Sindri.Core.Ids.ProfileHash? Profile, out Aw.Sindri.Core.Control.TemporalEndpoint! Temporal) -> void
 Aw.Sindri.Features.StartProcess.StartProcessResponse.StartProcessResponse(Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ProfileHash? Profile, Aw.Sindri.Core.Control.TemporalEndpoint! Temporal) -> void
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint!

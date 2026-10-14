@@ -30,9 +30,17 @@ internal static class QueryPortRules
     }
 
     /// <summary>Every query handler among <paramref name="types"/> with the write port it takes.</summary>
+    /// <remarks>
+    /// A handler's own helpers count too: a constructor parameter that is a concrete class of the handler's assembly
+    /// (ContextScopes for the context queries) is followed one level, so a write port can't hide behind a helper.
+    /// </remarks>
     public static IEnumerable<(Type Handler, Type Port)> Offenders(IEnumerable<Type> types) =>
-        types.Where(IsQueryHandler).SelectMany(handler => handler.GetConstructors()
-            .SelectMany(c => c.GetParameters()).Select(p => p.ParameterType).Where(WritePorts.Contains).Select(port => (handler, port)));
+        types.Where(IsQueryHandler).SelectMany(handler => Parameters(handler)
+            .SelectMany(p => p.IsClass && !p.IsAbstract && p.Assembly == handler.Assembly ? [p, .. Parameters(p)] : (Type[])[p])
+            .Where(WritePorts.Contains).Distinct().Select(port => (handler, port)));
+
+    private static IEnumerable<Type> Parameters(Type type) =>
+        type.GetConstructors().SelectMany(c => c.GetParameters()).Select(p => p.ParameterType);
 
     private static bool IsQueryHandler(Type type) =>
         type is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false }
