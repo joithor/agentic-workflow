@@ -58,6 +58,25 @@ public abstract class ContextEngineContract<TEngine>
         Check(result.IsError && result.Error.Code == ContextErrors.AllSourcesUnavailable.Code, "no source answering is 011");
     }
 
+    /// <summary>Without a map, the graph reads are SND-CONTEXT-030.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Graph_reads_without_a_map_are_030()
+    {
+        var scope = new ContextScope(Settings: null, [new ContextRepo(ContextRepoName.From("split-panes"), "/repos/split-panes")],
+            new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
+        var engine = CreateDown();
+
+        var codes = new[]
+        {
+            (await engine.ShowNode("feature:a", scope, CancellationToken.None)).Error.Code,
+            (await engine.Neighbors("feature:a", depth: null, scope, CancellationToken.None)).Error.Code,
+            (await engine.Path("feature:a", "feature:b", scope, CancellationToken.None)).Error.Code,
+        };
+
+        Check(codes.All(c => c == ContextErrors.NoMap.Code), "a graph read without a map is 030");
+    }
+
     private static (string Code, string Path) Code(TEngine engine, string json)
     {
         var checkedSettings = engine.CheckSettings(JsonDocument.Parse(json).RootElement.Clone(), _repos);

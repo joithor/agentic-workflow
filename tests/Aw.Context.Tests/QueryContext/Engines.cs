@@ -6,6 +6,9 @@ using Aw.Context.Features;
 using Aw.Context.Features.CheckMap;
 using Aw.Context.Features.CheckRetention;
 using Aw.Context.Features.ExportMap;
+using Aw.Context.Features.FindPath;
+using Aw.Context.Features.ListNeighbors;
+using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.ImportMap;
 using Aw.Context.Features.PreviewMap;
 using Aw.Context.Features.PurgeMap;
@@ -30,14 +33,15 @@ internal static class Engines
         var clock = time ?? new FakeTimeProvider(new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero));
         var scrubbers = new FakeScrubberFactory();
         var docs = index ?? new FakeDocIndex(clock);
+        var store = new FakeGraphStore();
         return new ContextEngine(new QueryContextService(catalog, scrubbers, new SequentialIdGenerator(), clock),
-            new SourcesStatusService(docs, catalog, scrubbers, clock), new RefreshDocsService(docs, scrubbers), scrubbers, Map(clock));
+            new SourcesStatusService(docs, catalog, scrubbers, clock), new RefreshDocsService(docs, scrubbers), scrubbers, Map(clock, store),
+            new ContextGraph(new ShowNodeService(), new ListNeighborsService(), new FindPathService()));
     }
 
     /// <summary>The map part over its fakes (S-3a); the query tests never touch it.</summary>
-    private static ContextMap Map(TimeProvider clock)
+    private static ContextMap Map(TimeProvider clock, FakeGraphStore store)
     {
-        var store = new FakeGraphStore();
         var exports = new FakeExportStore(clock);
         var reader = new FakeMapFileReader();
         return new ContextMap(new PreviewMapService(reader), new ImportMapService(reader, store, clock), new ExportMapService(store, exports, clock),

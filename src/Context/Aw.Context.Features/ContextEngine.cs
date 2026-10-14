@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Trust;
@@ -21,7 +22,8 @@ internal sealed class ContextEngine(
     IService<SourcesStatusRequest, SourcesView> sources,
     IService<RefreshDocsRequest, RefreshReport> refresh,
     IScrubberFactory scrubbers,
-    IContextMap map) : IContextEngine
+    IContextMap map,
+    IContextGraph graph) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
         SettingsReader.Read(section).Bind(read => scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
@@ -34,6 +36,13 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) =>
         refresh.Handle(new RefreshDocsRequest(scope), cancellationToken);
+
+    public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => graph.ShowNode(key, scope, cancellationToken);
+
+    public ValueTask<Result<NeighborsView>> Neighbors(string key, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.Neighbors(key, depth, scope, cancellationToken);
+
+    public ValueTask<Result<PathView>> Path(string from, string to, ContextScope scope, CancellationToken cancellationToken) => graph.Path(from, to, scope, cancellationToken);
 
     public ValueTask<Result<MapFilePreview>> PreviewMap(string path, ContextScope scope, CancellationToken cancellationToken) =>
         map.PreviewMap(path, scope, cancellationToken);

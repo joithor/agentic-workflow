@@ -1,6 +1,11 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Docs;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Trust;
+using Aw.Context.Testing.Engine;
+using Aw.Kernel.Ids;
+using Aw.Kernel.Testing;
 using Aw.Context.Features;
 using Aw.Context.Testing.Map;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +34,9 @@ internal sealed class MapWorld : IDisposable
             .AddSingleton<IGraphStore>(Store)
             .AddSingleton<IExportStore>(Exports)
             .AddSingleton<IMapFileReader>(Reader)
+            .AddSingleton<IScrubberFactory>(new FakeScrubberFactory())
+            .AddSingleton<ISourceCatalog>(Sources)
+            .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
             .AddContextFeatures()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = true });
         _scope = _provider.CreateScope();
@@ -44,6 +52,12 @@ internal sealed class MapWorld : IDisposable
 
     public IContextMap Map => _scope.ServiceProvider.GetRequiredService<IContextMap>();
 
+    /// <summary>The whole facade (S-3b: graph reads and queries over the imported map).</summary>
+    public IContextEngine Engine => _scope.ServiceProvider.GetRequiredService<IContextEngine>();
+
+    /// <summary>The sources the queries search: repo-docs over the fixture's docs by default.</summary>
+    public FixedSourceCatalog Sources { get; } = new(FakeContextSource.FixtureDocs());
+
     public static IReadOnlyList<ContextRepo> Repos { get; } = [new(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes"), new(ContextRepoName.From("other"), "/work/other")];
 
     public static ContextScope Human { get; } = new(Settings: null, Repos, new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
@@ -55,6 +69,21 @@ internal sealed class MapWorld : IDisposable
     }
 
     public static CancellationToken None => TestContext.Current.CancellationToken;
+
+    /// <summary>YAML from lines (one string per line).</summary>
+    public static string Yaml(params string[] lines) => string.Join('\n', lines) + "\n";
+
+    /// <summary>Imports a map written as YAML (placed at '/maps/other.yaml').</summary>
+    public async Task<MapImported> ImportYaml(string yaml)
+    {
+        const string path = "/maps/other.yaml";
+        Reader.Put(path, Maps.Parse(yaml), yaml);
+        var preview = await Map.PreviewMap(path, Human, None);
+        Assert.True(preview.IsSuccess, preview.IsError ? preview.Error.Message : null);
+        var imported = await Map.ImportMap(path, preview.Value.Hash, Human, None);
+        Assert.True(imported.IsSuccess, imported.IsError ? imported.Error.Message : null);
+        return imported.Value;
+    }
 
     /// <summary>Imports the fixture map with its own hash.</summary>
     public async Task<MapImported> ImportFixture()

@@ -1,0 +1,134 @@
+using Aw.Context.Core;
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Results;
+using Aw.Context.Testing.Map;
+using Aw.Context.Tests.Map;
+
+namespace Aw.Context.Tests.QueryContext;
+
+/// <summary>The node shape and text anchors over the fixture map (spec §8.1–§8.4; the Phase 3 signal).</summary>
+public sealed class GraphQueryTests : IDisposable
+{
+    private const string Orientation = "feature:layout.split-pane.orientation";
+    private readonly MapWorld _world = new();
+
+    public void Dispose() => _world.Dispose();
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_node_query_returns_its_subtree_and_an_affects_section_with_paths()
+    {
+        _ = await _world.ImportFixture();
+
+        var result = (await _world.Engine.Query(new ContextQuery(Text: null, Node: Orientation), MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.Equal(([Orientation], "v1"), (result.Anchors, result.MapVersion));
+        Assert.Equal([Orientation, "surface:command/toggle-orientation", "action:split-pane.toggle-orientation"],
+            Section(result, "graph").Items.Select(i => i.Node), StringComparer.Ordinal);
+        var affects = Assert.Single(Section(result, "affects").Items);
+        Assert.Equal(("feature:tabs.tab-manager", 1, "Tabs"), (affects.Node, affects.Depth, affects.Title));
+        Assert.Equal([Orientation, "writes thing:pane-layout", "reads action:tab-manager.restore-layout"], affects.Path!, StringComparer.Ordinal);
+        Assert.DoesNotContain(result.Sections.SelectMany(s => s.Items), i => i.Node == "feature:layout.pane-resize");
+        Assert.Equal(["code:src/layout/SplitPane.ts", "code:src/tabs/TabManager.ts"], Section(result, "code").Items.Select(i => i.Node), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Every_graph_item_says_where_it_came_from_and_cites_the_map_version()
+    {
+        _ = await _world.ImportFixture();
+
+        var result = (await _world.Engine.Query(new ContextQuery(Text: null, Node: Orientation), MapWorld.Human, MapWorld.None)).Value;
+
+        foreach (var item in result.Sections.Where(s => s.Name != "records").SelectMany(s => s.Items))
+        {
+            Assert.Equal((Provenance.Human, true, Trust.Trusted), (item.Provenance, item.Confirmed, item.Trust));
+            var cite = result.Cites[Assert.Single(item.Cites)];
+            Assert.Equal(("map:aw-split-panes/v1", "v1"), (cite.Key.Value, cite.Refs.Single().Version.Value));
+        }
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("feature:layout.orientation")]
+    [InlineData("Split orientation")]
+    public async Task An_alias_or_a_name_anchors_on_the_same_node(string node)
+    {
+        _ = await _world.ImportFixture();
+
+        var result = (await _world.Engine.Query(new ContextQuery(Text: null, Node: node), MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.Equal([Orientation], result.Anchors);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Depth_0_answers_the_subtree_without_affects()
+    {
+        _ = await _world.ImportFixture();
+
+        var result = (await _world.Engine.Query(new ContextQuery(Text: null, Node: Orientation, Depth: 0), MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.DoesNotContain(result.Sections, s => s.Name == "affects");
+        Assert.Contains(result.Sections, s => s.Name == "graph");
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(false, "feature:nope", "SND-CONTEXT-003")]
+    [InlineData(true, Orientation, "SND-CONTEXT-030")]
+    public async Task An_unknown_node_is_003_and_no_map_is_030(bool empty, string node, string code)
+    {
+        if (!empty)
+        {
+            _ = await _world.ImportFixture();
+        }
+
+        var result = await _world.Engine.Query(new ContextQuery(Text: null, Node: node), MapWorld.Human, MapWorld.None);
+
+        Assert.Equal(code, result.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_draft_query_with_no_draft_map_is_030()
+    {
+        _ = await _world.ImportFixture();
+
+        var result = await _world.Engine.Query(new ContextQuery(Text: null, Node: Orientation, Draft: true), MapWorld.Human, MapWorld.None);
+
+        Assert.Equal(ContextErrors.NoMap.Code, result.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_session_s_cascade_never_leaves_the_nodes_its_repo_implements()
+    {
+        _ = await _world.ImportFixture();
+
+        var result = (await _world.Engine.Query(new ContextQuery(Text: null, Node: Orientation), MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
+
+        var named = result.Sections.Where(s => s.Name != "records").SelectMany(s => s.Items).Select(i => i.Node ?? string.Empty)
+            .Concat(result.Sections.SelectMany(s => s.Items).SelectMany(i => i.Path ?? []).Skip(1));
+        Assert.All(named.Where(k => !k.StartsWith("code:", StringComparison.Ordinal)), k => Assert.Contains(k, FixtureMap.ScopedNodes, StringComparer.Ordinal));
+        Assert.DoesNotContain(result.Sections, s => s.Name == "affects");
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_question_naming_a_node_anchors_on_it_and_still_cites_repo_docs()
+    {
+        _ = await _world.ImportFixture();
+
+        var result = (await _world.Engine.Query(new ContextQuery("What else is affected if I change how split orientation works?"), MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.Equal([Orientation], result.Anchors);
+        _ = Assert.Single(Section(result, "affects").Items);
+        Assert.NotEmpty(Section(result, "records").Items);
+        Assert.Contains("surface:command/toggle-orientation", result.SuggestedAnchors, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Without_a_map_a_question_is_answered_as_in_phase_1()
+    {
+        var result = (await _world.Engine.Query(new ContextQuery("orientation toggle"), MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.Empty(result.Anchors);
+        Assert.Null(result.MapVersion);
+        Assert.Equal(["records"], result.Sections.Select(s => s.Name), StringComparer.Ordinal);
+    }
+
+    private static ResultSection Section(ContextResult result, string name) => result.Sections.Single(s => s.Name == name);
+}
