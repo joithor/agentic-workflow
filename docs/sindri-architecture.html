@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sindri Architecture</title>
+<meta name="description" content="How Sindri fits together: a clickable map of the app and step-by-step swimlanes of what using and building it looks like.">
+<style>
+:root {
+  --bg: #f4f0e8; --panel: #fffdf8; --panel-2: #f9f5ee; --ink: #1d1a16; --ink-2: #4c463d; --ink-3: #7d7468; --line: #e0d8ca;
+  --accent: #a8401b; --accent-soft: #f5e1d6; --focus: #1f5f8b;
+  --built: #2d6a38; --built-soft: #dfeedc; --building: #0f6b66; --building-soft: #d5efec; --specced: #1d5d8a; --specced-soft: #dce8f3;
+  --designed: #5a3d98; --designed-soft: #e9e1f5; --dream: #85600c; --dream-soft: #f4e9cb;
+  --term-bg: #1d1b18; --term-ink: #ece5d8; --term-dim: #9c9283; --term-ok: #93d095;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --r: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14120f; --panel: #1c1915; --panel-2: #211e19; --ink: #efe8dc; --ink-2: #c3b9a9; --ink-3: #91877a; --line: #342e27;
+    --accent: #ee8d5d; --accent-soft: #3b2417; --focus: #8cc4ee;
+    --built: #93d095; --built-soft: #1c2d1d; --building: #72d4cb; --building-soft: #13302d; --specced: #8ac0e8; --specced-soft: #16283a;
+    --designed: #bba3f0; --designed-soft: #282040; --dream: #e5c264; --dream-soft: #342a12;
+    --term-bg: #0d0c0a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14120f; --panel: #1c1915; --panel-2: #211e19; --ink: #efe8dc; --ink-2: #c3b9a9; --ink-3: #91877a; --line: #342e27;
+  --accent: #ee8d5d; --accent-soft: #3b2417; --focus: #8cc4ee;
+  --built: #93d095; --built-soft: #1c2d1d; --building: #72d4cb; --building-soft: #13302d; --specced: #8ac0e8; --specced-soft: #16283a;
+  --designed: #bba3f0; --designed-soft: #282040; --dream: #e5c264; --dream-soft: #342a12;
+  --term-bg: #0d0c0a;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 64px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+code { font-family: var(--mono); font-size: .86em; background: var(--panel-2); border: 1px solid var(--line); padding: .05em .35em; border-radius: 5px; overflow-wrap: anywhere; }
+button { font: inherit; color: inherit; }
+
+.top { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 14px; padding: 10px 20px;
+  background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.brand { font: 700 19px/1 var(--serif); white-space: nowrap; text-decoration: none; color: var(--ink); }
+.brand span { font: 500 13px var(--sans); color: var(--ink-3); margin-left: 6px; }
+.top nav { display: flex; gap: 4px; flex-wrap: wrap; }
+.top nav a { text-decoration: none; color: var(--ink-2); font-size: 14px; padding: 5px 10px; border-radius: 8px; }
+.top nav a:hover { background: var(--panel); color: var(--ink); }
+.top .sp { flex: 1; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 14px; line-height: 1.3; }
+.btn:hover { border-color: var(--ink-3); }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+
+main { max-width: 1160px; margin: 0 auto; padding: 26px 20px 80px; }
+section { margin: 0 0 64px; }
+.kicker { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin: 0 0 6px; }
+h1 { font: 700 clamp(30px, 5vw, 46px)/1.08 var(--serif); letter-spacing: -.02em; margin: 0 0 10px; }
+h2 { font: 700 clamp(24px, 3.4vw, 32px)/1.15 var(--serif); letter-spacing: -.01em; margin: 0 0 6px; }
+.cap { color: var(--ink-2); margin: 0 0 18px; max-width: 70ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font: 600 11.5px/1 var(--mono); letter-spacing: .03em; padding: 4px 8px; border-radius: 99px; white-space: nowrap; }
+.chip.built { background: var(--built-soft); color: var(--built); }
+.chip.building { background: var(--building-soft); color: var(--building); }
+.chip.specced { background: var(--specced-soft); color: var(--specced); }
+.chip.designed { background: var(--designed-soft); color: var(--designed); }
+.chip.dream { background: var(--dream-soft); color: var(--dream); }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); }
+.svgbox { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+svg { display: block; }
+svg text { fill: var(--ink); font-family: var(--sans); }
+svg .t-s { fill: var(--ink-3); font-size: 12px; }
+svg .t-m { fill: var(--ink-3); font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+
+/* map */
+#map .card { padding: 14px; }
+.region { fill: var(--panel-2); stroke: var(--line); stroke-dasharray: 5 4; }
+.mnode { cursor: pointer; }
+.mnode rect { fill: var(--panel); stroke-width: 2; transition: fill .15s, stroke-width .15s; }
+.mnode:hover rect, .mnode:focus-visible rect { fill: var(--panel-2); }
+.mnode.on rect { fill: var(--accent-soft); stroke-width: 3; }
+.mnode.dim rect { stroke-opacity: .3; }
+.mnode.dim text { opacity: .35; }
+.medge { stroke: var(--ink-3); stroke-width: 1.6; fill: none; opacity: .6; }
+.medge.on { stroke: var(--accent); opacity: 1; stroke-width: 2.4; }
+.s-built { stroke: var(--built); } .s-building { stroke: var(--building); } .s-specced { stroke: var(--specced); }
+.s-designed { stroke: var(--designed); } .s-dream { stroke: var(--dream); stroke-dasharray: 6 4; }
+.mapinfo { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-height: 52px; padding: 12px 4px 2px; }
+.mapinfo .ttl { font-weight: 700; }
+.mapinfo .hint { color: var(--ink-3); }
+.flowbtn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 99px; padding: 4px 11px; cursor: pointer; font-size: 13.5px; }
+.flowbtn:hover { border-color: var(--accent); }
+
+/* player */
+.picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 0 0 14px; }
+.pick { text-align: left; border: 1.5px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 10px 12px; cursor: pointer; display: grid; grid-template-columns: 30px 1fr; gap: 2px 8px; align-items: center; }
+.pick .ic { font-size: 22px; grid-row: span 2; }
+.pick .nm { font-weight: 650; font-size: 14.5px; line-height: 1.2; }
+.pick .id { font: 600 11px var(--mono); color: var(--ink-3); }
+.pick[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; align-items: stretch; }
+.stage > *, .ctrl > *, .picker > * { min-width: 0; }
+.lane-card { padding: 8px 0; }
+.lanebg { fill: var(--panel-2); }
+.lanebg.alt { fill: transparent; }
+.lanelbl { font-size: 13px; font-weight: 600; }
+.hop { cursor: pointer; }
+.hop circle.ring { fill: var(--panel); stroke-width: 2.5; transition: fill .2s, opacity .2s; }
+.hop text.n { font: 700 12px var(--mono); }
+.hop text.lb { font-size: 11.5px; fill: var(--ink-2); }
+.hop.fut { opacity: .4; }
+.hop.past circle.ring { fill: var(--panel-2); }
+.hop.cur circle.ring { fill: var(--accent); stroke: var(--accent); }
+.hop.cur text.n { fill: #fff; }
+.hop.cur text.lb { fill: var(--ink); font-weight: 700; }
+.link { fill: none; stroke: var(--ink-3); stroke-width: 1.6; opacity: .35; }
+.link.done { stroke: var(--accent); opacity: .9; stroke-width: 2.2; }
+.tok { fill: var(--accent); }
+.tokring { fill: none; stroke: var(--accent); stroke-width: 2; opacity: .5; }
+.screen { display: flex; flex-direction: column; overflow: hidden; min-height: 300px; }
+.screen .bar { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--line); font: 600 12px var(--mono); color: var(--ink-3); }
+.screen .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.screen .body { flex: 1; padding: 12px; font: 13px/1.55 var(--mono); }
+.screen.term { background: var(--term-bg); border-color: var(--term-bg); }
+.screen.term .bar { border-color: #2c2924; color: var(--term-dim); }
+.screen.term .dot { background: #3a362f; }
+.screen.term .body { color: var(--term-ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.screen.term .p { color: var(--term-ok); }
+.screen.term .d { color: var(--term-dim); }
+.screen .row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; margin: 0 0 8px; font: 13.5px/1.35 var(--sans); background: var(--panel-2); }
+.screen .row .pill { margin-left: auto; font: 600 11px var(--mono); padding: 3px 7px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+.screen .row.hot { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.screen .big { display: grid; place-items: center; text-align: center; gap: 8px; height: 100%; color: var(--ink-2); font: 14px var(--sans); }
+.screen .big .e { font-size: 54px; line-height: 1; }
+.ctrl { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; margin-top: 14px; }
+.ctrl .btns { display: flex; gap: 6px; }
+.ctrl .now { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; min-width: 0; }
+.ctrl .num { font: 700 13px var(--mono); color: var(--accent); }
+.ctrl .what { font-weight: 650; }
+.ctrl .ref { font: 12px var(--mono); color: var(--ink-3); }
+.ctrl details { grid-column: 1 / -1; font-size: 14.5px; color: var(--ink-2); }
+.ctrl details summary { cursor: pointer; color: var(--ink-3); font-size: 13px; }
+.ctrl details p { margin: 6px 0 0; }
+
+/* storyboards */
+.storyset { display: grid; gap: 34px; }
+.story h3 { font: 700 20px/1.25 var(--serif); margin: 0 0 2px; }
+.story .sub { color: var(--ink-3); font-size: 14px; margin: 0 0 12px; }
+.frames { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 38px; padding: 4px 2px 6px; align-items: start; }
+.frame { margin: 0; position: relative; scroll-snap-align: start; min-width: 0; }
+.frame:not(:last-child)::after { content: "→"; position: absolute; right: -28px; top: 64px; font: 700 22px var(--sans); color: var(--accent); }
+.shot { position: relative; display: block; width: 100%; border: 0; padding: 0; background: #010102; border-radius: 10px; overflow: hidden; cursor: zoom-in; box-shadow: 0 0 0 1px var(--line), 0 8px 22px rgba(0,0,0,.16); text-align: left; }
+.shot img { display: block; width: 100%; height: auto; }
+.mark { position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; background: #ff7a45; color: #fff; font: 700 12.5px/24px var(--sans); text-align: center; box-shadow: 0 0 0 4px rgba(255,122,69,.35); animation: pulse 1.8s ease-in-out infinite; pointer-events: none; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 10px rgba(255,122,69,.1); } }
+.frame figcaption { display: grid; grid-template-columns: 22px 1fr; gap: 3px 8px; margin-top: 10px; font-size: 14px; line-height: 1.35; }
+.frame figcaption .n { font: 700 12px/20px var(--mono); color: #fff; background: var(--accent); border-radius: 50%; width: 20px; height: 20px; text-align: center; }
+.frame figcaption code { grid-column: 2; justify-self: start; }
+.tag { position: absolute; right: 6px; bottom: 6px; font: 9.5px/1.3 var(--mono); color: #8a8f98; background: rgba(1,1,2,.8); padding: 2px 6px; border-radius: 5px; pointer-events: none; }
+/* warp + tmux illustration (Linear-dark, docs/sindri/DESIGN.md) */
+.warp { aspect-ratio: 16 / 10; display: flex; flex-direction: column; background: #010102; color: #e6e7e9; font-family: var(--mono); line-height: 1.5; border-radius: 10px; overflow: hidden; container-type: inline-size; }
+.warp > * { font-size: clamp(7.5px, 3.3cqi, 15px); }
+.warp .wbar { display: flex; align-items: center; gap: 5px; padding: 6px 8px; background: #0f1011; border-bottom: 1px solid #23252a; }
+.warp .wd { width: 8px; height: 8px; border-radius: 50%; background: #3e3e44; }
+.warp .wtab { margin-left: 6px; padding: 2px 8px; border-radius: 5px; color: #8a8f98; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.warp .wtab.on { background: #23252a; color: #f7f8f8; }
+.warp .wbody { flex: 1; padding: .7em .9em; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.warp .dim { color: #8a8f98; } .warp .ok { color: #4cb782; } .warp .bad { color: #eb5757; } .warp .acc { color: #828fff; }
+.warp .you { color: #f7f8f8; background: #5e6ad2; padding: 0 3px; border-radius: 3px; }
+.warp .banner { display: inline-block; min-width: 70%; color: #f7f8f8; background: #2b2d6e; border-left: 3px solid #828fff; padding: 2px 6px; margin-top: 4px; }
+.warp .cur { display: inline-block; width: .6em; background: #f7f8f8; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.warp .tmux { display: flex; gap: 8px; padding: 2px 8px; background: #4cb782; color: #010102; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.warp .tmux .r { margin-left: auto; font-weight: 500; }
+.warp.big { border-radius: 12px; aspect-ratio: 16 / 7; }
+dialog#lb { border: 0; padding: 12px; background: #0f1011; border-radius: 16px; max-width: min(1200px, 94vw); width: 94vw; max-height: 94vh; }
+dialog#lb::backdrop { background: rgba(0,0,0,.72); }
+dialog#lb .lbin { position: relative; border-radius: 12px; overflow: hidden; background: #010102; }
+dialog#lb img { display: block; width: 100%; height: auto; }
+dialog#lb .mark { width: 32px; height: 32px; margin: -16px 0 0 -16px; font-size: 15px; line-height: 32px; }
+dialog#lb .lbcap { color: #f7f8f8; font-size: 15px; margin: 10px 2px 0; display: flex; gap: 10px; align-items: center; }
+dialog#lb .x { margin-left: auto; background: #23252a; color: #f7f8f8; border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.screen.img { background: #010102; border-color: #23252a; }
+.screen.img .body { padding: 0; display: grid; place-items: center; }
+.screen.img .shot { border-radius: 0; box-shadow: none; }
+.screen.img .bar { border-color: #23252a; color: #8a8f98; }
+.screen.img .dot { background: #3e3e44; }
+.screen.warpk { background: #010102; border-color: #23252a; }
+.screen.warpk .body { padding: 0; }
+.screen.warpk .warp { border-radius: 0; height: 100%; aspect-ratio: auto; }
+.later-note { display: flex; gap: 10px; align-items: center; color: var(--ink-2); font-size: 14.5px; margin: 0 0 14px; }
+footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--ink-3); font-size: 14px; }
+
+@media (max-width: 860px) {
+  .frames { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 12px; }
+  .frame { scroll-snap-align: start; }
+  .stage { grid-template-columns: 1fr; }
+  .screen { min-height: 200px; }
+  .top nav { display: none; }
+  .ctrl { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#top">Sindri <span>how it fits together</span></a>
+  <nav aria-label="Sections"><a href="#map">Map</a><a href="#screens">Screens</a><a href="#using">Using Sindri</a><a href="#building">Building Sindri</a><a href="#later">Later</a></nav>
+  <span class="sp"></span>
+  <button id="themeBtn" class="btn" type="button" aria-label="Switch colour theme">Theme: auto</button>
+</header>
+
+<main id="top">
+  <section>
+    <p class="kicker">Architecture · as of 2026-10-12</p>
+    <h1>How Sindri fits together</h1>
+    <p class="cap">One map, then every common experience as a swimlane you can play step by step. Status on every piece follows <code>main</code> and the open PRs. Concepts: <a href="sindri-course/index.html">the course</a>. Every feature: <a href="sindri.html">the walkthrough</a>.</p>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section id="map">
+    <p class="kicker">The map</p>
+    <h2>One process, three engines, every surface a client</h2>
+    <p class="cap">Select a piece to see the flows that pass through it.</p>
+    <div class="card">
+      <div class="svgbox"><svg id="mapSvg" viewBox="0 0 960 520" style="min-width:720px" role="group" aria-label="Sindri architecture map. Each piece is a button."></svg></div>
+      <div class="mapinfo" id="mapInfo" aria-live="polite"><span class="hint">Select a piece.</span></div>
+    </div>
+  </section>
+
+  <section id="screens">
+    <p class="kicker">What it looks like</p>
+    <h2>From the app to the agent's terminal</h2>
+    <p class="cap">Real screens from the approved UI design, joined to the terminal you land in. Numbered dots mark what you press. Click any frame to see it full size.</p>
+    <div class="storyset" id="stories"></div>
+  </section>
+
+  <section id="using">
+    <p class="kicker">Track 1</p>
+    <h2>Using Sindri</h2>
+    <p class="cap">What a day with Sindri looks like. Pick an experience, then press Play or step through it.</p>
+    <div id="usingPlayer"></div>
+  </section>
+
+  <section id="building">
+    <p class="kicker">Track 2</p>
+    <h2>Building Sindri</h2>
+    <p class="cap">How a request moves through the code, and how an agent team adds and proves a phase.</p>
+    <div id="buildingPlayer"></div>
+  </section>
+
+  <section id="later">
+    <p class="kicker">Later</p>
+    <h2>Pull work down, push results up</h2>
+    <p class="later-note"><span class="chip designed">○ designed</span> The long-term direction: one team coordinator, and each developer takes a workstream onto their own machine in their own tool (README X61).</p>
+    <div id="laterPlayer"></div>
+  </section>
+
+  <dialog id="lb" aria-label="Full-size frame"><div class="lbin" id="lbin"></div><div class="lbcap"><span id="lbcap"></span><button class="x" type="button" id="lbx">Close · Esc</button></div></dialog>
+  <footer>App screens: the approved mockups in <code>docs/superpowers/specs/2026-10-11-sindri-ui-design/</code>, a design reference, not the implementation. The Warp and tmux frames are illustrations. Sources: <code>docs/sindri/README.md</code>, the factory addendum (A), and the API, engine (WF) and context (CTX) design specs under <code>docs/superpowers/specs/</code>. Shipped recipes: <code>recipes/sindri/</code>.</footer>
+</main>
+
+<script>
+"use strict";
+(function () {
+  var NS = "http://www.w3.org/2000/svg";
+  var GLYPH = { built: "●", building: "◑", specced: "◐", designed: "○", dream: "✧" };
+  var SNAME = { built: "built", building: "building", specced: "specced", designed: "designed", dream: "dream" };
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function el(tag, attrs, parent) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function txt(parent, x, y, s, cls, extra) {
+    var a = { x: x, y: y }; if (cls) a["class"] = cls;
+    if (extra) for (var k in extra) a[k] = extra[k];
+    var t = el("text", a, parent); t.textContent = s; return t;
+  }
+  function h(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function chip(s) { return '<span class="chip ' + s + '"><span aria-hidden="true">' + GLYPH[s] + "</span> " + SNAME[s] + "</span>"; }
+
+  /* ---------- legend ---------- */
+  var legend = document.getElementById("legend");
+  [["built", "merged on main"], ["building", "open PR"], ["specced", "approved spec, no PR yet"], ["designed", "designed, not planned"]].forEach(function (p) {
+    var s = h("span", null, chip(p[0]) + ' <span style="color:var(--ink-3);font-size:13px">' + p[1] + "</span>");
+    legend.appendChild(s);
+  });
+
+  /* ---------- lanes ---------- */
+  var LANES = {
+    you: ["🧑", "You"], cli: ["⌨️", "CLI"], app: ["🖥️", "Sindri app"], tool: ["🪟", "Your tool"],
+    api: ["🔀", "API"], engine: ["⚙️", "Engine"], temporal: ["⏱️", "Temporal"], agent: ["🤖", "Agent · tmux"],
+    ctx: ["🧭", "Context"], src: ["📚", "Sources"], ledger: ["📒", "Ledger"], gh: ["🌐", "GitHub"],
+    launcher: ["🚀", "Launcher"], notify: ["🔔", "Notifier"],
+    client: ["📨", "Client"], chain: ["🔗", "Command chain"], svc: ["🧩", "Service"], proj: ["🪞", "Projector"], stream: ["📡", "Stream"],
+    wf: ["⏱️", "RecipeWorkflow"], pure: ["🧠", "Pure engine"], act: ["🛠️", "Activity"],
+    scaf: ["🏗️", "Scaffold"], tests: ["🧪", "Tests"], code: ["📄", "src/"],
+    prove: ["🧾", "Prover"], home: ["🗂️", "Temp home"], gold: ["🥇", "Goldens"],
+    waves: ["🗺️", "Wave table"], lead: ["🎯", "Lane lead"], team: ["👥", "Stage owners"], pr: ["🔃", "PR"], main: ["🌿", "main"],
+    coord: ["🏢", "Coordinator"], laptop: ["💻", "Your laptop"]
+  };
+
+  /* ---------- flows ----------
+     hop: { l: lane, t: short label, c: code, s: status, r: ref, d: detail, scr: screen } */
+  function term(title, lines) { return { k: "term", title: title, lines: lines }; }
+  function app(title, rows) { return { k: "app", title: title, rows: rows }; }
+  function big(e, text) { return { k: "big", e: e, text: text }; }
+
+  var USING = [
+    { id: "U1", ic: "☀️", name: "Start your day", lanes: ["you", "cli", "api", "temporal", "app"], hops: [
+      { l: "you", t: "run sindri", c: "$ sindri", s: "built", r: "A §17.29.1", d: "One command starts everything. Every other sindri verb is a client of the running process.", scr: term("zsh", ["$ sindri"]) },
+      { l: "api", t: "take the lease", c: "host lease · ledger.db", s: "built", r: "S1 #163", d: "One process per host, under the host lease. It opens the ledger and the approved profile.", scr: term("zsh", ["$ sindri", "~ lease acquired", "~ profile approved 3f1c…"]) },
+      { l: "temporal", t: "start Temporal", c: "temporal server start-dev", s: "building", r: "WF §0 · P4a #188", d: "A local Temporal server on loopback, with its own SQLite file. Workflow instances survive restarts.", scr: term("zsh", ["$ sindri", "~ lease acquired", "~ temporal 127.0.0.1 (sqlite)"]) },
+      { l: "app", t: "open the app", c: "Sindri.app", s: "building", r: "UI U0 #184", d: "The Avalonia app opens as a client of the API. sindri --headless skips it on an always-on box.", scr: app("Sindri", [["Queue", ""], ["Needs you", "3"], ["Running", "2"]]) },
+      { l: "cli", t: "what's running", c: "sindri status", s: "built", r: "S1 · A §17.29.1", d: "The CLI prints the profile, the API address, services and what needs you.", scr: term("zsh", ["$ sindri status", "profile   approved 3f1c…", "api       127.0.0.1:7410", "services  index · intake · evolve", "ready     3 need you · 2 running"]) },
+      { l: "you", t: "start with needs you", c: "GET /needs-you", s: "specced", r: "API P4 · UI U3", d: "The first thing to look at is the one list of what's waiting on you.", scr: { k: "img", key: "home", m: [[6.4, 12.6]], alt: "Home opens on Needs you" } }
+    ] },
+    { id: "U2", ic: "🎫", name: "Ticket to PR", lanes: ["you", "engine", "agent", "gh"], hops: [
+      { l: "you", t: "create an item", c: "CreateItem → ITM-12", s: "building", r: "API P3 · UI U2 #197", d: "An item comes in by hand, or later from intake (Linear, notes). Its id is always ITM-…; tracker keys are aliases.", scr: app("New item", [["Fix flaky export", "ITM-12", true]]) },
+      { l: "engine", t: "triaged", c: "workflow.item · triaged", s: "building", r: "recipes/sindri · P4 #192", d: "The item recipe starts. It waits for the router to size and route the item (gate.route.startable).", scr: term("sindri", ["$ sindri workflow status ITM-12", "workflow.item@1  triaged", "next: waiting for the router"]) },
+      { l: "engine", t: "slot + claim", c: "startable → claimed", s: "building", r: "workflow.item", d: "It waits for a session slot and the budget gate, then claims the ref sindri/{user}/{item} so nobody else starts it.", scr: term("sindri", ["workflow.item@1  startable → claimed", "claim  sindri/joi/ITM-12"]) },
+      { l: "agent", t: "produce", c: "workflow.step · produce", s: "designed", r: "WF §6.5 · P8", d: "The child step recipe starts. The agent runtime launches the agent in a tmux session Sindri owns (snd-<run>).", scr: term("snd-7f2", ["claude · ITM-12 · round 1/3", "> reading the injection plan…", "> writing a failing test"]) },
+      { l: "engine", t: "checks", c: "checks · failed → produce", s: "building", r: "workflow.step · P3 #180", d: "Deterministic checks run. A failure loops back to produce with findings, at most 3 rounds.", scr: term("sindri", ["checks  failed: 1 finding", "→ produce (round 2/3)"]) },
+      { l: "agent", t: "revise", c: "round 2/3", s: "designed", r: "workflow.step", d: "The agent gets the findings and revises. No round repeats the same failure (no-progress detection).", scr: term("snd-7f2", ["> fixing: test asserts wrong date", "> all tests pass"]) },
+      { l: "engine", t: "verify", c: "verify · accepted", s: "building", r: "workflow.step", d: "A separate verifier reviews the output. The producer never grades itself.", scr: term("sindri", ["verify  accepted", "workflow.step  done", "workflow.item  running → done"]) },
+      { l: "gh", t: "PR opens", c: "shipper recipe", s: "designed", r: "A §17.29.2", d: "The shipper opens the PR with its evidence and a Not proven section.", scr: app("PR #412", [["Fix flaky export", "ready", true], ["Evidence: test fails on base, passes on head", "✓"], ["Not proven: none", ""]]) },
+      { l: "you", t: "review + merge", c: "your decision", s: "designed", r: "A §17.10", d: "You review and merge. A later merge-gate design lets a recipe auto-merge small, safe fixes.", scr: big("✅", "Merged by you") }
+    ] },
+    { id: "U3", ic: "🔔", name: "Something needs you", lanes: ["engine", "notify", "app", "you", "api"], hops: [
+      { l: "engine", t: "park", c: "no-progress → park", s: "building", r: "workflow.step · P3", d: "A Step runs out of time, rounds or budget, or repeats its findings. Instead of guessing, it parks with a typed reason.", scr: term("sindri", ["ITM-01JC8  workflow.step  checks", "failed twice with the same findings", "→ parked: no-progress"]) },
+      { l: "notify", t: "notify once", c: "notify.desk", s: "designed", r: "WF P6 · README X5", d: "notify.desk raises the one OS notification. The app never notifies on its own, so nothing fires twice.", scr: big("🔔", "ITM-01JC8 needs an answer") },
+      { l: "app", t: "needs-you row", c: "kind: park", s: "specced", r: "API §3.6 · UI U3", d: "The row says which answer it needs (answerKind), with its actions.", scr: { k: "img", key: "needs", m: [[5.3, 20.8]], alt: "Needs you, with the park open" } },
+      { l: "you", t: "answer", c: "sindri workflow answer ITM-01JC8 --grant 1", s: "specced", r: "WF §6.3", d: "Answer in the app's form, or copy the command for a protected answer and confirm it at a terminal.", scr: { k: "warp", state: "answer" } },
+      { l: "api", t: "one chain", c: "decision.recorded", s: "built", r: "API §2.1 · P1 #181", d: "Every write goes through one command chain: gate, audit, authorization, validation, then one event.", scr: term("ledger", ["command.handled  ok", "decision.recorded  ITM-01JC8"]) },
+      { l: "engine", t: "resume", c: "→ produce", s: "building", r: "WF P4 #192", d: "The instance resumes where it parked, with the grant applied.", scr: term("sindri", ["workflow.step  produce (round 3/3, +1 grant)"]) }
+    ] },
+    { id: "U4", ic: "🎮", name: "Step onto the line", lanes: ["you", "tool", "agent", "engine"], hops: [
+      { l: "you", t: "attach", c: "sindri open ITM-01JE7 --attach", s: "specced", r: "API P10a · UI U6", d: "From the app's Attach button or the CLI, on an item with a live agent.", scr: { k: "img", key: "home", m: [[51.8, 65.4]], alt: "Attach on a live row" } },
+      { l: "tool", t: "Warp tab", c: "tmux attach -t snd-7f2", s: "designed", r: "README X55", d: "A Warp tab joins the tmux session the agent is running in. You see exactly what it sees.", scr: { k: "warp", state: "watch" } },
+      { l: "agent", t: "you type", c: "takeover", s: "designed", r: "A §9.3", d: "The first thing you type is a takeover. The instance pauses and its timers stop.", scr: { k: "warp", state: "typed" } },
+      { l: "engine", t: "paused", c: "taken-over", s: "designed", r: "WF §6.3", d: "The item shows 'with you'. Nothing times out while you drive.", scr: { k: "img", key: "sent", m: [[73.3, 16.5]], alt: "With you: automation paused" } },
+      { l: "you", t: "hand back", c: "sindri workflow handback", s: "specced", r: "WF §6.3", d: "When you're done, press Hand back (B) in the app, or use the CLI.", scr: { k: "img", key: "sent", m: [[92.0, 24.1]], alt: "Hand back" } },
+      { l: "engine", t: "resume", c: "timers restart", s: "building", r: "WF P4", d: "The workflow continues from where it was, with your changes as recorded input.", scr: term("sindri", ["workflow.step  produce (resumed)"]) }
+    ] },
+    { id: "U5", ic: "🪟", name: "Open in your tool", lanes: ["you", "api", "launcher", "tool", "engine"], hops: [
+      { l: "you", t: "open", c: "sindri open ITM-01JC8 --agent claude-code", s: "specced", r: "API P10a · UI X52", d: "On an item with no live session: between steps, at a gate, or parked. Pick Claude Code, Codex or Cursor.", scr: { k: "img", key: "menu", m: [[88.4, 21.8], [75.9, 30.1]], alt: "The launch menu" } },
+      { l: "api", t: "record it", c: "LaunchRequested", s: "specced", r: "README X44", d: "Opening is a command that records one event. The launch itself happens after it commits.", scr: term("ledger", ["launch.requested  ITM-01JC8 claude-code"]) },
+      { l: "launcher", t: "launch", c: "launch.started", s: "designed", r: "API P10a", d: "The launcher opens Warp with your tool within 30 s, seeded only with ids.", scr: { k: "img", key: "sent", m: [[70.3, 60.8]], alt: "Sent to Warp" } },
+      { l: "tool", t: "pull context", c: "/sindri/mcp", s: "designed", r: "API §8 · CTX S-1M", d: "Your session pulls the item's state, packet, evidence and context through Sindri's MCP endpoint.", scr: { k: "warp", state: "seeded" } },
+      { l: "engine", t: "taken over", c: "until handback", s: "designed", r: "README X43", d: "If the item had a live instance, opening it takes it over until you hand back.", scr: { k: "img", key: "sent", m: [[73.3, 16.5]], alt: "With you until hand back" } }
+    ] },
+    { id: "U6", ic: "🧭", name: "Ask for context", lanes: ["you", "tool", "api", "ctx", "src"], hops: [
+      { l: "you", t: "ask", c: "\"what does this change affect?\"", s: "built", r: "", d: "From any session in your own tool.", scr: term("claude", ["you: what does changing the export date affect?"]) },
+      { l: "tool", t: "one call", c: "context_query", s: "specced", r: "CTX §8.5 · S-1M", d: "One MCP call instead of many: the station asks once and gets a budgeted bundle.", scr: term("claude", ["> context_query q=\"export date\" budget=4k"]) },
+      { l: "api", t: "route", c: "GET /sindri/context/query", s: "building", r: "CTX S-1A #194", d: "Session reads are gated by context.sessions.enabled and scoped to the repo.", scr: term("api", ["GET /sindri/context/query?q=export+date", "caller: session · repo-scoped"]) },
+      { l: "ctx", t: "plan", c: "product graph → cascade", s: "building", r: "CTX S-3a #196", d: "The planner seeds from product-graph nodes and expands what a change cascades into.", scr: big("🧭", "Export › Date range › Timezone") },
+      { l: "src", t: "recall", c: "repo docs · Onyx · code index", s: "building", r: "CTX S-1A, S-5A #195", d: "Sources give recall. Onyx searches business intent; Sindri does its own ranking.", scr: app("Sources", [["repo docs", "3"], ["Onyx: tickets, PRDs", "5"], ["code index", "4"]]) },
+      { l: "ctx", t: "rank + cite", c: "budgeted · scrubbed", s: "specced", r: "CTX §1, §4", d: "Ranked, cut to the budget, scrubbed of secrets, and every section cited.", scr: term("claude", ["4 sections · 3.1k tokens", "[1] PRD: export ranges (Linear)", "[2] src/export/range.ts:42", "[3] decision: dates are UTC"]) }
+    ] },
+    { id: "U7", ic: "📜", name: "Change a recipe", lanes: ["you", "cli", "engine"], hops: [
+      { l: "you", t: "edit YAML", c: "recipes/…/workflow.step.yaml", s: "built", r: "docs/csharp/sindri-workflow.md", d: "A recipe is declarative YAML: states, transitions, gates, loops, timeouts and budgets.", scr: term("vim", ["loops: { revisions: { cap: 3 } }", "budget: { tokens: 400k }"]) },
+      { l: "cli", t: "validate", c: "sindri recipe validate", s: "built", r: "WF P1 #179", d: "Schema and rule checks, in-process. No server needed.", scr: term("zsh", ["$ sindri recipe validate workflow.step.yaml", "pass"]) },
+      { l: "cli", t: "eval", c: "sindri recipe eval", s: "built", r: "WF P3 #180", d: "The recipe's eval cases run over the pure engine: happy path, no-progress, round caps.", scr: term("zsh", ["$ sindri recipe eval workflow.step.yaml", "happy        pass", "no-progress  pass", "rounds       pass"]) },
+      { l: "you", t: "approve", c: "sindri recipe approve", s: "building", r: "WF P2 #191 · W9", d: "Approval is protected: a server challenge you confirm by typing at a terminal.", scr: term("zsh", ["$ sindri recipe approve workflow.step", "type 3f1c9a to approve: 3f1c9a", "approved workflow.step@3f1c9a…"]) },
+      { l: "engine", t: "pinned", c: "id@hash", s: "building", r: "WF P2", d: "New instances use the approved hash. Running ones keep the version they started with.", scr: term("sindri", ["workflow.step@3f1c9a  approved", "running instances keep their pin"]) }
+    ] }
+  ];
+
+  var BUILDING = [
+    { id: "B1", ic: "🔗", name: "A command's path", lanes: ["client", "chain", "svc", "ledger", "proj", "stream"], hops: [
+      { l: "client", t: "POST", c: "X-Sindri-Caller · X-Sindri-Token", s: "built", r: "API §6 · P1 #181", d: "Every write is a POST. The caller class comes from a header; human callers also send the per-start token.", scr: term("http", ["POST /items/ITM-12/answer", "X-Sindri-Caller: human", "X-Sindri-Token: ••••"]) },
+      { l: "chain", t: "gate", c: "CommandGate", s: "built", r: "API §2.1", d: "One command at a time per process, decided without slow work.", scr: big("🚦", "1 · CommandGate") },
+      { l: "chain", t: "audit", c: "AuditingService", s: "built", r: "API §2.1", d: "Every attempt is audited as command.handled, even refusals.", scr: big("🧾", "2 · command.handled") },
+      { l: "chain", t: "authorize", c: "action class × caller", s: "built", r: "API §4.2", d: "One table decides. A session can request; only a human decides. A refusal is SND-AUTH-002.", scr: app("Authorization", [["human + terminal → protected", "✓"], ["session → decision", "✗", true]]) },
+      { l: "chain", t: "validate", c: "ValidatingService", s: "built", r: "API §2.1", d: "The slice's validator runs last, so an unauthorized caller learns nothing about valid input.", scr: big("✔️", "4 · validate") },
+      { l: "svc", t: "decide", c: "IService<TCommand, TResult>", s: "built", r: "csharp.md slice recipe", d: "One service decides; pure decisions live on the domain type in Core.", scr: big("🧩", "Result<T>") },
+      { l: "ledger", t: "one event", c: "append · idempotent key", s: "built", r: "API §2.1 · A §17.20", d: "Exactly one domain event, keyed so a retry can't apply twice. Tenant and ring keys ride along.", scr: term("ledger", ["seq 4211  decision.recorded", "tenant local · ring 0"]) },
+      { l: "proj", t: "project", c: "read model · read-your-writes", s: "building", r: "API §2.3, §2.4 · P2 #190", d: "The projector folds events into views; a write waits until its view caught up.", scr: big("🪞", "ItemView updated") },
+      { l: "stream", t: "push", c: "event stream", s: "specced", r: "API §5 · P5", d: "Clients like the app follow the stream instead of polling.", scr: term("stream", ["data: {\"type\":\"item.state-changed\",…}"]) }
+    ] },
+    { id: "B2", ic: "⏱️", name: "A workflow transition", lanes: ["client", "wf", "pure", "act", "ledger"], hops: [
+      { l: "client", t: "command", c: "Update keyed by nonce", s: "building", r: "WF §5.3 · P4", d: "Engine commands (answer, complete, handback) arrive as Temporal Updates, keyed by a nonce so retries are safe.", scr: term("zsh", ["$ sindri workflow complete … --outcome done"]) },
+      { l: "wf", t: "receive", c: "RecipeWorkflow", s: "building", r: "WF §0 · P4a #188", d: "One workflow type interprets every recipe. Steps are activities, events are signals, timers are durable.", scr: big("⏱️", "RecipeWorkflow") },
+      { l: "pure", t: "decide", c: "TransitionDecision", s: "built", r: "WF P3 #180", d: "The pure engine decides the transition: gates, loops, budgets, no-progress. No I/O.", scr: term("eval", ["produce → checks", "gates ok · round 1/3"]) },
+      { l: "act", t: "run", c: "activity · Step / effect", s: "building", r: "WF §5", d: "Effects and Steps run as activities; a desk Step waits for the complete Update.", scr: big("🛠️", "step.checks") },
+      { l: "ledger", t: "mirror", c: "RecordEvent (activity id)", s: "building", r: "WF §5.6 · P4a", d: "Every transition is mirrored into the ledger, keyed by the activity id. The ledger stays the one public log.", scr: term("ledger", ["workflow.transitioned  produce → checks"]) }
+    ] },
+    { id: "B3", ic: "🏗️", name: "Add a use case", lanes: ["scaf", "tests", "code"], hops: [
+      { l: "scaf", t: "scaffold", c: "/new-slice", s: "built", r: "docs/csharp/scaffolds/new-slice.md", d: "Generates the red test, the records, a stub service, and the endpoint and registration stubs.", scr: term("zsh", ["$ node scripts/scaffold/new-slice.mjs …"]) },
+      { l: "tests", t: "red", c: "StartItem_parks_when_…", s: "built", r: "AGENTS.md slice recipe", d: "Commit it red: it compiles with zero warnings and fails when run.", scr: term("dotnet test", ["✗ StartItem_parks_when_budget_is_exhausted"]) },
+      { l: "code", t: "records + ports", c: "Request · Response", s: "built", r: "slice recipe 2", d: "Write the real assertion; add the ports the service needs.", scr: big("📄", "Features/<Slice>/") },
+      { l: "code", t: "service", c: "IService<TReq, TRes>", s: "built", r: "slice recipe 3", d: "Pure decisions live on the domain type in Core.", scr: big("🧩", "Core decides") },
+      { l: "code", t: "endpoint", c: "Host/Endpoints", s: "built", r: "slice recipe 4", d: "Bind, call one service, map the Result.", scr: big("🔌", "endpoint → service") },
+      { l: "tests", t: "green", c: "register · JSON context", s: "built", r: "slice recipe 5", d: "Register in the project's Add…() method, add the types to the JSON context, and it passes.", scr: term("dotnet test", ["✓ StartItem_parks_when_budget_is_exhausted"]) }
+    ] },
+    { id: "B4", ic: "🧾", name: "Prove a phase", lanes: ["prove", "home", "gold"], hops: [
+      { l: "prove", t: "as the agent", c: "scripts/sindri-prove.sh <verb>", s: "built", r: "API §12", d: "Every proof runs through the prover, never against your real Sindri home.", scr: term("zsh", ["$ scripts/sindri-prove.sh status"]) },
+      { l: "home", t: "temp home", c: "$AW_SINDRI_HOME=tmp", s: "built", r: "API §12 · README X24", d: "A throwaway home per run; setup.sh, providers and MCP registration are never touched.", scr: big("🗂️", "/tmp/sindri-prove.x7Q") },
+      { l: "prove", t: "as the human", c: "sindri-prove.sh human <verb>", s: "built", r: "README X40", d: "Acts as the owner using the guarded token, honoured only for a temp home.", scr: term("zsh", ["$ scripts/sindri-prove.sh human profile approve"]) },
+      { l: "gold", t: "goldens", c: "per route · per scenario", s: "built", r: "README X51", d: "JSON goldens per route and scenario; the UI's contract tests read them.", scr: term("diff", ["goldens/items.answer.ok.json  match"]) },
+      { l: "prove", t: "AOT smoke", c: "src/Sindri/aot-smoke/run.sh", s: "built", r: "AGENTS.md", d: "Publishes the native binary and drives it end to end against expected output.", scr: term("zsh", ["$ bash src/Sindri/aot-smoke/run.sh", "matches expected.txt"]) }
+    ] },
+    { id: "B5", ic: "🗺️", name: "How a lane ships", lanes: ["waves", "lead", "team", "pr", "main"], hops: [
+      { l: "waves", t: "needs merged", c: "wave n ready", s: "built", r: "README build order", d: "A phase starts the moment everything it needs has merged. Phases in one wave run in parallel.", scr: app("Waves", [["2 · API P2 · engine P2 · S-1A", "now", true], ["3 · P3, P5 · S-1M, S-3, S-5A · U1", "next"]]) },
+      { l: "lead", t: "plan units", c: "/specToProvenPR", s: "built", r: "skills/specToProvenPR", d: "The lane lead splits the phase into units with owners and proof commands.", scr: big("🎯", "units A–E") },
+      { l: "team", t: "build", c: "worktrees · 2 heavy slots", s: "built", r: "README execution plan", d: "Stage owners build in worktrees; at most two heavy builds run at once across all lanes.", scr: big("👥", "A · B · C in parallel") },
+      { l: "pr", t: "prove + review", c: "zero blocking findings", s: "built", r: "/specToProvenPR", d: "Evidence from the running app, then review rounds until no blocking finding is left.", scr: app("PR", [["evidence attached", "✓"], ["blocking findings", "0", true]]) },
+      { l: "main", t: "merge", c: "next wave unlocks", s: "built", r: "README", d: "The phase merges, and whatever waited on it becomes ready.", scr: big("🌿", "merged") }
+    ] }
+  ];
+
+  var LATER = [
+    { id: "L1", ic: "⬇️", name: "Pull down, push up", lanes: ["coord", "you", "laptop", "tool"], hops: [
+      { l: "coord", t: "work waits", c: "item owned by you", s: "designed", r: "README X61", d: "The team coordinator holds the queue, the engine and shared context. Items have owners.", scr: app("Team queue", [["ITM-12 · owner: you", "ready", true], ["ITM-14 · owner: teammate", "running"]]) },
+      { l: "you", t: "pull it down", c: "sindri pull ITM-12", s: "designed", r: "X61 (b)", d: "Illustrative verb. The Step is routed to your machine, for example a Temporal task queue per machine.", scr: term("zsh", ["$ sindri pull ITM-12", "leased to joi-laptop (heartbeat)"]) },
+      { l: "laptop", t: "run locally", c: "your index · your sources", s: "designed", r: "X61 (c)", d: "Your local code index and sources join the shared context in one query.", scr: big("💻", "local + shared context") },
+      { l: "tool", t: "your tool", c: "Claude Code · Codex · Cursor", s: "designed", r: "X61", d: "The agent runs in the tool you prefer, on your machine.", scr: term("Warp · codex", ["> working on ITM-12…"]) },
+      { l: "coord", t: "push up", c: "complete · outputs + evidence", s: "designed", r: "X61 (b)", d: "Results go back as the Step's completion; the coordinator's gates decide what happens next, including a per-recipe merge gate.", scr: term("zsh", ["$ sindri push ITM-12", "gates: checks ✓ verify ✓ merge: human"]) }
+    ] }
+  ];
+
+  /* ---------- screens: mockup images and the terminal illustration ---------- */
+  var UI = "superpowers/specs/2026-10-11-sindri-ui-design/";
+  var IMG = {
+    home: UI + "mockups/home.png", needs: UI + "mockups/needs-you.png",
+    menu: UI + "prototype-launch-menu.png", sent: UI + "prototype-sent-to-warp.png"
+  };
+  function shot(src, marks, alt) {
+    return '<span class="shot-in" style="position:relative;display:block"><img src="' + src + '" alt="' + esc(alt) + '" loading="lazy">' +
+      (marks || []).map(function (m, i) { return '<span class="mark" style="left:' + m[0] + "%;top:" + m[1] + '%">' + (m[2] || i + 1) + "</span>"; }).join("") +
+      '<span class="tag">design reference</span></span>';
+  }
+  var WARP = {
+    watch: { tab: "sindri ITM-01JE7", r: "ITM-01JE7 · produce 2/3", lines: [
+      '<span class="dim">claude · ITM-01JE7 · produce 2/3</span>',
+      "⏺ Read ack-route.ts",
+      '⏺ Run tests  <span class="ok">14 passed</span> · <span class="bad">1 failed</span>',
+      '  <span class="bad">✗</span> 409 on a stale nonce',
+      "⏺ Fixing the nonce check…",
+      '<span class="cur">&nbsp;</span>'] },
+    typed: { tab: "sindri ITM-01JE7", r: "ITM-01JE7 · with you", lines: [
+      '<span class="dim">claude · ITM-01JE7 · produce 2/3</span>',
+      '⏺ Run tests  <span class="ok">14 passed</span> · <span class="bad">1 failed</span>',
+      "⏺ Fixing the nonce check…",
+      '<span class="you">&gt; reuse NonceStore here</span>',
+      '<span class="banner">sindri: with you · timers paused</span>',
+      "⏺ Using NonceStore.Consume…"] },
+    seeded: { tab: "sindri ITM-01JC8", r: "ITM-01JC8 · with you", lines: [
+      '<span class="dim">$ claude "Sindri item ITM-01JC8"</span>',
+      '⏺ sindri_item ITM-01JC8 <span class="dim">→ parked</span>',
+      '⏺ context_query <span class="dim">→ 4 cited</span>',
+      '  <span class="acc">[1]</span> decision: retries back off',
+      '  <span class="acc">[2]</span> src/outbox/Dispatcher.cs:88',
+      '<span class="cur">&nbsp;</span>'] },
+    answer: { tab: "zsh", r: "", lines: [
+      '<span class="ok">$</span> sindri workflow answer ITM-01JC8 --grant 1',
+      '<span class="dim">Grant 1 round to step.2? (protected)</span>',
+      "Type 3f1c9a to confirm: 3f1c9a",
+      '<span class="ok">✓</span> recorded · step.2 resumes',
+      '<span class="cur">&nbsp;</span>'] }
+  };
+  function warp(state, big) {
+    var w = WARP[state];
+    return '<div class="warp' + (big ? " big" : "") + '"><div class="wbar"><span class="wd"></span><span class="wd"></span><span class="wd"></span><span class="wtab on">' + esc(w.tab) + '</span><span class="wtab">~</span></div>' +
+      '<div class="wbody">' + w.lines.join("\n") + "</div>" +
+      (w.r ? '<div class="tmux"><span>[snd-7f2]</span><span>0:claude*</span><span class="r">' + esc(w.r) + "</span></div>" : "") + "</div>";
+  }
+  var lb = document.getElementById("lb"), lbin = document.getElementById("lbin"), lbcap = document.getElementById("lbcap");
+  function openLb(kind, a, b, cap) {
+    lbin.innerHTML = kind === "img" ? shot(a, b, cap) : warp(a, true);
+    lbcap.textContent = cap || "";
+    if (lb.showModal) lb.showModal(); else lb.setAttribute("open", "");
+  }
+  document.getElementById("lbx").addEventListener("click", function () { lb.close(); });
+  lb.addEventListener("click", function (e) { if (e.target === lb) lb.close(); });
+
+  /* ---------- storyboards ---------- */
+  var STORIES = [
+    { t: "Step in on a live agent", sub: "The app, then the agent's own terminal, then back. Frames come from separate mockups, so item ids differ.", f: [
+      { img: IMG.home, m: [[51.8, 65.4]], cap: "Find a live agent on Home and press Attach.", c: "sindri open ITM-01JE7 --attach" },
+      { warp: "watch", cap: "Warp joins the tmux session Sindri owns. You see what the agent sees.", c: "tmux attach -t snd-7f2" },
+      { warp: "typed", cap: "Type a line. That's a takeover: automation pauses and timers stop.", c: "takeover" },
+      { img: IMG.sent, m: [[73.3, 16.5, 4], [92.0, 24.1, 5]], cap: "The app shows it's with you. Press Hand back (B) when you're done.", c: "sindri workflow handback" }
+    ] },
+    { t: "Answer what's waiting on you", sub: "A parked item asks for more rounds; a protected answer is typed at a terminal.", f: [
+      { img: IMG.needs, m: [[5.3, 20.8], [93.7, 44.8]], cap: "Open the park, read its timeline, and copy the answer command.", c: "kind: park · answerKind" },
+      { warp: "answer", cap: "Paste it in any terminal and type the confirmation. The step resumes.", c: "sindri workflow answer ITM-01JC8 --grant 1" }
+    ] },
+    { t: "Open an item in your own tool", sub: "No live session yet: pick Claude Code, Codex or Cursor and land in Warp with the item seeded.", f: [
+      { img: IMG.menu, m: [[88.4, 21.8], [75.9, 30.1]], cap: "Open the chevron and pick a tool, or press O for the default.", c: "GET /launch/targets" },
+      { img: IMG.sent, m: [[70.3, 60.8, 3]], cap: "Sindri records the launch and says when it reached Warp.", c: "launch.started" },
+      { warp: "seeded", cap: "Your session pulls the item and its cited context through Sindri's MCP endpoint.", c: "sindri_item · context_query" }
+    ] }
+  ];
+  (function () {
+    var root = document.getElementById("stories"), step = 0;
+    STORIES.forEach(function (st) {
+      var sec = h("div", "story");
+      sec.appendChild(h("h3", null, esc(st.t)));
+      sec.appendChild(h("p", "sub", esc(st.sub)));
+      var row = h("div", "frames"); row.style.setProperty("--n", st.f.length);
+      st.f.forEach(function (fr, i) {
+        var fig = h("figure", "frame");
+        var b = h("button", "shot", fr.img ? shot(fr.img, fr.m, fr.cap) : warp(fr.warp));
+        b.type = "button"; b.setAttribute("aria-label", "Frame " + (i + 1) + ": " + fr.cap + " Open full size.");
+        b.addEventListener("click", function () { if (fr.img) openLb("img", fr.img, fr.m, fr.cap); else openLb("warp", fr.warp, null, fr.cap); });
+        fig.appendChild(b);
+        fig.appendChild(h("figcaption", null, '<span class="n">' + (i + 1) + "</span><span>" + esc(fr.cap) + "</span><code>" + esc(fr.c) + "</code>"));
+        row.appendChild(fig);
+      });
+      sec.appendChild(row);
+      root.appendChild(sec);
+    });
+  })();
+
+  /* ---------- player ---------- */
+  function player(rootId, flows) {
+    var root = document.getElementById(rootId);
+    var picker = h("div", "picker"); picker.setAttribute("role", "group"); picker.setAttribute("aria-label", "Pick a flow");
+    var stage = h("div", "stage");
+    var laneCard = h("div", "card lane-card"); var box = h("div", "svgbox"); laneCard.appendChild(box);
+    var screen = h("div", "card screen");
+    stage.appendChild(laneCard); stage.appendChild(screen);
+    var ctrl = h("div", "card ctrl");
+    var btns = h("div", "btns");
+    var bBack = h("button", "btn", "◀"); bBack.type = "button"; bBack.setAttribute("aria-label", "Previous step");
+    var bPlay = h("button", "btn", "▶ Play"); bPlay.type = "button"; bPlay.setAttribute("aria-pressed", "false");
+    var bNext = h("button", "btn", "▶|"); bNext.type = "button"; bNext.setAttribute("aria-label", "Next step");
+    btns.appendChild(bBack); btns.appendChild(bPlay); btns.appendChild(bNext);
+    var now = h("div", "now"); now.setAttribute("aria-live", "polite");
+    var bReset = h("button", "btn", "↺"); bReset.type = "button"; bReset.setAttribute("aria-label", "Back to the start");
+    var det = h("details"); det.innerHTML = "<summary>More about this step</summary><p></p>";
+    ctrl.appendChild(btns); ctrl.appendChild(now); ctrl.appendChild(bReset); ctrl.appendChild(det);
+    if (flows.length > 1) root.appendChild(picker);
+    root.appendChild(stage); root.appendChild(ctrl);
+
+    var flow, cur = 0, timer = null, hopEls = [], linkEls = [], tokG = null, pts = [];
+
+    flows.forEach(function (f, i) {
+      var b = h("button", "pick", '<span class="ic" aria-hidden="true">' + f.ic + '</span><span class="nm">' + esc(f.name) + '</span><span class="id">' + f.id + "</span>");
+      b.type = "button"; b.setAttribute("aria-pressed", "false"); b.dataset.flow = f.id;
+      b.addEventListener("click", function () { select(f.id); });
+      picker.appendChild(b);
+    });
+
+    function draw() {
+      box.innerHTML = "";
+      var L = flow.lanes, n = flow.hops.length;
+      var lw = 132, step = n > 7 ? 100 : 112, lh = 70, top = 14;
+      var W = lw + 40 + (n - 1) * step + 70, H = top * 2 + L.length * lh;
+      var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "group", "aria-label": flow.name + ": swimlane, each step is a button" });
+      svg.style.minWidth = Math.max(520, n * 64 + 150) + "px"; svg.style.width = "100%";
+      box.appendChild(svg);
+      var laneY = {};
+      L.forEach(function (k, i) {
+        var y = top + i * lh; laneY[k] = y + lh / 2;
+        el("rect", { x: 0, y: y, width: W, height: lh, "class": "lanebg" + (i % 2 ? " alt" : "") }, svg);
+        txt(svg, 12, y + lh / 2 + 7, LANES[k][0], null, { "font-size": "20", "aria-hidden": "true" });
+        txt(svg, 40, y + lh / 2 + 5, LANES[k][1], "lanelbl");
+      });
+      el("line", { x1: lw, y1: top, x2: lw, y2: H - top, stroke: "var(--line)" }, svg);
+      pts = flow.hops.map(function (hp, i) { return [lw + 40 + i * step, laneY[hp.l]]; });
+      var gl = el("g", {}, svg);
+      linkEls = [];
+      for (var i = 1; i < n; i++) {
+        var a = pts[i - 1], b = pts[i], mx = (a[0] + b[0]) / 2;
+        var d = a[1] === b[1] ? "M" + (a[0] + 20) + "," + a[1] + " H" + (b[0] - 20)
+          : "M" + (a[0] + 18) + "," + a[1] + " C" + mx + "," + a[1] + " " + mx + "," + b[1] + " " + (b[0] - 18) + "," + b[1];
+        linkEls.push(el("path", { d: d, "class": "link" }, gl));
+      }
+      tokG = el("g", { "aria-hidden": "true" }, svg);
+      el("circle", { r: 26, "class": "tokring" }, tokG);
+      hopEls = flow.hops.map(function (hp, i) {
+        var g = el("g", { "class": "hop", tabindex: "0", role: "button", transform: "translate(" + pts[i][0] + "," + pts[i][1] + ")",
+          "aria-label": "Step " + (i + 1) + ": " + hp.t + ", " + SNAME[hp.s] }, svg);
+        el("circle", { r: 18, "class": "ring s-" + hp.s }, g);
+        txt(g, 0, 4.5, String(i + 1), "n", { "text-anchor": "middle" });
+        txt(g, 0, 36, hp.t, "lb", { "text-anchor": "middle" });
+        g.addEventListener("click", function () { stop(); go(i); });
+        g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); stop(); go(i); } });
+        return g;
+      });
+    }
+
+    function renderScreen(sc) {
+      if (sc && (sc.k === "img" || sc.k === "warp")) {
+        screen.className = "card screen " + (sc.k === "img" ? "img" : "warpk");
+        screen.innerHTML = sc.k === "img"
+          ? '<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:6px">Sindri app</span></div><div class="body"><button type="button" class="shot">' + shot(sc.src || IMG[sc.key], sc.m, sc.alt || "Sindri app") + "</button></div>"
+          : '<div class="body">' + warp(sc.state) + "</div>";
+        var b = screen.querySelector(".shot");
+        if (b) b.addEventListener("click", function () { openLb("img", sc.src || IMG[sc.key], sc.m, sc.alt || ""); });
+        screen.setAttribute("aria-label", "What you'd see");
+        return;
+      }
+      screen.className = "card screen" + (sc && (sc.k === "term") ? " term" : "");
+      var bar = '<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:6px">' + esc(sc && sc.title || "") + "</span></div>";
+      var body = "";
+      if (!sc) body = "";
+      else if (sc.k === "term") body = sc.lines.map(function (l) {
+        if (l.indexOf("$ ") === 0) return '<span class="p">$</span> ' + esc(l.slice(2));
+        if (l.indexOf("~ ") === 0) return '<span class="d">' + esc(l.slice(2)) + "</span>";
+        return esc(l);
+      }).join("\n");
+      else if (sc.k === "app") body = sc.rows.map(function (r) {
+        return '<div class="row' + (r[2] ? " hot" : "") + '"><span>' + esc(r[0]) + "</span>" + (r[1] ? '<span class="pill">' + esc(r[1]) + "</span>" : "") + "</div>";
+      }).join("");
+      else if (sc.k === "big") body = '<div class="big"><div class="e" aria-hidden="true">' + sc.e + "</div><div>" + esc(sc.text) + "</div></div>";
+      screen.innerHTML = (sc && sc.k !== "big" ? bar : '<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>') + '<div class="body">' + body + "</div>";
+      screen.setAttribute("aria-label", "What you'd see");
+    }
+
+    function go(i) {
+      cur = Math.max(0, Math.min(flow.hops.length - 1, i));
+      var hp = flow.hops[cur];
+      hopEls.forEach(function (g, k) { g.setAttribute("class", "hop " + (k < cur ? "past" : k === cur ? "cur" : "fut")); });
+      linkEls.forEach(function (p, k) { p.setAttribute("class", "link" + (k < cur ? " done" : "")); });
+      tokG.setAttribute("transform", "translate(" + pts[cur][0] + "," + pts[cur][1] + ")");
+      tokG.style.transition = reduced ? "none" : "transform .45s ease";
+      renderScreen(hp.scr);
+      now.innerHTML = '<span class="num">' + (cur + 1) + "/" + flow.hops.length + '</span><span aria-hidden="true">' + LANES[hp.l][0] + '</span><span class="what">' + esc(hp.t) + "</span><code>" + esc(hp.c) + "</code>" + chip(hp.s) + (hp.r ? '<span class="ref">' + esc(hp.r) + "</span>" : "");
+      det.querySelector("p").textContent = hp.d;
+      bBack.disabled = cur === 0; bNext.disabled = cur === flow.hops.length - 1;
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } bPlay.innerHTML = "▶ Play"; bPlay.setAttribute("aria-pressed", "false"); }
+    function play() {
+      if (timer) { stop(); return; }
+      if (cur >= flow.hops.length - 1) go(0);
+      bPlay.innerHTML = "❚❚ Pause"; bPlay.setAttribute("aria-pressed", "true");
+      timer = setInterval(function () { if (cur >= flow.hops.length - 1) { stop(); return; } go(cur + 1); }, reduced ? 2600 : 1700);
+    }
+    function select(id) {
+      stop();
+      flow = flows.filter(function (f) { return f.id === id; })[0] || flows[0];
+      Array.prototype.forEach.call(picker.children, function (b) { b.setAttribute("aria-pressed", b.dataset.flow === flow.id ? "true" : "false"); });
+      draw(); go(0);
+    }
+    bBack.addEventListener("click", function () { stop(); go(cur - 1); });
+    bNext.addEventListener("click", function () { stop(); go(cur + 1); });
+    bPlay.addEventListener("click", play);
+    bReset.addEventListener("click", function () { stop(); go(0); });
+    select(flows[0].id);
+    return { select: select, root: root };
+  }
+
+  var players = { U: player("usingPlayer", USING), B: player("buildingPlayer", BUILDING), L: player("laterPlayer", LATER) };
+  function openFlow(id) {
+    var p = players[id.charAt(0)]; if (!p) return;
+    p.select(id);
+    p.root.parentNode.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  }
+
+  /* ---------- map ---------- */
+  (function () {
+    var svg = document.getElementById("mapSvg");
+    var R = [
+      { x: 10, y: 30, w: 210, h: 480, t: "your machine" },
+      { x: 250, y: 30, w: 440, h: 480, t: "the sindri process" },
+      { x: 720, y: 30, w: 230, h: 480, t: "beside it" }
+    ];
+    R.forEach(function (r) { el("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 16, "class": "region" }, svg); txt(svg, r.x + 14, r.y + 22, r.t, "t-m"); });
+    var N = [
+      { id: "cli", x: 30, y: 70, w: 170, ic: "⌨️", t: "CLI", s: "built", f: ["U1", "U3", "U4", "U5", "U7"], b: "Every verb is a client call; typed confirmations happen here." },
+      { id: "app", x: 30, y: 180, w: 170, ic: "🖥️", t: "Sindri app", s: "building", f: ["U1", "U2", "U3", "U4"], b: "Avalonia desktop client: queue, item detail, needs you, open in Warp." },
+      { id: "tool", x: 30, y: 290, w: 170, ic: "🪟", t: "Your tool", s: "designed", f: ["U4", "U5", "U6", "L1"], b: "Claude Code, Codex or Cursor in Warp. Reaches Sindri over MCP." },
+      { id: "api", x: 270, y: 70, w: 400, ic: "🔀", t: "API · one command chain", s: "built", f: ["U3", "U5", "U6", "B1"], b: "Commands, queries, projections and the event stream on loopback HTTP, plus the MCP endpoint." },
+      { id: "cp", x: 270, y: 200, w: 125, ic: "🎛️", t: "Control", s: "built", f: ["U1", "B1"], b: "Lease, ledger, profile, scheduler, notifications, doctor." },
+      { id: "engine", x: 408, y: 200, w: 125, ic: "⚙️", t: "Engine", s: "building", f: ["U2", "U3", "U4", "U7", "B2"], b: "Runs every piece of work as an instance of a recipe." },
+      { id: "ctx", x: 546, y: 200, w: 125, ic: "🧭", t: "Context", s: "building", f: ["U5", "U6", "L1"], b: "Product graph and planner over every source; cited, scrubbed, budgeted." },
+      { id: "recipes", x: 408, y: 330, w: 125, ic: "📜", t: "Recipes", s: "built", f: ["U2", "U7"], b: "Declarative YAML, validated, evaluated and approved by hash." },
+      { id: "blocks", x: 546, y: 330, w: 125, ic: "🧱", t: "Blocks", s: "specced", f: ["U2", "B2"], b: "Gates, evidence providers, Steps and effects as typed C# modules." },
+      { id: "ledger", x: 270, y: 330, w: 125, ic: "📒", t: "Ledger", s: "built", f: ["U3", "B1", "B2"], b: "The one public log. Every engine transition is mirrored here." },
+      { id: "temporal", x: 740, y: 70, w: 190, ic: "⏱️", t: "Temporal", s: "building", f: ["U1", "B2"], b: "Durable execution on loopback: state, timers, retries." },
+      { id: "agent", x: 740, y: 180, w: 190, ic: "🤖", t: "Agents in tmux", s: "designed", f: ["U2", "U4"], b: "Each agent Step runs in a tmux session Sindri owns. Warp attaches." },
+      { id: "src", x: 740, y: 290, w: 190, ic: "📚", t: "Sources", s: "building", f: ["U6"], b: "Repo docs, Onyx, the tracker and the code index." },
+      { id: "gh", x: 740, y: 400, w: 190, ic: "🌐", t: "GitHub · tracker", s: "designed", f: ["U2"], b: "Where PRs open and items come from." }
+    ];
+    var E = [["cli", "api"], ["app", "api"], ["tool", "api"], ["api", "cp"], ["api", "engine"], ["api", "ctx"], ["cp", "ledger"], ["engine", "recipes"], ["engine", "blocks"],
+      ["engine", "temporal"], ["engine", "agent"], ["ctx", "src"], ["engine", "ledger"], ["tool", "agent"], ["engine", "gh"]];
+    var by = {}; N.forEach(function (n) { n.h = 70; by[n.id] = n; });
+    var eg = el("g", {}, svg), edgeEls = [];
+    function c(n) { return [n.x + n.w / 2, n.y + n.h / 2]; }
+    E.forEach(function (e) {
+      var a = by[e[0]], b = by[e[1]], p = c(a), q = c(b), d;
+      if (e[0] === "engine" && ["temporal", "agent", "gh"].indexOf(e[1]) >= 0) {
+        /* go under the Context box through the corridor between the rows */
+        var lane = { temporal: 704, agent: 712, gh: 720 }[e[1]];
+        d = "M" + (a.x + 40) + "," + (a.y + a.h) + " V" + (300 + (lane - 704)) + " H" + lane + " V" + q[1] + " H" + b.x;
+      } else if (e[0] === "tool" && e[1] === "agent") {
+        d = "M" + (a.x + a.w) + "," + p[1] + " H236 V490 H728 V" + q[1] + " H" + b.x;
+      } else {
+        d = "M" + p[0] + "," + p[1] + " C" + ((p[0] + q[0]) / 2) + "," + p[1] + " " + ((p[0] + q[0]) / 2) + "," + q[1] + " " + q[0] + "," + q[1];
+      }
+      edgeEls.push([e, el("path", { d: d, "class": "medge" }, eg)]);
+    });
+    var info = document.getElementById("mapInfo"), gs = [];
+    N.forEach(function (n) {
+      var g = el("g", { "class": "mnode", tabindex: "0", role: "button", transform: "translate(" + n.x + "," + n.y + ")", "aria-label": n.t + ", " + SNAME[n.s] }, svg);
+      el("rect", { width: n.w, height: n.h, rx: 12, "class": "s-" + n.s }, g);
+      txt(g, 14, 43, n.ic, null, { "font-size": "24", "aria-hidden": "true" });
+      txt(g, 50, 33, n.t, null, { "font-size": "15", "font-weight": "700" });
+      txt(g, 50, 52, GLYPH[n.s] + " " + SNAME[n.s], "t-s");
+      function act() {
+        gs.forEach(function (x) { x[1].classList.remove("on"); x[1].classList.toggle("dim", x[0].id !== n.id && !E.some(function (e) { return (e[0] === n.id && e[1] === x[0].id) || (e[1] === n.id && e[0] === x[0].id); })); });
+        g.classList.add("on");
+        edgeEls.forEach(function (ep) { ep[1].setAttribute("class", "medge" + (ep[0][0] === n.id || ep[0][1] === n.id ? " on" : "")); });
+        info.innerHTML = '<span aria-hidden="true" style="font-size:20px">' + n.ic + '</span><span class="ttl">' + esc(n.t) + "</span>" + chip(n.s) + '<span style="color:var(--ink-2)">' + esc(n.b) + "</span>";
+        var all = USING.concat(BUILDING, LATER);
+        n.f.forEach(function (fid) {
+          var f = all.filter(function (x) { return x.id === fid; })[0]; if (!f) return;
+          var b = h("button", "flowbtn", f.ic + " " + esc(f.name)); b.type = "button";
+          b.addEventListener("click", function () { openFlow(fid); });
+          info.appendChild(b);
+        });
+      }
+      g.addEventListener("click", act);
+      g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(); } });
+      gs.push([n, g]);
+    });
+  })();
+
+  /* ---------- theme ---------- */
+  var themes = ["auto", "light", "dark"], ti = 0, tb = document.getElementById("themeBtn");
+  function setTheme(i) {
+    ti = i; var t = themes[i];
+    if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", t);
+    tb.textContent = "Theme: " + t;
+    try { localStorage.setItem("sindri-arch-theme", t); } catch (e) {}
+  }
+  try { var saved = localStorage.getItem("sindri-arch-theme"); if (saved && themes.indexOf(saved) >= 0) setTheme(themes.indexOf(saved)); } catch (e) {}
+  tb.addEventListener("click", function () { setTheme((ti + 1) % 3); });
+
+  /* deep link: #flow-U3 */
+  var m = /^#flow-([A-Z]\d)$/.exec(location.hash || ""); if (m) openFlow(m[1]);
+})();
+</script>
+</body>
+</html>

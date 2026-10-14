@@ -518,6 +518,10 @@ precision bar like direction checks (§6.1).
   roll-up.
 - Protected modules (§7.7) always wait for the human, even inside an epic.
 
+*Direction (owner, 2026-10-12): the rule that the default-branch PR is always the human's is read as the default of a
+per-recipe merge gate, so a recipe may let a small, safe change merge itself. See `docs/sindri/README.md` X61; the
+multiplayer addendum designs it. Until then this section stands as written.*
+
 ## 17.11 Ship contract and evidence providers
 
 **Ship contract** (`skills/_shared/ship-contract.md`, read by every worker and by Sindri's ship Step):
@@ -846,6 +850,10 @@ ladder, and each level reuses the one below:
 **Rollout:** P1 joins F2 (the task compiler needs it to run a packet's tasks in parallel). P2 follows F7 (it reuses
 the shared lease). P3 starts when ring 1 begins, as the safe way to share improvements between home and work. P4
 starts only when a team adopts it, and needs the workplace's approval.
+
+*Direction (owner, 2026-10-12): Sindri is meant to become the team's coordinator, with each developer pulling a
+workstream's agent down onto their own machine and pushing results back up. The local, single-user experience comes
+first. See `docs/sindri/README.md` X61; the multiplayer addendum redesigns P2 and P4 around it.*
 
 ## 17.21 Multiplayer foundations
 

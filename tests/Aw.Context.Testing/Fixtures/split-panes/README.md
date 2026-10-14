@@ -100,9 +100,8 @@ doesn't read Linear Documents (D4).
 Eight questions (§9.2 item 3), each with the anchors a correct answer holds: `nodes` (graph keys, §6.1 scheme),
 `absentNodes` (what it must not name, e.g. the sibling), `records` (canonical keys), `files` (repo paths) and
 `decisions` (verbatim quote, `current` or `superseded`, and the file it conflicts with). The node keys are the intended
-map, not one a stage has built yet; the stage that builds the map (S-3, S-4) checks its keys against them. Where the
-spec's §8.4 result example names this cascade differently (`feature:tabs.layout-restore`,
-`action:tabs.restore-layout`), that example is illustrative and these keys are the fixture's map.
+map, not one a stage has built yet; the stage that builds the map (S-3, S-4) checks its keys against them. The spec's
+§8.4 result example uses the same keys (`feature:tabs.tab-manager`, `action:tab-manager.restore-layout`).
 
 ## The fakes
 
