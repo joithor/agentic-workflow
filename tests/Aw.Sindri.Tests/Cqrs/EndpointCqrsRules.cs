@@ -11,6 +11,8 @@ namespace Aw.Sindri.Tests.Cqrs;
 /// ARCH-CQRS-001 (API spec §2.5) over the endpoint data source, since minimal-API lambdas are invisible to ArchUnitNET:
 /// every GET resolves an IService whose request is an IQuery; every POST one whose request is an ICommand, or an IIssue
 /// on one of the four carve-out routes with catalog rows of class 'issue'. Pure: each violation is one line.
+/// The MCP endpoint (/sindri/mcp, API spec §8) is a transport, not a route: the SDK maps it, and each of its tools calls
+/// one query service (Host/Mcp/McpToolTable), so it's skipped here.
 /// </summary>
 internal static partial class EndpointCqrsRules
 {
@@ -29,8 +31,16 @@ internal static partial class EndpointCqrsRules
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         ArgumentNullException.ThrowIfNull(catalog);
-        return [.. endpoints.Endpoints.OfType<RouteEndpoint>().SelectMany(endpoint => Violations(endpoint, catalog))];
+        return [.. endpoints.Endpoints.OfType<RouteEndpoint>()
+            .Where(endpoint => !IsMcp(endpoint))   // the MCP transport's own route only; its tools are proven to take the query chain (ContextMcpTests)
+            .SelectMany(endpoint => Violations(endpoint, catalog))];
     }
+
+    /// <summary>The one route the MCP SDK maps: exactly /sindri/mcp (any method), nothing under it.</summary>
+    /// <param name="endpoint">An endpoint.</param>
+    /// <returns>True for the MCP route.</returns>
+    public static bool IsMcp(RouteEndpoint endpoint) =>
+        string.Equals((endpoint.RoutePattern.RawText ?? string.Empty).TrimEnd('/'), Host.Mcp.McpEndpoint.Path, StringComparison.Ordinal);
 
     /// <summary>The request type of the IService&lt;TRequest, _&gt; the endpoint's handler takes, or null.</summary>
     public static Type? Request(RouteEndpoint endpoint)
@@ -43,10 +53,13 @@ internal static partial class EndpointCqrsRules
     /// <summary>'METHOD /route' with parameter names dropped ('{itemId}' → '{}').</summary>
     public static IEnumerable<string> Routes(RouteEndpoint endpoint)
     {
-        var route = Parameter.Replace(endpoint.RoutePattern.RawText ?? string.Empty, "{}");
+        var route = Normalize(endpoint.RoutePattern.RawText ?? string.Empty);
         var methods = endpoint.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods ?? ["*"];
         return methods.Select(method => method + " " + route);
     }
+
+    /// <summary>A route with each '{parameter}' written as '{}', so a catalog row's route compares with the mapped pattern.</summary>
+    public static string Normalize(string route) => Parameter.Replace(route, "{}");
 
     private static IEnumerable<string> Violations(RouteEndpoint endpoint, ICommandCatalog catalog)
     {

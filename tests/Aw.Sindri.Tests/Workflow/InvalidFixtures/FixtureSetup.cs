@@ -17,4 +17,10 @@ internal enum FixtureSetup
 
     /// <summary>The wiring catalog with a profile whose workflow.effects allows only effect.claim.ref.</summary>
     EffectAllowlist,
+
+    /// <summary>The build's catalog with InvalidFixtureRun.Registry: workflow.version-taken 1 and workflow.version-behind 1 and 3 registered with other hashes.</summary>
+    Registry,
+
+    /// <summary>The capability catalog and base, with InvalidFixtureRun.Registry, where the base is registered but not approved.</summary>
+    CapabilityWithUnapprovedBase,
 }

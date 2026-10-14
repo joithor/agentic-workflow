@@ -3,6 +3,7 @@ using Aw.Context.Testing.Engine;
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
@@ -49,6 +50,7 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton(new TemporalRuntime(new FakeTemporalServer(), H.Clock))   // the stop's Temporal side, with no server running
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddSingleton<IApprovals>(H.Profiles)
+            .AddSingleton<IChallenges>(H.Challenges)
             .AddSingleton<IContextEngine>(FakeContextEngine.Instance)
             .AddSingleton<ICommandCatalog>(new InMemoryCommandCatalog([.. ShellRows.All, fixture]))
             .AddSingleton(Latch)

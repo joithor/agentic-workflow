@@ -20,6 +20,15 @@ public static class EventTypes
     /// <summary>A human approved a profile hash.</summary>
     public const string ProfileApproved = "profile.approved";
 
+    /// <summary>A recipe was registered by hash (engine spec §4.1).</summary>
+    public const string RecipeRegistered = "recipe.registered";
+
+    /// <summary>A recipe hash was approved, or re-approved with new pins (engine spec §4.1).</summary>
+    public const string RecipeApproved = "recipe.approved";
+
+    /// <summary>A recipe hash was revoked, directly or by a cascade (engine spec §4.1).</summary>
+    public const string RecipeRevoked = "recipe.revoked";
+
     /// <summary>The context engine refreshed its snapshot sources (context spec §3; the context-docs-refresh service).</summary>
     public const string ContextSourcesSynced = "context.sources.synced";
 

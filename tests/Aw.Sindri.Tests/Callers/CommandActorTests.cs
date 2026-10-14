@@ -27,7 +27,10 @@ public sealed class CommandActorTests : IDisposable
         using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };
         var hash = (await app.Services.GetRequiredService<IProfileSource>().Load(ct)).Value.Hash;
 
-        var approve = await http.Ask(Post("/sindri/profile/approve", $$"""{"hash":"{{hash.Value}}","confirmed":true}""", Human(token.Value)));
+        var issued = await http.Ask(Post("/sindri/workflow/challenges", $$"""{"action":"approve profile {{hash.Abbreviated}}"}""", Human(token.Value)));
+        var challenge = System.Text.Json.JsonDocument.Parse(issued.Body).RootElement.GetProperty("challenge").GetString();
+        var approve = await http.Ask(Post("/sindri/profile/approve",
+            $$$"""{"hash":"{{{hash.Value}}}","answer":{"challenge":"{{{challenge}}}","typed":"approve profile {{{hash.Abbreviated}}}"}}""", Human(token.Value)));
 
         var ledger = app.Services.GetRequiredService<ILedgerStore>();
         var approved = (await ledger.Latest(EventTypes.ProfileApproved, ct)).Value;

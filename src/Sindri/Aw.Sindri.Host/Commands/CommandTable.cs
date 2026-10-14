@@ -5,6 +5,8 @@ using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Profile;
 
+using Aw.Sindri.Host.Commands.Probe;
+
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
@@ -29,7 +31,7 @@ internal static class CommandTable
             await using (scope.ConfigureAwait(false))
             {
                 var session = AgentSession.Detect(environment, scope.ServiceProvider.GetRequiredService<IProcessAncestry>(), Interactive());
-                return await Dispatch(args, session, scope.ServiceProvider).ConfigureAwait(false);
+                return await Dispatch(args, session, scope.ServiceProvider, environment).ConfigureAwait(false);
             }
         }
     }
@@ -51,7 +53,7 @@ internal static class CommandTable
             : await output.Error(refused).ConfigureAwait(false);
     }
 
-    private static async Task<int> Dispatch(string[] args, AgentSession session, IServiceProvider services)
+    private static async Task<int> Dispatch(string[] args, AgentSession session, IServiceProvider services, Func<string, string?> environment)
     {
         var options = services.GetRequiredService<JsonSerializerOptions>();
         var probe = services.GetRequiredService<IControlPlaneProbe>();
@@ -60,6 +62,7 @@ internal static class CommandTable
         var start = new StartCommand(probe, services.GetRequiredService<IControlPlaneLauncher>(), client, output, services.GetRequiredService<TimeProvider>(), session);
         var verbs = new Verbs(client, probe, output, services);
         var ct = CancellationToken.None;
+        var harnesses = new ProbeCommands(services.GetRequiredService<IProcessAncestry>(), services.GetRequiredService<IHarnessVersions>(), environment, Interactive());
         return args switch
         {
             // ---- verbs: one arm per verb ----
@@ -72,10 +75,13 @@ internal static class CommandTable
                 .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
             ["views", "rebuild", .. var rest] when NoStart(rest) is { } noStart => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!noStart, c))
                 .RebuildViews(ct).ConfigureAwait(false),
-            ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct).ConfigureAwait(false),
+            ["doctor", "--probe"] or ["doctor", "--probe", "--json"] => await output.Json(await harnesses.Probe(harness: null, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
+            ["doctor", "--probe", "--harness", var name, .. var rest] when Json(rest) is not null => await output.Json(await harnesses.Probe(name, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
+            ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct, harnesses.DoctorChecks).ConfigureAwait(false),
+            ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
             ["context", "map", .. var rest] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(rest, ct).ConfigureAwait(false),
             ["context", .. var rest] => await new ContextVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
-            ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
+            ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
             ["workflow", .. var rest] => await WorkflowCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
             ["help" or "--help" or "-h"] => await output.Text(Usage.Text + "\n", 0).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),

@@ -108,3 +108,11 @@ export function isLocalHost(host: string | undefined): boolean {
   const { hostname } = new URL(host);
   return hostname === "localhost" || hostname === "127.0.0.1";
 }
+
+// Previews sit behind private-network preflights that headless Chrome otherwise blocks (their API resolves to a 10.x address).
+const PREVIEW_LAUNCH_ARGS = ["--disable-features=LocalNetworkAccessChecks,PrivateNetworkAccessRespectPreflightResults,BlockInsecurePrivateNetworkRequests"];
+
+/** Chromium launch args for a run: the preview flags only for preview hosts; localhost is unchanged. */
+export function browserLaunchArgs(hostKind: "local" | "preview"): string[] {
+  return hostKind === "preview" ? [...PREVIEW_LAUNCH_ARGS] : [];
+}
