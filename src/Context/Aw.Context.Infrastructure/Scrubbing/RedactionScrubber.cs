@@ -31,7 +31,7 @@ internal sealed class RedactionScrubber(IRedactor redactor) : IEgressScrubber, I
         string? text;
         try
         {
-            text = IngestSanitizer.Clean(raw);
+            text = IngestSanitizer.Clean(raw.Replace("\r\n", "\n", StringComparison.Ordinal));   // one line ending, so a blank line reads the same in every file
         }
         catch (RegexMatchTimeoutException)
         {

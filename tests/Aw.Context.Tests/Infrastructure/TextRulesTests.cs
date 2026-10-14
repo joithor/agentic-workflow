@@ -44,7 +44,9 @@ public sealed class TextRulesTests
     [InlineData("a <div style=\"background:url(https://evil.example/p.png)\">x</div>", "a x</div>")]
     [InlineData("a <table background=\"https://evil.example/p.png\"> b", "a  b")]
     [InlineData("a <img alt=\"a>b\" src=\"https://evil.example/p.png\"> b", "a  b")]
-    [InlineData("a<style>\nbody { background: url(https://evil.example/p.png) }\n</style>b", "a\n\nb")]
+    [InlineData("a<style>\nbody { color: red }\n</style>b", "a\nbody { color: red }\n</style>b")]
+    [InlineData("Put CSS in a `<style>` element.\n\n## Next\n\nThis section survives.", "Put CSS in a `` element.\n\n## Next\n\nThis section survives.")]
+    [InlineData("pattern: \"(?<![A-Za-z0-9_])ACME-[0-9]{6}(?![0-9])\"", "pattern: \"(?<![A-Za-z0-9_])ACME-[0-9]{6}(?![0-9])\"")]
     [InlineData("read <a href=\"https://evil.example/prd\">the PRD</a>", "read the PRD</a>")]
     [InlineData("a <b>bold</b> and <span class=\"x\">kept</span>", "a <b>bold</b> and <span class=\"x\">kept</span>")]
     [InlineData("see [the PRD][a\\]b]\n[a\\]b]: https://evil.example/prd", "see the PRD\n")]
@@ -82,6 +84,17 @@ public sealed class TextRulesTests
     {
         Assert.Null(IngestSanitizer.Clean("<im[[[[[](a)](a)](a)](a)](a)g src=\"https://evil.example/x.png\">"));   // five layers: the joined tag forms after the last pass
         Assert.Equal(string.Empty, IngestSanitizer.Clean("<im[[[[](a)](a)](a)](a)g src=\"https://evil.example/x.png\">"));   // four: the fifth pass removes it and the sixth confirms
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_crlf_document_stops_raw_tag_reads_at_a_blank_line_like_an_lf_one()
+    {
+        var scrubber = new RedactionScrubber(Aw.Redaction.Redactor.Default);
+
+        var crlf = scrubber.Clean("Use `<b class=x` in prose\r\n\r\nKeep this paragraph about data=1.\r\n", singleLine: false).Text;
+
+        Assert.Equal(scrubber.Clean("Use `<b class=x` in prose\n\nKeep this paragraph about data=1.\n", singleLine: false).Text, crlf);
+        Assert.Contains("Keep this paragraph", crlf, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

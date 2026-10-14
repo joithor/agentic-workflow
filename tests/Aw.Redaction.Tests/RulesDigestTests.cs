@@ -49,7 +49,8 @@ public sealed class RulesDigestTests
             "Redacted|Authorization: Bearer [REDACTED:github-token]|github-token",
         ];
 
-        Assert.True(Redactor.EngineVersion == 1 && scanned.SequenceEqual(pinned, StringComparer.Ordinal),
-            "scan behaviour changed: raise Redactor.EngineVersion and update this test (" + string.Join(" | ", scanned) + ")");
+        Assert.True(scanned.SequenceEqual(pinned, StringComparer.Ordinal),
+            "scan behaviour changed: raise Redactor.EngineVersion and update this table (" + string.Join(" | ", scanned) + ")");
+        Assert.Equal(1, Redactor.EngineVersion);   // raised together with the table above, never alone
     }
 }

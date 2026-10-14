@@ -159,14 +159,14 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   `Redactor.RulesDigest` (every rule it applies, extra patterns included, with ids, patterns, options and the scan
   engine, so a widened rule under the same id counts), length-prefixed. The factory caches the last build by the
   patterns as written. Changing a regex therefore re-cleans by itself; raise `IngestSanitizer.Version` too
-  with any change to what the sanitizer removes in code (S-2W made it 5).
+  with any change to what the sanitizer removes in code (S-2W made it 6).
 - **A ruleset per stored doc.** Migration `0003_s2w_scrub_ruleset.sql` adds `doc.ruleset` (default `''`, so every
   row S-1A wrote is outdated). A refresh treats a document as current only when its blob **and** ruleset match; one
   stored under another ruleset is cleaned again (`RepoRefresh.Recleaned` counts those indexed with text, so they are
   among `Added`; one the new rules block or one over the size cap counts as blocked or skipped instead; Sindri carries
   it on `ContextRepoSynced`). Search filters `d.ruleset = @ruleset`, so a chunk cleaned with other rules is never a hit
   until it is cleaned again, and `DocIndexStatus.Outdated` turns the repo's status row `degraded` with the count.
-- **Sanitizer (S-1A review run 5 deferrals).** `HtmlImage` removes `img` and `image`, and the elements that can fetch
+- **Sanitizer (S-1A review run 5 deferrals).** `HtmlImage` removes `img`, `image` and `style`, and the elements that can fetch
   when they carry an attribute (`meta`, `iframe`, `frame`, `object`, `embed`, `link`, `base`, `script`, SVG `set` and
   `animate…`);
   `HtmlTag` + `RemoteAttribute` remove any other start tag carrying `src`, `srcset`, `imagesrcset`, `srcdoc`, `lowsrc`,
@@ -175,8 +175,10 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   a tag whose quotes don't balance or whose value is too long is removed, not kept; a raw read ends at its first `>`
   or a blank line (the part before it is removed). Markdown image and link text may run across line breaks (not a
   blank line). `Clean` returns null when the text still changes after `MaxPasses` passes and a confirming one (a later
-  removal could have joined a tag), and `RedactionScrubber` blocks it, as it does on a regex timeout. `StyleBlock` removes
-  `<style>…</style>`. The remote
+  removal could have joined a tag), and `RedactionScrubber` blocks it, as it does on a regex timeout. `<style>` start
+  tags go like `<img>` (the CSS after one is plain text; a whole-block rule deleted the rest of any doc that mentioned
+  `<style>`). `RedactionScrubber` turns CRLF into LF before cleaning, so a blank line reads the same everywhere. Image
+  rules skip a regex lookaround (`(?<![0-9])`). The remote
   definition's label takes backslash escapes and one line break (not a blank line), and labels are matched as
   CommonMark does (whitespace runs collapsed, case ignored), so `[x][p q]` meets `[p\nq]: https://…`.
 - **Not here: the map's text.** S-3a's map export and status (and S-3b's `node`/`affects` answers) don't scrub yet;
