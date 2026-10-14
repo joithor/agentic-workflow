@@ -29,7 +29,6 @@ using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StopProcess;
-using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Features.ValidateRecipe;
 using Aw.Sindri.Host.Commands.Recipe;
@@ -71,7 +70,8 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ApproveProfileResponse))]
 [JsonSerializable(typeof(ValidateProfileResponse))]
 [JsonSerializable(typeof(RunDoctorResponse))]
-[JsonSerializable(typeof(EventView))]
+[JsonSerializable(typeof(PublicEvent))]
+[JsonSerializable(typeof(StreamErrorFrame))]
 [JsonSerializable(typeof(ListCommandsRequest))]
 [JsonSerializable(typeof(ListCommandsResponse))]
 [JsonSerializable(typeof(CommandListRow))]
