@@ -57,7 +57,7 @@ public sealed class ProbeRunnerTests
     [InlineData("""{"probes":[{"id":"a","question":" ","expect":{}}]}""", "probes[0].question")]
     public void A_bad_probe_file_is_SND_CONTEXT_035_at_its_key_path(string json, string keyPath)
     {
-        var set = Aw.Kernel.Json.AwJson.Deserialize<ProbeSet>(System.Text.Encoding.UTF8.GetBytes(json), EvalJsonContext.Json).Value;
+        var set = Aw.Kernel.Json.AwJson.Deserialize<ProbeSet>(System.Text.Encoding.UTF8.GetBytes(json), EvalJson.Options).Value;
 
         var error = ProbeRunner.Check(set);
 
@@ -68,7 +68,7 @@ public sealed class ProbeRunnerTests
     [Fact, Trait("Lane", "unit")]
     public void The_fixture_probe_file_is_valid()
     {
-        var set = Aw.Kernel.Json.AwJson.Deserialize<ProbeSet>(System.Text.Encoding.UTF8.GetBytes(Aw.Context.Testing.Fixtures.SplitPanesFixture.ReadText("probes.json")), EvalJsonContext.Json);
+        var set = Aw.Kernel.Json.AwJson.Deserialize<ProbeSet>(System.Text.Encoding.UTF8.GetBytes(Aw.Context.Testing.Fixtures.SplitPanesFixture.ReadText("probes.json")), EvalJson.Options);
 
         Assert.True(set.IsSuccess, set.IsError ? set.Error.Message : null);
         Assert.Null(ProbeRunner.Check(set.Value));
