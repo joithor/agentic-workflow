@@ -9,7 +9,7 @@ using Aw.Sindri.Core.Scheduling;
 
 namespace Aw.Sindri.Features.GetStatus;
 
-internal sealed class GetStatusService(HeldLease held, IApprovalReader approvals, IProfileSource live, ILedgerReader ledger, EventFactory events)
+internal sealed class GetStatusService(HeldLease held, IApprovedProfile approvals, IProfileSource live, ILedgerReader ledger, EventFactory events)
     : IService<GetStatusRequest, GetStatusResponse>
 {
     public async ValueTask<Result<GetStatusResponse>> Handle(GetStatusRequest request, CancellationToken cancellationToken)

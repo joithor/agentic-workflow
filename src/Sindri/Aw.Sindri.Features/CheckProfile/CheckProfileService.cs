@@ -15,7 +15,7 @@ namespace Aw.Sindri.Features.CheckProfile;
 /// check (API spec C8). The last check comes from the ledger, so a restart resumes where the previous process stopped.
 /// </summary>
 internal sealed class CheckProfileService(
-    IProfileSource live, IApprovalReader approvals, ILedgerStore ledger, EventFactory events, ICallerContextAccessor callers, IIdGenerator ids)
+    IProfileSource live, IApprovedProfile approvals, ILedgerStore ledger, EventFactory events, ICallerContextAccessor callers, IIdGenerator ids)
     : IService<CheckProfileRequest, CheckProfileResponse>
 {
     public async ValueTask<Result<CheckProfileResponse>> Handle(CheckProfileRequest request, CancellationToken cancellationToken)

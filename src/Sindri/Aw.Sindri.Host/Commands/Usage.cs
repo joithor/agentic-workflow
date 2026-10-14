@@ -12,6 +12,7 @@ internal static class Usage
         "       sindri stop                   stop it and release the host lease",
         "       sindri profile validate [--json]",
         "       sindri profile approve [--no-start] [<hash>]   without a hash: show the hash and what changed; with it: approve (needs a terminal); starts the control plane unless --no-start",
+        "       sindri views rebuild [--no-start]   replay the ledger into the views (the fix when they stall); starts the control plane unless --no-start",
         "       sindri doctor [--json]        lease, ledger, profile, api and temporal checks; runs without the control plane",
         "       sindri context query <text> [--node K | --item I | --symbol S] [--depth N] [--budget N] [--draft] [--json]   cited context from the running control plane (exit 1: not running, unknown anchor, refused)",
         "       sindri context sources status [--json]   each context source's state and whether sessions may read context",
