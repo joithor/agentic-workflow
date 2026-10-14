@@ -3,6 +3,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Onyx;
 using Aw.Context.Infrastructure;
 using Aw.Context.Infrastructure.Onyx;
+using Aw.Context.Testing.Map;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,6 +20,7 @@ public sealed class OnyxRegistrationTests
         var services = new ServiceCollection()
             .AddSingleton<TimeProvider>(new FakeTimeProvider(OnyxSourceHarness.Now))
             .AddSingleton(typeof(ILogger<>), typeof(NullLogger<>))
+            .AddSingleton(FixtureMap.Json)   // the host's AwJson options; the map reader and exports folder take them (S-3a)
             .AddContextInfrastructure(static _ => null);
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         var settings = OnyxSettings.Create("http://127.0.0.1:3000", OnyxSourceHarness.Pointer, "v4.9.0").Value;
@@ -34,6 +36,7 @@ public sealed class OnyxRegistrationTests
         var services = new ServiceCollection()
             .AddSingleton<TimeProvider>(new FakeTimeProvider(OnyxSourceHarness.Now))
             .AddSingleton(typeof(ILogger<>), typeof(NullLogger<>))
+            .AddSingleton(FixtureMap.Json)   // the host's AwJson options; the map reader and exports folder take them (S-3a)
             .AddContextInfrastructure(static name => name == "AW_SINDRI_HOME" ? "/nonexistent/sindri-home" : null);
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         var catalog = provider.GetRequiredService<ISourceCatalog>();
