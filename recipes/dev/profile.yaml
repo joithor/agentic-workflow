@@ -14,5 +14,5 @@ services:
 workflow:
   deskTimeout: 1m      # the desk floor is off, so workflow.dev-timeout parks after 1m
   eventHold: 24h       # the default, written out
-  effects: [effect.notify.desk]   # the effect allowlist (RCP-EFFECT-001, the dispatch recheck): the P6 signal sends desk notices only
+  effects: [effect.notify.desk, effect.claim.ref]   # the effect allowlist (RCP-EFFECT-001, the dispatch recheck): desk notices, and the claim workflow.item makes
   dispatchDelay: 60s   # the undo window before each effect runs (default 10s): long enough to revoke within it (P6 signal 2)
