@@ -14,6 +14,7 @@ public sealed partial record OnyxSettings
     private const string TokenKey = "context.sources.onyx.token";
     private const string VersionKey = "context.sources.onyx.version";
     private const int MaxShown = 64;
+    private static readonly HashSet<string> _schemes = new(StringComparer.Ordinal) { "env", "file", "keychain", "op" };
 
     private OnyxSettings(Uri url, string token, string version)
     {
@@ -53,7 +54,7 @@ public sealed partial record OnyxSettings
                 $"{TokenKey}: required: a secret pointer to the Onyx API key (env:NAME, file:/path, keychain:service/account or op:vault/item/field).");
         }
 
-        if (!PointerShape.IsMatch(token))
+        if (!IsPointer(token))
         {
             return ContextErrors.SourceNotConfigured.With(
                 $"{TokenKey}: isn't a secret pointer, so it isn't used or shown here. Keep the Onyx API key outside the profile and point to it: "
@@ -133,6 +134,17 @@ public sealed partial record OnyxSettings
 
     private static Error NotPinned(string why) => ContextErrors.OnyxNotPinnedOrLoopback.With($"{VersionKey}: {why} (spec §8.8).");
 
+    /// <summary>
+    /// A known scheme ('env', 'file', 'keychain', 'op') and a non-empty target: the least that tells a pointer from a
+    /// key written into the profile. Sindri's own parser decides the rest when it resolves the pointer (doctor names
+    /// the exact SND-SECRET reason), so every pointer it accepts passes here too.
+    /// </summary>
+    private static bool IsPointer(string token)
+    {
+        var colon = token.IndexOf(':', StringComparison.Ordinal);
+        return colon > 0 && colon < token.Length - 1 && _schemes.Contains(token[..colon]);
+    }
+
     private static string Bare(string version) => version.StartsWith('v') ? version[1..] : version;
 
     /// <summary>Text from outside (a host, a reported version) as a message shows it: one line, at most 64 characters.</summary>
@@ -141,9 +153,6 @@ public sealed partial record OnyxSettings
         var line = new string([.. text.Select(c => char.IsControl(c) ? ' ' : c)]);
         return line.Length <= MaxShown ? line : line[..MaxShown] + "…";
     }
-
-    [GeneratedRegex(@"^(env|file|keychain|op):\S+\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex PointerShape { get; }
 
     [GeneratedRegex(@"^v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ReleaseTag { get; }
