@@ -10,12 +10,20 @@ public sealed class FakeClaudeCli : IClaudeCli
     /// <summary>What each run answers; null means claude couldn't be started.</summary>
     public ClaudeRun? Answer { get; set; } = new(0, string.Empty);
 
+    /// <summary>Directories that don't exist: a run there answers null, as the process adapter does.</summary>
+    public ISet<string> MissingDirectories { get; } = new HashSet<string>(StringComparer.Ordinal);
+
     /// <summary>Every run so far: its arguments and working directory.</summary>
     public IReadOnlyList<(IReadOnlyList<string> Arguments, string Directory)> Runs => _runs;
 
     /// <inheritdoc/>
     public ValueTask<ClaudeRun?> Run(IReadOnlyList<string> arguments, string workingDirectory, CancellationToken cancellationToken)
     {
+        if (MissingDirectories.Contains(workingDirectory))
+        {
+            return ValueTask.FromResult<ClaudeRun?>(null);
+        }
+
         if (Answer is not null)
         {
             _runs.Add((arguments, workingDirectory));

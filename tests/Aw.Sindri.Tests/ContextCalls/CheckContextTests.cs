@@ -82,6 +82,19 @@ public sealed class CheckContextTests
         Assert.Equal(CheckState.Warn, none[1].State);
     }
 
+    [Fact]
+    public async Task An_approved_profile_without_a_context_section_is_ok_and_says_so()
+    {
+        var harness = new SliceHarness();
+        _ = await harness.Profiles.Save(SliceHarness.Profile(), TestContext.Current.CancellationToken);
+        var checks = new ContextDoctorChecks(new ContextScopes(harness.Profiles, harness.Callers), FakeContextEngine.Instance, new FakeProviderFiles());
+
+        var rows = await checks.Run(TestContext.Current.CancellationToken);
+
+        Assert.Equal((CheckState.Ok, "no context: section in the profile, so no context sources"), (rows[0].State, rows[0].Detail));
+        Assert.Equal(CheckState.Ok, rows[1].State);
+    }
+
     private static DoctorCheck Check(FakeProviderFiles files) =>
         ContextChecks.McpScope([.. Enum.GetValues<ProviderFile>().Select(f => McpScope.Judge(files.Read(f, CancellationToken.None).AsTask().Result)).OfType<McpScopeFinding>()]);
 

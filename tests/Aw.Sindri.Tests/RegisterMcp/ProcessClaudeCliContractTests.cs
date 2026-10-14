@@ -16,6 +16,33 @@ public sealed class ProcessClaudeCliContractTests : ClaudeCliContract, IDisposab
     public void Dispose() => _root.Delete(recursive: true);
 
     [Fact]
+    public async Task A_bare_name_runs_from_the_search_path_never_from_the_working_directory()
+    {
+        var onPath = System.IO.Directory.CreateDirectory(Path.Combine(_root.FullName, "on-path")).FullName;
+        var work = System.IO.Directory.CreateDirectory(Path.Combine(_root.FullName, "work")).FullName;
+        await Script(Path.Combine(onPath, "claude"), $"#!/bin/sh\necho path >> '{Log}'\n");
+        await Script(Path.Combine(work, "claude"), $"#!/bin/sh\necho cwd >> '{Log}'\n");
+        await File.WriteAllTextAsync(Path.Combine(onPath, "not-exec"), "x", TestContext.Current.CancellationToken);
+        var settings = new McpSettings("claude", _root.FullName, ClaudeConfigDir: null, CodexHome: null) { SearchPath = ["relative", onPath] };
+
+        var run = await new ProcessClaudeCli(settings).Run(["mcp"], work, TestContext.Current.CancellationToken);
+        var nonExecutable = await new ProcessClaudeCli(settings with { ClaudeBin = "not-exec" }).Run(["mcp"], work, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, run!.ExitCode);   // why: the stub on the search path started
+        Assert.Equal(["path"], await File.ReadAllLinesAsync(Log, TestContext.Current.CancellationToken));
+        Assert.Null(nonExecutable);
+    }
+
+    private static async Task Script(string path, string text)
+    {
+        await File.WriteAllTextAsync(path, text, TestContext.Current.CancellationToken);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+    }
+
+    [Fact]
     public async Task A_run_over_its_budget_is_killed_and_reads_124()
     {
         var stub = Path.Combine(_root.FullName, "slow-claude");
@@ -73,6 +100,8 @@ public sealed class ProcessClaudeCliContractTests : ClaudeCliContract, IDisposab
     }
 
     protected override string Directory() => RealPath.Of(_root.FullName)!;   // why: the temp root exists; the stub prints the physical path (pwd -P)
+
+    protected override string MissingDirectory() => Path.Combine(_root.FullName, "gone");
 
     private string Log => Path.Combine(_root.FullName, "runs.log");
 }

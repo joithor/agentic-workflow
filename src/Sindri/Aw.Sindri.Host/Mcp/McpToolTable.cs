@@ -1,4 +1,5 @@
 using Aw.Context.Core;
+using Aw.Sindri.Core.Commands;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
@@ -29,6 +30,18 @@ internal static class McpToolTable
     {
         var call = request.Params!;           // why: the SDK sets Params on every tools/call
         var services = request.Services!;     // why: the SDK sets the request's services on every request
+        if (_tools.All(t => t.Name != call.Name))
+        {
+            return ValueTask.FromResult(McpResults.Failure(services, ContextErrors.McpToolUnknown.With(
+                $"'{call.Name}' is not a Sindri MCP tool (fix: tools/list names them)")));
+        }
+
+        if (services.GetRequiredService<ICallerContextAccessor>().Current?.Repo is null)   // every tool is repo-scoped (API §3.1)
+        {
+            return ValueTask.FromResult(McpResults.Failure(services, ContextErrors.McpRepoMissing.With(
+                "the call has no X-Sindri-Repo header, so it has no repo scope (fix: run 'sindri mcp register' in the work repo and use that registration)")));
+        }
+
         return call.Name switch
         {
             ContextTools.Query => ContextTools.CallQuery(services, call.Arguments, cancellationToken),

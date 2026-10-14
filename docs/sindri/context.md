@@ -138,9 +138,10 @@ learns why. Refusals are tool errors
 | Code | When |
 |---|---|
 | `SND-CONTEXT-020` | Session reads are off |
-| `SND-CONTEXT-003` | An anchor outside the session's repo, or unknown; also every call whose `X-Sindri-Repo` isn't a repo the profile maps (re-run `sindri mcp register` in the work repo) |
+| `SND-CONTEXT-003` | An anchor outside the session's repo, or unknown; also every call whose `X-Sindri-Repo` isn't a repo the profile maps (re-run `sindri mcp register` in the work repo). A header that isn't a valid repo name at all is refused before MCP, with HTTP 400 `SND-API-007` |
 | `SND-CONTEXT-006` | The question is invalid (no words, two shapes, depth or budget out of range) |
 | `SND-CONTEXT-021` | The call has no `X-Sindri-Repo` (use a registration from `sindri mcp register`) |
+| `SND-PROFILE-005` | No profile is approved yet, so no repo is mapped (the human runs `sindri profile approve`) |
 | `SND-CONTEXT-022` | An argument of the wrong type, or one the tool doesn't have |
 | `SND-CONTEXT-023` | A tool Sindri doesn't have |
 

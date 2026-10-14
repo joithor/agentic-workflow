@@ -109,12 +109,16 @@ public sealed class ContextMcpTests : IDisposable
             await own.Call("context_query", """{"q":"orientation","bogus":1}""", ct),
             await own.Call("context_query", """{"q":" "}""", ct),
             await own.Call("context_nope", "{}", ct),
+            await gated.Call("context_sources", "{}", ct),
+            await none.Call("context_sources", "{}", ct),
+            await own.Call("context_sources", """{"x":1}""", ct),
         }.Select(r => (r.IsError, Code(r)));
 
         Assert.NotEqual(true, (await own.Call("context_query", """{"q":"orientation","depth":null,"node":null}""", ct)).IsError);   // why: null is absent
         Assert.Equal(
             [(true, "SND-CONTEXT-020"), (true, "SND-CONTEXT-020"), (true, "SND-CONTEXT-003"), (true, "SND-CONTEXT-021"), (true, "SND-CONTEXT-022"),
-             (true, "SND-CONTEXT-022"), (true, "SND-CONTEXT-006"), (true, "SND-CONTEXT-023")],
+             (true, "SND-CONTEXT-022"), (true, "SND-CONTEXT-006"), (true, "SND-CONTEXT-023"), (true, "SND-CONTEXT-020"), (true, "SND-CONTEXT-021"),
+             (true, "SND-CONTEXT-022")],
             codes);
     }
 

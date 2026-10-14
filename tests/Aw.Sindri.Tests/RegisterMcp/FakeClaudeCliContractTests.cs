@@ -19,4 +19,10 @@ public sealed class FakeClaudeCliContractTests : ClaudeCliContract
     protected override IReadOnlyList<(IReadOnlyList<string> Arguments, string Directory)> Received() => _claude.Runs;
 
     protected override string Directory() => "/work/demo";
+
+    protected override string MissingDirectory()
+    {
+        _ = _claude.MissingDirectories.Add("/work/gone");
+        return "/work/gone";
+    }
 }

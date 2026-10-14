@@ -75,7 +75,7 @@ internal static class ContextChecks
     private static string Removal(ProviderFile file) => file switch
     {
         ProviderFile.Claude => "claude mcp remove --scope user sindri",
-        ProviderFile.Codex => "delete the [mcp_servers.sindri] table from Codex's config.toml",
+        ProviderFile.Codex => "delete the 'sindri' server under mcp_servers from Codex's config.toml",
         ProviderFile.Cursor => "delete mcpServers.sindri from Cursor's mcp.json",
         _ => "delete the 'sindri' entry",
     };

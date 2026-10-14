@@ -12,6 +12,9 @@ namespace Aw.Sindri.Infrastructure.Mcp;
 /// <param name="CodexHome">CODEX_HOME, or null.</param>
 internal sealed record McpSettings(string ClaudeBin, string Home, string? ClaudeConfigDir, string? CodexHome)
 {
+    /// <summary>The directories a bare executable name is looked up in: PATH's absolute entries, in order.</summary>
+    internal IReadOnlyList<string> SearchPath { get; init; } = [];
+
     /// <summary>How long a claude run may take before it is killed (exit 124). Fixed; tests shorten it.</summary>
     internal TimeSpan ClaudeBudget { get; init; } = TimeSpan.FromSeconds(30);
 
@@ -22,5 +25,8 @@ internal sealed record McpSettings(string ClaudeBin, string Home, string? Claude
         environment("AW_SINDRI_CLAUDE_BIN") is { Length: > 0 } bin ? bin : "claude",
         environment("HOME") is { Length: > 0 } home ? home : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         environment("CLAUDE_CONFIG_DIR") is { Length: > 0 } claude ? claude : null,
-        environment("CODEX_HOME") is { Length: > 0 } codex ? codex : null);
+        environment("CODEX_HOME") is { Length: > 0 } codex ? codex : null)
+    {
+        SearchPath = [.. (environment("PATH") ?? string.Empty).Split(':', StringSplitOptions.RemoveEmptyEntries).Where(Path.IsPathRooted)],
+    };
 }

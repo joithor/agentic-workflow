@@ -13,10 +13,10 @@ internal sealed class ProcessClaudeCli(McpSettings settings) : IClaudeCli
     {
         if (!Directory.Exists(workingDirectory))
         {
-            return new ClaudeRun(2, $"the repo's checkout {workingDirectory} doesn't exist");
+            return null;   // the profile's checkout was moved or deleted: claude can't be started there
         }
 
-        if (Executable(settings.ClaudeBin) is not { } executable)
+        if (Executable(settings.ClaudeBin, settings.SearchPath) is not { } executable)
         {
             return null;   // not on PATH, or not executable
         }
@@ -88,18 +88,16 @@ internal sealed class ProcessClaudeCli(McpSettings settings) : IClaudeCli
     }
 
     /// <summary>
-    /// A name with a '/' as given; a bare name looked up on PATH only. Process.Start would also try the working directory
-    /// (the work repo) first, and a file named 'claude' there must never run.
+    /// A name with a '/' as given; a bare name looked up in the settings' search path only (PATH's absolute entries), and
+    /// only an executable file counts. Process.Start would also try the working directory (the work repo) first, and a
+    /// file named 'claude' there must never run.
     /// </summary>
-    private static string? Executable(string name)
-    {
-        if (name.Contains('/', StringComparison.Ordinal))
-        {
-            return File.Exists(name) ? name : null;
-        }
+    private static string? Executable(string name, IReadOnlyList<string> searchPath) =>
+        name.Contains('/', StringComparison.Ordinal)
+            ? (IsExecutable(name) ? name : null)
+            : searchPath.Select(directory => Path.Combine(directory, name)).FirstOrDefault(IsExecutable);
 
-        return (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(':', StringSplitOptions.RemoveEmptyEntries)
-            .Select(directory => Path.Combine(directory, name))
-            .FirstOrDefault(File.Exists);
-    }
+    private static bool IsExecutable(string path) =>
+        File.Exists(path) && (OperatingSystem.IsWindows() || (File.GetUnixFileMode(path) & (UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute)) != UnixFileMode.None);
+
 }

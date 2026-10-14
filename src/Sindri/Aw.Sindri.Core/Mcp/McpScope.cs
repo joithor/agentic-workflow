@@ -29,7 +29,17 @@ public static partial class McpScope
             return null;
         }
 
-        var (registered, malformed) = read.File == ProviderFile.Codex ? (Codex(text), null) : Json(text);
+        bool registered;
+        string? malformed;
+        try
+        {
+            (registered, malformed) = read.File == ProviderFile.Codex ? (Codex(text), null) : Json(text);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            (registered, malformed) = (false, "too slow to check");
+        }
+
         return malformed is not null
             ? new McpScopeFinding(read.File, read.Path, McpScopeState.Unreadable, malformed)
             : registered ? new McpScopeFinding(read.File, read.Path, McpScopeState.UserWide, Problem: null) : null;

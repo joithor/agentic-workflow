@@ -4,7 +4,6 @@ using Aw.Context.Core;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Aw.Kernel.Services;
-using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Features.ContextCalls;
 using ModelContextProtocol.Protocol;
 
@@ -66,11 +65,6 @@ internal static class ContextTools
             return McpResults.Failure(services, request.Error);
         }
 
-        if (Unscoped(services) is { } missing)
-        {
-            return McpResults.Failure(services, missing);
-        }
-
         var answer = await services.GetRequiredService<IService<QueryContextRequest, ContextResult>>().Handle(request.Value, ct).ConfigureAwait(false);
         return McpResults.From(services, answer, McpSummaries.Query);
     }
@@ -88,23 +82,12 @@ internal static class ContextTools
                 $"context_sources takes no arguments, got '{string.Join("', '", arguments.Keys)}' (fix: call it with {{}})"));
         }
 
-        if (Unscoped(services) is { } missing)
-        {
-            return McpResults.Failure(services, missing);
-        }
-
         var port = services.GetRequiredService<IHttpContextAccessor>().HttpContext?.Connection.LocalPort ?? 0;
         var answer = await services.GetRequiredService<IService<GetContextSourcesRequest, SourcesView>>().Handle(new GetContextSourcesRequest(), ct).ConfigureAwait(false);
         return answer.IsError
             ? McpResults.Failure(services, answer.Error)
             : McpResults.Success(services, McpSourcesAnswer.Of(answer.Value, McpEndpoint.Build, port), McpSummaries.Sources(answer.Value, McpEndpoint.Build, port));
     }
-
-    /// <summary>SND-CONTEXT-021 when the call carries no X-Sindri-Repo (a registration always sends one), else null.</summary>
-    private static Error? Unscoped(IServiceProvider services) =>
-        services.GetRequiredService<ICallerContextAccessor>().Current?.Repo is null
-            ? ContextErrors.McpRepoMissing.With("the call has no X-Sindri-Repo header, so it has no repo scope (fix: run 'sindri mcp register' in the work repo and use that registration)")
-            : null;
 
     /// <summary>The arguments as a request; SND-CONTEXT-022 for an unknown property or a wrong type. Values are left to the engine (006).</summary>
     private static Result<QueryContextRequest> Bind(IDictionary<string, JsonElement>? arguments)

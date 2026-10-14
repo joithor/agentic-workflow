@@ -7,6 +7,6 @@ public interface IClaudeCli
     /// <param name="arguments">The arguments.</param>
     /// <param name="workingDirectory">Where it runs.</param>
     /// <param name="cancellationToken">Cancels the run.</param>
-    /// <returns>How it ended, or null when it couldn't be started (not installed, not executable).</returns>
+    /// <returns>How it ended, or null when it couldn't be started (not installed, not executable, or the directory doesn't exist).</returns>
     public ValueTask<ClaudeRun?> Run(IReadOnlyList<string> arguments, string workingDirectory, CancellationToken cancellationToken);
 }

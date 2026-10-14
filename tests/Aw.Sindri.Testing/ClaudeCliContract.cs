@@ -46,6 +46,21 @@ public abstract class ClaudeCliContract
         Expect.Equal(new ClaudeRun(3, "MCP server sindri already exists"), run);
     }
 
+    /// <summary>A directory that doesn't exist (the CLI under test must know it as missing).</summary>
+    /// <returns>The path.</returns>
+    protected abstract string MissingDirectory();
+
+    /// <summary>A run in a directory that doesn't exist is null, and nothing runs.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_missing_directory_is_null_and_nothing_runs()
+    {
+        var cli = Create(0, string.Empty);
+
+        Expect.Equal(expected: null, await cli.Run(["mcp"], MissingDirectory(), Token));
+        Expect.Equal(0, Received().Count);
+    }
+
     /// <summary>An executable that can't be started is null, not an exception.</summary>
     /// <returns>The test.</returns>
     [Fact]
