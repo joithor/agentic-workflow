@@ -115,6 +115,21 @@
       "shortcut": null
     },
     {
+      "action": "ImportContextMap",
+      "class": "protected",
+      "allowedCallers": [
+        "human+terminal"
+      ],
+      "terminal": true,
+      "method": "POST",
+      "route": "/sindri/context/map/import",
+      "cli": "sindri context map import <file>",
+      "ui": "cli-only:typed-confirmation",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "OpenItem:attach",
       "class": "desk",
       "allowedCallers": [

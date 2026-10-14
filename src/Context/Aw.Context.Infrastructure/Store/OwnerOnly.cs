@@ -29,4 +29,31 @@ internal static class OwnerOnly
             }
         }
     }
+
+    /// <summary>Writes <paramref name="contents"/> to <paramref name="path"/> through a 0600 temp file and a rename, so readers never see half a file.</summary>
+    /// <param name="path">The target file.</param>
+    /// <param name="contents">The bytes.</param>
+    internal static void WriteAtomically(string path, ReadOnlySpan<byte> contents)
+    {
+        var temp = $"{path}.tmp-{Path.GetRandomFileName()}";
+        var options = new FileStreamOptions { Mode = System.IO.FileMode.CreateNew, Access = FileAccess.Write };
+        if (!OperatingSystem.IsWindows())
+        {
+            options.UnixCreateMode = FileMode;
+        }
+
+        try
+        {
+            using (var stream = new FileStream(temp, options))
+            {
+                stream.Write(contents);
+            }
+
+            File.Move(temp, path, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(temp);   // gone already after a successful move; a failed write leaves nothing behind
+        }
+    }
 }
