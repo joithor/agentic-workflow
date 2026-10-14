@@ -155,10 +155,11 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   the repos, so `profile validate` and `approve` refuse a pattern Redaction refuses. The approved profile can change
   at run time (the scheduler re-reads approvals), and the next call picks it up.
 - **`Trust.ScrubRuleset`** (Vogen, 16–64 lowercase hex): the first 32 hex characters of SHA-256 over
-  `IngestSanitizer.Version`, the text of every sanitizer regex (`IngestSanitizer.Rules`), the built-in redaction rules'
-  `Redactor.RulesDigest` (their ids, patterns and options, so a widened rule under the same id counts) and each extra
-  (id, pattern), length-prefixed. Changing a regex therefore re-cleans by itself; raise `IngestSanitizer.Version` too
-  with any change to what the sanitizer removes in code (S-2W made it 3).
+  `IngestSanitizer.Version`, the text of every sanitizer regex (`IngestSanitizer.Rules`) and the built redactor's
+  `Redactor.RulesDigest` (every rule it applies, extra patterns included, with ids, patterns, options and the scan
+  engine, so a widened rule under the same id counts), length-prefixed. The factory caches the last build by the
+  patterns as written. Changing a regex therefore re-cleans by itself; raise `IngestSanitizer.Version` too
+  with any change to what the sanitizer removes in code (S-2W made it 5).
 - **A ruleset per stored doc.** Migration `0003_s2w_scrub_ruleset.sql` adds `doc.ruleset` (default `''`, so every
   row S-1A wrote is outdated). A refresh treats a document as current only when its blob **and** ruleset match; one
   stored under another ruleset is cleaned again (`RepoRefresh.Recleaned` counts those indexed with text, so they are
@@ -171,9 +172,10 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   `HtmlTag` + `RemoteAttribute` remove any other start tag carrying `src`, `srcset`, `imagesrcset`, `srcdoc`, `lowsrc`,
   `dynsrc`, `poster`, `background`, `href`, `data`, `action`, `formaction`, `style` or `ping` anywhere in the tag. Both
   read quoted values (which may hold `>`) first, then the tag raw up to its first `>` (`RawFetchingTag`, `RawTag`), so
-  a tag whose quotes don't balance or whose value is too long is removed, not kept; no tag read crosses a blank line.
-  Markdown image and link text may wrap onto one more line. `Clean` throws `RegexMatchTimeoutException` when the text
-  still changes after `MaxPasses` (a later removal could have joined a tag), so `RedactionScrubber` blocks it. `StyleBlock` removes
+  a tag whose quotes don't balance or whose value is too long is removed, not kept; a raw read ends at its first `>`
+  or a blank line (the part before it is removed). Markdown image and link text may run across line breaks (not a
+  blank line). `Clean` returns null when the text still changes after `MaxPasses` passes and a confirming one (a later
+  removal could have joined a tag), and `RedactionScrubber` blocks it, as it does on a regex timeout. `StyleBlock` removes
   `<style>…</style>`. The remote
   definition's label takes backslash escapes and one line break (not a blank line), and labels are matched as
   CommonMark does (whitespace runs collapsed, case ignored), so `[x][p q]` meets `[p\nq]: https://…`.
@@ -195,7 +197,8 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
 - `RepoDocsTests.Rows_an_S1A_store_wrote_are_outdated_after_the_upgrade_and_cleaned_again`: migration 0003 on a real
   migration-2 store with an S-1A row (outdated, unsearchable, cleaned again).
 - `StoredDocsTests`: a blocked or oversized re-clean isn't counted as `Recleaned`. `Aw.Redaction.Tests/RulesDigestTests`:
-  the digest follows patterns and options, not ids or the timeout.
+  the digest follows ids, patterns and options, not the timeout, and the scan engine's behaviour is pinned with
+  `EngineVersion`.
 - `QueryContextTests`, `SourcesStatusTests`, `SettingsReaderTests`, `TextRulesTests` (the HTML carriers and labels,
   including unbalanced quotes and values too long for the quote-aware read),
   and `ContextEngineContract` (an extra pattern that doesn't parse is 001 at its key path).

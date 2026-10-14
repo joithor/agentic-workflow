@@ -60,7 +60,10 @@ public sealed class TextRulesTests
     [InlineData("read [the\nPRD](https://evil.example/) now", "read the\nPRD now")]
     [InlineData("a <video poster                         =\"https://evil.example/x.png\"> b", "a  b")]
     [InlineData("use `IEnumerable<object>` and a <link> or <set>", "use `IEnumerable<object>` and a <link> or <set>")]
-    [InlineData("a <set of things\n\nmore text> b", "a <set of things\n\nmore text> b")]
+    [InlineData("a <set of things\n\nmore text> b", "a \n\nmore text> b")]
+    [InlineData("<div>\n<img src=\"https://evil.example/x.png?d=1\"\n\nmore text", "<div>\n\n\nmore text")]
+    [InlineData("<pre>\n<img\n\nsrc=\"https://evil.example/x.png\">\n</pre>", "<pre>\n\n\nsrc=\"https://evil.example/x.png\">\n</pre>")]
+    [InlineData("<details>\n<video poster=\"https://evil.example/x.png\"\n\nmore", "<details>\n\n\nmore")]
     [InlineData("<svg><use><set attributeName=\"href\" to=\"https://evil.example/x.svg#a\"/></use></svg>", "<svg><use></use></svg>")]
     public void The_sanitizer_removes_what_ingest_must_not_keep(string input, string expected) =>
         Assert.Equal(expected, IngestSanitizer.Clean(input));
@@ -75,9 +78,11 @@ public sealed class TextRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Text_still_changing_after_the_last_pass_is_refused_not_kept() =>
-        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() =>
-            IngestSanitizer.Clean("<im[[[[[](a)](a)](a)](a)](a)g src=\"https://evil.example/x.png\">"));
+    public void Text_still_changing_after_the_last_pass_is_refused_not_kept()
+    {
+        Assert.Null(IngestSanitizer.Clean("<im[[[[[](a)](a)](a)](a)](a)g src=\"https://evil.example/x.png\">"));   // five layers: the joined tag forms after the last pass
+        Assert.Equal(string.Empty, IngestSanitizer.Clean("<im[[[[](a)](a)](a)](a)g src=\"https://evil.example/x.png\">"));   // four: the fifth pass removes it and the sixth confirms
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void Encoded_blobs_over_200_characters_are_removed() =>

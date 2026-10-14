@@ -39,6 +39,6 @@ public sealed class RedactionScrubberFactoryTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_fingerprint_tells_lists_apart_that_concatenate_alike() =>
-        Assert.NotEqual(RedactionScrubberFactory.Fingerprint([new("a", "bc")]), RedactionScrubberFactory.Fingerprint([new("ab", "c")]));
+    public void The_cache_key_tells_lists_apart_that_concatenate_alike() =>
+        Assert.False(string.Equals(RedactionScrubberFactory.Key([new("a", "bc")]), RedactionScrubberFactory.Key([new("ab", "c")]), StringComparison.Ordinal));
 }

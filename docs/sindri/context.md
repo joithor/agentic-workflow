@@ -141,15 +141,17 @@ context:
   (at serve start and on its cadence): `context sources status` shows the repo as `degraded`, "N of M documents wait
   for the next refresh", and `context.sources.synced` counts them as `recleaned`. So nothing cleaned with the old
   rules is ever served.
-- **More HTML removed on ingest.** Besides comments, images and link targets (now also when their text wraps onto a
-  second line), the sanitizer removes the elements that can fetch whenever they carry an attribute (`<meta …>`,
+- **More HTML removed on ingest.** Besides comments, images and link targets (now also when their text runs across
+  line breaks), the sanitizer removes the elements that can fetch whenever they carry an attribute (`<meta …>`,
   `<iframe …>`, `<frame …>`, `<object …>`, `<embed …>`, `<link …>`, `<base …>`, `<script …>`, SVG `<set …>` and
-  `<animate…>`), every other HTML tag that can fetch or point at something remote (`src`,
+  `<animate…>`; one cut off by a blank line before its `>` loses its opening part), every other HTML tag that can fetch or point at something remote (`src`,
   `srcset`, `imagesrcset`, `srcdoc`, `poster`, `background`, `href`, `data`, `action`, `formaction`, `style` or `ping`
   attributes: `<input type=image>`, `<video poster>`, `<source srcset>`, SVG `<use href>`, inline CSS `url()`), also
   when its quotes don't balance, and whole `<style>` blocks, keeping the text between tags. Such a tag written in
   prose or a code span (`` `<link rel="preconnect">` ``) is removed too; a bare `<link>` or `IEnumerable<object>` stays.
-  A document the sanitizer can't settle in five passes is withheld (`scrub-blocked`), never kept half-cleaned. Remote link definitions with escaped
+  A document the sanitizer can't settle in five passes is withheld, never kept half-cleaned: an indexed document is
+  counted as `blocked` on the refresh (`context.sources.synced`) and never served; a record fetched from another source
+  is cited `scrub-blocked`. Remote link definitions with escaped
   brackets (`[a\]b]: https://…`) or a label over two lines are removed too. This also counts as a rules change: an index
   built before S-2W is cleaned again at its first refresh.
 ## S-3a: the product map: `context map import`, `export`, `status`
