@@ -38,6 +38,8 @@ public abstract class ContextEngineContract<TEngine>
         var engine = CreateDown();
 
         Check(Code(engine, """{"deadline":"soon"}""") == ("SND-CONTEXT-001", "context.deadline:"), "a bad deadline");
+        Check(Code(engine, """{"scrub":{"extraPatterns":[{"id":"acme-customer-id","pattern":"ACME-[0-9"}]}}""") == ("SND-CONTEXT-001", "context.scrub.extraPatterns[0].pattern:"),
+            "an extra pattern that doesn't parse");
         Check(Code(engine, """{"repos":["nope"]}""") == ("SND-CONTEXT-001", "context.repos:"), "an unknown context.repos name");
         Check(Code(engine, """{"deadline":"4s"}""") == ("SND-CONTEXT-001", "context.repos:"), "an unusable repo name in scope");
         Check(Code(engine, """{"repos":["split-panes"]}""") == ("ok", ""), "an unusable repo out of scope is fine");

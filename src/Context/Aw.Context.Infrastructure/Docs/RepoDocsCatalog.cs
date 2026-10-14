@@ -7,9 +7,9 @@ using Aw.Context.Infrastructure.Store;
 
 namespace Aw.Context.Infrastructure.Docs;
 
-/// <summary>The sources of Phase 1: one repo-docs source over the repos in scope (none when no repo is in scope).</summary>
-internal sealed class RepoDocsCatalog(ContextDatabase database, GitCli git, IIngestFilter ingest, TimeProvider clock) : ISourceCatalog
+/// <summary>The sources of Phase 1: one repo-docs source over the repos in scope (none when no repo is in scope), cleaning with the call's scrubbers.</summary>
+internal sealed class RepoDocsCatalog(ContextDatabase database, GitCli git, TimeProvider clock) : ISourceCatalog
 {
-    public IReadOnlyList<IContextSource> For(ContextSettings settings, IReadOnlyList<ContextRepo> repos) =>
-        repos.Count == 0 ? [] : [new RepoDocsSource(repos, database, git, ingest, clock)];
+    public IReadOnlyList<IContextSource> For(ContextSettings settings, IReadOnlyList<ContextRepo> repos, Scrubbers scrubbers) =>
+        repos.Count == 0 ? [] : [new RepoDocsSource(repos, database, git, scrubbers, clock)];
 }

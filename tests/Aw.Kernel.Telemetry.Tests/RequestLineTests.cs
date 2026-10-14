@@ -20,4 +20,19 @@ public sealed class RequestLineTests
         Assert.Contains("a request warning stays", everything, StringComparison.Ordinal);
         Assert.Contains("other categories keep their level", everything, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_trace_capped_category_writes_nothing_below_debug_even_at_trace()
+    {
+        using var h = new Harness(level: LogLevel.Trace);
+
+        h.Logger("ModelContextProtocol.Server.McpServer").Emit(LogLevel.Trace, "transport received message: zebra-quokka");
+        h.Logger("ModelContextProtocol.Server.McpServer").Emit(LogLevel.Debug, "a debug line stays");
+        h.Logger("Aw.Demo").Emit(LogLevel.Trace, "other categories keep trace");
+
+        var everything = h.Everything();
+        Assert.DoesNotContain("zebra-quokka", everything, StringComparison.Ordinal);
+        Assert.Contains("a debug line stays", everything, StringComparison.Ordinal);
+        Assert.Contains("other categories keep trace", everything, StringComparison.Ordinal);
+    }
 }

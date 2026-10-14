@@ -28,14 +28,19 @@ internal sealed class RedactionScrubber(IRedactor redactor) : IEgressScrubber, I
     public ScrubbedField Clean(string raw, bool singleLine)
     {
         ArgumentNullException.ThrowIfNull(raw);
-        string text;
+        string? text;
         try
         {
-            text = IngestSanitizer.Clean(raw);
+            text = IngestSanitizer.Clean(raw.Replace("\r\n", "\n", StringComparison.Ordinal));   // one line ending, so a blank line reads the same in every file
         }
         catch (RegexMatchTimeoutException)
         {
-            return new ScrubbedField(ScrubResult.BlockedText, Redacted: false, Blocked: true);   // fails closed: a text too costly to clean is never kept
+            text = null;
+        }
+
+        if (text is null)
+        {
+            return new ScrubbedField(ScrubResult.BlockedText, Redacted: false, Blocked: true);   // fails closed: a text too costly to clean, or that never settles, is never kept
         }
 
         return singleLine ? Scrub(string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))) : ScrubKeepingLines(text);
