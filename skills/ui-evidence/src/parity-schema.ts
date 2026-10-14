@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { LoginSchema } from "./login.js";
 import { ScriptStepSchema } from "./script-schema.js";
 
 const SelectorSchema = z.union([z.object({ testId: z.string().min(1) }).strict(), z.object({ text: z.string().min(1) }).strict()]);
@@ -54,20 +55,7 @@ export const DesignManifestSchema = z.object({
   neutralClick: z.union([PointSchema, z.literal(false)]).optional(),
   designNode: z.string().optional(),
   /** CSS selectors for the sign-in form; the credentials themselves come only from the named env vars. */
-  login: z
-    .object({
-      emailEnv: z.string().regex(/^[A-Z][A-Z0-9_]*$/),
-      passwordEnv: z.string().regex(/^[A-Z][A-Z0-9_]*$/),
-      emailSelector: z.string().min(1),
-      passwordSelector: z.string().min(1),
-      /** Clicked after the email (two-step forms) — optional. */
-      nextSelector: z.string().optional(),
-      submitSelector: z.string().min(1),
-      /** Sign-in is done once the URL path no longer contains this. */
-      loginPath: z.string().default("/login"),
-    })
-    .strict()
-    .optional(),
+  login: LoginSchema.optional(),
   frames: z.array(FrameSchema).min(1),
 }).strict();
 export type DesignManifest = z.infer<typeof DesignManifestSchema>;

@@ -21,7 +21,7 @@ Nothing in `setup.sh`, the providers or MCP registration points at it.
 
 The engine reads the approved profile's `context:` section and its `repos:`. Every key is optional; the defaults are
 shown. A key this build doesn't know is refused (`SND-CONTEXT-001` with its key path), so a section written for a later
-stage (`labeling`, `scrub`, …, or a key under `sources` beyond `onyx` and `linear.teams`) needs that stage's build.
+stage (`labeling`, …, or a key under `sources` beyond `onyx` and `linear.teams`) needs that stage's build.
 
 ```yaml
 repos:
@@ -110,6 +110,52 @@ anchor (`003`), a refused question (`006`), session reads off (`020`) · `2` a t
 
 `$AW_SINDRI_HOME/context/context.db` (default `$AW_STATE_DIR/sindri-app/context/`), owner-only (directory 0700, the
 file and its `-wal` and `-shm` 0600). Never delete it: later stages keep review decisions there.
+
+## S-2W: extra scrub patterns
+
+The built-in rules catch secrets (tokens, keys, credentials in URLs). Identifiers that are yours, such as customer or
+account numbers, need a pattern of your own:
+
+```yaml
+context:
+  scrub:
+    extraPatterns:
+      - { id: acme-customer-id, pattern: "(?<![A-Za-z0-9_])ACME-[0-9]{6}(?![0-9])" }
+```
+
+- **Where they apply.** Everywhere the engine scrubs, on every call: when a document is indexed, when a record is
+  fetched for an answer, and on every field of the answer (CLI and HTTP; MCP once S-1M lands). A match becomes
+  `[REDACTED:<id>]`, so `ACME-123456` in a doc answers as `[REDACTED:acme-customer-id]`. An approval that changes the
+  list takes effect on the next call; nothing restarts.
+- **Writing one.** The rules are Aw.Redaction's (`docs/csharp/redaction.md`, "Extra patterns from configuration"): the
+  id is lowercase letters, digits and single hyphens, starting with a letter, at most 64 characters, and not a built-in
+  rule id, `blocked` or `secret-field`; the pattern is a .NET regex of at most 1024 characters that can't match empty
+  text and uses ASCII classes (`[0-9]`, not `\d`). Give it boundaries as above, or `ACME-[0-9]{6}` also matches inside
+  `XACME-1234567`. A pattern that is slow on a text blocks that text (it is withheld, never shown).
+- **Refusals.** `sindri profile validate` and `approve` refuse a bad entry with `SND-CONTEXT-001` and its key path,
+  for example `context.scrub.extraPatterns[0].pattern: …` (the message says how to fix it and never repeats the
+  pattern). A refused profile is never approved, so the patterns in force are always valid.
+- **Changing the list.** Every stored document records the rules it was cleaned with (the extra patterns, the
+  built-in rules and the sanitizer's, so an upgrade that changes a rule counts too). After an approval that changes
+  the patterns, the stored documents are **not searched** until the next `context-docs-refresh` run cleans them again
+  (at serve start and on its cadence): `context sources status` shows the repo as `degraded`, "N of M documents wait
+  for the next refresh", and `context.sources.synced` counts them as `recleaned`. So nothing cleaned with the old
+  rules is ever served.
+- **More HTML removed on ingest.** Besides comments, images and link targets (now also when their text runs across
+  line breaks), the sanitizer removes the elements that can fetch whenever they carry an attribute (`<meta …>`,
+  `<iframe …>`, `<frame …>`, `<object …>`, `<embed …>`, `<link …>`, `<base …>`, `<script …>`, SVG `<set …>` and
+  `<animate…>`; one cut off by a blank line before its `>` loses its opening part), every other HTML tag that can fetch or point at something remote (`src`,
+  `srcset`, `imagesrcset`, `srcdoc`, `poster`, `background`, `href`, `data`, `action`, `formaction`, `style` or `ping`
+  attributes: `<input type=image>`, `<video poster>`, `<source srcset>`, SVG `<use href>`, inline CSS `url()`), also
+  when its quotes don't balance, and `<style>` start tags (the CSS after one is then plain text), keeping the text
+  between tags. A regex lookaround such as `(?<![0-9])` is not read as an image (unless a `(` or `]` follows it, as
+  it would an image). Such a tag written in
+  prose or a code span (`` `<link rel="preconnect">` ``) is removed too; a bare `<link>` or `IEnumerable<object>` stays.
+  A document the sanitizer can't settle in five passes is withheld, never kept half-cleaned: an indexed document is
+  counted as `blocked` on the refresh (`context.sources.synced`) and never served; a record fetched from another source
+  is cited `scrub-blocked`. Remote link definitions with escaped
+  brackets (`[a\]b]: https://…`) or a label over two lines are removed too. This also counts as a rules change: an index
+  built before S-2W is cleaned again at its first refresh.
 
 ## S-3a: the product map: `context map import`, `export`, `status`
 
@@ -265,7 +311,9 @@ citation: `cites.<n>.aliases` in `--json` and HTTP (every alias of the record, m
 like a title), and the first one beside the key in the text form (`linear:issue/<uuid> (ENG-482)`). Onyx v4.9.0 has no route that returns a
 document's `updated_at` by id, so **onyx citations stay `unchecked`** (version unchecked) instead of `current` or
 `stale`. A citation's `permalink` is scrubbed like every other field: a link the scrub changes at all (redacted or
-blocked) is left out, and the citation keeps its key and aliases.
+blocked) is left out, and the citation keeps its key and aliases. Onyx's titles, text, aliases and permalinks are
+scrubbed with the same rules as repo-docs, the profile's `context.scrub.extraPatterns` included (S-2W): a customer id
+in an Onyx record answers as `[REDACTED:<id>]`, and a permalink that holds one is left out.
 
 When Onyx doesn't answer, refuses the key, answers with an error status or replies in a shape the pinned release
 doesn't have, the answer still returns with repo-docs' results and a `degraded` entry `{ "source": "onyx", "code":

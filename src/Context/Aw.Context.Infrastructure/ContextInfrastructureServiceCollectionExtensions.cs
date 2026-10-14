@@ -9,7 +9,6 @@ using Aw.Context.Infrastructure.Onyx;
 using Aw.Context.Infrastructure.Scrubbing;
 using Aw.Context.Infrastructure.Sources;
 using Aw.Context.Infrastructure.Store;
-using Aw.Redaction;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -20,9 +19,9 @@ public static class ContextInfrastructureServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the context store (context.db under $AW_SINDRI_HOME/context), git, the repo-docs index and source catalog,
-    /// both scrubbing ports over Aw.Redaction's built-in rules, the graph store, the map file reader and the exports
-    /// folder, and the factory that builds the onyx source from the profile's onyx settings and Linear teams (doctor's
-    /// 'context:onyx' check runs that source's probe). The onyx source reads its key by calling
+    /// the scrubber factory over Aw.Redaction (each call's scrubbers carry the profile's extra patterns), the graph store,
+    /// the map file reader and the exports folder, and the factory that builds the onyx source from the profile's onyx
+    /// settings and Linear teams (doctor's 'context:onyx' check runs that source's probe). The onyx source reads its key by calling
     /// <paramref name="environment"/> with the settings' pointer text (Sindri's Composition wraps the environment so
     /// pointers resolve there). Needs a TimeProvider, ILogger and the host's AwJson options (a JsonSerializerOptions
     /// singleton whose context holds the map types), all registered by the host.
@@ -35,9 +34,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton(SettingsFromEnvironment.Read(environment))
             .AddSingleton<ContextDatabase>()
             .AddSingleton<GitCli>()
-            .AddSingleton(new RedactionScrubber(Redactor.Default))
-            .AddSingleton<IEgressScrubber>(static sp => sp.GetRequiredService<RedactionScrubber>())
-            .AddSingleton<IIngestFilter>(static sp => sp.GetRequiredService<RedactionScrubber>())
+            .AddSingleton<IScrubberFactory, RedactionScrubberFactory>()
             .AddSingleton<ISourceCatalog, ContextSourceCatalog>()
             .AddSingleton<IDocIndex, SqliteDocIndex>()
             .AddSingleton<IGraphStore, SqliteGraphStore>()

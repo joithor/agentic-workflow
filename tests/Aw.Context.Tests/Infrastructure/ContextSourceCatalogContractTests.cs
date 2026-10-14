@@ -18,6 +18,6 @@ public sealed class ContextSourceCatalogContractTests : SourceCatalogContract<IS
         _home.Dispose();
     }
 
-    protected override ISourceCatalog Create() => new ContextSourceCatalog(_home.Database, _home.Git, _home.Scrubber, _home.Clock,
+    protected override ISourceCatalog Create() => new ContextSourceCatalog(_home.Database, _home.Git, _home.Clock,
         new OnyxSources(new OnyxSourceParts(_http, static _ => null, _home.Clock, new CapturingLogger<OnyxClient>())));
 }

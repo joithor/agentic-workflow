@@ -1,4 +1,5 @@
 using Aw.Context.Core.Onyx;
+using Aw.Context.Core.Trust;
 
 namespace Aw.Context.Core.Engine;
 
@@ -34,4 +35,10 @@ public sealed record ContextSettings
 
     /// <summary>The Linear team keys ('context.sources.linear.teams') an Onyx identifier alias may name; empty for none.</summary>
     public IReadOnlyList<string> LinearTeams { get; init; } = [];
+
+    /// <summary>
+    /// The profile's extra scrub patterns ('context.scrub.extraPatterns', D14), as written: <see cref="IScrubberFactory"/>
+    /// checks them and every call scrubs with them, on ingest and on egress.
+    /// </summary>
+    public IReadOnlyList<ScrubPattern> ExtraPatterns { get; init; } = [];
 }

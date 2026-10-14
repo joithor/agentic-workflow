@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Aw.Context.Core.Trust;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 
@@ -42,7 +43,7 @@ public static partial class SettingsReader
 
         if (UnknownKey(element) is { } unknown)
         {
-            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, deadline, maxBudget, minHits, sessions, sources)");
+            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, deadline, maxBudget, minHits, scrub, sessions, sources)");
         }
 
         if (SourcesReader.Shape(element) is { } shape)
@@ -75,9 +76,14 @@ public static partial class SettingsReader
                 SessionsEnabled = section.Sessions?.Enabled ?? false,
                 Onyx = sources.Value.Onyx,
                 LinearTeams = sources.Value.Teams,
+                ExtraPatterns = Patterns(section.Scrub),
             },
         };
     }
+
+    /// <summary>The extra patterns as written (a null entry was refused by <see cref="Problem"/>).</summary>
+    private static IReadOnlyList<ScrubPattern> Patterns(ScrubSection? scrub) =>
+        [.. (scrub?.ExtraPatterns ?? []).OfType<ScrubPatternEntry>().Select(e => new ScrubPattern(e.Id, e.Pattern))];
 
     /// <summary>The first refused key of <paramref name="section"/> other than the deadline, or null.</summary>
     private static Error? Problem(ContextSection section, IReadOnlyList<string> globs)
@@ -98,6 +104,12 @@ public static partial class SettingsReader
             return Invalid("context.docs.globs", $"'{(badGlob is null ? "(empty)" : Printable(badGlob))}' isn't a repo-relative glob (letters, digits, '._-/*', no '..', no leading '/')");
         }
 
+        var empty = (section.Scrub?.ExtraPatterns ?? []).ToList().FindIndex(e => e is null);   // the entries themselves are checked by IScrubberFactory
+        if (empty >= 0)
+        {
+            return Invalid(string.Create(CultureInfo.InvariantCulture, $"context.scrub.extraPatterns[{empty}]"), "is empty; write { id: <rule id>, pattern: <regex> }");
+        }
+
         return section switch
         {
             { MaxBudget: < 1_000 or > 200_000 } => Invalid("context.maxBudget", "is 1000 to 200000 tokens"),
@@ -116,7 +128,7 @@ public static partial class SettingsReader
 
     private static string? UnknownKey(JsonElement element)
     {
-        string[] known = ["repos", "docs", "deadline", "maxBudget", "minHits", "sessions", "sources"];
+        string[] known = ["repos", "docs", "deadline", "maxBudget", "minHits", "scrub", "sessions", "sources"];
         return element.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 

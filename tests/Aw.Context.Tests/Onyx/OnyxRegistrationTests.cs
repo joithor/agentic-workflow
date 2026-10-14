@@ -1,6 +1,7 @@
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Onyx;
+using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure;
 using Aw.Context.Infrastructure.Onyx;
 using Aw.Context.Testing.Map;
@@ -40,6 +41,7 @@ public sealed class OnyxRegistrationTests
             .AddContextInfrastructure(static name => name == "AW_SINDRI_HOME" ? "/nonexistent/sindri-home" : null);
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         var catalog = provider.GetRequiredService<ISourceCatalog>();
+        var scrubbers = provider.GetRequiredService<IScrubberFactory>().For([]).Value;
         var repos = new[] { new ContextRepo(ContextRepoName.From("split-panes"), "/nonexistent/split-panes") };
         var plain = new ContextSettings();
         var named = plain with
@@ -48,8 +50,8 @@ public sealed class OnyxRegistrationTests
             LinearTeams = ["SPL"],
         };
 
-        Assert.Equal(["repo-docs"], catalog.For(plain, repos).Select(s => s.Describe().Id.Value), StringComparer.Ordinal);
-        Assert.Equal(["repo-docs", "onyx"], catalog.For(named, repos).Select(s => s.Describe().Id.Value), StringComparer.Ordinal);
-        Assert.Empty(catalog.For(named, []));   // no repo in scope, no source (SourceCatalogContract)
+        Assert.Equal(["repo-docs"], catalog.For(plain, repos, scrubbers).Select(s => s.Describe().Id.Value), StringComparer.Ordinal);
+        Assert.Equal(["repo-docs", "onyx"], catalog.For(named, repos, scrubbers).Select(s => s.Describe().Id.Value), StringComparer.Ordinal);
+        Assert.Empty(catalog.For(named, [], scrubbers));   // no repo in scope, no source (SourceCatalogContract)
     }
 }

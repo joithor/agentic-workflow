@@ -17,10 +17,7 @@ Aw.Context.Core.Docs.DocIndexStatus.Head.init -> void
 Aw.Context.Core.Docs.DocIndexStatus.LastSync.get -> System.DateTimeOffset?
 Aw.Context.Core.Docs.DocIndexStatus.LastSync.init -> void
 Aw.Context.Core.Docs.IDocIndex
-Aw.Context.Core.Docs.IDocIndex.Refresh(Aw.Context.Core.Engine.ContextRepo! repo, System.Collections.Generic.IReadOnlyList<string!>! globs, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.RepoRefresh!>!>
-Aw.Context.Core.Docs.IDocIndex.Status(Aw.Context.Core.Engine.ContextRepo! repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Docs.DocIndexStatus!>!>
 Aw.Context.Core.Docs.ISourceCatalog
-Aw.Context.Core.Docs.ISourceCatalog.For(Aw.Context.Core.Engine.ContextSettings! settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>!
 Aw.Context.Core.Engine.ContextCaller
 Aw.Context.Core.Engine.ContextCaller.<Clone>$() -> Aw.Context.Core.Engine.ContextCaller!
 Aw.Context.Core.Engine.ContextCaller.Client.get -> Aw.Context.Core.Engine.ContextClient
@@ -958,6 +955,64 @@ override Aw.Context.Core.Sources.SourceLimits.GetHashCode() -> int
 override Aw.Context.Core.Sources.SourceLimits.ToString() -> string!
 static Aw.Context.Core.Sources.SourceLimits.operator !=(Aw.Context.Core.Sources.SourceLimits? left, Aw.Context.Core.Sources.SourceLimits? right) -> bool
 static Aw.Context.Core.Sources.SourceLimits.operator ==(Aw.Context.Core.Sources.SourceLimits? left, Aw.Context.Core.Sources.SourceLimits? right) -> bool
+Aw.Context.Core.Docs.DocIndexStatus.Outdated.get -> int
+Aw.Context.Core.Docs.DocIndexStatus.Outdated.init -> void
+Aw.Context.Core.Docs.IDocIndex.Refresh(Aw.Context.Core.Engine.ContextRepo! repo, System.Collections.Generic.IReadOnlyList<string!>! globs, Aw.Context.Core.Trust.Scrubbers! scrubbers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.RepoRefresh!>!>
+Aw.Context.Core.Docs.IDocIndex.Status(Aw.Context.Core.Engine.ContextRepo! repo, Aw.Context.Core.Trust.ScrubRuleset ruleset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Docs.DocIndexStatus!>!>
+Aw.Context.Core.Docs.ISourceCatalog.For(Aw.Context.Core.Engine.ContextSettings! settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos, Aw.Context.Core.Trust.Scrubbers! scrubbers) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>!
+Aw.Context.Core.Engine.ContextSettings.ExtraPatterns.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Trust.ScrubPattern!>!
+Aw.Context.Core.Engine.ContextSettings.ExtraPatterns.init -> void
+Aw.Context.Core.Results.RepoRefresh.Recleaned.get -> int
+Aw.Context.Core.Results.RepoRefresh.Recleaned.init -> void
+Aw.Context.Core.Trust.IScrubberFactory
+Aw.Context.Core.Trust.IScrubberFactory.For(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Trust.ScrubPattern!>! extraPatterns) -> Aw.Kernel.Result<Aw.Context.Core.Trust.Scrubbers!>!
+Aw.Context.Core.Trust.ScrubPattern
+Aw.Context.Core.Trust.ScrubPattern.<Clone>$() -> Aw.Context.Core.Trust.ScrubPattern!
+Aw.Context.Core.Trust.ScrubPattern.Deconstruct(out string? Rule, out string? Pattern) -> void
+Aw.Context.Core.Trust.ScrubPattern.Equals(Aw.Context.Core.Trust.ScrubPattern? other) -> bool
+Aw.Context.Core.Trust.ScrubPattern.Rule.get -> string?
+Aw.Context.Core.Trust.ScrubPattern.Rule.init -> void
+Aw.Context.Core.Trust.ScrubPattern.Pattern.get -> string?
+Aw.Context.Core.Trust.ScrubPattern.Pattern.init -> void
+Aw.Context.Core.Trust.ScrubPattern.ScrubPattern(string? Rule, string? Pattern) -> void
+Aw.Context.Core.Trust.ScrubRuleset
+Aw.Context.Core.Trust.ScrubRuleset.Equals(Aw.Context.Core.Trust.ScrubRuleset other) -> bool
+Aw.Context.Core.Trust.ScrubRuleset.Equals(Aw.Context.Core.Trust.ScrubRuleset other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Trust.ScrubRuleset>! comparer) -> bool
+Aw.Context.Core.Trust.ScrubRuleset.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Trust.ScrubRuleset.IsInitialized() -> bool
+Aw.Context.Core.Trust.ScrubRuleset.ScrubRuleset() -> void
+Aw.Context.Core.Trust.ScrubRuleset.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Trust.ScrubRuleset.Value.get -> string!
+Aw.Context.Core.Trust.Scrubbers
+Aw.Context.Core.Trust.Scrubbers.<Clone>$() -> Aw.Context.Core.Trust.Scrubbers!
+Aw.Context.Core.Trust.Scrubbers.Deconstruct(out Aw.Context.Core.Trust.IIngestFilter! Ingest, out Aw.Context.Core.Trust.IEgressScrubber! Egress, out Aw.Context.Core.Trust.ScrubRuleset Ruleset) -> void
+Aw.Context.Core.Trust.Scrubbers.Egress.get -> Aw.Context.Core.Trust.IEgressScrubber!
+Aw.Context.Core.Trust.Scrubbers.Egress.init -> void
+Aw.Context.Core.Trust.Scrubbers.Equals(Aw.Context.Core.Trust.Scrubbers? other) -> bool
+Aw.Context.Core.Trust.Scrubbers.Ingest.get -> Aw.Context.Core.Trust.IIngestFilter!
+Aw.Context.Core.Trust.Scrubbers.Ingest.init -> void
+Aw.Context.Core.Trust.Scrubbers.Ruleset.get -> Aw.Context.Core.Trust.ScrubRuleset
+Aw.Context.Core.Trust.Scrubbers.Ruleset.init -> void
+Aw.Context.Core.Trust.Scrubbers.Scrubbers(Aw.Context.Core.Trust.IIngestFilter! Ingest, Aw.Context.Core.Trust.IEgressScrubber! Egress, Aw.Context.Core.Trust.ScrubRuleset Ruleset) -> void
+override Aw.Context.Core.Trust.ScrubPattern.Equals(object? obj) -> bool
+override Aw.Context.Core.Trust.ScrubPattern.GetHashCode() -> int
+override Aw.Context.Core.Trust.ScrubPattern.ToString() -> string!
+override Aw.Context.Core.Trust.ScrubRuleset.Equals(object? obj) -> bool
+override Aw.Context.Core.Trust.ScrubRuleset.GetHashCode() -> int
+override Aw.Context.Core.Trust.ScrubRuleset.ToString() -> string!
+override Aw.Context.Core.Trust.Scrubbers.Equals(object? obj) -> bool
+override Aw.Context.Core.Trust.Scrubbers.GetHashCode() -> int
+override Aw.Context.Core.Trust.Scrubbers.ToString() -> string!
+static Aw.Context.Core.Trust.ScrubPattern.operator !=(Aw.Context.Core.Trust.ScrubPattern? left, Aw.Context.Core.Trust.ScrubPattern? right) -> bool
+static Aw.Context.Core.Trust.ScrubPattern.operator ==(Aw.Context.Core.Trust.ScrubPattern? left, Aw.Context.Core.Trust.ScrubPattern? right) -> bool
+static Aw.Context.Core.Trust.ScrubRuleset.From(string! value) -> Aw.Context.Core.Trust.ScrubRuleset
+static Aw.Context.Core.Trust.ScrubRuleset.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Trust.ScrubRuleset
+static Aw.Context.Core.Trust.ScrubRuleset.TryFrom(string? value, out Aw.Context.Core.Trust.ScrubRuleset vo) -> bool
+static Aw.Context.Core.Trust.ScrubRuleset.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Trust.ScrubRuleset result) -> bool
+static Aw.Context.Core.Trust.ScrubRuleset.operator !=(Aw.Context.Core.Trust.ScrubRuleset left, Aw.Context.Core.Trust.ScrubRuleset right) -> bool
+static Aw.Context.Core.Trust.ScrubRuleset.operator ==(Aw.Context.Core.Trust.ScrubRuleset left, Aw.Context.Core.Trust.ScrubRuleset right) -> bool
+static Aw.Context.Core.Trust.Scrubbers.operator !=(Aw.Context.Core.Trust.Scrubbers? left, Aw.Context.Core.Trust.Scrubbers? right) -> bool
+static Aw.Context.Core.Trust.Scrubbers.operator ==(Aw.Context.Core.Trust.Scrubbers? left, Aw.Context.Core.Trust.Scrubbers? right) -> bool
 Aw.Context.Core.Facade.IContextMap
 Aw.Context.Core.Facade.IContextMap.CheckMap(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapHealth!>!>
 Aw.Context.Core.Facade.IContextMap.CheckRetention(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapHealth!>!>

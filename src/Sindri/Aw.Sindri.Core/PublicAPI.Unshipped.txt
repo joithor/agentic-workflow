@@ -3490,8 +3490,6 @@ static Aw.Sindri.Core.Events.ContextSourcesSynced.operator !=(Aw.Sindri.Core.Eve
 static Aw.Sindri.Core.Events.ContextSourcesSynced.operator ==(Aw.Sindri.Core.Events.ContextSourcesSynced? left, Aw.Sindri.Core.Events.ContextSourcesSynced? right) -> bool
 Aw.Sindri.Core.Profile.IApprovedProfile
 Aw.Sindri.Core.Profile.IApprovedProfile.Latest(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile?>!>
-Aw.Sindri.Core.Events.ContextRepoSynced.ContextRepoSynced(string! Repo, string? Head, int Added, int Removed, int Kept, int Blocked, string? Code, int Skipped = 0) -> void
-Aw.Sindri.Core.Events.ContextRepoSynced.Deconstruct(out string! Repo, out string? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code, out int Skipped) -> void
 Aw.Sindri.Core.Events.ContextRepoSynced.Skipped.get -> int
 Aw.Sindri.Core.Events.ContextRepoSynced.Skipped.init -> void
 Aw.Sindri.Core.Control.ControlEndpoint.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint?
@@ -3627,6 +3625,10 @@ override Aw.Sindri.Core.Events.WorkflowEventPayload.GetHashCode() -> int
 override Aw.Sindri.Core.Events.WorkflowEventPayload.ToString() -> string!
 static Aw.Sindri.Core.Events.WorkflowEventPayload.operator !=(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
 static Aw.Sindri.Core.Events.WorkflowEventPayload.operator ==(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
+Aw.Sindri.Core.Events.ContextRepoSynced.ContextRepoSynced(string! Repo, string? Head, int Added, int Removed, int Kept, int Blocked, string? Code, int Skipped = 0, int Recleaned = 0) -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Deconstruct(out string! Repo, out string? Head, out int Added, out int Removed, out int Kept, out int Blocked, out string? Code, out int Skipped, out int Recleaned) -> void
+Aw.Sindri.Core.Events.ContextRepoSynced.Recleaned.get -> int
+Aw.Sindri.Core.Events.ContextRepoSynced.Recleaned.init -> void
 Aw.Sindri.Core.Events.ContextMapImported
 Aw.Sindri.Core.Events.ContextMapImported.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapImported!
 Aw.Sindri.Core.Events.ContextMapImported.ContextMapImported(int Version, string! Repo, string! Hash, int Nodes, int Edges, int Overrides) -> void

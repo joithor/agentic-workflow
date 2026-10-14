@@ -13,20 +13,23 @@ namespace Aw.Context.Infrastructure.Sources;
 /// The sources for one call, in a stable order: repo-docs over the repos in scope, then the onyx source when the profile
 /// names 'context.sources.onyx' (built per call, as <see cref="OnyxSources"/> asks). No repo in scope gives no source at
 /// all, onyx included (SourceCatalogContract): a caller whose scope maps no repo reads nothing. Which of the sources a
-/// caller may read is ScopeRules.MayRead's decision, in the slices.
+/// caller may read is ScopeRules.MayRead's decision, in the slices. Repo-docs cleans with the call's scrubbers (the
+/// profile's extra patterns included); the onyx source returns raw text, which the query cleans at the ingest boundary
+/// with those same scrubbers and scrubs again per field on egress.
 /// </summary>
-internal sealed class ContextSourceCatalog(ContextDatabase database, GitCli git, IIngestFilter ingest, TimeProvider clock, OnyxSources onyx) : ISourceCatalog
+internal sealed class ContextSourceCatalog(ContextDatabase database, GitCli git, TimeProvider clock, OnyxSources onyx) : ISourceCatalog
 {
-    public IReadOnlyList<IContextSource> For(ContextSettings settings, IReadOnlyList<ContextRepo> repos)
+    public IReadOnlyList<IContextSource> For(ContextSettings settings, IReadOnlyList<ContextRepo> repos, Scrubbers scrubbers)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(repos);
+        ArgumentNullException.ThrowIfNull(scrubbers);
         if (repos.Count == 0)
         {
             return [];
         }
 
-        var sources = new List<IContextSource>(2) { new RepoDocsSource(repos, database, git, ingest, clock) };
+        var sources = new List<IContextSource>(2) { new RepoDocsSource(repos, database, git, scrubbers, clock) };
 
         if (settings.Onyx is { } onyxSettings)
         {

@@ -16,9 +16,10 @@ namespace Aw.Context.Features.QueryContext;
 /// The query pipeline (spec §8.2) for Phase 1's text shape: scope and gate, terms, every source searched under the
 /// deadline (a missing source is degraded; all of them missing is SND-CONTEXT-011), canonical dedup and RRF, the top
 /// items fetched and cleaned once at the ingest boundary, one batched version check per source, then packing,
-/// citations and per-field egress scrubbing (<see cref="ResultAssembly"/>). No model is called.
+/// citations and per-field egress scrubbing (<see cref="ResultAssembly"/>). Ingest and egress both use this call's
+/// scrubbers, built from the approved profile's extra patterns. No model is called.
 /// </summary>
-internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter ingest, IEgressScrubber egress, IIdGenerator ids, TimeProvider clock)
+internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFactory scrubberFactory, IIdGenerator ids, TimeProvider clock)
     : IService<QueryContextRequest, ContextResult>
 {
     /// <summary>The most fused items fetched (and so cited) per query.</summary>
@@ -30,7 +31,8 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
     public async ValueTask<Result<ContextResult>> Handle(QueryContextRequest request, CancellationToken cancellationToken)
     {
         var settings = SettingsReader.Read(request.Scope.Settings);
-        var repos = settings.Bind(s => ScopeRules.Resolve(s, request.Scope.Repos, request.Scope.Caller));
+        var scrubbers = settings.Bind(s => scrubberFactory.For(s.ExtraPatterns));
+        var repos = scrubbers.Bind(_ => ScopeRules.Resolve(settings.Value, request.Scope.Repos, request.Scope.Caller));
         var valid = repos.Bind(_ => QueryRules.Check(request.Query, settings.Value));
         if (valid.IsError)
         {
@@ -38,7 +40,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
         }
 
         var deadline = clock.GetUtcNow() + settings.Value.Deadline;
-        var sources = catalog.For(settings.Value, repos.Value).Where(s => ScopeRules.MayRead(request.Scope.Caller, s.Describe())).ToList();
+        var sources = catalog.For(settings.Value, repos.Value, scrubbers.Value).Where(s => ScopeRules.MayRead(request.Scope.Caller, s.Describe())).ToList();
         var searched = await Search(sources, valid.Value.Terms, deadline, cancellationToken).ConfigureAwait(false);
         if (sources.Count > 0 && searched.Answers.Count == 0)
         {
@@ -48,9 +50,9 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
 
         var degraded = searched.Degraded.ToList();
         var fused = RankFusion.Fuse(searched.Answers).Take(MaxItems).ToList();
-        var fetched = await Fetch(fused, sources, deadline, degraded, cancellationToken).ConfigureAwait(false);
+        var fetched = await Fetch(fused, (sources, scrubbers.Value.Ingest), deadline, degraded, cancellationToken).ConfigureAwait(false);
         var versions = await Versions(fetched, sources, deadline, cancellationToken).ConfigureAwait(false);
-        var assembly = new ResultAssembly(egress, QueryId.From("q_" + ids.NewId().ToString("N", CultureInfo.InvariantCulture)), clock.GetUtcNow());
+        var assembly = new ResultAssembly(scrubbers.Value.Egress, QueryId.From("q_" + ids.NewId().ToString("N", CultureInfo.InvariantCulture)), clock.GetUtcNow());
         return assembly.Build(request.Query, valid.Value.Budget, fetched, versions, degraded);
     }
 
@@ -79,9 +81,10 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IIngestFilter 
         return new Searched(answers, degraded);
     }
 
-    private async Task<IReadOnlyList<FetchedRecord>> Fetch(IReadOnlyList<FusedItem> items, IReadOnlyList<IContextSource> sources, DateTimeOffset deadline,
-        List<DegradedSource> degraded, CancellationToken ct)
+    private async Task<IReadOnlyList<FetchedRecord>> Fetch(IReadOnlyList<FusedItem> items, (IReadOnlyList<IContextSource> Sources, IIngestFilter Ingest) call,
+        DateTimeOffset deadline, List<DegradedSource> degraded, CancellationToken ct)
     {
+        var (sources, ingest) = call;
         var fetched = new List<FetchedRecord>();
         foreach (var item in items)
         {
