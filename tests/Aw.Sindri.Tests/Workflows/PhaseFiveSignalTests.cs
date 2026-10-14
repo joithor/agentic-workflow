@@ -17,6 +17,7 @@ namespace Aw.Sindri.Tests.Workflows;
 /// second of wall clock (the signal's last sentence).
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(nameof(WallClockAlone))]
 public sealed class PhaseFiveSignalTests(SindriTimeSkippingServer server) : IClassFixture<SindriTimeSkippingServer>, IDisposable
 {
     private static readonly TimeSpan _slack = TimeSpan.FromSeconds(5);
@@ -34,15 +35,16 @@ public sealed class PhaseFiveSignalTests(SindriTimeSkippingServer server) : ICla
         await WorkflowsHarness.HoldLease(sindri, ct);
         using var worker = new TemporalWorker(server.Environment.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
 
-        var clock = Stopwatch.StartNew();
-        await worker.ExecuteAsync(() => ThreeCases(sindri, ct), ct);
+        var took = await worker.ExecuteAsync(() => ThreeCases(sindri, ct), ct);
 
-        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(1), $"the three cases took {clock.ElapsedMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture)} ms of wall clock; the time-skipping server should run them in under a second");
+        Assert.True(took < TimeSpan.FromSeconds(1), $"the three cases took {took.TotalMilliseconds.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)} ms of wall clock; the time-skipping server should run them in under a second");
     }
 
     /// <summary>The signal's three cases: T-2 parks; T-8 is taken over at 20 s, handed back at 80 s and parks at about 120 s; T-2 resumes.</summary>
-    private async Task ThreeCases(IServiceProvider sindri, CancellationToken ct)
+    /// <returns>The wall clock the three cases took, from the first start to the last assertion (the worker's start-up excluded).</returns>
+    private async Task<TimeSpan> ThreeCases(IServiceProvider sindri, CancellationToken ct)
     {
+        var clock = Stopwatch.StartNew();
         var env = server.Environment;
         var first = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.RecipeStart(sindri, "workflow.dev-timeout", "T-2", ct));
         var second = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.RecipeStart(sindri, "workflow.dev-timeout", "T-8", ct));
@@ -69,9 +71,11 @@ public sealed class PhaseFiveSignalTests(SindriTimeSkippingServer server) : ICla
         Assert.Equal(("hold", "1.1", null), (beforeTheRest.State, beforeTheRest.Run?.Value, beforeTheRest.Question));
         Assert.Equal((ParkReason.Timeout, "1.1"), (parkedAfterTheRest.Question?.Reason, parkedAfterTheRest.Run?.Value));
         Assert.Equal(("hold", "1.1", true), (resumed.Instance.State, resumed.Instance.Run?.Value, resumed.Instance.Task is not null));
+        var took = clock.Elapsed;
         Assert.Null((await InterpreterEvalTests.Replay(second, ct)).ReplayFailure);
         await first.TerminateAsync("test over");
         await second.TerminateAsync("test over");
+        return took;
     }
 
     private static CommandStamp Stamp(char digit) => new(CommandNonce.From(new string(digit, 32)), new string('0', 64));
