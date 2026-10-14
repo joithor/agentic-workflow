@@ -21,7 +21,7 @@ Nothing in `setup.sh`, the providers or MCP registration points at it.
 
 The engine reads the approved profile's `context:` section and its `repos:`. Every key is optional; the defaults are
 shown. A key this build doesn't know is refused (`SND-CONTEXT-001` with its key path), so a section written for a later
-stage (`labeling`, `sources`, `scrub`, …) needs that stage's build.
+stage (`labeling`, `sources`, …) needs that stage's build.
 
 ```yaml
 repos:
@@ -110,3 +110,39 @@ anchor (`003`), a refused question (`006`), session reads off (`020`) · `2` a t
 
 `$AW_SINDRI_HOME/context/context.db` (default `$AW_STATE_DIR/sindri-app/context/`), owner-only (directory 0700, the
 file and its `-wal` and `-shm` 0600). Never delete it: later stages keep review decisions there.
+
+## S-2W: extra scrub patterns
+
+The built-in rules catch secrets (tokens, keys, credentials in URLs). Identifiers that are yours, such as customer or
+account numbers, need a pattern of your own:
+
+```yaml
+context:
+  scrub:
+    extraPatterns:
+      - { id: acme-customer-id, pattern: "(?<![A-Za-z0-9_])ACME-[0-9]{6}(?![0-9])" }
+```
+
+- **Where they apply.** Everywhere the engine scrubs, on every call: when a document is indexed, when a record is
+  fetched for an answer, and on every field of the answer (CLI and HTTP; MCP once S-1M lands). A match becomes
+  `[REDACTED:<id>]`, so `ACME-123456` in a doc answers as `[REDACTED:acme-customer-id]`. An approval that changes the
+  list takes effect on the next call; nothing restarts.
+- **Writing one.** The rules are Aw.Redaction's (`docs/csharp/redaction.md`, "Extra patterns from configuration"): the
+  id is lowercase letters, digits and single hyphens, starting with a letter, at most 64 characters, and not a built-in
+  rule id, `blocked` or `secret-field`; the pattern is a .NET regex of at most 1024 characters that can't match empty
+  text and uses ASCII classes (`[0-9]`, not `\d`). Give it boundaries as above, or `ACME-[0-9]{6}` also matches inside
+  `XACME-1234567`. A pattern that is slow on a text blocks that text (it is withheld, never shown).
+- **Refusals.** `sindri profile validate` and `approve` refuse a bad entry with `SND-CONTEXT-001` and its key path,
+  for example `context.scrub.extraPatterns[0].pattern: …` (the message says how to fix it and never repeats the
+  pattern). A refused profile is never approved, so the patterns in force are always valid.
+- **Changing the list.** Every stored document records the rules it was cleaned with. After an approval that changes
+  the patterns, the stored documents are **not searched** until the next `context-docs-refresh` run cleans them again
+  (at serve start and on its cadence): `context sources status` shows the repo as `degraded`, "N of M documents wait
+  for the next refresh", and `context.sources.synced` counts them as `recleaned`. So nothing cleaned with the old
+  rules is ever served.
+- **More HTML removed on ingest.** Besides comments, images and link targets, the sanitizer now removes every HTML tag
+  that can fetch or point at something remote (`src`, `srcset`, `poster`, `background`, `href`, `data`, `action`,
+  `formaction` or `style` attributes: `<input type=image>`, `<video poster>`, `<source srcset>`, SVG `<use href>`,
+  inline CSS `url()`) and whole `<style>` blocks, keeping the text between tags. Remote link definitions with escaped
+  brackets (`[a\]b]: https://…`) or a label over two lines are removed too. This also counts as a rules change: an index
+  built before S-2W is cleaned again at its first refresh.
