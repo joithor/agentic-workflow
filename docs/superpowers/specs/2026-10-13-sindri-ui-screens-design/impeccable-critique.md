@@ -256,3 +256,65 @@ Lowercase chip words in source on Agents; "all 12 →" vs the fixture's "… 7 m
 1. If "need you", "waiting on you" and "with you" cannot share one definition across four pages, does the owner have one queue of human work or four, and which one does the pulse count?
 2. The Recipes table says 81% and the inspector says 81 of 112. What in the pipeline guarantees they are the same number, and why is that not already a check like `sync-rules.sh --check`?
 3. Every page draws its most useful state open at once. When the Avalonia build shows one state at a time, which affordances will the owner discover without the mockup: a reason to keep the keyboard model, or to put the verbs back on the rows?
+
+
+---
+
+# Critique run 5: Sindri UI revision-8 mockups, after wave 6
+
+Target: `docs/superpowers/specs/2026-10-13-sindri-ui-screens-design/mockups/` at 423354d9. Independent assessment A (blind to runs 1-4 and the fix list) plus the detector (B): clean except the em-dash advisory on tabular nulls in two files.
+
+## Design Health Score
+
+| # | Heuristic | Score | Key issue |
+|---|---|---|---|
+| 1 | Visibility of system status | 3 | No in-flight state for any write; no skeleton state |
+| 2 | Match system / real world | 3 | `desk` never explained; Temporal and ledger internals leak into prose |
+| 3 | User control and freedom | 3 | The decision Accept describes a window with no Undo |
+| 4 | Consistency and standards | 2 | Attach has four shapes; the with-you row's actions differ by page; one timestamp reads 2h, 3h and 2h 56m; ITM-01JD6 is `workflow.item` on System and a `builder.feature` child on the project sheet |
+| 5 | Error prevention | 3 | System pre-focuses Sync now (a write); Home pre-focuses a chevron; the 10 s undo window |
+| 6 | Recognition rather than recall | 3 | The command behind a protected button is visible on Home and System only |
+| 7 | Flexibility and efficiency | 3 | No bulk action on Work or Agents; shortcut hints on three pages |
+| 8 | Aesthetic and minimalist design | 3 | Context is a wall; Recipes is 60 % empty; a dead "0 proposals · 31 accepted" row |
+| 9 | Error recovery | 3 | The Impact panel is the best piece in the set; refusal states only in comments |
+| 10 | Help and documentation | 2 | Nothing explains desk, gate, parked, lens or depth where they appear |
+| **Total** | | **28/40** | **Good: solid foundation; close the consistency and recall gaps before building** |
+
+## Anti-Patterns Verdict
+
+Not slop; every ban passes in source. Three things would make a Linear-fluent engineer pause: the vertical sheet handle on Home and Workflows, the dashed "Available with API P6" chip in product chrome, and Attach appearing in four shapes across five surfaces.
+
+## What's Working
+
+- The one frame: item, project and incident sheets share States, Facts, Children and tabs; the NEXT sentence is the product's voice.
+- System's Impact panel and the pill-to-sentence chain; every graph node a focusable link with a doctor-check label.
+- Chips and glyphs are one vocabulary: every chip resolves to the fixture's table; the Recipes and inspector numbers reconcile to the fixture to the digit; nav counts agree on all eleven pages.
+
+## Priority Issues
+
+- **[P1] Attach has four shapes**: a split primary on the sheets, a plain secondary plus a chevron on Agents, a menu-only button on Home's Running rows, a menu item on the incident's child row. *Fix:* one split component in two sizes, main = Attach, chevron = Take over, Request, Cancel. **polish**
+- **[P1] Open counts and ITM-01JD6's recipe are not derived from one source.** JD6 is `workflow.item` on System and a `builder.feature` child on the project sheet; the inspector's narrow list shows "open N" the wide table lacks; the Open list omits JD6 and JD2. *Fix:* settle JD6 in the fixture; derive every open count from the instance tables. **harden**
+- **[P1] Protected actions with no path to the command** on Workflows, Recipes, Agents and a project child. *Fix:* the lock button opens a popover with the command, Copy and Open in an agent. **clarify**
+- **[P2] Three duration formats** for one timestamp. *Fix:* one formatter in the fixture. **polish**
+- **[P2] Title loses to the repo tag** in narrow rows; a tag cut mid-word behind the sheet. **layout**
+- **[P2] The states band orphans its last node** ("── done ○" alone on a second line). **layout**
+- **[P2] Initial focus** on a chevron (Home) and on a write (System); the vertical sheet tab is an invented affordance. **harden**
+- **[P2] "Available with API P6" in product chrome**: honest for a reference, wrong in the app; keep the phase in a comment. **clarify**
+
+## Cognitive Load
+
+2 of 8 failed (moderate): minimal choices (Context's lens row, the inspector head) and working memory (protected actions with nothing to copy on three pages).
+
+## Persona Red Flags
+
+**Alex:** Attach is two clicks on Home; no bulk actions; hints on three pages. **Sam:** Home's first focus announces a menu; Context's graph nodes are rects inside one image, unreachable by keyboard, while System's are links; the toast's countdown is unannounced. **Riley:** six attention chips on Home, a count of five (the fixture's open point); "Workflows 12 open" counts four done rows; JD6 changes recipe between pages. **The owner:** the first row's resolution is a terminal round trip with the command behind a chevron; JB4's age differs by page; the degraded sources sit 1,600 px below the fold on Context.
+
+## Minor Observations
+
+The strip's "… 7 more" absent; the health sentence coloured on Home and plain on System; "mitigate ⇄ verify" vs "mitigate r1/3"; a Subject filter with no subject column; a 240 px void on the Other recipes rows; the with-you row's primary Attach on Agents; three heading-count treatments; "Request" vs "File a request"; the Recipes footnote; twenty null cells in the inspector's per-state table; the Build draft helper under two buttons; the dead post-accept row; "◀── anchor"; the saturated "N ev" column on System; 40 px rows against the brief's 36.
+
+## Questions to Consider
+
+1. If "needs you" has one definition, why does Home draw six attention chips and count five? Count the desk answer, or don't chip it.
+2. "Workflows 12 open" includes four done triage rows. What does "open" mean, and what does the owner do with a done row that is still open?
+3. The headline is one click into a live session, yet the first row of Home, the escalated row on Workflows and the changed recipe all resolve by leaving the app for a terminal. Why not let the protected confirmation be typed into ⌘K inside the app?
