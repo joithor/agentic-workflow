@@ -12,10 +12,13 @@ namespace Aw.Context.Infrastructure.Onyx;
 /// <param name="SourceType">The connector ('linear', 'slack', …).</param>
 /// <param name="UpdatedAt">When the source last changed the document, if known (UTC).</param>
 /// <param name="PrimaryOwners">The document's primary owners, if any (the first is the author).</param>
+/// <param name="Hidden">Whether an Onyx admin hid the document. Only admin search returns hidden documents (it retrieves
+/// with include_hidden); the source drops them, so Sindri sees what a standard search would.</param>
 internal sealed record OnyxSearchDoc(
     [property: JsonPropertyName("document_id")] string DocumentId,
     [property: JsonPropertyName("semantic_identifier")] string SemanticIdentifier,
     [property: JsonPropertyName("link")] string? Link,
     [property: JsonPropertyName("source_type")] string SourceType,
     [property: JsonPropertyName("updated_at")] DateTimeOffset? UpdatedAt,
-    [property: JsonPropertyName("primary_owners")] IReadOnlyList<string>? PrimaryOwners);
+    [property: JsonPropertyName("primary_owners")] IReadOnlyList<string>? PrimaryOwners,
+    [property: JsonPropertyName("hidden")] bool Hidden);
