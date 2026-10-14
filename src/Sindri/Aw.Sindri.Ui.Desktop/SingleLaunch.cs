@@ -8,16 +8,16 @@ namespace Aw.Sindri.Ui.Desktop;
 /// <summary>
 /// One app per user (UI spec §15): the first launch claims the instance and runs the app; a later one hands its message
 /// ("focus", or the deep link it was started with) to the running instance and exits. The running instance only
-/// navigates on it. It is the head's boundary: anything that throws before or while the app runs (an unusable 'ui'
-/// directory, a socket it can't use) ends the launch with SND-UI-004 and exit 2, logging the code and the exception's
-/// type only.
+/// navigates on it. It is the head's boundary: anything that throws while composing the platform, before or while the
+/// app runs, or while ending the instance and the motion poll after it (an unusable or removed 'ui' directory, a socket
+/// it can't use) ends the launch with SND-UI-004 and exit 2, logging the code and the exception's type only.
 /// </summary>
 internal static class SingleLaunch
 {
     private const string Scheme = "sindri://";
 
-    // A failure inside the app: the app's log names the cause, which AW_LOG_LEVEL=none hides.
-    private const string FailedInApp = "sindri-ui: couldn't start (SND-UI-004); the log names the cause unless AW_LOG_LEVEL is none";
+    // A failure inside the app (at start-up or while it ran): the app's log names the cause, which AW_LOG_LEVEL=none hides.
+    private const string FailedInApp = "sindri-ui: failed (SND-UI-004); the log names the cause unless AW_LOG_LEVEL is none";
 
     /// <summary>Runs the app, or hands over to the running one.</summary>
     /// <param name="instance">This launch's instance port.</param>
@@ -30,16 +30,62 @@ internal static class SingleLaunch
     {
         try
         {
-            return Launch(instance, args, runApp, errors);
+            try
+            {
+                return Launch(instance, args, runApp, errors);
+            }
+            finally
+            {
+                // Ending the instance (removing its socket and pid files) is inside the boundary too: ui/ may be gone.
+                instance.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            }
         }
         catch (Exception e)
         {
-            // The message and stack can carry the home's path: the code and the type only.
-            DesktopLog.FailedBeforeStart(log, e.GetType().Name);
-            // The line names the cause itself (the type only), so it holds when AW_LOG_LEVEL=none printed no log line.
-            errors.WriteLine($"sindri-ui: couldn't start (SND-UI-004: {e.GetType().Name})");
-            return SindriApp.FailedExitCode;
+            return Failed(e, errors, log);
         }
+    }
+
+    /// <summary>Composes the platform, then runs the app over it or hands over to the running one.</summary>
+    /// <param name="compose">Builds the head's adapters.</param>
+    /// <param name="args">The command line.</param>
+    /// <param name="runApp">Runs the app over the platform until it quits; returns its exit code.</param>
+    /// <param name="errors">Standard error.</param>
+    /// <param name="log">The head's log.</param>
+    /// <returns>The exit code, as the other overload's.</returns>
+    internal static int Run(Func<SindriPlatform> compose, IReadOnlyList<string> args, Func<SindriPlatform, int> runApp, TextWriter errors, ILogger log)
+    {
+        SindriPlatform platform;
+        try
+        {
+            platform = compose();
+        }
+        catch (Exception e)
+        {
+            return Failed(e, errors, log);
+        }
+
+        var exit = Run(platform.Instance, args, () => runApp(platform), errors, log);
+        try
+        {
+            // Ending the motion poll is inside the boundary too (review run 4, pattern-recognition-specialist-4).
+            (platform.Motion as IDisposable)?.Dispose();
+        }
+        catch (Exception e)
+        {
+            return Failed(e, errors, log);
+        }
+
+        return exit;
+    }
+
+    // SND-UI-004: the message and stack can carry the home's path, so the code and the type only. The line names the
+    // cause itself (the type only), so it holds when AW_LOG_LEVEL=none printed no log line.
+    private static int Failed(Exception e, TextWriter errors, ILogger log)
+    {
+        DesktopLog.Failed(log, e.GetType().Name);
+        errors.WriteLine($"sindri-ui: failed (SND-UI-004: {e.GetType().Name})");
+        return SindriApp.FailedExitCode;
     }
 
     private static int Launch(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors)

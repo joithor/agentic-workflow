@@ -100,7 +100,8 @@ and ports to native apps without a rewrite:
   (`AvaloniaUseCompiledBindingsByDefault`, every view has an `x:DataType`, no `ReflectionBinding`), so the app stays
   trim- and AOT-safe.
 - **A client, not a second implementation:** the app talks to Sindri's host over its versioned HTTP API (factory
-  addendum §17.27.1) and holds no logic of its own: no extra checks, shortcuts or UI-only state. It is its own
+  addendum §17.27.1) and holds no logic of its own: no extra checks, shortcuts or UI-only state changes (its only own state is local presentation preferences under
+  ui/). It is its own
   package (`SindriUi` in `deps.yaml`, above `Sindri`) and references no Sindri project: Sindri's HTTP contract (and two files under Sindri's
   home: the endpoint record `control.json` it finds the API by, and the per-start human token `auth/human.token`) is its only edge. The first UI PR (#184, which superseded #168) added the `http` edge kind to `deps.yaml`, the schema and
   `check-deps.mjs`. Its own platform services (notifications, tray icon, opening

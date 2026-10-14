@@ -16,7 +16,7 @@ Aw.Sindri.Ui.Platform.IPreferencesStore.Read(System.Threading.CancellationToken 
 Aw.Sindri.Ui.Platform.IPreferencesStore.Write(byte[]! contents, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Aw.Sindri.Ui.Platform.ISingleInstance
 Aw.Sindri.Ui.Platform.ISingleInstance.HolderProcessId() -> int?
-Aw.Sindri.Ui.Platform.ISingleInstance.Messages(System.Threading.CancellationToken cancellationToken) -> System.Collections.Generic.IAsyncEnumerable<string!>!
+Aw.Sindri.Ui.Platform.ISingleInstance.Messages(System.Threading.CancellationToken cancellationToken) -> System.Collections.Generic.IAsyncEnumerable<Aw.Sindri.Ui.Platform.InstanceMessage!>!
 Aw.Sindri.Ui.Platform.ISingleInstance.Send(string! message, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 Aw.Sindri.Ui.Platform.ISingleInstance.TryClaim(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 Aw.Sindri.Ui.Platform.ITray
@@ -24,6 +24,10 @@ Aw.Sindri.Ui.Platform.ITray.OpenRequested -> System.EventHandler?
 Aw.Sindri.Ui.Platform.ITray.QuitRequested -> System.EventHandler?
 Aw.Sindri.Ui.Platform.ITray.Show(Aw.Sindri.Ui.Platform.TrayView! view) -> void
 Aw.Sindri.Ui.Platform.ITray.Shown.get -> Aw.Sindri.Ui.Platform.TrayView?
+Aw.Sindri.Ui.Platform.InstanceMessage
+Aw.Sindri.Ui.Platform.InstanceMessage.InstanceMessage(string! text, System.Func<bool>! tryAct, System.Threading.CancellationToken withdrawn) -> void
+Aw.Sindri.Ui.Platform.InstanceMessage.Text.get -> string!
+Aw.Sindri.Ui.Platform.InstanceMessage.Withdrawn.get -> System.Threading.CancellationToken
 Aw.Sindri.Ui.Platform.InstanceMessages
 Aw.Sindri.Ui.Platform.SindriPlatform
 Aw.Sindri.Ui.Platform.SindriPlatform.<Clone>$() -> Aw.Sindri.Ui.Platform.SindriPlatform!
@@ -82,3 +86,14 @@ static Aw.Sindri.Ui.Platform.TrayView.operator ==(Aw.Sindri.Ui.Platform.TrayView
 static Aw.Sindri.Ui.Views.AppTrayIcons.Add(Avalonia.Controls.TrayIcon! icon) -> void
 static Aw.Sindri.Ui.Views.AppTrayIcons.Remove(Avalonia.Controls.TrayIcon! icon) -> void
 static Aw.Sindri.Ui.Views.SindriApp.Create(Aw.Sindri.Ui.Platform.SindriPlatform! platform, System.TimeProvider! clock) -> Aw.Sindri.Ui.Views.SindriApp!
+Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordFailure.NoPermission = 1 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordFailure.NotAFile = 2 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordFailure.Unreadable = 0 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException() -> void
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(Aw.Sindri.Ui.Platform.EndpointRecordFailure reason, System.Exception? innerException) -> void
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(string! message) -> void
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(string! message, System.Exception! innerException) -> void
+Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.Reason.get -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.InstanceMessage.TryAct() -> bool

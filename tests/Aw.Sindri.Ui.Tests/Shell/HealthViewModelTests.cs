@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Shell;
@@ -325,20 +326,39 @@ public sealed class HealthViewModelTests : IDisposable
         Assert.Contains("holds no lease", _vm.Reason, StringComparison.Ordinal);
     }
 
+    // Review run 3 (security-sentinel-0): the card says why in the app's own words, never the platform's message, which
+    // carries the record's full path; the path shows only shortened, on its own line (I5, I7).
     [Fact]
     public async Task A_record_the_platform_cant_read_reads_as_not_running_and_the_app_keeps_trying()
     {
         _records.Write(A.Record());
-        _records.FailNextRead(new UnauthorizedAccessException("Access to the path is denied."));
+        _records.FailNextRead(EndpointRecordFailure.NoPermission);
         Start();
 
         await Eventually(() => _vm.Headline == "Not running", "not running");
-        Assert.Contains("Access to the path is denied.", _vm.Reason, StringComparison.Ordinal);
+        Assert.Equal(Labels.RecordUnreadableBecause(Labels.RecordNoPermission), _vm.Reason);
+        Assert.Equal(StatusText.ShortPath(_records.Location), _vm.ReasonDetail);
         await Eventually(() =>
         {
             _clock.Advance(HealthViewModel.RetryEvery);
             return _vm.Headline == "Running";
         }, "recovered on the next try");
+    }
+
+    // Review run 4 (architecture-strategist-0): each reason the port names has its own words; a directory in the record's
+    // place is "not a file", never "no permission" (which is what .NET's UnauthorizedAccessException alone would say).
+    [Theory]
+    [InlineData(EndpointRecordFailure.NotAFile, Labels.RecordNotAFile)]
+    [InlineData(EndpointRecordFailure.Unreadable, Labels.RecordIoError)]
+    internal async Task A_record_the_platform_fails_to_read_says_why_in_the_apps_words(EndpointRecordFailure why, string reason)
+    {
+        _records.Write(A.Record());
+        _records.FailNextRead(why);
+        Start();
+
+        await Eventually(() => _vm.Headline == "Not running", "not running");
+        Assert.Equal(Labels.RecordUnreadableBecause(reason), _vm.Reason);
+        Assert.Equal(StatusText.ShortPath(_records.Location), _vm.ReasonDetail);
     }
 
     [Fact]
@@ -440,7 +460,7 @@ public sealed class HealthViewModelTests : IDisposable
         Start();
         await Eventually(() => _vm.Headline == "Running", "running");
 
-        _records.FailNextRead(new UnauthorizedAccessException("Access to the path is denied."));
+        _records.FailNextRead(EndpointRecordFailure.NoPermission);
         await Eventually(() =>
         {
             _clock.Advance(HealthViewModel.RetryEvery);

@@ -50,7 +50,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     public ShellText Text { get; } = ShellText.Instance;
 
     /// <summary>The pre-API state (§4.1).</summary>
-    public ShellState State { get; private set => Set(ref field, value); } = ShellState.Connecting;
+    public ShellState State { get; private set; } = ShellState.Connecting;
 
     /// <summary>The health pill's parts.</summary>
     public HealthPill Pill { get; } = new();
@@ -71,7 +71,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     public string Headline { get; private set => Set(ref field, value); } = Labels.Connecting;
 
     /// <summary>Why it isn't running, the two versions, or the unreadable answer's code and message; empty otherwise.</summary>
-    public string Reason { get; private set => Set(ref field, value); } = string.Empty;
+    public string Reason { get; private set; } = string.Empty;
 
     /// <summary>True while a control plane answers.</summary>
     public bool IsRunning { get; private set => Set(ref field, value); }
@@ -128,6 +128,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <param name="status">The status.</param>
     internal void Show(Uri url, StatusView status)
     {
+        _ = Interlocked.Increment(ref _decisions);
         if (status.ApiVersion is { } version && version != SindriApiClient.AppApiVersion)
         {
             Mismatch(version);
@@ -154,10 +155,9 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
             {
                 Headline = Labels.Running;
                 HealthLine = StatusText.HealthLine(status);
-                Reason = string.Empty;
                 IsRunning = true;
                 IsNotRunning = false;
-                State = ShellState.Normal;
+                Become(ShellState.Normal, string.Empty);
             }
 
             Heard();
@@ -196,13 +196,13 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     {
         lock (_gate)
         {
+            _decisions++;
             Headline = Labels.NotRunning;
             HealthLine = Labels.NotRunning;
-            Reason = reason;
             ReasonDetail = detail ?? string.Empty;
             IsRunning = false;
             IsNotRunning = true;
-            State = ShellState.NotRunning;
+            Become(ShellState.NotRunning, reason);
             Word();
         }
 
@@ -213,8 +213,8 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     {
         lock (_gate)
         {
-            Reason = $"{error.Code}: {error.Message}";
-            State = ShellState.Unreadable;
+            _decisions++;
+            Become(ShellState.Unreadable, $"{error.Code}: {error.Message}");
             Word();
         }
 
@@ -225,11 +225,29 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     {
         lock (_gate)
         {
-            Reason = Labels.Versions(version, SindriApiClient.AppApiVersion);
+            _decisions++;
             Detail.Mismatch(version);
             HealthLine = Labels.VersionMismatch;
-            State = ShellState.VersionMismatch;
+            Become(ShellState.VersionMismatch, Labels.Versions(version, SindriApiClient.AppApiVersion));
             Word();
+        }
+    }
+
+    // A state and its reason are one change (review run 3, julik-frontend-races-reviewer-0): both are set before either
+    // is raised, State first, so whoever reacts to State (the shell's live regions) already sees the new reason, and the
+    // old state's region never speaks it. Raised under the gate, like every other change here.
+    private void Become(ShellState state, string reason)
+    {
+        var (stateChanged, reasonChanged) = (State != state, !string.Equals(Reason, reason, StringComparison.Ordinal));
+        (State, Reason) = (state, reason);
+        if (stateChanged)
+        {
+            OnChanged(nameof(State));
+        }
+
+        if (reasonChanged)
+        {
+            OnChanged(nameof(Reason));
         }
     }
 
@@ -242,7 +260,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
             _failedRefreshes = 0;
             if (State is ShellState.Normal or ShellState.Stale)
             {
-                State = ShellState.Normal;
+                Become(ShellState.Normal, Reason);
                 Word();
             }
         }
@@ -260,7 +278,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
 
             if (clock.GetUtcNow() - _heard >= StaleAfter)
             {
-                State = ShellState.Stale;
+                Become(ShellState.Stale, Reason);
             }
 
             Word();

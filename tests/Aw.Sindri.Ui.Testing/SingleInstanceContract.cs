@@ -23,16 +23,111 @@ public abstract class SingleInstanceContract
     }
 
     // Sends, moving the clock on while the send waits, so a timeout on the binding's clock can fire.
-    private async Task<bool> SendWhileTimePasses(ISingleInstance sender, string message)
+    private Task<bool> SendWhileTimePasses(ISingleInstance sender, string message) =>
+        WhileTimePasses(sender.Send(message, Token).AsTask());
+
+    // Moves the clock on while a send waits; a send that never ends fails the test after 5 s rather than hanging it.
+    private async Task<bool> WhileTimePasses(Task<bool> sending)
     {
-        var sending = sender.Send(message, Token).AsTask();
         for (var i = 0; i < 500 && !sending.IsCompleted; i++)
         {
-            Elapse(TimeSpan.FromSeconds(1));
+            Elapse(TimeSpan.FromMilliseconds(250));
             await Task.Delay(10, Token);
         }
 
-        return await sending;
+        return await sending.WaitAsync(TimeSpan.FromSeconds(5), Token);
+    }
+
+    // Review run 4 (pattern-recognition-specialist-0): withdrawal is part of the port. A message the reader took but
+    // didn't act on before the sender's wait ended is withdrawn: it can't be acted on, and the send isn't acknowledged.
+    [Fact]
+    public async Task A_message_held_past_the_senders_wait_is_withdrawn_and_not_acknowledged()
+    {
+        await using var first = Launch();
+        await using var second = Launch();
+        Expect.True(await first.TryClaim(Token));
+        await using var messages = first.Messages(Token).GetAsyncEnumerator(Token);
+        var next = messages.MoveNextAsync().AsTask();
+        var sending = second.Send("item/ITM-HELD", Token).AsTask();
+        Expect.True(await next);
+        var message = messages.Current;
+        Expect.True(!message.Withdrawn.IsCancellationRequested);
+
+        Expect.True(!await WhileTimePasses(sending));
+        Expect.True(await Withdrawn(message));
+        Expect.True(!message.TryAct());
+    }
+
+    // The holder withdraws when its handling window closes (1.5 s, before the sender's own 2 s), but the clock moves in
+    // steps, so the sender's timeout can fire in the same step before the holder's withdrawal has run: wait up to 5 s.
+    private static async Task<bool> Withdrawn(InstanceMessage message)
+    {
+        for (var i = 0; i < 500 && !message.Withdrawn.IsCancellationRequested; i++)
+        {
+            await Task.Delay(10, Token);
+        }
+
+        return message.Withdrawn.IsCancellationRequested;
+    }
+
+    // Review run 4 (julik-frontend-races-reviewer-1, pattern-recognition-specialist-0): acting on a message is one
+    // decision. The first TryAct wins and the sender is told the message was handled; once the send has returned, the
+    // message is withdrawn and can't be acted on again.
+    [Fact]
+    public async Task A_message_acted_on_is_acknowledged_and_then_withdrawn()
+    {
+        await using var first = Launch();
+        await using var second = Launch();
+        Expect.True(await first.TryClaim(Token));
+        await using var messages = first.Messages(Token).GetAsyncEnumerator(Token);
+        var next = messages.MoveNextAsync().AsTask();
+        var sending = second.Send("item/ITM-ACTED", Token).AsTask();
+        Expect.True(await next);
+        var message = messages.Current;
+
+        Expect.True(message.TryAct());
+        Expect.True(await sending.WaitAsync(TimeSpan.FromSeconds(5), Token));
+        Expect.True(message.Withdrawn.IsCancellationRequested);
+        Expect.True(!message.TryAct());
+    }
+
+    // The reader coming back for the next message handles this one too (the app took it without acting on the UI
+    // thread): the send is acknowledged, and then the message is withdrawn.
+    [Fact]
+    public async Task A_message_the_reader_came_back_from_is_acknowledged_and_then_withdrawn()
+    {
+        await using var first = Launch();
+        await using var second = Launch();
+        Expect.True(await first.TryClaim(Token));
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var messages = first.Messages(stop.Token).GetAsyncEnumerator(stop.Token);
+        var after = Task.FromResult(false);
+        try
+        {
+            var next = messages.MoveNextAsync().AsTask();
+            var sending = second.Send("item/ITM-READ", Token).AsTask();
+            Expect.True(await next);
+            var message = messages.Current;
+            after = messages.MoveNextAsync().AsTask();
+
+            Expect.True(await sending.WaitAsync(TimeSpan.FromSeconds(5), Token));
+            Expect.True(message.Withdrawn.IsCancellationRequested);
+            Expect.True(!message.TryAct());
+        }
+        finally
+        {
+            await stop.CancelAsync();
+            try
+            {
+                _ = await after;
+            }
+            catch (OperationCanceledException)
+            {
+                // The reader stopped.
+            }
+
+            await messages.DisposeAsync();
+        }
     }
 
     [Fact]
@@ -132,6 +227,6 @@ public abstract class SingleInstanceContract
         Expect.True(await first.TryClaim(Token));
         Expect.True(!await second.TryClaim(Token));
 
-        Expect.Sequence([], await second.Messages(Token).ToListAsync(Token));
+        Expect.Sequence([], await second.Messages(Token).Select(m => m.Text).ToListAsync(Token));
     }
 }

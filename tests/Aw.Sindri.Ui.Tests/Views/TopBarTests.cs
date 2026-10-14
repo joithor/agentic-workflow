@@ -105,6 +105,24 @@ public sealed class TopBarTests : IDisposable
     // text is never "" (Avalonia #22312), it is live (Polite) only while sending, and every change of its text happens
     // with the live setting that matches: to "Sending…" while Polite, back to its resting text while Off, so only
     // "Sending…" is ever spoken. It is in the tree only while a refresh is in flight, and takes no room in the bar.
+    // Review run 4 (accessibility-tester-2): the ⌘K field does nothing until U1, so assistive tech doesn't meet it either:
+    // the field and everything in it are Raw (as the decorative glyphs are), so no screen reader announces a named search
+    // group that takes no input. U1 restores its view with its role and action.
+    [Fact]
+    public Task The_inert_search_field_is_hidden_from_assistive_tech() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, _) = await Show(s => s.State == ShellState.Normal);
+        var field = window.Get<TopBar>("TopBar").Get<Control>("SearchField");
+        Assert.True(field.IsEffectivelyVisible);
+
+        var exposed = field.GetVisualDescendants().OfType<Control>().Prepend(field)
+            .Where(c => AutomationProperties.GetAccessibilityView(c) != AccessibilityView.Raw)
+            .Select(c => c.Name ?? c.GetType().Name)
+            .ToList();
+        Assert.True(exposed.Count == 0, "exposed to assistive tech: " + string.Join(", ", exposed));
+    });
+
     [Fact]
     public Task Sending_is_announced_by_a_polite_TextBlock_that_is_never_emptied() => OnUi(async () =>
     {

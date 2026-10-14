@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.Testing;
 internal sealed class InMemoryEndpointRecords : IEndpointRecordSource
 {
     private byte[]? _bytes;
-    private Exception? _fail;
+    private EndpointRecordUnreadableException? _fail;
 
     /// <summary>Gets or sets where the record is said to live (a long temp path in the Not running card's test).</summary>
     public string Location { get; set; } = "memory:control.json";
@@ -23,9 +23,9 @@ internal sealed class InMemoryEndpointRecords : IEndpointRecordSource
     /// <param name="text">The text.</param>
     public void WriteText(string text) => _bytes = Encoding.UTF8.GetBytes(text);
 
-    /// <summary>Makes the next read throw, as a record the platform can't read does (a directory, no permission).</summary>
-    /// <param name="error">The exception.</param>
-    public void FailNextRead(Exception error) => _fail = error;
+    /// <summary>Makes the next read fail the way the port says a record the platform can't read does (no permission, a directory in its place).</summary>
+    /// <param name="why">Why it can't be read.</param>
+    public void FailNextRead(EndpointRecordFailure why) => _fail = new EndpointRecordUnreadableException(why, innerException: null);
 
     /// <summary>Removes the record, as a clean stop does.</summary>
     public void Remove() => _bytes = null;
