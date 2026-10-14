@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Testing;
@@ -114,6 +115,41 @@ public sealed class ApproveRecipeRefusalTests
         Assert.Equal(WorkflowErrors.RecipeEvalsFailing.Code, refused.Error.Code);
         Assert.Contains("declares no evals", refused.Error.Message, StringComparison.Ordinal);
         Assert.Null((await r.Approvals.Latest(bare.Id, 1, bare.Hash, Token)).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Generated_recipe_whose_base_was_revoked_is_005_and_records_nothing()
+    {
+        await using var r = await Started();
+        var step = await r.Shipped("sindri/workflow.step.yaml");
+        _ = await r.Approvals.Approve(RegistryData.Approval(step), Token);
+        var fast = RegistryData.Recipe("workflow.fast", baseRecipe: new RecipeRef(step.Id, step.Hash));
+        _ = await r.Recipes.Add(fast, Token);
+        _ = await r.Approvals.Revoke(RegistryData.Revocation(step), Token);   // registered while its base held; the base was revoked since
+
+        var refused = await r.Issue("approve workflow.fast 1");
+
+        Assert.Equal(WorkflowErrors.RecipeRevoked.Code, refused.Error.Code);
+        Assert.Contains("base workflow.step@", refused.Error.Message, StringComparison.Ordinal);
+        Assert.Null((await r.Approvals.Latest(fast.Id, 1, fast.Hash, Token)).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Child_approved_between_preview_and_answer_is_009_and_records_nothing()
+    {
+        await using var r = await Started();
+        var step = await r.Shipped("sindri/workflow.step.yaml");
+        _ = await r.Approve(step);
+        var item = await r.Shipped("sindri/workflow.item.yaml");
+        var issued = (await r.Issue("approve workflow.item 1")).Value;   // the preview pins workflow.step@<step>
+        var newer = RegistryData.Recipe("workflow.step", version: 2);
+        _ = await r.Recipes.Add(newer, Token);
+        _ = await r.Approvals.Approve(RegistryData.Approval(newer), Token);   // a second terminal approves a newer child meanwhile
+
+        var refused = await Approve(r, item, issued.Challenge, issued.Action);
+
+        Assert.Equal(WorkflowErrors.RecipeChallengeStale.Code, refused.Error.Code);
+        Assert.Null((await r.Approvals.Latest(item.Id, 1, item.Hash, Token)).Value);
     }
 
     private static async Task<RegistryHarness> Started()

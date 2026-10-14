@@ -7,7 +7,7 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 /// <param name="Preview">The preview the human reads.</param>
 /// <param name="Latest">The latest approval of the same hash, for a re-approval (drift or a newer child); else null.</param>
 /// <param name="Action">'approve &lt;id&gt; &lt;version&gt;'.</param>
-/// <param name="Subject">The recipe hash and version, plus the pins digest for a re-approval.</param>
+/// <param name="Subject">The recipe hash and version, plus the pins digest (every approval binds it).</param>
 public sealed record ApprovalPlan(RegisteredRecipe Recipe, ApprovalPreview Preview, RecipeApproval? Latest, ChallengeAction Action, ChallengeSubject Subject)
 {
     /// <summary>Whether this approval re-approves an approved hash with new pins (a drift approval, spec §4.1).</summary>

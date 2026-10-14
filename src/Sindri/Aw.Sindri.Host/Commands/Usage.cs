@@ -24,6 +24,8 @@ internal static class Usage
         "       sindri recipe register <file>            register a recipe by hash: 'registered <id>@<hash> (unapproved)'",
         "       sindri recipe show <id@hash>             the recipe's line and its approval preview",
         "       sindri recipe list [--stale] [--json]    one line per registered recipe; --stale: approved ones that drifted or pin a stale child",
+        "       sindri recipe approve <file|id@hash>     preview, then type 'approve <id> <version>' at a terminal: 'approved <id>@<hash12>'",
+        "       sindri recipe revoke <id@hash>           preview (parks, cascade, parents), then type 'revoke <id>@<hash12>' at a terminal",
         "       sindri workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--temporal <host:port>] [--no-wait]   report an open desk run (exit 0 ok, 1 Temporal not running, 2 error)",
         "       sindri workflow list [--query <q>] [--temporal <host:port>]   the open instances, one a line",
     ];

@@ -49,6 +49,15 @@ public interface IRecipeApprovals
     /// <returns>The approvals, by id and version.</returns>
     public ValueTask<Result<IReadOnlyList<RecipeApproval>>> ApprovedFrom(RecipeHash baseHash, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The latest approval of every key whose base is <paramref name="baseHash"/>, revoked or not: the edges a revoke walks
+    /// through, so a revoke that stopped partway reaches what lies below a recipe it already stamped.
+    /// </summary>
+    /// <param name="baseHash">The base's hash.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The approvals, by id and version.</returns>
+    public ValueTask<Result<IReadOnlyList<RecipeApproval>>> GeneratedFrom(RecipeHash baseHash, CancellationToken cancellationToken);
+
     /// <summary>The latest approvals that pin <paramref name="childHash"/> as a child and aren't revoked: the parents a child change marks child-stale or wakes.</summary>
     /// <param name="childHash">The child's hash.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
