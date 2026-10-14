@@ -77,15 +77,6 @@ public sealed class InMemoryRecipeApprovals : IRecipeApprovals
     }
 
     /// <inheritdoc/>
-    public ValueTask<Result<IReadOnlyList<RecipeApproval>>> ApprovedFrom(RecipeHash baseHash, CancellationToken cancellationToken)
-    {
-        lock (_gate)
-        {
-            return Done(Results.Success<IReadOnlyList<RecipeApproval>>([.. CurrentRows().Where(a => a.Base?.Hash == baseHash)]));
-        }
-    }
-
-    /// <inheritdoc/>
     public ValueTask<Result<IReadOnlyList<RecipeApproval>>> GeneratedFrom(RecipeHash baseHash, CancellationToken cancellationToken)
     {
         lock (_gate)

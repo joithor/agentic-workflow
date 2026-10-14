@@ -55,8 +55,6 @@ internal static class RecipeSql
 
     internal const string SelectCurrent = CurrentRows + ByKey;
 
-    internal const string SelectApprovedFrom = CurrentRows + " AND a.base_hash = $baseHash" + ByKey;
-
     internal const string SelectGeneratedFrom = LatestRows + " AND a.base_hash = $baseHash" + ByKey;
 
     internal const string SelectPinning =

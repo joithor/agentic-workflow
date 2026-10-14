@@ -22,8 +22,9 @@ public sealed class ProtectedCommandTests
     /// ends. ImportContextMap: X30 (docs/sindri/README.md) makes map import 'protected' with the shared challenge, but the
     /// context lane's S-3a request (merged after S1-D5) still confirms with the previewed hash and a 'confirmed' flag
     /// (ImportContextMapRequest). The context lane owns that code, so the engine lanes don't change it; this waiver lets the
-    /// rest of the rule hold meanwhile. It is still terminal-bound, which the first assertion checks, and
-    /// <see cref="Every_waiver_is_still_open"/> fails once its date passes, so it can't outlive the fix silently.
+    /// rest of the rule hold meanwhile. It is still terminal-bound, which the first assertion checks;
+    /// <see cref="Every_waiver_is_still_open"/> fails once its date passes, and a waiver whose row redeems the challenge (or
+    /// is gone) fails as stale, so it can't outlive the fix silently.
     /// </summary>
     private static readonly Dictionary<string, Waiver> _waived = new(StringComparer.Ordinal)
     {
@@ -54,11 +55,18 @@ public sealed class ProtectedCommandTests
             .Order(StringComparer.Ordinal)
             .ToList();
 
+        var stale = _waived.Keys
+            .Where(a => !rows.Exists(r => r.Action.Value == a && r.CommandType is { } type && !Redeems(type)))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        var exempted = string.Join("; ", _waived.Select(e => $"{e.Key}: {e.Value.Reason} (owner: {e.Value.Owner})"));
+
         Assert.True(unbound.Count == 0, string.Join(Environment.NewLine, unbound) + ". Fix: set NeedsTerminal on every protected row (engine spec §6.2)");
+        Assert.True(stale.Count == 0, $"stale exemptions: [{string.Join(", ", stale)}]. Fix: remove them from _waived (exempted: {exempted})");
         Assert.True(
             unchallenged.Count == 0,
             $"protected requests without a {nameof(ChallengeAnswer)}: [{string.Join(", ", unchallenged)}]. "
-            + $"Fix: give the request a {nameof(ChallengeAnswer)} it redeems (engine spec §4.2)");
+            + $"Fix: give the request a {nameof(ChallengeAnswer)} it redeems (engine spec §4.2). Exempted: {exempted}");
     }
 
     [Fact]
