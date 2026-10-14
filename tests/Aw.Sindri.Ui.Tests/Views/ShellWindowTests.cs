@@ -773,6 +773,82 @@ public sealed class ShellWindowTests : IDisposable
         AnnouncedOnly(window, "NotRunningLive", changes, Labels.NotRunning + ": ");
     });
 
+    // Review run 5 (accessibility-tester-0): the version-mismatch card replaces the whole shell, so it takes focus (its
+    // heading) and announces itself; the sentence is spoken through a polite live region that is in the tree before the
+    // mismatch comes, including a mismatch that appears mid-session.
+    [Fact]
+    public Task A_version_mismatch_at_start_puts_focus_on_the_card_heading() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status() with { ApiVersion = 2 };
+        var (window, _) = await Show(s => s.State == ShellState.VersionMismatch);
+
+        Assert.True(Named<TextBlock>(window, "VersionMismatchText").Focusable);
+        Assert.Same(Named<TextBlock>(window, "VersionMismatchText"), Focused(window));
+    });
+
+    [Fact]
+    public Task A_version_mismatch_mid_session_moves_focus_from_the_hidden_shell_to_the_card_heading() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(Named<Border>(window, "Page").Focus(NavigationMethod.Tab));
+
+        shell.Health.Show(A.Record().Url, A.Status() with { ApiVersion = 2 });
+        await Until(() => ReferenceEquals(Focused(window), window.Get<TextBlock>("VersionMismatchText")));
+        Settle(window);
+
+        Assert.Equal(ShellState.VersionMismatch, shell.State);
+        Assert.Same(Named<TextBlock>(window, "VersionMismatchText"), Focused(window));
+    });
+
+    [Fact]
+    public Task A_version_mismatch_is_announced_through_a_polite_live_region() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        var changes = LiveChanges(window, "MismatchLive");
+
+        shell.Health.Show(A.Record().Url, A.Status() with { ApiVersion = 2 });
+        Settle(window);
+
+        Assert.Equal([(Labels.VersionMismatch, AutomationLiveSetting.Polite)], changes);
+        Assert.True(string.IsNullOrEmpty(AutomationProperties.GetName(Named<TextBlock>(window, "MismatchLive"))));
+    });
+
+    // Review run 5 (accessibility-tester-2, WCAG 4.1.3): when Sindri recovers, the banner and card clear silently and the
+    // pill isn't live, so the change back is spoken through its own polite region. Spec §12 has no sentence for it, so it
+    // says the pill's own label, "Running". Nothing is said at start-up, and the region rests when trouble comes again.
+    [Fact]
+    public Task Recovery_is_announced_as_Running_through_a_polite_live_region() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        var changes = LiveChanges(window, "RunningLive");
+        Assert.Empty(changes);
+
+        _server.UnreadableStatus = true;
+        _server.Push(A.Event(1));
+        await Until(() => shell.State == ShellState.Unreadable);
+        Settle(window);
+        Assert.Empty(changes);
+        _server.UnreadableStatus = false;
+        _server.Push(A.Event(2));
+        _clock.Advance(HealthViewModel.RetryEvery);
+        await Until(() => shell.State == ShellState.Normal);
+        Settle(window);
+
+        Assert.Equal([(Labels.Running, AutomationLiveSetting.Polite)], changes);
+        Assert.True(string.IsNullOrEmpty(AutomationProperties.GetName(Named<TextBlock>(window, "RunningLive"))));
+
+        _server.UnreadableStatus = true;
+        _server.Push(A.Event(3));
+        await Until(() => shell.State == ShellState.Unreadable);
+        Settle(window);
+
+        Assert.Equal([(Labels.Running, AutomationLiveSetting.Polite), (Labels.Sindri, AutomationLiveSetting.Off)], changes);
+    });
+
     // Review run 3 (julik-frontend-races-reviewer-0): going straight from Not running to Unreadable and back, each state's
     // new reason is spoken only through its own live region. The old state's region goes Off and rests; it never speaks
     // the new reason while it is still Polite. The sequences are exact, so a stray announcement fails.
