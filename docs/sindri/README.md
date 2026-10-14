@@ -228,7 +228,7 @@ scripts/install-sindri.sh                 # or ./setup.sh --with-sindri
 sindri profile init --ring0 --plans '*-sindri-plan-*'   # profile for this repo; backlog = the Sindri plans
 sindri profile validate
 sindri profile approve                    # shows the hash and what changed
-sindri profile approve <hash>             # you, at a terminal: type the first 6 characters to confirm
+sindri profile approve <hash>             # you, at a terminal: type the challenge's 'approve profile <hash6>' to confirm
 sindri repo onboard .              # add, approve (at a terminal), hook, index
 sindri doctor                             # expect every line ok
 sindri observe                            # the remaining Sindri plan tasks, in order

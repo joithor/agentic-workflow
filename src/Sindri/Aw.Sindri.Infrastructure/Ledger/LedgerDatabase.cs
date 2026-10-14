@@ -6,7 +6,7 @@ using Aw.Sindri.Core.Ledger;
 namespace Aw.Sindri.Infrastructure.Ledger;
 
 /// <summary>
-/// The ledger file: its connections, its migrations (events, lease, outbox_commands) and its permissions. Writers call
+/// The ledger file: its connections, its migrations (events, lease, outbox_commands, recipes) and its permissions. Writers call
 /// <see cref="Writable"/>, which migrates once per process; readers never migrate or create the file.
 /// </summary>
 internal sealed class LedgerDatabase : IDisposable
@@ -100,9 +100,18 @@ internal sealed class LedgerDatabase : IDisposable
         _ => SindriErrors.LedgerUnavailable.With($"{error.Code}: {error.Message}"),
     };
 
+    /// <summary>
+    /// The outbox table's version (engine spec §7.2, S1-D9): pinned after S1's two files, so a new file never renumbers
+    /// it and Sindri's own files are 4 and up. A file numbered 3 collides with it and the runner refuses the set.
+    /// </summary>
+    internal const int OutboxVersion = 3;
+
+    /// <summary>The first migration with the recipe registry (engine spec §4.1); reads of an older file find no recipes.</summary>
+    internal const int RecipesVersion = 4;
+
     private static IReadOnlyList<Migration> LoadMigrations()
     {
         var own = EmbeddedMigrations.Load(typeof(LedgerDatabase).Assembly, "Aw.Sindri.Infrastructure.Ledger.Migrations.").Value;
-        return [.. own, SqliteOutboxSchema.CreateMigration(own.Count + 1)];
+        return [.. own.Where(static m => m.Version < OutboxVersion), SqliteOutboxSchema.CreateMigration(OutboxVersion), .. own.Where(static m => m.Version >= OutboxVersion)];
     }
 }

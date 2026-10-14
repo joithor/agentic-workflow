@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Host.Commands.Probe;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -17,14 +18,17 @@ internal sealed record AgentSession(string? Signal, bool Terminal, bool Prover)
     /// <summary>How many ancestors the parent-process check reads.</summary>
     private const int Depth = 32;
 
-    /// <summary>
-    /// The agent-session variables (API spec §6): Claude Code, Sindri's own children, Codex's sandbox, Cursor's agent.
-    /// Provisional until the engine's harness probe pins the list (P1 plan G9).
-    /// </summary>
-    internal static readonly IReadOnlyList<string> Variables = ["CLAUDECODE", "AW_SINDRI_CHILD", "CODEX_SANDBOX", "CURSOR_AGENT"];
+    /// <summary>Set by Sindri on the processes it starts (its recursion guard): Sindri's own marker, not a probed harness's.</summary>
+    internal const string SindriChild = "AW_SINDRI_CHILD";
 
-    /// <summary>The agent harnesses' process names (provisional, P1 plan G9).</summary>
-    internal static readonly IReadOnlyList<string> Harnesses = ["claude", "codex", "cursor-agent"];
+    /// <summary>
+    /// The agent-session variables (API spec §6): the pinned harness probe's markers (engine spec §6.2,
+    /// <see cref="PinnedProbe"/>), then Sindri's own.
+    /// </summary>
+    internal static readonly IReadOnlyList<string> Variables = [.. PinnedProbe.Variables, SindriChild];
+
+    /// <summary>The ancestry patterns of the agent harnesses, from the pinned probe.</summary>
+    internal static readonly IReadOnlyList<HarnessProcess> Harnesses = PinnedProbe.Processes;
 
     /// <summary>Whether an agent signal was seen: such a CLI never starts the control plane (API spec §7).</summary>
     internal bool InAgent => Signal is not null;
@@ -49,10 +53,23 @@ internal sealed record AgentSession(string? Signal, bool Terminal, bool Prover)
     private static string? Variable(Func<string, string?> environment) =>
         Variables.FirstOrDefault(v => environment(v) is { Length: > 0 }) is { } set ? $"{set} is set" : null;
 
-    private static string? Harness(IProcessAncestry ancestry) =>
-        ancestry.Ancestors(Environment.ProcessId, Depth)
-            .Select(a => a.Name[(a.Name.LastIndexOf('/') + 1)..])
-            .FirstOrDefault(name => Harnesses.Contains(name, StringComparer.Ordinal)) is { } harness
-            ? $"parent process {harness}"
-            : null;
+    /// <summary>The first ancestor that is an agent harness, named as the refusal shows it (engine spec §6.2).</summary>
+    private static string? Harness(IProcessAncestry ancestry)
+    {
+        foreach (var ancestor in ancestry.Ancestors(Environment.ProcessId, Depth))
+        {
+            var name = HarnessProcess.BaseName(ancestor.Name);
+            if (Harnesses.Any(h => h.Name is not null && h.Matches(ancestor.Name, executable: null)))
+            {
+                return $"parent process {name}";
+            }
+
+            if (Harnesses.Any(h => h.Matches(ancestor)))
+            {
+                return $"parent process {name} ({ancestor.Executable})";
+            }
+        }
+
+        return null;
+    }
 }

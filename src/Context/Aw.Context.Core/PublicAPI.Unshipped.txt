@@ -1286,6 +1286,12 @@ override Aw.Context.Core.Sources.SourceLimits.GetHashCode() -> int
 override Aw.Context.Core.Sources.SourceLimits.ToString() -> string!
 static Aw.Context.Core.Sources.SourceLimits.operator !=(Aw.Context.Core.Sources.SourceLimits? left, Aw.Context.Core.Sources.SourceLimits? right) -> bool
 static Aw.Context.Core.Sources.SourceLimits.operator ==(Aw.Context.Core.Sources.SourceLimits? left, Aw.Context.Core.Sources.SourceLimits? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.McpArgumentsInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.McpRegisterFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.McpRegisterRepoUnknown -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.McpRepoMissing -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.McpToolUnknown -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.McpUserWide -> Aw.Kernel.ErrorDefinition!
 Aw.Context.Core.Docs.DocIndexStatus.Outdated.get -> int
 Aw.Context.Core.Docs.DocIndexStatus.Outdated.init -> void
 Aw.Context.Core.Docs.IDocIndex.Refresh(Aw.Context.Core.Engine.ContextRepo! repo, System.Collections.Generic.IReadOnlyList<string!>! globs, Aw.Context.Core.Trust.Scrubbers! scrubbers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.RepoRefresh!>!>

@@ -36,6 +36,24 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-020: session reads are off ('context.sessions.enabled: false'), on every transport.</summary>
     public static readonly ErrorDefinition SessionsDisabled = new("SND-CONTEXT-020", ErrorKind.Forbidden, "Context reads from sessions are off");
 
+    /// <summary>SND-CONTEXT-021: an MCP call without X-Sindri-Repo, so it has no repo scope (stage S-1M).</summary>
+    public static readonly ErrorDefinition McpRepoMissing = new("SND-CONTEXT-021", ErrorKind.Invalid, "The MCP call names no repo");
+
+    /// <summary>SND-CONTEXT-022: an MCP tool's arguments don't match its input schema (S-1M).</summary>
+    public static readonly ErrorDefinition McpArgumentsInvalid = new("SND-CONTEXT-022", ErrorKind.Invalid, "The MCP tool's arguments are invalid");
+
+    /// <summary>SND-CONTEXT-023: an MCP tool Sindri doesn't have (S-1M).</summary>
+    public static readonly ErrorDefinition McpToolUnknown = new("SND-CONTEXT-023", ErrorKind.NotFound, "Unknown MCP tool");
+
+    /// <summary>SND-CONTEXT-024: 'sindri mcp register' outside every profile repo, or with a repo the profile doesn't name (S-1M).</summary>
+    public static readonly ErrorDefinition McpRegisterRepoUnknown = new("SND-CONTEXT-024", ErrorKind.Invalid, "Not a repo the profile names");
+
+    /// <summary>SND-CONTEXT-025: 'sindri mcp register --apply' couldn't run the claude CLI, or it failed (S-1M).</summary>
+    public static readonly ErrorDefinition McpRegisterFailed = new("SND-CONTEXT-025", ErrorKind.Unavailable, "The claude CLI couldn't register the MCP server");
+
+    /// <summary>SND-CONTEXT-026: a user-wide 'sindri' MCP entry in a provider's config (doctor context:mcp-scope; S-1M).</summary>
+    public static readonly ErrorDefinition McpUserWide = new("SND-CONTEXT-026", ErrorKind.Conflict, "A user-wide sindri MCP entry");
+
     /// <summary>SND-CONTEXT-030: no map yet (fix: sindri context map import &lt;file&gt;).</summary>
     public static readonly ErrorDefinition NoMap = new("SND-CONTEXT-030", ErrorKind.NotFound, "No map yet");
 
@@ -66,6 +84,7 @@ public static class ContextErrors
     /// <summary>Every Context error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
         [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled,
+         McpRepoMissing, McpArgumentsInvalid, McpToolUnknown, McpRegisterRepoUnknown, McpRegisterFailed, McpUserWide,
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed];
 
     /// <summary>

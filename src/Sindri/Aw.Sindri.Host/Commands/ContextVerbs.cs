@@ -1,6 +1,7 @@
 using System.Text;
 using Aw.Context.Core.Results;
 using Aw.Sindri.Core;
+using Aw.Sindri.Host.Text;
 
 namespace Aw.Sindri.Host.Commands;
 
