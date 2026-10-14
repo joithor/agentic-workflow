@@ -111,6 +111,108 @@ anchor (`003`), a refused question (`006`), session reads off (`020`) · `2` a t
 `$AW_SINDRI_HOME/context/context.db` (default `$AW_STATE_DIR/sindri-app/context/`), owner-only (directory 0700, the
 file and its `-wal` and `-shm` 0600). Never delete it: later stages keep review decisions there.
 
+## S-3a: the product map: `context map import`, `export`, `status`
+
+The product map is a graph of what the product is: features, the surfaces people meet them on, the actions there, the
+things those actions read and write, flows, decisions, and pointers to records and code (spec §6.1). Before the
+extractor (S-4) builds it, you write it by hand and import it. S-3b adds the questions it answers (`node`, `affects`).
+
+### The map file
+
+YAML or JSON, kept **outside every repo** (a file inside a git worktree is refused with `SND-CONTEXT-005`):
+
+```yaml
+schemaVersion: 1
+kind: authored            # 'export' for a file 'context map export' wrote
+repo: aw-split-panes      # the profile's repo name the map describes
+nodes:
+  - key: feature:layout.split-pane          # the kind is the key's scheme
+    label: Split pane                       # provenance defaults to human in an authored map
+  - key: surface:command/split-vertical     # surface:<screen|pane|dialog|command|keybinding|setting|menu|route|api|job>/<name>
+    label: Split vertically (command)
+  - key: code:src/layout/SplitPane.ts
+    label: SplitPane.ts
+    provenance: deterministic
+edges:
+  - {from: "surface:command/split-vertical", to: "feature:layout.split-pane", type: part-of}
+  - from: code:src/layout/SplitPane.ts
+    to: feature:layout.split-pane
+    type: implements
+    evidence:
+      - key: repo:aw-split-panes/src/layout/SplitPane.ts   # file evidence in the repo: what a session's scope follows
+aliases:
+  - {alias: "feature:layout.splits", target: "feature:layout.split-pane"}
+decisions:                                  # each implies a decision node and its 'quotes' edge to the record
+  - record: linear:issue/0e5a1b00-0000-4000-8000-000000000103
+    quote: toggling orientation keeps the focused pane first, so the cursor never jumps
+    wording: Toggling orientation keeps focus on the first pane.
+overrides:                                  # human decisions that outlive rebuilds and imports
+  - {action: rename, target: "feature:layout.split-pane", label: Splits, who: avery, at: "2026-07-30T09:05:00Z"}
+```
+
+- **Kinds:** `feature`, `surface`, `action`, `thing`, `flow`, `decision`, `record`, `code`. **Edges** (from → to):
+  `part-of` (feature or surface → feature), `on` (action → surface), `moves-to` (surface → surface), `reads`/`writes`
+  (surface or action → thing), `depends-on` (feature → feature), `step-of` (surface or action → flow, with `order`),
+  `implements`/`tests` (code → feature, surface or action), `decides` (decision → any), `mentions` (record → any),
+  `quotes` (decision → record), `supersedes` (decision → decision).
+- Every node and edge may carry `provenance` (`deterministic`, `model`, `human`), `confidence` (0 to 1), `evidence`
+  (record keys, with an optional `span`) and `at`. **Trust is never in the file**: it is recomputed from provenance.
+- Override actions: `accept`, `reject`, `rename` (`label`), `merge` and `move` (`other`), `add` (`label`, `other` =
+  parent feature), `delete`. An override whose node no longer exists is kept as **orphaned**, listed by export and
+  status, and applies again if the node comes back.
+- The file is all or nothing: `SND-CONTEXT-031` names each shape problem by key path (`edges[3].type: 'reads' doesn't
+  go from a feature to a thing`), `SND-CONTEXT-032` each reference to a node the file doesn't define. Nothing is written.
+
+### Importing (a protected command)
+
+```bash
+$SINDRI context map import ~/maps/product-map.yaml
+# map file /Users/you/maps/product-map.yaml
+# repo aw-split-panes, authored: 19 nodes, 19 edges, 1 aliases, 1 decisions, 2 overrides
+# hash 3f0c…
+# Type the first 6 characters of 3f0c… to import it: 3f0c9a
+# Imported map v1 (current) for aw-split-panes: 19 nodes, 19 edges, 1 aliases, 1 decisions, 2 overrides
+```
+
+Import is shaped like `profile approve`: only you, at an interactive terminal, can do it (a session, a script or the
+app gets `SND-AUTH-002`), and it is bound to the file's content hash, so a file changed after you saw its hash is
+refused with `SND-CONTEXT-034`. The new version becomes `current`, the previous one `retained`, and the ledger records
+`context.map.imported`. The API lane's shared challenge isn't on this base yet; the import adopts it when that lane
+ships it. HTTP: `POST /sindri/context/map/import` with `{"path", "hash", "confirmed"}`; without a hash it only previews.
+
+### Status and export
+
+```bash
+$SINDRI context map status [--json]
+# map v2 current · aw-split-panes · created 2026-10-12T17:02:11.0000000+00:00
+# 19 nodes, 19 edges, 1 aliases, 1 decisions, 2 overrides; 0 orphaned overrides; 1 retained versions
+$SINDRI context map export [<name-or-path>] [--json]
+# Exported map v2 to $AW_SINDRI_HOME/context/exports/map-v2-20261012T170400Z.json: 19 nodes, …
+```
+
+- An export is JSON (`kind: export`) with nodes, edges with their evidence, aliases, decisions and overrides, each with
+  its original timestamp and provenance; import it back to restore the map. It is written only under
+  `$AW_SINDRI_HOME/context/exports/` (0700; files 0600, by temp file and rename): a name or relative path lands there,
+  anything outside is `SND-CONTEXT-033`, a worktree path `SND-CONTEXT-005`.
+- HTTP: `GET /sindri/context/map` and `GET /sindri/context/map/export?path=…`.
+- **Sessions** (with `context.sessions.enabled: true`) see only the nodes their repo implements: the targets of
+  `implements` edges whose file evidence is `repo:<their X-Sindri-Repo>/…`, and the edges between those nodes. A repo
+  that implements nothing in the map answers `SND-CONTEXT-003`.
+- No map yet: `SND-CONTEXT-030` (fix: `sindri context map import <file>`).
+
+### Doctor and the purge
+
+`$SINDRI doctor` adds `context:map` (warns with no map or with orphaned overrides; how far the map is behind HEAD is
+unknown until a build records its commit, S-4) and `context:retention` (warns while exports older than 14 days or
+retained versions past the newest 20 are still there). The `context-purge` service removes both: name it under
+`services:` in the profile.
+
+### Exit codes (map verbs)
+
+`0` done · `1` attention: not running (`SND-API-001`), refused (`SND-AUTH-002`), out of scope (`003`), a worktree
+path (`005`), session reads off (`020`), no map (`030`), an invalid file (`031`, `032`), outside the exports folder
+(`033`), the file changed (`034`) · `2` a tool error: the store (`004`), a usage error.
+
 ## S-5A: the onyx source, secret pointers, doctor `context:onyx`
 
 Onyx CE (pinned **v4.9.0**) indexes the work product's Linear records, Slack and docs; Sindri searches it as the

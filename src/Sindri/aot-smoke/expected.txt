@@ -4,6 +4,8 @@ warn  ledger   no ledger yet (fix: sindri)
 fail  profile  not approved (fix: sindri profile approve)
 fail  api      unreachable: no control plane is recorded (fix: sindri)
 fail  temporal not running: no dev server on this home's temporal.db (fix: sindri)
+warn  context:map no map yet (fix: sindri context map import <file>)
+ok    context:retention no expired exports; at most 20 retained map versions
 ok    context:onyx not configured (no profile is approved)
 exit 2
 ## sindri --headless (human, terminal)
@@ -58,6 +60,8 @@ ok    ledger   schema 3/3
 ok    profile  approved, hash HASH6
 fail  api      unreachable: no control plane is recorded (fix: sindri)
 fail  temporal not running: no dev server on this home's temporal.db (fix: sindri)
+warn  context:map no map yet (fix: sindri context map import <file>)
+ok    context:retention no expired exports; at most 20 retained map versions
 ok    context:onyx not configured (the approved profile names no context.sources.onyx)
 exit 2
 ## sindri recipe validate ROOT/recipes/sindri/workflow.step.yaml
