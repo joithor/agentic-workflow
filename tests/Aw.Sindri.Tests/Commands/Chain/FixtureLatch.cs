@@ -9,5 +9,8 @@ internal sealed class FixtureLatch
 
     public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    /// <summary>Completes when the first run is inside the handler.</summary>
+    public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public void Start() => Interlocked.Increment(ref _started);
 }
