@@ -207,7 +207,8 @@ A `context_query` text block looks like this (the records themselves are in `str
 ```text
 3 items in 1 sections; 0 conflicts; degraded: none
 anchors: none
-C1 repo:split-panes/docs/architecture.md#L1-L24 (current)
-C2 repo:split-panes/docs/decisions/0002-orientation-toggle.md#L1-L18 (current)
+C1 repo:split-panes/docs/architecture.md (current)
+C2 repo:split-panes/docs/decisions/0001-orientation-toggle.md (current)
+C3 repo:split-panes/docs/ops-notes.md (current)
 The records, their text fenced as untrusted, are in structuredContent; cite them as [Cn].
 ```
