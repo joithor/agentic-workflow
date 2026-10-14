@@ -30,6 +30,8 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
     private Socket? _listener;
     private Task _accepting = Task.CompletedTask;
     private bool _ended;
+    private bool _retired;
+    private Delivery? _serving;
 
     public async ValueTask<bool> TryClaim(CancellationToken cancellationToken)
     {
@@ -130,7 +132,21 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
         }
     }
 
-    public void Retire() => throw new NotSupportedException();
+    public void Retire()
+    {
+        // From now on a message is refused at once; one the listener is serving is withdrawn. Serve checks the flag
+        // after it publishes its delivery and Retire reads the delivery after it sets the flag, so one of the two sees
+        // the other whatever the order.
+        Volatile.Write(ref _retired, true);
+        try
+        {
+            Volatile.Read(ref _serving)?.Withdraw();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Answered and disposed meanwhile: nothing left to withdraw.
+        }
+    }
 
     public int? HolderProcessId()
     {
@@ -228,7 +244,13 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
             {
                 var message = await InstanceWire.Read(client, linked.Token).ConfigureAwait(false);
                 delivery = message is null ? null : new Delivery(message, client);
-                var handled = delivery is not null && _inbox.Writer.TryWrite(delivery) && await Handled(delivery, linked.Token).ConfigureAwait(false);
+                Volatile.Write(ref _serving, delivery);
+                if (delivery is not null && Volatile.Read(ref _retired))
+                {
+                    delivery.Withdraw(); // the holder is ending: nothing will act on it
+                }
+
+                var handled = delivery is not null && !delivery.Handled.Task.IsCompleted && _inbox.Writer.TryWrite(delivery) && await Handled(delivery, linked.Token).ConfigureAwait(false);
                 _ = await client.SendAsync(new[] { handled ? InstanceWire.Handled : InstanceWire.Refused }, SocketFlags.None, linked.Token).ConfigureAwait(false);
             }
             catch (Exception e) when (e is OperationCanceledException or SocketException)
@@ -240,6 +262,7 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
                 // Answered or given up: an unhandled message is skipped by the reader, and one already handed to the app
                 // is withdrawn, so the app (which checks again on the UI thread) never acts on it late.
                 delivery?.Withdraw();
+                Volatile.Write(ref _serving, null);
                 delivery?.Dispose();
             }
         }

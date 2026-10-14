@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Views;
@@ -18,6 +19,7 @@ internal sealed class SingleLaunch(TimeSpan holderWait)
     /// <summary>How long a launch waits for a holder that didn't answer to go (a quitting app settles for up to a second).</summary>
     internal static readonly TimeSpan DefaultHolderWait = TimeSpan.FromSeconds(3);
 
+    private static readonly TimeSpan _claimEvery = TimeSpan.FromMilliseconds(50);
     private const string Scheme = "sindri://";
 
     // A failure inside the app (at start-up or while it ran): the app's log names the cause, which AW_LOG_LEVEL=none hides.
@@ -104,7 +106,6 @@ internal sealed class SingleLaunch(TimeSpan holderWait)
 
     private int Launch(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors)
     {
-        _ = holderWait;
         // Before the UI starts, on the main thread with no synchronization context: blocking here deadlocks nothing.
         if (Claim(instance))
         {
@@ -116,12 +117,21 @@ internal sealed class SingleLaunch(TimeSpan holderWait)
             return 0;
         }
 
-        // No answer: the holder may have just ended (then this launch claims and runs), or it holds the claim without
-        // handling messages (a failed start-up, a wedged app), which only the user can end.
-        if (Claim(instance))
+        // No answer: the holder may have just ended (then this launch claims and runs), or be quitting (it refuses at once
+        // and goes within a second or so), or it holds the claim without handling messages (a failed start-up, a wedged
+        // app), which only the user can end. So claim until the holder goes, for a bounded time (review run 5,
+        // julik-frontend-races-reviewer-0).
+        var waited = Stopwatch.StartNew();
+        do
         {
-            return RunApp(runApp, errors);
+            if (Claim(instance))
+            {
+                return RunApp(runApp, errors);
+            }
+
+            Thread.Sleep(_claimEvery);
         }
+        while (waited.Elapsed < holderWait);
 
         var pid = instance.HolderProcessId() is { } id ? id.ToString(CultureInfo.InvariantCulture) : "unknown";
         errors.WriteLine($"sindri-ui: Sindri app is running but not answering (pid {pid}): quit it or kill it");

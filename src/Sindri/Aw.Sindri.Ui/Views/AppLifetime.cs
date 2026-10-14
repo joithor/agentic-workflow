@@ -91,6 +91,11 @@ internal sealed class AppLifetime : IDisposable
     /// <param name="message">The message's text, unparsed.</param>
     internal void Receive(string message)
     {
+        if (_quitting)
+        {
+            return;   // nothing is shown for a message once the app is ending
+        }
+
         if (string.Equals(message, InstanceMessages.Focus, StringComparison.Ordinal))
         {
             BringForward();
