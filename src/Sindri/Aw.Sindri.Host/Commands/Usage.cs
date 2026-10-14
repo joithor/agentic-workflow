@@ -30,8 +30,14 @@ internal static class Usage
         "       sindri recipe list [--stale] [--json]    one line per registered recipe; --stale: approved ones that drifted or pin a stale child",
         "       sindri recipe approve <file|id@hash>     preview, then type 'approve <id> <version>' at a terminal: 'approved <id>@<hash12>'",
         "       sindri recipe revoke <id@hash>           preview (parks, cascade, parents), then type 'revoke <id>@<hash12>' at a terminal",
-        "       sindri workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--temporal <host:port>] [--no-wait]   report an open desk run (exit 0 ok, 1 Temporal not running, 2 error)",
-        "       sindri workflow list [--query <q>] [--temporal <host:port>]   the open instances, one a line",
+        "       sindri workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]... [--json]   start an approved recipe on an item (exit 0 started or found, 1 invalid or not running, 2 refused)",
+        "       sindri workflow status <address> [--json]   one instance's state, open runs and waits (exit 1 not running, 2 no such instance)",
+        "       sindri workflow list [--needs-me | --item <id> | --state <s>] [--query <q>] [--json]   one status header per instance; --needs-me: decisions, then tasks",
+        "       sindri workflow events <address> [--follow] [--json]   the instance's events from the ledger, oldest first; --follow keeps reading",
+        "       sindri workflow answer <address> [--text <t> | --file <f>] [--grant <n> | --grant-tokens <n> | --accept | --reject | --resume] [--nonce <n>] [--json]   answer a parked instance (grant, grant-tokens, accept: type the challenge at a terminal)",
+        "       sindri workflow command <address> <verb> [--nonce <n>] [--json]   send a recipe command to the instance",
+        "       sindri workflow cancel <address> [--nonce <n>] [--json]   cancel the instance",
+        "       sindri workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--nonce <n>] [--json]   report an open desk run (exit 0 applied, 1 not running, 2 refused)",
     ];
 
     internal static readonly string Text = string.Join('\n', [.. _verbs, "exit codes: 0 ok, 1 attention needed, 2 error"]);
