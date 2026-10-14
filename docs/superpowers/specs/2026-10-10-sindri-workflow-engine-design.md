@@ -365,7 +365,7 @@ A changed child is never drift: it only marks the parent `child-stale`.
 
 1. The CLI asks the server for a challenge for one action, such as `approve workflow.step 1`,
    `revoke workflow.step@…`, `grant 1 T-1/step/1` or `accept T-1/step/1`. The server returns a one-time **challenge**, valid for 5 minutes and bound to the subject (the recipe hash and
-   version plus a digest of the pins for a drift approval; or the instance address and version, including the
+   version plus a digest of its pins, bound on every approval so a pin that moves before the answer makes it stale; or the instance address and version, including the
    child's address and version for a forwarded answer), together with the preview. If the subject changes before the answer, the
    challenge is refused.
 2. The human types the action text at a TTY, for example `grant-tokens 100k T-1/step/1`. The CLI returns it with
