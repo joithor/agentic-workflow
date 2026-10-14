@@ -66,6 +66,7 @@ public sealed class CheckContextTests
         Assert.Equal(CheckState.Warn, ContextChecks.Sources(View(sessions: true, ok, down)).State);
         Assert.StartsWith("SND-CONTEXT-011", ContextChecks.Sources(View(sessions: true, down)).Detail, StringComparison.Ordinal);
         Assert.Equal(CheckState.Fail, ContextChecks.Sources(View(sessions: true, down)).State);
+        Assert.Equal(CheckState.Warn, ContextChecks.Sources(View(sessions: true, Row(SourceState.Degraded, code: null))).State);   // why: never refreshed is degraded, not 011
     }
 
     [Fact]

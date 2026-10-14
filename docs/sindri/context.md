@@ -96,7 +96,7 @@ sources:
 ### Who may read
 
 A human (CLI at a terminal, or the app) reads every mapped repo. An agent session, on any transport (the CLI inside a
-session, plain HTTP, later MCP), is refused with `SND-CONTEXT-020` while `context.sessions.enabled` is false; with it
+session, plain HTTP, MCP), is refused with `SND-CONTEXT-020` while `context.sessions.enabled` is false; with it
 on, a session sees only the repo it names in `X-Sindri-Repo` (the CLI sends the repo of its working directory), and
 anything else answers `SND-CONTEXT-003`, the same as an unknown anchor.
 
@@ -160,6 +160,9 @@ It prints, and with `--apply` runs in the repo's main checkout:
 ```bash
 claude mcp add --transport http --scope local --header 'X-Sindri-Repo: <repo>' sindri http://127.0.0.1:<port>/sindri/mcp
 ```
+
+Exit codes (spec §8.6): `0` printed or registered · `1` attention: not a profile repo (`024`) or `--apply` from a
+session (`SND-AUTH-002`) · `2` a tool error: `claude` couldn't run or failed (`025`), a usage error.
 
 `<repo>` is the profile repo the working directory belongs to (a linked worktree resolves to its main checkout), or
 `--repo NAME`. `<port>` is the running instance's, else the profile's `api.port` (default 7410). Outside every

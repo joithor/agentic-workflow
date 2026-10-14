@@ -40,7 +40,7 @@ public sealed class McpCliTests
 
         var exit = await new McpVerbs(services, output, new AgentSession(signal, terminal, Prover: false)).Run(["register", "--apply"], TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, exit);
+        Assert.Equal(1, exit);   // why: a refused input is attention (context spec §8.6), as the context map verbs answer it
         Assert.StartsWith("SND-AUTH-002", error.ToString(), StringComparison.Ordinal);
     }
 

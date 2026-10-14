@@ -31,7 +31,7 @@ internal static class ContextChecks
         var rows = view.Value.Sources;
         var down = rows.Where(r => r.State != SourceState.Ok).Select(r => $"{r.Source.Value} {r.Repo?.Value ?? "-"} {r.Code ?? r.State.ToString().ToLowerInvariant()}").ToList();
         var counts = $"{rows.Count(r => r.State == SourceState.Ok)} of {rows.Count} sources ok";
-        if (rows.Count > 0 && down.Count == rows.Count)
+        if (rows.Count > 0 && rows.All(r => r.State == SourceState.Unavailable))   // 011 is every source unavailable; degraded ones (e.g. never refreshed) only warn
         {
             return new DoctorCheck(SourcesName, CheckState.Fail, $"{ContextErrors.AllSourcesUnavailable.Code} every source is unavailable: {string.Join("; ", down)}", "sindri context sources status");
         }
