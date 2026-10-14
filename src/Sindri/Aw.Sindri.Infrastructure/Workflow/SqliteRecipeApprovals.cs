@@ -80,6 +80,9 @@ internal sealed class SqliteRecipeApprovals(LedgerDatabase database) : IRecipeAp
     public ValueTask<Result<IReadOnlyList<RecipeApproval>>> ApprovedFrom(RecipeHash baseHash, CancellationToken cancellationToken) =>
         List(new SqlStatement(RecipeSql.SelectApprovedFrom, c => c.Bind("$baseHash", baseHash.Value)), cancellationToken);
 
+    public ValueTask<Result<IReadOnlyList<RecipeApproval>>> GeneratedFrom(RecipeHash baseHash, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("red");
+
     public ValueTask<Result<IReadOnlyList<RecipeApproval>>> Pinning(RecipeHash childHash, CancellationToken cancellationToken) =>
         List(new SqlStatement(RecipeSql.SelectPinning, c => c.Bind("$childHash", childHash.Value)), cancellationToken);
 

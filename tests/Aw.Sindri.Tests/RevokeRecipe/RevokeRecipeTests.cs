@@ -117,6 +117,45 @@ public sealed class RevokeRecipeTests
         Assert.Equal(WorkflowErrors.RecipeRevoked.Code, (await r.Issue($"revoke workflow.step@{step.Hash.Display}")).Error.Code);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task Revoke_retried_after_the_cascade_stopped_below_a_stamped_recipe_finishes_the_cascade()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var (step, fast, _) = await Seed(r);
+        var faster = RegistryData.Recipe("workflow.faster", baseRecipe: new RecipeRef(fast.Id, fast.Hash));
+        _ = await r.Recipes.Add(faster, Token);
+        _ = await r.Approvals.Approve(RegistryData.Approval(faster), Token);
+        _ = await r.Approvals.Revoke(RegistryData.Revocation(step), Token);
+        _ = await r.Approvals.Revoke(RegistryData.Revocation(fast, step.Hash), Token);   // the cascade stopped after workflow.fast
+
+        var issued = await r.Issue($"revoke workflow.step@{step.Hash.Display}");
+        Assert.True(issued.IsSuccess, issued.IsError ? issued.Error.ToString() : null);
+        var revoked = await r.Run<RevokeRecipeRequest, RevokeRecipeResponse>(
+            new RevokeRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(issued.Value.Challenge, issued.Value.Action)), RegistryHarness.Human);
+
+        Assert.True(revoked.IsSuccess, revoked.IsError ? revoked.Error.ToString() : null);
+        Assert.Equal([new RecipeRef(faster.Id, faster.Hash)], revoked.Value.Preview.Cascade);
+        Assert.Equal(fast.Hash, (await r.Approvals.Revocation(faster.Hash, Token)).Value?.CascadedFrom);
+        Assert.Equal(WorkflowErrors.RecipeRevoked.Code, (await r.Issue($"revoke workflow.step@{step.Hash.Display}")).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_resumed_revoke_wakes_the_root_as_its_first_revoker()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var (step, _, _) = await Seed(r);
+        _ = await r.Approvals.Revoke(RegistryData.Revocation(step) with { RevokedBy = "human:earlier" }, Token);   // then the cascade stopped
+        var issued = (await r.Issue($"revoke workflow.step@{step.Hash.Display}")).Value;
+
+        var resumed = await r.Run<RevokeRecipeRequest, RevokeRecipeResponse>(
+            new RevokeRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), RegistryHarness.Human);
+
+        Assert.True(resumed.IsSuccess, resumed.IsError ? resumed.Error.ToString() : null);
+        Assert.Equal("human:earlier", Assert.Single(r.Wake.Sent, n => n.Hash == step.Hash).OnBehalfOf);
+    }
+
     /// <summary>workflow.step approved and running; workflow.fast generated from it (freeze) and running; workflow.item pinning it as a child.</summary>
     private static async Task<(RegisteredRecipe Step, RegisteredRecipe Fast, RegisteredRecipe Item)> Seed(RegistryHarness r)
     {

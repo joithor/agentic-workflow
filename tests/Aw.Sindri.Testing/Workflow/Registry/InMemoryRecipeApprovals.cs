@@ -86,6 +86,10 @@ public sealed class InMemoryRecipeApprovals : IRecipeApprovals
     }
 
     /// <inheritdoc/>
+    public ValueTask<Result<IReadOnlyList<RecipeApproval>>> GeneratedFrom(RecipeHash baseHash, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("red");
+
+    /// <inheritdoc/>
     public ValueTask<Result<IReadOnlyList<RecipeApproval>>> Pinning(RecipeHash childHash, CancellationToken cancellationToken)
     {
         lock (_gate)
