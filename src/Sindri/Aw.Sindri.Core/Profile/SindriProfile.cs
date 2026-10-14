@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Core.Profile;
@@ -16,6 +17,11 @@ namespace Aw.Sindri.Core.Profile;
 /// The workflow engine's settings (engine spec S1-D11). Left out of the canonical JSON when absent, so a profile without
 /// a 'workflow:' block keeps the hash it was approved under.
 /// </param>
+/// <param name="Context">
+/// The context engine's section ('context:', context spec §8.8). Sindri can't type it (the engine owns its keys), so it
+/// keeps the JSON and the engine checks it (IContextEngine.CheckSettings) at validate and approve. Left out of the
+/// canonical JSON when absent, so a profile without it keeps its hash (and its approval).
+/// </param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record SindriProfile(
     int SchemaVersion,
@@ -24,7 +30,8 @@ public sealed record SindriProfile(
     IReadOnlyList<RepoEntry>? Repos = null,
     IReadOnlyDictionary<string, ServiceSettings>? Services = null,
     ApiSettings? Api = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] WorkflowSettings? Workflow = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] WorkflowSettings? Workflow = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Context = null)
 {
     /// <summary>The tenant key until team mode.</summary>
     public const string DefaultTenant = "local";

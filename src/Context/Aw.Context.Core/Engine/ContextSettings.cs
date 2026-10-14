@@ -1,0 +1,29 @@
+namespace Aw.Context.Core.Engine;
+
+/// <summary>
+/// The profile's 'context:' section, checked, with its defaults (spec §8.8). Later phases add their keys as init
+/// properties with defaults, so a profile written for an earlier build keeps its meaning.
+/// </summary>
+public sealed record ContextSettings
+{
+    /// <summary>The default doc globs.</summary>
+    public static IReadOnlyList<string> DefaultDocGlobs { get; } = ["docs/**/*.md", "**/PRD*.md", "**/TDD*.md"];
+
+    /// <summary>The profile repos the engine maps, or null for all of them.</summary>
+    public IReadOnlyList<ContextRepoName>? Repos { get; init; }
+
+    /// <summary>The repo-relative globs whose files the repo-docs source indexes.</summary>
+    public IReadOnlyList<string> DocGlobs { get; init; } = DefaultDocGlobs;
+
+    /// <summary>The per-query deadline.</summary>
+    public TimeSpan Deadline { get; init; } = TimeSpan.FromSeconds(4);
+
+    /// <summary>The largest token budget a request may ask for.</summary>
+    public int MaxBudget { get; init; } = 32_000;
+
+    /// <summary>Below this many fused items a query reformulates once (Phase 8).</summary>
+    public int MinHits { get; init; } = 3;
+
+    /// <summary>Whether session callers may read context at all, on any transport (spec §3). Off until approved.</summary>
+    public bool SessionsEnabled { get; init; }
+}
