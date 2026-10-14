@@ -55,7 +55,7 @@ public abstract class EndpointRecordSourceContract
             seen = e.Reason;
         }
 
-        Expect.Equal<EndpointRecordFailure?>(why, seen);
+        Expect.Equal(why, seen);
     }
 
     [Fact]
