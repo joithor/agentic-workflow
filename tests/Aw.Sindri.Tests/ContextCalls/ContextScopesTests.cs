@@ -53,9 +53,9 @@ public sealed class ContextScopesTests
     {
         var live = SliceHarness.Profile("5s");
         _h.Profiles.Live = live with { Profile = live.Profile with { Context = JsonDocument.Parse("""{"repos":["nope"]}""").RootElement.Clone() } };
-        var service = new Features.ApproveProfile.ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, FakeContextEngine.Instance);
+        var service = new Features.ApproveProfile.ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, _h.Challenges, FakeContextEngine.Instance);
 
-        var approved = await service.Handle(new Features.ApproveProfile.ApproveProfileRequest(Hash: null, Confirmed: false), TestContext.Current.CancellationToken);
+        var approved = await service.Handle(new Features.ApproveProfile.ApproveProfileRequest(Hash: null, Answer: null), TestContext.Current.CancellationToken);
 
         Assert.Equal("SND-CONTEXT-001", approved.Error.Code);
         Assert.StartsWith("context.repos: 'nope' is not a profile repo", approved.Error.Message, StringComparison.Ordinal);

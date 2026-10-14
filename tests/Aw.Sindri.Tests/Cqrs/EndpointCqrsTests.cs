@@ -44,7 +44,7 @@ public sealed class EndpointCqrsTests : IDisposable
             .Where(row => row.Route is not null && !row.Ui.StartsWith("pending:", StringComparison.Ordinal)).ToList();
 
         Assert.NotEmpty(shipped);
-        Assert.All(shipped, row => Assert.Contains(row.Method + " " + row.Route, mapped));
+        Assert.All(shipped, row => Assert.Contains(row.Method + " " + EndpointCqrsRules.Normalize(row.Route!), mapped));   // why: the filter above keeps only rows with a route
     }
 
     [Fact, Trait("Lane", "integration")]

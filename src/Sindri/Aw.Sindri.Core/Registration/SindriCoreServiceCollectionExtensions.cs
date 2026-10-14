@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Registry;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Core.Registration;
@@ -13,7 +14,8 @@ public static class SindriCoreServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the Sindri domain services: the control plane's event scope and factory, the caller of the code running now,
-    /// the lease and human token this process holds, and the Temporal runtime serve keeps.
+    /// the lease and human token this process holds, the Temporal runtime serve keeps, the registry's approve and revoke planners and its
+    /// reader, and the registry's event appender.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
@@ -25,5 +27,9 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<HeldLease>()
             .AddSingleton<HeldHumanToken>()
             .AddSingleton<TemporalRuntime>()
-            .AddSingleton<BlockCatalog>();
+            .AddSingleton<BlockCatalog>()
+            .AddScoped<RecipeApprovalPlanner>()
+            .AddScoped<RecipeRevokePlanner>()
+            .AddScoped<RecipeRegistryReader>()
+            .AddSingleton<RecipeEvents>();
 }

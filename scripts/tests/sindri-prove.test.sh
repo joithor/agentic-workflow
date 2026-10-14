@@ -32,7 +32,7 @@ cat > "$STUB" <<'EOF'
 #!/usr/bin/env bash
 echo "args=$*"
 if [ -t 0 ] && [ -t 1 ]; then echo "tty=yes"; else echo "tty=no"; fi
-for v in CLAUDECODE AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT AW_SINDRI_PROVER AW_SINDRI_PORT; do
+for v in CLAUDECODE CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_EXECPATH CLAUDE_CODE_SESSION_ID CLAUDE_PID AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT AW_SINDRI_PROVER AW_SINDRI_PORT; do
   echo "$v=${!v-<unset>}"
 done
 if [ "${STUB_READ:-0}" = 1 ]; then IFS= read -r line; echo "stdin=[$line]"; fi
@@ -134,10 +134,10 @@ STUB_EXIT=2 prove "$H" stop >/dev/null 2>&1 </dev/null; rc=$?
 check "verb_mode_keeps_the_environment: SINDRI's exit code" "$rc" "2"
 
 # --- human_mode_unsets_agent_variables_sets_the_marker_and_has_a_tty ---
-out="$(CLAUDECODE=1 AW_SINDRI_CHILD=1 CODEX_SANDBOX=seatbelt CURSOR_AGENT=1 prove "$H" human status 2>&1 </dev/null)"; rc=$?
+out="$(CLAUDECODE=1 CLAUDE_CODE_ENTRYPOINT=cli CLAUDE_CODE_EXECPATH=x CLAUDE_CODE_SESSION_ID=s CLAUDE_PID=1 AW_SINDRI_CHILD=1 CODEX_SANDBOX=seatbelt CURSOR_AGENT=1 prove "$H" human status 2>&1 </dev/null)"; rc=$?
 check "human_mode_unsets_agent_variables_sets_the_marker_and_has_a_tty: exit 0" "$rc" "0"
 contains "human_mode_unsets_agent_variables_sets_the_marker_and_has_a_tty: arguments" "$out" "args=status"
-for v in CLAUDECODE AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT; do
+for v in CLAUDECODE CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_EXECPATH CLAUDE_CODE_SESSION_ID CLAUDE_PID AW_SINDRI_CHILD CODEX_SANDBOX CURSOR_AGENT; do
   contains "human_mode_unsets_agent_variables_sets_the_marker_and_has_a_tty: $v unset" "$out" "$v=<unset>"
 done
 contains "human_mode_unsets_agent_variables_sets_the_marker_and_has_a_tty: marker" "$out" "AW_SINDRI_PROVER=1"
