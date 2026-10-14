@@ -1,7 +1,10 @@
 using System.Globalization;
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
@@ -14,14 +17,15 @@ namespace Aw.Sindri.Features.ApproveProfile;
 /// Shows or records an approval. The 'profile.approved' event is appended first and the snapshot saved second, so a
 /// failed append changes nothing and a retry after a failed save finds the event already recorded and only saves. Each
 /// approval's key names the event it follows ('profile.approved:&lt;hash&gt;:after:&lt;seq&gt;'), so approving A, B,
-/// A, B records every step and a retry computes the same key.
+/// A, B records every step and a retry computes the same key. Approving redeems the 'approve profile &lt;hash6&gt;'
+/// challenge (S1-D5) bound to the live hash; a missing, mistyped, expired or stale one is SND-PROFILE-004 and records nothing.
 /// </summary>
-internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events)
+internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events, IChallenges challenges, IContextEngine context)
     : IService<ApproveProfileRequest, ApproveProfileResponse>
 {
     public async ValueTask<Result<ApproveProfileResponse>> Handle(ApproveProfileRequest request, CancellationToken cancellationToken)
     {
-        var loaded = await live.Load(cancellationToken).ConfigureAwait(false);
+        var loaded = await Load(cancellationToken).ConfigureAwait(false);
         if (loaded.IsError)
         {
             return loaded.Error;
@@ -41,7 +45,7 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
 
         var shown = preview.Value;
 
-        if (Refusal(asked, loaded.Value, request.Confirmed) is { } refusal)
+        if (Refusal(asked, loaded.Value, request.Answer) is { } refusal)
         {
             return refusal;
         }
@@ -53,25 +57,26 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
 
         var appended = await Record(asked, shown.Changes, recorded.Value, grant, cancellationToken).ConfigureAwait(false);
         var saved = appended.IsError ? appended.Error : await approvals.Save(loaded.Value, cancellationToken).ConfigureAwait(false);
-        return saved.IsError ? saved.Error : shown with { Approved = true };
+        return saved.IsError ? saved.Error : shown with { Approved = true, Sequence = appended.Value };
     }
 
     /// <summary>
     /// Appends the approval of <paramref name="asked"/> unless the latest recorded approval already names it (the
     /// event exists and only the save failed), keyed by the event it follows.
     /// </summary>
-    private async ValueTask<Result<Unit>> Record(ProfileHash asked, IReadOnlyList<string> changes, RecordedApproval? recorded,
+    /// <returns>The approval event's sequence (the earlier one when it was already recorded).</returns>
+    private async ValueTask<Result<long>> Record(ProfileHash asked, IReadOnlyList<string> changes, RecordedApproval? recorded,
         LeaseGrant grant, CancellationToken cancellationToken)
     {
         if (recorded?.Hash == asked)
         {
-            return Unit.Value;
+            return recorded.Sequence;
         }
 
         var entry = events.Entry(EventTypes.ProfileApproved, new ProfileApproved(asked, changes),
             string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ProfileApproved}:{asked.Value}:after:{recorded?.Sequence ?? 0}"));
         var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
-        return appended.IsError ? appended.Error : Unit.Value;
+        return appended.IsError ? appended.Error : appended.Value.Sequence;
     }
 
     /// <summary>
@@ -88,15 +93,31 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
 
         var previous = latest.IsSuccess ? latest.Value : null;
         var approved = ProfileRules.IsApproved(previous?.Hash, recorded?.Hash, loaded.Hash);
-        return new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), approved);
+        return new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), approved, Sequence: null);
     }
 
-    private static Error? Refusal(ProfileHash asked, LoadedProfile live, bool confirmed) => true switch
+    private Error? Refusal(ProfileHash asked, LoadedProfile live, ChallengeAnswer? answer) => true switch
     {
         _ when asked != live.Hash => SindriErrors.ProfileHashMismatch.With(
             $"{asked.Abbreviated}… isn't the live profile's hash ({live.Hash.Value}); run 'sindri profile approve' to see it and what changed"),
-        _ when !confirmed => SindriErrors.ProfileNeedsTerminal.With(
-            "approving needs you at an interactive terminal: run 'sindri profile approve <hash>' and type the first 6 characters"),
-        _ => null,
+        _ when answer is null => SindriErrors.ProfileNeedsTerminal.With(
+            $"approving needs you at an interactive terminal: run 'sindri profile approve <hash>' and type '{ChallengeAction.ApproveProfile(asked).Text}'"),
+        _ => challenges.Redeem(answer, ChallengeAction.ApproveProfile(asked), ChallengeSubject.ForProfile(live.Hash), SindriErrors.ProfileNeedsTerminal) is { IsError: true } stale
+            ? stale.Error
+            : null,
     };
+
+    /// <summary>The live profile, refused when its context section doesn't check, its repos included: an invalid section is never approved (SND-CONTEXT-001).</summary>
+    private async ValueTask<Result<LoadedProfile>> Load(CancellationToken cancellationToken)
+    {
+        var loaded = await live.Load(cancellationToken).ConfigureAwait(false);
+        if (loaded.IsError)
+        {
+            return loaded;
+        }
+
+        var profile = loaded.Value.Profile;
+        var checkedContext = context.CheckSettings(profile.Context, [.. (profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path))]);
+        return checkedContext.IsError ? checkedContext.Error : loaded;
+    }
 }

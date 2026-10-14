@@ -4,4 +4,8 @@ namespace Aw.Sindri.Core.Control;
 /// <param name="Url">The base URL, http://127.0.0.1:port.</param>
 /// <param name="Pid">The process id.</param>
 /// <param name="Epoch">Its lease epoch; a client checks it against the status answer, so a stale file reads as not running.</param>
-public sealed record ControlEndpoint(Uri Url, int Pid, long Epoch);
+public sealed record ControlEndpoint(Uri Url, int Pid, long Epoch)
+{
+    /// <summary>The Temporal dev server this control plane started or adopted (its pid and ports), or null in a record without one.</summary>
+    public TemporalEndpoint? Temporal { get; init; }
+}

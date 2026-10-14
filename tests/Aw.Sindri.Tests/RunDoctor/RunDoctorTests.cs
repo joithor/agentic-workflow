@@ -1,3 +1,4 @@
+using Aw.Context.Testing.Engine;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Ledger;
@@ -11,11 +12,12 @@ public sealed class RunDoctorTests
 {
     private readonly SliceHarness _h = new();
     private readonly FakeControlPlaneProbe _api = new();
+    private readonly FakeTemporalServer _temporal = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private RunDoctorService Service(ILedgerStore? ledger = null) =>
-        new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events), _api, _h.Clock);
+        new(_h.Store, _h.Probe, _h.Store, new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events, FakeContextEngine.Instance), _api, _temporal, _h.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task RunDoctor_is_green_when_running_approved_and_answering()
@@ -23,14 +25,16 @@ public sealed class RunDoctorTests
         var approved = SliceHarness.Profile();
         _h.Profiles.Live = approved;
         var grant = await _h.HoldLease();
-        _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events).Handle(new ApproveProfileRequest(approved.Hash, Confirmed: true), Token);
+        _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, _h.Challenges, FakeContextEngine.Instance).Handle(new ApproveProfileRequest(approved.Hash, _h.Confirm(approved.Hash)), Token);
         _api.Answer = (new ControlEndpoint(new Uri("http://127.0.0.1:7410"), grant.Holder.Pid, grant.Epoch), new Ping(grant.Holder.Pid, grant.Epoch));
+        _ = await _temporal.Ensure(Token);
 
         var report = (await Service().Handle(new RunDoctorRequest(), Token)).Value;
 
-        Assert.Equal("lease,ledger,profile,api", string.Join(',', report.Checks.Select(c => c.Name)));
-        Assert.All(report.Checks, c => Assert.Equal(CheckState.Ok, c.State));
-        Assert.Equal(0, report.ExitCode);
+        Assert.Equal("lease,ledger,profile,api,temporal,context:map,context:retention", string.Join(',', report.Checks.Select(c => c.Name)));
+        Assert.All(report.Checks.Where(c => !c.Name.StartsWith("context:", StringComparison.Ordinal)), c => Assert.Equal(CheckState.Ok, c.State));
+        Assert.Equal((CheckState.Warn, "no map yet", "sindri context map import <file>"), (report.Checks[5].State, report.Checks[5].Detail, report.Checks[5].Fix));
+        Assert.Equal(1, report.ExitCode);   // the test engine has no map, so context:map warns (S-3a); everything else is green
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -41,6 +45,8 @@ public sealed class RunDoctorTests
         Assert.Equal(2, report.ExitCode);
         var api = report.Checks.Single(c => c.Name == "api");
         Assert.Equal((CheckState.Fail, "sindri"), (api.State, api.Fix));
+        var temporal = report.Checks.Single(c => c.Name == "temporal");
+        Assert.Equal((CheckState.Fail, "sindri"), (temporal.State, temporal.Fix));
         Assert.Equal(CheckState.Fail, report.Checks.Single(c => c.Name == "profile").State);
     }
 

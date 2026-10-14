@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Net.Sockets;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
@@ -35,7 +36,7 @@ public sealed class ServeTests : IDisposable
     public async Task The_api_serves_status_ping_events_and_stop_under_the_lease()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
+        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, NoTemporal.Use);
         _ = Pipeline.Configure(app);
         await using (var scope = app.Services.CreateAsyncScope())
         {
@@ -43,13 +44,15 @@ public sealed class ServeTests : IDisposable
             Assert.True(started.IsSuccess);
         }
 
+        app.Services.GetRequiredService<HeldHumanToken>().Hold(new HumanToken("token-of-this-start"));   // serve mints it; the stop needs it
         await app.StartAsync(Token);
         using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };
 
         var status = await http.GetFromJsonAsync("/sindri/status", HttpJson.Info<GetStatusResponse>(), Token);
         var ping = await http.GetFromJsonAsync("/sindri/ping", HttpJson.Info<Ping>(), Token);
         var events = await FirstEventLines(http);
-        var stop = await http.PostAsync(new Uri("/sindri/stop", UriKind.Relative), content: null, Token);
+        using var stopRequest = new HttpRequestMessage(HttpMethod.Post, "/sindri/stop").AsHuman(app);
+        var stop = await http.SendAsync(stopRequest, Token);
 
         Assert.True(status!.Running);
         Assert.Equal((Environment.ProcessId, status.Epoch), (ping!.Pid, ping.Epoch));
@@ -62,12 +65,12 @@ public sealed class ServeTests : IDisposable
     }
 
     [Theory(Timeout = Deadline), Trait("Lane", "integration")]
-    [InlineData("""{"hash":"nope","confirmed":true}""")]
+    [InlineData("""{"hash":"nope"}""")]
     [InlineData("""{"hash":""")]
     public async Task A_bad_approve_body_is_a_400_problem_with_SND_CLI_003_and_no_stack_trace(string json)
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
+        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, NoTemporal.Use);
         _ = Pipeline.Configure(app);
         await app.StartAsync(Token);
         using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };
@@ -106,7 +109,7 @@ public sealed class ServeTests : IDisposable
         var port = ((IPEndPoint)taken.LocalEndpoint).Port.ToString(CultureInfo.InvariantCulture);
         var error = new StringWriter();
 
-        var code = await ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => port, _ => null }, TimeProvider.System, error)
+        var code = await ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => port, _ => null }, TimeProvider.System, error, NoTemporal.Use)
             .WaitAsync(ct);
 
         Assert.Equal(2, code);
@@ -120,7 +123,7 @@ public sealed class ServeTests : IDisposable
         var error = new StringWriter();
 
         var code = await ServeCommand.Run(n => n switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_PORT" => "0", _ => null }, TimeProvider.System, error,
-            static services => services.AddHostedService<FailsToStart>()).WaitAsync(ct);
+            NoTemporal.And(static services => services.AddHostedService<FailsToStart>())).WaitAsync(ct);
 
         Assert.Equal(2, code);
         Assert.StartsWith("SND-API-003 serve couldn't start listening: ", error.ToString(), StringComparison.Ordinal);
@@ -148,27 +151,32 @@ public sealed class ServeTests : IDisposable
     }
 
     [Fact(Timeout = Deadline), Trait("Lane", "integration")]
-    public async Task Approving_a_stale_hash_through_the_api_exits_2_with_SND_PROFILE_003()
+    public async Task Approving_a_stale_hash_through_the_api_is_409_with_SND_PROFILE_003()
     {
         var ct = TestContext.Current.CancellationToken;
         _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
         await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), "schemaVersion: 1\nuser: thor\n", ct);
-        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System);
+        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, NoTemporal.Use);
         _ = Pipeline.Configure(app);
-        await using var scope = app.Services.CreateAsyncScope();
-        var grant = (await scope.ServiceProvider.GetRequiredService<IService<StartProcessRequest, StartProcessResponse>>().Handle(new StartProcessRequest(), ct)).Value.Grant;
+        await using (var scope = app.Services.CreateAsyncScope())
+        {
+            Assert.True((await scope.ServiceProvider.GetRequiredService<IService<StartProcessRequest, StartProcessResponse>>().Handle(new StartProcessRequest(), ct)).IsSuccess);
+        }
+
+        app.Services.GetRequiredService<HeldHumanToken>().Hold(new HumanToken("token-of-this-start"));
         await app.StartAsync(ct);
-        _ = await app.Services.GetRequiredService<IEndpointFile>().Write(new ControlEndpoint(new Uri(app.Urls.First()), grant.Holder.Pid, grant.Epoch), ct);
+        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };
         var stale = SliceHarness.Profile("9s").Hash;
-        var stderr = new StringWriter();
-        var probe = app.Services.GetRequiredService<IControlPlaneProbe>();
-        using var client = new ControlPlaneClient(probe, SliceHarness.Json);
-        var verbs = new Verbs(client, probe, new Output(new StringWriter(), stderr, SliceHarness.Json), scope.ServiceProvider);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/sindri/profile/approve")
+        {
+            Content = new StringContent($$"""{"hash":"{{stale.Value}}"}""", System.Text.Encoding.UTF8, "application/json"),
+        }.AsHuman(app);
 
-        var code = await verbs.Approve(stale.Value, interactive: true, new StringReader(stale.Abbreviated + "\n"), ct);
+        using var answer = await http.SendAsync(request, ct);
+        var text = await answer.Content.ReadAsStringAsync(ct);
 
-        Assert.Equal(2, code);
-        Assert.StartsWith("SND-PROFILE-003 ", stderr.ToString(), StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Conflict, answer.StatusCode);
+        Assert.Equal("SND-PROFILE-003", System.Text.Json.JsonDocument.Parse(text).RootElement.GetProperty("title").GetString());
         await app.StopAsync(ct);
     }
 }

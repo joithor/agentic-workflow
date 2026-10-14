@@ -1,3 +1,4 @@
+using Aw.Context.Testing.Engine;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
@@ -26,12 +27,16 @@ public sealed class GetStatusTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task GetStatus_reports_api_version_1() =>
+        Assert.Equal(1, (await Service().Handle(new GetStatusRequest(), Token)).Value.ApiVersion);
+
+    [Fact, Trait("Lane", "unit")]
     public async Task GetStatus_reports_epoch_services_and_the_last_heartbeat()
     {
         var approved = SliceHarness.Profile("5s");
         _h.Profiles.Live = approved;
         var grant = await _h.HoldLease();
-        _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events).Handle(new ApproveProfileRequest(approved.Hash, Confirmed: true), Token);
+        _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, _h.Challenges, FakeContextEngine.Instance).Handle(new ApproveProfileRequest(approved.Hash, _h.Confirm(approved.Hash)), Token);
         _ = await new RecordHeartbeatService(_h.Store, _h.Events, _h.Clock).Handle(new RecordHeartbeatRequest(new ScheduledRun(grant, _h.Clock.GetUtcNow())), Token);
 
         var status = (await Service().Handle(new GetStatusRequest(), Token)).Value;

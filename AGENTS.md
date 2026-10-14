@@ -110,8 +110,11 @@ dotnet run --project src/Evidence/Aw.Evidence.Host -- <run|parity|parity-plan|pa
 dotnet run --project src/BugFix/Aw.BugFix.Host -- <command> --state <dir> [options]   # bugfix-state, the C# /bugFixOrchestrator helper (docs/csharp/bugfix.md); exit 0 ok, 1 bad input, 2 usage, 3 refused
 bash src/BugFix/aot-smoke/run.sh         # bugfix-state under NativeAOT: publish (on a copy), run a bug fix in a temp repo, compare with expected.txt
 dotnet run --project src/Sindri/Aw.Sindri.Host -- [--headless | serve | status | stop | profile validate|approve | doctor]   # the C# Sindri app (S1 app shell, docs/csharp/sindri.md); state in AW_SINDRI_HOME (default $AW_STATE_DIR/sindri-app); exit 0 ok, 1 attention, 2 error
-dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe validate <file> [--json]   # check a workflow recipe in-process, no serve needed (docs/csharp/sindri-workflow.md); exit 0 pass, 1 fail, 2 usage or tool error. 'recipe eval' exits 2 until P3
-bash src/Sindri/aot-smoke/run.sh         # sindri under NativeAOT: publish (on a copy), drive start, a refused second serve, the approve preview and its non-terminal refusal, status, stop and doctor in a temp home, then recipe validate on the shipped recipes and an invalid fixture (each call bounded to 30 s), compare with expected.txt
+dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe validate <file> [--json]   # check a workflow recipe in-process, no serve needed (docs/csharp/sindri-workflow.md); exit 0 pass, 1 fail, 2 usage or tool error
+dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe eval <file> [--json] | --scaffold <file>   # run a recipe's eval cases over the pure engine (docs/csharp/sindri-workflow.md); exit 0 pass, 1 a case fails, 2 usage or tool error; --record needs the server (P4)
+dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--temporal <host:port>] [--no-wait]   # P4a: report an open desk run to serve's Temporal (frontend from control.json); exit 0, 1 Temporal not running, 2 error (docs/csharp/sindri.md)
+dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow list [--query <visibility query>] [--temporal <host:port>]   # P4a: the open recipe instances by search attributes
+bash src/Sindri/aot-smoke/run.sh         # sindri, framework-dependent (the Temporal SDK has no NativeAOT; needs scripts/binaries-lock.sh fetch temporal): publish (on a copy), drive start, a refused second serve, the approve preview and its non-terminal refusal, a session's approve and stop refused (SND-AUTH-002), the human's typed approval and stop under a pty, status (and --json's apiVersion), /sindri/mcp's initialize and tools/list, stop and doctor (on a scratch HOME) in a temp home, then recipe validate on the shipped recipes and an invalid fixture (each call bounded to 30 s), compare with expected.txt
 
 # Rules (edit .agents/rules/, then regenerate)
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index
@@ -120,6 +123,10 @@ scripts/sync-rules.sh --check           # Exit 1 if links or the Rules Index are
 # Dependency graph (deps.yaml + schemas/deps.schema.json)
 node scripts/check-deps.mjs             # Schema, tiers, cycles, fan-out, compose (DEPS-COMPOSE-001), undeclared cli/db/file edges; exit 1 on drift
 node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid graph and the edge list (added/removed vs F)
+
+# Pinned external binaries (binaries.lock: the temporal CLI and the time-skipping test server; engine spec rev 8 §0)
+scripts/binaries-lock.sh check          # Shape of binaries.lock: six fields, one version per name, all four platforms
+scripts/binaries-lock.sh fetch <name>   # Download this platform's row, verify its sha256, install under $AW_STATE_DIR/cache/bin/<name>-<version>/
 
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
 node scripts/check-rules.mjs [--json]   # Every §4b rule has a record; every active check exists; pending ones wait on their PR
@@ -139,6 +146,7 @@ bash scripts/tests/check-deps.test.sh
 bash scripts/tests/check-rules.test.sh
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/check-env-example.test.sh
+bash scripts/tests/binaries-lock.test.sh
 bash scripts/tests/denylist-check.test.sh
 bash scripts/tests/owner-check.test.sh
 bash scripts/tests/repo-templates.test.sh
@@ -147,12 +155,14 @@ bash scripts/tests/find-duplicate-skills.test.sh
 bash scripts/tests/dotnet-verify-packages.test.sh
 bash scripts/tests/install-scorer-audit.test.sh
 bash scripts/tests/install-sindri.test.sh
+bash scripts/tests/sindri-prove.test.sh
 bash scripts/tests/readiness-baseline.test.sh
 bash scripts/tests/agent-token.test.sh
 bash scripts/tests/ci-changed-areas.test.sh
 bash scripts/tests/ci-bash-tests.test.sh
 bash scripts/tests/ci-lane-budgets.test.sh
 bash scripts/tests/ci-no-any.test.sh
+bash scripts/tests/sindri-smoke-normalize.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh
@@ -180,7 +190,7 @@ sindri shape reconcile                   # move the spool into the ledger and la
 sindri observe                          # Backlog with sizes; records to the ledger when the profile is approved
 scripts/install-sindri.sh               # Build sindri, install the CLI wrapper (or ./setup.sh --with-sindri)
 GH_TOKEN="$(scripts/agent-token.sh [--repo NAME])"  # Owner/session launcher only, never inside an agent session: 1h agent App token
-scripts/denylist-check.sh <denylist> <file>...   # Work identifiers in PR text: prints only file:line and a hit count; exit 0 none, 1 hits, 2 missing/empty denylist (fails closed)
+AW_DENYLIST=<file:ABSPATH|env:VAR> scripts/denylist-check.sh <file>...   # Work identifiers in PR text; the list is injected through AW_DENYLIST (0600-or-stricter file or env var), never an argument: prints only file:line and a hit count; exit 0 none, 1 hits, 2 fails closed (unset/invalid pointer, bad or missing list; see the script header)
 scripts/owner-check.sh <stage> up [--seed] [--services a,b] [--labeling] [--session] [--repo NAME] | down   # Owner only: the scratch Sindri instance (port 7480) for a stage's owner check (context spec, owner-check outline steps 1-4 and 7)
 
 # Setup (from repo root)

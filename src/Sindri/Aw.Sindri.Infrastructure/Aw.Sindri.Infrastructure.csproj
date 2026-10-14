@@ -5,6 +5,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Aw.Sindri.Infrastructure</RootNamespace>
+    <!-- PosixProcessAncestry calls libproc's proc_pidinfo through [LibraryImport], whose generated marshalling is unsafe code. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

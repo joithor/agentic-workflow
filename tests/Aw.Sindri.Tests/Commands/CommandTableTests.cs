@@ -1,11 +1,16 @@
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Challenges;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Features.ApproveProfile;
+using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Tests.Server;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Commands;
@@ -88,15 +93,20 @@ public sealed class CommandTableTests : IDisposable
     private async Task Approve()
     {
         var ct = TestContext.Current.CancellationToken;
-        var provider = Composition.Compose(new ServiceCollection(), Environment, TimeProvider.System).BuildServiceProvider();
+        var collection = Composition.Compose(new ServiceCollection(), Environment, TimeProvider.System);
+        NoTemporal.Use(collection);   // why: approving a profile needs the lease, not a real dev server (which would outlive the test)
+        var provider = collection.BuildServiceProvider();
         await using (provider)
         {
             await using var scope = provider.CreateAsyncScope();
             var services = scope.ServiceProvider;
+            using var human = services.GetRequiredService<ICallerContextAccessor>().Enter(A.Caller().AtTerminal().Client(ClientLabel.Cli).Build());   // approve is protected
             _ = await services.GetRequiredService<IService<StartProcessRequest, StartProcessResponse>>().Handle(new StartProcessRequest(), ct);
             var approve = services.GetRequiredService<IService<ApproveProfileRequest, ApproveProfileResponse>>();
-            var hash = (await approve.Handle(new ApproveProfileRequest(Hash: null, Confirmed: false), ct)).Value.Hash;
-            Assert.True((await approve.Handle(new ApproveProfileRequest(hash, Confirmed: true), ct)).Value.Approved);
+            var hash = (await approve.Handle(new ApproveProfileRequest(Hash: null, Answer: null), ct)).Value.Hash;
+            var issued = (await services.GetRequiredService<IService<IssueChallengeRequest, IssueChallengeResponse>>()
+                .Handle(new IssueChallengeRequest("approve profile " + hash.Abbreviated), ct)).Value;
+            Assert.True((await approve.Handle(new ApproveProfileRequest(hash, new ChallengeAnswer(issued.Challenge, issued.Action)), ct)).Value.Approved);
             _ = await services.GetRequiredService<IService<StopProcessRequest, StopProcessResponse>>().Handle(new StopProcessRequest(StopReason.Stop), ct);
         }
     }

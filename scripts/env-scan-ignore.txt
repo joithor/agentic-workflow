@@ -16,7 +16,13 @@ NODE_USE_ENV_PROXY # Node's own proxy switch; sindri doctor reports it
 GIT_CONFIG_GLOBAL # git's own variable; sindri onboard forwards it to the git it runs
 
 # Set by the host (Claude Code, Cursor) when it runs our hooks or installers.
-CLAUDECODE # set by Claude Code inside its sessions; the installer skips shell edits there
+CLAUDECODE # set by Claude Code inside its sessions; the installer skips shell edits there, and sindri's CLI classes itself as a session
+CLAUDE_CODE_ENTRYPOINT # set by Claude Code inside its sessions; a pinned probe marker (sindri's CLI classes itself as a session)
+CLAUDE_CODE_EXECPATH # set by Claude Code inside its sessions; a pinned probe marker (sindri's CLI classes itself as a session)
+CLAUDE_CODE_SESSION_ID # set by Claude Code inside its sessions; a pinned probe marker (sindri's CLI classes itself as a session)
+CLAUDE_PID # set by Claude Code inside its sessions; a pinned probe marker (sindri's CLI classes itself as a session)
+CODEX_SANDBOX # set by Codex in its sandboxed sessions; sindri's CLI reads it to class itself as a session
+CURSOR_AGENT # set by Cursor's agent in its sessions (unverified); sindri's CLI reads it to class itself as a session
 CURSOR_PROJECT_DIR # set by Cursor for hook commands
 CURSOR_TRANSCRIPT_PATH # set by Cursor for hook commands
 
@@ -31,7 +37,8 @@ AW_MCP_RETIRED # set by setup.sh (servers the toolkit no longer ships) for the p
 AW_EXTERNAL_SKILL_DIRS # set by setup.sh (fetched skill packs) for the provider installers
 WITH_SINDRI # set by setup.sh --with-sindri for the Claude installer
 AW_JUDGE_CHILD # recursion guard the judge sets on the agent CLIs it starts
-AW_SINDRI_CHILD # recursion guard sindri sets on the processes it starts
+AW_SINDRI_CHILD # recursion guard sindri sets on the processes it starts; sindri's CLI classes itself as a session under it
+AW_SINDRI_PROVER # set by scripts/sindri-prove.sh human; exempts sindri's CLI from the parent-process check
 LOCK_NAME # a parameter callers set before sourcing skills/_shared/skill-lock.sh
 REF # install-sindri.sh's --ref value
 REPO # sync-rules.sh's positional argument; the script resets it before reading arguments, so the environment can't set it

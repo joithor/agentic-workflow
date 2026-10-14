@@ -1,0 +1,93 @@
+using System.Globalization;
+using Aw.Kernel;
+using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Workflow.Registry;
+
+namespace Aw.Sindri.Core.Events;
+
+/// <summary>
+/// Appends the registry's events to the ledger chain (engine spec §4.1), under the process's lease grant:
+/// 'recipe.registered:&lt;hash&gt;', 'recipe.approved:&lt;hash&gt;:after:&lt;seq&gt;' (so a drift approval of the same hash is its
+/// own event) and 'recipe.revoked:&lt;hash&gt;' (one per revoked hash, cascaded ones included). Register, approve and
+/// revoke all write through it.
+/// </summary>
+/// <param name="ledger">The ledger.</param>
+/// <param name="events">The event factory (the caller's actor and correlation).</param>
+/// <param name="held">The grant this process holds.</param>
+public sealed class RecipeEvents(ILedgerStore ledger, EventFactory events, HeldLease held)
+{
+    /// <summary>Appends 'recipe.registered' for <paramref name="recipe"/>; registering the same hash again records nothing.</summary>
+    /// <param name="recipe">The stored recipe.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>The event's position (AlreadyRecorded on a repeat), or SND-LEDGER-002 when no lease is held.</returns>
+    public ValueTask<Result<LedgerAppend>> Registered(RegisteredRecipe recipe, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        return Append(EventTypes.RecipeRegistered, new RecipeRegistered(recipe.Id, recipe.Version, recipe.Hash),
+            $"{EventTypes.RecipeRegistered}:{recipe.Hash.Value}", cancellationToken);
+    }
+
+    /// <summary>
+    /// Appends 'recipe.approved' for <paramref name="approval"/>, keyed by the latest approval event it follows. A retry
+    /// whose approval is already the latest event records nothing and returns that event.
+    /// </summary>
+    /// <param name="approval">The stored approval row.</param>
+    /// <param name="drift">True for a drift approval (the same hash re-approved with new pins).</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>The event's position, or SND-LEDGER-002 when no lease is held.</returns>
+    public async ValueTask<Result<LedgerAppend>> Approved(RecipeApproval approval, bool drift, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(approval);
+        if (held.Current is null)
+        {
+            return NoLease(EventTypes.RecipeApproved);
+        }
+
+        var latest = await ledger.Latest(EventTypes.RecipeApproved, cancellationToken).ConfigureAwait(false);
+        if (latest.IsError)
+        {
+            return latest.Error;   // refuse: without the latest approval event the key can't name what it follows
+        }
+
+        var payload = new RecipeApproved(approval.Id, approval.Version, approval.Hash, approval.Via, approval.Base, approval.Pins, drift);
+        if (latest.Value is { } previous && events.Payload<RecipeApproved>(previous) is { IsSuccess: true } read && Same(read.Value, payload))
+        {
+            return new LedgerAppend(previous.Sequence, AlreadyRecorded: true);
+        }
+
+        var after = latest.Value?.Sequence ?? 0;
+        return await Append(EventTypes.RecipeApproved, payload,
+            string.Create(CultureInfo.InvariantCulture, $"{EventTypes.RecipeApproved}:{approval.Hash.Value}:after:{after}"), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Appends 'recipe.revoked' for <paramref name="revocation"/>, with the base it cascaded from; revoking the same hash again records nothing.</summary>
+    /// <param name="revocation">The stored revocation row.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>The event's position (AlreadyRecorded on a repeat), or SND-LEDGER-002 when no lease is held.</returns>
+    public ValueTask<Result<LedgerAppend>> Revoked(RecipeRevocation revocation, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(revocation);
+        return Append(EventTypes.RecipeRevoked, new RecipeRevoked(revocation.Id, revocation.Version, revocation.Hash, revocation.CascadedFrom),
+            $"{EventTypes.RecipeRevoked}:{revocation.Hash.Value}", cancellationToken);
+    }
+
+    private static Error NoLease(string type) =>
+        SindriErrors.LedgerUnavailable.With($"no lease is held, so '{type}' can't be recorded (fix: restart sindri)");
+
+    /// <summary>Whether <paramref name="recorded"/> is the same approval as <paramref name="asked"/>, pins compared item by item.</summary>
+    private static bool Same(RecipeApproved recorded, RecipeApproved asked) =>
+        recorded.Id == asked.Id && recorded.Version == asked.Version && recorded.Hash == asked.Hash && recorded.Via == asked.Via
+        && recorded.Base == asked.Base && recorded.Drift == asked.Drift
+        && recorded.Pins.Blocks.SequenceEqual(asked.Pins.Blocks) && recorded.Pins.Children.SequenceEqual(asked.Pins.Children);
+
+    private async ValueTask<Result<LedgerAppend>> Append<TPayload>(string type, TPayload payload, string key, CancellationToken cancellationToken)
+    {
+        if (held.Current is not { } grant)
+        {
+            return NoLease(type);
+        }
+
+        return await ledger.Append(events.Entry(type, payload, key), grant, cancellationToken).ConfigureAwait(false);
+    }
+}

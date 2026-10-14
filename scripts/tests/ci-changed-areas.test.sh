@@ -94,6 +94,14 @@ expect "the NuGet supply-chain script runs dotnet (where CI runs it) and bash (i
   "$(printf 'scripts/dotnet-verify-packages.sh\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
 
+expect "a binaries.lock pin runs dotnet (it fetches and sha256-checks the pins, and its Temporal tests and host smoke run them) and bash (its test)" \
+  "$(printf 'binaries.lock\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
+expect "the binaries.lock script runs dotnet (where CI fetches with it) and bash (its test)" \
+  "$(printf 'scripts/binaries-lock.sh\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
 expect "spike projects never run dotnet" \
   "$(printf 'spikes/aot/Spike.csproj\nspikes/aot/Program.cs\nspikes/Directory.Build.props\n')" \
   "$(printf 'bash=false\ndotnet=false\npackages=[]')"

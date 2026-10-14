@@ -98,13 +98,15 @@ The hook matches by line (`grep '^no brief for'`), so a JSON log line beside it 
 ## Framework logs in http hosts
 
 An http host clears ASP.NET's logging providers (`/new-package`'s `LoopbackBinding`), so Kernel's factory is the only
-logger and ASP.NET's own lines (lifetime, hosting diagnostics, routing, Kestrel) are scrubbed JSON too. The factory
-filters by `MinimumLevel` only, with no per-category rules, and the host reads no `Logging:LogLevel` configuration.
-At the default level, information, each request therefore writes its hosting and routing lines, where a stock ASP.NET
-app would hold `Microsoft.AspNetCore` at warning. This is deliberate for now: these hosts are local, loopback-only and
-low-traffic, and the request lines carry the trace ids. A host that finds them too loud sets `AW_LOG_LEVEL=warning`;
-per-category minimums (`Microsoft.*` and `System.*` at warning) are a `TelemetryOptions` change for when the first
-http package needs them (none is planned in R2 since the bridge was retired; the scaffold's http shape stays).
+logger and ASP.NET's own lines (lifetime, routing, Kestrel) are scrubbed JSON too. The factory filters by `MinimumLevel`,
+and the host reads no `Logging:LogLevel` configuration, with **one per-category rule, in every host:**
+`Microsoft.AspNetCore.Hosting.Diagnostics` never logs below warning (warning or `AW_LOG_LEVEL`, whichever is higher). Its "Request
+starting … / Request finished …" lines carry the URL with its query string, which may hold user text or secrets that
+no scrubber rule recognizes (Sindri's `GET /sindri/context/query?q=…` put the question in `serve.log`). The cost: no
+per-request line, and so no trace id on one, at information or debug. Every other ASP.NET category (routing, Kestrel,
+lifetime) still follows `MinimumLevel`, so at information each request writes its routing lines. A host that finds
+those too loud sets `AW_LOG_LEVEL=warning`; more per-category minimums are a `TelemetryOptions` change for when a host
+needs them.
 
 ## Scrubbing on every path
 

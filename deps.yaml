@@ -15,8 +15,8 @@
 #           SQLite file, read-only), file (shared state files) or compose (a Host references a lower-tier
 #           package's Features and Infrastructure projects to call their public Add…() registration methods
 #           and nothing else: DEPS-COMPOSE-001 here, ARCH-COMPOSE-001 in tests/Aw.Architecture.Tests; context
-#           spec §4). A compose edge sits beside a project edge to the same package, so fan-out counts
-#           the package through that project edge. status: current edges exist in the source today;
+#           spec §4). A compose edge sits beside a project edge to the same package: the Host and Features
+#           reach the target's Core through that project edge. status: current edges exist in the source today;
 #           planned edges are allowed but not built yet. Both directions are checked: a current edge
 #           the scan can't find, and a planned edge it does find, both fail. Adding an edge is a reviewed
 #           change to this file.
@@ -24,13 +24,12 @@
 #           tiers (a compose edge never into tier 0, which has no Features or Infrastructure); `sublevel`
 #           orders the kernel family inside tier 0 and is allowed on tier 0 only. db and file edges point
 #           down or across, never up; cli edges may point anywhere (a contract, §4b.1a). No cycles across
-#           any kind. Fan-out (§4b.1a): limits.packageFanOut caps the packages one package declares project
-#           edges to; once C# projects exist, each project may reference at most limits.projectFanOut in-repo
-#           projects and limits.thirdPartyFanOut third-party packages (analyzers excluded; *.Host and *.Tests
-#           exempt). Only the fan-out rules take exceptions, each with a reason, at most
-#           limits.exceptionMaxDays long, and an exception that suppresses nothing fails. A DEPS-FANOUT-001
-#           exception may name the project edge it is attached to (`edge: <to>`): it then covers that one edge
-#           only, and fails (DEPS-EXC-004) when the edge isn't declared or points into test support.
+#           any kind. Fan-out (§4b.1a): once C# projects exist, each project may reference at most
+#           limits.projectFanOut in-repo projects and limits.thirdPartyFanOut third-party packages (analyzers
+#           excluded; *.Host and *.Tests exempt). There is no cap on the packages one package declares project
+#           edges to (the owner removed DEPS-FANOUT-001, 2026-10-12). Only the fan-out rules take exceptions,
+#           each with a reason, at most limits.exceptionMaxDays long, and an exception that suppresses nothing
+#           fails.
 # C# names  A project belongs to the package whose projectPrefix starts its name (longest wins), e.g.
 #           src/Judge/Aw.Judge.Core and tests/Aw.Judge.Tests both belong to Judge. Another package is
 #           reached only through its Core project (Aw.<Pkg>.Core) or a tier-0 package's library projects
@@ -74,7 +73,6 @@
 version: 1
 
 limits:
-  packageFanOut: 4
   projectFanOut: 4
   thirdPartyFanOut: 6
   exceptionMaxDays: 183
@@ -221,7 +219,7 @@ packages:
     bins: [sindri]
     db: [sindri/ledger.db, sindri-app/ledger.db]
     namespace: sindri
-    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; reaches lower tiers only through Core contracts or CLIs"
+    note: "built new in C# as an application (control plane, workflow engine, context retrieval; addendum §17.29, Q7), not ported; ts: sindri (profile, ledger, scrub, observe, index, scope, evolve) is the reference and runs until the switch; S1 (app shell: CLI and control plane, host lease, ledger, profile, API, scheduler, doctor) and workflow engine P1 (the recipe model and validator, `sindri recipe validate`) are in src/Sindri; Aw.Sindri.Workflows is the Temporal adapter (Infrastructure layer, namespace Aw.Sindri.Infrastructure.Workflows, AwAotCompatible=false for temporalio/sdk-dotnet#286; engine rev 8 §0); reaches lower tiers only through Core contracts or CLIs"
 
   # ---- outside the tiers: code that stays bash or TypeScript and calls the CLIs (§4a) ----
   - id: Hooks
@@ -387,14 +385,22 @@ edges:
     kind: project
     status: current
     note: "the aw-readiness host starts Kernel telemetry in Compose (§4b.4)"
-  # Context's tier-0 edges (context spec §4: Aw.Kernel, Aw.Kernel.Data, Redaction). Stage S-FX declares the Kernel one,
-  # which its test support (tests/Aw.Context.Testing, AwJson for the fixture files) already needs; S-1A flips it to
-  # current with the package's own projects and adds the other two.
+  # Context's tier-0 edges (context spec §4: Aw.Kernel, Aw.Kernel.Data, Redaction), current since stage S-1A.
   - from: Context
     to: Kernel
     kind: project
-    status: planned
+    status: current
     note: "Result, AwJson, IService; Aw.Context.Testing reads the fixture's history and probes through AwJson"
+  - from: Context
+    to: KernelData
+    kind: project
+    status: current
+    note: "context.db: migrations, connections and sessions (Aw.Context.Infrastructure only; S-1A repo docs, S-3a graph store)"
+  - from: Context
+    to: Redaction
+    kind: project
+    status: current
+    note: "the ingest and egress scrubbers (Aw.Context.Infrastructure only; context spec D14)"
   - from: Scorer
     to: Kernel
     kind: project
@@ -465,25 +471,16 @@ edges:
     kind: cli
     status: planned
     note: "scorer's labeler moves into scorer's Core; sindri calls it through scorer's CLI instead of copying it (§4b.1a)"
-  # ---- the context engine (context spec §4, stage S-1C; S-1A flips both to current) ----
+  # ---- the context engine (context spec §4, stage S-1C; current since S-1A) ----
   - from: Sindri
     to: Context
     kind: project
-    status: planned
-    note: "Sindri's Features and Host use the IContextEngine facade and its records in Aw.Context.Core; the DEPS-FANOUT-001 exception below is attached to this edge"
+    status: current
+    note: "Sindri's Features and Host use the IContextEngine facade and its records in Aw.Context.Core"
   - from: Sindri
     to: Context
     kind: compose
-    status: planned
+    status: current
     note: "Sindri's Host calls AddContextFeatures and AddContextInfrastructure (and nothing else from those projects) in Composition"
 
-# Sindri's project fan-out is 4 (Kernel, KernelData, KernelTelemetry, Redaction; Packets and Readiness through their
-# CLIs, spec §4c, §8) plus Context: the context engine is one of Sindri's three engines by definition (addendum
-# §17.29.2), not a dependency of convenience. Renewed on review like every exception.
-exceptions:
-  - rule: DEPS-FANOUT-001
-    subject: Sindri
-    edge: Context
-    reason: "the context retrieval engine is one of Sindri's three engines by definition (addendum §17.29.2; context spec §4), reached through its IContextEngine facade; not a dependency of convenience"
-    recorded: 2026-10-11
-    expires: 2027-04-12
+exceptions: []
