@@ -21,5 +21,31 @@ public sealed class UsageTests
     public void Help_names_no_option_the_workflow_verbs_dropped() =>
         Assert.DoesNotContain(Lines(), l => l.StartsWith("sindri workflow ", StringComparison.Ordinal) && (l.Contains("--temporal", StringComparison.Ordinal) || l.Contains("--no-wait", StringComparison.Ordinal)));
 
+    /// <summary>Output.Error exits 1 only for 'not running' and 2 for everything else, malformed input included (review run 1).</summary>
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("start")]
+    [InlineData("status")]
+    [InlineData("list")]
+    [InlineData("events")]
+    [InlineData("answer")]
+    [InlineData("command")]
+    [InlineData("cancel")]
+    [InlineData("complete")]
+    public void Help_gives_every_workflow_verb_the_exit_codes_the_output_uses(string verb) =>
+        Assert.Contains("1 not running, 2 invalid, refused or error", Assert.Single(Lines(), l => l.StartsWith($"sindri workflow {verb} ", StringComparison.Ordinal)), StringComparison.Ordinal);
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("start", "[--json]")]
+    [InlineData("answer", "[--nonce <n>] [--json]")]
+    [InlineData("command", "[--nonce <n>] [--json]")]
+    [InlineData("cancel", "[--nonce <n>] [--json]")]
+    public void The_workflow_error_usage_names_the_flags_each_verb_takes(string verb, string flags)
+    {
+        var usage = WorkflowCommandTable.UsageText;
+        var part = usage.Split(" | ").Single(p => p.TrimStart().StartsWith(verb == "start" ? "usage: sindri workflow start" : verb, StringComparison.Ordinal));
+
+        Assert.Contains(flags, part, StringComparison.Ordinal);
+    }
+
     private static IEnumerable<string> Lines() => Usage.Text.Split('\n').Select(static l => l.Trim().Replace("usage: ", string.Empty, StringComparison.Ordinal));
 }

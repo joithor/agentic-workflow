@@ -11,7 +11,7 @@ namespace Aw.Sindri.Host.Commands;
 /// </summary>
 internal static class WorkflowCommandTable
 {
-    private const string Usage =
+    internal const string UsageText =
         "usage: sindri workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]... | status <address> [--json] | "
         + "list [--needs-me | --item <id> | --state <s>] [--query <q>] [--json] | events <address> [--follow] [--json] | "
         + "answer <address> [--text …|--file …] [--grant n | --grant-tokens n | --accept | --reject | --resume] | "
@@ -28,6 +28,6 @@ internal static class WorkflowCommandTable
         ["command", .. var rest] => new ApplyCommandVerbs(desk, services, output).Command(rest, ct),
         ["cancel", .. var rest] => new ApplyCommandVerbs(desk, services, output).Cancel(rest, ct),
         ["complete", .. var rest] => CompleteCommand.Run(rest, desk, services, output, ct),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["workflow", .. args])}' is not a sindri command ({Usage})")),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["workflow", .. args])}' is not a sindri command ({UsageText})")),
     };
 }
