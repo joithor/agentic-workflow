@@ -159,7 +159,7 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   `Redactor.RulesDigest` (every rule it applies, extra patterns included, with ids, patterns, options and the scan
   engine, so a widened rule under the same id counts), length-prefixed. The factory caches the last build by the
   patterns as written. Changing a regex therefore re-cleans by itself; raise `IngestSanitizer.Version` too
-  with any change to what the sanitizer removes in code (S-2W made it 6).
+  with any change to what the sanitizer removes in code (S-2W made it 7).
 - **A ruleset per stored doc.** Migration `0003_s2w_scrub_ruleset.sql` adds `doc.ruleset` (default `''`, so every
   row S-1A wrote is outdated). A refresh treats a document as current only when its blob **and** ruleset match; one
   stored under another ruleset is cleaned again (`RepoRefresh.Recleaned` counts those indexed with text, so they are
@@ -178,7 +178,7 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   removal could have joined a tag), and `RedactionScrubber` blocks it, as it does on a regex timeout. `<style>` start
   tags go like `<img>` (the CSS after one is plain text; a whole-block rule deleted the rest of any doc that mentioned
   `<style>`). `RedactionScrubber` turns CRLF into LF before cleaning, so a blank line reads the same everywhere. Image
-  rules skip a regex lookaround (`(?<![0-9])`). The remote
+  rules leave a regex lookaround (`(?<![0-9])`) alone unless a `(` or `]` follows it. The remote
   definition's label takes backslash escapes and one line break (not a blank line), and labels are matched as
   CommonMark does (whitespace runs collapsed, case ignored), so `[x][p q]` meets `[p\nq]: https://…`.
 - **Not here: the map's text.** S-3a's map export and status (and S-3b's `node`/`affects` answers) don't scrub yet;

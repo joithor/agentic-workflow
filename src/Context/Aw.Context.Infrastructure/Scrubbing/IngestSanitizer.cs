@@ -7,8 +7,8 @@ namespace Aw.Context.Infrastructure.Scrubbing;
 /// <summary>
 /// The first half of the ingest boundary (spec §7): removes HTML comments, invisible and control characters (tab and
 /// newline stay), encoded blobs over 200 characters, images (markdown inline and reference-style, wherever the
-/// definition is, also when their text runs across line breaks (not a blank line), but not a regex lookaround such as
-/// '(?&lt;![a-z])', and HTML '&lt;img&gt;' and '&lt;image&gt;' tags), the elements
+/// definition is, also when their text runs across line breaks (not a blank line); a regex lookaround such as
+/// '(?&lt;![a-z])' is left alone unless a '(' or ']' follows it, as it would an image; and HTML '&lt;img&gt;' and '&lt;image&gt;' tags), the elements
 /// that can fetch, whenever they have an attribute
 /// ('&lt;meta&gt;', '&lt;iframe&gt;', '&lt;frame&gt;', '&lt;object&gt;', '&lt;embed&gt;', '&lt;link&gt;', '&lt;base&gt;', '&lt;script&gt;', SVG
 /// '&lt;set&gt;' and '&lt;animate…&gt;'), every other HTML tag that can fetch or point at a remote resource (one with a 'src',
@@ -32,7 +32,7 @@ internal static partial class IngestSanitizer
     /// What the sanitizer removes, as a number: part of every stored document's scrub ruleset, so a change here cleans
     /// the stored documents again at the next refresh. Raise it with any change to what is removed.
     /// </summary>
-    internal const int Version = 6;
+    internal const int Version = 7;
 
     /// <summary>The clean text, or null when it still changes after <see cref="MaxPasses"/> passes (the caller blocks it).</summary>
     /// <param name="text">The text.</param>
@@ -145,7 +145,7 @@ internal static partial class IngestSanitizer
     [GeneratedRegex("[ \\t\\r\\n\\f/\"':](?:src|srcset|imagesrcset|srcdoc|lowsrc|dynsrc|poster|background|href|data|action|formaction|style|ping)[ \\t\\r\\n\\f]{0,4000}=", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex RemoteAttribute { get; }
 
-    [GeneratedRegex("(?<!\\(\\?<?)!\\[(?:[^\\]\\n]|\\n(?![ \\t]*\\n)){0,500}\\]\\([^)\\n]{0,2000}\\)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("!\\[(?:[^\\]\\n]|\\n(?![ \\t]*\\n)){0,500}\\]\\([^)\\n]{0,2000}\\)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Image { get; }
 
     [GeneratedRegex("^(?>(?:[ ]{0,3}(?:>|[-*+]|[0-9]{1,9}[.)])[ \\t]?){0,10})[ ]{0,3}\\[(?<label>(?!\\^)(?:\\\\[^\\n]|[^\\]\\\\\\n]|\\n(?![ \\t]*\\n)){1,500})\\]:[ \\t]*(?:\\n(?:[ ]{0,3}>)*[ \\t]*)?(?:<(?://|&|[a-z][a-z0-9+.-]{1,31}:)[^>\\n]{0,2000}>|(?://|&|[a-z][a-z0-9+.-]{1,31}:)[^ \\t\\n]{0,2000})(?:[ \\t]*$|[ \\t]+[\"'(][^\\n]{0,2000}$)", RegexOptions.CultureInvariant | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
@@ -154,7 +154,7 @@ internal static partial class IngestSanitizer
     [GeneratedRegex("\\[(?<text>(?:[^\\]\\n]|\\n(?![ \\t]*\\n)){0,500})\\]\\([^)\\n]{0,2000}\\)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Link { get; }
 
-    [GeneratedRegex("(?<!\\(\\?<?)!\\[(?<text>(?:[^\\]\\n]|\\n(?![ \\t]*\\n)){0,500})\\](?:\\[[^\\]\\n]{0,500}\\])?", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("(?<!\\(\\?<?)!\\[(?<text>(?:[^\\]\\n]|\\n(?![ \\t]*\\n)){0,500})\\](?:\\[[^\\]\\n]{0,500}\\])?|!\\[(?<text>(?:[^\\]\\n]|\\n(?![ \\t]*\\n)){0,500})\\](?=[(\\]])", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ReferenceImage { get; }
 
     [GeneratedRegex("\\[(?<text>[^\\]\\n]{1,500})\\]\\[(?<label>(?:\\\\[^\\n]|[^\\]\\\\\\n]|\\n(?![ \\t]*\\n)){0,500})\\]", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]

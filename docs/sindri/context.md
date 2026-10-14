@@ -148,7 +148,8 @@ context:
   `srcset`, `imagesrcset`, `srcdoc`, `poster`, `background`, `href`, `data`, `action`, `formaction`, `style` or `ping`
   attributes: `<input type=image>`, `<video poster>`, `<source srcset>`, SVG `<use href>`, inline CSS `url()`), also
   when its quotes don't balance, and `<style>` start tags (the CSS after one is then plain text), keeping the text
-  between tags. A regex lookaround such as `(?<![0-9])` is not read as an image. Such a tag written in
+  between tags. A regex lookaround such as `(?<![0-9])` is not read as an image (unless a `(` or `]` follows it, as
+  it would an image). Such a tag written in
   prose or a code span (`` `<link rel="preconnect">` ``) is removed too; a bare `<link>` or `IEnumerable<object>` stays.
   A document the sanitizer can't settle in five passes is withheld, never kept half-cleaned: an indexed document is
   counted as `blocked` on the refresh (`context.sources.synced`) and never served; a record fetched from another source
