@@ -22,14 +22,14 @@ internal sealed class RedactionScrubberFactory(TimeProvider clock) : IScrubberFa
     public Result<Scrubbers> For(IReadOnlyList<ScrubPattern> extraPatterns)
     {
         ArgumentNullException.ThrowIfNull(extraPatterns);
-        var ruleset = Fingerprint([]);
+        var ruleset = Fingerprint(extraPatterns);
         if (Volatile.Read(ref _last) is { } last && last.Ruleset == ruleset)
         {
             return last;
         }
 
         // why: Redaction refuses a null id or pattern itself (AW-REDACT-002, -003), so a missing one is reported at its key path like any other
-        var created = Redactor.Create([.. extraPatterns.Take(0).Select(p => new ExtraPattern(p.Rule!, p.Pattern!))], Redactor.DefaultMatchTimeout, clock);
+        var created = Redactor.Create([.. extraPatterns.Select(p => new ExtraPattern(p.Rule!, p.Pattern!))], Redactor.DefaultMatchTimeout, clock);
         if (!created.IsValid)
         {
             var refused = created.Errors[0];

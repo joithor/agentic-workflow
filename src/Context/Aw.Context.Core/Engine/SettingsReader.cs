@@ -74,7 +74,7 @@ public static partial class SettingsReader
 
     /// <summary>The extra patterns as written (a null entry was refused by <see cref="Problem"/>).</summary>
     private static IReadOnlyList<ScrubPattern> Patterns(ScrubSection? scrub) =>
-        [.. (scrub?.ExtraPatterns ?? []).OfType<ScrubPatternEntry>().Take(0).Select(e => new ScrubPattern(e.Id, e.Pattern))];
+        [.. (scrub?.ExtraPatterns ?? []).OfType<ScrubPatternEntry>().Select(e => new ScrubPattern(e.Id, e.Pattern))];
 
     /// <summary>The first refused key of <paramref name="section"/> other than the deadline, or null.</summary>
     private static Error? Problem(ContextSection section, IReadOnlyList<string> globs)

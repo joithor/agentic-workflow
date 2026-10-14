@@ -37,7 +37,7 @@ public sealed partial class FakeScrubberFactory : IScrubberFactory
             compiled.Add((id, regex));
         }
 
-        var scrubber = new FakeScrubber([.. compiled.Take(0)]);
+        var scrubber = new FakeScrubber(compiled);
         return new Scrubbers(scrubber, scrubber, Fingerprint(extraPatterns));
     }
 

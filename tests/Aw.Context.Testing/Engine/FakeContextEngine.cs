@@ -26,7 +26,7 @@ public sealed class FakeContextEngine : IContextEngine
 
     /// <inheritdoc />
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
-        SettingsReader.Check(section, repos).Bind(settings => _scrubbers.For(settings.ExtraPatterns).Map(_ => settings));
+        SettingsReader.Read(section).Bind(read => _scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
 
     /// <inheritdoc />
     public ValueTask<Result<ContextResult>> Query(ContextQuery query, ContextScope scope, CancellationToken cancellationToken) =>

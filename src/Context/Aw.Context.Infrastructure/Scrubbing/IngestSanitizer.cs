@@ -52,8 +52,9 @@ internal static partial class IngestSanitizer
     private static string Once(string text)
     {
         var cleaned = Comment.Replace(text, static m => Newlines(m.Value));
+        cleaned = StyleBlock.Replace(cleaned, static m => Newlines(m.Value));
         cleaned = HtmlImage.Replace(cleaned, static m => Newlines(m.Value));
-        _ = HtmlTag; _ = RemoteAttribute; _ = StyleBlock; _ = Unquoted(string.Empty);
+        cleaned = HtmlTag.Replace(cleaned, static m => RemoteAttribute.IsMatch(Unquoted(m.Value)) ? Newlines(m.Value) : m.Value);
         cleaned = Image.Replace(cleaned, string.Empty);
         cleaned = ReferenceImage.Replace(cleaned, "${text}");
         cleaned = RemoteReferences(cleaned);
