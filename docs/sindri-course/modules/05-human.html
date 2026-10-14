@@ -15,7 +15,7 @@
           <div class="badge-item"><code class="badge-code">writes</code><span class="badge-desc"><strong>Sign:</strong> a pre-tool path guard. <strong>Lock:</strong> Sindri's verifier refuses any bundle with out-of-scope paths.</span></div>
           <div class="badge-item"><code class="badge-code">commands</code><span class="badge-desc"><strong>Sign:</strong> a gate on command strings (easily evaded). <strong>Lock:</strong> missing credentials and network make the command fail anyway.</span></div>
           <div class="badge-item"><code class="badge-code">network</code><span class="badge-desc"><strong>Lock only:</strong> a per-task egress proxy allowlist.</span></div>
-          <div class="badge-item"><code class="badge-code">reads</code><span class="badge-desc"><strong>Lock:</strong> mounts. Only the repo, pack and allowed refs exist in the container.</span></div>
+          <div class="badge-item"><code class="badge-code">reads</code><span class="badge-desc"><strong>Lock:</strong> mounts. Only the repo, pack and allowed refs exist in the container (designed: a sandbox phase comes before any unattended Step runs).</span></div>
           <div class="badge-item"><code class="badge-code">holdouts</code><span class="badge-desc"><strong>Lock:</strong> mounted only into evaluator Steps, with a canary example to detect leaks.</span></div>
         </div>
         <div class="callout callout-warning">
@@ -56,17 +56,17 @@
 
       <section class="screen animate-in">
         <h2 class="screen-heading">The right screen for each decision</h2>
-        <p>A newsroom editor approves a headline from their phone, but rewrites a story at the desk. One command layer is the authority; the CLI and the dashboard are two clients of the same handler, with the same checks and the same ledger record. <span class="ref">§10, §17.12, §17.27</span></p>
+        <p>A newsroom editor approves a headline from their phone, but rewrites a story at the desk. One command layer is the authority; the CLI and the Sindri app are two clients of the same handler, with the same checks and the same ledger record. <span class="ref">§10, §17.12, §17.27</span></p>
         <div class="arch-diagram">
           <div class="arch-zone">
             <h4 class="arch-zone-label">Pick a surface</h4>
-            <div class="arch-component" data-desc="Host dashboard (Plan 6, specced). A loopback page showing every agent on the machine, one state per session written as text: approval, input, plan ready, auth, working, background, ready, stuck, interrupted, failed, limited, crashed, ended. One attention colour means only 'needs you'."><div class="arch-icon">🖥️</div><span>Dashboard</span></div>
+            <div class="arch-component" data-desc="The Sindri app (building: U0–U2 are open PRs). An Avalonia desktop app over the loopback API: the queue, item detail and timeline, what needs you, decisions, and opening or attaching to work in Warp. One attention colour means only 'needs you'. Protected actions show the CLI command to copy instead of running."><div class="arch-icon">🖥️</div><span>Sindri app</span></div>
             <div class="arch-component" data-desc="Phone, over a tailnet (designed). Binary, low-context decisions in a swipe inbox, each signed with a passkey over (item id, item version, nonce, choice). A changed item or reused nonce is refused, and every choice can be undone for 10 seconds."><div class="arch-icon">📱</div><span>Phone</span></div>
             <div class="arch-component" data-desc="The desk (designed). Open product questions, packet edits, freezes and protected approvals, which need a passkey plus typed confirmation of the full diff's hash. Never from the phone."><div class="arch-icon">🪑</div><span>Desk</span></div>
           </div>
           <div class="arch-description">Click a surface to see what it handles</div>
         </div>
-        <p>A <span class="term" data-definition="A private network between your own devices (for example with Tailscale), so the phone can reach the dashboard without exposing it to the internet.">tailnet</span> carries phone decisions. A <span class="term" data-definition="A table declaring each command's CLI form and UI action, or 'ui: pending' with the step it is due. A test fails when a pending action passes its step, so 'later' can't become 'never'.">command registry</span> keeps the UI honest about what it can't do yet.</p>
+        <p>A <span class="term" data-definition="A private network between your own devices (for example with Tailscale), so the phone can reach Sindri without exposing it to the internet.">tailnet</span> carries phone decisions. A <span class="term" data-definition="A table declaring each command's CLI form and UI action, or 'ui: pending' with the step it is due. A test fails when a pending action passes its step, so 'later' can't become 'never'.">command registry</span> keeps the UI honest about what it can't do yet.</p>
       </section>
 
       <section class="screen animate-in">
@@ -117,7 +117,7 @@
         <h2 class="screen-heading">Check your understanding</h2>
         <div class="quiz-container" id="quiz-m5">
           <div class="quiz-question-block" data-correct="b"
-               data-explanation-right="The hook was a sign; the boundary is what holds. With no credentials or network in the container the push fails, and Sindri re-verifies anything a session hands back."
+               data-explanation-right="The hook was a sign; the boundary is what holds. With no credentials or network in the container the push fails, and Sindri re-verifies anything a session hands back. That boundary is designed, not built yet: no unattended Step runs until the sandbox phase lands."
                data-explanation-wrong="Hooks only nudge cooperative agents. The security comes from the container: no credentials, an egress allowlist and Sindri-side re-verification.">
             <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
               <p>A prompt-injected session base64-encodes <code>git push --force</code> to slip past the command hook. What stops it?</p></div></div>

@@ -133,7 +133,7 @@
         <div class="flow-animation" data-steps='[
           {"highlight":"flow-m4-packet","label":"The packet passed sindri packet validate and its hash is in the ledger."},
           {"highlight":"flow-m4-compiler","label":"The task compiler turns the next Step into a session spec. Policy = ceiling ∩ lens ∩ task.","packet":true,"from":"m4-packet","to":"m4-compiler"},
-          {"highlight":"flow-m4-session","label":"A lean container session starts with only its planned skills, agents and MCP.","packet":true,"from":"m4-compiler","to":"m4-session"},
+          {"highlight":"flow-m4-session","label":"A lean session starts in a tmux session Sindri owns, with only its planned skills, agents and MCP. You can attach from Warp and take over.","packet":true,"from":"m4-compiler","to":"m4-session"},
           {"highlight":"flow-m4-eval","label":"A QA Step checks held-out examples the implementer never saw. A script computes the verdict.","packet":true,"from":"m4-session","to":"m4-eval"},
           {"highlight":"flow-m4-evidence","label":"Evidence providers run at base and head; each acceptance example gets an artifact.","packet":true,"from":"m4-eval","to":"m4-evidence"},
           {"highlight":"flow-m4-epic","label":"Ship gate: CI green, threads resolved, evidence satisfied, at most 3 rounds. Merge into the epic.","packet":true,"from":"m4-evidence","to":"m4-epic"}
