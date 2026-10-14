@@ -1,3 +1,5 @@
+using Aw.Context.Core.Trust;
+
 namespace Aw.Context.Core.Engine;
 
 /// <summary>
@@ -26,4 +28,10 @@ public sealed record ContextSettings
 
     /// <summary>Whether session callers may read context at all, on any transport (spec §3). Off until approved.</summary>
     public bool SessionsEnabled { get; init; }
+
+    /// <summary>
+    /// The profile's extra scrub patterns ('context.scrub.extraPatterns', D14), as written: <see cref="IScrubberFactory"/>
+    /// checks them and every call scrubs with them, on ingest and on egress.
+    /// </summary>
+    public IReadOnlyList<ScrubPattern> ExtraPatterns { get; init; } = [];
 }

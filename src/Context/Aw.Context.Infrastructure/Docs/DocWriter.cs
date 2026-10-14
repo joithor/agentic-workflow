@@ -9,7 +9,7 @@ internal static class DocWriter
     /// <summary>Removes the batch's stale documents, writes its prepared ones and moves the repo's cursor to its head.</summary>
     internal static async ValueTask<Result<Unit>> Write(SqliteUnitOfWorkFactory sessions, DocBatch batch, CancellationToken cancellationToken)
     {
-        var (repo, head, removed, prepared, at) = batch;
+        var (repo, head, ruleset, removed, prepared, at) = batch;
         var begun = await sessions.BeginSession(cancellationToken).ConfigureAwait(false);
         if (begun.IsError)
         {
@@ -22,7 +22,7 @@ internal static class DocWriter
             var statements = removed.SelectMany(path => (SqlStatement[])[
                     new(DocSql.DeleteChunks, c => c.Bind("@repo", repo).Bind("@path", path)),
                     new(DocSql.DeleteDoc, c => c.Bind("@repo", repo).Bind("@path", path))])
-                .Concat(prepared.SelectMany(doc => Inserts(repo, doc)))
+                .Concat(prepared.SelectMany(doc => Inserts(repo, ruleset, doc)))
                 .Append(new SqlStatement(DocSql.Synced, c => c.Bind("@source", DocSql.Source).Bind("@repo", repo).Bind("@cursor", head).Bind("@at", at)));
             foreach (var statement in statements)
             {
@@ -54,9 +54,9 @@ internal static class DocWriter
         }
     }
 
-    private static IEnumerable<SqlStatement> Inserts(string repo, PreparedDoc doc) =>
+    private static IEnumerable<SqlStatement> Inserts(string repo, string ruleset, PreparedDoc doc) =>
         doc.Chunks.Select(chunk => new SqlStatement(DocSql.InsertChunk, c => c.Bind("@repo", repo).Bind("@path", doc.Path).Bind("@blob", doc.Blob)
                 .Bind("@start", chunk.LineStart).Bind("@end", chunk.LineEnd).Bind("@text", chunk.Text)))
             .Prepend(new SqlStatement(DocSql.InsertDoc, c => c.Bind("@repo", repo).Bind("@path", doc.Path).Bind("@blob", doc.Blob)
-                .Bind("@title", doc.Title).Bind("@blocked", doc.Blocked)));
+                .Bind("@title", doc.Title).Bind("@blocked", doc.Blocked).Bind("@ruleset", ruleset)));
 }
