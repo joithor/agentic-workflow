@@ -125,10 +125,10 @@ public sealed class FreshnessTests : IDisposable
         await Connected(() => _vm.Catalog.Controls.Count > 0);
 
         Assert.Equal(1, _server.CatalogCalls);
-        Assert.Equal(18, _vm.Catalog.Controls.Count);
-        Assert.Equal("13 actions arrive in later phases", _vm.Catalog.PendingSummary);
-        Assert.Equal(["arrives in P6", "arrives in P3", "arrives in P4", "arrives in P10a"], _vm.Catalog.Pending.Select(p => p.Heading), StringComparer.Ordinal);
-        Assert.Equal(3, _vm.Catalog.CliOnly.Count);
+        Assert.Equal(20, _vm.Catalog.Controls.Count);
+        Assert.Equal("14 actions arrive in later phases", _vm.Catalog.PendingSummary);
+        Assert.Equal(["arrives in P6", "arrives in P3", "arrives in P4", "arrives in P10a", "arrives in S-5B"], _vm.Catalog.Pending.Select(p => p.Heading), StringComparer.Ordinal);
+        Assert.Equal(4, _vm.Catalog.CliOnly.Count);
     }
 
     // §9.2: an event re-reads every view the app shows (the status and the services view); its payload is never applied.
