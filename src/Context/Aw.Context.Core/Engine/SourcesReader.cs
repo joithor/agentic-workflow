@@ -8,7 +8,7 @@ namespace Aw.Context.Core.Engine;
 /// <summary>
 /// Reads 'context.sources' for <see cref="SettingsReader"/> (spec §8.8): 'onyx' through <see cref="OnyxSettings.Create"/>
 /// (SND-CONTEXT-055 or 002 with the key path) and 'linear.teams'. The shape (a map, known keys only) is SND-CONTEXT-001
-/// naming the full key path. Linear's own token and url arrive with its native adapter (stage S-5B).
+/// naming the full key path. Linear's own token and url arrive with its native adapter (stage S-6).
 /// </summary>
 internal static partial class SourcesReader
 {
@@ -45,7 +45,7 @@ internal static partial class SourcesReader
         if (teams.FirstOrDefault(t => !TeamKey.IsMatch(t)) is { } bad)
         {
             return SettingsReader.Invalid("context.sources.linear.teams",
-                $"'{SettingsReader.Printable(bad)}' isn't a Linear team key (a capital letter, then up to 9 capitals or digits, e.g. ENG)");
+                $"'{SettingsReader.Printable(bad)}' isn't a Linear team key (a capital letter, then one or more capitals or digits, e.g. ENG)");
         }
 
         if (section?.Onyx is not { } onyx)
@@ -80,6 +80,6 @@ internal static partial class SourcesReader
             ? SettingsReader.Printable(name)
             : null;
 
-    [GeneratedRegex("^[A-Z][A-Z0-9]{0,9}\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("^" + OnyxRecordKeys.TeamKeyPattern + "\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex TeamKey { get; }
 }

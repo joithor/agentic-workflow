@@ -25,6 +25,9 @@ public static partial class OnyxRecordKeys
     private const string SlackPrefix = "slack:";
     private const string OnyxPrefix = "onyx:";
 
+    /// <summary>A Linear team key as the identifier alias reads it: a capital letter, then one or more capitals or digits ('ENG').</summary>
+    internal const string TeamKeyPattern = "[A-Z][A-Z0-9]+";
+
     /// <summary>Identifies one Onyx document.</summary>
     /// <param name="document">Its Onyx document id.</param>
     /// <param name="sourceType">Its connector ('linear', 'slack', …).</param>
@@ -100,7 +103,7 @@ public static partial class OnyxRecordKeys
             : null;
     }
 
-    [GeneratedRegex(@"^\[(?<id>[A-Z][A-Z0-9]+-[0-9]+)\] ", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(@"^\[(?<id>" + TeamKeyPattern + @"-[0-9]+)\] ", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex TitlePrefix { get; }
 
     [GeneratedRegex(@"^(?<channel>[A-Z][A-Z0-9]+)__(?<ts>[0-9]+\.[0-9]+)\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
