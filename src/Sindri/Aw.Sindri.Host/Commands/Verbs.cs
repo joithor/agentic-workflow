@@ -1,10 +1,12 @@
 using System.Globalization;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.ValidateProfile;
@@ -12,7 +14,7 @@ using Aw.Sindri.Features.ValidateProfile;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// The client verbs. status, stop and profile approve call the running control plane's API; profile validate and doctor
+/// The client verbs. status, stop, profile approve and views rebuild call the running control plane's API; profile validate and doctor
 /// run the same handlers in this process, read-only, so they work while it is down.
 /// </summary>
 /// <param name="client">The API client.</param>
@@ -47,11 +49,19 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             : await output.Text(string.Create(CultureInfo.InvariantCulture, $"stopped (pid {stopped.Value.Value.Pid}, epoch {stopped.Value.Value.Epoch} released)\n"), 0).ConfigureAwait(false);
     }
 
-    /// <summary>'sindri views rebuild'.</summary>
-    internal Task<int> RebuildViews(CancellationToken ct)
+    /// <summary>'sindri views rebuild': starts the control plane if this CLI may (API spec §7), then posts RebuildViews and prints the sequence it recorded.</summary>
+    internal async Task<int> RebuildViews(CancellationToken ct)
     {
-        _ = (client, ct);
-        throw new NotSupportedException("views rebuild: make CliViewsRebuildTests pass");
+        var down = ensureRunning is null ? null : await ensureRunning(ct).ConfigureAwait(false);
+        if (down is not null)
+        {
+            return await output.Error(down).ConfigureAwait(false);
+        }
+
+        var accepted = await client.Post<RebuildViewsRequest, CommandAccepted>("/sindri/views/rebuild", body: null, ct).ConfigureAwait(false);
+        return accepted.IsError
+            ? await output.Error(accepted.Error).ConfigureAwait(false)
+            : await output.Text(string.Create(CultureInfo.InvariantCulture, $"views rebuild requested (sequence {accepted.Value.Value.Sequence})\n"), 0).ConfigureAwait(false);
     }
 
     internal async Task<int> Validate(bool json, CancellationToken ct)

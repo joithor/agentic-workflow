@@ -70,6 +70,8 @@ internal static class CommandTable
             ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
             ["profile", "approve", .. var rest] when Approval(rest) is { } a => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!a.NoStart, c))
                 .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
+            ["views", "rebuild", .. var rest] when NoStart(rest) is { } noStart => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!noStart, c))
+                .RebuildViews(ct).ConfigureAwait(false),
             ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
             ["workflow", .. var rest] => await WorkflowCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
@@ -91,6 +93,14 @@ internal static class CommandTable
     {
         [] => false,
         ["--json"] => true,
+        _ => null,
+    };
+
+    /// <summary>'views rebuild [--no-start]'.</summary>
+    private static bool? NoStart(string[] rest) => rest switch
+    {
+        [] => false,
+        ["--no-start"] => true,
         _ => null,
     };
 
