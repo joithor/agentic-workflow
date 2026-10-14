@@ -12,10 +12,10 @@ namespace Aw.Sindri.Host.Commands;
 internal static class WorkflowCommandTable
 {
     internal const string UsageText =
-        "usage: sindri workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]... | status <address> [--json] | "
+        "usage: sindri workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]... [--json] | status <address> [--json] | "
         + "list [--needs-me | --item <id> | --state <s>] [--query <q>] [--json] | events <address> [--follow] [--json] | "
-        + "answer <address> [--text …|--file …] [--grant n | --grant-tokens n | --accept | --reject | --resume] | "
-        + "command <address> <verb> | cancel <address> | complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--nonce <n>] [--json]";
+        + "answer <address> [--text …|--file …] [--grant n | --grant-tokens n | --accept | --reject | --resume] [--nonce <n>] [--json] | "
+        + "command <address> <verb> [--nonce <n>] [--json] | cancel <address> [--nonce <n>] [--json] | complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--nonce <n>] [--json]";
 
     /// <summary>Runs one 'workflow' verb: the writes as clients of the API through <paramref name="desk"/>, the reads in process.</summary>
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, RecipeDesk desk, CancellationToken ct) => args switch

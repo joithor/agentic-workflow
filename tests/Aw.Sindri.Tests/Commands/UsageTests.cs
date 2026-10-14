@@ -42,7 +42,10 @@ public sealed class UsageTests
     public void The_workflow_error_usage_names_the_flags_each_verb_takes(string verb, string flags)
     {
         var usage = WorkflowCommandTable.UsageText;
-        var part = usage.Split(" | ").Single(p => p.TrimStart().StartsWith(verb == "start" ? "usage: sindri workflow start" : verb, StringComparison.Ordinal));
+        var verbs = new[] { "start", "status", "list", "events", "answer", "command", "cancel", "complete" };
+        var from = usage.IndexOf(verb == "start" ? "workflow start " : $" | {verb} ", StringComparison.Ordinal);
+        var end = verbs.Select(v => usage.IndexOf($" | {v} ", from + 1, StringComparison.Ordinal)).Where(i => i > 0).DefaultIfEmpty(usage.Length).Min();
+        var part = usage[from..end];
 
         Assert.Contains(flags, part, StringComparison.Ordinal);
     }

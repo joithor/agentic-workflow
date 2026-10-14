@@ -14,7 +14,7 @@ namespace Aw.Sindri.Host.Commands;
 /// 1 MiB) and sends its content, never its path, to the API's complete route, where the command chain classes the caller
 /// (an agent session is refused SND-AUTH-002). It prints the new status header and what happened ('-> checks', or
 /// 'already applied (-> checks)' for a repeated nonce); '--json' prints the response with the nonce it used. Without
-/// '--nonce' the instance's nonce route issues one first. Exit 0 applied, 2 refused (SND-WF-005, -008, -009 …), 1 not running.
+/// '--nonce' the instance's nonce route issues one first. Exit 0 applied, 1 not running, 2 invalid, refused (SND-WF-005, -008, -009 …) or error.
 /// </summary>
 internal static class CompleteCommand
 {

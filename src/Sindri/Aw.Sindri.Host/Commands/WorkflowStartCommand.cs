@@ -10,7 +10,7 @@ namespace Aw.Sindri.Host.Commands;
 /// 'sindri workflow start &lt;recipe&gt; --item &lt;id&gt; [--attempt next] [--fact &lt;key&gt;=&lt;file&gt;]… [--json]'
 /// (engine spec rev 8 §5.1, §6.1, §6.3; engine P4 unit (b)). The CLI reads each fact file (at most 1 MiB) and sends its
 /// name and content, never its path, to the API's StartInstance route. It prints the status header; an attempt that has ended
-/// adds 'start a new one with --attempt next'. Exit 0 started or found, 2 refused (SND-WF-012 …), 1 invalid or not running.
+/// adds 'start a new one with --attempt next'. Exit 0 started or found, 1 not running, 2 invalid, refused (SND-WF-012 …) or error.
 /// </summary>
 internal static class WorkflowStartCommand
 {
