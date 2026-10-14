@@ -132,22 +132,20 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
     }
 
     [Fact]
-    public async Task An_item_event_seen_before_its_instance_is_visible_still_reaches_it_within_the_hold()
+    public async Task An_item_event_does_not_reach_an_instance_started_after_it()
     {
         await Serve(async sindri =>
         {
             _ = await Append(sindri, "item.routed", Router, "T-45", """{"outcome":"startable"}""");
-            await Bridge(sindri);   // why: visibility lists no instance of T-45 yet (it lags the start), so the cursor moves past the event
+            await Bridge(sindri);   // no instance of T-45 is live yet, so the cursor moves past the event
 
-            var relay = await Start(sindri, "workflow.relay", "T-45", attempt: 1);
+            var later = await Start(sindri, "workflow.relay", "T-45", attempt: 2);   // a later attempt
             await Visible(sindri, "T-45", 1);
-            await Bridge(sindri);   // the held window re-delivers it to the instance it missed
+            await Bridge(sindri);
+            await Bridge(sindri);
 
-            var view = await WorkflowsHarness.Until(relay, static v => v.State != "routed");
-            Assert.Equal("claimed", view.State);
-            Assert.Equal(1, await Signals(relay));
-            await Bridge(sindri);   // and only once
-            Assert.Equal(1, await Signals(relay));
+            Assert.Equal("routed", (await later.QueryAsync(static wf => wf.GetInstance())).State);
+            Assert.Equal(0, await Signals(later));
         });
     }
 

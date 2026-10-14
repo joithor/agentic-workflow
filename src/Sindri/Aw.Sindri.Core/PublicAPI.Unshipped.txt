@@ -4118,10 +4118,12 @@ Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Equals(Aw.Sindri.Core.Workflow.E
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Address.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.State.init -> void
-Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Deconstruct(out string! Address, out string? State, out bool NeedsYou) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Deconstruct(out string! Address, out string? State, out bool NeedsYou, out System.DateTimeOffset? StartedAt) -> void
 Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.Address.init -> void
 Aw.Sindri.Core.Control.ITemporalWorker.Run(Aw.Sindri.Core.Control.TemporalEndpoint! endpoint, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.InstanceRow(string! Address, string? State, bool NeedsYou) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.InstanceRow(string! Address, string? State, bool NeedsYou, System.DateTimeOffset? StartedAt = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow.StartedAt.init -> void
 Aw.Sindri.Core.Control.TemporalRuntime
 Aw.Sindri.Core.Control.TemporalRuntime.Stop(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Sindri.Core.Control.TemporalRuntime.TemporalRuntime(Aw.Sindri.Core.Control.ITemporalServer! server, System.TimeProvider! clock) -> void

@@ -14,10 +14,12 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// The window is in memory: it covers the seconds visibility lags, not a serve restart.
 /// </summary>
 /// <param name="instances">The live instances, by a visibility query on 'Item'.</param>
-/// <param name="times">'workflow.eventHold'.</param>
 /// <param name="clock">The bridge's clock.</param>
-internal sealed class HeldItemEvents(IWorkflowInstances instances, ProfileWorkflowTimes times, TimeProvider clock)
+internal sealed class HeldItemEvents(IWorkflowInstances instances, TimeProvider clock)
 {
+    /// <summary>How long a delivered item event stays in the window.</summary>
+    internal static readonly TimeSpan VisibilityLag = TimeSpan.FromHours(24);
+
     private readonly Lock _gate = new();
     private readonly List<Held> _held = [];
 
@@ -50,7 +52,7 @@ internal sealed class HeldItemEvents(IWorkflowInstances instances, ProfileWorkfl
     /// <returns>The deliveries still owed; mark each with <see cref="Delivered"/> once it is sent.</returns>
     public async ValueTask<Result<IReadOnlyList<(WaitSatisfied Trigger, InstanceAddress Target)>>> Owed(CancellationToken cancellationToken)
     {
-        var hold = (await times.Read(cancellationToken).ConfigureAwait(false)).EventHold;
+        var hold = VisibilityLag;
         var now = clock.GetUtcNow();
         Held[] held;
         lock (_gate)
