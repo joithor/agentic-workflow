@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Aw.Context.Core.Results;
 
 /// <summary>Who produced a fact (spec §6.1).</summary>
-[JsonConverter(typeof(JsonStringEnumConverter<Provenance>))]
+[JsonConverter(typeof(StrictEnumConverter<Provenance>))]
 public enum Provenance
 {
     /// <summary>Deterministic extraction or a source record as it stands.</summary>

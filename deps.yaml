@@ -395,7 +395,7 @@ edges:
     to: KernelData
     kind: project
     status: current
-    note: "context.db: migrations, connections and sessions (Aw.Context.Infrastructure only)"
+    note: "context.db: migrations, connections and sessions (Aw.Context.Infrastructure only; S-1A repo docs, S-3a graph store)"
   - from: Context
     to: Redaction
     kind: project

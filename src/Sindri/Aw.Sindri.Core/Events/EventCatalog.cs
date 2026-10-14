@@ -14,6 +14,7 @@ public static class EventCatalog
         new(EventTypes.ProfileApproved, Public: true, typeof(ProfileApproved), "profile.approved:<hash>:after:<seq>"),
         new("service.heartbeat", Public: true, typeof(Heartbeat), "service.heartbeat:<epoch>:<slot>"),
         new(EventTypes.ContextSourcesSynced, Public: true, typeof(ContextSourcesSynced), "context.sources.synced:<epoch>:<slot>"),
+        new(EventTypes.ContextMapImported, Public: true, typeof(ContextMapImported), "context.map.imported:<hash>:v<version>"),
         new(EventTypes.CommandHandled, Public: false, PublicPayload: null, "command.handled:<commandId>"),
         new(EventTypes.RecipeRegistered, Public: true, typeof(RecipeRegistered), "recipe.registered:<hash>"),
         new(EventTypes.RecipeApproved, Public: true, typeof(RecipeApproved), "recipe.approved:<hash>:after:<seq>"),

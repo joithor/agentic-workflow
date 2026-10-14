@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Features.QueryContext;
 using Aw.Context.Features.RefreshDocs;
@@ -14,7 +15,8 @@ namespace Aw.Context.Features;
 internal sealed class ContextEngine(
     IService<QueryContextRequest, ContextResult> query,
     IService<SourcesStatusRequest, SourcesView> sources,
-    IService<RefreshDocsRequest, RefreshReport> refresh) : IContextEngine
+    IService<RefreshDocsRequest, RefreshReport> refresh,
+    IContextMap map) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
         SettingsReader.Check(section, repos);
@@ -27,4 +29,21 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) =>
         refresh.Handle(new RefreshDocsRequest(scope), cancellationToken);
+
+    public ValueTask<Result<MapFilePreview>> PreviewMap(string path, ContextScope scope, CancellationToken cancellationToken) =>
+        map.PreviewMap(path, scope, cancellationToken);
+
+    public ValueTask<Result<MapImported>> ImportMap(string path, string confirmedHash, ContextScope scope, CancellationToken cancellationToken) =>
+        map.ImportMap(path, confirmedHash, scope, cancellationToken);
+
+    public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) =>
+        map.ExportMap(path, scope, cancellationToken);
+
+    public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken) => map.MapStatus(scope, cancellationToken);
+
+    public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) => map.CheckMap(cancellationToken);
+
+    public ValueTask<Result<MapHealth>> CheckRetention(CancellationToken cancellationToken) => map.CheckRetention(cancellationToken);
+
+    public ValueTask<Result<PurgeReport>> PurgeExpired(CancellationToken cancellationToken) => map.PurgeExpired(cancellationToken);
 }
