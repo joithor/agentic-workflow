@@ -106,6 +106,26 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
     }
 
     [Fact]
+    public async Task Cancel_again_with_its_nonce_after_the_instance_ended_is_already_applied_and_records_nothing()
+    {
+        await using var served = await Served.Start(_harness.Home, server.Environment);
+        _ = await served.Cli("start", "workflow.step", "--item", "T-19", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
+        _ = await served.Until("T-19/step/1", static v => v.Task is not null);
+        string[] cancel = ["cancel", "T-19/step/1", "--nonce", new string('c', 32)];
+
+        var first = await served.Cli(cancel);
+        _ = await served.Until("T-19/step/1", static v => v.State == "cancelled");
+        var events = await served.Events("T-19/step/1");
+        var again = await served.Cli(cancel);
+
+        Assert.Equal((0, string.Empty), (first.Exit, first.Stderr));
+        Assert.Equal("  -> cancelled", first.Lines[1]);
+        Assert.Equal((0, string.Empty), (again.Exit, again.Stderr));
+        Assert.Equal("  already applied (-> cancelled)", again.Lines[1]);
+        Assert.Equal(events, await served.Events("T-19/step/1"));
+    }
+
+    [Fact]
     public async Task Answer_while_nothing_waits_for_one_is_SND_WF_003_and_records_nothing()
     {
         await using var served = await Served.Start(_harness.Home, server.Environment);
