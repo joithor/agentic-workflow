@@ -39,7 +39,7 @@ public abstract class InstanceLivenessContract
 
         var live = await liveness.IsLive(Address, Token);
 
-        Expect.True(live.IsSuccess);
+        Expect.True(live.IsSuccess, live.IsError ? live.Error.ToString() : string.Empty);
         Expect.True(!live.Value);
     }
 
