@@ -120,3 +120,58 @@ Source: `impeccable-critique.md`, run 2. Apply in every file where the element a
 4. **One behind-sheet rule.** Workflows (behind workflow-project and workflow-incident), Work (behind item-sheet) and
    Recipes (behind recipe-inspector) all reflow to the narrow live list: id · title · state, full-width headers, no
    scrim, no `inert`, no sliced columns.
+
+## Wave 4: the calm pass (owner, 2026-10-14: "too busy compared to Superplane or Human Layer")
+
+Reference patterns: Human Layer's task view (a small uppercase status chip, the title with at most one tag, when,
+one action; no borders inside the panel; the Linear key as the only id); Superplane's cards (one title, one chip,
+one age). Eight rules, applied to every page. Where a rule and an earlier wave disagree, this wave wins.
+
+1. **Sections by surface, not cards.** Pages have no bordered or rounded panels. A section is a heading at 15 px / 500
+   with 32 px above it; consecutive sections alternate bands (canvas, then surface-1, full width of the page column);
+   hairlines only between table rows. The sheet keeps its card (the one lifted thing); menus and the palette keep theirs.
+2. **Ids recede.** Titles lead every row. `ITM-…`, `REQ-…`, `PRJ-…` and `snd-…` ids are hidden by default
+   (`.id` visible on row hover and focus-within, always in the sheet header, always inside copyable commands). Linear
+   keys (`ENG-511`, `APP-212`) stay visible where the row has one. The engine table and the history keep their ids
+   (they are the subject there).
+3. **One inline action per row**: the resolving action, then a ▾ holding the rest. No second button, no kbd hint in
+   rows (hints live in `?` and appear on focus). Copyable command lines move into the ▾ and the sheet; the protected
+   button still reveals its line in place when pressed.
+4. **Three or four columns per list**: status chip · title (+ at most one tag) · when · action. Workflows' stage
+   columns become one slim segmented progress bar per row (`▰▰▰▱▱▱`, one segment per state, the current one named
+   beside it); Agents rows: chip · session's item title · when · action, the meter only on hover/focus or in the sheet;
+   Recipes keeps its numbers but drops OPEN and TREND into the inspector; System's engine table keeps its columns.
+5. **A real type scale**: page title 20 / 600; section heading 15 / 500; row title 14 / 500; body 13; meta 12; status
+   chips 11 / 500 uppercase. Nothing else at 11. Hierarchy by size and weight.
+6. **Colour groups, chips state.** The attention tint (`--attn-soft`) sits behind the whole Needs you section once,
+   never per row. State is an uppercase chip in tinted ink: PARKED, ESCALATED, DECISION, FAILED, PROFILE, WITH YOU,
+   LIVE, RUNNING, QUEUED, DONE, DEGRADED, OK (chip background `--s2`, text `--ink-muted`; attention chips text
+   `--attn`; failed `--error`; live and ok `--success`). The glyph-plus-word pairs and the legends go. The accent
+   stays on the one primary per page and the focus ring.
+7. **Nothing repeated.** Repo tags only when a row's repo differs from its section's majority; "needs you now" and
+   the per-row motion words go; the glyph legend partial goes; the health strip becomes one sentence.
+8. **Density by rhythm.** 40 px rows, 16 px gutters, five rows per Home section then "all N →"; 24 px between a
+   heading and its rows.
+
+Also in this wave: Home's tool-step rows (ITM-01JE9, ITM-01JD6) get `Open instance ▾`, not Attach, as Agents has.
+
+### Wave 4a: the shell (one script, all eleven files)
+The base CSS gains the type scale (rule 5), the `.chip` set (rule 6), `.section` and `.band` (rule 1), `.id` hover
+rule (rule 2), 40 px rows (rule 8); the panel border and radius rules are removed from page CSS where they apply to
+page sections (not the sheet, menus, palette). The legend partial and `.motion` words are removed everywhere. The
+health strip becomes the one sentence. Nav unchanged.
+
+### Wave 4b: per page
+- home.html: the drawing in the owner's message of 2026-10-14 (Needs you band with five chip rows and one action each;
+  Workflows with progress bars; Running and Queued as two chip lists; the one-line health sentence).
+- workflows.html: chip · subject title · progress bar with the stage name · NOW · when · action; the recipe group headings
+  as section headings, not table captions.
+- workflow-project.html, workflow-incident.html, item-sheet.html: the frames keep the sheet card; inside it, FACTS and
+  CHILDREN become sections (rule 1) and children rows follow rule 3 and 4; the list behind follows the page rules.
+- recipes.html, recipe-inspector.html: chip · recipe · runs · done without you % · median · last change · action;
+  the inspector's small panels become sections in one band.
+- agents.html: per rule 4; the group headings as section headings; BY AGENT and BUDGET as two sections side by side
+  without borders.
+- context.html, context-filemap.html: the three bands stay (they are the design) but lose their panel borders: the
+  band backgrounds alternate instead; node card, map review and sources become sections.
+- system.html: the graph and impact lose their panel borders (alternating bands); engine table keeps its columns.
