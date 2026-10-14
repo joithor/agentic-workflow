@@ -69,7 +69,7 @@ public sealed class StateTimersTests
     private static WorkflowInstance Applied(WorkflowInstance instance, Trigger trigger)
     {
         var recipe = instance.Recipe.Id == Item.Id ? Item : Step;
-        var decision = TransitionDecision.Decide(new DecisionInput(instance, recipe, trigger, GateAnswers.None, Context()));
+        var decision = TransitionDecision.Decide(new DecisionInput(instance, recipe, trigger, GateAnswers.None, EngineFixture.Context()));
         return Assert.IsType<Applied>(decision).Changes[0].After;
     }
 }

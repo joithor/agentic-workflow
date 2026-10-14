@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
@@ -70,7 +71,7 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task<WorkflowInstance> RunDeskStep(WorkflowInstance instance, OpenRun open, InstanceStart start, Interpreting context)
     {
-        if (await RunStep(instance.Frame, open).ConfigureAwait(true) is not { } trigger)
+        if (await RunStep(instance.Frame, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true) is not { } trigger)
         {
             return await ApplySubmitted(instance, context).ConfigureAwait(true);
         }
@@ -123,7 +124,7 @@ internal sealed partial class RecipeWorkflow
     /// same run keeps the timer. Unit (c). The wait also wakes for an answer, command or cancel another Update
     /// submitted; it then returns null and the loop applies that command (unit (b)).
     /// </summary>
-    private async Task<Trigger?> RunStep(Frame frame, OpenRun open)
+    private async Task<Trigger?> RunStep(Frame frame, OpenRun open, RecipeState state)
     {
         if (!string.Equals(_recorded, open.Token.Value, StringComparison.Ordinal))
         {

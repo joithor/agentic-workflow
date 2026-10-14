@@ -87,7 +87,7 @@ public sealed class TimerExpiryTests
         var checks = At(Step, "checks", entry: 2);   // a desk run; timeout: { after: 30m, then: retry }
 
         var floor = Assert.IsType<Applied>(Expire(checks, DeadlineKind.State));
-        var dev = Assert.IsType<Applied>(Expire(checks, DeadlineKind.State, Context() with { DeskTimeout = TimeSpan.FromMinutes(1) }));
+        var dev = Assert.IsType<Applied>(Expire(checks, DeadlineKind.State, EngineFixture.Context() with { DeskTimeout = TimeSpan.FromMinutes(1) }));
 
         var park = Assert.IsType<Suspension>(floor.Changes[0].After.Suspension);
         Assert.Equal((SuspensionKind.Park, ParkReason.Timeout, ResumeKind.Rearm, "checks ran past 2d"), (park.Kind, park.Reason, park.Resume.Kind, park.Question));
@@ -114,7 +114,7 @@ public sealed class TimerExpiryTests
         var parked = Assert.IsType<Applied>(Expire(verify, DeadlineKind.State)).Changes[0].After;
         var cancelled = Suspensions.Cancel(verify);
 
-        _ = Assert.IsType<Absorbed>(TransitionDecision.Decide(new DecisionInput(verify, Step, new DeadlineFired(Timers, 2, DeadlineKind.State), GateAnswers.None, Context())));
+        _ = Assert.IsType<Absorbed>(TransitionDecision.Decide(new DecisionInput(verify, Step, new DeadlineFired(Timers, 2, DeadlineKind.State), GateAnswers.None, EngineFixture.Context())));
         _ = Assert.IsType<Absorbed>(Expire(parked, DeadlineKind.State));
         _ = Assert.IsType<Absorbed>(Expire(cancelled, DeadlineKind.Retry));
     }
@@ -122,7 +122,7 @@ public sealed class TimerExpiryTests
     private static Decision Expire(WorkflowInstance instance, DeadlineKind kind, DecisionContext? context = null)
     {
         var recipe = instance.Recipe.Id == Item.Id ? Item : Step;
-        return TransitionDecision.Decide(new DecisionInput(instance, recipe, new DeadlineFired(Timers, instance.Frame.Entry, kind), GateAnswers.None, context ?? Context()));
+        return TransitionDecision.Decide(new DecisionInput(instance, recipe, new DeadlineFired(Timers, instance.Frame.Entry, kind), GateAnswers.None, context ?? EngineFixture.Context()));
     }
 
     private static WorkflowInstance Agent(WorkflowInstance instance) =>
