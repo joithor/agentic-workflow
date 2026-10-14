@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Core.Events;
 
 namespace Aw.Sindri.Features.StreamEvents;
 
