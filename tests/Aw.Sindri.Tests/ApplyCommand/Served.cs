@@ -104,6 +104,13 @@ internal sealed class Served : IAsyncDisposable
         return run;
     }
 
+    /// <summary>Stops the worker, as a serve whose worker died would run on without one.</summary>
+    public async Task StopWorker()
+    {
+        await _workerStop.CancelAsync();
+        await _worker;
+    }
+
     /// <summary>Stops the worker and starts a new one, as a serve restart's worker would.</summary>
     public async Task RestartWorker()
     {

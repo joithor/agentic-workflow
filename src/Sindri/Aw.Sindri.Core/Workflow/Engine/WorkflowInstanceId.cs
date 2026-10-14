@@ -19,6 +19,11 @@ public readonly partial struct WorkflowInstanceId : ITypedId<WorkflowInstanceId,
     /// <returns>The id.</returns>
     public static WorkflowInstanceId For(Guid value) => From("WFI-" + value.ToString("N"));
 
+    /// <summary>The id of the instance at <paramref name="address"/>.</summary>
+    /// <param name="address">The instance's address.</param>
+    /// <returns>Its id.</returns>
+    public static WorkflowInstanceId Of(InstanceAddress address) => throw new NotSupportedException("red: minted from the address");
+
     private static Vogen.Validation Validate(string value) =>
         Shape.IsMatch(value) ? Vogen.Validation.Ok : Vogen.Validation.Invalid("An instance id is 'WFI-' and 32 lower-case hex digits");
 

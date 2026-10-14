@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Tests.CompleteStep;
 using Aw.Sindri.Tests.Server;
 using Aw.Sindri.Tests.Workflows;
@@ -17,7 +18,7 @@ namespace Aw.Sindri.Tests.ApplyCommand;
 [Lane(TestLane.Integration)]
 public sealed class WorkflowRoutesTests(DevServer server) : IClassFixture<DevServer>, IDisposable
 {
-    private const string Instance = "/sindri/workflow/instances/T-31%2Fstep%2F1";
+    private static readonly string _instance = "/sindri/workflow/instances/" + Id("T-31/step/1");
 
     private readonly WorkflowsHarness _harness = new();
 
@@ -31,10 +32,10 @@ public sealed class WorkflowRoutesTests(DevServer server) : IClassFixture<DevSer
         (string Route, string Body, string Action)[] calls =
         [
             ("/sindri/workflow/instances", Start("T-31"), "StartInstance"),
-            (Instance + "/commands", Command("answer", "\"answer\": \"text\", \"text\": \"go on\""), "ApplyCommand:answer-text"),
-            (Instance + "/commands", Command("command", "\"verb\": \"skip\""), "ApplyCommand:command"),
-            (Instance + "/commands", Command("cancel", string.Empty), "ApplyCommand:cancel"),
-            (Instance + "/runs/1.1/complete", Complete(), "CompleteStep"),
+            (_instance + "/commands", Command("answer", "\"answer\": \"text\", \"text\": \"go on\""), "ApplyCommand:answer-text"),
+            (_instance + "/commands", Command("command", "\"verb\": \"skip\""), "ApplyCommand:command"),
+            (_instance + "/commands", Command("cancel", string.Empty), "ApplyCommand:cancel"),
+            (_instance + "/runs/1.1/complete", Complete(), "CompleteStep"),
         ];
         var refused = new List<(HttpStatusCode, string?, bool)>();
         foreach (var (route, body, action) in calls)
@@ -54,7 +55,7 @@ public sealed class WorkflowRoutesTests(DevServer server) : IClassFixture<DevSer
 
         var (started, _, startDetail) = await Post(served, "/sindri/workflow/instances", Start("T-32"), r => r.AsHuman(served.App, terminal: false));
         _ = await served.Until("T-32/step/1", static v => v.Task is not null);
-        var (granted, title, detail) = await Post(served, "/sindri/workflow/instances/T-32%2Fstep%2F1/commands",
+        var (granted, title, detail) = await Post(served, "/sindri/workflow/instances/" + Id("T-32/step/1") + "/commands",
             Command("answer", "\"answer\": \"grant\", \"amount\": 1"), r => r.AsHuman(served.App, terminal: false));
 
         Assert.True(started == HttpStatusCode.OK, startDetail);
@@ -69,7 +70,7 @@ public sealed class WorkflowRoutesTests(DevServer server) : IClassFixture<DevSer
         _ = await served.Cli("start", "workflow.step", "--item", "T-33", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         _ = await served.Until("T-33/step/1", static v => v.Task is not null);
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/sindri/workflow/instances/T-33%2Fstep%2F1/nonce").AsSession();
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/sindri/workflow/instances/{Id("T-33/step/1")}/nonce").AsSession();
         using var answer = await served.Http.SendAsync(request, TestContext.Current.CancellationToken);
         var body = await answer.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
@@ -84,7 +85,9 @@ public sealed class WorkflowRoutesTests(DevServer server) : IClassFixture<DevSer
         $$"""{ "instance": "T-31/step/1", "kind": "{{kind}}"{{(fields.Length == 0 ? string.Empty : ", " + fields)}} }""";
 
     private static string Complete() =>
-        """{ "address": "T-31/step/1", "run": "1.1", "outcome": "done", "outputs": {} }""";
+        """{ "instance": "T-31/step/1", "run": "1.1", "outcome": "done", "outputs": {} }""";
+
+    private static string Id(string address) => WorkflowInstanceId.Of(InstanceAddress.From(address)).Value;
 
     private static async Task<(HttpStatusCode Status, string? Title, string? Detail)> Post(Served served, string route, string body, Func<HttpRequestMessage, HttpRequestMessage> caller)
     {

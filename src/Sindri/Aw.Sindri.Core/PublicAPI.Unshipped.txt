@@ -3275,6 +3275,7 @@ static Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSatisfied.operator ==(Aw.Sind
 static Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.operator !=(Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? left, Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.operator ==(Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? left, Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId.For(System.Guid value) -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+static Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId.Of(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address) -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
 static Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId.From(string! value) -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
 static Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
 static Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId.TryFrom(string? value, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId vo) -> bool
