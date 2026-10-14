@@ -29,7 +29,19 @@ public sealed class SettingsReaderTests
         Assert.Equal(["split-panes"], settings.Repos!.Select(r => r.Value), StringComparer.Ordinal);   // why: set above
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void Extra_scrub_patterns_are_read_as_written()
+    {
+        var settings = Read("""{"scrub":{"extraPatterns":[{"id":"acme-customer-id","pattern":"ACME-[0-9]{6}"},{"id":"order-id"}]}}""").Value;
+
+        Assert.Equal([new("acme-customer-id", "ACME-[0-9]{6}"), new("order-id", Pattern: null)], settings.ExtraPatterns);
+        Assert.Empty(SettingsReader.Read(section: null).Value.ExtraPatterns);
+    }
+
     [Theory, Trait("Lane", "unit")]
+    [InlineData("""{"scrub":{"extraPatterns":[{"id":"a","pattern":"b"},null]}}""", "context.scrub.extraPatterns[1]:")]
+    [InlineData("""{"scrub":{"extra":[]}}""", "context:")]
+    [InlineData("""{"scrub":{"extraPatterns":[{"id":"a","pattern":"b","flags":"i"}]}}""", "context:")]
     [InlineData("""{"deadline":"soon"}""", "context.deadline:")]
     [InlineData("""{"deadline":"90s"}""", "context.deadline:")]
     [InlineData("""{"maxBudget":10}""", "context.maxBudget:")]
