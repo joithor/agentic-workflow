@@ -83,6 +83,8 @@ public sealed class RegisterMcpTests
         Assert.Equal("SND-CONTEXT-025", failed.Error.Code);
         Assert.Contains("already exists", failed.Error.Message, StringComparison.Ordinal);
         Assert.Equal("SND-CONTEXT-025", missing.Error.Code);
+        _claude.Answer = new ClaudeRun(1, string.Empty);
+        Assert.StartsWith("claude exited 1 (fix:", (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true), Token)).Error.Message, StringComparison.Ordinal);
     }
 
     private RegisterMcpService Service() => new(_profiles, _locator, _endpoint, _claude);

@@ -10,6 +10,7 @@ using Aw.Sindri.Core.Workflow.Engine.Evals;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.ApproveProfile;
+using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Host.Mcp;
 using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.GetStatus;
@@ -58,5 +59,6 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(SourcesView))]
 [JsonSerializable(typeof(McpToolError))]
 [JsonSerializable(typeof(McpSourcesAnswer))]
+[JsonSerializable(typeof(RegisterMcpResponse))]
 [JsonSerializable(typeof(ContextSourcesSynced))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

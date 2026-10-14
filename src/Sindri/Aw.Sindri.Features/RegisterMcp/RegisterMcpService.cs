@@ -57,7 +57,7 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
     {
         null => ContextErrors.McpRegisterFailed.With("the claude CLI couldn't be started (fix: install Claude Code, or set AW_SINDRI_CLAUDE_BIN; or run the printed command by hand)"),
         { ExitCode: not 0 } failed => ContextErrors.McpRegisterFailed.With(
-            string.Create(CultureInfo.InvariantCulture, $"claude exited {failed.ExitCode}: {failed.ErrorTail} (fix: run the printed command by hand to see why)")),
+            string.Create(CultureInfo.InvariantCulture, $"claude exited {failed.ExitCode}{(failed.ErrorTail.Length == 0 ? string.Empty : ": " + failed.ErrorTail)} (fix: run the printed command by hand to see why)")),
         _ => registered,
     };
 }

@@ -15,6 +15,15 @@ public sealed class McpCliTests
         Assert.Equal("claude mcp add --header 'X-Sindri-Repo: it'\\''s' sindri http://127.0.0.1:7410/sindri/mcp", line);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void The_json_answer_is_in_the_host_context()
+    {
+        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(
+            new Features.RegisterMcp.RegisterMcpResponse(Core.Ids.RepoName.From("demo"), "/work/demo", ["mcp", "add"], Applied: false), AwJson.CreateOptions(SindriJsonContext.Default)));
+
+        Assert.Equal("""{"repo":"demo","checkout":"/work/demo","arguments":["mcp","add"],"applied":false}""", json);
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("CLAUDECODE is set", true)]
     [InlineData(null, false)]
