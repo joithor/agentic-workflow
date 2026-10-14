@@ -1,6 +1,15 @@
+using System.Security.Cryptography;
+using System.Text;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Effects;
+using Aw.Sindri.Core.Workflow.Ids;
 using Temporalio.Activities;
 using Temporalio.Common;
+using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -12,15 +21,26 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// profile's allowlist ('RecheckEffect', a local activity), then either runs it ('RunEffect', a regular activity that
 /// calls the block's 'IEffectKind', writes 'outbox.dispatched' and appends the reply event caused by that row) or
 /// writes 'outbox.refused' and hands the instance an 'OutboxRefused' trigger. Kernel's 'outbox_commands' is not used.
+/// <para>
+/// 'RunEffect' keys what it writes by the effect identity, not by its activity: the dispatched row
+/// 'effect:{identity}:dispatched' and the reply 'effect:{identity}:reply', each with an envelope id derived from its key.
+/// An activity retry or a re-emission (a new command id, the same identity) therefore writes nothing twice, and its reply
+/// still names the first dispatched row as its causation.
+/// </para>
 /// </summary>
-internal sealed class EffectActivities
+/// <param name="ledger">The ledger.</param>
+/// <param name="lease">The lease this process holds; every append is fenced by it.</param>
+/// <param name="events">The control plane's event factory.</param>
+/// <param name="catalog">The registered events: a block's reply outcome names the reply event that declares it.</param>
+/// <param name="dispatch">Runs an effect block's runtime, by its id.</param>
+internal sealed class EffectActivities(ILedgerStore ledger, HeldLease lease, EventFactory events, BlockCatalog catalog, EffectDispatch dispatch)
 {
     /// <summary>'RecordEffect' and 'RecheckEffect' run as local activities that retry without bound (the ledger must have the row).</summary>
     public static LocalActivityOptions LocalOptions => RecordEventActivities.LocalOptions;
 
     /// <summary>
-    /// 'RunEffect' runs as a regular activity: retried with backoff, since the block's existence check makes a repeat
-    /// harmless. Engine P6 unit (a) sets the timeouts.
+    /// 'RunEffect' runs as a regular activity: retried with backoff and without bound, since the block's existence check
+    /// and the identity-keyed rows make a repeat harmless; a block that answers with an error is retried.
     /// </summary>
     public static ActivityOptions RunOptions { get; } = new()
     {
@@ -28,14 +48,16 @@ internal sealed class EffectActivities
         RetryPolicy = new RetryPolicy { InitialInterval = TimeSpan.FromSeconds(1), BackoffCoefficient = 2, MaximumInterval = TimeSpan.FromMinutes(1), MaximumAttempts = 0 },
     };
 
-    /// <summary>Appends <paramref name="record"/>'s row under 'workflow:{workflow id}:{run id}:{activity id}'. Engine P6 unit (a).</summary>
+    /// <summary>Appends <paramref name="record"/>'s row under 'workflow:{workflow id}:{run id}:{activity id}'.</summary>
     /// <param name="record">The row.</param>
     /// <returns>Its ledger position.</returns>
     [Activity("RecordEffect")]
-    public Task<LedgerAppend> RecordAsync(EffectRecord record)
+    public async Task<LedgerAppend> RecordAsync(EffectRecord record)
     {
         ArgumentNullException.ThrowIfNull(record);
-        throw Unbuilt("unit (a): the RecordEffect activity (an effect's ledger row)");
+        var activity = ActivityExecutionContext.Current;
+        var entry = events.Entry(OutboxEvents.Of(record.Row.State), record.Row, RecordEventActivities.KeyOf(activity.Info), record.Item);
+        return await Append(entry, activity.CancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>The recheck: the recipe's approval and the approved profile's allowlist, now. Engine P6 unit (b).</summary>
@@ -48,14 +70,61 @@ internal sealed class EffectActivities
         throw Unbuilt("unit (b): the RecheckEffect local activity");
     }
 
-    /// <summary>Performs the effect through its block, writes 'outbox.dispatched' and appends its reply. Engine P6 unit (a).</summary>
+    /// <summary>Performs the effect through its block, writes 'outbox.dispatched' and appends its reply.</summary>
     /// <param name="run">The effect and its emission.</param>
     /// <returns>The dispatched row and the reply.</returns>
     [Activity("RunEffect")]
-    public Task<EffectRunResult> RunAsync(EffectRun run)
+    public async Task<EffectRunResult> RunAsync(EffectRun run)
     {
         ArgumentNullException.ThrowIfNull(run);
-        throw Unbuilt("unit (a): the RunEffect activity");
+        var cancel = ActivityExecutionContext.Current.CancellationToken;
+        var identity = run.Command.Identity.Text;
+        var done = await dispatch(EffectContexts.Of(run), cancel).ConfigureAwait(false);
+        if (done.IsError)
+        {
+            throw new InvalidOperationException($"{done.Error.Code}: {done.Error.Message}");   // retried: the block's existence check makes the repeat harmless
+        }
+
+        var row = new EffectRow(identity, run.CommandId, run.Command.Effect, run.Command.Origin, EffectState.Dispatched, InstanceAddress.From(run.WorkflowId),
+            Reason: done.Value.Existed ? "already sent" : null);
+        var dispatched = Keyed(events.Entry(OutboxEvents.Dispatched, row, $"effect:{identity}:dispatched", run.Item));
+        var at = await Append(dispatched, cancel).ConfigureAwait(false);
+        if (done.Value.Reply is { } outcome)
+        {
+            _ = await Append(Reply(run, outcome, dispatched.Envelope.Id), cancel).ConfigureAwait(false);
+        }
+
+        return new EffectRunResult(at.Sequence, done.Value.Reply?.Value, done.Value.Existed || at.AlreadyRecorded);
+    }
+
+    /// <summary>
+    /// The reply event a block's <paramref name="outcome"/> names (spec §2, §12): the one causation-routed event that
+    /// declares it, from that event's producer, caused by the dispatched row so the bridge routes it to this instance only.
+    /// </summary>
+    private LedgerEntry Reply(EffectRun run, OutcomeName outcome, Guid causation)
+    {
+        var replies = catalog.Events.Where(e => e.Route == EventRoute.Causation && e.Outcomes.Contains(outcome)).ToList();
+        if (replies is not [{ } reply])
+        {
+            throw new ApplicationFailureException(
+                $"{run.Command.Effect.Value} replied '{outcome.Value}', which {replies.Count} registered reply events declare (one must)", nonRetryable: true);
+        }
+
+        var entry = Keyed(events.Entry(reply.Kind.Value, new EffectReply(outcome.Value, run.Command.Identity.Text), $"effect:{run.Command.Identity.Text}:reply", run.Item));
+        return entry with { Envelope = entry.Envelope with { Actor = reply.Producer, CausationId = causation } };
+    }
+
+    /// <summary><paramref name="entry"/> with an envelope id derived from its idempotency key, so a repeat names the row already written.</summary>
+    private static LedgerEntry Keyed(LedgerEntry entry) =>
+        entry with { Envelope = entry.Envelope with { Id = new Guid(SHA256.HashData(Encoding.UTF8.GetBytes(entry.IdempotencyKey)).AsSpan(0, 16)) } };
+
+    private async Task<LedgerAppend> Append(LedgerEntry entry, CancellationToken cancellationToken)
+    {
+        var grant = lease.Current ?? throw new InvalidOperationException("SND-LEASE-002: this process holds no lease; the effect waits for one");
+        var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
+        return appended.IsError
+            ? throw new InvalidOperationException($"{appended.Error.Code}: {appended.Error.Message}")
+            : appended.Value;
     }
 
     private NotSupportedException Unbuilt(string what) => new($"engine P6 {what} is not built yet ({GetType().Name})");

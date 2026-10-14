@@ -71,6 +71,7 @@ internal sealed partial class RecipeWorkflow
         {
             Enter(after);
             await Mirror(Record(instance, change, submission.Trigger), NeedsYou(after)).ConfigureAwait(true);
+            Emit(instance, after, EffectsOf(decision));
         }
 
         if (submission.Ticket != 0)
@@ -133,7 +134,8 @@ internal sealed partial class RecipeWorkflow
             WaitSatisfied satisfied => satisfied.Outcome?.Value,
             _ => null,
         },
-        before.Frame.Run?.Token.Value);
+        before.Frame.Run?.Token.Value,
+        Ids(change.Event.Effects));
 
     private static string TypeOf(WorkflowEventType type) => type switch
     {

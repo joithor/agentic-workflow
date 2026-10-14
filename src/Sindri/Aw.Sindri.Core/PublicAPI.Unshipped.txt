@@ -4911,3 +4911,17 @@ static Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.operator ==(Aw.Sindr
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Action(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant answer, int? amount) -> Aw.Sindri.Core.Challenges.ChallengeAction!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Subject(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> Aw.Sindri.Core.Challenges.ChallengeSubject!
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply!
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Deconstruct(out string! Outcome, out string! Effect) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Effect.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Effect.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.EffectReply(string! Outcome, string! Effect) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Equals(Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Outcome.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Outcome.init -> void
+override Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.operator !=(Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply? left, Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.operator ==(Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply? left, Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply? right) -> bool

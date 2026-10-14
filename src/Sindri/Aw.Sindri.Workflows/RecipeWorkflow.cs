@@ -73,6 +73,7 @@ internal sealed partial class RecipeWorkflow
                 : await Wait(instance, context).ConfigureAwait(true);
         }
 
+        await Settle().ConfigureAwait(true);   // every effect it emitted is dispatched, refused or aborted (§5.7)
         await Workflow.WaitConditionAsync(static () => Workflow.AllHandlersFinished).ConfigureAwait(true);   // the Update that ended it returns its result
         return new RecipeResult(instance.State, instance.Outcome?.Value);
     }
@@ -93,12 +94,14 @@ internal sealed partial class RecipeWorkflow
         _recipe = new InterpretedRecipe(loaded.Version, loaded.Recipe, catalog, start.Inputs);
         _deskTimeout = loaded.DeskTimeout;
         _eventHold = loaded.EventHold;
+        _dispatchDelay = loaded.DispatchDelay;
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance);
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
         var instance = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
         Enter(instance);
         await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null), NeedsYou(instance)).ConfigureAwait(true);
+        Emit(before: null, instance, []);
         return (instance, _context);
     }
 

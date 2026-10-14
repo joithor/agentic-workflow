@@ -37,6 +37,13 @@ public static class EffectRules
     {
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(recipe);
-        throw new NotSupportedException("engine P6 unit (a): EffectRules.Reemitted (retry re-emits the entering transition's effects with the same identity)");
+        var entering = recipe.Transitions.Where(t => string.Equals(t.To, instance.Frame.State, StringComparison.Ordinal) && t.Effects.Count > 0).ToList();
+        if (entering.Select(static t => string.Join(',', t.Effects.Select(static e => e.Use.Value))).Distinct(StringComparer.Ordinal).Take(2).Count() != 1)
+        {
+            return [];   // none, or transitions with different effects enter the state: the instance doesn't record which one did
+        }
+
+        return [.. entering[0].Effects.Select((use, index) =>
+            new EffectCommand(use.Use, new EffectIdentity(instance.Id, instance.Frame.Entry, index), CommandOrigin.Recipe, use.With))];
     }
 }

@@ -649,3 +649,19 @@ the code's kind, or is absorbed when the same revoke already parked it.
 | (d) | `ClaimRefEffect`, `IWorkflowClaims` and the `workflow_claims` migration (ledger.db, version 5 or the next free); `EffectSettings.Of`, the two keys in `ProfileRules` and `ProfileDiff`, RCP-EFFECT-001 against the allowlist, `workflow.dispatchDelay` in `LoadRecipe` |
 
 The contract's red test is `PhaseSixSignalTests` (Phase 6 signal 1 on the time-skipping server).
+
+Unit (a), as built:
+
+- **Dispatch** runs as a workflow task the loop doesn't await, started after every mirrored change (start, `Apply`,
+  the desk report). Recipe effects wait `LoadedRecipe.DispatchDelay` in a cancellation scope; a `cancel` within the delay
+  aborts the effect with an `outbox.refused` row whose code is null and whose reason starts `cancelled`. Engine-origin
+  notices skip the delay and the recheck. The instance returns only once every effect it emitted has settled.
+- **One run per identity:** an identity already dispatched, or still on its way, is skipped, so a `retry` re-emission
+  (`RecipeWorkflow.Reemit`, over `EffectRules.Reemitted`) writes nothing twice. `RunEffect` keys its rows by identity
+  (`effect:{identity}:dispatched`, `effect:{identity}:reply`, envelope ids derived from the keys), so an activity retry
+  writes nothing twice either.
+- **The reply** is the one causation-routed event that declares the block's outcome, appended as its producer
+  (`system:dispatcher`) with the dispatched row as its causation; payload `EffectReply` (`outcome`, `effect`).
+- **Blocks by id:** `AddEffect` also registers the block keyed by its id; `RunEffect` resolves it in its own scope
+  through the `EffectDispatch` registration.
+- The transition's ledger payload lists its effect ids (`effects`, left out when there are none).

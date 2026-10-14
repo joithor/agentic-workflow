@@ -55,7 +55,7 @@ internal sealed class RecordEventActivities(ILedgerStore ledger, HeldLease lease
         ArgumentNullException.ThrowIfNull(record);
         var grant = lease.Current ?? throw new InvalidOperationException("SND-LEASE-002: this process holds no lease; the event waits for one");
         var activity = ActivityExecutionContext.Current;
-        var payload = new WorkflowEventPayload(record.WorkflowId, record.From, record.To, record.Trigger, record.Outcome, record.Run);
+        var payload = new WorkflowEventPayload(record.WorkflowId, record.From, record.To, record.Trigger, record.Outcome, record.Run, record.Effects);
         var entry = events.Entry(record.Type, payload, KeyOf(activity.Info)) with { Item = record.Item };
         var appended = await ledger.Append(entry, grant, activity.CancellationToken).ConfigureAwait(false);
         return appended.IsError
