@@ -146,7 +146,8 @@ In `tests/Aw.Sindri.Tests/ContextCalls`:
   `ContextTools` binds arguments (022), checks `X-Sindri-Repo` (021), and calls the ContextCalls services the HTTP
   routes use (`IService<QueryContextRequest, ContextResult>`, `IService<GetContextSourcesRequest, SourcesView>`), so
   the engine's gate (020) and scope (003) apply. `McpResults` puts the answer in `structuredContent` (the host's AwJson
-  options) beside `McpSummaries`' text; an error is `isError` with `McpToolError {code, message}`.
+  options; `context_sources` wraps the view in `McpSourcesAnswer` with the answering `instance`, since Claude Code
+  reads `structuredContent` and not the text) beside `McpSummaries`' text; an error is `isError` with `McpToolError {code, message}`.
 - `Aw.Sindri.Core/Mcp/`: `McpRegistration` (the claude arguments, the port rule), `McpScope.Judge` (a user-wide
   `sindri` entry in one provider file), and the ports `IClaudeCli` and `IProviderFiles`.
 - `Aw.Sindri.Features/RegisterMcp/` (`sindri mcp register`) and `Aw.Sindri.Features/ContextCalls/CheckContext*`

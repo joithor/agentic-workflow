@@ -57,5 +57,6 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ContextResult))]
 [JsonSerializable(typeof(SourcesView))]
 [JsonSerializable(typeof(McpToolError))]
+[JsonSerializable(typeof(McpSourcesAnswer))]
 [JsonSerializable(typeof(ContextSourcesSynced))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

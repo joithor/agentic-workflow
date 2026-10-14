@@ -155,6 +155,7 @@ public sealed class ContextMcpTests : IDisposable
         Assert.True(result.StructuredContent!.Value.GetProperty("sessionsEnabled").GetBoolean());
         Assert.Contains("\"state\":\"ok\"", result.StructuredContent.Value.GetRawText(), StringComparison.Ordinal);
         Assert.Contains("port " + host.Http.BaseAddress!.Port.ToString(System.Globalization.CultureInfo.InvariantCulture), Text(result), StringComparison.Ordinal);
+        Assert.Equal(host.Http.BaseAddress.Port, result.StructuredContent.Value.GetProperty("instance").GetProperty("port").GetInt32());   // why: Claude Code reads structuredContent, not the text
         Assert.Matches(@"repo-docs\s+split-panes\s+ok", Text(result));
     }
 

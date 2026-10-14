@@ -95,7 +95,9 @@ internal static class ContextTools
 
         var port = services.GetRequiredService<IHttpContextAccessor>().HttpContext?.Connection.LocalPort ?? 0;
         var answer = await services.GetRequiredService<IService<GetContextSourcesRequest, SourcesView>>().Handle(new GetContextSourcesRequest(), ct).ConfigureAwait(false);
-        return McpResults.From(services, answer, view => McpSummaries.Sources(view, McpEndpoint.Build, port));
+        return answer.IsError
+            ? McpResults.Failure(services, answer.Error)
+            : McpResults.Success(services, McpSourcesAnswer.Of(answer.Value, McpEndpoint.Build, port), McpSummaries.Sources(answer.Value, McpEndpoint.Build, port));
     }
 
     /// <summary>SND-CONTEXT-021 when the call carries no X-Sindri-Repo (a registration always sends one), else null.</summary>

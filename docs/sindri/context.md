@@ -126,9 +126,11 @@ Phase 1 tools (both read-only):
 | Tool | Arguments | Answer |
 |---|---|---|
 | `context_query` | `q`, or one anchor `node` / `item` / `symbol`; `depth?`, `budget?` | `structuredContent`: the same result JSON as `context query --json`; text: counts, anchors, conflicts, degraded sources and the citation keys, never the records' text a second time |
-| `context_sources` | none | `structuredContent`: the sources view; text: the Sindri build and port that answered, then the `context sources status` table |
+| `context_sources` | none | `structuredContent`: the sources view plus `instance` (the Sindri build and port that answered); text: the same, then the `context sources status` table |
 
-The draft map is never read over MCP. The tools stay listed while `context.sessions.enabled` is false; "off" (spec
+Claude Code hands the model `structuredContent` rather than the text block when a result has both, so everything a
+session needs is in `structuredContent`; the text block is for clients that show text only. The draft map is never
+read over MCP. The tools stay listed while `context.sessions.enabled` is false; "off" (spec
 §8.5) means every call is refused with `SND-CONTEXT-020`, so a session learns why. Refusals are tool errors
 (`isError: true`) whose text starts with the code and whose `structuredContent` is `{code, message}`:
 
