@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Ledger;
 using Microsoft.AspNetCore.Builder;
@@ -132,6 +133,15 @@ public sealed class RecipeRegistryCliTests : IDisposable
         Assert.Contains("SND-RECIPE-001 ", _error.ToString(), StringComparison.Ordinal);
         Assert.Contains("RCP-REACH-001: ", _error.ToString(), StringComparison.Ordinal);
         Assert.Empty((await app.Services.GetRequiredService<IRecipeStore>().All(ct)).Value);
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task The_registry_hosts_fake_Temporal_so_no_dev_server_races_the_verbs()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var app = await Started(ct);
+
+        _ = Assert.IsType<FakeTemporalServer>(app.Services.GetRequiredService<ITemporalServer>());
     }
 
     private string Take()
