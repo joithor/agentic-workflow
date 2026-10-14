@@ -58,6 +58,7 @@ public static class InstanceViews
             children,
             instance.Outcome)
         {
+            Id = WorkflowInstanceId.Of(instance.Address),
             Answer = words.Answer(),
             Drift = words.Drift(),
             Budget = Budget(instance, recipe),
