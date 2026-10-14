@@ -68,3 +68,65 @@ Home "Show all 7 in Queue" beside Queued 4; the split-button chevron has no key 
 1. The chip says "park" and the word says "needs you now"; what is the orange bar for, and why does the same orange pulse on Recipes, Context and System?
 2. Every live Agents row carries four actions and the sheet repeats them. Which surface is the control surface? Would one Open per row plus one hovered action row be faster and safer than twenty-eight buttons?
 3. "● Healthy" sits beside "index failed" on ten pages and System says "Degraded". Is "healthy" the process or the system? One word computed the same way everywhere, or three verdicts?
+
+
+---
+
+# Critique run 2: Sindri UI revision-8 mockups, after the fix passes
+
+Target: `docs/superpowers/specs/2026-10-13-sindri-ui-screens-design/mockups/` at b84eddee (11 files, re-captured 1280-wide renders). Register: product. Independent assessment A (did not read run 1, fixes.md or the snapshots) plus the detector (B): 9 files clean, 2 with the em-dash advisory firing only on tabular nulls; "Overused font: Inter" ignored as a false positive.
+
+## Design Health Score
+
+| # | Heuristic | Score | Key issue |
+|---|---|---|---|
+| 1 | Visibility of system status | 3 | No loading or refreshing state; the decision row's live-looking Accept beside "acted on once the workflow engine runs" |
+| 2 | Match system / real world | 3 | Five phrasings for human-blocked; "open" means three things |
+| 3 | User control and freedom | 3 | Undo on bulk accept and Mark all seen; none on a single map-review Accept/Reject, Drop, or the decision Accept |
+| 4 | Consistency and standards | 2 | Band on 3 of 11 pages; three behind-sheet treatments; Attach primary in some places, secondary in others; hint placement varies; fixture drift |
+| 5 | Error prevention | 3 | Cancel behind a menu plus confirm, read-first focus, budget marks; re-scope Accept and escalation Reject unguarded |
+| 6 | Recognition rather than recall | 3 | Legends on three pages only; ◆ ? ◇ ░ ⚠ unexplained elsewhere; two adjacent ▾ on Agents waiting rows |
+| 7 | Flexibility and efficiency | 3 | Chords, ⌘K, ⌘N, ⌘Z, bulk accept; no multi-select on Work or Agents |
+| 8 | Aesthetic and minimalist design | 3 | "needs you now" repeats the panel title; spec-note parentheticals in Agents group headers; Context's Node panel stretched |
+| 9 | Error recovery | 3 | Home's failure row and System's Impact name cause, fix and blast radius; refusal and Reload states exist only in comments |
+| 10 | Help and documentation | 2 | "? Shortcuts" on four pages; no help surface, no "what is a park" |
+| **Total** | | **28/40** | **Good: address weak areas, solid foundation** |
+
+## Anti-Patterns Verdict
+
+Passes the product slop test: one shell, one button vocabulary, one glyph set with a legend, Restrained palette, no stripes, gradients, hero metrics, card grids or modals; every id, hash and command plausible. The machine shows in uniformity: every section is the same surface-1 panel with an 11 px eyebrow and a 13/12/11 ladder, so hierarchy rides on four greys. The detector agrees: nothing left but the tabular-null em dashes.
+
+## What's Working
+
+- Home passes the five-second test: `5 need you · 4 running · 1 with you · 4 queued · Degraded`, most urgent first, every tinted row carrying its resolving action with the class visible.
+- One instance frame for a project, an incident and an item; the wrapped states band keeps links attached to their nodes; the `next` sentence is the best copy in the set.
+- The inspector's numbers reconcile; the lens stack's cross-band edges are computed from the node boxes.
+
+## Priority Issues
+
+- **[P1] Attach means three things.** Home says Attach pauses automation; Agents says the first keystroke is the takeover; the sheets make Attach the read action beside a separate Take over. One sentence everywhere. **clarify**
+- **[P1] Not-yet-wired actions rendered live.** The decision row's Accept is a brand primary beside "acted on once the workflow engine runs", while Run again on the next row is disabled with a pending chip. One pattern. **harden**
+- **[P1] Fixture drift.** `workflow.project` runs three instances but is not among the seven recipes; the engine table lacks ITM-01JD9 and ITM-01JD6 and says "activities 2 running" beside four live sessions; the index failed at 03:00 on Home and 12:21 on System and Context; INC-14's NOW differs behind the sheets. **audit**
+- **[P1] Three behind-sheet treatments.** Work reflows live; Workflows is sliced with headers cut mid-word; Recipes dims with a scrim. One rule. **layout**
+- **[P2] Human-blocked vocabulary and counts.** "need you", "waiting on you", "running at a desk", "to look at", each count with a different scope. **clarify**
+- **[P2] Shell drift.** Band, sheet tab, hint placement and legends differ page to page. **polish**
+- **[P2] The protected button has no defined click** on six pages; only Home shows the command line. **harden**
+- **[P2] Decision points above four**: two chevrons on Agents waiting rows, five verbs on the Context proposal row, five controls on Home's escalated row. **distill**
+
+## Cognitive Load
+
+3 of 8 failed (moderate): single focus on Context, chunking on the lens row and the Recipes and Agents tables, minimal choices on the three rows above.
+
+## Persona Red Flags
+
+**Alex:** no multi-select; two chevrons on one row; the terminal hop with no command on Recipes, Context, Agents; hints move page to page. **Sam:** `● done` and `● live` differ by colour alone; ◐ is in-progress and degraded in one screen; the red "Cancel item" button is under AA on surface-3; the typed-confirmation note lives in `title` only; fixed px grids will clip at 1.3 text scale. **Riley:** "12 open" includes done rows; the index-failure time differs by page; the bulk-accept button stays enabled above its own toast; `workflow.project` missing from Recipes. **The owner:** Accept on the re-scope does nothing; Attach's semantics unclear at a glance; "import the design output" has no Import action on any screen.
+
+## Minor Observations
+
+"needs you now" repeated under three chips; the failed-service row tinted orange beside a red ✕; two "since" values on the item sheet with no label; the behind-lists kept pre-fix column widths; "Pause in the menu" promised but not drawn; destructive before Keep in confirms; press transform on two pages only; no legend on Recipes; the Node panel stretched with empty surface; "Accept all deterministic" enabled above the toast; "212 queries / 7 d" on the SVG edge; the vertical sheet-tab handle is the one invented affordance; `--ink` and `--ink-muted` near-indistinguishable on dark.
+
+## Questions to Consider
+
+1. If Attach is read-only until a keystroke, why does Home call it a takeover; if it is a takeover, why is it the pre-focused read action? Which sentence should the owner believe at 2 am?
+2. Is a `⌂ · terminal` button that does nothing the honest rendering of the protected class, or should it open Warp with the command typed?
+3. Has "dense, calm, exact" become "uniform"? Where on each page is the one element allowed to be louder than 13 px?
