@@ -15,7 +15,7 @@ public static partial class TransitionDecision
     /// <summary>
     /// 'outbox.refused': SND-RECIPE-005 parks spec-conflict (revoked), 'cancel' only; SND-RECIPE-006 parks (drift), the
     /// effect kept on its rearm for the drift approval's re-send (P2's path); SND-WF-011 parks (dispatch), whose
-    /// '--resume' re-emits it. The same revoke or drift twice parks once.
+    /// '--resume' re-emits it; so does SND-WF-010, a setup the effect can't run in, naming the cause. The same revoke or drift twice parks once.
     /// </summary>
     private static Decision OutboxRefusal(Deciding d, WorkflowInstance instance, OutboxRefused refused)
     {
@@ -51,8 +51,10 @@ public static partial class TransitionDecision
                 new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, effect), d.Trigger.Actor);
         }
 
-        return SpecConflict(ParkKind.Dispatch,
-            $"{effect.Kind.Value} isn't on the profile's effect allowlist. Add it and approve the profile, then resume to send it again.",
+        var question = string.Equals(refused.Code, WorkflowErrors.NoRuntime.Code, StringComparison.Ordinal)
+            ? $"{effect.Kind.Value} can't run: {refused.Reason}. Fix that, then resume to send it again."
+            : $"{effect.Kind.Value} isn't on the profile's effect allowlist. Add it and approve the profile, then resume to send it again.";
+        return SpecConflict(ParkKind.Dispatch, question,
             new ResumeAction(ResumeKind.Reemit, Withheld: null, Gate: null, effect), d.Trigger.Actor);
     }
 

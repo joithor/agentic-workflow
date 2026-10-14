@@ -64,7 +64,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
             Assert.Equal("cancelled", (await handle.GetResultAsync()).State);
             Assert.Equal("cancelled", cancelled.Instance.State);
             Assert.Empty(await EffectRows.Of(sindri, OutboxEvents.Dispatched, CommandOrigin.Recipe));
-            Assert.Empty(_desk.Calls);
+            Assert.Empty(_desk.RecipeCalls);
         }, Token);
     }
 
@@ -86,7 +86,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
             var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));
             var parked = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
             Assert.Equal(("SND-WF-011", "spec-conflict (dispatch)"), (refused.Code, parked.Detail));
-            Assert.Empty(_desk.Calls);
+            Assert.Empty(_desk.RecipeCalls);
 
             await Allow(_notify);
             var resumed = await handle.ExecuteUpdateAsync(wf => wf.AnswerAsync(Resume('b')), new WorkflowUpdateOptions(new string('b', 32)));
@@ -101,7 +101,35 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
             Assert.All(pending, p => Assert.Equal(refused.Identity, p.Identity));
             Assert.NotEqual(pending[0].Command, pending[1].Command, StringComparer.Ordinal);
             Assert.Equal(pending[1].Command, dispatched.Command);
-            Assert.Equal([refused.Identity], _desk.Performed);
+            Assert.Equal([refused.Identity], _desk.RecipePerformed);
+            await handle.TerminateAsync("test over");
+        }, Token);
+    }
+
+    [Fact]
+    public async Task An_effect_whose_setup_cannot_run_parks_dispatch_naming_the_cause_without_retrying_forever()
+    {
+        var env = server.Environment;
+        _harness.Recipe("workflow.dev-notify", WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
+        await Allow(_notify);
+        _desk.Failure = Aw.Sindri.Core.Workflow.WorkflowErrors.NoRuntime.With("/repos/dev has no commit to point refs/sindri/me/T-95 at");
+        await using var sindri = Sindri();
+        await WorkflowsHarness.HoldLease(sindri, Token);
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            var handle = await Completed(sindri, "T-95");
+            await Armed(handle, timers: 1);
+            await env.DelayAsync(_delay + TimeSpan.FromSeconds(1), Token);
+            var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));
+            var parked = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
+            await env.DelayAsync(TimeSpan.FromMinutes(5), Token);
+
+            Assert.Equal(("SND-WF-010", "spec-conflict (dispatch)"), (refused.Code, parked.Detail));
+            Assert.Contains("has no commit", refused.Reason, StringComparison.Ordinal);
+            Assert.Contains("has no commit", parked.Question?.Question, StringComparison.Ordinal);
+            _ = Assert.Single(_desk.RecipeCalls);   // a non-retryable failure: one try, not the retry policy's
             await handle.TerminateAsync("test over");
         }, Token);
     }
@@ -126,7 +154,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
             var parked = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
 
             Assert.Equal(("SND-RECIPE-006", "spec-conflict (drift)"), (refused.Code, parked.Detail));
-            Assert.Empty(_desk.Calls);
+            Assert.Empty(_desk.RecipeCalls);
             await handle.TerminateAsync("test over");
         }, Token);
     }

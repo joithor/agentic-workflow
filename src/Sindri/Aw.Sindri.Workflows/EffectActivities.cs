@@ -111,6 +111,12 @@ internal sealed class EffectActivities(
         var cancel = ActivityExecutionContext.Current.CancellationToken;
         var identity = run.Command.Identity.Text;
         var done = await dispatch(EffectContexts.Of(run), cancel).ConfigureAwait(false);
+        if (done.IsError && done.Error.Code == WorkflowErrors.NoRuntime.Code)
+        {
+            // A setup the effect can't run in (no commit, a repo the profile lacks, no fact:item): retrying can't fix it; the instance parks dispatch.
+            throw new ApplicationFailureException(done.Error.Message, errorType: done.Error.Code, nonRetryable: true);
+        }
+
         if (done.IsError)
         {
             throw new InvalidOperationException($"{done.Error.Code}: {done.Error.Message}");   // retried: the block's existence check makes the repeat harmless

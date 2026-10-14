@@ -2030,11 +2030,9 @@ Aw.Sindri.Core.Workflow.Engine.Triggers.OpenRequested.OpenRequested(string! Acto
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Code.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Code.init -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.RefusedEffect! Effect, out string! Code, out long Sequence) -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Effect.get -> Aw.Sindri.Core.Workflow.Engine.RefusedEffect!
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Effect.init -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.OutboxRefused(string! Actor, Aw.Sindri.Core.Workflow.Engine.RefusedEffect! Effect, string! Code, long Sequence) -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Sequence.get -> long
 Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Sequence.init -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.RecipeWake
@@ -5102,3 +5100,7 @@ static Aw.Sindri.Core.Profile.EffectSettings.IsEffectId(string! entry) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.For(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, int version, bool deskTaskNotified, Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType change) -> System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>!
 static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.NoticedDeskTask(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>! notices) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Id.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.RefusedEffect! Effect, out string! Code, out long Sequence, out string? Reason) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.OutboxRefused(string! Actor, Aw.Sindri.Core.Workflow.Engine.RefusedEffect! Effect, string! Code, long Sequence, string? Reason = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Reason.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Triggers.OutboxRefused.Reason.init -> void

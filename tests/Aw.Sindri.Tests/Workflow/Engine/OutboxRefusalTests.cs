@@ -57,6 +57,22 @@ public sealed class OutboxRefusalTests
         Assert.StartsWith("effect.claim.ref isn't on the profile's effect allowlist", parked.Suspension.Question, StringComparison.Ordinal);
     }
 
+    /// <summary>A setup the effect can't run in (no commit, a repo the profile lacks, no fact:item) parks dispatch and names the cause, not the allowlist.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void A_setup_failure_parks_dispatch_naming_the_cause_and_resume_reemits()
+    {
+        const string Cause = "/repos/dev has no commit to point refs/sindri/me/T-4 at";
+        var failed = new OutboxRefused(Dispatcher, _claimRef, "SND-WF-010", Sequence: 94, Cause);
+
+        var parked = Parked(Decide(Claimed(), Item, failed, rules: EngineRules.Default));
+        var resumed = Assert.IsType<Applied>(Decide(parked, Item, Resume(), rules: EngineRules.Default));
+
+        Assert.Equal((ParkReason.SpecConflict, ParkKind.Dispatch, ResumeKind.Reemit), Of(parked));
+        Assert.Contains(Cause, parked.Suspension!.Question, StringComparison.Ordinal);
+        Assert.DoesNotContain("allowlist", parked.Suspension.Question, StringComparison.Ordinal);
+        Assert.Equal(_claim, Assert.Single(resumed.Effects).Identity);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Resume_on_a_dispatch_park_reemits_the_effect_under_its_identity()
     {

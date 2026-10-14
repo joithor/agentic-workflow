@@ -15,6 +15,9 @@ internal sealed class FakeDeskEffect : IEffectKind
     private readonly List<EffectContext> _calls = [];
     private readonly HashSet<string> _performed = new(StringComparer.Ordinal);
 
+    /// <summary>When set, every dispatch fails with it (a setup the effect can't run in) instead of performing the effect.</summary>
+    public Error? Failure { get; set; }
+
     /// <summary>Every dispatch, in order.</summary>
     public IReadOnlyList<EffectContext> Calls
     {
@@ -26,6 +29,12 @@ internal sealed class FakeDeskEffect : IEffectKind
             }
         }
     }
+
+    /// <summary>The recipe effect's dispatches only: the engine's own notices (unit (c)) go through this block too.</summary>
+    public IReadOnlyList<EffectContext> RecipeCalls => [.. Calls.Where(static c => !c.FromEngine)];
+
+    /// <summary>The recipe effect's identities performed, once each.</summary>
+    public IReadOnlyList<string> RecipePerformed => [.. RecipeCalls.Select(static c => c.Identity).Distinct(StringComparer.Ordinal)];
 
     /// <summary>The identities performed, once each.</summary>
     public IReadOnlyList<string> Performed
@@ -49,6 +58,11 @@ internal sealed class FakeDeskEffect : IEffectKind
         lock (_gate)
         {
             _calls.Add(context);
+            if (Failure is { } failure)
+            {
+                return ValueTask.FromResult<Result<EffectDone>>(failure);
+            }
+
             existed = !_performed.Add(context.Identity);
         }
 

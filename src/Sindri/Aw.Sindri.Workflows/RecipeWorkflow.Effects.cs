@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -145,8 +146,16 @@ internal sealed partial class RecipeWorkflow
             var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts);
             var options = (ActivityOptions)EffectActivities.RunOptions.Clone();
             options.TaskQueue = Workflow.Info.TaskQueue;   // the instance's queue, from settings (never a constant)
-            _ = await Workflow.ExecuteActivityAsync((EffectActivities a) => a.RunAsync(run), options).ConfigureAwait(true);
-            _ = _effectsSent.Add(row.Identity);
+            try
+            {
+                _ = await Workflow.ExecuteActivityAsync((EffectActivities a) => a.RunAsync(run), options).ConfigureAwait(true);
+                _ = _effectsSent.Add(row.Identity);
+            }
+            catch (ActivityFailureException e) when (e.InnerException is ApplicationFailureException { NonRetryable: true, ErrorType: { } code } setup)
+            {
+                var failed = await Record(row with { State = EffectState.Refused, Code = code, Reason = setup.Message }).ConfigureAwait(true);   // the setup can't run it: refused, parked dispatch
+                await Refuse(new OutboxRefused(Dispatcher, new RefusedEffect(effect.Effect, effect.Identity, effect.With), code, failed.Sequence, setup.Message)).ConfigureAwait(true);
+            }
         }
         finally
         {
