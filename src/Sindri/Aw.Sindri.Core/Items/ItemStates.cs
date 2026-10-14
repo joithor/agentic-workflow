@@ -1,3 +1,5 @@
+using Aw.Sindri.Core.Items.Vocabulary;
+
 namespace Aw.Sindri.Core.Items;
 
 /// <summary>Pure questions about an item state.</summary>

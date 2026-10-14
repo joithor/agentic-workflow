@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.Items.Vocabulary;
 
 namespace Aw.Sindri.Features.GetQueue;
 

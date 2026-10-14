@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Aw.Sindri.Core.Items;
+namespace Aw.Sindri.Core.Items.Vocabulary;
 
 /// <summary>An item's state (API spec §3.6); written in kebab case ('needs-decision').</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<ItemState>))]

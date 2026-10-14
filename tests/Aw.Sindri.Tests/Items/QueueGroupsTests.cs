@@ -1,6 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Testing;
 

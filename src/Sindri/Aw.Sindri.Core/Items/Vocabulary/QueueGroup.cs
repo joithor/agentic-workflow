@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Aw.Sindri.Core.Items;
+namespace Aw.Sindri.Core.Items.Vocabulary;
 
 /// <summary>A queue group (API spec §3.6); written in camel case ('waitingOnYou'). <see cref="QueueGroups.Order"/> holds the groups the queue shows.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<QueueGroup>))]

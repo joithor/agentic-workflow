@@ -1,5 +1,5 @@
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.Items.Vocabulary;
 
 namespace Aw.Sindri.Core.Events;
 

@@ -43,7 +43,7 @@ internal static partial class EndpointCqrsRules
     /// <summary>'METHOD /route' with parameter names dropped ('{itemId}' → '{}').</summary>
     public static IEnumerable<string> Routes(RouteEndpoint endpoint)
     {
-        var route = Parameter.Replace(endpoint.RoutePattern.RawText ?? string.Empty, "{}");
+        var route = WithoutParameterNames(endpoint.RoutePattern.RawText ?? string.Empty);
         var methods = endpoint.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods ?? ["*"];
         return methods.Select(method => method + " " + route);
     }
@@ -63,6 +63,9 @@ internal static partial class EndpointCqrsRules
             }
         }
     }
+
+    /// <summary>The route with parameter names dropped ('{itemId}' → '{}'), as <see cref="Routes"/> gives it.</summary>
+    public static string WithoutParameterNames(string route) => Parameter.Replace(route, "{}");
 
     private static string? Post(string route, Type request, ICommandCatalog catalog)
     {

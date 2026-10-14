@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Aw.Sindri.Core.Items;
+namespace Aw.Sindri.Core.Items.Vocabulary;
 
 /// <summary>Why a human closes an item: the 'CloseItem' variant ('done' or 'cancelled').</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<CloseReason>))]

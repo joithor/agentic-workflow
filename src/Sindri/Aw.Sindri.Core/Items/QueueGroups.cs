@@ -1,3 +1,5 @@
+using Aw.Sindri.Core.Items.Vocabulary;
+
 namespace Aw.Sindri.Core.Items;
 
 /// <summary>The one place the queue's group set lives (API spec §3.6; owner decision 2026-10-12: four groups, parked items wait on you).</summary>

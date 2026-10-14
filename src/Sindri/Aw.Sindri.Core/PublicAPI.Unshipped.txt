@@ -3993,41 +3993,41 @@ Aw.Sindri.Core.Events.ItemStateChanged
 Aw.Sindri.Core.Events.ItemStateChanged.<Clone>$() -> Aw.Sindri.Core.Events.ItemStateChanged!
 Aw.Sindri.Core.Events.ItemStateChanged.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
 Aw.Sindri.Core.Events.ItemStateChanged.CommandId.init -> void
-Aw.Sindri.Core.Events.ItemStateChanged.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Items.ItemState From, out Aw.Sindri.Core.Items.ItemState To, out long Version, out string? Reason) -> void
+Aw.Sindri.Core.Events.ItemStateChanged.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Items.Vocabulary.ItemState From, out Aw.Sindri.Core.Items.Vocabulary.ItemState To, out long Version, out string? Reason) -> void
 Aw.Sindri.Core.Events.ItemStateChanged.Equals(Aw.Sindri.Core.Events.ItemStateChanged? other) -> bool
-Aw.Sindri.Core.Events.ItemStateChanged.From.get -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Events.ItemStateChanged.From.get -> Aw.Sindri.Core.Items.Vocabulary.ItemState
 Aw.Sindri.Core.Events.ItemStateChanged.From.init -> void
 Aw.Sindri.Core.Events.ItemStateChanged.Item.get -> Aw.Sindri.Core.Ids.ItemId
 Aw.Sindri.Core.Events.ItemStateChanged.Item.init -> void
-Aw.Sindri.Core.Events.ItemStateChanged.ItemStateChanged(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Items.ItemState From, Aw.Sindri.Core.Items.ItemState To, long Version, string? Reason) -> void
+Aw.Sindri.Core.Events.ItemStateChanged.ItemStateChanged(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Items.Vocabulary.ItemState From, Aw.Sindri.Core.Items.Vocabulary.ItemState To, long Version, string? Reason) -> void
 Aw.Sindri.Core.Events.ItemStateChanged.Reason.get -> string?
 Aw.Sindri.Core.Events.ItemStateChanged.Reason.init -> void
-Aw.Sindri.Core.Events.ItemStateChanged.To.get -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Events.ItemStateChanged.To.get -> Aw.Sindri.Core.Items.Vocabulary.ItemState
 Aw.Sindri.Core.Events.ItemStateChanged.To.init -> void
 Aw.Sindri.Core.Events.ItemStateChanged.Version.get -> long
 Aw.Sindri.Core.Events.ItemStateChanged.Version.init -> void
-Aw.Sindri.Core.Items.CloseReason
-Aw.Sindri.Core.Items.CloseReason.Cancelled = 1 -> Aw.Sindri.Core.Items.CloseReason
-Aw.Sindri.Core.Items.CloseReason.Done = 0 -> Aw.Sindri.Core.Items.CloseReason
+Aw.Sindri.Core.Items.Vocabulary.CloseReason
+Aw.Sindri.Core.Items.Vocabulary.CloseReason.Cancelled = 1 -> Aw.Sindri.Core.Items.Vocabulary.CloseReason
+Aw.Sindri.Core.Items.Vocabulary.CloseReason.Done = 0 -> Aw.Sindri.Core.Items.Vocabulary.CloseReason
 Aw.Sindri.Core.Items.ItemActions
 Aw.Sindri.Core.Items.ItemScope
-Aw.Sindri.Core.Items.ItemState
-Aw.Sindri.Core.Items.ItemState.Cancelled = 8 -> Aw.Sindri.Core.Items.ItemState
-Aw.Sindri.Core.Items.ItemState.Done = 7 -> Aw.Sindri.Core.Items.ItemState
-Aw.Sindri.Core.Items.ItemState.NeedsAnswer = 4 -> Aw.Sindri.Core.Items.ItemState
-Aw.Sindri.Core.Items.ItemState.NeedsDecision = 3 -> Aw.Sindri.Core.Items.ItemState
-Aw.Sindri.Core.Items.ItemState.New = 0 -> Aw.Sindri.Core.Items.ItemState
-Aw.Sindri.Core.Items.ItemState.Parked = 5 -> Aw.Sindri.Core.Items.ItemState
-Aw.Sindri.Core.Items.ItemState.Queued = 1 -> Aw.Sindri.Core.Items.ItemState
-Aw.Sindri.Core.Items.ItemState.Running = 2 -> Aw.Sindri.Core.Items.ItemState
-Aw.Sindri.Core.Items.ItemState.TakenOver = 6 -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.Vocabulary.ItemState
+Aw.Sindri.Core.Items.Vocabulary.ItemState.Cancelled = 8 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
+Aw.Sindri.Core.Items.Vocabulary.ItemState.Done = 7 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
+Aw.Sindri.Core.Items.Vocabulary.ItemState.NeedsAnswer = 4 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
+Aw.Sindri.Core.Items.Vocabulary.ItemState.NeedsDecision = 3 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
+Aw.Sindri.Core.Items.Vocabulary.ItemState.New = 0 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
+Aw.Sindri.Core.Items.Vocabulary.ItemState.Parked = 5 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
+Aw.Sindri.Core.Items.Vocabulary.ItemState.Queued = 1 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
+Aw.Sindri.Core.Items.Vocabulary.ItemState.Running = 2 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
+Aw.Sindri.Core.Items.Vocabulary.ItemState.TakenOver = 6 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
 Aw.Sindri.Core.Items.ItemStates
-Aw.Sindri.Core.Items.QueueGroup
-Aw.Sindri.Core.Items.QueueGroup.Parked = 2 -> Aw.Sindri.Core.Items.QueueGroup
-Aw.Sindri.Core.Items.QueueGroup.Queued = 4 -> Aw.Sindri.Core.Items.QueueGroup
-Aw.Sindri.Core.Items.QueueGroup.Running = 3 -> Aw.Sindri.Core.Items.QueueGroup
-Aw.Sindri.Core.Items.QueueGroup.WaitingOnYou = 0 -> Aw.Sindri.Core.Items.QueueGroup
-Aw.Sindri.Core.Items.QueueGroup.WithYou = 1 -> Aw.Sindri.Core.Items.QueueGroup
+Aw.Sindri.Core.Items.Vocabulary.QueueGroup
+Aw.Sindri.Core.Items.Vocabulary.QueueGroup.Parked = 2 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
+Aw.Sindri.Core.Items.Vocabulary.QueueGroup.Queued = 4 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
+Aw.Sindri.Core.Items.Vocabulary.QueueGroup.Running = 3 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
+Aw.Sindri.Core.Items.Vocabulary.QueueGroup.WaitingOnYou = 0 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
+Aw.Sindri.Core.Items.Vocabulary.QueueGroup.WithYou = 1 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
 Aw.Sindri.Core.Items.QueueGroups
 Aw.Sindri.Core.Items.TimelineLine
 const Aw.Sindri.Core.Events.EventTypes.ItemCreated = "item.created" -> string!
@@ -4053,12 +4053,12 @@ static Aw.Sindri.Core.Events.ItemLinked.operator !=(Aw.Sindri.Core.Events.ItemLi
 static Aw.Sindri.Core.Events.ItemLinked.operator ==(Aw.Sindri.Core.Events.ItemLinked? left, Aw.Sindri.Core.Events.ItemLinked? right) -> bool
 static Aw.Sindri.Core.Events.ItemStateChanged.operator !=(Aw.Sindri.Core.Events.ItemStateChanged? left, Aw.Sindri.Core.Events.ItemStateChanged? right) -> bool
 static Aw.Sindri.Core.Events.ItemStateChanged.operator ==(Aw.Sindri.Core.Events.ItemStateChanged? left, Aw.Sindri.Core.Events.ItemStateChanged? right) -> bool
-static Aw.Sindri.Core.Items.ItemActions.For(Aw.Sindri.Core.Items.ItemState state) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>!
-static Aw.Sindri.Core.Items.ItemActions.Primary(Aw.Sindri.Core.Items.ItemState state) -> Aw.Sindri.Core.Ids.ActionId?
+static Aw.Sindri.Core.Items.ItemActions.For(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>!
+static Aw.Sindri.Core.Items.ItemActions.Primary(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> Aw.Sindri.Core.Ids.ActionId?
 static Aw.Sindri.Core.Items.ItemScope.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Ids.RepoName? itemRepo) -> bool
-static Aw.Sindri.Core.Items.ItemStates.IsClosed(Aw.Sindri.Core.Items.ItemState state) -> bool
-static Aw.Sindri.Core.Items.QueueGroups.GroupOf(Aw.Sindri.Core.Items.ItemState state) -> Aw.Sindri.Core.Items.QueueGroup?
-static Aw.Sindri.Core.Items.QueueGroups.Order.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.QueueGroup>!
+static Aw.Sindri.Core.Items.ItemStates.IsClosed(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> bool
+static Aw.Sindri.Core.Items.QueueGroups.GroupOf(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup?
+static Aw.Sindri.Core.Items.QueueGroups.Order.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.Vocabulary.QueueGroup>!
 static Aw.Sindri.Core.Items.TimelineLine.For(Aw.Sindri.Core.Ledger.LedgerEvent! recorded, System.Text.Json.JsonSerializerOptions! json) -> string!
 static readonly Aw.Sindri.Core.SindriErrors.ItemConflict -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.ItemNotFound -> Aw.Kernel.ErrorDefinition!
@@ -4092,13 +4092,13 @@ Aw.Sindri.Core.Views.ItemRow.CreatedAt.get -> System.DateTimeOffset
 Aw.Sindri.Core.Views.ItemRow.CreatedAt.init -> void
 Aw.Sindri.Core.Views.ItemRow.CreatedBy.get -> string!
 Aw.Sindri.Core.Views.ItemRow.CreatedBy.init -> void
-Aw.Sindri.Core.Views.ItemRow.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Id, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Items.ItemState State, out string? Step, out long Version, out string! CreatedBy, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset Since, out System.DateTimeOffset UpdatedAt, out Aw.Sindri.Core.Ids.RecordKey? Link, out Aw.Sindri.Core.Ids.ItemAlias? Alias, out string? Body, out string? WaitingOn, out string? Instance, out string? Owner, out long Sequence) -> void
+Aw.Sindri.Core.Views.ItemRow.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Id, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Items.Vocabulary.ItemState State, out string? Step, out long Version, out string! CreatedBy, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset Since, out System.DateTimeOffset UpdatedAt, out Aw.Sindri.Core.Ids.RecordKey? Link, out Aw.Sindri.Core.Ids.ItemAlias? Alias, out string? Body, out string? WaitingOn, out string? Instance, out string? Owner, out long Sequence) -> void
 Aw.Sindri.Core.Views.ItemRow.Equals(Aw.Sindri.Core.Views.ItemRow? other) -> bool
 Aw.Sindri.Core.Views.ItemRow.Id.get -> Aw.Sindri.Core.Ids.ItemId
 Aw.Sindri.Core.Views.ItemRow.Id.init -> void
 Aw.Sindri.Core.Views.ItemRow.Instance.get -> string?
 Aw.Sindri.Core.Views.ItemRow.Instance.init -> void
-Aw.Sindri.Core.Views.ItemRow.ItemRow(Aw.Sindri.Core.Ids.ItemId Id, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Items.ItemState State, string? Step, long Version, string! CreatedBy, System.DateTimeOffset CreatedAt, System.DateTimeOffset Since, System.DateTimeOffset UpdatedAt, Aw.Sindri.Core.Ids.RecordKey? Link, Aw.Sindri.Core.Ids.ItemAlias? Alias, string? Body, string? WaitingOn, string? Instance, string? Owner, long Sequence) -> void
+Aw.Sindri.Core.Views.ItemRow.ItemRow(Aw.Sindri.Core.Ids.ItemId Id, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Items.Vocabulary.ItemState State, string? Step, long Version, string! CreatedBy, System.DateTimeOffset CreatedAt, System.DateTimeOffset Since, System.DateTimeOffset UpdatedAt, Aw.Sindri.Core.Ids.RecordKey? Link, Aw.Sindri.Core.Ids.ItemAlias? Alias, string? Body, string? WaitingOn, string? Instance, string? Owner, long Sequence) -> void
 Aw.Sindri.Core.Views.ItemRow.Link.get -> Aw.Sindri.Core.Ids.RecordKey?
 Aw.Sindri.Core.Views.ItemRow.Link.init -> void
 Aw.Sindri.Core.Views.ItemRow.Owner.get -> string?
@@ -4109,7 +4109,7 @@ Aw.Sindri.Core.Views.ItemRow.Sequence.get -> long
 Aw.Sindri.Core.Views.ItemRow.Sequence.init -> void
 Aw.Sindri.Core.Views.ItemRow.Since.get -> System.DateTimeOffset
 Aw.Sindri.Core.Views.ItemRow.Since.init -> void
-Aw.Sindri.Core.Views.ItemRow.State.get -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Views.ItemRow.State.get -> Aw.Sindri.Core.Items.Vocabulary.ItemState
 Aw.Sindri.Core.Views.ItemRow.State.init -> void
 Aw.Sindri.Core.Views.ItemRow.Step.get -> string?
 Aw.Sindri.Core.Views.ItemRow.Step.init -> void
@@ -4149,14 +4149,14 @@ override Aw.Sindri.Core.Views.ItemRow.ToString() -> string!
 override Aw.Sindri.Core.Views.TimelineRow.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Views.TimelineRow.GetHashCode() -> int
 override Aw.Sindri.Core.Views.TimelineRow.ToString() -> string!
-static Aw.Sindri.Core.Items.ItemDecisions.Close(Aw.Sindri.Core.Views.ItemRow! item, Aw.Sindri.Core.Items.CloseReason reason, long seenVersion, Aw.Sindri.Core.Ids.CommandId command) -> Aw.Kernel.Result<Aw.Sindri.Core.Events.ItemStateChanged!>!
+static Aw.Sindri.Core.Items.ItemDecisions.Close(Aw.Sindri.Core.Views.ItemRow! item, Aw.Sindri.Core.Items.Vocabulary.CloseReason reason, long seenVersion, Aw.Sindri.Core.Ids.CommandId command) -> Aw.Kernel.Result<Aw.Sindri.Core.Events.ItemStateChanged!>!
 static Aw.Sindri.Core.Text.SafeText.Clean(Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! text, int max) -> string!
 static Aw.Sindri.Core.Text.SafeText.Escape(string! text) -> string!
 static Aw.Sindri.Core.Text.SafeText.Line(string! text, int max) -> string!
 static Aw.Sindri.Core.Views.AliasRow.operator !=(Aw.Sindri.Core.Views.AliasRow? left, Aw.Sindri.Core.Views.AliasRow? right) -> bool
 static Aw.Sindri.Core.Views.AliasRow.operator ==(Aw.Sindri.Core.Views.AliasRow? left, Aw.Sindri.Core.Views.AliasRow? right) -> bool
-static Aw.Sindri.Core.Views.EmptyText.Group(Aw.Sindri.Core.Items.QueueGroup group) -> string!
-static Aw.Sindri.Core.Views.EmptyText.Items(Aw.Sindri.Core.Items.ItemState? state, Aw.Sindri.Core.Ids.RepoName? repo) -> string!
+static Aw.Sindri.Core.Views.EmptyText.Group(Aw.Sindri.Core.Items.Vocabulary.QueueGroup group) -> string!
+static Aw.Sindri.Core.Views.EmptyText.Items(Aw.Sindri.Core.Items.Vocabulary.ItemState? state, Aw.Sindri.Core.Ids.RepoName? repo) -> string!
 static Aw.Sindri.Core.Views.EmptyText.Queue() -> string!
 static Aw.Sindri.Core.Views.EmptyText.Timeline() -> string!
 static Aw.Sindri.Core.Views.ItemRow.operator !=(Aw.Sindri.Core.Views.ItemRow? left, Aw.Sindri.Core.Views.ItemRow? right) -> bool
@@ -4168,11 +4168,11 @@ Aw.Sindri.Core.Items.ItemSummary
 Aw.Sindri.Core.Items.ItemSummary.<Clone>$() -> Aw.Sindri.Core.Items.ItemSummary!
 Aw.Sindri.Core.Items.ItemSummary.Actions.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>!
 Aw.Sindri.Core.Items.ItemSummary.Actions.init -> void
-Aw.Sindri.Core.Items.ItemSummary.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Id, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Items.ItemState State, out string? Step, out System.DateTimeOffset Since, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string? Owner) -> void
+Aw.Sindri.Core.Items.ItemSummary.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Id, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Items.Vocabulary.ItemState State, out string? Step, out System.DateTimeOffset Since, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string? Owner) -> void
 Aw.Sindri.Core.Items.ItemSummary.Equals(Aw.Sindri.Core.Items.ItemSummary? other) -> bool
 Aw.Sindri.Core.Items.ItemSummary.Id.get -> Aw.Sindri.Core.Ids.ItemId
 Aw.Sindri.Core.Items.ItemSummary.Id.init -> void
-Aw.Sindri.Core.Items.ItemSummary.ItemSummary(Aw.Sindri.Core.Ids.ItemId Id, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Items.ItemState State, string? Step, System.DateTimeOffset Since, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string? Owner) -> void
+Aw.Sindri.Core.Items.ItemSummary.ItemSummary(Aw.Sindri.Core.Ids.ItemId Id, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Items.Vocabulary.ItemState State, string? Step, System.DateTimeOffset Since, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string? Owner) -> void
 Aw.Sindri.Core.Items.ItemSummary.Owner.get -> string?
 Aw.Sindri.Core.Items.ItemSummary.Owner.init -> void
 Aw.Sindri.Core.Items.ItemSummary.PrimaryAction.get -> Aw.Sindri.Core.Ids.ActionId?
@@ -4181,7 +4181,7 @@ Aw.Sindri.Core.Items.ItemSummary.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
 Aw.Sindri.Core.Items.ItemSummary.Repo.init -> void
 Aw.Sindri.Core.Items.ItemSummary.Since.get -> System.DateTimeOffset
 Aw.Sindri.Core.Items.ItemSummary.Since.init -> void
-Aw.Sindri.Core.Items.ItemSummary.State.get -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemSummary.State.get -> Aw.Sindri.Core.Items.Vocabulary.ItemState
 Aw.Sindri.Core.Items.ItemSummary.State.init -> void
 Aw.Sindri.Core.Items.ItemSummary.Step.get -> string?
 Aw.Sindri.Core.Items.ItemSummary.Step.init -> void
