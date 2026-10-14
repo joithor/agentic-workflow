@@ -466,6 +466,10 @@
         <div class="card"><h3>Coordinate agents</h3><p>Agents hand off through Prism handoffs (<code>session_save_handoff</code> / <code>session_load_context</code>), judge's outbox and teammate names (agent teams), and Sindri's ledger; there is no bridge server.</p></div>
         <div class="card"><h3>Trim skills per repo</h3><p>Claude Code only. Profiles: <code>web-app</code>, <code>ios</code>, <code>personal</code>.</p><div class="term"><span class="pr">$ </span>./setup.sh --profile web-app \
     --target ~/repos/app</div></div>
+        <div class="card"><h3>Try Sindri (opt-in)</h3><p>The TypeScript <code>sindri</code> CLI sizes your backlog, scopes briefs and indexes code. Setup adds it, plus a SessionStart nudge for repos that aren't onboarded yet. The new C# Sindri app isn't installed until the switch. Walkthrough: <code>docs/sindri.html</code>.</p><div class="term"><span class="pr">$ </span>./setup.sh --with-sindri
+<span class="pr">$ </span>sindri profile init
+<span class="pr">$ </span>sindri repo onboard .
+<span class="pr">$ </span>sindri doctor</div></div>
         <div class="card"><h3>Tune the judge</h3><p><code data-cmd>judge</code> lets you inspect, tune, and undo the decisions it made for hooks: <code>why</code>, <code>undo</code>, <code>health</code>.</p></div>
       </div>
       <h3>Update</h3>

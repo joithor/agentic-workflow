@@ -1,19 +1,27 @@
 #!/usr/bin/env bash
-# NativeAOT smoke for sindri (src/Sindri/Aw.Sindri.Host): publish it with PublishAot for the host RID, fail on any
-# trim/AOT (IL2xxx/IL3xxx) warning, then drive the native binary through the S1 and API P1 journeys against a temp home:
-# doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease, the approve
-# preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed approval, status (text and --json's apiVersion),
-# a session's stop refused, the human's stop, status and doctor again; then recipe validate on the shipped recipes
-# (their hashes; workflow.item reads its child beside it) and on an invalid fixture (RCP-REACH-001, exit 1), the first
-# verbs through the YAML reader and the recipe binding. The normalized output (pids, ports, hashes, times, the host name
-# and the temp path masked) must equal expected.txt.
+# Publish smoke for sindri (src/Sindri/Aw.Sindri.Host), CI's AOT-job entry for the host (engine spec rev 8 §11, heavy
+# lane: "the framework-dependent publish of the Sindri host"). The host is framework-dependent, not NativeAOT: it hosts
+# the Temporal worker through Aw.Sindri.Workflows and the Temporal .NET SDK has no trimming support
+# (temporalio/sdk-dotnet#286; .agents/rules/csharp.md "AOT scope"). So this publishes the host framework-dependent and
+# portable (no runtime identifier, no self-contained runtime) with warnings as errors, checks that the output is
+# framework-dependent and carries the Temporal SDK with its native bridge, then drives the published apphost 'sindri'
+# (DOTNET_ROOT set from the 'dotnet' on PATH when unset) through the S1 and API P1 journeys against a temp home (serve
+# brings up the pinned Temporal dev server, so the temporal CLI must be installed: scripts/binaries-lock.sh fetch
+# temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
+# the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
+# approval, status (text and --json's apiVersion), a session's stop refused, the human's stop, status and doctor again;
+# then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
+# fixture (RCP-REACH-001, exit 1). The normalized output (pids, ports, hashes, times, the host name and the temp path
+# masked) must equal expected.txt.
+# The apphost, not 'dotnet sindri.dll': start re-launches its own executable as 'serve' (Environment.ProcessPath), which
+# under 'dotnet sindri.dll' is the dotnet muxer.
 # Callers (API spec §6): the run unsets the agent variables (CLAUDECODE, AW_SINDRI_CHILD, CODEX_SANDBOX, CURSOR_AGENT)
 # and sets AW_SINDRI_PROVER=1, so the binary is the human; a "(human, terminal)" step runs under a pty
 # (scripts/lib/with-tty.sh: CRs and terminal control sequences stripped, stderr merged), a "(session)" step sets CLAUDECODE=1 with stdin from /dev/null.
 # Every invocation of the binary is bounded (30 s, perl's alarm); one that runs over prints 'exit 124'.
-# The publish runs on a copy of the files it needs, in a temp dir under $TMPDIR that is deleted on exit (PublishAot
-# with a RID makes restore add the host RID's ILCompiler packs to the lock files, so it never runs on the checkout).
-# Kept in artifacts/aot-sindri-smoke/ (gitignored): bin/ (the binary and its SQLite library), publish.log, actual.txt.
+# The publish runs on a copy of the files it needs, in a temp dir under $TMPDIR that is deleted on exit, so the
+# checkout's lock files and build output are never touched.
+# Kept in artifacts/aot-sindri-smoke/ (gitignored): bin/ (the publish output with the apphost), publish.log, actual.txt.
 set -euo pipefail
 export AW_LOG_LEVEL=none
 
@@ -57,12 +65,27 @@ work="$scratch/run"
 mkdir -p "$tree" "$work"
 git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' BannedSymbols.txt CodeMetricsConfig.txt \
   src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Context src/Sindri | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
-rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
-dotnet publish "$tree/src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false \
-  -o "$out/bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }
-if grep -qE 'IL[23][0-9]{3}' "$out/publish.log"; then
-  grep -E 'IL[23][0-9]{3}' "$out/publish.log" >&2
-  exit 1
+dotnet publish "$tree/src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" -c Release --no-self-contained -warnaserror   -o "$out/bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }
+
+# Framework-dependent: the runtimeconfig names the shared framework and no runtime ships beside the host.
+pub="$out/bin"
+grep -q '"name": "Microsoft.AspNetCore.App"' "$pub/sindri.runtimeconfig.json" || { echo "aot-sindri-smoke: sindri.runtimeconfig.json names no shared framework" >&2; exit 1; }
+[ ! -e "$pub/System.Private.CoreLib.dll" ] || { echo "aot-sindri-smoke: the publish is self-contained (System.Private.CoreLib.dll beside the host)" >&2; exit 1; }
+# The Temporal SDK and its native core bridge for this platform are in the publish output.
+[ -f "$pub/Temporalio.dll" ] || { echo "aot-sindri-smoke: Temporalio.dll is missing from the publish output" >&2; exit 1; }
+os="$(uname -s)"; arch="$(uname -m)"
+case "$os/$arch" in
+  Darwin/arm64) bridge=runtimes/osx-arm64/native/libtemporalio_sdk_core_c_bridge.dylib ;;
+  Darwin/x86_64) bridge=runtimes/osx-x64/native/libtemporalio_sdk_core_c_bridge.dylib ;;
+  Linux/x86_64) bridge=runtimes/linux-x64/native/libtemporalio_sdk_core_c_bridge.so ;;
+  Linux/aarch64) bridge=runtimes/linux-arm64/native/libtemporalio_sdk_core_c_bridge.so ;;
+  *) bridge="" ;;
+esac
+[ -z "$bridge" ] || [ -f "$pub/$bridge" ] || { echo "aot-sindri-smoke: the Temporal core bridge $bridge is missing from the publish output" >&2; exit 1; }
+[ -x "$bin" ] || { echo "aot-sindri-smoke: the apphost 'sindri' is missing from the publish output" >&2; exit 1; }
+if [ -z "${DOTNET_ROOT:-}" ]; then
+  DOTNET_ROOT="$(cd "$(dirname "$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$(command -v dotnet)")")" && pwd)"
+  export DOTNET_ROOT
 fi
 
 export AW_SINDRI_HOME="$work/home" AW_SINDRI_PORT=0
@@ -124,4 +147,4 @@ sed -E -e "s#$work#WORK#g" -e "s#$root#ROOT#g" -e "s#held by $(hostname -s)[^/ ]
   -e 's/pid [0-9]+/pid PID/g' -e 's#HOST/[0-9]+#HOST/PID#g' -e 's/127\.0\.0\.1:[0-9]+/127.0.0.1:PORT/g' \
   -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z/TIME/g' -e 's/\(last [0-9:]{8}Z\)/(last TIME)/g' "$out/actual.raw" >"$out/actual.txt"
 diff -u "$here/expected.txt" "$out/actual.txt"
-echo "aot-sindri-smoke: ok ($(du -h "$bin" | cut -f1) binary)"
+echo "aot-sindri-smoke: ok (framework-dependent publish, $(du -sh "$pub" | cut -f1))"

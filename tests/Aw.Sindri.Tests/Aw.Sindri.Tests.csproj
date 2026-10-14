@@ -19,6 +19,7 @@
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Features/Aw.Sindri.Features.csproj" />
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Infrastructure/Aw.Sindri.Infrastructure.csproj" />
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" />
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Workflows/Aw.Sindri.Workflows.csproj" />
     <ProjectReference Include="../Aw.Sindri.Testing/Aw.Sindri.Testing.csproj" />
     <ProjectReference Include="../Aw.Context.Testing/Aw.Context.Testing.csproj" />
     <ProjectReference Include="../Aw.Kernel.Telemetry.Testing/Aw.Kernel.Telemetry.Testing.csproj" />

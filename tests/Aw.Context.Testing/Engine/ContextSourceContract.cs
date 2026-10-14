@@ -35,6 +35,21 @@ public abstract class ContextSourceContract<TSource>
         Check(all.All(h => h.Ref.Source == source.Describe().Id), "every hit names this source");
     }
 
+    /// <summary>
+    /// The descriptor states where the source runs and any limits it declares (README X61): a placement from the enum,
+    /// limits, when declared, well formed, and none on a local source (CTX D6).
+    /// </summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Describe_states_placement_and_well_formed_limits()
+    {
+        var described = (await Create()).Describe();
+
+        Check(Enum.IsDefined(described.Placement), "the placement is Local or Shared");
+        Check(described.Limits is null || described.Limits.IsWellFormed, "declared limits are positive, a request count with its window");
+        Check(described.Placement != SourcePlacement.Local || described.Limits is null, "a local source declares no limits (CTX D6, README X61)");
+    }
+
     /// <summary>A term the docs don't hold finds nothing (and is never read as query syntax).</summary>
     /// <returns>A task.</returns>
     [Fact]

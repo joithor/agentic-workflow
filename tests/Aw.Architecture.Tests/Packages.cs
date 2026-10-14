@@ -39,5 +39,6 @@ internal static class Packages
         "Aw.Context.Core",
         "Aw.Context.Features",
         "Aw.Context.Infrastructure",
+        "Aw.Sindri.Workflows",
     ];
 }

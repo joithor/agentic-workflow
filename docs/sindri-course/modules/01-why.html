@@ -108,15 +108,19 @@
 
       <section class="screen animate-in">
         <h2 class="screen-heading">What's real today, and what isn't</h2>
-        <p>Sindri is part built, part plan. Every feature in this course carries one of four labels:</p>
+        <p>Sindri is part built, part plan. Every feature in this course carries one of five labels (as of 2026-10-12):</p>
         <div class="pattern-cards">
           <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5)">
             <h4 class="pattern-title">Built <span class="status built">built</span></h4>
-            <p class="pattern-desc">Shipped in Plans 1–5: measurement, the ledger, the code index, scoping and offline self-evolution.</p>
+            <p class="pattern-desc">Merged on <code>main</code>. Plans 1–5 in TypeScript (measurement, the ledger, the code index, scoping and offline self-evolution), and the first stages of the new C# Sindri app: its shell, its command chain and the engine's recipe model.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)">
+            <h4 class="pattern-title">Building <span class="status building">building</span></h4>
+            <p class="pattern-desc">Has an open PR. The C# app's API, workflow engine on Temporal, context engine and Avalonia UI are here, in parallel lanes.</p>
           </div>
           <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)">
             <h4 class="pattern-title">Specced <span class="status specced">specced</span></h4>
-            <p class="pattern-desc">Has an approved spec and plan. Plan 6, the dashboard, is here.</p>
+            <p class="pattern-desc">Has an approved spec and plan, but no PR yet: the later phases of each app lane.</p>
           </div>
           <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4)">
             <h4 class="pattern-title">Designed <span class="status designed">designed</span></h4>
@@ -128,7 +132,7 @@
           </div>
         </div>
         <div class="file-tree">
-          <div class="ft-folder open"><span class="ft-name">sindri/src/</span><span class="ft-desc">The built part, in TypeScript today (a C# port is in progress)</span>
+          <div class="ft-folder open"><span class="ft-name">sindri/src/</span><span class="ft-desc">The built part in TypeScript: it runs today and is the reference for the new C# app in <code>src/Sindri</code>, which replaces it at the switch</span>
             <div class="ft-children">
               <div class="ft-folder"><span class="ft-name">ledger/</span><span class="ft-desc">The one database everything writes to</span></div>
               <div class="ft-folder"><span class="ft-name">lock/</span><span class="ft-desc">Makes sure only one Sindri runs at a time</span></div>

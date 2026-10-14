@@ -32,6 +32,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ApiProblem))]
 [JsonSerializable(typeof(ProcessStarted))]
 [JsonSerializable(typeof(ProcessStopped))]
+[JsonSerializable(typeof(WorkflowEventPayload))]
 [JsonSerializable(typeof(ProfileApproved))]
 [JsonSerializable(typeof(Heartbeat))]
 [JsonSerializable(typeof(CommandHandled))]

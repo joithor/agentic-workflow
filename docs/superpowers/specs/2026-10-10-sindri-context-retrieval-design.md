@@ -60,7 +60,7 @@ that graph plus rank fusion across adapters.
 | D3 | **Onyx is used for recall only; Sindri owns ranking** | Onyx's OpenSearch path fuses one vector and one keyword query by min-max normalization with fixed 0.5/0.5 weights, with no reranker, no recency and no document boost (read at Onyx `main` 268e4d5a3d, 2026-10-05: `backend/onyx/document_index/opensearch/search.py:81-93`, TODOs `:157-160`; `hybrid_alpha` and `recency_bias_multiplier` passed by `context/search/pipeline.py:317-318` but unused there). Re-checked against the pinned release in the Onyx phase |
 | D4 | A **native read-only Linear adapter** for project structure | Onyx's Linear connector reads issues and comments only (`connectors/linear/connector.py:231-341`): no projects, no Linear Documents (where the owner's PRDs and TDDs live), no project updates, no issue↔PR attachments |
 | D5 | One separable package, **`Aw.Context`**, with no Sindri imports, reached through **one facade port** in its Core (§4) | §17.3 Reuse, and the C# rule that another package is reached only through its Core |
-| D6 | **No rate limiting** in the adapter contract | Every source is on the machine: Onyx on loopback, repos, the index. A per-query deadline stays |
+| D6 | **No rate limiting for Local sources** in the adapter contract | Every source today is on the machine: Onyx on loopback, repos, the index. A per-query deadline stays. "No rate limiting" is a property of `Local` sources, not a global rule: a `Shared` source may declare `SourceLimits` (README X61), which nothing enforces yet |
 | D7 | `affects` (the cascade) is **computed at query time** over typed steps (§6.1), never stored | Stored, it goes stale on every edge change |
 | D8 | Human edits are an **override layer** that survives every rebuild and every key-scheme change | Ring 1 runs in `assist` mode: the extracted map is a draft until the owner confirms it |
 | D9 | **Decision** is its own node: Sindri's wording, citing a verbatim quote, with `supersedes` | What "what was decided about X?" must return |
@@ -179,7 +179,8 @@ public sealed record SourceRef(SourceId Source, ExternalId Id, SourceVersion Ver
 
 public interface IContextSource
 {
-    SourceDescriptor Describe();      // id, kind (Intent | Doc | Code), freshness (Live | Snapshot), as-of support
+    SourceDescriptor Describe();      // id, kind (Intent | Doc | Code), freshness (Live | Snapshot), as-of support,
+                                      // placement (Local | Shared, default Local) and limits (null for none; README X61)
     ValueTask<Result<IReadOnlyList<SourceHit>>> Search(SourceQuery query, CancellationToken ct);
     ValueTask<Result<SourceRecord>> Fetch(SourceRef reference, CancellationToken ct);
     ValueTask<Result<IReadOnlyList<SourceVersion>>> Versions(IReadOnlyList<SourceRef> refs, CancellationToken ct); // batched
@@ -201,7 +202,7 @@ public sealed record ChangePage(IReadOnlyList<SourceRef> Changed, IReadOnlyList<
 - **Read-only by construction.** Credentials are read-only and least-privilege (§8.8); `context sources status`
   reports the scope each token actually has where the source exposes it.
 - **Errors** (`Result<T>`): `Unavailable` (the query goes on without the source and reports `degraded`), `NotFound`,
-  `Fatal`. No `RateLimited` (D6).
+  `Fatal`. No `RateLimited` for Local sources (D6); a Shared source's declared limits are README X61's later work.
 - **Freshness:** every hit carries `AsOf`. `Search`, `Fetch` and `Versions` are live; `Changes` drives a scheduled sync.
   A source that can't cut to `AsOf` returns `Leaky = true`.
 - **Cursors** are persisted per source; a cursor advances only after the links from its page commit; replay is
@@ -401,8 +402,8 @@ build at a time.
 { "schemaVersion": 1, "queryId": "q_01JC…", "query": {...}, "anchors": [...], "mapVersion": "v12@a41b07d",
   "asOf": "2026-10-10T18:02:11Z",
   "sections": [
-    { "name": "affects", "items": [{ "kind": "feature", "node": "feature:tabs.layout-restore", "depth": 1,
-      "path": ["feature:layout.split-pane.orientation", "writes thing:pane-layout", "reads action:tabs.restore-layout"],
+    { "name": "affects", "items": [{ "kind": "feature", "node": "feature:tabs.tab-manager", "depth": 1,
+      "path": ["feature:layout.split-pane.orientation", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"],
       "provenance": "deterministic", "confirmed": true, "trust": "trusted", "cites": ["C4"] }] },
     { "name": "decisions", "items": [{ "kind": "decision", "node": "decision:…", "text": "…", "score": 0.031,
       "why": ["decides→feature:layout.split-pane.orientation", "rrf:linear#1,onyx#2"],
@@ -809,7 +810,8 @@ own worktree and its own throwaway Sindri home, coordinated by a lead.
 
 Phases split into stages where part of a phase has fewer dependencies than the rest. One stage = one PR. A stage may
 start once every dependency is merged, or all but one are merged and that one is open as a review-clean PR (it then
-stacks on that branch).
+stacks on that branch). A dependency marked *(job route only)* or *(linker only)* doesn't count toward this rule or
+the stacking limits: the stage starts without it and never branches from it (see the owner decisions below the table).
 
 | Stage | What | Depends on | Wave |
 |---|---|---|---|
@@ -819,27 +821,30 @@ stacks on that branch).
 | **S-1A** | Phase 1a: `Aw.Context` package, facade, contract, sanitizer, egress scrubber, repo-docs, planner skeleton, HTTP and CLI | S1 merged · API P1 merged (the chain) · S-1C · S-FX | 1 |
 | **S-1M** | Phase 1b: the `/sindri/mcp` host (shared with API P8), `context_query` and `context_sources`, doctor checks, per-repo registration docs | S-1A | 2 |
 | **S-2W** | Wiring `context.scrub.extraPatterns` into `Aw.Context` (XS) | S-1A · S-2R | 2 |
-| **S-3** | Phase 3 without its MCP tools: graph store, overrides, cascade, `node`/`neighbors`/`path`, probe runner | S-1A | 2 |
+| **S-3a** | Phase 3, first half: graph store and Phase 3's whole migration (graph, overrides, decisions, retention), keys, aliases and key-migration scaffolding, overrides, `ImportMap` (protected) and `ExportMap` with the 14-day export purge, the `map import`, `map export` and `map status` routes and verbs, doctor `context:map` and `context:retention`, the purge service (split from S-3 for size, 2026-10-12) | S-1A | 2 |
+| **S-3b** | Phase 3, second half: the cascade, `node`/`neighbors`/`path` with their routes and verbs and `query --node` in the planner, the `node` shape with `graph` and `affects`, `text` anchors, the probe runner; carries the Phase 3 signal except `context_node` from a session, which S-3M proves | S-3a | 2, after S-3a (stacks on it; split from one wave-2 stage) |
 | **S-5A** | Phase 5, first half: `onyx` adapter (search, fetch, UUID canonical keys and identifier aliases, contract tests against `FakeOnyxServer`), secret-pointer resolution, Onyx setup doc and doctor `context:onyx` | S-1A · S-2R · S-FX; **merges after S-2W** | 2 |
-| **S-3M** | Phase 3's MCP tools `context_node`, `context_neighbors` (XS) | S-1M · S-3 | 3 |
-| **S-4** | Phase 4: extractor, file-level `implements`, map review | S-3 · API P6 merged (jobs: `map build` runs as a job, never inside the command gate) | 3 |
-| **S-5B** | Phase 5, second half: sync, rules-first linking, decisions from issue and comment records, intent-vs-intent conflicts, the `item` shape | S-3 · S-5A · API P6 merged (jobs: `sources sync`) | 3 |
-| **S-6** | Phase 6: native `linear` adapter (hand-written GraphQL, D18): projects, Linear Documents, project updates, issue↔PR attachments; dedup with Onyx's records; links and decisions from documents through S-5B's linker | S-5B | 4 |
-| **S-7A** | Phase 7, harness: corpus builder, per-sample as-of maps (from the extractor), arms runner, reports, on the fixture corpus | S-3 · S-4 · S-FX | 4 |
+| **S-3M** | Phase 3's MCP tools `context_node`, `context_neighbors` (XS) | S-1M · S-3b | 3 |
+| **S-4** | Phase 4: extractor, file-level `implements`, map review. Starts on S-3b; `map build` runs as an API P6 job, never inside the command gate, so its job route is added when P6 merges (owner, 2026-10-12) | S-3b · API P6 (job route only) | 3 |
+| **S-5B** | Phase 5, second half: sync, rules-first linking, decisions from issue and comment records, intent-vs-intent conflicts, the `item` shape. Starts on S-3b and S-5A (it stacks on at most one of them; the other has merged); `sources sync` runs as an API P6 job, so its job route (and flipping S-1A's `pending:S-5B` `SyncSources` row to ready) is added when P6 merges (owner, 2026-10-12) | S-3b · S-5A · API P6 (job route only) | 3 |
+| **S-6** | Phase 6: native `linear` adapter (hand-written GraphQL, D18): projects, Linear Documents, project updates, issue↔PR attachments; dedup with Onyx's records. Starts on S-1A and S-5A; what goes through S-5B (links and decisions from documents through its linker, and `item.linked` through its `context-sync` service) is added when S-5B merges (owner, 2026-10-12) | S-1A · S-5A · S-5B (linker only) | 3 |
+| **S-7A** | Phase 7, harness: corpus builder, per-sample as-of maps (from the extractor), arms runner, reports, on the fixture corpus | S-3b · S-4 · S-FX | 4 |
 | **S-CF** | Intent-vs-file conflicts: a decision citing a file the map says implements something else (S) | S-4 · S-5B | 4 |
 | **S-7B** | Phase 7 on the owner's corpus: eligible-sample count, the real backtest and probes. **Owner-run** (below) | S-4 · S-6 · S-7A | 5 |
 | **S-8** | Phase 8: ranker features and the rerank arm (code on fixtures; the arm decision from an owner-run backtest) | S-7B | 6 |
 | **S-9** | Phase 9: code adapter and symbol-level links | the code index block | blocked |
 | **S-10** | Phase 10: the `input.context.retrieve` block | engine P4 (the `StepInput` runtime) | after engine P4 |
 
-Critical path: S-1A → S-3 → S-5B → S-6 → S-7B → S-8 (S-4 → S-7A runs beside it).
+Critical path: S-1A → S-3a → S-3b → S-5B → S-6 (its linker part) → S-7B → S-8, with S-4 → S-7A → S-7B about as long beside it. S-6's adapter work starts earlier, on S-5A. API P6 gates both branches: S-4 and S-5B go ready only after it merges, so P6 joins this path whenever it lands later than S-3b, and the lead tracks it in `stages.md` as an outside blocker.
+
+**Owner decisions, 2026-10-12 (delivery only; no behaviour change):** each context stage ships as one PR even when it measures L, built from layered commits (Core → Infrastructure → Features → Host), each layer green on its own; only S-3 is split, into S-3a and S-3b. A stage may stack up to three deep while the goal is to finish this week (S-1A was stacked on API P1 before it merged). S-4, S-5B and S-6 start before their last dependency and add the dependent part (the P6 job routes, the S-5B part) when it merges. That part lands in the same PR (one PR per stage), and the PR is opened only once it is in; the order is item 7 of the stage-owner brief below. `map build` never runs inside the command gate, even before P6.
 
 ```mermaid
 flowchart LR
   S1[S1 merged] --> P1[API P1 chain]
   P1 --> S1A
-  P6[API P6 jobs] --> S4
-  P6 --> S5B
+  P6[API P6 jobs] -. job route .-> S4
+  P6 -. job route .-> S5B
   WF4[engine P4] --> S10[S-10 context.retrieve]
   S1C[S-1C compose edge] --> S1A
   SFX[S-FX fixture app] --> S1A
@@ -849,16 +854,19 @@ flowchart LR
   S2R --> S5A
   S1A[S-1A engine + CLI/HTTP] --> S1M[S-1M MCP]
   S1A --> S2W[S-2W scrub wiring]
-  S1A --> S3[S-3 graph]
+  S1A --> S3a[S-3a graph store]
+  S3a --> S3b[S-3b cascade + probes]
   S1A --> S5A[S-5A Onyx adapter]
   S2W -. merges before .-> S5A
   S1M --> S3M[S-3M MCP graph tools]
-  S3 --> S3M
-  S3 --> S4[S-4 extractor]
-  S3 --> S5B[S-5B links + decisions]
+  S3b --> S3M
+  S3b --> S4[S-4 extractor]
+  S3b --> S5B[S-5B links + decisions]
   S5A --> S5B
-  S5B --> S6[S-6 native Linear]
-  S3 --> S7A[S-7A eval harness]
+  S5A --> S6[S-6 native Linear]
+  S1A --> S6
+  S5B -. linker .-> S6
+  S3b --> S7A[S-7A eval harness]
   S4 --> S7A
   S4 --> SCF[S-CF intent-vs-file]
   S5B --> SCF
@@ -873,12 +881,12 @@ flowchart LR
 | Role | Who | Does | Never does |
 |---|---|---|---|
 | **Lead** | The session that starts the epic (`/specToProvenPR` steps 0 and 0.5) | Is the **only writer** of `plans/<epic>/stages.md`: the table above, each stage's state, branch, base, port and home. Asks the autonomy question once (recommended: run continuously; stop only at merge gates). Starts a stage owner for every unblocked stage within the caps. Watches for merges and tells owners to rebase. Re-plans when a stage's scope changes. Reports to the human | Write product code or tests; merge; run anything against work data |
-| **Stage owner** | One named teammate per stage (`stage-3`, …), started by the lead with `isolation: worktree`, assigned **until its PR merges** | Runs `/specToProvenPR` steps 1–9 for its stage only, under the brief below. Rebases its own branch when told, resolves conflicts, and redoes step 9's re-check (the journey once; `/review` again if the resolution touched non-test source). Reports each step change to the lead by message | Touch another stage's worktree; write `stages.md`; use the owner's Sindri home, profile, port or any real source |
+| **Stage owner** | One named teammate per stage (`stage-3a`, …), started by the lead with `isolation: worktree`, assigned **until its PR merges** | Runs `/specToProvenPR` steps 1–9 for its stage only, under the brief below. Rebases its own branch when told, resolves conflicts, and redoes step 9's re-check (the journey once; `/review` again if the resolution touched non-test source). Reports each step change to the lead by message | Touch another stage's worktree; write `stages.md`; use the owner's Sindri home, profile, port or any real source |
 | **Implementers** | Subagents of a stage owner (superpowers:subagent-driven-development) | Independent tasks inside one stage in parallel, each red-green with its own tests | Work across stages |
 | **Reviewers** | `/review`'s own multi-agent fan-out, per PR | The review loop on each stage's PR | — |
 
 **Stage-owner brief.** `/specToProvenPR` as it exists runs a whole epic from one worktree. Until it takes a stage id
-(`--stage S-3`, a toolkit follow-up outside this spec), the lead gives each owner this brief, which overrides those
+(`--stage S-3a`, a toolkit follow-up outside this spec), the lead gives each owner this brief, which overrides those
 defaults:
 
 1. You own stage `<id>` only. The lead has done steps 0 and 0.5; don't create an epic worktree or ask the autonomy
@@ -902,6 +910,16 @@ defaults:
    asks the human.
 6. After step 9, report "ready" to the lead and stop. Don't start another stage. Stay assigned until the PR merges.
    After a restart, resume from your stage's row in `stages.md` and your `$STAGE_DIR` files.
+7. **A stage with a partial dependency** (S-4 and S-5B on API P6's job route, S-6 on S-5B): before the dependency
+   merges, run steps 1–2 for the whole stage, late part included (the verification plan names its journey), and
+   step 3 for everything except the late part; then report `parked: <dependency>` and open no PR yet (step 7 needs the
+   hand test). A parked stage holds no building slot and is not a base to stack on. When the lead says the dependency
+   merged, rebase, do step 3 for the late part, then run steps 4–9 in full on the whole stage (for S-4 the hand test
+   is the first time `map build` runs); a woken stage takes the next free building slot, ahead of new stages (a woken stage is not a new stage for the caps). If the
+   stage still stacks on an unmerged base (S-4 on S-3b, or S-5B on S-3b or S-5A), the lead first has the stack
+   rebased from the bottom (the lowest unmerged stage onto `main`, each one above onto the one below), each owner
+   redoing its step 9 re-check, or the stage stays parked, as `parked: <base>`, until its base merges. The lead also watches API
+   P6, which is outside this epic, and wakes S-6 when S-5B merges.
 
 ### Work data stays with the owner
 
@@ -947,11 +965,11 @@ team ever reads work data:
 
 - **Caps:** at most **3 stages building** at once (the heavy-job lock has two slots that integration and heavy lanes
   take, so the third waits briefly; the owner's review bandwidth is the other limit), at most **4 PRs ready and
-  unmerged**, and stacks at most **2 deep**. At either of the last two caps the lead starts no new building stage;
+  unmerged**, and stacks at most **2 deep** (**3 deep** while the goal is to finish this week; owner, 2026-10-12). At either of the last two caps the lead starts no new building stage;
   owners do prep only.
-- **A freed slot is filled at once** with the next ready stage: critical path first, then whichever unblocks the most.
+- **A freed slot is filled at once** with the next ready stage: a woken parked stage first (brief item 7), then critical path, then whichever unblocks the most.
 - **Stacking:** a stage on an unmerged dependency branches from it and bases its PR on it. A stage stacks on **at most
-  one** unmerged dependency; with two or more open, it waits until all but one have merged. When the dependency merges,
+  one** unmerged dependency (the partial dependencies marked in the table don't count); with two or more open, it waits until all but one have merged. When the dependency merges,
   the lead tells the owner, who rebases onto `main`, retargets the PR and redoes the step 9 re-check. A stage never
   stacks on a dependency with blocking findings.
 - **Prep while blocked:** verification plans for upcoming stages, fixture and probe assets, `owner-check.md` drafts,
@@ -967,7 +985,7 @@ team ever reads work data:
 |---|---|
 | `context.db` migrations | **Named, not pre-numbered.** A stage's migration file is `NNNN_<stage>_<name>.sql` (the loader's form: four digits, letters, digits and
 `_` only, e.g. `0003_s5a_linear_cursor.sql`) with `NNNN` set to the next free number **on the branch it sits on**, and renumbered when it rebases onto a new base (a stage's migrations stay contiguous on top of its base, as `Aw.Kernel.Data`'s gap check requires). Number and content freeze at merge. Only throwaway homes ever ran an unmerged migration, so renumbering never touches a real `context.db` |
-| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3/S-3M `030–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`. §8.6 follows these ranges |
+| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3a `030–034` (030 "No map yet" is defined in S-3a; S-3b reuses it), S-3b/S-3M `035–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`. §8.6 follows these ranges |
 | `deps.yaml`, `Directory.Packages.props`, `AgenticWorkflow.slnx`, `.env.example` | Append-only edits within the stage's own block; the later PR's rebase resolves conflicts |
 | `PublicAPI.Unshipped.txt`, Sindri's `EndpointTable`, `CommandTable`, JSON context, MCP tool list | One line or one block per slice; the later rebase keeps both |
 | `docs/sindri/context.md`, `docs/csharp/sindri-context.md` | One section per stage, headed by the stage id |
@@ -983,15 +1001,19 @@ team ever reads work data:
 ### What the lead reports
 
 One line per stage on every change, and on request:
-`S-3  building  step 4 (hand test)  branch …  base S-1A (#…, ready)  port 7493  tokens 0.8M  blockers: none`.
+`S-3a  building  step 4 (hand test)  branch …  base S-1A (#…, ready)  port 7493  tokens 0.8M  blockers: none`
+(states include `waiting` (not started, or woken with no free slot), `building`, `parked: <dependency>`, `ready`
+(the PR is marked ready) and `merged`).
 `stages.md` is the single record, so `/specToProvenPR` resume mode works for the lead after a restart.
 
 ## Phases
 
 Each phase is one PR, or the stages the table above splits it into. Sizes: XS ≤ 80, S ≤ 250, M ≤ 600 changed lines
-of production code (tests excluded), L above (split before starting). Every phase ends with its signal shown in the
-running app, with evidence written outside repos, and from Phase 3 on its signal includes "`$SINDRI context eval
-probes` doesn't regress". Stage ids and waves are in "Parallel delivery" above. A signal step that needs the work
+of production code (tests excluded), L above. A stage that measures L still ships as one PR of layered commits (owner,
+2026-10-12; see Parallel delivery). The stages below come from dependency splits; Phase 3 is the only phase also split
+for size. Every phase ends with its signal shown in the
+running app, with evidence written outside repos, and once a stage's base includes S-3b, its signal includes "`$SINDRI
+context eval probes` doesn't regress". Stage ids and waves are in "Parallel delivery" above. A signal step that needs the work
 repo, real Linear, real Onyx or a session in the work repo is an **owner check**; stage owners prove the same signal
 on the fixture app.
 
@@ -1003,13 +1025,16 @@ on the fixture app.
   `Canonical`, result types, `IngestSanitizer`, egress scrubber, RRF, packing, citations, `QueryContext` and
   `SourcesStatus` slices, `repo-docs` adapter with scrubbed FTS5 and its refresh service, its `context.db` migration);
   `tests/Aw.Context.{Tests,Testing}` (contract base, fakes, fixture app skeleton); Sindri: `Context: JsonElement?`
-  in the profile, routes, `context query` and `context sources status|sync` verbs, the `/sindri/mcp` endpoint (stateless,
+  in the profile, routes, `context query` and `context sources status|sync` verbs (the `SyncSources` catalog row
+  for `sources sync` is `pending:S-5B`, a context stage id that the catalog test treats as unshipped until S-5B flips the row (API
+  P6 leaves the row alone); S-5B adds the P6 job route and
+  makes it ready), the `/sindri/mcp` endpoint (stateless,
   behind the guard; or its tools only, if API P8 created it) with `context_query` and `context_sources`, doctor `context:sources` and `context:mcp-scope`;
   `deps.yaml` (package, edges, `compose` edge kind), `scripts/check-deps.mjs`, the ArchUnitNET
   rule, rule records; `Directory.Packages.props` (MCP package); `docs/sindri/context.md` (setup, `$SINDRI`, MCP
   registration per repo, the agent-rules snippet, a text-output example); `docs/csharp/sindri-context.md` (C# codes);
   `.env.example` for any new variable.
-- **Size:** L as listed, so three stages: **S-1C** (`compose` edge and checks: S, wave 0), **S-1A** (package,
+- **Size:** L as listed, split by dependency into three stages: **S-1C** (`compose` edge and checks: S, wave 0), **S-1A** (package,
   contract, sanitizer, scrubber, repo-docs, planner skeleton, HTTP and CLI: M, wave 1) and **S-1M** (MCP host and
   tools, doctor: S, wave 2). The phase is done when S-1M ships.
 - **S1:** S-1A and S-1M need S1 merged; S-1C doesn't.
@@ -1036,12 +1061,18 @@ on the fixture app.
 - **Goal:** the product graph exists and answers cascade questions, from a hand-authored map first; probes guard
   every later phase.
 - **Files:** its `context.db` migration (graph, overrides, decisions, retention); `EntryKey`, aliases, key migration
-  scaffolding; `ImportMap` and `ExportMap` (versioned schema with `schemaVersion` and `kind: export | authored`; an export holds nodes, edges with their evidence, aliases, decisions, overrides and rejections **with their original timestamps and provenance**; import accepts the current and the previous schema version and runs the key migration on older keys, and the imported map becomes `current`. Trust is always recomputed from provenance, never read from the file. Rows with `human` provenance, overrides and rejections are restored only by a `protected` import with the shared challenge (`SND-AUTH-002` otherwise); an import from the app is the same `protected` command, shown there as the CLI to copy (API §4.2). Exports are written only under `$AW_SINDRI_HOME/context/exports/` or an owner-check home, by temp file and rename at 0600, and purged after 14 days. Tests: round trip, a golden export from the previous build, and the terminal gate); `ShowNode`, `Neighbors`, `Path`;
+  scaffolding; `ImportMap` and `ExportMap` (versioned schema with `schemaVersion` and `kind: export | authored`; an export holds nodes, edges with their evidence, aliases, decisions, overrides and rejections **with their original timestamps and provenance**; import accepts the current and the previous schema version and runs the key migration on older keys, and the imported map becomes `current`. Trust is always recomputed from provenance, never read from the file. Import is a `protected` command (it restores rows with `human` provenance, overrides and rejections); without the terminal (and, once the engine lands, its shared challenge) it is refused with `SND-AUTH-002` and writes nothing; an import from the app is the same `protected` command, shown there as the CLI to copy (API §4.2). Exports are written only under `$AW_SINDRI_HOME/context/exports/` or an owner-check home, by temp file and rename at 0600, and purged after 14 days. Tests: round trip, a golden export from the previous build, and the terminal gate); `ShowNode`, `Neighbors`, `Path`;
   the cascade (§6.1) with fixtures; `node` shape, `graph` and `affects` sections; anchor resolution for `text`;
   routes, verbs, MCP `context_node` and `context_neighbors` (these two tools are stage S-3M, after S-1M); doctor `context:map` and `context:retention`; the probe
   runner (`eval probes`) and probe file format.
-- **Size:** M.
-- **S1:** `IScheduledService` (purge).
+- **Size:** L as measured, so two stages (owner, 2026-10-12): **S-3a** (store, keys, overrides, import and export, map status, doctor, purge) and **S-3b** (cascade, `node`/`neighbors`/`path`, anchors, probe runner; carries the signal below except `context_node` from a session, which is S-3M's).
+- **S-3a signal:** on the fixture app, `sindri-prove.sh human $SINDRI context map import <fixture map>`, then `context map status` prints
+  node, edge and alias counts; `context map export` and a re-import (through `sindri-prove.sh human` again) into a fresh throwaway home round-trip with the
+  original timestamps and provenance; `context map import` without the terminal (a `protected` command from an agent
+  caller, over HTTP or the CLI) is refused with `SND-AUTH-002` and writes nothing to `context.db` (`ledger.db` gets only its `command.handled` audit row), while the same file imported at the terminal through
+  `sindri-prove.sh human` restores its `human` rows; an export whose mtime is set back past 14 days is gone after the
+  purge service runs once; doctor `context:map` and `context:retention` report ok. The probe rule starts with S-3b.
+- **S1:** `IScheduledService` (purge, in S-3a).
 - **Signal:** after `$SINDRI context map import ~/…/product-map.yaml`, `$SINDRI context query --node
   feature:layout.split-pane.orientation --json` returns its subtree and an `affects` section with paths;
   `context_node` returns the same from a session; `$SINDRI context eval probes` prints precision@5 for the probe file.
@@ -1056,7 +1087,8 @@ on the fixture app.
   `ReviewMap` (§8.7, interactive and `--export`/`--apply`); the `symbol` shape in its file-path form (`--symbol
   <path>`, MCP `symbol`); `IHeavyJobLock`; `ILabeler` over the provider port (the `claude` CLI adapter until #156)
   adapter; a scheduled rebuild. (The intent-vs-file conflict check is stage S-CF, §14 A-F13.)
-- **Size:** M (split extraction and labeling into two PRs if over).
+- **Size:** M (stage **S-4**, wave 3: starts on S-3b; `map build`'s API P6 job route is added in the same PR when P6
+  merges, before it goes ready; one PR even if it measures L; owner 2026-10-12).
 - **S1:** `IScheduledService`.
 - **Signal:** `$SINDRI context map build` prints proposed nodes with provenance, confidence and their files;
   `$SINDRI context map review` bulk-accepts deterministic ones and accepts or rejects model ones; a second build keeps
@@ -1071,8 +1103,9 @@ on the fixture app.
   `context:onyx`, `docs/sindri/onyx.md` (§8.8); `SyncSource` and its scheduled service, the rules-first linker (§13),
   `Decision` extraction (labeling switch, `maxTokensPerSync`, queue), `supersedes`, intent-vs-intent conflicts, the
   `item` shape.
-- **Size:** M, as two stages: **S-5A** (adapter, keys, secret pointers, setup doc and doctor; wave 2, beside S-3) and
-  **S-5B** (sync, linking, decisions, conflicts, `item`; wave 3).
+- **Size:** M, as two stages: **S-5A** (adapter, keys, secret pointers, setup doc and doctor; wave 2, beside S-3a and S-3b) and
+  **S-5B** (sync, linking, decisions, conflicts, `item`; wave 3; starts on S-3b and S-5A, stacking on at most one, and its `sources sync` job route is
+  added when API P6 merges).
 - **S1:** `IScheduledService`.
 - **Signal:** with Onyx scoped and loopback-bound, `$SINDRI context query --item ENG-482 --json` returns the issue,
   the nodes it touches, its decisions quoting their source and related Slack threads, all with `onyx:` citations
@@ -1087,7 +1120,9 @@ on the fixture app.
   the JSON context, team filter, `linear.url`), dedup with Onyx's records by UUID key, document version handling, the
   as-of check of document history (§12), links and decisions from documents through S-5B's linker, the recorded
   Linear fake.
-- **Size:** S–M (stage **S-6**, wave 4).
+- **Size:** S–M (stage **S-6**, wave 3: starts on S-1A and S-5A; what goes through S-5B, the links and decisions
+  through its linker and `item.linked` through `context-sync`, is added in the same PR when S-5B merges, before it
+  goes ready; owner 2026-10-12).
 - **S1:** secret pointers (Phase 5).
 - **Signal:** `$SINDRI context query --item ENG-482 --json` now also returns its project's PRD and TDD (`linear:doc/…`
   citations with `updatedAt`) and the PRs that shipped it, with the issue cited once carrying both `onyx` and `linear`

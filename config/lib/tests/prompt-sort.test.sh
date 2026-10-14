@@ -23,9 +23,14 @@ EOF
   echo "$bin"
 }
 
+# The hook kills the judge after AW_PROMPT_SORT_BUDGET_MS. Only the slow-judge test measures
+# that budget (RUN_BUDGET_MS=600); every other test asserts what the fake judge received or
+# printed, so it gets a budget a loaded machine can't exhaust. With 600 ms, a fake that took
+# longer than that to start (load average ~45) was killed before it logged its call, and the
+# test failed as if the hook had skipped the judge.
 run_hook() { # run_hook <bin> <mode> <stdin-json> [extra env...]
   local bin="$1" mode="$2" input="$3"; shift 3
-  env PATH="$bin:$PATH" FAKE_LOG="$bin/calls.log" FAKE_MODE="$mode" AW_PROMPT_SORT_BUDGET_MS=600 "$@" "$BASH_BIN" "$HOOK" <<< "$input"
+  env PATH="$bin:$PATH" FAKE_LOG="$bin/calls.log" FAKE_MODE="$mode" AW_PROMPT_SORT_BUDGET_MS="${RUN_BUDGET_MS:-30000}" "$@" "$BASH_BIN" "$HOOK" <<< "$input"
 }
 
 test_prints_context_and_passes_prompt_and_session_to_judge() {
@@ -48,7 +53,7 @@ test_silent_when_no_scaffold_fires() {
 test_slow_judge_is_killed_within_budget_with_no_output_rf2() {
   local bin out rc start end; bin="$(make_fake_judge)"
   start=$(date +%s)
-  set +e; out="$(run_hook "$bin" slow '{"session_id":"s1","prompt":"fix the login button"}')"; rc=$?; set -e
+  set +e; out="$(RUN_BUDGET_MS=600 run_hook "$bin" slow '{"session_id":"s1","prompt":"fix the login button"}')"; rc=$?; set -e
   end=$(date +%s)
   [ "$rc" -eq 0 ] || { echo "FAIL: RF-2 must exit 0, got $rc"; exit 1; }
   [ -z "$out" ] || { echo "FAIL: RF-2 must print nothing, got: $out"; exit 1; }
