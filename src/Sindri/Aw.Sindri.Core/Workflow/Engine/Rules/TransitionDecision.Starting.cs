@@ -10,6 +10,9 @@ public static partial class TransitionDecision
 {
     private const string StartKind = "start";
 
+    /// <summary>The actor of a takeover the engine itself makes: an instance started taken over (UI E-19), an open-request (E-6).</summary>
+    private const string EngineActor = "service:engine";
+
     /// <summary><see cref="Start(StartRequest, Recipe, DecisionContext)"/> through <paramref name="rules"/>.</summary>
     internal static Decision Start(StartRequest request, Recipe recipe, DecisionContext context, IEngineRules rules)
     {
@@ -35,7 +38,7 @@ public static partial class TransitionDecision
         }
 
         var entered = entering.Value;
-        var taking = request.TakenOver ? rules.TakeOver(entered.After, request.Actor) : entered.After;
+        var taking = request.TakenOver ? rules.TakeOver(entered.After, EngineActor) : entered.After;
         if (taking.IsError)
         {
             return new Rejected(request.Key, taking.Error);

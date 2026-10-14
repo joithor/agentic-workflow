@@ -219,7 +219,7 @@ internal sealed partial class RecipeWorkflow
             start.Attempt,
             Parent: null,
             start.Inputs.ToDictionary(static i => i.Key, static i => i.Value.Value),
-            start.OpenLaunch is null ? Desk : InstanceIds.Engine,
+            Desk,
             TakenOver: start.OpenLaunch is not null,
             start.Tenant,
             start.Ring);
