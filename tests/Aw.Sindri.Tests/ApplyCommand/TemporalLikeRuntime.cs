@@ -22,6 +22,7 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
     private readonly List<CommandNonce> _sent = [];
     private TaskCompletionSource? _hold;
     private TaskCompletionSource? _entered;
+    private TaskCompletionSource? _held;
     private bool _loseNextResponse;
     private bool _refuseNext;
 
@@ -35,7 +36,7 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
     /// <summary>Every nonce a Send used, in order.</summary>
     public IReadOnlyList<CommandNonce> Sent => _sent;
 
-    public CallerContext? Current { get; } = Aw.Sindri.Testing.A.Caller().AtTerminal().Build();
+    public CallerContext? Current { get; } = Testing.A.Caller().AtTerminal().Build();
 
     /// <summary>The next new Update applies, but its response is lost: the caller sees a timeout.</summary>
     public void LoseNextResponse() => _loseNextResponse = true;
@@ -47,11 +48,11 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
     public Task HoldNext()
     {
         _entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        _hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _hold = _held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         return _entered.Task;
     }
 
-    public void Release() => _hold?.SetResult();
+    public void Release() => _held?.SetResult();
 
     public InstanceView View() => View(version: 4 + Applied);
 

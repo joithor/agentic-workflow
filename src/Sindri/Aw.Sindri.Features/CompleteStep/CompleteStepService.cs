@@ -51,7 +51,8 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
         var nonce = request.Nonce ?? nonces.Issue();
         var shas = request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span)));
         var reportSha = ReportSha(request, shas);
-        var claim = await nonces.Claim(nonce, address.Value + "\n" + reportSha, cancellationToken).ConfigureAwait(false);
+        var subject = address.Value + "\n" + reportSha;
+        var claim = await nonces.Claim(nonce, subject, cancellationToken).ConfigureAwait(false);
         if (claim.IsError)
         {
             return claim.Error;
@@ -60,38 +61,41 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
         var stored = await Store(request, cancellationToken).ConfigureAwait(false);
         if (stored.IsError)
         {
-            return await GiveBack(nonce, claim.Value == NonceClaim.Applied, stored.Error, cancellationToken).ConfigureAwait(false);
+            return await GiveBack(nonce, claim.Value, stored.Error, cancellationToken).ConfigureAwait(false);
         }
 
         var report = new StepCompleted(caller.Actor, request.Run, request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, reportSha);
-        return await Send(address, nonce, report, alreadyApplied: claim.Value == NonceClaim.Applied, cancellationToken).ConfigureAwait(false);
+        return await Send(address, new SentReport(nonce, subject, claim.Value), report, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Sends the report as the Update keyed by the nonce; a refusal gives the claim back, an unconfirmed send keeps it.</summary>
-    private async ValueTask<Result<CompleteStepResponse>> Send(InstanceAddress address, CommandNonce nonce, StepCompleted report, bool alreadyApplied, CancellationToken cancellationToken)
+    /// <summary>Sends the report as the Update keyed by the nonce; a refusal gives back a claim this call created, an unconfirmed send keeps it.</summary>
+    private async ValueTask<Result<CompleteStepResponse>> Send(InstanceAddress address, SentReport sentReport, StepCompleted report, CancellationToken cancellationToken)
     {
-        var sent = await runtime.Send(address, nonce, report, cancellationToken).ConfigureAwait(false);
+        var sent = await runtime.Send(address, sentReport.Nonce, report, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
         {
             return sent.Error.Kind is ErrorKind.Unavailable or ErrorKind.Timeout
-                ? sent.Error   // it may have applied: keep the claim, so the retry with this nonce is deduplicated
-                : await GiveBack(nonce, alreadyApplied, sent.Error, cancellationToken).ConfigureAwait(false);
+                ? sent.Error   // it may have applied: keep the claim, so the retry with this nonce resends the same Update id
+                : await GiveBack(sentReport.Nonce, sentReport.Claim, sent.Error, cancellationToken).ConfigureAwait(false);
         }
 
-        var applied = await nonces.Applied(nonce, string.Empty, cancellationToken).ConfigureAwait(false);
-        return applied.IsError ? applied.Error : new CompleteStepResponse(sent.Value, nonce, alreadyApplied);
+        var applied = await nonces.Applied(sentReport.Nonce, sentReport.Subject, cancellationToken).ConfigureAwait(false);
+        return applied.IsError ? applied.Error : new CompleteStepResponse(sent.Value, sentReport.Nonce, sentReport.Claim == NonceClaim.Applied);
     }
 
-    /// <summary>A refused report consumes nothing (spec §5.2, W12): the claim is given back, unless the nonce had already applied it.</summary>
-    private async ValueTask<Result<CompleteStepResponse>> GiveBack(CommandNonce nonce, bool alreadyApplied, Error refusal, CancellationToken cancellationToken)
+    /// <summary>A refused report consumes nothing (spec §5.2, W12): a claim this call created is given back; a pending or applied one stays, as its Update id was used.</summary>
+    private async ValueTask<Result<CompleteStepResponse>> GiveBack(CommandNonce nonce, NonceClaim claim, Error refusal, CancellationToken cancellationToken)
     {
-        if (!alreadyApplied)
+        if (claim == NonceClaim.Fresh)
         {
             _ = await nonces.Release(nonce, cancellationToken).ConfigureAwait(false);
         }
 
         return refusal;
     }
+
+    /// <summary>The nonce a report went out with, the subject it claimed it for and what the claim found.</summary>
+    private readonly record struct SentReport(CommandNonce Nonce, string Subject, NonceClaim Claim);
 
     private async ValueTask<Result<IReadOnlyDictionary<FactKey, FactValue>>> Store(CompleteStepRequest request, CancellationToken cancellationToken)
     {
@@ -111,7 +115,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
     }
 
     /// <summary>The SHA-256 of the canonical report (run, outcome, each output's key and content digest in key order), so two different reports never share a key.</summary>
-    private static string ReportSha(CompleteStepRequest request, Dictionary<FactKey, string> shas)
+    internal static string ReportSha(CompleteStepRequest request, Dictionary<FactKey, string> shas)
     {
         var text = new StringBuilder()
             .Append(CultureInfo.InvariantCulture, $"run {request.Run.Value}\noutcome {request.Outcome.Value}\n");

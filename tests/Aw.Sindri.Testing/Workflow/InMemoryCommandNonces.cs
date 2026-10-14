@@ -36,7 +36,7 @@ public sealed class InMemoryCommandNonces(TimeProvider clock) : ICommandNonces
                     WorkflowErrors.NonceRefused.With($"nonce {nonce.Value} expired (fix: run the command again; the CLI fetches a new nonce)"),
                 _ when !string.Equals(claim.Subject, subject, StringComparison.Ordinal) =>
                     WorkflowErrors.NonceRefused.With($"nonce {nonce.Value} was used for another command (fix: run the command again; the CLI fetches a new nonce)"),
-                _ => claim.Applied ? NonceClaim.Applied : NonceClaim.Fresh,   // red: Pending is not told apart yet
+                _ => claim.Applied ? NonceClaim.Applied : NonceClaim.Pending,
             });
         }
     }
@@ -46,10 +46,9 @@ public sealed class InMemoryCommandNonces(TimeProvider clock) : ICommandNonces
     {
         lock (_gate)
         {
-            if (_claims.TryGetValue(nonce, out var claim))
-            {
-                _claims[nonce] = claim with { Applied = true };
-            }
+            _claims[nonce] = _claims.TryGetValue(nonce, out var claim)
+                ? claim with { Applied = true }
+                : (subject, clock.GetUtcNow(), true);   // the claim was given back or swept meanwhile: the command applied, so record that
         }
 
         return ValueTask.FromResult<Result<Unit>>(Unit.Value);

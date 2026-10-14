@@ -28,12 +28,12 @@ internal sealed class HomeCommandNonces(WorkflowsHome home, TimeProvider clock) 
     public async ValueTask<Result<NonceClaim>> Claim(CommandNonce nonce, string subject, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(subject);
-        var digest = Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(subject)));   // one line, whatever the subject holds
+        var digest = Digest(subject);
         var now = clock.GetUtcNow();
         try
         {
             _ = OperatingSystem.IsWindows() ? Directory.CreateDirectory(home.NoncesDirectory) : Directory.CreateDirectory(home.NoncesDirectory, OwnerDirectory);
-            if (await TryCreate(FileOf(nonce), $"{digest}\n{now.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture)}\n", cancellationToken).ConfigureAwait(false))
+            if (await TryCreate(FileOf(nonce), Text(digest, now), cancellationToken).ConfigureAwait(false))
             {
                 return NonceClaim.Fresh;
             }
@@ -50,7 +50,7 @@ internal sealed class HomeCommandNonces(WorkflowsHome home, TimeProvider clock) 
             }
 
             return string.Equals(claimed, digest, StringComparison.Ordinal)
-                ? (lines.Contains(AppliedMark, StringComparer.Ordinal) ? NonceClaim.Applied : NonceClaim.Fresh)   // red: Pending is not told apart yet
+                ? (lines.Contains(AppliedMark, StringComparer.Ordinal) ? NonceClaim.Applied : NonceClaim.Pending)
                 : WorkflowErrors.NonceRefused.With($"nonce {nonce.Value} was used for another command (fix: run the command again; the CLI fetches a new nonce)");
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) // boundary: an unwritable home is an expected failure
@@ -61,9 +61,11 @@ internal sealed class HomeCommandNonces(WorkflowsHome home, TimeProvider clock) 
 
     public async ValueTask<Result<Unit>> Applied(CommandNonce nonce, string subject, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(subject);
         try
         {
-            if (File.Exists(FileOf(nonce)))
+            // the claim can be gone (given back by a refused sibling, or removed by hand): the command applied, so record that
+            if (!await TryCreate(FileOf(nonce), Text(Digest(subject), clock.GetUtcNow()) + AppliedMark + "\n", cancellationToken).ConfigureAwait(false))
             {
                 await File.AppendAllTextAsync(FileOf(nonce), AppliedMark + "\n", cancellationToken).ConfigureAwait(false);
             }
@@ -93,6 +95,11 @@ internal sealed class HomeCommandNonces(WorkflowsHome home, TimeProvider clock) 
             return Unwritable(e);
         }
     }
+
+    private static string Digest(string subject) =>
+        Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(subject)));   // one line, whatever the subject holds
+
+    private static string Text(string digest, DateTimeOffset at) => $"{digest}\n{at.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture)}\n";
 
     private static async Task<bool> TryCreate(string file, string text, CancellationToken cancellationToken)
     {
