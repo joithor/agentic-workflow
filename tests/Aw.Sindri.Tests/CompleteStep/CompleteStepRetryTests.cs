@@ -18,7 +18,7 @@ public sealed class CompleteStepRetryTests
     private readonly TemporalLikeRuntime _instance = new();
     private readonly InMemoryCommandNonces _nonces = new(new FakeTimeProvider());
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task A_report_retried_after_a_timeout_that_did_apply_is_applied_and_keeps_its_claim()
     {
         var service = new CompleteStepService(_instance, _instance, new InMemoryFactStore(), _nonces, _instance);
@@ -35,7 +35,7 @@ public sealed class CompleteStepRetryTests
         Assert.Equal(NonceClaim.Applied, (await _nonces.Claim(_nonce, _instance.Address.Value + "\n" + ReportSha(), TestContext.Current.CancellationToken)).Value);
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task A_refused_report_gives_its_fresh_nonce_back()
     {
         var service = new CompleteStepService(_instance, _instance, new InMemoryFactStore(), _nonces, _instance);
