@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sindri Workflow instance · PRJ-sync</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#010102;
+  --s1:#0f1011; --s2:#141516; --s3:#18191a; --s4:#191a1b;
+  --line1:#23252a; --line2:#34343a; --line3:#3e3e44;
+  --ink:#f7f8f8; --ink-muted:#d0d6e0; --ink-subtle:#8a8f98; --ink-tertiary:#62666d;
+  --on-primary:#fbfbfd; /* tinted near-white, never pure white: 4.6:1 on --brand (--ink lands at 4.4:1) */
+  --brand:#5e6ad2; --brand-hover:#828fff; --focus:#828fff;
+  --brand-hover-fill:#535fc6; --brand-pressed:#4c57be; --brand-deep:#535db9; --error:#eb5757;
+  --success:#27a644;
+  --attn:#f2994a; --attn-soft:rgba(242,153,74,.14);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+/* type scale (fixes.md wave 4, rule 5): page title 20/600 · section heading 15/500 · row title 14/500 · body 13 · meta 12 · chip 11/500 uppercase. Nothing else at 11. */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--canvas);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.4;
+  -webkit-font-smoothing:antialiased;font-feature-settings:"cv01","ss03"}
+body{overflow-x:hidden;position:relative;min-height:100vh}
+button,input,textarea{font:inherit;color:inherit;background:none;border:0}
+button{cursor:pointer}
+a{color:var(--brand-hover);text-decoration:none}
+:focus-visible,.is-focused{outline:2px solid var(--focus);outline-offset:2px}
+.mono{font-family:var(--mono);font-size:12px;letter-spacing:-.1px}
+kbd{font-family:var(--sans);font-size:12px;font-weight:500;color:var(--ink-subtle);line-height:1.2;
+  border:1px solid var(--line2);border-radius:4px;padding:2px 6px;min-width:18px;
+  display:inline-flex;align-items:center;justify-content:center;background:var(--s2)}
+small{font-size:12px}
+svg{flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* glyph vocabulary (fixture.md): one class set, the same glyph and colour everywhere, always beside a word.
+   Work state: ● done (g-done) or live (g-live) · ◐ in progress · ○ not started or queued · ◎ with you ·
+   ▌ parked · ▲ escalated · ◌ model call, no session · ⇄ loop · ▣ current state · ◆ changed since approval.
+   Health: ✓ ok · ◐ degraded · ✕ failed · ○ absent. */
+.g-done{color:var(--ink-muted)}
+.g-live{color:var(--success)}
+.g-prog{color:var(--ink)}
+.g-todo{color:var(--ink-subtle)}
+.g-you{color:var(--ink-muted)}
+.g-park,.g-esc,.g-chg{color:var(--attn)}
+.g-model{color:var(--ink-subtle)}
+.g-loop{color:var(--ink-subtle)}
+.g-cur{color:var(--ink)}
+.h-ok{color:var(--success)}
+.h-deg{color:var(--ink)}
+.h-fail{color:var(--error)}
+.h-abs{color:var(--ink-subtle)}
+
+/* top bar (fits 1280: the search flexes, the health pill never shrinks) */
+.topbar{height:48px;display:flex;align-items:center;gap:8px;padding:0 16px;
+  border-bottom:1px solid var(--line1);background:var(--canvas);position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;letter-spacing:-.2px;flex:none}
+.brand-mark{width:20px;height:20px;border-radius:5px;background:var(--brand);color:var(--on-primary);display:grid;place-items:center}
+.seg{display:flex;align-items:center;gap:2px;padding:2px;background:var(--s1);border:1px solid var(--line1);border-radius:8px;flex:none}
+.seg a{display:flex;align-items:center;gap:6px;height:26px;padding:2px 8px;border-radius:6px;
+  color:var(--ink-subtle);font-weight:500;font-size:13px;white-space:nowrap}
+.seg a:hover{color:var(--ink-muted);background:var(--s2)}
+.seg a[aria-current="page"]{color:var(--ink);background:var(--s3);box-shadow:inset 0 0 0 1px var(--line2)}
+.seg a[aria-current="page"]::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--brand)}
+.count-attn{font-size:12px;font-weight:600;line-height:1.2;color:var(--attn);background:var(--attn-soft);
+  border-radius:4px;padding:2px 6px;display:inline-flex;align-items:center}
+.count{font-size:12px;font-weight:500;color:var(--ink-subtle)}
+.search{margin-left:auto;display:flex;align-items:center;gap:6px;flex:1 1 160px;min-width:120px;max-width:260px;white-space:nowrap;height:30px;padding:4px 8px 4px 10px;
+  border:1px solid var(--line1);border-radius:8px;background:var(--s1);color:var(--ink-subtle)}
+.search span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.search kbd{flex:none}
+.health{display:flex;align-items:center;gap:6px;height:30px;padding:4px 10px;border:1px solid var(--line1);flex:none;
+  border-radius:8px;background:var(--s1);white-space:nowrap;font-size:12px;color:var(--ink-muted)}
+.health .word{display:inline-flex;align-items:center;gap:5px;color:var(--attn);font-weight:500;font-size:13px}  /* Degraded in --attn, the chip table's colour */
+.health .word .g{color:inherit}
+.health .sep{color:var(--ink-subtle)}
+.health .age{color:var(--ink-subtle)}
+/* static here; in the real app it pulses once when the needs-you count changes */
+
+/* page */
+.page{max-width:1264px;margin:0 auto;padding:0 40px 48px 16px}
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;padding:10px 0 10px;gap:16px}
+.pagehead h1{font-size:20px;font-weight:600;letter-spacing:-.4px;display:flex;align-items:center;gap:8px}
+.pagehead h1 .crumb{color:var(--ink-subtle);font-weight:500}
+.pagehead .sub{color:var(--ink-subtle);margin-top:2px;display:flex;gap:8px;align-items:center}
+.pagehead .sub b{color:var(--ink-muted);font-weight:500}
+.attn-word{color:var(--ink);font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.attn-word i{width:6px;height:6px;border-radius:50%;background:var(--attn)}
+.hints{display:flex;gap:12px;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
+.hints span{display:flex;align-items:center;gap:4px}
+
+/* panels */
+.panel{background:transparent;border:0;border-radius:0;box-shadow:none}
+.phead{display:flex;align-items:center;gap:8px;min-height:32px;padding:4px 16px;border:0}
+.eyebrow{font-size:15px;font-weight:500;letter-spacing:-.1px;color:var(--ink)}
+.phead .meta{margin-left:auto;color:var(--ink-subtle);font-size:12px;display:flex;gap:10px;align-items:center}
+.phead .meta a{color:var(--brand-hover)}
+.row2{display:grid;grid-template-columns:1.5fr 1fr;gap:8px;margin-top:8px}
+
+/* needs-you rows: a full-row tint plus the chip and the word, no stripe (fixes.md 3) */
+.ny{display:grid;grid-template-columns:104px minmax(0,1fr) 60px 492px;gap:12px;align-items:center;
+  padding:6px 16px;border-top:1px solid var(--line1)}
+.ny:first-of-type{border-top:0}
+.ny:hover{background:var(--s2)}
+.ny.sel{background:var(--s3)}
+.ny.pulse,.ny.colour{background:var(--attn-soft)}
+.ny.pulse .chip{color:var(--attn)}
+.kind{display:flex;flex-direction:column;gap:3px}
+.what{min-width:0}
+.what .line1{display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap}
+.what .line1>*{flex:none}
+.what .line1 .title{flex:0 1 auto;min-width:0}
+.what .line1 .rest{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--ink-subtle)}
+.id{color:var(--ink-subtle);white-space:nowrap}
+.what .title{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.what .line2{color:var(--ink-subtle);margin-top:2px;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}
+.what .line2 .reason{color:var(--ink-muted);overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:12px;line-height:1.2;border:0;border-radius:0;padding:0;color:var(--ink-subtle);display:inline-flex;align-items:center;white-space:nowrap;flex:none}
+.since{color:var(--ink-subtle);font-size:12px;text-align:right;line-height:1.4;white-space:nowrap}
+.since b{display:block;color:var(--ink-muted);font-weight:500;font-size:12px}
+.acts{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+
+/* buttons */
+.btn{height:28px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--line2);background:var(--s3);color:var(--ink-muted);white-space:nowrap}
+.btn:hover{background:var(--s4);border-color:var(--line3);color:var(--ink)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-primary)}
+.btn.primary:hover{background:var(--brand-hover-fill);border-color:var(--brand-hover-fill)}
+.btn.primary:active{background:var(--brand-pressed);border-color:var(--brand-pressed)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink-subtle)}
+.btn.ghost:hover{color:var(--ink-muted);background:var(--s2)}
+.btn[disabled]{color:var(--ink-tertiary);background:var(--s2);border-color:var(--line1);cursor:not-allowed}
+.btn kbd{margin-left:1px}
+.btn.primary kbd{color:var(--on-primary);opacity:.85;border-color:transparent;background:var(--brand-deep)}
+.btn.term{background:var(--s2);color:var(--ink)}
+.btn.term svg{color:var(--ink-subtle)}
+.btn.sm{height:24px;padding:0 8px;font-size:12px}
+.split{position:relative;display:inline-flex}
+.split .main{border-radius:8px 0 0 8px}
+.split .chev{border-radius:0 8px 8px 0;border-left-color:var(--line1);padding:0 6px;margin-left:-1px}
+.warp{width:12px;height:12px;border-radius:3px;background:var(--s4);border:1px solid var(--line3);display:inline-grid;place-items:center}
+.cmd{display:inline-flex;align-items:stretch;margin-top:4px;min-height:24px;border:1px solid var(--line1);border-radius:6px;background:var(--canvas);max-width:100%}
+.cmd .prompt{font-family:var(--mono);font-size:12px;color:var(--ink-subtle);padding:4px 0 4px 8px;display:flex;align-items:center}
+.cmd code{font-family:var(--mono);font-size:12px;color:var(--ink-muted);padding:4px 8px 4px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center}
+.cmd button{padding:4px 8px;border-left:1px solid var(--line1);color:var(--ink-subtle);display:flex;align-items:center;gap:4px;font-size:12px}
+.cmd button:hover{color:var(--ink);background:var(--s3)}
+.pending{font-size:12px;line-height:1.2;color:var(--ink-subtle);border:1px dashed var(--line2);border-radius:4px;padding:2px 6px;white-space:nowrap}
+
+/* running */
+.run{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 14px;padding:5px 16px;border-top:1px solid var(--line1);align-items:center}
+.run:first-of-type{border-top:0}
+.run:hover{background:var(--s2)}
+.run .step{display:flex;gap:6px;align-items:center;color:var(--ink-subtle);margin-top:2px;white-space:nowrap;overflow:hidden;font-size:12px}
+.run .step .mono{color:var(--ink-muted)}
+.state{display:inline-flex;align-items:center;gap:5px;font-weight:500;color:var(--ink);font-size:12px;white-space:nowrap}
+.run .hint{grid-column:1/-1;color:var(--ink-subtle);font-size:12px}
+.budget{grid-column:1/-1;display:flex;align-items:center;gap:10px;color:var(--ink-subtle);font-size:12px}
+.budget .track{flex:1;height:3px;border-radius:2px;background:var(--line1);overflow:hidden}
+.budget .fill{height:100%;background:var(--ink-subtle)}
+.subgroup{display:flex;align-items:center;gap:8px;padding:6px 16px 4px;font-size:12px;color:var(--ink-subtle);border-top:1px solid var(--line1)}
+.subgroup:first-of-type{border-top:0}
+
+/* queued */
+.q{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;padding:5px 16px;border-top:1px solid var(--line1);align-items:center}
+.q:first-of-type{border-top:0}
+.q:hover{background:var(--s2)}
+.q .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q .t b{font-weight:500}
+.q .sub{color:var(--ink-subtle);font-size:12px}
+.q .r{color:var(--ink-subtle);font-size:12px;text-align:right;white-space:nowrap}
+.qfoot{padding:8px 16px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px;display:flex;justify-content:space-between}
+
+/* label/value cell (no health strip any more; Context's coverage row still uses it) */
+.cell{flex:1 1 auto;padding:6px 12px;min-width:0}
+.cell .k{font-size:12px;color:var(--ink-subtle);display:block}
+.cell .v{display:flex;align-items:center;gap:6px;color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;font-size:12px}
+.cell .v .mono{font-weight:400;color:var(--ink-muted)}
+.cell .v.warn{color:var(--ink-muted)}
+
+/* sheet */
+.sheet-tab{position:fixed;right:0;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;
+  background:var(--s2);border:1px solid var(--line2);border-right:0;border-radius:8px 0 0 8px;
+  padding:10px 4px;color:var(--ink-subtle);font-size:12px;display:flex;gap:6px;align-items:center;z-index:15}
+.sheet{position:fixed;top:48px;right:0;bottom:0;width:520px;background:var(--s1);border-left:1px solid var(--line2);z-index:25;
+  display:flex;flex-direction:column}
+
+/* absolute to the page, not fixed, so captures never cover content (fixes.md 10) */
+.caption{position:absolute;right:16px;bottom:12px;font-size:12px;color:var(--ink-subtle);background:var(--canvas);
+  border:1px solid var(--line1);border-radius:6px;padding:2px 8px;z-index:40}
+
+/* menu (closed by default) */
+.menu{position:absolute;right:0;top:32px;z-index:30;width:320px;background:var(--s3);border:1px solid var(--line2);
+  border-radius:8px;padding:4px;box-shadow:inset 0 1px 0 rgba(247,248,248,.04)}
+.menu[hidden]{display:none}
+.menu .mi{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 8px;border-radius:6px;color:var(--ink);width:100%;text-align:left}
+.menu .mi small{color:var(--ink-subtle);font-size:12px}
+.menu .mi:hover{background:var(--s4)}
+.menu .mi[aria-disabled="true"]{color:var(--ink-tertiary)}
+.menu .cap{padding:6px 8px 4px;font-size:12px;color:var(--ink-subtle)}
+
+/* ===== the calm pass, shared shell (fixes.md wave 4a) ===== */
+/* (a) type scale */
+h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.2}
+.section>h2,.section>.sh>h2{font-size:15px;font-weight:500;letter-spacing:-.1px;line-height:1.3;color:var(--ink)}
+.row-title,.what .title,.wf .subj{font-size:14px;font-weight:500;line-height:1.3;color:var(--ink)}
+.meta{font-size:12px;line-height:1.4;color:var(--ink-subtle)}
+/* (b) chips state: one uppercase word in tinted ink, no border, no glyph */
+.chip{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;padding:2px 6px;border:0;border-radius:4px;
+  background:var(--s2);color:var(--ink-muted);font-size:11px;font-weight:500;line-height:1.2;letter-spacing:.04em;
+  text-transform:uppercase;white-space:nowrap}
+.chip.attn{color:var(--attn)}
+.chip.fail{color:var(--error)}
+.chip.ok{color:var(--success)}
+/* (c) sections by surface: heading, 24 px, rows; bands alternate canvas / surface-1 at the page column's full width */
+.section{margin-top:32px}
+.section>h2,.section>.sh{margin-bottom:24px;padding:0 16px}
+.section>.sh{display:flex;align-items:baseline;gap:12px}
+.section>.sh>h2{margin:0}
+.band{background:var(--canvas);border:0;border-radius:0;box-shadow:none;margin-top:0;padding:32px 0}
+.band:nth-of-type(even){background:var(--s1)}
+.band.attn,.band.attn:nth-of-type(even){background:var(--attn-soft)}
+.band>.section{margin-top:0}
+/* (d) ids recede: shown on row hover and focus, always in a sheet header, a copyable command, or when marked .keep */
+.id{display:none}
+:is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li):is(:hover,:focus-within) .id,
+.sheet-head .id,.cmd .id,.id.keep{display:inline}
+/* ids at rest (fixes.md wave 5, item 2): one mechanism. .id.at-rest is never display:none: mono, tertiary ink at rest,
+   subtle ink on row hover and focus, a fixed slot where the row gives it a column, so nothing shifts */
+.id.at-rest{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:400;letter-spacing:-.1px;color:var(--ink-subtle);white-space:nowrap}
+:is(.row,.ny,.run,.q,.wf,.mr,.tr,tr,li,.en,.child,.ag,.op):is(:hover,:focus-within) .id.at-rest{display:inline-block;color:var(--ink-muted)}
+/* (e) 40 px rows, 16 px gutters, hairlines only between rows */
+.row{display:grid;align-items:center;column-gap:16px;padding:4px 16px;border-top:1px solid var(--line1)}
+.row:first-child{border-top:0}
+.row,.ny,.run,.q,.wf{min-height:40px;column-gap:16px}
+.ny{padding-top:4px;padding-bottom:4px}
+.run,.q{padding-top:4px;padding-bottom:4px}
+/* (g) the health strip is one sentence */
+.hsent{margin-top:32px;padding:0 16px;font-size:12px;line-height:1.4;color:var(--ink-subtle)}
+
+
+
+/* ═══════ rev 8 screens: additions below the base styles (no new colours) ═══════ */
+body{min-width:1280px}
+/* adapt (the 900 × 600 minimum): the page keeps its 1280 floor and scrolls; under 1100 px the sheet takes the
+   viewport's full width instead of leaving a sliver of list beside it */
+@media (max-width:1100px){.sheet.wide{width:100%}}
+/* motion: hover and press only, 120 ms ease-out, colour and background only (never a layout property); nothing moves on load */
+.btn,.icon-btn,.tab,.menu .mi,.st tbody td,.qt .tr,.fact,.child{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out}
+.btn:active{background:var(--s2)}
+.btn.term:active{background:var(--s3)}
+@media (prefers-reduced-motion:reduce){.btn,.icon-btn,.tab,.menu .mi,.st tbody td,.qt .tr,.fact,.child{transition:none}}
+/* the destructive class is visible before the click (PRODUCT.md principle 1): the error red carries the verb, nothing else */
+.btn.danger{color:var(--error)}
+.btn.danger:hover{color:var(--error);border-color:var(--line3)}
+
+/* ---- the instance frame (§4.2, §4.7): one sheet for a project, an incident and an item ---- */
+.sheet.wide{width:760px}
+.sheet-head{padding:12px 20px 10px;border-bottom:1px solid var(--line1);flex:none}
+.sheet-body{padding:0;overflow:auto;flex:1}
+/* crumb: the address and the title never truncate; the meta sits beside the title when it fits and wraps under it when not */
+.crumb{display:flex;align-items:flex-start;gap:10px}
+.crumb .lead{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.crumb .addr{font-family:var(--mono);font-size:12px;color:var(--ink-subtle);white-space:nowrap}
+.crumb .ttl{font-size:15px;font-weight:500;letter-spacing:-.2px;line-height:1.4}
+.crumb .meta{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
+.crumb .meta .mono{color:var(--ink-muted)}
+.crumb .meta b{color:var(--ink);font-weight:500}
+.crumb .r{display:flex;gap:6px;align-items:center;flex:none;height:24px}
+.icon-btn{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--ink-subtle);border:1px solid var(--line1);background:var(--s2)}
+.icon-btn:hover{color:var(--ink);background:var(--s3)}
+/* subject line: label · text · actions; .stack puts the actions under a text that needs the whole line */
+.sheet-head .subject{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:6px 10px;align-items:center;margin-top:8px;color:var(--ink-muted);font-size:12px}
+.sheet-head .subject .lbl{color:var(--ink-subtle);font-size:12px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;align-self:start;padding-top:4px}
+.sheet-head .subject .txt{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:24px}
+.sheet-head .subject .txt b{color:var(--ink);font-weight:500}
+.sheet-head .subject .txt .mono{color:var(--ink-muted)}
+.sheet-head .subject .txt .note{color:var(--ink-subtle)}
+.sheet-head .subject .acts{grid-column:3;justify-self:end;display:flex;gap:6px;position:relative}
+.sheet-head .subject.stack .txt{white-space:normal;line-height:1.5;padding-top:3px}
+.sheet-head .subject.stack .acts{grid-column:2;grid-row:2;justify-self:start}
+.chev{padding:0 6px}
+/* the one-line confirm that Cancel asks for (drawn open on the incident sheet) */
+.confirm{display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;border:1px solid var(--line2);border-radius:8px;background:var(--s2);font-size:12px;color:var(--ink-muted);line-height:1.4}
+.confirm b{color:var(--ink);font-weight:500}
+.confirm .acts{margin-left:auto;display:flex;gap:6px;flex:none}
+
+/* the sheet keeps its card; inside it the frame is bands, not panels (calm pass, rule 1): states, facts, children, tabs alternate
+   surface-1 / canvas, full width of the sheet, one section each, no borders */
+.sb{padding:14px 20px 12px;background:var(--s1)}
+.sb.alt{background:var(--canvas)}
+.sb:last-child{padding-bottom:4px}
+.sb .section{margin-top:0}
+.sb .section>.sh{margin-bottom:8px;padding:0}
+.sb .section>.sh .meta{margin-left:auto}
+.sb .tabs{margin-top:0}
+
+/* STATES band: the recipe's states in path order; a link and the node it leads to wrap as one unit, so a row that
+   continues starts with its link and no link ever dangles at a row's end */
+.path{display:flex;align-items:center;flex-wrap:wrap;gap:3px 0;margin-left:-7px;padding:0 0 10px;font-size:12px}
+.step{display:inline-flex;align-items:center;flex:none}
+.node{display:inline-flex;align-items:center;gap:5px;height:26px;padding:4px 7px;border-radius:6px;color:var(--ink-muted);white-space:nowrap}
+.node b{font-weight:500;color:var(--ink)}
+.node .badge{font-size:12px;color:var(--ink-subtle);white-space:nowrap}
+.node.cur{background:var(--s3);color:var(--ink)}
+.node.cur .badge{color:var(--ink-muted)}
+.node.todo b{color:var(--ink-subtle)}
+.link{color:var(--line3);font-family:var(--mono);font-size:12px;letter-spacing:-1px;padding:0 1px;flex:none}
+.link.loop{color:var(--ink-subtle);letter-spacing:0;font-family:var(--sans);font-size:12px;padding:0 3px}
+/* the expanded state is a divided region of the panel, not a card inside it */
+.expand{border-top:1px solid var(--line1);padding:12px 0 0}
+.expand .decl{display:flex;flex-wrap:wrap;gap:3px 6px;align-items:center;color:var(--ink-muted);font-size:12px;line-height:1.5}
+.expand .decl b{color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.expand .decl .mono{color:var(--ink-muted)}
+.expand .decl .sep{color:var(--ink-subtle)}
+.expand .decl .live{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-weight:500}
+.expand .decl .unit{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}  /* a glyph stays on its word's line */
+.krow{display:grid;grid-template-columns:50px minmax(0,1fr);gap:10px;margin-top:4px;font-size:12px;line-height:1.5}
+.krow .k{color:var(--ink-subtle);font-size:12px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;padding-top:2px}
+.krow .v{color:var(--ink-muted);min-width:0}
+.krow .v.ink{color:var(--ink)}
+.ctl{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap}
+.ctl .stat{display:flex;align-items:center;gap:6px;color:var(--ink-subtle);font-size:12px;min-width:0;flex:1 1 320px;flex-wrap:wrap;line-height:1.5}
+.ctl .stat .mono{color:var(--ink-muted)}
+.ctl .stat b{color:var(--ink-muted);font-weight:500}
+.ctl .stat .kv{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}  /* a key and its value wrap together */
+.ctl .acts{margin-left:auto;display:flex;gap:6px;flex:none}
+.bar4{display:inline-block;width:48px;height:3px;border-radius:2px;background:var(--line1);overflow:hidden;vertical-align:middle;margin:0 2px}
+.bar4 i{display:block;height:100%;background:var(--ink-subtle)}
+
+/* trace (an agent step's activities) */
+.trace{list-style:none;margin-top:1px}
+.trace li{display:grid;grid-template-columns:14px 124px 56px 40px minmax(0,1fr);gap:8px;align-items:center;font-size:12px;color:var(--ink-muted);padding:2px 0}
+.trace .nm{font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap}
+.trace .st{color:var(--ink-muted);font-weight:500}
+.trace .st.fail{color:var(--ink)}
+.trace .t{font-family:var(--mono);font-size:12px;color:var(--ink-subtle)}
+.trace .d{color:var(--ink-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* FACTS: fact key (meta) · one line · one action. The line never wraps or truncates; the text is written to fit */
+.fact{display:grid;grid-template-columns:112px minmax(0,1fr) auto;column-gap:16px;align-items:center;min-height:40px;padding:4px 8px;margin:0 -8px;border-radius:6px}
+.fact:hover{background:var(--s2)}
+.fact .key{font-family:var(--mono);font-size:12px;color:var(--ink-subtle);white-space:nowrap}
+.fact .sum{color:var(--ink-muted);font-size:13px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fact .sum b{color:var(--ink);font-weight:500}
+.fact .sum .note{color:var(--ink-subtle)}
+.fact .sum .mono{color:var(--ink-muted)}
+.fact .acts{display:flex;gap:6px;flex:none;justify-content:flex-end}
+.fact .acts:empty{display:none}
+
+/* CHILDREN: chip · title (+ one tag) · when · one action with a ▾. The id shows on hover and focus only */
+.children{display:grid;grid-template-columns:84px minmax(0,1fr) max-content max-content}
+.child{display:grid;grid-template-columns:subgrid;grid-column:1/-1;column-gap:16px;align-items:center;min-height:40px;padding:4px 8px;margin:0 -8px;border-radius:6px}
+.child:hover{background:var(--s2)}
+.child .chip{align-self:center;justify-self:start}
+.child .ttl{font-size:14px;font-weight:500;line-height:1.3;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.child .ttl.muted{color:var(--ink-muted);font-weight:400}
+.child .ttl .tag,.child .ttl .id{margin-left:8px;font-weight:400}
+.child .when{font-size:12px;color:var(--ink-subtle);white-space:nowrap;text-align:right}
+.child .acts{display:flex;gap:6px;justify-content:flex-end;position:relative}
+.child:is(:hover,:focus-within) .id{display:inline}
+.cfoot{display:flex;align-items:center;gap:8px;padding:8px 0 0;color:var(--ink-subtle);font-size:12px}
+.cfoot a{margin-left:auto}
+
+/* the sheet's tabs: a key per tab, the active tab's first lines under the rule */
+.tabs{display:flex;gap:2px;margin-top:12px;position:relative;z-index:1;margin-bottom:-1px}
+.tabs .tab{height:32px;padding:0 10px;display:flex;align-items:center;gap:6px;color:var(--ink-subtle);font-weight:500;border-bottom:2px solid transparent}
+.tabs .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.tabs .tab .n{font-size:12px;color:var(--ink-subtle)}
+.tabs .tab kbd{margin-left:2px}
+.tabs .tab:hover{color:var(--ink-muted)}
+.tabpanel{border-top:1px solid var(--line1);padding:6px 0 0}
+.ev{display:grid;grid-template-columns:40px 118px minmax(0,1fr);gap:10px;align-items:baseline;font-size:12px;color:var(--ink-muted);line-height:1.5;padding:2px 0}
+.ev .t{font-family:var(--mono);font-size:12px;color:var(--ink-subtle)}
+.ev .a{font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev .d{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev .d .mono{color:var(--ink-muted)}
+.ev.more .d a{color:var(--ink-subtle);text-decoration:none}
+.ev.more .d a:hover{color:var(--ink-muted)}
+
+/* ---- the list behind a sheet (calm pass): sections by surface, then chip · title · when. No borders, ids on hover, 40 px rows.
+   The sheet is 760 px, so the column is 512 px and its bands run full width of it ---- */
+.page.behind{max-width:none;margin:0;padding:0 768px 48px 0}
+.page.behind .pagehead{flex-wrap:wrap;align-items:center;gap:8px 16px;padding:10px 0 10px 16px}
+.page.behind .pagehead>div:first-child{flex-wrap:wrap;gap:0 14px}
+.page.behind .sub{white-space:nowrap;flex-basis:100%}
+.qt .band{padding:32px 16px}
+.qt .section>.sh{padding:0}
+.qt .tr{display:grid;grid-template-columns:104px minmax(0,1fr) auto;column-gap:16px;align-items:center;min-height:40px;padding:4px 8px;margin:0 -8px;border-radius:6px}
+.qt .tr:hover{background:var(--s2)}
+.qt .tr.sel,.qt .tr.sel:hover{background:var(--s3)}
+.qt .tr .chip{align-self:center;justify-self:start}
+.qt .tr .tt{display:flex;align-items:baseline;gap:8px;min-width:0;font-size:14px;font-weight:500;line-height:1.3;color:var(--ink);white-space:nowrap}
+.qt .tr .tt .tx{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.qt .tr .tt .tag{flex:0 100 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:400}
+.qt .tr .tt .id{flex:none;font-weight:400;margin-left:auto}
+.qt .tr .when{font-size:12px;color:var(--ink-subtle);white-space:nowrap;text-align:right}
+.qt .tr.more{color:var(--ink-subtle);font-size:12px}
+.toolbar{display:flex;align-items:center;gap:8px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 9.5 6 2l4 7.5H7.4L6 6.8 4.6 9.5z" fill="currentColor"/></svg></span>Sindri</div>
+  <nav class="seg" aria-label="Primary">
+    <a href="#">Home</a>
+    <a href="#" aria-current="page">Workflows <span class="count">12</span></a>
+    <a href="#">Work <span class="count">12</span></a>
+    <a href="#">Recipes <span class="count">8</span></a>
+    <a href="#">Context</a>
+    <a href="#">Agents <span class="count">4</span></a>
+    <a href="#">System</a>
+  </nav>
+  <div class="search" role="search"><svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><circle cx="6" cy="6" r="4.2" stroke="currentColor" fill="none" stroke-width="1.4"/><path d="m9.2 9.2 3 3" stroke="currentColor" stroke-width="1.4"/></svg><span>Search or run a command</span><kbd>⌘K</kbd></div>
+  <button class="health" aria-label="Health: Degraded, updated 2s ago, index failed, profile changed">
+    <span class="word"><span class="g h-deg" aria-hidden="true">◐</span>Degraded</span>
+    <span class="sep" aria-hidden="true">·</span><span class="age">updated 2s ago</span>
+    <span class="sep" aria-hidden="true">·</span><span>index failed</span>
+    <span class="sep" aria-hidden="true">·</span><span>profile changed</span>
+  </button>
+</header>
+
+<main class="page behind">
+  <div class="pagehead">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <h1>Workflows</h1>
+      <div class="sub">
+        <span><b>12</b> open</span>
+        <span>·</span><span class="attn-word"><i aria-hidden="true"></i>2 need you</span>
+        <span>·</span><span><b>1</b> with you</span>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" aria-label="Start a workflow (Command N)">Start… <kbd>⌘N</kbd></button>
+    </div>
+  </div>
+
+  <div class="qt" aria-label="Open workflows by recipe">
+  <section class="band" aria-label="incident.response">
+    <div class="section">
+      <div class="sh"><h2>incident.response</h2><span class="meta">1</span></div>
+      <div class="tr" role="row" aria-label="INC-14, running, mitigate r1/3"><span class="chip ok">Running</span><span class="tt"><span class="tx">Outbox retry storm</span><span class="tag meta">mitigate r1/3</span><span class="id at-rest mono">INC-14</span></span><span class="when">1h</span></div>
+    </div>
+  </section>
+  <section class="band" aria-label="triage.alert">
+    <div class="section">
+      <div class="sh"><h2>triage.alert</h2><span class="meta">webhooks · 6</span></div>
+      <div class="tr" role="row" aria-label="sentry #8812, decision, classify"><span class="chip attn">Decision</span><span class="tt"><span class="tx">TypeError in tabs.layout</span><span class="tag meta">classify</span><span class="id at-rest mono">sentry #8812</span></span><span class="when">4m</span></div>
+      <div class="tr" role="row" aria-label="P-2211, escalated"><span class="chip attn">Escalated</span><span class="tt"><span class="tx">PagerDuty P-2211</span><span class="tag meta">classify</span></span><span class="when">1h</span></div>
+      <div class="tr" role="row" aria-label="sentry #8809, done"><span class="chip">Done</span><span class="tt"><span class="tx">429s on stream</span><span class="id at-rest mono">sentry #8809</span></span><span class="when">12m</span></div>
+      <div class="tr more" role="row"><span></span><span>… 3 more done</span><span></span></div>
+    </div>
+  </section>
+  <section class="band" aria-label="workflow.project">
+    <div class="section">
+      <div class="sh"><h2>workflow.project</h2><span class="meta">Linear projects · 3</span></div>
+      <div class="tr sel" role="row" aria-label="PRJ-sync, running, build 4/9" aria-selected="true"><span class="chip ok">Running</span><span class="tt"><span class="tx">Offline sync</span><span class="tag meta">build 4/9</span><span class="id at-rest mono">PRJ-sync</span></span><span class="when">3h</span></div>
+      <div class="tr" role="row" aria-label="PRJ-exports, with you, design"><span class="chip">With you</span><span class="tt"><span class="tx">Billing exports</span><span class="tag meta">design</span><span class="id at-rest mono">PRJ-exports</span></span><span class="when">20h</span></div>
+      <div class="tr" role="row" aria-label="PRJ-tabs, running, scoping 2/3"><span class="chip ok">Running</span><span class="tt"><span class="tx">Tab manager v2</span><span class="tag meta">scoping 2/3</span><span class="id at-rest mono">PRJ-tabs</span></span><span class="when">46m</span></div>
+    </div>
+  </section>
+  <section class="band" aria-label="Other recipes">
+    <div class="section">
+      <div class="sh"><h2>Other recipes</h2><span class="meta">2</span></div>
+      <div class="tr" role="row" aria-label="intake.linear, polling"><span></span><span class="tt"><span class="tx">intake.linear</span><span class="tag meta">polling every 15m · 2 new items</span></span><span class="when">12:15</span></div>
+      <div class="tr" role="row" aria-label="scoping.project, standalone"><span></span><span class="tt"><span class="tx">scoping.project</span><span class="tag meta">standalone · none open</span></span><span class="when"></span></div>
+    </div>
+  </section>
+  </div>
+</main>
+
+<!-- ═════════ INSTANCE DETAIL: workflow/PRJ-sync (open, no scrim) ═════════ -->
+<aside class="sheet wide" aria-label="Workflow instance PRJ-sync, Offline sync">
+  <div class="sheet-head">
+    <div class="crumb">
+      <div class="lead">
+        <span class="addr id">workflow/PRJ-sync</span>
+        <span class="ttl">Offline sync</span>
+        <span class="meta"><span class="mono">workflow.project@a8c21e7f</span><span>·</span><span>v12</span><span>·</span><b>build</b><span>·</span><span>since 09:14 (3h)</span></span>
+      </div>
+      <div class="r"><kbd>Esc</kbd><button class="icon-btn" aria-label="Close instance detail"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6M9 3 3 9" stroke="currentColor" stroke-width="1.3"/></svg></button></div>
+    </div>
+    <div class="subject">
+      <span class="lbl">subject</span>
+      <span class="txt"><b>Linear APP</b> · PRD-sync.md <span class="note">(linear:doc)</span> · <span class="mono">feature:sync</span></span>
+      <div class="acts">
+        <button class="btn sm">Open in Linear ↗</button>
+        <!-- initial focus: the read action. Take over is never pre-focused (↵ ↵ from the list must not be a takeover) -->
+        <button class="btn sm is-focused">Open in Context ▸</button>
+        <button class="btn sm chev" aria-label="More actions for PRJ-sync" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+        <!-- the menu holds the destructive command; choosing it opens the one-line confirm drawn on workflow-incident.html -->
+        <div class="menu" role="menu" hidden>
+          <button class="mi" role="menuitem">Cancel instance… <kbd>X</kbd><small>asks first: the running children stop and the instance closes</small></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-body">
+    <!-- STATES: the recipe's states in path order; the current state's expansion sits under a hairline -->
+    <div class="sb">
+    <section class="section" aria-labelledby="st-h">
+      <div class="sh"><h2 id="st-h">States</h2></div>
+      <div class="path" aria-label="States in path order">
+        <span class="step"><span class="node"><b>intake</b><span class="g g-done">●</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node"><b>studio</b><span class="g g-done">●</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node"><b>scoping</b><span class="g g-done">●</span><span class="badge mono">r1</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node"><b>design</b><span class="g g-done">●</span><span class="badge">desk</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node cur" aria-current="step"><span class="g g-cur">▣</span><b>build</b><span class="g g-prog">◐</span><span class="badge mono">4/9</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node todo"><b>verify</b><span class="g g-todo">○</span><span class="badge">desk</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node todo"><b>ship</b><span class="g g-todo">○</span></span></span>
+      </div>
+      <div class="expand" aria-label="Current state: build">
+        <div class="decl"><b><span class="g g-cur">▣</span>build</b><span class="sep">·</span><span class="mono">step.children(builder.feature)</span><span>one child per packet task</span><span class="sep">·</span><span class="unit"><span class="g g-park" role="img" aria-label="parked">▌</span>1 parked: <span class="mono">ITM-01JD7</span> no-progress, mirrored from the child</span><span class="sep">·</span><span>gates on exit:</span><span class="mono">gate.evidence.all</span>,<span class="mono">gate.judge.verify ≥ 0.8</span></div>
+        <div class="krow"><span class="k">next</span><span class="v ink">Build runs each packet task as a child item; verify opens for you when every child is done.</span></div>
+        <div class="ctl">
+          <div class="stat"><span class="kv"><span>budget</span><span class="mono">1.2M / 3M</span><span class="bar4" role="img" aria-label="40 percent of this state's budget used"><i style="width:40%"></i></span><span>this state</span></span><span>·</span><span class="kv"><span>timeout</span><span class="mono">parks in 2d 4h</span></span></div>
+        </div>
+      </div>
+    </section>
+    </div>
+    <!-- FACTS: key · one line · one action -->
+    <div class="sb alt">
+    <section class="section facts" aria-labelledby="fa-h">
+<div class="sh"><h2 id="fa-h">Facts</h2><span class="meta">declared by the recipe, produced so far</span></div>
+      <div class="fact"><span class="key">fact:brief</span><span class="sum"><b>PRD-sync.md</b> · <span class="mono">linear:doc</span> · updated 5d ago</span><div class="acts"><button class="btn sm">Open ↗</button></div></div>
+      <div class="fact"><span class="key">fact:scope-map</span><span class="sum"><b>scope-sync-v3.json</b> · 14 surfaces · backtest <span class="mono">0.74 / 0.70</span> <b>PASS</b></span><div class="acts"><div class="split"><button class="btn sm main " aria-label="View ▸">View ▸</button><button class="btn sm chev" aria-label="More actions for scope-map" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div></div>
+      <div class="fact"><span class="key">fact:design</span><span class="sum"><b>design-output/</b> · imported 10-12 08:50 <span class="note">(desk step, completed by you)</span></span><div class="acts"><button class="btn sm">Open in Figma ↗</button></div></div>
+      <div class="fact"><span class="key">fact:packet</span><span class="sum"><b>packet.json</b> · frozen <span class="mono">sha256:3f1c09</span> · 9 tasks · checks 9/9 ✓</span><div class="acts"><button class="btn sm">View ▸</button></div></div>
+      <div class="fact"><span class="key">fact:evidence</span><span class="sum">4 of 9 packs</span><div class="acts"></div></div>
+    </section>
+    </div>
+    <!-- CHILDREN: packet 3f1c09 (4 done · 1 running · 1 parked · 3 queued = 9); the rows that need a glance, the rest behind "… 6 more" -->
+    <div class="sb">
+    <section class="section" aria-labelledby="ch-h">
+<div class="sh"><h2 id="ch-h">Children</h2><span class="meta">9 · <span class="mono">builder.feature</span>, by packet workstream</span></div>
+      <div class="children">
+        <div class="child" aria-label="ITM-01JD6 running checks"><span class="chip ok">Running</span><span class="ttl">Services page job panel<span class="tag meta">ws-2 Store</span><span class="id at-rest mono">ITM-01JD6</span></span><span class="when">0m</span><div class="acts"><div class="split"><button class="btn sm main " aria-label="Open ITM-01JD6">Open</button><button class="btn sm chev" aria-label="More actions for ITM-01JD6" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div></div>
+        <div class="child" aria-label="ITM-01JD7 parked, needs you"><span class="chip attn">Parked</span><span class="ttl">Background sync (iOS)<span class="tag meta">ws-3 Mobile</span><span class="id at-rest mono">ITM-01JD7</span></span><span class="when"></span><div class="acts"><div class="split"><button class="btn sm main term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button><button class="btn sm chev" aria-label="More actions for ITM-01JD7" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div></div>
+        <div class="child" aria-label="ITM-01JF3 queued"><span class="chip ">Queued</span><span class="ttl">doctor views line<span class="tag meta">ws-3 Mobile</span><span class="id at-rest mono">ITM-01JF3</span></span><span class="when">52m</span><div class="acts"><div class="split"><button class="btn sm main " aria-label="Open ITM-01JF3">Open</button><button class="btn sm chev" aria-label="More actions for ITM-01JF3" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div></div>
+      </div>
+      <div class="cfoot"><span>… 6 more · 4 done · 2 queued</span><a href="#">Open all in Work ▸</a></div>
+    </section>
+    </div>
+    <div class="sb alt">
+    <div class="tabs" role="tablist">
+          <button class="tab" role="tab" aria-selected="true" aria-controls="tp">Timeline <span class="n">41</span><kbd>1</kbd></button>
+          <button class="tab" role="tab" aria-selected="false">Decisions <span class="n">3</span><kbd>2</kbd></button>
+          <button class="tab" role="tab" aria-selected="false">Requests <span class="n">1</span><kbd>3</kbd></button>
+          <button class="tab" role="tab" aria-selected="false">Context <span class="n">14</span><kbd>4</kbd></button>
+        </div>
+        <div class="tabpanel" id="tp" role="tabpanel" aria-label="Timeline, newest first">
+          <div class="ev"><span class="t">12:26</span><span class="a">ITM-01JD6</span><span class="d">checks started · factory worker · <span class="mono">snd-01JD6.1</span></span></div>
+          <div class="ev"><span class="t">12:26</span><span class="a">ITM-01JD6</span><span class="d">produce done</span></div>
+          <div class="ev more"><span class="t"></span><span class="a"></span><span class="d"><a href="#" aria-label="39 more events, opens the full timeline">… 39 more</a></span></div>
+        </div>
+    </div>
+  </div>
+</aside>
+
+<div class="caption">Workflow instance (project) · design reference, not implementation</div>
+</body>
+</html>
