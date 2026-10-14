@@ -16,6 +16,9 @@ public static class OutboxEvents
     /// <summary>The recheck refused it; the instance parks with spec-conflict of that kind (§3.8), or absorbs it.</summary>
     public const string Refused = "outbox.refused";
 
+    /// <summary>The instance was cancelled within the dispatch delay, so the effect was aborted (engine P6 unit (b)).</summary>
+    public const string Cancelled = "outbox.cancelled";
+
     /// <summary>The event type of a row in <paramref name="state"/>.</summary>
     /// <param name="state">The row's state.</param>
     /// <returns>Its event type.</returns>
@@ -23,6 +26,7 @@ public static class OutboxEvents
     {
         EffectState.Pending => Pending,
         EffectState.Dispatched => Dispatched,
+        EffectState.Cancelled => Cancelled,
         EffectState.Refused or _ => Refused,
     };
 }

@@ -6,12 +6,15 @@ using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.CompleteStep;
+using Aw.Sindri.Tests.Notifications;
 using Aw.Sindri.Tests.Workflows;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
 using Temporalio.Client;
 using Temporalio.Testing;
@@ -59,7 +62,11 @@ internal sealed class Served : IAsyncDisposable
     public static async Task<Served> Start(string home, WorkflowEnvironment environment, Func<string, string?> variables, Action<IServiceCollection>? replace = null)
     {
         var ct = TestContext.Current.CancellationToken;
-        var app = LoopbackBinding.Build([], name => name == "AW_SINDRI_HOME" ? home : variables(name), new FakeTimeProvider(), replace);
+        var app = LoopbackBinding.Build([], name => name == "AW_SINDRI_HOME" ? home : variables(name), new FakeTimeProvider(), services =>
+        {
+            _ = services.Replace(ServiceDescriptor.Singleton<IOsNotifier>(new FakeOsNotifier()));   // no test fires a real OS notification
+            replace?.Invoke(services);
+        });
         _ = Pipeline.Configure(app);
         await WorkflowsHarness.HoldLease(app.Services, ct);
         app.Services.GetRequiredService<HeldHumanToken>().Hold((await app.Services.GetRequiredService<IHumanTokenStore>().Mint(ct)).Value);

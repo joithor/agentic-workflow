@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
+using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Effects;
@@ -22,5 +23,19 @@ public static class EngineNotices
         ArgumentNullException.ThrowIfNull(after);
         _ = (before, version, deskTaskNotified);
         throw new NotSupportedException("engine P6 unit (c): EngineNotices.For (parks, escalations, desk tasks, takeoverIdle)");
+    }
+
+    /// <summary>The notices a change of type <paramref name="change"/> sends: a 'workflow.notified' change is takeoverIdle's (P5).</summary>
+    /// <param name="before">The instance before the change (null at start).</param>
+    /// <param name="after">The instance after it.</param>
+    /// <param name="version">The instance's version after the change.</param>
+    /// <param name="deskTaskNotified">Whether the instance already sent a desk-task notice.</param>
+    /// <param name="change">The type of the change's ledger event.</param>
+    /// <returns>Each notice's command and class.</returns>
+    public static IReadOnlyList<(EffectCommand Command, NoticeClass Class)> For(WorkflowInstance? before, WorkflowInstance after, int version, bool deskTaskNotified, WorkflowEventType change)
+    {
+        ArgumentNullException.ThrowIfNull(after);
+        _ = (before, version, deskTaskNotified, change);
+        throw new NotSupportedException("engine P6 unit (c): EngineNotices.For");
     }
 }

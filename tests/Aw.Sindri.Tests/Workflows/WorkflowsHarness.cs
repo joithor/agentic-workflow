@@ -10,9 +10,12 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Tests.Notifications;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
 using Temporalio.Client;
 using Temporalio.Testing;
@@ -37,6 +40,9 @@ internal sealed class WorkflowsHarness : IDisposable
 
     public string Home => _home.Path;
 
+    /// <summary>The OS notifications the composed host showed: every composition here replaces the real one, so no test fires a notification.</summary>
+    public FakeOsNotifier Notifier { get; } = new();
+
     public void Dispose()
     {
         _home.Dispose();
@@ -56,6 +62,7 @@ internal sealed class WorkflowsHarness : IDisposable
     {
         ArgumentNullException.ThrowIfNull(replace);
         var services = Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider(DateTimeOffset.UtcNow));
+        _ = services.Replace(ServiceDescriptor.Singleton<IOsNotifier>(Notifier));
         replace(services);
         return services.BuildServiceProvider();
     }

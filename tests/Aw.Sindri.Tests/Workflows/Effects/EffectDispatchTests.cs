@@ -54,7 +54,7 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
             Assert.Equal((BlockId.From("effect.notify.desk"), handle.Id), (pending.Kind, pending.Instance.Value));
             Assert.Empty(early);
             Assert.Equal((pending.Identity, pending.Command), (dispatched.Identity, dispatched.Command));
-            Assert.Equal([pending.Identity], _desk.Performed);
+            Assert.Equal([pending.Identity], _desk.Calls.Where(static c => !c.FromEngine).Select(static c => c.Identity), StringComparer.Ordinal);   // the first desk task's engine notice runs through the block too
             Assert.Equal([pending.Identity], transition.Effects);
             await handle.TerminateAsync("test over");
         }, Token);
@@ -84,7 +84,7 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
             Assert.Equal((pending.Identity, EffectState.Refused, null), (refused.Identity, refused.State, refused.Code));
             Assert.StartsWith("cancelled", refused.Reason, StringComparison.Ordinal);
             Assert.Empty(await EffectRows.Of(sindri, OutboxEvents.Dispatched, CommandOrigin.Recipe));
-            Assert.Empty(_desk.Calls);
+            Assert.DoesNotContain(_desk.Calls, static c => !c.FromEngine);
         }, Token);
     }
 

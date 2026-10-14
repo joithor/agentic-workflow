@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Features.Blocks.Effect;
@@ -9,7 +10,9 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// line of 'notifications.jsonl' per effect identity and a macOS notification when one is available. A recipe's
 /// replies 'notify.delivered' with 'delivered'; an engine notice replies nothing.
 /// </summary>
-internal sealed class NotifyDeskEffect : IEffectKind, IDescribedBlock
+/// <param name="notices">The notifications file and the OS notification centre.</param>
+/// <param name="clock">When the notice is sent.</param>
+internal sealed class NotifyDeskEffect(IDeskNotices notices, TimeProvider clock) : IEffectKind, IDescribedBlock
 {
     /// <inheritdoc/>
     public static BlockDescriptor Descriptor { get; } = new(
@@ -20,6 +23,6 @@ internal sealed class NotifyDeskEffect : IEffectKind, IDescribedBlock
     public ValueTask<Result<EffectDone>> Dispatch(EffectContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
-        throw new NotSupportedException("engine P6 unit (c): effect.notify.desk (notifications.jsonl through IDeskNotices)");
+        throw new NotSupportedException($"engine P6 unit (c): effect.notify.desk (notifications.jsonl through {notices}, {clock})");
     }
 }

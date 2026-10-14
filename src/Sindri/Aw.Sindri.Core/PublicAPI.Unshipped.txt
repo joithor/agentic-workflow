@@ -4996,3 +4996,6 @@ override Aw.Sindri.Core.Events.ContextMapImported.ToString() -> string!
 static Aw.Sindri.Core.Events.ContextMapImported.operator !=(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapImported.operator ==(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Id.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.For(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, int version, bool deskTaskNotified, Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType change) -> System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>!
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectState.Cancelled = 4 -> Aw.Sindri.Core.Workflow.Engine.Effects.EffectState
+const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Cancelled = "outbox.cancelled" -> string!

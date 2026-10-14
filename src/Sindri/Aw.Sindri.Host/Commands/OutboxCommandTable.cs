@@ -45,7 +45,7 @@ internal static class OutboxCommandTable
     }
 
     /// <summary>One line per effect ('seq  time  state  kind  origin  instance  identity  code'), or 'no commands'. Engine P6 unit (c).</summary>
-    private static string Lines(IReadOnlyList<OutboxCommandView> commands)
+    internal static string Lines(IReadOnlyList<OutboxCommandView> commands)
     {
         ArgumentNullException.ThrowIfNull(commands);
         throw new NotSupportedException("engine P6 unit (c): the outbox list lines");

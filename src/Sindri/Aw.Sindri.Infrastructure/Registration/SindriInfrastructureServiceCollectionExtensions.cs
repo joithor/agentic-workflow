@@ -6,12 +6,14 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.Challenges;
 using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Infrastructure.Lease;
+using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Infrastructure.Profile;
 using Aw.Sindri.Infrastructure.Workflow;
@@ -53,5 +55,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IRecipeStore, SqliteRecipeStore>()
             .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>()
             .AddSingleton<IChallenges, ProcessChallenges>()
-            .AddSingleton<IHarnessVersions, CommandHarnessVersions>();
+            .AddSingleton<IHarnessVersions, CommandHarnessVersions>()
+            .AddSingleton<IOsNotifier, OsascriptNotifier>()          // engine P6 unit (c): the only OS notifier (README X5, X50)
+            .AddSingleton<IDeskNotices, FileDeskNotices>();          // engine P6 unit (c): notifications.jsonl
 }
