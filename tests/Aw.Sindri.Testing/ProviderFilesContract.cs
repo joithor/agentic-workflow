@@ -24,6 +24,22 @@ public abstract class ProviderFilesContract
     /// <returns>The reader over that home.</returns>
     protected abstract IProviderFiles Create(IReadOnlyDictionary<ProviderFile, string> files);
 
+    /// <summary>A home where <paramref name="file"/> exists but can't be read.</summary>
+    /// <param name="file">Which file.</param>
+    /// <returns>The reader over that home.</returns>
+    protected abstract IProviderFiles CreateUnreadable(ProviderFile file);
+
+    /// <summary>An unreadable file has no text and a problem that says why, never the content.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task An_unreadable_file_has_a_problem_and_no_text()
+    {
+        var read = await CreateUnreadable(ProviderFile.Codex).Read(ProviderFile.Codex, Token);
+
+        Expect.True(read.Text is null && read.Problem is { Length: > 0 });
+        Expect.Equal(Shown(ProviderFile.Codex), read.Path);
+    }
+
     /// <summary>Each file reads back with its text and its path shown under '~'.</summary>
     /// <returns>The test.</returns>
     [Fact]

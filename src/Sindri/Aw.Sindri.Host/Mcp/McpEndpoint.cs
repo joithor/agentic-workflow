@@ -55,7 +55,7 @@ internal static partial class McpEndpoint
             var headers = context.Request.Headers;
             if (headers.ContainsKey("Origin"))
             {
-                LogRefused(context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(McpEndpoint)), headers.Origin.ToString());
+                LogRefused(context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(McpEndpoint)), context.Request.Method, headers.Origin.ToString());
                 await ApiProblems.Write(context, SindriErrors.OriginRefused.Code, StatusCodes.Status403Forbidden,
                     $"{context.Request.Path} refuses an Origin header: MCP clients send none (fix: connect with an MCP client, registered by 'sindri mcp register')").ConfigureAwait(false);
                 return;
@@ -79,6 +79,6 @@ internal static partial class McpEndpoint
         return app;
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "SND-API-008 POST /sindri/mcp refused: Origin '{Origin}'")]
-    private static partial void LogRefused(ILogger logger, string origin);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "SND-API-008 {Method} /sindri/mcp refused: Origin '{Origin}'")]
+    private static partial void LogRefused(ILogger logger, string method, string origin);
 }

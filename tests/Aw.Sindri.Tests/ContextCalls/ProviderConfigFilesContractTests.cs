@@ -46,4 +46,15 @@ public sealed class ProviderConfigFilesContractTests : ProviderFilesContract, ID
 
         return new ProviderConfigFiles(McpSettings.Read(name => name == "HOME" ? _home.FullName : null));
     }
+
+    protected override IProviderFiles CreateUnreadable(ProviderFile file)
+    {
+        var files = Create(new Dictionary<ProviderFile, string> { [file] = "[mcp_servers.sindri]\n" });
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(Path.Combine(_home.FullName, Shown(file)[2..]), UnixFileMode.None);
+        }
+
+        return files;
+    }
 }

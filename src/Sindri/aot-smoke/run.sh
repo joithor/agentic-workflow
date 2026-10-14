@@ -123,7 +123,7 @@ doctor() { # doctor reads the providers' user-wide MCP files: point it at an emp
 mcp() { # $1 = JSON-RPC method, $2 = params: one stateless /sindri/mcp call as an MCP client sends it (no Origin)
   local url
   url="$(jq -r '.url' "$AW_SINDRI_HOME/control.json")"
-  curl -s -X POST "${url%/}/sindri/mcp" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+  curl -s -m 30 -X POST "${url%/}/sindri/mcp" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
     -H 'X-Sindri-Repo: smoke' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$1\",\"params\":$2}" | sed -n 's/^data: //p'
 }
 session_tty() { # an agent session at a terminal (the CLI's own terminal check passes, so the server decides)

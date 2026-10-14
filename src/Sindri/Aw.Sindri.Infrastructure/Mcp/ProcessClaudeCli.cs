@@ -1,6 +1,6 @@
-using System.Globalization;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using Aw.Sindri.Core.Mcp;
 
 namespace Aw.Sindri.Infrastructure.Mcp;
@@ -11,7 +11,17 @@ internal sealed class ProcessClaudeCli(McpSettings settings) : IClaudeCli
 {
     public async ValueTask<ClaudeRun?> Run(IReadOnlyList<string> arguments, string workingDirectory, CancellationToken cancellationToken)
     {
-        var start = new ProcessStartInfo(settings.ClaudeBin, arguments)
+        if (!Directory.Exists(workingDirectory))
+        {
+            return new ClaudeRun(2, $"the repo's checkout {workingDirectory} doesn't exist");
+        }
+
+        if (Executable(settings.ClaudeBin) is not { } executable)
+        {
+            return null;   // not on PATH, or not executable
+        }
+
+        var start = new ProcessStartInfo(executable, arguments)
         {
             UseShellExecute = false,
             WorkingDirectory = workingDirectory,
@@ -49,14 +59,47 @@ internal sealed class ProcessClaudeCli(McpSettings settings) : IClaudeCli
         {
             await claude.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
-            claude.Kill(entireProcessTree: true);
+            Stop(claude);   // over budget or cancelled: never leave the child running
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
             return new ClaudeRun(124, string.Create(CultureInfo.InvariantCulture, $"claude didn't finish within {budget.TotalSeconds:0} s"));
         }
 
         _ = await output.ConfigureAwait(false);
         var lines = (await error.ConfigureAwait(false)).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         return new ClaudeRun(claude.ExitCode, lines.Length == 0 ? string.Empty : lines[^1]);
+    }
+
+    private static void Stop(Process claude)
+    {
+        try
+        {
+            claude.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException)
+        {
+            // it exited between the timeout and the kill
+        }
+    }
+
+    /// <summary>
+    /// A name with a '/' as given; a bare name looked up on PATH only. Process.Start would also try the working directory
+    /// (the work repo) first, and a file named 'claude' there must never run.
+    /// </summary>
+    private static string? Executable(string name)
+    {
+        if (name.Contains('/', StringComparison.Ordinal))
+        {
+            return File.Exists(name) ? name : null;
+        }
+
+        return (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(':', StringSplitOptions.RemoveEmptyEntries)
+            .Select(directory => Path.Combine(directory, name))
+            .FirstOrDefault(File.Exists);
     }
 }

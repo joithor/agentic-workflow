@@ -17,4 +17,6 @@ public sealed class FakeProviderFilesContractTests : ProviderFilesContract
 
         return fake;
     }
+
+    protected override IProviderFiles CreateUnreadable(ProviderFile file) => new FakeProviderFiles().Unreadable(file);
 }

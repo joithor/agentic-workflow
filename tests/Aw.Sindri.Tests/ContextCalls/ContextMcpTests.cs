@@ -111,6 +111,7 @@ public sealed class ContextMcpTests : IDisposable
             await own.Call("context_nope", "{}", ct),
         }.Select(r => (r.IsError, Code(r)));
 
+        Assert.NotEqual(true, (await own.Call("context_query", """{"q":"orientation","depth":null,"node":null}""", ct)).IsError);   // why: null is absent
         Assert.Equal(
             [(true, "SND-CONTEXT-020"), (true, "SND-CONTEXT-020"), (true, "SND-CONTEXT-003"), (true, "SND-CONTEXT-021"), (true, "SND-CONTEXT-022"),
              (true, "SND-CONTEXT-022"), (true, "SND-CONTEXT-006"), (true, "SND-CONTEXT-023")],
@@ -239,7 +240,7 @@ public sealed class ContextMcpTests : IDisposable
     /// <summary>Commits <paramref name="text"/> at <paramref name="path"/> in the fixture repo.</summary>
     private static void Plant(FixtureRepo repo, string path, string text)
     {
-        var file = System.IO.Path.Combine(repo.Path, path);
+        var file = Path.Combine(repo.Path, path);
         File.WriteAllText(file, text);
         Git(repo.Path, "add", path);
         Git(repo.Path, "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid", "commit", "-q", "-m", "plant " + path);
@@ -247,10 +248,10 @@ public sealed class ContextMcpTests : IDisposable
 
     private static void Git(string repo, params string[] args)
     {
-        var start = new System.Diagnostics.ProcessStartInfo("git", ["-C", repo, .. args]) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        var start = new ProcessStartInfo("git", ["-C", repo, .. args]) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
         start.Environment["GIT_CONFIG_GLOBAL"] = "/dev/null";
         start.Environment["GIT_CONFIG_NOSYSTEM"] = "1";
-        using var git = System.Diagnostics.Process.Start(start)!;
+        using var git = Process.Start(start)!;
         git.WaitForExit();
         Assert.True(git.ExitCode == 0, git.StandardError.ReadToEnd());
     }

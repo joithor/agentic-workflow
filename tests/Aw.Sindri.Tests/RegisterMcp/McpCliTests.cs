@@ -1,10 +1,10 @@
 using Aw.Kernel.Json;
-using Aw.Sindri.Host;
-using Aw.Sindri.Host.Commands;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.RegisterMcp;
+using Aw.Sindri.Host;
+using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,7 +24,7 @@ public sealed class McpCliTests
     public void The_json_answer_is_in_the_host_context()
     {
         var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(
-            new Features.RegisterMcp.RegisterMcpResponse(Core.Ids.RepoName.From("demo"), "/work/demo", ["mcp", "add"], Applied: false), AwJson.CreateOptions(SindriJsonContext.Default)));
+            new RegisterMcpResponse(Core.Ids.RepoName.From("demo"), "/work/demo", ["mcp", "add"], Applied: false), AwJson.CreateOptions(SindriJsonContext.Default)));
 
         Assert.Equal("""{"repo":"demo","checkout":"/work/demo","arguments":["mcp","add"],"applied":false}""", json);
     }

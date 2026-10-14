@@ -131,13 +131,14 @@ Phase 1 tools (both read-only):
 Claude Code hands the model `structuredContent` rather than the text block when a result has both, so everything a
 session needs is in `structuredContent`; the text block is for clients that show text only. The draft map is never
 read over MCP. The tools stay listed while `context.sessions.enabled` is false; "off" (spec
-§8.5) means every call is refused with `SND-CONTEXT-020`, so a session learns why. Refusals are tool errors
+§8.5) means every call is refused with `SND-CONTEXT-020` (after the argument and repo-header checks), so a session
+learns why. Refusals are tool errors
 (`isError: true`) whose text starts with the code and whose `structuredContent` is `{code, message}`:
 
 | Code | When |
 |---|---|
 | `SND-CONTEXT-020` | Session reads are off |
-| `SND-CONTEXT-003` | An anchor outside the session's repo, or unknown |
+| `SND-CONTEXT-003` | An anchor outside the session's repo, or unknown; also every call whose `X-Sindri-Repo` isn't a repo the profile maps (re-run `sindri mcp register` in the work repo) |
 | `SND-CONTEXT-006` | The question is invalid (no words, two shapes, depth or budget out of range) |
 | `SND-CONTEXT-021` | The call has no `X-Sindri-Repo` (use a registration from `sindri mcp register`) |
 | `SND-CONTEXT-022` | An argument of the wrong type, or one the tool doesn't have |
