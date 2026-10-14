@@ -1,5 +1,4 @@
 using Aw.Kernel;
-using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -10,17 +9,14 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>
 /// 'sindri workflow start &lt;recipe&gt; --item &lt;id&gt; [--attempt next] [--fact &lt;key&gt;=&lt;file&gt;]… [--json]'
 /// (engine spec rev 8 §5.1, §6.1, §6.3; engine P4 unit (b)). The CLI reads each fact file (at most 1 MiB) and sends its
-/// name and content, never its path, to the StartInstance slice. It prints the status header; an attempt that has ended
+/// name and content, never its path, to the API's StartInstance route. It prints the status header; an attempt that has ended
 /// adds 'start a new one with --attempt next'. Exit 0 started or found, 2 refused (SND-WF-012 …), 1 invalid or not running.
 /// </summary>
 internal static class WorkflowStartCommand
 {
     private const string Usage = "usage: sindri workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]... [--json]";
 
-    /// <summary>The actor a terminal's start carries until API P1's caller chain names it (spec §6.2).</summary>
-    private const string Actor = "human:cli";
-
-    internal static async Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct)
+    internal static async Task<int> Run(string[] args, RecipeDesk desk, IServiceProvider services, Output output, CancellationToken ct)
     {
         var json = args.Contains("--json", StringComparer.Ordinal);
         var request = await Parse([.. args.Where(static a => a != "--json")], ct).ConfigureAwait(false);
@@ -29,7 +25,12 @@ internal static class WorkflowStartCommand
             return await output.Error(request.Error).ConfigureAwait(false);
         }
 
-        var started = await services.GetRequiredService<IService<StartInstanceRequest, StartInstanceResponse>>().Handle(request.Value, ct).ConfigureAwait(false);
+        if (await desk.EnsureRunning(ct).ConfigureAwait(false) is { } down)
+        {
+            return await output.Error(down).ConfigureAwait(false);
+        }
+
+        var started = await desk.Client.Post<StartInstanceRequest, StartInstanceResponse>("/sindri/workflow/instances", request.Value, ct).ConfigureAwait(false);
         if (started.IsError)
         {
             return await output.Error(started.Error).ConfigureAwait(false);
@@ -37,11 +38,12 @@ internal static class WorkflowStartCommand
 
         if (json)
         {
-            return await output.Json(started.Value, 0).ConfigureAwait(false);
+            return await output.Raw(started.Value.Body, 0).ConfigureAwait(false);
         }
 
-        var header = InstanceHeader.Line(started.Value.Instance, services.GetRequiredService<TimeProvider>().GetUtcNow());
-        return await output.Text(header + "\n" + (started.Value.Finished ? "  start a new one with --attempt next\n" : string.Empty), 0).ConfigureAwait(false);
+        var answer = started.Value.Value;
+        var header = InstanceHeader.Line(answer.Instance, services.GetRequiredService<TimeProvider>().GetUtcNow());
+        return await output.Text(header + "\n" + (answer.Finished ? "  start a new one with --attempt next\n" : string.Empty), 0).ConfigureAwait(false);
     }
 
     private static async Task<Result<StartInstanceRequest>> Parse(string[] args, CancellationToken ct)
@@ -84,7 +86,7 @@ internal static class WorkflowStartCommand
             facts[read.Value.Key] = read.Value.Fact;
         }
 
-        return new StartInstanceRequest(recipe, item, flags.Exists(static f => f.Flag == "--attempt"), facts, Actor);
+        return new StartInstanceRequest(recipe, item, flags.Exists(static f => f.Flag == "--attempt"), facts);
     }
 
     /// <summary>Reads '&lt;key&gt;=&lt;file&gt;': the file's name and content, at most 1 MiB (spec §6.1); the server never sees the path.</summary>

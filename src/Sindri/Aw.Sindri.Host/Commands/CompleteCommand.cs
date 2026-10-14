@@ -1,29 +1,27 @@
 using Aw.Kernel;
-using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.CompleteStep;
+using Aw.Sindri.Host.Endpoints;
 
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri workflow complete &lt;address&gt; --run &lt;t&gt; --outcome &lt;o&gt; [--output &lt;fact&gt;=&lt;file&gt;]… [--nonce
 /// &lt;n&gt;] [--json]' (engine spec rev 8.1 §5.3, §6.3; engine P4 unit (c)). The CLI reads each output file (at most
-/// 1 MiB) and sends its content, never its path, to the CompleteStep slice. It prints the new status header and what
-/// happened ('-> checks', or 'already applied (-> checks)' for a repeated nonce); '--json' prints the response with the
-/// nonce it used. Without '--nonce' the slice issues one. Exit 0 applied, 2 refused (SND-WF-005, -008, -009 …), 1 not running.
+/// 1 MiB) and sends its content, never its path, to the API's complete route, where the command chain classes the caller
+/// (an agent session is refused SND-AUTH-002). It prints the new status header and what happened ('-> checks', or
+/// 'already applied (-> checks)' for a repeated nonce); '--json' prints the response with the nonce it used. Without
+/// '--nonce' the instance's nonce route issues one first. Exit 0 applied, 2 refused (SND-WF-005, -008, -009 …), 1 not running.
 /// </summary>
 internal static class CompleteCommand
 {
     private const string Usage =
         "usage: sindri workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--nonce <n>] [--json]";
 
-    /// <summary>The actor a terminal's report carries until API P1's caller chain names it (spec §6.2).</summary>
-    private const string Actor = "human:cli";
-
-    internal static async Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct)
+    internal static async Task<int> Run(string[] args, RecipeDesk desk, IServiceProvider services, Output output, CancellationToken ct)
     {
         var (request, json, problem) = await Parse(args, ct).ConfigureAwait(false);
         if (request is null)
@@ -31,7 +29,10 @@ internal static class CompleteCommand
             return await output.Error(problem ?? SindriErrors.InvalidInput.With(Usage)).ConfigureAwait(false);
         }
 
-        var done = await services.GetRequiredService<IService<CompleteStepRequest, CompleteStepResponse>>().Handle(request, ct).ConfigureAwait(false);
+        var nonce = await ApplyCommandVerbs.NonceFor(desk, request.Address.Value, request.Nonce, ct).ConfigureAwait(false);
+        var route = $"/sindri/workflow/instances/{InstanceRoute.Segment(request.Address.Value)}/runs/{InstanceRoute.Segment(request.Run.Value)}/complete";
+        var done = nonce.IsError ? nonce.Error
+            : await desk.Client.Post<CompleteStepRequest, CompleteStepResponse>(route, request with { Nonce = nonce.Value }, ct).ConfigureAwait(false);
         if (done.IsError)
         {
             return await output.Error(done.Error).ConfigureAwait(false);
@@ -39,11 +40,12 @@ internal static class CompleteCommand
 
         if (json)
         {
-            return await output.Json(done.Value, 0).ConfigureAwait(false);
+            return await output.Raw(done.Value.Body, 0).ConfigureAwait(false);
         }
 
-        var happened = done.Value.AlreadyApplied ? $"already applied ({done.Value.Result.Happened})" : done.Value.Result.Happened;
-        var header = InstanceHeader.Line(done.Value.Result.Instance, services.GetRequiredService<TimeProvider>().GetUtcNow());
+        var answer = done.Value.Value;
+        var happened = answer.AlreadyApplied ? $"already applied ({answer.Result.Happened})" : answer.Result.Happened;
+        var header = InstanceHeader.Line(answer.Result.Instance, services.GetRequiredService<TimeProvider>().GetUtcNow());
         return await output.Text($"{header}\n  {happened}\n", 0).ConfigureAwait(false);
     }
 
@@ -76,7 +78,7 @@ internal static class CompleteCommand
         }
 
         var (run, outcome, nonce) = fields.Value;
-        return (new CompleteStepRequest(instance, run, outcome, outputs, nonce, Actor), json, null);
+        return (new CompleteStepRequest(instance, run, outcome, outputs, nonce), json, null);
     }
 
     /// <summary>The address and the '--flag value' pairs, each flag one this verb takes.</summary>

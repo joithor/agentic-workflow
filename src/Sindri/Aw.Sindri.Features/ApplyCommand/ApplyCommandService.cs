@@ -5,6 +5,7 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
@@ -21,14 +22,17 @@ namespace Aw.Sindri.Features.ApplyCommand;
 /// as its id. A repeat of a command its nonce already applied skips the checks: Temporal returns the first outcome. The workflow's validator answers a trigger not allowed here or an answer that doesn't fit (SND-WF-003);
 /// a refusal gives the nonce back, so a refused command consumes nothing. A command already applied with this nonce
 /// returns the first outcome, marked 'already applied'. Without a nonce one is issued (the IssueNonce stand-in).
-/// The caller and action-class checks (SND-AUTH-002) are the API chain's, before this slice.
+/// The caller and action-class checks (SND-AUTH-002) are the API chain's, before this slice; the caller's
+/// actor sends the command.
 /// </summary>
 /// <param name="directory">Resolves the address.</param>
 /// <param name="runtime">The instances on Temporal.</param>
 /// <param name="recipes">The approval check.</param>
 /// <param name="nonces">The nonce table.</param>
 /// <param name="challenges">The server's challenges, for a protected answer.</param>
-internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, ICommandNonces nonces, IChallenges challenges)
+/// <param name="callers">The caller the API chain classed: its actor sends the command.</param>
+internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, ICommandNonces nonces, IChallenges challenges,
+    ICallerContextAccessor callers)
     : IService<ApplyCommandRequest, ApplyCommandResponse>
 {
     public async ValueTask<Result<ApplyCommandResponse>> Handle(ApplyCommandRequest request, CancellationToken cancellationToken)
@@ -39,6 +43,11 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
             return malformed;
         }
 
+        if (callers.Current is not { } caller)
+        {
+            return SindriErrors.AuthRefused.With("ApplyCommand needs a caller");
+        }
+
         var address = await directory.Resolve(request.Instance, cancellationToken).ConfigureAwait(false);
         if (address.IsError)
         {
@@ -47,7 +56,7 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
 
         var nonce = request.Nonce ?? nonces.Issue();
         var stamp = new CommandStamp(nonce, ArgumentsSha(request));
-        var trigger = Trigger(request, stamp);
+        var trigger = Trigger(request, caller.Actor, stamp);
         var claim = await nonces.Claim(nonce, address.Value.Value + "\n" + stamp.ArgumentsSha256, cancellationToken).ConfigureAwait(false);
         if (claim.IsError)
         {
@@ -122,13 +131,13 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
     /// <summary>A protected answer's challenge (spec §4.2): its action text and the instance as it is now must match; any attempt uses it up (SND-WF-013).</summary>
     private Error? Redeem(ApplyCommandRequest request, InstanceAddress address, InstanceView view)
     {
-        var action = ApplyCommandChallenge.Action(address, request.Answer!.Value, request.Amount); // why: only a protected answer redeems
+        var action = InstanceChallenge.Action(address, request.Answer!.Value, request.Amount); // why: only a protected answer redeems
         if (request.Challenge is not { } answer)
         {
             return WorkflowErrors.WorkflowChallengeStale.With($"'{action.Text}' is protected and needs its challenge typed at a terminal (fix: run it again in a terminal: sindri workflow answer {address.Value} ...)");
         }
 
-        var redeemed = challenges.Redeem(answer, action, ApplyCommandChallenge.Subject(view), WorkflowErrors.WorkflowChallengeStale);
+        var redeemed = challenges.Redeem(answer, action, InstanceChallenge.Subject(view), WorkflowErrors.WorkflowChallengeStale);
         return redeemed.IsError ? redeemed.Error : null;
     }
 
@@ -143,11 +152,11 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
         _ => null,
     };
 
-    private static Trigger Trigger(ApplyCommandRequest request, CommandStamp stamp) => request.Kind switch
+    private static Trigger Trigger(ApplyCommandRequest request, string actor, CommandStamp stamp) => request.Kind switch
     {
-        ApplyCommandKind.Answer => new AnswerGiven(request.Actor, stamp, request.Answer!.Value, request.Text, request.Amount, Forwarded: null), // why: Malformed refuses an answer with no variant
-        ApplyCommandKind.Command => new CommandFired(request.Actor, request.Verb!.Value, stamp), // why: Malformed refuses a command with no verb
-        ApplyCommandKind.Cancel or _ => new CancelRequested(request.Actor, CancelOrigin.Command, stamp, Sequence: null, Parent: null),
+        ApplyCommandKind.Answer => new AnswerGiven(actor, stamp, request.Answer!.Value, request.Text, request.Amount, Forwarded: null), // why: Malformed refuses an answer with no variant
+        ApplyCommandKind.Command => new CommandFired(actor, request.Verb!.Value, stamp), // why: Malformed refuses a command with no verb
+        ApplyCommandKind.Cancel or _ => new CancelRequested(actor, CancelOrigin.Command, stamp, Sequence: null, Parent: null),
     };
 
     /// <summary>The SHA-256 of the command's canonical arguments, so two different commands never share a nonce's subject.</summary>

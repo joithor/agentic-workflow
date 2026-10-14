@@ -10,7 +10,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/commands",
       "cli": "sindri workflow answer <address> --accept",
-      "ui": "pending:WF-P4",
+      "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -25,7 +25,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/commands",
       "cli": "sindri workflow answer <address> --grant <rounds>",
-      "ui": "pending:WF-P4",
+      "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -40,7 +40,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/commands",
       "cli": "sindri workflow answer <address> --grant-tokens <tokens>",
-      "ui": "pending:WF-P4",
+      "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -56,7 +56,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/commands",
       "cli": "sindri workflow answer <address> --reject",
-      "ui": "pending:WF-P4",
+      "ui": "ready",
       "destructive": true,
       "readsViews": false,
       "shortcut": null
@@ -72,7 +72,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/commands",
       "cli": "sindri workflow answer <address> --resume",
-      "ui": "pending:WF-P4",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -88,7 +88,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/commands",
       "cli": "sindri workflow answer <address> --text <text>",
-      "ui": "pending:WF-P4",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -104,7 +104,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/commands",
       "cli": "sindri workflow cancel <address>",
-      "ui": "pending:WF-P4",
+      "ui": "ready",
       "destructive": true,
       "readsViews": false,
       "shortcut": null
@@ -120,7 +120,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/commands",
       "cli": "sindri workflow command <address> <verb>",
-      "ui": "pending:WF-P4",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -249,7 +249,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/runs/{run}/complete",
       "cli": "sindri workflow complete <address> --run <token> --outcome <outcome>",
-      "ui": "pending:WF-P4",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -331,7 +331,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances/{instanceId}/nonce",
       "cli": "sindri workflow command <address> <verb>",
-      "ui": "pending:WF-P4",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -521,7 +521,7 @@
       "method": "POST",
       "route": "/sindri/workflow/instances",
       "cli": "sindri workflow start <recipe> --item <itemId>",
-      "ui": "pending:WF-P4",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null

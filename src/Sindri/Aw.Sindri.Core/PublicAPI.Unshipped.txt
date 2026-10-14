@@ -4906,3 +4906,6 @@ static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.For(Aw.Sindri.Core.W
 static Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Of(Aw.Sindri.Core.Workflow.Engine.Effects.EffectState state) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.operator !=(Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim? left, Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.operator ==(Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim? left, Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Action(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant answer, int? amount) -> Aw.Sindri.Core.Challenges.ChallengeAction!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Subject(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> Aw.Sindri.Core.Challenges.ChallengeSubject!

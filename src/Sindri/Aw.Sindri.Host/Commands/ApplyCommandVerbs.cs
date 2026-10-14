@@ -1,5 +1,4 @@
 using Aw.Kernel;
-using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -7,18 +6,26 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.ApplyCommand;
+using Aw.Sindri.Features.IssueChallenge;
+using Aw.Sindri.Features.IssueNonce;
+using Aw.Sindri.Host.Endpoints;
 
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri workflow answer &lt;address&gt; [--text …|--file …] [--grant n | --grant-tokens n | --accept | --reject |
 /// --resume]', 'workflow command &lt;address&gt; &lt;verb&gt;' and 'workflow cancel &lt;address&gt;', each with '[--nonce
-/// &lt;n&gt;] [--json]' (engine spec rev 8 §5.2, §5.8, §6.3; engine P4 unit (b)). Each calls the ApplyCommand slice and
-/// prints the new status header and what happened (an answer: the resume action it ran); a repeated nonce prints
-/// 'already applied (…)'. A protected answer (grant, grant-tokens, accept) shows what it does, asks the server for its
-/// challenge, and reads the action text typed at the terminal (§4.2). Exit 0 applied, 2 refused, 1 invalid or not running.
+/// &lt;n&gt;] [--json]' (engine spec rev 8 §5.2, §5.8, §6.3), as clients of the API: without '--nonce' the CLI asks the
+/// instance's nonce route for one, then posts the command to its commands route, where the command chain classes the
+/// caller (an agent session is refused SND-AUTH-002). Each prints the new status header and what happened (an answer:
+/// the resume action it ran); a repeated nonce prints 'already applied (…)'. A protected answer (grant, grant-tokens,
+/// accept) asks the server for its challenge, shows the instance and the action to type, and sends what the human types
+/// (§4.2); a session sends none and is refused. Exit 0 applied, 2 refused, 1 invalid or not running.
 /// </summary>
-internal static class ApplyCommandVerbs
+/// <param name="desk">The API client, the terminal and the start rule.</param>
+/// <param name="services">The scope the clock resolves from.</param>
+/// <param name="output">Where the verbs write.</param>
+internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider services, Output output)
 {
     private const string AnswerUsage =
         "usage: sindri workflow answer <address> [--text <t> | --file <f>] [--grant <n> | --grant-tokens <n> | --accept | --reject | --resume] [--nonce <n>] [--json]";
@@ -36,10 +43,7 @@ internal static class ApplyCommandVerbs
     /// <summary>The answer options that carry text or the nonce rather than choose the variant.</summary>
     private static readonly string[] _carriers = ["--text", "--file", "--nonce"];
 
-    /// <summary>The actor a terminal's command carries until API P1's caller chain names it (spec §6.2).</summary>
-    private const string Actor = "human:cli";
-
-    internal static async Task<int> Answer(string[] args, IServiceProvider services, Output output, CancellationToken ct)
+    internal async Task<int> Answer(string[] args, CancellationToken ct)
     {
         var (json, rest) = Json(args);
         if (rest is not [var address, .. var options])
@@ -54,10 +58,10 @@ internal static class ApplyCommandVerbs
         }
 
         var (variant, text, amount, nonce) = parsed.Value;
-        var request = new ApplyCommandRequest(address, ApplyCommandKind.Answer, variant, text, amount, Verb: null, nonce, Challenge: null, Actor);
-        if (ApplyCommandChallenge.IsProtected(request.Kind, variant))
+        var request = new ApplyCommandRequest(address, ApplyCommandKind.Answer, variant, text, amount, Verb: null, nonce, Challenge: null);
+        if (ApplyCommandChallenge.IsProtected(request.Kind, variant) && desk.Client.SessionReason is null)
         {
-            var challenge = await Challenge(request, services, output, ct).ConfigureAwait(false);
+            var challenge = await Challenge(request, ct).ConfigureAwait(false);
             if (challenge.IsError)
             {
                 return await output.Error(challenge.Error).ConfigureAwait(false);
@@ -66,10 +70,10 @@ internal static class ApplyCommandVerbs
             request = request with { Challenge = challenge.Value };
         }
 
-        return await Apply(request, json, services, output, ct).ConfigureAwait(false);
+        return await Apply(request, json, ct).ConfigureAwait(false);
     }
 
-    internal static async Task<int> Command(string[] args, IServiceProvider services, Output output, CancellationToken ct)
+    internal async Task<int> Command(string[] args, CancellationToken ct)
     {
         var (json, rest) = Json(args);
         if (rest is not [var address, var verb, .. var options] || !CommandVerb.TryFrom(verb, out var parsed))
@@ -80,10 +84,10 @@ internal static class ApplyCommandVerbs
         var nonce = Nonce(options, CommandUsage);
         return nonce.IsError
             ? await output.Error(nonce.Error).ConfigureAwait(false)
-            : await Apply(new ApplyCommandRequest(address, ApplyCommandKind.Command, Answer: null, Text: null, Amount: null, parsed, nonce.Value, Challenge: null, Actor), json, services, output, ct).ConfigureAwait(false);
+            : await Apply(new ApplyCommandRequest(address, ApplyCommandKind.Command, Answer: null, Text: null, Amount: null, parsed, nonce.Value, Challenge: null), json, ct).ConfigureAwait(false);
     }
 
-    internal static async Task<int> Cancel(string[] args, IServiceProvider services, Output output, CancellationToken ct)
+    internal async Task<int> Cancel(string[] args, CancellationToken ct)
     {
         var (json, rest) = Json(args);
         if (rest is not [var address, .. var options])
@@ -94,13 +98,35 @@ internal static class ApplyCommandVerbs
         var nonce = Nonce(options, CancelUsage);
         return nonce.IsError
             ? await output.Error(nonce.Error).ConfigureAwait(false)
-            : await Apply(new ApplyCommandRequest(address, ApplyCommandKind.Cancel, Answer: null, Text: null, Amount: null, Verb: null, nonce.Value, Challenge: null, Actor), json, services, output, ct).ConfigureAwait(false);
+            : await Apply(new ApplyCommandRequest(address, ApplyCommandKind.Cancel, Answer: null, Text: null, Amount: null, Verb: null, nonce.Value, Challenge: null), json, ct).ConfigureAwait(false);
     }
 
-    private static async Task<int> Apply(ApplyCommandRequest request, bool json, IServiceProvider services, Output output, CancellationToken ct)
+    /// <summary>
+    /// The nonce for a command on <paramref name="reference"/> (spec §5.2): the given one, else one the instance's nonce
+    /// route issues. A human command starts the control plane first when this CLI may (API spec §7).
+    /// </summary>
+    internal static async Task<Result<CommandNonce>> NonceFor(RecipeDesk desk, string reference, CommandNonce? given, CancellationToken ct)
     {
-        await using var scope = services.CreateAsyncScope();
-        var done = await scope.ServiceProvider.GetRequiredService<IService<ApplyCommandRequest, ApplyCommandResponse>>().Handle(request, ct).ConfigureAwait(false);
+        if (await desk.EnsureRunning(ct).ConfigureAwait(false) is { } down)
+        {
+            return down;
+        }
+
+        if (given is { } nonce)
+        {
+            return nonce;
+        }
+
+        var issued = await desk.Client.Post<IssueNonceRequest, IssueNonceResponse>($"/sindri/workflow/instances/{InstanceRoute.Segment(reference)}/nonce", body: null, ct)
+            .ConfigureAwait(false);
+        return issued.IsError ? issued.Error : issued.Value.Value.Nonce;
+    }
+
+    private async Task<int> Apply(ApplyCommandRequest request, bool json, CancellationToken ct)
+    {
+        var nonce = await NonceFor(desk, request.Instance, request.Nonce, ct).ConfigureAwait(false);
+        var done = nonce.IsError ? nonce.Error : await desk.Client.Post<ApplyCommandRequest, ApplyCommandResponse>(
+            $"/sindri/workflow/instances/{InstanceRoute.Segment(request.Instance)}/commands", request with { Nonce = nonce.Value }, ct).ConfigureAwait(false);
         if (done.IsError)
         {
             return await output.Error(done.Error).ConfigureAwait(false);
@@ -108,40 +134,54 @@ internal static class ApplyCommandVerbs
 
         if (json)
         {
-            return await output.Json(done.Value, 0).ConfigureAwait(false);
+            return await output.Raw(done.Value.Body, 0).ConfigureAwait(false);
         }
 
-        var happened = done.Value.AlreadyApplied ? $"already applied ({done.Value.Result.Happened})" : done.Value.Result.Happened;
-        var header = InstanceHeader.Line(done.Value.Result.Instance, services.GetRequiredService<TimeProvider>().GetUtcNow());
+        var answer = done.Value.Value;
+        var happened = answer.AlreadyApplied ? $"already applied ({answer.Result.Happened})" : answer.Result.Happened;
+        var header = InstanceHeader.Line(answer.Result.Instance, services.GetRequiredService<TimeProvider>().GetUtcNow());
         return await output.Text($"{header}\n  {happened}\n", 0).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// The §4.2 challenge of a protected answer: the instance as it is now, what the answer does, and the action text the
-    /// human types back at the terminal. The server checks the typed text and the subject when the answer arrives.
+    /// The §4.2 challenge of a protected answer: the server issues it for the instance as it is now and answers with the
+    /// instance and the action text; the human types the action back at the terminal. The server checks the typed text
+    /// and the subject when the answer arrives.
     /// </summary>
-    private static async Task<Result<ChallengeAnswer>> Challenge(ApplyCommandRequest request, IServiceProvider services, Output output, CancellationToken ct)
+    private async Task<Result<ChallengeAnswer>> Challenge(ApplyCommandRequest request, CancellationToken ct)
     {
-        var address = await services.GetRequiredService<IInstanceDirectory>().Resolve(request.Instance, ct).ConfigureAwait(false);
-        if (address.IsError)
+        if (await desk.EnsureRunning(ct).ConfigureAwait(false) is { } down)
         {
-            return address.Error;
+            return down;
         }
 
-        var view = await services.GetRequiredService<IInstanceRuntime>().Get(address.Value, ct).ConfigureAwait(false);
-        if (view.IsError)
+        var action = ChallengeText(request);
+        var issued = await desk.Client.Post<IssueChallengeRequest, IssueChallengeResponse>("/sindri/workflow/challenges", new IssueChallengeRequest(action), ct)
+            .ConfigureAwait(false);
+        if (issued.IsError)
         {
-            return view.Error;
+            return issued.Error;
         }
 
-        var action = ApplyCommandChallenge.Action(address.Value, request.Answer!.Value, request.Amount); // why: only a protected answer asks
-        var issued = services.GetRequiredService<IChallenges>().Issue(action, ApplyCommandChallenge.Subject(view.Value));
-        var header = InstanceHeader.Line(view.Value, services.GetRequiredService<TimeProvider>().GetUtcNow());
-        var question = view.Value.Question is { } q ? $"\n  {q.Question}" : string.Empty;
-        await output.Out.WriteAsync($"{header}{question}\n  type '{action.Text}' to confirm: ").ConfigureAwait(false);
+        var challenge = issued.Value.Value;
+        var header = challenge.Instance is { } view ? InstanceHeader.Line(view, services.GetRequiredService<TimeProvider>().GetUtcNow()) : request.Instance;
+        var question = challenge.Instance?.Question is { } q ? $"\n  {q.Question}" : string.Empty;
+        await output.Out.WriteAsync($"{header}{question}\n  type '{challenge.Action}' to confirm: ").ConfigureAwait(false);
         await output.Out.FlushAsync(ct).ConfigureAwait(false);
-        var typed = (await Console.In.ReadLineAsync(ct).ConfigureAwait(false))?.Trim() ?? string.Empty;
-        return new ChallengeAnswer(issued.Id, typed);
+        var typed = (await desk.Input.ReadLineAsync(ct).ConfigureAwait(false))?.Trim() ?? string.Empty;
+        return new ChallengeAnswer(challenge.Challenge, typed);
+    }
+
+    /// <summary>The action text the server issues a protected answer's challenge for: 'grant n &lt;ref&gt;', 'grant-tokens n &lt;ref&gt;' or 'accept &lt;ref&gt;'.</summary>
+    private static string ChallengeText(ApplyCommandRequest request)
+    {
+        var n = request.Amount?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "?";
+        return request.Answer switch
+        {
+            AnswerVariant.Grant => $"grant {n} {request.Instance}",
+            AnswerVariant.GrantTokens => $"grant-tokens {n} {request.Instance}",
+            AnswerVariant.Accept or AnswerVariant.Text or AnswerVariant.Reject or AnswerVariant.Resume or null or _ => "accept " + request.Instance,
+        };
     }
 
     /// <summary>The answer's variant and its text or amount, and the optional nonce; exactly one variant, '--resume' may carry '--text'.</summary>
