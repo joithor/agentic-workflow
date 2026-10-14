@@ -616,6 +616,7 @@
           "Aw.Kernel.Testing": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Aw.Sindri.Features": "[1.0.0, )",
+          "Aw.Sindri.Infrastructure": "[1.0.0, )",
           "Microsoft.Extensions.TimeProvider.Testing": "[10.10.0, 10.10.0]"
         }
       },

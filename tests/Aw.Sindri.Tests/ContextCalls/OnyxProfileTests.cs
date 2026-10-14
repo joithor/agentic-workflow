@@ -6,7 +6,7 @@ using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Infrastructure.Secrets;
-using Aw.Sindri.Tests.Secrets;
+using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 

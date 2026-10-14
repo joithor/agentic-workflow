@@ -6,7 +6,6 @@ using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Testing;
-using Aw.Sindri.Tests.Secrets;
 
 namespace Aw.Sindri.Tests.RunDoctor;
 

@@ -1,6 +1,7 @@
 using System.Runtime.Versioning;
 using Aw.Sindri.Core;
 using Aw.Sindri.Infrastructure.Secrets;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
 
 namespace Aw.Sindri.Tests.Secrets;

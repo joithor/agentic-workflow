@@ -3,6 +3,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Secrets;
 using Aw.Sindri.Host;
 using Aw.Sindri.Infrastructure.Secrets;
+using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Secrets;
 

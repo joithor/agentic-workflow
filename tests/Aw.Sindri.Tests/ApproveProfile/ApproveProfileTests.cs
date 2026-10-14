@@ -15,7 +15,6 @@ using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Testing;
-using Aw.Sindri.Tests.Secrets;
 
 namespace Aw.Sindri.Tests.ApproveProfile;
 
