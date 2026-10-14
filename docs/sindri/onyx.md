@@ -66,7 +66,9 @@ Create only these, in Admin → Connectors:
 | Slack | The product's channels only (connector-indexed; Sindri doesn't use the federated lane) |
 | Docs spaces (Confluence, Drive, …) | The product's spaces only |
 
-First indexing time shows in `$SINDRI context sources status`, read from Onyx's connector status.
+Check first indexing and each connector's progress in Onyx's Admin → Connectors page. Sindri doesn't read Onyx's
+connector status (no connector route is on its allowlist, §7), so `$SINDRI context sources status` shows whether Onyx
+answers and what the key is, not how far indexing has got.
 
 ## 5. The key
 
@@ -90,10 +92,17 @@ context:
     linear: { teams: [ENG] }        # team keys whose ENG-n identifiers become aliases
 ```
 
-Pointers Sindri accepts: `keychain:<service>/<account>`, `env:<VAR>`, `file:<absolute path>` (mode 0600, owned by you).
-A value without one of these schemes is refused (`SND-CONTEXT-002`). Then `$SINDRI profile validate` and
-`$SINDRI profile approve` at a terminal. Validate checks the pointer's form only; it doesn't resolve it, so an unset
-variable or a file at the wrong mode shows up in `$SINDRI doctor` (step 6) as `SND-SECRET-002` or `003` with the fix.
+Pointers Sindri accepts: `keychain:<service>/<account>`, `env:<VAR>`, `op:<vault>/<item>/<field>` (1Password CLI) and
+`file:<absolute path>` (a regular file, not a symbolic link, mode 0600 or stricter). A value without one of these
+schemes is refused (`SND-CONTEXT-002`). Then, at a terminal:
+
+```bash
+$SINDRI profile validate          # prints the profile's hash; exit 1 means valid but not approved yet
+$SINDRI profile approve <hash>    # type the hash's first 6 characters; this also starts the control plane
+```
+
+Validate checks the pointer's form only; it doesn't resolve it, so an unset variable or a file at the wrong mode shows
+up in `$SINDRI doctor` (step 6) as `SND-SECRET-002` or `003` with the fix.
 
 ## 6. Check it
 
@@ -108,8 +117,10 @@ $SINDRI context sources status
 | `SND-CONTEXT-053` | The admin key isn't a service account's | Create a service account for Sindri (§5) |
 | `SND-CONTEXT-055` | `onyx.url` isn't loopback, or Onyx reports a version other than the pinned one | §1, §2 |
 | `SND-CONTEXT-051` | Onyx answered with a shape the pinned v4.9.0 doesn't have | Check `version` against what Onyx runs (§1) |
-| `SND-CONTEXT-052` | Onyx has no document with that id any more | Nothing; the citation stays a reference |
 | `SND-CONTEXT-010` | Onyx didn't answer; queries continue without it (`degraded`) | `docker compose ps`, `sources status` |
+
+A hit whose document Onyx no longer has when Sindri fetches its text is left out of the answer (no citation without
+the record), so nothing reports it and there's nothing to fix.
 
 **Manual checks on every Onyx version change** (a search key can't read these): Admin → LLM shows no cloud provider;
 Admin → Search Settings shows a self-hosted embedding model; `.env` has `DISABLE_TELEMETRY=true`; §2's `lsof` shows
@@ -119,7 +130,7 @@ loopback only.
 
 | Request | Why |
 |---|---|
-| `POST /api/admin/search` `{query, filters:{source_type, time_cutoff}}` | Candidates: document ids, titles, links, `updated_at` |
+| `POST /api/admin/search` `{query, filters: {}}` (each term quoted as a phrase; no filter is sent: an as-of query marks a hit updated after its cut, or undated, as possibly leaked) | Candidates: document ids, titles, links, `updated_at` |
 | `GET /api/document/document-size-info?document_id=` and `GET /api/document/chunk-info?document_id=&chunk_id=` | A cited record's text |
 | `GET /api/version` | Doctor's version check (no key sent) |
 | `GET /api/me` | Doctor shows the key's role and account type |

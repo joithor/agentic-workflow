@@ -235,7 +235,7 @@ Onyx's Linear connector uses the issue's UUID as its document id, so those hits 
 prefix (`[ENG-482] `) and the `linear.app` link name the same identifier and its team is in
 `context.sources.linear.teams`. Slack threads (`<channel>__<thread_ts>`) key as `slack:<channel>/<thread_ts>`; anything
 else as `onyx:<source_type>/<document id>`. Body text never contributes. Fusion deduplicates on the canonical key, so
-the same issue from Onyx and the native Linear adapter (S-5B) is one item.
+the same issue from Onyx and the native Linear adapter (S-6) is one item.
 
 ### Versions
 

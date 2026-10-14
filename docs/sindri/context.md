@@ -21,7 +21,7 @@ Nothing in `setup.sh`, the providers or MCP registration points at it.
 
 The engine reads the approved profile's `context:` section and its `repos:`. Every key is optional; the defaults are
 shown. A key this build doesn't know is refused (`SND-CONTEXT-001` with its key path), so a section written for a later
-stage (`labeling`, `sources`, `scrub`, …) needs that stage's build.
+stage (`labeling`, `scrub`, …, or a key under `sources` beyond `onyx` and `linear.teams`) needs that stage's build.
 
 ```yaml
 repos:
@@ -234,8 +234,8 @@ context:
 - `token`: a **secret pointer** to the Onyx admin key of a service account Sindri alone uses, never the key itself.
   Missing, or text that isn't a pointer, is `SND-CONTEXT-002`; the message doesn't repeat the text (rotate a key that
   was written into the profile).
-- `linear.teams`: team keys (a capital letter, then up to 9 capitals or digits). Linear's own `token` and `url` arrive
-  with the native Linear adapter (S-5B); this build refuses them (`SND-CONTEXT-001`), like any unknown key under
+- `linear.teams`: team keys (a capital letter, then one or more capitals or digits, e.g. `ENG`). Linear's own `token` and `url` arrive
+  with the native Linear adapter (S-6); this build refuses them (`SND-CONTEXT-001`), like any unknown key under
   `sources`, `onyx` or `linear`.
 
 `sindri profile validate` reports each of these with its key path (`context.sources.onyx.url: …`).
@@ -307,8 +307,9 @@ export SINDRI_ONYX_KEY='on_…'                   # the service account's admin 
 #     sources:
 #       onyx: { url: "http://127.0.0.1:3000", token: "env:SINDRI_ONYX_KEY", version: "v4.9.0" }
 #       linear: { teams: [ENG] }
-sindri profile validate && sindri profile approve
-sindri doctor                                   # context:onyx
-sindri context sources status
-sindri context query "split pane orientation"
+$SINDRI profile validate                        # prints the hash; exit 1 = valid, not approved yet
+$SINDRI profile approve <hash>                  # type its first 6 characters; also starts the control plane
+$SINDRI doctor                                  # context:onyx
+$SINDRI context sources status
+$SINDRI context query "split pane orientation"
 ```
