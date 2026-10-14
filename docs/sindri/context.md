@@ -326,15 +326,18 @@ $SINDRI context map import ~/maps/product-map.yaml
 # map file /Users/you/maps/product-map.yaml
 # repo aw-split-panes, authored: 20 nodes, 21 edges, 1 aliases, 1 decisions, 2 overrides
 # hash 3f0c…
-# Type the first 6 characters of 3f0c… to import it: 3f0c9a
+# Type 'import map 3f0c9a' to import it: import map 3f0c9a
 # Imported map v1 (current) for aw-split-panes: 20 nodes, 21 edges, 1 aliases, 1 decisions, 2 overrides
 ```
 
-Import is shaped like `profile approve`: only you, at an interactive terminal, can do it (a session, a script or the
-app gets `SND-AUTH-002`), and it is bound to the file's content hash, so a file changed after you saw its hash is
-refused with `SND-CONTEXT-034`. The new version becomes `current`, the previous one `retained`, and the ledger records
-`context.map.imported`. The engine's shared challenge has shipped (engine P2, `POST /sindri/workflow/challenges`, which `profile approve`
-and the recipe verbs use); the import still confirms with `confirmed` until it moves onto that challenge (a follow-up). HTTP: `POST /sindri/context/map/import` with `{"path", "hash", "confirmed"}`; without a hash it only previews.
+Import is a protected command, typed like `profile approve`: only you, at an interactive terminal, can do it (a
+session, a script or the app gets `SND-AUTH-002`). The preview issues the engine's shared challenge (engine spec §4.2,
+README X30): the action `import map <hash6>`, bound to the file's whole content hash. You type that action; the server
+redeems it once. A missing, mistyped, reused or expired answer is `SND-AUTH-002`, and a file changed after you saw its
+hash is `SND-CONTEXT-034`; either way nothing is written. The new version becomes `current`, the previous one
+`retained`, and the ledger records `context.map.imported`. HTTP: `POST /sindri/context/map/import` with `{"path"}`
+previews and returns `challenge: {challenge, action, expiresAt}`; `{"path", "hash", "answer": {"challenge", "typed"}}`
+imports.
 
 ### Status and export
 

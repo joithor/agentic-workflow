@@ -279,9 +279,11 @@ days), never the store or the ledger. It is a query because the API spec lists i
 command or event describes; a later file-writing route should not take it as a precedent without the same reasons.
 Import and preview refuse a session-kind caller in the engine too (SND-CONTEXT-020), whatever surface reaches them.
 
-**Still to adopt:** the engine's shared challenge, which shipped with engine P2 (`POST /sindri/workflow/challenges`;
-`profile approve` uses it). The import still confirms with a human at a terminal, the content hash and `confirmed`;
-moving it onto the challenge is a follow-up, and `ProtectedCommandTests` names it as the one exemption until then.
+**The challenge (S-3b):** the import uses the engine's shared challenge (engine spec §4.2, README X30). The preview
+(`ImportContextMapRequest` without a hash) issues `import map <hash6>` with the subject `map:<content hash>` through
+`IChallenges` and returns it as `MapImportChallenge`; the import's `ChallengeAnswer` must redeem it
+(`SindriErrors.AuthRefused`, SND-AUTH-002, when missing or stale), after a hash that isn't the file's now is refused
+with SND-CONTEXT-034. `ProtectedCommandTests` has no exemption left for it.
 
 ### Store
 

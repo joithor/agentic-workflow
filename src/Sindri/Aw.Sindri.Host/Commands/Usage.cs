@@ -17,7 +17,7 @@ internal static class Usage
         "       sindri mcp register [--repo NAME] [--apply] [--json]   the per-repo Claude Code registration of /sindri/mcp (--apply: a human at a terminal)",
         "       sindri context query <text> [--node K | --item I | --symbol S] [--depth N] [--budget N] [--draft] [--json]   cited context from the running control plane (exit 1: not running, unknown anchor, refused)",
         "       sindri context sources status [--json]   each context source's state and whether sessions may read context",
-        "       sindri context map import <file>   check a map file, show its hash, type its first 6 characters to make it the current map (a terminal only)",
+        "       sindri context map import <file>   check a map file, show its hash, type the challenge it shows ('import map <hash6>') to make it the current map (a terminal only)",
         "       sindri context map export [<path>] [--json]   write the current map under $AW_SINDRI_HOME/context/exports/",
         "       sindri context map status [--json]   the current map version and its counts (exit 1: no map yet, SND-CONTEXT-030)",
         "       sindri context sources sync      pending:S-5B (repo docs refresh through the context-docs-refresh service)",
