@@ -109,7 +109,7 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt) with { Version = _mirrored }
+            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt) with { Version = _mirrored, Id = instance.Id }
             : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
             {
                 Id = WorkflowInstanceId.Of(start.WorkflowId()),
