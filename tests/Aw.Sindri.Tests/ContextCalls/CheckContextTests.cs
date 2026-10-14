@@ -19,6 +19,9 @@ public sealed class CheckContextTests
     [InlineData(ProviderFile.Claude, """{"mcpServers":{"sindri":{"type":"http"}},"projects":{"/x":{"note":"personal-project-marker"}}}""")]
     [InlineData(ProviderFile.Codex, "model = \"x\" # personal-project-marker\n\n[mcp_servers.sindri]\nurl = \"http://127.0.0.1:7410/sindri/mcp\"\n")]
     [InlineData(ProviderFile.Codex, "[mcp_servers.\"sindri\".env]\nX = \"personal-project-marker\"\n")]
+    [InlineData(ProviderFile.Codex, "[mcp_servers]\nother = { url = \"personal-project-marker\" }\nsindri = { url = \"x\" }\n")]
+    [InlineData(ProviderFile.Codex, "mcp_servers.sindri.url = \"x\" # personal-project-marker\n")]
+    [InlineData(ProviderFile.Codex, "mcp_servers = { other = {}, 'sindri' = { url = \"personal-project-marker\" } }\n")]
     [InlineData(ProviderFile.Cursor, """{"mcpServers":{"sindri":{"url":"x"},"personal-project-marker":{}}}""")]
     public void A_user_wide_sindri_entry_is_026_naming_only_the_file(ProviderFile file, string text)
     {
@@ -33,6 +36,7 @@ public sealed class CheckContextTests
     [Theory]
     [InlineData(ProviderFile.Claude, """{"mcpServers":{"prism":{}},"projects":{"/work/demo":{"mcpServers":{"sindri":{"type":"http"}}}}}""")]
     [InlineData(ProviderFile.Codex, "[mcp_servers.sindri-ownercheck]\n[mcp_servers.other]\n")]
+    [InlineData(ProviderFile.Codex, "# [mcp_servers.sindri]\nnote = \"[mcp_servers.sindri] # not a table\"\n[profiles.sindri]\nsindri = 1\n")]
     [InlineData(ProviderFile.Cursor, """{"mcpServers":{}}""")]
     public void Local_scope_other_servers_and_missing_files_are_ok(ProviderFile file, string text)
     {
@@ -65,17 +69,17 @@ public sealed class CheckContextTests
     }
 
     [Fact]
-    public async Task The_service_reads_the_approved_profile_and_every_provider_file()
+    public async Task The_checks_read_the_approved_profile_and_every_provider_file()
     {
         var harness = new SliceHarness();
-        var service = new CheckContextService(new ContextScopes(harness.Profiles, harness.Callers), FakeContextEngine.Instance,
+        var checks = new ContextDoctorChecks(new ContextScopes(harness.Profiles, harness.Callers), FakeContextEngine.Instance,
             new FakeProviderFiles().With(ProviderFile.Codex, "[mcp_servers.sindri]\n"));
 
-        var none = (await service.Handle(new CheckContextRequest(), TestContext.Current.CancellationToken)).Value;
+        var none = await checks.Run(TestContext.Current.CancellationToken);
 
-        Assert.Equal([ContextChecks.SourcesName, ContextChecks.McpScopeName], none.Checks.Select(c => c.Name), StringComparer.Ordinal);
-        Assert.StartsWith("SND-PROFILE-005", none.Checks[0].Detail, StringComparison.Ordinal);   // why: nothing is approved yet
-        Assert.Equal(CheckState.Warn, none.Checks[1].State);
+        Assert.Equal([ContextChecks.SourcesName, ContextChecks.McpScopeName], none.Select(c => c.Name), StringComparer.Ordinal);
+        Assert.StartsWith("SND-PROFILE-005", none[0].Detail, StringComparison.Ordinal);   // why: nothing is approved yet
+        Assert.Equal(CheckState.Warn, none[1].State);
     }
 
     private static DoctorCheck Check(FakeProviderFiles files) =>

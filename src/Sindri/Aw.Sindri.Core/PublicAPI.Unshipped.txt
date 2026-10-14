@@ -3672,3 +3672,5 @@ static Aw.Sindri.Core.Mcp.McpScopeFinding.operator !=(Aw.Sindri.Core.Mcp.McpScop
 static Aw.Sindri.Core.Mcp.McpScopeFinding.operator ==(Aw.Sindri.Core.Mcp.McpScopeFinding? left, Aw.Sindri.Core.Mcp.McpScopeFinding? right) -> bool
 static Aw.Sindri.Core.Mcp.ProviderFileRead.operator !=(Aw.Sindri.Core.Mcp.ProviderFileRead? left, Aw.Sindri.Core.Mcp.ProviderFileRead? right) -> bool
 static Aw.Sindri.Core.Mcp.ProviderFileRead.operator ==(Aw.Sindri.Core.Mcp.ProviderFileRead? left, Aw.Sindri.Core.Mcp.ProviderFileRead? right) -> bool
+Aw.Sindri.Core.Doctor.IDoctorChecks
+Aw.Sindri.Core.Doctor.IDoctorChecks.Run(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>!>

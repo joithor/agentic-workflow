@@ -169,20 +169,23 @@ public sealed class ContextMcpTests : IDisposable
         var foreignHost = await Initialize(host, ct, ("Host", "evil.example"));
         var foreignOrigin = await Initialize(host, ct, ("Origin", "http://evil.example"));
         var loopbackOrigin = await Initialize(host, ct, ("Origin", "http://127.0.0.1"));
+        var trailingSlash = await InitializeAt(host, "/sindri/mcp/", ct, ("Origin", "http://127.0.0.1"));
+        var otherCase = await InitializeAt(host, "/Sindri/MCP", ct, ("Origin", "http://127.0.0.1"));
 
         Assert.Equal(HttpStatusCode.OK, plain.StatusCode);
         Assert.False(plain.Headers.Contains("Mcp-Session-Id"));   // why: stateless, so a restart doesn't break a session
         Assert.Equal(HttpStatusCode.BadRequest, foreignHost.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, foreignOrigin.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, loopbackOrigin.StatusCode);
+        Assert.Equal((HttpStatusCode.Forbidden, HttpStatusCode.Forbidden), (trailingSlash.StatusCode, otherCase.StatusCode));   // why: routing matches them, so the MCP middleware must too
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Neither_the_question_nor_record_text_reaches_a_log_line()
+    public async Task Neither_the_question_nor_record_text_reaches_a_log_line_even_at_trace()
     {
         var ct = TestContext.Current.CancellationToken;
         var sink = new InMemoryLogSink();
-        var runtime = TelemetryRuntime.Start(new TelemetryOptions { ServiceName = "sindri", Sink = sink, Clock = TimeProvider.System, MinimumLevel = LogLevel.Debug });
+        var runtime = TelemetryRuntime.Start(new TelemetryOptions { ServiceName = "sindri", Sink = sink, Clock = TimeProvider.System, MinimumLevel = LogLevel.Trace });
         await using var host = await ContextHosts.Approved(_repo, sessions: true, ct, services => services
             .Replace(ServiceDescriptor.Singleton(runtime))
             .Replace(ServiceDescriptor.Singleton(runtime.LoggerFactory)));
@@ -204,9 +207,12 @@ public sealed class ContextMcpTests : IDisposable
 
     private static int Count(string text, string part) => (text.Length - text.Replace(part, string.Empty, StringComparison.Ordinal).Length) / part.Length;
 
-    private static async Task<HttpResponseMessage> Initialize(GoldenHost host, CancellationToken ct, params (string Name, string Value)[] headers)
+    private static Task<HttpResponseMessage> Initialize(GoldenHost host, CancellationToken ct, params (string Name, string Value)[] headers) =>
+        InitializeAt(host, "/sindri/mcp", ct, headers);
+
+    private static async Task<HttpResponseMessage> InitializeAt(GoldenHost host, string path, CancellationToken ct, params (string Name, string Value)[] headers)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/sindri/mcp")
+        using var request = new HttpRequestMessage(HttpMethod.Post, path)
         {
             Content = new StringContent(
                 """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}""",

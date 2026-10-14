@@ -1,15 +1,14 @@
+using System.Globalization;
 using System.ComponentModel;
 using System.Diagnostics;
 using Aw.Sindri.Core.Mcp;
 
 namespace Aw.Sindri.Infrastructure.Mcp;
 
-/// <summary>Runs the claude CLI as a child process with an argument list (no shell), bounded to 30 s.</summary>
+/// <summary>Runs the claude CLI as a child process with an argument list (no shell), bounded by the settings' budget (30 s).</summary>
 /// <param name="settings">Which executable.</param>
 internal sealed class ProcessClaudeCli(McpSettings settings) : IClaudeCli
 {
-    private static readonly TimeSpan _budget = TimeSpan.FromSeconds(30);
-
     public async ValueTask<ClaudeRun?> Run(IReadOnlyList<string> arguments, string workingDirectory, CancellationToken cancellationToken)
     {
         var start = new ProcessStartInfo(settings.ClaudeBin, arguments)
@@ -36,14 +35,14 @@ internal sealed class ProcessClaudeCli(McpSettings settings) : IClaudeCli
 
         using (claude)
         {
-            return await Finish(claude, cancellationToken).ConfigureAwait(false);
+            return await Finish(claude, settings.ClaudeBudget, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private static async Task<ClaudeRun> Finish(Process claude, CancellationToken cancellationToken)
+    private static async Task<ClaudeRun> Finish(Process claude, TimeSpan budget, CancellationToken cancellationToken)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(_budget);
+        timeout.CancelAfter(budget);
         var output = claude.StandardOutput.ReadToEndAsync(timeout.Token);
         var error = claude.StandardError.ReadToEndAsync(timeout.Token);
         try
@@ -53,7 +52,7 @@ internal sealed class ProcessClaudeCli(McpSettings settings) : IClaudeCli
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             claude.Kill(entireProcessTree: true);
-            return new ClaudeRun(124, "claude didn't finish within 30 s");
+            return new ClaudeRun(124, string.Create(CultureInfo.InvariantCulture, $"claude didn't finish within {budget.TotalSeconds:0} s"));
         }
 
         _ = await output.ConfigureAwait(false);

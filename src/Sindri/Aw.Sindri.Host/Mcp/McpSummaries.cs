@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Aw.Context.Core.Results;
-using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Host.Text;
 
 namespace Aw.Sindri.Host.Mcp;
 

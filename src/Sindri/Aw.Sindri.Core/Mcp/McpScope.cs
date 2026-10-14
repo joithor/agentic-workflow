@@ -29,7 +29,7 @@ public static partial class McpScope
             return null;
         }
 
-        var (registered, malformed) = read.File == ProviderFile.Codex ? (CodexTable.IsMatch(text), null) : Json(text);
+        var (registered, malformed) = read.File == ProviderFile.Codex ? (Codex(text), null) : Json(text);
         return malformed is not null
             ? new McpScopeFinding(read.File, read.Path, McpScopeState.Unreadable, malformed)
             : registered ? new McpScopeFinding(read.File, read.Path, McpScopeState.UserWide, Problem: null) : null;
@@ -51,7 +51,73 @@ public static partial class McpScope
         }
     }
 
-    /// <summary>Codex's config.toml: a [mcp_servers.sindri] table (or one of its sub-tables), the name bare or quoted.</summary>
-    [GeneratedRegex("""^\s*\[\s*mcp_servers\s*\.\s*(?:sindri|"sindri"|'sindri')\s*(?:\.[^\]]*)?\]""", RegexOptions.Multiline | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex CodexTable { get; }
+    /// <summary>
+    /// Codex's config.toml: any TOML spelling of a 'sindri' server under mcp_servers — a [mcp_servers.sindri] table or a
+    /// sub-table, a 'sindri' key in [mcp_servers], a top-level dotted key 'mcp_servers.sindri…', or an inline table
+    /// 'mcp_servers = { sindri = … }'. Names may be bare or quoted. Read line by line (no TOML package): comments are cut,
+    /// and a line that isn't a table header or a key is skipped.
+    /// </summary>
+    private static bool Codex(string text)
+    {
+        var table = string.Empty;
+        foreach (var raw in text.Split('\n'))
+        {
+            var line = Uncommented(raw).Trim();
+            if (line.StartsWith('['))
+            {
+                table = Key(line.Trim('[', ']'));
+                if (IsSindri(table))
+                {
+                    return true;
+                }
+
+                continue;
+            }
+
+            var equals = line.IndexOf('=', StringComparison.Ordinal);
+            if (equals <= 0)
+            {
+                continue;
+            }
+
+            var key = Key(line[..equals]);
+            var full = table.Length == 0 ? key : table + "." + key;
+            if (IsSindri(full) || (string.Equals(full, Servers, StringComparison.Ordinal) && InlineSindri.IsMatch(line[(equals + 1)..])))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private const string Servers = "mcp_servers";
+
+    private static bool IsSindri(string key) =>
+        string.Equals(key, Servers + "." + ServerName, StringComparison.Ordinal) || key.StartsWith(Servers + "." + ServerName + ".", StringComparison.Ordinal);
+
+    /// <summary>A dotted TOML key with each part trimmed and unquoted.</summary>
+    private static string Key(string key) => string.Join('.', key.Split('.').Select(part => part.Trim().Trim('"', '\'')));
+
+    /// <summary>The line up to a '#' that isn't inside a quoted string.</summary>
+    private static string Uncommented(string line)
+    {
+        var quote = '\0';
+        for (var i = 0; i < line.Length; i++)
+        {
+            var c = line[i];
+            if (quote == '\0' && c == '#')
+            {
+                return line[..i];
+            }
+
+            quote = quote == '\0' && c is '"' or '\'' ? c : quote == c ? '\0' : quote;
+        }
+
+        return line;
+    }
+
+    /// <summary>A 'sindri' key inside an inline table: '{ sindri = …' or ', "sindri".url = …'.</summary>
+    [GeneratedRegex("""(?:^|[{,])\s*(?:sindri|"sindri"|'sindri')\s*[=.]""", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex InlineSindri { get; }
 }

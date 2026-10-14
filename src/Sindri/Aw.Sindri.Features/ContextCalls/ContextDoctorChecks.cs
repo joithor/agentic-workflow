@@ -1,6 +1,5 @@
 using Aw.Context.Core.Facade;
-using Aw.Kernel;
-using Aw.Kernel.Services;
+using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Mcp;
 
 namespace Aw.Sindri.Features.ContextCalls;
@@ -9,9 +8,9 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// Doctor's context checks. context:sources asks the engine in-process with the approved profile from the same home
 /// serve reads (so it works with the process stopped); context:mcp-scope reads the three providers' user-wide MCP files.
 /// </summary>
-internal sealed class CheckContextService(ContextScopes scopes, IContextEngine engine, IProviderFiles files) : IService<CheckContextRequest, CheckContextResponse>
+internal sealed class ContextDoctorChecks(ContextScopes scopes, IContextEngine engine, IProviderFiles files) : IDoctorChecks
 {
-    public async ValueTask<Result<CheckContextResponse>> Handle(CheckContextRequest request, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<DoctorCheck>> Run(CancellationToken cancellationToken)
     {
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
         var sources = scope.IsError
@@ -28,6 +27,6 @@ internal sealed class CheckContextService(ContextScopes scopes, IContextEngine e
             }
         }
 
-        return new CheckContextResponse([sources, ContextChecks.McpScope(findings)]);
+        return [sources, ContextChecks.McpScope(findings)];
     }
 }

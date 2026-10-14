@@ -12,6 +12,9 @@ namespace Aw.Sindri.Infrastructure.Mcp;
 /// <param name="CodexHome">CODEX_HOME, or null.</param>
 internal sealed record McpSettings(string ClaudeBin, string Home, string? ClaudeConfigDir, string? CodexHome)
 {
+    /// <summary>How long a claude run may take before it is killed (exit 124). Fixed; tests shorten it.</summary>
+    internal TimeSpan ClaudeBudget { get; init; } = TimeSpan.FromSeconds(30);
+
     /// <summary>Reads the settings from the environment Composition passes.</summary>
     /// <param name="environment">Reads a variable.</param>
     /// <returns>The settings.</returns>

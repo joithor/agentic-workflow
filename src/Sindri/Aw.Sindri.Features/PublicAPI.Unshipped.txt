@@ -469,17 +469,6 @@ Aw.Sindri.Features.StartProcess.StartProcessResponse.Deconstruct(out Aw.Sindri.C
 Aw.Sindri.Features.StartProcess.StartProcessResponse.StartProcessResponse(Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ProfileHash? Profile, Aw.Sindri.Core.Control.TemporalEndpoint! Temporal) -> void
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint!
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.init -> void
-Aw.Sindri.Features.ContextCalls.CheckContextRequest
-Aw.Sindri.Features.ContextCalls.CheckContextRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.CheckContextRequest!
-Aw.Sindri.Features.ContextCalls.CheckContextRequest.CheckContextRequest() -> void
-Aw.Sindri.Features.ContextCalls.CheckContextRequest.Equals(Aw.Sindri.Features.ContextCalls.CheckContextRequest? other) -> bool
-Aw.Sindri.Features.ContextCalls.CheckContextResponse
-Aw.Sindri.Features.ContextCalls.CheckContextResponse.<Clone>$() -> Aw.Sindri.Features.ContextCalls.CheckContextResponse!
-Aw.Sindri.Features.ContextCalls.CheckContextResponse.CheckContextResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>! Checks) -> void
-Aw.Sindri.Features.ContextCalls.CheckContextResponse.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>!
-Aw.Sindri.Features.ContextCalls.CheckContextResponse.Checks.init -> void
-Aw.Sindri.Features.ContextCalls.CheckContextResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>! Checks) -> void
-Aw.Sindri.Features.ContextCalls.CheckContextResponse.Equals(Aw.Sindri.Features.ContextCalls.CheckContextResponse? other) -> bool
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.<Clone>$() -> Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Apply.get -> bool
@@ -504,22 +493,12 @@ Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Equals(Aw.Sindri.Features.Reg
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.RegisterMcpResponse(Aw.Sindri.Core.Ids.RepoName Repo, string! Checkout, System.Collections.Generic.IReadOnlyList<string!>! Arguments, bool Applied) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Repo.get -> Aw.Sindri.Core.Ids.RepoName
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Repo.init -> void
-override Aw.Sindri.Features.ContextCalls.CheckContextRequest.Equals(object? obj) -> bool
-override Aw.Sindri.Features.ContextCalls.CheckContextRequest.GetHashCode() -> int
-override Aw.Sindri.Features.ContextCalls.CheckContextRequest.ToString() -> string!
-override Aw.Sindri.Features.ContextCalls.CheckContextResponse.Equals(object? obj) -> bool
-override Aw.Sindri.Features.ContextCalls.CheckContextResponse.GetHashCode() -> int
-override Aw.Sindri.Features.ContextCalls.CheckContextResponse.ToString() -> string!
 override Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.GetHashCode() -> int
 override Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.ToString() -> string!
 override Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Equals(object? obj) -> bool
 override Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.GetHashCode() -> int
 override Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.ToString() -> string!
-static Aw.Sindri.Features.ContextCalls.CheckContextRequest.operator !=(Aw.Sindri.Features.ContextCalls.CheckContextRequest? left, Aw.Sindri.Features.ContextCalls.CheckContextRequest? right) -> bool
-static Aw.Sindri.Features.ContextCalls.CheckContextRequest.operator ==(Aw.Sindri.Features.ContextCalls.CheckContextRequest? left, Aw.Sindri.Features.ContextCalls.CheckContextRequest? right) -> bool
-static Aw.Sindri.Features.ContextCalls.CheckContextResponse.operator !=(Aw.Sindri.Features.ContextCalls.CheckContextResponse? left, Aw.Sindri.Features.ContextCalls.CheckContextResponse? right) -> bool
-static Aw.Sindri.Features.ContextCalls.CheckContextResponse.operator ==(Aw.Sindri.Features.ContextCalls.CheckContextResponse? left, Aw.Sindri.Features.ContextCalls.CheckContextResponse? right) -> bool
 static Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.operator !=(Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? left, Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? right) -> bool
 static Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.operator ==(Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? left, Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? right) -> bool
 static Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.operator !=(Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse? left, Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse? right) -> bool

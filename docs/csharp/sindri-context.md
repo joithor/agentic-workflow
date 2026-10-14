@@ -150,8 +150,9 @@ In `tests/Aw.Sindri.Tests/ContextCalls`:
   reads `structuredContent` and not the text) beside `McpSummaries`' text; an error is `isError` with `McpToolError {code, message}`.
 - `Aw.Sindri.Core/Mcp/`: `McpRegistration` (the claude arguments, the port rule), `McpScope.Judge` (a user-wide
   `sindri` entry in one provider file), and the ports `IClaudeCli` and `IProviderFiles`.
-- `Aw.Sindri.Features/RegisterMcp/` (`sindri mcp register`) and `Aw.Sindri.Features/ContextCalls/CheckContext*`
-  with `ContextChecks` (doctor's `context:sources` and `context:mcp-scope`, merged into the doctor report by the CLI).
+- `Aw.Sindri.Features/RegisterMcp/` (`sindri mcp register`) and `Aw.Sindri.Features/ContextCalls/ContextDoctorChecks`
+  with `ContextChecks` (doctor's `context:sources` and `context:mcp-scope`): an `IDoctorChecks` (Core port) that the
+  RunDoctor slice's `WithMoreChecks` decorator appends after the core rows, applying the exit rule to the whole list.
 - `Aw.Sindri.Infrastructure/Mcp/`: `ProcessClaudeCli` (argument list, no shell, 30 s budget) and
   `ProviderConfigFiles`, both reading `McpSettings` (`AW_SINDRI_CLAUDE_BIN`, `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME`).
 

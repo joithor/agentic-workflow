@@ -46,7 +46,7 @@ internal static partial class McpEndpoint
     {
         _ = app.Use(async (context, next) =>
         {
-            if (!context.Request.Path.Equals(Path, StringComparison.Ordinal))
+            if (context.GetEndpoint()?.Metadata.GetMetadata<McpRouteMetadata>() is null)   // routing already ran: '/sindri/mcp/' and '/Sindri/MCP' match too
             {
                 await next(context).ConfigureAwait(false);
                 return;
@@ -57,7 +57,7 @@ internal static partial class McpEndpoint
             {
                 LogRefused(context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(McpEndpoint)), headers.Origin.ToString());
                 await ApiProblems.Write(context, SindriErrors.OriginRefused.Code, StatusCodes.Status403Forbidden,
-                    $"{Path} refuses an Origin header: MCP clients send none (fix: connect with an MCP client, registered by 'sindri mcp register')").ConfigureAwait(false);
+                    $"{context.Request.Path} refuses an Origin header: MCP clients send none (fix: connect with an MCP client, registered by 'sindri mcp register')").ConfigureAwait(false);
                 return;
             }
 
@@ -75,7 +75,7 @@ internal static partial class McpEndpoint
     /// <returns>The app.</returns>
     internal static WebApplication MapSindriMcp(this WebApplication app)
     {
-        _ = app.MapMcp(Path);
+        _ = app.MapMcp(Path).WithMetadata(McpRouteMetadata.Instance);
         return app;
     }
 

@@ -186,8 +186,11 @@ only. Answer: *pending the S-1M owner check*.
   the store can't open; `warn` with no approved profile, `ok` with no `context:` section.
 - `context:mcp-scope`: warns (`SND-CONTEXT-026`) on a user-wide `sindri` entry in Claude Code's `~/.claude.json`
   (top-level `mcpServers`; the local scope under `projects` is fine), Codex's `~/.codex/config.toml`
-  (`[mcp_servers.sindri]`) or Cursor's `~/.cursor/mcp.json`, with how to remove it. `CLAUDE_CONFIG_DIR` and
-  `CODEX_HOME` move those files as they do for the tools. A file that can't be read or parsed is a warning naming it.
+  (a `sindri` server under `mcp_servers` in any TOML spelling: a `[mcp_servers.sindri]` table, a `sindri` key in
+  `[mcp_servers]`, a dotted `mcp_servers.sindri…` key or an inline table) or Cursor's `~/.cursor/mcp.json`, with how
+  to remove it. `CLAUDE_CONFIG_DIR` and `CODEX_HOME` move those files as they do for the tools. A file that can't be
+  read, or a Claude Code or Cursor file that isn't valid JSON, is a warning naming it (Codex's file is read line by
+  line, not parsed).
   The row names only the file, never anything else in it.
 
 ### Telling sessions to use it

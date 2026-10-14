@@ -5,7 +5,6 @@ using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
-using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.ValidateProfile;
@@ -64,10 +63,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
 
     internal async Task<int> Doctor(bool json, CancellationToken ct)
     {
-        var core = (await scope.GetRequiredService<IService<RunDoctorRequest, RunDoctorResponse>>().Handle(new RunDoctorRequest(), ct).ConfigureAwait(false)).Value;
-        var context = (await scope.GetRequiredService<IService<CheckContextRequest, CheckContextResponse>>().Handle(new CheckContextRequest(), ct).ConfigureAwait(false)).Value;
-        DoctorCheck[] checks = [.. core.Checks, .. context.Checks];
-        var report = new RunDoctorResponse(checks, DoctorRules.ExitCode(checks));
+        var report = (await scope.GetRequiredService<IService<RunDoctorRequest, RunDoctorResponse>>().Handle(new RunDoctorRequest(), ct).ConfigureAwait(false)).Value;
         if (json)
         {
             return await output.Json(report, report.ExitCode).ConfigureAwait(false);
