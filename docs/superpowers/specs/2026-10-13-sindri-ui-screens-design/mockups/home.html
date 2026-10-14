@@ -167,6 +167,7 @@ svg{flex:none}
 .run .step{display:flex;gap:6px;align-items:center;color:var(--ink-subtle);margin-top:2px;white-space:nowrap;overflow:hidden;font-size:12px}
 .run .step .mono{color:var(--ink-muted)}
 .state{display:inline-flex;align-items:center;gap:5px;font-weight:500;color:var(--ink);font-size:12px;white-space:nowrap}
+.run .hint{grid-column:1/-1;color:var(--ink-subtle);font-size:12px}
 .budget{grid-column:1/-1;display:flex;align-items:center;gap:10px;color:var(--ink-subtle);font-size:12px}
 .budget .track{flex:1;height:3px;border-radius:2px;background:var(--line1);overflow:hidden}
 .budget .fill{height:100%;background:var(--ink-subtle)}
@@ -270,7 +271,7 @@ svg{flex:none}
     <a href="#" aria-current="page">Home</a>
     <a href="#">Workflows <span class="count">12</span></a>
     <a href="#">Work <span class="count">12</span></a>
-    <a href="#">Recipes <span class="count">7</span></a>
+    <a href="#">Recipes <span class="count">8</span></a>
     <a href="#">Context</a>
     <a href="#">Agents <span class="count">4</span></a>
     <a href="#">System</a>
@@ -343,7 +344,7 @@ svg{flex:none}
       <div class="kind"><span class="chip"><span class="g">?</span>decision</span><span class="motion">needs you now <span class="newword">new</span></span></div>
       <div class="what">
         <div class="line1"><span class="id mono">REQ-01JD4</span><span class="title">Re-scope ITM-01JD2: drop the iOS head from this item</span><span class="tag">sindri-app</span></div>
-        <div class="line2">Filed by a session ·<span class="reason">recorded; acted on once the workflow engine runs</span></div>
+        <div class="line2">Filed by a session ·<span class="reason">Accept records your decision now; the engine acts on it when the workflow runs.</span></div>
       </div>
       <div class="since"><b>26m</b>since 11:40</div>
       <div class="acts">
@@ -478,7 +479,7 @@ svg{flex:none}
           <div class="step"><span class="state live"><span class="g g-live">●</span>Live</span>· <span class="mono">produce</span> round 2/3 · Claude Code in Warp · since 12:20 (6m)</div>
         </div>
         <div class="acts"><div class="split"><button class="btn main " aria-label="Attach ITM-01JE7"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach</button><button class="btn chev " aria-label="Choose agent for ITM-01JE7" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
-        <div class="budget"><span>Budget</span><div class="track"><div class="fill" style="width:42%"></div></div><span class="mono">84k / 200k tokens</span><span>· Attach pauses automation (a takeover)</span></div>
+        <div class="budget"><span>Budget</span><div class="track"><div class="fill" style="width:42%"></div></div><span class="mono">84k / 200k tokens</span><span>· Attach joins the live session; your first keystroke takes it over.</span></div>
       </div>
 
       <div class="run" aria-label="Running: ITM-01JE9">
@@ -487,6 +488,7 @@ svg{flex:none}
           <div class="step"><span class="state"><span class="g g-live">●</span>Running</span>· <span class="mono">checks</span> · Codex · since 12:24 (2m)</div>
         </div>
         <div class="acts"><div class="split"><button class="btn main " aria-label="Attach ITM-01JE9"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach</button><button class="btn chev " aria-label="Choose agent for ITM-01JE9" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
+        <div class="hint">Attach joins the live session; your first keystroke takes it over.</div>
       </div>
     <div class="run" aria-label="Running: ITM-01JD9">
         <div class="what">
@@ -494,6 +496,7 @@ svg{flex:none}
           <div class="step"><span class="state"><span class="g g-live">●</span>Running</span>· <span class="mono">produce</span> round 1/3 · Claude Code in Warp · since 12:25 (1m)</div>
         </div>
         <div class="acts"><div class="split"><button class="btn main " aria-label="Attach ITM-01JD9"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach</button><button class="btn chev " aria-label="Choose agent for ITM-01JD9" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
+        <div class="hint">Attach joins the live session; your first keystroke takes it over.</div>
       </div>
 
       <div class="run" aria-label="Running: ITM-01JD6">
@@ -502,6 +505,7 @@ svg{flex:none}
           <div class="step"><span class="state"><span class="g g-live">●</span>Running</span>· <span class="mono">checks</span> · factory worker · since 12:26 (0m)</div>
         </div>
         <div class="acts"><div class="split"><button class="btn main " aria-label="Attach ITM-01JD6"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach</button><button class="btn chev " aria-label="Choose agent for ITM-01JD6" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
+        <div class="hint">Attach joins the live session; your first keystroke takes it over.</div>
       </div>
       <div class="qfoot"><a href="#" aria-label="Show all 5 in Work: the four running and the one with you">Show all 5 in Work</a><span><kbd>G</kbd><kbd>R</kbd></span></div>
     </section>

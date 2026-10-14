@@ -297,6 +297,7 @@ body{min-width:1280px}
 .ctl .stat b{color:var(--ink-muted);font-weight:500}
 .ctl .stat .kv{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}  /* a key and its value wrap together */
 .ctl .acts{margin-left:auto;display:flex;gap:6px;flex:none}
+.ctl .hint{flex-basis:100%;color:var(--ink-subtle);font-size:12px;line-height:1.5}
 .bar4{display:inline-block;width:48px;height:3px;border-radius:2px;background:var(--line1);overflow:hidden;vertical-align:middle;margin:0 2px}
 .bar4 i{display:block;height:100%;background:var(--ink-subtle)}
 
@@ -359,14 +360,14 @@ body{min-width:1280px}
 .ev .d .mono{color:var(--ink-muted)}
 
 /* ---- the Work list behind the item sheet: queue.html's table, compressed to the 520 px beside the sheet.
-   Item · Title · State · Step; the state keeps its glyph and word, and Repo, Agent, Since, the reason suffix and the row action live in the sheet while it is open ---- */
+   Item · Title · State, the one rule shared with Workflows and Recipes; the state keeps its glyph and word, and Repo, Step, Agent, Since and the row action live in the sheet while it is open ---- */
 .page.behind{max-width:none;margin:0;padding-right:768px}
 .page.behind .pagehead{flex-wrap:wrap;align-items:center;gap:8px 16px}
 .page.behind .pagehead>div:first-child{flex-wrap:wrap;gap:0 14px}
 .page.behind .sub{white-space:nowrap;flex-basis:100%}  /* the counts, one line, under the title */
 .filter{display:flex;align-items:center;gap:8px;width:280px;height:30px;padding:4px 8px 4px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--s1);color:var(--ink-subtle)}
 .filter span{flex:1}
-.qt{--cols:68px minmax(0,1fr) max-content max-content}
+.qt{--cols:92px minmax(0,1fr) max-content}
 .qt .colhead,.qt .tr{display:grid;grid-template-columns:var(--cols);gap:12px;align-items:center;padding:4px 16px}
 .qt .colhead{height:32px;font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);border-bottom:1px solid var(--line1)}
 .qt .gh{display:flex;align-items:center;gap:8px;height:32px;padding:4px 16px;background:var(--s2);border-top:1px solid var(--line1);border-bottom:1px solid var(--line1);color:var(--ink);font-weight:500;font-size:12px}
@@ -391,7 +392,7 @@ body{min-width:1280px}
     <a href="#">Home</a>
     <a href="#">Workflows <span class="count">12</span></a>
     <a href="#" aria-current="page">Work <span class="count">12</span></a>
-    <a href="#">Recipes <span class="count">7</span></a>
+    <a href="#">Recipes <span class="count">8</span></a>
     <a href="#">Context</a>
     <a href="#">Agents <span class="count">4</span></a>
     <a href="#">System</a>
@@ -425,54 +426,54 @@ body{min-width:1280px}
 
   <section class="panel qt" aria-label="Work items">
     <div class="colhead" role="row">
-      <span>Item</span><span>Title</span><span>State</span><span>Step</span>
+      <span>Item</span><span>Title</span><span>State</span>
     </div>
 
     <div class="gh"><span class="g">?</span>Waiting on you <span class="count-attn">2</span></div>
     <div class="tr attn" role="row" aria-label="Needs you now: ITM-01JB4, escalated gate">
       <span class="id mono">ITM-01JB4</span><span class="tt">Context map review for tabs.layout</span>
-      <span class="st"><span class="g g-esc">▲</span>Escalated</span><span class="cell2 ink mono">gate.verify.judge</span>
+      <span class="st"><span class="g g-esc">▲</span>Escalated</span>
     </div>
     <div class="tr attn" role="row" aria-label="Needs you now: ITM-01JD2, needs a decision">
       <span class="id mono">ITM-01JD2</span><span class="tt muted">Re-scope requested: drop the iOS head from this item</span>
-      <span class="st"><span class="g">?</span>Needs decision</span><span class="cell2">—</span>
+      <span class="st"><span class="g">?</span>Needs decision</span>
     </div>
 
     <div class="gh"><span class="g g-you">◎</span>With you <span class="count">1</span></div>
     <div class="tr" role="row" aria-label="With you: ITM-01JA1">
       <span class="id mono">ITM-01JA1</span><span class="tt">Onyx adapter secret pointers</span>
-      <span class="st"><span class="g g-you">◎</span>With you</span><span class="cell2 ink mono">produce</span>
+      <span class="st"><span class="g g-you">◎</span>With you</span>
     </div>
 
     <div class="gh"><span class="g g-park">▌</span>Parked <span class="count">1</span></div>
     <div class="tr attn" role="row" aria-label="Needs you now: ITM-01JC8, parked no-progress">
       <span class="id mono">ITM-01JC8</span><span class="tt">Retry storm in outbox dispatcher</span>
-      <span class="st"><span class="g g-park">▌</span>Parked</span><span class="cell2 ink mono">step.2 · 3/3</span>
+      <span class="st"><span class="g g-park">▌</span>Parked</span>
     </div>
 
     <div class="gh"><span class="g g-live">●</span>Running <span class="count">4</span></div>
     <div class="tr sel" role="row" aria-selected="true" aria-label="Running: ITM-01JE7, selected">
       <span class="id mono">ITM-01JE7</span><span class="tt">Add needs-you ack route</span>
-      <span class="st"><span class="g g-live">●</span>Running</span><span class="cell2 ink mono">produce · 2/3</span>
+      <span class="st"><span class="g g-live">●</span>produce 2/3</span>
     </div>
     <div class="tr" role="row" aria-label="Running: ITM-01JE9">
       <span class="id mono">ITM-01JE9</span><span class="tt">Tester: decision race integration test</span>
-      <span class="st"><span class="g g-live">●</span>Running</span><span class="cell2 ink mono">checks · 1/1</span>
+      <span class="st"><span class="g g-live">●</span>checks 1/1</span>
     </div>
     <div class="tr" role="row" aria-label="Running: ITM-01JD9">
       <span class="id mono">ITM-01JD9</span><span class="tt">Judge outbox drain on shutdown</span>
-      <span class="st"><span class="g g-live">●</span>Running</span><span class="cell2 ink mono">produce · 1/3</span>
+      <span class="st"><span class="g g-live">●</span>produce 1/3</span>
     </div>
     <div class="tr" role="row" aria-label="Running: ITM-01JD6">
       <span class="id mono">ITM-01JD6</span><span class="tt">Services page job panel</span>
-      <span class="st"><span class="g g-live">●</span>Running</span><span class="cell2 ink mono">checks</span>
+      <span class="st"><span class="g g-live">●</span>checks</span>
     </div>
 
     <div class="gh"><span class="g g-todo">○</span>Queued <span class="count">4</span></div>
-    <div class="tr" role="row" aria-label="Queued: ITM-01JF0"><span class="id mono">ITM-01JF0</span><span class="tt">Stream limits 429 fallback</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span></div>
-    <div class="tr" role="row" aria-label="Queued: ITM-01JF3"><span class="id mono">ITM-01JF3</span><span class="tt">doctor views line</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span></div>
-    <div class="tr" role="row" aria-label="Queued: ITM-01JF4"><span class="id mono">ITM-01JF4</span><span class="tt">Tray badge on Linux</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span></div>
-    <div class="tr" role="row" aria-label="Queued: ITM-01JF8"><span class="id mono">ITM-01JF8</span><span class="tt">Receipt verify route</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span></div>
+    <div class="tr" role="row" aria-label="Queued: ITM-01JF0"><span class="id mono">ITM-01JF0</span><span class="tt">Stream limits 429 fallback</span><span class="st"><span class="g g-todo">○</span>queued 1h</span></div>
+    <div class="tr" role="row" aria-label="Queued: ITM-01JF3"><span class="id mono">ITM-01JF3</span><span class="tt">doctor views line</span><span class="st"><span class="g g-todo">○</span>queued 52m</span></div>
+    <div class="tr" role="row" aria-label="Queued: ITM-01JF4"><span class="id mono">ITM-01JF4</span><span class="tt">Tray badge on Linux</span><span class="st"><span class="g g-todo">○</span>queued 40m</span></div>
+    <div class="tr" role="row" aria-label="Queued: ITM-01JF8"><span class="id mono">ITM-01JF8</span><span class="tt">Receipt verify route</span><span class="st"><span class="g g-todo">○</span>queued 12m</span></div>
   </section>
 </main>
 
@@ -531,6 +532,7 @@ body{min-width:1280px}
             <button class="btn">Take over <kbd>T</kbd></button>
             <button class="btn">Request <kbd>R</kbd></button>
           </div>
+          <div class="hint">Attach joins the live session; your first keystroke takes it over.</div>
         </div>
       </div>
     </section>

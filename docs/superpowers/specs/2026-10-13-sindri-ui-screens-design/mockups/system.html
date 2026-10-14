@@ -291,6 +291,7 @@ body{min-width:1280px}
 .en .wait,.en .tim,.en .rt{color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .en .rt .null{color:var(--ink-subtle)}
 .en .hist{color:var(--ink-subtle);text-align:right;white-space:nowrap}
+.en.more{min-height:30px;border-top:1px solid var(--line1)}
 .pend-line{display:flex;gap:10px;align-items:center;padding:8px 16px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px}
 .pend-line .mono{color:var(--ink-muted)}
 .pend-line .r{margin-left:auto;display:flex;gap:10px;align-items:center}
@@ -321,7 +322,7 @@ body{min-width:1280px}
     <a href="#">Home</a>
     <a href="#">Workflows <span class="count">12</span></a>
     <a href="#">Work <span class="count">12</span></a>
-    <a href="#">Recipes <span class="count">7</span></a>
+    <a href="#">Recipes <span class="count">8</span></a>
     <a href="#">Context</a>
     <a href="#">Agents <span class="count">4</span></a>
     <a href="#" aria-current="page">System</a>
@@ -361,7 +362,7 @@ body{min-width:1280px}
     <section class="panel" aria-labelledby="dep-h">
       <div class="phead"><h2 class="eyebrow" id="dep-h">Dependencies</h2><div class="meta" style="margin-left:4px;margin-right:auto">what depends on what · health on the edge</div></div>
       <div class="graphbody">
-        <svg width="806" height="392" viewBox="0 0 806 392" role="group" aria-label="Dependency graph, layered. Sources: Linear API ok, Slack ok and Onyx 3000 degraded 2h behind feed CONTEXT; Ollama 11434 ok and the code index, failed at 12:21, feed CONTEXT; graphify ok and git ok feed the code index. CONTEXT feeds ENGINE through input.context.retrieve. recipes, 7 approved, feed ENGINE; Temporal dev 7233 ok with temporal.db feeds ENGINE; ENGINE mirrors into ledger.db ok, head 4236, views 4236. ENGINE feeds SESSIONS; tmux ok with 3 sessions feeds SESSIONS; launch targets Warp ok, claude 2.1.3 ok, codex ok, cursor absent. SESSIONS feed the API at 127.0.0.1:47811 v1, which serves the UI, the CLI and MCP at /sindri/mcp, 212 queries in 7 days. Enter on a node opens its doctor check.">
+        <svg width="806" height="392" viewBox="0 0 806 392" role="group" aria-label="Dependency graph, layered. Sources: Linear API ok, Slack ok and Onyx 3000 degraded 2h behind feed CONTEXT; Ollama 11434 ok and the code index, failed at 03:00, feed CONTEXT; graphify ok and git ok feed the code index. CONTEXT feeds ENGINE through input.context.retrieve. recipes, 8 registered, feed ENGINE; Temporal dev 7233 ok with temporal.db feeds ENGINE; ENGINE mirrors into ledger.db ok, head 4236, views 4236. ENGINE feeds SESSIONS; tmux ok with 3 sessions feeds SESSIONS; launch targets Warp ok, claude 2.1.3 ok, codex ok, cursor absent. SESSIONS feed the API at 127.0.0.1:47811 v1, which serves the UI, the CLI and MCP at /sindri/mcp, 212 queries in 7 days. Enter on a node opens its doctor check.">
           <defs><marker id="ah" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8z" class="arrow"/></marker></defs>
 
           <!-- sources (left) -> CONTEXT -->
@@ -372,7 +373,7 @@ body{min-width:1280px}
           <!-- Ollama, code index -> CONTEXT -->
           <path class="edge" d="M540 28 H470 V58 H423" marker-end="url(#ah)"/>
           <path class="edge" d="M560 108 H470 V78 H423" marker-end="url(#ah)"/>
-          <text class="el m" x="468" y="122">12:21 failed</text>
+          <text class="el m" x="468" y="122">03:00 failed</text>
           <!-- graphify, git -> code index -->
           <path class="edge" d="M700 108 H674" marker-end="url(#ah)"/>
           <path class="edge" d="M700 148 H660 V123" marker-end="url(#ah)"/>
@@ -399,11 +400,11 @@ body{min-width:1280px}
           <a href="#" class="gn" aria-label="Slack, ok. Open its doctor check"><rect class="node" x="20" y="54" width="112" height="28" rx="6"/><text class="nt" x="32" y="72"><tspan class="ok">✓</tspan> Slack</text></a>
           <a href="#" class="gn" aria-label="CONTEXT, the context engine. Open its doctor check"><rect class="hub" x="300" y="52" width="120" height="32" rx="7"/><text class="nt b" x="360" y="72" text-anchor="middle">CONTEXT</text></a>
           <a href="#" class="gn" aria-label="Onyx 3000, degraded, 2h behind. Open its doctor check"><rect class="node" x="20" y="94" width="112" height="28" rx="6"/><text class="nt" x="32" y="112"><tspan class="deg">◐</tspan> Onyx 3000</text></a>
-          <a href="#" class="gn" aria-label="code index, failed at 12:21. Open its doctor check"><rect class="node" x="560" y="94" width="112" height="28" rx="6"/><text class="nt" x="572" y="112"><tspan class="fail">✕</tspan> code index</text></a>
+          <a href="#" class="gn" aria-label="code index, failed at 03:00. Open its doctor check"><rect class="node" x="560" y="94" width="112" height="28" rx="6"/><text class="nt" x="572" y="112"><tspan class="fail">✕</tspan> code index</text></a>
           <a href="#" class="gn" aria-label="graphify, ok. Open its doctor check"><rect class="node" x="700" y="94" width="100" height="28" rx="6"/><text class="nt" x="712" y="112"><tspan class="ok">✓</tspan> graphify</text></a>
           <a href="#" class="gn" aria-label="git, ok. Open its doctor check"><rect class="node" x="700" y="134" width="100" height="28" rx="6"/><text class="nt" x="712" y="152"><tspan class="ok">✓</tspan> git</text></a>
 
-          <a href="#" class="gn" aria-label="recipes, 7 approved. Open its doctor check"><rect class="node" x="20" y="174" width="112" height="28" rx="6"/><text class="nt" x="32" y="192"><tspan class="ok">✓</tspan> recipes</text><text class="el m" x="32" y="217">7 approved</text></a>
+          <a href="#" class="gn" aria-label="recipes, 8 registered. Open its doctor check"><rect class="node" x="20" y="174" width="112" height="28" rx="6"/><text class="nt" x="32" y="192"><tspan class="ok">✓</tspan> recipes</text><text class="el m" x="32" y="217">8 registered</text></a>
           <a href="#" class="gn" aria-label="ENGINE, the workflow engine. Open its doctor check"><rect class="hub" x="300" y="172" width="120" height="32" rx="7"/><text class="nt b" x="360" y="192" text-anchor="middle">ENGINE</text></a>
           <a href="#" class="gn" aria-label="Temporal dev 7233, ok, 12 milliseconds. Open its doctor check"><rect class="node" x="450" y="174" width="218" height="28" rx="6"/><text class="nt" x="462" y="192"><tspan class="ok">✓</tspan> Temporal dev 7233 <tspan class="dim">(12 ms)</tspan></text></a>
           <a href="#" class="gn" aria-label="temporal.db, ok. Open its doctor check"><rect class="node" x="690" y="174" width="116" height="28" rx="6"/><text class="nt" x="700" y="192"><tspan class="ok">✓</tspan> temporal.db</text></a>
@@ -473,18 +474,21 @@ body{min-width:1280px}
       <span>worker <span class="mono">1</span> · <span class="mono">sindri-48211</span></span><span>·</span>
       <span>task queue <span class="mono">sindri</span></span><span>·</span>
       <span class="state live"><span class="g g-live">●</span>polling</span><span>·</span>
-      <span>activities <span class="mono">2</span> running · <span class="mono">0</span> backlog</span><span>·</span>
+      <span>activities <span class="mono">4</span> running · <span class="mono">0</span> backlog</span><span>·</span>
       <span>last heartbeat <span class="mono">1s</span></span>
       <span class="r">mirror lag <span class="mono">0 events (0 ms)</span></span>
     </div>
     <div class="en-h"><span>Instance</span><span>Recipe@hash</span><span>State</span><span>Waiting on</span><span>Timers</span><span>Retries</span><span style="text-align:right">History</span></div>
 
     <div class="en"><span class="id">ITM-01JE7</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-live">●</span>produce r2/3</span><span class="wait">activity <span class="mono">step.produce</span> (async, 6m)</span><span class="tim">timeout 1d 23h</span><span class="rt">0</span><span class="hist"><a href="#">412 ev</a></span></div>
+    <div class="en"><span class="id">ITM-01JD9</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-live">●</span>produce r1/3</span><span class="wait">activity <span class="mono">step.produce</span> (async, 1m)</span><span class="tim">timeout 1d 23h</span><span class="rt">0</span><span class="hist"><a href="#">36 ev</a></span></div>
     <div class="en sel" aria-current="true"><span class="id">ITM-01JE9</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-live">●</span>checks</span><span class="wait">activity <span class="mono">step.checks</span> (2m)</span><span class="tim">produce timeout 12:30</span><span class="rt">1 · exit 1</span><span class="hist"><a href="#">88 ev</a></span></div>
+    <div class="en"><span class="id">ITM-01JD6</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-live">●</span>checks</span><span class="wait">activity <span class="mono">step.checks</span> (0m)</span><span class="tim">produce timeout 12:56</span><span class="rt">0</span><span class="hist"><a href="#">24 ev</a></span></div>
     <div class="en"><span class="id">ITM-01JC8</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-park">▌</span>parked no-progress</span><span class="wait">signal <span class="mono">answer</span> (grant)</span><span class="tim">none</span><span class="rt"><span class="null">—</span></span><span class="hist"><a href="#">640 ev</a></span></div>
     <div class="en"><span class="id">ITM-01JB4</span><span class="mono">workflow.item@3f1c09</span><span class="st"><span class="g g-esc">▲</span>escalated gate</span><span class="wait">signal <span class="mono">answer</span> (accept/reject)</span><span class="tim">escalate timeout fired</span><span class="rt"><span class="null">—</span></span><span class="hist"><a href="#">301 ev</a></span></div>
     <div class="en"><span class="id">PRJ-tabs</span><span class="mono">workflow.project@a8c2</span><span class="st"><span class="g g-live">●</span>scoping → child</span><span class="wait">child <span class="mono">PRJ-tabs/scoping/1</span></span><span class="tim">parks in 1h 14m</span><span class="rt">0</span><span class="hist"><a href="#">57 ev</a></span></div>
     <div class="en"><span class="id">INC-14</span><span class="mono">incident.response@5d9</span><span class="st"><span class="g g-live">●</span>mitigate r1/3</span><span class="wait">child <span class="mono">ITM-01JG2</span> · activity</span><span class="tim">escalates in 36m</span><span class="rt">0</span><span class="hist"><a href="#">120 ev</a></span></div>
+    <div class="en more"><span class="id"></span><span style="color:var(--ink-subtle)">… 4 more open</span></div>
 
     <div class="pend-line">
       <span>pending</span><span>updates <span class="mono">0</span> · signals <span class="mono">0</span> · stuck &gt; 5 min: <span class="mono">0</span> · <span title="Temporal: a workflow that restarted its own history to stay small">continue-as-new</span>: <span class="mono">0</span></span>

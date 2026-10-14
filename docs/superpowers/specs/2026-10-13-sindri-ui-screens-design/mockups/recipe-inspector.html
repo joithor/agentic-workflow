@@ -267,9 +267,6 @@ svg{flex:none}
 .sh-acts .win{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
 .sh-acts .win b{color:var(--ink-muted);font-weight:500}
 .sheet-body{padding:8px 20px 14px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:6px}
-/* the list behind is aria-hidden and inert; a scrim over the page dims it instead of opacity on its text, so the text itself keeps AA */
-.behind{pointer-events:none}
-.behind::after{content:"";position:fixed;inset:48px 0 0 0;background:rgba(1,1,2,.6);z-index:24}
 
 /* states band with the open instances on it. It wraps: each link travels with the node it leads to (.hop), so a row
    never ends on a dangling line. A recipe with ten states takes two rows; the second row starts with its link, then the
@@ -323,6 +320,30 @@ svg{flex:none}
 .btn,.tr,.op{transition:background-color 120ms ease-out,border-color 120ms ease-out,color 120ms ease-out}
 .btn:active{transform:translateY(1px)}
 @media (prefers-reduced-motion:reduce){.btn,.tr,.op{transition:none}.btn:active{transform:none}}
+/* ---- the list behind a sheet: one rule on Workflows, Work and Recipes. A narrow live list (id, title, state), column heads and
+   group heads at the full 496 px the sheet leaves, no scrim, no inert, nothing sliced ---- */
+.page.behind{max-width:none;margin:0;padding-right:768px}
+.page.behind .pagehead{flex-wrap:wrap;align-items:center;gap:8px 16px}
+.page.behind .pagehead>div:first-child{flex-wrap:wrap;gap:0 14px}
+.page.behind .sub{white-space:nowrap;flex-basis:100%}
+.qt{--cols:140px minmax(0,1fr) max-content}
+.qt .colhead,.qt .tr{display:grid;grid-template-columns:var(--cols);gap:12px;align-items:center;padding:4px 16px}
+.qt .colhead{height:32px;font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);border-bottom:1px solid var(--line1)}
+.qt .gh{display:flex;align-items:center;gap:8px;height:32px;padding:4px 16px;background:var(--s2);border-top:1px solid var(--line1);border-bottom:1px solid var(--line1);color:var(--ink);font-weight:500;font-size:12px}
+.qt .gh .g{width:12px}
+.qt .gh .rdesc{color:var(--ink-subtle);font-weight:400}
+.qt .tr{position:relative;min-height:36px;border-top:1px solid var(--line1)}
+.qt .gh+.tr{border-top:0}
+.qt .tr:hover{background:var(--s2)}
+.qt .tr.sel,.qt .tr.sel:hover{background:var(--s3)}
+.qt .tr.attn{background:var(--attn-soft)}
+.qt .tr .tt{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:2px 0}
+.qt .tr .tt.muted{color:var(--ink-muted);font-weight:400}
+.qt .tr .tt small{display:block;color:var(--ink-subtle);font-weight:400;font-size:12px;white-space:normal;line-height:1.35}
+.qt .tr .tt small .mono{color:var(--ink-muted)}
+.qt .tr .st{display:flex;align-items:center;gap:6px;white-space:nowrap;font-weight:500;color:var(--ink);font-size:12px}
+.qt .tr .st small{color:var(--ink-subtle);font-weight:400;font-size:12px}
+.qt .tr.more{color:var(--ink-subtle);font-size:12px;min-height:30px}
 </style>
 </head>
 <body>
@@ -332,7 +353,7 @@ svg{flex:none}
     <a href="#">Home</a>
     <a href="#">Workflows <span class="count">12</span></a>
     <a href="#">Work <span class="count">12</span></a>
-    <a href="#" aria-current="page">Recipes <span class="count">7</span></a>
+    <a href="#" aria-current="page">Recipes <span class="count">8</span></a>
     <a href="#">Context</a>
     <a href="#">Agents <span class="count">4</span></a>
     <a href="#">System</a>
@@ -347,41 +368,32 @@ svg{flex:none}
 </header>
 
 
-<main class="page behind" aria-hidden="true" inert>
+<main class="page behind">
   <div class="pagehead">
     <div style="display:flex;align-items:baseline;gap:14px">
-      <h1>Recipes <span class="count" style="font-size:13px">7</span></h1>
+      <h1>Recipes <span class="count" style="font-size:13px">8</span></h1>
       <div class="sub">
         <button class="btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Window: 30 days">30 days <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
-        <span>·</span><span><b>184</b> runs</span>
-        <span>·</span><span><b>81%</b> done without you</span>
+        <span>·</span><span><b>193</b> runs</span>
+        <span>·</span><span><b>80%</b> done without you</span>
       </div>
     </div>
     <div class="r">
-      <div class="hints" aria-label="Keyboard shortcuts">
-        <span><kbd>J</kbd><kbd>K</kbd> Move</span>
-        <span><kbd>↵</kbd> Open</span>
-        <span><kbd>?</kbd> Shortcuts</span>
-      </div>
       <button class="btn">Validate file…</button>
       <button class="btn">Import</button>
     </div>
   </div>
 
-  <!-- initial focus: the first row. ↵ opens the inspector (a read); Validate file… and Import are secondary, so ↵ ↵ never starts a job -->
-  <!-- empty (0 recipes): "No recipes registered. Import a recipe file to add it as a draft." [Import] · the table head stays, the 30-day line reads "0 runs" -->
-  <section class="panel" role="table" aria-label="Recipes, 30 days">
-    <div class="th rc" role="row">
-      <span role="columnheader">Recipe</span><span role="columnheader">Status</span><span role="columnheader">Open</span><span role="columnheader">Runs</span><span role="columnheader">Done</span><span role="columnheader">Failed</span><span role="columnheader">Human</span><span role="columnheader">Median</span><span role="columnheader">Tokens/run</span><span role="columnheader">Trend (4 wk)</span><span role="columnheader">Last change</span>
-    </div>
-    <div class="tr rc sel" aria-selected="true" role="row" aria-label="Recipe workflow.item, approved"><span class="nm" role="cell"><a href="#">workflow.item</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">4</span><span class="num" role="cell">112</span><span class="num" role="cell">97</span><span class="num" role="cell">6</span><span class="num" role="cell">19%</span><span class="num" role="cell">1h 40m</span><span class="num" role="cell">310k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:25%"></i><i style="height:50%"></i><i style="height:75%"></i><i style="height:100%"></i></span></span><span class="last" role="cell"><span class="num">10-02</span><span class="num">v7</span></span></div>
-    <div class="tr rc" role="row" aria-label="Recipe workflow.step, approved"><span class="nm" role="cell"><a href="#">workflow.step</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">6</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span role="cell"><span class="dash">(child only)</span></span><span class="last" role="cell"><span class="num">10-02</span><span class="num">v4</span></span></div>
-    <div class="tr rc" role="row" aria-label="Recipe builder.feature, approved"><span class="nm" role="cell"><a href="#">builder.feature</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">9</span><span class="num" role="cell">38</span><span class="num" role="cell">31</span><span class="num" role="cell">2</span><span class="num" role="cell">13%</span><span class="num" role="cell">2h 05m</span><span class="num" role="cell">420k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:50%"></i><i style="height:75%"></i><i style="height:75%"></i><i style="height:100%"></i></span></span><span class="last" role="cell"><span class="num">10-08</span><span class="num">v3</span></span></div>
-    <div class="tr rc" role="row" aria-label="Recipe triage.alert, approved"><span class="nm" role="cell"><a href="#">triage.alert</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">3</span><span class="num" role="cell">24</span><span class="num" role="cell">22</span><span class="num" role="cell">0</span><span class="num" role="cell">42%</span><span class="num" role="cell">6m</span><span class="num" role="cell">18k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, falling"><i style="height:75%"></i><i style="height:50%"></i><i style="height:25%"></i><i style="height:25%"></i></span></span><span class="last" role="cell"><span class="num">09-28</span><span class="num">v2</span></span></div>
-    <div class="tr rc" role="row" aria-label="Recipe incident.response, approved"><span class="nm" role="cell"><a href="#">incident.response</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">1</span><span class="num" role="cell">3</span><span class="num" role="cell">2</span><span class="num" role="cell">1</span><span class="num" role="cell">100%</span><span class="num" role="cell">3h 10m</span><span class="num" role="cell">190k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, uneven"><i style="height:12%"></i><i style="height:25%"></i><i style="height:12%"></i><i style="height:50%"></i></span></span><span class="last" role="cell"><span class="num">09-30</span><span class="num">v1</span></span></div>
-    <div class="tr rc chg" role="row" aria-label="Recipe scoping.project, changed since approval"><span class="nm" role="cell"><a href="#">scoping.project</a></span><span class="st chg" role="cell"><span class="g g-chg" aria-hidden="true">◆</span>changed</span><span class="num" role="cell">1</span><span class="num" role="cell">7</span><span class="num" role="cell">5</span><span class="num" role="cell">0</span><span class="num" role="cell">29%</span><span class="num" role="cell">48m</span><span class="num" role="cell">540k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:25%"></i><i style="height:25%"></i><i style="height:50%"></i><i style="height:50%"></i></span></span><span class="last" role="cell"><span class="num">today</span><span class="num">v3</span><span class="dash">·</span><button class="btn term sm" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Re-approve · terminal</button></span></div>
-    <div class="tr rc draft" role="row" aria-label="Recipe intake.linear, draft"><span class="nm" role="cell"><a href="#">intake.linear</a></span><span class="st draft" role="cell"><span class="g g-todo" aria-hidden="true">○</span>draft</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span role="cell"><span class="dash">—</span></span><span class="last" role="cell"><span>never approved</span></span></div>
-    <div class="tfoot">failed = ended in cancelled or a terminal failure state · human = runs with a park answered, an escalation decided or a takeover</div>
+  <section class="panel qt" aria-label="Recipes, 30 days">
+    <div class="colhead" role="row"><span>Recipe</span><span>Activity</span><span>Status</span></div>
+    <div class="tr" role="row" aria-label="Recipe workflow.project, approved"><span class="id mono">workflow.project</span><span class="tt">open 3 · runs 9</span><span class="st"><span class="g g-done">●</span>approved</span></div>
+    <div class="tr sel" role="row" aria-label="Recipe workflow.item, approved"><span class="id mono">workflow.item</span><span class="tt">open 4 · runs 112</span><span class="st"><span class="g g-done">●</span>approved</span></div>
+    <div class="tr" role="row" aria-label="Recipe workflow.step, approved"><span class="id mono">workflow.step</span><span class="tt">open 6 · no runs yet</span><span class="st"><span class="g g-done">●</span>approved</span></div>
+    <div class="tr" role="row" aria-label="Recipe builder.feature, approved"><span class="id mono">builder.feature</span><span class="tt">open 9 · runs 38</span><span class="st"><span class="g g-done">●</span>approved</span></div>
+    <div class="tr" role="row" aria-label="Recipe triage.alert, approved"><span class="id mono">triage.alert</span><span class="tt">open 3 · runs 24</span><span class="st"><span class="g g-done">●</span>approved</span></div>
+    <div class="tr" role="row" aria-label="Recipe incident.response, approved"><span class="id mono">incident.response</span><span class="tt">open 1 · runs 3</span><span class="st"><span class="g g-done">●</span>approved</span></div>
+    <div class="tr" role="row" aria-label="Recipe scoping.project, changed"><span class="id mono">scoping.project</span><span class="tt">open 1 · runs 7</span><span class="st"><span class="g g-chg">◆</span>changed</span></div>
+    <div class="tr" role="row" aria-label="Recipe intake.linear, draft"><span class="id mono">intake.linear</span><span class="tt">no runs yet</span><span class="st"><span class="g g-todo">○</span>draft</span></div>
   </section>
 </main>
 
