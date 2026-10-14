@@ -12,7 +12,7 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri workflow answer &lt;address&gt; [--text …|--file …] [--grant n | --grant-tokens n | --accept | --reject |
-/// --resume]', 'workflow command &lt;address&gt; &lt;verb&gt;' and 'workflow cancel &lt;address&gt;', each with '[--nonce
+/// --resume]', 'workflow command &lt;address&gt; &lt;verb&gt;', 'workflow cancel', 'takeover' and 'handback &lt;address&gt;', each with '[--nonce
 /// &lt;n&gt;] [--json]' (engine spec rev 8 §5.2, §5.8, §6.3), as clients of the API: without '--nonce' the CLI asks the
 /// instance's nonce route for one, then posts the command to its commands route, where the command chain classes the
 /// caller (an agent session is refused SND-AUTH-002). Each prints the new status header and what happened (an answer:
@@ -31,6 +31,10 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
     private const string CommandUsage = "usage: sindri workflow command <address> <verb> [--nonce <n>] [--json]";
 
     private const string CancelUsage = "usage: sindri workflow cancel <address> [--nonce <n>] [--json]";
+
+    private const string TakeoverUsage = "usage: sindri workflow takeover <address> [--nonce <n>] [--json]";
+
+    private const string HandbackUsage = "usage: sindri workflow handback <address> [--nonce <n>] [--json]";
 
     /// <summary>The answer options that take no value.</summary>
     private static readonly string[] _switches = ["--accept", "--reject", "--resume"];
@@ -85,18 +89,27 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
             : await Apply(new ApplyCommandRequest(address, ApplyCommandKind.Command, Answer: null, Text: null, Amount: null, parsed, nonce.Value, Challenge: null), json, ct).ConfigureAwait(false);
     }
 
-    internal async Task<int> Cancel(string[] args, CancellationToken ct)
+    internal Task<int> Cancel(string[] args, CancellationToken ct) => Bare(args, ApplyCommandKind.Cancel, CancelUsage, ct);
+
+    /// <summary>'workflow takeover &lt;address&gt;' (class pause: an agent session may take over).</summary>
+    internal Task<int> Takeover(string[] args, CancellationToken ct) => Bare(args, ApplyCommandKind.Takeover, TakeoverUsage, ct);
+
+    /// <summary>'workflow handback &lt;address&gt;' (class desk: an agent session is refused SND-AUTH-002).</summary>
+    internal Task<int> Handback(string[] args, CancellationToken ct) => Bare(args, ApplyCommandKind.Handback, HandbackUsage, ct);
+
+    /// <summary>A command that takes only the address and the optional nonce: cancel, takeover, handback.</summary>
+    private async Task<int> Bare(string[] args, ApplyCommandKind kind, string usage, CancellationToken ct)
     {
         var (json, rest) = Json(args);
         if (rest is not [var address, .. var options])
         {
-            return await output.Error(SindriErrors.InvalidInput.With(CancelUsage)).ConfigureAwait(false);
+            return await output.Error(SindriErrors.InvalidInput.With(usage)).ConfigureAwait(false);
         }
 
-        var nonce = Nonce(options, CancelUsage);
+        var nonce = Nonce(options, usage);
         return nonce.IsError
             ? await output.Error(nonce.Error).ConfigureAwait(false)
-            : await Apply(new ApplyCommandRequest(address, ApplyCommandKind.Cancel, Answer: null, Text: null, Amount: null, Verb: null, nonce.Value, Challenge: null), json, ct).ConfigureAwait(false);
+            : await Apply(new ApplyCommandRequest(address, kind, Answer: null, Text: null, Amount: null, Verb: null, nonce.Value, Challenge: null), json, ct).ConfigureAwait(false);
     }
 
     private async Task<int> Apply(ApplyCommandRequest request, bool json, CancellationToken ct)

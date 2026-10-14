@@ -12,6 +12,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Trigger">The trigger's kind ('start', 'step.completed', 'wait.satisfied', 'answer').</param>
 /// <param name="Outcome">The trigger's outcome, when it has one.</param>
 /// <param name="Run">The run token the trigger reported on, when it has one.</param>
+/// <param name="Causation">What caused it beyond the trigger: the launch ('LCH-…') an open-request or a start taken over answers (UI E-6, E-19).</param>
 internal sealed record WorkflowEventRecord(
     string WorkflowId,
     string Type,
@@ -20,4 +21,5 @@ internal sealed record WorkflowEventRecord(
     string To,
     string Trigger,
     string? Outcome,
-    string? Run);
+    string? Run,
+    string? Causation = null);

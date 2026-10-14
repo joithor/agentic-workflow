@@ -121,16 +121,16 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
     {
         StepCompleted report => deskReports.Complete(address, nonce, report, cancellationToken),   // unit (c)
         AnswerGiven or CommandFired or CancelRequested => commands.Send(address, nonce, command, cancellationToken),   // unit (b)
-        TakeoverRequested or HandbackRequested => commands.Send(address, nonce, command, cancellationToken),   // engine P5 unit (b)
+        TakeoverRequested or HandbackRequested => commands.Send(address, nonce, command, cancellationToken),   // engine P5
         _ => throw new NotSupportedException($"the '{command.Name}' trigger is no command Update"),
     };
 
     /// <summary>
     /// The 'open-request' Update (UI spec E-6, spec §5.2) with update id <see cref="InstanceIds.OpenRequestUpdate"/>: no
-    /// nonce, actor 'service:engine'. Engine P5 unit (b).
+    /// nonce, actor 'service:engine'.
     /// </summary>
     public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, OpenRequested request, CancellationToken cancellationToken) =>
-        throw new NotSupportedException($"engine P5 unit (b): the open-request Update {InstanceIds.OpenRequestUpdate(address, request)}");
+        commands.OpenRequest(address, request, cancellationToken);
 
     /// <summary>
     /// The bridge's 'event' signal (spec §5.4; unit (d)): Temporal buffers it until the instance reaches the wait. The

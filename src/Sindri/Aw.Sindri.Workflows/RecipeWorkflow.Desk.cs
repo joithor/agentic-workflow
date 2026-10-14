@@ -89,7 +89,7 @@ internal sealed partial class RecipeWorkflow
         instance = After(instance, decision);
         if (!ReferenceEquals(before, instance))
         {
-            Enter(instance);
+            instance = Enter(instance);
             await Mirror(Transition(start, before, instance, trigger, open), NeedsYou(instance)).ConfigureAwait(true);
         }
 

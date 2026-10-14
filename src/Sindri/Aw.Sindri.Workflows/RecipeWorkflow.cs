@@ -83,11 +83,6 @@ internal sealed partial class RecipeWorkflow
     {
         ArgumentNullException.ThrowIfNull(start);
         _start = start;
-        if (start.OpenLaunch is { } launch)
-        {
-            throw Unbuilt($"P5 unit (b): the E-19 start taken over for launch {launch}");   // StartOf passes TakenOver and the takeover's causation
-        }
-
         _since = Now;
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
@@ -99,9 +94,8 @@ internal sealed partial class RecipeWorkflow
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
-        var instance = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
-        Enter(instance);
-        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null), NeedsYou(instance)).ConfigureAwait(true);
+        var instance = Enter(Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions)));
+        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
         return (instance, _context);
     }
 
@@ -168,10 +162,12 @@ internal sealed partial class RecipeWorkflow
     /// <summary>
     /// Takes <paramref name="instance"/> as the instance after a decided change, and does what the change asks of the
     /// timers (spec §5.5, <see cref="StateTimers.Between"/>): a new entry or run, or an answer that ended a park, arms the
-    /// state's full timeout; a park, escalation or end stops it; a 'then: retry' arms the retry timer. The first entry
-    /// arms its state's timeout unless it parked at once.
+    /// state's full timeout; a park, escalation or end stops it; a 'then: retry' arms the retry timer; a takeover pauses
+    /// it and keeps what was left on its suspension, which the handback re-arms. The first entry arms its state's
+    /// timeout unless it parked at once; a start taken over (E-19) keeps the full timeout for the handback.
     /// </summary>
-    private void Enter(WorkflowInstance instance)
+    /// <returns>The instance as the interpreter holds it: a takeover's suspension carries what it paused.</returns>
+    private WorkflowInstance Enter(WorkflowInstance instance)
     {
         var before = _instance;
         if (before is null || !string.Equals(before.State, instance.State, StringComparison.Ordinal) || before.Frame.Entry != instance.Frame.Entry)
@@ -179,24 +175,33 @@ internal sealed partial class RecipeWorkflow
             _since = Now;
         }
 
-        _instance = instance;
         var recipe = _context!.Recipe; // why: Begin sets the context before the first entry
-        var action = before is null ? First(instance, recipe, _deskTimeout) : StateTimers.Between(before, instance, recipe, _deskTimeout);
-        _ = _timers.Apply(action, instance.Frame.Entry);
+        var kept = before is null
+            ? First(instance, recipe)
+            : _timers.Apply(StateTimers.Between(before, instance, recipe, _deskTimeout), instance.Frame.Entry);
+        _instance = kept is not null && instance.Suspension is { Kind: SuspensionKind.Takeover } takeover
+            ? instance with { Suspension = takeover with { Remaining = kept } }
+            : instance;
+        return _instance;
     }
 
-    /// <summary>The first entry's timer: its state's timeout, unless it ended or parked at once.</summary>
-    private static TimerAction First(WorkflowInstance instance, Core.Workflow.Recipes.Recipe recipe, TimeSpan deskFloor) =>
-        instance is { Ended: false, Suspension: null } && StateTimers.Timeout(recipe.States[instance.Frame.State], instance.Frame.Run, deskFloor) is { } after
-            ? new TimerAction(TimerActionKind.Arm, DeadlineKind.State, after)
-            : TimerAction.Stop;
+    /// <summary>
+    /// The first entry's timers: its state's timeout, unless it ended or parked at once; started taken over (E-19), the
+    /// full timeout is kept for the handback and 'takeoverIdle' runs.
+    /// </summary>
+    private RemainingTimer? First(WorkflowInstance instance, Core.Workflow.Recipes.Recipe recipe)
+    {
+        var full = instance.Ended ? null : StateTimers.Timeout(recipe.States[instance.Frame.State], instance.Frame.Run, _deskTimeout);
+        return (instance.Suspension, full) switch
+        {
+            ({ Kind: SuspensionKind.Takeover }, _) => _timers.Held(full, instance.Frame.Entry),
+            (null, { } after) => _timers.Apply(new TimerAction(TimerActionKind.Arm, DeadlineKind.State, after), instance.Frame.Entry),
+            _ => _timers.Apply(TimerAction.Stop, instance.Frame.Entry),
+        };
+    }
 
     /// <summary>The workflow's deterministic clock, as an offset in UTC.</summary>
     private static DateTimeOffset Now => new(Workflow.UtcNow, TimeSpan.Zero);
-
-    /// <summary>The exception a stubbed handler throws: a rejected Update in a validator, recording nothing.</summary>
-    private NotSupportedException Unbuilt(string what) =>
-        new($"engine {what} is not built yet ({_start?.WorkflowId().Value ?? "no instance"})");
 
     private static StartRequest StartOf(InstanceStart start, LoadedRecipe loaded)
     {
@@ -211,8 +216,8 @@ internal sealed partial class RecipeWorkflow
             start.Attempt,
             Parent: null,
             start.Inputs.ToDictionary(static i => i.Key, static i => i.Value.Value),
-            Desk,
-            TakenOver: false,
+            start.OpenLaunch is null ? Desk : InstanceIds.Engine,
+            TakenOver: start.OpenLaunch is not null,
             start.Tenant,
             start.Ring);
     }

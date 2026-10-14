@@ -52,19 +52,28 @@ public static class StateTimers
         Takeovers(before, after) ?? Entries(before, after, recipe, deskFloor);
 
     /// <summary>
-    /// A takeover of a running timer pauses it; a handback resumes the timer its suspension kept (none when it covered a
-    /// park); any other change is not a takeover's (null). Unit (b).
+    /// A takeover pauses the running timer (and arms 'takeoverIdle'); a handback resumes the timer its suspension kept,
+    /// none when it returns to the park it covered, and leaves a takeover that kept nothing to the entries (the full
+    /// timeout); a cancel while taken over stops every timer; a change that keeps the takeover keeps them; any other
+    /// change is not a takeover's (null).
     /// </summary>
     internal static TimerAction? Takeovers(WorkflowInstance before, WorkflowInstance after)
     {
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(after);
-        if (before.Suspension?.Kind != SuspensionKind.Takeover && after.Suspension?.Kind != SuspensionKind.Takeover)
+        var was = before.Suspension?.Kind == SuspensionKind.Takeover;
+        var now = after.Suspension?.Kind == SuspensionKind.Takeover;
+        return (was, now) switch
         {
-            return null;   // not a takeover's change: unit (a)'s entries decide it
-        }
-
-        throw new NotSupportedException($"engine P5 unit (b): the takeover timers of {after.Address.Value} ({before.State} -> {after.State})");
+            (false, false) => null,                                  // not a takeover's change: the entries decide it
+            (false, true) => TimerAction.Pause,                      // a takeover: pause what runs, arm takeoverIdle
+            (true, true) => TimerAction.Keep,                        // still taken over: a notification, a pending park
+            (true, false) when after.Ended => TimerAction.Stop,     // a cancel while taken over stops every timer
+            (true, false) when after.Suspension is not null => new TimerAction(TimerActionKind.Resume, Timer: null, After: null),   // back to the park it covered
+            (true, false) => before.Suspension!.Remaining is { } left // why: 'was' holds only with a suspension
+                ? new TimerAction(TimerActionKind.Resume, left.Kind, left.Left)
+                : null,                                              // nothing was kept: the entries arm the full timeout
+        };
     }
 
     /// <summary>

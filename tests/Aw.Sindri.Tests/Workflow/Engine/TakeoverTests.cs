@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 using static Aw.Sindri.Tests.Workflow.Engine.EngineFixture;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
@@ -64,7 +65,7 @@ public sealed class TakeoverTests
         var taken = Applied(At(Step, "produce"), Takeover());
         var park = DeskTimeouts.TimeoutPark("produce", _floor, Timers);
 
-        _ = Assert.IsType<Absorbed>(Decide(taken, Step, new DeadlineFired(Timers, 1, DeadlineKind.State)));
+        _ = Assert.IsType<Absorbed>(Real(taken, Step, new DeadlineFired(Timers, 1, DeadlineKind.State)));
         var pending = Suspensions.Suspend(taken, park);
         Assert.Equal((EngineStates.TakenOver, park), (pending.State, pending.PendingPark));
         Assert.Equal((EngineStates.Parked, ParkReason.Timeout), (Applied(pending, Handback()).State, Applied(pending, Handback()).Suspension?.Reason));
@@ -73,7 +74,7 @@ public sealed class TakeoverTests
     [Fact, Trait("Lane", "unit")]
     public void Handback_when_not_taken_over_is_SND_WF_003()
     {
-        var rejected = Assert.IsType<Rejected>(Decide(At(Step, "produce"), Step, Handback()));
+        var rejected = Assert.IsType<Rejected>(Real(At(Step, "produce"), Step, Handback()));
 
         Assert.Equal("SND-WF-003", rejected.Error.Code);
     }
@@ -84,14 +85,14 @@ public sealed class TakeoverTests
         var taken = Applied(At(Step, "produce"), Takeover());
         var back = Applied(taken, Handback());
 
-        var notified = Assert.IsType<Applied>(Decide(taken, Step, Idle()));
+        var notified = Assert.IsType<Applied>(Real(taken, Step, Idle()));
 
         var change = Assert.Single(notified.Changes);
         Assert.Equal((WorkflowEventType.Notified, TriggerNames.TakeoverIdle), (change.Event.Type, change.Event.Trigger.Kind));
         Assert.Equal(taken, change.After);
         Assert.Empty(notified.Effects);
         Assert.Equal(TimerAction.Keep, StateTimers.Between(taken, change.After, Step, _floor));
-        _ = Assert.IsType<Absorbed>(Decide(back, Step, Idle()));
+        _ = Assert.IsType<Absorbed>(Real(back, Step, Idle()));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -100,9 +101,9 @@ public sealed class TakeoverTests
         var produce = At(Step, "produce");
         var open = new OpenRequested(Engine, "LCH-0123456789abcdef0123456789abcdef");
 
-        var taken = Assert.IsType<Applied>(Decide(produce, Step, open)).Changes[0];
-        var again = Decide(taken.After, Step, open);
-        var byHand = Decide(Applied(produce, Takeover()), Step, open);
+        var taken = Assert.IsType<Applied>(Real(produce, Step, open)).Changes[0];
+        var again = Real(taken.After, Step, open);
+        var byHand = Real(Applied(produce, Takeover()), Step, open);
 
         Assert.Equal((EngineStates.TakenOver, Engine), (taken.After.State, taken.After.Suspension?.Actor));
         Assert.Equal(("open-request", "wf:" + produce.Id.Value + ":open:LCH-0123456789abcdef0123456789abcdef"), (taken.Event.Trigger.Kind, taken.Event.Trigger.Key.Value));
@@ -118,8 +119,8 @@ public sealed class TakeoverTests
         var ended = Applied(produce, new CancelRequested("human:cli", CancelOrigin.Command, Stamp('c'), Sequence: null, Parent: null));
         var revoked = EngineFixture.Context() with { Approval = ApprovalCheck.Revoked };
 
-        Assert.Equal("SND-WF-003", Assert.IsType<Rejected>(Decide(ended, Step, open)).Error.Code);
-        _ = Assert.IsType<Applied>(Decide(produce, Step, open, context: revoked));
+        Assert.Equal("SND-WF-003", Assert.IsType<Rejected>(Real(ended, Step, open)).Error.Code);
+        _ = Assert.IsType<Applied>(Real(produce, Step, open, context: revoked));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -132,6 +133,10 @@ public sealed class TakeoverTests
         Assert.Equal(TimeSpan.FromSeconds(40), InstanceViews.Of(kept, recipe, Now, timeoutAt: null).Paused);
         Assert.Null(InstanceViews.Of(taken, recipe, Now, timeoutAt: null).Paused);
     }
+
+    /// <summary>Decides through the real rules, not the fixture's fake ones.</summary>
+    private static Decision Real(WorkflowInstance instance, Recipe recipe, Trigger trigger, DecisionContext? context = null) =>
+        Decide(instance, recipe, trigger, context: context, rules: EngineRules.Default);
 
     private static TakeoverRequested Takeover() => new("human:cli", Stamp('a'));
 
@@ -147,5 +152,5 @@ public sealed class TakeoverTests
     private static RecipeVersion Version() => new(Step.Id, Step.Version, RecipeHash.From("sha256:" + new string('0', 64)));
 
     private static WorkflowInstance Applied(WorkflowInstance instance, Trigger trigger) =>
-        _ = Assert.IsType<Applied>(Decide(instance, Step, trigger)).Changes[0].After;
+        _ = Assert.IsType<Applied>(Real(instance, Step, trigger)).Changes[0].After;
 }

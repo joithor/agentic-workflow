@@ -46,4 +46,12 @@ internal static class TemporalUpdates
     internal static Error NoWorker(InstanceAddress address, CommandNonce nonce) =>
         SindriErrors.ApiTimeout.With($"no worker took the command for {address.Value} within {Patience.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s; it may still apply once one runs "
             + $"(fix: start sindri serve, which runs the worker, then run the same command again with --nonce {nonce.Value})");
+
+    /// <summary>SND-API-002 for the engine's own Update (an 'open-request') no worker took in <see cref="Patience"/>.</summary>
+    /// <param name="address">The instance.</param>
+    /// <param name="updateId">The Update's id ('wf:{instance}:open:{launch}'): a repeat with it applies once.</param>
+    /// <returns>The error.</returns>
+    internal static Error NoWorker(InstanceAddress address, string updateId) =>
+        SindriErrors.ApiTimeout.With($"no worker took {updateId} for {address.Value} within {Patience.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s; it may still apply once one runs "
+            + "(fix: start sindri serve, which runs the worker; sending it again applies it once)");
 }

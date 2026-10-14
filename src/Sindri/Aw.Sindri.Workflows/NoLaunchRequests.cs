@@ -15,5 +15,5 @@ internal sealed class NoLaunchRequests : ILaunchRequests
     public static NoLaunchRequests Instance { get; } = new();
 
     public ValueTask<Result<OpenRequested?>> Requested(ItemKey item, CancellationToken cancellationToken) =>
-        throw new NotSupportedException($"engine P5 unit (b): the launches of {item.Value}");
+        ValueTask.FromResult<Result<OpenRequested?>>((OpenRequested?)null);
 }

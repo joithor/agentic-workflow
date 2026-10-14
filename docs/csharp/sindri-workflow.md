@@ -624,12 +624,12 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   `{item}/{recipe}/1`, `/2` … so a start never waits on visibility. Without `--attempt` the latest attempt is used (a
   live one is returned as it is; an ended one is shown with `start a new one with --attempt next`); `--attempt next`
   is refused while the latest is live (`SND-WF-012`). It prints the status header.
-- **`workflow answer`, `command <verb>`, `cancel`** run the `ApplyCommand` slice, in this order: resolve the address
+- **`workflow answer`, `command <verb>`, `cancel`, `takeover`, `handback`** run the `ApplyCommand` slice, in this order: resolve the address
   (a bare item is the root of its latest attempt, `SND-WF-006` listing the candidates when the item has roots of more
   than one recipe); check the arguments; claim the nonce for exactly this command (`SND-WF-009`); for a protected
   answer (`--grant`, `--grant-tokens`, `--accept`) redeem its challenge (`IChallenges`, P2's shape; action text
   `grant n <address>`, `grant-tokens n <address>`, `accept <address>`; subject `instance:<address>@v<version>`, the
-  address and the instance version the preview showed, so any event mirrored since makes it stale; `SND-WF-013`); check the recipe's approval unless the trigger is exempt (cancel; `SND-RECIPE-005`, `-006`);
+  address and the instance version the preview showed, so any event mirrored since makes it stale; `SND-WF-013`); check the recipe's approval unless the trigger is exempt (cancel, takeover, handback; `SND-RECIPE-005`, `-006`);
   then send the Update with the nonce as its id. A refusal gives the nonce back. A repeated nonce skips the checks and
   Temporal returns the first outcome, printed `already applied (…)`. The CLI prints the status header and what happened;
   an answer prints the resume action it ran (`resumed (transition): -> produce`).
@@ -657,3 +657,31 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
 - **Namespace and task queue** come from `AW_SINDRI_TEMPORAL_NAMESPACE` and `AW_SINDRI_TEMPORAL_TASK_QUEUE` (each
   `sindri` when unset; README X61). A Step's activity runs on its instance's queue; `StepTaskQueue.For` is the seam a
   later phase uses to route a Step elsewhere.
+
+## Takeover, handback, takeoverIdle and open-request (engine P5 unit (b))
+
+Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
+
+- **`workflow takeover <address>`** (class `pause`: an agent session may take over, so the attach hook works) and
+  **`workflow handback <address>`** (class `desk`: a session is refused `SND-AUTH-002`) are `ApplyCommand` kinds
+  `takeover` and `handback`, sent as the `takeover` and `handback` Updates with the nonce as id. Both are exempt from
+  the approval check. A takeover of an ended or already taken-over instance, and a handback of one that isn't taken
+  over, are `SND-WF-003` from the validator and record nothing.
+- **Timers.** A takeover cancels the state timer's scope and keeps what was left (`RemainingTimer`, from
+  `Workflow.UtcNow`) on the takeover's suspension; status shows it as `paused  timeout 40s left`
+  (`InstanceView.paused`). Nothing fires while taken over. The handback re-arms that timer with what was left
+  (`StateTimers.Between` decides `pause`, `resume`, `keep` or `stop`; `TimerScopes` applies it). A takeover over a park
+  pauses nothing and the handback returns to the park; a park that arrives while taken over waits as the pending park
+  and takes effect on the handback. A cancel while taken over stops every timer.
+- **takeoverIdle.** A takeover arms a 2 h timer in its own scope. When it fires while still taken over the engine
+  records one `workflow.notified` row and clears it; it never hands back. P6 delivers it as `notify.desk`
+  ("hand back {item}?").
+- **open-request (E-6).** `IInstanceRuntime.OpenRequest` sends the `open-request` Update with id
+  `wf:{instance}:open:{launchId}`: no nonce, actor `service:engine`, past the API chain and exempt from approval. It
+  takes over wherever a takeover is allowed, is a no-op (nothing recorded) when the instance is already taken over,
+  and is `SND-WF-003` on an ended instance. Temporal deduplicates the id, so a repeat applies once. The ledger row
+  carries the launch id as `causation`. Its sender is API P10b's launcher.
+- **Start taken over (E-19).** `StartInstance` reads the item's launches (`ILaunchRequests`); when one is still
+  requested the instance starts taken over (`InstanceStart.OpenLaunch`, actor `service:engine`), with the launch as the
+  `workflow.started` row's `causation`, the state's full timeout kept for the handback and takeoverIdle running. Until
+  API P10a's launches projection lands, the adapter (`NoLaunchRequests`) reads none.

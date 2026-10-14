@@ -15,7 +15,7 @@ internal static class WorkflowCommandTable
         "usage: sindri workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]... | status <address> [--json] | "
         + "list [--needs-me | --item <id> | --state <s>] [--query <q>] [--json] | events <address> [--follow] [--json] | "
         + "answer <address> [--text …|--file …] [--grant n | --grant-tokens n | --accept | --reject | --resume] | "
-        + "command <address> <verb> | cancel <address> | complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--nonce <n>] [--json]";
+        + "command <address> <verb> | cancel <address> | takeover <address> | handback <address> | complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--nonce <n>] [--json]";
 
     /// <summary>Runs one 'workflow' verb: the writes as clients of the API through <paramref name="desk"/>, the reads in process.</summary>
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, RecipeDesk desk, CancellationToken ct) => args switch
@@ -27,6 +27,8 @@ internal static class WorkflowCommandTable
         ["answer", .. var rest] => new ApplyCommandVerbs(desk, services, output).Answer(rest, ct),
         ["command", .. var rest] => new ApplyCommandVerbs(desk, services, output).Command(rest, ct),
         ["cancel", .. var rest] => new ApplyCommandVerbs(desk, services, output).Cancel(rest, ct),
+        ["takeover", .. var rest] => new ApplyCommandVerbs(desk, services, output).Takeover(rest, ct),
+        ["handback", .. var rest] => new ApplyCommandVerbs(desk, services, output).Handback(rest, ct),
         ["complete", .. var rest] => CompleteCommand.Run(rest, desk, services, output, ct),
         _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["workflow", .. args])}' is not a sindri command ({Usage})")),
     };

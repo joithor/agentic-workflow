@@ -74,7 +74,7 @@ internal sealed partial class RecipeWorkflow
         var after = After(instance, decision);
         if (OwnChange(instance, decision) is { } change)
         {
-            Enter(after);
+            after = Enter(after);
             await Mirror(Record(instance, change, submission.Trigger), NeedsYou(after)).ConfigureAwait(true);
         }
 
@@ -138,7 +138,8 @@ internal sealed partial class RecipeWorkflow
             WaitSatisfied satisfied => satisfied.Outcome?.Value,
             _ => null,
         },
-        before.Frame.Run?.Token.Value);
+        before.Frame.Run?.Token.Value,
+        (trigger as OpenRequested)?.Launch);
 
     private static string TypeOf(WorkflowEventType type) => type switch
     {

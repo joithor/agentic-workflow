@@ -10,7 +10,7 @@ using Temporalio.Exceptions;
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
-/// The answer, command and cancel paths of <see cref="TemporalInstanceRuntime.Send"/> (engine spec rev 8 §5.2; engine
+/// The answer, command, cancel, takeover, handback and open-request paths of <see cref="TemporalInstanceRuntime.Send"/> (engine spec rev 8 §5.2; engine
 /// P4 unit (b)): each trigger as the Update its kind names on the instance's workflow, with the nonce as the update id,
 /// so Temporal returns the first outcome for a repeated nonce. The validator's refusal comes back as the
 /// ApplicationFailure its error type names (SND-WF-003 …), mapped back to its catalogue code.
@@ -32,10 +32,26 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
         AnswerGiven answer => Execute(address, nonce, wf => wf.AnswerAsync(answer), cancellationToken),
         CommandFired fired => Execute(address, nonce, wf => wf.CommandAsync(fired), cancellationToken),
         CancelRequested cancel => Execute(address, nonce, wf => wf.CancelAsync(cancel), cancellationToken),
-        _ => throw new NotSupportedException($"engine P5 unit (b): the '{command.Name}' Update"),   // takeover, handback
+        TakeoverRequested takeover => Execute(address, nonce, wf => wf.TakeoverAsync(takeover), cancellationToken),
+        HandbackRequested handback => Execute(address, nonce, wf => wf.HandbackAsync(handback), cancellationToken),
+        _ => throw new NotSupportedException($"the '{command.Name}' trigger is no command Update"),
     };
 
-    private async ValueTask<Result<CommandResult>> Execute(InstanceAddress address, CommandNonce nonce, Expression<Func<RecipeWorkflow, Task<CommandResult>>> update, CancellationToken cancellationToken)
+    /// <summary>
+    /// The 'open-request' Update (UI spec E-6, spec §5.2) with update id 'wf:{instance}:open:{launch}': no nonce, and
+    /// Temporal returns the first outcome for a repeat.
+    /// </summary>
+    /// <param name="address">The instance.</param>
+    /// <param name="request">The open-request.</param>
+    /// <param name="cancellationToken">Cancels the wait for the outcome.</param>
+    /// <returns>The outcome, or the validator's refusal (SND-WF-003), or SND-WF-001.</returns>
+    public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, OpenRequested request, CancellationToken cancellationToken) =>
+        Execute(address, InstanceIds.OpenRequestUpdate(address, request), wf => wf.OpenRequestAsync(request), cancellationToken);
+
+    private ValueTask<Result<CommandResult>> Execute(InstanceAddress address, CommandNonce nonce, Expression<Func<RecipeWorkflow, Task<CommandResult>>> update, CancellationToken cancellationToken) =>
+        Execute(address, nonce.Value, update, cancellationToken);
+
+    private async ValueTask<Result<CommandResult>> Execute(InstanceAddress address, string updateId, Expression<Func<RecipeWorkflow, Task<CommandResult>>> update, CancellationToken cancellationToken)
     {
         var client = await frontend.Connect(flag: null, cancellationToken).ConfigureAwait(false);
         if (client.IsError)
@@ -47,7 +63,7 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
         {
             return await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value).ExecuteUpdateAsync(
                 update,
-                new WorkflowUpdateOptions(nonce.Value) { Rpc = TemporalUpdates.Rpc(cancellationToken) }).ConfigureAwait(false);
+                new WorkflowUpdateOptions(updateId) { Rpc = TemporalUpdates.Rpc(cancellationToken) }).ConfigureAwait(false);
         }
         catch (WorkflowUpdateFailedException e) when (e.InnerException is ApplicationFailureException { ErrorType: { } code } refusal) // boundary: the validator's refusal is the caller's answer
         {
@@ -59,7 +75,7 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
         }
         catch (Exception e) when (!cancellationToken.IsCancellationRequested && e is WorkflowUpdateRpcTimeoutOrCanceledException or RpcException { Code: RpcException.StatusCode.DeadlineExceeded }) // boundary: no worker took it
         {
-            return TemporalUpdates.NoWorker(address, nonce);
+            return CommandNonce.TryFrom(updateId, out var nonce) ? TemporalUpdates.NoWorker(address, nonce) : TemporalUpdates.NoWorker(address, updateId);
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound) // boundary: no running execution with that id
         {
