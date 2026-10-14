@@ -29,7 +29,7 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
         AnswerGiven answer => Execute(address, nonce, wf => wf.AnswerAsync(answer), cancellationToken),
         CommandFired fired => Execute(address, nonce, wf => wf.CommandAsync(fired), cancellationToken),
         CancelRequested cancel => Execute(address, nonce, wf => wf.CancelAsync(cancel), cancellationToken),
-        _ => throw new NotSupportedException($"engine P5: the '{command.Name}' Update"),
+        _ => throw new NotSupportedException($"engine P5 unit (b): the '{command.Name}' Update"),   // takeover, handback
     };
 
     private async ValueTask<Result<CommandResult>> Execute(InstanceAddress address, CommandNonce nonce, Expression<Func<RecipeWorkflow, Task<CommandResult>>> update, CancellationToken cancellationToken)

@@ -32,6 +32,19 @@ public interface IInstanceRuntime
     /// <returns>The outcome, or the validator's refusal (SND-WF-003, -005, -008) with nothing recorded, or SND-WF-001.</returns>
     public ValueTask<Result<CommandResult>> Send(InstanceAddress address, CommandNonce nonce, Trigger command, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Sends an 'open-request' (UI spec E-6, engine spec §5.2) as the 'open-request' Update, with update id
+    /// 'wf:{instance}:open:{launch}': a trigger, not a command, so it takes no nonce, and the engine sends it itself
+    /// (caller 'service:engine'), past the API chain and so past the approval check it is exempt from. Temporal
+    /// deduplicates the id, so a repeat returns the first outcome; one sent to an instance already taken over is a no-op.
+    /// The launcher waits for this result (E-1) and fails the launch with the refusal's code. Engine P5 unit (b).
+    /// </summary>
+    /// <param name="address">The item's active instance.</param>
+    /// <param name="request">The open-request: actor 'service:engine' and the launch id.</param>
+    /// <param name="cancellationToken">Cancels the wait for the outcome.</param>
+    /// <returns>The instance after it (taken over, or as it was), or the validator's refusal (SND-WF-003), or SND-WF-001.</returns>
+    public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, OpenRequested request, CancellationToken cancellationToken);
+
     /// <summary>Signals a registered event to the instance (the bridge, §5.4); Temporal buffers it until the instance reaches its wait.</summary>
     /// <param name="address">The instance the event routes to.</param>
     /// <param name="delivered">The event as the wait's trigger.</param>

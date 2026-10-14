@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -26,8 +24,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// takeover waits for a delivered event that fits or a command an Update submits. Every trigger is decided at the wait,
 /// one at a time; each change is mirrored into the ledger through 'RecordEvent' (§5.6) and the search attributes are
 /// set. The other Updates of §5.2 have their final signatures and hand their trigger to the loop through 'Submit':
-/// (b) 'answer', 'command', 'cancel' (and P5 'takeover', 'handback'); (c) 'complete' and its validator; (d) the bridge's
-/// 'event' signal (§5.4).
+/// (b) 'answer', 'command', 'cancel'; (c) 'complete' and its validator; (d) the bridge's 'event' signal (§5.4). Engine
+/// P5 adds the timer scopes ('TimerScopes', §5.5) and 'takeover', 'handback' and 'open-request'
+/// ('RecipeWorkflow.Takeover.cs').
 /// </para>
 /// </summary>
 [Workflow("RecipeWorkflow")]
@@ -39,6 +38,7 @@ internal sealed partial class RecipeWorkflow
     private readonly Queue<WaitSatisfied> _delivered = new();
     private readonly HashSet<long> _eventsTaken = [];
     private readonly Dictionary<string, Reported> _reported = new(StringComparer.Ordinal);
+    private readonly TimerScopes _timers = new(Timers);   // engine P5 (§5.5): unit (a) arms the state timers through it, unit (b) pauses and resumes them
     private InstanceStart? _start;
     private InterpretedRecipe? _recipe;
     private Interpreting? _context;
@@ -85,6 +85,11 @@ internal sealed partial class RecipeWorkflow
     {
         ArgumentNullException.ThrowIfNull(start);
         _start = start;
+        if (start.OpenLaunch is { } launch)
+        {
+            throw Unbuilt($"P5 unit (b): the E-19 start taken over for launch {launch}");   // StartOf passes TakenOver and the takeover's causation
+        }
+
         _since = Now;
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
@@ -112,28 +117,6 @@ internal sealed partial class RecipeWorkflow
             ? InstanceViews.Of(instance, recipe, _since, _timeoutAt) with { Version = _mirrored }
             : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null);
     }
-
-    /// <summary>'workflow takeover' (class pause, spec §5.5): suspends the instance and pauses its timer. P5.</summary>
-    /// <param name="takeover">The takeover.</param>
-    /// <returns>The instance after it.</returns>
-    [WorkflowUpdate("takeover")]
-    public Task<CommandResult> TakeoverAsync(TakeoverRequested takeover) => throw Unbuilt("P5: the takeover Update");
-
-    /// <summary>Rejects a takeover where none is allowed (SND-WF-003). P5.</summary>
-    /// <param name="takeover">The takeover.</param>
-    [WorkflowUpdateValidator(nameof(TakeoverAsync))]
-    public void ValidateTakeover(TakeoverRequested takeover) => throw Unbuilt("P5: the takeover validator");
-
-    /// <summary>'workflow handback' (spec §5.5): ends the takeover and re-arms the timer with what remained. P5.</summary>
-    /// <param name="handback">The handback.</param>
-    /// <returns>The instance after it.</returns>
-    [WorkflowUpdate("handback")]
-    public Task<CommandResult> HandbackAsync(HandbackRequested handback) => throw Unbuilt("P5: the handback Update");
-
-    /// <summary>Rejects a handback of an instance that isn't taken over (SND-WF-003). P5.</summary>
-    /// <param name="handback">The handback.</param>
-    [WorkflowUpdateValidator(nameof(HandbackAsync))]
-    public void ValidateHandback(HandbackRequested handback) => throw Unbuilt("P5: the handback validator");
 
     /// <summary>
     /// A registered ledger event the bridge routed here (spec §5.4). Temporal buffers it until the instance reaches the
@@ -204,12 +187,12 @@ internal sealed partial class RecipeWorkflow
 
     /// <summary>The exception a stubbed handler throws: a rejected Update in a validator, recording nothing.</summary>
     private NotSupportedException Unbuilt(string what) =>
-        new($"engine P4 {what} is not built yet ({_start?.WorkflowId().Value ?? "no instance"})");
+        new($"engine {what} is not built yet ({_start?.WorkflowId().Value ?? "no instance"})");
 
     private static StartRequest StartOf(InstanceStart start, LoadedRecipe loaded)
     {
         var address = start.WorkflowId();
-        var id = WorkflowInstanceId.For(new Guid(SHA256.HashData(Encoding.UTF8.GetBytes(address.Value)).AsSpan(0, 16)));
+        var id = InstanceIds.Of(address);
         return new StartRequest(
             TriggerKey.For(id, "start"),
             id,
