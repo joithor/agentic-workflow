@@ -30,13 +30,13 @@ internal sealed class InMemoryEndpointRecords : IEndpointRecordSource
     /// <summary>Removes the record, as a clean stop does.</summary>
     public void Remove() => _bytes = null;
 
-    public ValueTask<byte[]?> Read(CancellationToken cancellationToken)
+    public ValueTask<EndpointRecordRead> Read(CancellationToken cancellationToken)
     {
         if (Interlocked.Exchange(ref _fail, value: null) is { } error)
         {
             throw error;
         }
 
-        return ValueTask.FromResult<byte[]?>(_bytes is null ? null : [.. _bytes]);
+        return ValueTask.FromResult(_bytes is null ? EndpointRecordRead.None : EndpointRecordRead.Found([.. _bytes]));
     }
 }

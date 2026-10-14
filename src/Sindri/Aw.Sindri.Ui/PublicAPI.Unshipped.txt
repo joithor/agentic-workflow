@@ -1,7 +1,7 @@
 #nullable enable
 Aw.Sindri.Ui.Platform.IEndpointRecordSource
 Aw.Sindri.Ui.Platform.IEndpointRecordSource.Location.get -> string!
-Aw.Sindri.Ui.Platform.IEndpointRecordSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<byte[]?>
+Aw.Sindri.Ui.Platform.IEndpointRecordSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Ui.Platform.EndpointRecordRead!>
 Aw.Sindri.Ui.Platform.IHumanTokenSource
 Aw.Sindri.Ui.Platform.IHumanTokenSource.Location.get -> string!
 Aw.Sindri.Ui.Platform.IHumanTokenSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
@@ -88,6 +88,12 @@ Aw.Sindri.Ui.Platform.EndpointRecordFailure
 Aw.Sindri.Ui.Platform.EndpointRecordFailure.NoPermission = 1 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
 Aw.Sindri.Ui.Platform.EndpointRecordFailure.NotAFile = 2 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
 Aw.Sindri.Ui.Platform.EndpointRecordFailure.Unreadable = 0 -> Aw.Sindri.Ui.Platform.EndpointRecordFailure
+Aw.Sindri.Ui.Platform.EndpointRecordRead
+Aw.Sindri.Ui.Platform.EndpointRecordRead.Bytes.get -> byte[]?
+Aw.Sindri.Ui.Platform.EndpointRecordRead.Failure.get -> Aw.Sindri.Ui.Platform.EndpointRecordFailure?
+static Aw.Sindri.Ui.Platform.EndpointRecordRead.Found(byte[]! bytes) -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
+static Aw.Sindri.Ui.Platform.EndpointRecordRead.None.get -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
+static Aw.Sindri.Ui.Platform.EndpointRecordRead.Unreadable(Aw.Sindri.Ui.Platform.EndpointRecordFailure why) -> Aw.Sindri.Ui.Platform.EndpointRecordRead!
 Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException
 Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException() -> void
 Aw.Sindri.Ui.Platform.EndpointRecordUnreadableException.EndpointRecordUnreadableException(Aw.Sindri.Ui.Platform.EndpointRecordFailure reason, System.Exception? innerException) -> void

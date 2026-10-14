@@ -91,7 +91,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
 
     private async Task<Uri?> Connect(CancellationToken cancellationToken)
     {
-        var bytes = await records.Read(cancellationToken).ConfigureAwait(true);
+        var bytes = (await records.Read(cancellationToken).ConfigureAwait(true)).Bytes;
         if (bytes is null)
         {
             return health.NotRunning(Labels.NoRecord, StatusText.ShortPath(records.Location));
@@ -198,7 +198,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
             while (true)
             {
                 await Task.Delay(HealthViewModel.RetryEvery, clock, stop.Token).ConfigureAwait(true);
-                var now = await records.Read(stop.Token).ConfigureAwait(true);
+                var now = (await records.Read(stop.Token).ConfigureAwait(true)).Bytes;
                 if (now is null || !now.AsSpan().SequenceEqual(_record))
                 {
                     await stop.CancelAsync().ConfigureAwait(true);

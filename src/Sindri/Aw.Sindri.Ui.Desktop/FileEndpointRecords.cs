@@ -12,15 +12,15 @@ internal sealed class FileEndpointRecords(string path) : IEndpointRecordSource
 {
     public string Location => path;
 
-    public async ValueTask<byte[]?> Read(CancellationToken cancellationToken)
+    public async ValueTask<EndpointRecordRead> Read(CancellationToken cancellationToken)
     {
         try
         {
-            return await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false);
+            return EndpointRecordRead.Found(await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false));
         }
         catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException)
         {
-            return null;
+            return EndpointRecordRead.None;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

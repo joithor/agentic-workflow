@@ -21,14 +21,14 @@ public abstract class EndpointRecordSourceContract
     protected abstract IEndpointRecordSource? Unreadable(EndpointRecordFailure why);
 
     [Fact]
-    public async Task No_record_reads_as_null() => Expect.True(await With(null).Read(Token) is null);
+    public async Task No_record_reads_as_null() => Expect.True((await With(null).Read(Token)) is { Bytes: null, Failure: null });
 
     [Fact]
     public async Task A_record_reads_back_byte_for_byte()
     {
         byte[] record = [.. """{"url":"http://127.0.0.1:7410/","pid":1,"epoch":2}"""u8];
 
-        Expect.Sequence(record, await With(record).Read(Token));
+        Expect.Sequence(record, (await With(record).Read(Token)).Bytes);
     }
 
     // Review run 4 (architecture-strategist-0): the port says why in its own terms, so the app never reads the platform's
@@ -38,24 +38,17 @@ public abstract class EndpointRecordSourceContract
     [InlineData(EndpointRecordFailure.NoPermission)]
     [InlineData(EndpointRecordFailure.NotAFile)]
     [InlineData(EndpointRecordFailure.Unreadable)]
-    public async Task A_record_the_platform_cant_read_fails_with_why(EndpointRecordFailure why)
+    public async Task A_record_the_platform_cant_read_reads_as_a_result_with_why(EndpointRecordFailure why)
     {
         if (Unreadable(why) is not { } source)
         {
             return; // this binding can't make the case here (Unreadable says when)
         }
 
-        EndpointRecordFailure? seen = null;
-        try
-        {
-            _ = await source.Read(Token);
-        }
-        catch (EndpointRecordUnreadableException e)
-        {
-            seen = e.Reason;
-        }
+        var read = await source.Read(Token);
 
-        Expect.Equal(why, seen);
+        Expect.True(read.Bytes is null);
+        Expect.Equal(why, read.Failure);
     }
 
     [Fact]
