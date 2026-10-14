@@ -33,6 +33,7 @@ public sealed class AdversarialInputTests
     [InlineData(2 * 128 * 1024, 2)]
     [InlineData((2 * 128 * 1024) + 1, 4)]
     [InlineData(4_000_000, 32)]
+    [InlineData(int.MaxValue, 16384)]
     public void The_timeout_doubles_with_each_doubling_of_the_input(int length, int factor)
     {
         var timeout = Redactor.MatchTimeoutFor(TimeSpan.FromMilliseconds(100), length);
@@ -64,16 +65,13 @@ public sealed class AdversarialInputTests
     }
 
     [Fact]
-    public void A_text_past_the_first_size_tier_is_scrubbed_not_blocked()
+    public void A_scrub_uses_the_timeout_of_its_size_tier()
     {
-        // A tight base timeout still scrubs a text over one window, because the timeout scales with its size.
-        var redactor = new Redactor(BuiltinRules.All, TimeSpan.FromSeconds(10));
-        var chunk = Shapes.Join("Lorem ipsum dolor sit amet, see https://example.com/a?b=c gh", "p_", Shapes.Body, "Ab3dE6gH9 \n");
-        var input = string.Concat(Enumerable.Repeat(chunk, (130 * 1024 / chunk.Length) + 1));
+        var redactor = new Redactor(BuiltinRules.All, TimeSpan.FromMilliseconds(100));
 
-        var result = redactor.Scrub(input);
-
-        Assert.Equal(ScrubOutcome.Redacted, result.Outcome);
+        Assert.Equal(TimeSpan.FromMilliseconds(100), redactor.TimeoutFor(10));
+        Assert.Equal(TimeSpan.FromMilliseconds(800), redactor.TimeoutFor(1_000_000));
+        Assert.Equal(Redactor.MatchTimeoutFor(TimeSpan.FromMilliseconds(100), 4_000_000), redactor.TimeoutFor(4_000_000));
     }
 
     [Fact]

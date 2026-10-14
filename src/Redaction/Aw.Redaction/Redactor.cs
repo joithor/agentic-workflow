@@ -157,6 +157,9 @@ public sealed class Redactor : IRedactor
         return raw;
     }
 
+    /// <summary>The match timeout the rules a text of <paramref name="length"/> characters is scanned with were compiled with.</summary>
+    internal TimeSpan TimeoutFor(int length) => RulesFor(length).MatchTimeout;
+
     private CompiledRules RulesFor(int length)
     {
         var tier = TierFor(length);

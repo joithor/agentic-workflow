@@ -21,7 +21,7 @@ public sealed class HeavyScaleTests
     }
 
     [Fact]
-    public void A_text_full_of_placeholders_and_secrets_is_scrubbed_not_blocked()
+    public void Sixty_thousand_placeholders_and_secrets_are_scrubbed_not_blocked()
     {
         var key = Shapes.Join("gh", "p_", Shapes.Body, "Ab3dE6gH9");
         var input = string.Concat(Enumerable.Repeat("[REDACTED:github-token] " + key + " ", 60_000));
