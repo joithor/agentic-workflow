@@ -181,7 +181,7 @@ public sealed class OnyxContextTests : IDisposable
             + "    linear: { teams: [SPL] }\n";
         var host = await GoldenHost.Start(temporary: true, ct, yaml, environment ?? new Dictionary<string, string>(StringComparer.Ordinal) { [KeyVariable] = onyx.Token });
         var hash = (await host.LiveHash(ct)).Value;
-        var approved = await host.Http.Ask(Post("/sindri/profile/approve", $"{{\"hash\":\"{hash}\",\"confirmed\":true}}", Human(host.Token.Value)));
+        var approved = await host.Http.Ask(Post("/sindri/profile/approve", await ApiScenarios.Confirmed(host, hash), Human(host.Token.Value)));
         Assert.Equal(HttpStatusCode.OK, approved.Status);
         await using var scope = host.App.Services.CreateAsyncScope();
         var refresh = scope.ServiceProvider.GetServices<IScheduledService>().Single(s => s.Identity().Value == "context-docs-refresh");
