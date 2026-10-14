@@ -702,3 +702,25 @@ Unit (a), as built:
 - **Blocks by id:** `AddEffect` also registers the block keyed by its id; `RunEffect` resolves it in its own scope
   through the `EffectDispatch` registration.
 - The transition's ledger payload lists its effect ids (`effects`, left out when there are none).
+
+Unit (c), as built:
+
+- **Engine notices** (`EngineNotices.For`): a new park or escalation interrupts; a `workflow.notified` change of a
+  taken-over instance is takeoverIdle's and interrupts ("hand back {item}?"; P5 writes that row, and `Apply` passes
+  the change's event type); a newly open desk run interrupts if it is the instance's first desk task and is `info`
+  after that. A takeover, a resume into the same run, an ended instance and a `retry` re-emission send none. Each
+  notice is `effect.notify.desk` with origin `engine`, identity `{instance id}:{entry}:n{version}`, and its class and
+  text in its `with` (`class`, `text`).
+- **`effect.notify.desk`** sends a `DeskNotice` through `IDeskNotices`. A recipe's notice is `info`, its text the
+  entered state's rendered `next` (the interpreter passes it as `EffectRun.Text`) with the instance address beside
+  it, and it replies `notify.delivered` with `delivered`; an engine notice replies nothing.
+- **`notifications.jsonl`** (`FileDeskNotices`): one JSON line per identity (`identity`, `instance`, `item`, `class`,
+  `text`, `at`), so a repeat writes nothing. An `interrupt` is then shown as a macOS notification through `osascript`
+  (`IOsNotifier`, internal to Infrastructure; title `Sindri: <address>`); an `info` one isn't, and is collected into
+  `$AW_SINDRI_HOME/digest/<yyyy-MM-dd>.jsonl` (UTC). The spec defines no digest delivery. Every test composition
+  (`WorkflowsHarness.Sindri`, `Served`) replaces the notifier with `FakeOsNotifier`.
+- **`outbox list [--pending | --dispatched] [--json]`** and **`GET /sindri/outbox?state=`** (`pending`, `dispatched`,
+  `refused`, `cancelled`; another is SND-CLI-003) read the ledger's `outbox.*` rows through `ILedgerReader`, fold them
+  by command (latest row wins, oldest emission first), and print `seq  time  state  kind  origin  instance  identity`,
+  a refusal as `refused (<code>)`, or `no commands`. `outbox.cancelled` (unit (b)'s state) is its own `cancelled`
+  line, neither pending nor dispatched.
