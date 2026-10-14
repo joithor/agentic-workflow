@@ -1,0 +1,47 @@
+using Aw.Kernel;
+using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Items;
+
+namespace Aw.Sindri.Host.Endpoints;
+
+/// <summary>Binds the item routes' raw values (P1 binding rule): an '{itemId}' segment and the '?state=' and '?repo=' filters, each a 400 SND-CLI-003 when malformed.</summary>
+internal static class ItemRoute
+{
+    /// <summary>The id or alias in an '{itemId}' segment.</summary>
+    /// <param name="itemId">The segment.</param>
+    /// <returns>The reference, or SND-CLI-003.</returns>
+    internal static Result<ItemRef> Item(string itemId) =>
+        ItemRef.TryParse(itemId, out var item) ? item : SindriErrors.InvalidInput.With("'" + itemId + "' isn't an item id (ITM-…) or a tracker key (ENG-142)");
+
+    /// <summary>The kebab-case '?state=' filter, or null when absent.</summary>
+    /// <param name="state">The query value.</param>
+    /// <returns>The state, or SND-CLI-003.</returns>
+    internal static Result<ItemState?> State(string? state) => state switch
+    {
+        null => (ItemState?)null,
+        "new" => ItemState.New,
+        "queued" => ItemState.Queued,
+        "running" => ItemState.Running,
+        "needs-decision" => ItemState.NeedsDecision,
+        "needs-answer" => ItemState.NeedsAnswer,
+        "parked" => ItemState.Parked,
+        "taken-over" => ItemState.TakenOver,
+        "done" => ItemState.Done,
+        "cancelled" => ItemState.Cancelled,
+        _ => SindriErrors.InvalidInput.With("'" + state + "' isn't an item state"),
+    };
+
+    /// <summary>The '?repo=' filter, or null when absent.</summary>
+    /// <param name="repo">The query value.</param>
+    /// <returns>The repo, or SND-CLI-003.</returns>
+    internal static Result<RepoName?> Repo(string? repo)
+    {
+        if (repo is null)
+        {
+            return (RepoName?)null;
+        }
+
+        return RepoName.TryFrom(repo, out var name) ? name : SindriErrors.InvalidInput.With("'" + repo + "' isn't a repo name");
+    }
+}

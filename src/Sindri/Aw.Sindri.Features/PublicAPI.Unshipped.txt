@@ -579,3 +579,214 @@ Aw.Sindri.Features.StartProcess.StartProcessResponse.Deconstruct(out Aw.Sindri.C
 Aw.Sindri.Features.StartProcess.StartProcessResponse.StartProcessResponse(Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Core.Ids.ProfileHash? Profile, Aw.Sindri.Core.Control.TemporalEndpoint! Temporal) -> void
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.get -> Aw.Sindri.Core.Control.TemporalEndpoint!
 Aw.Sindri.Features.StartProcess.StartProcessResponse.Temporal.init -> void
+Aw.Sindri.Features.CloseItem.CloseItemRequest
+Aw.Sindri.Features.CloseItem.CloseItemRequest.<Clone>$() -> Aw.Sindri.Features.CloseItem.CloseItemRequest!
+Aw.Sindri.Features.CloseItem.CloseItemRequest.CarriesProtectedFields.get -> bool
+Aw.Sindri.Features.CloseItem.CloseItemRequest.CloseItemRequest(Aw.Sindri.Core.Ids.ItemRef Item, Aw.Sindri.Core.Items.CloseReason Reason, long ItemVersion) -> void
+Aw.Sindri.Features.CloseItem.CloseItemRequest.Deconstruct(out Aw.Sindri.Core.Ids.ItemRef Item, out Aw.Sindri.Core.Items.CloseReason Reason, out long ItemVersion) -> void
+Aw.Sindri.Features.CloseItem.CloseItemRequest.Equals(Aw.Sindri.Features.CloseItem.CloseItemRequest? other) -> bool
+Aw.Sindri.Features.CloseItem.CloseItemRequest.Item.get -> Aw.Sindri.Core.Ids.ItemRef
+Aw.Sindri.Features.CloseItem.CloseItemRequest.Item.init -> void
+Aw.Sindri.Features.CloseItem.CloseItemRequest.ItemVersion.get -> long
+Aw.Sindri.Features.CloseItem.CloseItemRequest.ItemVersion.init -> void
+Aw.Sindri.Features.CloseItem.CloseItemRequest.Reason.get -> Aw.Sindri.Core.Items.CloseReason
+Aw.Sindri.Features.CloseItem.CloseItemRequest.Reason.init -> void
+Aw.Sindri.Features.CloseItem.CloseItemRequest.Variant.get -> string!
+Aw.Sindri.Features.CreateItem.CreateItemRequest
+Aw.Sindri.Features.CreateItem.CreateItemRequest.<Clone>$() -> Aw.Sindri.Features.CreateItem.CreateItemRequest!
+Aw.Sindri.Features.CreateItem.CreateItemRequest.Body.get -> string?
+Aw.Sindri.Features.CreateItem.CreateItemRequest.Body.init -> void
+Aw.Sindri.Features.CreateItem.CreateItemRequest.CreateItemRequest(string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, string? Body, Aw.Sindri.Core.Ids.RecordKey? Link) -> void
+Aw.Sindri.Features.CreateItem.CreateItemRequest.Deconstruct(out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out string? Body, out Aw.Sindri.Core.Ids.RecordKey? Link) -> void
+Aw.Sindri.Features.CreateItem.CreateItemRequest.Equals(Aw.Sindri.Features.CreateItem.CreateItemRequest? other) -> bool
+Aw.Sindri.Features.CreateItem.CreateItemRequest.Link.get -> Aw.Sindri.Core.Ids.RecordKey?
+Aw.Sindri.Features.CreateItem.CreateItemRequest.Link.init -> void
+Aw.Sindri.Features.CreateItem.CreateItemRequest.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Features.CreateItem.CreateItemRequest.Repo.init -> void
+Aw.Sindri.Features.CreateItem.CreateItemRequest.Title.get -> string!
+Aw.Sindri.Features.CreateItem.CreateItemRequest.Title.init -> void
+Aw.Sindri.Features.CreateItem.ItemCreatedResponse
+Aw.Sindri.Features.CreateItem.ItemCreatedResponse.<Clone>$() -> Aw.Sindri.Features.CreateItem.ItemCreatedResponse!
+Aw.Sindri.Features.CreateItem.ItemCreatedResponse.Accepted.get -> Aw.Sindri.Core.Commands.CommandAccepted!
+Aw.Sindri.Features.CreateItem.ItemCreatedResponse.Accepted.init -> void
+Aw.Sindri.Features.CreateItem.ItemCreatedResponse.Deconstruct(out Aw.Sindri.Core.Commands.CommandAccepted! Accepted, out Aw.Sindri.Core.Ids.ItemId ItemId) -> void
+Aw.Sindri.Features.CreateItem.ItemCreatedResponse.Equals(Aw.Sindri.Features.CreateItem.ItemCreatedResponse? other) -> bool
+Aw.Sindri.Features.CreateItem.ItemCreatedResponse.ItemCreatedResponse(Aw.Sindri.Core.Commands.CommandAccepted! Accepted, Aw.Sindri.Core.Ids.ItemId ItemId) -> void
+Aw.Sindri.Features.CreateItem.ItemCreatedResponse.ItemId.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Features.CreateItem.ItemCreatedResponse.ItemId.init -> void
+Aw.Sindri.Features.GetItem.GetItemRequest
+Aw.Sindri.Features.GetItem.GetItemRequest.<Clone>$() -> Aw.Sindri.Features.GetItem.GetItemRequest!
+Aw.Sindri.Features.GetItem.GetItemRequest.Deconstruct(out Aw.Sindri.Core.Ids.ItemRef Item) -> void
+Aw.Sindri.Features.GetItem.GetItemRequest.Equals(Aw.Sindri.Features.GetItem.GetItemRequest? other) -> bool
+Aw.Sindri.Features.GetItem.GetItemRequest.GetItemRequest(Aw.Sindri.Core.Ids.ItemRef Item) -> void
+Aw.Sindri.Features.GetItem.GetItemRequest.Item.get -> Aw.Sindri.Core.Ids.ItemRef
+Aw.Sindri.Features.GetItem.GetItemRequest.Item.init -> void
+Aw.Sindri.Features.GetItem.ItemView
+Aw.Sindri.Features.GetItem.ItemView.<Clone>$() -> Aw.Sindri.Features.GetItem.ItemView!
+Aw.Sindri.Features.GetItem.ItemView.Actions.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>!
+Aw.Sindri.Features.GetItem.ItemView.Actions.init -> void
+Aw.Sindri.Features.GetItem.ItemView.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Features.GetItem.ItemView.AsOf.init -> void
+Aw.Sindri.Features.GetItem.ItemView.Body.get -> string?
+Aw.Sindri.Features.GetItem.ItemView.Body.init -> void
+Aw.Sindri.Features.GetItem.ItemView.CreatedAt.get -> System.DateTimeOffset
+Aw.Sindri.Features.GetItem.ItemView.CreatedAt.init -> void
+Aw.Sindri.Features.GetItem.ItemView.CreatedBy.get -> string!
+Aw.Sindri.Features.GetItem.ItemView.CreatedBy.init -> void
+Aw.Sindri.Features.GetItem.ItemView.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Id, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Items.ItemState State, out string? Step, out System.DateTimeOffset Since, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string? Owner, out long Version, out string! CreatedBy, out string? WaitingOn, out string? Instance, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset UpdatedAt, out string? Body, out Aw.Sindri.Core.Ids.RecordKey? Link, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetItem.ItemView.Equals(Aw.Sindri.Features.GetItem.ItemView? other) -> bool
+Aw.Sindri.Features.GetItem.ItemView.Id.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Features.GetItem.ItemView.Id.init -> void
+Aw.Sindri.Features.GetItem.ItemView.Instance.get -> string?
+Aw.Sindri.Features.GetItem.ItemView.Instance.init -> void
+Aw.Sindri.Features.GetItem.ItemView.ItemView(Aw.Sindri.Core.Ids.ItemId Id, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Items.ItemState State, string? Step, System.DateTimeOffset Since, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string? Owner, long Version, string! CreatedBy, string? WaitingOn, string? Instance, System.DateTimeOffset CreatedAt, System.DateTimeOffset UpdatedAt, string? Body, Aw.Sindri.Core.Ids.RecordKey? Link, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetItem.ItemView.Link.get -> Aw.Sindri.Core.Ids.RecordKey?
+Aw.Sindri.Features.GetItem.ItemView.Link.init -> void
+Aw.Sindri.Features.GetItem.ItemView.Owner.get -> string?
+Aw.Sindri.Features.GetItem.ItemView.Owner.init -> void
+Aw.Sindri.Features.GetItem.ItemView.PrimaryAction.get -> Aw.Sindri.Core.Ids.ActionId?
+Aw.Sindri.Features.GetItem.ItemView.PrimaryAction.init -> void
+Aw.Sindri.Features.GetItem.ItemView.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Features.GetItem.ItemView.Repo.init -> void
+Aw.Sindri.Features.GetItem.ItemView.Since.get -> System.DateTimeOffset
+Aw.Sindri.Features.GetItem.ItemView.Since.init -> void
+Aw.Sindri.Features.GetItem.ItemView.State.get -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Features.GetItem.ItemView.State.init -> void
+Aw.Sindri.Features.GetItem.ItemView.Step.get -> string?
+Aw.Sindri.Features.GetItem.ItemView.Step.init -> void
+Aw.Sindri.Features.GetItem.ItemView.Title.get -> string!
+Aw.Sindri.Features.GetItem.ItemView.Title.init -> void
+Aw.Sindri.Features.GetItem.ItemView.UpdatedAt.get -> System.DateTimeOffset
+Aw.Sindri.Features.GetItem.ItemView.UpdatedAt.init -> void
+Aw.Sindri.Features.GetItem.ItemView.Version.get -> long
+Aw.Sindri.Features.GetItem.ItemView.Version.init -> void
+Aw.Sindri.Features.GetItem.ItemView.WaitingOn.get -> string?
+Aw.Sindri.Features.GetItem.ItemView.WaitingOn.init -> void
+Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest
+Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.<Clone>$() -> Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest!
+Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.After.get -> long?
+Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.After.init -> void
+Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.Deconstruct(out Aw.Sindri.Core.Ids.ItemRef Item, out long? After) -> void
+Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.Equals(Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest? other) -> bool
+Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.GetItemTimelineRequest(Aw.Sindri.Core.Ids.ItemRef Item, long? After) -> void
+Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.Item.get -> Aw.Sindri.Core.Ids.ItemRef
+Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.Item.init -> void
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.<Clone>$() -> Aw.Sindri.Features.GetItemTimeline.TimelineResponse!
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.AsOf.init -> void
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.TimelineRow!>! Entries, out long? Next, out string? Empty, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.Empty.get -> string?
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.Empty.init -> void
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.Entries.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.TimelineRow!>!
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.Entries.init -> void
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.Equals(Aw.Sindri.Features.GetItemTimeline.TimelineResponse? other) -> bool
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.Next.get -> long?
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.Next.init -> void
+Aw.Sindri.Features.GetItemTimeline.TimelineResponse.TimelineResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.TimelineRow!>! Entries, long? Next, string? Empty, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetQueue.GetQueueRequest
+Aw.Sindri.Features.GetQueue.GetQueueRequest.<Clone>$() -> Aw.Sindri.Features.GetQueue.GetQueueRequest!
+Aw.Sindri.Features.GetQueue.GetQueueRequest.Equals(Aw.Sindri.Features.GetQueue.GetQueueRequest? other) -> bool
+Aw.Sindri.Features.GetQueue.GetQueueRequest.GetQueueRequest() -> void
+Aw.Sindri.Features.GetQueue.QueueGroupView
+Aw.Sindri.Features.GetQueue.QueueGroupView.<Clone>$() -> Aw.Sindri.Features.GetQueue.QueueGroupView!
+Aw.Sindri.Features.GetQueue.QueueGroupView.Deconstruct(out Aw.Sindri.Core.Items.QueueGroup Group, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.ItemSummary!>! Items, out string? Empty) -> void
+Aw.Sindri.Features.GetQueue.QueueGroupView.Empty.get -> string?
+Aw.Sindri.Features.GetQueue.QueueGroupView.Empty.init -> void
+Aw.Sindri.Features.GetQueue.QueueGroupView.Equals(Aw.Sindri.Features.GetQueue.QueueGroupView? other) -> bool
+Aw.Sindri.Features.GetQueue.QueueGroupView.Group.get -> Aw.Sindri.Core.Items.QueueGroup
+Aw.Sindri.Features.GetQueue.QueueGroupView.Group.init -> void
+Aw.Sindri.Features.GetQueue.QueueGroupView.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.ItemSummary!>!
+Aw.Sindri.Features.GetQueue.QueueGroupView.Items.init -> void
+Aw.Sindri.Features.GetQueue.QueueGroupView.QueueGroupView(Aw.Sindri.Core.Items.QueueGroup Group, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.ItemSummary!>! Items, string? Empty) -> void
+Aw.Sindri.Features.GetQueue.QueueResponse
+Aw.Sindri.Features.GetQueue.QueueResponse.<Clone>$() -> Aw.Sindri.Features.GetQueue.QueueResponse!
+Aw.Sindri.Features.GetQueue.QueueResponse.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Features.GetQueue.QueueResponse.AsOf.init -> void
+Aw.Sindri.Features.GetQueue.QueueResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetQueue.QueueGroupView!>! Groups, out string? Empty, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetQueue.QueueResponse.Empty.get -> string?
+Aw.Sindri.Features.GetQueue.QueueResponse.Empty.init -> void
+Aw.Sindri.Features.GetQueue.QueueResponse.Equals(Aw.Sindri.Features.GetQueue.QueueResponse? other) -> bool
+Aw.Sindri.Features.GetQueue.QueueResponse.Groups.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetQueue.QueueGroupView!>!
+Aw.Sindri.Features.GetQueue.QueueResponse.Groups.init -> void
+Aw.Sindri.Features.GetQueue.QueueResponse.QueueResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetQueue.QueueGroupView!>! Groups, string? Empty, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.ListItems.ListItemsRequest
+Aw.Sindri.Features.ListItems.ListItemsRequest.<Clone>$() -> Aw.Sindri.Features.ListItems.ListItemsRequest!
+Aw.Sindri.Features.ListItems.ListItemsRequest.Deconstruct(out Aw.Sindri.Core.Items.ItemState? State, out Aw.Sindri.Core.Ids.RepoName? Repo) -> void
+Aw.Sindri.Features.ListItems.ListItemsRequest.Equals(Aw.Sindri.Features.ListItems.ListItemsRequest? other) -> bool
+Aw.Sindri.Features.ListItems.ListItemsRequest.ListItemsRequest(Aw.Sindri.Core.Items.ItemState? State, Aw.Sindri.Core.Ids.RepoName? Repo) -> void
+Aw.Sindri.Features.ListItems.ListItemsRequest.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Features.ListItems.ListItemsRequest.Repo.init -> void
+Aw.Sindri.Features.ListItems.ListItemsRequest.State.get -> Aw.Sindri.Core.Items.ItemState?
+Aw.Sindri.Features.ListItems.ListItemsRequest.State.init -> void
+Aw.Sindri.Features.ListItems.ListItemsResponse
+Aw.Sindri.Features.ListItems.ListItemsResponse.<Clone>$() -> Aw.Sindri.Features.ListItems.ListItemsResponse!
+Aw.Sindri.Features.ListItems.ListItemsResponse.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Features.ListItems.ListItemsResponse.AsOf.init -> void
+Aw.Sindri.Features.ListItems.ListItemsResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.ItemSummary!>! Items, out string? Empty, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.ListItems.ListItemsResponse.Empty.get -> string?
+Aw.Sindri.Features.ListItems.ListItemsResponse.Empty.init -> void
+Aw.Sindri.Features.ListItems.ListItemsResponse.Equals(Aw.Sindri.Features.ListItems.ListItemsResponse? other) -> bool
+Aw.Sindri.Features.ListItems.ListItemsResponse.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.ItemSummary!>!
+Aw.Sindri.Features.ListItems.ListItemsResponse.Items.init -> void
+Aw.Sindri.Features.ListItems.ListItemsResponse.ListItemsResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.ItemSummary!>! Items, string? Empty, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+override Aw.Sindri.Features.CloseItem.CloseItemRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CloseItem.CloseItemRequest.GetHashCode() -> int
+override Aw.Sindri.Features.CloseItem.CloseItemRequest.ToString() -> string!
+override Aw.Sindri.Features.CreateItem.CreateItemRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CreateItem.CreateItemRequest.GetHashCode() -> int
+override Aw.Sindri.Features.CreateItem.CreateItemRequest.ToString() -> string!
+override Aw.Sindri.Features.CreateItem.ItemCreatedResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CreateItem.ItemCreatedResponse.GetHashCode() -> int
+override Aw.Sindri.Features.CreateItem.ItemCreatedResponse.ToString() -> string!
+override Aw.Sindri.Features.GetItem.GetItemRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetItem.GetItemRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetItem.GetItemRequest.ToString() -> string!
+override Aw.Sindri.Features.GetItem.ItemView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetItem.ItemView.GetHashCode() -> int
+override Aw.Sindri.Features.GetItem.ItemView.ToString() -> string!
+override Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.ToString() -> string!
+override Aw.Sindri.Features.GetItemTimeline.TimelineResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetItemTimeline.TimelineResponse.GetHashCode() -> int
+override Aw.Sindri.Features.GetItemTimeline.TimelineResponse.ToString() -> string!
+override Aw.Sindri.Features.GetQueue.GetQueueRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetQueue.GetQueueRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetQueue.GetQueueRequest.ToString() -> string!
+override Aw.Sindri.Features.GetQueue.QueueGroupView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetQueue.QueueGroupView.GetHashCode() -> int
+override Aw.Sindri.Features.GetQueue.QueueGroupView.ToString() -> string!
+override Aw.Sindri.Features.GetQueue.QueueResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetQueue.QueueResponse.GetHashCode() -> int
+override Aw.Sindri.Features.GetQueue.QueueResponse.ToString() -> string!
+override Aw.Sindri.Features.ListItems.ListItemsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListItems.ListItemsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ListItems.ListItemsRequest.ToString() -> string!
+override Aw.Sindri.Features.ListItems.ListItemsResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListItems.ListItemsResponse.GetHashCode() -> int
+override Aw.Sindri.Features.ListItems.ListItemsResponse.ToString() -> string!
+static Aw.Sindri.Features.CloseItem.CloseItemRequest.operator !=(Aw.Sindri.Features.CloseItem.CloseItemRequest? left, Aw.Sindri.Features.CloseItem.CloseItemRequest? right) -> bool
+static Aw.Sindri.Features.CloseItem.CloseItemRequest.operator ==(Aw.Sindri.Features.CloseItem.CloseItemRequest? left, Aw.Sindri.Features.CloseItem.CloseItemRequest? right) -> bool
+static Aw.Sindri.Features.CreateItem.CreateItemRequest.operator !=(Aw.Sindri.Features.CreateItem.CreateItemRequest? left, Aw.Sindri.Features.CreateItem.CreateItemRequest? right) -> bool
+static Aw.Sindri.Features.CreateItem.CreateItemRequest.operator ==(Aw.Sindri.Features.CreateItem.CreateItemRequest? left, Aw.Sindri.Features.CreateItem.CreateItemRequest? right) -> bool
+static Aw.Sindri.Features.CreateItem.ItemCreatedResponse.operator !=(Aw.Sindri.Features.CreateItem.ItemCreatedResponse? left, Aw.Sindri.Features.CreateItem.ItemCreatedResponse? right) -> bool
+static Aw.Sindri.Features.CreateItem.ItemCreatedResponse.operator ==(Aw.Sindri.Features.CreateItem.ItemCreatedResponse? left, Aw.Sindri.Features.CreateItem.ItemCreatedResponse? right) -> bool
+static Aw.Sindri.Features.GetItem.GetItemRequest.operator !=(Aw.Sindri.Features.GetItem.GetItemRequest? left, Aw.Sindri.Features.GetItem.GetItemRequest? right) -> bool
+static Aw.Sindri.Features.GetItem.GetItemRequest.operator ==(Aw.Sindri.Features.GetItem.GetItemRequest? left, Aw.Sindri.Features.GetItem.GetItemRequest? right) -> bool
+static Aw.Sindri.Features.GetItem.ItemView.operator !=(Aw.Sindri.Features.GetItem.ItemView? left, Aw.Sindri.Features.GetItem.ItemView? right) -> bool
+static Aw.Sindri.Features.GetItem.ItemView.operator ==(Aw.Sindri.Features.GetItem.ItemView? left, Aw.Sindri.Features.GetItem.ItemView? right) -> bool
+static Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.operator !=(Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest? left, Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest? right) -> bool
+static Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest.operator ==(Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest? left, Aw.Sindri.Features.GetItemTimeline.GetItemTimelineRequest? right) -> bool
+static Aw.Sindri.Features.GetItemTimeline.TimelineResponse.operator !=(Aw.Sindri.Features.GetItemTimeline.TimelineResponse? left, Aw.Sindri.Features.GetItemTimeline.TimelineResponse? right) -> bool
+static Aw.Sindri.Features.GetItemTimeline.TimelineResponse.operator ==(Aw.Sindri.Features.GetItemTimeline.TimelineResponse? left, Aw.Sindri.Features.GetItemTimeline.TimelineResponse? right) -> bool
+static Aw.Sindri.Features.GetQueue.GetQueueRequest.operator !=(Aw.Sindri.Features.GetQueue.GetQueueRequest? left, Aw.Sindri.Features.GetQueue.GetQueueRequest? right) -> bool
+static Aw.Sindri.Features.GetQueue.GetQueueRequest.operator ==(Aw.Sindri.Features.GetQueue.GetQueueRequest? left, Aw.Sindri.Features.GetQueue.GetQueueRequest? right) -> bool
+static Aw.Sindri.Features.GetQueue.QueueGroupView.operator !=(Aw.Sindri.Features.GetQueue.QueueGroupView? left, Aw.Sindri.Features.GetQueue.QueueGroupView? right) -> bool
+static Aw.Sindri.Features.GetQueue.QueueGroupView.operator ==(Aw.Sindri.Features.GetQueue.QueueGroupView? left, Aw.Sindri.Features.GetQueue.QueueGroupView? right) -> bool
+static Aw.Sindri.Features.GetQueue.QueueResponse.operator !=(Aw.Sindri.Features.GetQueue.QueueResponse? left, Aw.Sindri.Features.GetQueue.QueueResponse? right) -> bool
+static Aw.Sindri.Features.GetQueue.QueueResponse.operator ==(Aw.Sindri.Features.GetQueue.QueueResponse? left, Aw.Sindri.Features.GetQueue.QueueResponse? right) -> bool
+static Aw.Sindri.Features.ListItems.ListItemsRequest.operator !=(Aw.Sindri.Features.ListItems.ListItemsRequest? left, Aw.Sindri.Features.ListItems.ListItemsRequest? right) -> bool
+static Aw.Sindri.Features.ListItems.ListItemsRequest.operator ==(Aw.Sindri.Features.ListItems.ListItemsRequest? left, Aw.Sindri.Features.ListItems.ListItemsRequest? right) -> bool
+static Aw.Sindri.Features.ListItems.ListItemsResponse.operator !=(Aw.Sindri.Features.ListItems.ListItemsResponse? left, Aw.Sindri.Features.ListItems.ListItemsResponse? right) -> bool
+static Aw.Sindri.Features.ListItems.ListItemsResponse.operator ==(Aw.Sindri.Features.ListItems.ListItemsResponse? left, Aw.Sindri.Features.ListItems.ListItemsResponse? right) -> bool

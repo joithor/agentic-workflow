@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Health;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -11,10 +12,16 @@ using Aw.Sindri.Core.Workflow.Engine.Evals;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.ApproveProfile;
+using Aw.Sindri.Features.CloseItem;
+using Aw.Sindri.Features.CreateItem;
 using Aw.Sindri.Features.EvalRecipe;
+using Aw.Sindri.Features.GetItem;
+using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetProfile;
+using Aw.Sindri.Features.GetQueue;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.ListCommands;
+using Aw.Sindri.Features.ListItems;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RunDoctor;
@@ -23,6 +30,7 @@ using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Features.ValidateRecipe;
 using Aw.Sindri.Host.Commands.Recipe;
+using Aw.Sindri.Host.Endpoints;
 
 namespace Aw.Sindri.Host;
 
@@ -70,6 +78,20 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(GetProfileRequest))]
 [JsonSerializable(typeof(GetProfileResponse))]
 [JsonSerializable(typeof(RebuildViewsRequest))]
+[JsonSerializable(typeof(CreateItemRequest))]
+[JsonSerializable(typeof(ItemCreatedResponse))]
+[JsonSerializable(typeof(CloseItemRequest))]
+[JsonSerializable(typeof(CloseItemBody))]
+[JsonSerializable(typeof(GetQueueRequest))]
+[JsonSerializable(typeof(QueueResponse))]
+[JsonSerializable(typeof(QueueGroupView))]
+[JsonSerializable(typeof(ItemSummary))]
+[JsonSerializable(typeof(ListItemsRequest))]
+[JsonSerializable(typeof(ListItemsResponse))]
+[JsonSerializable(typeof(GetItemRequest))]
+[JsonSerializable(typeof(ItemView))]
+[JsonSerializable(typeof(GetItemTimelineRequest))]
+[JsonSerializable(typeof(TimelineResponse))]
 [JsonSerializable(typeof(Recipe))]
 [JsonSerializable(typeof(BlockDescriptor))]
 [JsonSerializable(typeof(ValidateRecipeResponse))]

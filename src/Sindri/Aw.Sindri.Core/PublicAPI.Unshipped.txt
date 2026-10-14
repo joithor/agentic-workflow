@@ -4163,3 +4163,33 @@ static Aw.Sindri.Core.Views.ItemRow.operator !=(Aw.Sindri.Core.Views.ItemRow? le
 static Aw.Sindri.Core.Views.ItemRow.operator ==(Aw.Sindri.Core.Views.ItemRow? left, Aw.Sindri.Core.Views.ItemRow? right) -> bool
 static Aw.Sindri.Core.Views.TimelineRow.operator !=(Aw.Sindri.Core.Views.TimelineRow? left, Aw.Sindri.Core.Views.TimelineRow? right) -> bool
 static Aw.Sindri.Core.Views.TimelineRow.operator ==(Aw.Sindri.Core.Views.TimelineRow? left, Aw.Sindri.Core.Views.TimelineRow? right) -> bool
+Aw.Sindri.Core.Items.ItemSummaries
+Aw.Sindri.Core.Items.ItemSummary
+Aw.Sindri.Core.Items.ItemSummary.<Clone>$() -> Aw.Sindri.Core.Items.ItemSummary!
+Aw.Sindri.Core.Items.ItemSummary.Actions.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>!
+Aw.Sindri.Core.Items.ItemSummary.Actions.init -> void
+Aw.Sindri.Core.Items.ItemSummary.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Id, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Items.ItemState State, out string? Step, out System.DateTimeOffset Since, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string? Owner) -> void
+Aw.Sindri.Core.Items.ItemSummary.Equals(Aw.Sindri.Core.Items.ItemSummary? other) -> bool
+Aw.Sindri.Core.Items.ItemSummary.Id.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Core.Items.ItemSummary.Id.init -> void
+Aw.Sindri.Core.Items.ItemSummary.ItemSummary(Aw.Sindri.Core.Ids.ItemId Id, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Items.ItemState State, string? Step, System.DateTimeOffset Since, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string? Owner) -> void
+Aw.Sindri.Core.Items.ItemSummary.Owner.get -> string?
+Aw.Sindri.Core.Items.ItemSummary.Owner.init -> void
+Aw.Sindri.Core.Items.ItemSummary.PrimaryAction.get -> Aw.Sindri.Core.Ids.ActionId?
+Aw.Sindri.Core.Items.ItemSummary.PrimaryAction.init -> void
+Aw.Sindri.Core.Items.ItemSummary.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Items.ItemSummary.Repo.init -> void
+Aw.Sindri.Core.Items.ItemSummary.Since.get -> System.DateTimeOffset
+Aw.Sindri.Core.Items.ItemSummary.Since.init -> void
+Aw.Sindri.Core.Items.ItemSummary.State.get -> Aw.Sindri.Core.Items.ItemState
+Aw.Sindri.Core.Items.ItemSummary.State.init -> void
+Aw.Sindri.Core.Items.ItemSummary.Step.get -> string?
+Aw.Sindri.Core.Items.ItemSummary.Step.init -> void
+Aw.Sindri.Core.Items.ItemSummary.Title.get -> string!
+Aw.Sindri.Core.Items.ItemSummary.Title.init -> void
+override Aw.Sindri.Core.Items.ItemSummary.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Items.ItemSummary.GetHashCode() -> int
+override Aw.Sindri.Core.Items.ItemSummary.ToString() -> string!
+static Aw.Sindri.Core.Items.ItemSummaries.From(Aw.Sindri.Core.Views.ItemRow! row) -> Aw.Sindri.Core.Items.ItemSummary!
+static Aw.Sindri.Core.Items.ItemSummary.operator !=(Aw.Sindri.Core.Items.ItemSummary? left, Aw.Sindri.Core.Items.ItemSummary? right) -> bool
+static Aw.Sindri.Core.Items.ItemSummary.operator ==(Aw.Sindri.Core.Items.ItemSummary? left, Aw.Sindri.Core.Items.ItemSummary? right) -> bool
