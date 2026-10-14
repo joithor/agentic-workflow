@@ -51,7 +51,7 @@ public sealed class WorkflowReadVerbsTests : IDisposable
             Assert.Matches(@"^T-1/step/1  workflow\.step@", byItem);
             Assert.Equal("no instances match\n", otherState);
             Assert.Equal(0, eventsExit);
-            Assert.Matches(@"^\d+  \d\d-\d\d \d\d:\d\d:\d\d  workflow\.started  -> produce  start  \S+\n$", events);
+            Assert.Matches(@"^\d+  \d\d-\d\d \d\d:\d\d:\d\d  workflow\.started  -> produce  start  \S+\n(\d+  \d\d-\d\d \d\d:\d\d:\d\d  outbox\.pending  \S+\n)?$", events);   // and the first desk task's engine notice (P6 unit (c)), once its row is in
             await handle.TerminateAsync("test over");
         }
         finally

@@ -65,6 +65,7 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceRuntime>(_instances)
             .AddSingleton(SliceHarness.Json)
             .AddSingleton<IProfileSource>(H.Profiles)
+            .AddSingleton<Core.Workflow.Engine.Effects.IDeskNotices>(new Testing.Workflow.InMemoryDeskNotices())   // effect.notify.desk's port (engine P6 unit (c))
             .AddRecipeBlocks()
             .AddSingleton<BlockCatalog>()
             .AddScoped<RecipeApprovalPlanner>()
