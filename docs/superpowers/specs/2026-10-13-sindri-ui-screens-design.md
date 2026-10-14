@@ -43,6 +43,7 @@ revision 7's §14 token plan.
 | R8-10 | A desk step (export, do it in your own tools, import, checks, freeze) is how a `desk` state renders, not a page of its own. The design session lives in the owner's tools; Sindri records a link and a timestamp and advances only on import | Sindri can't see inside Figma; the state machine stays the recipe's |
 | R8-11 | New surfaces a scoping run finds become **draft proposals in the next map version**, never writes to the current map | Map promotion stays a `protected` command (CTX §8.7) |
 | R8-12 | The UI reads Temporal's history and pending work **through Sindri's API**, never from Temporal directly | One client contract (rev 7 §9); the dev server stays loopback-private |
+| R8-13 | During the mockup fix pass (2026-10-14): the health word is one word, worst verdict wins; no side stripes and the band only while needs-you is non-zero; initial focus on a read action and Cancel behind a one-line confirm, bulk accepts get Undo; every instance sheet is 760 px | The critique's P1s; `fixes.md` carries the list |
 
 ## 2. What the app is for (restated)
 
@@ -517,6 +518,30 @@ stalled render the same banners and placeholders. Two additions:
 |---|---|---|
 | **Not served yet** | A panel whose API phase hasn't landed (§8) | The panel frame with its title and "arrives with API Pn" in `InkSubtle`, as the U0 shell does today |
 | **Index not built** | Context's `symbols` lens, the file map's symbol column | The lens toggle disabled with the words; the band's header reads "symbols · index not built (CTX phase 9)" |
+
+### 4.9 Mockups
+
+The HTML mockups live in `2026-10-13-sindri-ui-screens-design/mockups/`, one self-contained file per screen with a
+1280-wide PNG beside it, all rendering the one scenario in `fixture.md` (ids, titles, counts, the health word, the
+glyph vocabulary and the protected-action label). They are design references, not the implementation; where a
+mockup and this text differ, the text wins, and `fixture.md` wins on data. They passed an `/impeccable` critique
+(`impeccable-critique.md`, 25/40 on the first render) and the fix passes in `fixes.md`: one shell in every file (the
+top bar fits 1280, one health word, no side stripes, the attention band only while needs-you is non-zero, one glyph
+set, no em dashes, an 11 px floor), then per page the layout, harden, clarify, onboard, typeset, quieter, distill,
+animate (hover and press only), adapt and optimize passes. The owner's calls during that pass: worst-verdict health
+word, stripes removed, read-first focus with Cancel behind a confirm, 760 px for every instance sheet (R8-13).
+
+| File | Shows |
+|---|---|
+| `home.html` | §4.1: Home with the Workflows strip |
+| `workflows.html` | §4.2: the list, grouped by recipe |
+| `workflow-project.html` | §4.2: the instance frame for PRJ-sync (build, 4 of 9 children) |
+| `workflow-incident.html` | §4.2: the same frame for INC-14, with the Cancel confirm drawn |
+| `item-sheet.html` | §4.7: ITM-01JE7 in the frame at 760, over the Work list |
+| `recipes.html`, `recipe-inspector.html` | §4.3: the list with its numbers; the inspector for workflow.item |
+| `agents.html` | §4.5: sessions under their recipe state, the action menu open on one row, budgets |
+| `context.html`, `context-filemap.html` | §4.4: the lens stack with computed cross-band edges and the undo toast; the file map as a tree |
+| `system.html` | §4.6: the dependency graph with the impact panel, the engine table and a history |
 
 ## 5. The recipe-driven rendering contract
 
