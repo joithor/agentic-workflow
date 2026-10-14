@@ -76,5 +76,11 @@
     <PackageVersion Include="Avalonia.Desktop" Version="[12.1.3]" />
     <PackageVersion Include="Avalonia.Headless" Version="[12.1.3]" />
     <PackageVersion Include="Avalonia.Skia" Version="[12.1.3]" />
+    <!-- Durable execution for the Sindri workflow engine (engine spec rev 8 §0, README X53/X54): the Temporal .NET SDK,
+         referenced by Aw.Sindri.Workflows only. It has no trimming or NativeAOT support (temporalio/sdk-dotnet#286), so
+         that project opts out of IsAotCompatible and the Sindri host publishes framework-dependent. Its Rust core ships
+         as a native library inside the package (osx-arm64, osx-x64, linux-x64, linux-arm64). 1.19.0 published
+         2026-09-14, MIT. -->
+    <PackageVersion Include="Temporalio" Version="[1.19.0]" />
   </ItemGroup>
 </Project>

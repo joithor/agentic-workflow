@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>Sindri Walkthrough</title>
-<meta name="description" content="A click-through visual guide to Sindri: what is built, specced, designed and dreamed.">
+<meta name="description" content="A click-through visual guide to Sindri: what is built, being built, specced, designed and dreamed.">
 <style>
 :root {
   --bg: #f4f0e8; --panel: #fffdf8; --panel-2: #f9f5ee; --ink: #1d1a16; --ink-2: #4c463d; --ink-3: #7d7468; --line: #e0d8ca;
   --accent: #a8401b; --accent-soft: #f5e1d6; --focus: #1f5f8b;
-  --built: #2d6a38; --built-soft: #dfeedc; --specced: #1d5d8a; --specced-soft: #dce8f3;
+  --built: #2d6a38; --built-soft: #dfeedc; --building: #0f6b66; --building-soft: #d5efec; --specced: #1d5d8a; --specced-soft: #dce8f3;
   --designed: #5a3d98; --designed-soft: #e9e1f5; --dream: #85600c; --dream-soft: #f4e9cb;
   --bad: #a82a1d; --bad-soft: #f9e0dc;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
@@ -22,7 +22,7 @@
   :root:not([data-theme="light"]) {
     --bg: #14120f; --panel: #1c1915; --panel-2: #211e19; --ink: #efe8dc; --ink-2: #c3b9a9; --ink-3: #91877a; --line: #342e27;
     --accent: #ee8d5d; --accent-soft: #3b2417; --focus: #8cc4ee;
-    --built: #93d095; --built-soft: #1c2d1d; --specced: #8ac0e8; --specced-soft: #16283a;
+    --built: #93d095; --built-soft: #1c2d1d; --building: #72d4cb; --building-soft: #13302d; --specced: #8ac0e8; --specced-soft: #16283a;
     --designed: #bba3f0; --designed-soft: #282040; --dream: #e5c264; --dream-soft: #342a12;
     --bad: #ff8b7c; --bad-soft: #3b1a16;
   }
@@ -30,7 +30,7 @@
 :root[data-theme="dark"] {
   --bg: #14120f; --panel: #1c1915; --panel-2: #211e19; --ink: #efe8dc; --ink-2: #c3b9a9; --ink-3: #91877a; --line: #342e27;
   --accent: #ee8d5d; --accent-soft: #3b2417; --focus: #8cc4ee;
-  --built: #93d095; --built-soft: #1c2d1d; --specced: #8ac0e8; --specced-soft: #16283a;
+  --built: #93d095; --built-soft: #1c2d1d; --building: #72d4cb; --building-soft: #13302d; --specced: #8ac0e8; --specced-soft: #16283a;
   --designed: #bba3f0; --designed-soft: #282040; --dream: #e5c264; --dream-soft: #342a12;
   --bad: #ff8b7c; --bad-soft: #3b1a16;
 }
@@ -74,6 +74,7 @@ main { padding: 22px 0 90px; min-width: 0; outline: none; }
 .fbtn { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--line); background: transparent; border-radius: 99px; padding: 3px 11px 3px 9px; cursor: pointer; font-size: 13px; }
 .fbtn .ct { font: 600 12px var(--mono); color: var(--ink-3); }
 .fbtn[aria-pressed="true"].built { background: var(--built-soft); border-color: var(--built); }
+.fbtn[aria-pressed="true"].building { background: var(--building-soft); border-color: var(--building); }
 .fbtn[aria-pressed="true"].specced { background: var(--specced-soft); border-color: var(--specced); }
 .fbtn[aria-pressed="true"].designed { background: var(--designed-soft); border-color: var(--designed); }
 .fbtn[aria-pressed="true"].dream { background: var(--dream-soft); border-color: var(--dream); }
@@ -83,6 +84,7 @@ main { padding: 22px 0 90px; min-width: 0; outline: none; }
 /* chips */
 .chip { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font: 600 11.5px/1.5 var(--mono); padding: 1px 8px; border-radius: 99px; vertical-align: middle; }
 .chip.built { background: var(--built-soft); color: var(--built); }
+.chip.building { background: var(--building-soft); color: var(--building); }
 .chip.specced { background: var(--specced-soft); color: var(--specced); }
 .chip.designed { background: var(--designed-soft); color: var(--designed); }
 .chip.dream { background: var(--dream-soft); color: var(--dream); }
@@ -114,6 +116,7 @@ th { font: 600 11.5px var(--mono); text-transform: uppercase; letter-spacing: .0
 .feats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0 6px; }
 .feat { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 8px; padding: 11px 13px 10px; }
 .feat[data-s="built"] { border-left-color: var(--built); }
+.feat[data-s="building"] { border-left-color: var(--building); }
 .feat[data-s="specced"] { border-left-color: var(--specced); }
 .feat[data-s="designed"] { border-left-color: var(--designed); }
 .feat[data-s="dream"] { border-left-color: var(--dream); border-style: dashed solid dashed solid; }
@@ -121,9 +124,9 @@ th { font: 600 11.5px var(--mono); text-transform: uppercase; letter-spacing: .0
 .feat p { margin: 0; font-size: 14px; color: var(--ink-2); line-height: 1.5; }
 .feat .ref { display: block; margin-top: 5px; }
 .detail .ref, .feat .ref, #pop .ref { white-space: normal; overflow-wrap: anywhere; }
-body.hide-built .feat[data-s="built"], body.hide-specced .feat[data-s="specced"],
+body.hide-built .feat[data-s="built"], body.hide-building .feat[data-s="building"], body.hide-specced .feat[data-s="specced"],
 body.hide-designed .feat[data-s="designed"], body.hide-dream .feat[data-s="dream"] { display: none; }
-body.hide-built svg [data-s="built"], body.hide-specced svg [data-s="specced"],
+body.hide-built svg [data-s="built"], body.hide-building svg [data-s="building"], body.hide-specced svg [data-s="specced"],
 body.hide-designed svg [data-s="designed"], body.hide-dream svg [data-s="dream"] { opacity: .18; }
 .feats-empty { font-size: 14px; color: var(--ink-3); font-style: italic; }
 
@@ -159,6 +162,7 @@ svg .bx-a { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; 
 svg .node { cursor: pointer; }
 svg .node .nb { fill: var(--panel-2); stroke: var(--ink-3); stroke-width: 1.4; transition: fill .15s, stroke .15s; }
 svg .node[data-s="built"] .nb { stroke: var(--built); }
+svg .node[data-s="building"] .nb { stroke: var(--building); }
 svg .node[data-s="specced"] .nb { stroke: var(--specced); }
 svg .node[data-s="designed"] .nb { stroke: var(--designed); }
 svg .node[data-s="dream"] .nb { stroke: var(--dream); stroke-dasharray: 6 4; }
@@ -166,7 +170,7 @@ svg .node:hover .nb { fill: var(--accent-soft); }
 svg .node.on .nb { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.6; }
 svg .node:focus { outline: none; }
 svg .node:focus-visible .nb { stroke: var(--focus); stroke-width: 3.2; }
-svg .glyph-built { fill: var(--built); } svg .glyph-specced { fill: var(--specced); }
+svg .glyph-built { fill: var(--built); } svg .glyph-building { fill: var(--building); } svg .glyph-specced { fill: var(--specced); }
 svg .glyph-designed { fill: var(--designed); } svg .glyph-dream { fill: var(--dream); }
 svg .dim { opacity: .25; }
 .detail { margin-top: 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 13px 15px; min-height: 64px; }
@@ -238,6 +242,7 @@ svg .dim { opacity: .25; }
 <div class="filterbar" role="group" aria-label="Show features by status">
   <span class="lbl">Show</span>
   <button type="button" class="fbtn built" data-f="built" aria-pressed="true"><span aria-hidden="true">●</span> built <span class="ct" data-ct="built"></span></button>
+  <button type="button" class="fbtn building" data-f="building" aria-pressed="true"><span aria-hidden="true">◑</span> building <span class="ct" data-ct="building"></span></button>
   <button type="button" class="fbtn specced" data-f="specced" aria-pressed="true"><span aria-hidden="true">◐</span> specced <span class="ct" data-ct="specced"></span></button>
   <button type="button" class="fbtn designed" data-f="designed" aria-pressed="true"><span aria-hidden="true">○</span> designed <span class="ct" data-ct="designed"></span></button>
   <button type="button" class="fbtn dream" data-f="dream" aria-pressed="true"><span aria-hidden="true">✧</span> dream <span class="ct" data-ct="dream"></span></button>
@@ -250,7 +255,7 @@ svg .dim { opacity: .25; }
   <h1>Sindri grows Sindri.</h1>
   <p class="lede">Sindri is a local, always-on harness that picks up work, sizes it, starts agent sessions with cited context, keeps them on track and ships them through a fixed recipe. It asks the human only when it has to. Named after the dwarf smith who forged Draupnir, the ring that multiplies itself.</p>
   <div class="quote">The human approves direction. Sindri does the finding, the building and the proving. <span class="ref">§17 core tenet</span></div>
-  <p><b>New here?</b> Start with the interactive course, <a href="sindri-course/index.html">How Sindri Works</a>: six short modules with animations, real code and quizzes. These pages are the full reference.</p>
+  <p><b>New here?</b> Start with the interactive course, <a href="sindri-course/index.html">How Sindri Works</a>: six short modules with animations, real code and quizzes. To see how the pieces connect and what using it looks like step by step, open <a href="sindri-architecture.html">How Sindri fits together</a>. These pages are the full reference.</p>
   <p>Part of the finding is looking outward. Sindri {{field harvest|harvests other software factories}}: it reads their designs, checks each practice against its own spec, and builds the ones it lacks through its own factory. <a href="#c-field">See chapter 22</a>. <span class="ref">§17.25</span></p>
   <p>It started from a measurement. A transcript audit of one month of work (406 sessions, 2,911 human turns) found that the human's effort went mostly to the <em>least</em> judgment-heavy parts of agent work. <span class="ref">§1</span></p>
   <figure class="dia">
@@ -261,8 +266,9 @@ svg .dim { opacity: .25; }
     <figcaption>Shares of human turns by category, from the audit in §1. Shipping direction and product decisions dominate; dispatch is undercounted because it costs one turn per ticket.</figcaption>
   </figure>
   <h3>The shape of the whole thing</h3>
-  <p>Plans 1–5 built the control room: measurement, the {{ledger}}, the code index, the scoping harness and offline self-evolution. Plan 6 (the dashboard) is specced. The factory addendum (§17) designs the production line: from a {{scope map}} through a desk design studio to a frozen {{packet}}, then a factory build of narrow sessions run by {{lens|lenses}}, reviewed from anywhere, and merged by the human. Agent readiness and a C# port come first, so agents can build on a repo that checks what they do.</p>
-  <p>Every feature on these pages carries a status: <span class="chip built">● built</span> shipped in Plans 1–5, <span class="chip specced">◐ specced</span> has an approved spec and plan, <span class="chip designed">○ designed</span> in a design spec but not planned, <span class="chip dream">✧ dream</span> vision, scouting seeds or deferred. Use the filter above to hide any of them. Underlined terms open a definition.</p>
+  <p>Plans 1–5 built the control room in TypeScript: measurement, the {{ledger}}, the code index, the scoping harness and offline self-evolution, with evolve's privacy gate after them. That TypeScript <code>sindri</code> runs at the desk today and is the reference for what each part does. The factory addendum (§17) designs the production line: from a {{scope map}} through a desk design studio to a frozen {{packet}}, then a factory build of narrow sessions run by {{lens|lenses}}, reviewed from anywhere, and merged by the human.</p>
+  <p>The production line runs inside the {{Sindri app}}, a new C# application, not a port of the TypeScript one (decision Q7, §17.29). Its first stage, the app shell, is merged. The API, the {{workflow engine}} on {{Temporal}}, the {{context engine|context retrieval engine}} and the Avalonia UI are being built now in five parallel lanes. Plan 6's dashboard became that UI. Nothing of the C# build is installed until {{the switch}}. <a href="#c-arch">See chapter 4</a> for the app and <a href="#c-roadmap">chapter 21</a> for what's merged and what's in flight.</p>
+  <p>Every feature on these pages carries a status: <span class="chip built">● built</span> merged on <code>main</code>, <span class="chip building">◑ building</span> has an open PR, <span class="chip specced">◐ specced</span> has an approved spec and plan, <span class="chip designed">○ designed</span> in a design spec but not planned, <span class="chip dream">✧ dream</span> vision, scouting seeds or deferred. Status as of 2026-10-12. Use the filter above to hide any of them. Underlined terms open a definition.</p>
   <div class="feats" data-ch="overview"></div>
   <p class="kbd">Navigate with ← → keys, the chapter list, or the buttons at the bottom. Every chapter has its own link.</p>
 </section>
@@ -311,17 +317,28 @@ svg .dim { opacity: .25; }
 </section>
 
 <!-- 4 -->
-<section class="ch" id="c-arch" data-title="Architecture: tick, ledger, jobs, sessions">
+<section class="ch" id="c-arch" data-title="Architecture: the Sindri app">
   <p class="kicker">Chapter 4 · Architecture</p>
-  <h2>A short tick, a single writer, bounded work</h2>
-  <p class="lede">launchd fires a short deterministic {{tick}}. It never waits on a model: model work runs in bounded jobs and sessions that end, and the tick reads their results from the {{ledger}} on the next pass. <span class="ref">§5</span></p>
+  <h2>One process, three engines, every surface a client</h2>
+  <p class="lede"><code>sindri</code> starts one process per host under the host lease and opens the UI app beside it; <code>sindri --headless</code> skips the UI on the always-on box. The process holds three engines: the control plane, the {{workflow engine}} and the {{context engine}}. The CLI, the app, the phone and agent sessions are all clients of one API. launchd only keeps the process alive; today's launchd jobs become background services inside it. <span class="ref">§17.29 · docs/sindri/README.md</span></p>
   <figure class="dia">
-    <svg viewBox="0 0 600 470" role="group" aria-label="Tick architecture diagram. Each component is a button.">
+    <svg viewBox="0 0 600 470" role="group" aria-label="Sindri app architecture diagram. Each component is a button.">
       <g id="archLines"></g>
       <g id="archNodes"></g>
     </svg>
-    <div class="detail" id="archDetail" aria-live="polite"><p class="hint">Select a component.</p></div>
+    <div class="detail" id="archDetail" aria-live="polite"><p class="hint">Select a component to see what it does, its status and the PRs that build it.</p></div>
   </figure>
+  <p>Play the flows through this picture, from starting your day to shipping a recipe change: <a href="sindri-architecture.html">How Sindri fits together</a>.</p>
+  <h3>Built new, not ported <span class="ref">§17.29 · Q7 · readiness §4c</span></h3>
+  <p>The TypeScript <code>sindri/</code> package is a guide to <em>what</em> each part does, never to <em>how</em>. The C# app keeps no byte or state compatibility with it, and no TS state is migrated. The one exception is the hook contract: the commands, JSON fields, exit codes and files that the bash hooks and statusline rely on stay frozen until {{the switch}}, checked in CI by running the real hook scripts against the C# binaries. Until then nothing in <code>setup.sh</code>, the providers, MCP registration or launchd points at the C# build, and every proof runs in a temp home through <code>scripts/sindri-prove.sh</code>.</p>
+  <h3>Recipes, blocks and Temporal <span class="ref">§17.28 · engine §0, §5 · Q8</span></h3>
+  <ul class="clean">
+    <li>A {{recipe}} is declarative YAML, checked by a JSON Schema: states, transitions, gates, evidence, effects, loop caps, timeouts and budgets. A new workflow, or a change to one, is a config change; <code>sindri recipe validate</code> and <code>recipe eval</code> already run.</li>
+    <li>A {{block}} is a typed C# module with its own contract and tests: a gate, an evidence provider, a Step implementation or an effect. New code is needed only for a new block. Tools become blocks; a skill's phase sequence, such as <code>/bugFixOrchestrator</code>'s, becomes a recipe.</li>
+    <li>{{Temporal}} runs the instances (decided 2026-10-11, no spike). One <code>RecipeWorkflow</code> interprets every recipe; commands are Updates keyed by a nonce, Steps are activities, events are signals, children are child workflows. Every transition is mirrored into the {{ledger}}, which stays the one public log. Timers fire on wake after downtime: a timeout parks or escalates, which is visible and harmless.</li>
+  </ul>
+  <h3>How you step onto the line <span class="ref">README X55, X56 · API §8.1</span></h3>
+  <p>Every agent session Sindri runs lives in a tmux session it owns (<code>snd-&lt;run&gt;</code>), whether you or the factory started it. <b>Attach</b> (<code>sindri open &lt;item&gt; --attach</code>, or the app's button) opens a Warp tab joined to it, so you type into the live agent whatever Step it is on. The first thing you type is a {{takeover}}: the workflow pauses with its timers stopped until you hand back. With no live session, <b>open</b> starts Claude Code, Codex or Cursor in Warp, seeded with the item id; the session pulls the item's state, packet, evidence and context through Sindri's MCP endpoint. Headless <code>-p</code> runs are never used for Steps, because nobody can join them. Each launched command runs under <code>sindri session wrap</code>, which heartbeats and reports its exit.</p>
   <h3>The Step contract <span class="ref">§6</span></h3>
   <p>Every unit of work is a {{Step}}: inputs, an output schema, deterministic checks, a verifier, max rounds, a budget and an escalation. The producer never verifies itself.</p>
   <figure class="dia">
@@ -628,7 +645,7 @@ status: active  # proposed | active | retired</code></pre>
       <g id="mpNodes"></g>
     </svg>
     <div class="detail" id="mpDetail" aria-live="polite"><p class="hint">Select a piece to see where it lands in the order of work.</p></div>
-    <figcaption>Order of work: cheap seams during the C# port (they make P1 simpler too) → with P2 → with P4.</figcaption>
+    <figcaption>Order of work: cheap seams in the C# app as it is built (they make P1 simpler too) → with P2 → with P4.</figcaption>
   </figure>
   <h3>Every piece: today versus needed</h3>
   <div class="ctrls" role="group" aria-label="Multiplayer pieces" id="mpBtns"></div>
@@ -684,7 +701,7 @@ status: active  # proposed | active | retired</code></pre>
 <section class="ch" id="c-surfaces" data-title="Human surfaces">
   <p class="kicker">Chapter 18 · Where the human decides</p>
   <h2>The right surface for each decision</h2>
-  <p class="lede">One command layer is the authority; the CLI and the dashboard are two clients of it, so every action gets a UI form (§17.27). A loopback dashboard shows every agent on the machine; over a tailnet, a phone handles binary, low-context decisions, signed with a passkey. Open questions, freezes and protected approvals stay at the desk. <span class="ref">§10, Plan 6, §17.12, §17.19</span></p>
+  <p class="lede">One command layer is the authority; the CLI and the Sindri app are two clients of it, so every action gets a UI form (§17.27). The Avalonia app talks to the loopback API and shows the queue, what needs you and every item's timeline; over a tailnet, a phone handles binary, low-context decisions, signed with a passkey. Open questions, freezes and protected approvals stay at the desk. <span class="ref">§10, UI spec, §17.12, §17.19</span></p>
   <figure class="dia">
     <svg viewBox="0 0 600 300" role="group" aria-label="Surfaces arranged by context needed and where they are used. Each is a button.">
       <path class="ln" d="M40,270 H580" marker-end="url(#ah)"/><path class="ln" d="M40,270 V20" marker-end="url(#ah)"/>
@@ -695,9 +712,9 @@ status: active  # proposed | active | retired</code></pre>
     <div class="detail" id="surfDetail" aria-live="polite"><p class="hint">Select a surface.</p></div>
   </figure>
   <h3>Every step from the UI <span class="ref">§17.27</span></h3>
-  <p>Every action, from <b>Scope</b> on a tracker item to editing, freezing and promoting, is a command with one handler. The CLI and the dashboard call the same handler, with the same checks, errors and ledger record; the UI has no logic of its own. Long jobs stream the same progress to both and can be cancelled from either.</p>
+  <p>Every action, from <b>Scope</b> on a tracker item to editing, freezing and promoting, is a command with one handler. The CLI and the app call the same handler, with the same checks, errors and ledger event; the app has no logic of its own. Protected actions are never run from the app: it shows the CLI command to copy and type at a terminal. Long jobs stream the same progress to both and can be cancelled from either.</p>
   <div class="tablewrap"><table>
-    <thead><tr><th>Action class</th><th>Host dashboard</th><th>Tailnet desk view</th><th>Phone</th></tr></thead>
+    <thead><tr><th>Action class</th><th>Sindri app (host)</th><th>Tailnet desk view</th><th>Phone</th></tr></thead>
     <tbody>
       <tr><td>Read and watch</td><td>yes</td><td>yes</td><td>yes</td></tr>
       <tr><td>Read-only jobs (scope, backtest, harvest, index build)</td><td>yes</td><td>passkey</td><td>from a card only</td></tr>
@@ -711,7 +728,7 @@ status: active  # proposed | active | retired</code></pre>
   <div class="ctrls" role="list" aria-label="Decision states">
     <span role="listitem" class="chipbtn">pending</span><span role="listitem" class="chipbtn">deciding</span><span role="listitem" class="chipbtn">decided here</span><span role="listitem" class="chipbtn">decided elsewhere</span><span role="listitem" class="chipbtn">stale</span><span role="listitem" class="chipbtn">offline (queued)</span><span role="listitem" class="chipbtn">passkey failed</span><span role="listitem" class="chipbtn">revoked device</span>
   </div>
-  <h3>Dashboard states (Plan 6) <span class="ref">dashboard §4.3</span></h3>
+  <h3>Session states <span class="ref">dashboard §4.3, kept by the UI spec</span></h3>
   <p>Exactly one state per session, always written as text, ranked: <code>approval</code> › <code>input</code> › <code>plan ready</code> › <code>auth</code> › <code>working</code> › <code>background</code> › <code>ready</code> › <code>stuck</code> › <code>interrupted</code> › <code>failed</code> › <code>limited</code> › <code>crashed</code> › <code>ended</code>. One attention colour means only "needs you"; under reduced motion its pulse becomes a static outline.</p>
   <div class="feats" data-ch="surfaces"></div>
 </section>
@@ -745,7 +762,7 @@ status: active  # proposed | active | retired</code></pre>
 <section class="ch" id="c-readiness" data-title="Agent readiness, the C# port and code standards">
   <p class="kicker">Chapter 20 · Ready before the factory</p>
   <h2>A repo that tells agents how to work, and checks them</h2>
-  <p class="lede">Before F0, this repo reaches Level 4 on Factory's agent-readiness framework; Level 5 arrives with the factory itself. The toolkit's TypeScript packages are being rewritten in C# on .NET 10, and the readiness foundation is built first so every ported package is compliant from its first commit. <span class="ref">readiness §1, §2, §4a</span></p>
+  <p class="lede">Before F0, this repo reaches Level 4 on Factory's agent-readiness framework; Level 5 arrives with the factory itself. The readiness foundation (the C# template, R1b) is built, so every C# package is compliant from its first commit. Redaction, Packets, Readiness, BugFix, Judge and Evidence are merged on .NET 10; the ports stop there, and Sindri is built new in C# as an application. <span class="ref">readiness §1, §2, §4a, §10</span></p>
   <h3>Five levels, nine pillars</h3>
   <figure class="dia">
     <svg viewBox="0 0 600 160" role="group" aria-label="Readiness levels. Each is a button.">
@@ -788,19 +805,36 @@ status: active  # proposed | active | retired</code></pre>
 <section class="ch" id="c-roadmap" data-title="Rollout roadmap">
   <p class="kicker">Chapter 21 · What ships when</p>
   <h2>Plans, readiness, factory, distribution</h2>
-  <p class="lede">Every step ends with a "Turn it on" task: run the switch-on command, record the evidence, and use the piece on the next plan's work. Select any milestone. <span class="ref">§13, §13.3, §17.16, §17.20, readiness §10</span></p>
+  <p class="lede">Every step ends with a "Turn it on" task: run the switch-on command, record the evidence, and use the piece on the next plan's work. Select any milestone. <span class="ref">§13, §13.3, §17.16, §17.20, §17.29.4, readiness §10</span></p>
   <figure class="dia">
-    <svg viewBox="0 0 640 420" role="group" aria-label="Rollout timeline in four lanes. Each milestone is a button.">
+    <svg viewBox="0 0 640 520" role="group" aria-label="Rollout timeline in five lanes. Each milestone is a button.">
       <g id="tlLines"></g>
       <g id="tlNodes"></g>
     </svg>
     <div class="legend" aria-hidden="false">
       <span><svg width="14" height="14" viewBox="0 0 14 14" style="display:inline;vertical-align:-2px;width:14px" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="var(--built)"/></svg> built (filled)</span>
+      <span><svg width="14" height="14" viewBox="0 0 14 14" style="display:inline;vertical-align:-2px;width:14px" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="var(--building-soft)" stroke="var(--building)" stroke-width="2.5"/></svg> building (open PR)</span>
       <span><svg width="14" height="14" viewBox="0 0 14 14" style="display:inline;vertical-align:-2px;width:14px" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--specced)" stroke-width="2.5"/><circle cx="7" cy="7" r="2" fill="var(--specced)"/></svg> specced (ring and dot)</span>
       <span><svg width="14" height="14" viewBox="0 0 14 14" style="display:inline;vertical-align:-2px;width:14px" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--designed)" stroke-width="2"/></svg> designed (ring)</span>
     </div>
     <div class="detail" id="tlDetail" aria-live="polite"><p class="hint">Select a milestone.</p></div>
   </figure>
+  <h3>The app's build waves <span class="ref">docs/sindri/README.md "Build order"</span></h3>
+  <p>The one cross-spec order for the app's first three build steps. Each phase sits one wave after the latest wave it needs. Five lanes (API, engine, context, UI, and the S1 gate) run in parallel, and a lane starts a phase as soon as its needs have merged. Merged phases are <b>bold</b>; open PRs are <i>italic</i>.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Wave</th><th>API</th><th>Engine</th><th>Context</th><th>UI</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td><b>S1</b> (app shell), <b>P0</b></td><td><b>P1</b>, <b>P3</b></td><td><b>S-1C</b>, <b>S-2R</b>, <b>S-FX</b></td><td><i>U0</i> theme and shell</td></tr>
+      <tr><td>1</td><td><b>P1</b> command chain</td><td><i>P4a</i> Temporal foundation</td><td>—</td><td>—</td></tr>
+      <tr><td>2</td><td><i>P2</i> projector, <code>health</code></td><td><i>P2</i> registry, approval</td><td><i>S-1A</i> <code>Aw.Context</code>, routes</td><td>—</td></tr>
+      <tr><td>3</td><td>P3 items, P5 stream</td><td>—</td><td>S-1M MCP, S-2W, S-3 (<i>S-3a</i> graph store, then S-3b), <i>S-5A</i> Onyx</td><td><i>U1</i> catalog, freshness</td></tr>
+      <tr><td>4</td><td>P4 decisions, P6 jobs</td><td><i>P4</i> interpreter</td><td>S-3M</td><td><i>U2</i> queue, item detail</td></tr>
+      <tr><td>5</td><td>P8 tools, P11 item states</td><td>P5, P6</td><td>S-4, S-5B, S-10</td><td>U3 needs you, U4 health</td></tr>
+      <tr><td>6</td><td>P10a open in Warp</td><td>P7</td><td>S-6, S-7A, S-CF</td><td>U5 engine, U7 context</td></tr>
+      <tr><td>7</td><td>P10b opening is a takeover</td><td>P8 agent runtime</td><td>S-7B</td><td>U6a open in Warp</td></tr>
+      <tr><td>8</td><td>—</td><td>—</td><td>S-8</td><td>U6b attach, resume</td></tr>
+    </tbody></table></div>
+  <p style="font-size:14.5px">Older drafts #166, #167, #168 and #169 were built ahead of the specs. They stay open as reference branches and are never merged; each phase is rebuilt from its spec, reusing their code where it fits. <span class="ref">README X17</span></p>
   <h3>The bootstrapping rule <span class="ref">§13.3</span></h3>
   <ul class="clean">
     <li>A piece not switched on within one working day of its plan merging becomes a ring-0 work item of its own.</li>
@@ -929,7 +963,7 @@ status: active  # proposed | active | retired</code></pre>
 "use strict";
 (function () {
   var SVGNS = "http://www.w3.org/2000/svg";
-  var GLYPH = { built: "●", specced: "◐", designed: "○", dream: "✧" };
+  var GLYPH = { built: "●", building: "◑", specced: "◐", designed: "○", dream: "✧" };
 
   /* ---------- Glossary ---------- */
   var G = {
@@ -943,7 +977,7 @@ status: active  # proposed | active | retired</code></pre>
     "autonomy tier": ["Autonomy tier", "How far a standing workflow may act: report (digest or comment), propose (draft PR or item), or act (allowlisted actions). Raised only by an approval-tier change.", "§17.9"],
     "evidence kind": ["Evidence kind", "A pluggable evidence provider (test, ui-browser, migration, a11y, perf…) that plans, runs at base and head, verifies by script and publishes an artifact.", "§17.11"],
     "ship contract": ["Ship contract", "Shared rules for shipping: at most 3 review rounds by default, every acceptance example backed by a passing artifact, one set of publish rules.", "§17.11"],
-    "tick": ["Tick", "The short, deterministic loop launchd fires. It holds a fenced singleton lock, reconciles, spawns bounded jobs and never waits on a model.", "§5, §9.1"],
+    "tick": ["Tick", "The short, deterministic loop that reconciles, spawns bounded jobs and never waits on a model. In the TS design launchd fires it; in the C# app it is the scheduler inside the process, under the host lease.", "§5, §9.1, §17.29.1"],
     "ledger": ["Ledger", "Sindri's SQLite database (WAL mode, 0600). Sindri is its only writer; hooks append to a spool that the tick ingests.", "§5.2"],
     "Step": ["Step", "The unit of work: inputs, output schema, deterministic checks, a separate verifier, max rounds, budget and escalation.", "§6"],
     "direction check": ["Direction check", "A short structured dialogue between models, on a different model from the producer, asking whether this is the right path before more effort is spent.", "§6.1"],
@@ -955,7 +989,7 @@ status: active  # proposed | active | retired</code></pre>
     "task compiler": ["Task compiler", "Sindri code (no model) that turns a frozen workflow Step into a session spec and its sandbox policy.", "§17.5"],
     "sandbox policy": ["Sandbox policy", "Per-session controls compiled from the session spec: writes, reads, commands, network, MCP, skills and budgets. Out-of-scope actions are refused, not left to the agent.", "§17.5"],
     "epic": ["Epic branch", "One branch per packet. Task PRs stack against it and may merge into it automatically under the ship gate; the epic → default-branch PR is always the human's.", "§17.10"],
-    "takeover": ["Takeover", "Unsolicited human input in a Sindri session. The session pauses its lease and shows 'with you' until sindri handback.", "§9.3"],
+    "takeover": ["Takeover", "Unsolicited human input in a Sindri session, usually the first thing typed after attaching to its tmux session. The instance pauses with its timers stopped until sindri handback.", "§9.3 · README X55"],
     "park": ["Park", "Stop an item with a typed reason and notify, instead of guessing (invariant 4).", "§3, §6"],
     "profile": ["Profile", "The workplace- and repo-specific configuration, kept in a separate private repo, validated by schema and approved by hash at a terminal.", "§11.1"],
     "artifact registry": ["Artifact registry", "The ledger's list of every managed artifact (skills, prompts, recipes, thresholds, toolkit modules) with a version, source, owner Step and eval suite.", "§7.4, §7.7"],
@@ -971,8 +1005,8 @@ status: active  # proposed | active | retired</code></pre>
     "lease": ["Shared lease", "The single record deciding the active factory host. Its epoch is checked before every outward action; a host that can't reach it stays passive.", "§17.19 C6"],
     "fencing epoch": ["Fencing epoch", "A counter bumped when the lock is acquired. Every write carries it, and stale epochs are rejected, so a zombie tick can't act.", "§9.1"],
     "swipe inbox": ["Swipe inbox", "The mobile view for binary, non-protected decisions, signed with a passkey on an enrolled device, each with visible buttons and a 10-second undo.", "§17.12, §17.19"],
-    "tailnet": ["Tailnet", "A private Tailscale network. The dashboard is served only there (tailscale serve, never funnel).", "§17.12"],
-    "strangler": ["Strangler rewrite", "Porting each package beside the untouched TS install, proving it with its own tests, then one clean, reversible cutover (setup.sh --runtime cs) once every package is done.", "readiness §4a, §4c"],
+    "tailnet": ["Tailnet", "A private Tailscale network. Sindri's API is reached off the machine only there (tailscale serve, never funnel).", "§17.12"],
+    "strangler": ["Strangler rewrite", "Building the C# toolkit beside the untouched TS install, each package proven by its own tests, then one clean, reversible cutover (setup.sh --runtime cs). Ports stopped after Judge and Evidence; Sindri is built new.", "readiness §4a, §4c, §10"],
     "slice": ["Feature slice", "One folder per use case holding its request and response records, service, validator and endpoint or CLI mapping. Slices never reference each other.", "readiness §4b.1"],
     "typed id": ["Strongly typed id", "A value type such as ItemId or SizeClass in place of a raw string or Guid; raw ids in public signatures are an analyzer error.", "readiness §4b.3"],
     "golden harness": ["Golden files", "CLI output and JSON contracts recorded from the C# build and compared after declared normalization (ids, times). No TS parity: the cutover is clean.", "readiness §4c"],
@@ -993,6 +1027,13 @@ status: active  # proposed | active | retired</code></pre>
     "tombstone": ["Tombstone", "A removed map or packet item kept with its reason, so scoping doesn't re-propose it unless new evidence appears.", "§17.26.4"],
     "change set": ["Change set", "The edits from one instruction (\"add X but remove Y\"), planned and re-run together and accepted in whole or part. Each one is a draft revision you can undo.", "§17.26.4"],
     "command registry": ["Command registry", "Every Sindri command with its CLI form and UI action, or ui: pending and a due step that a test enforces.", "§17.27.4"],
+    "Sindri app": ["The Sindri application", "One C# process per host with a UI app as its client, built new rather than ported. It holds the control plane, the workflow engine and the context retrieval engine.", "§17.29 · Q7"],
+    "workflow engine": ["Workflow engine", "Runs every piece of work as an instance of a recipe: parks, escalation, takeover, loops, budgets, gates and receipts. Durable execution is Temporal's.", "§17.28 · engine spec"],
+    "context engine": ["Context retrieval engine", "The product graph and a query planner over trackers, docs, notes, memory, the code index and the product map, all scrubbed and cited. The Aw.Context package.", "§17.3 · context spec"],
+    "Temporal": ["Temporal", "The durable-execution server the engine runs on: a local dev server on loopback started by sindri serve. One RecipeWorkflow interprets every recipe; the ledger mirrors every transition.", "engine §0, §5 · Q8"],
+    "recipe": ["Recipe", "Declarative YAML, checked by a JSON Schema, naming a workflow's states, transitions, gates, evidence, effects, loop caps, timeouts and budgets. Approved by the human before it runs.", "§17.28 · docs/csharp/sindri-workflow.md"],
+    "block": ["Block", "A typed C# module with its own contract and tests: a gate, an evidence provider, a Step implementation or an effect kind. Finished tool ports become blocks.", "§17.28.2"],
+    "the switch": ["The switch", "The one clean cutover from the TypeScript toolkit to the C# build, once every desk tool has its C# form. Until then nothing installed points at the C# build.", "readiness §4a, §4c"],
     "holdout": ["Holdout", "Acceptance examples (or eval corpus) the implementer never sees. Mounted only into evaluator Steps; a canary example detects leaks.", "§17.4, §17.19"]
   };
 
@@ -1000,15 +1041,15 @@ status: active  # proposed | active | retired</code></pre>
   var F = [
     ["overview","built","Measured where the human's time goes","The audit became <code>scorer audit</code>: resumed and forked copies deduped, regex patterns calibrated against model-adjudicated labels, weekly unlabeled runs.","§1, §13 step 0, Plan 1"],
     ["overview","built","Sindri builds Sindri, on ring 0","Each merged plan's piece was switched on and used on the next plan: observe lists the backlog, scope maps later plans, evolve reflects on merged PRs.","§13.3"],
-    ["overview","specced","One place to see every agent","The Plan 6 dashboard: every Claude Code, Codex and Cursor session on the machine, repo index status, automatic work, and a 'needs you' list.","dashboard spec, Plan 6"],
+    ["overview","building","One place to see every agent","The Sindri app, an Avalonia desktop client of the API: queue, item detail, needs you, decisions and opening work in Warp. Plan 6's dashboard views are its input.","UI spec · #184, #193, #197"],
     ["overview","designed","The factory production line","Scope → design studio → frozen packet → workflow generation → factory build → review anywhere → human merges.","§17.0"],
-    ["overview","designed","Readiness and a C# port first","Level 4 agent readiness before F0, with the toolkit rewritten in C# on .NET 10 and switched over in one clean cutover.","§17.16, readiness"],
+    ["overview","building","Readiness and a C# port first","The C# template, Readiness, Packets, Redaction, BugFix, Judge and Evidence are merged; ports stop there and Sindri is built new in C#, then one clean cutover.","§17.16, §17.29, readiness §10"],
 
     ["tenets","built","1 · One Sindri at a time","A singleton lock with a fencing epoch; a tick that can't acquire exits quietly.","§3, §9.1"],
     ["tenets","designed","2 · Nothing long-lived holds a model","The tick is short deterministic code; model work runs in bounded jobs and sessions that end.","§3"],
     ["tenets","designed","3 · No step grades itself; no path unchallenged","Separate verifiers; direction checks on a different model before effort is committed.","§3, §6.1"],
     ["tenets","designed","4 · Escalate, never guess","Below-threshold decisions and exhausted loops notify and park.","§3"],
-    ["tenets","built","5 · One heavy job at a time per host","Index builds and other heavy work share one heavy-job lock.","§3"],
+    ["tenets","built","5 · One heavy job at a time per host","Index builds and other heavy work share the heavy-job lock, which now has two slots.","§3 · #157"],
     ["tenets","designed","6 · Deny by default inside sessions","A gate enforces the profile allowlist, fails closed, and can't be disabled from inside.","§3, §8.1"],
     ["tenets","designed","7 · Untrusted text is data","Ticket text, fetched pages and transcripts are summarized and cited, never followed.","§3, §8.3"],
     ["tenets","built","8 · No secrets anywhere","The scrubber runs at ingest and as a pre-commit hook that refuses secret-shaped strings.","§3, §8.4, Plan 2"],
@@ -1032,26 +1073,29 @@ status: active  # proposed | active | retired</code></pre>
     ["pipeline","designed","Review anywhere","Swipe inbox, walkthrough pages, desk queue and live session over a tailnet.","§17.12"],
     ["pipeline","designed","Existing skills as Step implementations","<code>/specToProvenPR</code>, <code>/bugFixOrchestrator</code>, <code>/review</code> and <code>/addressReview</code> gain a sindri mode with no 'ask the user'.","§17.7, §17.19"],
 
-    ["arch","built","Ledger and spool","SQLite in WAL mode with one writer; hooks append to a spool that observe and reconcile ingest.","§5.2, Plan 2"],
-    ["arch","built","Singleton lock with fencing","Atomic rename acquire, provably-dead takeover, an epoch on every write.","§9.1, Plan 2"],
-    ["arch","built","Profile with approval by hash","Schema, validate, explain, migrate; approval needs a typed confirmation at a terminal, and runtime loads the approved snapshot.","§11.1, Plan 2"],
-    ["arch","built","Plan-file tracker and hourly observe","Plan files read as a backlog; <code>sindri observe</code> runs hourly via launchd and records to the ledger.","§13.3, Plan 2"],
-    ["arch","built","doctor and stable error codes","One line per health check with a fix; errors carry <code>SND-AREA-NNN</code> codes; every read command has <code>--json</code>.","§11.5, Plan 2"],
-    ["arch","designed","The full tick","Reconcile, scan trackers, spawn triage/pack/verifier jobs, route, launch sessions, run the ship state machine, notify.","§5"],
-    ["arch","designed","Session containers","Each session is a container with a dedicated user, a cloned workspace, scoped tokens and sindri hooks in managed settings.","§7.2, §8.2"],
-    ["arch","designed","Liveness and relaunch","Progress from transcript mtime and heartbeats; kill-before-relaunch onto a persistent volume; park after two relaunches.","§9.2"],
-    ["arch","designed","Ship state machine","Stacks opened as drafts, released bottom up through reviewer bots and fix rounds until threads resolve and CI is green.","§7.3"],
-    ["arch","designed","Turn classification and handback","Each human turn in a session is an answer, a takeover or a sindri delivery.","§9.3"],
-
+    ["arch","built","App shell (S1)","The <code>sindri</code> process and CLI, host lease, ledger, YAML profile approved by hash, scheduler and doctor, in <code>src/Sindri</code>. Not installed until the switch.","§17.29.4 step 1 · #163"],
+    ["arch","built","One command chain (API P0–P1)","Command gate, audit, caller classes, the per-start <code>human</code> token, the CQRS catalog and golden JSON for every route.","API spec §2–§6 · #174, #181"],
+    ["arch","building","Projections and read-your-writes (API P2)","The projector, the ledger head and <code>health</code>; then items (P3), the event stream (P5), decisions and needs-you (P4) and jobs (P6).","API spec · #190"],
+    ["arch","built","Recipe model, validator and pure engine","Engine P1 and P3: the recipe format and its checks, the pure transition engine, and recipe eval cases run with <code>sindri recipe eval</code>.","engine spec · #179, #180"],
+    ["arch","building","The Temporal foundation (engine P4a)","Pinned <code>Temporalio</code>, the dev server under <code>sindri serve</code>, the worker, the first <code>RecipeWorkflow</code> and the ledger mirror, with its acceptance checks measured.","engine §0, §5 · #188"],
+    ["arch","building","Registry, approval and the interpreter (engine P2, P4)","Recipes registered and approved by the human through a server challenge; the interpreter runs desk Steps and bridges engine events to items.","engine spec · #191, #192"],
+    ["arch","designed","The agent runtime (engine P8)","Launches each agent Step in tmux through <code>ILauncher</code>; the session reports with a run-scoped <code>step-report</code>; gates still decide; tokens are metered through the provider port.","engine §6.5, P8 · README X21"],
+    ["arch","designed","Opening work in Warp (API P10a, P10b)","<code>OpenItem</code> with <code>open</code>, <code>attach</code> and <code>resume</code> modes for Claude Code, Codex or Cursor; opening an item with a live instance takes it over.","UI spec §6 · README X43, X44, X52"],
+    ["arch","designed","Liveness from session wrap","<code>sindri session wrap</code> heartbeats and reports exit; <code>session.ended</code> is written on exit or after 120 s without a heartbeat.","API §8.1 · README X35"],
+    ["arch","designed","A sandbox before unattended Steps","A sandbox phase comes before any unattended Step runs on the host. Containers stay the security target; tmux on the host comes first for attended work.","README X59 · §8.2"],
+    ["arch","designed","Shipper and PR babysitter recipes","Stacks opened as drafts, released bottom up through reviewer bots and fix rounds until threads resolve and CI is green. The human merges.","§7.3 · §17.29.2"],
+    ["arch","designed","Turn classification and handback","Each human turn in a session is an answer, a takeover or a sindri delivery; <code>sindri handback</code> resumes the instance.","§9.3"],
+    ["arch","built","TS reference: ledger, lock, profile, observe, doctor","Plans 1–5's TypeScript Sindri keeps running at the desk until the switch and is the reference for each part.","Plan 2 · readiness §4c"],
     ["ladder","built","The judge chain and provider pinning","Decisions run as judge questions on a provider chain; <code>judge --providers</code> lets callers pin providers.","§6, Plan 1"],
     ["ladder","designed","Rung, cost and outcome on every decision","Each decision records which rung made it, what it cost and how it turned out.","§17 principle 3"],
     ["ladder","designed","Push decisions down","A rung-3 or rung-4 decision that keeps getting the same answer becomes a judge question; a reliable judge question becomes code.","§17 principle 3"],
     ["ladder","designed","Avoidable agent turns metric","Agent turns a lower rung could have made, judged after the fact; the share at rungs 1–2 should rise monthly.","§17.2"],
 
     ["graph","built","Code index","Structure, normalized-AST and MinHash clones, dependencies, local embeddings on loopback, and a sandboxed graphify call graph.","§6.2, Plan 3"],
-    ["graph","designed","Entities, typed edges, provenance, freshness","Product nodes, symbols, records, journeys, telemetry, incidents, decisions and rules, joined by seven edge types.","§17.3"],
+    ["graph","building","Entities, typed edges, provenance, freshness","Product nodes, symbols, records, journeys, telemetry, incidents, decisions and rules, joined by typed edges. The product graph store with map import, export and status is S-3a.","§17.3 · context spec · #196"],
+    ["graph","built","Context foundations (S-1C, S-2R, S-FX)","The compose edge, the denylist and the owner-check instance, the redaction pass and the fixtures every later context stage builds on.","context spec · #175, #176, #177"],
     ["graph","designed","Query planner with rank fusion","Seeds expand through product and code graphs, fan out per component, and fuse with reciprocal rank fusion under per-dimension budgets.","§17.3"],
-    ["graph","designed","Pluggable component adapters","Connector, MemoryStore, Retriever, CodeGraph, ProductGraph, BehaviorSource, TelemetrySource, each pinned and swappable.","§17.3"],
+    ["graph","building","Pluggable component adapters","Each source is an adapter in the <code>Aw.Context</code> package: repo docs first (S-1A), then Onyx CE (S-5A); records key on stable ids, secrets are pointers, and model calls go through one port.","context §4, §8.8 · #194, #195"],
     ["graph","designed","A backtest arm per dimension","A dimension is enabled for a repo only when its arm improves recall without dropping precision below the bar.","§17.3"],
     ["graph","designed","Lowest-trust consolidation","Consolidation output keeps the lowest trust of its inputs; the graph has no Sindri imports and can't grade itself.","§17.19 C7"],
 
@@ -1066,7 +1110,7 @@ status: active  # proposed | active | retired</code></pre>
     ["scoping","designed","Direction checks","Approach, scoping, drift, shape and scope-expansion checkpoints, sindri-relayed, shadow first.","§6.1"],
     ["scoping","designed","Shape enforcement","Each index layer enforces once its precision reaches 0.7 over 30 signals on real commits.","§13 step 3b"],
 
-    ["packets","designed","Packet schema and deterministic checks","Acyclic tasks, existing or declared write scopes, no overlapping concurrent scopes, answered or defaulted questions, a hidden holdout.","§17.4"],
+    ["packets","built","Packet schema and deterministic checks","<code>aw-packets validate</code> and <code>freeze</code>: acyclic tasks, existing or declared write scopes, no overlapping concurrent scopes, answered or defaulted questions, a hidden holdout. A standalone NativeAOT CLI; Sindri's use of it is designed.","§17.4 · docs/csharp/packets.md"],
     ["packets","designed","Freeze and amend","The hash is recorded; later changes are amendments that re-plan only the affected tasks.","§17.4"],
     ["packets","designed","Edit with the same machinery","add, remove, prune, ask, narrow and widen re-run retrieval or pruning scoped to the edit; provenance, tombstones and pinned human adds.","§17.26.4"],
     ["packets","designed","Change sets, restore and undo","Compound edits plan and re-run as one change set; tombstones restore; every change set is a draft revision you can undo.","§17.26.4"],
@@ -1091,7 +1135,7 @@ status: active  # proposed | active | retired</code></pre>
     ["rules","designed","Product precedents","Recorded answers to recurring product questions, cited when agents ask.","§17.6"],
     ["rules","designed","Code standards as rule records","Every readiness §4b rule becomes a record with its check named.","readiness §4b"],
 
-    ["evidence","built","UI evidence skill","Playwright-based UI evidence for web PRs, with a design-parity mode; the basis of the <code>ui-browser</code> kind.","toolkit skill"],
+    ["evidence","built","UI evidence skill","Playwright-based UI evidence for web PRs, with a design-parity mode; the basis of the <code>ui-browser</code> kind. Its C# build (<code>Aw.Evidence</code>) is merged and becomes a block when the first recipe needs evidence.","toolkit skill · #158"],
     ["evidence","designed","Evidence provider contract","applies, plan, run at base and head, verify by script, publish with ask-first rules.","§17.11"],
     ["evidence","designed","Ship contract","Three review rounds by default, a satisfied evidence plan, shared publish rules.","§17.11"],
     ["evidence","designed","Two-phase verification","Sindri re-runs the reproduce check in a fresh verifier container: fail on base, pass on head.","§6, §8.5"],
@@ -1113,9 +1157,9 @@ status: active  # proposed | active | retired</code></pre>
     ["parallel","designed","P2 · Coordinator and workers","Worker hosts pull Steps under leases with heartbeats; a dead worker's Step resumes from checkpoint.","§17.20"],
     ["parallel","designed","P3 · Federation","Independent instances share only published packs and idea cards, at the lowest trust tier.","§17.20"],
     ["parallel","designed","P4 · Team mode","Shared store, a user per human with roles, per-user and per-team budgets, tenant-keyed rows.","§17.20"],
-    ["parallel","designed","Seams built now","LedgerStore, Lease, Launcher and Scheduler ports; idempotent events keyed by (kind, item, attempt, sha); tenant and ring keys on every row.","§17.20, readiness §4b.6"],
+    ["parallel","building","Seams built now","LedgerStore, Lease, Launcher and Scheduler ports; idempotent events keyed by (kind, item, attempt, sha); tenant and ring keys on every row. The app shell and API P1 carry the first of them.","§17.20, readiness §4b.6 · #163, #181"],
 
-    ["multi","designed","Event envelope and transactional outbox","Every state change is an event (id, type, version, tenant, ring, actor, item, causation, correlation, trace, time) in an append-only log written in the ledger's transaction; consumers read with durable cursors.","§17.21"],
+    ["multi","designed","Event envelope and transactional outbox","Every state change is an event (id, type, version, tenant, ring, actor, item, causation, correlation, trace, time) in an append-only log written in the ledger's transaction; consumers read with durable cursors. The control plane keeps an outbox; the engine's effects are Temporal activities instead.","§17.21 · README X57"],
     ["multi","designed","Bus port","In-process → database polling or LISTEN/NOTIFY → a broker at P2+.","§17.21"],
     ["multi","designed","Exactly-once outward commands","Every push, merge, comment, label and notification is an outbox command with an idempotency key, run by one dispatcher under the lease.","§17.21"],
     ["multi","designed","Service identities","Coordinator, each worker, each agent session and each standing workflow has its own identity; every record carries an actor. Agents never act as a person.","§17.21"],
@@ -1135,7 +1179,7 @@ status: active  # proposed | active | retired</code></pre>
     ["evolve","built","Stable and next channels","Install locations of Sindri itself; promote needs a passing suite, a soak and a typed confirmation.","§7.7, Plan 5"],
     ["evolve","built","Weekly job and publishing","The Monday job runs evolve; staged proposals publish to a plan file on a branch after a privacy check.","§7.6, Plan 5"],
     ["evolve","built","Adjudicated hook false positives","Hook fires are sampled and an adjudicator decides whether each was warranted.","§7.4, Plan 5"],
-    ["evolve","specced","All-sessions input behind a hardened publish gate","Evolve learns from every provider and repo; published tasks never quote transcripts and pass a generalization pass and a derived deny list.","evolve privacy spec, B1/B2"],
+    ["evolve","built","All-sessions input behind a hardened publish gate","Evolve learns from every provider and repo; <code>stage</code> generalizes each proposal and <code>publish</code> runs six gate layers, so published tasks never quote transcripts.","evolve privacy spec, B1/B2"],
     ["evolve","designed","Online shadow A/B","A variant runs beside the current version on live items before adoption.","§7.4"],
     ["evolve","designed","Self-adopt tier with brakes","25% canary, auto-revert after regression, at most 3 adoptions per artifact per week, a tier brake.","§7.4"],
     ["evolve","designed","Capability scouting","A weekly read-only scout over gaps, upstream changes, the software-factory field, the ecosystem and notes.","§17.18"],
@@ -1152,12 +1196,12 @@ status: active  # proposed | active | retired</code></pre>
 
     ["surfaces","built","CLI as the authority","Every read command has <code>--json</code>; exit codes 0 ok, 1 attention, 2 error.","Plans 2–5"],
     ["surfaces","built","Live session pane","The <code>aw-live</code> mod shows this session's numbers from <code>scorer live</code>.","toolkit mod"],
-    ["surfaces","specced","Fleet collector","Adapters per provider plus an <code>aw:fleet</code> hook spool; one state per session from pure rules.","dashboard §4"],
-    ["surfaces","specced","Dashboard views","Needs you, Agents, Repos, Automatic work, Today; typed-confirmation commands are shown, never run, from the browser.","dashboard §5"],
-    ["surfaces","specced","The needs-you signal and badge","One attention colour, motion that respects reduced motion, a tab title count, and a menu-bar badge.","dashboard §5.1–5.2"],
+    ["surfaces","designed","Fleet collector","Session hooks and <code>tmux capture-pane</code> feed the timeline and a live Running view. A follow-up spec; Plan 6's provider adapters are its input.","README X59 · dashboard §4"],
+    ["surfaces","building","Dashboard views","The Sindri app's views: queue and item detail (U2), then needs you and home (U3), services and health (U4), engine surfaces (U5), open in Warp (U6) and the context tab (U7). Protected actions show the CLI to copy.","UI spec · #184, #193, #197"],
+    ["surfaces","specced","The needs-you signal and badge","One attention colour, motion that respects reduced motion, a taskbar badge and tray icon. Only <code>notify.desk</code> raises OS notifications; the app never does.","UI spec · README X5, X50"],
     ["surfaces","designed","Notification taxonomy and budget","needs-answer, decide and needs-approval never overflow; an interrupt ceiling; per-surface budgets.","§10.1, §17.19 C15"],
     ["surfaces","designed","Swipe inbox with signed decisions","Passkey on an enrolled device; signs item, version, nonce and choice.","§17.12, §17.19"],
-    ["surfaces","designed","One command layer","The CLI and the dashboard are clients of the same handlers; every UI action writes a signed decision record.","§17.27.1"],
+    ["surfaces","built","One command layer","The CLI and the app call the same command chain, with the same checks, errors and ledger event; the app has no logic of its own.","§17.27.1 · API P1 #181"],
     ["surfaces","designed","Scope button and studio actions","Scope with a dry-run first, live round progress, map edits, create, validate, freeze and amend a packet.","§17.27.3"],
     ["surfaces","designed","UI parity test","A command registry with ui: pending and a due step; the test fails when a button is overdue.","§17.27.4"],
     ["surfaces","designed","Walkthrough pages","Designs, scope maps, PR walkthroughs and incident timelines, from a separate origin with no decision endpoints.","§17.12, §17.19"],
@@ -1169,20 +1213,22 @@ status: active  # proposed | active | retired</code></pre>
     ["hosts","designed","Subscription capacity routing","A quota ledger per account; route to the account with the most window left above the human's reserve; checkpoint and move on a rate limit.","§17.15"],
     ["hosts","designed","Linux built-ins as prerequisites","systemd scheduler, Docker sandbox and a phone-reachable notifier.","§17.13"],
 
-    ["readiness","designed","Readiness check module","<code>aw-readiness check</code> before the switch, <code>sindri readiness check</code> after, per repo and app; our own check is the score of record (no Factory account). It keeps its own history until the switch, then the C# ledger imports it.","readiness §8"],
-    ["readiness","designed","Cutover contract","No TS parity: each package proves itself with its own tests, the AOT job and the real hook scripts run against the C# binaries; the switch moves the TS state aside and C# starts fresh; one reversible cutover.","readiness §4c"],
-    ["readiness","designed","CI, identity and supply chain","<code>contents: read</code> permissions, banned untrusted triggers, SHA-pinned actions, NuGet source mapping, loopback bind in code.","readiness §4d"],
-    ["readiness","designed","Feature slices on a clean direction","Host → Features → Core ← Infrastructure; Core has no I/O and bans clocks and random ids.","readiness §4b.1"],
-    ["readiness","designed","Minimal endpoint → service → repository → SQL","Endpoints call exactly one service; repositories return Core types over hand-written ADO.NET by default.","readiness §4b.2"],
-    ["readiness","designed","Typed ids, Result and Error","No raw ids in public signatures; expected failures are coded Errors; exceptions only for bugs.","readiness §4b.3"],
-    ["readiness","designed","Explicit DI","Registration only in Host via one extension method per project; no scanning, no service locator.","readiness §4b.4"],
-    ["readiness","designed","TDD with fakes and contract tests","Red first; one fake per port; shared contract tests run against the fake and the SQL implementation.","readiness §4b.5"],
-    ["readiness","designed","Analyzers and size limits","Warnings as errors, banned APIs, public API tracking, file ≤ 300 lines, method ≤ 40, complexity ≤ 10, with a ratchet.","readiness §4b.6"],
-    ["readiness","designed","NativeAOT on entry points only","Hook binaries and CLIs build AOT; the evidence package stays framework-dependent; local builds stay JIT.","readiness §4b.6"],
+    ["readiness","built","Readiness check module","<code>aw-readiness check</code> per repo, a standalone NativeAOT CLI and our score of record (no Factory account); <code>sindri readiness check</code> after the switch. It keeps its own history until then.","readiness §8 · docs/readiness/README.md"],
+    ["readiness","specced","Cutover contract","No TS parity: each package proves itself with its own tests and the AOT job, and the real hook scripts run against the C# binaries in CI. The switch moves the TS state aside and C# starts fresh; one reversible cutover.","readiness §4c"],
+    ["readiness","built","CI, identity and supply chain","<code>contents: read</code> permissions, banned untrusted triggers, SHA-pinned actions, NuGet source mapping, loopback bind in code.","readiness §4d"],
+    ["readiness","built","Feature slices on a clean direction","Host → Features → Core ← Infrastructure; Core has no I/O and bans clocks and random ids.","readiness §4b.1"],
+    ["readiness","built","Minimal endpoint → service → repository → SQL","Endpoints call exactly one service; repositories return Core types over hand-written ADO.NET by default.","readiness §4b.2"],
+    ["readiness","built","Typed ids, Result and Error","No raw ids in public signatures; expected failures are coded Errors; exceptions only for bugs.","readiness §4b.3"],
+    ["readiness","built","Explicit DI","Registration only in Host via one extension method per project; no scanning, no service locator.","readiness §4b.4"],
+    ["readiness","built","TDD with fakes and contract tests","Red first; one fake per port; shared contract tests run against the fake and the SQL implementation.","readiness §4b.5"],
+    ["readiness","built","Analyzers and size limits","Warnings as errors, banned APIs, public API tracking, file ≤ 300 lines, method ≤ 40, complexity ≤ 10, with a ratchet.","readiness §4b.6"],
+    ["readiness","built","NativeAOT on entry points only","Hook binaries and CLIs build AOT. Evidence (Playwright) and the Sindri host (its Temporal worker can't be trimmed) stay framework-dependent; the Avalonia app stays AOT.","readiness §4b.6 · README X54"],
     ["readiness","designed","Stays outside C#, on purpose","Claude Code mods (TS), a pinned TS-indexer sidecar, graphify (Python), and Bash installers.","readiness §4a"],
 
     ["roadmap","built","Plans 1–5 merged","Measure and fixes, core, code index, scoping harness, self-evolution.","git log, §13.3"],
-    ["roadmap","specced","Plan 6 and evolve privacy","The dashboard plan and the B1/B2 privacy plans are written and approved.","Plan 6, B1/B2"],
+    ["roadmap","built","Evolve privacy, and Plan 6 folded into the app","Evolve privacy B1 (the publish gate) and B2 (all-sessions input) shipped in the TS package. Plan 6's dashboard became the Sindri app's UI.","B1/B2 · UI spec"],
+    ["roadmap","building","The Sindri app, in five lanes","API, engine, context and UI lanes each run their own /specToProvenPR team behind the S1 gate; a phase starts when the wave table's needs for it have merged.","docs/sindri/README.md execution plan"],
+    ["roadmap","designed","Follow-up specs","A sandbox phase before unattended Steps, standing workflows as the second recipe, the collector, and feeding takeovers back into recipes. None is written yet.","README X59"],
     ["roadmap","designed","F0.5 thin slice","One micro-packet → one task → one PR, two lenses, two evidence kinds, end to end once before it grows.","§17.16"],
     ["roadmap","designed","Field review across F0–F6","Tiers, gate records and outcomes in F0; test protection, test proof and guardrails from F0.5; back-pressure, PR lease and receipts in F2; the merge card in F3; tracing and the tune report in F6.","§17.23.18"],
     ["roadmap","designed","Second field pass and harvest","Ownership, oracles and spec-conflict in F0; the critic and escalation in F3; DORA in F4; context assertions in F5; one variant per artifact and the harvest job in F6.","§17.24.10, §17.25"],
@@ -1287,7 +1333,7 @@ status: active  # proposed | active | retired</code></pre>
   secs.forEach(function (s) { s.innerHTML = termify(s.innerHTML); });
 
   /* ---------- Features render + counts ---------- */
-  var counts = { built: 0, specced: 0, designed: 0, dream: 0 };
+  var counts = { built: 0, building: 0, specced: 0, designed: 0, dream: 0 };
   F.forEach(function (f) { counts[f[1]]++; });
   Array.prototype.forEach.call(document.querySelectorAll(".feats"), function (box) {
     var ch = box.getAttribute("data-ch"), html = "";
@@ -1460,18 +1506,19 @@ status: active  # proposed | active | retired</code></pre>
   (function () {
     var lines = document.getElementById("archLines"), g = document.getElementById("archNodes");
     var N = [
-      { id: "launchd", x: 230, y: 12, w: 140, h: 50, t: "launchd", sub: "scheduler", s: "built", b: "Fires the tick. Today it already runs the hourly <code>sindri observe</code>, the nightly and hourly index builds, and the Monday evolve job.", r: "§5 · §13.3" },
-      { id: "tick", x: 205, y: 108, w: 190, h: 68, t: "sindri tick", sub: "short · deterministic", s: "designed", b: "Reconciles the ledger with launcher and liveness, scans trackers, spawns bounded jobs, routes items, starts sessions under the cap, drives the ship state machine and notifies. Guarded by the fenced singleton lock (built).", r: "§5 · §9" },
-      { id: "tracker", x: 12, y: 108, w: 160, h: 56, t: "Tracker.scan", sub: "plan files · tracker", s: "built", b: "The <code>plan-file</code> tracker reads <code>### Task</code> headings and checkboxes as work items, so the toolkit builds itself without a tracker account. Tracker scanning for the full tick is designed.", r: "§7.1 · §13.3 · Plan 2" },
-      { id: "jobs", x: 12, y: 200, w: 160, h: 56, t: "bounded jobs", sub: "triage · pack · verify", s: "designed", b: "Detached, with their own lease and budget: triage, context pack, scoping, verifier and eval. Scoping already runs as a CLI.", r: "§5 · §6" },
-      { id: "judge", x: 12, y: 292, w: 160, h: 56, t: "judge", sub: "decision questions", s: "built", b: "The cheap decision engine. Questions run on a provider chain; new Sindri questions (size, ambiguity, pack probe, direction verdict) are designed.", r: "§5.1 · §6" },
-      { id: "ledger", x: 428, y: 108, w: 160, h: 56, t: "ledger.db", sub: "SQLite · one writer", s: "built", b: "The single source of truth for items, events, decisions and adoptions. Mode 0600, outside every session's working tree.", r: "§5.2 · Plan 2" },
-      { id: "spool", x: 428, y: 200, w: 160, h: 56, t: "spool", sub: "hooks append here", s: "built", b: "Hooks never write the database. They append files that the tick ingests and deletes only after the transaction commits.", r: "§5.2 · Plan 3" },
-      { id: "index", x: 428, y: 292, w: 160, h: 56, t: "code index", sub: "per repo", s: "built", b: "Structure, clones, dependencies, local embeddings and a graph, rebuilt from a bare mirror.", r: "§6.2 · Plan 3" },
-      { id: "router", x: 12, y: 396, w: 130, h: 56, t: "router", sub: "trust · size · mode", s: "designed", b: "shadow records only; assist lists startable items; auto-small starts XS, clear, trusted items within budget; anything else goes to scoping.", r: "§7.1" },
-      { id: "launcher", x: 160, y: 396, w: 130, h: 56, t: "Launcher", sub: "sessions", s: "designed", b: "Starts a container per session with a cloned workspace, an environment adapter, a settings overlay and its pack. Re-injects the task on compaction.", r: "§7.2 · §8.2" },
-      { id: "ship", x: 308, y: 396, w: 130, h: 56, t: "ship machine", sub: "stacks of PRs", s: "designed", b: "Drafts, reviewer bots, fix rounds until threads resolve and CI is green, level by level. The human merges.", r: "§7.3" },
-      { id: "notify", x: 456, y: 396, w: 132, h: 56, t: "Notifier", sub: "taxonomy · budget", s: "designed", b: "needs-answer, decide and needs-approval never overflow; parked and fyi batch; a digest collects the rest.", r: "§10.1" }
+      { id: "cli", x: 12, y: 12, w: 176, h: 56, t: "sindri CLI", sub: "verbs · --json", s: "built", b: "Every <code>sindri &lt;verb&gt;</code> is a client call to the running process, and starts it first if needed. Typed confirmations for protected actions happen here, at a terminal.", r: "S1 #163 · API P1 #181" },
+      { id: "app", x: 212, y: 12, w: 176, h: 56, t: "Sindri app", sub: "Avalonia · desktop", s: "building", b: "A full desk client of the API with no logic of its own: queue, item detail, needs you, decisions, starting workflows and opening work in Warp. U0 (theme and shell), U1 (catalog, headers, freshness) and U2 (queue, item detail) are open PRs.", r: "UI spec · #184, #193, #197" },
+      { id: "sess", x: 412, y: 12, w: 176, h: 56, t: "agent sessions", sub: "MCP · requests only", s: "designed", b: "Sessions reach Sindri through one MCP endpoint (<code>sindri_*</code> and <code>context_*</code> tools) stamped as <code>session</code>. Their calls are requests, never decisions.", r: "API §8 · README X8" },
+      { id: "api", x: 12, y: 112, w: 576, h: 50, t: "API: one command chain", sub: "commands · queries · projections · event stream · loopback HTTP", s: "built", b: "Every POST is a command through one chain: the 5-second command gate, audit, authorization by caller class (<code>human</code>, <code>session</code>, <code>service</code>), then one domain event. P0 and P1 (the chain, callers, the <code>human</code> token, goldens) are merged; P2 (the projector and read-your-writes) is an open PR.", r: "API spec §2–§6 · #174, #181, #190" },
+      { id: "cp", x: 12, y: 206, w: 176, h: 56, t: "control plane", sub: "lease · ledger · scheduler", s: "built", b: "The host lease, the ledger, the YAML profile approved by hash, the in-process scheduler for background services, notifications and doctor. The app shell, stage S1.", r: "§17.29.2 · S1 #163" },
+      { id: "wf", x: 212, y: 206, w: 176, h: 56, t: "workflow engine", sub: "recipes · blocks · gates", s: "building", b: "Runs every piece of work as an instance of a recipe. P1 (recipe model and validator) and P3 (the pure engine and recipe evals) are merged; P4a (the Temporal foundation), P2 (registry and approval) and P4 (the interpreter) are open PRs.", r: "engine spec · #179, #180, #188, #191, #192" },
+      { id: "ctx", x: 412, y: 206, w: 176, h: 56, t: "context engine", sub: "graph · planner · cited", s: "building", b: "The product graph and a query planner over trackers, docs, notes, memory and the code index, scrubbed and cited. S-1C, S-2R and S-FX are merged; S-1A (the <code>Aw.Context</code> package and routes), S-3a (the product graph store) and S-5A (the Onyx source) are open PRs.", r: "context spec · #175–#177, #194–#196" },
+      { id: "ledger", x: 12, y: 304, w: 176, h: 56, t: "ledger.db", sub: "the one public log", s: "built", b: "SQLite in WAL mode under <code>$AW_SINDRI_HOME</code>. Every engine transition is mirrored here, so the ledger stays the one public log even though Temporal holds the running state.", r: "§17.29 · README X10, X53" },
+      { id: "temporal", x: 212, y: 304, w: 176, h: 56, t: "Temporal server", sub: "local · loopback", s: "building", b: "<code>sindri serve</code> starts <code>temporal server start-dev</code> on loopback with its own SQLite file. One <code>RecipeWorkflow</code> interprets every recipe: commands are Updates, Steps are activities, events are signals, timers are durable.", r: "engine §0, §5 · Q8 · #188" },
+      { id: "src", x: 412, y: 304, w: 176, h: 56, t: "sources", sub: "repo docs · Onyx · Linear", s: "building", b: "Each source is an adapter. Repo docs come first (S-1A), then Onyx CE (S-5A); tracker records are keyed by their stable ids, and secrets are pointers, never values.", r: "context §4, §8.8 · #194, #195" },
+      { id: "tmux", x: 12, y: 400, w: 176, h: 56, t: "tmux sessions", sub: "snd-<run> · Warp attaches", s: "designed", b: "Every agent session Sindri runs lives in a tmux session it owns, started through <code>ILauncher</code>. Attach opens a Warp tab joined to it; the first thing you type is a takeover.", r: "README X55 · API P10a/b · engine P8" },
+      { id: "blocks", x: 212, y: 400, w: 176, h: 56, t: "blocks", sub: "gates · evidence · Steps", s: "specced", b: "Typed C# modules with their own contracts and tests. The finished tool ports (Redaction, Packets, Readiness, BugFix, Judge and Evidence) are merged packages and become blocks when the first recipe needs them.", r: "§17.28.2 · engine P8" },
+      { id: "ts", x: 412, y: 400, w: 176, h: 56, t: "TS sindri", sub: "runs until the switch", s: "built", b: "The TypeScript package from Plans 1–5 still runs at the desk (observe, scope, index, evolve, doctor) and is the reference for what each part does, never for how. Nothing of it is migrated.", r: "readiness §4c · docs/csharp/sindri.md" }
     ];
     function c(n, side) {
       if (side === "b") return [n.x + n.w / 2, n.y + n.h]; if (side === "t") return [n.x + n.w / 2, n.y];
@@ -1479,10 +1526,10 @@ status: active  # proposed | active | retired</code></pre>
     }
     var by = {}; N.forEach(function (n) { by[n.id] = n; });
     function link(a, sa, b, sb, cls) { var p = c(by[a], sa), q = c(by[b], sb); el("path", { "class": cls || "ln", d: "M" + p[0] + "," + p[1] + " L" + q[0] + "," + q[1], "marker-end": "url(#ah)" }, lines); }
-    link("launchd", "b", "tick", "t", "ln-a");
-    link("tick", "l", "tracker", "r"); link("tick", "l", "jobs", "r"); link("jobs", "b", "judge", "t");
-    link("tick", "r", "ledger", "l"); link("spool", "t", "ledger", "b"); link("tick", "r", "index", "l", "ln-d");
-    ["router", "launcher", "ship", "notify"].forEach(function (k) { link("tick", "b", k, "t"); });
+    ["cli", "app", "sess"].forEach(function (k) { var n = by[k]; el("path", { "class": "ln", d: "M" + (n.x + n.w / 2) + "," + (n.y + n.h) + " V" + (by.api.y - 6), "marker-end": "url(#ah)" }, lines); });
+    ["cp", "wf", "ctx"].forEach(function (k) { var n = by[k]; el("path", { "class": "ln-a", d: "M" + (n.x + n.w / 2) + "," + (by.api.y + by.api.h) + " V" + (n.y - 6), "marker-end": "url(#aha)" }, lines); });
+    link("cp", "b", "ledger", "t"); link("wf", "b", "temporal", "t"); link("ctx", "b", "src", "t");
+    link("temporal", "l", "ledger", "r", "ln-d"); link("temporal", "b", "blocks", "t"); link("temporal", "b", "tmux", "t", "ln-d");
     N.forEach(function (n) {
       node(g, { x: n.x, y: n.y, w: n.w, h: n.h, s: n.s, title: n.t, panel: "archDetail", d: { t: n.t, s: n.s, b: n.b, r: n.r },
         draw: function (q) { txt(q, 12, n.h / 2 - 2, n.t, null, { "font-size": "15", "font-weight": "700" }); txt(q, 12, n.h / 2 + 16, n.sub, "t-s", { "font-size": "12" }); glyphText(q, n.w - 8, 18, n.s); } });
@@ -1644,7 +1691,7 @@ status: active  # proposed | active | retired</code></pre>
       ["Frozen packet", "The packet passed <code>sindri packet validate</code> and its hash is in the ledger. The build runs against that hash.", "packet.frozen hash=…"],
       ["Compile", "The {{task compiler}} turns the next Step into a {{session spec}}: write scope, read seeds, rules, lens tools, evidence, budget, next.", "step.compiled task=T3 lens=implementer"],
       ["Sandbox", "The policy is the approved ceiling ∩ lens ∩ task. Out-of-scope writes, commands and network are refused, not left to the agent.", "policy.compiled ceiling∩lens∩task"],
-      ["Lean session", "A container starts with only the planned skills, agents and MCP; the injection plan arrives at SessionStart.", "session.started first-call tokens ≤ plan"],
+      ["Lean session", "A tmux session starts with only the planned skills, agents and MCP; the injection plan arrives at SessionStart. A container wraps it once the sandbox phase lands.", "session.started first-call tokens ≤ plan"],
       ["Evaluator", "A QA lens Step checks held-out examples the implementer never saw. Verdicts are computed by a script.", "eval.verdict pass holdouts=3/3"],
       ["Evidence", "Providers run at base and head; each acceptance example gets a passing artifact.", "evidence.satisfied kinds=test,cli-transcript"],
       ["Ship gate", "CI green, threads resolved, evidence satisfied, review rounds ≤ 3.", "ship.gate pass rounds=2"],
@@ -1741,7 +1788,7 @@ status: active  # proposed | active | retired</code></pre>
   /* ---------- Multiplayer ---------- */
   (function () {
     var PH = [
-      { k: "port", t: "During the C# port", sub: "cheap seams", items: ["Event envelope + outbox", "Outbox commands", "actor · tenant · ring · trace", "Bus port", "Secrets port", "OpenTelemetry + traces"] },
+      { k: "port", t: "In the C# app now", sub: "cheap seams", items: ["Event envelope + outbox", "Outbox commands", "actor · tenant · ring · trace", "Bus port", "Secrets port", "OpenTelemetry + traces"] },
       { k: "p2", t: "With P2", sub: "coordinator + workers", items: ["Bus transport between hosts", "Worker service identities", "Cross-machine traces"] },
       { k: "p4", t: "With P4", sub: "team mode", items: ["People and roles", "Tenant isolation", "Collaboration surfaces", "Hash-chained audit", "Shared store", "SLOs", "Per-tenant secrets, policy"] }
     ];
@@ -1759,7 +1806,7 @@ status: active  # proposed | active | retired</code></pre>
       });
     });
     var R = [
-      ["Event log and bus", "The ledger is the record; hooks append to spool files; the dashboard polls.", "One event envelope, an append-only log in the ledger's transaction (transactional outbox), durable cursors, and a Bus port."],
+      ["Event log and bus", "The ledger is the record; hooks append to spool files; the API serves an event stream (API P5).", "One event envelope, an append-only log in the ledger's transaction (transactional outbox), durable cursors, and a Bus port."],
       ["Exactly-once outward actions", "Writes run directly from the ship Step, with idempotency keys on some adapters.", "Every outward action is an outbox command with an idempotency key, run by one dispatcher under the lease."],
       ["Identity", "One OS user; host CLI verbs are the authority.", "People, devices and service identities; every record and event carries an actor."],
       ["Authorization", "Implicit: the host user can do everything.", "Roles per tenant (owner, approver, contributor, viewer); each decision kind declares its role; optional two-person approval."],
@@ -1773,7 +1820,7 @@ status: active  # proposed | active | retired</code></pre>
       ["Config and policy as code", "Profile files with profile approve.", "Versioned per-tenant profiles changed by pull request with required approvers."],
       ["Data lifecycle", "Retention per §8.4.", "Retention, export and deletion per tenant; backups and restore drills."],
       ["Operations", "One process on one host.", "Rolling upgrades with version-skew rules, upcast events, zero-downtime migrations, health endpoints."],
-      ["API", "CLI verbs; the dashboard's local HTTP.", "One versioned API (HTTP + event stream) for every client, plus outbound webhooks."]
+      ["API", "One loopback HTTP API and event stream for the CLI, the app and sessions (API P1 merged).", "One versioned API (HTTP + event stream) for every client, plus outbound webhooks."]
     ];
     buttons("mpBtns", R.map(function (r) { return { t: r[0], s: "designed", b: "<b>Today:</b> " + esc(r[1]) + "<br><b>Needed:</b> " + esc(r[2]), r: "§17.21" }; }), "mpPiece");
   })();
@@ -1820,14 +1867,14 @@ status: active  # proposed | active | retired</code></pre>
   (function () {
     var g = document.getElementById("surfNodes");
     var S = [
-      { t: "Menu-bar badge", x: 60, y: 40, s: "specced", b: "'3 working · 1 needs you', refreshed every 30 s; no action runs from it.", r: "dashboard §5.2" },
+      { t: "Tray badge", x: 60, y: 40, s: "specced", b: "The app's taskbar badge and tray icon: '3 working · 1 needs you'. No action runs from it, and only <code>notify.desk</code> raises OS notifications.", r: "UI spec · README X5" },
       { t: "Swipe inbox", x: 70, y: 120, s: "designed", b: "Binary, low-context decisions on the phone: undraft a PR, accept evidence, approve or reject a rule, evolve proposal or idea card, keep or drop a scope surface, raise a workflow's tier.", r: "§17.12 · §17.19" },
       { t: "Notifications", x: 85, y: 200, s: "designed", b: "A taxonomy with a budget per surface: needs-answer, decide and needs-approval never overflow; the rest batches into a digest.", r: "§10.1 · §17.19 C15" },
-      { t: "Dashboard", x: 255, y: 60, s: "specced", b: "Loopback only, a thin layer over CLI JSON. Needs you, Agents, Repos, Automatic work and Today. Exposed off-machine only through <code>tailscale serve</code>.", r: "dashboard spec · §17.19" },
+      { t: "Sindri app", x: 255, y: 60, s: "building", b: "An Avalonia desktop app over the loopback API: the queue, item detail and timeline, needs you, decisions, starting workflows and opening work in Warp. Shell U0, catalog U1 and queue U2 are open PRs; phone heads come later from the same views.", r: "UI spec · #184, #193, #197" },
       { t: "Walkthrough pages", x: 265, y: 160, s: "designed", b: "Read and comment: designs, scope maps, PR walkthroughs, incident timelines. Served from a separate origin with no cookies or decision endpoints.", r: "§17.12 · §17.19" },
-      { t: "Live session", x: 420, y: 90, s: "designed", b: "Watch or take over a running session through a terminal's remote control or <code>sindri attach</code>. Typing in is a takeover, never an authenticated decision.", r: "§17.12" },
+      { t: "Live session", x: 420, y: 90, s: "designed", b: "Every agent session runs in a tmux session Sindri owns; <code>sindri open &lt;item&gt; --attach</code> or the app joins it from a Warp tab. Typing in is a takeover, never an authenticated decision.", r: "§17.12 · README X55" },
       { t: "Desk queue", x: 430, y: 190, s: "designed", b: "Open questions, design revisions, amendments, packet freezes and every approval-tier item.", r: "§17.12 · §17.19" },
-      { t: "CLI", x: 440, y: 240, s: "built", b: "The authority. <code>approve</code>, <code>answer</code>, <code>decide</code> and <code>handback</code> (designed) join today's commands; typed confirmations happen here.", r: "§10.3 · Plans 2–5" }
+      { t: "CLI", x: 440, y: 240, s: "built", b: "The authority. The C# <code>sindri</code> CLI calls the same command chain as the app; <code>approve</code>, <code>answer</code>, <code>decide</code> and <code>handback</code> (designed) join it; typed confirmations happen here.", r: "§10.3 · Plans 2–5 · #163, #181" }
     ];
     S.forEach(function (s) {
       node(g, { x: s.x, y: s.y, w: 142, h: 40, rx: 20, s: s.s, title: s.t, panel: "surfDetail", d: { t: s.t, s: s.s, b: s.b, r: s.r },
@@ -1867,15 +1914,15 @@ status: active  # proposed | active | retired</code></pre>
 
     var lines = document.getElementById("tierLines"), tg = document.getElementById("tierNodes");
     var T = [
-      { id: "sindri", t: "Sindri", tier: 3, x: 230, y: 20, w: 140, b: "Tier 3. Depends on tiers 0–2 only through their <code>Core</code> contracts or their CLIs. Sized per module inside its port packet, last in the order." },
-      { id: "scorer", t: "Scorer", tier: 2, x: 60, y: 120, w: 140, b: "Tier 2. Calls judge and reads <code>judge.db</code> today: a declared, read-only <code>db</code> edge that should become a CLI or a published view." },
-      { id: "evidence", t: "Evidence", tier: 2, x: 230, y: 120, w: 140, b: "Tier 2 (ui-evidence). Framework-dependent, because Playwright for .NET doesn't support NativeAOT." },
-      { id: "bugfix", t: "BugFix", tier: 2, x: 400, y: 120, w: 140, b: "Tier 2 (the bugfix-state CLI). AOT entry point." },
-      { id: "judge", t: "Judge", tier: 1, x: 48, y: 230, w: 125, b: "Tier 1. Ported first, after Redaction. Depends only on tier 0: the Kernel and Redaction." },
-      { id: "redaction", t: "Redaction", tier: 0, x: 420, y: 340, w: 140, b: "Tier 0, next to the Kernel. The scrubbing patterns now copied between judge and sindri, in one pattern file, with timeouts that block." },
-      { id: "packets", t: "Packets", tier: 1, x: 453, y: 230, w: 125, b: "Tier 1. The packet schema, validate and freeze. A standalone C# package built from the template in R1b; depends only on the Kernel." },
-      { id: "readiness", t: "Readiness", tier: 1, x: 318, y: 230, w: 125, b: "Tier 1. Our readiness check, the score of record. Built from the template in R1b; keeps its own history until the switch." },
-      { id: "kernel", t: "Aw.Kernel", tier: 0, x: 140, y: 340, w: 240, b: "Tier 0, with its Data, Telemetry and Testing parts: <code>Result&lt;T&gt;</code>, <code>Error</code>, clock helpers, id conventions, logging, the <code>IService</code> pipeline and contract-test base classes. The BCL plus one external package each." }
+      { id: "sindri", s: "building", t: "Sindri", tier: 3, x: 230, y: 20, w: 140, b: "Tier 3. Built new in C# as an application, not ported; the app shell is merged. Depends on tiers 0–2 only through their <code>Core</code> contracts or their CLIs." },
+      { id: "scorer", s: "designed", t: "Scorer", tier: 2, x: 60, y: 120, w: 140, b: "Tier 2. Not ported: the scorer is rebuilt as a Sindri block from its TS reference when the first recipe needs it. The TS scorer calls judge and reads <code>judge.db</code>, a declared, read-only <code>db</code> edge." },
+      { id: "evidence", s: "built", t: "Evidence", tier: 2, x: 230, y: 120, w: 140, b: "Tier 2 (ui-evidence). Framework-dependent, because Playwright for .NET doesn't support NativeAOT." },
+      { id: "bugfix", s: "built", t: "BugFix", tier: 2, x: 400, y: 120, w: 140, b: "Tier 2 (the bugfix-state CLI). AOT entry point." },
+      { id: "judge", s: "built", t: "Judge", tier: 1, x: 48, y: 230, w: 125, b: "Tier 1. Ported first, after Redaction. Depends only on tier 0: the Kernel and Redaction." },
+      { id: "redaction", s: "built", t: "Redaction", tier: 0, x: 420, y: 340, w: 140, b: "Tier 0, next to the Kernel. The scrubbing patterns now copied between judge and sindri, in one pattern file, with timeouts that block." },
+      { id: "packets", s: "built", t: "Packets", tier: 1, x: 453, y: 230, w: 125, b: "Tier 1. The packet schema, validate and freeze. A standalone C# package built from the template in R1b; depends only on the Kernel." },
+      { id: "readiness", s: "built", t: "Readiness", tier: 1, x: 318, y: 230, w: 125, b: "Tier 1. Our readiness check, the score of record. Built from the template in R1b; keeps its own history until the switch." },
+      { id: "kernel", s: "built", t: "Aw.Kernel", tier: 0, x: 140, y: 340, w: 240, b: "Tier 0, with its Data, Telemetry and Testing parts: <code>Result&lt;T&gt;</code>, <code>Error</code>, clock helpers, id conventions, logging, the <code>IService</code> pipeline and contract-test base classes. The BCL plus one external package each." }
     ];
     var by = {}; T.forEach(function (t) { by[t.id] = t; });
     var E = [["sindri", "scorer"], ["sindri", "evidence"], ["sindri", "bugfix"], ["sindri", "judge"], ["sindri", "redaction"], ["scorer", "judge"], ["scorer", "kernel"], ["evidence", "kernel"], ["bugfix", "kernel"], ["judge", "kernel"], ["judge", "redaction"], ["packets", "kernel"], ["readiness", "kernel"], ["sindri", "packets"], ["sindri", "readiness"]];
@@ -1887,9 +1934,9 @@ status: active  # proposed | active | retired</code></pre>
     });
     txt(lines, 4, 50, "tier 3", "t-m"); txt(lines, 4, 150, "tier 2", "t-m"); txt(lines, 4, 260, "tier 1", "t-m"); txt(lines, 4, 370, "tier 0", "t-m");
     T.forEach(function (t) {
-      node(tg, { x: t.x, y: t.y, w: t.w, h: 44, rx: 10, s: "designed", title: t.t + ", tier " + t.tier, onSelect: function () {
+      node(tg, { x: t.x, y: t.y, w: t.w, h: 44, rx: 10, s: t.s, title: t.t + ", tier " + t.tier, onSelect: function () {
           edgeEls.forEach(function (ep) { var on = ep[0][0] === t.id || ep[0][1] === t.id; ep[1].setAttribute("class", on ? "ln-a" : (ep[0][0] === "sindri" ? "ln-d" : "ln")); ep[1].setAttribute("marker-end", on ? "url(#aha)" : "url(#ah)"); });
-          renderDetail("tierDetail", { t: t.t, s: "designed", b: t.b, r: "readiness §4b.1a, §4b.6, §10" });
+          renderDetail("tierDetail", { t: t.t, s: t.s, b: t.b, r: "readiness §4b.1a, §4b.6, §10" });
         }, draw: function (q) { txt(q, t.w / 2, 28, t.t, null, { "text-anchor": "middle", "font-size": "15", "font-weight": "700" }); } });
     });
     var bad = document.getElementById("badBtn");
@@ -1898,7 +1945,7 @@ status: active  # proposed | active | retired</code></pre>
       bad.setAttribute("aria-pressed", on ? "true" : "false");
       document.getElementById("badEdge").style.display = on ? "" : "none";
       document.getElementById("badMark").style.display = on ? "" : "none";
-      if (on) renderDetail("tierDetail", { t: "CI fails: undeclared upward edge", s: "designed", b: "Judge (tier 1) → Sindri (tier 3) points up the tiers. It isn't in <code>deps.yaml</code>, so the architecture test fails the build. Adding any edge is a reviewed change to <code>deps.yaml</code>, and an approval-tier change once it is a rule record.", l: ["Project edges are checked against real references", "CLI, db and file edges by scanning launches, connection strings and state paths", "Fan-out: at most 4 in-repo projects and 6 third-party packages per project", "No Common, Shared, Utils or Helpers projects"], r: "readiness §4b.1a" });
+      if (on) renderDetail("tierDetail", { t: "CI fails: undeclared upward edge", s: "designed", b: "Judge (tier 1) → Sindri (tier 3) points up the tiers. It isn't in <code>deps.yaml</code>, so the architecture test fails the build. Adding any edge is a reviewed change to <code>deps.yaml</code>, and an approval-tier change once it is a rule record.", l: ["Project edges are checked against real references", "CLI, db and file edges by scanning launches, connection strings and state paths", "Per-project limits on references (the package fan-out cap was removed 2026-10-12)", "No Common, Shared, Utils or Helpers projects"], r: "readiness §4b.1a" });
       else document.getElementById("tierDetail").innerHTML = '<p class="hint">Edge removed. Select a package.</p>';
     });
 
@@ -1922,14 +1969,14 @@ status: active  # proposed | active | retired</code></pre>
         ["3", "built", "Plan 3 · Code index", "Host code index, record-only shape signals and outcome reconcile.", "#72"],
         ["4", "built", "Plan 4 · Scoping harness", "<code>sindri scope</code>, <code>--backtest</code>, and repo onboarding.", "#78"],
         ["5", "built", "Plan 5 · Self-evolution", "Offline, human-gated: registry, suites, reflect, correct, compare, adopt, channels, weekly job.", "#81, #82"],
-        ["B", "specced", "Evolve privacy B1/B2", "A hardened publish gate, then all-sessions input from every provider and repo.", "evolve privacy spec"],
-        ["6", "specced", "Plan 6 · Dashboard", "Fleet collector, dashboard views, needs-you signal, menu-bar badge, attach.", "dashboard spec · #83"]
+        ["B", "built", "Evolve privacy B1/B2", "A hardened publish gate, then all-sessions input from every provider and repo.", "evolve privacy spec · #84"],
+        ["6", "building", "Plan 6 · Dashboard → the Sindri app", "The browser dashboard was not built: it became the Avalonia app's UI (U0–U7 in the app lane), and its collector a follow-up spec.", "dashboard spec · UI spec"]
       ] },
       { y: 155, name: "Readiness", items: [
-        ["R0", "designed", "R0 · Baseline", "A manual pass over the nine pillars, recorded per criterion.", "readiness §10"],
-        ["R1a", "designed", "R1a · Safety and measurement", "Hardened CI, the main ruleset and agent identity; the cutover contract; fail-open logging; the AOT spike; the readiness baseline.", "readiness §4c, §4d, §10"],
-        ["R1b", "designed", "R1b · The template", "Build props, central packages, analyzers, ratchet, Kernel, <code>deps.yaml</code> with edge checks, scaffolds, rule records, devcontainer and templates; <code>Aw.Readiness</code> and <code>Aw.Packets</code> as the first two packages built from it.", "readiness §10"],
-        ["R2", "designed", "R2 · The ports", "One packet per package, whole, lowest tier first: Redaction → Judge → Scorer, Evidence and BugFix → Sindri. Stop rules: 2× per package or 1.5× overall triggers a review.", "readiness §4a, §10"],
+        ["R0", "built", "R0 · Baseline", "A manual pass over the nine pillars, recorded per criterion.", "readiness §10"],
+        ["R1a", "built", "R1a · Safety and measurement", "Hardened CI, the main ruleset and agent identity; the cutover contract; fail-open logging; the AOT spike; the readiness baseline.", "readiness §4c, §4d, §10"],
+        ["R1b", "built", "R1b · The template", "Build props, central packages, analyzers, ratchet, Kernel, <code>deps.yaml</code> with edge checks, scaffolds, rule records, devcontainer and templates; <code>Aw.Readiness</code> and <code>Aw.Packets</code> as the first two packages built from it. Level 4 for the template waits on the owner's label sync.", "readiness §10 · #141"],
+        ["R2", "building", "R2 · The ports, then the Sindri app", "Redaction, BugFix, Judge and Evidence are ported and merged; no further standalone ports (owner re-plan 2026-10-11). Sindri is built new in C# (the app lane), then the switch.", "readiness §4a, §10 · #155, #156, #158, #160"],
         ["R3", "designed", "R3 · Level 4", "Criteria that need usage data; Level 4 passed. Factory work starts here.", "readiness §10"],
         ["R4", "designed", "R4 · Level 5", "F0–F3 plus the readiness module's weekly workflow.", "readiness §10"]
       ] },
@@ -1951,6 +1998,17 @@ status: active  # proposed | active | retired</code></pre>
         ["P4", "designed", "P4 · Team mode", "When a team adopts it, with approval. Brings people and roles, tenant isolation, collaboration, hash-chained audit, the shared store and SLOs.", "§17.20, §17.21"]
       ] }
     ];
+    lanes.splice(2, 0, { y: 255, name: "Sindri app (C#)", items: [
+        ["S1", "built", "S1 · App shell", "The <code>sindri</code> process and CLI, host lease, ledger, profile, scheduler and doctor.", "#163"],
+        ["API", "building", "API P0–P11", "P0 and P1 (the command chain) merged; P2 (the projector) open; P3–P11 planned, ending with opening work in Warp (P10a, P10b).", "API spec · #174, #181, #190"],
+        ["WF", "building", "Engine P1–P8", "P1 and P3 merged; P4a (the Temporal foundation), P2 and P4 open; P5–P8 planned, ending with the agent runtime.", "engine spec · #179, #180, #188, #191, #192"],
+        ["CTX", "building", "Context S-1…S-10", "S-1C, S-2R and S-FX merged; S-1A, S-3a and S-5A open; S-1M, S-2W, S-3M, S-4, S-5B, S-6, S-7, S-8, S-10 and S-CF planned.", "context spec · #194, #195, #196"],
+        ["UI", "building", "UI U0–U7", "U0 (theme and shell), U1 (catalog) and U2 (queue, item detail) open as a stack; U3–U7 planned.", "UI spec · #184, #193, #197"],
+        ["BL", "designed", "Blocks", "Each tool port becomes a block when the first recipe needs it; scorer, code index, scoping and evolve are rebuilt from their TS reference.", "§17.29.4 step 4"],
+        ["WL", "designed", "Factory-line workflows", "Recipes down the factory line, intake first. The scoping recipe's spec is next after the UI design.", "§17.29.4 step 5 · README X34"],
+        ["SW", "designed", "The switch", "<code>./setup.sh --runtime cs</code> on the always-on box, then the laptop, once every desk tool has its C# form; TS deleted 14 days later.", "readiness §4c, §10"]
+      ] });
+    lanes[3].y = 355; lanes[4].y = 455;
     var x0 = 118, step = 58;
     lanes.forEach(function (ln) {
       txt(lines, 6, ln.y - 26, ln.name.toUpperCase(), "t-m", { "font-size": "11" });
@@ -1961,6 +2019,7 @@ status: active  # proposed | active | retired</code></pre>
           draw: function (q) {
             var nb = q.querySelector(".nb");
             if (it[1] === "built") { nb.setAttribute("style", "fill:var(--built);stroke:var(--built)"); }
+            else if (it[1] === "building") { nb.setAttribute("style", "fill:var(--building-soft);stroke-width:3.5"); }
             else if (it[1] === "specced") { nb.setAttribute("style", "stroke-width:3.5"); el("circle", { r: 3, fill: "var(--specced)", cy: 13 }, q); }
             txt(q, 0, 4, it[0], null, { "text-anchor": "middle", "font-size": it[0].length > 2 ? "10.5" : "12.5", "font-weight": "700", style: it[1] === "built" ? "fill:var(--panel)" : "" });
           } });
@@ -1968,11 +2027,13 @@ status: active  # proposed | active | retired</code></pre>
     });
     function arrow(x1, y1, x2, y2) { el("path", { "class": "ln-a", d: "M" + x1 + "," + y1 + " C" + x1 + "," + ((y1 + y2) / 2) + " " + x2 + "," + ((y1 + y2) / 2) + " " + x2 + "," + y2, "marker-end": "url(#aha)" }, lines); }
     arrow(x0 + 6 * step, 76, x0, 134);
-    arrow(x0 + 4 * step, 176, x0, 234);
-    arrow(x0 + 3 * step, 276, x0, 334);
-    txt(lines, 470, 140, "Plan 6 → readiness", "t-s", { "font-size": "11" });
-    txt(lines, 372, 200, "R3: Level 4 → F0", "t-s", { "font-size": "11" });
-    txt(lines, 290, 300, "P1 joins F2", "t-s", { "font-size": "11" });
+    arrow(x0 + 3 * step, 176, x0, 234);
+    arrow(x0 + 7 * step, 276, x0, 334);
+    arrow(x0 + 3 * step, 376, x0, 434);
+    txt(lines, 300, 104, "plans → readiness", "t-s", { "font-size": "11" });
+    txt(lines, 300, 200, "R2: Sindri built new", "t-s", { "font-size": "11" });
+    txt(lines, 430, 318, "switch → R3 · Level 4 → F0", "t-s", { "font-size": "11" });
+    txt(lines, 290, 400, "P1 joins F2", "t-s", { "font-size": "11" });
   })();
 
   /* ---------- Ch21: idea card demo ---------- */
