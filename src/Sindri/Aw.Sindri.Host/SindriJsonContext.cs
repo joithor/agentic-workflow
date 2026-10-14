@@ -95,4 +95,5 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(PurgeReport))]
 [JsonSerializable(typeof(ImportContextMapRequest))]
 [JsonSerializable(typeof(ImportContextMapResponse))]
+[JsonSerializable(typeof(MapImportChallenge))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

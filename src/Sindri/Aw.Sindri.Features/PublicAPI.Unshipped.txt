@@ -32,6 +32,25 @@ Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Changes.init -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Equals(Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse? other) -> bool
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Hash.get -> Aw.Sindri.Core.Ids.ProfileHash
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Hash.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer?
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Answer.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Deconstruct(out string! Path, out string? Hash, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.ImportContextMapRequest(string! Path, string? Hash = null, Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer = null) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Challenge.get -> Aw.Sindri.Features.ContextCalls.MapImportChallenge?
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Challenge.init -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Deconstruct(out Aw.Context.Core.Map.MapFilePreview! Preview, out Aw.Context.Core.Map.MapImported? Imported, out long? Sequence, out Aw.Sindri.Features.ContextCalls.MapImportChallenge? Challenge) -> void
+Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.ImportContextMapResponse(Aw.Context.Core.Map.MapFilePreview! Preview, Aw.Context.Core.Map.MapImported? Imported, long? Sequence, Aw.Sindri.Features.ContextCalls.MapImportChallenge? Challenge = null) -> void
+Aw.Sindri.Features.ContextCalls.MapImportChallenge
+Aw.Sindri.Features.ContextCalls.MapImportChallenge.<Clone>$() -> Aw.Sindri.Features.ContextCalls.MapImportChallenge!
+Aw.Sindri.Features.ContextCalls.MapImportChallenge.Action.get -> string!
+Aw.Sindri.Features.ContextCalls.MapImportChallenge.Action.init -> void
+Aw.Sindri.Features.ContextCalls.MapImportChallenge.Challenge.get -> Aw.Sindri.Core.Challenges.ChallengeId
+Aw.Sindri.Features.ContextCalls.MapImportChallenge.Challenge.init -> void
+Aw.Sindri.Features.ContextCalls.MapImportChallenge.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeId Challenge, out string! Action, out System.DateTimeOffset ExpiresAt) -> void
+Aw.Sindri.Features.ContextCalls.MapImportChallenge.Equals(Aw.Sindri.Features.ContextCalls.MapImportChallenge? other) -> bool
+Aw.Sindri.Features.ContextCalls.MapImportChallenge.ExpiresAt.get -> System.DateTimeOffset
+Aw.Sindri.Features.ContextCalls.MapImportChallenge.ExpiresAt.init -> void
+Aw.Sindri.Features.ContextCalls.MapImportChallenge.MapImportChallenge(Aw.Sindri.Core.Challenges.ChallengeId Challenge, string! Action, System.DateTimeOffset ExpiresAt) -> void
 Aw.Sindri.Features.GetStatus.GetStatusResponse.Deconstruct(out bool Running, out int Pid, out long Epoch, out System.DateTimeOffset? LeaseExpiresAt, out Aw.Sindri.Features.GetStatus.ProfileStatus! Profile, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetStatus.ServiceStatus!>! Services) -> void
 Aw.Sindri.Features.GetStatus.GetStatusResponse.Epoch.get -> long
 Aw.Sindri.Features.GetStatus.GetStatusResponse.Epoch.init -> void
@@ -704,20 +723,14 @@ Aw.Sindri.Features.ContextCalls.GetContextMapRequest.Equals(Aw.Sindri.Features.C
 Aw.Sindri.Features.ContextCalls.GetContextMapRequest.GetContextMapRequest() -> void
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ImportContextMapRequest!
-Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Confirmed.get -> bool
-Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Confirmed.init -> void
-Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Deconstruct(out string! Path, out string? Hash, out bool Confirmed) -> void
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Equals(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? other) -> bool
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Hash.get -> string?
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Hash.init -> void
-Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.ImportContextMapRequest(string! Path, string? Hash = null, bool Confirmed = false) -> void
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Path.get -> string!
 Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.Path.init -> void
 Aw.Sindri.Features.ContextCalls.ImportContextMapResponse
 Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ImportContextMapResponse!
-Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Deconstruct(out Aw.Context.Core.Map.MapFilePreview! Preview, out Aw.Context.Core.Map.MapImported? Imported, out long? Sequence) -> void
 Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Equals(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? other) -> bool
-Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.ImportContextMapResponse(Aw.Context.Core.Map.MapFilePreview! Preview, Aw.Context.Core.Map.MapImported? Imported, long? Sequence) -> void
 Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Imported.get -> Aw.Context.Core.Map.MapImported?
 Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Imported.init -> void
 Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Preview.get -> Aw.Context.Core.Map.MapFilePreview!
@@ -736,6 +749,9 @@ override Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.ToString() -> s
 override Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.Equals(object? obj) -> bool
 override Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.GetHashCode() -> int
 override Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.MapImportChallenge.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.MapImportChallenge.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.MapImportChallenge.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.ExportContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ExportContextMapRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.GetContextMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextMapRequest? right) -> bool
@@ -744,3 +760,5 @@ static Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.operator !=(Aw.Si
 static Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.operator !=(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? left, Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? right) -> bool
 static Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.operator ==(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? left, Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? right) -> bool
+static Aw.Sindri.Features.ContextCalls.MapImportChallenge.operator !=(Aw.Sindri.Features.ContextCalls.MapImportChallenge? left, Aw.Sindri.Features.ContextCalls.MapImportChallenge? right) -> bool
+static Aw.Sindri.Features.ContextCalls.MapImportChallenge.operator ==(Aw.Sindri.Features.ContextCalls.MapImportChallenge? left, Aw.Sindri.Features.ContextCalls.MapImportChallenge? right) -> bool

@@ -25,7 +25,6 @@ public sealed class ProtectedCommandTests
     /// </summary>
     private static readonly Dictionary<string, string> _confirmsOtherwise = new(StringComparer.Ordinal)
     {
-        ["ImportContextMap"] = "confirms the previewed map hash with 'confirmed' (context spec S-3a); moving it onto the engine's challenge is the context lane's follow-up",
     };
 
     [Fact]

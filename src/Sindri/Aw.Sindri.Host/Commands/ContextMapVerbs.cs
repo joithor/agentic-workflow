@@ -34,7 +34,7 @@ internal sealed class ContextMapVerbs(ControlPlaneClient client, Output output, 
 
     private async Task<int> Import(string file, CancellationToken ct)
     {
-        var shown = await client.Post<ImportContextMapRequest, ImportContextMapResponse>(Route + "/import", new(file, Hash: null, Confirmed: false), ct).ConfigureAwait(false);
+        var shown = await client.Post<ImportContextMapRequest, ImportContextMapResponse>(Route + "/import", new(file, Hash: null, Answer: null), ct).ConfigureAwait(false);
         if (shown.IsError)
         {
             return await Failed(shown.Error).ConfigureAwait(false);
@@ -47,7 +47,7 @@ internal sealed class ContextMapVerbs(ControlPlaneClient client, Output output, 
             return await Failed(refused).ConfigureAwait(false);
         }
 
-        var done = await client.Post<ImportContextMapRequest, ImportContextMapResponse>(Route + "/import", new(file, preview.Hash, Confirmed: true), ct).ConfigureAwait(false);
+        var done = await client.Post<ImportContextMapRequest, ImportContextMapResponse>(Route + "/import", new(file, preview.Hash, Answer: null), ct).ConfigureAwait(false);
         return done.IsError ? await Failed(done.Error).ConfigureAwait(false) : await output.Text(ContextMapText.Imported(done.Value.Value), 0).ConfigureAwait(false);
     }
 

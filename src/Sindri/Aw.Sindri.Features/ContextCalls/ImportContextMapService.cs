@@ -3,6 +3,7 @@ using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -31,10 +32,10 @@ internal sealed class ImportContextMapService(ContextScopes scopes, IContextEngi
             return preview.IsError ? preview.Error : new ImportContextMapResponse(preview.Value, Imported: null, Sequence: null);
         }
 
-        if (!request.Confirmed)
+        if (request.Answer is not { } answer || !Redeemed(answer))
         {
             return SindriErrors.AuthRefused.With(
-                "importing a map needs you at an interactive terminal: run 'sindri context map import <file>' and type the first 6 characters of its hash");
+                "importing a map needs you at an interactive terminal: run 'sindri context map import <file>' and type the action it shows");
         }
 
         if (held.Current is not { } grant)
@@ -54,4 +55,6 @@ internal sealed class ImportContextMapService(ContextScopes scopes, IContextEngi
         var appended = await ledger.Append(events.Entry(EventTypes.ContextMapImported, payload, key), grant, cancellationToken).ConfigureAwait(false);
         return appended.IsError ? appended.Error : new ImportContextMapResponse(preview.Value, v, appended.Value.Sequence);
     }
+
+    private static bool Redeemed(ChallengeAnswer answer) => answer is null;
 }
