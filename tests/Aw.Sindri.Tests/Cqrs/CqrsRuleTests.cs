@@ -33,6 +33,14 @@ public sealed class CqrsRuleTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Query_port_rule_follows_a_handler_s_own_helper()
+    {
+        var violation = Assert.Single(QueryPortRules.Check([typeof(HelperQueryService)]));
+
+        Assert.Contains("HelperQueryService handles a query but takes ILedgerStore", violation, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_query_port_allowlist_is_empty_and_gone()
     {
         Assert.Null(typeof(QueryPortRules).GetField("Allowlist"));   // P1's G1 allowlist went with C9's read ports
@@ -72,6 +80,17 @@ public sealed class CqrsRuleTests
     {
         public ValueTask<Result<long>> Handle(LedgerQuery request, CancellationToken cancellationToken) =>
             ValueTask.FromResult<Result<long>>(ledger.GetHashCode());
+    }
+
+    private sealed class LedgerHelper(ILedgerStore ledger)
+    {
+        public override string ToString() => ledger.ToString() ?? string.Empty;
+    }
+
+    private sealed class HelperQueryService(LedgerHelper helper) : IService<LedgerQuery, long>
+    {
+        public ValueTask<Result<long>> Handle(LedgerQuery request, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<long>>(helper.GetHashCode());
     }
 
     private sealed class LedgerWritingCommandService(ILedgerStore ledger) : IService<UnlistedCommand, CommandAccepted>

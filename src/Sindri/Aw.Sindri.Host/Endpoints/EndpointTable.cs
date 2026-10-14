@@ -14,10 +14,12 @@ internal static class EndpointTable
 
         // ---- queries: one line per slice, sorted ----
         _ = queries.MapGetProfile();
+        _ = queries.MapGetContextSources();
         _ = queries.MapGetStatus();
         _ = queries.MapListCommands();
         _ = queries.MapListServices();
         _ = queries.MapPingProcess();
+        _ = queries.MapQueryContext();
         _ = queries.MapStreamEvents();
 
         // ---- commands: one line per slice, sorted ----

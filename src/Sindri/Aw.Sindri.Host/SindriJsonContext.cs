@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
@@ -71,4 +72,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(EvalStartLine))]
 [JsonSerializable(typeof(EvalStepLine))]
 [JsonSerializable(typeof(RecipeValidationView))]
+[JsonSerializable(typeof(ContextResult))]
+[JsonSerializable(typeof(SourcesView))]
+[JsonSerializable(typeof(ContextSourcesSynced))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;
