@@ -162,8 +162,40 @@ page sections (not the sheet, menus, palette). The legend partial and `.motion` 
 health strip becomes the one sentence. Nav unchanged.
 
 ### Wave 4b: per page
-- home.html: the drawing in the owner's message of 2026-10-14 (Needs you band with five chip rows and one action each;
-  Workflows with progress bars; Running and Queued as two chip lists; the one-line health sentence).
+- home.html: the approved drawing below (Needs you band with five chip rows and one action each; Workflows with
+  progress bars; Running and Queued as two chip lists; the one-line health sentence).
+
+```
+Home        5 need you · 4 running · 1 with you · 4 queued
+
+Needs you                                                                                        Mark all seen
+▒▒▒ attention band behind the whole section ▒▒▒
+  PARKED      Retry storm in outbox dispatcher                 checks failed twice      12m   Grant rounds · terminal   ▾
+  DECISION    Re-scope: drop the iOS head from this item        filed by a session       26m   Accept   Decline        ▾
+  ESCALATED   Context map review for tabs.layout                judge 0.62, below 0.80   2h    Accept · terminal        ▾
+  FAILED      Nightly index build  SND-INDEX-012                graphify timed out       9h    Run again
+  PROFILE     Profile changed since approval · 2 keys                                    2h    Approve · terminal
+▒▒▒
+
+Workflows   12 open                                                                               all 12 →
+  Outbox retry storm        incident      ▰▰▰▱▱▱  mitigate 1/3     agent rolling back · comms posting      1h 24m
+  sentry #8812 TypeError    triage        ▰▱▱▱    classify         needs your severity                     4m   Answer
+  Offline sync              project       ▰▰▰▰▰▱▱ build 4/9        1 running · 1 parked · 3 queued          3h
+  Billing exports           project       ▰▰▰▰▱▱▱ design           with you: import the design output      20h
+  Tab manager v2            project       ▰▰▰▱▱▱▱ scoping 2/3      challenger round 2                       46m
+
+Running                                                      Queued
+  WITH YOU   Onyx adapter secret pointers    25m  Hand back     Stream limits 429 fallback          1h    Open ▾
+  LIVE       Add needs-you ack route         6m   Attach ▾      doctor views line                   52m   Open ▾
+  RUNNING    Tester: decision race test      2m   Open ▾        Tray badge on Linux                 40m   Open ▾
+  RUNNING    Judge outbox drain              1m   Attach ▾      Receipt verify route                12m   Open ▾
+  RUNNING    Services page job panel         0m   Open ▾
+
+Sindri   Running · pid 48211 · epoch 7 · API v1 · views 2s ago · 5 ok, 1 failed (index) · profile changed since approval
+```
+  The progress bar is a slim segmented bar (CSS, not glyphs): one segment per recipe state, filled up to the current
+  one, the current stage named beside it. The health line may read as wave 4a wrote it ("Sindri is degraded: the code
+  index failed at the 03:00 build and the profile changed since approval. Updated 2s ago.").
 - workflows.html: chip · subject title · progress bar with the stage name · NOW · when · action; the recipe group headings
   as section headings, not table captions.
 - workflow-project.html, workflow-incident.html, item-sheet.html: the frames keep the sheet card; inside it, FACTS and
