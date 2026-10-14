@@ -95,7 +95,7 @@ internal sealed class ProcessClaudeCli(McpSettings settings) : IClaudeCli
     private static string? Executable(string name, IReadOnlyList<string> searchPath) =>
         name.Contains('/', StringComparison.Ordinal)
             ? (IsExecutable(name) ? name : null)
-            : searchPath.Select(directory => Path.Combine(directory, name)).FirstOrDefault(IsExecutable);
+            : searchPath.Where(Path.IsPathRooted).Select(directory => Path.Combine(directory, name)).FirstOrDefault(IsExecutable);
 
     private static bool IsExecutable(string path) =>
         File.Exists(path) && (OperatingSystem.IsWindows() || (File.GetUnixFileMode(path) & (UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute)) != UnixFileMode.None);

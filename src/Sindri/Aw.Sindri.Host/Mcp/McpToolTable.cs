@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Aw.Context.Core;
 using Aw.Sindri.Core.Commands;
 using ModelContextProtocol.Protocol;
@@ -46,8 +47,7 @@ internal static class McpToolTable
         {
             ContextTools.Query => ContextTools.CallQuery(services, call.Arguments, cancellationToken),
             ContextTools.Sources => ContextTools.CallSources(services, call.Arguments, cancellationToken),
-            _ => ValueTask.FromResult(McpResults.Failure(services, ContextErrors.McpToolUnknown.With(
-                $"'{call.Name}' is not a Sindri MCP tool (fix: tools/list names them)"))),
+            _ => throw new UnreachableException($"McpToolTable lists '{call.Name}' but has no handler for it"),
         };
     }
 }

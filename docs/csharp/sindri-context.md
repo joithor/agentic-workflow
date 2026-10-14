@@ -143,7 +143,8 @@ In `tests/Aw.Sindri.Tests/ContextCalls`:
   any `Origin` is a 403 (`SND-API-008`); the caller, terminal and token headers are dropped and `X-Sindri-Client: mcp`
   set, so the request is `session:mcp` and the engine sees client `mcp`. `McpToolTable` lists the tools explicitly
   (low-level `WithListToolsHandler`/`WithCallToolHandler`, hand-written schemas; API P8 appends its rows).
-  `ContextTools` binds arguments (022), checks `X-Sindri-Repo` (021), and calls the ContextCalls services the HTTP
+  `McpToolTable` refuses an unknown tool (023) and a call with no `X-Sindri-Repo` (021; every tool is repo-scoped);
+  `ContextTools` then binds arguments (022) and calls the ContextCalls services the HTTP
   routes use (`IService<QueryContextRequest, ContextResult>`, `IService<GetContextSourcesRequest, SourcesView>`), so
   the engine's gate (020) and scope (003) apply. `McpResults` puts the answer in `structuredContent` (the host's AwJson
   options; `context_sources` wraps the view in `McpSourcesAnswer` with the answering `instance`, since Claude Code
@@ -154,7 +155,9 @@ In `tests/Aw.Sindri.Tests/ContextCalls`:
   with `ContextChecks` (doctor's `context:sources` and `context:mcp-scope`): an `IDoctorChecks` (Core port) that the
   RunDoctor slice's `WithMoreChecks` decorator appends after the core rows, applying the exit rule to the whole list.
 - `Aw.Sindri.Infrastructure/Mcp/`: `ProcessClaudeCli` (argument list, no shell, 30 s budget) and
-  `ProviderConfigFiles`, both reading `McpSettings` (`AW_SINDRI_CLAUDE_BIN`, `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME`).
+  `ProviderConfigFiles`, both reading `McpSettings` (`AW_SINDRI_CLAUDE_BIN`, `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME`,
+  `PATH`). A bare `claude` is looked up in PATH's absolute entries only, and only an executable file counts, so a
+  `claude` in the work repo's checkout never runs.
 
 ### Errors (S-1M range 021–029; 020 is S-1A's)
 
@@ -175,8 +178,8 @@ Every facade error passes through to the MCP tool error unchanged (`isError`, te
 - `tests/Aw.Sindri.Tests/ContextCalls/ContextMcpTests` (integration): the MCP SDK's own client against a started
   host: tools/list, a `context_query` round trip (citations with blob shas; the summary doesn't repeat record text;
   the client sends no `Origin`), a planted secret scrubbed and planted instructions fenced, every refusal's code (020
-  twice, the second with human headers that MCP ignores; 003, 021, 022 twice, 006, 023), `context_sources`, the guard
-  (foreign `Host` 400, foreign and loopback `Origin` 403, no `Mcp-Session-Id`), and no question or record text in logs.
+  twice, the second with human headers that MCP ignores; 003, 021, 022 twice, 006, 023; and `context_sources`' 020, 021, 022), `context_sources`, the guard
+  (foreign `Host` 400, foreign and loopback `Origin` 403, also at `/sindri/mcp/` and `/Sindri/MCP`; no `Mcp-Session-Id`), and no question or record text in logs.
 - `RegisterMcpTests` (unit), `ClaudeCliContract` (the fake; `ProcessClaudeCli` over a recording stub script, never the
   real claude), `CheckContextTests` (each provider's file shapes, malformed and unreadable files, the sources states),
   `ProviderFilesContract` (the fake; `ProviderConfigFiles` over a scratch home).

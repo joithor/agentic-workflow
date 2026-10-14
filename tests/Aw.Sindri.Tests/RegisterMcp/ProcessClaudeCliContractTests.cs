@@ -33,6 +33,14 @@ public sealed class ProcessClaudeCliContractTests : ClaudeCliContract, IDisposab
         Assert.Null(nonExecutable);
     }
 
+    [Fact]
+    public void The_search_path_is_PATH_s_absolute_entries_in_order()
+    {
+        var settings = McpSettings.Read(name => name == "PATH" ? "/a::relative:/b:./c" : null);
+
+        Assert.Equal(["/a", "/b"], settings.SearchPath);
+    }
+
     private static async Task Script(string path, string text)
     {
         await File.WriteAllTextAsync(path, text, TestContext.Current.CancellationToken);
