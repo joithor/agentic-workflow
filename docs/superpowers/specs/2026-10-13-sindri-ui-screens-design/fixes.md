@@ -229,3 +229,29 @@ Sindri   Running · pid 48211 · epoch 7 · API v1 · views 2s ago · 5 ok, 1 fa
    rule everywhere (most urgent first, then oldest), written here: INC-14, sentry #8812, PRJ-sync, PRJ-exports,
    PRJ-tabs for the strip; within a Workflows group, most urgent first.
 8. **Words with every glyph**: `✕ 03:00 failed` on Context and System; `checks ◐ r1 failed` not `●`.
+
+## Wave 6: the fourth critique's P1s (owner, 2026-10-14: "Docs then Wave 6")
+
+1. **One definition of the human queue.** fixture.md defines: *needs you* = the union of parked, escalated, decision,
+   failed-service and profile rows (Home's count); *waiting on you* is retired everywhere; *with you* = taken-over
+   instances, a neutral chip, never counted as needs-you. Every page-head count is derived from the rows under it:
+   Workflows "3 need you" becomes the number of attn-chip rows on the page; Work's and Agents' "waiting on you"
+   headings become "Needs you" with the same union rule (Agents: parked + escalated = 2; Work: escalated + decision +
+   parked = 3, the parked section folds into it).
+2. **Recipes and the inspector from one source.** fixture.md gains a per-recipe table (runs, done, done without you,
+   failed, cancelled, human rate = runs with a park answered, an escalation decided or a takeover ÷ runs, median,
+   tokens p50, four weekly buckets); Recipes' "done without you %" = done-without-you ÷ runs; the page total is the
+   run-weighted mean; the inspector's OUTCOMES, HUMAN TIME and per-state numbers reconcile with the same rows.
+3. **The band and the health sentence.** The attention band is removed from every page (the pill carries the state;
+   R8-13's band rule is withdrawn, noted in the spec). One health sentence generated from the pill's reasons,
+   verbatim on Home and System: "Sindri is degraded: the code index failed at the 03:00 build, the profile changed
+   since approval, and Onyx is 2h behind. Updated 2s ago."
+4. **The Attach note under every Attach primary**: one `.attach-note` line with the fixture sentence directly under
+   the control row of every sheet that offers Attach (item sheet, incident) and under every Running group that offers
+   Attach (Home, Agents); the menu copy stays.
+Also, cheap and from the same critique: Home's queued-row tag no longer shrinks (`flex:none`, the title truncates);
+Timeline panels show "… 39 more" under their two events; Context draws one state (the toast state wins: 15 pending,
+the row reads "0 proposals · 31 accepted 12:26", header 15); Agents draws the open menu only (the confirm moves to
+a comment); needs-you ids on Home use `.id.at-rest` like the Running rows; "soft 80%" loses its attention colour
+until the fill passes the marker; Agents' chip words capitalised in source; the inspector's "human rate" matches
+the fixture's formula.
