@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Infrastructure.Workflows;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,6 +72,29 @@ public sealed class EffectActivitiesTests : IDisposable
         }
 
         Assert.Equal([command.Identity.Text], _desk.Performed);
+    }
+
+    [Fact]
+    public async Task Every_outbox_row_of_an_effect_belongs_to_the_instance_whose_events_are_listed()
+    {
+        await using var sindri = _harness.Sindri(_desk.Replace);
+        await WorkflowsHarness.HoldLease(sindri, Token);
+        var activities = sindri.GetRequiredService<EffectActivities>();
+        var command = new EffectCommand(_notify, new EffectIdentity(_instance, Entry: 2, Index: 0), CommandOrigin.Recipe, new Dictionary<string, Core.Workflow.Recipes.WithValue>(StringComparer.Ordinal));
+        foreach (var (state, activity) in new[] { (EffectState.Pending, "1"), (EffectState.Refused, "2"), (EffectState.Cancelled, "3") })
+        {
+            var row = new EffectRow(command.Identity.Text, "cmd-1", _notify, CommandOrigin.Recipe, state, _address);
+            _ = await Local(activity).RunAsync(() => activities.RecordAsync(new EffectRecord("T-81", row)));
+        }
+
+        _ = await Regular("effect-1").RunAsync(() => activities.RunAsync(new EffectRun(_address.Value, "T-81", Attempt: 1, command, "cmd-1", Text: null, new Dictionary<FactKey, FactValue>())));
+
+        var kinds = new[] { OutboxEvents.Pending, OutboxEvents.Dispatched, OutboxEvents.Refused, OutboxEvents.Cancelled, "notify.delivered" };
+        foreach (var kind in kinds)
+        {
+            var recorded = Assert.Single(await EffectRows.Events(sindri, kind));
+            Assert.True(InstanceEvents.Belongs(recorded, _address), $"{kind} is keyed '{recorded.IdempotencyKey}', which 'workflow events {_address.Value}' drops");
+        }
     }
 
     private static ActivityEnvironment Local(string activityId) => new()
