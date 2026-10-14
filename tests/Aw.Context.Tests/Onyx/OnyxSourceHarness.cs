@@ -16,16 +16,23 @@ internal sealed class OnyxSourceHarness : IDisposable
     public static readonly DateTimeOffset Now = new(2026, 10, 12, 9, 0, 0, TimeSpan.Zero);
     private static readonly HashSet<string> _teams = new(StringComparer.Ordinal) { "SPL" };
 
-    public OnyxSourceHarness(Uri url, string? token)
-        : this(url, name => name == Pointer ? token : null)
+    /// <summary>A harness whose pointer resolves to <paramref name="token"/>.</summary>
+    /// <param name="url">The fake server.</param>
+    /// <param name="token">What the pointer resolves to (null: nothing).</param>
+    /// <param name="callDeadline">The fetch and probe call deadline; null takes <see cref="Patient"/>.</param>
+    public OnyxSourceHarness(Uri url, string? token, TimeSpan? callDeadline = null)
+        : this(url, name => name == Pointer ? token : null, callDeadline)
     {
     }
 
-    /// <summary>A harness whose environment function is the caller's (to count or change what the pointer resolves to).</summary>
-    public OnyxSourceHarness(Uri url, Func<string, string?> environment)
+    /// <summary>A harness whose environment function is the caller's (to count, delay or change what the pointer resolves to).</summary>
+    /// <param name="url">The fake server.</param>
+    /// <param name="environment">Resolves the pointer.</param>
+    /// <param name="callDeadline">The fetch and probe call deadline; null takes <see cref="Patient"/>.</param>
+    public OnyxSourceHarness(Uri url, Func<string, string?> environment, TimeSpan? callDeadline = null)
     {
         Settings = OnyxSettings.Create(url.ToString(), Pointer, FakeOnyxServer.PinnedVersion).Value;
-        Sources = new OnyxSources(new OnyxSourceParts(Http, environment, new FakeTimeProvider(Now), Log) { CallDeadline = Patient });
+        Sources = new OnyxSources(new OnyxSourceParts(Http, environment, new FakeTimeProvider(Now), Log) { CallDeadline = callDeadline ?? Patient });
         Source = Sources.Create(Settings, _teams);
     }
 

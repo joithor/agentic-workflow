@@ -6,7 +6,8 @@ namespace Aw.Context.Tests.Onyx;
 /// <summary>
 /// The onyx source resolves its key pointer once per source, that is once per query (spec §4 "Secrets"): a keychain:
 /// or op: pointer starts a process per resolution, so a search and a many-chunk fetch must not resolve it per request.
-/// A pointer that didn't resolve is tried again by the next query's source.
+/// A pointer that didn't resolve is tried again by the next query's source. The resolution runs under the call's
+/// deadline and the caller's cancellation, so a locked keychain or an op sign-in degrades the query on time.
 /// </summary>
 [Trait("Lane", "integration")]
 public sealed class OnyxKeyResolutionTests
@@ -45,5 +46,47 @@ public sealed class OnyxKeyResolutionTests
         Assert.Equal(ContextErrors.SourceNotConfigured.Code, first.Error.Code);
         Assert.Equal(ContextErrors.SourceNotConfigured.Code, again.Error.Code);   // the same source keeps its answer
         Assert.NotEmpty(next.Value);
+    }
+
+    [Fact]
+    public async Task A_resolution_slower_than_the_deadline_is_unavailable_with_010_within_the_deadline()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        using var stuck = new ManualResetEventSlim();
+        using var harness = new OnyxSourceHarness(onyx.Url, _ => stuck.Wait(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken) ? null : onyx.Token);
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var search = await harness.Source.Search(OnyxSourceHarness.Query("pane") with { Deadline = TimeSpan.FromMilliseconds(200) }, TestContext.Current.CancellationToken);
+
+            Assert.Equal(ContextErrors.SourceUnavailable.Code, search.Error.Code);
+            Assert.True(started.Elapsed < TimeSpan.FromSeconds(3), $"took {started.Elapsed}");
+            Assert.Empty(onyx.Requests);
+        }
+        finally
+        {
+            stuck.Set();
+        }
+    }
+
+    [Fact]
+    public async Task Cancelling_the_caller_stops_a_resolution_that_is_still_running()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        using var stuck = new ManualResetEventSlim();
+        using var harness = new OnyxSourceHarness(onyx.Url, _ => stuck.Wait(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken) ? null : onyx.Token);
+        using var caller = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        caller.CancelAfter(TimeSpan.FromMilliseconds(200));
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await harness.Source.Search(OnyxSourceHarness.Query("pane"), caller.Token));
+
+            Assert.True(started.Elapsed < TimeSpan.FromSeconds(3), $"took {started.Elapsed}");
+        }
+        finally
+        {
+            stuck.Set();
+        }
     }
 }

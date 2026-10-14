@@ -79,6 +79,23 @@ public sealed class OnyxSourceFailureTests
         Assert.True(started.Elapsed < TimeSpan.FromSeconds(3));
     }
 
+    [Fact]
+    public async Task Missing_the_fetch_and_probe_call_deadline_is_unavailable_with_010()
+    {
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { Delay = TimeSpan.FromSeconds(5) });
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token, callDeadline: TimeSpan.FromMilliseconds(200));
+        var started = System.Diagnostics.Stopwatch.StartNew();
+
+        var fetch = await harness.Source.Fetch(Spl105Ref, TestContext.Current.CancellationToken);
+        var health = await harness.Source.Probe(TestContext.Current.CancellationToken);
+
+        Assert.Equal(ContextErrors.SourceUnavailable.Code, fetch.Error.Code);
+        Assert.Contains("within", fetch.Error.Message, StringComparison.Ordinal);
+        Assert.Equal((SourceState.Unavailable, ContextErrors.SourceUnavailable.Code), (health.State, health.Code));
+        Assert.Contains("within", health.Detail, StringComparison.Ordinal);
+        Assert.True(started.Elapsed < TimeSpan.FromSeconds(3), $"took {started.Elapsed}");
+    }
+
     [Theory]
     [InlineData("DELETE", "/api/admin/search")]
     [InlineData("GET", "/api/admin/search")]
