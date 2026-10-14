@@ -17,11 +17,22 @@ internal sealed class OnyxSourceHarness : IDisposable
     private static readonly HashSet<string> _teams = new(StringComparer.Ordinal) { "SPL" };
 
     public OnyxSourceHarness(Uri url, string? token)
+        : this(url, name => name == Pointer ? token : null)
+    {
+    }
+
+    /// <summary>A harness whose environment function is the caller's (to count or change what the pointer resolves to).</summary>
+    public OnyxSourceHarness(Uri url, Func<string, string?> environment)
     {
         Settings = OnyxSettings.Create(url.ToString(), Pointer, FakeOnyxServer.PinnedVersion).Value;
-        var parts = new OnyxSourceParts(Http, name => name == Pointer ? token : null, new FakeTimeProvider(Now), Log);
-        Source = new OnyxSources(parts).Create(Settings, _teams);
+        Sources = new OnyxSources(new OnyxSourceParts(Http, environment, new FakeTimeProvider(Now), Log));
+        Source = Sources.Create(Settings, _teams);
     }
+
+    /// <summary>The factory the source came from (one source per query in production).</summary>
+    public OnyxSources Sources { get; }
+
+    public static IReadOnlySet<string> Teams => _teams;
 
     public OnyxSettings Settings { get; }
 

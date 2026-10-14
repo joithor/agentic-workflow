@@ -42,6 +42,7 @@ public sealed class SourcesSettingsTests
     [InlineData("""{"sources":[]}""", "SND-CONTEXT-001", "context.sources:")]
     [InlineData("""{"sources":{"onyx":"http://127.0.0.1:3000"}}""", "SND-CONTEXT-001", "context.sources.onyx:")]
     [InlineData("""{"sources":{"linear":{"teams":["eng team"]}}}""", "SND-CONTEXT-001", "context.sources.linear.teams:")]
+    [InlineData("""{"sources":{"linear":{"teams":["E"]}}}""", "SND-CONTEXT-001", "context.sources.linear.teams:")]   // one letter can't prefix an alias
     [InlineData("""{"sources":{"onyx":{"url":"http://10.0.0.5:3000","token":"env:K","version":"v4.9.0"}}}""", "SND-CONTEXT-055", "context.sources.onyx.url:")]
     [InlineData("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"env:K","version":"latest"}}}""", "SND-CONTEXT-055", "context.sources.onyx.version:")]
     [InlineData("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","version":"v4.9.0"}}}""", "SND-CONTEXT-002", "context.sources.onyx.token:")]

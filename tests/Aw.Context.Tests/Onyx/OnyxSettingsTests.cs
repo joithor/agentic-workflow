@@ -1,5 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Onyx;
+using Aw.Context.Testing.Fixtures;
 
 namespace Aw.Context.Tests.Onyx;
 
@@ -109,6 +110,28 @@ public sealed class OnyxSettingsTests
         Assert.Equal(ContextErrors.SourceNotConfigured.Code, error.Code);
         Assert.StartsWith("context.sources.onyx.token: ", error.Message, StringComparison.Ordinal);
     }
+
+    public static TheoryData<string> SindriPointers => [.. SecretPointerSamples.Accepted];
+
+    // The same list Aw.Sindri.Tests' SecretPointerAgreementTests runs through Sindri's SecretPointer.Parse: every
+    // pointer Sindri accepts passes this check, which asks only for a known scheme and a non-empty target.
+    [Theory, Trait("Lane", "unit")]
+    [MemberData(nameof(SindriPointers))]
+    public void Every_pointer_sindri_accepts_is_accepted(string token)
+    {
+        var settings = OnyxSettings.Create("http://127.0.0.1:3000", token, "v4.9.0");
+
+        Assert.True(settings.IsSuccess, settings.IsError ? settings.Error.Message : null);
+        Assert.Equal(token, settings.Value.Token);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("env:")]
+    [InlineData("keychain:")]
+    [InlineData("vault:onyx/sindri")]
+    [InlineData("on_live-0123456789abcdef")]
+    public void A_token_without_a_known_scheme_and_a_target_is_002(string token)
+        => Assert.Equal(ContextErrors.SourceNotConfigured.Code, OnyxSettings.Create("http://127.0.0.1:3000", token, "v4.9.0").Error.Code);
 
     [Fact, Trait("Lane", "unit")]
     public void No_error_or_description_repeats_the_token()

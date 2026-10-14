@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json.Nodes;
 using Aw.Context.Core;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Engine;
@@ -65,6 +66,20 @@ public sealed class OnyxSourceContractTests : ContextSourceContract<IContextSour
         Assert.True(all.Count > 1);
         Assert.Equal(all[0].Ref, Assert.Single(one).Ref);
         Assert.Equal(2, onyx.Requests.Count);
+    }
+
+    [Fact]
+    public async Task Search_leaves_out_documents_onyx_marks_hidden()
+    {
+        // Admin search includes documents an Onyx admin hid (SearchDoc.hidden); a standard search never returns them.
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxPlant = static json => Hide(json, Spl105) });
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+
+        var hits = (await harness.Source.Search(OnyxSourceHarness.Query("minimum", "pane", "width"), TestContext.Current.CancellationToken)).Value;
+
+        Assert.NotEmpty(hits);
+        Assert.DoesNotContain(hits, h => h.Ref.Id.Value == Spl105);
+        Assert.Equal(Enumerable.Range(1, hits.Count), hits.Select(h => h.Rank));
     }
 
     [Fact]
@@ -208,6 +223,21 @@ public sealed class OnyxSourceContractTests : ContextSourceContract<IContextSour
             harness.Dispose();
             await server.DisposeAsync();
         }
+    }
+
+    private static string Hide(string json, string documentId)
+    {
+        if (JsonNode.Parse(json) is not JsonObject { } reply || reply["documents"] is not JsonArray documents)
+        {
+            return json;
+        }
+
+        foreach (var document in documents.OfType<JsonObject>().Where(d => (string?)d["document_id"] == documentId))
+        {
+            document["hidden"] = true;
+        }
+
+        return reply.ToJsonString();
     }
 
     protected override bool ChecksVersions => false;
