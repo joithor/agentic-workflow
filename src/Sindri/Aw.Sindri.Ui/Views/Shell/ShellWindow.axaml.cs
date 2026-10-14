@@ -5,7 +5,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -97,37 +96,6 @@ internal sealed partial class ShellWindow : Window
             : e.Key == Key.Escape ? Escape()
             : OpenByKey(e);
         base.OnKeyDown(e);
-    }
-
-    // ⌘K opens the palette, `?` the shortcuts sheet (never while typing in a field, nor over the palette), ⌘, Settings.
-    private bool OpenByKey(KeyEventArgs e)
-    {
-        if (Shell is not { IsChromeVisible: true } shell)
-        {
-            return false;
-        }
-
-        if (e.Key == Key.K && e.KeyModifiers == _command)
-        {
-            shell.Palette.Open();
-            return true;
-        }
-
-        if (IsQuestionMark(e) && e.Source is not TextBox && !shell.Palette.IsOpen)
-        {
-            shell.Shortcuts.Open();
-            return true;
-        }
-
-        if (e.Key != Key.OemComma || e.KeyModifiers != _command)
-        {
-            return false;
-        }
-
-        shell.GoTo(PageId.Settings);
-        // Like the sheet's heading (§11.2), opening Settings moves focus into it: its first control.
-        Dispatcher.UIThread.Post(() => FirstFocusable(this.Get<Control>("SettingsSlot"))?.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
-        return true;
     }
 
     // Esc closes the sheet when it shows, or Settings over the Not running card (focus then goes from its hidden control
