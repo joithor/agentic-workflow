@@ -1,12 +1,15 @@
 using Aw.Kernel.Ids;
 using Aw.Sindri.Core.Auth;
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Infrastructure.Auth;
+using Aw.Sindri.Infrastructure.Challenges;
 using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Infrastructure.Lease;
 using Aw.Sindri.Infrastructure.Ledger;
@@ -45,6 +48,11 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IRepoLocator, GitRepoLocator>()
             .AddSingleton<IRecipeReader, YamlRecipeReader>()
             .AddSingleton<IRecipeFiles, FileRecipeFiles>()
+            .AddSingleton<IRecipeWake, NoOpRecipeWake>()
+            .AddSingleton<IRecipeStore, SqliteRecipeStore>()
+            .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>()
+            .AddSingleton<IChallenges, ProcessChallenges>()
+            .AddSingleton<IHarnessVersions, CommandHarnessVersions>()
             .AddSingleton(McpSettings.Read(environment))
             .AddSingleton<IClaudeCli, ProcessClaudeCli>()
             .AddSingleton<IProviderFiles, ProviderConfigFiles>();

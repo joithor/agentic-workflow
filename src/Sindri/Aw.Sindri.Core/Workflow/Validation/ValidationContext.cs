@@ -15,4 +15,12 @@ public sealed record ValidationContext(
     BlockCatalog Catalog,
     RecipeProfileFacts Profile,
     IChildRecipeResolver Children,
-    Recipe? BaseRecipe);
+    Recipe? BaseRecipe)
+{
+    /// <summary>
+    /// The registry, when served (spec §9.1): RCP-VERSION-001 and -002 check the recipe's version against it, and
+    /// RCP-CAP-003 a generated recipe's base. Null when validating with no registry ('recipe validate' offline), and then
+    /// those rules don't run; register and the packet freeze always supply it.
+    /// </summary>
+    public RecipeRegistryView? Registry { get; init; }
+}

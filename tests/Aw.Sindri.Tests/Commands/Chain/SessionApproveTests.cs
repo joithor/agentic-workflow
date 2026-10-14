@@ -37,7 +37,7 @@ public sealed class SessionApproveTests : IDisposable
         var hash = SliceHarness.Profile().Hash.Value;
         using var request = new HttpRequestMessage(HttpMethod.Post, "/sindri/profile/approve")
         {
-            Content = new StringContent($$"""{"hash":"{{hash}}","confirmed":true}""", Encoding.UTF8, "application/json"),
+            Content = new StringContent($$"""{"hash":"{{hash}}"}""", Encoding.UTF8, "application/json"),
         }.AsSession();
 
         using var answer = await http.SendAsync(request, ct);
