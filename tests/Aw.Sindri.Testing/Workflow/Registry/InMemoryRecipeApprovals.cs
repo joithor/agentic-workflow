@@ -86,8 +86,14 @@ public sealed class InMemoryRecipeApprovals : IRecipeApprovals
     }
 
     /// <inheritdoc/>
-    public ValueTask<Result<IReadOnlyList<RecipeApproval>>> GeneratedFrom(RecipeHash baseHash, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("red");
+    public ValueTask<Result<IReadOnlyList<RecipeApproval>>> GeneratedFrom(RecipeHash baseHash, CancellationToken cancellationToken)
+    {
+        lock (_gate)
+        {
+            return Done(Results.Success<IReadOnlyList<RecipeApproval>>([.. _approvals.GroupBy(a => (a.Id, a.Version, a.Hash)).Select(g => g.Last())
+                .Where(a => a.Base?.Hash == baseHash).OrderBy(a => a.Id.Value, StringComparer.Ordinal).ThenBy(a => a.Version)]));
+        }
+    }
 
     /// <inheritdoc/>
     public ValueTask<Result<IReadOnlyList<RecipeApproval>>> Pinning(RecipeHash childHash, CancellationToken cancellationToken)

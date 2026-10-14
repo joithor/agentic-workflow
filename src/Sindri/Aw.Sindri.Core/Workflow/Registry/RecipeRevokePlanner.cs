@@ -99,7 +99,7 @@ public sealed class RecipeRevokePlanner(IRecipeStore store, IRecipeApprovals app
             : null;
     }
 
-    /// <summary>The approvals made from <paramref name="root"/>, and from those in turn, nearest first; each once.</summary>
+    /// <summary>The live approvals made from <paramref name="root"/>, and from those in turn (through revoked ones too), nearest first; each once.</summary>
     private async ValueTask<Result<IReadOnlyList<RecipeApproval>>> Cascade(RecipeHash root, CancellationToken cancellationToken)
     {
         var found = new List<RecipeApproval>();
@@ -107,7 +107,7 @@ public sealed class RecipeRevokePlanner(IRecipeStore store, IRecipeApprovals app
         var seen = new HashSet<RecipeHash> { root };
         while (queue.TryDequeue(out var hash))
         {
-            var made = await approvals.ApprovedFrom(hash, cancellationToken).ConfigureAwait(false);
+            var made = await approvals.GeneratedFrom(hash, cancellationToken).ConfigureAwait(false);
             if (made.IsError)
             {
                 return made.Error;
@@ -115,8 +115,17 @@ public sealed class RecipeRevokePlanner(IRecipeStore store, IRecipeApprovals app
 
             foreach (var approval in made.Value.Where(a => seen.Add(a.Hash)))
             {
-                found.Add(approval);
-                queue.Enqueue(approval.Hash);
+                queue.Enqueue(approval.Hash);   // walk through a recipe already stamped, so a resumed revoke reaches what lies below it
+                var revoked = await approvals.Revocation(approval.Hash, cancellationToken).ConfigureAwait(false);
+                if (revoked.IsError)
+                {
+                    return revoked.Error;
+                }
+
+                if (revoked.Value is null)
+                {
+                    found.Add(approval);
+                }
             }
         }
 
