@@ -16,9 +16,9 @@ public static class SindriCoreServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the Sindri domain services: the control plane's event scope and factory, the caller of the code running now,
-    /// the lease and human token this process holds, the Temporal runtime serve keeps, the projector's progress (status and
-    /// rebuild control), the registry's approve and revoke planners, its reader and its event appender, and
-    /// the approved recipes the engine reads over the registry.
+    /// the lease and human token this process holds, the Temporal runtime serve keeps, the projector's progress (status,
+    /// rebuild control and feed) and its projections, the registry's approve and revoke planners, its reader and its
+    /// event appender, and the approved recipes the engine reads over the registry.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
@@ -38,5 +38,8 @@ public static class SindriCoreServiceCollectionExtensions
             .AddScoped<RecipeRevokePlanner>()
             .AddScoped<RecipeRegistryReader>()
             .AddSingleton<RecipeEvents>()
-            .AddSingleton<IApprovedRecipes, RegistryApprovedRecipes>();
+            .AddSingleton<IApprovedRecipes, RegistryApprovedRecipes>()
+            .AddSingleton<IProjectorFeed>(static sp => sp.GetRequiredService<ProjectorProgress>())
+            .AddSingleton<IProjection, ServicesProjection>()
+            .AddSingleton<IProjection, ProfileProjection>();
 }

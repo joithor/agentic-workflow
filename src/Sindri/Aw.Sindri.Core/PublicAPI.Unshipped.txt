@@ -4506,6 +4506,9 @@ Aw.Sindri.Core.Views.IProjection.Handles(string! eventType) -> bool
 Aw.Sindri.Core.Views.IProjection.Views.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Views.IProjectorControl
 Aw.Sindri.Core.Views.IProjectorControl.RequestRebuild() -> void
+Aw.Sindri.Core.Views.IProjectorFeed
+Aw.Sindri.Core.Views.IProjectorFeed.Publish(Aw.Sindri.Core.Views.ViewsStatus! status) -> void
+Aw.Sindri.Core.Views.IProjectorFeed.TakeRebuildRequest() -> bool
 Aw.Sindri.Core.Views.IProjectorStatus
 Aw.Sindri.Core.Views.IProjectorStatus.Current.get -> Aw.Sindri.Core.Views.ViewsStatus!
 Aw.Sindri.Core.Views.IProjectorStatus.WaitFor(long sequence, System.TimeSpan limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -4832,6 +4835,8 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Action(Aw.Sindri
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Subject(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> Aw.Sindri.Core.Challenges.ChallengeSubject!
 Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api, out Aw.Sindri.Core.Profile.WorkflowSettings? Workflow, out System.Text.Json.JsonElement? Context) -> void
 Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null, Aw.Sindri.Core.Profile.WorkflowSettings? Workflow = null, System.Text.Json.JsonElement? Context = null) -> void
+Aw.Sindri.Core.Profile.ProfileCheck
+static Aw.Sindri.Core.Profile.ProfileCheck.Decide(Aw.Sindri.Core.Events.ProfileChecked? previous, Aw.Sindri.Core.Profile.LoadedProfile? approved, Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>! live, Aw.Sindri.Core.Ids.CommandId commandId) -> Aw.Sindri.Core.Events.ProfileChecked?
 Aw.Sindri.Core.Events.ContextMapImported
 Aw.Sindri.Core.Events.ContextMapImported.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapImported!
 Aw.Sindri.Core.Events.ContextMapImported.ContextMapImported(int Version, string! Repo, string! Hash, int Nodes, int Edges, int Overrides) -> void

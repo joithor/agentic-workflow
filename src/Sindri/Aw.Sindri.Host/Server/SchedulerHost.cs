@@ -1,10 +1,12 @@
 using Aw.Kernel;
+using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Features.RecordServiceRun;
 
 namespace Aw.Sindri.Host.Server;
 
@@ -15,7 +17,8 @@ namespace Aw.Sindri.Host.Server;
 /// (SND-SCHED-001) while the current schedule keeps running. Each service runs on its own loop (S1-D10): a run still in
 /// flight holds back no other service, and its own slots that come due meanwhile are skipped, never overlapped. Nothing
 /// runs while the process holds no lease; a stop waits for the runs in flight, which see the stop's cancellation. Each
-/// run is its own caller, 'service:&lt;name&gt;', so its events carry that actor (API spec §2.1).
+/// run is its own caller, 'service:&lt;name&gt;', so its events carry that actor (API spec §2.1), and every run, ok or
+/// failed, is recorded as 'service.ran' (C8).
 /// </summary>
 internal sealed partial class SchedulerHost(
     IServiceScopeFactory scopes, IApprovals approvals, HeldLease held, ICallerContextAccessor callers, IEnumerable<BuiltInService> builtIns, TimeProvider clock, ILogger<SchedulerHost> log)
@@ -131,26 +134,55 @@ internal sealed partial class SchedulerHost(
         var scope = scopes.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {
-            var service = scope.ServiceProvider.GetServices<IScheduledService>().FirstOrDefault(s => s.Identity() == schedule.Name);
-            if (service is null)
+            var outcome = await Outcome(scope.ServiceProvider, schedule.Name, run, ct).ConfigureAwait(false);
+            await Record(scope.ServiceProvider, new RecordServiceRunRequest(schedule.Name, run, outcome), ct).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Runs the service and returns how it ended: its result, a throw as SND-SCHED-001, or SND-SCHED-001 when this build lacks it (G8).</summary>
+    private async Task<Result<Unit>> Outcome(IServiceProvider services, ServiceName name, ScheduledRun run, CancellationToken ct)
+    {
+        var service = services.GetServices<IScheduledService>().FirstOrDefault(s => s.Identity() == name);
+        if (service is null)
+        {
+            LogUnknownService(log, name.Value);
+            return SindriErrors.ServiceFailed.With($"the profile names service '{name.Value}', which this build doesn't have");
+        }
+
+        try
+        {
+            var result = await service.Run(run, ct).ConfigureAwait(false);
+            if (result.IsError)
             {
-                LogUnknownService(log, schedule.Name.Value);
-                return;
+                LogServiceFailed(log, name.Value, result.Error.Code, result.Error.Message);
             }
 
-            try
-            {
-                var result = await service.Run(run, ct).ConfigureAwait(false);
-                if (result.IsError)
-                {
-                    LogServiceFailed(log, schedule.Name.Value, result.Error.Code, result.Error.Message);
-                }
-            }
-            catch (Exception e) when (!ct.IsCancellationRequested)   // boundary: one failed run (its own timeout too) must not stop later slots
-            {
-                var failed = SindriErrors.ServiceFailed.With(e.Message);
-                LogServiceFailed(log, schedule.Name.Value, failed.Code, failed.Message);
-            }
+            return result;
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested)   // boundary: one failed run (its own timeout too) must not stop later slots
+        {
+            var failed = SindriErrors.ServiceFailed.With(e.Message);
+            LogServiceFailed(log, name.Value, failed.Code, failed.Message);
+            return failed;
+        }
+    }
+
+    /// <summary>Appends the run's 'service.ran' (API spec C8); a failure to record is logged and the schedule goes on.</summary>
+    private async Task Record(IServiceProvider services, RecordServiceRunRequest request, CancellationToken ct)
+    {
+        Result<RecordServiceRunResponse> recorded;
+        try
+        {
+            recorded = await services.GetRequiredService<IService<RecordServiceRunRequest, RecordServiceRunResponse>>().Handle(request, ct).ConfigureAwait(false);
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested)   // boundary: recording one run must not stop later slots
+        {
+            recorded = SindriErrors.LedgerUnavailable.With(e.Message);
+        }
+
+        if (recorded.IsError)
+        {
+            LogRecordFailed(log, request.Service.Value, recorded.Error.Code, recorded.Error.Message);
         }
     }
 
@@ -174,6 +206,9 @@ internal sealed partial class SchedulerHost(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 the profile names service '{Service}', which this build doesn't have")]
     private static partial void LogUnknownService(ILogger logger, string service);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 service '{Service}' ran but its service.ran wasn't recorded: {Code} {Detail}")]
+    private static partial void LogRecordFailed(ILogger logger, string service, string code, string detail);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "SND-SCHED-001 service '{Service}' failed: {Code} {Detail}")]
     private static partial void LogServiceFailed(ILogger logger, string service, string code, string detail);
