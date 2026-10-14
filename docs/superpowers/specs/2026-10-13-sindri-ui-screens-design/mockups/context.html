@@ -227,26 +227,42 @@ body{min-width:1280px}
 .subgroup .r{margin-left:auto}
 .lock{width:12px;height:12px}
 
+/* motion: hover and press only, 120 ms ease-out, colour properties only (nothing that lays out) */
+.btn,.view button,.lens input,.mr,.src,.cas li{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out}
+.btn:active{background:var(--s2);border-color:var(--line3)}
+.btn.ghost:active{background:var(--s3)}
+
+/* ===== Context · page head: no primary here; the read action (the anchor field) holds focus ===== */
+.pagehead{align-items:flex-start}
+.pagehead .acts{align-self:flex-start;align-items:flex-start}
+.actcol{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.actcol small{font-size:12px;color:var(--ink-subtle);white-space:nowrap}
+
 /* ===== Context · lens row ===== */
 .lensrow{display:flex;align-items:center;gap:10px;margin:0 0 10px}
-.anchor{display:flex;align-items:center;gap:8px;height:30px;padding:4px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--s1);width:440px}
+.anchor{display:flex;align-items:center;gap:8px;height:30px;padding:4px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--s1);width:420px}
+/* the focus ring sits on the field's frame (focus-within), so the input itself draws none */
+.anchor:focus-within{outline:2px solid var(--focus);outline-offset:2px}
 .anchor input{flex:1;min-width:0;font-family:var(--mono);font-size:12px;letter-spacing:-.1px;color:var(--ink);height:100%}
-.anchor input:focus{outline:none}
-.anchor .ph{color:var(--ink-subtle);font-size:11px;white-space:nowrap}
+.anchor input:focus-visible{outline:none}
+.anchor .ph{color:var(--ink-subtle);font-size:12px;white-space:nowrap}
 .lenses{display:flex;align-items:center;gap:14px;color:var(--ink-subtle);font-size:12px;margin-left:8px}
 .lens{display:inline-flex;align-items:center;gap:6px;color:var(--ink);font-weight:500;cursor:pointer;font-size:12px}
 .lens input{appearance:none;-webkit-appearance:none;width:14px;height:14px;border:1px solid var(--line3);border-radius:4px;background:var(--s2);display:grid;place-items:center;margin:0;cursor:inherit}
 .lens input:checked{background:var(--ink-muted);border-color:var(--ink-muted)}
 .lens input:checked::after{content:"";width:7px;height:4px;border-left:1px solid var(--canvas);border-bottom:1px solid var(--canvas);transform:translateY(-1px) rotate(-45deg)}
 .lens.off{color:var(--ink-subtle)}
-.lens.disabled{color:var(--ink-tertiary);cursor:not-allowed}
+.lens.disabled{color:var(--ink-subtle);cursor:not-allowed}
 .lens.disabled input{border-color:var(--line2);background:var(--s1)}
-.mini{display:inline-flex;gap:1px;padding:3px;border:1px solid var(--line2);border-radius:5px;background:var(--s1);margin-left:2px}
-.mini button{padding:3px 7px;line-height:1.2;border-radius:3px;font-size:11px;color:var(--ink-subtle);font-weight:500}
-.mini button[aria-pressed="true"]{background:var(--s3);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
+.lens.disabled .why{font-weight:400}
+/* the files lens's form: a segmented control, 28 px like every .btn */
+.view{display:inline-flex;gap:2px;padding:4px 3px;border:1px solid var(--line2);border-radius:8px;background:var(--s1);margin-left:4px}
+.view button{padding:0 10px;line-height:18px;border-radius:6px;font-size:13px;font-weight:500;color:var(--ink-subtle)}
+.view button:hover{color:var(--ink-muted);background:var(--s2)}
+.view button[aria-pressed="true"]{background:var(--s3);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
 
 /* ===== Context · the three bands and the cross-band edges ===== */
-.stack{position:relative;height:647px}
+.stack{position:relative;height:663px}
 .band{position:relative;overflow:visible}
 .band .phead .eyebrow,.band .phead .meta{position:relative;z-index:3;background:var(--s1);padding:0 4px}
 .band .phead .eyebrow{margin-left:-4px}
@@ -255,21 +271,21 @@ body{min-width:1280px}
 .bandbody svg{display:block}
 .gap{height:32px}
 .xedges{position:absolute;left:0;top:0;z-index:2;pointer-events:none}
-.conflict{position:absolute;top:80px;left:704px}
+/* the conflict control sits inside the decision node; the script below places it from the node's box (the values here are the no-script fallback) */
+.conflict{position:absolute;left:48px;top:102px}
 .conflict .w{color:var(--attn)}
 .node{fill:var(--s3);stroke:var(--line2);stroke-width:1}
 .node.anchor{fill:var(--s4);stroke:var(--line3);stroke-width:1.5}
 .node.sugg,.node.orph{stroke-dasharray:3 3}
 .node.orph{stroke:var(--line3)}
-.hub{fill:var(--s3);stroke:var(--line3)}
 .nt{font-family:var(--mono);font-size:12px;letter-spacing:-.1px;fill:var(--ink)}
 .nt .dim,.nt .sym{fill:var(--ink-subtle)}
 .nt .warn{fill:var(--attn)}
-.nt .b{font-family:var(--sans);font-weight:600;letter-spacing:.3px;font-size:12px}
 .edge{stroke:var(--line3);fill:none;stroke-width:1}
 .edge.model{stroke-dasharray:3 3}
-.el{font-family:var(--sans);font-size:11px;fill:var(--ink-subtle)}
-.el.m{font-family:var(--mono);font-size:11px}
+/* edge labels at 12 (the meta size); 11 stays for eyebrows and kbd only */
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-subtle)}
+.el.m{font-family:var(--mono);font-size:12px}
 .el.k{fill:var(--ink-muted)}
 .arrow{fill:var(--line3)}
 
@@ -288,13 +304,27 @@ body{min-width:1280px}
 .gaps .r{margin-left:auto}
 
 /* ===== Context · map review, sources, node card ===== */
-.mr{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;padding:6px 16px;border-top:1px solid var(--line1);align-items:center}
+/* a proposal row: kind | what on the first line, the actions on their own line under it (nothing shares a column with the evidence) */
+.mr{display:grid;grid-template-columns:140px minmax(0,1fr);grid-template-areas:"kind what" "acts acts";gap:6px 10px;padding:8px 16px;border-top:1px solid var(--line1);align-items:start}
 .mr:hover{background:var(--s2)}
-.mr .what .line2{margin-top:1px}
+.mr .kind{grid-area:kind}
+.mr .what{grid-area:what}
+.mr .what .line1 .mono{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.mr .what .line2{margin-top:2px}
+.mr .acts{grid-area:acts;justify-content:flex-start;gap:6px}
 .mr .acts .btn{height:24px;padding:0 8px;font-size:12px}
-.mr.more{color:var(--ink-subtle);font-size:12px;grid-template-columns:1fr;padding:6px 16px 8px}
+.mr.more{display:block;color:var(--ink-subtle);font-size:12px;padding:6px 16px 8px}
+.mr .kind{min-width:0}
+.mr .motion{font-size:12px;white-space:normal;line-height:1.4}
+.subgroup .lead{flex:1;min-width:0}
+/* the one-line undo state after Accept all deterministic (drawn once; see the comment in the markup) */
+.toast{display:flex;align-items:center;gap:8px;margin:0 16px 8px;padding:5px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--s3);font-size:12px;color:var(--ink-muted)}
+.toast .g{width:auto}
+.toast .mono{color:var(--ink)}
+.toast .dim{color:var(--ink-subtle);margin-left:auto;white-space:nowrap}
 .src{display:grid;grid-template-columns:18px 112px minmax(0,1fr) 110px;gap:10px;padding:6px 16px;border-top:1px solid var(--line1);align-items:center;font-size:12px}
 .src:first-of-type{border-top:0}
+.src:hover{background:var(--s2)}
 .src .nm{font-family:var(--mono);font-size:12px;color:var(--ink)}
 .src .n{color:var(--ink-muted)}
 .src .age{color:var(--ink-subtle);text-align:right;white-space:nowrap}
@@ -304,9 +334,11 @@ body{min-width:1280px}
 .cas{list-style:none}
 .cas li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;padding:3px 0;font-size:12px;align-items:center}
 .cas .d{font-family:var(--mono);font-size:11px;color:var(--ink-subtle)}
-.cas .key{font-family:var(--mono);font-size:12px;color:var(--ink)}
-.cas .via{color:var(--ink-subtle);font-size:11px}
+.cas .key{font-family:var(--mono);font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cas .via{color:var(--ink-subtle);font-size:12px;white-space:nowrap}
 .nc .acts{justify-content:flex-start;margin-top:12px;flex-wrap:wrap}
+/* adapt: the mockup renders at 1280. At the 900 × 600 minimum the page scrolls both ways (the band drawings keep their width);
+   under 1100 px the Map review and Node columns stack (row2 becomes one column) and the lens row wraps under the anchor field. */
 </style>
 </head>
 <body>
@@ -342,43 +374,44 @@ body{min-width:1280px}
       </div>
     </div>
     <div class="acts">
-      <button class="btn primary is-focused">Build draft</button>
+      <!-- no primary on this page: Build draft is a secondary that rebuilds v14 and keeps every pending proposal; focus starts in the anchor field (a read) -->
+      <div class="actcol"><button class="btn" aria-describedby="build-what">Build draft</button><small id="build-what">keeps the 46 pending proposals</small></div>
       <button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Promote · terminal</button>
     </div>
   </div>
 
-  <!-- ANCHOR · DEPTH · LENSES -->
+  <!-- ANCHOR · DEPTH · LENSES · the files lens's form -->
   <div class="lensrow">
-    <label class="anchor"><kbd>⌘/</kbd><input value="feature:tabs.tab-manager" aria-label="Anchor: a node key, a file or a record id" spellcheck="false"><span class="ph">node · file · record</span></label>
+    <label class="anchor is-focused"><kbd>⌘/</kbd><input value="feature:tabs.tab-manager" aria-label="Anchor: a node key, a file or a record id" spellcheck="false" autofocus><span class="ph">node · file · record</span></label>
     <button class="btn" aria-haspopup="listbox" aria-label="Depth: 2">depth <span class="mono">2</span><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
     <div class="lenses" role="group" aria-label="Lenses">
       <span>lenses</span>
       <label class="lens"><input type="checkbox" checked>intent</label>
       <label class="lens"><input type="checkbox" checked>product</label>
       <label class="lens"><input type="checkbox" checked>files</label>
-      <span class="mini" role="group" aria-label="Files lens form"><button aria-pressed="true">graph</button><button aria-pressed="false">tree</button></span>
-      <label class="lens disabled" title="index not built (CTX phase 9)"><input type="checkbox" disabled aria-describedby="sym-why">symbols</label><span class="sr" id="sym-why">index not built (CTX phase 9)</span>
+      <label class="lens disabled" title="index not built (CTX phase 9)"><input type="checkbox" disabled aria-describedby="sym-why">symbols <span class="why" id="sym-why">· index not built</span></label>
       <label class="lens off"><input type="checkbox">draft</label>
     </div>
+    <div class="view" role="group" aria-label="Files lens form: graph or tree"><button aria-pressed="true">graph</button><button aria-pressed="false">tree</button></div>
   </div>
 
-  <!-- THE LENS STACK: three bands on one vertical axis -->
+  <!-- THE LENS STACK: three bands on one vertical axis. Node boxes carry data-node; the cross-band overlay below is drawn from those boxes at load. -->
   <div class="stack">
 
     <!-- INTENT -->
-    <section class="panel band" aria-labelledby="int-h" style="height:167px">
+    <section class="panel band" aria-labelledby="int-h" style="height:183px">
       <div class="phead"><h2 class="eyebrow" id="int-h">Intent · Linear · Slack · Onyx</h2><div class="meta">5 records · 2 decisions · 1 conflict</div></div>
       <div class="bandbody">
-        <svg width="1174" height="128" viewBox="0 0 1174 128" role="img" aria-label="Intent band. Four records: ENG-482 Restore panes per window; PRD-tabs.md section 3, a Linear doc; Slack #tabs-design on 09-30; ENG-301, orphaned. ENG-482 decides the proposed decision 'panes restore per window, not per workspace', which supersedes 'per workspace' of 09-12 and conflicts with PRD section 3.2.">
+        <svg width="1174" height="144" viewBox="0 0 1174 144" role="img" aria-label="Intent band. Four records: ENG-482 Restore panes per window; PRD-tabs.md section 3, a Linear doc; Slack #tabs-design on 09-30; ENG-301, orphaned. ENG-482 decides the proposed decision 'panes restore per window, not per workspace', which supersedes 'per workspace' of 09-12 and conflicts with PRD section 3.2.">
           <defs><marker id="ah" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8z" class="arrow"/></marker></defs>
-          <rect class="node" x="20" y="12" width="270" height="26" rx="6"/><text class="nt" x="32" y="29">ENG-482 <tspan class="dim">"Restore panes per window"</tspan></text>
-          <rect class="node" x="540" y="12" width="218" height="26" rx="6"/><text class="nt" x="552" y="29">PRD-tabs.md §3 <tspan class="dim">(linear:doc)</tspan></text>
-          <rect class="node" x="775" y="12" width="211" height="26" rx="6"/><text class="nt" x="787" y="29">#tabs-design 09-30 <tspan class="dim">(slack)</tspan></text>
-          <rect class="node orph" x="1010" y="12" width="154" height="26" rx="6"/><text class="nt" x="1022" y="29">ENG-301 <tspan class="warn">⚠ orphaned</tspan></text>
-          <path class="edge" d="M155 38 V68" marker-end="url(#ah)"/><text class="el" x="162" y="58">decides</text>
-          <rect class="node" x="20" y="70" width="500" height="44" rx="6"/>
-          <text class="nt" x="32" y="88"><tspan class="dim">◇ decision</tspan> "panes restore per window, not per workspace"</text>
-          <text class="nt" x="32" y="106"><tspan class="dim">supersedes ◇</tspan> "per workspace", 09-12</text>
+          <rect class="node" data-node="int-eng482" x="20" y="12" width="270" height="26" rx="6"/><text class="nt" x="32" y="29">ENG-482 <tspan class="dim">"Restore panes per window"</tspan></text>
+          <rect class="node" data-node="int-prd" x="540" y="12" width="218" height="26" rx="6"/><text class="nt" x="552" y="29">PRD-tabs.md §3 <tspan class="dim">(linear:doc)</tspan></text>
+          <rect class="node" data-node="int-slack" x="775" y="12" width="211" height="26" rx="6"/><text class="nt" x="787" y="29">#tabs-design 09-30 <tspan class="dim">(slack)</tspan></text>
+          <rect class="node orph" data-node="int-eng301" x="1010" y="12" width="154" height="26" rx="6"/><text class="nt" x="1022" y="29">ENG-301 <tspan class="warn">⚠ orphaned</tspan></text>
+          <path class="edge" d="M155 38 V58" marker-end="url(#ah)"/><text class="el" x="162" y="52">decides</text>
+          <rect class="node" data-node="int-decision" x="20" y="60" width="500" height="72" rx="6"/>
+          <text class="nt" x="32" y="78"><tspan class="dim">◇ decision</tspan> "panes restore per window, not per workspace"</text>
+          <text class="nt" x="32" y="96"><tspan class="dim">supersedes ◇</tspan> "per workspace", 09-12</text>
         </svg>
         <button class="btn sm conflict" aria-label="Conflict with PRD section 3.2: open both quotes side by side"><span class="w" aria-hidden="true">⚠</span>conflict with PRD §3.2 ▸</button>
       </div>
@@ -391,28 +424,28 @@ body{min-width:1280px}
       <div class="phead"><h2 class="eyebrow" id="prod-h">Product graph · features · surfaces · actions · things · flows</h2><div class="meta">own scope 7 · affects 3 at depth ≤ 2</div></div>
       <div class="bandbody">
         <svg width="1174" height="222" viewBox="0 0 1174 222" role="img" aria-label="Product graph around the anchor feature:tabs.tab-manager. feature:layout has two part-of children, feature:layout.split-pane and the anchor. split-pane writes thing:pane-layout, which the anchor reads. The anchor has the part-of child action:tab-manager.restore-layout, a step of flow:open-tab-split-resize at depth 1. action:split-pane.split-vertical writes pane-layout and is on surface:command/split-vertical. feature:session.restore is a dependency at depth 2. The anchor carries the conflict mark.">
-          <rect class="node" x="288" y="12" width="125" height="26" rx="6"/><text class="nt" x="300" y="29">feature:layout</text>
+          <rect class="node" data-node="prod-layout" x="288" y="12" width="125" height="26" rx="6"/><text class="nt" x="300" y="29">feature:layout</text>
           <path class="edge" d="M318 38 L185 66" marker-end="url(#ah)"/><text class="el" x="212" y="48" text-anchor="end">part-of</text>
           <path class="edge" d="M384 38 L560 64" marker-end="url(#ah)"/><text class="el" x="492" y="46">part-of</text>
 
-          <rect class="node" x="58" y="68" width="204" height="26" rx="6"/><text class="nt" x="70" y="85">feature:layout.split-pane</text>
-          <rect class="node anchor" x="480" y="66" width="240" height="30" rx="7"/><text class="nt" x="492" y="86">▣ feature:tabs.tab-manager <tspan class="warn">⚠</tspan></text>
+          <rect class="node" data-node="prod-split" x="58" y="68" width="204" height="26" rx="6"/><text class="nt" x="70" y="85">feature:layout.split-pane</text>
+          <rect class="node anchor" data-node="prod-anchor" x="480" y="66" width="240" height="30" rx="7"/><text class="nt" x="492" y="86">▣ feature:tabs.tab-manager <tspan class="warn">⚠</tspan></text>
           <text class="el k" x="730" y="85">◀── anchor</text>
 
           <path class="edge" d="M160 94 V122" marker-end="url(#ah)"/><text class="el" x="168" y="112">writes</text>
           <path class="edge" d="M233 137 H540 V98" marker-end="url(#ah)"/><text class="el" x="548" y="118">reads</text>
           <path class="edge" d="M640 96 V122" marker-end="url(#ah)"/><text class="el" x="648" y="112">part-of</text>
 
-          <rect class="node" x="87" y="124" width="146" height="26" rx="6"/><text class="nt" x="99" y="141">thing:pane-layout</text>
-          <rect class="node" x="470" y="124" width="262" height="26" rx="6"/><text class="nt" x="482" y="141">action:tab-manager.restore-layout</text>
-          <path class="edge" d="M732 137 H773" marker-end="url(#ah)"/><text class="el" x="752" y="131" text-anchor="middle">step-of</text>
-          <rect class="node" x="775" y="124" width="211" height="26" rx="6"/><text class="nt" x="787" y="141">flow:open-tab-split-resize</text><text class="el m" x="993" y="141">d1</text>
+          <rect class="node" data-node="prod-pane" x="87" y="124" width="146" height="26" rx="6"/><text class="nt" x="99" y="141">thing:pane-layout</text>
+          <rect class="node" data-node="prod-restore" x="470" y="124" width="262" height="26" rx="6"/><text class="nt" x="482" y="141">action:tab-manager.restore-layout</text>
+          <path class="edge" d="M732 137 H773" marker-end="url(#ah)"/><text class="el" x="752" y="118" text-anchor="middle">step-of</text>
+          <rect class="node" data-node="prod-flow" x="775" y="124" width="211" height="26" rx="6"/><text class="nt" x="787" y="141">flow:open-tab-split-resize</text><text class="el m" x="993" y="141">d1</text>
 
           <path class="edge" d="M160 180 V152" marker-end="url(#ah)"/><text class="el" x="168" y="168">writes</text>
-          <rect class="node" x="35" y="180" width="254" height="26" rx="6"/><text class="nt" x="47" y="197">action:split-pane.split-vertical</text>
+          <rect class="node" data-node="prod-splitv" x="35" y="180" width="254" height="26" rx="6"/><text class="nt" x="47" y="197">action:split-pane.split-vertical</text>
           <path class="edge" d="M289 193 H350" marker-end="url(#ah)"/><text class="el" x="319" y="187" text-anchor="middle">on</text>
-          <rect class="node" x="352" y="180" width="240" height="26" rx="6"/><text class="nt" x="364" y="197">surface:command/split-vertical</text>
-          <rect class="node" x="785" y="180" width="190" height="26" rx="6"/><text class="nt" x="797" y="197">feature:session.restore</text><text class="el m" x="982" y="197">d2 (dep)</text>
+          <rect class="node" data-node="prod-cmd" x="352" y="180" width="240" height="26" rx="6"/><text class="nt" x="364" y="197">surface:command/split-vertical</text>
+          <rect class="node" data-node="prod-session" x="785" y="180" width="190" height="26" rx="6"/><text class="nt" x="797" y="197">feature:session.restore</text><text class="el m" x="982" y="197">d2 (dep)</text>
         </svg>
       </div>
     </section>
@@ -424,24 +457,25 @@ body{min-width:1280px}
       <div class="phead"><h2 class="eyebrow" id="code-h">Code · files (map v13) · symbols (index 12:21)</h2><div class="meta">6 files · 11 symbols · 1 feature with no code</div></div>
       <div class="bandbody">
         <svg width="1174" height="116" viewBox="0 0 1174 116" role="img" aria-label="Code band. src/layout/SplitPane.ts with symbols setOrientation and split; src/tabs/Manager.ts with restoreLayout; tests/tabs/restore.test.ts; src/layout/paneStore.ts with write and read; src/session/restore.ts, a model-suggested, unconfirmed link. Call chain: Manager.restoreLayout calls paneStore.read calls SplitPane.setOrientation.">
-          <rect class="node" x="30" y="12" width="370" height="26" rx="6"/><text class="nt" x="42" y="29">src/layout/SplitPane.ts  <tspan class="sym">#setOrientation  #split</tspan></text>
-          <rect class="node" x="480" y="12" width="276" height="26" rx="6"/><text class="nt" x="492" y="29">src/tabs/Manager.ts  <tspan class="sym">#restoreLayout</tspan></text>
-          <rect class="node" x="963" y="12" width="211" height="26" rx="6"/><text class="nt" x="975" y="29">tests/tabs/restore.test.ts</text>
-          <rect class="node" x="30" y="58" width="298" height="26" rx="6"/><text class="nt" x="42" y="75">src/layout/paneStore.ts  <tspan class="sym">#write  #read</tspan></text>
-          <rect class="node sugg" x="700" y="58" width="370" height="26" rx="6"/><text class="nt" x="712" y="75">src/session/restore.ts  <tspan class="dim">◇ suggested, unconfirmed</tspan></text>
+          <rect class="node" data-node="code-splitpane" x="30" y="12" width="370" height="26" rx="6"/><text class="nt" x="42" y="29">src/layout/SplitPane.ts  <tspan class="sym">#setOrientation  #split</tspan></text>
+          <rect class="node" data-node="code-manager" x="480" y="12" width="276" height="26" rx="6"/><text class="nt" x="492" y="29">src/tabs/Manager.ts  <tspan class="sym">#restoreLayout</tspan></text>
+          <rect class="node" data-node="code-test" x="963" y="12" width="211" height="26" rx="6"/><text class="nt" x="975" y="29">tests/tabs/restore.test.ts</text>
+          <rect class="node" data-node="code-panestore" x="30" y="58" width="298" height="26" rx="6"/><text class="nt" x="42" y="75">src/layout/paneStore.ts  <tspan class="sym">#write  #read</tspan></text>
+          <rect class="node sugg" data-node="code-session" x="700" y="58" width="370" height="26" rx="6"/><text class="nt" x="712" y="75">src/session/restore.ts  <tspan class="dim">◇ suggested, unconfirmed</tspan></text>
           <text class="nt" x="30" y="108"><tspan class="dim">calls</tspan>  Manager.restoreLayout <tspan class="dim">→</tspan> paneStore.read <tspan class="dim">→</tspan> SplitPane.setOrientation</text>
         </svg>
       </div>
     </section>
 
-    <!-- CROSS-BAND EDGES: one overlay, lines run from node edge to node edge through the gaps; headers sit above the lines -->
-    <svg class="xedges" width="1208" height="647" viewBox="0 0 1208 647" role="img" aria-label="Cross-band edges. Downward: the decision decides the anchor feature:tabs.tab-manager; PRD-tabs.md section 3 mentions the anchor; Slack #tabs-design mentions flow:open-tab-split-resize. Upward: SplitPane.ts implements action:split-pane.split-vertical; Manager.ts implements and restore.test.ts tests action:tab-manager.restore-layout; session/restore.ts implements feature:session.restore, model-suggested at 0.74.">
-      <path class="edge" d="M517 152 V301" marker-end="url(#ah)"/><text class="el" x="523" y="187">decides</text>
-      <path class="edge" d="M697 76 V301" marker-end="url(#ah)"/><text class="el" x="703" y="187">mentions</text>
-      <path class="edge" d="M897 76 V359" marker-end="url(#ah)"/><text class="el" x="903" y="187">mentions</text>
-      <path class="edge" d="M177 542 V445" marker-end="url(#ah)"/><text class="el" x="183" y="480">implements</text>
-      <path class="edge" d="M637 542 V389" marker-end="url(#ah)"/><text class="el" x="643" y="480">implements · tests</text>
-      <path class="edge model" d="M897 588 V445" marker-end="url(#ah)"/><text class="el" x="903" y="480">implements <tspan class="dim">(model-suggested 0.74)</tspan></text>
+    <!-- CROSS-BAND EDGES: one overlay. Each path names the two nodes it joins (data-from, data-to); the script at the end of the
+         page draws it from node edge to node edge through the gap and puts its label in the gap. Headers sit above the lines. -->
+    <svg class="xedges" width="1208" height="663" viewBox="0 0 1208 663" role="img" aria-label="Cross-band edges. Downward: the decision decides the anchor feature:tabs.tab-manager; PRD-tabs.md section 3 mentions the anchor; Slack #tabs-design mentions flow:open-tab-split-resize. Upward: SplitPane.ts implements action:split-pane.split-vertical; Manager.ts implements and restore.test.ts tests action:tab-manager.restore-layout; session/restore.ts implements feature:session.restore, model-suggested at 0.74.">
+      <path class="edge" data-edge="e1" data-from="int-decision" data-to="prod-anchor" data-dir="down" marker-end="url(#ah)"/><text class="el" data-edge="e1">decides</text>
+      <path class="edge" data-edge="e2" data-from="int-prd" data-to="prod-anchor" data-dir="down" marker-end="url(#ah)"/><text class="el" data-edge="e2">mentions</text>
+      <path class="edge" data-edge="e3" data-from="int-slack" data-to="prod-flow" data-dir="down" marker-end="url(#ah)"/><text class="el" data-edge="e3">mentions</text>
+      <path class="edge" data-edge="e4" data-from="code-splitpane" data-to="prod-splitv" data-dir="up" data-at="0.5" marker-end="url(#ah)"/><text class="el" data-edge="e4">implements</text>
+      <path class="edge" data-edge="e5" data-from="code-manager" data-to="prod-restore" data-dir="up" marker-end="url(#ah)"/><text class="el" data-edge="e5">implements · tests</text>
+      <path class="edge model" data-edge="e6" data-from="code-session" data-to="prod-session" data-dir="up" marker-end="url(#ah)"/><text class="el" data-edge="e6">implements <tspan class="dim">(model-suggested 0.74)</tspan></text>
     </svg>
   </div>
 
@@ -471,8 +505,16 @@ body{min-width:1280px}
           <div class="meta">draft v14 · by impact <span><kbd>G</kbd><kbd>M</kbd></span></div>
         </div>
 
-        <div class="subgroup">deterministic <b>31</b> · rename 12 · move 9 · implements 10 · from the file map and the symbol index
+        <div class="subgroup"><span class="lead">deterministic <b>31</b> · rename 12 · move 9 · implements 10 · from the file map and symbol index</span>
           <span class="r"><button class="btn sm">Accept all deterministic</button></span></div>
+        <!-- state, drawn once: the line that appears right after Accept all deterministic. In the app it sits here for 10 s with Undo live,
+             then the subgroup line above reads "deterministic 0 · 31 accepted 12:26" and the count drops to 15. -->
+        <div class="toast" role="status">
+          <span class="g h-ok" aria-hidden="true">✓</span>
+          <span>31 deterministic proposals accepted · 31 <span class="mono">map_override</span> rows written</span>
+          <button class="btn sm">Undo <kbd>⌘Z</kbd></button>
+          <span class="dim">undo stays open for 10 s</span>
+        </div>
 
         <div class="subgroup">model <b>15</b> · by impact, highest first</div>
         <div class="mr" aria-label="Model proposal: implements, src/session/restore.ts to feature:session.restore, 0.74">
@@ -507,16 +549,16 @@ body{min-width:1280px}
 
       <section class="panel" aria-labelledby="src-h">
         <div class="phead"><h2 class="eyebrow" id="src-h">Sources</h2><span class="count">5</span><div class="meta">intent 2h behind <button class="btn sm">Sync all</button></div></div>
-        <div class="src"><span class="g h-ok" aria-label="ok">●</span><span class="nm">linear</span><span class="n">1,204 issues · 2 projects</span><span class="age">synced 2m ago</span></div>
-        <div class="src"><span class="g h-ok" aria-label="ok">●</span><span class="nm">linear:doc</span><span class="n">38 docs · 412 sections</span><span class="age">synced 2m ago</span></div>
+        <div class="src"><span class="g h-ok" aria-label="ok">✓</span><span class="nm">linear</span><span class="n">1,204 issues · 2 projects</span><span class="age">synced 2m ago</span></div>
+        <div class="src"><span class="g h-ok" aria-label="ok">✓</span><span class="nm">linear:doc</span><span class="n">38 docs · 412 sections</span><span class="age">synced 2m ago</span></div>
         <div class="src"><span class="g h-deg" aria-label="degraded">◐</span><span class="nm">slack</span><span class="n">6 channels · 3,118 messages</span><span class="age deg">2h behind</span></div>
         <div class="src"><span class="g h-deg" aria-label="degraded">◐</span><span class="nm">onyx</span><span class="n">96 decisions · 14 threads</span><span class="age deg">2h behind</span></div>
-        <div class="src"><span class="g h-ok" aria-label="ok">●</span><span class="nm">git</span><span class="n">agentic-workflow @ <span class="mono">7c3e1a2</span> · 1,204 files</span><span class="age">12:21</span></div>
+        <div class="src"><span class="g h-ok" aria-label="ok">✓</span><span class="nm">git</span><span class="n">agentic-workflow @ <span class="mono">7c3e1a2</span> · 1,204 files</span><span class="age">12:21</span></div>
       </section>
     </div>
 
     <section class="panel" aria-labelledby="node-h">
-      <div class="phead"><h2 class="eyebrow" id="node-h">Node</h2><span class="mono" style="color:var(--ink)">▣ feature:tabs.tab-manager</span><div class="meta"><kbd>↵</kbd></div></div>
+      <div class="phead"><h2 class="eyebrow" id="node-h">Node</h2><span class="mono" style="color:var(--ink)">▣ feature:tabs.tab-manager</span><div class="meta"><kbd>→</kbd> open</div></div>
       <div class="nc">
         <dl class="kv">
           <dt>kind</dt><dd>feature · part of <span class="mono">feature:layout</span></dd>
@@ -535,7 +577,7 @@ body{min-width:1280px}
           <li><span class="d">d1</span><span class="key">thing:pane-layout</span><span class="via">reads</span></li>
         </ul>
         <div class="acts">
-          <button class="btn">Neighbors <kbd>N</kbd></button>
+          <button class="btn">Neighbors <kbd>→</kbd></button>
           <button class="btn">Path to…</button>
           <button class="btn">Query</button>
           <button class="btn">Edit</button>
@@ -546,5 +588,42 @@ body{min-width:1280px}
 </main>
 
 <div class="caption">Context · lens stack · design reference, not implementation</div>
+
+<script>
+/* Cross-band edges and the conflict control are laid out from the node boxes, never from pixel constants.
+   Runs once at load (and again when the web fonts settle, which can move the conflict button's width). */
+(function () {
+  function draw() {
+    var stack = document.querySelector('.stack'); if (!stack) return;
+    var S = stack.getBoundingClientRect();
+    var box = function (el) { var r = el.getBoundingClientRect();
+      return { l: r.left - S.left, r: r.right - S.left, t: r.top - S.top, b: r.bottom - S.top, cx: (r.left + r.right) / 2 - S.left }; };
+    var node = function (id) { return stack.querySelector('[data-node="' + id + '"]'); };
+    var ov = stack.querySelector('.xedges');
+    ov.setAttribute('width', Math.round(S.width)); ov.setAttribute('height', Math.round(S.height));
+    ov.setAttribute('viewBox', '0 0 ' + Math.round(S.width) + ' ' + Math.round(S.height));
+    ov.querySelectorAll('path[data-from]').forEach(function (p) {
+      var a = node(p.dataset.from), b = node(p.dataset.to); if (!a || !b) return;
+      var A = box(a), B = box(b), down = p.dataset.dir !== 'up';
+      var y1 = down ? A.b : A.t, y2 = down ? B.t : B.b;   // from the node edge it leaves to the node edge it enters
+      var ol = Math.max(A.l, B.l), or = Math.min(A.r, B.r), x, d;
+      if (p.dataset.at && or - ol >= 24) { x = ol + (or - ol) * parseFloat(p.dataset.at); d = 'M' + x + ' ' + y1 + 'V' + y2; }
+      else if (A.cx >= B.l + 8 && A.cx <= B.r - 8) { x = A.cx; d = 'M' + x + ' ' + y1 + 'V' + y2; }   // the source's centre lies over the target
+      else if (or - ol >= 24) { x = (ol + or) / 2; d = 'M' + x + ' ' + y1 + 'V' + y2; }                // else the centre of their overlap
+      else { var ga = box(a.closest('.band')), gb = box(b.closest('.band'));                            // else an elbow through the gap
+        var my = down ? (ga.b + gb.t) / 2 : (gb.b + ga.t) / 2; x = B.cx; d = 'M' + A.cx + ' ' + y1 + 'V' + my + 'H' + x + 'V' + y2; }
+      p.setAttribute('d', d);
+      var lab = ov.querySelector('text[data-edge="' + p.dataset.edge + '"]');
+      if (lab) { var up = box((down ? a : b).closest('.band')), lo = box((down ? b : a).closest('.band'));
+        lab.setAttribute('x', x + 6); lab.setAttribute('y', (up.b + lo.t) / 2 + 4); }   // the label sits in the gap beside its line
+    });
+    var c = stack.querySelector('.conflict'), dn = node('int-decision');
+    if (c && dn) { var D = dn.getBoundingClientRect(), P = c.offsetParent.getBoundingClientRect();
+      c.style.left = (D.left - P.left + 12) + 'px'; c.style.top = (D.bottom - P.top - c.offsetHeight - 6) + 'px'; }   // inside the decision node, bottom left
+  }
+  draw(); window.addEventListener('load', draw);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
 </body>
 </html>

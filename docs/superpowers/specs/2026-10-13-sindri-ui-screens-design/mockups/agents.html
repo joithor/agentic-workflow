@@ -216,22 +216,10 @@ svg{flex:none}
 
 
 
-/* ── additions for the §4.3 Recipes and §4.5 Agents screens ── */
-.pagehead .r{display:flex;align-items:center;gap:8px}
-.sel{height:22px;padding:2px 5px 2px 7px;font-size:12px;color:var(--ink-muted);border:1px solid var(--line1);background:var(--s1);border-radius:6px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
-.sel:hover{border-color:var(--line2);color:var(--ink)}
+/* ── additions for the §4.5 Agents screen ── */
 
-/* meters (▮▮▮░░ in the drawings) and sparklines (▂▄▆█) */
-.meter{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px;color:var(--ink-muted)}
-.meter .trk{position:relative;width:96px;height:4px;border-radius:2px;background:var(--s2);box-shadow:inset 0 0 0 1px var(--line1)}
-.meter .fil{height:100%;border-radius:2px;background:var(--ink-muted)}
-.meter.soft .fil{background:var(--attn)}
-.meter.hard .fil{background:var(--error)}
-.meter .mk{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--attn)}
-.meter .n{font-family:var(--mono);font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums}
-.meter .cap{font-family:var(--mono);font-size:12px;color:var(--ink-subtle)}
-.spark{display:inline-flex;align-items:flex-end;gap:2px;height:14px;vertical-align:middle}
-.spark i{display:block;width:5px;background:var(--ink-subtle);border-radius:1px;min-height:2px}
+.pagehead .r{display:flex;align-items:center;gap:8px}
+.pagehead .r .hints{margin-right:8px}
 
 /* data table as grid rows */
 .th,.tr{display:grid;gap:10px;align-items:center;padding:4px 16px}
@@ -240,78 +228,25 @@ svg{flex:none}
 .th + .tr{border-top:0}
 .tr:hover{background:var(--s2)}
 .tr.sel{background:var(--s3)}
-.tr .nm{font-family:var(--mono);font-size:12px;color:var(--ink)}
 .num{font-family:var(--mono);font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dash{color:var(--ink-subtle)}
-.st{display:inline-flex;align-items:center;gap:6px;color:var(--ink);font-weight:500;white-space:nowrap}
-.tr.chg{background:var(--attn-soft)}
-.tr.draft,.tr.draft .nm,.tr.draft .st,.tr.draft .num{color:var(--ink-subtle)}
-.tr .last{display:flex;gap:8px;align-items:center;white-space:nowrap;min-width:0}
-.tr .last .btn.sm{height:22px;font-size:12px}
-.tfoot{padding:9px 16px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px}
-.rc{grid-template-columns:138px 104px 40px 44px 44px 52px 54px 64px 86px 78px minmax(0,1fr)}
 
-/* sheet, inspector variant (760) */
-.sheet{width:760px}
-.sheet-head{padding:12px 20px 10px;border-bottom:1px solid var(--line1)}
-.crumb{display:flex;align-items:center;gap:10px;color:var(--ink-subtle);font-size:12px}
-.crumb .r{margin-left:auto;display:flex;align-items:center;gap:6px}
-.icon-btn{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--ink-subtle)}
-.icon-btn:hover{background:var(--s3);color:var(--ink)}
-.sh-title{font-size:16px;font-weight:600;letter-spacing:-.3px;margin-top:6px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.sh-title .m{font-size:12px;font-weight:400;color:var(--ink-subtle)}
-.sh-title .m b{color:var(--ink-muted);font-weight:500}
-.sh-acts{display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap}
-.sh-acts .win{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
-.sh-acts .win b{color:var(--ink-muted);font-weight:500}
-.sheet-body{padding:12px 20px 20px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:8px}
-.behind{opacity:.55;pointer-events:none}
+/* meters (▮▮▮░░ in the drawing): a CSS track with the number beside it, the words in the aria-label */
+.meter{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px;color:var(--ink-muted)}
+.meter .trk{position:relative;flex:1 1 auto;width:96px;height:4px;border-radius:2px;background:var(--s3);box-shadow:inset 0 0 0 1px var(--line1)}
+.meter .fil{height:100%;border-radius:2px;background:var(--ink-muted)}
+.meter.soft .fil{background:var(--attn)}
+.meter.hard .fil{background:var(--error)}
+.meter .mk{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--attn)}
+.meter .mk.h{background:var(--error)}
+.meter .n{font-family:var(--mono);font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums}
+.meter .cap{font-family:var(--mono);font-size:12px;color:var(--ink-subtle)}
 
-/* states band with the open instances on it */
-.band{display:flex;align-items:flex-start;padding:12px 16px 6px}
-.node{display:flex;flex-direction:column;gap:3px;align-items:flex-start;flex:none}
-.node .nm{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap}
-.node .nm .g{width:auto;letter-spacing:1px}
-.node .nm small{font-family:var(--sans);font-size:11px;color:var(--ink-subtle)}
-.node .sub{font-size:11px;color:var(--ink-muted);display:inline-flex;gap:4px;align-items:center;white-space:nowrap}
-.link{flex:1;height:1px;background:var(--line2);margin:8px 8px 0;min-width:12px}
-.loop{flex:none;margin:1px 6px 0;color:var(--ink-subtle);font-size:12px}
-.ps{display:grid;grid-template-columns:100px 1fr 1fr 1.15fr 1.35fr;gap:4px 12px;padding:10px 16px 12px;font-size:12px;border-top:1px solid var(--line1)}
-.ps .h{color:var(--ink-subtle);font-size:11px;font-weight:500;letter-spacing:.3px;text-transform:uppercase}
-.ps .h.nm{font-family:var(--mono);text-transform:none;letter-spacing:0;font-size:12px;color:var(--ink)}
-.ps .k{color:var(--ink-subtle)}
-.ps .v{color:var(--ink-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-.ps .v small{color:var(--ink-subtle);font-size:12px}
-
-/* small panels */
-.row3{display:grid;grid-template-columns:1.25fr 1fr .9fr;gap:8px}
-.kvl{padding:8px 16px 10px;display:grid;grid-template-columns:max-content 1fr;gap:5px 12px;font-size:12px;align-items:center}
-.kvl .k{color:var(--ink-subtle);white-space:nowrap}
-.kvl .v{color:var(--ink-muted);white-space:nowrap;display:flex;gap:6px;align-items:center}
-.kvl .v b{color:var(--ink);font-weight:500}
-.outc{padding:8px 16px 10px;display:grid;grid-template-columns:max-content 28px minmax(0,1fr);gap:6px 10px;font-size:12px;align-items:center}
-.outc .k{color:var(--ink-subtle);white-space:nowrap}
-.outc .n{text-align:right}
-.outc .meter{display:flex}
-.outc .meter .trk{width:100%}
-.row2b{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.op{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 16px;border-top:1px solid var(--line1);font-size:12px}
-.phead + .op{border-top:0}
-.op .t{display:flex;gap:8px;align-items:center;white-space:nowrap;overflow:hidden;color:var(--ink-muted)}
-.op .t .id{color:var(--ink)}
-.op .btn{height:24px;padding:0 8px;font-size:12px}
-.ev{padding:10px 16px;font-size:12px;color:var(--ink-muted);display:flex;flex-direction:column;gap:6px}
-.ev .cases{display:flex;flex-wrap:wrap;gap:6px 14px;font-family:var(--mono);font-size:12px}
-.ev .cases .g{margin-right:4px}
-.ev .note{color:var(--ink-subtle)}
-.defn{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--ink-subtle);padding:2px 4px}
-.defn b{color:var(--ink-muted);font-weight:500}
-
-/* agents */
+/* sessions, grouped under recipe › state */
 .grp{display:flex;align-items:center;gap:8px;padding:7px 16px 5px;font-size:12px;color:var(--ink-muted);border-top:1px solid var(--line1)}
 .grp .mono{color:var(--ink)}
 .grp small{color:var(--ink-subtle);font-size:12px}
-.ag{position:relative;display:grid;grid-template-columns:14px 94px 82px minmax(0,1fr) 38px 176px 84px auto;gap:10px;align-items:center;padding:6px 16px;border-top:1px solid var(--line1);font-size:12px;color:var(--ink-muted)}
+.ag{position:relative;display:grid;grid-template-columns:14px 94px 96px minmax(0,1fr) 38px 176px 84px auto;gap:10px;align-items:center;padding:6px 16px;border-top:1px solid var(--line1);font-size:12px;color:var(--ink-muted)}
 .grp + .ag{border-top:0}
 .ag:hover{background:var(--s2)}
 .ag.wait{background:var(--attn-soft)}
@@ -323,24 +258,47 @@ svg{flex:none}
 .ag .rd{font-family:var(--mono);font-size:12px;color:var(--ink-muted)}
 .ag .age{color:var(--ink-subtle);white-space:nowrap}
 .ag .age b{color:var(--ink-muted);font-weight:500}
-.ag .stt{grid-column:5/8;color:var(--ink-muted);white-space:nowrap}
+/* waiting rows have no round or meter: the state words take their own width and the title keeps the rest */
+.ag.wait{grid-template-columns:14px 94px 96px minmax(0,1fr) auto auto}
+.ag .stt{color:var(--ink-muted);white-space:nowrap}
 .ag .stt b{color:var(--ink);font-weight:500}
-.ag .acts{justify-content:flex-end}
+/* one read action per row and a ▾ menu for the rest; the menu opens under the chevron, right-aligned */
+.ag .acts{position:relative;justify-content:flex-end}
 .ag .btn{height:26px;padding:0 8px;font-size:12px}
+.ag .btn.more{padding:0 6px}
+.ag .menu{top:26px;width:320px}
+.menu .mi{flex-direction:row;align-items:center;gap:8px;height:23px;padding:0 8px;white-space:nowrap}
+.menu .mi small{color:var(--ink-subtle)}
+.menu .mi kbd{margin-left:auto}
+/* the one-line confirm that Cancel… opens, in place of the row's numbers and actions */
+.ag .confirm{grid-column:5/-1;display:flex;align-items:center;justify-content:flex-end;gap:8px;color:var(--ink-muted);white-space:nowrap}
+.ag .confirm b{color:var(--ink);font-weight:500}
+.btn.danger{color:var(--error)}
+.btn.danger:hover{color:var(--error);border-color:var(--error)}
 .legend{display:flex;gap:16px;flex-wrap:wrap;padding:8px 16px;color:var(--ink-subtle);font-size:12px;border-top:1px solid var(--line1)}
 .legend span{display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
 .legend .ml{margin-left:auto}
+
+/* By agent (30 days) and Budget (today): two frames, each labelled with its own window */
 .ba{grid-template-columns:104px 70px 48px 84px 64px 118px 1fr}
+.phead .meta .btn{height:28px}
 .bud{padding:8px 16px 10px;display:grid;grid-template-columns:88px minmax(0,1fr) max-content;gap:7px 12px;font-size:12px;align-items:center}
 .bud .k{color:var(--ink-muted);white-space:nowrap}
 .bud .meter{display:flex}
 .bud .meter .trk{width:100%}
 .bud .v{font-family:var(--mono);font-size:12px;color:var(--ink-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .bud .v small{font-family:var(--sans);color:var(--attn);font-size:11px;margin-left:6px}
-.bud .lg{grid-column:1/-1;color:var(--ink-subtle);font-size:12px;display:flex;gap:12px;margin-top:2px}
-.bud .lg i{font-style:normal;color:var(--attn)}
-.bud .lg i.h{color:var(--error)}
-.row2a{display:grid;grid-template-columns:1.55fr 1fr;gap:8px;margin-top:8px}
+.bud .key{grid-column:1/-1;color:var(--ink-subtle);font-size:12px;display:flex;gap:14px;margin-top:2px;white-space:nowrap}
+.bud .key i{font-style:normal;color:var(--attn)}
+.bud .key i.h{color:var(--error)}
+.row2a{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-top:8px}
+/* adapt: 900 × 600 is the minimum. Under 1100 the page keeps its 1264 layout and scrolls sideways, so rows keep their titles, columns and actions */
+@media (max-width:1100px){.page{min-width:1264px}body{overflow-x:auto}}
+
+/* motion: hover and press only, 120 ms ease-out, colour properties only (nothing that lays out animates) */
+.btn,.tr,.ag,.menu .mi{transition:background-color 120ms ease-out,border-color 120ms ease-out,color 120ms ease-out}
+.btn:active{transform:translateY(1px)}
+@media (prefers-reduced-motion:reduce){.btn,.tr,.ag,.menu .mi{transition:none}.btn:active{transform:none}}
 </style>
 </head>
 <body>
@@ -378,60 +336,82 @@ svg{flex:none}
       </div>
     </div>
     <div class="r">
-      <button class="btn" aria-haspopup="listbox" aria-label="Window: 30 days">30 days <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+      <div class="hints" aria-label="Keyboard shortcuts">
+        <span><kbd>J</kbd><kbd>K</kbd> Move</span>
+        <span><kbd>↵</kbd> Details</span>
+        <span><kbd>O</kbd> Attach</span>
+        <span><kbd>?</kbd> Shortcuts</span>
+      </div>
       <button class="btn">Budgets</button>
     </div>
   </div>
 
+  <!-- initial focus: Attach on the first row (a read: it joins the tmux session; with you comes first, as on Home).
+       Take over, File a request and Cancel live in the row's ▾ menu (drawn open on snd-01JE7.2); Take over is never
+       pre-focused and is not offered where there is no terminal; Cancel asks first (the confirm is drawn on ITM-01JE9). -->
+  <!-- empty (0 live · 0 with you · 0 waiting): "Nothing running. 4 queued; the next starts on its own." The legend and the two panels below stay. -->
   <section class="panel" aria-label="Sessions by recipe and state">
     <div class="grp" style="border-top:0"><span class="mono">workflow.item › produce</span><small>(<span class="mono">step.produce</span> · agent Step)</small></div>
+    <div class="ag you" aria-label="With you: snd-01JA1.3 on ITM-01JA1">
+      <span class="g g-you" role="img" aria-label="with you">◎</span><span class="sid">snd-01JA1.3</span><span class="agn">Claude Code</span>
+      <div class="it"><span class="id mono">ITM-01JA1</span><span class="ttl">Onyx adapter secret pointers</span></div>
+      <span class="rd dash">—</span><span class="meter" role="img" aria-label="41k of 200k tokens"><span class="n">41k</span><span class="trk"><span class="fil" style="width:20%"></span></span><span class="cap">200k</span></span><span class="age">with you <b>25m</b></span>
+      <div class="acts"><button class="btn primary is-focused" aria-label="Attach to snd-01JA1.3 (O)"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach <kbd>O</kbd></button><button class="btn">Hand back <kbd>B</kbd></button></div>
+    </div>
     <div class="ag live" aria-label="Live: snd-01JE7.2 on ITM-01JE7">
-      <span class="g g-live" aria-label="live, nobody attached">●</span><span class="sid">snd-01JE7.2</span><span class="agn">Claude Code</span>
-      <div class="it"><span class="id mono">ITM-01JE7</span><span class="ttl">Sync status pill</span></div>
-      <span class="rd">r2/3</span><span class="meter " role="img" aria-label="84k of 200k tokens"><span class="n">84k</span><span class="trk"><span class="fil" style="width:42%"></span></span><span class="cap">200k</span></span><span class="age"><b>6m</b></span>
-      <div class="acts"><button class="btn primary is-focused" aria-label="Attach ITM-01JE7 (O)"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach <kbd>O</kbd></button><button class="btn">Take over <kbd>T</kbd></button><button class="btn">Request <kbd>R</kbd></button><button class="btn ghost">Cancel <kbd>X</kbd></button></div>
+      <span class="g g-live" role="img" aria-label="live, nobody attached">●</span><span class="sid">snd-01JE7.2</span><span class="agn">Claude Code</span>
+      <div class="it"><span class="id mono">ITM-01JE7</span><span class="ttl">Add needs-you ack route</span></div>
+      <span class="rd">r2/3</span><span class="meter" role="img" aria-label="84k of 200k tokens"><span class="n">84k</span><span class="trk"><span class="fil" style="width:42%"></span></span><span class="cap">200k</span></span><span class="age"><b>6m</b></span>
+      <div class="acts"><button class="btn" aria-label="Attach to snd-01JE7.2 (O)"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach <kbd>O</kbd></button><button class="btn more" aria-label="More for snd-01JE7.2" aria-haspopup="menu" aria-expanded="true"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+        <!-- the row menu for a live agent Step, drawn open once. File a request comes first so ↵ ↵ from the chevron never takes over -->
+        <div class="menu" role="menu" aria-label="More for snd-01JE7.2">
+          <button class="mi" role="menuitem">File a request <small>a note for its next turn</small><kbd>R</kbd></button>
+          <button class="mi" role="menuitem">Take over <small>yours until you hand back</small><kbd>T</kbd></button>
+          <button class="mi" role="menuitem">Cancel… <small>asks first</small><kbd>X</kbd></button>
+        </div>
+      </div>
+
     </div>
     <div class="ag live" aria-label="Live: snd-01JD9.1 on ITM-01JD9">
-      <span class="g g-live" aria-label="live, nobody attached">●</span><span class="sid">snd-01JD9.1</span><span class="agn">Claude Code</span>
-      <div class="it"><span class="id mono">ITM-01JD9</span><span class="ttl">Judge outbox drain</span></div>
-      <span class="rd">r1/3</span><span class="meter " role="img" aria-label="22k of 200k tokens"><span class="n">22k</span><span class="trk"><span class="fil" style="width:11%"></span></span><span class="cap">200k</span></span><span class="age"><b>1m</b></span>
-      <div class="acts"><button class="btn" aria-label="Attach ITM-01JD9 (O)"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach <kbd>O</kbd></button><button class="btn">Take over <kbd>T</kbd></button><button class="btn">Request <kbd>R</kbd></button><button class="btn ghost">Cancel <kbd>X</kbd></button></div>
+      <span class="g g-live" role="img" aria-label="live, nobody attached">●</span><span class="sid">snd-01JD9.1</span><span class="agn">Claude Code</span>
+      <div class="it"><span class="id mono">ITM-01JD9</span><span class="ttl">Judge outbox drain on shutdown</span></div>
+      <span class="rd">r1/3</span><span class="meter" role="img" aria-label="22k of 200k tokens"><span class="n">22k</span><span class="trk"><span class="fil" style="width:11%"></span></span><span class="cap">200k</span></span><span class="age"><b>1m</b></span>
+      <div class="acts"><button class="btn" aria-label="Attach to snd-01JD9.1 (O)"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach <kbd>O</kbd></button><button class="btn more" aria-label="More for snd-01JD9.1" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
     </div>
-    <div class="ag you" aria-label="With you: snd-01JA1.3 on ITM-01JA1">
-      <span class="g g-you" aria-label="with you">◎</span><span class="sid">snd-01JA1.3</span><span class="agn">Claude Code</span>
-      <div class="it"><span class="id mono">ITM-01JA1</span><span class="ttl">Onyx secret pointers</span></div>
-      <span class="rd dash">—</span><span class="meter"><span class="n">41k</span></span><span class="age">with you <b>25m</b></span>
-      <div class="acts"><button class="btn" aria-label="Attach ITM-01JA1 (O)"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach <kbd>O</kbd></button><button class="btn">Hand back <kbd>B</kbd></button></div>
+    <div class="grp"><span class="mono">workflow.item › checks</span><small>(<span class="mono">step.checks</span> · tool Step, no terminal: Pause in the menu, no takeover)</small></div>
+    <div class="ag live" aria-label="Live: snd-01JE9.1 on ITM-01JE9, cancel asked">
+      <span class="g g-live" role="img" aria-label="live, no terminal">●</span><span class="sid">snd-01JE9.1</span><span class="agn">Codex</span>
+      <div class="it"><span class="id mono">ITM-01JE9</span><span class="ttl">Tester: decision race integration test</span></div>
+      <!-- confirm (drawn once): the one-line state after Cancel… in the row menu. Keep holds the focus in this state; Esc keeps too -->
+      <div class="confirm" role="alertdialog" aria-label="Cancel ITM-01JE9?"><span>Cancel <b class="mono">ITM-01JE9</b>? Its checks run stops and the item ends cancelled.</span><button class="btn danger">Cancel item</button><button class="btn">Keep <kbd>Esc</kbd></button></div>
+    </div>
+    <div class="ag live" aria-label="Live: snd-01JD6.1 on ITM-01JD6">
+      <span class="g g-live" role="img" aria-label="live, no terminal">●</span><span class="sid">snd-01JD6.1</span><span class="agn">factory worker</span>
+      <div class="it"><span class="id mono">ITM-01JD6</span><span class="ttl">Services page job panel</span></div>
+      <span class="rd dash">—</span><span class="meter" role="img" aria-label="3k of 200k tokens"><span class="n">3k</span><span class="trk"><span class="fil" style="width:2%"></span></span><span class="cap">200k</span></span><span class="age"><b>0m</b></span>
+      <div class="acts"><button class="btn" aria-label="Open instance ITM-01JD6">Open instance <span aria-hidden="true">▸</span></button><button class="btn more" aria-label="More for snd-01JD6.1" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
     </div>
 
-    <div class="grp"><span class="mono">workflow.item › checks</span><small>(<span class="mono">step.checks</span> · tool Step, no terminal)</small></div>
-    <div class="ag live" aria-label="Live: snd-01JE9.1 on ITM-01JE9">
-      <span class="g g-live" aria-label="live, no terminal">●</span><span class="sid">snd-01JE9.1</span><span class="agn">Codex</span>
-      <div class="it"><span class="id mono">ITM-01JE9</span><span class="ttl">Replay on reconnect</span></div>
-      <span class="rd">1/1</span><span class="meter " role="img" aria-label="12k of 200k tokens"><span class="n">12k</span><span class="trk"><span class="fil" style="width:6%"></span></span><span class="cap">200k</span></span><span class="age"><b>2m</b></span>
-      <div class="acts"><button class="btn" aria-haspopup="menu" aria-expanded="false" aria-label="Open ITM-01JE9">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button><button class="btn">Take over <kbd>T</kbd></button><button class="btn ghost">Cancel <kbd>X</kbd></button></div>
-    </div>
-
-    <div class="grp"><span class="mono">scoping.project › challenge</span><small>(<span class="mono">step.scope.challenge</span> · model, no session)</small></div>
+    <div class="grp"><span class="mono">scoping.project › challenge</span><small>(<span class="mono">step.scope.challenge</span> · model call, no session: no attach, no takeover)</small></div>
     <div class="ag" aria-label="Model run: challenger on PRJ-tabs">
-      <span class="g g-model" aria-label="model call, no terminal">◌</span><span class="sid none">model run</span><span class="agn">challenger</span>
+      <span class="g g-model" role="img" aria-label="model call, no session">◌</span><span class="sid none">model run</span><span class="agn">challenger</span>
       <div class="it"><span class="id mono">PRJ-tabs</span><span class="ttl">Tab manager v2</span></div>
-      <span class="rd">r2/3</span><span class="meter " role="img" aria-label="84k of 600k tokens"><span class="n">84k</span><span class="trk"><span class="fil" style="width:14%"></span></span><span class="cap">600k</span></span><span class="age"><b>46m</b></span>
-      <div class="acts"><button class="btn">Open instance ▸</button><button class="btn">Take over <kbd>T</kbd></button><button class="btn ghost">Cancel <kbd>X</kbd></button></div>
+      <span class="rd">r2/3</span><span class="meter" role="img" aria-label="84k of 600k tokens"><span class="n">84k</span><span class="trk"><span class="fil" style="width:14%"></span></span><span class="cap">600k</span></span><span class="age"><b>46m</b></span>
+      <div class="acts"><button class="btn" aria-label="Open instance PRJ-tabs">Open instance <span aria-hidden="true">▸</span></button><button class="btn more" aria-label="More for the PRJ-tabs model run" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
     </div>
 
     <div class="grp"><span style="color:var(--ink)">waiting on you</span><span class="count-attn">2</span></div>
     <div class="ag wait" aria-label="Parked: ITM-01JC8, no session">
-      <span class="g g-park" aria-label="parked">▌</span><span class="sid none">no session</span><span class="agn dash">—</span>
-      <div class="it"><span class="id mono">ITM-01JC8</span><span class="ttl">Background sync</span></div>
+      <span class="g g-park" role="img" aria-label="parked">▌</span><span class="sid none">no session</span><span class="agn dash">—</span>
+      <div class="it"><span class="id mono">ITM-01JC8</span><span class="ttl">Retry storm in outbox dispatcher</span></div>
       <span class="stt"><b>parked</b> no-progress · 12m</span>
-      <div class="acts"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button><div class="split"><button class="btn main"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Claude Code</button><button class="btn chev" aria-label="Choose agent for ITM-01JC8" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div><button class="btn ghost">Cancel <kbd>X</kbd></button></div>
+      <div class="acts"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button><div class="split"><button class="btn main" aria-label="Open in Claude Code ITM-01JC8"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Claude Code</button><button class="btn chev" aria-label="Choose agent for ITM-01JC8" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div><button class="btn more" aria-label="More for ITM-01JC8" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
     </div>
     <div class="ag wait" aria-label="Escalated: ITM-01JB4, no session">
-      <span class="g g-esc" aria-label="escalated">▲</span><span class="sid none">no session</span><span class="agn dash">—</span>
-      <div class="it"><span class="id mono">ITM-01JB4</span><span class="ttl">Context map review</span></div>
-      <span class="stt"><b>escalated</b> gate 0.62 · 2h56m</span>
-      <div class="acts"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button><button class="btn">Reject</button><div class="split"><button class="btn main"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Codex</button><button class="btn chev" aria-label="Choose agent for ITM-01JB4" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
+      <span class="g g-esc" role="img" aria-label="escalated">▲</span><span class="sid none">no session</span><span class="agn dash">—</span>
+      <div class="it"><span class="id mono">ITM-01JB4</span><span class="ttl">Context map review for tabs.layout</span></div>
+      <span class="stt"><b>escalated</b> gate 0.62 · 2h 56m</span>
+      <div class="acts"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button><button class="btn">Reject</button><div class="split"><button class="btn main" aria-label="Open in Codex ITM-01JB4"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Codex</button><button class="btn chev" aria-label="Choose agent for ITM-01JB4" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div><button class="btn more" aria-label="More for ITM-01JB4" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
     </div>
 
     <div class="legend" aria-label="Legend">
@@ -445,7 +425,7 @@ svg{flex:none}
 
   <div class="row2a">
     <section class="panel" aria-labelledby="by-h">
-      <div class="phead"><h2 class="eyebrow" id="by-h">By agent</h2><span class="count">30 d</span></div>
+      <div class="phead"><h2 class="eyebrow" id="by-h">By agent</h2><span class="meta" style="margin-left:0;gap:8px">·<button class="btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Window: 30 days">30 days <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></span></div>
       <div class="th ba" role="row"><span>Agent</span><span>Sessions</span><span>Done</span><span>Taken over</span><span>Median</span><span>Tokens/session</span><span>$/session</span></div>
       <div class="tr ba"><span style="color:var(--ink)">Claude Code</span><span class="num">96</span><span class="num">88</span><span class="num">9%</span><span class="num">48m</span><span class="num">290k</span><span class="num">$1.70</span></div>
       <div class="tr ba"><span style="color:var(--ink)">Codex</span><span class="num">41</span><span class="num">39</span><span class="num">2%</span><span class="num">11m</span><span class="num">40k</span><span class="num">$0.22</span></div>
@@ -453,13 +433,13 @@ svg{flex:none}
       <div class="tr ba"><span style="color:var(--ink)">challenger</span><span class="num">7</span><span class="num">7</span><span class="num">0%</span><span class="num">14m</span><span class="num">110k</span><span class="num">$0.41</span></div>
     </section>
     <section class="panel" aria-labelledby="bg-h">
-      <div class="phead"><h2 class="eyebrow" id="bg-h">Budget</h2><span class="count">today</span></div>
+      <div class="phead"><h2 class="eyebrow" id="bg-h">Budget</h2><span class="meta" style="margin-left:0">· today</span></div>
       <div class="bud">
-        <span class="k">Claude Code</span><span class="meter " role="img" aria-label="$3.10 of $8.00, 39%"><span class="n"></span><span class="trk"><span class="fil" style="width:39%"></span><span class="mk" style="left:80%"></span></span></span><span class="v">$3.10 / $8.00</span>
-        <span class="k">Codex</span><span class="meter " role="img" aria-label="$1.02 of $4.00, 26%"><span class="n"></span><span class="trk"><span class="fil" style="width:26%"></span><span class="mk" style="left:80%"></span></span></span><span class="v">$1.02 / $4.00</span>
-        <span class="k">Cursor</span><span class="meter " role="img" aria-label="$0.00 of $2.00, 0%"><span class="n"></span><span class="trk"><span class="fil" style="width:0%"></span><span class="mk" style="left:80%"></span></span></span><span class="v">$0.00 / $2.00</span>
-        <span class="k">total</span><span class="meter " role="img" aria-label="$4.12 of $14, 29%"><span class="n"></span><span class="trk"><span class="fil" style="width:29%"></span><span class="mk" style="left:80%"></span></span></span><span class="v">$4.12 / $14<small>soft 80%</small></span>
-        <span class="lg"><span><i aria-hidden="true">│</i> soft warning at 80%</span><span><i class="h" aria-hidden="true">│</i> hard stop at 100% (new sessions refused, SND-LAUNCH-010)</span></span>
+        <span class="k">Claude Code</span><span class="meter" role="img" aria-label="$3.10 of $8.00, 39%"><span class="trk"><span class="fil" style="width:39%"></span><span class="mk" style="left:80%"></span><span class="mk h" style="right:0"></span></span></span><span class="v">$3.10 / $8.00</span>
+        <span class="k">Codex</span><span class="meter" role="img" aria-label="$1.02 of $4.00, 26%"><span class="trk"><span class="fil" style="width:26%"></span><span class="mk" style="left:80%"></span><span class="mk h" style="right:0"></span></span></span><span class="v">$1.02 / $4.00</span>
+        <span class="k">Cursor</span><span class="meter" role="img" aria-label="$0.00 of $2.00, 0%, cursor not found on this host"><span class="trk"><span class="fil" style="width:0%"></span><span class="mk" style="left:80%"></span><span class="mk h" style="right:0"></span></span></span><span class="v">$0.00 / $2.00</span>
+        <span class="k">total</span><span class="meter" role="img" aria-label="$4.12 of $14, 29%"><span class="trk"><span class="fil" style="width:29%"></span><span class="mk" style="left:80%"></span><span class="mk h" style="right:0"></span></span></span><span class="v">$4.12 / $14<small>soft 80%</small></span>
+        <span class="key"><span><i aria-hidden="true">│</i> soft warning at 80%</span><span><i class="h" aria-hidden="true">│</i> hard stop at 100%: new sessions refused (SND-LAUNCH-010)</span></span>
       </div>
     </section>
   </div>

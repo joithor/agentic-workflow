@@ -232,6 +232,35 @@ svg{flex:none}
 .wfmore{padding:6px 16px 7px 42px;border-top:1px solid var(--line1);font-size:12px}
 .wfmore a{color:var(--ink-subtle)}
 .wfmore a:hover{color:var(--ink-muted)}
+
+/* ---- wave 2 (fixes.md, home): page overrides appended after the shell ---- */
+/* typeset: meta text sits on the 12 step; only eyebrows, kbd and the repo tag stay at 11 */
+.motion,.since,.pending{font-size:12px}
+/* layout: the actions column holds its widest row (lock button + split) at 420; the title column gets the rest,
+   so the longest subject with its id and repo tag never truncates at 1280 */
+.ny{grid-template-columns:104px minmax(0,1fr) 60px 420px}
+/* the focus ring on a split's main half paints over its chevron instead of under it */
+.split .main.is-focused{position:relative;z-index:1}
+/* distill: the copyable line is the control (one click copies); no "Copy" word repeated per row */
+.cmd{cursor:pointer;text-align:left}
+.cmd .cp{padding:0 8px;border-left:1px solid var(--line1);color:var(--ink-subtle);display:flex;align-items:center}
+.cmd:hover{border-color:var(--line2)}
+.cmd:hover .cp{color:var(--ink);background:var(--s3)}
+.cmd:active .cp{background:var(--s2)}
+/* animate: hover and press only, 120 ms, ease-out-quart; colour properties only, nothing moves on load */
+.btn,.cmd,.cmd .cp,.ny,.run,.q,.wf,.seg a,.wfmore a,.qfoot a,.phead .meta a{
+  transition:background-color 120ms cubic-bezier(.25,1,.5,1),border-color 120ms cubic-bezier(.25,1,.5,1),color 120ms cubic-bezier(.25,1,.5,1)}
+.btn:active{background:var(--s2);border-color:var(--line3)}
+.btn.term:active{background:var(--s1)}
+/* adapt: desktop first at 1280 × 800; the 900 × 600 minimum scrolls. Under 1100 the two columns stack, the
+   needs-you actions drop under the row's text, and the strip keeps the glyph, SUBJECT, RECIPE and NOW. */
+@media (max-width:1100px){
+  .row2{grid-template-columns:1fr}
+  .ny{grid-template-columns:104px minmax(0,1fr) 60px}
+  .ny .acts{grid-column:2/-1;justify-content:flex-start;flex-wrap:wrap;padding-bottom:4px}
+  .wf{grid-template-columns:14px minmax(0,1fr) 150px minmax(0,1fr) auto}
+  .wf .stage,.wf .age{display:none}
+}
 </style>
 </head>
 <body>
@@ -262,7 +291,7 @@ svg{flex:none}
       <h1>Home</h1>
       <div class="sub">
         <span class="attn-word"><i aria-hidden="true"></i>5 need you</span>
-        <span>·</span><span><b>6</b> running</span>
+        <span>·</span><span><b>4</b> running</span>
         <span>·</span><span><b>1</b> with you</span>
         <span>·</span><span><b>4</b> queued</span>
       </div>
@@ -272,7 +301,7 @@ svg{flex:none}
       <span><kbd>J</kbd><kbd>K</kbd> Move</span>
       <span><kbd>↵</kbd> Details</span>
       <span><kbd>O</kbd> Open</span>
-      <span><kbd>A</kbd> Primary action</span>
+      <span><kbd>A</kbd> Answer</span>
       <span><kbd>?</kbd> Shortcuts</span>
     </div>
   </div>
@@ -284,32 +313,42 @@ svg{flex:none}
       <span class="count-attn">5</span>
       <div class="meta">Most urgent first, then oldest <span><kbd>G</kbd><kbd>N</kbd></span><button class="btn ghost sm" aria-label="Mark all seen (Shift+A)">Mark all seen <kbd>⇧A</kbd></button></div>
     </div>
+    <!-- empty (0 need you): the head stays, the band is absent, and one untinted row reads
+         "Nothing needs you. Last cleared 11:12." in --ink-subtle; the strip takes the rows back. -->
+    <!-- after Mark all seen: the tints clear and the head reads "5 marked seen · Undo ⌘Z" for 10 s. -->
 
     <div class="ny pulse" aria-label="Needs you now: park, ITM-01JC8">
       <div class="kind"><span class="chip"><span class="g g-park">▌</span>park</span><span class="motion">needs you now <span class="newword">new</span></span></div>
       <div class="what">
         <div class="line1"><span class="id mono">ITM-01JC8</span><span class="title">Retry storm in outbox dispatcher</span><span class="tag">agentic-workflow</span></div>
         <div class="line2">Parked: no-progress · <span class="reason">checks failed twice with the same findings</span></div>
-        <span class="cmd"><span class="prompt">$</span><code>sindri workflow answer ITM-01JC8 --grant 1</code><button aria-label="Copy: sindri workflow answer ITM-01JC8 --grant 1"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M2 8V2.8C2 2.4 2.4 2 2.8 2H8" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Copy</button></span>
+        <button class="cmd" aria-label="Copy command: sindri workflow answer ITM-01JC8 --grant 1" title="Copy to clipboard"><span class="prompt" aria-hidden="true">$</span><code>sindri workflow answer ITM-01JC8 --grant 1</code><span class="cp" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M2 8V2.8C2 2.4 2.4 2 2.8 2H8" stroke="currentColor" fill="none" stroke-width="1.2"/></svg></span></button>
       </div>
       <div class="since"><b>12m</b>since 11:54</div>
       <div class="acts">
         <button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button>
-        <div class="split"><button class="btn main " aria-label="Open in Claude Code ITM-01JC8"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Claude Code</button><button class="btn chev " aria-label="Choose agent for ITM-01JC8" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
-        <button class="btn ghost">Cancel</button>
+        <div class="split"><button class="btn main is-focused" aria-label="Open in Claude Code ITM-01JC8"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Claude Code</button><button class="btn chev " aria-label="More for ITM-01JC8: other agents, cancel" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+          <!-- closed; X opens it on the focused row -->
+          <div class="menu" role="menu" aria-label="More for ITM-01JC8" hidden>
+            <div class="cap">Open in</div>
+            <button class="mi" role="menuitem">Codex</button>
+            <!-- Cursor is not offered: not found on this host (System) -->
+            <div class="cap">Destructive</div>
+            <button class="mi" role="menuitem">Cancel ITM-01JC8…<small>Asks first: "Cancel ITM-01JC8? The parked round is discarded. [Cancel item] [Keep]"</small></button>
+          </div></div>
       </div>
     </div>
 
     <div class="ny pulse" aria-label="Needs you now: decision on ITM-01JD2">
       <div class="kind"><span class="chip"><span class="g">?</span>decision</span><span class="motion">needs you now <span class="newword">new</span></span></div>
       <div class="what">
-        <div class="line1"><span class="id mono">REQ</span><span class="title">Re-scope ITM-01JD2: drop the iOS head from this item</span><span class="tag">sindri-app</span></div>
+        <div class="line1"><span class="id mono">REQ-01JD4</span><span class="title">Re-scope ITM-01JD2: drop the iOS head from this item</span><span class="tag">sindri-app</span></div>
         <div class="line2">Filed by a session ·<span class="reason">recorded; acted on once the workflow engine runs</span></div>
       </div>
       <div class="since"><b>26m</b>since 11:40</div>
       <div class="acts">
-        <button class="btn primary is-focused">Accept</button>
-        <button class="btn">Decline <kbd>X</kbd></button>
+        <button class="btn primary">Accept</button>
+        <button class="btn">Decline</button>
         <div class="split"><button class="btn main " aria-label="Open in Claude Code ITM-01JD2"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Claude Code</button><button class="btn chev " aria-label="Choose agent for ITM-01JD2" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
       </div>
     </div>
@@ -319,7 +358,7 @@ svg{flex:none}
       <div class="what">
         <div class="line1"><span class="id mono">ITM-01JB4</span><span class="title">Context map review for tabs.layout</span><span class="tag">agentic-workflow</span></div>
         <div class="line2">Gate: <span class="mono">gate.verify.judge</span> scored<span class="reason">0.62, below 0.80</span></div>
-        <span class="cmd"><span class="prompt">$</span><code>sindri workflow answer ITM-01JB4 --accept</code><button aria-label="Copy: sindri workflow answer ITM-01JB4 --accept"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M2 8V2.8C2 2.4 2.4 2 2.8 2H8" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Copy</button></span>
+        <button class="cmd" aria-label="Copy command: sindri workflow answer ITM-01JB4 --accept" title="Copy to clipboard"><span class="prompt" aria-hidden="true">$</span><code>sindri workflow answer ITM-01JB4 --accept</code><span class="cp" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M2 8V2.8C2 2.4 2.4 2 2.8 2H8" stroke="currentColor" fill="none" stroke-width="1.2"/></svg></span></button>
       </div>
       <div class="since"><b>2h 56m</b>since 09:10</div>
       <div class="acts">
@@ -333,7 +372,7 @@ svg{flex:none}
       <div class="kind"><span class="chip"><span class="g h-fail">✕</span>failure</span><span class="motion">failed</span></div>
       <div class="what">
         <div class="line1"><span class="id mono">service index</span><span class="title">Nightly index build failed</span><span class="mono" style="color:var(--ink-muted)">SND-INDEX-012</span><span class="rest">graphify timed out</span></div>
-        <span class="cmd"><span class="prompt">$</span><code>sindri services run index</code><button aria-label="Copy: sindri services run index"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M2 8V2.8C2 2.4 2.4 2 2.8 2H8" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Copy</button></span>
+        <button class="cmd" aria-label="Copy command: sindri services run index" title="Copy to clipboard"><span class="prompt" aria-hidden="true">$</span><code>sindri services run index</code><span class="cp" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M2 8V2.8C2 2.4 2.4 2 2.8 2H8" stroke="currentColor" fill="none" stroke-width="1.2"/></svg></span></button>
       </div>
       <div class="since"><b>9h</b>since 03:02</div>
       <div class="acts">
@@ -343,11 +382,11 @@ svg{flex:none}
     </div>
 
     <div class="ny calm" aria-label="To look at: profile changed">
-      <div class="kind"><span class="chip"><span class="g">◇</span>profile</span><span class="motion">to look at</span></div>
+      <div class="kind"><span class="chip"><span class="g g-chg">◆</span>profile</span><span class="motion">to look at</span></div>
       <div class="what">
         <div class="line1"><span class="title">Profile changed since approval · 2 keys</span></div>
         <div class="line2"><span class="mono reason">services.index.every</span>·<span class="mono reason">context.maxBudget</span></div>
-        <span class="cmd"><span class="prompt">$</span><code>sindri profile approve 3f1c09</code><button aria-label="Copy: sindri profile approve 3f1c09"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M2 8V2.8C2 2.4 2.4 2 2.8 2H8" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Copy</button></span>
+        <button class="cmd" aria-label="Copy command: sindri profile approve 3f1c09" title="Copy to clipboard"><span class="prompt" aria-hidden="true">$</span><code>sindri profile approve 3f1c09</code><span class="cp" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M2 8V2.8C2 2.4 2.4 2 2.8 2H8" stroke="currentColor" fill="none" stroke-width="1.2"/></svg></span></button>
       </div>
       <div class="since"><b>2h 11m</b>since 10:15</div>
       <div class="acts">
@@ -360,17 +399,17 @@ svg{flex:none}
   <section class="panel" style="margin-top:8px" aria-labelledby="wf-h">
     <div class="phead">
       <h2 class="eyebrow" id="wf-h">Workflows</h2>
-      <span class="count">7 open</span>
+      <span class="count">12 open</span>
       <div class="meta"><a href="#">Open Workflows ▸</a></div>
     </div>
 
-    <div class="wf" aria-label="Escalated: INC-14 Outbox retry storm, incident.response">
-      <span class="g g-esc" aria-hidden="true">▲</span>
+    <div class="wf" aria-label="In progress: INC-14 Outbox retry storm, incident.response">
+      <span class="g g-prog" aria-hidden="true">◐</span>
       <span class="subj"><span class="mono">INC-14</span> Outbox retry storm</span>
       <span class="recipe">incident.response</span>
       <span class="stage"><span class="mono">mitigate</span> <span class="badge">r1/3</span> ⇄ <span class="mono">verify</span></span>
       <span class="age">1h 24m</span>
-      <span class="now">agent rolling back · comms posting</span>
+      <span class="now">agent rolling back in <span class="mono">ITM-01JG2</span> · comms posting</span>
       <span class="acts"></span>
     </div>
 
@@ -380,7 +419,7 @@ svg{flex:none}
       <span class="recipe">triage.alert</span>
       <span class="stage"><span class="mono">classify</span> · <span class="badge">desk</span></span>
       <span class="age">4m</span>
-      <span class="now">needs your class</span>
+      <span class="now">needs your severity</span>
       <span class="acts"><button class="btn sm" aria-label="Answer: classify sentry #8812">Answer <kbd>A</kbd></button></span>
     </div>
 
@@ -389,8 +428,8 @@ svg{flex:none}
       <span class="subj"><span class="team">APP ·</span> Offline sync</span>
       <span class="recipe">workflow.project</span>
       <span class="stage"><span class="mono">build</span> <span class="badge">4/9</span></span>
-      <span class="age">3h</span>
-      <span class="now"><span class="mono">ITM-01JE7</span> produce 2/3</span>
+      <span class="age">3h 12m</span>
+      <span class="now"><span class="mono">ITM-01JD6</span> checks · 4 done · 1 running · 1 parked · 3 queued</span>
       <span class="acts"></span>
     </div>
 
@@ -399,7 +438,7 @@ svg{flex:none}
       <span class="subj"><span class="team">ENG ·</span> Billing exports</span>
       <span class="recipe">workflow.project</span>
       <span class="stage"><span class="mono">design</span> · <span class="badge">desk</span></span>
-      <span class="age">2h</span>
+      <span class="age">20h</span>
       <span class="now">with you: import the design output</span>
       <span class="acts"></span>
     </div>
@@ -410,18 +449,18 @@ svg{flex:none}
       <span class="recipe">workflow.project</span>
       <span class="stage"><span class="mono">scoping</span> <span class="badge">r2/3</span></span>
       <span class="age">46m</span>
-      <span class="now">challenger round 2</span>
+      <span class="now">challenger round 2 · <span class="mono">84k / 600k</span></span>
       <span class="acts"></span>
     </div>
 
-    <div class="wfmore"><a href="#" aria-label="2 more open workflows, opens Workflows">… 2 more</a></div>
+    <div class="wfmore"><a href="#" aria-label="7 more open workflows, opens Workflows">… 7 more</a></div>
   </section>
 
   <!-- RUNNING + WITH YOU  |  QUEUED -->
   <div class="row2">
     <section class="panel" aria-labelledby="run-h">
       <div class="phead">
-        <h2 class="eyebrow" id="run-h">Running <span class="count">6</span> · With you <span class="count">1</span></h2>
+        <h2 class="eyebrow" id="run-h">Running <span class="count">4</span> · With you <span class="count">1</span></h2>
         <div class="meta"><span><kbd>G</kbd><kbd>R</kbd> Running</span><span><kbd>G</kbd><kbd>W</kbd> With you</span></div>
       </div>
 
@@ -436,7 +475,7 @@ svg{flex:none}
       <div class="run" aria-label="Running: ITM-01JE7">
         <div class="what">
           <div class="line1"><span class="id mono">ITM-01JE7</span><span class="title">Add needs-you ack route</span><span class="tag">agentic-workflow</span></div>
-          <div class="step"><span class="state live"><span class="g g-live">●</span>Live</span>· <span class="mono">workflow.step › produce</span> round 2/3 · Claude Code in Warp · since 12:20 (6m)</div>
+          <div class="step"><span class="state live"><span class="g g-live">●</span>Live</span>· <span class="mono">produce</span> round 2/3 · Claude Code in Warp · since 12:20 (6m)</div>
         </div>
         <div class="acts"><div class="split"><button class="btn main " aria-label="Attach ITM-01JE7"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach</button><button class="btn chev " aria-label="Choose agent for ITM-01JE7" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
         <div class="budget"><span>Budget</span><div class="track"><div class="fill" style="width:42%"></div></div><span class="mono">84k / 200k tokens</span><span>· Attach pauses automation (a takeover)</span></div>
@@ -464,16 +503,16 @@ svg{flex:none}
         </div>
         <div class="acts"><div class="split"><button class="btn main " aria-label="Attach ITM-01JD6"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach</button><button class="btn chev " aria-label="Choose agent for ITM-01JD6" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
       </div>
-      <div class="qfoot"><a href="#">Show all 7 in Queue</a><span><kbd>G</kbd><kbd>R</kbd></span></div>
+      <div class="qfoot"><a href="#" aria-label="Show all 5 in Work: the four running and the one with you">Show all 5 in Work</a><span><kbd>G</kbd><kbd>R</kbd></span></div>
     </section>
 
     <section class="panel" aria-labelledby="q-h">
       <div class="phead">
         <h2 class="eyebrow" id="q-h">Queued</h2><span class="count">4</span>
-        <div class="meta"><span><kbd>G</kbd><kbd>Q</kbd></span><a href="#">Open queue →</a></div>
+        <div class="meta"><span><kbd>G</kbd><kbd>Q</kbd></span><a href="#">Open queue ▸</a></div>
       </div>
       <div class="q"><div class="t"><span class="id mono">ITM-01JF0</span> <b>Stream limits 429 fallback</b><div class="sub">agentic-workflow · queued 1h</div></div><span></span><button class="btn sm"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Claude Code</button></div>
-      <div class="q"><div class="t"><span class="id mono">ITM-01JF3</span> <b>doctor views line</b><div class="sub">agentic-workflow · queued 52m</div></div><span></span><button class="btn sm"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Claude Code</button></div>
+      <div class="q"><div class="t"><span class="id mono">ITM-01JF3</span> <b>doctor views line</b><div class="sub">sindri-app · queued 52m</div></div><span></span><button class="btn sm"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Claude Code</button></div>
       <div class="q"><div class="t"><span class="id mono">ITM-01JF4</span> <b>Tray badge on Linux</b><div class="sub">sindri-app · queued 40m</div></div><span></span><button class="btn sm"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Claude Code</button></div>
       <div class="q"><div class="t"><span class="id mono">ITM-01JF8</span> <b>Receipt verify route</b><div class="sub">sindri-app · queued 12m</div></div><span></span><button class="btn sm"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Open in Claude Code</button></div>
     </section>
@@ -482,12 +521,12 @@ svg{flex:none}
   <!-- SINDRI HEALTH -->
   <section class="strip" aria-label="Sindri health">
     <div class="hd"><h2 class="eyebrow">Sindri health</h2><kbd>G</kbd><kbd>.</kbd></div>
-    <div class="cell"><span class="k">Process</span><span class="v"><span class="dot" aria-hidden="true"></span>Running <span class="mono">pid 48211</span></span></div>
+    <div class="cell"><span class="k">Process</span><span class="v"><span class="g g-live" aria-hidden="true">●</span>Running <span class="mono">pid 48211</span></span></div>
     <div class="cell"><span class="k">Epoch · lease</span><span class="v"><span class="mono">7</span> · held</span></div>
     <div class="cell"><span class="k">API</span><span class="v"><span class="mono">v1</span></span></div>
     <div class="cell"><span class="k">Views</span><span class="v">updated <span class="mono">2s ago</span></span></div>
-    <div class="cell"><span class="k">Services</span><span class="v warn">5 ok · ✕ 1 failed (index)</span></div>
-    <div class="cell"><span class="k">Profile</span><span class="v warn">◇ changed since approval</span></div>
+    <div class="cell"><span class="k">Services</span><span class="v warn">5 ok · <span class="g h-fail" aria-hidden="true">✕</span>1 failed (index)</span></div>
+    <div class="cell"><span class="k">Profile</span><span class="v warn"><span class="g g-chg" aria-hidden="true">◆</span>changed since approval</span></div>
   </section>
 </main>
 

@@ -218,87 +218,48 @@ svg{flex:none}
 
 /* ═══════ rev 8 screens: additions below the base styles (no new colours) ═══════ */
 body{min-width:1280px}
-.tools{display:flex;align-items:center;gap:8px}
-.tools .btn svg{color:var(--ink-subtle)}
+/* adapt (the 900 × 600 minimum): the page keeps its 1280 floor and scrolls; under 1100 px the sheet takes the
+   viewport's full width instead of leaving a sliver of list beside it */
+@media (max-width:1100px){.sheet.wide{width:100%}}
+/* motion: hover and press only, 120 ms ease-out, colour and background only (never a layout property); nothing moves on load */
+.btn,.icon-btn,.tab,.menu .mi,.st tbody td,.qt .tr,.fact,.child{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out}
+.btn:active{background:var(--s2)}
+.btn.term:active{background:var(--s3)}
+@media (prefers-reduced-motion:reduce){.btn,.icon-btn,.tab,.menu .mi,.st tbody td,.qt .tr,.fact,.child{transition:none}}
+/* the destructive class is visible before the click (PRODUCT.md principle 1): the error red carries the verb, nothing else */
+.btn.danger{color:var(--error)}
+.btn.danger:hover{color:var(--error);border-color:var(--line3)}
 
-/* glyph vocabulary (§4 conventions) */
-
-/* workflows list (behind the sheet) */
-.wfg .gh{display:flex;align-items:center;gap:8px;height:32px;padding:4px 16px;background:var(--s2);border-top:1px solid var(--line1);
-  border-bottom:1px solid var(--line1);font-weight:500;font-size:12px;color:var(--ink)}
-.wfg:first-child .gh{border-top:0;border-radius:12px 12px 0 0}
-.wfg .gh .mono{color:var(--ink)}
-.wfg .gh .desc{color:var(--ink-subtle);font-weight:400}
-.wfg .colhead,.wfg .tr{display:grid;grid-template-columns:var(--cols);gap:10px;align-items:center;padding:4px 16px}
-.wfg .colhead{height:26px;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);font-weight:500;white-space:nowrap;overflow:hidden}
-.wfg .colhead span{overflow:hidden;text-overflow:ellipsis}
-.wfg .tr{position:relative;height:36px;border-top:1px solid var(--line1)}
-.wfg .tr:hover{background:var(--s2)}
-.wfg .tr.sel{background:var(--s3)}
-.wfg .subj{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wfg .subj .team{color:var(--ink-subtle)}
-.wfg .inp{color:var(--ink-subtle);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wfg .inp b{color:var(--ink-muted);font-weight:400}
-.sc{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.sc .mono{color:var(--ink-subtle)}
-.sc.span2{grid-column:span 2}
-.sc.span3{grid-column:span 3}
-.wfg .now{color:var(--ink-subtle);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wfg .gfoot{display:flex;align-items:center;gap:8px;height:32px;padding:4px 16px;border-top:1px solid var(--line1);color:var(--ink-muted);font-size:12px;font-weight:500}
-.wfg .gfoot .desc{color:var(--ink-subtle);font-weight:400}
-.wfg .gfoot .r{margin-left:auto;display:flex;align-items:center;gap:4px;color:var(--ink-subtle);font-weight:400;font-size:12px}
-.legend{margin-top:8px;color:var(--ink-subtle);font-size:12px;display:flex;gap:14px;align-items:center}
-.legend .keys{margin-left:auto;display:flex;gap:12px}
-.legend .keys span{display:flex;gap:4px;align-items:center}
-
-/* work list (behind the item sheet) · queue.html's table at reduced detail */
-.filter{display:flex;align-items:center;gap:8px;width:280px;height:30px;padding:4px 8px 4px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--s1);color:var(--ink-subtle)}
-.filter span{flex:1}
-.qt{--cols:80px minmax(0,1fr) 112px 140px 124px 90px 92px 206px}
-.qt .colhead,.qt .tr{display:grid;grid-template-columns:var(--cols);gap:12px;align-items:center;padding:4px 16px}
-.qt .colhead{height:32px;font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);border-bottom:1px solid var(--line1)}
-.qt .colhead .r,.qt .tr .act{justify-self:end}
-.qt .gh{display:flex;align-items:center;gap:8px;height:32px;padding:4px 16px;background:var(--s2);border-top:1px solid var(--line1);border-bottom:1px solid var(--line1);color:var(--ink);font-weight:500;font-size:12px}
-.qt .gh .g{width:12px}
-.qt .tr{position:relative;height:36px;border-top:1px solid var(--line1)}
-.qt .gh+.tr{border-top:0}
-.qt .tr:hover{background:var(--s2)}
-.qt .tr.sel{background:var(--s3)}
-.qt .tr.attn{background:var(--attn-soft)}
-.qt .tr .tt{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qt .tr .tt.muted{color:var(--ink-muted);font-weight:400}
-.qt .tr .cell2{color:var(--ink-subtle);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qt .tr .cell2.ink{color:var(--ink-muted)}
-.qt .tr .st{display:flex;align-items:center;gap:6px;white-space:nowrap;font-weight:500;color:var(--ink);font-size:12px}
-.qt .tr .st small{color:var(--ink-subtle);font-weight:400;font-size:12px}
-.qt .tr .act{display:flex;gap:6px;align-items:center}
-
-/* the instance frame: sheet chrome */
+/* ---- the instance frame (§4.2, §4.7): one sheet for a project, an incident and an item ---- */
 .sheet.wide{width:760px}
 .sheet-head{padding:12px 20px 10px;border-bottom:1px solid var(--line1);flex:none}
 .sheet-body{padding:0 20px 16px;overflow:auto;flex:1}
-.crumb{display:flex;align-items:center;gap:10px;min-width:0}
-.crumb .addr{font-family:var(--mono);font-size:12px;color:var(--ink-subtle);white-space:nowrap;flex:none}
-.crumb .ttl{font-size:15px;font-weight:600;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.crumb .meta{margin-left:auto;color:var(--ink-subtle);font-size:12px;white-space:nowrap;display:flex;gap:6px;align-items:center;flex:none}
+/* crumb: the address and the title never truncate; the meta sits beside the title when it fits and wraps under it when not */
+.crumb{display:flex;align-items:flex-start;gap:10px}
+.crumb .lead{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.crumb .addr{font-family:var(--mono);font-size:12px;color:var(--ink-subtle);white-space:nowrap}
+.crumb .ttl{font-size:15px;font-weight:600;letter-spacing:-.2px;line-height:1.4}
+.crumb .meta{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
 .crumb .meta .mono{color:var(--ink-muted)}
 .crumb .meta b{color:var(--ink);font-weight:500}
-.crumb .r{display:flex;gap:6px;align-items:center;flex:none}
+.crumb .r{display:flex;gap:6px;align-items:center;flex:none;height:24px}
 .icon-btn{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--ink-subtle);border:1px solid var(--line1);background:var(--s2)}
 .icon-btn:hover{color:var(--ink);background:var(--s3)}
-.sh-title{font-size:17px;font-weight:600;letter-spacing:-.3px;margin-top:6px}
-.sh-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px;color:var(--ink-subtle);font-size:12px}
-.sh-meta .mono{color:var(--ink-muted)}
-.sh-meta b{color:var(--ink);font-weight:500}
-.subject{display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--ink-muted);font-size:12px;min-width:0}
-.subject .lbl{color:var(--ink-subtle);font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;flex:none;width:52px}
-.subject .txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.subject .txt b{color:var(--ink);font-weight:500}
-.subject .txt .mono{color:var(--ink-muted)}
-.subject .acts{flex:none;display:flex;gap:6px}
-.subject.stack{flex-wrap:wrap}
-.subject.stack .txt{flex-basis:100%;white-space:normal;line-height:1.5}
-.subject.stack .acts{margin-left:62px}
+/* subject line: label · text · actions; .stack puts the actions under a text that needs the whole line */
+.sheet-head .subject{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:6px 10px;align-items:center;margin-top:8px;color:var(--ink-muted);font-size:12px}
+.sheet-head .subject .lbl{color:var(--ink-subtle);font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;align-self:start;padding-top:4px}
+.sheet-head .subject .txt{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:24px}
+.sheet-head .subject .txt b{color:var(--ink);font-weight:500}
+.sheet-head .subject .txt .mono{color:var(--ink-muted)}
+.sheet-head .subject .txt .note{color:var(--ink-subtle)}
+.sheet-head .subject .acts{grid-column:3;justify-self:end;display:flex;gap:6px;position:relative}
+.sheet-head .subject.stack .txt{white-space:normal;line-height:1.5;padding-top:3px}
+.sheet-head .subject.stack .acts{grid-column:2;grid-row:2;justify-self:start}
+.chev{padding:0 6px}
+/* the one-line confirm that Cancel asks for (drawn open on the incident sheet) */
+.confirm{display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;border:1px solid var(--line2);border-radius:8px;background:var(--s2);font-size:12px;color:var(--ink-muted);line-height:1.4}
+.confirm b{color:var(--ink);font-weight:500}
+.confirm .acts{margin-left:auto;display:flex;gap:6px;flex:none}
 
 /* panels inside the sheet */
 .sp{margin-top:10px}
@@ -306,8 +267,10 @@ body{min-width:1280px}
 .sp .phead .meta{text-transform:none;letter-spacing:0;font-size:12px}
 .sp .phead .count{margin-left:-2px}
 
-/* STATES band */
+/* STATES band: the recipe's states in path order; a link and the node it leads to wrap as one unit, so a row that
+   continues starts with its link and no link ever dangles at a row's end */
 .path{display:flex;align-items:center;flex-wrap:wrap;gap:3px 0;padding:8px 10px 6px;font-size:12px}
+.step{display:inline-flex;align-items:center;flex:none}
 .node{display:inline-flex;align-items:center;gap:5px;height:26px;padding:4px 7px;border-radius:6px;color:var(--ink-muted);white-space:nowrap}
 .node b{font-weight:500;color:var(--ink)}
 .node .badge{font-size:11px;color:var(--ink-subtle);white-space:nowrap}
@@ -316,23 +279,24 @@ body{min-width:1280px}
 .node.todo b{color:var(--ink-subtle)}
 .link{color:var(--line3);font-family:var(--mono);font-size:11px;letter-spacing:-1px;padding:0 1px;flex:none}
 .link.loop{color:var(--ink-subtle);letter-spacing:0;font-family:var(--sans);font-size:12px;padding:0 3px}
-.expand{margin:0 14px 12px;border:1px solid var(--line2);border-radius:8px;background:var(--canvas);padding:9px 12px 10px}
+/* the expanded state is a divided region of the panel, not a card inside it */
+.expand{border-top:1px solid var(--line1);padding:10px 14px 12px}
 .expand .decl{display:flex;flex-wrap:wrap;gap:3px 6px;align-items:center;color:var(--ink-muted);font-size:12px;line-height:1.5}
 .expand .decl b{color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:5px}
 .expand .decl .mono{color:var(--ink-muted)}
 .expand .decl .sep{color:var(--ink-subtle)}
 .expand .decl .live{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-weight:500}
+.expand .decl .unit{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}  /* a glyph stays on its word's line */
 .krow{display:grid;grid-template-columns:50px minmax(0,1fr);gap:10px;margin-top:6px;font-size:12px;line-height:1.5}
 .krow .k{color:var(--ink-subtle);font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;padding-top:2px}
 .krow .v{color:var(--ink-muted);min-width:0}
 .krow .v.ink{color:var(--ink)}
-.ctl{display:flex;align-items:center;gap:10px;margin-top:8px}
-.ctl .stat{display:flex;align-items:center;gap:6px;color:var(--ink-subtle);font-size:12px;min-width:0;flex:1;flex-wrap:wrap;line-height:1.5}
+.ctl{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.ctl .stat{display:flex;align-items:center;gap:6px;color:var(--ink-subtle);font-size:12px;min-width:0;flex:1 1 320px;flex-wrap:wrap;line-height:1.5}
 .ctl .stat .mono{color:var(--ink-muted)}
 .ctl .stat b{color:var(--ink-muted);font-weight:500}
+.ctl .stat .kv{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}  /* a key and its value wrap together */
 .ctl .acts{margin-left:auto;display:flex;gap:6px;flex:none}
-.ctl.stack{flex-wrap:wrap}
-.ctl.stack .acts{margin-left:0;flex-basis:100%;justify-content:flex-end}
 .bar4{display:inline-block;width:48px;height:3px;border-radius:2px;background:var(--line1);overflow:hidden;vertical-align:middle;margin:0 2px}
 .bar4 i{display:block;height:100%;background:var(--ink-subtle)}
 
@@ -345,45 +309,99 @@ body{min-width:1280px}
 .trace .t{font-family:var(--mono);font-size:11px;color:var(--ink-subtle)}
 .trace .d{color:var(--ink-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* FACTS */
+/* FACTS: a summary that is too long for its row wraps to a second line; it never truncates */
 .fact{display:grid;grid-template-columns:104px 14px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:34px;padding:4px 14px;border-top:1px solid var(--line1)}
 .phead+.fact{border-top:0}
 .fact:hover{background:var(--s2)}
 .fact .key{font-family:var(--mono);font-size:12px;color:var(--ink-subtle);white-space:nowrap}
-.fact .sum{color:var(--ink-muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.fact .sum{color:var(--ink-muted);font-size:12px;min-width:0;line-height:1.45}
 .fact .sum b{color:var(--ink);font-weight:500}
 .fact .sum .note{color:var(--ink-subtle)}
 .fact .sum .mono{color:var(--ink-muted)}
 .fact .sum a{color:var(--brand-hover)}
 .fact .acts{display:flex;gap:6px;flex:none}
 .fact .acts:empty{display:none}
-.facts.narrow .fact{grid-template-columns:92px 14px minmax(0,1fr) auto;padding:4px 12px;gap:8px}
-.facts.narrow .fact .sum{white-space:normal;line-height:1.45;font-size:12px}
 
-/* CHILDREN */
-.child{display:grid;grid-template-columns:var(--ccols,92px 84px minmax(0,1fr) 240px auto);gap:10px;align-items:center;min-height:36px;padding:4px 14px;border-top:1px solid var(--line1)}
-.phead+.child{border-top:0}
+/* CHILDREN: group · id · title · state · actions. The title column never gives up its first word (a 140 px floor,
+   then its own width); the state column shrinks first, down to its glyph and word */
+.children{display:grid;grid-template-columns:var(--ccols,90px 78px minmax(140px,max-content) minmax(120px,1fr) auto)}
+.child{display:grid;grid-template-columns:subgrid;grid-column:1/-1;gap:8px;align-items:center;min-height:36px;padding:4px 12px;border-top:1px solid var(--line1)}
+.children .child:first-child{border-top:0}
+.child .sc{display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--ink-muted)}
+.child .sc .g{margin-right:4px}
+.child .sc .mono{color:var(--ink-subtle)}
 .child:hover{background:var(--s2)}
+.child.attn,.child.attn:hover{background:var(--attn-soft)}
 .child.cont{border-top:0}
 .child .grp{color:var(--ink);font-weight:500;font-size:12px;white-space:nowrap}
 .child .grp .mono{color:var(--ink-subtle);font-size:12px}
 .child .id{color:var(--ink-subtle);white-space:nowrap}
 .child .ttl{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .child .ttl.muted{color:var(--ink-muted);font-weight:400}
-.child .acts{display:flex;gap:6px;justify-content:flex-end;flex:none}
+.child .acts{display:flex;gap:6px;justify-content:flex-end;flex:none;position:relative}
 .child .acts:empty{display:none}
-.cfoot{display:flex;align-items:center;padding:7px 14px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px}
+.cfoot{display:flex;align-items:center;gap:8px;padding:7px 14px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px}
+.cfoot .eyebrow{color:var(--ink-muted)}
 .cfoot a{margin-left:auto}
-.cnone{padding:10px 12px;color:var(--ink-subtle);font-size:12px;line-height:1.45}
 
-/* the sheet's lower row and tabs */
-.two{display:grid;grid-template-columns:minmax(0,1fr) 164px;gap:8px;margin-top:10px;align-items:start}
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line1);margin-top:12px}
-.tabs .tab{height:34px;padding:0 10px;display:flex;align-items:center;gap:6px;color:var(--ink-subtle);font-weight:500;
-  border-bottom:2px solid transparent;margin-bottom:-1px}
+/* the sheet's tabs: a key per tab, the active tab's first lines under the rule */
+.tabs{display:flex;gap:2px;margin-top:12px;position:relative;z-index:1;margin-bottom:-1px}
+.tabs .tab{height:34px;padding:0 10px;display:flex;align-items:center;gap:6px;color:var(--ink-subtle);font-weight:500;border-bottom:2px solid transparent}
 .tabs .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
 .tabs .tab .n{font-size:11px;color:var(--ink-subtle)}
+.tabs .tab kbd{margin-left:2px}
 .tabs .tab:hover{color:var(--ink-muted)}
+.tabpanel{border-top:1px solid var(--line1);padding:8px 0 0}
+.ev{display:grid;grid-template-columns:40px 118px minmax(0,1fr);gap:10px;align-items:baseline;font-size:12px;color:var(--ink-muted);line-height:1.5;padding:2px 10px}
+.ev .t{font-family:var(--mono);font-size:11px;color:var(--ink-subtle)}
+.ev .a{font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev .d{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev .d .mono{color:var(--ink-muted)}
+
+/* ---- the Workflows list behind the sheet: workflows.html's table, copied as one implementation (§4.2) ---- */
+.toolbar{display:flex;align-items:center;gap:8px}
+.toolbar .gap{width:8px}
+.ghead{display:flex;align-items:center;gap:8px;height:32px;padding:4px 16px;border-top:1px solid var(--line1);background:var(--s2)}
+.ghead:first-of-type{border-top:0;border-radius:12px 12px 0 0}
+.ghead .rname{font-family:var(--mono);font-size:12px;letter-spacing:-.1px;font-weight:500;color:var(--ink)}
+.ghead .rdesc{color:var(--ink-subtle);font-size:12px}
+.ghead .rdesc::before{content:"·";margin-right:8px}
+.ghead.collapsed{height:34px;border-bottom:0;border-radius:0 0 12px 12px}
+.ghead.collapsed .rdesc::before{content:none}
+.ghead.collapsed .sepdot{color:var(--ink-subtle);padding:0 4px}
+.ghead.collapsed .btn{margin-left:auto}
+table.st{width:100%;border-collapse:collapse}
+.st th{font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);text-align:left;
+  padding:5px 8px;white-space:nowrap;border-bottom:1px solid var(--line1)}
+.st th.stage{text-transform:none;letter-spacing:-.1px;font-family:var(--mono);font-size:12px;color:var(--ink-muted);font-weight:400}
+.st th.subject{width:214px}
+.st th.inputs{width:124px}
+.st th.now{width:184px}
+.st td{padding:5px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--line1);height:30px;vertical-align:middle}
+.st tbody tr:first-child td{border-top:0}
+.st tbody tr:hover td{background:var(--s2)}
+.st tbody tr.sel td,.st tbody tr.sel:hover td{background:var(--s3)}
+.st tbody tr.more td{color:var(--ink-subtle);font-size:12px;height:28px}
+.st th:first-child,.st td:first-child{padding-left:16px}
+.st th:last-child,.st td:last-child{padding-right:16px}
+.st td.subject{font-weight:500;color:var(--ink)}
+.st td.subject .team{color:var(--ink-subtle)}
+.st td.inputs{color:var(--ink-muted);font-size:12px}
+.st td.inputs .ok{color:var(--success)}
+.st td.inputs .mono{color:var(--ink-muted)}
+.st td.stage{color:var(--ink-muted);font-size:12px}
+.st td.stage .g{display:inline-block;width:12px;margin-right:3px}
+.st td.stage .b{color:var(--ink-subtle)}
+.st td.stage .b.mono{color:var(--ink-muted)}
+.st td.stage.badge{color:var(--ink)}
+.st td.stage.badge .mono{color:var(--ink-muted)}
+.st td.stage.badge .reason{color:var(--ink-subtle)}
+.st td.now{color:var(--ink-subtle);font-size:12px}
+.st td.now .mono{color:var(--ink-muted)}
+.legend{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 16px 0;font-size:12px;color:var(--ink-subtle)}
+.legend .keys{display:flex;gap:14px;white-space:nowrap}
+.legend .keys span{display:inline-flex;align-items:center;gap:4px}
+.legend .keys span b{font-weight:500;color:var(--ink-muted)}
 </style>
 </head>
 <body>
@@ -412,103 +430,88 @@ body{min-width:1280px}
     <div style="display:flex;align-items:baseline;gap:14px">
       <h1>Workflows</h1>
       <div class="sub">
-        <span><b>12</b> open</span><span>·</span>
-        <span class="attn-word"><i aria-hidden="true"></i>3 need you</span><span>·</span>
-        <span><b>2</b> running at a desk</span>
+        <span><b>12</b> open</span>
+        <span>·</span><span class="attn-word"><i aria-hidden="true"></i>3 need you</span>
+        <span>·</span><span><b>2</b> running at a desk</span>
       </div>
     </div>
-    <div class="tools">
-      <button class="btn" aria-haspopup="listbox" aria-expanded="false">Recipe <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
-      <button class="btn" aria-haspopup="listbox" aria-expanded="false">Subject <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
-      <button class="btn">Start… <kbd>⌘N</kbd></button>
+    <div class="toolbar">
+      <button class="btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by recipe">Recipe <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+      <button class="btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by subject">Subject <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+      <span class="gap" aria-hidden="true"></span>
+      <button class="btn primary" aria-label="Start a workflow (Command N)">Start… <kbd>⌘N</kbd></button>
     </div>
   </div>
 
-  <section class="panel" aria-label="Workflow instances, grouped by recipe">
-    <!-- workflow.project -->
-    <div class="wfg" style="--cols:200px 120px repeat(7,74px) minmax(0,1fr)">
-      <div class="gh"><span class="mono">workflow.project</span><span class="desc">· Linear projects</span><span class="count">3</span></div>
-      <div class="colhead" role="row"><span>Subject</span><span>Inputs</span><span>intake</span><span>studio</span><span>scoping</span><span>design</span><span>build</span><span>verify</span><span>ship</span><span>Now</span></div>
-      <div class="tr" role="row" aria-label="ENG Tab manager v2, scoping round 2 of 3">
-        <span class="subj"><span class="team">ENG ·</span> Tab manager v2</span>
-        <span class="inp">PRD-tabs.md <b>✓</b></span>
-        <span class="sc"><span class="g g-done">●</span></span><span class="sc"><span class="g g-done">●</span></span>
-        <span class="sc"><span class="g g-prog">◐</span><span class="mono">r2/3</span></span>
-        <span class="sc"><span class="g g-todo">○</span></span><span class="sc"><span class="g g-todo">○</span></span><span class="sc"><span class="g g-todo">○</span></span><span class="sc"><span class="g g-todo">○</span></span>
-        <span class="now">challenger round 2</span>
-      </div>
-      <div class="tr" role="row" aria-label="ENG Billing exports, design at a desk">
-        <span class="subj"><span class="team">ENG ·</span> Billing exports</span>
-        <span class="inp">PRD-exports <b>✓</b></span>
-        <span class="sc"><span class="g g-done">●</span></span><span class="sc"><span class="g g-done">●</span></span><span class="sc"><span class="g g-done">●</span></span>
-        <span class="sc"><span class="g g-prog">◐</span><span class="mono">desk</span></span>
-        <span class="sc"><span class="g g-todo">○</span></span><span class="sc"><span class="g g-todo">○</span></span><span class="sc"><span class="g g-todo">○</span></span>
-        <span class="now">with you: import</span>
-      </div>
-      <div class="tr  sel" role="row" aria-label="APP Offline sync, build 4 of 9" aria-selected="true">
-        <span class="subj"><span class="team">APP ·</span> Offline sync</span>
-        <span class="inp">PRD-sync.md <b>✓</b></span>
-        <span class="sc"><span class="g g-done">●</span></span><span class="sc"><span class="g g-done">●</span></span><span class="sc"><span class="g g-done">●</span></span><span class="sc"><span class="g g-done">●</span></span>
-        <span class="sc"><span class="g g-prog">◐</span><span class="mono">4/9</span></span>
-        <span class="sc"><span class="g g-todo">○</span></span><span class="sc"><span class="g g-todo">○</span></span>
-        <span class="now">ITM-01JE7 produce</span>
-      </div>
-    </div>
-
-    <!-- triage.alert -->
-    <div class="wfg" style="--cols:200px 120px repeat(4,74px) minmax(0,1fr)">
-      <div class="gh"><span class="mono">triage.alert</span><span class="desc">· webhooks</span><span class="count">6</span></div>
-      <div class="colhead" role="row"><span>Subject</span><span>Inputs</span><span>received</span><span>classify</span><span>route</span><span>done</span><span>Now</span></div>
-      <div class="tr" role="row" aria-label="sentry 8812 TypeError, classify at a desk">
-        <span class="subj">sentry #8812 TypeError</span>
-        <span class="inp">payload <b>✓</b></span>
-        <span class="sc"><span class="g g-done">●</span></span>
-        <span class="sc"><span class="g g-prog">◐</span><span class="mono">desk</span></span>
-        <span class="sc"><span class="g g-todo">○</span></span><span class="sc"><span class="g g-todo">○</span></span>
-        <span class="now">needs your class</span>
-      </div>
-      <div class="tr" role="row" aria-label="sentry 8809 429s, done">
-        <span class="subj">sentry #8809 429s</span>
-        <span class="inp">payload <b>✓</b></span>
-        <span class="sc"><span class="g g-done">●</span></span><span class="sc"><span class="g g-done">●</span></span><span class="sc"><span class="g g-done">●</span></span>
-        <span class="sc"><span class="g g-done">●</span><span class="mono">→ ITM-01JF0 queued</span></span>
-        <span class="now">done 12m</span>
-      </div>
-      <div class="tr" role="row" aria-label="pagerduty P-2211, escalated gate severity">
-        <span class="subj">pagerduty P-2211</span>
-        <span class="inp">payload <b>✓</b></span>
-        <span class="sc"><span class="g g-done">●</span></span>
-        <span class="sc span3"><span class="g g-esc">▲</span>escalated: <span class="mono">gate.severity 0.91</span></span>
-        <span class="now"><button class="btn sm term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button></span>
-      </div>
-    </div>
-
-    <!-- incident.response -->
-    <div class="wfg" style="--cols:200px 120px 74px 74px 150px 74px 90px 74px minmax(0,1fr)">
-      <div class="gh"><span class="mono">incident.response</span><span class="count">1</span></div>
-      <div class="colhead" role="row"><span>Subject</span><span>Inputs</span><span>detected</span><span>triage</span><span>mitigate ⇄ verify</span><span>comms</span><span>postmortem</span><span>closed</span><span>Now</span></div>
-      <div class="tr" role="row" aria-label="INC-14 outbox retry storm, mitigate round 1 of 3">
-        <span class="subj">INC-14 outbox retry storm</span>
-        <span class="inp">P-2211 <b>✓</b></span>
-        <span class="sc"><span class="g g-done">●</span></span><span class="sc"><span class="g g-done">●</span></span>
-        <span class="sc"><span class="g g-prog">◐</span><span class="mono">r1/3</span><span class="g g-loop" aria-hidden="true">⇄</span><span class="g g-todo">○</span></span>
-        <span class="sc"><span class="g g-prog">◐</span><span class="mono">child</span></span>
-        <span class="sc"><span class="g g-todo">○</span></span><span class="sc"><span class="g g-todo">○</span></span>
-        <span class="now">mitigation running</span>
-      </div>
-    </div>
-
-    <div class="wfg">
-      <div class="gfoot"><span class="mono">intake.linear</span><span class="count">2</span><span class="desc">·</span><span class="mono">scoping.project</span><span class="desc">(standalone)</span><span class="count">0</span><button class="btn ghost sm r" aria-expanded="false">show all <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
-    </div>
+  <!-- ROOT INSTANCES, grouped by recipe; each group's columns are its recipe's states in path order (§5.1).
+       The same table as workflows.html, at the 520 px the sheet leaves; the sheet covers the rest -->
+  <section class="panel" aria-label="Open workflows by recipe">
+    <div class="ghead"><span class="rname">workflow.project</span><span class="rdesc">Linear projects</span><span class="count">3</span></div>
+    <table class="st" aria-label="workflow.project instances">
+      <thead><tr>
+        <th scope="col" class="subject">Subject</th><th scope="col" class="inputs">Inputs</th>
+        <th scope="col" class="stage">intake</th>
+        <th scope="col" class="stage">studio</th>
+        <th scope="col" class="stage">scoping</th>
+        <th scope="col" class="stage">design</th>
+        <th scope="col" class="stage">build</th>
+        <th scope="col" class="stage">verify</th>
+        <th scope="col" class="stage">ship</th>
+        <th scope="col" class="now">Now</th>
+      </tr></thead>
+      <tbody>
+      <tr><td class="subject"><span class="team">ENG ·</span> Tab manager v2</td><td class="inputs"><span class="mono">PRD-tabs.md</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">r2/3</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="now">challenger round 2</td></tr>
+      <tr><td class="subject"><span class="team">ENG ·</span> Billing exports</td><td class="inputs"><span class="mono">PRD-exports</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">desk</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="now">with you: import</td></tr>
+      <tr class="sel" aria-selected="true"><td class="subject"><span class="team">APP ·</span> Offline sync</td><td class="inputs"><span class="mono">PRD-sync.md</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">4/9</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="now"><span class="mono">ITM-01JD6</span> checks</td></tr>
+      </tbody>
+    </table>
+    <div class="ghead"><span class="rname">triage.alert</span><span class="rdesc">webhooks</span><span class="count">6</span></div>
+    <table class="st" aria-label="triage.alert instances">
+      <thead><tr>
+        <th scope="col" class="subject">Subject</th><th scope="col" class="inputs">Inputs</th>
+        <th scope="col" class="stage">received</th>
+        <th scope="col" class="stage">classify</th>
+        <th scope="col" class="stage">route</th>
+        <th scope="col" class="stage">done</th>
+        <th scope="col" class="now">Now</th>
+      </tr></thead>
+      <tbody>
+      <tr><td class="subject">sentry #8812 TypeError</td><td class="inputs"><span class="mono">payload</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">desk</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="now">needs your severity</td></tr>
+      <tr><td class="subject">sentry #8809 429s</td><td class="inputs"><span class="mono">payload</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span> <span class="b">→ <span class="mono">ITM-01JF0</span> queued</span></td><td class="now">done 12m</td></tr>
+      <tr><td class="subject">pagerduty P-2211</td><td class="inputs"><span class="mono">payload</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage badge" colspan="3"><span class="g g-esc" role="img" aria-label="escalated">▲</span> escalated: <span class="mono">gate.severity</span> <span class="reason">0.91</span></td><td class="now"><button class="btn sm term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button></td></tr>
+      <tr class="more"><td colspan="7">… 3 more done</td></tr>
+      </tbody>
+    </table>
+    <div class="ghead"><span class="rname">incident.response</span><span class="count">1</span></div>
+    <table class="st" aria-label="incident.response instances">
+      <thead><tr>
+        <th scope="col" class="subject">Subject</th><th scope="col" class="inputs">Inputs</th>
+        <th scope="col" class="stage">detected</th>
+        <th scope="col" class="stage">triage</th>
+        <th scope="col" class="stage">mitigate ⇄ verify</th>
+        <th scope="col" class="stage">comms</th>
+        <th scope="col" class="stage">postmortem</th>
+        <th scope="col" class="stage">closed</th>
+        <th scope="col" class="now">Now</th>
+      </tr></thead>
+      <tbody>
+      <tr><td class="subject"><span class="mono">INC-14</span> outbox retry storm</td><td class="inputs"><span class="mono">P-2211</span> <span class="ok" role="img" aria-label="present">✓</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-done" role="img" aria-label="done">●</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">r1/3</span></td><td class="stage"><span class="g g-prog" role="img" aria-label="in progress">◐</span> <span class="b">child</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="stage"><span class="g g-todo" role="img" aria-label="not started">○</span></td><td class="now">mitigation running</td></tr>
+      </tbody>
+    </table>
+    <div class="ghead collapsed"><span class="rname">intake.linear</span><span class="count">2</span><span class="sepdot" aria-hidden="true">·</span><span class="rname">scoping.project</span><span class="rdesc">(standalone)</span><span class="count">0</span><button class="btn ghost sm" aria-expanded="false" aria-label="Show all recipe groups">show all <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
   </section>
 
-  <div class="legend" aria-label="Legend and keys">
+  <div class="legend">
     <div class="lg" aria-label="Legend">
       <div class="lg-row"><span><span class="g g-done">●</span>done</span><span><span class="g g-live">●</span>live</span><span><span class="g g-prog">◐</span>in progress</span><span><span class="g g-todo">○</span>not started</span><span><span class="g g-you">◎</span>with you</span><span><span class="g g-park">▌</span>parked</span><span><span class="g g-esc">▲</span>escalated</span><span><span class="g g-model">◌</span>model call, no session</span><span><span class="g g-loop">⇄</span>loop</span></div>
       <div class="lg-row"><span><span class="g h-ok">✓</span>ok</span><span><span class="g h-deg">◐</span>degraded</span><span><span class="g h-fail">✕</span>failed</span><span><span class="g h-abs">○</span>absent</span></div>
     </div>
-    <span class="keys"><span><kbd>↵</kbd> opens</span><span><kbd>A</kbd> answer</span><span><kbd>B</kbd> hand back</span><span><kbd>X</kbd> cancel</span></span>
+    <div class="keys" aria-label="Keyboard shortcuts">
+      <span><kbd>↵</kbd> opens</span>
+      <span><kbd>A</kbd> answer</span>
+      <span><kbd>B</kbd> hand back</span>
+      <span><kbd>X</kbd> cancel</span>
+    </div>
   </div>
 </main>
 
@@ -516,18 +519,25 @@ body{min-width:1280px}
 <aside class="sheet wide" aria-label="Workflow instance PRJ-sync, Offline sync">
   <div class="sheet-head">
     <div class="crumb">
-      <span class="addr">workflow/PRJ-sync</span>
-      <span class="ttl">Offline sync</span>
-      <span class="meta"><span class="mono">workflow.project@a8c21e7f</span><span>·</span><span>v12</span><span>·</span><b>build</b><span>·</span><span>since 09:14 (3h)</span></span>
+      <div class="lead">
+        <span class="addr">workflow/PRJ-sync</span>
+        <span class="ttl">Offline sync</span>
+        <span class="meta"><span class="mono">workflow.project@a8c21e7f</span><span>·</span><span>v12</span><span>·</span><b>build</b><span>·</span><span>since 09:14 (3h)</span></span>
+      </div>
       <div class="r"><kbd>Esc</kbd><button class="icon-btn" aria-label="Close instance detail"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6M9 3 3 9" stroke="currentColor" stroke-width="1.3"/></svg></button></div>
     </div>
     <div class="subject">
       <span class="lbl">subject</span>
-      <span class="txt"><b>Linear APP</b> · PRD-sync.md <span class="note" style="color:var(--ink-subtle)">(linear:doc)</span> · <span class="mono">feature:sync</span></span>
+      <span class="txt"><b>Linear APP</b> · PRD-sync.md <span class="note">(linear:doc)</span> · <span class="mono">feature:sync</span></span>
       <div class="acts">
         <button class="btn sm">Open in Linear ↗</button>
-        <button class="btn sm">Open in Context ▸</button>
-        <button class="btn sm ghost">Cancel <kbd>X</kbd></button>
+        <!-- initial focus: the read action. Take over is never pre-focused (↵ ↵ from the list must not be a takeover) -->
+        <button class="btn sm is-focused">Open in Context ▸</button>
+        <button class="btn sm chev" aria-label="More actions for PRJ-sync" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+        <!-- the menu holds the destructive command; choosing it opens the one-line confirm drawn on workflow-incident.html -->
+        <div class="menu" role="menu" hidden>
+          <button class="mi" role="menuitem">Cancel instance… <kbd>X</kbd><small>asks first: the running children stop and the instance closes</small></button>
+        </div>
       </div>
     </div>
   </div>
@@ -536,21 +546,23 @@ body{min-width:1280px}
     <!-- STATES -->
     <section class="panel sp" aria-labelledby="st-h">
       <div class="phead"><h2 class="eyebrow" id="st-h">States</h2><div class="meta">from the recipe, in path order</div></div>
+      <!-- seven states fit one row at 760; a longer recipe wraps, each link travelling with the node it leads to (see the incident).
+           The park mirrored from ITM-01JD7 is a badge on the state it interrupted: in the expanded build region below -->
       <div class="path" aria-label="States in path order">
-        <span class="node"><b>intake</b><span class="g g-done">●</span></span><span class="link" aria-hidden="true">──</span>
-        <span class="node"><b>studio</b><span class="g g-done">●</span></span><span class="link" aria-hidden="true">──</span>
-        <span class="node"><b>scoping</b><span class="g g-done">●</span><span class="badge mono">r1</span></span><span class="link" aria-hidden="true">──</span>
-        <span class="node"><b>design</b><span class="g g-done">●</span><span class="badge">desk</span></span><span class="link" aria-hidden="true">──</span>
-        <span class="node cur" aria-current="step"><span class="g g-cur">▣</span><b>build</b><span class="g g-prog">◐</span><span class="badge mono">4/9</span></span><span class="link" aria-hidden="true">──</span>
-        <span class="node todo"><b>verify</b><span class="g g-todo">○</span><span class="badge">desk</span></span><span class="link" aria-hidden="true">──</span>
-        <span class="node todo"><b>ship</b><span class="g g-todo">○</span></span>
+        <span class="step"><span class="node"><b>intake</b><span class="g g-done">●</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node"><b>studio</b><span class="g g-done">●</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node"><b>scoping</b><span class="g g-done">●</span><span class="badge mono">r1</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node"><b>design</b><span class="g g-done">●</span><span class="badge">desk</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node cur" aria-current="step"><span class="g g-cur">▣</span><b>build</b><span class="g g-prog">◐</span><span class="badge mono">4/9</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node todo"><b>verify</b><span class="g g-todo">○</span><span class="badge">desk</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node todo"><b>ship</b><span class="g g-todo">○</span></span></span>
       </div>
       <div class="expand" aria-label="Current state: build">
-        <div class="decl"><b><span class="g g-cur">▣</span>build</b><span class="sep">·</span><span class="mono">step.children(builder.feature)</span><span>one child per packet task</span><span class="sep">·</span><span>gates on exit:</span><span class="mono">gate.evidence.all</span>,<span class="mono">gate.judge.verify ≥ 0.8</span></div>
+        <div class="decl"><b><span class="g g-cur">▣</span>build</b><span class="sep">·</span><span class="mono">step.children(builder.feature)</span><span>one child per packet task</span><span class="sep">·</span><span class="unit"><span class="g g-park" role="img" aria-label="parked">▌</span>1 parked: <span class="mono">ITM-01JD7</span> no-progress, mirrored from the child</span><span class="sep">·</span><span>gates on exit:</span><span class="mono">gate.evidence.all</span>,<span class="mono">gate.judge.verify ≥ 0.8</span></div>
         <div class="krow"><span class="k">next</span><span class="v ink">Build runs each packet task as a child item; verify opens for you when every child is done.</span></div>
         <div class="ctl">
-          <div class="stat"><span>budget</span><span class="mono">1.2M / 3M</span><span class="bar4" role="img" aria-label="40 percent of the state budget used"><i style="width:40%"></i></span><span>(state)</span><span>·</span><span>timeout</span><span class="mono">parks in 2d 4h</span><span>·</span><span>commands</span><b>takeover, cancel</b></div>
-          <div class="acts"><button class="btn primary is-focused">Take over <kbd>T</kbd></button></div>
+          <div class="stat"><span class="kv"><span>budget</span><span class="mono">1.2M / 3M</span><span class="bar4" role="img" aria-label="40 percent of this state's budget used"><i style="width:40%"></i></span><span>this state</span></span><span>·</span><span class="kv"><span>timeout</span><span class="mono">parks in 2d 4h</span></span><span>·</span><span class="kv"><span>commands</span><b>takeover, cancel</b></span></div>
+          <div class="acts"><button class="btn">Take over <kbd>T</kbd></button></div>
         </div>
       </div>
     </section>
@@ -565,38 +577,46 @@ body{min-width:1280px}
       <div class="fact"><span class="key">fact:evidence</span><span class="g g-prog">◐</span><span class="sum">4 of 9 packs</span><div class="acts"></div></div>
     </section>
 
-    <!-- CHILDREN -->
+    <!-- CHILDREN: packet 3f1c09, grouped by workstream (fixture: 4 done · 1 running · 1 parked · 3 queued = 9).
+         The rows that need a glance are shown; the done and the rest of the queued rows sit behind "… 6 more" -->
     <section class="panel sp" aria-labelledby="ch-h">
       <div class="phead"><h2 class="eyebrow" id="ch-h">Children</h2><span class="count">9</span><div class="meta"><span class="mono">builder.feature</span>, grouped by packet workstream</div></div>
-      <div class="child" aria-label="ws-1 UI: ITM-01JE7 running">
-        <span class="grp">ws-1 <span class="mono">UI</span></span>
-        <span class="id mono">ITM-01JE7</span>
-        <span class="ttl">Sync status pill</span>
-        <span class="sc"><span class="g g-prog">◐</span>running <span class="mono">produce 2/3</span> · Claude Code 6m</span>
-        <div class="acts"><div class="split"><button class="btn sm main" aria-label="Open ITM-01JE7">Open</button><button class="btn sm chev" aria-label="Choose agent for ITM-01JE7" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div><button class="btn sm">Take over <kbd>T</kbd></button></div>
+      <div class="children">
+        <div class="child" aria-label="ws-2 Store: ITM-01JD6 running checks">
+          <span class="grp">ws-2 <span class="mono">Store</span></span>
+          <span class="id mono">ITM-01JD6</span>
+          <span class="ttl">Services page job panel</span>
+          <span class="sc"><span class="g g-live">●</span>running <span class="mono">checks</span> · factory worker</span>
+          <!-- a tool Step with no terminal: Open and the menu (no Attach, no Take over) -->
+          <div class="acts"><div class="split"><button class="btn sm main" aria-label="Open ITM-01JD6">Open</button><button class="btn sm chev" aria-label="More actions for ITM-01JD6" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
+        </div>
+        <div class="child attn" aria-label="ws-3 Mobile: ITM-01JD7 parked, needs you">
+          <span class="grp">ws-3 <span class="mono">Mobile</span></span>
+          <span class="id mono">ITM-01JD7</span>
+          <span class="ttl">Background sync (iOS)</span>
+          <span class="sc"><span class="g g-park">▌</span>parked <span class="mono">no-progress</span></span>
+          <div class="acts"><button class="btn sm term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button></div>
+        </div>
+        <div class="child cont" aria-label="ws-3 Mobile: ITM-01JF3 queued">
+          <span class="grp"></span>
+          <span class="id mono">ITM-01JF3</span>
+          <span class="ttl">doctor views line</span>
+          <span class="sc"><span class="g g-todo">○</span>queued 52m</span>
+          <div class="acts"></div>
+        </div>
       </div>
-      <div class="child cont" aria-label="ws-1 UI: ITM-01JF0 queued">
-        <span class="grp"></span>
-        <span class="id mono">ITM-01JF0</span>
-        <span class="ttl">Conflict resolver</span>
-        <span class="sc"><span class="g g-todo">○</span>queued after <span class="mono">ITM-01JE7</span></span>
-        <div class="acts"></div>
-      </div>
-      <div class="child" aria-label="ws-3 Mobile: ITM-01JC8 parked, needs you">
-        <span class="grp">ws-3 <span class="mono">Mobile</span></span>
-        <span class="id mono">ITM-01JC8</span>
-        <span class="ttl">Background sync</span>
-        <span class="sc"><span class="g g-park">▌</span>parked <span class="mono">no-progress</span> · mirrored here</span>
-        <div class="acts"><button class="btn sm term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button></div>
-      </div>
-      <div class="cfoot"><span>… 6 more</span><a href="#">Open all in Work ▸</a></div>
+      <div class="cfoot"><span>… 6 more · 4 done · 2 queued</span><a href="#">Open all in Work ▸</a></div>
     </section>
 
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" aria-selected="true">Timeline <span class="n">41</span></button>
-      <button class="tab" role="tab" aria-selected="false">Decisions <span class="n">3</span></button>
-      <button class="tab" role="tab" aria-selected="false">Requests <span class="n">1</span></button>
-      <button class="tab" role="tab" aria-selected="false">Context <span class="n">14</span></button>
+      <button class="tab" role="tab" aria-selected="true" aria-controls="tp">Timeline <span class="n">41</span><kbd>1</kbd></button>
+      <button class="tab" role="tab" aria-selected="false">Decisions <span class="n">3</span><kbd>2</kbd></button>
+      <button class="tab" role="tab" aria-selected="false">Requests <span class="n">1</span><kbd>3</kbd></button>
+      <button class="tab" role="tab" aria-selected="false">Context <span class="n">14</span><kbd>4</kbd></button>
+    </div>
+    <div class="tabpanel" id="tp" role="tabpanel" aria-label="Timeline, newest first">
+      <div class="ev"><span class="t">12:26</span><span class="a">ITM-01JD6</span><span class="d">checks started · factory worker · <span class="mono">snd-01JD6.1</span></span></div>
+      <div class="ev"><span class="t">12:26</span><span class="a">ITM-01JD6</span><span class="d">produce done</span></div>
     </div>
   </div>
 </aside>

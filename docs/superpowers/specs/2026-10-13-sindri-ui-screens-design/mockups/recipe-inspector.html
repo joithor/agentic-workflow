@@ -216,20 +216,12 @@ svg{flex:none}
 
 
 
-/* ── additions for the §4.3 Recipes and §4.5 Agents screens ── */
-.pagehead .r{display:flex;align-items:center;gap:8px}
-.sel{height:22px;padding:2px 5px 2px 7px;font-size:12px;color:var(--ink-muted);border:1px solid var(--line1);background:var(--s1);border-radius:6px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
-.sel:hover{border-color:var(--line2);color:var(--ink)}
+/* ── additions for the §4.3 Recipes list (behind) and the recipe inspector ── */
 
-/* meters (▮▮▮░░ in the drawings) and sparklines (▂▄▆█) */
-.meter{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px;color:var(--ink-muted)}
-.meter .trk{position:relative;width:96px;height:4px;border-radius:2px;background:var(--s2);box-shadow:inset 0 0 0 1px var(--line1)}
-.meter .fil{height:100%;border-radius:2px;background:var(--ink-muted)}
-.meter.soft .fil{background:var(--attn)}
-.meter.hard .fil{background:var(--error)}
-.meter .mk{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--attn)}
-.meter .n{font-family:var(--mono);font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums}
-.meter .cap{font-family:var(--mono);font-size:12px;color:var(--ink-subtle)}
+.pagehead .r{display:flex;align-items:center;gap:8px}
+.pagehead .r .hints{margin-right:8px}
+
+/* sparklines (▂▄▆█ in the drawing): four CSS bars, the direction in words in the aria-label */
 .spark{display:inline-flex;align-items:flex-end;gap:2px;height:14px;vertical-align:middle}
 .spark i{display:block;width:5px;background:var(--ink-subtle);border-radius:1px;min-height:2px}
 
@@ -240,66 +232,86 @@ svg{flex:none}
 .th + .tr{border-top:0}
 .tr:hover{background:var(--s2)}
 .tr.sel{background:var(--s3)}
-.tr .nm{font-family:var(--mono);font-size:12px;color:var(--ink)}
 .num{font-family:var(--mono);font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dash{color:var(--ink-subtle)}
+
+/* the row is the affordance: the recipe name is a link, ↵ on the focused row opens the inspector */
+.tr.is-focused{outline-offset:-2px;border-radius:4px}
+.tr .nm{font-family:var(--mono);font-size:12px;color:var(--ink)}
+.tr .nm a{color:var(--ink)}
+.tr .nm a:hover{color:var(--brand-hover);text-decoration:underline;text-underline-offset:3px}
 .st{display:inline-flex;align-items:center;gap:6px;color:var(--ink);font-weight:500;white-space:nowrap}
 .tr.chg{background:var(--attn-soft)}
-.tr.draft,.tr.draft .nm,.tr.draft .st,.tr.draft .num{color:var(--ink-subtle)}
+.tr.draft,.tr.draft .nm,.tr.draft .nm a,.tr.draft .st,.tr.draft .num{color:var(--ink-subtle)}
 .tr .last{display:flex;gap:8px;align-items:center;white-space:nowrap;min-width:0}
 .tr .last .btn.sm{height:22px;font-size:12px}
 .tfoot{padding:9px 16px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px}
 .rc{grid-template-columns:138px 104px 40px 44px 44px 52px 54px 64px 86px 78px minmax(0,1fr)}
+/* adapt: 900 × 600 is the minimum. Under 1100 the page keeps its 1264 layout and scrolls sideways, so every column and the full Last change cell stay */
+@media (max-width:1100px){.page{min-width:1264px}body{overflow-x:auto}}
 
-/* sheet, inspector variant (760) */
+/* sheet, inspector variant: exactly 760 (the page never exceeds 1280). Adapt: under 1100 the sheet takes the full
+   width and the page behind scrolls; 900 × 600 is the minimum, the sheet body scrolls inside it. */
 .sheet{width:760px}
-.sheet-head{padding:12px 20px 10px;border-bottom:1px solid var(--line1)}
+@media (max-width:1100px){.sheet{width:100%;border-left:0}}
+.sheet-head{padding:10px 20px 10px;border-bottom:1px solid var(--line1)}
 .crumb{display:flex;align-items:center;gap:10px;color:var(--ink-subtle);font-size:12px}
 .crumb .r{margin-left:auto;display:flex;align-items:center;gap:6px}
 .icon-btn{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--ink-subtle)}
 .icon-btn:hover{background:var(--s3);color:var(--ink)}
-.sh-title{font-size:16px;font-weight:600;letter-spacing:-.3px;margin-top:6px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sh-title{font-size:16px;line-height:1.3;font-weight:600;letter-spacing:-.3px;margin-top:4px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 .sh-title .m{font-size:12px;font-weight:400;color:var(--ink-subtle)}
 .sh-title .m b{color:var(--ink-muted);font-weight:500}
-.sh-acts{display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap}
+.sh-acts{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.sh-acts .btn{padding:0 8px}
 .sh-acts .win{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
 .sh-acts .win b{color:var(--ink-muted);font-weight:500}
-.sheet-body{padding:12px 20px 20px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:8px}
-.behind{opacity:.55;pointer-events:none}
+.sheet-body{padding:8px 20px 14px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:6px}
+/* the list behind is aria-hidden and inert; a scrim over the page dims it instead of opacity on its text, so the text itself keeps AA */
+.behind{pointer-events:none}
+.behind::after{content:"";position:fixed;inset:48px 0 0 0;background:rgba(1,1,2,.6);z-index:24}
 
-/* states band with the open instances on it */
-.band{display:flex;align-items:flex-start;padding:12px 16px 6px}
+/* states band with the open instances on it. It wraps: each link travels with the node it leads to (.hop), so a row
+   never ends on a dangling line. A recipe with ten states takes two rows; the second row starts with its link, then the
+   node, and the per-state table below it keeps one column per state that has numbers (it scrolls sideways past five). */
+.band{display:flex;flex-wrap:wrap;align-items:flex-start;row-gap:10px;padding:10px 16px 4px}
+.hop{display:flex;align-items:flex-start;flex:1 1 auto;min-width:0}
+.hop.lp{flex:none}
 .node{display:flex;flex-direction:column;gap:3px;align-items:flex-start;flex:none}
 .node .nm{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap}
-.node .nm .g{width:auto;letter-spacing:1px}
+.node .nm .g{width:auto}
 .node .nm small{font-family:var(--sans);font-size:11px;color:var(--ink-subtle)}
 .node .sub{font-size:11px;color:var(--ink-muted);display:inline-flex;gap:4px;align-items:center;white-space:nowrap}
-.link{flex:1;height:1px;background:var(--line2);margin:8px 8px 0;min-width:12px}
+.link{flex:1 1 auto;height:1px;background:var(--line2);margin:8px 8px 0;min-width:12px}
 .loop{flex:none;margin:1px 6px 0;color:var(--ink-subtle);font-size:12px}
-.ps{display:grid;grid-template-columns:100px 1fr 1fr 1.15fr 1.35fr;gap:4px 12px;padding:10px 16px 12px;font-size:12px;border-top:1px solid var(--line1)}
+.ps{display:grid;grid-template-columns:96px 1fr 1fr 1.15fr 1.35fr;gap:2px 12px;padding:8px 16px 9px;font-size:12px;border-top:1px solid var(--line1)}
 .ps .h{color:var(--ink-subtle);font-size:11px;font-weight:500;letter-spacing:.3px;text-transform:uppercase}
 .ps .h.nm{font-family:var(--mono);text-transform:none;letter-spacing:0;font-size:12px;color:var(--ink)}
 .ps .k{color:var(--ink-subtle)}
 .ps .v{color:var(--ink-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ps .v small{color:var(--ink-subtle);font-size:12px}
 
-/* small panels */
-.row3{display:grid;grid-template-columns:1.25fr 1fr .9fr;gap:8px}
-.kvl{padding:8px 16px 10px;display:grid;grid-template-columns:max-content 1fr;gap:5px 12px;font-size:12px;align-items:center}
+/* small panels: Outcomes takes what is left, Human time and Cost their content width, all inside 720 */
+.row3{display:grid;grid-template-columns:minmax(0,1fr) max-content max-content;gap:8px}
+.row3 .panel{min-width:0}
+.kvl{padding:8px 16px 10px;display:grid;grid-template-columns:max-content auto;gap:5px 12px;font-size:12px;align-items:center}
 .kvl .k{color:var(--ink-subtle);white-space:nowrap}
 .kvl .v{color:var(--ink-muted);white-space:nowrap;display:flex;gap:6px;align-items:center}
 .kvl .v b{color:var(--ink);font-weight:500}
-.outc{padding:8px 16px 10px;display:grid;grid-template-columns:max-content 28px minmax(0,1fr);gap:6px 10px;font-size:12px;align-items:center}
+/* OUTCOMES: CSS bars with the number beside them; each bar is the share of the window's 112 runs */
+.outc{padding:8px 16px 10px;display:grid;grid-template-columns:max-content 24px minmax(48px,1fr);gap:6px 10px;font-size:12px;align-items:center}
 .outc .k{color:var(--ink-subtle);white-space:nowrap}
 .outc .n{text-align:right}
-.outc .meter{display:flex}
-.outc .meter .trk{width:100%}
-.row2b{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.op{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 16px;border-top:1px solid var(--line1);font-size:12px}
+.outc .trk{position:relative;height:4px;border-radius:2px;background:var(--s3);box-shadow:inset 0 0 0 1px var(--line1)}
+.outc .fil{height:100%;border-radius:2px;background:var(--ink-muted)}
+.outc .fil.lo{background:var(--ink-subtle)}
+.row2b{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(0,1fr);gap:8px}
+/* OPEN rows: the state words never clip under the lock button; when the row has no room the button takes its own line */
+.op{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-height:32px;padding:4px 16px;border-top:1px solid var(--line1);font-size:12px}
 .phead + .op{border-top:0}
-.op .t{display:flex;gap:8px;align-items:center;white-space:nowrap;overflow:hidden;color:var(--ink-muted)}
+.op .t{display:flex;gap:7px;align-items:center;white-space:nowrap;color:var(--ink-muted);flex:1 1 auto}
 .op .t .id{color:var(--ink)}
-.op .btn{height:24px;padding:0 8px;font-size:12px}
+.op .btn{height:24px;padding:0 8px;font-size:12px;margin-left:auto}
 .ev{padding:10px 16px;font-size:12px;color:var(--ink-muted);display:flex;flex-direction:column;gap:6px}
 .ev .cases{display:flex;flex-wrap:wrap;gap:6px 14px;font-family:var(--mono);font-size:12px}
 .ev .cases .g{margin-right:4px}
@@ -307,40 +319,10 @@ svg{flex:none}
 .defn{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--ink-subtle);padding:2px 4px}
 .defn b{color:var(--ink-muted);font-weight:500}
 
-/* agents */
-.grp{display:flex;align-items:center;gap:8px;padding:7px 16px 5px;font-size:12px;color:var(--ink-muted);border-top:1px solid var(--line1)}
-.grp .mono{color:var(--ink)}
-.grp small{color:var(--ink-subtle);font-size:12px}
-.ag{position:relative;display:grid;grid-template-columns:14px 94px 82px minmax(0,1fr) 38px 176px 84px auto;gap:10px;align-items:center;padding:6px 16px;border-top:1px solid var(--line1);font-size:12px;color:var(--ink-muted)}
-.grp + .ag{border-top:0}
-.ag:hover{background:var(--s2)}
-.ag.wait{background:var(--attn-soft)}
-.ag .sid{font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap}
-.ag .sid.none{color:var(--ink-subtle);font-family:var(--sans)}
-.ag .agn{color:var(--ink-muted);white-space:nowrap}
-.ag .it{display:flex;gap:8px;align-items:baseline;min-width:0;white-space:nowrap;overflow:hidden}
-.ag .it .ttl{color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis}
-.ag .rd{font-family:var(--mono);font-size:12px;color:var(--ink-muted)}
-.ag .age{color:var(--ink-subtle);white-space:nowrap}
-.ag .age b{color:var(--ink-muted);font-weight:500}
-.ag .stt{grid-column:5/8;color:var(--ink-muted);white-space:nowrap}
-.ag .stt b{color:var(--ink);font-weight:500}
-.ag .acts{justify-content:flex-end}
-.ag .btn{height:26px;padding:0 8px;font-size:12px}
-.legend{display:flex;gap:16px;flex-wrap:wrap;padding:8px 16px;color:var(--ink-subtle);font-size:12px;border-top:1px solid var(--line1)}
-.legend span{display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
-.legend .ml{margin-left:auto}
-.ba{grid-template-columns:104px 70px 48px 84px 64px 118px 1fr}
-.bud{padding:8px 16px 10px;display:grid;grid-template-columns:88px minmax(0,1fr) max-content;gap:7px 12px;font-size:12px;align-items:center}
-.bud .k{color:var(--ink-muted);white-space:nowrap}
-.bud .meter{display:flex}
-.bud .meter .trk{width:100%}
-.bud .v{font-family:var(--mono);font-size:12px;color:var(--ink-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-.bud .v small{font-family:var(--sans);color:var(--attn);font-size:11px;margin-left:6px}
-.bud .lg{grid-column:1/-1;color:var(--ink-subtle);font-size:12px;display:flex;gap:12px;margin-top:2px}
-.bud .lg i{font-style:normal;color:var(--attn)}
-.bud .lg i.h{color:var(--error)}
-.row2a{display:grid;grid-template-columns:1.55fr 1fr;gap:8px;margin-top:8px}
+/* motion: hover and press only, 120 ms ease-out, colour properties only (nothing that lays out animates) */
+.btn,.tr,.op{transition:background-color 120ms ease-out,border-color 120ms ease-out,color 120ms ease-out}
+.btn:active{transform:translateY(1px)}
+@media (prefers-reduced-motion:reduce){.btn,.tr,.op{transition:none}.btn:active{transform:none}}
 </style>
 </head>
 <body>
@@ -368,35 +350,42 @@ svg{flex:none}
 <main class="page behind" aria-hidden="true" inert>
   <div class="pagehead">
     <div style="display:flex;align-items:baseline;gap:14px">
-      <h1>Recipes <span class="count" style="font-size:14px">7</span></h1>
+      <h1>Recipes <span class="count" style="font-size:13px">7</span></h1>
       <div class="sub">
-        <button class="sel" aria-haspopup="listbox" aria-label="Window: 30 days">30 days <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+        <button class="btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Window: 30 days">30 days <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
         <span>·</span><span><b>184</b> runs</span>
         <span>·</span><span><b>81%</b> done without you</span>
       </div>
     </div>
     <div class="r">
-      <button class="btn primary">Validate file…</button>
+      <div class="hints" aria-label="Keyboard shortcuts">
+        <span><kbd>J</kbd><kbd>K</kbd> Move</span>
+        <span><kbd>↵</kbd> Open</span>
+        <span><kbd>?</kbd> Shortcuts</span>
+      </div>
+      <button class="btn">Validate file…</button>
       <button class="btn">Import</button>
     </div>
   </div>
 
-  <section class="panel" aria-label="Recipes, 30 days">
+  <!-- initial focus: the first row. ↵ opens the inspector (a read); Validate file… and Import are secondary, so ↵ ↵ never starts a job -->
+  <!-- empty (0 recipes): "No recipes registered. Import a recipe file to add it as a draft." [Import] · the table head stays, the 30-day line reads "0 runs" -->
+  <section class="panel" role="table" aria-label="Recipes, 30 days">
     <div class="th rc" role="row">
-      <span>Recipe</span><span>Status</span><span>Open</span><span>Runs</span><span>Done</span><span>Failed</span><span>Human</span><span>Median</span><span>Tokens/run</span><span>Trend (4 wk)</span><span>Last change</span>
+      <span role="columnheader">Recipe</span><span role="columnheader">Status</span><span role="columnheader">Open</span><span role="columnheader">Runs</span><span role="columnheader">Done</span><span role="columnheader">Failed</span><span role="columnheader">Human</span><span role="columnheader">Median</span><span role="columnheader">Tokens/run</span><span role="columnheader">Trend (4 wk)</span><span role="columnheader">Last change</span>
     </div>
-    <div class="tr rc sel" aria-selected="true" aria-label="Recipe workflow.item"><span class="nm">workflow.item</span><span class="st ok"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num">4</span><span class="num">112</span><span class="num">97</span><span class="num">6</span><span class="num">19%</span><span class="num">1h 40m</span><span class="num">310k</span><span><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:25%"></i><i style="height:50%"></i><i style="height:75%"></i><i style="height:100%"></i></span></span><span class="last"><span class="num">10-02</span><span class="num">v7</span></span></div>
-    <div class="tr rc " aria-label="Recipe workflow.step"><span class="nm">workflow.step</span><span class="st ok"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num">6</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span><span style="color:var(--ink-subtle)">(child only)</span></span><span class="last"><span class="num">10-02</span><span class="num">v4</span></span></div>
-    <div class="tr rc " aria-label="Recipe builder.feature"><span class="nm">builder.feature</span><span class="st ok"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num">9</span><span class="num">38</span><span class="num">31</span><span class="num">2</span><span class="num">13%</span><span class="num">2h 05m</span><span class="num">420k</span><span><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:50%"></i><i style="height:75%"></i><i style="height:75%"></i><i style="height:100%"></i></span></span><span class="last"><span class="num">10-08</span><span class="num">v3</span></span></div>
-    <div class="tr rc " aria-label="Recipe triage.alert"><span class="nm">triage.alert</span><span class="st ok"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num">3</span><span class="num">24</span><span class="num">22</span><span class="num">0</span><span class="num">42%</span><span class="num">6m</span><span class="num">18k</span><span><span class="spark" role="img" aria-label="trend, four weeks, falling"><i style="height:75%"></i><i style="height:50%"></i><i style="height:25%"></i><i style="height:25%"></i></span></span><span class="last"><span class="num">09-28</span><span class="num">v2</span></span></div>
-    <div class="tr rc " aria-label="Recipe incident.response"><span class="nm">incident.response</span><span class="st ok"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num">1</span><span class="num">3</span><span class="num">2</span><span class="num">1</span><span class="num">100%</span><span class="num">3h 10m</span><span class="num">190k</span><span><span class="spark" role="img" aria-label="trend, four weeks, uneven"><i style="height:12%"></i><i style="height:25%"></i><i style="height:12%"></i><i style="height:50%"></i></span></span><span class="last"><span class="num">09-30</span><span class="num">v1</span></span></div>
-    <div class="tr rc chg" aria-label="Recipe scoping.project"><span class="nm">scoping.project</span><span class="st chg"><span class="g g-chg" aria-hidden="true">◆</span>changed</span><span class="num">1</span><span class="num">7</span><span class="num">5</span><span class="num">0</span><span class="num">29%</span><span class="num">48m</span><span class="num">540k</span><span><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:25%"></i><i style="height:25%"></i><i style="height:50%"></i><i style="height:50%"></i></span></span><span class="last"><span class="num">today</span><span class="num">v3</span><span style="color:var(--ink-subtle)">·</span><button class="btn term sm" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Re-approve · terminal</button></span></div>
-    <div class="tr rc draft" aria-label="Recipe intake.linear"><span class="nm">intake.linear</span><span class="st"><span class="g g-todo" aria-hidden="true">○</span>draft</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span><span class="dash">—</span></span><span class="last"><span>never approved</span></span></div>
+    <div class="tr rc sel" aria-selected="true" role="row" aria-label="Recipe workflow.item, approved"><span class="nm" role="cell"><a href="#">workflow.item</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">4</span><span class="num" role="cell">112</span><span class="num" role="cell">97</span><span class="num" role="cell">6</span><span class="num" role="cell">19%</span><span class="num" role="cell">1h 40m</span><span class="num" role="cell">310k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:25%"></i><i style="height:50%"></i><i style="height:75%"></i><i style="height:100%"></i></span></span><span class="last" role="cell"><span class="num">10-02</span><span class="num">v7</span></span></div>
+    <div class="tr rc" role="row" aria-label="Recipe workflow.step, approved"><span class="nm" role="cell"><a href="#">workflow.step</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">6</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span role="cell"><span class="dash">(child only)</span></span><span class="last" role="cell"><span class="num">10-02</span><span class="num">v4</span></span></div>
+    <div class="tr rc" role="row" aria-label="Recipe builder.feature, approved"><span class="nm" role="cell"><a href="#">builder.feature</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">9</span><span class="num" role="cell">38</span><span class="num" role="cell">31</span><span class="num" role="cell">2</span><span class="num" role="cell">13%</span><span class="num" role="cell">2h 05m</span><span class="num" role="cell">420k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:50%"></i><i style="height:75%"></i><i style="height:75%"></i><i style="height:100%"></i></span></span><span class="last" role="cell"><span class="num">10-08</span><span class="num">v3</span></span></div>
+    <div class="tr rc" role="row" aria-label="Recipe triage.alert, approved"><span class="nm" role="cell"><a href="#">triage.alert</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">3</span><span class="num" role="cell">24</span><span class="num" role="cell">22</span><span class="num" role="cell">0</span><span class="num" role="cell">42%</span><span class="num" role="cell">6m</span><span class="num" role="cell">18k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, falling"><i style="height:75%"></i><i style="height:50%"></i><i style="height:25%"></i><i style="height:25%"></i></span></span><span class="last" role="cell"><span class="num">09-28</span><span class="num">v2</span></span></div>
+    <div class="tr rc" role="row" aria-label="Recipe incident.response, approved"><span class="nm" role="cell"><a href="#">incident.response</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">1</span><span class="num" role="cell">3</span><span class="num" role="cell">2</span><span class="num" role="cell">1</span><span class="num" role="cell">100%</span><span class="num" role="cell">3h 10m</span><span class="num" role="cell">190k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, uneven"><i style="height:12%"></i><i style="height:25%"></i><i style="height:12%"></i><i style="height:50%"></i></span></span><span class="last" role="cell"><span class="num">09-30</span><span class="num">v1</span></span></div>
+    <div class="tr rc chg" role="row" aria-label="Recipe scoping.project, changed since approval"><span class="nm" role="cell"><a href="#">scoping.project</a></span><span class="st chg" role="cell"><span class="g g-chg" aria-hidden="true">◆</span>changed</span><span class="num" role="cell">1</span><span class="num" role="cell">7</span><span class="num" role="cell">5</span><span class="num" role="cell">0</span><span class="num" role="cell">29%</span><span class="num" role="cell">48m</span><span class="num" role="cell">540k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:25%"></i><i style="height:25%"></i><i style="height:50%"></i><i style="height:50%"></i></span></span><span class="last" role="cell"><span class="num">today</span><span class="num">v3</span><span class="dash">·</span><button class="btn term sm" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Re-approve · terminal</button></span></div>
+    <div class="tr rc draft" role="row" aria-label="Recipe intake.linear, draft"><span class="nm" role="cell"><a href="#">intake.linear</a></span><span class="st draft" role="cell"><span class="g g-todo" aria-hidden="true">○</span>draft</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span role="cell"><span class="dash">—</span></span><span class="last" role="cell"><span>never approved</span></span></div>
     <div class="tfoot">failed = ended in cancelled or a terminal failure state · human = runs with a park answered, an escalation decided or a takeover</div>
   </section>
 </main>
 
-<!-- ═════════ RECIPE INSPECTOR (open sheet, 760) ═════════ -->
+<!-- ═════════ RECIPE INSPECTOR (open sheet, exactly 760; the page never exceeds 1280) ═════════ -->
 <aside class="sheet" aria-label="Recipe inspector workflow.item">
   <div class="sheet-head">
     <div class="crumb">
@@ -404,30 +393,29 @@ svg{flex:none}
       <div class="r"><kbd>Esc</kbd><button class="icon-btn" aria-label="Close inspector"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6M9 3 3 9" stroke="currentColor" stroke-width="1.3"/></svg></button></div>
     </div>
     <div class="sh-title">workflow.item <span class="m">@ <b class="mono">3f1c09a2</b></span><span class="m"><b>v7</b></span><span class="m">schema <b>1</b></span><span class="m">approved <b>10-02</b> by you</span></div>
+    <!-- initial focus: Open file (a read). Run evals stays the primary but is never pre-focused: ↵ on the list row and ↵ again must not start a job -->
     <div class="sh-acts">
-      <button class="btn primary is-focused">Run evals <kbd>E</kbd></button>
+      <button class="btn primary">Run evals <kbd>E</kbd></button>
       <button class="btn">Validate</button>
-      <button class="btn">Open file <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 2h5v5M8 2 2.5 7.5" stroke="currentColor" fill="none" stroke-width="1.2"/></svg></button>
+      <button class="btn is-focused">Open file <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 2h5v5M8 2 2.5 7.5" stroke="currentColor" fill="none" stroke-width="1.2"/></svg></button>
       <button class="btn" aria-haspopup="menu" aria-expanded="false">Versions <span class="count">7</span> <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
-      <div class="win"><button class="sel" aria-haspopup="listbox" aria-label="Window: 30 days">30 days <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button><span><b>112</b> runs · <b>97</b> done · <b>6</b> failed · <b>9</b> cancelled</span></div>
+      <div class="win"><button class="btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Window: 30 days">30 days <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button><span><b>112</b> runs · <b>97</b> done · <b>6</b> failed · <b>9</b> cancelled</span></div>
     </div>
   </div>
 
   <div class="sheet-body">
     <section class="panel" aria-labelledby="st-h">
       <div class="phead"><h2 class="eyebrow" id="st-h">States</h2><span class="meta" style="margin-left:0">· open instances on them</span></div>
+      <!-- the four open instances placed on the band: ITM-01JE7 produce, ITM-01JC8 parked at produce, ITM-01JE9 checks, ITM-01JB4 escalated at the gate.
+           Two or more in progress on one state render as the glyph and a count ("◐ 2"), never a doubled glyph -->
+      <!-- ten states: the band wraps; each link travels with the node it leads to (.hop in the CSS), so the second row starts with its link and no row ends on a dangling line -->
       <div class="band" aria-label="States band">
-        <div class="node"><span class="nm">intake <span class="g g-done" aria-label="done">●</span></span></div>
-        <span class="link" aria-hidden="true"></span>
-        <div class="node"><span class="nm">produce <span class="g g-prog" aria-label="2 in progress">◐◐</span></span><span class="sub"><span class="g g-park" aria-hidden="true">▌</span>1 parked</span></div>
-        <span class="loop" aria-label="loop">⇄</span>
-        <div class="node"><span class="nm">checks <span class="g g-prog" aria-label="1 in progress">◐</span></span><span class="sub"><span class="g g-esc" aria-hidden="true">▲</span>1 escalated</span></div>
-        <span class="link" aria-hidden="true"></span>
-        <div class="node"><span class="nm">gate.verify.judge</span></div>
-        <span class="link" aria-hidden="true"></span>
-        <div class="node"><span class="nm">review <span class="g g-todo" aria-label="not started">○</span> <small>desk</small></span></div>
-        <span class="link" aria-hidden="true"></span>
-        <div class="node"><span class="nm">done</span></div>
+        <div class="node"><span class="nm">intake <span class="g g-done" role="img" aria-label="done">●</span></span></div>
+        <div class="hop"><span class="link" aria-hidden="true"></span><div class="node"><span class="nm">produce <span class="g g-prog" role="img" aria-label="1 in progress">◐</span></span><span class="sub"><span class="g g-park" aria-hidden="true">▌</span>1 parked</span></div></div>
+        <div class="hop lp"><span class="loop" role="img" aria-label="loop">⇄</span><div class="node"><span class="nm">checks <span class="g g-prog" role="img" aria-label="1 in progress">◐</span></span></div></div>
+        <div class="hop"><span class="link" aria-hidden="true"></span><div class="node"><span class="nm">gate.verify.judge</span><span class="sub"><span class="g g-esc" aria-hidden="true">▲</span>1 escalated</span></div></div>
+        <div class="hop"><span class="link" aria-hidden="true"></span><div class="node"><span class="nm">review <span class="g g-todo" role="img" aria-label="not started">○</span> <small>desk</small></span></div></div>
+        <div class="hop"><span class="link" aria-hidden="true"></span><div class="node"><span class="nm">done</span></div></div>
       </div>
       <div class="ps" role="table" aria-label="Per-state numbers, 30 days">
         <span class="h">per state</span><span class="h nm">produce</span><span class="h nm">checks</span><span class="h nm">gate.verify.judge</span><span class="h nm">review <small style="font-family:var(--sans);color:var(--ink-subtle)">(desk)</small></span>
@@ -444,11 +432,11 @@ svg{flex:none}
       <section class="panel" aria-labelledby="oc-h">
         <div class="phead"><h2 class="eyebrow" id="oc-h">Outcomes</h2><span class="count">30 d</span></div>
         <div class="outc">
-          <span class="k">done without you</span><span class="num n">81</span><span class="meter " role="img" aria-label="81 of 112, done without you"><span class="n"></span><span class="trk"><span class="fil" style="width:80%"></span></span></span>
-          <span class="k">done after a park</span><span class="num n">12</span><span class="meter " role="img" aria-label="12 of 112, done after a park"><span class="n"></span><span class="trk"><span class="fil" style="width:15%"></span></span></span>
-          <span class="k">done after takeover</span><span class="num n">4</span><span class="meter " role="img" aria-label="4 of 112, done after takeover"><span class="n"></span><span class="trk"><span class="fil" style="width:5%"></span></span></span>
-          <span class="k">failed</span><span class="num n">6</span><span class="meter " role="img" aria-label="6 of 112, failed"><span class="n"></span><span class="trk"><span class="fil" style="width:5%"></span></span></span>
-          <span class="k">cancelled</span><span class="num n">9</span><span class="meter " role="img" aria-label="9 of 112, cancelled"><span class="n"></span><span class="trk"><span class="fil" style="width:10%"></span></span></span>
+          <span class="k">done without you</span><span class="num n">81</span><span class="trk" role="img" aria-label="81 of 112, done without you"><span class="fil" style="width:72%"></span></span>
+          <span class="k">done after a park</span><span class="num n">12</span><span class="trk" role="img" aria-label="12 of 112, done after a park"><span class="fil" style="width:11%"></span></span>
+          <span class="k">done after takeover</span><span class="num n">4</span><span class="trk" role="img" aria-label="4 of 112, done after takeover"><span class="fil" style="width:4%"></span></span>
+          <span class="k">failed</span><span class="num n">6</span><span class="trk" role="img" aria-label="6 of 112, failed"><span class="fil lo" style="width:5%"></span></span>
+          <span class="k">cancelled</span><span class="num n">9</span><span class="trk" role="img" aria-label="9 of 112, cancelled"><span class="fil lo" style="width:8%"></span></span>
         </div>
       </section>
       <section class="panel" aria-labelledby="ht-h">
@@ -457,14 +445,15 @@ svg{flex:none}
           <span class="k">parks answered</span><span class="v"><b>16</b> · median <b>2h 10m</b></span>
           <span class="k">escalations decided</span><span class="v"><b>11</b> · median <b>42m</b></span>
           <span class="k">takeovers</span><span class="v"><b>7</b> · median <b>25m</b></span>
-          <span class="k">human rate</span><span class="v"><b>19%</b> <span style="color:var(--ink-subtle)">(last 4 wk</span> <span class="spark" role="img" aria-label="human rate, four weeks, rising"><i style="height:25%"></i><i style="height:50%"></i><i style="height:75%"></i><i style="height:100%"></i></span><span style="color:var(--ink-subtle)">)</span></span>
+          <span class="k">human rate</span><span class="v"><b>19%</b> · 4 wk <span class="spark" role="img" aria-label="human rate, four weeks, rising"><i style="height:25%"></i><i style="height:50%"></i><i style="height:75%"></i><i style="height:100%"></i></span></span>
         </div>
       </section>
       <section class="panel" aria-labelledby="co-h">
         <div class="phead"><h2 class="eyebrow" id="co-h">Cost</h2></div>
         <div class="kvl">
-          <span class="k">tokens/run</span><span class="v"><b>310k</b> (p50) <b>710k</b> (p90)</span>
-          <span class="k">$/run</span><span class="v"><b>$1.84</b> (p50)</span>
+          <span class="k">tokens/run p50</span><span class="v"><b>310k</b></span>
+          <span class="k">tokens/run p90</span><span class="v"><b>710k</b></span>
+          <span class="k">$/run p50</span><span class="v"><b>$1.84</b></span>
           <span class="k">30 d total</span><span class="v"><b>$214</b></span>
           <span class="k">budget hits</span><span class="v"><b>2</b></span>
         </div>
@@ -476,13 +465,13 @@ svg{flex:none}
         <div class="phead"><h2 class="eyebrow" id="op-h">Open</h2><span class="count">4</span></div>
         <div class="op"><div class="t"><span class="id mono">ITM-01JE7</span><span class="mono">produce</span><span class="num">r2/3</span><span>Claude Code</span><span class="num">6m</span></div><button class="btn" aria-haspopup="menu" aria-expanded="false" aria-label="Open ITM-01JE7">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
         <div class="op"><div class="t"><span class="id mono">ITM-01JE9</span><span class="mono">checks</span><span>Codex</span><span class="num">2m</span></div><button class="btn" aria-haspopup="menu" aria-expanded="false" aria-label="Open ITM-01JE9">Open <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
-        <div class="op"><div class="t"><span class="id mono">ITM-01JC8</span><span class="g g-park" aria-hidden="true">▌</span>parked <span style="color:var(--ink-subtle)">no-progress</span><span class="num">12m</span></div><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button></div>
-        <div class="op"><div class="t"><span class="id mono">ITM-01JB4</span><span class="g g-esc" aria-hidden="true">▲</span>escalated <span style="color:var(--ink-subtle)">gate</span><span class="num">2h56m</span></div><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button></div>
+        <div class="op"><div class="t"><span class="id mono">ITM-01JC8</span><span class="g g-park" aria-hidden="true">▌</span>parked <span class="dash">no-progress</span><span class="num">12m</span></div><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button></div>
+        <div class="op"><div class="t"><span class="id mono">ITM-01JB4</span><span class="g g-esc" aria-hidden="true">▲</span>escalated <span class="dash">gate 0.62</span><span class="num">2h 56m</span></div><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button></div>
       </section>
       <section class="panel" aria-labelledby="ev-h">
         <div class="phead"><h2 class="eyebrow" id="ev-h">Evals</h2><span class="st ok" style="font-size:12px"><span class="count" style="font-family:var(--mono)">12/12</span><span class="g h-ok" aria-hidden="true">✓</span></span><span class="meta">last run today</span></div>
         <div class="ev">
-          <div class="cases"><span><span class="g h-ok" aria-hidden="true">✓</span>01 happy-path</span><span><span class="g h-ok" aria-hidden="true">✓</span>02 checks-fail-once</span><span><span class="g h-ok" aria-hidden="true">✓</span>03 budget-park</span><span style="color:var(--ink-subtle)">…</span></div>
+          <div class="cases"><span><span class="g h-ok" aria-hidden="true">✓</span>01 happy-path</span><span><span class="g h-ok" aria-hidden="true">✓</span>02 checks-fail-once</span><span><span class="g h-ok" aria-hidden="true">✓</span>03 budget-park</span><span class="dash">… 9 more</span></div>
           <div class="note">recorded against v7 · 3 cases recorded from real runs (<span class="mono">--record</span>)</div>
         </div>
       </section>

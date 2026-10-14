@@ -218,87 +218,48 @@ svg{flex:none}
 
 /* ═══════ rev 8 screens: additions below the base styles (no new colours) ═══════ */
 body{min-width:1280px}
-.tools{display:flex;align-items:center;gap:8px}
-.tools .btn svg{color:var(--ink-subtle)}
+/* adapt (the 900 × 600 minimum): the page keeps its 1280 floor and scrolls; under 1100 px the sheet takes the
+   viewport's full width instead of leaving a sliver of list beside it */
+@media (max-width:1100px){.sheet.wide{width:100%}}
+/* motion: hover and press only, 120 ms ease-out, colour and background only (never a layout property); nothing moves on load */
+.btn,.icon-btn,.tab,.menu .mi,.st tbody td,.qt .tr,.fact,.child{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out}
+.btn:active{background:var(--s2)}
+.btn.term:active{background:var(--s3)}
+@media (prefers-reduced-motion:reduce){.btn,.icon-btn,.tab,.menu .mi,.st tbody td,.qt .tr,.fact,.child{transition:none}}
+/* the destructive class is visible before the click (PRODUCT.md principle 1): the error red carries the verb, nothing else */
+.btn.danger{color:var(--error)}
+.btn.danger:hover{color:var(--error);border-color:var(--line3)}
 
-/* glyph vocabulary (§4 conventions) */
-
-/* workflows list (behind the sheet) */
-.wfg .gh{display:flex;align-items:center;gap:8px;height:32px;padding:4px 16px;background:var(--s2);border-top:1px solid var(--line1);
-  border-bottom:1px solid var(--line1);font-weight:500;font-size:12px;color:var(--ink)}
-.wfg:first-child .gh{border-top:0;border-radius:12px 12px 0 0}
-.wfg .gh .mono{color:var(--ink)}
-.wfg .gh .desc{color:var(--ink-subtle);font-weight:400}
-.wfg .colhead,.wfg .tr{display:grid;grid-template-columns:var(--cols);gap:10px;align-items:center;padding:4px 16px}
-.wfg .colhead{height:26px;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);font-weight:500;white-space:nowrap;overflow:hidden}
-.wfg .colhead span{overflow:hidden;text-overflow:ellipsis}
-.wfg .tr{position:relative;height:36px;border-top:1px solid var(--line1)}
-.wfg .tr:hover{background:var(--s2)}
-.wfg .tr.sel{background:var(--s3)}
-.wfg .subj{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wfg .subj .team{color:var(--ink-subtle)}
-.wfg .inp{color:var(--ink-subtle);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wfg .inp b{color:var(--ink-muted);font-weight:400}
-.sc{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.sc .mono{color:var(--ink-subtle)}
-.sc.span2{grid-column:span 2}
-.sc.span3{grid-column:span 3}
-.wfg .now{color:var(--ink-subtle);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wfg .gfoot{display:flex;align-items:center;gap:8px;height:32px;padding:4px 16px;border-top:1px solid var(--line1);color:var(--ink-muted);font-size:12px;font-weight:500}
-.wfg .gfoot .desc{color:var(--ink-subtle);font-weight:400}
-.wfg .gfoot .r{margin-left:auto;display:flex;align-items:center;gap:4px;color:var(--ink-subtle);font-weight:400;font-size:12px}
-.legend{margin-top:8px;color:var(--ink-subtle);font-size:12px;display:flex;gap:14px;align-items:center}
-.legend .keys{margin-left:auto;display:flex;gap:12px}
-.legend .keys span{display:flex;gap:4px;align-items:center}
-
-/* work list (behind the item sheet) · queue.html's table at reduced detail */
-.filter{display:flex;align-items:center;gap:8px;width:280px;height:30px;padding:4px 8px 4px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--s1);color:var(--ink-subtle)}
-.filter span{flex:1}
-.qt{--cols:80px minmax(0,1fr) 112px 140px 124px 90px 92px 206px}
-.qt .colhead,.qt .tr{display:grid;grid-template-columns:var(--cols);gap:12px;align-items:center;padding:4px 16px}
-.qt .colhead{height:32px;font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);border-bottom:1px solid var(--line1)}
-.qt .colhead .r,.qt .tr .act{justify-self:end}
-.qt .gh{display:flex;align-items:center;gap:8px;height:32px;padding:4px 16px;background:var(--s2);border-top:1px solid var(--line1);border-bottom:1px solid var(--line1);color:var(--ink);font-weight:500;font-size:12px}
-.qt .gh .g{width:12px}
-.qt .tr{position:relative;height:36px;border-top:1px solid var(--line1)}
-.qt .gh+.tr{border-top:0}
-.qt .tr:hover{background:var(--s2)}
-.qt .tr.sel{background:var(--s3)}
-.qt .tr.attn{background:var(--attn-soft)}
-.qt .tr .tt{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qt .tr .tt.muted{color:var(--ink-muted);font-weight:400}
-.qt .tr .cell2{color:var(--ink-subtle);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qt .tr .cell2.ink{color:var(--ink-muted)}
-.qt .tr .st{display:flex;align-items:center;gap:6px;white-space:nowrap;font-weight:500;color:var(--ink);font-size:12px}
-.qt .tr .st small{color:var(--ink-subtle);font-weight:400;font-size:12px}
-.qt .tr .act{display:flex;gap:6px;align-items:center}
-
-/* the instance frame: sheet chrome */
+/* ---- the instance frame (§4.2, §4.7): one sheet for a project, an incident and an item ---- */
 .sheet.wide{width:760px}
 .sheet-head{padding:12px 20px 10px;border-bottom:1px solid var(--line1);flex:none}
 .sheet-body{padding:0 20px 16px;overflow:auto;flex:1}
-.crumb{display:flex;align-items:center;gap:10px;min-width:0}
-.crumb .addr{font-family:var(--mono);font-size:12px;color:var(--ink-subtle);white-space:nowrap;flex:none}
-.crumb .ttl{font-size:15px;font-weight:600;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.crumb .meta{margin-left:auto;color:var(--ink-subtle);font-size:12px;white-space:nowrap;display:flex;gap:6px;align-items:center;flex:none}
+/* crumb: the address and the title never truncate; the meta sits beside the title when it fits and wraps under it when not */
+.crumb{display:flex;align-items:flex-start;gap:10px}
+.crumb .lead{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.crumb .addr{font-family:var(--mono);font-size:12px;color:var(--ink-subtle);white-space:nowrap}
+.crumb .ttl{font-size:15px;font-weight:600;letter-spacing:-.2px;line-height:1.4}
+.crumb .meta{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
 .crumb .meta .mono{color:var(--ink-muted)}
 .crumb .meta b{color:var(--ink);font-weight:500}
-.crumb .r{display:flex;gap:6px;align-items:center;flex:none}
+.crumb .r{display:flex;gap:6px;align-items:center;flex:none;height:24px}
 .icon-btn{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--ink-subtle);border:1px solid var(--line1);background:var(--s2)}
 .icon-btn:hover{color:var(--ink);background:var(--s3)}
-.sh-title{font-size:17px;font-weight:600;letter-spacing:-.3px;margin-top:6px}
-.sh-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px;color:var(--ink-subtle);font-size:12px}
-.sh-meta .mono{color:var(--ink-muted)}
-.sh-meta b{color:var(--ink);font-weight:500}
-.subject{display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--ink-muted);font-size:12px;min-width:0}
-.subject .lbl{color:var(--ink-subtle);font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;flex:none;width:52px}
-.subject .txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.subject .txt b{color:var(--ink);font-weight:500}
-.subject .txt .mono{color:var(--ink-muted)}
-.subject .acts{flex:none;display:flex;gap:6px}
-.subject.stack{flex-wrap:wrap}
-.subject.stack .txt{flex-basis:100%;white-space:normal;line-height:1.5}
-.subject.stack .acts{margin-left:62px}
+/* subject line: label · text · actions; .stack puts the actions under a text that needs the whole line */
+.sheet-head .subject{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:6px 10px;align-items:center;margin-top:8px;color:var(--ink-muted);font-size:12px}
+.sheet-head .subject .lbl{color:var(--ink-subtle);font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;align-self:start;padding-top:4px}
+.sheet-head .subject .txt{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:24px}
+.sheet-head .subject .txt b{color:var(--ink);font-weight:500}
+.sheet-head .subject .txt .mono{color:var(--ink-muted)}
+.sheet-head .subject .txt .note{color:var(--ink-subtle)}
+.sheet-head .subject .acts{grid-column:3;justify-self:end;display:flex;gap:6px;position:relative}
+.sheet-head .subject.stack .txt{white-space:normal;line-height:1.5;padding-top:3px}
+.sheet-head .subject.stack .acts{grid-column:2;grid-row:2;justify-self:start}
+.chev{padding:0 6px}
+/* the one-line confirm that Cancel asks for (drawn open on the incident sheet) */
+.confirm{display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;border:1px solid var(--line2);border-radius:8px;background:var(--s2);font-size:12px;color:var(--ink-muted);line-height:1.4}
+.confirm b{color:var(--ink);font-weight:500}
+.confirm .acts{margin-left:auto;display:flex;gap:6px;flex:none}
 
 /* panels inside the sheet */
 .sp{margin-top:10px}
@@ -306,8 +267,10 @@ body{min-width:1280px}
 .sp .phead .meta{text-transform:none;letter-spacing:0;font-size:12px}
 .sp .phead .count{margin-left:-2px}
 
-/* STATES band */
+/* STATES band: the recipe's states in path order; a link and the node it leads to wrap as one unit, so a row that
+   continues starts with its link and no link ever dangles at a row's end */
 .path{display:flex;align-items:center;flex-wrap:wrap;gap:3px 0;padding:8px 10px 6px;font-size:12px}
+.step{display:inline-flex;align-items:center;flex:none}
 .node{display:inline-flex;align-items:center;gap:5px;height:26px;padding:4px 7px;border-radius:6px;color:var(--ink-muted);white-space:nowrap}
 .node b{font-weight:500;color:var(--ink)}
 .node .badge{font-size:11px;color:var(--ink-subtle);white-space:nowrap}
@@ -316,23 +279,24 @@ body{min-width:1280px}
 .node.todo b{color:var(--ink-subtle)}
 .link{color:var(--line3);font-family:var(--mono);font-size:11px;letter-spacing:-1px;padding:0 1px;flex:none}
 .link.loop{color:var(--ink-subtle);letter-spacing:0;font-family:var(--sans);font-size:12px;padding:0 3px}
-.expand{margin:0 14px 12px;border:1px solid var(--line2);border-radius:8px;background:var(--canvas);padding:9px 12px 10px}
+/* the expanded state is a divided region of the panel, not a card inside it */
+.expand{border-top:1px solid var(--line1);padding:10px 14px 12px}
 .expand .decl{display:flex;flex-wrap:wrap;gap:3px 6px;align-items:center;color:var(--ink-muted);font-size:12px;line-height:1.5}
 .expand .decl b{color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:5px}
 .expand .decl .mono{color:var(--ink-muted)}
 .expand .decl .sep{color:var(--ink-subtle)}
 .expand .decl .live{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-weight:500}
+.expand .decl .unit{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}  /* a glyph stays on its word's line */
 .krow{display:grid;grid-template-columns:50px minmax(0,1fr);gap:10px;margin-top:6px;font-size:12px;line-height:1.5}
 .krow .k{color:var(--ink-subtle);font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;padding-top:2px}
 .krow .v{color:var(--ink-muted);min-width:0}
 .krow .v.ink{color:var(--ink)}
-.ctl{display:flex;align-items:center;gap:10px;margin-top:8px}
-.ctl .stat{display:flex;align-items:center;gap:6px;color:var(--ink-subtle);font-size:12px;min-width:0;flex:1;flex-wrap:wrap;line-height:1.5}
+.ctl{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.ctl .stat{display:flex;align-items:center;gap:6px;color:var(--ink-subtle);font-size:12px;min-width:0;flex:1 1 320px;flex-wrap:wrap;line-height:1.5}
 .ctl .stat .mono{color:var(--ink-muted)}
 .ctl .stat b{color:var(--ink-muted);font-weight:500}
+.ctl .stat .kv{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}  /* a key and its value wrap together */
 .ctl .acts{margin-left:auto;display:flex;gap:6px;flex:none}
-.ctl.stack{flex-wrap:wrap}
-.ctl.stack .acts{margin-left:0;flex-basis:100%;justify-content:flex-end}
 .bar4{display:inline-block;width:48px;height:3px;border-radius:2px;background:var(--line1);overflow:hidden;vertical-align:middle;margin:0 2px}
 .bar4 i{display:block;height:100%;background:var(--ink-subtle)}
 
@@ -345,45 +309,79 @@ body{min-width:1280px}
 .trace .t{font-family:var(--mono);font-size:11px;color:var(--ink-subtle)}
 .trace .d{color:var(--ink-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* FACTS */
+/* FACTS: a summary that is too long for its row wraps to a second line; it never truncates */
 .fact{display:grid;grid-template-columns:104px 14px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:34px;padding:4px 14px;border-top:1px solid var(--line1)}
 .phead+.fact{border-top:0}
 .fact:hover{background:var(--s2)}
 .fact .key{font-family:var(--mono);font-size:12px;color:var(--ink-subtle);white-space:nowrap}
-.fact .sum{color:var(--ink-muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.fact .sum{color:var(--ink-muted);font-size:12px;min-width:0;line-height:1.45}
 .fact .sum b{color:var(--ink);font-weight:500}
 .fact .sum .note{color:var(--ink-subtle)}
 .fact .sum .mono{color:var(--ink-muted)}
 .fact .sum a{color:var(--brand-hover)}
 .fact .acts{display:flex;gap:6px;flex:none}
 .fact .acts:empty{display:none}
-.facts.narrow .fact{grid-template-columns:92px 14px minmax(0,1fr) auto;padding:4px 12px;gap:8px}
-.facts.narrow .fact .sum{white-space:normal;line-height:1.45;font-size:12px}
 
-/* CHILDREN */
-.child{display:grid;grid-template-columns:var(--ccols,92px 84px minmax(0,1fr) 240px auto);gap:10px;align-items:center;min-height:36px;padding:4px 14px;border-top:1px solid var(--line1)}
-.phead+.child{border-top:0}
+/* CHILDREN: group · id · title · state · actions. The title column never gives up its first word (a 140 px floor,
+   then its own width); the state column shrinks first, down to its glyph and word */
+.children{display:grid;grid-template-columns:var(--ccols,90px 78px minmax(140px,max-content) minmax(120px,1fr) auto)}
+.child{display:grid;grid-template-columns:subgrid;grid-column:1/-1;gap:8px;align-items:center;min-height:36px;padding:4px 12px;border-top:1px solid var(--line1)}
+.children .child:first-child{border-top:0}
+.child .sc{display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--ink-muted)}
+.child .sc .g{margin-right:4px}
+.child .sc .mono{color:var(--ink-subtle)}
 .child:hover{background:var(--s2)}
+.child.attn,.child.attn:hover{background:var(--attn-soft)}
 .child.cont{border-top:0}
 .child .grp{color:var(--ink);font-weight:500;font-size:12px;white-space:nowrap}
 .child .grp .mono{color:var(--ink-subtle);font-size:12px}
 .child .id{color:var(--ink-subtle);white-space:nowrap}
 .child .ttl{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .child .ttl.muted{color:var(--ink-muted);font-weight:400}
-.child .acts{display:flex;gap:6px;justify-content:flex-end;flex:none}
+.child .acts{display:flex;gap:6px;justify-content:flex-end;flex:none;position:relative}
 .child .acts:empty{display:none}
-.cfoot{display:flex;align-items:center;padding:7px 14px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px}
+.cfoot{display:flex;align-items:center;gap:8px;padding:7px 14px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px}
+.cfoot .eyebrow{color:var(--ink-muted)}
 .cfoot a{margin-left:auto}
-.cnone{padding:10px 12px;color:var(--ink-subtle);font-size:12px;line-height:1.45}
 
-/* the sheet's lower row and tabs */
-.two{display:grid;grid-template-columns:minmax(0,1fr) 164px;gap:8px;margin-top:10px;align-items:start}
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line1);margin-top:12px}
-.tabs .tab{height:34px;padding:0 10px;display:flex;align-items:center;gap:6px;color:var(--ink-subtle);font-weight:500;
-  border-bottom:2px solid transparent;margin-bottom:-1px}
+/* the sheet's tabs: a key per tab, the active tab's first lines under the rule */
+.tabs{display:flex;gap:2px;margin-top:12px;position:relative;z-index:1;margin-bottom:-1px}
+.tabs .tab{height:34px;padding:0 10px;display:flex;align-items:center;gap:6px;color:var(--ink-subtle);font-weight:500;border-bottom:2px solid transparent}
 .tabs .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
 .tabs .tab .n{font-size:11px;color:var(--ink-subtle)}
+.tabs .tab kbd{margin-left:2px}
 .tabs .tab:hover{color:var(--ink-muted)}
+.tabpanel{border-top:1px solid var(--line1);padding:8px 0 0}
+.ev{display:grid;grid-template-columns:40px 118px minmax(0,1fr);gap:10px;align-items:baseline;font-size:12px;color:var(--ink-muted);line-height:1.5;padding:2px 10px}
+.ev .t{font-family:var(--mono);font-size:11px;color:var(--ink-subtle)}
+.ev .a{font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev .d{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev .d .mono{color:var(--ink-muted)}
+
+/* ---- the Work list behind the item sheet: queue.html's table, compressed to the 520 px beside the sheet.
+   Item · Title · State · Step; the state keeps its glyph and word, and Repo, Agent, Since, the reason suffix and the row action live in the sheet while it is open ---- */
+.page.behind{max-width:none;margin:0;padding-right:768px}
+.page.behind .pagehead{flex-wrap:wrap;align-items:center;gap:8px 16px}
+.page.behind .pagehead>div:first-child{flex-wrap:wrap;gap:0 14px}
+.page.behind .sub{white-space:nowrap;flex-basis:100%}  /* the counts, one line, under the title */
+.filter{display:flex;align-items:center;gap:8px;width:280px;height:30px;padding:4px 8px 4px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--s1);color:var(--ink-subtle)}
+.filter span{flex:1}
+.qt{--cols:68px minmax(0,1fr) max-content max-content}
+.qt .colhead,.qt .tr{display:grid;grid-template-columns:var(--cols);gap:12px;align-items:center;padding:4px 16px}
+.qt .colhead{height:32px;font-size:11px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-subtle);border-bottom:1px solid var(--line1)}
+.qt .gh{display:flex;align-items:center;gap:8px;height:32px;padding:4px 16px;background:var(--s2);border-top:1px solid var(--line1);border-bottom:1px solid var(--line1);color:var(--ink);font-weight:500;font-size:12px}
+.qt .gh .g{width:12px}
+.qt .tr{position:relative;height:36px;border-top:1px solid var(--line1)}
+.qt .gh+.tr{border-top:0}
+.qt .tr:hover{background:var(--s2)}
+.qt .tr.sel,.qt .tr.sel:hover{background:var(--s3)}
+.qt .tr.attn{background:var(--attn-soft)}
+.qt .tr .tt{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qt .tr .tt.muted{color:var(--ink-muted);font-weight:400}
+.qt .tr .cell2{color:var(--ink-subtle);font-size:12px;white-space:nowrap}
+.qt .tr .cell2.ink{color:var(--ink-muted)}
+.qt .tr .st{display:flex;align-items:center;gap:6px;white-space:nowrap;font-weight:500;color:var(--ink);font-size:12px}
+.qt .tr .st small{color:var(--ink-subtle);font-weight:400;font-size:12px}
 </style>
 </head>
 <body>
@@ -408,18 +406,18 @@ body{min-width:1280px}
 </header>
 <div class="attn-band" role="presentation"></div>
 
-<main class="page">
+<main class="page behind">
   <div class="pagehead">
     <div style="display:flex;align-items:baseline;gap:14px">
       <h1>Work</h1>
       <div class="sub">
-        <span><b>10</b> items</span><span>·</span>
+        <span><b>12</b> items</span><span>·</span>
         <span class="attn-word"><i aria-hidden="true"></i>2 waiting on you</span><span>·</span>
         <span><b>1</b> with you</span><span>·</span><span><b>1</b> parked</span><span>·</span>
-        <span><b>2</b> running</span><span>·</span><span><b>4</b> queued</span>
+        <span><b>4</b> running</span><span>·</span><span><b>4</b> queued</span>
       </div>
     </div>
-    <div class="tools" style="margin-right:520px">
+    <div class="tools">
       <div class="filter" role="search"><svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><circle cx="6" cy="6" r="4.2" stroke="currentColor" fill="none" stroke-width="1.4"/><path d="m9.2 9.2 3 3" stroke="currentColor" stroke-width="1.4"/></svg><span>Filter by id, title, repo</span><kbd>/</kbd></div>
       <button class="btn">Create item <kbd>C</kbd></button>
     </div>
@@ -427,70 +425,78 @@ body{min-width:1280px}
 
   <section class="panel qt" aria-label="Work items">
     <div class="colhead" role="row">
-      <span>Item</span><span>Title</span><span>Repo</span><span>State</span><span>Step</span><span>Agent</span><span>Since</span><span class="r">Action</span>
+      <span>Item</span><span>Title</span><span>State</span><span>Step</span>
     </div>
 
     <div class="gh"><span class="g">?</span>Waiting on you <span class="count-attn">2</span></div>
     <div class="tr attn" role="row" aria-label="Needs you now: ITM-01JB4, escalated gate">
-      <span class="id mono">ITM-01JB4</span><span class="tt">Context map review for tabs.layout</span><span class="cell2">agentic-workflow</span>
-      <span class="st"><span class="g g-esc">▲</span>Escalated <small>· gate</small></span><span class="cell2 ink mono">gate.verify.judge</span><span class="cell2">—</span><span class="cell2">09:10 · 2h 56m</span>
-      <span class="act"><button class="btn sm term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button></span>
+      <span class="id mono">ITM-01JB4</span><span class="tt">Context map review for tabs.layout</span>
+      <span class="st"><span class="g g-esc">▲</span>Escalated</span><span class="cell2 ink mono">gate.verify.judge</span>
     </div>
     <div class="tr attn" role="row" aria-label="Needs you now: ITM-01JD2, needs a decision">
-      <span class="id mono">ITM-01JD2</span><span class="tt muted">Re-scope requested: drop the iOS head from this item</span><span class="cell2">sindri-app</span>
-      <span class="st"><span class="g">?</span>Needs decision</span><span class="cell2">—</span><span class="cell2">—</span><span class="cell2">11:40 · 26m</span>
-      <span class="act"><button class="btn sm">Accept</button><button class="btn sm">Decline <kbd>X</kbd></button></span>
+      <span class="id mono">ITM-01JD2</span><span class="tt muted">Re-scope requested: drop the iOS head from this item</span>
+      <span class="st"><span class="g">?</span>Needs decision</span><span class="cell2">—</span>
     </div>
 
     <div class="gh"><span class="g g-you">◎</span>With you <span class="count">1</span></div>
     <div class="tr" role="row" aria-label="With you: ITM-01JA1">
-      <span class="id mono">ITM-01JA1</span><span class="tt">Onyx adapter secret pointers</span><span class="cell2">sindri-app</span>
-      <span class="st"><span class="g g-you">◎</span>With you <small>· taken over</small></span><span class="cell2">—</span><span class="cell2">in Warp</span><span class="cell2">12:01 · 25m</span>
-      <span class="act"><button class="btn sm">Hand back <kbd>B</kbd></button></span>
+      <span class="id mono">ITM-01JA1</span><span class="tt">Onyx adapter secret pointers</span>
+      <span class="st"><span class="g g-you">◎</span>With you</span><span class="cell2 ink mono">produce</span>
     </div>
 
     <div class="gh"><span class="g g-park">▌</span>Parked <span class="count">1</span></div>
     <div class="tr attn" role="row" aria-label="Needs you now: ITM-01JC8, parked no-progress">
-      <span class="id mono">ITM-01JC8</span><span class="tt">Retry storm in outbox dispatcher</span><span class="cell2">agentic-workflow</span>
-      <span class="st"><span class="g g-park">▌</span>Parked <small>· no-progress</small></span><span class="cell2 ink mono">step.2 · 3/3</span><span class="cell2">—</span><span class="cell2">11:54 · 12m</span>
-      <span class="act"><button class="btn sm term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button></span>
+      <span class="id mono">ITM-01JC8</span><span class="tt">Retry storm in outbox dispatcher</span>
+      <span class="st"><span class="g g-park">▌</span>Parked</span><span class="cell2 ink mono">step.2 · 3/3</span>
     </div>
 
-    <div class="gh"><span class="g g-live">●</span>Running <span class="count">2</span></div>
+    <div class="gh"><span class="g g-live">●</span>Running <span class="count">4</span></div>
     <div class="tr sel" role="row" aria-selected="true" aria-label="Running: ITM-01JE7, selected">
-      <span class="id mono">ITM-01JE7</span><span class="tt">Sync status pill</span><span class="cell2">agentic-workflow</span>
-      <span class="st"><span class="g g-live">●</span>Running</span><span class="cell2 ink mono">produce · 2/3</span><span class="cell2 ink">Claude Code</span><span class="cell2">12:20 · 6m</span>
-      <span class="act"><button class="btn sm">Attach <kbd>O</kbd></button></span>
+      <span class="id mono">ITM-01JE7</span><span class="tt">Add needs-you ack route</span>
+      <span class="st"><span class="g g-live">●</span>Running</span><span class="cell2 ink mono">produce · 2/3</span>
     </div>
     <div class="tr" role="row" aria-label="Running: ITM-01JE9">
-      <span class="id mono">ITM-01JE9</span><span class="tt">Tester: decision race integration test</span><span class="cell2">agentic-workflow</span>
-      <span class="st"><span class="g g-live">●</span>Running</span><span class="cell2 ink mono">checks</span><span class="cell2 ink">Codex</span><span class="cell2">12:24 · 2m</span>
-      <span class="act"><button class="btn sm">Attach <kbd>O</kbd></button></span>
+      <span class="id mono">ITM-01JE9</span><span class="tt">Tester: decision race integration test</span>
+      <span class="st"><span class="g g-live">●</span>Running</span><span class="cell2 ink mono">checks · 1/1</span>
+    </div>
+    <div class="tr" role="row" aria-label="Running: ITM-01JD9">
+      <span class="id mono">ITM-01JD9</span><span class="tt">Judge outbox drain on shutdown</span>
+      <span class="st"><span class="g g-live">●</span>Running</span><span class="cell2 ink mono">produce · 1/3</span>
+    </div>
+    <div class="tr" role="row" aria-label="Running: ITM-01JD6">
+      <span class="id mono">ITM-01JD6</span><span class="tt">Services page job panel</span>
+      <span class="st"><span class="g g-live">●</span>Running</span><span class="cell2 ink mono">checks</span>
     </div>
 
     <div class="gh"><span class="g g-todo">○</span>Queued <span class="count">4</span></div>
-    <div class="tr" role="row" aria-label="Queued: ITM-01JF0"><span class="id mono">ITM-01JF0</span><span class="tt">Stream limits 429 fallback</span><span class="cell2">agentic-workflow</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span><span class="cell2">—</span><span class="cell2">queued 1h</span><span class="act"></span></div>
-    <div class="tr" role="row" aria-label="Queued: ITM-01JF3"><span class="id mono">ITM-01JF3</span><span class="tt">doctor views line</span><span class="cell2">agentic-workflow</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span><span class="cell2">—</span><span class="cell2">queued 52m</span><span class="act"></span></div>
-    <div class="tr" role="row" aria-label="Queued: ITM-01JF4"><span class="id mono">ITM-01JF4</span><span class="tt">Tray badge on Linux</span><span class="cell2">sindri-app</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span><span class="cell2">—</span><span class="cell2">queued 40m</span><span class="act"></span></div>
-    <div class="tr" role="row" aria-label="Queued: ITM-01JF8"><span class="id mono">ITM-01JF8</span><span class="tt">Receipt verify route</span><span class="cell2">sindri-app</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span><span class="cell2">—</span><span class="cell2">queued 12m</span><span class="act"></span></div>
+    <div class="tr" role="row" aria-label="Queued: ITM-01JF0"><span class="id mono">ITM-01JF0</span><span class="tt">Stream limits 429 fallback</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span></div>
+    <div class="tr" role="row" aria-label="Queued: ITM-01JF3"><span class="id mono">ITM-01JF3</span><span class="tt">doctor views line</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span></div>
+    <div class="tr" role="row" aria-label="Queued: ITM-01JF4"><span class="id mono">ITM-01JF4</span><span class="tt">Tray badge on Linux</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span></div>
+    <div class="tr" role="row" aria-label="Queued: ITM-01JF8"><span class="id mono">ITM-01JF8</span><span class="tt">Receipt verify route</span><span class="st"><span class="g g-todo">○</span>Queued</span><span class="cell2">—</span></div>
   </section>
 </main>
 
-<!-- ═════════ ITEM SHEET: item/ITM-01JE7 (the Workflows frame at sheet width; open, no scrim) ═════════ -->
-<aside class="sheet" aria-label="Item ITM-01JE7, Sync status pill">
+<!-- ═════════ ITEM SHEET: item/ITM-01JE7 (the Workflows frame at the same 760; open, no scrim) ═════════ -->
+<aside class="sheet wide" aria-label="Item ITM-01JE7, Add needs-you ack route">
   <div class="sheet-head">
     <div class="crumb">
-      <span class="addr">item/ITM-01JE7</span>
-      <div class="r" style="margin-left:auto"><kbd>Esc</kbd><button class="icon-btn" aria-label="Close item sheet"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6M9 3 3 9" stroke="currentColor" stroke-width="1.3"/></svg></button></div>
+      <div class="lead">
+        <span class="addr">item/ITM-01JE7</span>
+        <span class="ttl">Add needs-you ack route</span>
+        <span class="meta"><span class="mono">workflow.item@3f1c09a2</span><span>·</span><span>v7</span><span>·</span><b>produce</b><span class="mono">r2/3</span><span>·</span><span>since 12:14 (12m)</span></span>
+      </div>
+      <div class="r"><kbd>Esc</kbd><button class="icon-btn" aria-label="Close item sheet"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6M9 3 3 9" stroke="currentColor" stroke-width="1.3"/></svg></button></div>
     </div>
-    <div class="sh-title">Sync status pill</div>
-    <div class="sh-meta"><span class="mono">workflow.item@3f1c09a2</span><span>·</span><span>v7</span><span>·</span><b>produce</b><span class="mono">r2/3</span><span>·</span><span>since 12:14 (12m)</span></div>
     <div class="subject stack">
       <span class="lbl">subject</span>
-      <span class="txt">packet task <b>t3</b> of <span class="mono">PRJ-sync</span> <span style="color:var(--ink-subtle)">(ws-1 UI)</span> · repo <b>agentic-workflow</b> · Linear <b>ENG-511</b> · <span class="mono">feature:sync.status-pill</span></span>
+      <span class="txt">Linear <b>ENG-511</b> · repo <b>agentic-workflow</b> · no project · <span class="mono">feature:needs-you.ack</span></span>
       <div class="acts">
         <button class="btn sm">Open in Linear ↗</button>
         <button class="btn sm">Open in Context ▸</button>
+        <button class="btn sm chev" aria-label="More actions for ITM-01JE7" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+        <div class="menu" role="menu" hidden>
+          <button class="mi" role="menuitem">Cancel item… <kbd>X</kbd><small>asks first: the session stops and the item closes</small></button>
+        </div>
       </div>
     </div>
   </div>
@@ -498,59 +504,57 @@ body{min-width:1280px}
   <div class="sheet-body">
     <!-- STATES -->
     <section class="panel sp" aria-labelledby="st-h">
-      <div class="phead"><h2 class="eyebrow" id="st-h">States</h2><div class="meta">in path order</div></div>
+      <div class="phead"><h2 class="eyebrow" id="st-h">States</h2><div class="meta">from the recipe, in path order</div></div>
       <div class="path" aria-label="States in path order">
-        <span class="node"><b>intake</b><span class="g g-done">●</span></span><span class="link" aria-hidden="true">──</span>
-        <span class="node cur" aria-current="step"><span class="g g-cur">▣</span><b>produce</b><span class="g g-prog">◐</span><span class="badge mono">r2/3</span></span>
-        <span class="link loop" aria-label="loops with">⇄</span>
-        <span class="node"><b>checks</b><span class="g g-done">●</span><span class="badge mono">r1 failed</span></span><span class="link" aria-hidden="true">──</span>
-        <span class="node todo"><b class="mono" style="font-size:12px">gate.verify.judge</b><span class="g g-todo">○</span><span class="badge mono">≥ 0.80</span></span><span class="link" aria-hidden="true">──</span>
-        <span class="node todo"><b>review</b><span class="g g-todo">○</span><span class="badge">desk</span></span><span class="link" aria-hidden="true">──</span>
-        <span class="node todo"><b>done</b></span>
+        <span class="step"><span class="node"><b>intake</b><span class="g g-done">●</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node cur" aria-current="step"><span class="g g-cur">▣</span><b>produce</b><span class="g g-prog">◐</span><span class="badge mono">r2/3</span></span></span>
+        <span class="step"><span class="link loop" role="img" aria-label="loops with">⇄</span><span class="node"><b>checks</b><span class="g g-done">●</span><span class="badge mono">r1 failed</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node todo"><b class="mono" style="font-size:12px">gate.verify.judge</b><span class="g g-todo">○</span><span class="badge mono">≥ 0.80</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node todo"><b>review</b><span class="g g-todo">○</span><span class="badge">desk</span></span></span>
+        <span class="step"><span class="link" aria-hidden="true">──</span><span class="node todo"><b>done</b><span class="g g-todo">○</span></span></span>
       </div>
       <div class="expand" aria-label="Current state: produce">
-        <div class="decl"><b><span class="g g-cur">▣</span>produce</b><span class="sep">·</span><span class="mono">step.produce</span><span class="sep">·</span><span class="live"><span class="dot" aria-hidden="true"></span>Claude Code in Warp</span><span class="sep">·</span><span class="mono">snd-01JE7.2</span><span class="sep">·</span><span>since 12:20 (6m)</span><span class="sep">·</span><span class="mono">84k / 200k</span><span>tokens</span><span class="bar4" role="img" aria-label="42 percent of the state budget used"><i style="width:42%"></i></span></div>
+        <div class="decl"><b><span class="g g-cur">▣</span>produce</b><span class="sep">·</span><span class="mono">step.produce</span><span class="sep">·</span><span class="live"><span class="g g-live" aria-hidden="true">●</span>Claude Code in Warp</span><span class="sep">·</span><span class="mono">snd-01JE7.2</span><span class="sep">·</span><span>since 12:20 (6m)</span><span class="sep">·</span><span class="mono">84k / 200k</span><span class="bar4" role="img" aria-label="42 percent of the token budget used"><i style="width:42%"></i></span></div>
         <div class="krow"><span class="k">next</span><span class="v ink">Produce the Step output (round 2/3). Round 1's checks found 2 findings: second ack returns 500; route missing from the catalog.</span></div>
         <div class="krow"><span class="k">trace</span>
           <ol class="trace" aria-label="Activities of the produce state">
-            <li><span class="g g-done">●</span><span class="nm">step.produce r1</span><span class="st">done</span><span class="t">12:23</span><span class="d">4 files · +182 −9</span></li>
-            <li><span class="g g-done">●</span><span class="nm">step.checks</span><span class="st fail">failed</span><span class="t">12:25</span><span class="d">2 findings</span></li>
-            <li><span class="g g-live">◐</span><span class="nm">step.produce r2</span><span class="st">running</span><span class="t">12:26</span><span class="d">attempt 1</span></li>
+            <li><span class="g g-done">●</span><span class="nm">step.produce r1</span><span class="st">done</span><span class="t">12:17</span><span class="d">4 files · +182 −9</span></li>
+            <li><span class="g g-done">●</span><span class="nm">step.checks</span><span class="st fail">failed</span><span class="t">12:19</span><span class="d">2 findings</span></li>
+            <li><span class="g g-live">●</span><span class="nm">step.produce r2</span><span class="st">running</span><span class="t">12:20</span><span class="d">attempt 1</span></li>
           </ol>
         </div>
-        <div class="ctl stack">
-          <div class="stat"><span>timeout</span><span class="mono">parks in 1d 23h</span><span>·</span><span>commands</span><b>takeover, request, cancel</b></div>
+        <div class="ctl">
+          <div class="stat"><span class="kv"><span>timeout</span><span class="mono">parks in 1d 23h</span></span><span>·</span><span class="kv"><span>commands</span><b>takeover, request, cancel</b></span></div>
           <div class="acts">
+            <!-- initial focus: Attach, the read action. Cancel lives in the subject menu -->
             <div class="split"><button class="btn main primary is-focused" aria-label="Attach to the produce session"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach <kbd>O</kbd></button><button class="btn chev primary" aria-label="Choose agent" aria-haspopup="menu" aria-expanded="false" style="border-left-color:rgba(247,248,248,.25)"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
             <button class="btn">Take over <kbd>T</kbd></button>
             <button class="btn">Request <kbd>R</kbd></button>
-            <button class="btn ghost">Cancel <kbd>X</kbd></button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- FACTS beside CHILDREN 0 -->
-    <div class="two">
-      <section class="panel facts narrow" aria-labelledby="fa-h">
-        <div class="phead"><h2 class="eyebrow" id="fa-h">Facts</h2></div>
-        <div class="fact"><span class="key">fact:task</span><span class="g g-done">●</span><span class="sum"><b>t3</b> from packet <span class="mono">3f1c09</span> · acceptance 2 visible · 1 held</span><div class="acts"></div></div>
-        <div class="fact"><span class="key">fact:spec</span><span class="g g-done">●</span><span class="sum"><b>spec.md</b> <span class="mono">sha256:1c0e…</span></span><div class="acts"><button class="btn sm">Open ↗</button></div></div>
-        <div class="fact"><span class="key">fact:output</span><span class="g g-prog">◐</span><span class="sum">round 1 · 4 files · round 2 running</span><div class="acts"><button class="btn sm">Diff ↗</button></div></div>
-        <div class="fact"><span class="key">fact:findings</span><span class="g g-done">●</span><span class="sum">round 1 · 2 findings</span><div class="acts"><button class="btn sm">View ▸</button></div></div>
-        <div class="fact"><span class="key">fact:evidence</span><span class="g g-todo">○</span><span class="sum"><span class="note">after checks pass</span></span><div class="acts"></div></div>
-      </section>
-      <section class="panel" aria-labelledby="ch-h">
-        <div class="phead"><h2 class="eyebrow" id="ch-h">Children</h2><span class="count">0</span></div>
-        <div class="cnone">none; <span class="mono">workflow.item</span> declares no children</div>
-      </section>
-    </div>
+    <!-- FACTS, with the empty Children panel folded into a footer line -->
+    <section class="panel sp facts" aria-labelledby="fa-h">
+      <div class="phead"><h2 class="eyebrow" id="fa-h">Facts</h2><div class="meta">declared by the recipe, produced so far</div></div>
+      <div class="fact"><span class="key">fact:item</span><span class="g g-done">●</span><span class="sum"><b>ENG-511</b> intake record · Linear · <span class="note">no project</span></span><div class="acts"><button class="btn sm">Open ↗</button></div></div>
+      <div class="fact"><span class="key">fact:spec</span><span class="g g-done">●</span><span class="sum"><b>spec.md</b> <span class="mono">sha256:1c0e…</span></span><div class="acts"><button class="btn sm">Open ↗</button></div></div>
+      <div class="fact"><span class="key">fact:output</span><span class="g g-prog">◐</span><span class="sum">round 1 · 4 files · <span class="mono">+182 −9</span> · round 2 running</span><div class="acts"><button class="btn sm">Diff ↗</button></div></div>
+      <div class="fact"><span class="key">fact:findings</span><span class="g g-done">●</span><span class="sum">round 1 · 2 findings: second ack returns 500; route missing from the catalog</span><div class="acts"><button class="btn sm">View ▸</button></div></div>
+      <div class="fact"><span class="key">fact:evidence</span><span class="g g-todo">○</span><span class="sum"><span class="note">after checks pass</span></span><div class="acts"></div></div>
+      <div class="cfoot" aria-label="Children: none"><span class="eyebrow">Children</span><span class="count">0</span><span>·</span><span><span class="mono">workflow.item</span> declares no children</span></div>
+    </section>
 
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" aria-selected="true">Timeline <span class="n">6</span></button>
-      <button class="tab" role="tab" aria-selected="false">Decisions <span class="n">0</span></button>
-      <button class="tab" role="tab" aria-selected="false">Requests <span class="n">0</span></button>
-      <button class="tab" role="tab" aria-selected="false">Context <span class="n">12</span></button>
+      <button class="tab" role="tab" aria-selected="true" aria-controls="tp">Timeline <span class="n">6</span><kbd>1</kbd></button>
+      <button class="tab" role="tab" aria-selected="false">Decisions <span class="n">0</span><kbd>2</kbd></button>
+      <button class="tab" role="tab" aria-selected="false">Requests <span class="n">0</span><kbd>3</kbd></button>
+      <button class="tab" role="tab" aria-selected="false">Context <span class="n">12</span><kbd>4</kbd></button>
+    </div>
+    <div class="tabpanel" id="tp" role="tabpanel" aria-label="Timeline, newest first">
+      <div class="ev"><span class="t">12:20</span><span class="a">ITM-01JE7</span><span class="d">produce round 2 started · Claude Code · <span class="mono">snd-01JE7.2</span></span></div>
+      <div class="ev"><span class="t">12:19</span><span class="a">ITM-01JE7</span><span class="d">checks failed · 2 findings</span></div>
     </div>
   </div>
 </aside>

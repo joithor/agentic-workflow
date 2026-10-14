@@ -216,20 +216,12 @@ svg{flex:none}
 
 
 
-/* ── additions for the §4.3 Recipes and §4.5 Agents screens ── */
-.pagehead .r{display:flex;align-items:center;gap:8px}
-.sel{height:22px;padding:2px 5px 2px 7px;font-size:12px;color:var(--ink-muted);border:1px solid var(--line1);background:var(--s1);border-radius:6px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
-.sel:hover{border-color:var(--line2);color:var(--ink)}
+/* ── additions for the §4.3 Recipes screen ── */
 
-/* meters (▮▮▮░░ in the drawings) and sparklines (▂▄▆█) */
-.meter{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px;color:var(--ink-muted)}
-.meter .trk{position:relative;width:96px;height:4px;border-radius:2px;background:var(--s2);box-shadow:inset 0 0 0 1px var(--line1)}
-.meter .fil{height:100%;border-radius:2px;background:var(--ink-muted)}
-.meter.soft .fil{background:var(--attn)}
-.meter.hard .fil{background:var(--error)}
-.meter .mk{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--attn)}
-.meter .n{font-family:var(--mono);font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums}
-.meter .cap{font-family:var(--mono);font-size:12px;color:var(--ink-subtle)}
+.pagehead .r{display:flex;align-items:center;gap:8px}
+.pagehead .r .hints{margin-right:8px}
+
+/* sparklines (▂▄▆█ in the drawing): four CSS bars, the direction in words in the aria-label */
 .spark{display:inline-flex;align-items:flex-end;gap:2px;height:14px;vertical-align:middle}
 .spark i{display:block;width:5px;background:var(--ink-subtle);border-radius:1px;min-height:2px}
 
@@ -240,107 +232,28 @@ svg{flex:none}
 .th + .tr{border-top:0}
 .tr:hover{background:var(--s2)}
 .tr.sel{background:var(--s3)}
-.tr .nm{font-family:var(--mono);font-size:12px;color:var(--ink)}
 .num{font-family:var(--mono);font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dash{color:var(--ink-subtle)}
+
+/* the row is the affordance: the recipe name is a link, ↵ on the focused row opens the inspector */
+.tr.is-focused{outline-offset:-2px;border-radius:4px}
+.tr .nm{font-family:var(--mono);font-size:12px;color:var(--ink)}
+.tr .nm a{color:var(--ink)}
+.tr .nm a:hover{color:var(--brand-hover);text-decoration:underline;text-underline-offset:3px}
 .st{display:inline-flex;align-items:center;gap:6px;color:var(--ink);font-weight:500;white-space:nowrap}
 .tr.chg{background:var(--attn-soft)}
-.tr.draft,.tr.draft .nm,.tr.draft .st,.tr.draft .num{color:var(--ink-subtle)}
+.tr.draft,.tr.draft .nm,.tr.draft .nm a,.tr.draft .st,.tr.draft .num{color:var(--ink-subtle)}
 .tr .last{display:flex;gap:8px;align-items:center;white-space:nowrap;min-width:0}
 .tr .last .btn.sm{height:22px;font-size:12px}
 .tfoot{padding:9px 16px;border-top:1px solid var(--line1);color:var(--ink-subtle);font-size:12px}
 .rc{grid-template-columns:138px 104px 40px 44px 44px 52px 54px 64px 86px 78px minmax(0,1fr)}
+/* adapt: 900 × 600 is the minimum. Under 1100 the page keeps its 1264 layout and scrolls sideways, so every column and the full Last change cell stay */
+@media (max-width:1100px){.page{min-width:1264px}body{overflow-x:auto}}
 
-/* sheet, inspector variant (760) */
-.sheet{width:760px}
-.sheet-head{padding:12px 20px 10px;border-bottom:1px solid var(--line1)}
-.crumb{display:flex;align-items:center;gap:10px;color:var(--ink-subtle);font-size:12px}
-.crumb .r{margin-left:auto;display:flex;align-items:center;gap:6px}
-.icon-btn{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--ink-subtle)}
-.icon-btn:hover{background:var(--s3);color:var(--ink)}
-.sh-title{font-size:16px;font-weight:600;letter-spacing:-.3px;margin-top:6px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.sh-title .m{font-size:12px;font-weight:400;color:var(--ink-subtle)}
-.sh-title .m b{color:var(--ink-muted);font-weight:500}
-.sh-acts{display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap}
-.sh-acts .win{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--ink-subtle);font-size:12px;white-space:nowrap}
-.sh-acts .win b{color:var(--ink-muted);font-weight:500}
-.sheet-body{padding:12px 20px 20px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:8px}
-.behind{opacity:.55;pointer-events:none}
-
-/* states band with the open instances on it */
-.band{display:flex;align-items:flex-start;padding:12px 16px 6px}
-.node{display:flex;flex-direction:column;gap:3px;align-items:flex-start;flex:none}
-.node .nm{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap}
-.node .nm .g{width:auto;letter-spacing:1px}
-.node .nm small{font-family:var(--sans);font-size:11px;color:var(--ink-subtle)}
-.node .sub{font-size:11px;color:var(--ink-muted);display:inline-flex;gap:4px;align-items:center;white-space:nowrap}
-.link{flex:1;height:1px;background:var(--line2);margin:8px 8px 0;min-width:12px}
-.loop{flex:none;margin:1px 6px 0;color:var(--ink-subtle);font-size:12px}
-.ps{display:grid;grid-template-columns:100px 1fr 1fr 1.15fr 1.35fr;gap:4px 12px;padding:10px 16px 12px;font-size:12px;border-top:1px solid var(--line1)}
-.ps .h{color:var(--ink-subtle);font-size:11px;font-weight:500;letter-spacing:.3px;text-transform:uppercase}
-.ps .h.nm{font-family:var(--mono);text-transform:none;letter-spacing:0;font-size:12px;color:var(--ink)}
-.ps .k{color:var(--ink-subtle)}
-.ps .v{color:var(--ink-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-.ps .v small{color:var(--ink-subtle);font-size:12px}
-
-/* small panels */
-.row3{display:grid;grid-template-columns:1.25fr 1fr .9fr;gap:8px}
-.kvl{padding:8px 16px 10px;display:grid;grid-template-columns:max-content 1fr;gap:5px 12px;font-size:12px;align-items:center}
-.kvl .k{color:var(--ink-subtle);white-space:nowrap}
-.kvl .v{color:var(--ink-muted);white-space:nowrap;display:flex;gap:6px;align-items:center}
-.kvl .v b{color:var(--ink);font-weight:500}
-.outc{padding:8px 16px 10px;display:grid;grid-template-columns:max-content 28px minmax(0,1fr);gap:6px 10px;font-size:12px;align-items:center}
-.outc .k{color:var(--ink-subtle);white-space:nowrap}
-.outc .n{text-align:right}
-.outc .meter{display:flex}
-.outc .meter .trk{width:100%}
-.row2b{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.op{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 16px;border-top:1px solid var(--line1);font-size:12px}
-.phead + .op{border-top:0}
-.op .t{display:flex;gap:8px;align-items:center;white-space:nowrap;overflow:hidden;color:var(--ink-muted)}
-.op .t .id{color:var(--ink)}
-.op .btn{height:24px;padding:0 8px;font-size:12px}
-.ev{padding:10px 16px;font-size:12px;color:var(--ink-muted);display:flex;flex-direction:column;gap:6px}
-.ev .cases{display:flex;flex-wrap:wrap;gap:6px 14px;font-family:var(--mono);font-size:12px}
-.ev .cases .g{margin-right:4px}
-.ev .note{color:var(--ink-subtle)}
-.defn{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--ink-subtle);padding:2px 4px}
-.defn b{color:var(--ink-muted);font-weight:500}
-
-/* agents */
-.grp{display:flex;align-items:center;gap:8px;padding:7px 16px 5px;font-size:12px;color:var(--ink-muted);border-top:1px solid var(--line1)}
-.grp .mono{color:var(--ink)}
-.grp small{color:var(--ink-subtle);font-size:12px}
-.ag{position:relative;display:grid;grid-template-columns:14px 94px 82px minmax(0,1fr) 38px 176px 84px auto;gap:10px;align-items:center;padding:6px 16px;border-top:1px solid var(--line1);font-size:12px;color:var(--ink-muted)}
-.grp + .ag{border-top:0}
-.ag:hover{background:var(--s2)}
-.ag.wait{background:var(--attn-soft)}
-.ag .sid{font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap}
-.ag .sid.none{color:var(--ink-subtle);font-family:var(--sans)}
-.ag .agn{color:var(--ink-muted);white-space:nowrap}
-.ag .it{display:flex;gap:8px;align-items:baseline;min-width:0;white-space:nowrap;overflow:hidden}
-.ag .it .ttl{color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis}
-.ag .rd{font-family:var(--mono);font-size:12px;color:var(--ink-muted)}
-.ag .age{color:var(--ink-subtle);white-space:nowrap}
-.ag .age b{color:var(--ink-muted);font-weight:500}
-.ag .stt{grid-column:5/8;color:var(--ink-muted);white-space:nowrap}
-.ag .stt b{color:var(--ink);font-weight:500}
-.ag .acts{justify-content:flex-end}
-.ag .btn{height:26px;padding:0 8px;font-size:12px}
-.legend{display:flex;gap:16px;flex-wrap:wrap;padding:8px 16px;color:var(--ink-subtle);font-size:12px;border-top:1px solid var(--line1)}
-.legend span{display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
-.legend .ml{margin-left:auto}
-.ba{grid-template-columns:104px 70px 48px 84px 64px 118px 1fr}
-.bud{padding:8px 16px 10px;display:grid;grid-template-columns:88px minmax(0,1fr) max-content;gap:7px 12px;font-size:12px;align-items:center}
-.bud .k{color:var(--ink-muted);white-space:nowrap}
-.bud .meter{display:flex}
-.bud .meter .trk{width:100%}
-.bud .v{font-family:var(--mono);font-size:12px;color:var(--ink-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-.bud .v small{font-family:var(--sans);color:var(--attn);font-size:11px;margin-left:6px}
-.bud .lg{grid-column:1/-1;color:var(--ink-subtle);font-size:12px;display:flex;gap:12px;margin-top:2px}
-.bud .lg i{font-style:normal;color:var(--attn)}
-.bud .lg i.h{color:var(--error)}
-.row2a{display:grid;grid-template-columns:1.55fr 1fr;gap:8px;margin-top:8px}
+/* motion: hover and press only, 120 ms ease-out, colour properties only (nothing that lays out animates) */
+.btn,.tr{transition:background-color 120ms ease-out,border-color 120ms ease-out,color 120ms ease-out}
+.btn:active{transform:translateY(1px)}
+@media (prefers-reduced-motion:reduce){.btn,.tr{transition:none}.btn:active{transform:none}}
 </style>
 </head>
 <body>
@@ -368,30 +281,37 @@ svg{flex:none}
 <main class="page">
   <div class="pagehead">
     <div style="display:flex;align-items:baseline;gap:14px">
-      <h1>Recipes <span class="count" style="font-size:14px">7</span></h1>
+      <h1>Recipes <span class="count" style="font-size:13px">7</span></h1>
       <div class="sub">
-        <button class="sel" aria-haspopup="listbox" aria-label="Window: 30 days">30 days <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
+        <button class="btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Window: 30 days">30 days <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
         <span>·</span><span><b>184</b> runs</span>
         <span>·</span><span><b>81%</b> done without you</span>
       </div>
     </div>
     <div class="r">
-      <button class="btn primary is-focused">Validate file…</button>
+      <div class="hints" aria-label="Keyboard shortcuts">
+        <span><kbd>J</kbd><kbd>K</kbd> Move</span>
+        <span><kbd>↵</kbd> Open</span>
+        <span><kbd>?</kbd> Shortcuts</span>
+      </div>
+      <button class="btn">Validate file…</button>
       <button class="btn">Import</button>
     </div>
   </div>
 
-  <section class="panel" aria-label="Recipes, 30 days">
+  <!-- initial focus: the first row. ↵ opens the inspector (a read); Validate file… and Import are secondary, so ↵ ↵ never starts a job -->
+  <!-- empty (0 recipes): "No recipes registered. Import a recipe file to add it as a draft." [Import] · the table head stays, the 30-day line reads "0 runs" -->
+  <section class="panel" role="table" aria-label="Recipes, 30 days">
     <div class="th rc" role="row">
-      <span>Recipe</span><span>Status</span><span>Open</span><span>Runs</span><span>Done</span><span>Failed</span><span>Human</span><span>Median</span><span>Tokens/run</span><span>Trend (4 wk)</span><span>Last change</span>
+      <span role="columnheader">Recipe</span><span role="columnheader">Status</span><span role="columnheader">Open</span><span role="columnheader">Runs</span><span role="columnheader">Done</span><span role="columnheader">Failed</span><span role="columnheader">Human</span><span role="columnheader">Median</span><span role="columnheader">Tokens/run</span><span role="columnheader">Trend (4 wk)</span><span role="columnheader">Last change</span>
     </div>
-    <div class="tr rc " aria-label="Recipe workflow.item"><span class="nm">workflow.item</span><span class="st ok"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num">4</span><span class="num">112</span><span class="num">97</span><span class="num">6</span><span class="num">19%</span><span class="num">1h 40m</span><span class="num">310k</span><span><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:25%"></i><i style="height:50%"></i><i style="height:75%"></i><i style="height:100%"></i></span></span><span class="last"><span class="num">10-02</span><span class="num">v7</span></span></div>
-    <div class="tr rc " aria-label="Recipe workflow.step"><span class="nm">workflow.step</span><span class="st ok"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num">6</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span><span style="color:var(--ink-subtle)">(child only)</span></span><span class="last"><span class="num">10-02</span><span class="num">v4</span></span></div>
-    <div class="tr rc " aria-label="Recipe builder.feature"><span class="nm">builder.feature</span><span class="st ok"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num">9</span><span class="num">38</span><span class="num">31</span><span class="num">2</span><span class="num">13%</span><span class="num">2h 05m</span><span class="num">420k</span><span><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:50%"></i><i style="height:75%"></i><i style="height:75%"></i><i style="height:100%"></i></span></span><span class="last"><span class="num">10-08</span><span class="num">v3</span></span></div>
-    <div class="tr rc " aria-label="Recipe triage.alert"><span class="nm">triage.alert</span><span class="st ok"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num">3</span><span class="num">24</span><span class="num">22</span><span class="num">0</span><span class="num">42%</span><span class="num">6m</span><span class="num">18k</span><span><span class="spark" role="img" aria-label="trend, four weeks, falling"><i style="height:75%"></i><i style="height:50%"></i><i style="height:25%"></i><i style="height:25%"></i></span></span><span class="last"><span class="num">09-28</span><span class="num">v2</span></span></div>
-    <div class="tr rc " aria-label="Recipe incident.response"><span class="nm">incident.response</span><span class="st ok"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num">1</span><span class="num">3</span><span class="num">2</span><span class="num">1</span><span class="num">100%</span><span class="num">3h 10m</span><span class="num">190k</span><span><span class="spark" role="img" aria-label="trend, four weeks, uneven"><i style="height:12%"></i><i style="height:25%"></i><i style="height:12%"></i><i style="height:50%"></i></span></span><span class="last"><span class="num">09-30</span><span class="num">v1</span></span></div>
-    <div class="tr rc chg" aria-label="Recipe scoping.project"><span class="nm">scoping.project</span><span class="st chg"><span class="g g-chg" aria-hidden="true">◆</span>changed</span><span class="num">1</span><span class="num">7</span><span class="num">5</span><span class="num">0</span><span class="num">29%</span><span class="num">48m</span><span class="num">540k</span><span><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:25%"></i><i style="height:25%"></i><i style="height:50%"></i><i style="height:50%"></i></span></span><span class="last"><span class="num">today</span><span class="num">v3</span><span style="color:var(--ink-subtle)">·</span><button class="btn term sm" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Re-approve · terminal</button></span></div>
-    <div class="tr rc draft" aria-label="Recipe intake.linear"><span class="nm">intake.linear</span><span class="st"><span class="g g-todo" aria-hidden="true">○</span>draft</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span class="num dash">—</span><span><span class="dash">—</span></span><span class="last"><span>never approved</span></span></div>
+    <div class="tr rc is-focused" tabindex="0" role="row" aria-label="Recipe workflow.item, approved"><span class="nm" role="cell"><a href="#">workflow.item</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">4</span><span class="num" role="cell">112</span><span class="num" role="cell">97</span><span class="num" role="cell">6</span><span class="num" role="cell">19%</span><span class="num" role="cell">1h 40m</span><span class="num" role="cell">310k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:25%"></i><i style="height:50%"></i><i style="height:75%"></i><i style="height:100%"></i></span></span><span class="last" role="cell"><span class="num">10-02</span><span class="num">v7</span></span></div>
+    <div class="tr rc" role="row" aria-label="Recipe workflow.step, approved"><span class="nm" role="cell"><a href="#">workflow.step</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">6</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span role="cell"><span class="dash">(child only)</span></span><span class="last" role="cell"><span class="num">10-02</span><span class="num">v4</span></span></div>
+    <div class="tr rc" role="row" aria-label="Recipe builder.feature, approved"><span class="nm" role="cell"><a href="#">builder.feature</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">9</span><span class="num" role="cell">38</span><span class="num" role="cell">31</span><span class="num" role="cell">2</span><span class="num" role="cell">13%</span><span class="num" role="cell">2h 05m</span><span class="num" role="cell">420k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:50%"></i><i style="height:75%"></i><i style="height:75%"></i><i style="height:100%"></i></span></span><span class="last" role="cell"><span class="num">10-08</span><span class="num">v3</span></span></div>
+    <div class="tr rc" role="row" aria-label="Recipe triage.alert, approved"><span class="nm" role="cell"><a href="#">triage.alert</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">3</span><span class="num" role="cell">24</span><span class="num" role="cell">22</span><span class="num" role="cell">0</span><span class="num" role="cell">42%</span><span class="num" role="cell">6m</span><span class="num" role="cell">18k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, falling"><i style="height:75%"></i><i style="height:50%"></i><i style="height:25%"></i><i style="height:25%"></i></span></span><span class="last" role="cell"><span class="num">09-28</span><span class="num">v2</span></span></div>
+    <div class="tr rc" role="row" aria-label="Recipe incident.response, approved"><span class="nm" role="cell"><a href="#">incident.response</a></span><span class="st ok" role="cell"><span class="g g-done" aria-hidden="true">●</span>approved</span><span class="num" role="cell">1</span><span class="num" role="cell">3</span><span class="num" role="cell">2</span><span class="num" role="cell">1</span><span class="num" role="cell">100%</span><span class="num" role="cell">3h 10m</span><span class="num" role="cell">190k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, uneven"><i style="height:12%"></i><i style="height:25%"></i><i style="height:12%"></i><i style="height:50%"></i></span></span><span class="last" role="cell"><span class="num">09-30</span><span class="num">v1</span></span></div>
+    <div class="tr rc chg" role="row" aria-label="Recipe scoping.project, changed since approval"><span class="nm" role="cell"><a href="#">scoping.project</a></span><span class="st chg" role="cell"><span class="g g-chg" aria-hidden="true">◆</span>changed</span><span class="num" role="cell">1</span><span class="num" role="cell">7</span><span class="num" role="cell">5</span><span class="num" role="cell">0</span><span class="num" role="cell">29%</span><span class="num" role="cell">48m</span><span class="num" role="cell">540k</span><span role="cell"><span class="spark" role="img" aria-label="trend, four weeks, rising"><i style="height:25%"></i><i style="height:25%"></i><i style="height:50%"></i><i style="height:50%"></i></span></span><span class="last" role="cell"><span class="num">today</span><span class="num">v3</span><span class="dash">·</span><button class="btn term sm" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Re-approve · terminal</button></span></div>
+    <div class="tr rc draft" role="row" aria-label="Recipe intake.linear, draft"><span class="nm" role="cell"><a href="#">intake.linear</a></span><span class="st draft" role="cell"><span class="g g-todo" aria-hidden="true">○</span>draft</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span class="num dash" role="cell">—</span><span role="cell"><span class="dash">—</span></span><span class="last" role="cell"><span>never approved</span></span></div>
     <div class="tfoot">failed = ended in cancelled or a terminal failure state · human = runs with a park answered, an escalation decided or a takeover</div>
   </section>
 </main>
