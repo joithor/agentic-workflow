@@ -3,7 +3,8 @@ namespace Aw.Architecture.Tests.Rules;
 /// <summary>
 /// The UI package's own rules (.agents/rules/csharp.md "The UI package"), over the unshaped UI assemblies: view models
 /// carry no Avalonia types (so they test in the unit lane), a platform head holds no views or view models, and nothing in
-/// the UI uses a type of Sindri itself (its HTTP contract is the only edge).
+/// the UI uses a type of Sindri itself (its HTTP contract, the endpoint record control.json and auth/human.token, the
+/// per-start human token it sends, are its only edges).
 /// </summary>
 public static class UiRules
 {

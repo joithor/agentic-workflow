@@ -77,7 +77,8 @@
 #           URL), a path under another package's `namespace` that isn't in its files or db (namespace
 #           names double as log and label strings in C#, so the C# scan doesn't match them), paths from
 #           computed pieces, cli edges (a C# Process start is not scanned), and http calls from
-#           TypeScript or shell (only C# is scanned for routes).
+#           TypeScript or shell (only C# is scanned for routes; a current http edge from a shell or
+#           mod node is therefore never stale: check-deps prints "not scanned" for it instead).
 #
 # YAML subset (parsed without a library, so the check needs no install step): block mappings and
 # sequences, plain, 'single' or "double" quoted scalars, [flow, lists] of scalars, and # comments.

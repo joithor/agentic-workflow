@@ -50,7 +50,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     public ShellText Text { get; } = ShellText.Instance;
 
     /// <summary>The pre-API state (§4.1).</summary>
-    public ShellState State { get; private set => Set(ref field, value); } = ShellState.Connecting;
+    public ShellState State { get; private set; } = ShellState.Connecting;
 
     /// <summary>The health pill's parts.</summary>
     public HealthPill Pill { get; } = new();
@@ -71,7 +71,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     public string Headline { get; private set => Set(ref field, value); } = Labels.Connecting;
 
     /// <summary>Why it isn't running, the two versions, or the unreadable answer's code and message; empty otherwise.</summary>
-    public string Reason { get; private set => Set(ref field, value); } = string.Empty;
+    public string Reason { get; private set; } = string.Empty;
 
     /// <summary>True while a control plane answers.</summary>
     public bool IsRunning { get; private set => Set(ref field, value); }
@@ -128,6 +128,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <param name="status">The status.</param>
     internal void Show(Uri url, StatusView status)
     {
+        _ = Interlocked.Increment(ref _decisions);
         if (status.ApiVersion is { } version && version != SindriApiClient.AppApiVersion)
         {
             Mismatch(version);
@@ -154,10 +155,9 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
             {
                 Headline = Labels.Running;
                 HealthLine = StatusText.HealthLine(status);
-                Reason = string.Empty;
                 IsRunning = true;
                 IsNotRunning = false;
-                State = ShellState.Normal;
+                Become(ShellState.Normal, string.Empty);
             }
 
             Heard();
@@ -196,41 +196,17 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     {
         lock (_gate)
         {
+            _decisions++;
             Headline = Labels.NotRunning;
             HealthLine = Labels.NotRunning;
-            Reason = reason;
             ReasonDetail = detail ?? string.Empty;
             IsRunning = false;
             IsNotRunning = true;
-            State = ShellState.NotRunning;
+            Become(ShellState.NotRunning, reason);
             Word();
         }
 
         return null;
-    }
-
-    private Uri? Unreadable(Error error)
-    {
-        lock (_gate)
-        {
-            Reason = $"{error.Code}: {error.Message}";
-            State = ShellState.Unreadable;
-            Word();
-        }
-
-        return null;
-    }
-
-    private void Mismatch(int version)
-    {
-        lock (_gate)
-        {
-            Reason = Labels.Versions(version, SindriApiClient.AppApiVersion);
-            Detail.Mismatch(version);
-            HealthLine = Labels.VersionMismatch;
-            State = ShellState.VersionMismatch;
-            Word();
-        }
     }
 
     // An event, a status or an answered ping: the views are fresh again.
@@ -242,7 +218,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
             _failedRefreshes = 0;
             if (State is ShellState.Normal or ShellState.Stale)
             {
-                State = ShellState.Normal;
+                Become(ShellState.Normal, Reason);
                 Word();
             }
         }
@@ -260,7 +236,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
 
             if (clock.GetUtcNow() - _heard >= StaleAfter)
             {
-                State = ShellState.Stale;
+                Become(ShellState.Stale, Reason);
             }
 
             Word();

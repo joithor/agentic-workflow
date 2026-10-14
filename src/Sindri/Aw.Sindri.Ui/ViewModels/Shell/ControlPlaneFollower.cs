@@ -39,9 +39,9 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
             {
                 wait = await Cycle(cancellationToken).ConfigureAwait(true);
             }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            catch (EndpointRecordUnreadableException e)
             {
-                wait = RecordUnreadable(e);
+                wait = RecordUnreadable(e.Reason);
             }
 
             if (wait)
@@ -58,10 +58,20 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         }
     }
 
-    // The platform couldn't read the record (a directory, no permission): say so, and keep trying.
-    private bool RecordUnreadable(Exception e)
+    // The platform couldn't read the record (no permission, a directory in its place): say why in the app's words, from
+    // the port's reason (review run 4, architecture-strategist-0), and keep trying. The platform's message names the
+    // record's full path, so it stays out of the window; the path shows shortened on its own line, as everywhere else
+    // (review run 3, security-sentinel-0).
+    private bool RecordUnreadable(EndpointRecordFailure reason)
     {
-        _ = health.NotRunning(Labels.RecordUnreadableBecause(e.Message), StatusText.ShortPath(records.Location));
+        var why = reason switch
+        {
+            EndpointRecordFailure.NoPermission => Labels.RecordNoPermission,
+            EndpointRecordFailure.NotAFile => Labels.RecordNotAFile,
+            EndpointRecordFailure.Unreadable => Labels.RecordIoError,
+            _ => Labels.RecordIoError,
+        };
+        _ = health.NotRunning(Labels.RecordUnreadableBecause(why), StatusText.ShortPath(records.Location));
         return true;
     }
 
@@ -132,6 +142,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
         }
 
         (_epoch, _pid) = (ping.Epoch, ping.Pid);
+        health.Follows(ping.Pid, ping.Epoch);
     }
 
     private async Task<int> Follow(Uri url, CancellationToken cancellationToken)
@@ -206,7 +217,7 @@ internal sealed class ControlPlaneFollower(IEndpointRecordSource records, ISindr
                 }
             }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (EndpointRecordUnreadableException)
         {
             await stop.CancelAsync().ConfigureAwait(true);   // the next Connect reads it again and says why
         }

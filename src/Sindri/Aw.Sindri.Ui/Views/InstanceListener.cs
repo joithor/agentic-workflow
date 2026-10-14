@@ -29,7 +29,16 @@ internal sealed class InstanceListener(ISingleInstance instance)
             {
                 if (Receiver(message) is { } receive)
                 {
-                    await Dispatcher.UIThread.InvokeAsync(() => receive(message)).GetTask().ConfigureAwait(false);
+                    // Claimed on the UI thread just before acting: the claim is also the sender's answer, so a message
+                    // whose wait ended while the UI thread was busy is never acted on late, and one acted on is never
+                    // answered "not handled" (review run 4, julik-frontend-races-reviewer-1).
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        if (message.TryAct())
+                        {
+                            receive(message.Text);
+                        }
+                    }).GetTask().ConfigureAwait(false);
                 }
             }
         }
@@ -56,14 +65,15 @@ internal sealed class InstanceListener(ISingleInstance instance)
         }
     }
 
-    // Who handles the message: the window's lifetime once it shows; before that nobody, keeping the latest deep link.
-    private Action<string>? Receiver(string message)
+    // Who handles the message: the window's lifetime once it shows; before that nobody: the message is claimed at once
+    // (the window is about to show) and the latest deep link is kept.
+    private Action<string>? Receiver(InstanceMessage message)
     {
         lock (_gate)
         {
-            if (_receive is null && DeepLink.TryParse(message, out _))
+            if (_receive is null && message.TryAct() && DeepLink.TryParse(message.Text, out _))
             {
-                _kept = message;
+                _kept = message.Text;
             }
 
             return _receive;

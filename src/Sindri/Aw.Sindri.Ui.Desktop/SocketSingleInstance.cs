@@ -14,7 +14,9 @@ namespace Aw.Sindri.Ui.Desktop;
 /// lock records its process id in instance.pid (0600), then removes a socket left by a crash and listens. A later launch
 /// connects and sends one message (<see cref="InstanceWire"/>); the holder answers 1 only once its reader has handled it
 /// (came back for the next one), within 1.5 s of its arrival; the sender waits 2 s. A message nothing handled in time,
-/// or whose sender has gone, is dropped, never handed over late.
+/// or whose sender has gone, is dropped, never handed over late; one already handed over is withdrawn
+/// (<see cref="InstanceMessage.Withdrawn"/>). The app claims a message on the UI thread before acting on it
+/// (<see cref="InstanceMessage.TryAct"/>), and that claim, or the withdrawal if it came first, is the sender's answer.
 /// </summary>
 internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider clock) : ISingleInstance
 {
@@ -27,6 +29,7 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
     private FileStream? _claim;
     private Socket? _listener;
     private Task _accepting = Task.CompletedTask;
+    private bool _ended;
 
     public async ValueTask<bool> TryClaim(CancellationToken cancellationToken)
     {
@@ -99,7 +102,7 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
         }
     }
 
-    public async IAsyncEnumerable<string> Messages([EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<InstanceMessage> Messages([EnumeratorCancellation] CancellationToken cancellationToken)
     {
         if (_claim is null)
         {
@@ -116,12 +119,13 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
 
             try
             {
-                yield return delivery.Message;
+                yield return new InstanceMessage(delivery.Message, delivery.TryAct, delivery.Withdrawn);
             }
             finally
             {
-                // The reader came back for the next one, or stopped after this one: either way it handled it.
-                _ = delivery.Handled.TrySetResult(true);
+                // The reader came back for the next one, or stopped after this one: either way it handled it, unless the
+                // wait ended first.
+                _ = delivery.TryAct();
             }
         }
     }
@@ -142,14 +146,30 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
 
     public async ValueTask DisposeAsync()
     {
+        // Ending twice is a no-op (SingleLaunch ends the instance it ran over; its owner may too).
+        if (_ended)
+        {
+            return;
+        }
+
+        _ended = true;
         await _stop.CancelAsync().ConfigureAwait(false);
         _listener?.Dispose();
         await _accepting.ConfigureAwait(false);
         if (_claim is not null)
         {
-            // While the lock is still held, so neither can be a later instance's.
-            File.Delete(paths.InstanceSocket);
-            File.Delete(paths.InstancePid);
+            // While the lock is still held, so neither can be a later instance's. A directory removed while the app ran
+            // (a temp home cleaned up, the home reset) is already cleaned up: the lock is released either way.
+            try
+            {
+                File.Delete(paths.InstanceSocket);
+                File.Delete(paths.InstancePid);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // Nothing left to remove.
+            }
+
             await _claim.DisposeAsync().ConfigureAwait(false);
         }
 
@@ -205,7 +225,7 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
             try
             {
                 var message = await InstanceWire.Read(client, linked.Token).ConfigureAwait(false);
-                delivery = message is null ? null : new Delivery(message, client, new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
+                delivery = message is null ? null : new Delivery(message, client);
                 var handled = delivery is not null && _inbox.Writer.TryWrite(delivery) && await Handled(delivery, linked.Token).ConfigureAwait(false);
                 _ = await client.SendAsync(new[] { handled ? InstanceWire.Handled : InstanceWire.Refused }, SocketFlags.None, linked.Token).ConfigureAwait(false);
             }
@@ -215,20 +235,27 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
             }
             finally
             {
-                _ = delivery?.Handled.TrySetResult(false); // unhandled by now: the reader skips it
+                // Answered or given up: an unhandled message is skipped by the reader, and one already handed to the app
+                // is withdrawn, so the app (which checks again on the UI thread) never acts on it late.
+                delivery?.Withdraw();
+                delivery?.Dispose();
             }
         }
     }
 
-    // Waits for the reader to handle the message, until the sender leaves or 1.5 s pass.
+    // Waits for the reader to handle the message, until the sender leaves or 1.5 s pass. The answer is the one decision
+    // the delivery settled on: the app's claim (TryAct, on the UI thread just before acting) or the reader coming back
+    // wins if it came first; otherwise the withdrawal here does, and the app no longer acts on it (review run 4,
+    // julik-frontend-races-reviewer-1).
     private async Task<bool> Handled(Delivery delivery, CancellationToken cancellationToken)
     {
         using var handling = new CancellationTokenSource(_handleWithin, clock);
         using var waiting = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, handling.Token);
         var left = InstanceWire.Left(delivery.Sender, waiting.Token);
-        var first = await Task.WhenAny(delivery.Handled.Task, left).ConfigureAwait(false);
+        _ = await Task.WhenAny(delivery.Handled.Task, left).ConfigureAwait(false);
         await waiting.CancelAsync().ConfigureAwait(false);
         await left.ConfigureAwait(false);
-        return first == delivery.Handled.Task && await delivery.Handled.Task.ConfigureAwait(false);
+        delivery.Withdraw();
+        return await delivery.Handled.Task.ConfigureAwait(false);
     }
 }

@@ -16,15 +16,28 @@ mkdir -p "$out"
 tree="$out/tree"
 [ ! -d "$tree" ] || find "$tree" -delete
 mkdir -p "$tree"
+# The publish output starts empty too: `dotnet publish -o` keeps what an earlier run left, so the binary check and the
+# <dir> copy could use an old sindri-ui or another version's native libraries (review run 4, code-reviewer-0).
+bin="$out/bin"
+[ ! -d "$bin" ] || find "$bin" -delete
 git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' BannedSymbols.txt CodeMetricsConfig.txt \
   src/Aw.Kernel src/Aw.Kernel.Telemetry src/Redaction/Aw.Redaction src/Aw.Analyzers src/Sindri/Aw.Sindri.Ui src/Sindri/Aw.Sindri.Ui.Desktop | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
 rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
 dotnet publish "$tree/src/Sindri/Aw.Sindri.Ui.Desktop/Aw.Sindri.Ui.Desktop.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false \
-  -o "$out/bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }
+  -o "$bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }
 if grep -qE 'IL[23][0-9]{3}' "$out/publish.log"; then
   grep -E 'IL[23][0-9]{3}' "$out/publish.log" >&2
   exit 1
 fi
-[ -x "$out/bin/sindri-ui" ] || { echo "aot-sindri-ui: no sindri-ui binary in $out/bin" >&2; exit 1; }
-if [ "${1:-}" != "" ]; then find "$out/bin" -maxdepth 1 -type f -exec cp {} "$1/" \; ; fi
-echo "aot-sindri-ui: ok ($(du -h "$out/bin/sindri-ui" | cut -f1) binary; $(file -b "$out/bin/sindri-ui" | cut -d, -f1))"
+[ -x "$bin/sindri-ui" ] || { echo "aot-sindri-ui: no sindri-ui binary in $bin" >&2; exit 1; }
+# Copy to <dir> when given, each file with a plain cp so a failure stops the script (find's `-exec cp {} <dir>/ \;`
+# ignored cp's status, so a missing or read-only <dir> still printed ok; review run 3, code-reviewer-1).
+if [ -n "${1:-}" ]; then
+  [ -d "$1" ] || { echo "aot-sindri-ui: no directory $1" >&2; exit 1; }
+  for f in "$bin"/*; do
+    if [ -f "$f" ]; then
+      cp "$f" "$1/" || { echo "aot-sindri-ui: couldn't copy $(basename "$f") to $1" >&2; exit 1; }
+    fi
+  done
+fi
+echo "aot-sindri-ui: ok ($(du -h "$bin/sindri-ui" | cut -f1) binary; $(file -b "$bin/sindri-ui" | cut -d, -f1))"

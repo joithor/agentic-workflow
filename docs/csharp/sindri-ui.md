@@ -67,7 +67,7 @@ Windows the profile's ACLs do it):
 | Adapter | How |
 |---|---|
 | `FilePreferencesStore` | `ui/preferences.json`; a write goes to a new 0600 temp file beside it, flushed to disk, then renamed over it |
-| `SocketSingleInstance` | The claim is an exclusive lock on `ui/instance.lock` (the OS drops it when the process dies, so a crash leaves no claim); its holder records its process id in `ui/instance.pid` (0600; removed on exit), then removes a crashed instance's `ui/instance.sock` and listens there (a Unix domain socket, 0600; AF_UNIX on Windows 10 and later too; when the path is longer than 100 bytes (under sun_path's 104 on macOS and 108 on Linux), as in a deep temp home, the socket goes to `$TMPDIR/sindri-ui-<hash of the path>/`, 0700). A later launch writes one UTF-8 message ending in a newline, keeps its side open and reads one byte back: 1 once the holder's reader has handled the message (`Views/InstanceListener` reads from the app's framework start-up on: before the window shows it answers `focus` at once and keeps the latest deep link; after, `AppLifetime.Receive` handles each on the UI thread before the next is read), 0 refused. The listener refuses an empty message, one over 512 characters, one that isn't UTF-8 or one without its newline; it waits 1.5 s from a message's arrival for the handling and the sender waits 2 s, so a holder that doesn't handle it (an app whose framework start-up failed or hangs, or a wedged one) gives no answer. A message nothing handled in time, or whose sender has gone, is dropped |
+| `SocketSingleInstance` | The claim is an exclusive lock on `ui/instance.lock` (the OS drops it when the process dies, so a crash leaves no claim); its holder records its process id in `ui/instance.pid` (0600; removed on exit), then removes a crashed instance's `ui/instance.sock` and listens there (a Unix domain socket, 0600; AF_UNIX on Windows 10 and later too; when the path is longer than 100 bytes (under sun_path's 104 on macOS and 108 on Linux), as in a deep temp home, the socket goes to `$TMPDIR/sindri-ui-<hash of the path>/`, 0700). A later launch writes one UTF-8 message ending in a newline, keeps its side open and reads one byte back: 1 once the holder's reader has handled the message (`Views/InstanceListener` reads from the app's framework start-up on: before the window shows it answers `focus` at once and keeps the latest deep link; after, `AppLifetime.Receive` handles each on the UI thread before the next is read), 0 refused. The listener refuses an empty message, one over 512 characters, one that isn't UTF-8 or one without its newline; it waits 1.5 s from a message's arrival for the handling and the sender waits 2 s, so a holder that doesn't handle it (an app whose framework start-up failed or hangs, or a wedged one) gives no answer. A message nothing handled in time, or whose sender has gone, is dropped; one already handed to the app is withdrawn (`InstanceMessage.Withdrawn`), and `Views/InstanceListener` checks that again on the UI thread before acting, so a busy UI thread never acts on it late |
 | `SingleLaunch` | `Program` claims before Avalonia starts; a later launch sends `focus` (or its one argument when it is a deep link, `sindri://` optional) and exits 0 once the running app handled it. With no answer it claims again: if the holder ended meanwhile, this launch runs the app; otherwise it exits 1 with `sindri-ui: Sindri app is running but not answering (pid N): quit it or kill it` on standard error. Exit codes: 0 handed over (or the app quit), 1 a holder that doesn't answer, 2 the app failed (SND-UI-004) |
 | `AvaloniaTray` | Avalonia's `TrayIcon`, created on the first `Show` and registered with the app through `Views/AppTrayIcons` (Avalonia makes the native icon only for an icon in the Application's `TrayIcon.Icons`); `TrayMarks` draws Sindri's mark in the theme's Ink, filled (Neutral), hollow (Stale) and hollow struck through (NotRunning), as macOS template images; menu labels double each `_` |
 | `PolledMotionPreference` | The OS reader at start and every 2 s on the injected `TimeProvider`: macOS `NSWorkspace.accessibilityDisplayShouldReduceMotion` through `objc_msgSend` (`MacMotion`), Windows `SPI_GETCLIENTAREAANIMATION` (`WindowsMotion`), GNOME `gsettings get org.gnome.desktop.interface enable-animations` (`GnomeMotion`; no gsettings, a failure or a hang past 3 s reads as off) |
@@ -118,10 +118,11 @@ desktop lifetime).
 the app logs `SND-UI-004` through `SindriPlatform.Log` (an `ILogger`; the desktop head's is `Aw.Kernel.Telemetry`'s,
 JSON lines on standard error, `AW_LOG_LEVEL`) with the exception's type only (no message, no stack: they can carry paths
 and payloads), then ends with exit code 2 (`SindriApp.FailedExitCode`) instead of staying up without a window or tray.
-`SingleLaunch` then writes `sindri-ui: couldn't start (SND-UI-004); the log names the cause unless AW_LOG_LEVEL is none`
-on standard error. `SingleLaunch` is also the head's boundary: anything that throws before or around the app (claiming the
-instance when `ui/` can't be made, a hand-over socket it can't use) is logged the same way (`SND-UI-004`, the type
-only, never the message, which can name the home), with a line that names the exception's type (`sindri-ui: couldn't start (SND-UI-004: IOException)`), and exit 2; never an unhandled exception.
+`SingleLaunch` then writes `sindri-ui: failed (SND-UI-004); the log names the cause unless AW_LOG_LEVEL is none`
+on standard error. `SingleLaunch` is also the head's boundary: anything that throws before or around the app (composing the
+platform, claiming the instance when `ui/` can't be made, a hand-over socket it can't use, ending the instance and the
+motion poll after the app quits; `ui/` removed while the app ran counts as already cleaned up) is logged the same way (`SND-UI-004`, the type
+only, never the message, which can name the home), with a line that names the exception's type (`sindri-ui: failed (SND-UI-004: IOException)`; neutral words, since the failure can come after a normal run), and exit 2; never an unhandled exception.
 
 | Part | What it shows |
 |---|---|
@@ -130,7 +131,7 @@ only, never the message, which can name the home), with a line that names the ex
 | Home | The page title, three frames (Needs you, Running · With you, Queued), each "not served yet", and the Sindri health strip: the health line (§4.8) over the fields the status carries today (`Running · pid · epoch · API v1 · N services · profile <state>`; "Not running" when it isn't), which opens Health on a click or Enter |
 | Queue, Decisions, Services, Settings | The title and "not served yet"; Settings is the slot `Views/Settings*` fills (⌘, opens it) |
 | Health | S1b's status card (`HealthViewModel`: lease, API, profile, services, last event) |
-| Detail sheet | A deep link's subject over the page at the right, 520 px (420–760, dragged by its left edge and remembered); Esc closes it and leaves an edge tab that reopens it; below 1100 px it covers the page with a Back button and focus moves to its heading |
+| Detail sheet | A deep link's subject over the page at the right, 520 px (420–760, dragged by its left edge and remembered); Esc closes it and leaves an edge tab that reopens it; below 1100 px it covers the page with a Back button, focus moves to its heading, and the page (disabled under it) leaves the tab order and F6 until the sheet closes or stops covering |
 
 The pre-API states (`ShellState`, highest first): **version mismatch** (the status's `apiVersion` differs from
 `AppApiVersion`: a full-window panel with both versions and "quit both and run" around `sindri` in the command chip, no top bar), **not running**
@@ -141,16 +142,21 @@ without an event, a status or an answered ping, on the injected clock: the pill 
 **Refresh** beside it; otherwise "✓ Running · updated Ns ago", re-worded every second). Refresh follows §4.1's command
 lifecycle: while it is in flight it is disabled with its label kept and a spinner in its icon's place (still under
 reduced motion), "Sending…" is announced after 300 ms through a polite live region (not shown), and a second click does
-nothing. After three failed refreshes the pill keeps "stale" and a banner under
+nothing. Its answer counts only when the follow decided no state while it was in flight, the views are still normal or
+stale, and it came from the pid and epoch the follow checked with ping; otherwise it is dropped, so a late answer never
+shows Running over Not running or Unreadable. After three failed refreshes the pill keeps "stale" and a banner under
 the top bar reads "Sindri not responding: run `sindri doctor`" in full, since the sentence doesn't fit the pill at
 900 px. The view models carry no Avalonia types; views bind the app's copy through `ShellText` (compiled bindings
-resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar, page and sheet; the window's
-minimum is 900 × 600.
+resolve public members only, and `Labels` is internal). F6 / Shift+F6 cycle top bar, page and sheet; on macOS ⌘⌥→ / ⌘⌥← do the same (owner decision, 2026-10-12;
+UI spec §8), since with the default "Use F1, F2, etc. keys as standard function keys" off F6 is the Focus key there and
+reaches the app only with fn held (fn+F6 and fn+Shift+F6). Ctrl+F6 isn't bound. The window's minimum is 900 × 600.
 
 **Focus never goes nowhere (§11.2).** When the focused control disappears, focus moves to a neighbour: Refresh keeps
 focus through its in-flight phase and gets it back when the refresh fails; when Sindri answers and Refresh hides, the
-health pill gets it. Closing the sheet returns focus to the edge tab when the tab reopened it, otherwise (a deep link)
-to the page region. A state change that hides the focused control moves focus to its region's neighbour: the pill in
+health pill gets it. Reopening the sheet from its edge tab moves focus to the sheet's heading at every width (beside
+the page the tab hides as the sheet opens), as opening a covering sheet does. Closing the sheet returns focus to the edge
+tab when the tab reopened it, otherwise (a deep link) to the page region. Narrowing the window below 1100 px with the
+sheet open moves focus on the page (now disabled under the sheet) to the sheet's heading. A state change that hides the focused control moves focus to its region's neighbour: the pill in
 the top bar, the page region in the page (`ShellWindow.KeepFocus`, `TopBar.KeepRefreshFocus`).
 
 ### Settings and reduced motion (§3.3 ⌘,, §11.4, §14.2)
@@ -411,7 +417,13 @@ beat (10 s). A refused Refresh click counts only as a failed refresh; the next p
    sequence seen) triggers one status refresh; a burst of events triggers one. When the stream ends (the control
    plane stopped or was killed), a status refresh fails, or `control.json` changes (checked every 2 s; a stopping
    control plane can hold its stream open), the app looks again, every 2 s while nothing answers. A record the
-   platform can't read, or one with a relative `url`, reads as "can't be read" with the reason, and the app keeps trying.
+   platform can't read, or one with a relative `url`, reads as "can't be read" with the reason, and the app keeps trying. The port
+says why in its own terms (`EndpointRecordUnreadableException` with an `EndpointRecordFailure`: `NoPermission`, `NotAFile`
+or `Unreadable`; `EndpointRecordSourceContract` binds the desktop adapter to a real directory and a mode-000 file), since
+.NET on macOS and Linux throws the same `UnauthorizedAccessException` for both; the desktop adapter checks for a
+directory at the path first. The reason is the app's own words ("this user has no permission to read it", "it isn't a
+file (something else, such as a directory, is in its place)", or "the platform couldn't read it"), never the platform's
+message, which names the full path; the path shows shortened (`~/…`) on its own line, as every path in the window does.
 4. While it follows, the app pings every 10 s (S1's stream sends no keep-alive, and a control plane with nothing
    scheduled sends no events). A ping answered with the followed pid and epoch keeps the views fresh; failed pings, or
    another process's answer, for 30 s read as stale.
@@ -474,14 +486,14 @@ that code and its detail as they are (API spec §3.6).
 | `SND-UI-001` | No usable endpoint record, or it names a process that isn't the one answering |
 | `SND-UI-002` | Nothing answered at the recorded endpoint, or not within 2 s |
 | `SND-UI-003` | The API answered, but not with the record this build reads (an error status other than a 403 with Sindri's ProblemDetails, or another body). The banner says it in words ("SND-UI-003: /sindri/status answered with something this build can't read", or "… answered 500"); a body's parser detail (record, JSON path, byte position) goes only to the log, as a `SND-UI-003` warning |
-| `SND-UI-004` | The app's start-up, its following of the control plane, or the launch before it (claiming the single instance, handing over) threw: logged (code and exception type) and the app exits 2. Not shown in a window: there may be none |
+| `SND-UI-004` | The app's start-up, its following of the control plane, the launch before it (claiming the single instance, handing over) or ending the instance and the motion poll after it threw: logged (code and exception type) and the app exits 2. Not shown in a window: there may be none |
 
 ## Tests
 
 | Lane | What |
 |---|---|
 | unit | The view models (the shell, Health, and Settings against the in-memory preferences and a fake OS setting) against the in-memory API, endpoint record and human token; the `ISindriApi` contract for the fake and for the real client over a canned handler that writes Sindri's wire format by hand; Sindri's API goldens (UI spec E-17: `tests/Aw.Sindri.Tests/Golden/Api/{status,ping,events}`, linked into the test output and read through `GoldenFiles`) deserialized through the app's JSON context, the handler's hand-written bodies held to their shape, and the SND-AUTH-001 refusal goldens served verbatim (one retry, then their code and detail; `Api/GoldenContractTests`); the control.json path; the theme (tokens, contrast, Fluent values, no hex outside `Theme/`); the port contracts over their fakes; preferences, deep links, labels |
-| integration | The shell window under Avalonia's headless platform (Skia rendering), one key frame per pre-API state plus Health, the sheet, its edge tab and its covering form, saved as `frames/shell-*.png` under the test output (`artifacts/bin/Aw.Sindri.Ui.Tests/debug/frames/`); F6, Esc and ⌘,; the remembered bounds; Settings (frames `settings-motion-off`, `-on`, `settings-system-reduces-motion`, `settings-text-120`); `Motion.Apply` over a token dictionary; the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the head's adapters against temp directories (the endpoint-record, human-token, preferences, single-instance and tray contracts, owner-only modes, a crashed instance's socket, the listener's checks), the OS motion readers read-only (GNOME over a stand-in gsettings, macOS against `defaults read com.apple.universalaccess reduceMotion`), and `AppLifetime` on a headless window |
+| integration | The shell window under Avalonia's headless platform (Skia rendering), one key frame per pre-API state plus Health, the sheet, its edge tab and its covering form, saved as `frames/shell-*.png` under the test output (`artifacts/bin/Aw.Sindri.Ui.Tests/debug/frames/`); F6 (and ⌘⌥←/→ on macOS), Esc and ⌘,; the remembered bounds; Settings (frames `settings-motion-off`, `-on`, `settings-system-reduces-motion`, `settings-text-120`); `Motion.Apply` over a token dictionary; the theme as the app resolves it (palette, overrides, the embedded mono font, the text scale); the head's adapters against temp directories (the endpoint-record, human-token, preferences, single-instance and tray contracts, owner-only modes, a crashed instance's socket, the listener's checks), the OS motion readers read-only (GNOME over a stand-in gsettings, macOS against `defaults read com.apple.universalaccess reduceMotion`), and `AppLifetime` on a headless window |
 
 `Avalonia.Headless.XUnit` 12.1.3 is compiled against xUnit v3 3.2.2 and fails discovery under the repo's xUnit v3 4.0.1
 (`MissingMethodException` in `TestIntrospectionHelper.GetTestCaseDetails`). The view tests are plain xUnit v3 facts that

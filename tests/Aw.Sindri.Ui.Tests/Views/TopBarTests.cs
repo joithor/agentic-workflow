@@ -105,6 +105,21 @@ public sealed class TopBarTests : IDisposable
     // text is never "" (Avalonia #22312), it is live (Polite) only while sending, and every change of its text happens
     // with the live setting that matches: to "Sending…" while Polite, back to its resting text while Off, so only
     // "Sending…" is ever spoken. It is in the tree only while a refresh is in flight, and takes no room in the bar.
+    // Review run 4 (accessibility-tester-2) hid the ⌘K field from assistive tech while it did nothing. U1 opens the
+    // palette from it, so the field is a Tab stop and exposed with its name; only its decorative parts (the placeholder
+    // text, the keycap) stay Raw so the name is not read twice.
+    [Fact]
+    public Task The_search_field_is_exposed_to_assistive_tech_and_reachable_by_keyboard() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, _) = await Show(s => s.State == ShellState.Normal);
+        var field = window.Get<TopBar>("TopBar").Get<Control>("SearchField");
+        Assert.True(field.IsEffectivelyVisible);
+        Assert.True(field.Focusable);
+        Assert.NotEqual(AccessibilityView.Raw, AutomationProperties.GetAccessibilityView(field));
+        Assert.False(string.IsNullOrWhiteSpace(AutomationProperties.GetName(field)));
+    });
+
     [Fact]
     public Task Sending_is_announced_by_a_polite_TextBlock_that_is_never_emptied() => OnUi(async () =>
     {

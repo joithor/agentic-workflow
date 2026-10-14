@@ -780,6 +780,41 @@ public sealed class ShellWindowTests : IDisposable
         AnnouncedOnly(window, "NotRunningLive", changes, Labels.NotRunning + ": ");
     });
 
+    // Review run 3 (julik-frontend-races-reviewer-0): going straight from Not running to Unreadable and back, each state's
+    // new reason is spoken only through its own live region. The old state's region goes Off and rests; it never speaks
+    // the new reason while it is still Polite. The sequences are exact, so a stray announcement fails.
+    [Fact]
+    public Task Not_running_to_Unreadable_and_back_speaks_each_reason_only_through_its_own_region() => OnUi(async () =>
+    {
+        var (window, shell) = await Show(_ => true, run: false);
+        var notRunning = LiveChanges(window, "NotRunningLive");
+        var unreadable = LiveChanges(window, "UnreadableLive");
+        _ = shell.Run(_stop.Token);
+        await Until(() => shell.State == ShellState.NotRunning);
+        Settle(window);
+        Assert.Equal(ShellState.NotRunning, shell.State);
+        var notRunningSaid = Labels.NotRunning + ": " + shell.Reason;
+
+        _records.Write(A.Record());
+        _server.Refusal = A.NoTokenRefusal;
+        _clock.Advance(HealthViewModel.RetryEvery);
+        await Until(() => shell.State == ShellState.Unreadable);
+        Settle(window);
+        Assert.Equal(ShellState.Unreadable, shell.State);
+        var unreadableSaid = Labels.Unreadable + ": " + shell.Reason;
+
+        _records.Remove();
+        _clock.Advance(HealthViewModel.RetryEvery);
+        await Until(() => shell.State == ShellState.NotRunning);
+        Settle(window);
+        Assert.Equal(ShellState.NotRunning, shell.State);
+
+        Assert.Equal(
+            [(notRunningSaid, AutomationLiveSetting.Polite), (Labels.Sindri, AutomationLiveSetting.Off), (notRunningSaid, AutomationLiveSetting.Polite)],
+            notRunning);
+        Assert.Equal([(unreadableSaid, AutomationLiveSetting.Polite), (Labels.Sindri, AutomationLiveSetting.Off)], unreadable);
+    });
+
     // Every change of a live region's text, with the live setting it had when it changed.
     private static List<(string? Text, AutomationLiveSetting Live)> LiveChanges(Window window, string name)
     {
@@ -1053,6 +1088,56 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Same(tab, Focused(window));
     });
 
+    // Review run 4 (accessibility-tester-0; §11.2): at 1100 px and wider the sheet sits beside the page, and the edge tab
+    // that reopens it hides as it opens. Focus moves into the sheet (its heading) rather than staying on the hidden tab.
+    [Fact]
+    public Task Reopening_the_sheet_from_its_edge_tab_at_1280_px_moves_focus_into_the_sheet() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        await new Preferences(_preferences).Update(_ => UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 1280, 800) });
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        shell.CloseSheet();
+        Settle(window);
+        var tab = window.Get<Button>("EdgeTab");
+        Assert.True(tab.Focus(NavigationMethod.Tab));
+
+        tab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+
+        var sheet = window.Get<Border>("Sheet");
+        Assert.DoesNotContain("covers", sheet.Classes, StringComparer.Ordinal);
+        Assert.False(tab.IsEffectivelyVisible);
+        Assert.True(Focused(window) is Visual focused && sheet.IsVisualAncestorOf(focused), $"focus is on {(Focused(window) as Control)?.Name ?? Focused(window)?.GetType().Name ?? "nothing"}, not in the sheet");
+        Assert.Same(window.Get<TextBlock>("SheetTitle"), Focused(window));
+    });
+
+    // Review run 4 (accessibility-tester-1; WCAG 2.4.3): narrowing the window below 1100 px while the sheet is open makes
+    // it cover the page, which it disables. Focus on a page control moves out (into the sheet or the top bar), never
+    // staying on a disabled control under the sheet.
+    [Fact]
+    public Task Narrowing_below_1100_px_with_focus_in_the_page_moves_focus_out_of_the_covered_page() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        await new Preferences(_preferences).Update(_ => UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 1280, 800) });
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        Settle(window);
+        Assert.True(Named<Button>(window, "HealthStrip").Focus(NavigationMethod.Tab));
+
+        window.Width = 900;
+        Settle(window);
+
+        var sheet = window.Get<Border>("Sheet");
+        Assert.Contains("covers", sheet.Classes, StringComparer.Ordinal);
+        Assert.False(window.Get<Border>("Page").IsEffectivelyEnabled);
+        var focused = Focused(window) as Control;
+        Assert.True(focused is { IsEffectivelyEnabled: true, IsEffectivelyVisible: true }, $"focus is on {focused?.Name ?? focused?.GetType().Name ?? "nothing"}, disabled or hidden");
+        Assert.True(focused is not null && (sheet.IsVisualAncestorOf(focused) || window.Get<Control>("TopBar").IsVisualAncestorOf(focused)), $"focus is on {focused?.Name ?? focused?.GetType().Name}, outside the sheet and the top bar");
+    });
+
     // §11.2 (c): when a state change hides the focused control (Home's health strip when Sindri stops), focus moves to
     // the page region rather than nowhere.
     [Fact]
@@ -1186,6 +1271,43 @@ public sealed class ShellWindowTests : IDisposable
         Assert.True(Visible(window, "SheetBack"));
         Assert.Equal(window.Get<Border>("Sheet").Bounds.Width, window.ClientSize.Width, precision: 0);
         Frame(window, "sheet-covers");
+    });
+
+    // Review run 3 (accessibility-tester-3; WCAG 2.4.3, 2.4.7): at 900 px the sheet covers the page, so the page and its
+    // controls leave the tab order while it does. Tab and Shift+Tab from Back, and F6, never land under the sheet, and
+    // closing it gives the page back its focus and its stops.
+    [Fact]
+    public Task At_900_px_the_covering_sheet_takes_the_page_out_of_the_tab_order() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        await new Preferences(_preferences).Update(_ => UiPreferences.Defaults with { Window = new WindowBounds(0, 0, 900, 600) });
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        Settle(window);
+        Assert.Contains("covers", window.Get<Border>("Sheet").Classes, StringComparer.Ordinal);
+        var page = window.Get<Border>("Page");
+        bool UnderTheSheet() => Focused(window) is Visual focused && (focused == page || page.IsVisualAncestorOf(focused));
+
+        foreach (var (key, modifiers) in new[] { (Key.Tab, RawInputModifiers.Shift), (Key.Tab, RawInputModifiers.None), (Key.F6, RawInputModifiers.None), (Key.F6, RawInputModifiers.Shift) })
+        {
+            Assert.True(window.Get<Button>("SheetBack").Focus(NavigationMethod.Tab));
+            for (var i = 0; i < 12; i++)
+            {
+                window.KeyPress(key, modifiers, key == Key.Tab ? PhysicalKey.Tab : PhysicalKey.F6, keySymbol: null);
+                Settle(window);
+                Assert.False(UnderTheSheet(), string.Create(CultureInfo.InvariantCulture, $"{modifiers}+{key} #{i + 1} reached {(Focused(window) as Control)?.Name ?? Focused(window)?.GetType().Name} under the sheet"));
+            }
+        }
+
+        Assert.True(window.Get<Button>("SheetBack").Focus(NavigationMethod.Tab));
+        window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, keySymbol: null);
+        Settle(window);
+
+        Assert.Same(page, Focused(window));
+        window.KeyPress(Key.Tab, RawInputModifiers.None, PhysicalKey.Tab, keySymbol: null);
+        Settle(window);
+        Assert.True(UnderTheSheet() && Focused(window) != page, "Tab moves inside the page again once the sheet closes");
     });
 
     // §3.2: window minimum 900 × 600, and the top bar still fits there in every pill state, at text scale 1.0 and 1.3: the
@@ -1518,6 +1640,37 @@ public sealed class ShellWindowTests : IDisposable
         }
 
         Assert.Equal(["TopBar", "Page", "Sheet", "TopBar"], seen);
+    });
+
+    // Owner decision F6 (2026-10-12, review run 4): on macOS ⌘⌥→ and ⌘⌥← cycle the regions forward and back, like F6
+    // and Shift+F6 (F6 there is the Focus key, which reaches the app only with fn held). RegionKeysTests covers the
+    // mapping on every OS; this drives the window on the platform that binds it.
+    [Fact]
+    public Task Command_option_arrows_cycle_the_regions_on_macOS() => OnUi(async () =>
+    {
+        Assert.SkipUnless(OperatingSystem.IsMacOS(), "⌘⌥←/→ is the macOS binding");
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-1", out var link));
+        shell.Navigate(link);
+        Settle(window);
+
+        string Region()
+        {
+            var focused = window.FocusManager?.GetFocusedElement() as Visual;
+            string[] names = ["TopBar", "Page", "Sheet"];
+            return names.FirstOrDefault(n => focused is not null && window.Get<Control>(n) is var r && (r == focused || r.IsVisualAncestorOf(focused))) ?? "none";
+        }
+
+        var seen = new List<string>();
+        foreach (var (key, physical) in new[] { (Key.Right, PhysicalKey.ArrowRight), (Key.Right, PhysicalKey.ArrowRight), (Key.Right, PhysicalKey.ArrowRight), (Key.Left, PhysicalKey.ArrowLeft), (Key.Left, PhysicalKey.ArrowLeft) })
+        {
+            window.KeyPress(key, RawInputModifiers.Meta | RawInputModifiers.Alt, physical, keySymbol: null);
+            Settle(window);
+            seen.Add(Region());
+        }
+
+        Assert.Equal(["TopBar", "Page", "Sheet", "Page", "TopBar"], seen);
     });
 
     [Fact]

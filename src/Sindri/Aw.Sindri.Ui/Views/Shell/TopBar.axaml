@@ -107,12 +107,12 @@
         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" VerticalAlignment="Center">
           <Path Classes="magnifier" Data="M5.5,1 A4.5,4.5 0 1 1 5.5,10 A4.5,4.5 0 1 1 5.5,1 Z M8.8,8.8 L12,12" VerticalAlignment="Center" />
           <TextBlock x:Name="SearchText" Grid.Column="1" Classes="caption subtle search-text" Text="{Binding Text.Search}" AutomationProperties.Name="{Binding Text.Search}" VerticalAlignment="Center"
-                     TextTrimming="CharacterEllipsis" />
-          <Border x:Name="SearchKeycap" Grid.Column="2" Classes="kbd search-key" AutomationProperties.Name="{Binding Text.SearchKey}">
-            <StackPanel Orientation="Horizontal" Spacing="1">
+                     TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
+          <Border x:Name="SearchKeycap" Grid.Column="2" Classes="kbd search-key" AutomationProperties.Name="{Binding Text.SearchKey}" AutomationProperties.AccessibilityView="Raw">
+            <StackPanel Orientation="Horizontal" Spacing="1" AutomationProperties.AccessibilityView="Raw">
               <icons:StateIcon Classes="kbd" Icon="Command" VerticalAlignment="Center" />
               <TextBlock Classes="kbd" Text="{Binding Text.SearchKeyLetter}" VerticalAlignment="Center"
-                         AutomationProperties.Name="{Binding Text.SearchKey}" />
+                         AutomationProperties.Name="{Binding Text.SearchKey}" AutomationProperties.AccessibilityView="Raw" />
             </StackPanel>
           </Border>
         </Grid>

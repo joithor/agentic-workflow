@@ -168,6 +168,8 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
       flag("DEPS-KIND-002", "edge into a shell or mod node", edgeText(e), `shell and mod nodes only consume packages; nothing depends on them (${e.to} is ${b.kind})`, `move the shared state or contract into a package and point the edge the other way (${e.to} -> <package>)`);
       return bad;
     }
+    // DEPS-KIND-004 depends only on the target, so it holds for an http edge from a shell or mod node too.
+    if (e.kind === "http" && !(b.routes ?? []).length) flag("DEPS-KIND-004", "http edge to a package that serves no routes", edgeText(e), `an http edge calls a package's HTTP API, declared as its routes (${e.to} lists none)`, `add routes: [/<prefix>/] to ${e.to} in deps.yaml, or change the edge's kind`);
     if (a.kind !== "package") {
       if (linked(e.kind)) flag("DEPS-KIND-001", `${e.kind} edge outside the C# packages`, edgeText(e), `project and compose edges connect kind: package nodes (${e.from} is ${a.kind})`, `change the edge to kind: cli or file in deps.yaml`);
       return bad;
@@ -175,7 +177,6 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
     if (e.kind === "compose" && b.tier === 0) flag("DEPS-COMPOSE-001", "compose edge into a tier-0 package", edgeText(e), "a tier-0 package has no Features or Infrastructure to compose; its library projects are used whole through a project edge", "delete the compose edge; reference the tier-0 library projects under the project edge");
     if (linked(e.kind) && b.test && !a.test) flag("DEPS-KIND-003", `${e.kind} edge from production code into a test-support package`, edgeText(e), "only test projects reference test-support packages, and they need no declared edge", `delete the edge from deps.yaml and move the reference into ${e.from}'s *.Tests project`);
     if (linked(e.kind) && rank(a) <= rank(b)) flag("DEPS-TIER-001", `${e.kind} edge does not point to a lower tier`, `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, `a ${e.kind} edge points strictly down the tiers (§4b.1a)`, `change it to kind: cli and call ${e.to}'s CLI, or move the shared code down a tier`);
-    if (e.kind === "http" && !(b.routes ?? []).length) flag("DEPS-KIND-004", "http edge to a package that serves no routes", edgeText(e), `an http edge calls a package's HTTP API, declared as its routes (${e.to} lists none)`, `add routes: [/<prefix>/] to ${e.to} in deps.yaml, or change the edge's kind`);
     if ((e.kind === "db" || e.kind === "file") && rank(a) < rank(b)) flag("DEPS-TIER-002", `${e.kind} edge points to a higher tier`, `${e.from} (${tierLabel(a)}) -> ${e.to} (${tierLabel(b)})`, "db and file edges point down or across, never up", `replace it with (from: ${e.from}, to: ${e.to}, kind: cli) and ask ${e.to}'s CLI`);
     return bad;
   }
@@ -193,12 +194,16 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
     const at = `${from} -> ${to} (${kind})`;
     const without = new Set(findCycles(edges.filter((e) => !(e.from === from && e.to === to && e.kind === kind))).map((c) => c.join(">")));
     const closes = cycles.filter((c) => !without.has(c.join(">")));
-    if (closes.length === 1) { x.used = true; coveredCycles.add(closes[0]); }
+    // Only the first exception on a cycle covers it: a second one (say, the other direction) suppresses nothing.
+    const duplicate = closes.length === 1 && coveredCycles.has(closes[0]);
+    if (closes.length === 1 && !duplicate) { x.used = true; coveredCycles.add(closes[0]); }
     const parallel = closes.length === 0 && cycles.some((c) => c.some((n, i) => n === from && c[i + 1] === to));
-    x.measured = closes.length === 1 ? closes[0].join(" -> ")
+    x.measured = duplicate ? `${closes[0].join(" -> ")} is already covered by another DEPS-CYCLE-001 exception`
+      : closes.length === 1 ? closes[0].join(" -> ")
       : closes.length > 1 ? `${closes.length} cycles pass through ${at} (${closes.map((c) => c.join(" -> ")).join("; ")}), more than the one an exception covers`
       : parallel ? `every cycle through ${at} also has another ${from} -> ${to} edge` : `no cycle passes through ${at}`;
-    x.fix = closes.length > 1 ? `break the other cycle through ${at}: the exception covers one`
+    x.fix = duplicate ? `delete one of the two exceptions on ${closes[0].join(" -> ")}`
+      : closes.length > 1 ? `break the other cycle through ${at}: the exception covers one`
       : parallel ? `remove the other ${from} -> ${to} edge: only the excused ${kind} edge may close the cycle` : undefined;
   }
   for (const c of cycles.filter((x) => !coveredCycles.has(x))) fail("DEPS-CYCLE-001", "the declared graph has a cycle", c.join(" -> "), "the graph is acyclic across every edge kind (§4b.1a); a DEPS-CYCLE-001 exception covers the one cycle its excused cli or http edge closes", "delete one edge of the cycle in deps.yaml, or move the shared part into a lower tier");
@@ -216,6 +221,12 @@ export function check(root, today = new Date().toISOString().slice(0, 10)) {
     } else if (d.status === "planned") fail("DEPS-STALE-002", "planned edge found in source", `${edgeText(d)}: ${h.where} ${h.what}`, "an edge the source has today is status: current", `set status: current on ${edgeText(d)} in deps.yaml`);
   }
   for (const e of edges.filter((x) => x.status === "current" && !linked(x.kind) && !found.has(edgeKey(x)))) {
+    // Only the C# scan finds http calls, so an http edge from a shell or mod node can't be checked (review run 4).
+    const from = byId.get(e.from);
+    if (e.kind === "http" && from.kind !== "package") {
+      info.push(`${edgeText(e)}: not scanned (http calls from ${from.kind} sources are not detected)`);
+      continue;
+    }
     const where = e.kind === "http"
       ? `no string literal naming ${e.to}'s routes (${byId.get(e.to).routes?.join(", ") ?? "none"}) in ${e.from}'s C# projects`
       : `no match under ${byId.get(e.from).scan?.join(", ") ?? "(no scan dirs)"} or in ${e.from}'s C# projects`;
