@@ -118,15 +118,15 @@ desktop lifetime).
 the app logs `SND-UI-004` through `SindriPlatform.Log` (an `ILogger`; the desktop head's is `Aw.Kernel.Telemetry`'s,
 JSON lines on standard error, `AW_LOG_LEVEL`) with the exception's type only (no message, no stack: they can carry paths
 and payloads), then ends with exit code 2 (`SindriApp.FailedExitCode`) instead of staying up without a window or tray.
-`SingleLaunch` then writes `sindri-ui: couldn't start (SND-UI-004); the log names the cause unless AW_LOG_LEVEL is none`
+`SingleLaunch` then writes `sindri-ui: failed (SND-UI-004); the log names the cause unless AW_LOG_LEVEL is none`
 on standard error. `SingleLaunch` is also the head's boundary: anything that throws before or around the app (composing the
-platform, claiming the instance when `ui/` can't be made, a hand-over socket it can't use, ending the instance after the
-app quits; `ui/` removed while the app ran counts as already cleaned up) is logged the same way (`SND-UI-004`, the type
-only, never the message, which can name the home), with a line that names the exception's type (`sindri-ui: couldn't start (SND-UI-004: IOException)`), and exit 2; never an unhandled exception.
+platform, claiming the instance when `ui/` can't be made, a hand-over socket it can't use, ending the instance and the
+motion poll after the app quits; `ui/` removed while the app ran counts as already cleaned up) is logged the same way (`SND-UI-004`, the type
+only, never the message, which can name the home), with a line that names the exception's type (`sindri-ui: failed (SND-UI-004: IOException)`; neutral words, since the failure can come after a normal run), and exit 2; never an unhandled exception.
 
 | Part | What it shows |
 |---|---|
-| Top bar (48 px) | Brand; Home · Queue · Decisions · Services (counts empty until their routes); Later ▾ (Agents, Repos, Today, Automatic work, each "not served yet"); the ⌘K field, inert until U1 and so no Tab stop; the health pill, which opens Health (while Sindri isn't running it is only the state: disabled like the navigation, its word undimmed, since the Not running card is the health state and Health has nothing to show). When they don't all fit (the 900 px minimum, text scale up to 1.3) the bar steps down in `TopBar.axaml.cs`: the ⌘K field folds to its magnifier, then the pill's age drops (the pill's accessible name keeps it), then the brand keeps its mark alone. The pill's word always shows |
+| Top bar (48 px) | Brand; Home · Queue · Decisions · Services (counts empty until their routes); Later ▾ (Agents, Repos, Today, Automatic work, each "not served yet"); the ⌘K field, inert until U1 and so no Tab stop and Raw to assistive tech; the health pill, which opens Health (while Sindri isn't running it is only the state: disabled like the navigation, its word undimmed, since the Not running card is the health state and Health has nothing to show). When they don't all fit (the 900 px minimum, text scale up to 1.3) the bar steps down in `TopBar.axaml.cs`: the ⌘K field folds to its magnifier, then the pill's age drops (the pill's accessible name keeps it), then the brand keeps its mark alone. The pill's word always shows |
 | Home panels' bodies | "not served yet", centred in the panel |
 | Home | The page title, three frames (Needs you, Running · With you, Queued), each "not served yet", and the Sindri health strip: the health line (§4.8) over the fields the status carries today (`Running · pid · epoch · API v1 · N services · profile <state>`; "Not running" when it isn't), which opens Health on a click or Enter |
 | Queue, Decisions, Services, Settings | The title and "not served yet"; Settings is the slot `Views/Settings*` fills (⌘, opens it) |
@@ -317,7 +317,7 @@ that code and its detail as they are (API spec §3.6).
 | `SND-UI-001` | No usable endpoint record, or it names a process that isn't the one answering |
 | `SND-UI-002` | Nothing answered at the recorded endpoint, or not within 2 s |
 | `SND-UI-003` | The API answered, but not with the record this build reads (an error status other than a 403 with Sindri's ProblemDetails, or another body). The banner says it in words ("SND-UI-003: /sindri/status answered with something this build can't read", or "… answered 500"); a body's parser detail (record, JSON path, byte position) goes only to the log, as a `SND-UI-003` warning |
-| `SND-UI-004` | The app's start-up, its following of the control plane, or the launch before it (claiming the single instance, handing over) threw: logged (code and exception type) and the app exits 2. Not shown in a window: there may be none |
+| `SND-UI-004` | The app's start-up, its following of the control plane, the launch before it (claiming the single instance, handing over) or ending the instance and the motion poll after it threw: logged (code and exception type) and the app exits 2. Not shown in a window: there may be none |
 
 ## Tests
 

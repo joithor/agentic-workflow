@@ -13,7 +13,7 @@ internal static class Program
         using var telemetry = TelemetryRuntime.Start(TelemetryOptions.FromEnvironment("sindri-ui", Environment.GetEnvironmentVariable, TimeProvider.System));
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var log = telemetry.LoggerFactory.CreateLogger("Aw.Sindri.Ui");
-        // SingleLaunch composes the platform, runs or hands over, and ends the instance and the motion poll, all inside
+        // SingleLaunch composes the platform, runs or hands over, then ends the instance and the motion poll, all inside
         // its SND-UI-004 boundary.
         return SingleLaunch.Run(
             () => Composition.Platform(Environment.GetEnvironmentVariable, home, TimeProvider.System) with { Log = log },

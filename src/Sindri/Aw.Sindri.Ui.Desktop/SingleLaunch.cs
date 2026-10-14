@@ -9,15 +9,15 @@ namespace Aw.Sindri.Ui.Desktop;
 /// One app per user (UI spec §15): the first launch claims the instance and runs the app; a later one hands its message
 /// ("focus", or the deep link it was started with) to the running instance and exits. The running instance only
 /// navigates on it. It is the head's boundary: anything that throws while composing the platform, before or while the
-/// app runs, or while ending the instance after it (an unusable or removed 'ui' directory, a socket it can't use) ends
-/// the launch with SND-UI-004 and exit 2, logging the code and the exception's type only.
+/// app runs, or while ending the instance and the motion poll after it (an unusable or removed 'ui' directory, a socket
+/// it can't use) ends the launch with SND-UI-004 and exit 2, logging the code and the exception's type only.
 /// </summary>
 internal static class SingleLaunch
 {
     private const string Scheme = "sindri://";
 
-    // A failure inside the app: the app's log names the cause, which AW_LOG_LEVEL=none hides.
-    private const string FailedInApp = "sindri-ui: couldn't start (SND-UI-004); the log names the cause unless AW_LOG_LEVEL is none";
+    // A failure inside the app (at start-up or while it ran): the app's log names the cause, which AW_LOG_LEVEL=none hides.
+    private const string FailedInApp = "sindri-ui: failed (SND-UI-004); the log names the cause unless AW_LOG_LEVEL is none";
 
     /// <summary>Runs the app, or hands over to the running one.</summary>
     /// <param name="instance">This launch's instance port.</param>
@@ -65,22 +65,26 @@ internal static class SingleLaunch
             return Failed(e, errors, log);
         }
 
+        var exit = Run(platform.Instance, args, () => runApp(platform), errors, log);
         try
         {
-            return Run(platform.Instance, args, () => runApp(platform), errors, log);
-        }
-        finally
-        {
+            // Ending the motion poll is inside the boundary too (review run 4, pattern-recognition-specialist-4).
             (platform.Motion as IDisposable)?.Dispose();
         }
+        catch (Exception e)
+        {
+            return Failed(e, errors, log);
+        }
+
+        return exit;
     }
 
     // SND-UI-004: the message and stack can carry the home's path, so the code and the type only. The line names the
     // cause itself (the type only), so it holds when AW_LOG_LEVEL=none printed no log line.
     private static int Failed(Exception e, TextWriter errors, ILogger log)
     {
-        DesktopLog.FailedBeforeStart(log, e.GetType().Name);
-        errors.WriteLine($"sindri-ui: couldn't start (SND-UI-004: {e.GetType().Name})");
+        DesktopLog.Failed(log, e.GetType().Name);
+        errors.WriteLine($"sindri-ui: failed (SND-UI-004: {e.GetType().Name})");
         return SindriApp.FailedExitCode;
     }
 
