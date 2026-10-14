@@ -20,6 +20,9 @@ bool whole = redactor.IsSecretName("client_secret");   // true: write ScrubResul
 
 - `Redactor.Create(TimeSpan)` gives the same rules with another per-pattern timeout; `Redactor.Create(extraPatterns,
   TimeSpan, TimeProvider)` adds patterns from configuration ("Extra patterns from configuration" below).
+- `RulesDigest` is SHA-256 (64 lowercase hex characters) over every rule's id, pattern and options in order, each
+  length-prefixed (extra patterns included). It changes whenever a rule does, even under the same id, so a caller that
+  stores scrubbed text records it and cleans the text again after a change (the context engine's scrub ruleset).
 - `IsSecretName(name)` is for callers that see a key and its value apart (a telemetry attribute, a header, a JSON
   field): the assignment rules need the name and the value in one string, so such a caller redacts the whole value of
   a field whose name ends in a secret word (API_KEY, SECRET, TOKEN, PASSWORD, PRIVATE_KEY, ACCESS_KEY, any case and

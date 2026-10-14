@@ -135,15 +135,19 @@ context:
 - **Refusals.** `sindri profile validate` and `approve` refuse a bad entry with `SND-CONTEXT-001` and its key path,
   for example `context.scrub.extraPatterns[0].pattern: …` (the message says how to fix it and never repeats the
   pattern). A refused profile is never approved, so the patterns in force are always valid.
-- **Changing the list.** Every stored document records the rules it was cleaned with. After an approval that changes
+- **Changing the list.** Every stored document records the rules it was cleaned with (the extra patterns, the
+  built-in rules and the sanitizer's, so an upgrade that changes a rule counts too). After an approval that changes
   the patterns, the stored documents are **not searched** until the next `context-docs-refresh` run cleans them again
   (at serve start and on its cadence): `context sources status` shows the repo as `degraded`, "N of M documents wait
   for the next refresh", and `context.sources.synced` counts them as `recleaned`. So nothing cleaned with the old
   rules is ever served.
-- **More HTML removed on ingest.** Besides comments, images and link targets, the sanitizer now removes every HTML tag
-  that can fetch or point at something remote (`src`, `srcset`, `poster`, `background`, `href`, `data`, `action`,
-  `formaction` or `style` attributes: `<input type=image>`, `<video poster>`, `<source srcset>`, SVG `<use href>`,
-  inline CSS `url()`) and whole `<style>` blocks, keeping the text between tags. Remote link definitions with escaped
+- **More HTML removed on ingest.** Besides comments, images and link targets, the sanitizer now removes the elements
+  that fetch whatever their attributes (`<meta>`, `<iframe>`, `<frame>`, `<object>`, `<embed>`, `<link>`, `<base>`,
+  `<script>`, SVG `<set>` and `<animate…>`), every other HTML tag that can fetch or point at something remote (`src`,
+  `srcset`, `imagesrcset`, `srcdoc`, `poster`, `background`, `href`, `data`, `action`, `formaction`, `style` or `ping`
+  attributes: `<input type=image>`, `<video poster>`, `<source srcset>`, SVG `<use href>`, inline CSS `url()`), also
+  when its quotes don't balance, and whole `<style>` blocks, keeping the text between tags. A tag name written in prose
+  (`<script>`) is removed too. Remote link definitions with escaped
   brackets (`[a\]b]: https://…`) or a label over two lines are removed too. This also counts as a rules change: an index
   built before S-2W is cleaned again at its first refresh.
 ## S-3a: the product map: `context map import`, `export`, `status`

@@ -64,6 +64,38 @@ public sealed class RepoDocsTests
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Rows_an_S1A_store_wrote_are_outdated_after_the_upgrade_and_cleaned_again()
+    {
+        using var home = new TempHome();
+        using var fixture = FixtureRepo.Build();
+        var repo = new ContextRepo(ContextRepoName.From("split-panes"), fixture.Path);
+        var blob = Git(fixture.Path, "rev-parse", "HEAD:docs/architecture.md");
+        Directory.CreateDirectory(home.Settings.Home);
+        var connections = new Aw.Kernel.Data.SqliteConnectionFactory(new Aw.Kernel.Data.SqliteOptions(home.Settings.DatabasePath));
+        Assert.True((await new Aw.Kernel.Data.MigrationRunner(connections, home.Clock).Migrate(Aw.Context.Infrastructure.Store.ContextDatabase.Migrations,
+            TestContext.Current.CancellationToken, targetVersion: 2)).IsSuccess);
+        using (var raw = new SqliteConnection($"Data Source={home.Settings.DatabasePath};Pooling=False"))
+        {
+            raw.Open();
+            using var insert = raw.CreateCommand();
+            insert.CommandText = "INSERT INTO doc (repo, path, blob, title, blocked) VALUES ('split-panes', 'docs/architecture.md', $blob, 'Architecture', 0); " +
+                "INSERT INTO doc_chunk (repo, path, blob, line_start, line_end, text) VALUES ('split-panes', 'docs/architecture.md', $blob, 1, 2, 'zebra orientation');";
+            _ = insert.Parameters.AddWithValue("$blob", blob);
+            _ = insert.ExecuteNonQuery();
+        }
+
+        var outdated = (await home.Index.Status(repo, home.Scrubbers.Ruleset, CancellationToken.None)).Value;
+        var hits = (await new RepoDocsSource([repo], home.Database, home.Git, home.Scrubbers, home.Clock)
+            .Search(new SourceQuery(["zebra"], AsOf: null, 10, TimeSpan.FromSeconds(5)), CancellationToken.None)).Value;
+        var refreshed = (await home.Index.Refresh(repo, ["docs/**/*.md"], home.Scrubbers, CancellationToken.None)).Value;
+
+        Assert.Equal((1, 1), (outdated.Documents, outdated.Outdated));   // migration 0003 gave the S-1A row ruleset ''
+        Assert.Empty(hits);
+        Assert.Equal((1, 2), (refreshed.Recleaned, refreshed.Added));
+        Assert.Equal(0L, Count(home, $"SELECT count(*) FROM doc WHERE ruleset <> '{home.Scrubbers.Ruleset.Value}'"));
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_repo_git_cant_read_is_reported_with_its_code_and_a_source_outside_scope_is_not_found()
     {
         using var home = new TempHome();

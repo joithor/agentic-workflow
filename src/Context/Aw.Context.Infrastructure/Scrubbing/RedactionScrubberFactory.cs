@@ -44,14 +44,14 @@ internal sealed class RedactionScrubberFactory(TimeProvider clock) : IScrubberFa
     }
 
     /// <summary>
-    /// The ruleset: a hash of the sanitizer's version, the built-in rule ids and every (id, pattern) in order, each part
-    /// length-prefixed so no two lists hash alike.
+    /// The ruleset: a hash of the sanitizer's version and rules, the built-in redaction rules' digest (what they match,
+    /// not only their ids) and every extra (id, pattern) in order, each part length-prefixed so no two lists hash alike.
     /// </summary>
     internal static ScrubRuleset Fingerprint(IReadOnlyList<ScrubPattern> extraPatterns)
     {
         var text = new StringBuilder()
-            .Append(CultureInfo.InvariantCulture, $"sanitizer:{IngestSanitizer.Version}\n")
-            .Append("rules:").AppendJoin(',', Redactor.Default.RuleIds).Append('\n');
+            .Append(CultureInfo.InvariantCulture, $"sanitizer:{IngestSanitizer.Version}\n");
+        _ = Part(Part(text, IngestSanitizer.Rules), Redactor.Default.RulesDigest);
         foreach (var pattern in extraPatterns)
         {
             _ = Part(Part(text, pattern.Rule), pattern.Pattern);

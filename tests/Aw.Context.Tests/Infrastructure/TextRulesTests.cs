@@ -50,8 +50,24 @@ public sealed class TextRulesTests
     [InlineData("see [the PRD][a\\]b]\n[a\\]b]: https://evil.example/prd", "see the PRD\n")]
     [InlineData("see [the PRD][p q]\n[p\nq]: https://evil.example/prd", "see the PRD\n\n")]
     [InlineData("[a\n\nb]: https://example.com/x", "[a\n\nb]: https://example.com/x")]
+    [InlineData("a <img src=https://evil.example/t.png alt=Bob's> b", "a  b")]
+    [InlineData("a <video poster=https://evil.example/t.png title=Bob's> b", "a  b")]
+    [InlineData("<video title=a\"b poster=https://evil.example/x.png c=\"d>\"> b", "\"> b")]
+    [InlineData("<link rel=preload as=image imagesrcset=\"https://evil.example/x.png 1x\"> b", " b")]
+    [InlineData("<iframe srcdoc=\"&lt;img src=https://evil.example/x&gt;\"></iframe> b", "</iframe> b")]
+    [InlineData("<meta http-equiv=refresh content=\"0;url=https://evil.example/\"> b", " b")]
+    [InlineData("<svg><use><set attributeName=\"href\" to=\"https://evil.example/x.svg#a\"/></use></svg>", "<svg><use></use></svg>")]
     public void The_sanitizer_removes_what_ingest_must_not_keep(string input, string expected) =>
         Assert.Equal(expected, IngestSanitizer.Clean(input));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_remote_tag_with_a_value_too_long_to_parse_is_still_removed()
+    {
+        var value = "https://evil.example/t.png?" + string.Concat(Enumerable.Repeat("a.", 2100));   // over 4000 characters, no 201-character run
+
+        Assert.Equal("a  b", IngestSanitizer.Clean("a <img src=\"" + value + "\"> b"));
+        Assert.Equal("a  b", IngestSanitizer.Clean("a <video poster=\"" + value + "\"> b"));
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void Encoded_blobs_over_200_characters_are_removed() =>

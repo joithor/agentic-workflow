@@ -26,6 +26,7 @@ public sealed class Redactor : IRedactor
         _clock = clock;
         _matchTimeout = Cap(matchTimeout.TotalMilliseconds);
         RuleIds = [.. rules.Select(r => r.Id).Distinct(StringComparer.Ordinal)];
+        RulesDigest = Digest(rules);
         _secretName = new Regex(
             BuiltinRules.SecretName,
             RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase,
@@ -43,6 +44,28 @@ public sealed class Redactor : IRedactor
 
     /// <summary>The rule ids, in priority order (an earlier rule names an overlapping hit).</summary>
     public IReadOnlyList<string> RuleIds { get; }
+
+    /// <summary>
+    /// A fingerprint of what the rules match: SHA-256 (64 lowercase hex characters) over every rule's id, pattern and
+    /// options in order, each part length-prefixed. It changes whenever a rule does, even under the same id, so a caller
+    /// that stores scrubbed text can tell it was scrubbed under other rules (the context engine cleans such text again).
+    /// </summary>
+    public string RulesDigest { get; }
+
+    private static string Digest(IReadOnlyList<RedactionRule> rules)
+    {
+        var text = new StringBuilder();
+        foreach (var rule in rules)
+        {
+            var options = ((int)rule.Options).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            foreach (var part in (string[])[rule.Id, rule.Pattern, options])
+            {
+                _ = text.Append(part.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(':').Append(part).Append('\n');
+            }
+        }
+
+        return Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
+    }
 
     /// <summary>Creates a redactor over the built-in rules with its own per-pattern match timeout.</summary>
     /// <param name="matchTimeout">The timeout for each pattern; must be positive.</param>

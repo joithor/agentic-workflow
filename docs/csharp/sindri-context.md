@@ -155,19 +155,29 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   the repos, so `profile validate` and `approve` refuse a pattern Redaction refuses. The approved profile can change
   at run time (the scheduler re-reads approvals), and the next call picks it up.
 - **`Trust.ScrubRuleset`** (Vogen, 16–64 lowercase hex): the first 32 hex characters of SHA-256 over
-  `IngestSanitizer.Version`, the built-in rule ids and each extra (id, pattern), length-prefixed. Raise
-  `IngestSanitizer.Version` with any change to what the sanitizer removes (S-2W made it 2).
+  `IngestSanitizer.Version`, the text of every sanitizer regex (`IngestSanitizer.Rules`), the built-in redaction rules'
+  `Redactor.RulesDigest` (their ids, patterns and options, so a widened rule under the same id counts) and each extra
+  (id, pattern), length-prefixed. Changing a regex therefore re-cleans by itself; raise `IngestSanitizer.Version` too
+  with any change to what the sanitizer removes in code (S-2W made it 3).
 - **A ruleset per stored doc.** Migration `0003_s2w_scrub_ruleset.sql` adds `doc.ruleset` (default `''`, so every
   row S-1A wrote is outdated). A refresh treats a document as current only when its blob **and** ruleset match; one
-  stored under another ruleset is cleaned again (`RepoRefresh.Recleaned`, also counted in `Added`; Sindri carries it
-  on `ContextRepoSynced`). Search filters `d.ruleset = @ruleset`, so a chunk cleaned with other rules is never a hit
+  stored under another ruleset is cleaned again (`RepoRefresh.Recleaned` counts those indexed with text, so they are
+  among `Added`; one the new rules block or one over the size cap counts as blocked or skipped instead; Sindri carries
+  it on `ContextRepoSynced`). Search filters `d.ruleset = @ruleset`, so a chunk cleaned with other rules is never a hit
   until it is cleaned again, and `DocIndexStatus.Outdated` turns the repo's status row `degraded` with the count.
-- **Sanitizer (S-1A review run 5 deferrals).** `HtmlTag` + `RemoteAttribute` remove any start tag carrying `src`,
-  `srcset`, `lowsrc`, `dynsrc`, `poster`, `background`, `href`, `data`, `action`, `formaction`, `style` or `ping`
-  (matched outside quoted values; a quoted value may hold `>`); `StyleBlock` removes `<style>…</style>`. The remote
+- **Sanitizer (S-1A review run 5 deferrals).** `HtmlImage` removes the elements that fetch whatever their attributes
+  (`img`, `image`, `meta`, `iframe`, `frame`, `object`, `embed`, `link`, `base`, `script`, SVG `set` and `animate…`);
+  `HtmlTag` + `RemoteAttribute` remove any other start tag carrying `src`, `srcset`, `imagesrcset`, `srcdoc`, `lowsrc`,
+  `dynsrc`, `poster`, `background`, `href`, `data`, `action`, `formaction`, `style` or `ping` anywhere in the tag. Both
+  read quoted values (which may hold `>`) first, then the tag raw up to its first `>` (`RawFetchingTag`, `RawTag`), so
+  a tag whose quotes don't balance or whose value is too long is removed, not kept. `StyleBlock` removes
+  `<style>…</style>`. The remote
   definition's label takes backslash escapes and one line break (not a blank line), and labels are matched as
   CommonMark does (whitespace runs collapsed, case ignored), so `[x][p q]` meets `[p\nq]: https://…`.
-- **Not here.** Telemetry's redactor stays `Redactor.Default`: log lines and spans carry codes, counts and hashes,
+- **Not here: the map's text.** S-3a's map export and status (and S-3b's `node`/`affects` answers) don't scrub yet;
+  they must build `Scrubbers` per call through `IScrubberFactory` and pass every text field through `Egress`, as the
+  repo-docs pipeline does (follow-up for S-3b).
+- **Not here: telemetry.** Telemetry's redactor stays `Redactor.Default`: log lines and spans carry codes, counts and hashes,
   never record or query text (§7), and the telemetry redactor is fixed at start while the profile changes at run time.
 
 ### Tests (S-2W)

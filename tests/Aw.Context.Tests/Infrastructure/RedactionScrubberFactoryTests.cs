@@ -39,6 +39,20 @@ public sealed class RedactionScrubberFactoryTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_document_cleaned_again_but_blocked_or_oversized_is_not_counted_as_recleaned()
+    {
+        var stored = new Aw.Context.Infrastructure.Docs.StoredDocs(new Dictionary<string, Aw.Context.Infrastructure.Docs.StoredDoc>(StringComparer.Ordinal)
+        {
+            ["docs/a.md"] = new("docs/a.md", "b1", Ruleset: ""),
+        });
+
+        Assert.True(stored.Recleaned(new("docs/a.md", "b1", "A", Blocked: false, [])));
+        Assert.False(stored.Recleaned(new("docs/a.md", "b1", "A", Blocked: true, [])));
+        Assert.False(stored.Recleaned(new("docs/a.md", "b1", "A", Blocked: false, []) { Oversized = true }));
+        Assert.False(stored.Recleaned(new("docs/a.md", "b2", "A", Blocked: false, [])));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_fingerprint_tells_lists_apart_that_concatenate_alike() =>
         Assert.NotEqual(RedactionScrubberFactory.Fingerprint([new("a", "bc")]), RedactionScrubberFactory.Fingerprint([new("ab", "c")]));
 }
