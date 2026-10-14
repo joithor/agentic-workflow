@@ -144,10 +144,6 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   run recipe validate "$root/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml"
 } >"$out/actual.raw"
 
-sed -E -e "s#$work#WORK#g" -e "s#$root#ROOT#g" -e "s#held by $(hostname -s)[^/ ]*#held by HOST#g" -e 's/[0-9a-f]{64}/HASH/g' -e 's/hash [0-9a-f]{6}/hash HASH6/g' -e 's/approve profile [0-9a-f]{6}/approve profile HASH6/g' \
-  -e 's/pid [0-9]+/pid PID/g' -e 's#HOST/[0-9]+#HOST/PID#g' -e 's/127\.0\.0\.1:[0-9]+/127.0.0.1:PORT/g' \
-  -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z/TIME/g' -e 's/\(last [0-9:]{8}Z\)/(last TIME)/g' \
-  -e 's/^(  services  heartbeat every [0-9]+s) \(last TIME\)$/\1/' \
-  -e '/^(ok|warn) +claude-code /d' "$out/actual.raw" >"$out/actual.txt"   # doctor's claude-code line depends on where it runs (re-probed inside Claude Code, else the installed version); the pending owner-probe lines are pinned
+bash "$here/normalize.sh" "$work" "$root" <"$out/actual.raw" >"$out/actual.txt"
 diff -u "$here/expected.txt" "$out/actual.txt"
 echo "aot-sindri-smoke: ok (framework-dependent publish, $(du -sh "$pub" | cut -f1))"

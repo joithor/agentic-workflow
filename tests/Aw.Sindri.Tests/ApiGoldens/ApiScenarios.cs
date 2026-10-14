@@ -87,7 +87,7 @@ internal static class ApiScenarios
     }
 
     /// <summary>An approve body for <paramref name="hash"/> that answers a fresh 'approve profile &lt;hash6&gt;' challenge as the human typed it (S1-D5).</summary>
-    private static async Task<string> Confirmed(GoldenHost host, string hash)
+    internal static async Task<string> Confirmed(GoldenHost host, string hash)
     {
         var action = "approve profile " + hash[..6];
         var issued = await host.Http.Ask(Post("/sindri/workflow/challenges", $"{{\"action\":\"{action}\"}}", Human(host.Token.Value)));
