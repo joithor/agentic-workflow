@@ -13,6 +13,7 @@ internal static class EndpointTable
         var commands = group.MapGroup(string.Empty).WithMetadata(CommandRouteMetadata.Instance);   // Origin refused before binding (SND-API-008)
 
         // ---- queries: one line per slice, sorted ----
+        _ = queries.MapGetEventCatalog();
         _ = queries.MapGetItem();
         _ = queries.MapGetItemTimeline();
         _ = queries.MapGetProfile();
@@ -26,6 +27,7 @@ internal static class EndpointTable
         _ = queries.MapListServices();
         _ = queries.MapPingProcess();
         _ = queries.MapQueryContext();
+        _ = queries.MapReadLedger();
         _ = queries.MapStreamEvents();
 
         // ---- commands: one line per slice, sorted ----

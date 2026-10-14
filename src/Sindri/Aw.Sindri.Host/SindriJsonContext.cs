@@ -18,6 +18,7 @@ using Aw.Sindri.Features.CloseItem;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.CreateItem;
 using Aw.Sindri.Features.EvalRecipe;
+using Aw.Sindri.Features.GetEventCatalog;
 using Aw.Sindri.Features.GetItem;
 using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetProfile;
@@ -26,6 +27,7 @@ using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListItems;
 using Aw.Sindri.Features.ListServices;
+using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StopProcess;
@@ -71,6 +73,9 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ValidateProfileResponse))]
 [JsonSerializable(typeof(RunDoctorResponse))]
 [JsonSerializable(typeof(PublicEvent))]
+[JsonSerializable(typeof(LedgerPage))]
+[JsonSerializable(typeof(EventCatalogView))]
+[JsonSerializable(typeof(EventTypeView))]
 [JsonSerializable(typeof(StreamErrorFrame))]
 [JsonSerializable(typeof(ListCommandsRequest))]
 [JsonSerializable(typeof(ListCommandsResponse))]

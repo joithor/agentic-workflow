@@ -12,6 +12,7 @@ using Aw.Sindri.Features.Commands;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.CreateItem;
 using Aw.Sindri.Features.EvalRecipe;
+using Aw.Sindri.Features.GetEventCatalog;
 using Aw.Sindri.Features.GetItem;
 using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetProfile;
@@ -21,6 +22,7 @@ using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListItems;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.PingProcess;
+using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RecordServiceRun;
@@ -82,6 +84,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     private static IServiceCollection AddQueries(this IServiceCollection services)
     {
         // ---- queries (one line per slice) ----
+        _ = services.AddScoped<IValidator<GetEventCatalogRequest>, AcceptAllValidator<GetEventCatalogRequest>>().AddQuery<GetEventCatalogRequest, EventCatalogView, GetEventCatalogService>();
         _ = services.AddScoped<IValidator<GetItemRequest>, AcceptAllValidator<GetItemRequest>>().AddQuery<GetItemRequest, ItemView, GetItemService>();
         _ = services.AddScoped<IValidator<GetItemTimelineRequest>, AcceptAllValidator<GetItemTimelineRequest>>().AddQuery<GetItemTimelineRequest, TimelineResponse, GetItemTimelineService>();
         _ = services.AddScoped<IValidator<GetProfileRequest>, AcceptAllValidator<GetProfileRequest>>().AddQuery<GetProfileRequest, GetProfileResponse, GetProfileService>();
@@ -95,6 +98,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<ListServicesRequest>, AcceptAllValidator<ListServicesRequest>>().AddQuery<ListServicesRequest, ListServicesResponse, ListServicesService>();
         _ = services.AddScoped<IValidator<PingProcessRequest>, AcceptAllValidator<PingProcessRequest>>().AddQuery<PingProcessRequest, Ping, PingProcessService>();
         _ = services.AddScoped<IValidator<QueryContextRequest>, AcceptAllValidator<QueryContextRequest>>().AddQuery<QueryContextRequest, ContextResult, QueryContextService>();
+        _ = services.AddScoped<IValidator<ReadLedgerRequest>, AcceptAllValidator<ReadLedgerRequest>>().AddQuery<ReadLedgerRequest, LedgerPage, ReadLedgerService>();
         _ = services.AddScoped<IValidator<StreamEventsRequest>, AcceptAllValidator<StreamEventsRequest>>().AddQuery<StreamEventsRequest, StreamEventsResponse, StreamEventsService>();
         return services;
     }

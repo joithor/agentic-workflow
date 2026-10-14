@@ -856,3 +856,72 @@ Aw.Sindri.Features.StreamEvents.StreamEventsResponse.ScannedTo.init -> void
 Aw.Sindri.Features.StreamEvents.StreamEventsResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>! Events, out long ScannedTo) -> void
 Aw.Sindri.Features.StreamEvents.StreamEventsResponse.Events.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>!
 Aw.Sindri.Features.StreamEvents.StreamEventsResponse.StreamEventsResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>! Events, long ScannedTo) -> void
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.<Clone>$() -> Aw.Sindri.Features.GetEventCatalog.EventCatalogView!
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetEventCatalog.EventTypeView!>! Types) -> void
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.Equals(Aw.Sindri.Features.GetEventCatalog.EventCatalogView? other) -> bool
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.EventCatalogView(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetEventCatalog.EventTypeView!>! Types) -> void
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.Types.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetEventCatalog.EventTypeView!>!
+Aw.Sindri.Features.GetEventCatalog.EventCatalogView.Types.init -> void
+Aw.Sindri.Features.GetEventCatalog.EventTypeView
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.<Clone>$() -> Aw.Sindri.Features.GetEventCatalog.EventTypeView!
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Deconstruct(out string! Type, out string! KeyShape, out System.Collections.Generic.IReadOnlyList<string!>! Invalidates) -> void
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Equals(Aw.Sindri.Features.GetEventCatalog.EventTypeView? other) -> bool
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.EventTypeView(string! Type, string! KeyShape, System.Collections.Generic.IReadOnlyList<string!>! Invalidates) -> void
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Invalidates.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Invalidates.init -> void
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.KeyShape.get -> string!
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.KeyShape.init -> void
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Type.get -> string!
+Aw.Sindri.Features.GetEventCatalog.EventTypeView.Type.init -> void
+Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest
+Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.<Clone>$() -> Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest!
+Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.Equals(Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? other) -> bool
+Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.GetEventCatalogRequest() -> void
+Aw.Sindri.Features.ReadLedger.LedgerPage
+Aw.Sindri.Features.ReadLedger.LedgerPage.<Clone>$() -> Aw.Sindri.Features.ReadLedger.LedgerPage!
+Aw.Sindri.Features.ReadLedger.LedgerPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>! Events, out long? Next) -> void
+Aw.Sindri.Features.ReadLedger.LedgerPage.Equals(Aw.Sindri.Features.ReadLedger.LedgerPage? other) -> bool
+Aw.Sindri.Features.ReadLedger.LedgerPage.Events.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>!
+Aw.Sindri.Features.ReadLedger.LedgerPage.Events.init -> void
+Aw.Sindri.Features.ReadLedger.LedgerPage.LedgerPage(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>! Events, long? Next) -> void
+Aw.Sindri.Features.ReadLedger.LedgerPage.Next.get -> long?
+Aw.Sindri.Features.ReadLedger.LedgerPage.Next.init -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.<Clone>$() -> Aw.Sindri.Features.ReadLedger.ReadLedgerRequest!
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.After.get -> long
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.After.init -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Deconstruct(out long After, out Aw.Sindri.Core.Ids.ItemRef? Item, out string? Type, out int Max) -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Equals(Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? other) -> bool
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Item.get -> Aw.Sindri.Core.Ids.ItemRef?
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Item.init -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Max.get -> int
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Max.init -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.ReadLedgerRequest(long After, Aw.Sindri.Core.Ids.ItemRef? Item = null, string? Type = null, int Max = 100) -> void
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Type.get -> string?
+Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Type.init -> void
+override Aw.Sindri.Features.GetEventCatalog.EventCatalogView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetEventCatalog.EventCatalogView.GetHashCode() -> int
+override Aw.Sindri.Features.GetEventCatalog.EventCatalogView.ToString() -> string!
+override Aw.Sindri.Features.GetEventCatalog.EventTypeView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetEventCatalog.EventTypeView.GetHashCode() -> int
+override Aw.Sindri.Features.GetEventCatalog.EventTypeView.ToString() -> string!
+override Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.ToString() -> string!
+override Aw.Sindri.Features.ReadLedger.LedgerPage.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ReadLedger.LedgerPage.GetHashCode() -> int
+override Aw.Sindri.Features.ReadLedger.LedgerPage.ToString() -> string!
+override Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.ToString() -> string!
+static Aw.Sindri.Features.GetEventCatalog.EventCatalogView.operator !=(Aw.Sindri.Features.GetEventCatalog.EventCatalogView? left, Aw.Sindri.Features.GetEventCatalog.EventCatalogView? right) -> bool
+static Aw.Sindri.Features.GetEventCatalog.EventCatalogView.operator ==(Aw.Sindri.Features.GetEventCatalog.EventCatalogView? left, Aw.Sindri.Features.GetEventCatalog.EventCatalogView? right) -> bool
+static Aw.Sindri.Features.GetEventCatalog.EventTypeView.operator !=(Aw.Sindri.Features.GetEventCatalog.EventTypeView? left, Aw.Sindri.Features.GetEventCatalog.EventTypeView? right) -> bool
+static Aw.Sindri.Features.GetEventCatalog.EventTypeView.operator ==(Aw.Sindri.Features.GetEventCatalog.EventTypeView? left, Aw.Sindri.Features.GetEventCatalog.EventTypeView? right) -> bool
+static Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.operator !=(Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? left, Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? right) -> bool
+static Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.operator ==(Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? left, Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? right) -> bool
+static Aw.Sindri.Features.ReadLedger.LedgerPage.operator !=(Aw.Sindri.Features.ReadLedger.LedgerPage? left, Aw.Sindri.Features.ReadLedger.LedgerPage? right) -> bool
+static Aw.Sindri.Features.ReadLedger.LedgerPage.operator ==(Aw.Sindri.Features.ReadLedger.LedgerPage? left, Aw.Sindri.Features.ReadLedger.LedgerPage? right) -> bool
+static Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.operator !=(Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? left, Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? right) -> bool
+static Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.operator ==(Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? left, Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? right) -> bool
