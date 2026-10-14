@@ -295,7 +295,7 @@ terminal's.
 
 | Golden | State | Source |
 |---|---|---|
-| `claude-code.json` | pinned (2026-10-12, Claude Code 2.1.296, its Bash tool in Warp) | `scripts/sindri-prove.sh doctor --probe` from an agent session, `SINDRI="$HOME/.dotnet/dotnet artifacts/bin/Aw.Sindri.Host/debug/sindri.dll"` |
+| `claude-code.json` | pinned (2026-10-12 at Claude Code 2.1.296; re-probed 2026-10-14 at 2.1.299, same markers and ancestry; its Bash tool in Warp) | `scripts/sindri-prove.sh doctor --probe` from an agent session, `SINDRI="$HOME/.dotnet/dotnet artifacts/bin/Aw.Sindri.Host/debug/sindri.dll"` |
 | `plain-terminal.json` | pinned (derived) | the variable names Claude Code was launched with (`ps eww` of the `claude` process: the owner's Warp shell's exported environment) and that shell's ancestry (`-zsh`, Warp, launchd). The owner may replace it with a real probe from a plain terminal |
 | `codex-read-only.json`, `codex-workspace-write.json`, `codex-danger-full-access.json` | pending: owner probe | — |
 | `cursor-agent.json`, `cursor-terminal.json` | pending: owner probe | — |
