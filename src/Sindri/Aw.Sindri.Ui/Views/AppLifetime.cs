@@ -23,7 +23,15 @@ internal sealed class AppLifetime : IDisposable
     private readonly Action _shutdown;
     private readonly Func<Task> _settle;
     private readonly TimeProvider _clock;
+    /// <summary>Raised on the UI thread the moment Quit, or the OS ending the app, begins (the single instance retires on it).</summary>
+    internal event EventHandler? Quitting
+    {
+        add => _onQuitting += value;
+        remove => _onQuitting -= value;
+    }
+
     private IClassicDesktopStyleApplicationLifetime? _desktop;
+    private EventHandler? _onQuitting;
     private bool _quitting;
 
     /// <summary>Wires the window and the tray.</summary>
@@ -140,6 +148,7 @@ internal sealed class AppLifetime : IDisposable
         }
 
         _quitting = true;
+        _onQuitting?.Invoke(this, EventArgs.Empty);
         try
         {
             await _settle().WaitAsync(SettleWithin, _clock).ConfigureAwait(true);
@@ -162,6 +171,7 @@ internal sealed class AppLifetime : IDisposable
     internal void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
     {
         _quitting = true;
+        _onQuitting?.Invoke(this, EventArgs.Empty);
         try
         {
             _settle().WaitAsync(SettleWithin, _clock).GetAwaiter().GetResult();

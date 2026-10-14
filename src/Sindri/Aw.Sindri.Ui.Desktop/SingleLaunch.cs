@@ -12,8 +12,12 @@ namespace Aw.Sindri.Ui.Desktop;
 /// app runs, or while ending the instance and the motion poll after it (an unusable or removed 'ui' directory, a socket
 /// it can't use) ends the launch with SND-UI-004 and exit 2, logging the code and the exception's type only.
 /// </summary>
-internal static class SingleLaunch
+/// <param name="holderWait">How long a launch whose message got no answer waits for the holder to go before it names it.</param>
+internal sealed class SingleLaunch(TimeSpan holderWait)
 {
+    /// <summary>How long a launch waits for a holder that didn't answer to go (a quitting app settles for up to a second).</summary>
+    internal static readonly TimeSpan DefaultHolderWait = TimeSpan.FromSeconds(3);
+
     private const string Scheme = "sindri://";
 
     // A failure inside the app (at start-up or while it ran): the app's log names the cause, which AW_LOG_LEVEL=none hides.
@@ -26,7 +30,17 @@ internal static class SingleLaunch
     /// <param name="errors">Standard error.</param>
     /// <param name="log">The head's log, for a failure before the app starts (SND-UI-004).</param>
     /// <returns>The exit code: the app's (2 when it failed), 0 when the running instance handled the message, 1 when it holds the claim but doesn't answer.</returns>
-    internal static int Run(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors, ILogger log)
+    internal static int Run(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors, ILogger log) =>
+        new SingleLaunch(DefaultHolderWait).Execute(instance, args, runApp, errors, log);
+
+    /// <summary>As <see cref="Run(ISingleInstance, IReadOnlyList{string}, Func{int}, TextWriter, ILogger)"/>, with this launch's wait for a holder that doesn't answer.</summary>
+    /// <param name="instance">This launch's instance port.</param>
+    /// <param name="args">The command line.</param>
+    /// <param name="runApp">Runs the app until it quits; returns its exit code.</param>
+    /// <param name="errors">Standard error.</param>
+    /// <param name="log">The head's log.</param>
+    /// <returns>The exit code, as Run's.</returns>
+    internal int Execute(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors, ILogger log)
     {
         try
         {
@@ -88,8 +102,9 @@ internal static class SingleLaunch
         return SindriApp.FailedExitCode;
     }
 
-    private static int Launch(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors)
+    private int Launch(ISingleInstance instance, IReadOnlyList<string> args, Func<int> runApp, TextWriter errors)
     {
+        _ = holderWait;
         // Before the UI starts, on the main thread with no synchronization context: blocking here deadlocks nothing.
         if (Claim(instance))
         {

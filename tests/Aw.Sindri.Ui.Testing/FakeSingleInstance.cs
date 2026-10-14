@@ -79,6 +79,8 @@ internal sealed class FakeSingleInstance(FakeInstanceChannel channel, int proces
         }
     }
 
+    public void Retire() => throw new NotSupportedException();
+
     public int? HolderProcessId() => channel.HolderProcessId;
 
     public ValueTask DisposeAsync()

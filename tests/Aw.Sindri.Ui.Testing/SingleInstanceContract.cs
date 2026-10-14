@@ -130,6 +130,48 @@ public abstract class SingleInstanceContract
         }
     }
 
+    // Review run 5 (julik-frontend-races-reviewer-0): a holder that has begun ending refuses at once, so a relaunch is
+    // never answered "handled" for a message nothing will act on, and it can tell the holder is going (the claim stays
+    // held until the holder is disposed).
+    [Fact]
+    public async Task A_retired_holder_refuses_a_later_launchs_message_at_once_and_keeps_the_claim_until_it_ends()
+    {
+        var first = Launch();
+        await using var second = Launch();
+        Expect.True(await first.TryClaim(Token));
+        await using var reader = new InstanceReader(first, Token);
+
+        first.Retire();
+
+        Expect.True(!await second.Send(InstanceMessages.Focus, Token).AsTask().WaitAsync(TimeSpan.FromSeconds(5), Token));
+        Expect.Sequence([], await reader.Take(0));
+        Expect.True(!await second.TryClaim(Token));
+
+        await first.DisposeAsync();
+        Expect.True(await second.TryClaim(Token));
+    }
+
+    // A message already handed to the app when the holder retires is withdrawn: the app can no longer act on it and the
+    // sender isn't told it was handled.
+    [Fact]
+    public async Task A_message_in_flight_when_the_holder_retires_is_withdrawn_and_refused()
+    {
+        await using var first = Launch();
+        await using var second = Launch();
+        Expect.True(await first.TryClaim(Token));
+        await using var messages = first.Messages(Token).GetAsyncEnumerator(Token);
+        var next = messages.MoveNextAsync().AsTask();
+        var sending = second.Send("item/ITM-QUIT", Token).AsTask();
+        Expect.True(await next);
+        var message = messages.Current;
+
+        first.Retire();
+
+        Expect.True(!await sending.WaitAsync(TimeSpan.FromSeconds(5), Token));
+        Expect.True(message.Withdrawn.IsCancellationRequested);
+        Expect.True(!message.TryAct());
+    }
+
     [Fact]
     public async Task The_first_launch_claims_and_a_second_does_not()
     {

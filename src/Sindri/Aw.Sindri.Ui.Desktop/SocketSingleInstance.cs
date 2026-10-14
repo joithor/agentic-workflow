@@ -130,6 +130,8 @@ internal sealed class SocketSingleInstance(UiStatePaths paths, TimeProvider cloc
         }
     }
 
+    public void Retire() => throw new NotSupportedException();
+
     public int? HolderProcessId()
     {
         // Only a launch whose claim failed asks, so the file is the live holder's (a crashed one's lock is gone and the
