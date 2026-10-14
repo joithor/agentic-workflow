@@ -20,7 +20,7 @@ public sealed class RecipeRevokePlanner(IRecipeStore store, IRecipeApprovals app
     /// <param name="id">The recipe id.</param>
     /// <param name="hash">The hash or its prefix.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
-    /// <returns>The plan; SND-RECIPE-002 when no registered version of the id matches; SND-RECIPE-003 when it was never approved; SND-RECIPE-005 when it is already revoked.</returns>
+    /// <returns>The plan; SND-RECIPE-002 when no registered version of the id matches; SND-RECIPE-003 when it was never approved; SND-RECIPE-005 when it is already revoked and nothing approved from it is left to cascade to.</returns>
     public async ValueTask<Result<RevokePlan>> Revoke(RecipeId id, string hash, CancellationToken cancellationToken)
     {
         var versions = await store.Versions(id, cancellationToken).ConfigureAwait(false);
@@ -78,9 +78,19 @@ public sealed class RecipeRevokePlanner(IRecipeStore store, IRecipeApprovals app
     {
         var name = $"{recipe.Id.Value}@{recipe.Hash.Display}";
         var revoked = await approvals.Revocation(recipe.Hash, cancellationToken).ConfigureAwait(false);
-        if (revoked.IsError || revoked.Value is not null)
+        if (revoked.IsError)
         {
-            return revoked.IsError ? revoked.Error : WorkflowErrors.RecipeRevoked.With($"{name} is already revoked; nothing to do");
+            return revoked.Error;
+        }
+
+        if (revoked.Value is not null)
+        {
+            // A revoke whose cascade stopped partway (the hash stamped, some generated recipes not) is finished by running
+            // it again: every step is keyed by its hash, so the stamped ones record nothing new.
+            var rest = await Cascade(recipe.Hash, cancellationToken).ConfigureAwait(false);
+            return rest.IsError ? rest.Error
+                : rest.Value.Count == 0 ? WorkflowErrors.RecipeRevoked.With($"{name} is already revoked; nothing to do")
+                : null;
         }
 
         var latest = await approvals.Latest(recipe.Id, recipe.Version, recipe.Hash, cancellationToken).ConfigureAwait(false);
@@ -89,7 +99,7 @@ public sealed class RecipeRevokePlanner(IRecipeStore store, IRecipeApprovals app
             : null;
     }
 
-    /// <summary>The approvals made from <paramref name="root"/>, and from those in turn, nearest first; each once.</summary>
+    /// <summary>The live approvals made from <paramref name="root"/>, and from those in turn (through revoked ones too), nearest first; each once.</summary>
     private async ValueTask<Result<IReadOnlyList<RecipeApproval>>> Cascade(RecipeHash root, CancellationToken cancellationToken)
     {
         var found = new List<RecipeApproval>();
@@ -97,7 +107,7 @@ public sealed class RecipeRevokePlanner(IRecipeStore store, IRecipeApprovals app
         var seen = new HashSet<RecipeHash> { root };
         while (queue.TryDequeue(out var hash))
         {
-            var made = await approvals.ApprovedFrom(hash, cancellationToken).ConfigureAwait(false);
+            var made = await approvals.GeneratedFrom(hash, cancellationToken).ConfigureAwait(false);
             if (made.IsError)
             {
                 return made.Error;
@@ -105,8 +115,17 @@ public sealed class RecipeRevokePlanner(IRecipeStore store, IRecipeApprovals app
 
             foreach (var approval in made.Value.Where(a => seen.Add(a.Hash)))
             {
-                found.Add(approval);
-                queue.Enqueue(approval.Hash);
+                queue.Enqueue(approval.Hash);   // walk through a recipe already stamped, so a resumed revoke reaches what lies below it
+                var revoked = await approvals.Revocation(approval.Hash, cancellationToken).ConfigureAwait(false);
+                if (revoked.IsError)
+                {
+                    return revoked.Error;
+                }
+
+                if (revoked.Value is null)
+                {
+                    found.Add(approval);
+                }
             }
         }
 

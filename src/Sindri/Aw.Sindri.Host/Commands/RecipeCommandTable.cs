@@ -43,7 +43,7 @@ internal static partial class RecipeCommandTable
         ["approve", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe approve needs one recipe file or id@hash ({ApproveUsage})")),
         ["revoke", var target] when target.Contains('@', StringComparison.Ordinal) && desk is not null => new RecipeDeskCommands(desk, services, output).Revoke(target, ct),
         ["revoke", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe revoke needs one id@hash ({RevokeUsage})")),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", .. args])}' is not a sindri command ({ValidateUsage}; {EvalUsage}; {RegisterUsage}; {ShowUsage}; {ListUsage})")),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", .. args])}' is not a sindri command ({ValidateUsage}; {EvalUsage}; {RegisterUsage}; {ShowUsage}; {ListUsage}; {ApproveUsage}; {RevokeUsage})")),
     };
 
     private static Task<int> RunEval(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch

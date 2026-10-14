@@ -40,7 +40,7 @@ public sealed class InMemoryChallenges(TimeProvider clock) : IChallenges
 
             var why = clock.GetUtcNow() >= issued.ExpiresAt ? "expired"
                 : issued.Action != expected ? $"was for '{issued.Action.Text}', not '{expected.Text}'"
-                : !string.Equals(answer.Typed, issued.Action.Text, StringComparison.Ordinal) ? $"needed '{issued.Action.Text}' typed exactly"
+                : !string.Equals(answer.Typed.Trim(), issued.Action.Text, StringComparison.Ordinal) ? $"needed '{issued.Action.Text}' typed exactly"
                 : issued.Subject != current ? "has a subject that changed since the preview"
                 : null;
             return why is null ? issued : stale.With($"The challenge {why}; run it again and re-read the preview");

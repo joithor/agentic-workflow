@@ -12,7 +12,7 @@ internal static class IssueNonceEndpoint
     internal static RouteGroupBuilder MapIssueNonce(this RouteGroupBuilder group)
     {
         _ = group.MapPost("/workflow/instances/{instanceId}/nonce", static async (string instanceId, IService<IssueNonceRequest, IssueNonceResponse> service, CancellationToken ct)
-            => (await service.Handle(new IssueNonceRequest(InstanceRoute.Reference(instanceId)), ct).ConfigureAwait(false)).ToHttpResult());
+            => (await service.Handle(new IssueNonceRequest(InstanceRoute.Id(instanceId)), ct).ConfigureAwait(false)).ToHttpResult());
         return group;
     }
 }

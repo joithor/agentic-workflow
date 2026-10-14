@@ -13,17 +13,23 @@ internal static class EndpointTable
         var commands = group.MapGroup(string.Empty).WithMetadata(CommandRouteMetadata.Instance);   // Origin refused before binding (SND-API-008)
 
         // ---- queries: one line per slice, sorted ----
+        _ = queries.MapExportContextMap();
+        _ = queries.MapGetContextMap();
+        _ = queries.MapGetContextSources();
         _ = queries.MapGetProfile();
         _ = queries.MapGetStatus();
         _ = queries.MapListCommands();
+        _ = queries.MapListInstances();
         _ = queries.MapListServices();
         _ = queries.MapListRecipes();
         _ = queries.MapPingProcess();
+        _ = queries.MapQueryContext();
         _ = queries.MapShowRecipe();
         _ = queries.MapStreamEvents();
 
         // ---- commands: one line per slice, sorted ----
         _ = commands.MapApproveProfile();
+        _ = commands.MapImportContextMap();
         _ = commands.MapRebuildViews();
         _ = commands.MapStopProcess();
         _ = commands.MapApproveRecipe();

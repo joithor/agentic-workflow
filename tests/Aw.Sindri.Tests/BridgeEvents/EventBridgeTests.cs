@@ -181,7 +181,7 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
         var start = new InstanceStart(approved.Value.Version, ItemKey.From(item), attempt, inputs, Tenant: "local", Ring: 0);
         return await server.Environment.Client.StartWorkflowAsync(
             (RecipeWorkflow wf) => wf.RunAsync(start),
-            new WorkflowOptions(id: start.WorkflowId().Value, taskQueue: SindriTemporal.TaskQueue));
+            new WorkflowOptions(id: start.WorkflowId().Value, taskQueue: TemporalSettings.DefaultTaskQueue));
     }
 
     /// <summary>Waits until visibility lists <paramref name="count"/> live instances of <paramref name="item"/> (it is eventually consistent).</summary>

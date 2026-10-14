@@ -28,10 +28,11 @@
       --color-accent-light: #FDEEE9;
       --color-accent-muted: #E8836C;
     }
-    /* Sindri-only: build-status chips (built / specced / designed / dream) */
+    /* Sindri-only: build-status chips (built / building / specced / designed / dream) */
     .status { display: inline-block; font: 600 0.7rem/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase;
       padding: 3px 7px; border-radius: 99px; vertical-align: middle; margin-left: 6px; white-space: nowrap; }
     .status.built    { background: #E8F5EE; color: #226B41; }
+    .status.building { background: #E2F4F1; color: #0F6B66; }
     .status.specced  { background: #E4F2F7; color: #1F6280; }
     .status.designed { background: #FDF5E0; color: #8A6A1C; }
     .status.dream    { background: #EFEBF7; color: #5E528A; }
@@ -176,15 +177,19 @@
 
       <section class="screen animate-in">
         <h2 class="screen-heading">What's real today, and what isn't</h2>
-        <p>Sindri is part built, part plan. Every feature in this course carries one of four labels:</p>
+        <p>Sindri is part built, part plan. Every feature in this course carries one of five labels (as of 2026-10-12):</p>
         <div class="pattern-cards">
           <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5)">
             <h4 class="pattern-title">Built <span class="status built">built</span></h4>
-            <p class="pattern-desc">Shipped in Plans 1–5: measurement, the ledger, the code index, scoping and offline self-evolution.</p>
+            <p class="pattern-desc">Merged on <code>main</code>. Plans 1–5 in TypeScript (measurement, the ledger, the code index, scoping and offline self-evolution), and the first stages of the new C# Sindri app: its shell, its command chain and the engine's recipe model.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)">
+            <h4 class="pattern-title">Building <span class="status building">building</span></h4>
+            <p class="pattern-desc">Has an open PR. The C# app's API, workflow engine on Temporal, context engine and Avalonia UI are here, in parallel lanes.</p>
           </div>
           <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)">
             <h4 class="pattern-title">Specced <span class="status specced">specced</span></h4>
-            <p class="pattern-desc">Has an approved spec and plan. Plan 6, the dashboard, is here.</p>
+            <p class="pattern-desc">Has an approved spec and plan, but no PR yet: the later phases of each app lane.</p>
           </div>
           <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4)">
             <h4 class="pattern-title">Designed <span class="status designed">designed</span></h4>
@@ -196,7 +201,7 @@
           </div>
         </div>
         <div class="file-tree">
-          <div class="ft-folder open"><span class="ft-name">sindri/src/</span><span class="ft-desc">The built part, in TypeScript today (a C# port is in progress)</span>
+          <div class="ft-folder open"><span class="ft-name">sindri/src/</span><span class="ft-desc">The built part in TypeScript: it runs today and is the reference for the new C# app in <code>src/Sindri</code>, which replaces it at the switch</span>
             <div class="ft-children">
               <div class="ft-folder"><span class="ft-name">ledger/</span><span class="ft-desc">The one database everything writes to</span></div>
               <div class="ft-folder"><span class="ft-name">lock/</span><span class="ft-desc">Makes sure only one Sindri runs at a time</span></div>
@@ -258,8 +263,9 @@
 
       <section class="screen animate-in">
         <h2 class="screen-heading">A watchman doing rounds</h2>
-        <p>A night watchman doesn't sit in one room waiting for trouble. Every few minutes they walk the building, check each door, write in the logbook and move on. That's the <span class="term" data-definition="One short, deterministic pass of Sindri: read the ledger, check what finished, start what's due, notify, exit. macOS's launchd fires it on a schedule.">tick</span>.</p>
-        <p><span class="term" data-definition="macOS's built-in scheduler, the thing that starts programs at boot or on a timer. Sindri uses it instead of a long-running server process.">launchd</span> fires a short deterministic tick. It never waits on a model: model work runs in bounded jobs and sessions that end, and the next tick reads their results from the <span class="term" data-definition="Sindri's single SQLite database: items, events, decisions and adoptions. The one source of truth, kept outside every session's working tree.">ledger</span>. <span class="status designed">designed</span> <span class="ref">§5</span></p>
+        <p>A night watchman doesn't sit in one room waiting for trouble. Every few minutes they walk the building, check each door, write in the logbook and move on. That's the <span class="term" data-definition="One short, deterministic pass of Sindri: read the ledger, check what finished, start what's due, notify, exit. In the C# app it is the scheduler inside the one Sindri process.">tick</span>.</p>
+        <p><span class="term" data-definition="macOS's built-in scheduler, the thing that starts programs at boot or on a timer. The TypeScript Sindri uses it to fire jobs; the C# app is one long-running process that launchd only keeps alive.">launchd</span> fires a short deterministic tick. It never waits on a model: model work runs in bounded jobs and sessions that end, and the next tick reads their results from the <span class="term" data-definition="Sindri's single SQLite database: items, events, decisions and adoptions. The one source of truth, kept outside every session's working tree.">ledger</span>. <span class="status designed">designed</span> <span class="ref">§5</span></p>
+        <p>In the new C# app, the watchman lives inside one process that <code>sindri</code> starts under the host lease. Long-running work runs as workflow instances on a local <span class="term" data-definition="A durable-execution server. Sindri starts a local one on loopback; it keeps each workflow's state, timers and retries, and every transition is mirrored into the ledger.">Temporal</span> server, so a crash or a reboot resumes them instead of losing them. <span class="status building">building</span> <span class="ref">§17.29 · engine spec</span></p>
         <div class="icon-rows">
           <div class="icon-row"><div class="icon-circle" style="background: var(--color-actor-4)">⏰</div><div><strong>launchd</strong> <span class="status built">built</span><p>Already runs the hourly <code>sindri observe</code>, index builds and the Monday evolve job.</p></div></div>
           <div class="icon-row"><div class="icon-circle" style="background: var(--color-actor-1)">🔦</div><div><strong>sindri tick</strong> <span class="status designed">designed</span><p>Reconciles, scans trackers, spawns jobs, routes items, starts sessions under the cap, notifies.</p></div></div>
@@ -719,7 +725,7 @@
         <div class="flow-animation" data-steps='[
           {"highlight":"flow-m4-packet","label":"The packet passed sindri packet validate and its hash is in the ledger."},
           {"highlight":"flow-m4-compiler","label":"The task compiler turns the next Step into a session spec. Policy = ceiling ∩ lens ∩ task.","packet":true,"from":"m4-packet","to":"m4-compiler"},
-          {"highlight":"flow-m4-session","label":"A lean container session starts with only its planned skills, agents and MCP.","packet":true,"from":"m4-compiler","to":"m4-session"},
+          {"highlight":"flow-m4-session","label":"A lean session starts in a tmux session Sindri owns, with only its planned skills, agents and MCP. You can attach from Warp and take over.","packet":true,"from":"m4-compiler","to":"m4-session"},
           {"highlight":"flow-m4-eval","label":"A QA Step checks held-out examples the implementer never saw. A script computes the verdict.","packet":true,"from":"m4-session","to":"m4-eval"},
           {"highlight":"flow-m4-evidence","label":"Evidence providers run at base and head; each acceptance example gets an artifact.","packet":true,"from":"m4-eval","to":"m4-evidence"},
           {"highlight":"flow-m4-epic","label":"Ship gate: CI green, threads resolved, evidence satisfied, at most 3 rounds. Merge into the epic.","packet":true,"from":"m4-evidence","to":"m4-epic"}
@@ -801,7 +807,7 @@
           <div class="badge-item"><code class="badge-code">writes</code><span class="badge-desc"><strong>Sign:</strong> a pre-tool path guard. <strong>Lock:</strong> Sindri's verifier refuses any bundle with out-of-scope paths.</span></div>
           <div class="badge-item"><code class="badge-code">commands</code><span class="badge-desc"><strong>Sign:</strong> a gate on command strings (easily evaded). <strong>Lock:</strong> missing credentials and network make the command fail anyway.</span></div>
           <div class="badge-item"><code class="badge-code">network</code><span class="badge-desc"><strong>Lock only:</strong> a per-task egress proxy allowlist.</span></div>
-          <div class="badge-item"><code class="badge-code">reads</code><span class="badge-desc"><strong>Lock:</strong> mounts. Only the repo, pack and allowed refs exist in the container.</span></div>
+          <div class="badge-item"><code class="badge-code">reads</code><span class="badge-desc"><strong>Lock:</strong> mounts. Only the repo, pack and allowed refs exist in the container (designed: a sandbox phase comes before any unattended Step runs).</span></div>
           <div class="badge-item"><code class="badge-code">holdouts</code><span class="badge-desc"><strong>Lock:</strong> mounted only into evaluator Steps, with a canary example to detect leaks.</span></div>
         </div>
         <div class="callout callout-warning">
@@ -842,17 +848,17 @@
 
       <section class="screen animate-in">
         <h2 class="screen-heading">The right screen for each decision</h2>
-        <p>A newsroom editor approves a headline from their phone, but rewrites a story at the desk. One command layer is the authority; the CLI and the dashboard are two clients of the same handler, with the same checks and the same ledger record. <span class="ref">§10, §17.12, §17.27</span></p>
+        <p>A newsroom editor approves a headline from their phone, but rewrites a story at the desk. One command layer is the authority; the CLI and the Sindri app are two clients of the same handler, with the same checks and the same ledger record. <span class="ref">§10, §17.12, §17.27</span></p>
         <div class="arch-diagram">
           <div class="arch-zone">
             <h4 class="arch-zone-label">Pick a surface</h4>
-            <div class="arch-component" data-desc="Host dashboard (Plan 6, specced). A loopback page showing every agent on the machine, one state per session written as text: approval, input, plan ready, auth, working, background, ready, stuck, interrupted, failed, limited, crashed, ended. One attention colour means only 'needs you'."><div class="arch-icon">🖥️</div><span>Dashboard</span></div>
+            <div class="arch-component" data-desc="The Sindri app (building: U0–U2 are open PRs). An Avalonia desktop app over the loopback API: the queue, item detail and timeline, what needs you, decisions, and opening or attaching to work in Warp. One attention colour means only 'needs you'. Protected actions show the CLI command to copy instead of running."><div class="arch-icon">🖥️</div><span>Sindri app</span></div>
             <div class="arch-component" data-desc="Phone, over a tailnet (designed). Binary, low-context decisions in a swipe inbox, each signed with a passkey over (item id, item version, nonce, choice). A changed item or reused nonce is refused, and every choice can be undone for 10 seconds."><div class="arch-icon">📱</div><span>Phone</span></div>
             <div class="arch-component" data-desc="The desk (designed). Open product questions, packet edits, freezes and protected approvals, which need a passkey plus typed confirmation of the full diff's hash. Never from the phone."><div class="arch-icon">🪑</div><span>Desk</span></div>
           </div>
           <div class="arch-description">Click a surface to see what it handles</div>
         </div>
-        <p>A <span class="term" data-definition="A private network between your own devices (for example with Tailscale), so the phone can reach the dashboard without exposing it to the internet.">tailnet</span> carries phone decisions. A <span class="term" data-definition="A table declaring each command's CLI form and UI action, or 'ui: pending' with the step it is due. A test fails when a pending action passes its step, so 'later' can't become 'never'.">command registry</span> keeps the UI honest about what it can't do yet.</p>
+        <p>A <span class="term" data-definition="A private network between your own devices (for example with Tailscale), so the phone can reach Sindri without exposing it to the internet.">tailnet</span> carries phone decisions. A <span class="term" data-definition="A table declaring each command's CLI form and UI action, or 'ui: pending' with the step it is due. A test fails when a pending action passes its step, so 'later' can't become 'never'.">command registry</span> keeps the UI honest about what it can't do yet.</p>
       </section>
 
       <section class="screen animate-in">
@@ -903,7 +909,7 @@
         <h2 class="screen-heading">Check your understanding</h2>
         <div class="quiz-container" id="quiz-m5">
           <div class="quiz-question-block" data-correct="b"
-               data-explanation-right="The hook was a sign; the boundary is what holds. With no credentials or network in the container the push fails, and Sindri re-verifies anything a session hands back."
+               data-explanation-right="The hook was a sign; the boundary is what holds. With no credentials or network in the container the push fails, and Sindri re-verifies anything a session hands back. That boundary is designed, not built yet: no unattended Step runs until the sandbox phase lands."
                data-explanation-wrong="Hooks only nudge cooperative agents. The security comes from the container: no credentials, an egress allowlist and Sindri-side re-verification.">
             <div class="scenario-block"><div class="scenario-context"><span class="scenario-label">Scenario</span>
               <p>A prompt-injected session base64-encodes <code>git push --force</code> to slip past the command hook. What stops it?</p></div></div>
@@ -1046,10 +1052,12 @@
         <p>Sindri bootstraps itself: every step ends with a "Turn it on" task, and the next plan's work runs on it. <span class="ref">§13, §17.16</span></p>
         <div class="step-cards">
           <div class="step-card"><div class="step-num">1–5</div><div class="step-body"><strong>Plans 1–5: the control room <span class="status built">built</span></strong><p>Measurement, the ledger, the code index, the scoping harness, offline self-evolution.</p></div></div>
-          <div class="step-card"><div class="step-num">6</div><div class="step-body"><strong>Plan 6: the dashboard <span class="status specced">specced</span></strong><p>Every agent on the machine, one state each.</p></div></div>
-          <div class="step-card"><div class="step-num">R</div><div class="step-body"><strong>Agent readiness and the C# port <span class="status specced">specced</span></strong><p>The repo reaches Level 4 on Factory's agent-readiness framework, so agents build on a codebase that checks what they do.</p></div></div>
+          <div class="step-card"><div class="step-num">R</div><div class="step-body"><strong>Agent readiness and the C# template <span class="status built">built</span></strong><p>The C# template, Readiness, Packets, Redaction, BugFix, Judge and Evidence are merged, so agents build on a codebase that checks what they do. The ports stop there.</p></div></div>
+          <div class="step-card"><div class="step-num">S</div><div class="step-body"><strong>The Sindri app, built new in C# <span class="status building">building</span></strong><p>The app shell is merged. The API, the workflow engine on Temporal, the context engine and the Avalonia UI (which absorbed Plan 6's dashboard) are being built in parallel lanes, each phase landing in a fixed wave order.</p></div></div>
+          <div class="step-card"><div class="step-num">⇄</div><div class="step-body"><strong>The switch <span class="status designed">designed</span></strong><p>One clean cutover from the TypeScript toolkit to the C# build, once every desk tool has its C# form. Nothing installed points at the C# build before then.</p></div></div>
           <div class="step-card"><div class="step-num">F</div><div class="step-body"><strong>The factory, F0 onward <span class="status designed">designed</span></strong><p>Packets, task compiler, lenses, evidence, review anywhere. Level 5 arrives with it.</p></div></div>
         </div>
+        <p>Want to see the pieces working together? <a href="../sindri-architecture.html">How Sindri fits together</a> plays each experience, from starting your day to shipping a change, as a step-by-step swimlane.</p>
         <div class="badge-list">
           <div class="badge-item"><code class="badge-code">1 working day</code><span class="badge-desc">A piece not switched on within a day of its plan merging becomes a ring-0 work item of its own.</span></div>
           <div class="badge-item"><code class="badge-code">no hand-starts</code><span class="badge-desc">No later plan is started by hand if the pieces before it could start it.</span></div>

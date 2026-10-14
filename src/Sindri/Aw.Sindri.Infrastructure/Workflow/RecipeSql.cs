@@ -46,11 +46,18 @@ internal static class RecipeSql
         "SELECT " + ApprovalColumns + " FROM recipe_approvals a WHERE a.revoked_at IS NULL AND a.seq = " +
         "(SELECT MAX(b.seq) FROM recipe_approvals b WHERE b.id = a.id AND b.version = a.version AND b.hash = a.hash)";
 
+    // The latest row of each key, revoked or not.
+    private const string LatestRows =
+        "SELECT " + ApprovalColumns + " FROM recipe_approvals a WHERE a.seq = " +
+        "(SELECT MAX(b.seq) FROM recipe_approvals b WHERE b.id = a.id AND b.version = a.version AND b.hash = a.hash)";
+
     private const string ByKey = " ORDER BY a.id, a.version, a.seq";
 
     internal const string SelectCurrent = CurrentRows + ByKey;
 
     internal const string SelectApprovedFrom = CurrentRows + " AND a.base_hash = $baseHash" + ByKey;
+
+    internal const string SelectGeneratedFrom = LatestRows + " AND a.base_hash = $baseHash" + ByKey;
 
     internal const string SelectPinning =
         CurrentRows + " AND EXISTS (SELECT 1 FROM json_each(a.children_json) c WHERE c.value = $childHash)" + ByKey;

@@ -14,13 +14,19 @@ namespace Aw.Sindri.Features.ListInstances;
 /// full status header. '--needs-me' is served here by a visibility query on 'NeedsYou = true', shaped like API's
 /// 'GET /needs-you' (Decisions, then Tasks; README X5) until API P4 builds that route, which it then reads instead.
 /// </summary>
+/// <param name="directory">Resolves an address or a bare item ('address').</param>
 /// <param name="instances">The visibility query.</param>
 /// <param name="runtime">Each instance's 'GetInstance' Query; one that ended between the list and its query (SND-WF-001) is left out.</param>
-internal sealed partial class ListInstancesService(IWorkflowInstances instances, IInstanceRuntime runtime) : IService<ListInstancesRequest, ListInstancesResponse>
+internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceRuntime runtime) : IService<ListInstancesRequest, ListInstancesResponse>
 {
     public async ValueTask<Result<ListInstancesResponse>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (request.Address is { } reference)
+        {
+            return await One(reference, cancellationToken).ConfigureAwait(false);
+        }
+
         if (request.State is { } state && !StateName.IsMatch(state))
         {
             return SindriErrors.InvalidInput.With($"'{state}' isn't a state name (fix: --state <name>, e.g. --state produce or --state parked)");
@@ -52,6 +58,19 @@ internal sealed partial class ListInstancesService(IWorkflowInstances instances,
         }
 
         return Listed(request.NeedsMe, views);
+    }
+
+    /// <summary>The one instance an address or bare item names, as 'GetInstance' shows it (its id included).</summary>
+    private async ValueTask<Result<ListInstancesResponse>> One(string reference, CancellationToken cancellationToken)
+    {
+        var address = await directory.Resolve(reference, cancellationToken).ConfigureAwait(false);
+        if (address.IsError)
+        {
+            return address.Error;
+        }
+
+        var view = await runtime.Get(address.Value, cancellationToken).ConfigureAwait(false);
+        return view.IsError ? view.Error : new ListInstancesResponse([view.Value], NeedsYou: null, Empty: null);
     }
 
     private static ListInstancesResponse Listed(bool needsMe, List<InstanceView> views)

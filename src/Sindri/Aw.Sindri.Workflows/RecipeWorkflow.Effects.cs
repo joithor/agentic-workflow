@@ -132,7 +132,9 @@ internal sealed partial class RecipeWorkflow
             }
 
             var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, Text: null, after.Facts);
-            _ = await Workflow.ExecuteActivityAsync((EffectActivities a) => a.RunAsync(run), EffectActivities.RunOptions).ConfigureAwait(true);
+            var options = (ActivityOptions)EffectActivities.RunOptions.Clone();
+            options.TaskQueue = Workflow.Info.TaskQueue;   // the instance's queue, from settings (never a constant)
+            _ = await Workflow.ExecuteActivityAsync((EffectActivities a) => a.RunAsync(run), options).ConfigureAwait(true);
             _ = _effectsSent.Add(row.Identity);
         }
         finally

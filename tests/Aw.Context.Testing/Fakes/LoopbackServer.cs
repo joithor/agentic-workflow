@@ -45,7 +45,7 @@ internal sealed class LoopbackServer : IAsyncDisposable
         _ = builder.WebHost.ConfigureKestrel(k => k.Listen(IPAddress.Loopback, 0));
         var server = new LoopbackServer(builder.Build(), log, handler);
         server._app.Run(server.Serve);
-        await server._app.StartAsync().ConfigureAwait(false);
+        await server._app.StartAsync(CancellationToken.None).ConfigureAwait(false);
         server.BaseUrl = new Uri(server._app.Urls.Single().TrimEnd('/') + "/");
         return server;
     }

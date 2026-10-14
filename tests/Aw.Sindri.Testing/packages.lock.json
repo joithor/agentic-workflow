@@ -51,6 +51,14 @@
           "Microsoft.Bcl.AsyncInterfaces": "6.0.0"
         }
       },
+      "aw.context.core": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Vogen": "[8.0.7, 8.0.7]"
+        }
+      },
       "aw.kernel": {
         "type": "Project"
       },
@@ -72,6 +80,7 @@
       "aw.sindri.features": {
         "type": "Project",
         "dependencies": {
+          "Aw.Context.Core": "[1.0.0, )",
           "Aw.Kernel": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",

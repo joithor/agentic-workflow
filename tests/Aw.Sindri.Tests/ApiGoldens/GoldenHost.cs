@@ -37,9 +37,14 @@ public sealed class GoldenHost : IAsyncDisposable
     private readonly TempHome? _elsewhere;
     private WebApplication? _app;
 
-    private GoldenHost(bool temporary)
+    private readonly string _profileYaml;
+    private readonly Action<IServiceCollection>? _extra;
+
+    private GoldenHost(bool temporary, string profileYaml, Action<IServiceCollection>? extra)
     {
         _elsewhere = temporary ? null : new TempHome();
+        _profileYaml = profileYaml;
+        _extra = extra;
     }
 
     /// <summary>The token the host holds.</summary>
@@ -57,10 +62,12 @@ public sealed class GoldenHost : IAsyncDisposable
     /// <summary>Starts a host. <paramref name="temporary"/> false points TMPDIR and AW_STATE_DIR away from its home, so the prover label is refused.</summary>
     /// <param name="temporary">Whether the home counts as temporary (honours the prover label).</param>
     /// <param name="ct">Cancellation.</param>
+    /// <param name="profileYaml">The live profile it starts with (<see cref="ProfileYaml"/> unless a test needs another).</param>
+    /// <param name="extra">More service replacements, after the fixed ones (a test's log sink).</param>
     /// <returns>The started host.</returns>
-    public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct)
+    public static async Task<GoldenHost> Start(bool temporary, CancellationToken ct, string profileYaml = ProfileYaml, Action<IServiceCollection>? extra = null)
     {
-        var host = new GoldenHost(temporary);
+        var host = new GoldenHost(temporary, profileYaml, extra);
         try
         {
             await host.Run(ct);
@@ -95,9 +102,10 @@ public sealed class GoldenHost : IAsyncDisposable
     private async Task Run(CancellationToken ct)
     {
         _ = Directory.CreateDirectory(Path.Combine(_home.Path, "profile"));
-        await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), ProfileYaml, ct);
-        var app = LoopbackBinding.Build([], Environment, new FakeTimeProvider(KnownInstants.Epoch), static services =>
+        await File.WriteAllTextAsync(Path.Combine(_home.Path, "profile", "profile.yaml"), _profileYaml, ct);
+        var app = LoopbackBinding.Build([], Environment, new FakeTimeProvider(KnownInstants.Epoch), services =>
         {
+            _extra?.Invoke(services);
             _ = services.Replace(ServiceDescriptor.Singleton<IIdGenerator>(new SequentialIdGenerator()));
             _ = services.Replace(ServiceDescriptor.Singleton<IProcessProbe>(new FakeProcessProbe(Pid)));
             NoTemporal.Use(services);   // the Temporal side is faked: the goldens are about the API

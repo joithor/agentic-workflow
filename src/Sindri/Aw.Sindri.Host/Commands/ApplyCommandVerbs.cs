@@ -7,8 +7,6 @@ using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.IssueChallenge;
-using Aw.Sindri.Features.IssueNonce;
-using Aw.Sindri.Host.Endpoints;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -101,32 +99,11 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
             : await Apply(new ApplyCommandRequest(address, ApplyCommandKind.Cancel, Answer: null, Text: null, Amount: null, Verb: null, nonce.Value, Challenge: null), json, ct).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// The nonce for a command on <paramref name="reference"/> (spec §5.2): the given one, else one the instance's nonce
-    /// route issues. A human command starts the control plane first when this CLI may (API spec §7).
-    /// </summary>
-    internal static async Task<Result<CommandNonce>> NonceFor(RecipeDesk desk, string reference, CommandNonce? given, CancellationToken ct)
-    {
-        if (await desk.EnsureRunning(ct).ConfigureAwait(false) is { } down)
-        {
-            return down;
-        }
-
-        if (given is { } nonce)
-        {
-            return nonce;
-        }
-
-        var issued = await desk.Client.Post<IssueNonceRequest, IssueNonceResponse>($"/sindri/workflow/instances/{InstanceRoute.Segment(reference)}/nonce", body: null, ct)
-            .ConfigureAwait(false);
-        return issued.IsError ? issued.Error : issued.Value.Value.Nonce;
-    }
-
     private async Task<int> Apply(ApplyCommandRequest request, bool json, CancellationToken ct)
     {
-        var nonce = await NonceFor(desk, request.Instance, request.Nonce, ct).ConfigureAwait(false);
-        var done = nonce.IsError ? nonce.Error : await desk.Client.Post<ApplyCommandRequest, ApplyCommandResponse>(
-            $"/sindri/workflow/instances/{InstanceRoute.Segment(request.Instance)}/commands", request with { Nonce = nonce.Value }, ct).ConfigureAwait(false);
+        var target = await InstanceTarget.Resolve(desk, request.Instance, request.Nonce, ct).ConfigureAwait(false);
+        var done = target.IsError ? target.Error : await desk.Client.Post<ApplyCommandRequest, ApplyCommandResponse>(
+            $"/sindri/workflow/instances/{target.Value.Id.Value}/commands", request with { Nonce = target.Value.Nonce }, ct).ConfigureAwait(false);
         if (done.IsError)
         {
             return await output.Error(done.Error).ConfigureAwait(false);

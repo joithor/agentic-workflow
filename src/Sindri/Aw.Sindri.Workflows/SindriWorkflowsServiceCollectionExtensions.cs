@@ -33,10 +33,11 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<ItemFactActivities>()
             .AddSingleton<EffectDispatch>(static provider => (context, ct) => DispatchScoped(provider, context, ct))   // engine P6 unit (a): RunEffect runs a scoped block by id
             .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
-            .AddSingleton(provider => SindriWorker.Options(
+            .AddSingleton(provider => SindriWorker.Options(settings,
                 provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(),
                 provider.GetRequiredService<ItemFactActivities>(), provider.GetRequiredService<EffectActivities>()))
             .AddSingleton<TemporalFrontend>()
+            .AddSingleton<KnownInstances>()                            // engine P4: the opaque ids this process has seen (spec §6.3)
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items
             .AddSingleton<IInstanceRuntime, TemporalInstanceRuntime>()
             .AddSingleton<IWorkflowInstances, TemporalWorkflowInstances>()

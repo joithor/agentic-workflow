@@ -22,7 +22,10 @@ internal sealed class TemporalDeskReports(TemporalFrontend frontend)
     /// <param name="nonce">The update id.</param>
     /// <param name="report">The desk report.</param>
     /// <param name="cancellationToken">Cancels the wait for the outcome.</param>
-    /// <returns>The outcome, the validator's refusal, SND-WF-001 for no such instance, or SND-API-001.</returns>
+    /// <returns>
+    /// The outcome, the validator's refusal, SND-WF-001 for no such instance, SND-API-001 for a Temporal without the
+    /// namespace, or SND-API-002 when no worker took the report within <see cref="TemporalUpdates.Patience"/>.
+    /// </returns>
     public async ValueTask<Result<CommandResult>> Complete(InstanceAddress address, CommandNonce nonce, StepCompleted report, CancellationToken cancellationToken)
     {
         var client = await frontend.Connect(flag: null, cancellationToken).ConfigureAwait(false);
@@ -36,11 +39,19 @@ internal sealed class TemporalDeskReports(TemporalFrontend frontend)
         {
             return await handle.ExecuteUpdateAsync(
                 wf => wf.CompleteAsync(report),
-                new WorkflowUpdateOptions(nonce.Value) { Rpc = new RpcOptions { CancellationToken = cancellationToken } }).ConfigureAwait(false);
+                new WorkflowUpdateOptions(nonce.Value) { Rpc = TemporalUpdates.Rpc(cancellationToken) }).ConfigureAwait(false);
         }
         catch (WorkflowUpdateFailedException e) when (e.InnerException is ApplicationFailureException { ErrorType: { } code } refusal)
         {
             return Refusal(code, refusal.Message);
+        }
+        catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal; says nothing about the run
+        {
+            return TemporalUpdates.NotServes(client.Value, e);
+        }
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested && e is WorkflowUpdateRpcTimeoutOrCanceledException or RpcException { Code: RpcException.StatusCode.DeadlineExceeded }) // boundary: no worker took it
+        {
+            return TemporalUpdates.NoWorker(address, nonce);
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)
         {

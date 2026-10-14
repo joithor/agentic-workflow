@@ -305,6 +305,21 @@
       "shortcut": null
     },
     {
+      "action": "ImportContextMap",
+      "class": "protected",
+      "allowedCallers": [
+        "human+terminal"
+      ],
+      "terminal": true,
+      "method": "POST",
+      "route": "/sindri/context/map/import",
+      "cli": "sindri context map import <file>",
+      "ui": "cli-only:typed-confirmation",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "IssueChallenge",
       "class": "issue",
       "allowedCallers": [
@@ -540,6 +555,23 @@
       "cli": "sindri stop",
       "ui": "ready",
       "destructive": true,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "SyncSources",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/context/sources/sync",
+      "cli": "sindri context sources sync",
+      "ui": "pending:S-5B",
+      "destructive": false,
       "readsViews": false,
       "shortcut": null
     },

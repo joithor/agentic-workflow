@@ -25,12 +25,11 @@ public sealed class ApproveRecipeTests
         _ = await registry.H.HoldLease();
         var document = RecipeReaderTests.Reader.Read(ShippedRecipes.Read("sindri/workflow.step.yaml"), "workflow.step.yaml").Document!;
         var step = await registry.Register(document);
-        var action = ChallengeAction.Approve(step.Id, step.Version);
-        var challenge = registry.Challenges.Issue(action, ChallengeSubject.ForRecipe(step.Hash, step.Version, pinsDigest: null));
+        var issued = (await registry.Issue("approve workflow.step 1")).Value;   // the server binds the subject, pins included
         var human = A.Caller().AtTerminal().Client(ClientLabel.Cli).Build();
 
         var approved = await registry.Run<ApproveRecipeRequest, ApproveRecipeResponse>(
-            new ApproveRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(challenge.Id, "approve workflow.step 1")), human);
+            new ApproveRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(issued.Challenge, "approve workflow.step 1")), human);
 
         Assert.True(approved.IsSuccess, approved.IsError ? approved.Error.ToString() : null);
         var (approval, preview) = (approved.Value.Approval, approved.Value.Preview);

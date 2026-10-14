@@ -8,16 +8,17 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
 /// <see cref="ITemporalWorker"/> over the SDK's TemporalWorker (engine spec rev 8 §0 "Operations"): the worker 'sindri
-/// serve' runs on task queue 'sindri' of the dev server it keeps. Engine P4a: a frontend that doesn't answer is
+/// serve' runs on the settings' namespace and task queue of the dev server it keeps. Engine P4a: a frontend that doesn't answer is
 /// logged and serve runs on without a worker (P4 makes it a health failure).
 /// </summary>
+/// <param name="settings">The namespace and the task queue.</param>
 /// <param name="steps">The RunStep activities.</param>
 /// <param name="events">The RecordEvent activity.</param>
 /// <param name="items">The ReadItemRepo activity.</param>
 /// <param name="effects">The effect activities (engine P6).</param>
 /// <param name="logger">The log.</param>
 internal sealed partial class SindriWorkerHost(
-    RunStepActivities steps, RecordEventActivities events, ItemFactActivities items, EffectActivities effects, ILogger<SindriWorkerHost> logger) : ITemporalWorker
+    TemporalSettings settings, RunStepActivities steps, RecordEventActivities events, ItemFactActivities items, EffectActivities effects, ILogger<SindriWorkerHost> logger) : ITemporalWorker
 {
     public async Task Run(TemporalEndpoint endpoint, CancellationToken cancellationToken)
     {
@@ -26,7 +27,7 @@ internal sealed partial class SindriWorkerHost(
         ITemporalClient client;
         try
         {
-            client = await TemporalClient.ConnectAsync(new TemporalClientConnectOptions(target) { Namespace = SindriTemporal.Namespace }).ConfigureAwait(false);
+            client = await TemporalClient.ConnectAsync(new TemporalClientConnectOptions(target) { Namespace = settings.Namespace }).ConfigureAwait(false);
         }
         catch (Exception e) // boundary: serve runs on; the doctor's temporal line shows why (the connect takes no token)
         {
@@ -36,8 +37,8 @@ internal sealed partial class SindriWorkerHost(
 
         try
         {
-            using var worker = new TemporalWorker(client, SindriWorker.Options(steps, events, items, effects));
-            Polling(logger, target, SindriTemporal.TaskQueue);
+            using var worker = new TemporalWorker(client, SindriWorker.Options(settings, steps, events, items, effects));
+            Polling(logger, target, settings.TaskQueue);
             await worker.ExecuteAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
