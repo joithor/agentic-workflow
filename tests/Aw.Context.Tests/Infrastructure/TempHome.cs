@@ -1,9 +1,9 @@
 
+using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Docs;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Scrubbing;
 using Aw.Context.Infrastructure.Store;
-using Aw.Context.Core.Trust;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Context.Tests.Infrastructure;

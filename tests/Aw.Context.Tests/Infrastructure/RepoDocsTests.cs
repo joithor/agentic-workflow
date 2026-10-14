@@ -71,8 +71,8 @@ public sealed class RepoDocsTests
         var repo = new ContextRepo(ContextRepoName.From("split-panes"), fixture.Path);
         var blob = Git(fixture.Path, "rev-parse", "HEAD:docs/architecture.md");
         Directory.CreateDirectory(home.Settings.Home);
-        var connections = new Aw.Kernel.Data.SqliteConnectionFactory(new Aw.Kernel.Data.SqliteOptions(home.Settings.DatabasePath));
-        Assert.True((await new Aw.Kernel.Data.MigrationRunner(connections, home.Clock).Migrate(Aw.Context.Infrastructure.Store.ContextDatabase.Migrations,
+        var connections = new Kernel.Data.SqliteConnectionFactory(new Kernel.Data.SqliteOptions(home.Settings.DatabasePath));
+        Assert.True((await new Kernel.Data.MigrationRunner(connections, home.Clock).Migrate(Context.Infrastructure.Store.ContextDatabase.Migrations,
             TestContext.Current.CancellationToken, targetVersion: 2)).IsSuccess);
         using (var raw = new SqliteConnection($"Data Source={home.Settings.DatabasePath};Pooling=False"))
         {

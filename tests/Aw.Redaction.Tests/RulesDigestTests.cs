@@ -20,7 +20,7 @@ public sealed class RulesDigestTests
         Assert.Equal(Redactor.Default.RulesDigest, Redactor.Create(TimeSpan.FromSeconds(3)).RulesDigest);
         var extra = Redactor.Create([new ExtraPattern("acme-customer-id", "ACME-[0-9]{6}")], Redactor.DefaultMatchTimeout, TimeProvider.System);
         Assert.True(extra.IsValid);
-        Assert.False(string.Equals(Redactor.Default.RulesDigest, extra.Redactor!.RulesDigest, StringComparison.Ordinal));   // why: IsValid holds, so a redactor was built
+        Assert.False(string.Equals(Redactor.Default.RulesDigest, extra.Redactor.RulesDigest, StringComparison.Ordinal));
     }
 
     /// <summary>

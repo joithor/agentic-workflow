@@ -93,7 +93,7 @@ public sealed class TextRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_crlf_document_stops_raw_tag_reads_at_a_blank_line_like_an_lf_one()
     {
-        var scrubber = new RedactionScrubber(Aw.Redaction.Redactor.Default);
+        var scrubber = new RedactionScrubber(Redaction.Redactor.Default);
 
         var crlf = scrubber.Clean("Use `<b class=x` in prose\r\n\r\nKeep this paragraph about data=1.\r\n", singleLine: false).Text;
 
