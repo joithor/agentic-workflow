@@ -14,7 +14,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// attempts of a '(recipe, item)' pair are read by describing their workflow ids, '{item}/{recipe}/1', '/2' … up to the
 /// first that doesn't exist, so a start never waits on eventually consistent visibility. A bare item is resolved through
 /// the 'Item' search attribute. An opaque id is found among the instances this process has seen, else by minting the id
-/// of every instance visibility lists.
+/// of every instance visibility lists. An instance is live while its execution runs (<see cref="IInstanceLiveness"/>,
+/// engine P6 unit (d)).
 /// </summary>
 /// <param name="frontend">Finds the dev server serve keeps.</param>
 /// <param name="known">The ids this process has seen.</param>
@@ -48,8 +49,28 @@ internal sealed class TemporalInstanceDirectory(TemporalFrontend frontend, Known
         }
     }
 
-    public ValueTask<Result<bool>> IsLive(InstanceAddress address, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("engine P6 unit (d)");
+    public async ValueTask<Result<bool>> IsLive(InstanceAddress address, CancellationToken cancellationToken)
+    {
+        var client = await frontend.Connect(flag: null, cancellationToken).ConfigureAwait(false);
+        if (client.IsError)
+        {
+            return client.Error;
+        }
+
+        try
+        {
+            var described = await client.Value.GetWorkflowHandle(address.Value).DescribeAsync(new() { Rpc = new() { CancellationToken = cancellationToken } }).ConfigureAwait(false);
+            return described.Status == WorkflowExecutionStatus.Running;
+        }
+        catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal, not a missing instance
+        {
+            return TemporalUpdates.NotServes(client.Value, e);
+        }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound) // boundary: never started (or no longer kept) is not live
+        {
+            return false;
+        }
+    }
 
     public async ValueTask<Result<InstanceAddress>> Resolve(string reference, CancellationToken cancellationToken)
     {

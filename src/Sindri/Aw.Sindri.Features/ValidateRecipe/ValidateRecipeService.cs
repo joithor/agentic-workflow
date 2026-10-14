@@ -1,7 +1,9 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Validation;
 
 namespace Aw.Sindri.Features.ValidateRecipe;
@@ -9,10 +11,10 @@ namespace Aw.Sindri.Features.ValidateRecipe;
 /// <summary>
 /// Reads the recipe (a file, or text with the name findings show), validates it against the build's catalog, and
 /// returns the reader's and the validator's findings with the hash. Not served, a child recipe resolves from the
-/// recipe file's directory (spec §9.1); text has no directory, so its children don't resolve. The profile has no
-/// effect allowlist yet (S1-D11, P6), so RCP-EFFECT-001 is skipped.
+/// recipe file's directory (spec §9.1); text has no directory, so its children don't resolve. RCP-EFFECT-001 checks
+/// the approved profile's 'workflow.effects' (S1-D11); it is skipped when none is approved or it has no such key.
 /// </summary>
-internal sealed class ValidateRecipeService(IRecipeReader reader, IRecipeFiles files, BlockCatalog catalog)
+internal sealed class ValidateRecipeService(IRecipeReader reader, IRecipeFiles files, BlockCatalog catalog, IApprovedProfile profile)
     : IService<ValidateRecipeRequest, ValidateRecipeResponse>
 {
     public async ValueTask<Result<ValidateRecipeResponse>> Handle(ValidateRecipeRequest request, CancellationToken cancellationToken)
@@ -33,7 +35,13 @@ internal sealed class ValidateRecipeService(IRecipeReader reader, IRecipeFiles f
         var children = request.Path is { } path
             ? await SameDirectoryChildren.Load(path, document.Recipe, reader, files, cancellationToken).ConfigureAwait(false)
             : SameDirectoryChildren.None;
-        var context = new ValidationContext(catalog, RecipeProfileFacts.None, children, BaseRecipe: null);
+        var approved = await profile.Latest(cancellationToken).ConfigureAwait(false);
+        if (approved.IsError)
+        {
+            return approved.Error;
+        }
+
+        var context = new ValidationContext(catalog, RecipeRegistryReader.ProfileFacts(approved.Value), children, BaseRecipe: null);
         return new ValidateRecipeResponse([.. reading.Findings, .. RecipeValidator.Validate(document, context)], document.Hash)
         {
             Normalized = document.Recipe,

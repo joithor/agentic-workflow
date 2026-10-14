@@ -97,7 +97,7 @@ internal sealed class EffectActivities(
 
         // A running instance's recipe with no approval row at all is treated like a revoked one: it no longer holds.
         var check = approval.IsError ? ApprovalCheck.Revoked : approval.Value;
-        var settings = new EffectSettings(Allowlist(approved.Value), EffectSettings.DefaultDispatchDelay);
+        var settings = approved.Value is { } snapshot ? EffectSettings.Of(snapshot.Profile) : _noEffects;   // unit (d): the S1-D11 keys, checked at approve
         return Answer(EffectRules.Recheck(recheck.Origin, check, settings, recheck.Kind), recheck);
     }
 
@@ -156,29 +156,6 @@ internal sealed class EffectActivities(
         return appended.IsError
             ? throw new InvalidOperationException($"{appended.Error.Code}: {appended.Error.Message}")
             : appended.Value;
-    }
-
-    /// <summary>
-    /// The approved profile's 'workflow.effects' as block ids; null when none is approved or it sets none. Unit (d)
-    /// validates the key (RCP-EFFECT-001), so an id that doesn't parse is simply not allowlisted here.
-    /// </summary>
-    private static HashSet<BlockId>? Allowlist(LoadedProfile? approved)
-    {
-        if (approved?.Profile.Workflow?.Effects is not { } ids)
-        {
-            return null;
-        }
-
-        HashSet<BlockId> allowed = [];
-        foreach (var id in ids)
-        {
-            if (BlockId.TryFrom(id, out var block))
-            {
-                _ = allowed.Add(block);
-            }
-        }
-
-        return allowed;
     }
 
     private static EffectRecheckResult Answer(string? code, EffectRecheck recheck) => new(code, code switch

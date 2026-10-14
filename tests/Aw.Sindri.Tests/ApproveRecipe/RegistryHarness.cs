@@ -65,6 +65,11 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceRuntime>(_instances)
             .AddSingleton(SliceHarness.Json)
             .AddSingleton<IProfileSource>(H.Profiles)
+            .AddSingleton<IApprovedProfile>(H.Profiles)   // engine P6 unit (d): RCP-EFFECT-001 reads the approved allowlist
+            .AddSingleton<Core.Workflow.Engine.Effects.IWorkflowClaims>(new Testing.Workflow.InMemoryWorkflowClaims())   // engine P6 unit (d): effect.claim.ref's ports
+            .AddSingleton<Core.Workflow.Engine.Effects.IClaimRefs>(new Testing.Workflow.InMemoryClaimRefs())
+            .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceLiveness>(new Testing.Workflow.FakeInstanceLiveness())
+            .AddSingleton<Core.Workflow.Engine.Runtime.IFactContents>(new Testing.Workflow.InMemoryFactStore())
             .AddRecipeBlocks()
             .AddSingleton<BlockCatalog>()
             .AddScoped<RecipeApprovalPlanner>()

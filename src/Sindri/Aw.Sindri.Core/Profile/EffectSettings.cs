@@ -19,6 +19,29 @@ public sealed record EffectSettings(IReadOnlySet<BlockId>? Allowlist, TimeSpan D
     public static EffectSettings Of(SindriProfile profile)
     {
         ArgumentNullException.ThrowIfNull(profile);
-        throw new NotSupportedException("engine P6 unit (d): EffectSettings.Of reads workflow.effects and workflow.dispatchDelay (S1-D11)");
+        var workflow = profile.Workflow;
+        return new(AllowlistOf(workflow?.Effects), Delay(workflow?.DispatchDelay) ?? DefaultDispatchDelay);
     }
+
+    /// <summary>
+    /// Parses 'workflow.dispatchDelay': a whole number and s, m or h, from 5s to 24h, the grammar of a service's cadence
+    /// (<see cref="Cadence"/>).
+    /// </summary>
+    /// <param name="text">The key's text.</param>
+    /// <returns>The delay, or null when it isn't one.</returns>
+    public static TimeSpan? Delay(string? text) =>
+        text is not null && Cadence.Parse(text) is { IsSuccess: true } cadence ? cadence.Value.Interval : null;
+
+    /// <summary>
+    /// The allowlist's ids; null when the key is absent. An entry that isn't an 'effect.*' id is left out: the profile
+    /// check (<see cref="ProfileRules.Check"/>) refuses one before a profile can be approved.
+    /// </summary>
+    private static HashSet<BlockId>? AllowlistOf(IReadOnlyList<string>? ids) =>
+        ids is null ? null : [.. ids.Where(IsEffectId).Select(BlockId.From)];
+
+    /// <summary>Whether <paramref name="entry"/> names an effect block: a block id in the 'effect.' family.</summary>
+    /// <param name="entry">The allowlist entry.</param>
+    /// <returns>True for 'effect.notify.desk' and the like.</returns>
+    public static bool IsEffectId(string entry) =>
+        BlockId.TryFrom(entry, out _) && entry.StartsWith("effect.", StringComparison.Ordinal);
 }

@@ -5,7 +5,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
 /// The profile's 'workflow:' times (engine spec S1-D11) for the worker: 'workflow.deskTimeout', the floor every desk
-/// wait is raised to, and 'workflow.eventHold', how long a buffered event signal waits. 'LoadRecipe' reads it when an
+/// wait is raised to, 'workflow.eventHold', how long a buffered event signal waits, and (engine P6 unit (d))
+/// 'workflow.dispatchDelay', the undo window before each effect, read from the approved profile like the allowlist. 'LoadRecipe' reads it when an
 /// instance starts, so the interpreter takes the value from history and a replay sees the same one. A profile that
 /// doesn't load gives the defaults (2d, 24h): serve refuses to run on an invalid profile before any instance starts.
 /// </summary>
@@ -25,9 +26,14 @@ internal sealed class ProfileWorkflowTimes(IProfileSource profiles, IApprovedPro
     /// <summary>The approved profile's 'workflow.dispatchDelay', or its default (10s) when none is approved or it sets none.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The delay; an error when the approvals can't be read.</returns>
-    public ValueTask<Result<TimeSpan>> DispatchDelay(CancellationToken cancellationToken)
+    public async ValueTask<Result<TimeSpan>> DispatchDelay(CancellationToken cancellationToken)
     {
-        _ = (approved, cancellationToken);
-        throw new NotSupportedException("engine P6 unit (d)");
+        var latest = await approved.Latest(cancellationToken).ConfigureAwait(false);
+        if (latest.IsError)
+        {
+            return latest.Error;
+        }
+
+        return latest.Value is { } snapshot ? EffectSettings.Of(snapshot.Profile).DispatchDelay : EffectSettings.DefaultDispatchDelay;
     }
 }

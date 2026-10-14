@@ -85,8 +85,8 @@ api: { port: 7410 }       # optional, default 7410; 0 (a free port) or 1024..655
 workflow:                 # optional (engine S1-D11); the times are durations <n>m|h|d
   deskTimeout: 2d         # default 2d: the floor of every desk Step's timeout
   eventHold: 24h          # default 24h: how long a buffered event waits for its wait
-  effects: [effect.notify.desk]   # engine P6: the effect allowlist; absent, RCP-EFFECT-001 is skipped and every recipe effect is refused (SND-WF-011)
-  dispatchDelay: 10s      # engine P6: default 10s, the undo window before each effect runs (<n>s allowed; checked by P6 unit (d))
+  effects: [effect.notify.desk]   # engine P6: the effect allowlist (effect.* ids); absent, RCP-EFFECT-001 is skipped and every recipe effect is refused (SND-WF-011)
+  dispatchDelay: 10s      # engine P6: default 10s, the undo window before each effect runs (<n>s|m|h, 5s to 24h, like a cadence)
 context: { ... }          # optional: the context engine's section, checked by the engine (docs/sindri/context.md)
 ```
 

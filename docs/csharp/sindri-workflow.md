@@ -34,8 +34,9 @@ reads the file and its child recipes, and writes nothing.
 - **Hand-written only:** `recipe validate` passes no base recipe, so it checks every recipe as hand-written: a `base`
   field is `RCP-CAP-004`, and the generated-recipe rules (`RCP-CAP-001`, `-002`, `-005`, `-006`) don't run. Those will run
   when Sindri's generator checks a generated recipe against its base (the packet freeze, W9); no command runs them in this build.
-- **The profile:** there is no effect allowlist in the profile yet (`workflow.effects`, P6), so `RCP-EFFECT-001` is
-  reported as `skipped`.
+- **The profile:** `RCP-EFFECT-001` checks the **approved** profile's effect allowlist (`workflow.effects`, P6): an
+  effect off it is an error. It is reported as `skipped` only when no profile is approved or the approved one has no
+  `workflow.effects` (an empty list allows nothing). `recipe validate` reads the approval and writes nothing.
 
 | Exit | When |
 |---|---|
@@ -347,7 +348,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-THRESH-002` | A threshold is in (0, 1], and a deterministic gate has none | Fix or remove it |
 | `RCP-NEXT-001` | `next` uses only recipe variables | Use only the listed variables |
 | `RCP-NEXT-002` | `next` names no approval-tier command | Leave it out |
-| `RCP-EFFECT-001` | Every effect is on the profile's effect allowlist. **Skipped** while the profile has no `workflow.effects` (P6) | Add it to `workflow.effects` |
+| `RCP-EFFECT-001` | Every effect is on the approved profile's effect allowlist. **Skipped** while no profile is approved or it has no `workflow.effects` | Add it to `workflow.effects` and approve the profile |
 | `RCP-RES-001` | **Information:** a resource wait has no allocator in this build | None needed; it parks with `SND-WF-010` until one lands |
 | `RCP-HASH-001` | A `hash` in the file matches the content | Set it to the hash the message names, or remove it |
 | `RCP-VERSION-001` | Same id and version, same hash (registry, P2) | Raise `version` |
@@ -729,3 +730,29 @@ Unit (b), as built:
   answer's event.
 - **Gap for the integrator (P2's path):** a drift approval that resumes an instance parked by a drift refusal should
   re-send `ResumeAction.Effect`; the approval resume doesn't do that yet.
+
+Unit (d), as built:
+
+- **Profile keys (S1-D11):** `EffectSettings.Of` reads `workflow.effects` (null when the key is absent; an empty list
+  allows nothing) and `workflow.dispatchDelay` (the grammar of a service cadence, `<n>s|m|h` from 5s to 24h, so `60s`
+  works; default 10s). `ProfileRules.Check` refuses an entry that isn't an `effect.*` id (`workflow.effects[i]`) and a
+  delay outside that grammar; `ProfileDiff` names both keys. Both are left out of the canonical JSON when absent, so an
+  approval made before P6 keeps its hash.
+- **The approved snapshot everywhere:** the recheck (unit (b)) now reads the allowlist through `EffectSettings.Of` on
+  `IApprovedProfile.Latest`; `LoadRecipe` takes `workflow.dispatchDelay` from the approved profile too
+  (`ProfileWorkflowTimes.DispatchDelay`; a read that fails is retried, none approved is 10s), so the undo window is the
+  one the owner approved, and a replay sees it from history. `RCP-EFFECT-001` reads the same snapshot, both in
+  `recipe validate` and in the served validation `recipe approve` runs (`RecipeRegistryReader.ProfileFacts`).
+- **`workflow_claims`** (ledger.db, migration 5: `item` primary key, `owner`, `attempt`, `claimed_at`) is the claim.
+  `IWorkflowClaims.Take(claim, ended)` inserts for a free item, takes over a holder the caller found ended, and
+  otherwise returns the holder, inside one write transaction. Liveness is `IInstanceLiveness` (Temporal: the execution
+  runs), never a column.
+- **`effect.claim.ref`** reads `fact:item` back (`IFactContents`), takes the user and the repo's path from the approved
+  profile, takes the claim, and creates `refs/sindri/{user}/{item}` with `git update-ref` (empty old value) at the
+  default branch's head (`origin/HEAD`, else `main`, `master`, `HEAD`); `git show-ref sindri/<user>/<item>` finds it.
+  It never moves an existing ref and touches no branch or working tree. Replies: `created` (taken now, already held by
+  this instance, or taken over from an ended owner, whose marker is reused) and `claimExists` (another live instance
+  holds it; nothing is written). A repo with no commit, a repo key the approved profile lacks, or no `fact:item` is an
+  error (`SND-WF-010`) that `RunEffect` retries.
+- **`--attempt next`** is refused with `SND-WF-012` while the latest attempt of the recipe is live (P4) **or** while the
+  item's claim is held by a live instance (`ClaimHolders.LiveHolder`), naming the holder.
