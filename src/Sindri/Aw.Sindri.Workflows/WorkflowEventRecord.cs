@@ -12,6 +12,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Trigger">The trigger's kind ('start', 'step.completed', 'wait.satisfied', 'answer').</param>
 /// <param name="Outcome">The trigger's outcome, when it has one.</param>
 /// <param name="Run">The run token the trigger reported on, when it has one.</param>
+/// <param name="Effects">The identities of the effects the change runs (§5.7; engine P6); null when it runs none.</param>
 internal sealed record WorkflowEventRecord(
     string WorkflowId,
     string Type,
@@ -20,4 +21,5 @@ internal sealed record WorkflowEventRecord(
     string To,
     string Trigger,
     string? Outcome,
-    string? Run);
+    string? Run,
+    IReadOnlyList<string>? Effects = null);

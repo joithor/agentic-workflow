@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Core.Events;
 
 /// <summary>
@@ -11,4 +13,12 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Trigger">The trigger's kind.</param>
 /// <param name="Outcome">The trigger's outcome.</param>
 /// <param name="Run">The run token.</param>
-public sealed record WorkflowEventPayload(string Instance, string From, string To, string Trigger, string? Outcome, string? Run);
+/// <param name="Effects">The identities of the effects the change runs (§5.6, §5.7; engine P6); left out when it runs none.</param>
+public sealed record WorkflowEventPayload(
+    string Instance,
+    string From,
+    string To,
+    string Trigger,
+    string? Outcome,
+    string? Run,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Effects = null);

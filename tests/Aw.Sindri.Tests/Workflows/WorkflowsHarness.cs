@@ -49,8 +49,16 @@ internal sealed class WorkflowsHarness : IDisposable
     /// the ledger stamps the events the bridge delivers with it, and the interpreter measures 'workflow.eventHold' from
     /// that stamp against workflow time, so a clock in 2000 would make every delivered event 26 years old.
     /// </remarks>
-    public ServiceProvider Sindri() =>
-        Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider(DateTimeOffset.UtcNow)).BuildServiceProvider();
+    public ServiceProvider Sindri() => Sindri(static _ => { });
+
+    /// <summary>The host composed over this home, with <paramref name="replace"/> applied last (a fake block runtime).</summary>
+    public ServiceProvider Sindri(Action<IServiceCollection> replace)
+    {
+        ArgumentNullException.ThrowIfNull(replace);
+        var services = Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : null, new FakeTimeProvider(DateTimeOffset.UtcNow));
+        replace(services);
+        return services.BuildServiceProvider();
+    }
 
     /// <summary>The 'temporal' dev server pinned in binaries.lock, with Sindri's namespace and search attributes.</summary>
     public static Task<WorkflowEnvironment> StartDevServer() =>

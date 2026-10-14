@@ -1,4 +1,6 @@
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
+using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -9,4 +11,12 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Command">The effect, its stable identity, origin and arguments.</param>
 /// <param name="CommandId">This emission's command id (new on each re-emission; the identity stays).</param>
 /// <param name="Text">An engine notice's rendered text; null for a recipe effect.</param>
-internal sealed record EffectRun(string WorkflowId, string Item, int Attempt, EffectCommand Command, string CommandId, string? Text);
+/// <param name="Facts">The instance's facts when the effect was emitted: a '{ fact }' argument reads its value here.</param>
+internal sealed record EffectRun(
+    string WorkflowId,
+    string Item,
+    int Attempt,
+    EffectCommand Command,
+    string CommandId,
+    string? Text,
+    IReadOnlyDictionary<FactKey, FactValue> Facts);
