@@ -81,7 +81,6 @@ svg{flex:none}
 .health .sep{color:var(--ink-subtle)}
 .health .age{color:var(--ink-subtle)}
 /* static here; in the real app it pulses once when the needs-you count changes */
-.attn-band{height:2px;background:var(--attn)}
 
 /* page */
 .page{max-width:1264px;margin:0 auto;padding:0 40px 48px 16px}
@@ -381,6 +380,9 @@ body{min-width:1280px}
 .ev .a{font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ev .d{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ev .d .mono{color:var(--ink-muted)}
+.ev.more .d a{color:var(--ink-subtle);text-decoration:none}
+.ev.more .d a:hover{color:var(--ink-muted)}
+.attach-note{flex-basis:100%;margin:0;font-size:12px;line-height:1.5;color:var(--ink-subtle)}
 
 /* ---- the list behind a sheet (calm pass): sections by surface, then chip · title · when. No borders, ids on hover, 40 px rows.
    The sheet is 760 px, so the column is 512 px and its bands run full width of it ---- */
@@ -425,7 +427,6 @@ body{min-width:1280px}
     <span class="sep" aria-hidden="true">·</span><span>profile changed</span>
   </button>
 </header>
-<div class="attn-band" role="presentation"></div>
 
 <main class="page behind">
   <div class="pagehead">
@@ -433,8 +434,8 @@ body{min-width:1280px}
       <h1>Work</h1>
       <div class="sub">
         <span><b>12</b> items</span><span>·</span>
-        <span class="attn-word"><i aria-hidden="true"></i>2 waiting on you</span><span>·</span>
-        <span><b>1</b> with you</span><span>·</span><span><b>1</b> parked</span><span>·</span>
+        <span class="attn-word"><i aria-hidden="true"></i>3 need you</span><span>·</span>
+        <span><b>1</b> with you</span><span>·</span>
         <span><b>4</b> running</span><span>·</span><span><b>4</b> queued</span>
       </div>
     </div>
@@ -445,23 +446,18 @@ body{min-width:1280px}
   </div>
 
   <div class="qt" aria-label="Work items">
-  <section class="band attn" aria-label="Waiting on you">
+  <section class="band attn" aria-label="Needs you">
     <div class="section">
-      <div class="sh"><h2>Waiting on you</h2><span class="meta">2</span></div>
-      <div class="tr" role="row" aria-label="Needs you now: ITM-01JB4, escalated gate"><span class="chip attn">Escalated</span><span class="tt"><span class="tx">Context map review for tabs.layout</span><span class="id at-rest mono">ITM-01JB4</span></span><span class="when">3h</span></div>
+      <div class="sh"><h2>Needs you</h2><span class="meta">3</span></div>
+      <div class="tr" role="row" aria-label="Parked: ITM-01JC8, no-progress"><span class="chip attn">Parked</span><span class="tt"><span class="tx">Retry storm in outbox dispatcher</span><span class="id at-rest mono">ITM-01JC8</span></span><span class="when">12m</span></div>
       <div class="tr" role="row" aria-label="Needs you now: ITM-01JD2, needs a decision"><span class="chip attn">Decision</span><span class="tt"><span class="tx">Re-scope: drop the iOS head from this item</span><span class="id at-rest mono">ITM-01JD2</span></span><span class="when">26m</span></div>
+      <div class="tr" role="row" aria-label="Needs you now: ITM-01JB4, escalated gate"><span class="chip attn">Escalated</span><span class="tt"><span class="tx">Context map review for tabs.layout</span><span class="id at-rest mono">ITM-01JB4</span></span><span class="when">3h</span></div>
     </div>
   </section>
   <section class="band" aria-label="With you">
     <div class="section">
       <div class="sh"><h2>With you</h2><span class="meta">1</span></div>
       <div class="tr" role="row" aria-label="With you: ITM-01JA1"><span class="chip ">With you</span><span class="tt"><span class="tx">Onyx adapter secret pointers</span><span class="id at-rest mono">ITM-01JA1</span></span><span class="when">25m</span></div>
-    </div>
-  </section>
-  <section class="band" aria-label="Parked">
-    <div class="section">
-      <div class="sh"><h2>Parked</h2><span class="meta">1</span></div>
-      <div class="tr" role="row" aria-label="Parked: ITM-01JC8, no-progress"><span class="chip attn">Parked</span><span class="tt"><span class="tx">Retry storm in outbox dispatcher</span><span class="id at-rest mono">ITM-01JC8</span></span><span class="when">12m</span></div>
     </div>
   </section>
   <section class="band" aria-label="Running">
@@ -541,6 +537,7 @@ body{min-width:1280px}
             <button class="btn">Take over <kbd>T</kbd></button>
             <button class="btn">Request <kbd>R</kbd></button>
           </div>
+          <p class="attach-note">Attach joins the live session; your first keystroke takes it over.</p>
         </div>
       </div>
     </section>
@@ -565,7 +562,7 @@ body{min-width:1280px}
     </div>
     <div class="sb alt">
     <div class="tabs" role="tablist">
-          <button class="tab" role="tab" aria-selected="true" aria-controls="tp">Timeline <span class="n">6</span><kbd>1</kbd></button>
+          <button class="tab" role="tab" aria-selected="true" aria-controls="tp">Timeline <span class="n">41</span><kbd>1</kbd></button>
           <button class="tab" role="tab" aria-selected="false">Decisions <span class="n">0</span><kbd>2</kbd></button>
           <button class="tab" role="tab" aria-selected="false">Requests <span class="n">0</span><kbd>3</kbd></button>
           <button class="tab" role="tab" aria-selected="false">Context <span class="n">12</span><kbd>4</kbd></button>
@@ -573,6 +570,7 @@ body{min-width:1280px}
         <div class="tabpanel" id="tp" role="tabpanel" aria-label="Timeline, newest first">
           <div class="ev"><span class="t">12:20</span><span class="a">ITM-01JE7</span><span class="d">produce round 2 started · Claude Code · <span class="mono">snd-01JE7.2</span></span></div>
           <div class="ev"><span class="t">12:19</span><span class="a">ITM-01JE7</span><span class="d">checks failed · 2 findings</span></div>
+          <div class="ev more"><span class="t"></span><span class="a"></span><span class="d"><a href="#" aria-label="39 more events, opens the full timeline">… 39 more</a></span></div>
         </div>
     </div>
   </div>

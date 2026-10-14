@@ -30,8 +30,8 @@ Home · Workflows **12** · Work **12** · Recipes **8** · Context · Agents **
 | ITM-01JF4 | Tray badge on Linux | sindri-app | packet task t7 of PRJ-sync (ws-3) | ○ queued | — | — | queued 40m |
 | ITM-01JF8 | Receipt verify route | sindri-app | packet task t8 of PRJ-sync (ws-4) | ○ queued | — | — | queued 12m |
 
-Summary lines: Home `5 need you · 4 running · 1 with you · 4 queued`; Work `12 items · 2 waiting on you · 1 with
-you · 1 parked · 4 running · 4 queued`. Home's Running panel shows the four running rows and the with-you row
+Summary lines: Home `5 need you · 4 running · 1 with you · 4 queued`; Work `12 items · 3 need you · 1 with you ·
+4 running · 4 queued` (3 + 1 + 4 + 4 = 12; the parked item is inside the 3, see "The human queue"). Home's Running panel shows the four running rows and the with-you row
 (with-you first), then "Show all 5 in Work". Home's Queued panel shows the four queued rows.
 
 Needs you (5, most urgent first): ITM-01JC8 park · REQ-01JD4 decision (re-scope ITM-01JD2) · ITM-01JB4 escalated ·
@@ -67,7 +67,7 @@ verify route (○ queued). 4 done · 1 running · 1 parked · 3 queued = 9.
 Home's Workflows strip: `WORKFLOWS 12 open`, rows INC-14, sentry #8812, PRJ-sync, PRJ-exports, PRJ-tabs, then
 "… 7 more".
 
-## Agents (4 live · 1 with you · 2 waiting on you)
+## Agents (4 live · 1 with you · 2 need you)
 
 | Session | Agent | Item · step | Round | Tokens | Since | State |
 |---|---|---|---|---|---|---|
@@ -79,12 +79,60 @@ Home's Workflows strip: `WORKFLOWS 12 open`, rows INC-14, sentry #8812, PRJ-sync
 | (model run) | challenger | PRJ-tabs · scoping / challenge | 2/3 | 84k / 600k | 46m | ◌ model call, no session |
 
 "4 live" counts the four tmux sessions (JE7, JD9, JE9, JD6); the with-you session and the model run are listed
-separately. Waiting on you: ITM-01JC8 (parked), ITM-01JB4 (escalated). Budget today: Claude Code $3.10 / $8.00,
+separately. Need you: ITM-01JC8 (parked), ITM-01JB4 (escalated). Budget today: Claude Code $3.10 / $8.00,
 Codex $1.02 / $4.00, Cursor $0.00 / $2.00 (cursor not found on this host), total $4.12 / $14.00.
 
 ## Recipes (8)
 
-As drawn in the spec §4.3 plus **`workflow.project`** (the root recipe the three Linear projects run: `● approved · open 3 · runs 9 · done 5 · failed 1 · human 67% · median 2d 4h · tokens/run 1.9M · last change 10-06 v12`), listed first. `scoping.project` is "changed since approval" (pinned block step.scope.draft v2 → v3). The page title reads `Recipes 8 · 30 days · 193 runs · 80% done without you`.
+As drawn in the spec §4.3 plus **`workflow.project`** (the root recipe the three Linear projects run: `● approved · open 3 · runs 9 · done 5 · failed 1 · human 67% · median 2d 4h · tokens/run 1.9M · last change 10-06 v12`), listed first. `scoping.project` is "changed since approval" (pinned block step.scope.draft v2 → v3). The page title reads `Recipes 8 · 30 days · 193 runs · 68% done without you`. The numbers for every recipe are in "Recipes: the numbers" below; the workflow.project line above agrees with that table (9 runs = 5 done + 1 failed + 3 cancelled; human 67% = 6 interventions ÷ 9).
+
+## The human queue (one definition)
+
+Three words, three sets, never mixed. Every count in a page head is derived from the rows under it.
+
+- **needs you** = the union of *parked* + *escalated* + *decision* + *failed service* + *profile changed* rows
+  (every row whose chip is `PARKED`, `ESCALATED`, `DECISION`, `PROFILE` or `FAILED`). A person has to act.
+- **with you** = instances a person took over (`WITH YOU` chip). Neutral chip, never counted as needs you.
+- **waiting on you** is retired: no page, heading, tooltip or table cell uses it.
+
+Resulting counts (each equals the attention-chip rows on that page):
+
+| Page | Needs you | Rows |
+|---|---|---|
+| Home | **5** | ITM-01JC8 parked, REQ-01JD4 decision, ITM-01JB4 escalated, service `index` failed, profile changed |
+| Workflows | **2** | sentry #8812 `DECISION`, PagerDuty P-2211 `ESCALATED` (PRJ-sync's parked child is a child, not a root row; INC-14, PRJ-sync, PRJ-tabs run, PRJ-exports is `WITH YOU`). Head: `12 open · 2 need you · 1 with you` |
+| Work | **3** | ITM-01JB4 escalated, ITM-01JD2 decision, ITM-01JC8 parked (the parked section folds into Needs you) |
+| Agents | **2** | ITM-01JC8 parked, ITM-01JB4 escalated (sessions wait on them; failed service and profile are not sessions) |
+| Sheets | their own | An item or workflow sheet's head counts only the attention-chip rows inside that sheet; an incident or project head names those rows |
+
+Open point: Home's Workflows strip also draws sentry #8812 with a `DECISION` chip, which is a workflow-level row counted on Workflows (2) and not in Home's five (item-level, service and profile rows). If Home must count every attention chip it draws, its count is 6; this file keeps 5 as the owner specified.
+
+
+## Recipes: the numbers (30 days, one source for Recipes and the inspector)
+
+Formulas, written once. **Done without you %** = done without you ÷ runs. **Human rate** = interventions ÷ runs,
+where an intervention is a park answered, an escalation decided or a takeover (a run can have more than one, so the
+rate is a per-run average, not a share of distinct runs). **Page total** = the run-weighted mean: sum of the
+done-without-you column ÷ sum of the runs column. Runs = done + failed + cancelled.
+
+| Recipe | Runs | Done | Done without you | Failed | Cancelled | Interventions (parks / escalations / takeovers) | Human rate | Median | Tokens p50 | 4 weeks (runs, oldest first) | Done without you % |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| workflow.project | 9 | 5 | 3 | 1 | 3 | 6 (4 / 1 / 1) | 67% | 2d 4h | 1.9M | 1 · 2 · 3 · 3 | 33% |
+| workflow.item | 112 | 97 | 81 | 6 | 9 | 34 (16 / 11 / 7) | 30% | 1h 40m | 310k | 22 · 27 · 30 · 33 | 72% |
+| workflow.step | none (child only) | | | | | | | | | | none |
+| builder.feature | 38 | 34 | 29 | 2 | 2 | 10 (5 / 3 / 2) | 26% | 2h 05m | 420k | 6 · 9 · 11 · 12 | 76% |
+| triage.alert | 24 | 22 | 14 | 0 | 2 | 10 (8 / 2 / 0) | 42% | 6m | 18k | 5 · 6 · 6 · 7 | 58% |
+| incident.response | 3 | 2 | 0 | 1 | 0 | 3 (2 / 0 / 1) | 100% | 3h 10m | 190k | 1 · 1 · 0 · 1 | 0% |
+| scoping.project | 7 | 6 | 5 | 0 | 1 | 2 (2 / 0 / 0) | 29% | 48m | 540k | 0 · 2 · 2 · 3 | 71% |
+| intake.linear | none (draft) | | | | | | | | | | none |
+| **Page total** | **193** | 166 | **132** | 10 | 17 | 65 | 34% | | | | **68%** (132 ÷ 193) |
+
+Checks: 9 + 112 + 38 + 24 + 3 + 7 = 193; 166 + 10 + 17 = 193; 3 + 81 + 29 + 14 + 0 + 5 = 132.
+workflow.item, the inspector's recipe: 81 done without you + 12 done after a park + 4 done after a takeover = 97
+done; 97 + 6 failed + 9 cancelled = 112; human rate (16 + 11 + 7) ÷ 112 = **30%** (the earlier 19% was wrong); done
+without you 81 ÷ 112 = **72%**. Its weekly human rate (4 weeks, oldest first): 5 ÷ 22 = 23%, 8 ÷ 27 = 30%,
+9 ÷ 30 = 30%, 12 ÷ 33 = 36%. `Failed` on the Recipes table counts failed runs only; cancelled runs appear in the
+inspector's Outcomes.
 
 ## Context
 
@@ -118,6 +166,9 @@ Never prose, never a dash.
 - **The decision row** (REQ-01JD4): `Accept records your decision now; the engine acts on it when the workflow runs.` Accept
   stays a live primary (recording is API P4, served); a control whose API phase hasn't landed uses the pending pattern
   (disabled, with the dashed "Available with API Pn" chip), never a live-looking button.
+- **The health sentence** (generated from the pill's reasons, verbatim on Home and System): `Sindri is degraded: the code
+  index failed at the 03:00 build, the profile changed since approval, and Onyx is 2h behind. Updated 2s ago.` No
+  attention band on any page; the pill carries the state.
 - **INC-14's NOW**: `agent rolling back in ITM-01JG2 · comms posting`, everywhere the row appears (Home strip, Workflows,
   and the lists behind the sheets).
 - **PRJ-exports' input**: `PRD-exports.md`, never `PRD-exports`.
@@ -131,7 +182,7 @@ page's chip when it appears behind a sheet (the stage goes in the tag, never in 
 
 | Chip word | Class | Colour | Meaning | Where |
 |---|---|---|---|---|
-| `PARKED` | `chip attn` | `--attn` text | an instance waits for a person's answer | needs-you rows, Work, Agents waiting, children, engine table |
+| `PARKED` | `chip attn` | `--attn` text | an instance waits for a person's answer | needs-you rows, Work, Agents needs you, children, engine table |
 | `ESCALATED` | `chip attn` | `--attn` | a gate or timeout escalated; a person decides | same |
 | `DECISION` | `chip attn` | `--attn` | a request or decision waits for a person | needs-you rows, Workflows triage rows |
 | `PROFILE` | `chip attn` | `--attn` | the profile changed since approval | needs-you row |

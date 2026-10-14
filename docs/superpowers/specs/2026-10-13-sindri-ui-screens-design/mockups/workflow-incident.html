@@ -81,7 +81,6 @@ svg{flex:none}
 .health .sep{color:var(--ink-subtle)}
 .health .age{color:var(--ink-subtle)}
 /* static here; in the real app it pulses once when the needs-you count changes */
-.attn-band{height:2px;background:var(--attn)}
 
 /* page */
 .page{max-width:1264px;margin:0 auto;padding:0 40px 48px 16px}
@@ -381,6 +380,9 @@ body{min-width:1280px}
 .ev .a{font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ev .d{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ev .d .mono{color:var(--ink-muted)}
+.ev.more .d a{color:var(--ink-subtle);text-decoration:none}
+.ev.more .d a:hover{color:var(--ink-muted)}
+.attach-note{flex-basis:100%;margin:0;font-size:12px;line-height:1.5;color:var(--ink-subtle)}
 
 /* ---- the list behind a sheet (calm pass): sections by surface, then chip · title · when. No borders, ids on hover, 40 px rows.
    The sheet is 760 px, so the column is 512 px and its bands run full width of it ---- */
@@ -430,8 +432,8 @@ body{min-width:1280px}
       <h1>Workflows</h1>
       <div class="sub">
         <span><b>12</b> open</span>
-        <span>·</span><span class="attn-word"><i aria-hidden="true"></i>3 need you</span>
-        <span>·</span><span><b>2</b> running at a desk</span>
+        <span>·</span><span class="attn-word"><i aria-hidden="true"></i>2 need you</span>
+        <span>·</span><span><b>1</b> with you</span>
       </div>
     </div>
     <div class="toolbar">
@@ -530,6 +532,7 @@ body{min-width:1280px}
             <div class="split"><button class="btn main primary is-focused" aria-label="Attach to the mitigate session"><span class="warp" aria-hidden="true"><svg width="8" height="8" viewBox="0 0 8 8"><path d="m1.5 2 2 2-2 2M4.5 6H7" stroke="#d0d6e0" fill="none" stroke-width="1"/></svg></span>Attach <kbd>O</kbd></button><button class="btn chev primary" aria-label="Choose agent" aria-haspopup="menu" aria-expanded="false" style="border-left-color:rgba(247,248,248,.25)"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div>
             <button class="btn">Take over <kbd>T</kbd></button>
           </div>
+          <p class="attach-note">Attach joins the live session; your first keystroke takes it over.</p>
         </div>
       </div>
     </section>
@@ -569,6 +572,7 @@ body{min-width:1280px}
         <div class="tabpanel" id="tp" role="tabpanel" aria-label="Timeline, newest first">
           <div class="ev"><span class="t">12:15</span><span class="a">INC-14/comms/1</span><span class="d">posted to <span class="mono">#incidents</span></span></div>
           <div class="ev"><span class="t">12:12</span><span class="a">ITM-01JG2</span><span class="d">mitigate round 1 started · Claude Code</span></div>
+          <div class="ev more"><span class="t"></span><span class="a"></span><span class="d"><a href="#" aria-label="16 more events, opens the full timeline">… 16 more</a></span></div>
         </div>
     </div>
   </div>

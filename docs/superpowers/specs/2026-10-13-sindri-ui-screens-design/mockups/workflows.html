@@ -81,7 +81,6 @@ svg{flex:none}
 .health .sep{color:var(--ink-subtle)}
 .health .age{color:var(--ink-subtle)}
 /* static here; in the real app it pulses once when the needs-you count changes */
-.attn-band{height:2px;background:var(--attn)}
 
 /* page */
 .page{max-width:1264px;margin:0 auto;padding:0 40px 48px 16px}
@@ -260,7 +259,6 @@ a.more:hover{color:var(--ink-muted)}
     <span class="sep" aria-hidden="true">·</span><span>profile changed</span>
   </button>
 </header>
-<div class="attn-band" role="presentation"></div>
 
 <main class="page">
   <!-- empty (0 open): one line, "Nothing open. intake.linear polls every 15m; Start… runs a recipe now." with Start… focused, the only time it takes the initial focus. -->
@@ -269,7 +267,7 @@ a.more:hover{color:var(--ink-muted)}
   <header class="pagehead">
     <div class="ph-l">
       <h1 class="page-title">Workflows</h1>
-      <p class="sub"><span>12 open</span><span>·</span><span class="attn-word">3 need you</span><span>·</span><span>2 running at a desk</span></p>
+      <p class="sub"><span>12 open</span><span>·</span><span class="attn-word">2 need you</span><span>·</span><span>1 with you</span></p>
     </div>
     <div class="toolbar">
       <button class="btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by recipe">Recipe <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>

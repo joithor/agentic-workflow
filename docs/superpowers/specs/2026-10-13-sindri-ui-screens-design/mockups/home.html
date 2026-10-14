@@ -81,7 +81,6 @@ svg{flex:none}
 .health .sep{color:var(--ink-subtle)}
 .health .age{color:var(--ink-subtle)}
 /* static here; in the real app it pulses once when the needs-you count changes */
-.attn-band{height:2px;background:var(--attn)}
 
 /* page */
 .page{max-width:1264px;margin:0 auto;padding:0 40px 48px 16px}
@@ -227,8 +226,9 @@ a.more:hover{color:var(--ink-muted)}
 .ny{grid-template-columns:96px minmax(0,1fr) 240px 40px 264px}
 .wf{grid-template-columns:96px minmax(0,280px) 244px minmax(0,1fr) 56px 76px}
 .lr{grid-template-columns:76px minmax(0,1fr) 36px auto}
-.lr .id.at-rest{width:66px;flex:none}
-.lr .tag{flex:0 100 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lr .id.at-rest,.ny .t .id.at-rest:first-child{width:66px;flex:none}
+.attach-note{margin:8px 0 0;padding:0 16px;font-size:12px;line-height:1.4;color:var(--ink-subtle)}
+.lr .tag{flex:none}
 .cols{display:grid;grid-template-columns:1.25fr 1fr;gap:24px}
 .cols .section{margin-top:0}
 @media (max-width:1100px){
@@ -261,7 +261,6 @@ a.more:hover{color:var(--ink-muted)}
     <span class="sep" aria-hidden="true">·</span><span>profile changed</span>
   </button>
 </header>
-<div class="attn-band" role="presentation"></div>
 
 <main class="page">
   <header class="pagehead">
@@ -279,7 +278,7 @@ a.more:hover{color:var(--ink-muted)}
       <div class="rows">
 <div class="row ny" aria-label="Needs you: parked, ITM-01JC8">
   <span class="chip attn">Parked</span>
-  <div class="t"><span class="id mono">ITM-01JC8</span><span class="row-title">Retry storm in outbox dispatcher</span></div>
+  <div class="t"><span class="id at-rest mono">ITM-01JC8</span><span class="row-title">Retry storm in outbox dispatcher</span></div>
   <span class="m">checks failed twice with the same findings</span>
   <span class="w">12m</span>
   <div class="a"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button><span class="mwrap"><button class="btn ghost chev is-focused" aria-label="More for ITM-01JC8" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
@@ -287,7 +286,7 @@ a.more:hover{color:var(--ink-muted)}
 </div>
 <div class="row ny" aria-label="Needs you: decision on ITM-01JD2">
   <span class="chip attn">Decision</span>
-  <div class="t"><span class="id mono">REQ-01JD4</span><span class="row-title">Re-scope: drop the iOS head from this item</span><span class="tag">sindri-app</span></div>
+  <div class="t"><span class="id at-rest mono">REQ-01JD4</span><span class="row-title">Re-scope: drop the iOS head from this item</span><span class="tag">sindri-app</span></div>
   <span class="m">filed by a session</span>
   <span class="w">26m</span>
   <div class="a"><button class="btn primary" title="Accept records your decision now; the engine acts on it when the workflow runs.">Accept</button><button class="btn">Decline</button><span class="mwrap"><button class="btn ghost chev" aria-label="More for ITM-01JD2" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
@@ -295,7 +294,7 @@ a.more:hover{color:var(--ink-muted)}
 </div>
 <div class="row ny" aria-label="Needs you: escalated gate, ITM-01JB4">
   <span class="chip attn">Escalated</span>
-  <div class="t"><span class="id mono">ITM-01JB4</span><span class="row-title">Context map review for tabs.layout</span></div>
+  <div class="t"><span class="id at-rest mono">ITM-01JB4</span><span class="row-title">Context map review for tabs.layout</span></div>
   <span class="m">judge 0.62, below 0.80</span>
   <span class="w">2h</span>
   <div class="a"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button><span class="mwrap"><button class="btn ghost chev" aria-label="More for ITM-01JB4" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button>
@@ -409,6 +408,7 @@ a.more:hover{color:var(--ink-muted)}
 <div class="menu" role="menu" aria-label="Open instance ITM-01JD6" hidden><button class="mi" role="menuitem">Open instance</button><button class="mi" role="menuitem">Open in Claude Code</button><button class="mi" role="menuitem">Open in Codex</button></div></span></div>
 </div>
         </div>
+        <p class="attach-note">Attach joins the live session; your first keystroke takes it over.</p>
       </div>
       <div class="section" aria-labelledby="q-h">
         <div class="sh"><h2 id="q-h">Queued</h2><span class="meta">4</span><a class="more" href="#" aria-label="All 4 queued in Work">all 4 →</a></div>
@@ -446,7 +446,7 @@ a.more:hover{color:var(--ink-muted)}
     </div>
   </section>
 
-  <p class="hsent" aria-label="Sindri health">Sindri is <span class="d">degraded</span>: the code index <span class="f">failed</span> at the 03:00 build and the profile changed since approval. Updated 2s ago.</p>
+  <p class="hsent" aria-label="Sindri health">Sindri is <span class="d">degraded</span>: the code index <span class="f">failed</span> at the 03:00 build, the profile changed since approval, and Onyx is 2h behind. Updated 2s ago.</p>
 </main>
 
 <button class="sheet-tab" aria-label="Detail sheet, closed. Last opened: ITM-01JC8">

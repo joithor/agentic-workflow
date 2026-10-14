@@ -81,7 +81,6 @@ svg{flex:none}
 .health .sep{color:var(--ink-subtle)}
 .health .age{color:var(--ink-subtle)}
 /* static here; in the real app it pulses once when the needs-you count changes */
-.attn-band{height:2px;background:var(--attn)}
 
 /* page */
 .page{max-width:1264px;margin:0 auto;padding:0 40px 48px 16px}
@@ -307,7 +306,7 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
 .bud .meter{display:flex}
 .bud .meter .trk{width:100%}
 .bud .v{font-family:var(--mono);font-size:12px;color:var(--ink-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-.bud .v small{font-family:var(--sans);color:var(--attn);font-size:12px;margin-left:6px}
+.bud .v small{font-family:var(--sans);color:var(--ink-subtle);font-size:12px;margin-left:6px}
 .bud .key{grid-column:1/-1;color:var(--ink-subtle);font-size:12px;display:flex;gap:16px;margin-top:4px;white-space:nowrap}
 .bud .key i{font-style:normal;color:var(--attn)}
 .bud .key i.h{color:var(--error)}
@@ -341,8 +340,6 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
     <span class="sep" aria-hidden="true">·</span><span>profile changed</span>
   </button>
 </header>
-<div class="attn-band" role="presentation"></div>
-
 
 <main class="page">
   <div class="pagehead">
@@ -351,7 +348,7 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
       <div class="sub">
         <span><b>4</b> live</span>
         <span>·</span><span><b>1</b> with you</span>
-        <span>·</span><span class="attn-word"><i aria-hidden="true"></i>2 waiting on you</span>
+        <span>·</span><span class="attn-word"><i aria-hidden="true"></i>2 need you</span>
         <span>·</span><span><b>$4.12</b> today</span>
       </div>
     </div>
@@ -369,7 +366,7 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
   <!-- initial focus: Attach on the first row (a read: it joins the tmux session; with you comes first, as on Home).
        Take over, File a request and Cancel live in the row's ▾ menu (drawn open on snd-01JE7.2, with the token meter); Take over is never
        pre-focused and is not offered where there is no terminal; Cancel asks first (the confirm is drawn on ITM-01JE9). -->
-  <!-- empty (0 live · 0 with you · 0 waiting): "Nothing running. 4 queued; the next starts on its own." The two sections below stay. -->
+  <!-- empty (0 live · 0 with you · 0 need you): "Nothing running. 4 queued; the next starts on its own." The two sections below stay. -->
   <section class="band" aria-label="workflow.item › produce">
     <div class="section">
       <div class="sh"><h2>workflow.item › produce</h2><span class="meta">step.produce · agent Step</span></div>
@@ -389,8 +386,9 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
   <section class="band" aria-label="workflow.item › checks">
     <div class="section">
       <div class="sh"><h2>workflow.item › checks</h2><span class="meta">step.checks · tool Step, no terminal: no attach, no takeover</span></div>
-      <!-- confirm (drawn once): the one-line state after Cancel… in the row menu. Keep holds the focus in this state; Esc keeps too -->
-      <div class="row ag" aria-label="Running: snd-01JE9.1 on ITM-01JE9, cancel asked"><span class="chip ok">Running</span><span class="id at-rest mono">snd-01JE9.1 · ITM-01JE9</span><span class="row-title"><span class="ttl">Tester: decision race integration test</span><span class="tag">Codex</span></span><div class="confirm" role="alertdialog" aria-label="Cancel ITM-01JE9?"><span>Cancel <b class="mono">ITM-01JE9</b>? Its checks stop.</span><button class="btn danger">Cancel item</button><button class="btn" title="Esc keeps it">Keep</button></div></div>
+      <!-- the Cancel… confirm is not drawn: the page draws the one open menu (on snd-01JE7.2). After Cancel… the row's actions become the one line
+           "Cancel ITM-01JE9? Its checks stop. [Cancel item] [Keep]"; Keep holds the focus and Esc keeps too. -->
+      <div class="row ag" aria-label="Running: snd-01JE9.1 on ITM-01JE9"><span class="chip ok">Running</span><span class="id at-rest mono">snd-01JE9.1 · ITM-01JE9</span><span class="row-title"><span class="ttl">Tester: decision race integration test</span><span class="tag">Codex</span></span><span class="meter tok" role="img" aria-label="12k of 200k tokens"><span class="n">12k</span><span class="trk"><span class="fil" style="width:6%"></span></span><span class="n dash">200k</span></span><span class="num w">2m</span><div class="acts"><button class="btn" aria-label="Open instance ITM-01JE9">Open instance</button><button class="btn more" aria-label="More for snd-01JE9.1" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
       <div class="row ag" aria-label="Running: snd-01JD6.1 on ITM-01JD6"><span class="chip ok">Running</span><span class="id at-rest mono">snd-01JD6.1 · ITM-01JD6</span><span class="row-title"><span class="ttl">Services page job panel</span><span class="tag">factory worker</span></span><span class="meter tok" role="img" aria-label="3k of 200k tokens"><span class="n">3k</span><span class="trk"><span class="fil" style="width:2%"></span></span><span class="n dash">200k</span></span><span class="num w">0m</span><div class="acts"><button class="btn" aria-label="Open instance ITM-01JD6">Open instance</button><button class="btn more" aria-label="More for snd-01JD6.1" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
     </div>
   </section>
@@ -400,11 +398,11 @@ h1.page-title{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.
       <div class="row ag" aria-label="Model run: challenger on PRJ-tabs"><span class="chip">Model</span><span class="id at-rest mono">PRJ-tabs</span><span class="row-title"><span class="ttl">Tab manager v2</span><span class="tag">challenger</span></span><span class="meter tok" role="img" aria-label="84k of 600k tokens"><span class="n">84k</span><span class="trk"><span class="fil" style="width:14%"></span></span><span class="n dash">600k</span></span><span class="num w">46m</span><div class="acts"><button class="btn" aria-label="Open instance PRJ-tabs">Open instance</button><button class="btn more" aria-label="More for the PRJ-tabs model run" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
     </div>
   </section>
-  <section class="band attn" aria-label="Waiting on you">
+  <section class="band attn" aria-label="Needs you">
     <div class="section">
-      <div class="sh"><h2>Waiting on you</h2><span class="count-attn">2</span></div>
-      <div class="row ag" aria-label="Parked: ITM-01JC8, no session"><span class="chip attn">parked</span><span class="id at-rest mono">ITM-01JC8</span><span class="row-title"><span class="ttl">Retry storm in outbox dispatcher</span><span class="tag">no-progress</span></span><span></span><span class="num w">12m</span><div class="acts"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button><button class="btn more" aria-label="More for ITM-01JC8" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
-      <div class="row ag" aria-label="Escalated: ITM-01JB4, no session"><span class="chip attn">escalated</span><span class="id at-rest mono">ITM-01JB4</span><span class="row-title"><span class="ttl">Context map review for tabs.layout</span><span class="tag">gate 0.62</span></span><span></span><span class="num w">2h 56m</span><div class="acts"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button><button class="btn more" aria-label="More for ITM-01JB4" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
+      <div class="sh"><h2>Needs you</h2><span class="count-attn">2</span></div>
+      <div class="row ag" aria-label="Parked: ITM-01JC8, no session"><span class="chip attn">Parked</span><span class="id at-rest mono">ITM-01JC8</span><span class="row-title"><span class="ttl">Retry storm in outbox dispatcher</span><span class="tag">no-progress</span></span><span></span><span class="num w">12m</span><div class="acts"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Grant rounds · terminal</button><button class="btn more" aria-label="More for ITM-01JC8" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
+      <div class="row ag" aria-label="Escalated: ITM-01JB4, no session"><span class="chip attn">Escalated</span><span class="id at-rest mono">ITM-01JB4</span><span class="row-title"><span class="ttl">Context map review for tabs.layout</span><span class="tag">gate 0.62</span></span><span></span><span class="num w">2h 56m</span><div class="acts"><button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Accept · terminal</button><button class="btn more" aria-label="More for ITM-01JB4" aria-haspopup="menu" aria-expanded="false"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" fill="none" stroke-width="1.3"/></svg></button></div></div>
     </div>
   </section>
   <section class="band" aria-label="By agent and budget">

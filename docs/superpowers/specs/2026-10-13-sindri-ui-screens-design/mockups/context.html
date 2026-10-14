@@ -81,7 +81,6 @@ svg{flex:none}
 .health .sep{color:var(--ink-subtle)}
 .health .age{color:var(--ink-subtle)}
 /* static here; in the real app it pulses once when the needs-you count changes */
-.attn-band{height:2px;background:var(--attn)}
 
 /* page */
 .page{max-width:1264px;margin:0 auto;padding:0 40px 48px 16px}
@@ -408,14 +407,14 @@ body{min-width:1280px}
       <h1 class="page-title">Context</h1>
       <div class="sub">
         <span>map <b>v13</b> current</span>
-        <span>·</span><span>draft <b>v14</b> (46 proposals)</span>
+        <span>·</span><span>draft <b>v14</b> (46 proposals, 31 accepted)</span>
         <span>·</span><span>code index <span class="x">✕</span> <b>03:00 failed</b></span>
         <span>·</span><span>intent <b>2h behind</b></span>
       </div>
     </div>
     <div class="acts">
       <!-- no primary on this page: Build draft is a secondary that rebuilds v14 and keeps every pending proposal; focus starts in the anchor field (a read) -->
-      <div class="actcol"><button class="btn" aria-describedby="build-what">Build draft</button><small id="build-what">keeps the 46 pending proposals</small></div>
+      <div class="actcol"><button class="btn" aria-describedby="build-what">Build draft</button><small id="build-what">keeps the 15 pending proposals</small></div>
       <button class="btn term" title="Needs a typed confirmation at a terminal"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="5.6" rx="1.2" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M4 5.2V3.8a2 2 0 0 1 4 0v1.4" stroke="currentColor" fill="none" stroke-width="1.2"/></svg>Promote · terminal</button>
     </div>
   </div>
@@ -540,15 +539,15 @@ body{min-width:1280px}
   <section class="band" aria-label="Map review and node">
     <div class="duo">
       <div class="section" aria-labelledby="mr-h">
-        <div class="sh"><h2 id="mr-h">Map review</h2><span class="meta"><b>46</b> pending · draft v14 · by impact</span><button class="btn sm act">Accept all deterministic</button></div>
+        <div class="sh"><h2 id="mr-h">Map review</h2><span class="meta"><b>15</b> pending · draft v14 · by impact</span><button class="btn sm act" disabled title="Nothing deterministic left to accept">Accept all deterministic</button></div>
         <div class="list">
-          <div class="mr" aria-label="Deterministic proposals: 31, rename 12, move 9, implements 10">
+          <div class="mr" aria-label="Deterministic proposals: 0 pending, 31 accepted at 12:26">
             <span class="chip">Deterministic</span>
-            <div class="t"><span class="keyt">31 proposals</span><div class="meta">rename 12 · move 9 · implements 10, from the file map and symbol index</div></div>
-            <span class="split"><button class="btn sm main">Review</button><button class="btn sm chev" aria-label="More">▾</button></span>
+            <div class="t"><span class="keyt">0 proposals · 31 accepted 12:26</span><div class="meta">rename 12 · move 9 · implements 10, from the file map and symbol index</div></div>
+            <span class="split"><button class="btn sm main" disabled>Review</button><button class="btn sm chev" aria-label="More">▾</button></span>
           </div>
-          <!-- state, drawn once: the line that appears right after Accept all deterministic. In the app it sits here for 10 s with Undo live,
-               then the row above reads "0 proposals · 31 accepted 12:26" and the count drops to 15. -->
+          <!-- the one state drawn is the one right after Accept all deterministic: the row above reads "0 proposals · 31 accepted 12:26", the header says 15 pending,
+               and this line stays for 10 s with Undo live; then it goes and the page keeps the same numbers. -->
           <div class="toast" role="status">
             <span class="g h-ok" aria-hidden="true">✓</span>
             <span>31 deterministic proposals accepted · 31 <span class="mono">map_override</span> rows written</span>
