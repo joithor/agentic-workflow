@@ -206,6 +206,28 @@ public sealed class QueryContextTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task An_onyx_record_is_scrubbed_with_the_profiles_extra_patterns_in_title_text_alias_and_permalink()
+    {
+        const string acme = """{"scrub":{"extraPatterns":[{"id":"acme-customer-id","pattern":"ACME-[0-9]{6}"}]}}""";
+        var record = FakeContextSource.Doc("linear/SPL-103", "Customer ACME-123456 escalation", "orientation for customer ACME-123456", "o9");
+        var onyx = new FakeContextSource(_onyx, [record with
+        {
+            Ref = record.Ref with { Source = _onyx.Id, Permalink = new Uri("https://linear.app/fixture-labs/issue/ACME-123456") },
+            Aliases = ["SPL-103", "ACME-123456"],
+        }]);
+
+        var result = await Engines.Over(onyx).Query(new ContextQuery("orientation"), Engines.Human(acme), CancellationToken.None);
+
+        var item = result.Value.Sections.Single().Items.Single();
+        var cite = result.Value.Cites[item.Cites.Single()];
+        Assert.Equal("<untrusted source=\"onyx\">Customer [REDACTED:acme-customer-id] escalation</untrusted>", item.Title);
+        Assert.Equal((false, true), (item.Text!.Contains("ACME-123456", StringComparison.Ordinal), item.Text.Contains("[REDACTED:acme-customer-id]", StringComparison.Ordinal)));
+        Assert.Equal(["SPL-103", "[REDACTED:acme-customer-id]"], cite.Aliases, StringComparer.Ordinal);
+        Assert.Null(cite.Permalink);   // a link the extra pattern changed is left out
+        Assert.Equal(record.Ref.Canonical, cite.Key);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_degraded_source_names_the_cause_code_when_it_is_not_010_itself()
     {
         var onyx = new FakeContextSource(_onyx, []) { Failure = ContextErrors.OnyxUnexpectedReply.With("Onyx answered with a body v4.9.0 doesn't send") };
