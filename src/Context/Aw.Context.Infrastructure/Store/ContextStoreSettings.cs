@@ -6,4 +6,7 @@ internal sealed record ContextStoreSettings(string Home)
 {
     /// <summary>The store.</summary>
     public string DatabasePath => Path.Combine(Home, "context.db");
+
+    /// <summary>The only folder map exports are written to (S-3a): 0700, files 0600.</summary>
+    public string ExportsDirectory => Path.Combine(Home, "exports");
 }

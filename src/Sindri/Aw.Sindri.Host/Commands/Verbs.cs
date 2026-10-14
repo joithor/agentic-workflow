@@ -69,7 +69,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             return await output.Json(report, report.ExitCode).ConfigureAwait(false);
         }
 
-        var lines = report.Checks.Select(c => $"{Word(c.State),-5} {c.Name,-8} {c.Detail}{(c.Fix is null ? string.Empty : $" (fix: {c.Fix})")}");
+        var lines = report.Checks.Select(c => $"{Word(c.State),-5} {c.Name,-17} {c.Detail}{(c.Fix is null ? string.Empty : $" (fix: {c.Fix})")}");
         return await output.Text(string.Join('\n', lines) + "\n", report.ExitCode).ConfigureAwait(false);
     }
 

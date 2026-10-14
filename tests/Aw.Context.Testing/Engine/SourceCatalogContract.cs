@@ -1,5 +1,6 @@
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Trust;
 using Aw.Kernel.Testing;
 using Xunit;
 
@@ -16,6 +17,9 @@ public abstract class SourceCatalogContract<TCatalog>
     /// <summary>A repo the catalog may be asked about.</summary>
     protected static ContextRepo Repo { get; } = new(ContextRepoName.From("split-panes"), "/repos/split-panes");
 
+    /// <summary>The scrubbers the contract passes (no extra patterns).</summary>
+    protected static Scrubbers Scrubbers { get; } = new FakeScrubberFactory().For([]).Value;
+
     /// <summary>A fresh catalog.</summary>
     /// <returns>The catalog.</returns>
     protected abstract TCatalog Create();
@@ -23,7 +27,7 @@ public abstract class SourceCatalogContract<TCatalog>
     /// <summary>No repo in scope, no source.</summary>
     [Fact]
     public void No_repo_in_scope_gives_no_source() =>
-        Check(Create().For(new ContextSettings(), []).Count == 0, "no repo in scope gives no source");
+        Check(Create().For(new ContextSettings(), [], Scrubbers).Count == 0, "no repo in scope gives no source");
 
     /// <summary>The same scope gives the same sources, in a stable order with distinct ids.</summary>
     [Fact]
@@ -31,8 +35,8 @@ public abstract class SourceCatalogContract<TCatalog>
     {
         var catalog = Create();
 
-        var first = catalog.For(new ContextSettings(), [Repo]).Select(s => s.Describe().Id).ToList();
-        var second = catalog.For(new ContextSettings(), [Repo]).Select(s => s.Describe().Id).ToList();
+        var first = catalog.For(new ContextSettings(), [Repo], Scrubbers).Select(s => s.Describe().Id).ToList();
+        var second = catalog.For(new ContextSettings(), [Repo], Scrubbers).Select(s => s.Describe().Id).ToList();
 
         Check(first.Count > 0 && first.SequenceEqual(second), "the same scope gives the same sources in order");
         Check(first.Distinct().Take(first.Count + 1).Count() == first.Count, "source ids are distinct");

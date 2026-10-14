@@ -82,5 +82,11 @@
          as a native library inside the package (osx-arm64, osx-x64, linux-x64, linux-arm64). 1.19.0 published
          2026-09-14, MIT. -->
     <PackageVersion Include="Temporalio" Version="[1.19.0]" />
+    <!-- MCP server (context spec §8.5, API spec §8, README X8): the official MCP C# SDK, Streamable HTTP in stateless mode
+         at /sindri/mcp. Referenced by Aw.Sindri.Host only (Host/Mcp); the context packages stay free of it. 2.2.0 is the
+         version the readiness AOT spike approved (docs/readiness/aot-spike.md: MapMcp on CreateSlimBuilder, 0 trim/AOT
+         warnings); published 2026-08-13, Apache-2.0. Brings ModelContextProtocol and ModelContextProtocol.Core 2.2.0
+         (the tests' MCP client) transitively. -->
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="[2.2.0]" />
   </ItemGroup>
 </Project>

@@ -21,6 +21,13 @@ public sealed record TelemetryOptions
     /// <summary>The lowest level written. Default: information.</summary>
     public LogLevel MinimumLevel { get; init; } = LogLevel.Information;
 
+    /// <summary>
+    /// Category prefixes never written below debug, whatever <see cref="MinimumLevel"/> says: third-party libraries whose
+    /// trace level logs whole messages (the MCP SDK logs every JSON-RPC message at trace, so a question and the records
+    /// it returns would reach the log). Default: 'ModelContextProtocol'.
+    /// </summary>
+    public IReadOnlyList<string> TraceCappedCategories { get; init; } = ["ModelContextProtocol"];
+
     /// <summary>Where log lines go. Null: standard error.</summary>
     public ILogSink? Sink { get; init; }
 

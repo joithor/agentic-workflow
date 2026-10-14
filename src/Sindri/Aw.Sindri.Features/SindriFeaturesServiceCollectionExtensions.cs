@@ -1,6 +1,8 @@
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.Blocks;
@@ -11,6 +13,7 @@ using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.RecordHeartbeat;
+using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;
@@ -38,19 +41,27 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<RecordHeartbeatRequest, RecordHeartbeatResponse>, RecordHeartbeatService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddScoped<ProfileFacts>()
-            .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>, RunDoctorService>()
+            .AddScoped<RunDoctorService>()
+            .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
+                new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
+            .AddScoped<IDoctorChecks, ContextDoctorChecks>()
+            .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddScoped<ContextScopes>()
             .AddScoped<IScheduledService, ContextDocsRefreshService>()
+            .AddScoped<IScheduledService, ContextPurgeService>()
             .AddScoped<IService<ValidateRecipeRequest, ValidateRecipeResponse>, ValidateRecipeService>()
             .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
             .AddRecipeBlocks();
 
         // ---- commands (one line per slice) ----
+        _ = services.AddScoped<IValidator<ImportContextMapRequest>, AcceptAllValidator<ImportContextMapRequest>>().AddCommand<ImportContextMapRequest, ImportContextMapResponse, ImportContextMapService>();
         _ = services.AddScoped<IValidator<ApproveProfileRequest>, AcceptAllValidator<ApproveProfileRequest>>().AddCommand<ApproveProfileRequest, ApproveProfileResponse, ApproveProfileService>();
         _ = services.AddScoped<IValidator<StopProcessRequest>, AcceptAllValidator<StopProcessRequest>>().AddCommand<StopProcessRequest, StopProcessResponse, StopProcessService>();
 
         // ---- queries (one line per slice) ----
+        _ = services.AddScoped<IValidator<ExportContextMapRequest>, AcceptAllValidator<ExportContextMapRequest>>().AddQuery<ExportContextMapRequest, MapExported, ExportContextMapService>();
+        _ = services.AddScoped<IValidator<GetContextMapRequest>, AcceptAllValidator<GetContextMapRequest>>().AddQuery<GetContextMapRequest, MapStatusView, GetContextMapService>();
         _ = services.AddScoped<IValidator<GetContextSourcesRequest>, AcceptAllValidator<GetContextSourcesRequest>>().AddQuery<GetContextSourcesRequest, SourcesView, GetContextSourcesService>();
         _ = services.AddScoped<IValidator<GetStatusRequest>, AcceptAllValidator<GetStatusRequest>>().AddQuery<GetStatusRequest, GetStatusResponse, GetStatusService>();
         _ = services.AddScoped<IValidator<ListCommandsRequest>, AcceptAllValidator<ListCommandsRequest>>().AddQuery<ListCommandsRequest, ListCommandsResponse, ListCommandsService>();
