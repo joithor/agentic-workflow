@@ -35,9 +35,12 @@ public sealed class SafeTextTests
     [InlineData("\uFEFFa", @"\u{FEFF}a")]
     [InlineData("a\u2028b", @"a\u{2028}b")]
     [InlineData("a\U000E0041b", @"a\u{E0041}b")]
-    [InlineData("a\uD800b", @"a\u{D800}b")]
     public void Escape_marks_zero_width_and_bidi_characters(string text, string expected) =>
         Expect.Equal(expected, SafeText.Escape(text));
+
+    [Fact]
+    public void Escape_marks_a_lone_surrogate() =>
+        Expect.Equal(@"a\u{D800}b", SafeText.Escape("a" + (char)0xD800 + "b"));   // built at run time: attribute metadata turns a lone surrogate into U+FFFD
 
     [Fact]
     public void Escape_keeps_plain_text_and_newlines_for_Line_to_fold() =>
