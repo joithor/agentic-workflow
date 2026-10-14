@@ -40,6 +40,29 @@ public sealed class ListOutboxTests
     }
 
     [Fact]
+    public async Task An_effect_cancelled_within_its_delay_shows_cancelled_and_is_neither_pending_nor_dispatched()
+    {
+        var h = await Ledger();
+        var grant = h.Held.Current!;   // why: Ledger() holds the lease
+        var t6 = InstanceAddress.From("T-6/dev-notify/1");
+        foreach (var (type, state, key) in new[] { (OutboxEvents.Pending, EffectState.Pending, "workflow:T-6:run:2"), (OutboxEvents.Cancelled, EffectState.Cancelled, "workflow:T-6:run:3") })
+        {
+            var row = new EffectRow("WFI-c:2:0", "c-cancelled", _notify, CommandOrigin.Recipe, state, t6);
+            Assert.False((await h.Store.Append(h.Events.Entry(type, row, key, "T-6"), grant, Token)).IsError);
+        }
+
+        var service = new ListOutboxService(h.Store, h.Events);
+        var all = (await service.Handle(new ListOutboxRequest(), Token)).Value.Commands;
+        var pending = (await service.Handle(new ListOutboxRequest(EffectState.Pending), Token)).Value.Commands;
+        var dispatched = (await service.Handle(new ListOutboxRequest(EffectState.Dispatched), Token)).Value.Commands;
+
+        var cancelled = Assert.Single(all, static c => c.Command == "c-cancelled");
+        Assert.Equal(EffectState.Cancelled, cancelled.State);
+        Assert.Contains("  cancelled  effect.notify.desk  recipe  T-6/dev-notify/1  WFI-c:2:0", OutboxCommandTable.Lines([cancelled]), StringComparison.Ordinal);
+        Assert.DoesNotContain(pending.Concat(dispatched), static c => c.Command == "c-cancelled");
+    }
+
+    [Fact]
     public async Task Pending_and_dispatched_keep_the_effects_in_that_state()
     {
         var h = await Ledger();

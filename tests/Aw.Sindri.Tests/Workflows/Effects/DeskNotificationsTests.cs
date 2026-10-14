@@ -40,7 +40,8 @@ public sealed class DeskNotificationsTests(SindriTimeSkippingServer server) : IC
     {
         var env = server.Environment;
         _harness.Recipe("workflow.dev-notify", WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
-        await using var sindri = _harness.Sindri();
+        var space = env.Client.Options.Namespace;
+        await using var sindri = _harness.Sindri(static _ => { }, name => name == "AW_SINDRI_TEMPORAL_NAMESPACE" ? space : null);   // the bridge signals in the server's namespace
         await WorkflowsHarness.HoldLease(sindri, Token);
         _ = await WorkflowsHarness.AsServe(sindri, env, Token);
         using var worker = new TemporalWorker(env.Client, PassingRecheck.Options(sindri));

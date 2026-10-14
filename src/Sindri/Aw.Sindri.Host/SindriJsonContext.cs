@@ -98,6 +98,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(GetInstanceResponse))]
 [JsonSerializable(typeof(ListInstancesResponse))]
 [JsonSerializable(typeof(ListOutboxResponse))]   // engine P6 unit (c): outbox list
+[JsonSerializable(typeof(DeskNotice))]   // engine P6 unit (c): a line of notifications.jsonl
 [JsonSerializable(typeof(EffectRow))]            // engine P6: an effect's ledger row (§5.7)
 [JsonSerializable(typeof(EffectReply))]          // engine P6 unit (a): an effect's reply event (notify.delivered, claim.created)
 [JsonSerializable(typeof(GetInstanceEventsResponse))]
