@@ -10,7 +10,7 @@ namespace Aw.Sindri.Tests.CompleteStep;
 /// <summary>A 'workflow.step' instance on an item, run by the worker 'sindri serve' runs, and the 'workflow' verbs run in process against it.</summary>
 /// <param name="Sindri">The composed host over the test's home.</param>
 /// <param name="Handle">The instance.</param>
-internal sealed record DeskInstance(ServiceProvider Sindri, WorkflowHandle<RecipeWorkflow, RecipeResult> Handle)
+internal sealed record DeskInstance(IServiceProvider Sindri, WorkflowHandle<RecipeWorkflow, RecipeResult> Handle)
 {
     /// <summary>Runs 'sindri workflow complete &lt;address&gt; &lt;args&gt;'.</summary>
     public async Task<CliRun> Complete(params string[] args)

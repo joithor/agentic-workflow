@@ -2,6 +2,7 @@ using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Tests.CompleteStep;
@@ -59,7 +60,7 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         var address = await Rounds(served, "T-12");
         var events = await served.Events(address);
 
-        var granted = await Apply(served, new ApplyCommandRequest(address, ApplyCommandKind.Answer, AnswerVariant.Grant, Text: null, Amount: 1, Verb: null, Nonce: null, Challenge: null, "human:cli"));
+        var granted = await Apply(served, new ApplyCommandRequest(address, ApplyCommandKind.Answer, AnswerVariant.Grant, Text: null, Amount: 1, Verb: null, Nonce: null, Challenge: null));
 
         Assert.True(granted.IsError);
         Assert.Equal("SND-WF-013", granted.Error.Code);
@@ -73,10 +74,10 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
         var address = await Rounds(served, "T-13");
         var parked = await served.Until(address, static v => v.State == "parked");
         var challenges = served.Sindri.GetRequiredService<IChallenges>();
-        var action = ApplyCommandChallenge.Action(InstanceAddress.From(address), AnswerVariant.Grant, 1);
-        var issued = challenges.Issue(action, ApplyCommandChallenge.Subject(parked));
+        var action = InstanceChallenge.Action(InstanceAddress.From(address), AnswerVariant.Grant, 1);
+        var issued = challenges.Issue(action, InstanceChallenge.Subject(parked));
 
-        var granted = await Apply(served, new ApplyCommandRequest(address, ApplyCommandKind.Answer, AnswerVariant.Grant, Text: null, Amount: 1, Verb: null, Nonce: null, new ChallengeAnswer(issued.Id, "grant 1 " + address), "human:cli"));
+        var granted = await Apply(served, new ApplyCommandRequest(address, ApplyCommandKind.Answer, AnswerVariant.Grant, Text: null, Amount: 1, Verb: null, Nonce: null, new ChallengeAnswer(issued.Id, "grant 1 " + address)));
 
         Assert.False(granted.IsError, granted.IsError ? granted.Error.Message : null);
         Assert.Equal("grant 1 " + address, action.Text);
@@ -180,6 +181,7 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
 
     private static async Task<Kernel.Result<ApplyCommandResponse>> Apply(Served served, ApplyCommandRequest request)
     {
+        using var caller = served.AsHumanAtTerminal();
         await using var scope = served.Sindri.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<IService<ApplyCommandRequest, ApplyCommandResponse>>().Handle(request, TestContext.Current.CancellationToken);
     }

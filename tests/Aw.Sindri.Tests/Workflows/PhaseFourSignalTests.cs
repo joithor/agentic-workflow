@@ -1,6 +1,4 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Control;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Workflows;
 
@@ -19,14 +17,9 @@ public sealed class PhaseFourSignalTests : IDisposable
     [Fact]
     public async Task Start_workflow_step_on_an_item_then_status_shows_the_desk_task_with_run_1_1()
     {
-        var ct = TestContext.Current.CancellationToken;
         await using var env = await WorkflowsHarness.StartDevServer();
-        await using var sindri = _harness.Sindri();
-        await WorkflowsHarness.HoldLease(sindri, ct);
-        var temporal = await WorkflowsHarness.AsServe(sindri, env, ct);
-        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var worker = sindri.GetRequiredService<ITemporalWorker>().Run(temporal, stop.Token);
-        try
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env);
+        var sindri = served.Sindri;
         {
             var spec = _harness.File("spec.md", "the spec");
 
@@ -41,11 +34,6 @@ public sealed class PhaseFourSignalTests : IDisposable
             Assert.Contains(lines, static l => l.Contains("sindri workflow complete T-1/step/1 --run 1.1 --outcome done --output fact:output=<file>", StringComparison.Ordinal));
             Assert.Contains(lines, static l => l.StartsWith("  inputs    fact:spec  spec.md  sha256:", StringComparison.Ordinal));
             Assert.Contains("  commands  complete, takeover, cancel", lines, StringComparer.Ordinal);
-        }
-        finally
-        {
-            await stop.CancelAsync();
-            await worker;
         }
     }
 }

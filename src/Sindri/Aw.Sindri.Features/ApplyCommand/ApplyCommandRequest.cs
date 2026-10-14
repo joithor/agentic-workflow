@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Challenges;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
@@ -17,14 +19,41 @@ namespace Aw.Sindri.Features.ApplyCommand;
 /// <param name="Verb">The recipe verb, for a command.</param>
 /// <param name="Nonce">The command's nonce; null to have one issued.</param>
 /// <param name="Challenge">The challenge and its typed text, for a protected answer (grant, grant-tokens, accept).</param>
-/// <param name="Actor">Who sends it ('human:cli').</param>
 public sealed record ApplyCommandRequest(
     string Instance,
     ApplyCommandKind Kind,
-    AnswerVariant? Answer,
-    string? Text,
-    int? Amount,
-    CommandVerb? Verb,
-    CommandNonce? Nonce,
-    ChallengeAnswer? Challenge,
-    string Actor);
+    AnswerVariant? Answer = null,
+    string? Text = null,
+    int? Amount = null,
+    CommandVerb? Verb = null,
+    CommandNonce? Nonce = null,
+    ChallengeAnswer? Challenge = null) : ICommand<ApplyCommandResponse>, IClassifiedCommand
+{
+    /// <summary>
+    /// The catalog variant (engine spec §6.2, UI spec E-12): 'answer-&lt;variant&gt;' ('answer-text', 'answer-grant' …),
+    /// 'command' for every recipe verb, or 'cancel'. An answer without a variant is 'answer', which no row names, so it is
+    /// classified protected (fail-closed) and then refused as malformed.
+    /// </summary>
+    [JsonIgnore]
+    public string Variant => Kind switch
+    {
+        ApplyCommandKind.Answer => Answer is { } variant ? "answer-" + AnswerName(variant) : "answer",
+        ApplyCommandKind.Command => "command",
+        ApplyCommandKind.Cancel or _ => "cancel",
+    };
+
+    /// <summary>A grant, a token grant or an accept, whatever the kind says: protected (W22).</summary>
+    [JsonIgnore]
+    public bool CarriesProtectedFields => Answer is AnswerVariant.Grant or AnswerVariant.GrantTokens or AnswerVariant.Accept;
+
+    private static string AnswerName(AnswerVariant variant) => variant switch
+    {
+        AnswerVariant.Text => "text",
+        AnswerVariant.Grant => "grant",
+        AnswerVariant.GrantTokens => "grant-tokens",
+        AnswerVariant.Accept => "accept",
+        AnswerVariant.Reject => "reject",
+        AnswerVariant.Resume => "resume",
+        _ => "unknown",
+    };
+}
