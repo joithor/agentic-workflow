@@ -29,7 +29,7 @@ public sealed class RecipeDeclarationsTests
         var recipe = RecipeReaderTests.Bind(WithDeclarations(Declared));
 
         Assert.Equal("triage", recipe.Urgency);
-        Assert.Equal([new RecipeInput(Core.Workflow.Ids.FactKey.From("fact:item"), "Item", "item", "item")], recipe.Inputs);
+        Assert.Equal([new RecipeInput(Core.Workflow.Ids.FactKey.From("fact:item"), "Item", "item", "item", Generate: null)], recipe.Inputs);
         Assert.Equal(
             [
                 new RecipeOutput(Core.Workflow.Ids.FactKey.From("fact:output"), "The answer", "file", "produce"),

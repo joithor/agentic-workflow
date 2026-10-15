@@ -230,5 +230,33 @@ internal static class InvalidFixtureCases
             FixtureSetup.Shipped,
             "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'file'; kind item pairs with type item at RCP-TYPE-003.yaml:5:35 (inputs[0].kind); set type to item, or change kind",
             []),
+        ["RCP-INPUT-001"] = new(
+            FixtureSetup.Shipped,
+            "RCP-INPUT-001: input 'fact:item' declares no kind at RCP-INPUT-001.yaml:5:5 (inputs[0]); add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)",
+            []),
+        ["RCP-INPUT-002"] = new(
+            FixtureSetup.Shipped,
+            "RCP-INPUT-002: the recipe declares no input at RCP-INPUT-002.yaml:1:1 (inputs); declare at least one input; a scheduled recipe gives it generate: \"<template>\"",
+            []),
+        ["RCP-NAME-002"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-002: the name template is empty or longer than 200 characters at RCP-NAME-002.yaml:4:1 (name); write literal text with {fact:<input>} or {start:date|time}",
+            []),
+        ["RCP-NAME-003"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-003: unknown placeholder '{owner}' at RCP-NAME-003.yaml:4:1 (name); use {fact:<input>}, {start:date} or {start:time}, and write {{ or }} for a literal brace",
+            []),
+        ["RCP-NAME-004"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-004: '{fact:scope}' names no declared input at RCP-NAME-004.yaml:4:1 (name); declare fact:scope under inputs or remove the placeholder",
+            []),
+        ["RCP-NAME-005"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-005: generate may not read inputs ('{fact:note}') at RCP-NAME-005.yaml:5:47 (inputs[0].generate); use only literals, {start:date} and {start:time}",
+            []),
+        ["RCP-NAME-006"] = new(
+            FixtureSetup.Shipped,
+            "RCP-NAME-006: generate on an input of kind 'item' at RCP-NAME-006.yaml:5:47 (inputs[0].generate); only a text input can be generated; supply this input at start",
+            []),
     };
 }

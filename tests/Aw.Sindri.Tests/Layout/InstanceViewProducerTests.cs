@@ -27,7 +27,7 @@ public sealed class InstanceViewProducerTests
         Recipe = StatusCases.Recipe.Recipe with
         {
             Urgency = "incident",
-            Inputs = [new RecipeInput(_spec, "Spec", "file", "file")],
+            Inputs = [new RecipeInput(_spec, "Spec", "file", "file", Generate: null)],
             Outputs = [new RecipeOutput(_output, "Output", "text", "produce"), new RecipeOutput(_findings, "Findings", Type: "mystery", "checks")],
         },
     };
@@ -364,8 +364,8 @@ public sealed class InstanceViewProducerTests
     public void Only_the_first_input_has_a_kind_the_subject_adapter_as_the_recipe_view_serves_it()
     {
         var slots = Slots(
-            new RecipeInput(FactKey.From("fact:project"), "Project", "payload", "linear-project"),
-            new RecipeInput(FactKey.From("fact:notes"), "Notes", "file", "file"));
+            new RecipeInput(FactKey.From("fact:project"), "Project", "payload", "linear-project", Generate: null),
+            new RecipeInput(FactKey.From("fact:notes"), "Notes", "file", "file", Generate: null));
 
         Assert.Equal((string?[])["linear-project", null], slots.Select(static s => s.Kind), StringComparer.Ordinal);
     }
@@ -373,7 +373,7 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void A_first_input_typed_link_with_no_declared_kind_has_no_kind_and_a_text_one_is_a_text_subject()
     {
-        Assert.Null(Assert.Single(Slots(new RecipeInput(FactKey.From("fact:url"), "Url", "link", Kind: null))).Kind);
-        Assert.Equal("text", Assert.Single(Slots(new RecipeInput(FactKey.From("fact:note"), "Note", Type: null, Kind: null))).Kind);
+        Assert.Null(Assert.Single(Slots(new RecipeInput(FactKey.From("fact:url"), "Url", "link", Kind: null, Generate: null))).Kind);
+        Assert.Equal("text", Assert.Single(Slots(new RecipeInput(FactKey.From("fact:note"), "Note", Type: null, Kind: null, Generate: null))).Kind);
     }
 }

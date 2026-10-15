@@ -19,7 +19,7 @@ public sealed class SubjectRefsTests
     private static InterpretedRecipe Recipe(string? type, string? kind = null, string? name = null) =>
         StatusCases.Recipe with
         {
-            Recipe = EngineFixture.Step with { Inputs = [new RecipeInput(_fact, "Input", type, kind ?? type)] },
+            Recipe = EngineFixture.Step with { Inputs = [new RecipeInput(_fact, "Input", type, kind ?? type, Generate: null)] },
             Inputs = name is null ? [] : new Dictionary<FactKey, InputFact> { [_fact] = new(name, EngineFixture.Fact("x")) },
         };
 
@@ -84,7 +84,7 @@ public sealed class SubjectRefsTests
     [InlineData("payload", """{"id":"P-1","title":"A title"}""")]
     public void A_first_input_with_a_type_and_no_declared_kind_has_a_null_subject_kind_equal_to_the_input_kind(string type, string content)
     {
-        var recipe = StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [new RecipeInput(_fact, "Input", type, Kind: null)] } };
+        var recipe = StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [new RecipeInput(_fact, "Input", type, Kind: null, Generate: null)] } };
         var view = InstanceViews.Of(EngineFixture.At(recipe.Recipe, "produce"), recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
         var subject = SubjectRefs.Of(recipe, _item, content)!;

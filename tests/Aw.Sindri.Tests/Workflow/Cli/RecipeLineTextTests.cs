@@ -17,7 +17,7 @@ public sealed class RecipeLineTextTests
     public void The_detail_shows_the_effective_kind_declared_or_implied_by_the_type_and_lists_urgency_then_each_input_then_each_output_then_the_path_order()
     {
         var summary = Summary(
-            [new RecipeInput(FactKey.From("fact:item"), "Item", "item", "item"), new RecipeInput(FactKey.From("fact:note"), Label: null, Type: null, Kind: null), new RecipeInput(FactKey.From("fact:doc"), Label: null, Type: "file", Kind: null), new RecipeInput(FactKey.From("fact:hook"), Label: null, Type: "payload", Kind: null), new RecipeInput(FactKey.From("fact:repo"), Label: null, Type: "payload", Kind: "webhook")],
+            [new RecipeInput(FactKey.From("fact:item"), "Item", "item", "item", Generate: null), new RecipeInput(FactKey.From("fact:note"), Label: null, Type: null, Kind: null, Generate: null), new RecipeInput(FactKey.From("fact:doc"), Label: null, Type: "file", Kind: null, Generate: null), new RecipeInput(FactKey.From("fact:hook"), Label: null, Type: "payload", Kind: null, Generate: null), new RecipeInput(FactKey.From("fact:repo"), Label: null, Type: "payload", Kind: "webhook", Generate: null)],
             [new RecipeOutput(FactKey.From("fact:draft"), "Draft", "file", "a"), new RecipeOutput(FactKey.From("fact:plain"), Label: null, Type: null, "b")],
             urgency: "triage");
 
