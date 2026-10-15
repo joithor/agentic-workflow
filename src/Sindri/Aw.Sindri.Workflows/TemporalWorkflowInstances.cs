@@ -3,6 +3,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Temporalio.Client;
+using Temporalio.Common;
 using Temporalio.Exceptions;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -52,17 +53,20 @@ internal sealed class TemporalWorkflowInstances(TemporalFrontend frontend) : IWo
         return rows.OrderBy(static r => r.Address, StringComparer.Ordinal).ToList();
     }
 
-    private static InstanceRow Row(WorkflowExecution execution)
-    {
-        var attributes = execution.TypedSearchAttributes;
-        return new InstanceRow(
-            execution.Id,
-            attributes.TryGetValue(SindriTemporal.StateKey, out var state) ? state : null,
-            attributes.TryGetValue(SindriTemporal.NeedsYouKey, out var needsYou) && needsYou,
-            new DateTimeOffset(DateTime.SpecifyKind(execution.StartTime, DateTimeKind.Utc)),
-            attributes.TryGetValue(SindriTemporal.RecipeKey, out var recipe) ? recipe : null,
-            attributes.TryGetValue(SindriTemporal.UrgencyKey, out var urgency) && Urgencies.IsKnown(urgency) ? Urgencies.Parse(urgency) : RecipeUrgency.Work,
-            attributes.TryGetValue(SindriTemporal.SubjectKey, out var subject) ? subject : null,
-            !attributes.TryGetValue(SindriTemporal.RootKey, out var root) || root);
-    }
+    private static InstanceRow Row(WorkflowExecution execution) => Row(execution.Id, execution.StartTime, execution.TypedSearchAttributes);
+
+    /// <summary>
+    /// The row of an execution from its search attributes. An attribute the instance never set reads as its default: an
+    /// instance started before 'Urgency', 'Subject' and 'Root' existed is 'work', has no subject and is a root, which is
+    /// also what the typed filters match it as (<see cref="InstanceFilters.ToQuery"/>: 'Urgency IS NULL', 'Root IS NULL').
+    /// </summary>
+    internal static InstanceRow Row(string id, DateTime startTime, SearchAttributeCollection attributes) => new(
+        id,
+        attributes.TryGetValue(SindriTemporal.StateKey, out var state) ? state : null,
+        attributes.TryGetValue(SindriTemporal.NeedsYouKey, out var needsYou) && needsYou,
+        new DateTimeOffset(DateTime.SpecifyKind(startTime, DateTimeKind.Utc)),
+        attributes.TryGetValue(SindriTemporal.RecipeKey, out var recipe) ? recipe : null,
+        attributes.TryGetValue(SindriTemporal.UrgencyKey, out var urgency) && Urgencies.IsKnown(urgency) ? Urgencies.Parse(urgency) : RecipeUrgency.Work,
+        attributes.TryGetValue(SindriTemporal.SubjectKey, out var subject) ? subject : null,
+        !attributes.TryGetValue(SindriTemporal.RootKey, out var root) || root);
 }
