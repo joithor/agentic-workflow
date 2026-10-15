@@ -245,9 +245,9 @@
                 </Button>
               </Grid>
               <!-- The one sheet layer's content, chosen by the kind of link that opened it (SheetLink.Kind): every kind shows
-                   "not served yet" until its lane adds its own content here. -->
+                   "not served yet" (IsSheetPlaceholderShown) until its lane claims the kind in ShellViewModel.Sheet.cs and adds its own content here. -->
               <Panel x:Name="SheetContent">
-                <TextBlock x:Name="SheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}"
+                <TextBlock x:Name="SheetBody" Classes="body muted" Text="{Binding Text.NotServedYet}" IsVisible="{Binding IsSheetPlaceholderShown}"
                            AutomationProperties.Name="{Binding Text.NotServedYet}" />
                 <!-- LANE ANCHOR U3': the Needs you sheet content for item, decision, service and job links. Insert immediately above this marker, never between the markers. -->
                 <!-- LANE ANCHOR U8: the instance sheet content for workflow, recipe, node, session and system links. Insert immediately below this marker, never between the markers. -->

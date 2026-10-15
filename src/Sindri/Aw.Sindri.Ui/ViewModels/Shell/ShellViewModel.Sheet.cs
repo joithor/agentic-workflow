@@ -27,7 +27,14 @@ internal sealed partial class ShellViewModel
     public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
 
     /// <summary>True while the sheet shows its "not served yet" placeholder: until a lane's content claims the link's kind.</summary>
-    public bool IsSheetPlaceholderShown => throw new NotSupportedException(SheetSubject);
+#pragma warning disable IDE0072 // the lanes populate the kinds they claim; every other kind keeps the placeholder
+    public bool IsSheetPlaceholderShown => SheetLink?.Kind switch
+    {
+        // LANE ANCHOR U3': one `DeepLinkKind.X or … => false` arm for the Needs you kinds claims them from the placeholder. Insert immediately above this marker, never between the markers.
+        // LANE ANCHOR U8: one `DeepLinkKind.X or … => false` arm for the instance kinds. Insert immediately below this marker, never between the markers.
+        _ => true,
+    };
+#pragma warning restore IDE0072
 
     /// <summary>Opens the sheet on a deep link's subject, keeping the link's kind (an item and a workflow with one subject are two sheets).</summary>
     /// <param name="link">The link, with a subject.</param>
@@ -35,7 +42,7 @@ internal sealed partial class ShellViewModel
     {
         SheetLink = link;
         IsSheetOpen = true;
-        Changed(nameof(SheetLink), nameof(SheetSubject), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown));
+        Changed(nameof(SheetLink), nameof(SheetSubject), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsSheetPlaceholderShown));
     }
 
     /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
@@ -56,7 +63,4 @@ internal sealed partial class ShellViewModel
         IsSheetOpen = true;
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
-
-    // LANE ANCHOR U3': the sheet keeps its link kind (SheetLink); a lane that needs state for its kinds adds its own partial. Insert immediately above this marker, never between the markers.
-    // LANE ANCHOR U8: the instance sheet's tabs belong in a partial of their own, chosen by SheetLink.Kind. Insert immediately below this marker, never between the markers.
 }
