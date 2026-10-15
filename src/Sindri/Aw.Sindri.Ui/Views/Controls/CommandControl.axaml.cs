@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
@@ -13,8 +14,8 @@ internal sealed partial class CommandControl : UserControl
         InitializeComponent();
     }
 
-    /// <summary>Puts focus back on the control's button (after its question is answered or dismissed).</summary>
-    internal void FocusRun() => _ = this.FindControl<Button>("RunButton")?.Focus();
+    /// <summary>Puts focus back on the control's button (after its question is answered or dismissed), on the keyboard's ring.</summary>
+    internal void FocusRun() => _ = this.FindControl<Button>("RunButton")?.Focus(NavigationMethod.Tab);
 
     private void OnRun(object? sender, RoutedEventArgs e)
     {
@@ -24,7 +25,7 @@ internal sealed partial class CommandControl : UserControl
             if (control.IsConfirming)
             {
                 // The question replaces nothing: focus moves to Keep, the safe answer (Esc keeps too).
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = this.FindControl<Button>("KeepButton")?.Focus(), Avalonia.Threading.DispatcherPriority.Loaded);
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = this.FindControl<Button>("KeepButton")?.Focus(NavigationMethod.Tab), Avalonia.Threading.DispatcherPriority.Loaded);
             }
         }
     }
