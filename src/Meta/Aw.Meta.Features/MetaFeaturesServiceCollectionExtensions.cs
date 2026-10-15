@@ -5,8 +5,13 @@ using Aw.Meta.Features.Inbox;
 using Aw.Meta.Features.InboxDefer;
 using Aw.Meta.Features.InboxDismiss;
 using Aw.Meta.Features.Lanes;
+using Aw.Meta.Features.LogAppend;
+using Aw.Meta.Features.Owner;
+using Aw.Meta.Features.OwnerAnswer;
+using Aw.Meta.Features.OwnerAsk;
 using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Roles;
+using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Features.Team;
@@ -20,39 +25,63 @@ public static class MetaFeaturesServiceCollectionExtensions
     /// <summary>Adds every Meta use case as an IService.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
-    public static IServiceCollection AddMetaFeatures(this IServiceCollection services)
-    {
-        _ = services
-            .AddScoped<SyncInboxService>()
-            .AddScoped<IValidator<SyncInboxRequest>, SyncInboxValidator>()
-            .Validated<SyncInboxService, SyncInboxRequest, SyncInboxResponse>()
-            .AddScoped<SetRoleService>()
-            .Plain<SetRoleService, SetRoleRequest, MetaRole>()
-            .AddScoped<ShowRoleService>()
-            .Plain<ShowRoleService, ShowRoleRequest, ShowRoleResponse>()
-            .AddScoped<TeamInitService>()
-            .AddScoped<IValidator<TeamInitRequest>, TeamInitValidator>()
-            .Validated<TeamInitService, TeamInitRequest, TeamConfig>()
-            .AddScoped<TeamShowService>()
-            .Plain<TeamShowService, TeamShowRequest, TeamConfig>()
-            .AddScoped<RefreshLanesService>()
-            .Plain<RefreshLanesService, RefreshLanesRequest, LanesResponse>()
-            .AddScoped<StopCheckService>()
-            .AddScoped<IValidator<StopCheckRequest>, StopCheckValidator>()
-            .Validated<StopCheckService, StopCheckRequest, StopCheckResponse>()
-            .AddScoped<OutboxRecordService>()
-            .AddScoped<IValidator<OutboxRecordRequest>, OutboxRecordValidator>()
-            .Validated<OutboxRecordService, OutboxRecordRequest, OutboxRecordResponse>()
-            .AddScoped<ListInboxService>()
-            .Plain<ListInboxService, ListInboxRequest, ListInboxResponse>()
-            .AddScoped<DismissInboxService>()
-            .AddScoped<IValidator<DismissInboxRequest>, DismissInboxValidator>()
-            .Validated<DismissInboxService, DismissInboxRequest, DismissInboxResponse>()
-            .AddScoped<DeferInboxService>()
-            .AddScoped<IValidator<DeferInboxRequest>, DeferInboxValidator>()
-            .Validated<DeferInboxService, DeferInboxRequest, DeferInboxResponse>();
-        return services;
-    }
+    public static IServiceCollection AddMetaFeatures(this IServiceCollection services) => services
+        .AddSetupSlices()
+        .AddInboxSlices()
+        .AddHookSlices()
+        .AddOwnerSlices()
+        .AddReportSlices();
+
+    private static IServiceCollection AddSetupSlices(this IServiceCollection services) => services
+        .AddScoped<SetRoleService>()
+        .Plain<SetRoleService, SetRoleRequest, MetaRole>()
+        .AddScoped<ShowRoleService>()
+        .Plain<ShowRoleService, ShowRoleRequest, ShowRoleResponse>()
+        .AddScoped<TeamInitService>()
+        .AddScoped<IValidator<TeamInitRequest>, TeamInitValidator>()
+        .Validated<TeamInitService, TeamInitRequest, TeamConfig>()
+        .AddScoped<TeamShowService>()
+        .Plain<TeamShowService, TeamShowRequest, TeamConfig>();
+
+    private static IServiceCollection AddInboxSlices(this IServiceCollection services) => services
+        .AddScoped<SyncInboxService>()
+        .AddScoped<IValidator<SyncInboxRequest>, SyncInboxValidator>()
+        .Validated<SyncInboxService, SyncInboxRequest, SyncInboxResponse>()
+        .AddScoped<ListInboxService>()
+        .Plain<ListInboxService, ListInboxRequest, ListInboxResponse>()
+        .AddScoped<DismissInboxService>()
+        .AddScoped<IValidator<DismissInboxRequest>, DismissInboxValidator>()
+        .Validated<DismissInboxService, DismissInboxRequest, DismissInboxResponse>()
+        .AddScoped<DeferInboxService>()
+        .AddScoped<IValidator<DeferInboxRequest>, DeferInboxValidator>()
+        .Validated<DeferInboxService, DeferInboxRequest, DeferInboxResponse>();
+
+    private static IServiceCollection AddHookSlices(this IServiceCollection services) => services
+        .AddScoped<StopCheckService>()
+        .AddScoped<IValidator<StopCheckRequest>, StopCheckValidator>()
+        .Validated<StopCheckService, StopCheckRequest, StopCheckResponse>()
+        .AddScoped<OutboxRecordService>()
+        .AddScoped<IValidator<OutboxRecordRequest>, OutboxRecordValidator>()
+        .Validated<OutboxRecordService, OutboxRecordRequest, OutboxRecordResponse>()
+        .AddScoped<RefreshLanesService>()
+        .Plain<RefreshLanesService, RefreshLanesRequest, LanesResponse>();
+
+    private static IServiceCollection AddOwnerSlices(this IServiceCollection services) => services
+        .AddScoped<ListOwnerService>()
+        .Plain<ListOwnerService, ListOwnerRequest, ListOwnerResponse>()
+        .AddScoped<AnswerOwnerService>()
+        .AddScoped<IValidator<AnswerOwnerRequest>, AnswerOwnerValidator>()
+        .Validated<AnswerOwnerService, AnswerOwnerRequest, AnswerOwnerResponse>()
+        .AddScoped<AskOwnerService>()
+        .AddScoped<IValidator<AskOwnerRequest>, AskOwnerValidator>()
+        .Validated<AskOwnerService, AskOwnerRequest, AskOwnerResponse>();
+
+    private static IServiceCollection AddReportSlices(this IServiceCollection services) => services
+        .AddScoped<AppendLogService>()
+        .AddScoped<IValidator<AppendLogRequest>, AppendLogValidator>()
+        .Validated<AppendLogService, AppendLogRequest, AppendLogResponse>()
+        .AddScoped<StatusService>()
+        .Plain<StatusService, StatusRequest, StatusResponse>();
 
     // Exposes an already registered service as its IService.
     private static IServiceCollection Plain<TService, TRequest, TResponse>(this IServiceCollection services)
