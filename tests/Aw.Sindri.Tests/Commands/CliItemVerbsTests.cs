@@ -12,6 +12,7 @@ using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.CreateItem;
 using Aw.Sindri.Features.GetItem;
 using Aw.Sindri.Features.GetQueue;
+using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.ListItems;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
@@ -93,13 +94,58 @@ public sealed class CliItemVerbsTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Cli_item_close_reads_the_version_when_none_given()
     {
-        var api = new RoutedApi().On("/sindri/items/" + A.FirstItemId.Value, HttpStatusCode.OK, View(version: 3))
+        var api = new RoutedApi().On("/sindri/status", HttpStatusCode.OK, _statusAtHead7).On("/sindri/items/" + A.FirstItemId.Value, HttpStatusCode.OK, View(version: 3))
             .On("/sindri/items/" + A.FirstItemId.Value + "/close", HttpStatusCode.OK, new CommandAccepted(new SequentialIdGenerator().New<CommandId>(), Sequence: 9));
 
         var code = await Verbs(api, Human).Run(["item", "close", A.FirstItemId.Value], Token);
 
         Assert.Equal((0, $"{A.FirstItemId.Value} closed: done (sequence 9)\n"), (code, _out.ToString().ReplaceLineEndings("\n")));
-        Assert.Equal([("GET", null), ("POST", """{"reason":"done","itemVersion":3}""")], api.Calls.Select(static c => (c.Method, c.Body)));
+        Assert.Equal("""{"reason":"done","itemVersion":3}""", api.Calls[^1].Body);
+    }
+
+    private static readonly GetStatusResponse _statusAtHead7 = new(Running: true, Pid: 42, Epoch: 3, LeaseExpiresAt: null,
+        new ProfileStatus(Approved: null, Live: null, ChangedSinceApproval: false, Problem: null, Source: null, NeedsApproval: false), [])
+    {
+        ApiVersion = 1,
+        Views = new ViewsStatus(Cursor: 3, LedgerHead: 7, ProjectedAt: KnownInstants.Epoch, Rebuilding: false, Stalled: false, StalledAt: null, StalledType: null),
+    };
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_item_close_pre_read_waits_for_the_ledger_head_read_from_status()
+    {
+        var api = new RoutedApi().On("/sindri/status", HttpStatusCode.OK, _statusAtHead7)
+            .On("/sindri/items/" + A.FirstItemId.Value, HttpStatusCode.OK, View(version: 3))
+            .On("/sindri/items/" + A.FirstItemId.Value + "/close", HttpStatusCode.OK, new CommandAccepted(new SequentialIdGenerator().New<CommandId>(), Sequence: 9));
+
+        var code = await Verbs(api, Human).Run(["item", "close", A.FirstItemId.Value], Token);
+
+        Assert.Equal(0, code);
+        Assert.Equal([("GET", "/sindri/status", null), ("GET", "/sindri/items/" + A.FirstItemId.Value, "7"), ("POST", "/sindri/items/" + A.FirstItemId.Value + "/close", null)],
+            api.Calls.Select(static c => (c.Method, c.Path, c.Headers.GetValueOrDefault(SindriHeaders.After))));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_items_and_queue_send_the_ledger_head_as_x_sindri_after()
+    {
+        var api = new RoutedApi().On("/sindri/status", HttpStatusCode.OK, _statusAtHead7)
+            .On("/sindri/items", HttpStatusCode.OK, new ListItemsResponse([], EmptyText.Items(state: null, repo: null), _fresh))
+            .On("/sindri/queue", HttpStatusCode.OK, new QueueResponse([], EmptyText.Queue(), _fresh));
+
+        _ = await Verbs(api, Human).Run(["items"], Token);
+        _ = await Verbs(api, Human).Run(["queue"], Token);
+
+        Assert.Equal("7,7", string.Join(',', api.Calls.Where(static c => !string.Equals(c.Path, "/sindri/status", StringComparison.Ordinal)).Select(static c => c.Headers.GetValueOrDefault(SindriHeaders.After))));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_items_prints_the_servers_message_and_exits_2_when_the_views_stay_behind()
+    {
+        var api = new RoutedApi().On("/sindri/status", HttpStatusCode.OK, _statusAtHead7)
+            .OnRaw("/sindri/items", HttpStatusCode.ServiceUnavailable, """{"type":"about:blank","title":"SND-API-011","status":503,"detail":"views at cursor 3, waiting for 7"}""");
+
+        var code = await Verbs(api, Human).Run(["items"], Token);
+
+        Assert.Equal((2, "SND-API-011 views at cursor 3, waiting for 7\n"), (code, _error.ToString().ReplaceLineEndings("\n")));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -172,6 +218,12 @@ public sealed class CliItemVerbsTests : IDisposable
         public RoutedApi On<T>(string path, HttpStatusCode status, T body)
         {
             _routes[path] = (status, Encoding.UTF8.GetString(AwJson.Serialize(body, SliceHarness.Json)));
+            return this;
+        }
+
+        public RoutedApi OnRaw(string path, HttpStatusCode status, string body)
+        {
+            _routes[path] = (status, body);
             return this;
         }
 
