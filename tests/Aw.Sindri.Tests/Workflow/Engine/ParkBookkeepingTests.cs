@@ -201,6 +201,20 @@ public sealed class ParkBookkeepingTests
         Assert.Equal((_e2, CommandOrigin.Engine), (sent.Identity, sent.Origin));
     }
 
+    /// <summary>(S2) A refused effect joins the park of its own kind when one exists: a drift refusal goes to the drift park, not to an earlier dispatch park.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void A_refusal_joins_the_park_of_its_own_kind_before_an_earlier_park_of_another_kind()
+    {
+        var dispatched = Refuse(TimedOut(), _first, "SND-WF-011");
+        var drifted = Applied(dispatched, new RecipeWake(Engine, RecipeWakeKind.Drifted, 7));
+
+        var after = Refuse(drifted, _second, "SND-RECIPE-006");
+
+        var held = AllParks(after).Where(static p => p.ParkKind is ParkKind.Dispatch or ParkKind.Drift).ToDictionary(static p => p.ParkKind!.Value, static p => p.Resume.Effects.Select(static e => e.Identity).ToArray());
+        Assert.Equal([_e1], held[ParkKind.Dispatch]);
+        Assert.Equal([_e2], held[ParkKind.Drift]);
+    }
+
     /// <summary>The identities of the effects any park of the instance holds.</summary>
     private static IEnumerable<EffectIdentity> Held(WorkflowInstance instance) =>
         AllParks(instance).SelectMany(static p => p.Resume.Effects).Select(static e => e.Identity);
