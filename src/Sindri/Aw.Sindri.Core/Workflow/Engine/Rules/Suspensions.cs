@@ -13,6 +13,12 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// </summary>
 internal static class Suspensions
 {
+    /// <summary>The parked parks waiting behind the suspension, in order (wip: one so far; the queue design is in the handoff).</summary>
+    /// <param name="instance">The instance.</param>
+    /// <returns>The pending parks.</returns>
+    internal static IReadOnlyList<Suspension> PendingParks(WorkflowInstance instance) =>
+        instance.PendingPark is { } pending ? [pending] : [];
+
     private static OutcomeName Cancelled { get; } = OutcomeName.From("cancelled");
 
     /// <summary>
