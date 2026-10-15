@@ -143,10 +143,7 @@ public sealed partial class FreshnessTests : IDisposable
         _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
 
         _server.Push(A.Event(1, "views.stalled"));
-        for (var i = 0; i < 200 && !_vm.Banner.IsShown; i++)
-        {
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
+        await Until(() => _vm.Banner.IsShown);
 
         Assert.True(_vm.Banner.IsStalled);
         Assert.True(_server.StatusCalls > status && _server.ServicesCalls > services);
@@ -335,11 +332,14 @@ public sealed partial class FreshnessTests : IDisposable
         Assert.Equal(text, _vm.Pill.Text);
     }
 
+    // Waits up to 2 s for what the test is about to assert, and fails here, naming nothing else, when it never holds.
     private static async Task Until(Func<bool> condition)
     {
         for (var i = 0; i < 200 && !condition(); i++)
         {
             await Task.Delay(10, TestContext.Current.CancellationToken);
         }
+
+        Assert.True(condition(), "the awaited state was reached within 2 s");
     }
 }

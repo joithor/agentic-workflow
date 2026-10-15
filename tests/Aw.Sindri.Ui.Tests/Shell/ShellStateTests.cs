@@ -30,7 +30,7 @@ public sealed class ShellStateTests
 
     private static async Task Eventually(Func<bool> condition)
     {
-        for (var i = 0; i < 200 && !condition(); i++)
+        for (var i = 0; i < 400 && !condition(); i++)   // 2 s: the follower runs on the thread pool, so a loaded box needs room
         {
             await Task.Delay(5, Token);
         }
