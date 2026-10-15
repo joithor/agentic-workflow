@@ -163,7 +163,7 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
         }
 
         var (standing, stale) = Stand(parsed.Value, latest.Value, revoked.Value, current);
-        return new RecipeSummary(recipe.Id, recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs, parsed.Value.Urgency, parsed.Value.Outputs);
+        return new RecipeSummary(recipe.Id, recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs, parsed.Value.Urgency, parsed.Value.Outputs, "path", [], []);
     }
 
     /// <summary>

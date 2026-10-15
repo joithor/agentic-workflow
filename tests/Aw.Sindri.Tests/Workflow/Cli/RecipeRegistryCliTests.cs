@@ -58,6 +58,8 @@ public sealed class RecipeRegistryCliTests : IDisposable
         Assert.Equal($"{name} unapproved\n", listOut);
         Assert.StartsWith($"{name} unapproved\n", showOut, StringComparison.Ordinal);
         Assert.Contains("pinned blocks:\n  step.checks sha256:", showOut, StringComparison.Ordinal);
+        Assert.Contains("order: path\nstate: produce order=1\nstate: checks order=2\nstate: verify order=3\nstate: done order=4\n", showOut, StringComparison.Ordinal);
+        Assert.Contains("loop: revisions checks -> produce\nloop: revisions verify -> produce\n", showOut, StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
@@ -96,6 +98,11 @@ public sealed class RecipeRegistryCliTests : IDisposable
         var recipe = shown.GetProperty("recipe");
         Assert.Equal(("workflow.step", "unapproved", "work"), (recipe.GetProperty("id").GetString(), recipe.GetProperty("standing").GetString(), recipe.GetProperty("urgency").GetString()));
         Assert.Equal(JsonValueKind.Array, recipe.GetProperty("outputs").ValueKind);
+        Assert.Equal("path", recipe.GetProperty("orderedBy").GetString());
+        var done = recipe.GetProperty("states").EnumerateArray().Last();
+        Assert.Equal(("done", 4), (done.GetProperty("id").GetString(), done.GetProperty("order").GetInt32()));
+        var loop = recipe.GetProperty("loops").EnumerateArray().First();
+        Assert.Equal(("checks", "produce"), (loop.GetProperty("from").GetString(), loop.GetProperty("to").GetString()));
         Assert.Equal("fact:spec", Assert.Single(recipe.GetProperty("inputs").EnumerateArray()).GetProperty("key").GetString());
         Assert.True(recipe.TryGetProperty("hash", out _) && recipe.TryGetProperty("version", out _));
         Assert.Equal(JsonValueKind.Object, shown.GetProperty("preview").ValueKind);

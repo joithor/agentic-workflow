@@ -68,4 +68,19 @@ public sealed class LegacyRecipeRowTests
         Assert.Equal(["fact:output"], line.Outputs.Select(o => o.Key.Value), StringComparer.Ordinal);
         Assert.Equal("produce", Assert.Single(line.Outputs).From);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_listing_of_a_recipe_carries_its_path_order_and_loops()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var registered = await r.RegisterShipped("sindri/workflow.step.yaml");
+        Assert.True(registered.IsSuccess, registered.IsError ? registered.Error.ToString() : null);
+
+        var line = Assert.Single(await r.List());
+
+        Assert.Equal("path", line.OrderedBy);
+        Assert.Equal(["produce=1", "checks=2", "verify=3", "done=4"], line.States.Select(s => $"{s.State}={s.Order?.ToString(System.Globalization.CultureInfo.InvariantCulture)}"), StringComparer.Ordinal);
+        Assert.Equal(["checks>produce", "verify>produce"], line.Loops.Select(l => $"{l.From}>{l.To}"), StringComparer.Ordinal);
+    }
 }
