@@ -88,11 +88,21 @@ internal sealed partial class ShellWindow : Window
     /// <inheritdoc />
     protected override void OnKeyDown(KeyEventArgs e)
     {
+        if (!IsChordStep(e))
+        {
+            Shell?.CancelChord();
+        }
+
         e.Handled = RegionStep(e.Key, e.KeyModifiers, OperatingSystem.IsMacOS()) is { } step ? CycleRegion(back: step < 0)
             : e.Key == Key.Escape ? Escape()
             : OpenByKey(e) || (!OverlayOpen && Chord(e));
         base.OnKeyDown(e);
     }
+
+    // A chord's keys are the plain letters and '.'; a modifier pressed alone is part of typing a key, not another key.
+    private static bool IsChordStep(KeyEventArgs e) =>
+        (e.KeyModifiers == KeyModifiers.None && ChordKey(e.Key) is not null)
+        || e.Key is Key.LeftShift or Key.RightShift or Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LWin or Key.RWin;
 
     // Single keys never fire while typing in a text field (rev 7 §8).
     private bool Chord(KeyEventArgs e) =>

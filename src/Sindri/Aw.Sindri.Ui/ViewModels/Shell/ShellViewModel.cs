@@ -173,6 +173,8 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="page">The page.</param>
     internal void GoTo(PageId page)
     {
+        // Only G D sets the Home filter, after it gets here; any other way to a page, Home included, clears it.
+        SetHomeFilter(HomeFilter.All);
         if (page == CurrentPage)
         {
             return;
