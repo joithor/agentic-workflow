@@ -8,6 +8,8 @@ colors:
   on-primary: "#ffffff"
   primary-hover: "#828fff"
   primary-focus: "#5e69d1"
+  primary-hover-fill: "#535fc6"
+  primary-pressed: "#4c57be"
   ink: "#f7f8f8"
   ink-muted: "#d0d6e0"
   ink-subtle: "#8a8f98"
@@ -26,6 +28,7 @@ colors:
   inverse-ink: "#000000"
   brand-secure: "#7a7fad"
   semantic-success: "#27a644"
+  semantic-error: "#eb5757"
   semantic-overlay: "#000000"
 
 typography:
@@ -136,12 +139,12 @@ components:
     rounded: "{rounded.md}"
     padding: 8px 14px
   button-primary-pressed:
-    backgroundColor: "{colors.primary-focus}"
+    backgroundColor: "{colors.primary-pressed}"
     textColor: "{colors.on-primary}"
     typography: "{typography.button}"
     rounded: "{rounded.md}"
   button-primary-hover:
-    backgroundColor: "{colors.primary-hover}"
+    backgroundColor: "{colors.primary-hover-fill}"
     textColor: "{colors.on-primary}"
     typography: "{typography.button}"
     rounded: "{rounded.md}"
@@ -306,6 +309,7 @@ The page rhythm is **dense product screenshots** — Linear's marketing leads wi
 ### Semantic
 - **Success Green** ({colors.semantic-success}): Status pills, success indicators. The only semantic color on marketing.
 - **Overlay** ({colors.semantic-overlay}): Pure black overlay scrim for modals.
+- **Error** ({colors.semantic-error}): Error text, destructive confirmations and form validation, always with a word and a ✕ glyph (6.0:1 on canvas, 5.5:1 on surface-1). Linear's in-product red; with the attention orange it is one of the two documented in-product exceptions to the single accent (UI spec §11.1, §14.1, X22), never used on marketing.
 
 ## Typography
 
@@ -375,7 +379,7 @@ The dark canvas IS the whitespace. Sections separate by lift onto surface-1 pane
 | 1 (charcoal lift) | `{colors.surface-1}` background on canvas, 1px `{colors.hairline}` | Default cards, product panels |
 | 2 (surface-2 lift) | `{colors.surface-2}` background, 1px `{colors.hairline-strong}` | Featured pricing card, hovered cards |
 | 3 (surface-3 lift) | `{colors.surface-3}` background | Sub-nav, dropdown menus |
-| 4 (focus ring) | 2px `{colors.primary-focus}` outline at 50% opacity | Focused input, focused button |
+| 4 (focus ring) | 2px `{colors.primary-hover}` outline at full opacity, offset 2px | Focused input, focused button. The 50% `{colors.primary-focus}` ring was 1.8:1 on the canvas, below WCAG's 3:1 non-text minimum; this one is 6.6:1 on surface-1 (UI spec §11.1, X22) |
 
 Linear's depth is carried by surface ladder + hairline borders. The brand resists drop shadows on dark almost entirely.
 
@@ -412,8 +416,8 @@ Linear's depth is carried by surface ladder + hairline borders. The brand resist
 
 **`button-primary`** — Lavender CTA. The default primary CTA across all pages.
 - Background `{colors.primary}`, text `{colors.on-primary}`, type `{typography.button}`, padding 8px 14px, rounded `{rounded.md}`.
-- Pressed state lives in `button-primary-pressed` (background shifts to `{colors.primary-focus}`).
-- Hover state lives in `button-primary-hover` (background shifts to `{colors.primary-hover}` lighter lavender).
+- Pressed state lives in `button-primary-pressed` (background darkens to `{colors.primary-pressed}` #4c57be; white 6.2:1).
+- Hover state lives in `button-primary-hover` (background darkens to `{colors.primary-hover-fill}` #535fc6; white 5.5:1). Linear's lighter `{colors.primary-hover}` fill put white text at 2.87:1, below WCAG AA (UI spec §11.1, X22); `{colors.primary-hover}` stays for links, selected labels and the focus ring.
 
 **`button-secondary`** — Charcoal button. Used for secondary CTAs ("Sign in", "Read changelog").
 - Background `{colors.surface-1}`, text `{colors.ink}`, type `{typography.button}`, padding 8px 14px, rounded `{rounded.md}`. 1px `{colors.hairline}` border.
@@ -457,7 +461,7 @@ Linear's depth is carried by surface ladder + hairline borders. The brand resist
 
 **`text-input`** + **`text-input-focused`** — Form fields on `/contact/sales` and signup overlays.
 - Background `{colors.surface-1}`, text `{colors.ink}`, type `{typography.body}`, rounded `{rounded.md}`, padding 8px 12px.
-- Focused state retains the same surface; the focus ring is a 2px `{colors.primary-focus}` outline at 50% opacity.
+- Focused state retains the same surface; the focus ring is Elevation level 4: a 2px `{colors.primary-hover}` outline at full opacity, offset 2px.
 
 ### Status & Build Page
 

@@ -2,7 +2,7 @@ schemaVersion: 1
 id: engineering.csharp.no-package-cycles
 kind: engineering
 section: "4b.1a"
-text: "The declared package graph has no cycles across any edge kind."
+text: "The declared package graph has no cycles across any edge kind; a cycle closed by a cli or http edge may carry a reviewed, dated DEPS-CYCLE-001 exception that names that edge and must cover exactly one cycle."
 why: "A cycle makes every package in it change and ship together."
 select:
   languages: [csharp]
@@ -11,6 +11,11 @@ checks:
   - type: check-deps
     id: "DEPS-CYCLE-001"
     status: active
+    note: "an exception's excuses (from, to, kind cli or http) covers the one cycle that goes away without that edge; dates and expiry are DEPS-EXC-001/003, and one that covers no cycle, or more than one, fails DEPS-EXC-002"
+  - type: check-deps
+    id: "DEPS-EXC-005"
+    status: active
+    note: "the excused edge isn't a declared edge, or doesn't leave the exception's subject"
 gap: closed
 source:
   type: adr
