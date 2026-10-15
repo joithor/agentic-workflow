@@ -9,7 +9,11 @@
        id, title and state. -->
   <Border x:Name="RowFrame" Classes="item-row" Classes.selected="{Binding IsSelected}" Focusable="True"
           AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
-    <Grid x:Name="TableRow" ColumnDefinitions="150,*,150,130,110,70,260" VerticalAlignment="Center">
+    <Grid x:Name="TableRow" VerticalAlignment="Center">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="150" /><ColumnDefinition Width="*" MinWidth="160" /><ColumnDefinition Width="150" /><ColumnDefinition Width="130" />
+        <ColumnDefinition Width="110" /><ColumnDefinition Width="70" /><ColumnDefinition Width="260" />
+      </Grid.ColumnDefinitions>
       <TextBlock x:Name="IdText" AutomationProperties.Name="{Binding Id}" Classes="mono subtle" Text="{Binding Id}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
       <Button x:Name="TitleButton" Grid.Column="1" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">
         <TextBlock Classes="body-strong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Title}" />

@@ -1,8 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
@@ -195,9 +197,9 @@ public sealed class SheetEnterFocusTests : IDisposable
         var row = OpenRow(window, shell);
 
         var title = row.GetVisualDescendants().OfType<Button>().First(b => b.Name == "TitleButton");
-        var cell = row.GetVisualDescendants().OfType<Grid>().First(g => g.Name == "TableRow").Children[1];
+        var column = row.GetVisualDescendants().OfType<Grid>().First(g => g.Name == "TableRow").ColumnDefinitions[1].ActualWidth;
 
-        Assert.True(title.Bounds.Width > 0 && cell.Bounds.Width >= 160, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"title {title.Bounds.Width} wide, its cell {cell.Bounds.Width}"));
+        Assert.True(title.Bounds.Width > 0 && column >= 160, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the title is {title.Bounds.Width} wide in a {column} column"));
     });
 
     [Fact]

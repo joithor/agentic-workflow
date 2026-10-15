@@ -49,7 +49,11 @@
             PointerEntered="OnPanelEntered" PointerExited="OnPanelExited">
       <StackPanel>
         <Border Classes="phead">
-          <Grid ColumnDefinitions="150,*,150,130,110,70,260">
+          <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="150" /><ColumnDefinition Width="*" MinWidth="160" /><ColumnDefinition Width="150" /><ColumnDefinition Width="130" />
+        <ColumnDefinition Width="110" /><ColumnDefinition Width="70" /><ColumnDefinition Width="260" />
+      </Grid.ColumnDefinitions>
             <TextBlock Classes="eyebrow" Text="{Binding Text.Items.ColumnItem}" />
             <TextBlock Grid.Column="1" Classes="eyebrow" Text="{Binding Text.Items.ColumnTitle}" />
             <TextBlock Grid.Column="2" Classes="eyebrow" Text="{Binding Text.Items.ColumnRepo}" />

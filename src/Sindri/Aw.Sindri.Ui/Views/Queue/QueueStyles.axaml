@@ -14,6 +14,29 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Primary}" />
     <Setter Property="BorderThickness" Value="2,1,0,0" />
   </Style>
+  <!-- Proof B2/B7: a row and the controls in it draw their focus ring inside their own template, not in the window's adorner
+       layer, which is above the sheet: the page runs full width under the sheet, the sheet covers the ring and the page's
+       ScrollViewer clips it. The ring is the same 2 px PrimaryHover as everywhere (Theme/FluentOverrides.axaml); the padding
+       gives up what the border takes so the row's content does not move. -->
+  <Style Selector="Border.item-row">
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+  </Style>
+  <Style Selector="Border.item-row:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHover}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="Padding" Value="14,7,14,6" />
+  </Style>
+  <Style Selector="Border.item-row.selected:focus-visible">
+    <Setter Property="Padding" Value="14,7,14,6" />
+  </Style>
+  <Style Selector="Border.item-row Button">
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+  </Style>
+  <Style Selector="Border.item-row Button:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHover}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+  </Style>
   <Style Selector="Button.row-title">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />

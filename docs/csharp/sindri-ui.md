@@ -429,12 +429,12 @@ its row cleared, single keys do nothing. `Y` copies the selected row's primary-a
 Home's panels ignore it. The top bar shows "G …" while the chord waits: a visual cue only, with no live region and
 not a control element for a screen reader.
 
-**Deviation: the page narrows beside the sheet (owner question, provisional owner default (2026-10-15)).** UI spec §3.2 has
-the sheet sit "over the page". With the sheet beside the page (1100 px and wider) the page's right margin reserves the
-sheet's clamped width (420 to 760 px), so the page is narrower while it is open (340 to 540 px at 1100 to 1300 px with a
-760 px sheet) and the focused row's ring, drawn in the adorner layer above the sheet, is never drawn over it. Below
-1100 px the sheet covers the page as before. The alternative is a full-width page clipped at the sheet's edge
-(`ClipToBounds`); the owner decides.
+**Focus rings on rows (proof B2, B7).** The page runs full width under the sheet beside it (UI spec §3.2 "over the page").
+The default focus ring is an adorner, drawn above the sheet, so a row and the buttons in it (`Border.item-row`, in
+`Views/Queue/QueueStyles.axaml`) have no adorner (`FocusAdorner` null) and draw the same 2 px PrimaryHover ring inside
+their own template on `:focus-visible`: the row on its own border, a button on its content presenter. That ring is part
+of the page, so the sheet covers it and the page's scroll viewer clips it. The title column has a 160 px minimum so a
+narrow page shrinks it last.
 
 **Selection is focus (U2 review run 1).** A refresh reconciles in place: groups by name (so a collapsed group stays
 collapsed), rows by id and timeline rows by sequence are updated, and the bound lists (`ObservableCollection`, via
