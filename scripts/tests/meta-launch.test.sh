@@ -69,6 +69,11 @@ check "launch: meta pane first" "$(grep -m1 -o 'demo-[a-z]*' "$yaml")" "demo-met
 tmux new-session -d -s demo-api "sleep 60" 2> /dev/null   # stands in for a live lane on the rerun
 OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes api)"
 check "rerun: live session kept" "$OUT" "$(printf 'tmux demo-api: running\nwarp: %s' "$yaml")"
+check "rerun with --lanes: the layout still has every lane" "$(grep -c 'exec: tmux new -A -s demo-' "$yaml")" "3"
+mkdir -p "$WORK/path"; printf '#!/usr/bin/env bash\necho "$1" > "%s"\n' "$WORK/opened" > "$WORK/path/xdg-open"; chmod +x "$WORK/path/xdg-open"
+OUT="$(PATH="$WORK/path:$PATH" bash "$DIR/meta-launch.sh" --lanes api)"
+for _ in $(seq 50); do [ -s "$WORK/opened" ] && break; sleep 0.1; done   # xdg-open runs in the background
+check "open: by the config's name, URI-encoded" "$(tail -1 <<< "$OUT"):$(cat "$WORK/opened" 2> /dev/null)" "warp: opening warp://launch/demo%20team:warp://launch/demo%20team"
 tmux kill-server 2> /dev/null
 OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes api)"
 check "after tmux died: recreated" "$(printf '%s\n' "$OUT" | head -1)" "tmux demo-api: started"

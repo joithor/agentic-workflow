@@ -24,10 +24,10 @@ config="${AW_META_CONFIG:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/meta/team.jso
 [ -f "$config" ] || { echo "meta-launch: no team config at $config (run: aw-meta team-init --team <t> --repo <dir> --lanes a,b)" >&2; exit 1; }
 team="$(jq -r '.team // empty' "$config")"
 repo="$(jq -r '.repo // empty' "$config")"
-if [ -n "$only" ]; then lanes="$only"
-else lanes="$(jq -r '[(.metaLane // "meta")] + (.lanes // []) | reduce .[] as $l ([]; if index([$l]) then . else . + [$l] end) | join(",")' "$config")"; fi
-IFS=, read -r -a L <<< "$lanes"
-for n in "$team" "${L[@]}"; do
+all="$(jq -r '[(.metaLane // "meta")] + (.lanes // []) | reduce .[] as $l ([]; if index([$l]) then . else . + [$l] end) | join(",")' "$config")"
+IFS=, read -r -a A <<< "$all"        # every lane: the Warp layout always has a pane for each
+IFS=, read -r -a L <<< "${only:-$all}"   # the lanes whose tmux sessions this run checks (--lanes)
+for n in "$team" "${A[@]}" "${L[@]}"; do
   case "$n" in *[!a-z0-9-]*|"") echo "meta-launch: bad team or lane name '$n'" >&2; exit 2 ;; esac
 done
 case "$repo" in /*) [ -d "$repo" ] || { echo "meta-launch: repo $repo not found" >&2; exit 1; } ;;
@@ -57,16 +57,16 @@ render() {
   echo "  - tabs:"
   echo "      - title: $team"
   echo "        layout:"
-  if [ "${#L[@]}" = 1 ]; then
-    printf '          cwd: %s\n          commands:\n            - exec: tmux new -A -s %s\n' "$repo" "$team-${L[0]}"
+  if [ "${#A[@]}" = 1 ]; then
+    printf '          cwd: %s\n          commands:\n            - exec: tmux new -A -s %s\n' "$repo" "$team-${A[0]}"
     return
   fi
   echo "          split_direction: vertical"
   echo "          panes:"
-  pane "            " "${L[0]}"
+  pane "            " "${A[0]}"
   echo "            - split_direction: horizontal"
   echo "              panes:"
-  for l in "${L[@]:1}"; do pane "                " "$l"; done
+  for l in "${A[@]:1}"; do pane "                " "$l"; done
 }
 if [ "$dry" = 1 ]; then echo "[dry-run] would write $yaml:"; render; exit 0; fi
 mkdir -p "$dir"
@@ -76,7 +76,9 @@ echo "warp: $yaml"
 
 # 3. Open it in Warp.
 if [ "$open" = 1 ]; then
-  uri="warp://launch/$(jq -rn --arg p "$yaml" '$p|@uri')"
+  # Warp opens a launch configuration by its name (the YAML's name:, URI-encoded), not by its file path.
+  uri="warp://launch/$(jq -rn --arg n "$team team" '$n|@uri')"
+  echo "warp: opening $uri"
   if command -v xdg-open > /dev/null; then xdg-open "$uri" > /dev/null 2>&1 &
   elif command -v warp-terminal > /dev/null; then warp-terminal "$uri" > /dev/null 2>&1 &
   else echo "open $uri in Warp (Command Palette → Launch Configuration → $team team)"; fi
