@@ -128,7 +128,7 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
             return approval.Error;
         }
 
-        return ApprovalRefusal.Of(approval.Value, view.Value.Recipe, address);
+        return ApprovalRefusal.Of(approval.Value, view.Value.Recipe.Id, view.Value.Recipe.Hash, address);
     }
 
     /// <summary>A protected answer's challenge (spec §4.2): its action text and the instance as it is now must match; any attempt uses it up (SND-WF-013).</summary>

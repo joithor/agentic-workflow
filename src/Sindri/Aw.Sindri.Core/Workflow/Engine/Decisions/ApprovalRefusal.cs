@@ -1,5 +1,5 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
@@ -8,13 +8,14 @@ public static class ApprovalRefusal
 {
     /// <summary>Success when the approval holds, else the refusal naming what changed and how to go on.</summary>
     /// <param name="check">The check's answer.</param>
-    /// <param name="recipe">The instance's recipe.</param>
+    /// <param name="recipe">The instance's recipe id.</param>
+    /// <param name="hash">The hash the instance is pinned to.</param>
     /// <param name="address">The instance.</param>
     /// <returns>Unit, or the refusal.</returns>
-    public static Result<Unit> Of(ApprovalCheck check, RecipeVersion recipe, InstanceAddress address) => check switch
+    public static Result<Unit> Of(ApprovalCheck check, RecipeId recipe, RecipeHash hash, InstanceAddress address) => check switch
     {
-        ApprovalCheck.Revoked => WorkflowErrors.RecipeRevoked.With($"{recipe.Id.Value}@{recipe.Hash.Display} was revoked; nothing was sent (fix: approve a new version, or sindri workflow cancel {address.Value})"),
-        ApprovalCheck.Drifted => WorkflowErrors.RecipePinDrift.With($"a block {recipe.Id.Value}@{recipe.Hash.Display} pins changed since approval; nothing was sent (fix: re-approve it, see sindri recipe list --stale)"),
+        ApprovalCheck.Revoked => WorkflowErrors.RecipeRevoked.With($"{recipe.Value}@{hash.Display} was revoked; nothing was sent (fix: approve a new version, or sindri workflow cancel {address.Value})"),
+        ApprovalCheck.Drifted => WorkflowErrors.RecipePinDrift.With($"a block {recipe.Value}@{hash.Display} pins changed since approval; nothing was sent (fix: re-approve it, see sindri recipe list --stale)"),
         ApprovalCheck.Holds or _ => Unit.Value,
     };
 }
