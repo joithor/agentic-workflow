@@ -1,5 +1,5 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using Aw.Meta.Core;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Commands;
 using Aw.Meta.Core.Gate;
 using Aw.Meta.Core.Lanes;
@@ -13,7 +13,7 @@ public sealed class MergeRunTests
 {
     private readonly MetaWorld _world = new();
 
-    private MergeRunService Service() => new();
+    private MergeRunService Service() => new(new MergeReadiness(_world.Config, _world.Gates, _world.Repo), _world.Repo, _world.Gates, _world.Log, _world.Clock);
 
     private async Task Ready(bool gated = true, bool mergeFails = false)
     {
