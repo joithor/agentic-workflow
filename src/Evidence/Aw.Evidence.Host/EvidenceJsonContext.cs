@@ -17,6 +17,7 @@ namespace Aw.Evidence.Host;
 [JsonSerializable(typeof(Error))]
 [JsonSerializable(typeof(UiScript))]
 [JsonSerializable(typeof(ApiScript))]
+[JsonSerializable(typeof(ApiSummary))]
 [JsonSerializable(typeof(DesignManifest))]
 [JsonSerializable(typeof(RunSummary))]
 [JsonSerializable(typeof(ParitySummary))]

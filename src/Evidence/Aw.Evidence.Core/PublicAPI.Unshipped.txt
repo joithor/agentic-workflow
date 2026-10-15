@@ -1707,3 +1707,188 @@ Aw.Evidence.Core.Data.HeaderSourceConverter
 Aw.Evidence.Core.Data.HeaderSourceConverter.HeaderSourceConverter() -> void
 override Aw.Evidence.Core.Data.HeaderSourceConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Evidence.Core.Data.HeaderSource?
 override Aw.Evidence.Core.Data.HeaderSourceConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Evidence.Core.Data.HeaderSource! value, System.Text.Json.JsonSerializerOptions! options) -> void
+Aw.Evidence.Core.Data.ApiAction
+Aw.Evidence.Core.Data.ApiAction.Cli = 1 -> Aw.Evidence.Core.Data.ApiAction
+Aw.Evidence.Core.Data.ApiAction.Request = 0 -> Aw.Evidence.Core.Data.ApiAction
+Aw.Evidence.Core.Data.ApiFailure
+Aw.Evidence.Core.Data.ApiFailure.<Clone>$() -> Aw.Evidence.Core.Data.ApiFailure!
+Aw.Evidence.Core.Data.ApiFailure.Actual.get -> string!
+Aw.Evidence.Core.Data.ApiFailure.Actual.init -> void
+Aw.Evidence.Core.Data.ApiFailure.Equals(Aw.Evidence.Core.Data.ApiFailure? other) -> bool
+Aw.Evidence.Core.Data.ApiFailure.Expected.get -> string!
+Aw.Evidence.Core.Data.ApiFailure.Expected.init -> void
+Aw.Evidence.Core.Data.ApiFailure.Step.get -> int
+Aw.Evidence.Core.Data.ApiFailure.Step.init -> void
+Aw.Evidence.Core.Data.ApiOutcome
+Aw.Evidence.Core.Data.ApiOutcome.Errored = 3 -> Aw.Evidence.Core.Data.ApiOutcome
+Aw.Evidence.Core.Data.ApiOutcome.Failed = 1 -> Aw.Evidence.Core.Data.ApiOutcome
+Aw.Evidence.Core.Data.ApiOutcome.Passed = 0 -> Aw.Evidence.Core.Data.ApiOutcome
+Aw.Evidence.Core.Data.ApiOutcome.Refused = 2 -> Aw.Evidence.Core.Data.ApiOutcome
+Aw.Evidence.Core.Data.ApiStep
+Aw.Evidence.Core.Data.ApiStep.<Clone>$() -> Aw.Evidence.Core.Data.ApiStep!
+Aw.Evidence.Core.Data.ApiStep.Action.get -> Aw.Evidence.Core.Data.ApiAction
+Aw.Evidence.Core.Data.ApiStep.Action.init -> void
+Aw.Evidence.Core.Data.ApiStep.ApiStep(int Index, Aw.Evidence.Core.Data.ApiAction Action, string! Target, Aw.Evidence.Core.Data.ApiStepStatus Status, int? Code, string? Output, System.Collections.Generic.IReadOnlyList<string!>! HeaderNames) -> void
+Aw.Evidence.Core.Data.ApiStep.Code.get -> int?
+Aw.Evidence.Core.Data.ApiStep.Code.init -> void
+Aw.Evidence.Core.Data.ApiStep.Deconstruct(out int Index, out Aw.Evidence.Core.Data.ApiAction Action, out string! Target, out Aw.Evidence.Core.Data.ApiStepStatus Status, out int? Code, out string? Output, out System.Collections.Generic.IReadOnlyList<string!>! HeaderNames) -> void
+Aw.Evidence.Core.Data.ApiStep.Equals(Aw.Evidence.Core.Data.ApiStep? other) -> bool
+Aw.Evidence.Core.Data.ApiStep.HeaderNames.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Data.ApiStep.HeaderNames.init -> void
+Aw.Evidence.Core.Data.ApiStep.Index.get -> int
+Aw.Evidence.Core.Data.ApiStep.Index.init -> void
+Aw.Evidence.Core.Data.ApiStep.Output.get -> string?
+Aw.Evidence.Core.Data.ApiStep.Output.init -> void
+Aw.Evidence.Core.Data.ApiStep.Status.get -> Aw.Evidence.Core.Data.ApiStepStatus
+Aw.Evidence.Core.Data.ApiStep.Status.init -> void
+Aw.Evidence.Core.Data.ApiStep.Target.get -> string!
+Aw.Evidence.Core.Data.ApiStep.Target.init -> void
+Aw.Evidence.Core.Data.ApiStepStatus
+Aw.Evidence.Core.Data.ApiStepStatus.Broken = 3 -> Aw.Evidence.Core.Data.ApiStepStatus
+Aw.Evidence.Core.Data.ApiStepStatus.Failed = 1 -> Aw.Evidence.Core.Data.ApiStepStatus
+Aw.Evidence.Core.Data.ApiStepStatus.Passed = 0 -> Aw.Evidence.Core.Data.ApiStepStatus
+Aw.Evidence.Core.Data.ApiStepStatus.Refused = 2 -> Aw.Evidence.Core.Data.ApiStepStatus
+Aw.Evidence.Core.Data.ApiStepStatus.Skipped = 4 -> Aw.Evidence.Core.Data.ApiStepStatus
+Aw.Evidence.Core.Data.ApiSummary
+Aw.Evidence.Core.Data.ApiSummary.<Clone>$() -> Aw.Evidence.Core.Data.ApiSummary!
+Aw.Evidence.Core.Data.ApiSummary.ApiSummary(string! Schema, string! Kind, Aw.Evidence.Core.Ids.RunId RunId, Aw.Evidence.Core.Ids.RunInstanceId RunInstance, System.DateTimeOffset StartedAt, System.DateTimeOffset FinishedAt, string? AppBuild, string! ScriptSha256, Aw.Evidence.Core.Data.DataRunAt At, string? Host, Aw.Evidence.Core.Data.ApiOutcome Outcome, string! Headline, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiStep!>! Steps, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiFailure!>! Failures, System.Collections.Generic.IReadOnlyList<string!>! DeclaredWrites, System.Collections.Generic.IReadOnlyList<string!>! PassedEnv, string! Provenance, string? SeedSha256, Aw.Evidence.Core.Data.CodedMessage? Refusal, Aw.Evidence.Core.Data.CodedMessage? Error, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Usage.ModelInvocation!>! Invocations) -> void
+Aw.Evidence.Core.Data.ApiSummary.AppBuild.get -> string?
+Aw.Evidence.Core.Data.ApiSummary.AppBuild.init -> void
+Aw.Evidence.Core.Data.ApiSummary.At.get -> Aw.Evidence.Core.Data.DataRunAt
+Aw.Evidence.Core.Data.ApiSummary.At.init -> void
+Aw.Evidence.Core.Data.ApiSummary.DeclaredWrites.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Data.ApiSummary.DeclaredWrites.init -> void
+Aw.Evidence.Core.Data.ApiSummary.Deconstruct(out string! Schema, out string! Kind, out Aw.Evidence.Core.Ids.RunId RunId, out Aw.Evidence.Core.Ids.RunInstanceId RunInstance, out System.DateTimeOffset StartedAt, out System.DateTimeOffset FinishedAt, out string? AppBuild, out string! ScriptSha256, out Aw.Evidence.Core.Data.DataRunAt At, out string? Host, out Aw.Evidence.Core.Data.ApiOutcome Outcome, out string! Headline, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiStep!>! Steps, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiFailure!>! Failures, out System.Collections.Generic.IReadOnlyList<string!>! DeclaredWrites, out System.Collections.Generic.IReadOnlyList<string!>! PassedEnv, out string! Provenance, out string? SeedSha256, out Aw.Evidence.Core.Data.CodedMessage? Refusal, out Aw.Evidence.Core.Data.CodedMessage? Error, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Usage.ModelInvocation!>! Invocations) -> void
+Aw.Evidence.Core.Data.ApiSummary.Equals(Aw.Evidence.Core.Data.ApiSummary? other) -> bool
+Aw.Evidence.Core.Data.ApiSummary.Error.get -> Aw.Evidence.Core.Data.CodedMessage?
+Aw.Evidence.Core.Data.ApiSummary.Error.init -> void
+Aw.Evidence.Core.Data.ApiSummary.ExitCode() -> int
+Aw.Evidence.Core.Data.ApiSummary.Failures.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiFailure!>!
+Aw.Evidence.Core.Data.ApiSummary.Failures.init -> void
+Aw.Evidence.Core.Data.ApiSummary.FinishedAt.get -> System.DateTimeOffset
+Aw.Evidence.Core.Data.ApiSummary.FinishedAt.init -> void
+Aw.Evidence.Core.Data.ApiSummary.Headline.get -> string!
+Aw.Evidence.Core.Data.ApiSummary.Headline.init -> void
+Aw.Evidence.Core.Data.ApiSummary.Host.get -> string?
+Aw.Evidence.Core.Data.ApiSummary.Host.init -> void
+Aw.Evidence.Core.Data.ApiSummary.Invocations.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Usage.ModelInvocation!>!
+Aw.Evidence.Core.Data.ApiSummary.Invocations.init -> void
+Aw.Evidence.Core.Data.ApiSummary.Kind.get -> string!
+Aw.Evidence.Core.Data.ApiSummary.Kind.init -> void
+Aw.Evidence.Core.Data.ApiSummary.Outcome.get -> Aw.Evidence.Core.Data.ApiOutcome
+Aw.Evidence.Core.Data.ApiSummary.Outcome.init -> void
+Aw.Evidence.Core.Data.ApiSummary.PassedEnv.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Data.ApiSummary.PassedEnv.init -> void
+Aw.Evidence.Core.Data.ApiSummary.Provenance.get -> string!
+Aw.Evidence.Core.Data.ApiSummary.Provenance.init -> void
+Aw.Evidence.Core.Data.ApiSummary.Refusal.get -> Aw.Evidence.Core.Data.CodedMessage?
+Aw.Evidence.Core.Data.ApiSummary.Refusal.init -> void
+Aw.Evidence.Core.Data.ApiSummary.RunId.get -> Aw.Evidence.Core.Ids.RunId
+Aw.Evidence.Core.Data.ApiSummary.RunId.init -> void
+Aw.Evidence.Core.Data.ApiSummary.RunInstance.get -> Aw.Evidence.Core.Ids.RunInstanceId
+Aw.Evidence.Core.Data.ApiSummary.RunInstance.init -> void
+Aw.Evidence.Core.Data.ApiSummary.Schema.get -> string!
+Aw.Evidence.Core.Data.ApiSummary.Schema.init -> void
+Aw.Evidence.Core.Data.ApiSummary.ScriptSha256.get -> string!
+Aw.Evidence.Core.Data.ApiSummary.ScriptSha256.init -> void
+Aw.Evidence.Core.Data.ApiSummary.SeedSha256.get -> string?
+Aw.Evidence.Core.Data.ApiSummary.SeedSha256.init -> void
+Aw.Evidence.Core.Data.ApiSummary.StartedAt.get -> System.DateTimeOffset
+Aw.Evidence.Core.Data.ApiSummary.StartedAt.init -> void
+Aw.Evidence.Core.Data.ApiSummary.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiStep!>!
+Aw.Evidence.Core.Data.ApiSummary.Steps.init -> void
+Aw.Evidence.Core.Data.CheckedExpectation
+Aw.Evidence.Core.Data.CheckedExpectation.<Clone>$() -> Aw.Evidence.Core.Data.CheckedExpectation!
+Aw.Evidence.Core.Data.CheckedExpectation.CheckedExpectation(int Count, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiFailure!>! Failures, int? FirstFailedOrdinal) -> void
+Aw.Evidence.Core.Data.CheckedExpectation.Count.get -> int
+Aw.Evidence.Core.Data.CheckedExpectation.Count.init -> void
+Aw.Evidence.Core.Data.CheckedExpectation.Deconstruct(out int Count, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiFailure!>! Failures, out int? FirstFailedOrdinal) -> void
+Aw.Evidence.Core.Data.CheckedExpectation.Equals(Aw.Evidence.Core.Data.CheckedExpectation? other) -> bool
+Aw.Evidence.Core.Data.CheckedExpectation.Failures.get -> System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Data.ApiFailure!>!
+Aw.Evidence.Core.Data.CheckedExpectation.Failures.init -> void
+Aw.Evidence.Core.Data.CheckedExpectation.FirstFailedOrdinal.get -> int?
+Aw.Evidence.Core.Data.CheckedExpectation.FirstFailedOrdinal.init -> void
+Aw.Evidence.Core.Data.CodedMessage
+Aw.Evidence.Core.Data.CodedMessage.<Clone>$() -> Aw.Evidence.Core.Data.CodedMessage!
+Aw.Evidence.Core.Data.CodedMessage.Code.get -> string!
+Aw.Evidence.Core.Data.CodedMessage.Code.init -> void
+Aw.Evidence.Core.Data.CodedMessage.CodedMessage(string! Code, string! Message) -> void
+Aw.Evidence.Core.Data.CodedMessage.Deconstruct(out string! Code, out string! Message) -> void
+Aw.Evidence.Core.Data.CodedMessage.Equals(Aw.Evidence.Core.Data.CodedMessage? other) -> bool
+Aw.Evidence.Core.Data.CodedMessage.Message.get -> string!
+Aw.Evidence.Core.Data.CodedMessage.Message.init -> void
+Aw.Evidence.Core.Data.DataRunAt
+Aw.Evidence.Core.Data.DataRunAt.Base = 0 -> Aw.Evidence.Core.Data.DataRunAt
+Aw.Evidence.Core.Data.DataRunAt.Head = 1 -> Aw.Evidence.Core.Data.DataRunAt
+Aw.Evidence.Core.Data.ExpectationCheck
+Aw.Evidence.Core.Data.HttpCall
+Aw.Evidence.Core.Data.HttpCall.<Clone>$() -> Aw.Evidence.Core.Data.HttpCall!
+Aw.Evidence.Core.Data.HttpCall.Body.get -> string?
+Aw.Evidence.Core.Data.HttpCall.Body.init -> void
+Aw.Evidence.Core.Data.HttpCall.Deconstruct(out Aw.Evidence.Core.Data.HttpVerb Method, out string! Url, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers, out string? Body) -> void
+Aw.Evidence.Core.Data.HttpCall.Equals(Aw.Evidence.Core.Data.HttpCall? other) -> bool
+Aw.Evidence.Core.Data.HttpCall.Headers.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Evidence.Core.Data.HttpCall.Headers.init -> void
+Aw.Evidence.Core.Data.HttpCall.HttpCall(Aw.Evidence.Core.Data.HttpVerb Method, string! Url, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers, string? Body) -> void
+Aw.Evidence.Core.Data.HttpCall.Method.get -> Aw.Evidence.Core.Data.HttpVerb
+Aw.Evidence.Core.Data.HttpCall.Method.init -> void
+Aw.Evidence.Core.Data.HttpCall.Url.get -> string!
+Aw.Evidence.Core.Data.HttpCall.Url.init -> void
+Aw.Evidence.Core.Data.HttpReply
+Aw.Evidence.Core.Data.HttpReply.<Clone>$() -> Aw.Evidence.Core.Data.HttpReply!
+Aw.Evidence.Core.Data.HttpReply.Body.get -> string!
+Aw.Evidence.Core.Data.HttpReply.Body.init -> void
+Aw.Evidence.Core.Data.HttpReply.Deconstruct(out int Status, out string? Location, out string! Body) -> void
+Aw.Evidence.Core.Data.HttpReply.Equals(Aw.Evidence.Core.Data.HttpReply? other) -> bool
+Aw.Evidence.Core.Data.HttpReply.HttpReply(int Status, string? Location, string! Body) -> void
+Aw.Evidence.Core.Data.HttpReply.Location.get -> string?
+Aw.Evidence.Core.Data.HttpReply.Location.init -> void
+Aw.Evidence.Core.Data.HttpReply.Status.get -> int
+Aw.Evidence.Core.Data.HttpReply.Status.init -> void
+Aw.Evidence.Core.Data.IApiTransport
+Aw.Evidence.Core.Data.IApiTransport.SendAsync(Aw.Evidence.Core.Data.HttpCall! call, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Data.HttpReply!>!>
+Aw.Evidence.Core.Data.ITextScrubber
+Aw.Evidence.Core.Data.ITextScrubber.Scrub(string! text) -> string!
+const Aw.Evidence.Core.Data.ApiSummary.KindName = "api" -> string!
+const Aw.Evidence.Core.Data.ApiSummary.SchemaName = "evidence.api.summary/1" -> string!
+const Aw.Evidence.Core.Data.ApiSummary.Unseeded = "unseeded" -> string!
+override Aw.Evidence.Core.Data.ApiFailure.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.ApiFailure.GetHashCode() -> int
+override Aw.Evidence.Core.Data.ApiFailure.ToString() -> string!
+override Aw.Evidence.Core.Data.ApiStep.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.ApiStep.GetHashCode() -> int
+override Aw.Evidence.Core.Data.ApiStep.ToString() -> string!
+override Aw.Evidence.Core.Data.ApiSummary.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.ApiSummary.GetHashCode() -> int
+override Aw.Evidence.Core.Data.ApiSummary.ToString() -> string!
+override Aw.Evidence.Core.Data.CheckedExpectation.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.CheckedExpectation.GetHashCode() -> int
+override Aw.Evidence.Core.Data.CheckedExpectation.ToString() -> string!
+override Aw.Evidence.Core.Data.CodedMessage.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.CodedMessage.GetHashCode() -> int
+override Aw.Evidence.Core.Data.CodedMessage.ToString() -> string!
+override Aw.Evidence.Core.Data.HttpCall.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.HttpCall.GetHashCode() -> int
+override Aw.Evidence.Core.Data.HttpCall.ToString() -> string!
+override Aw.Evidence.Core.Data.HttpReply.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Data.HttpReply.GetHashCode() -> int
+override Aw.Evidence.Core.Data.HttpReply.ToString() -> string!
+static Aw.Evidence.Core.Data.ApiFailure.operator !=(Aw.Evidence.Core.Data.ApiFailure? left, Aw.Evidence.Core.Data.ApiFailure? right) -> bool
+static Aw.Evidence.Core.Data.ApiFailure.operator ==(Aw.Evidence.Core.Data.ApiFailure? left, Aw.Evidence.Core.Data.ApiFailure? right) -> bool
+static Aw.Evidence.Core.Data.ApiStep.operator !=(Aw.Evidence.Core.Data.ApiStep? left, Aw.Evidence.Core.Data.ApiStep? right) -> bool
+static Aw.Evidence.Core.Data.ApiStep.operator ==(Aw.Evidence.Core.Data.ApiStep? left, Aw.Evidence.Core.Data.ApiStep? right) -> bool
+static Aw.Evidence.Core.Data.ApiSummary.operator !=(Aw.Evidence.Core.Data.ApiSummary? left, Aw.Evidence.Core.Data.ApiSummary? right) -> bool
+static Aw.Evidence.Core.Data.ApiSummary.operator ==(Aw.Evidence.Core.Data.ApiSummary? left, Aw.Evidence.Core.Data.ApiSummary? right) -> bool
+static Aw.Evidence.Core.Data.CheckedExpectation.operator !=(Aw.Evidence.Core.Data.CheckedExpectation? left, Aw.Evidence.Core.Data.CheckedExpectation? right) -> bool
+static Aw.Evidence.Core.Data.CheckedExpectation.operator ==(Aw.Evidence.Core.Data.CheckedExpectation? left, Aw.Evidence.Core.Data.CheckedExpectation? right) -> bool
+static Aw.Evidence.Core.Data.CodedMessage.operator !=(Aw.Evidence.Core.Data.CodedMessage? left, Aw.Evidence.Core.Data.CodedMessage? right) -> bool
+static Aw.Evidence.Core.Data.CodedMessage.operator ==(Aw.Evidence.Core.Data.CodedMessage? left, Aw.Evidence.Core.Data.CodedMessage? right) -> bool
+static Aw.Evidence.Core.Data.ExpectationCheck.Evaluate(int step, Aw.Evidence.Core.Data.Expectation! expect, int actualCode, string! output, string? goldenText) -> Aw.Evidence.Core.Data.CheckedExpectation!
+static Aw.Evidence.Core.Data.HttpCall.operator !=(Aw.Evidence.Core.Data.HttpCall? left, Aw.Evidence.Core.Data.HttpCall? right) -> bool
+static Aw.Evidence.Core.Data.HttpCall.operator ==(Aw.Evidence.Core.Data.HttpCall? left, Aw.Evidence.Core.Data.HttpCall? right) -> bool
+static Aw.Evidence.Core.Data.HttpReply.operator !=(Aw.Evidence.Core.Data.HttpReply? left, Aw.Evidence.Core.Data.HttpReply? right) -> bool
+static Aw.Evidence.Core.Data.HttpReply.operator ==(Aw.Evidence.Core.Data.HttpReply? left, Aw.Evidence.Core.Data.HttpReply? right) -> bool
+Aw.Evidence.Core.Data.ApiFailure.ApiFailure(int Step, string? Location, string! Expected, string! Actual) -> void
+Aw.Evidence.Core.Data.ApiFailure.Deconstruct(out int Step, out string? Location, out string! Expected, out string! Actual) -> void
+Aw.Evidence.Core.Data.ApiFailure.Location.get -> string?
+Aw.Evidence.Core.Data.ApiFailure.Location.init -> void
