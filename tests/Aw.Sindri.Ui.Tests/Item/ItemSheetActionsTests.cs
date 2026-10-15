@@ -280,4 +280,29 @@ public sealed class ItemSheetActionsTests
 
         Assert.Equal((false, 2), (sheet.HasProblem, sheet.Actions.Count));
     }
+
+    // testing-2: the line the 409 leaves is cleared by either arm of ConflictPassed alone, and by neither when nothing changed.
+    [Theory]
+    [InlineData("same", true)]
+    [InlineData("version", false)]
+    [InlineData("action", false)]
+    public async Task The_409_line_is_cleared_by_each_arm_of_ConflictPassed_and_kept_when_neither_holds(string arm, bool stays)
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        _server.Close = RouteAnswer.Problem("items-id-close", "stale-version");
+        _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");   // version 2, Close not allowed
+        await sheet.Actions[0].Press(Token);
+        Assert.True(sheet.HasProblem);
+
+        _server.Items[A.NewItem] = arm switch
+        {
+            "version" => new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("items-id", "after-close").Replace("\"version\": 2,", "\"version\": 3,", StringComparison.Ordinal)),   // the version moved, the action is still not allowed
+            "action" => NewAtVersion(2),   // the same version, the action allowed again
+            _ => RouteAnswer.SpecShaped("items-id", "after-close"),
+        };
+        await sheet.Refresh(_api, Token);
+
+        Assert.Equal(stays, sheet.HasProblem);
+    }
 }
