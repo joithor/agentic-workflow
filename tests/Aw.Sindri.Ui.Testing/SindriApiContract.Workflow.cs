@@ -220,7 +220,7 @@ public abstract partial class SindriApiContract
 
         if (golden is null)
         {
-            Expect.Equal(("SND-ITEM-404", ErrorKind.NotFound), (recipe.Error.Code, recipe.Error.Kind));
+            Expect.Equal(("SND-RECIPE-002", ErrorKind.NotFound), (recipe.Error.Code, recipe.Error.Kind));
         }
         else
         {
@@ -231,11 +231,11 @@ public abstract partial class SindriApiContract
     }
 
     [Fact]
-    public async Task Recipe_that_does_not_exist_is_SND_ITEM_404()
+    public async Task Recipe_that_does_not_exist_is_SND_RECIPE_002()
     {
         var refused = await Reach(new FakeSindriApi()).Recipe(_api, "workflow.none", hash: null, Token);
 
-        Expect.Equal(("SND-ITEM-404", ErrorKind.NotFound), (refused.Error.Code, refused.Error.Kind));
+        Expect.Equal(("SND-RECIPE-002", ErrorKind.NotFound), (refused.Error.Code, refused.Error.Kind));
         Expect.True(refused.Error.Message.Length > 0);
     }
 
@@ -250,7 +250,7 @@ public abstract partial class SindriApiContract
         var wrong = await api.Recipe(_api, id, "sha256:" + new string('0', 64), Token);
 
         Expect.True(named.IsSuccess);
-        Expect.Equal(("SND-ITEM-404", ErrorKind.NotFound), (wrong.Error.Code, wrong.Error.Kind));
+        Expect.Equal(("SND-RECIPE-002", ErrorKind.NotFound), (wrong.Error.Code, wrong.Error.Kind));
     }
 
     [Fact]
