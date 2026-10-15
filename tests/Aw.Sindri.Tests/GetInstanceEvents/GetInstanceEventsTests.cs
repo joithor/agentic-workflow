@@ -116,7 +116,7 @@ public sealed class GetInstanceEventsTests
     public async Task Following_ends_with_exit_0_when_it_is_interrupted()
     {
         var h = await Ledger();
-        using var interrupt = new CancellationTokenSource();
+        using var interrupt = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         var stdout = new CancelOnWrite(interrupt);
 
         using var api = Api(h);
@@ -125,6 +125,34 @@ public sealed class GetInstanceEventsTests
 
         Assert.Equal(0, exit);
         Assert.Contains("workflow.started", stdout.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task Following_prints_an_event_appended_after_it_started_exactly_once()
+    {
+        var h = await Ledger();
+        using var interrupt = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var stdout = new SignalOnWrite();
+        using var api = Api(h);
+        var run = EventsCommand.Run(["T-1/step/1", "--follow"], api.Desk, Services(h), new Output(stdout, new StringWriter(), SliceHarness.Json), interrupt.Token);
+        await stdout.Wait(2);   // the two rows it read first, one write each
+
+        var entry = h.Events.Entry("workflow.transition", new InstanceEventFields("checks", "done", "step.completed", "done", "1.2"), "workflow:T-1/step/1:run-a:5") with { Item = "T-1" };
+        Assert.False((await h.Store.Append(entry, h.Held.Current!, TestContext.Current.CancellationToken)).IsError);
+        while (!await stdout.Wait(3, TimeSpan.FromMilliseconds(50)))
+        {
+            h.Clock.Advance(EventsCommand.Poll);   // the poll's delay may not have started yet: advance until it has read the row
+        }
+
+        h.Clock.Advance(EventsCommand.Poll);   // more polls after the row: none may print it again
+        h.Clock.Advance(EventsCommand.Poll);
+        await interrupt.CancelAsync();
+        var exit = await run.WaitAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        var lines = stdout.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(3, lines.Length);
+        _ = Assert.Single(lines, static l => l.Contains("checks -> done", StringComparison.Ordinal));
     }
 
     [Fact(Timeout = 30_000)]
