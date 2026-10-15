@@ -1,8 +1,10 @@
+using Aw.Kernel;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
@@ -54,16 +56,17 @@ internal sealed class Served : IAsyncDisposable
     /// <summary>A client of the API, without caller headers (a test adds them per request).</summary>
     public HttpClient Http { get; }
 
-    /// <summary>Serves <paramref name="home"/> on <paramref name="environment"/>.</summary>
-    public static Task<Served> Start(string home, WorkflowEnvironment environment, Action<IServiceCollection>? replace = null) =>
-        Start(home, environment, static _ => null, replace);
+    /// <summary>Serves <paramref name="home"/> on <paramref name="environment"/>; <paramref name="ct"/> is the test's token, so a test with a timeout stops promptly.</summary>
+    public static Task<Served> Start(string home, WorkflowEnvironment environment, CancellationToken ct, Action<IServiceCollection>? replace = null) =>
+        Start(home, environment, static _ => null, ct, replace);
 
     /// <summary>Serves <paramref name="home"/> on <paramref name="environment"/>, reading the other variables from <paramref name="variables"/>.</summary>
-    public static async Task<Served> Start(string home, WorkflowEnvironment environment, Func<string, string?> variables, Action<IServiceCollection>? replace = null)
+    public static async Task<Served> Start(string home, WorkflowEnvironment environment, Func<string, string?> variables, CancellationToken ct, Action<IServiceCollection>? replace = null)
     {
-        var ct = TestContext.Current.CancellationToken;
         var app = LoopbackBinding.Build([], name => name == "AW_SINDRI_HOME" ? home : variables(name), new FakeTimeProvider(), services =>
         {
+            // why: the clock is fake, so the projector never ticks and a ReadsViews command (StartInstance, UI E-19) would wait for the views forever
+            _ = services.AddSingleton<IProjectorStatus>(static sp => new CaughtUpViews(sp.GetRequiredService<ProjectorProgress>()));
             _ = services.Replace(ServiceDescriptor.Singleton<IOsNotifier>(new FakeOsNotifier()));   // no test fires a real OS notification
             replace?.Invoke(services);
         });
@@ -147,5 +150,13 @@ internal sealed class Served : IAsyncDisposable
     {
         var (exit, stdout, stderr) = await WorkflowsHarness.Cli(Sindri, new AgentSession(session, terminal, Prover: false), typed, args);
         return new CliRun(exit, stdout, stderr);
+    }
+
+    /// <summary>The projector's status with a wait that returns at once: the views are always at the head in these hosts.</summary>
+    private sealed class CaughtUpViews(ProjectorProgress inner) : IProjectorStatus
+    {
+        public ViewsStatus Current => inner.Current;
+
+        public ValueTask<Result<Unit>> WaitFor(long sequence, TimeSpan limit, CancellationToken cancellationToken) => ValueTask.FromResult<Result<Unit>>(Unit.Value);
     }
 }

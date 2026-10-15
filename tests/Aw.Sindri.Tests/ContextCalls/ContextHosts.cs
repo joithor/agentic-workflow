@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text.Json;
 using Aw.Context.Testing.Fixtures;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Scheduling;
@@ -22,12 +21,9 @@ internal static class ContextHosts
     {
         var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: split-panes, path: \"{repo.Path}\" }}\n"
             + $"context:\n  docs: {{ globs: [\"docs/**/*.md\"] }}\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n";
-        var host = await GoldenHost.Start(temporary: true, ct, yaml, extra);
-        var hash = await host.LiveHash(ct);
-        var issued = await host.Http.Ask(Post("/sindri/workflow/challenges", $$"""{"action":"approve profile {{hash.Abbreviated}}"}""", Human(host.Token.Value)));
-        var challenge = JsonDocument.Parse(issued.Body).RootElement.GetProperty("challenge").GetString();
-        var approved = await host.Http.Ask(Post("/sindri/profile/approve",
-            $$$"""{"hash":"{{{hash.Value}}}","answer":{"challenge":"{{{challenge}}}","typed":"approve profile {{{hash.Abbreviated}}}"}}""", Human(host.Token.Value)));
+        var host = await GoldenHost.Start(temporary: true, ct, yaml, extra: extra);
+        var hash = (await host.LiveHash(ct)).Value;
+        var approved = await host.Http.Ask(Post("/sindri/profile/approve", await ApiScenarios.Confirmed(host, hash), Human(host.Token.Value)));
         Assert.Equal(HttpStatusCode.OK, approved.Status);
         await using var scope = host.App.Services.CreateAsyncScope();
         var refresh = scope.ServiceProvider.GetServices<IScheduledService>().Single(s => s.Identity().Value == "context-docs-refresh");

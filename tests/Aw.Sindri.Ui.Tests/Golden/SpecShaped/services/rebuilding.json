@@ -1,0 +1,11 @@
+{
+  "services": [],
+  "empty": "Rebuilding views (cursor 12 of 42)…",
+  "asOf": {
+    "cursor": 12,
+    "ledgerHead": 42,
+    "projectedAt": "2026-01-01T00:00:58.0000000Z",
+    "rebuilding": true,
+    "stalled": false
+  }
+}

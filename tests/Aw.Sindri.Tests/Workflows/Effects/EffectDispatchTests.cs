@@ -59,7 +59,7 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
             Assert.Empty(early);
             Assert.Equal((pending.Identity, pending.Command), (dispatched.Identity, dispatched.Command));
             Assert.Equal([pending.Identity], _desk.Calls.Where(static c => !c.FromEngine).Select(static c => c.Identity), StringComparer.Ordinal);   // the first desk task's engine notice runs through the block too
-            Assert.Equal([pending.Identity], transition.Effects);
+            Assert.Equal([pending.Identity], transition.Detail!.Effects);
             await handle.TerminateAsync("test over");
         }, Token);
     }

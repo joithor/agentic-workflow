@@ -9,4 +9,5 @@ namespace Aw.Sindri.Core.Ledger;
 /// <param name="Envelope">The §17.21 envelope; the payload is the event's JSON.</param>
 /// <param name="IdempotencyKey">The key; a second entry with the same key is not recorded again.</param>
 /// <param name="Item">The work item, when the event concerns one.</param>
-public sealed record LedgerEntry(EventEnvelope<string> Envelope, string IdempotencyKey, string? Item);
+/// <param name="TemporalEvent">The Temporal event id the engine mirrored this row for (the activity id, the key's third part; UI E-30), or null for every other row.</param>
+public sealed record LedgerEntry(EventEnvelope<string> Envelope, string IdempotencyKey, string? Item, string? TemporalEvent = null);

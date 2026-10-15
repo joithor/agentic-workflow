@@ -1,0 +1,19 @@
+using Aw.Kernel;
+
+namespace Aw.Sindri.Ui.Api;
+
+/// <summary>The app's error catalogue (SND-UI-NNN, docs/csharp/sindri-ui.md). The app shows each as words with a fix.</summary>
+internal static class SindriUiErrors
+{
+    /// <summary>SND-UI-001: no usable endpoint record, or it names a process that isn't the one answering.</summary>
+    public static readonly ErrorDefinition NotRunning = new("SND-UI-001", ErrorKind.Unavailable, "Sindri is not running");
+
+    /// <summary>SND-UI-002: nothing answered at the recorded endpoint, or not within 2 s.</summary>
+    public static readonly ErrorDefinition Unreachable = new("SND-UI-002", ErrorKind.Unavailable, "Sindri's API doesn't answer");
+
+    /// <summary>SND-UI-003: the API answered, but not with the record this build reads.</summary>
+    public static readonly ErrorDefinition BadAnswer = new("SND-UI-003", ErrorKind.Invalid, "Sindri's API gave an answer this app can't read");
+
+    /// <summary>SND-UI-004: the app's start-up, or its following of the control plane, threw; the app exits with code 2.</summary>
+    public static readonly ErrorDefinition Failed = new("SND-UI-004", ErrorKind.Unavailable, "The Sindri app failed and exits");
+}

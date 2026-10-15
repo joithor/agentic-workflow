@@ -1,3 +1,5 @@
+using Aw.Sindri.Core.Events;
+
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
@@ -12,7 +14,11 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Trigger">The trigger's kind ('start', 'step.completed', 'wait.satisfied', 'answer').</param>
 /// <param name="Outcome">The trigger's outcome, when it has one.</param>
 /// <param name="Run">The run token the trigger reported on, when it has one.</param>
-/// <param name="Effects">The identities of the effects the change runs (§5.7; engine P6); null when it runs none.</param>
+/// <param name="Actor">Who fired the trigger (the human who answered or reported, the timer service); none records the process's own actor.</param>
+/// <param name="Tenant">The instance's tenant; none records the process's.</param>
+/// <param name="Ring">The instance's ring; none records the process's.</param>
+/// <param name="Detail">The rest of the event the decision recorded (spec §5.6); a row mirrored without a decision (a held event's expiry, the desk deadline's park) carries the trigger and the suspension only.</param>
+/// <param name="Causation">What caused it beyond the trigger: the launch ('LCH-…') an open-request or a start taken over answers (UI E-6, E-19).</param>
 internal sealed record WorkflowEventRecord(
     string WorkflowId,
     string Type,
@@ -22,4 +28,8 @@ internal sealed record WorkflowEventRecord(
     string Trigger,
     string? Outcome,
     string? Run,
-    IReadOnlyList<string>? Effects = null);
+    string? Actor = null,
+    string? Tenant = null,
+    int? Ring = null,
+    WorkflowEventDetail? Detail = null,
+    string? Causation = null);

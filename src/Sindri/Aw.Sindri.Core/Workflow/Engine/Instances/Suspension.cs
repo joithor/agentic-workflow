@@ -22,6 +22,13 @@ public sealed record Suspension(
     WorkflowInstanceId? Mirrors,
     ResumeAction Resume)
 {
+    /// <summary>
+    /// The state timer a takeover paused and what was left of it (spec §5.5): set by the interpreter on a takeover of an
+    /// instance whose timer was running, read by the handback that re-arms it. Null on a park or escalation (a park stops
+    /// the timer) and on a takeover over one. Engine P5 contract unit; unit (b) sets and reads it.
+    /// </summary>
+    public RemainingTimer? Remaining { get; init; }
+
     /// <summary>The engine-owned state this suspension shows (spec §3.8).</summary>
     public string State => Kind switch
     {

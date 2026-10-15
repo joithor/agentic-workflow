@@ -12,7 +12,7 @@ sindri scrub --install-pre-commit   # hook v2: secret scan, then shape recording
 sindri repo onboard <path>             # repo add → approval (yours, at a terminal) → pre-commit hook → first index build; idempotent
 ```
 
-`index setup` reads the **approved** profile, so approve first. It needs Ollama (running, with the model), `uv`, and macOS `sandbox-exec` (or Linux `bwrap`). Without one of them that layer is `unavailable` and everything else works.
+`index setup` reads the **approved** profile, so approve first. It needs Ollama (running, with the model), `uv`, and macOS `sandbox-exec` (or Linux `bwrap`; on Ubuntu 24.04 `bwrap` also needs an AppArmor profile that allows user namespaces, which `scripts/install-deps.sh` (run by `setup.sh`) probes with `bwrap --ro-bind / / true` and prints the root fix for). Without one of them that layer is `unavailable` and everything else works.
 
 ### Onboarding a repo
 

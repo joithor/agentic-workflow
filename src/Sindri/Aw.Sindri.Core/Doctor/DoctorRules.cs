@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Core.Doctor;
 
@@ -39,6 +40,21 @@ public static class DoctorRules
         { Value.IsCurrent: true } => new("ledger", CheckState.Ok, Text($"schema {schema.Value.Applied}/{schema.Value.Expected}"), Fix: null),
         _ => new("ledger", CheckState.Fail, Text($"schema {schema.Value.Applied}/{schema.Value.Expected}: written by another build"), "use the build that wrote it, or move the ledger aside"),
     };
+
+    /// <summary>The views: caught up, rebuilding, stalled on an event, or not built yet.</summary>
+    /// <param name="state">The projector_state row (null when the views store doesn't exist), or why it can't be read.</param>
+    /// <param name="head">The ledger's head, or why it can't be read.</param>
+    /// <returns>The check.</returns>
+    public static DoctorCheck Views(Result<ProjectorState?> state, Result<long> head) =>
+        state.IsError ? new("views", CheckState.Fail, state.Error.Message, "check the file's permissions and disk, then run sindri doctor again")
+        : head.IsError ? new("views", CheckState.Fail, head.Error.Message, "check the file's permissions and disk, then run sindri doctor again")
+        : state.Value switch
+        {
+            null => new("views", CheckState.Warn, "no views yet", "sindri"),
+            { StalledAt: { } at } s => new("views", CheckState.Fail, Text($"stalled at {at} ({s.StalledType})"), "sindri views rebuild"),
+            { Rebuilding: true } s => new("views", CheckState.Warn, Text($"rebuilding (cursor {s.Cursor} of {head.Value})"), "wait for the rebuild, then run sindri doctor again"),
+            var s => new("views", CheckState.Ok, Text($"cursor {s.Cursor} of head {head.Value}"), Fix: null),
+        };
 
     /// <summary>
     /// The profile: valid, and approved by <see cref="ProfileRules.IsApproved"/> (it is the saved approval and the latest

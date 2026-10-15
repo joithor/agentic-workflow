@@ -34,12 +34,13 @@ internal sealed class TemporalDeskReports(TemporalFrontend frontend)
             return client.Error;
         }
 
+        using var patience = TemporalUpdates.Wait(cancellationToken);
         var handle = client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value);
         try
         {
             return await handle.ExecuteUpdateAsync(
                 wf => wf.CompleteAsync(report),
-                new WorkflowUpdateOptions(nonce.Value) { Rpc = TemporalUpdates.Rpc(cancellationToken) }).ConfigureAwait(false);
+                new WorkflowUpdateOptions(nonce.Value) { Rpc = patience.Options }).ConfigureAwait(false);
         }
         catch (WorkflowUpdateFailedException e) when (e.InnerException is ApplicationFailureException { ErrorType: { } code } refusal)
         {
@@ -51,11 +52,15 @@ internal sealed class TemporalDeskReports(TemporalFrontend frontend)
         }
         catch (Exception e) when (!cancellationToken.IsCancellationRequested && e is WorkflowUpdateRpcTimeoutOrCanceledException or RpcException { Code: RpcException.StatusCode.DeadlineExceeded }) // boundary: no worker took it
         {
-            return TemporalUpdates.NoWorker(address, nonce);
+            return await TemporalUpdates.NoAnswer(client.Value, address, nonce, cancellationToken).ConfigureAwait(false);
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)
         {
             return WorkflowErrors.InstanceNotFound.With($"no running instance {address.Value} (fix: sindri workflow list)");
+        }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client.Value, e, nonce);
         }
     }
 

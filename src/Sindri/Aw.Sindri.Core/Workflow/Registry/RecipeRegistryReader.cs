@@ -1,7 +1,5 @@
-using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
-using Aw.Kernel.Json;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
@@ -174,7 +172,8 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
         }
 
         var (standing, stale) = Stand(parsed.Value, latest.Value, revoked.Value, current);
-        return new RecipeSummary(recipe.Id, recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs);
+        var order = StatePathOrder.Of(parsed.Value);
+        return new RecipeSummary(recipe.Id, recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs, parsed.Value.Urgency, parsed.Value.Outputs, order.OrderedBy, order.States, order.Loops);
     }
 
     /// <summary>
@@ -202,5 +201,5 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
         return (RecipeStanding.Approved, stale);
     }
 
-    private Result<Recipe> Parse(RegisteredRecipe recipe) => AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(recipe.Text), json);
+    private Result<Recipe> Parse(RegisteredRecipe recipe) => recipe.Read(json);
 }

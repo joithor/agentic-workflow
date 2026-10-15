@@ -110,7 +110,7 @@ internal sealed class LedgerDatabase : IDisposable
     internal const int RecipesVersion = 4;
 
     /// <summary>The first migration with 'workflow_claims' (engine spec §5.9; engine P6 unit (d)); reads of an older file find no claim.</summary>
-    internal const int ClaimsVersion = 5;
+    internal const int ClaimsVersion = 6;
 
     private static IReadOnlyList<Migration> LoadMigrations()
     {

@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Infrastructure.Workflow;
 
-/// <summary>The item claims' SQL (ledger.db, migration 0005_workflow_claims).</summary>
+/// <summary>The item claims' SQL (ledger.db, migration 0006_workflow_claims).</summary>
 internal static class ClaimSql
 {
     internal const string SelectClaim = "SELECT item, owner, attempt FROM workflow_claims WHERE item = $item";

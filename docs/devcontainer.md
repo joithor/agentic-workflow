@@ -44,4 +44,4 @@ command (`initializeCommand`), capabilities or privileges.
 ## Environment variables
 
 `.env.example` lists every variable the code reads, with its default. The container sets only `AW_STATE_DIR`,
-`DOTNET_CLI_TELEMETRY_OPTOUT` and `DOTNET_NOLOGO`.
+`DOTNET_CLI_TELEMETRY_OPTOUT`, `DOTNET_NOLOGO` and `AVALONIA_TELEMETRY_OPTOUT`.

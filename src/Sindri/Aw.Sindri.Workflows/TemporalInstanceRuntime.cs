@@ -22,7 +22,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="frontend">Finds the dev server serve keeps (Start, unit (b); Get, unit (e); the 'event' signal, unit (d)).</param>
 /// <param name="commands">The answer, command and cancel Updates (unit (b)).</param>
 /// <param name="settings">The task queue instances start on.</param>
-/// <param name="known">The ids this process has seen: every instance it starts or shows.</param>
+/// <param name="known">The ids this process has seen: every instance it starts or queries (a read cache for the id-to-address hop; it holds no instance state).</param>
 internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, TemporalDeskReports deskReports, TemporalCommands commands, TemporalSettings settings, KnownInstances known) : IInstanceRuntime
 {
     /// <summary>How long a Query waits for a worker to answer; past it, status says no worker answered.</summary>
@@ -59,23 +59,44 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         }
         catch (WorkflowAlreadyStartedException) // boundary: the attempt ended; RejectDuplicate keeps its id, and Get shows it as it ended
         {
-            return await Get(address, cancellationToken).ConfigureAwait(false);
+            return Remembered(await Get(address, cancellationToken).ConfigureAwait(false));
         }
         catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal
         {
             return TemporalUpdates.NotServes(client.Value, e);
         }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client.Value, e);
+        }
 
+        return await WaitStarted(address, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Asks every 50 ms whether the new instance has left 'starting', up to <see cref="StartPolls"/> times.</summary>
+    private async ValueTask<Result<InstanceView>> WaitStarted(InstanceAddress address, CancellationToken cancellationToken)
+    {
         for (var poll = 1; ; poll++)
         {
             var view = await Get(address, cancellationToken).ConfigureAwait(false);
             if (view.IsError || view.Value.State != "starting" || poll >= StartPolls)
             {
-                return view;
+                return Remembered(view);
             }
 
             await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>A start remembers the instance it shows (the directory finds its id).</summary>
+    private Result<InstanceView> Remembered(Result<InstanceView> view)
+    {
+        if (view.IsSuccess)
+        {
+            known.Remember(view.Value.Address);
+        }
+
+        return view;
     }
 
     /// <summary>
@@ -96,7 +117,7 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
             var view = await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value)
                 .QueryAsync(static wf => wf.GetInstance(), new WorkflowQueryOptions { Rpc = new RpcOptions { Timeout = QueryPatience, CancellationToken = cancellationToken } })
                 .ConfigureAwait(false);
-            known.Remember(view.Address);
+            known.Remember(address);   // a read cache for the id-to-address hop, not instance state
             return view;
         }
         catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal; says nothing about the instance
@@ -107,7 +128,11 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         {
             return WorkflowErrors.InstanceNotFound.With($"{address.Value} isn't an instance (fix: sindri workflow list, or sindri workflow start)");
         }
-        catch (RpcException e) when (e.Code is RpcException.StatusCode.DeadlineExceeded or RpcException.StatusCode.Unavailable) // boundary: no worker answered
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client.Value, e);
+        }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.DeadlineExceeded) // boundary: no worker answered
         {
             return SindriErrors.ApiTimeout.With($"no worker answered the status query for {address.Value} within {StatusText.Duration(QueryPatience)}: {e.Message} (fix: start sindri serve, which runs the worker)");
         }
@@ -121,8 +146,16 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
     {
         StepCompleted report => deskReports.Complete(address, nonce, report, cancellationToken),   // unit (c)
         AnswerGiven or CommandFired or CancelRequested => commands.Send(address, nonce, command, cancellationToken),   // unit (b)
-        _ => throw new NotSupportedException($"engine P5: the '{command.Name}' Update"),
+        TakeoverRequested or HandbackRequested => commands.Send(address, nonce, command, cancellationToken),   // engine P5
+        _ => throw new NotSupportedException($"the '{command.Name}' trigger is no command Update"),
     };
+
+    /// <summary>
+    /// The 'open-request' Update (UI spec E-6, spec §5.2) with update id <see cref="InstanceIds.OpenRequestUpdate"/>: no
+    /// nonce, actor 'service:engine'.
+    /// </summary>
+    public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, LaunchId launch, CancellationToken cancellationToken) =>
+        commands.OpenRequest(address, new OpenRequested(EngineActor.Name, launch.Value), cancellationToken);
 
     /// <summary>
     /// The bridge's 'event' signal (spec §5.4; unit (d)): Temporal buffers it until the instance reaches the wait. The
@@ -150,6 +183,10 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)   // boundary: no such instance, or it has ended
         {
             return WorkflowErrors.InstanceNotFound.With($"no running instance {address.Value} (fix: sindri workflow list)");
+        }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client.Value, e);
         }
     }
 }

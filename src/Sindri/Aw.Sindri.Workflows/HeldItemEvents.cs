@@ -8,29 +8,30 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <summary>
 /// The bridge's 'route: item' targets and its held window (engine spec §5.4). An item event goes to the item's live
 /// instances as the visibility query lists them, but visibility lags a start: an instance started just before its event
-/// can be missing from the list, and the cursor has moved on by the time it shows up. So every item event delivered
-/// within 'workflow.eventHold' stays in the window, and each bridge run re-sends it to a live instance of its item that
-/// hasn't had it. The workflow drops a repeat by its ledger sequence, and one older than the hold expires there anyway.
-/// The window is in memory: it covers the seconds visibility lags, not a serve restart.
+/// can be missing from the list, and the cursor has moved on by the time it shows up. So every item event stays in the
+/// window for <see cref="VisibilityLag"/> after it was delivered, and each bridge run re-sends it to a live instance of
+/// its item that hasn't had it and that started at or before the event happened. An instance that started after it (a
+/// later attempt) never gets it from the window: the event is not about that attempt. The workflow drops a repeat by its
+/// ledger sequence. The window is in memory: it covers the seconds visibility lags, not a serve restart.
 /// </summary>
 /// <param name="instances">The live instances, by a visibility query on 'Item'.</param>
-/// <param name="times">'workflow.eventHold'.</param>
 /// <param name="clock">The bridge's clock.</param>
-internal sealed class HeldItemEvents(IWorkflowInstances instances, ProfileWorkflowTimes times, TimeProvider clock)
+internal sealed class HeldItemEvents(IWorkflowInstances instances, TimeProvider clock)
 {
+    /// <summary>How long after its delivery an item event stays in the window: the time visibility may lag a start.</summary>
+    internal static readonly TimeSpan VisibilityLag = TimeSpan.FromMinutes(1);
+
     private readonly Lock _gate = new();
     private readonly List<Held> _held = [];
 
     /// <summary>The live instances of <paramref name="item"/>.</summary>
-    /// <param name="item">The item.</param>
+    /// <param name="item">The item (an <see cref="ItemKey"/>'s text).</param>
     /// <param name="cancellationToken">Cancels the query.</param>
     /// <returns>Their addresses.</returns>
     public async ValueTask<Result<IReadOnlyList<InstanceAddress>>> LiveOf(string item, CancellationToken cancellationToken)
     {
-        var live = await instances.List($"Item = '{item.Replace("'", "''", StringComparison.Ordinal)}'", ended: false, cancellationToken).ConfigureAwait(false);
-        return live.IsError
-            ? live.Error
-            : live.Value.Select(static row => InstanceAddress.TryFrom(row.Address, out var address) ? address : (InstanceAddress?)null).OfType<InstanceAddress>().ToList();
+        var live = await Started(item, cancellationToken).ConfigureAwait(false);
+        return live.IsError ? live.Error : live.Value.Select(static i => i.Address).ToList();
     }
 
     /// <summary>Keeps <paramref name="trigger"/> in the window, with the instances that already have it.</summary>
@@ -41,34 +42,42 @@ internal sealed class HeldItemEvents(IWorkflowInstances instances, ProfileWorkfl
     {
         lock (_gate)
         {
-            _held.Add(new Held(item, trigger, [.. signalled]));
+            _held.Add(new Held(item, trigger, clock.GetUtcNow(), [.. signalled]));
         }
     }
 
-    /// <summary>Drops what is past the hold, then lists, per held event, the live instances of its item that haven't had it.</summary>
+    /// <summary>
+    /// Drops what is past the visibility lag, then lists the live instances of each held item (one query per item) that
+    /// haven't had an event and started at or before it.
+    /// </summary>
     /// <param name="cancellationToken">Cancels the queries.</param>
     /// <returns>The deliveries still owed; mark each with <see cref="Delivered"/> once it is sent.</returns>
     public async ValueTask<Result<IReadOnlyList<(WaitSatisfied Trigger, InstanceAddress Target)>>> Owed(CancellationToken cancellationToken)
     {
-        var hold = (await times.Read(cancellationToken).ConfigureAwait(false)).EventHold;
         var now = clock.GetUtcNow();
         Held[] held;
         lock (_gate)
         {
-            _ = _held.RemoveAll(h => h.Trigger.OccurredAt is not { } at || now - at >= hold);
+            _ = _held.RemoveAll(h => h.Trigger.OccurredAt is null || now - h.DeliveredAt >= VisibilityLag);
             held = [.. _held];
         }
 
         List<(WaitSatisfied, InstanceAddress)> owed = [];
-        foreach (var one in held)
+        foreach (var byItem in held.GroupBy(static h => h.Item, StringComparer.Ordinal))
         {
-            var live = await LiveOf(one.Item, cancellationToken).ConfigureAwait(false);
+            var live = await Started(byItem.Key, cancellationToken).ConfigureAwait(false);
             if (live.IsError)
             {
                 return live.Error;
             }
 
-            owed.AddRange(live.Value.Where(a => !one.Signalled.Contains(a)).Select(a => (one.Trigger, a)));
+            foreach (var one in byItem)
+            {
+                var happened = one.Trigger.OccurredAt.GetValueOrDefault(); // why: a held event without a time was dropped above
+                owed.AddRange(live.Value
+                    .Where(i => i.StartedAt is { } started && started <= happened && !one.Signalled.Contains(i.Address))
+                    .Select(i => (one.Trigger, i.Address)));
+            }
         }
 
         return owed;
@@ -88,5 +97,15 @@ internal sealed class HeldItemEvents(IWorkflowInstances instances, ProfileWorkfl
         }
     }
 
-    private sealed record Held(string Item, WaitSatisfied Trigger, HashSet<InstanceAddress> Signalled);
+    private async ValueTask<Result<List<Live>>> Started(string item, CancellationToken cancellationToken)
+    {
+        var live = await instances.List($"Item = '{item.Replace("'", "''", StringComparison.Ordinal)}'", ended: false, cancellationToken).ConfigureAwait(false);
+        return live.IsError
+            ? live.Error
+            : live.Value.Select(static row => InstanceAddress.TryFrom(row.Address, out var address) ? new Live(address, row.StartedAt) : null).OfType<Live>().ToList();
+    }
+
+    private sealed record Live(InstanceAddress Address, DateTimeOffset? StartedAt);
+
+    private sealed record Held(string Item, WaitSatisfied Trigger, DateTimeOffset DeliveredAt, HashSet<InstanceAddress> Signalled);
 }

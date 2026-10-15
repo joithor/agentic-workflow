@@ -57,6 +57,15 @@ public sealed class StartAndEngineTriggerTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Start_taken_over_records_the_callers_actor_and_only_the_takeover_is_the_engines()
+    {
+        var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request() with { TakenOver = true }, Step, EngineFixture.Context(), new FakeEngineRules()));
+
+        var (row, started) = (applied.Changes[0].After, applied.Changes[0].Event);
+        Assert.Equal(("human:thor", "service:engine"), (started.Trigger.Actor, row.Suspension?.Actor));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Child_parked_mirrors_the_park_and_resumed_releases_it()
     {
         var running = At(Item, "running", entry: 4) with { Frame = At(Item, "running", entry: 4).Frame with { Child = ChildId } };

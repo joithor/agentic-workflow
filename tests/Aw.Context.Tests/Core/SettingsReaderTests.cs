@@ -19,6 +19,25 @@ public sealed class SettingsReaderTests
         Assert.Null(settings.Repos);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null, 2)]
+    [InlineData(0, 0)]
+    [InlineData(4, 4)]
+    public void The_cascade_depth_defaults_to_2_and_takes_0_to_4(int? depth, int expected)
+    {
+        var settings = depth is null ? SettingsReader.Read(section: null) : Read("{\"cascadeDepth\":" + depth.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}");
+
+        Assert.Equal(expected, settings.Value.CascadeDepth);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_cascade_depth_over_4_is_SND_CONTEXT_001_at_its_key()
+    {
+        var settings = Read("""{"cascadeDepth":5}""");
+
+        Assert.StartsWith("context.cascadeDepth:", settings.Error.Message, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Every_key_is_read()
     {

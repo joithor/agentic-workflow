@@ -74,18 +74,55 @@ internal sealed class WorkflowsHarness : IDisposable
         return services.BuildServiceProvider();
     }
 
-    /// <summary>The 'temporal' dev server pinned in binaries.lock, with Sindri's namespace (or <paramref name="namespace"/>) and search attributes.</summary>
-    public static Task<WorkflowEnvironment> StartDevServer(string @namespace = TemporalSettings.DefaultNamespace) =>
-        WorkflowEnvironment.StartLocalAsync(new WorkflowEnvironmentStartLocalOptions
+    /// <summary>
+    /// Moves the time-skipping server's clock by <paramref name="by"/>, as 'WorkflowEnvironment.DelayAsync' does, but with an RPC
+    /// timeout of 3 minutes: the SDK's own call gives up after 30 s of wall clock, which a loaded box can spend on the server
+    /// replaying the workflow tasks the skip wakes.
+    /// </summary>
+    /// <param name="environment">The time-skipping environment.</param>
+    /// <param name="by">How far to move the clock.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>When the clock has moved.</returns>
+    public static async Task Skip(WorkflowEnvironment environment, TimeSpan by, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(environment);
+        _ = await environment.Client.Connection.TestService.UnlockTimeSkippingWithSleepAsync(
+            new Temporalio.Api.TestService.V1.SleepRequest { Duration = Google.Protobuf.WellKnownTypes.Duration.FromTimeSpan(by) },
+            new RpcOptions { Timeout = TimeSpan.FromMinutes(3), CancellationToken = cancellationToken });
+    }
+
+    /// <summary>
+    /// The 'temporal' dev server pinned in binaries.lock, with Sindri's namespace (or <paramref name="namespace"/>) and search attributes.
+    /// The SDK picks the server's port (bind 0, read, release) and the server then binds it, so a parallel test can take it in between
+    /// ("bind: address already in use"); that start is tried again, three times at most.
+    /// </summary>
+    public static async Task<WorkflowEnvironment> StartDevServer(string @namespace = TemporalSettings.DefaultNamespace, CancellationToken ct = default)
+    {
+        const int Attempts = 3;
+        for (var attempt = 1; ; attempt++)
         {
-            Namespace = @namespace,
-            UI = false,
-            DevServerOptions = new DevServerOptions
+            try
             {
-                ExistingPath = PinnedTemporal.Path(),
-                ExtraArgs = [.. SindriTemporal.SearchAttributes.SelectMany(static a => new[] { "--search-attribute", $"{a.Name}={a.Type}" })],
-            },
-        });
+                return await WorkflowEnvironment.StartLocalAsync(new WorkflowEnvironmentStartLocalOptions
+                {
+                    Namespace = @namespace,
+                    UI = false,
+                    DevServerOptions = new DevServerOptions
+                    {
+                        ExistingPath = PinnedTemporal.Path(),
+                        ExtraArgs = [.. SindriTemporal.SearchAttributes.SelectMany(static a => new[] { "--search-attribute", $"{a.Name}={a.Type}" })],
+                    },
+                }).WaitAsync(TimeSpan.FromSeconds(120), ct);   // a dev server that never comes up fails the test instead of hanging the lane
+            }
+            catch (Exception e) when (attempt < Attempts && !ct.IsCancellationRequested && e is not TimeoutException && IsPortTaken(e))
+            {
+                await Console.Error.WriteLineAsync(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"dev server start {attempt} of {Attempts} lost its port ({e.Message.ReplaceLineEndings(" ")}); starting again"));
+            }
+        }
+    }
+
+    private static bool IsPortTaken(Exception e) =>
+        e.ToString().Contains("address already in use", StringComparison.OrdinalIgnoreCase);
 
     public static string Target(WorkflowEnvironment env) => env.Client.Connection.Options.TargetHost!;
 
@@ -199,7 +236,18 @@ internal sealed class WorkflowsHarness : IDisposable
         InstanceView? last = null;
         while (DateTime.UtcNow < deadline)
         {
-            last = await handle.QueryAsync(static wf => wf.GetInstance());
+            // why: an unbounded Query can sit on a time-skipping server (a replay waiting for a worker) until the test's own timeout; 25 s is past the 10 s sticky-queue wait a restarted worker leaves behind
+            var ct = TestContext.Current.CancellationToken;
+            var query = new WorkflowQueryOptions { Rpc = new RpcOptions { Timeout = TimeSpan.FromSeconds(25), CancellationToken = ct } };
+            try
+            {
+                last = await handle.QueryAsync(static wf => wf.GetInstance(), query);
+            }
+            catch (Exception e) when (!ct.IsCancellationRequested && e is Temporalio.Exceptions.RpcException { Code: Temporalio.Exceptions.RpcException.StatusCode.DeadlineExceeded or Temporalio.Exceptions.RpcException.StatusCode.Cancelled or Temporalio.Exceptions.RpcException.StatusCode.Unknown } or Temporalio.Exceptions.RpcTimeoutOrCanceledException)
+            {
+                continue;   // boundary: one slow Query; the loop's deadline decides when to give up
+            }
+
             if (holds(last))
             {
                 return last;

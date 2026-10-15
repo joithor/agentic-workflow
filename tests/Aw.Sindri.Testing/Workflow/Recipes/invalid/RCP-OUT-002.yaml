@@ -1,0 +1,17 @@
+schema: 1
+id: workflow.output-not-produced
+version: 1
+outputs:
+  - { key: fact:report, type: file, from: produce }
+initial: produce
+states:
+  produce:
+    kind: active
+    step: step.produce
+    timeout: { after: 4h, then: park }
+    next: "Produce the Step output."
+  done:
+    kind: terminal
+    outcome: resolved
+transitions:
+  - { from: produce, to: done, on: step.completed, when: { outcome: done } }

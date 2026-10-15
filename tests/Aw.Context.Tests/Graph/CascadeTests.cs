@@ -1,0 +1,225 @@
+using Aw.Context.Core.Graph;
+using Aw.Context.Testing.Graph;
+
+namespace Aw.Context.Tests.Graph;
+
+/// <summary>The cascade (spec §6.1): own scope free, typed steps cost 1, ascend free and never re-entering own scope, a depth cap and shortest paths.</summary>
+public sealed class CascadeTests
+{
+    private const string Orientation = "feature:layout.split-pane.orientation";
+    private const string TabManager = "feature:tabs.tab-manager";
+
+    [Fact, Trait("Lane", "unit")]
+    public void Orientation_affects_the_tab_manager_at_depth_1_through_pane_layout()
+    {
+        var result = Cascade.Affects(FixtureGraph.Applied(), FixtureGraph.Key(Orientation), depth: 2);
+
+        var affected = Assert.Single(result.Affected);
+        Assert.Equal((TabManager, 1), (affected.Node.Value, affected.Depth));
+        Assert.Equal([Orientation, "owns surface:command/toggle-orientation", "owns action:split-pane.toggle-orientation", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"], affected.Path);
+        Assert.Equal([EdgeType.PartOf, EdgeType.On, EdgeType.Writes, EdgeType.Reads], affected.Edges.Select(e => e.Type));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Own_scope_is_the_anchor_its_surfaces_and_their_actions_and_never_its_sibling()
+    {
+        var result = Cascade.Affects(FixtureGraph.Applied(), FixtureGraph.Key(Orientation), depth: 2);
+
+        Assert.Equal([Orientation, "action:split-pane.toggle-orientation", "surface:command/toggle-orientation"], result.OwnScope.Select(k => k.Value), StringComparer.Ordinal);
+        Assert.DoesNotContain(result.Affected, a => a.Node.Value == "feature:layout.pane-resize");
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_parent_feature_takes_its_descendant_features_into_own_scope()
+    {
+        var result = Cascade.Affects(FixtureGraph.Applied(), FixtureGraph.Key("feature:layout.split-pane"), depth: 2);
+
+        Assert.Contains(result.OwnScope, k => k.Value == "feature:layout.pane-resize");
+        Assert.Contains(result.OwnScope, k => k.Value == "action:pane-resize.resize-focused");
+        Assert.Equal([TabManager], result.Affected.Select(a => a.Node.Value), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_descendant_feature_is_an_owns_hop_of_its_parent_and_the_path_names_every_hop_down_to_the_action()
+    {
+        var result = Cascade.Affects(FixtureGraph.Applied(), FixtureGraph.Key("feature:layout.split-pane"), depth: 2);
+
+        var affected = Assert.Single(result.Affected);
+        // both descendant features write pane-layout at the same depth with three owns hops: the first in key order (pane-resize) claims it
+        Assert.Equal(["feature:layout.split-pane", "owns feature:layout.pane-resize", "owns surface:setting/paneResizeStep", "owns action:pane-resize.resize-focused", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"],
+            affected.Path);
+        Assert.Equal([EdgeType.PartOf, EdgeType.PartOf, EdgeType.On, EdgeType.Writes, EdgeType.Reads], affected.Edges.Select(e => e.Type));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_surface_anchor_starts_its_path_at_the_surface_and_owns_only_its_actions()
+    {
+        var result = Cascade.Affects(FixtureGraph.Applied(), FixtureGraph.Key("surface:command/toggle-orientation"), depth: 2);
+
+        Assert.Equal(["surface:command/toggle-orientation", "action:split-pane.toggle-orientation"], result.OwnScope.Select(k => k.Value), StringComparer.Ordinal);
+        var affected = Assert.Single(result.Affected);
+        Assert.Equal(["surface:command/toggle-orientation", "owns action:split-pane.toggle-orientation", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"], affected.Path);
+        Assert.Equal([EdgeType.On, EdgeType.Writes, EdgeType.Reads], affected.Edges.Select(e => e.Type));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_surface_under_two_own_scope_features_is_reached_through_the_first_in_key_order_only_once()
+    {
+        var graph = new GraphBuilder()
+            .Edge("feature:c", EdgeType.PartOf, "feature:p")
+            .Edge("surface:screen/s", EdgeType.PartOf, "feature:p").Edge("surface:screen/s", EdgeType.PartOf, "feature:c")
+            .Edge("action:s1", EdgeType.On, "surface:screen/s").Edge("action:s1", EdgeType.Writes, "thing:t").Edge("action:x1", EdgeType.Reads, "thing:t")
+            .Build();
+
+        var result = Cascade.Affects(graph, NodeKey.From("feature:p"), depth: 2);
+
+        Assert.Equal(1, result.OwnScope.Count(k => k.Value == "surface:screen/s"));
+        var affected = Assert.Single(result.Affected);
+        Assert.Equal(["feature:p", "owns surface:screen/s", "owns action:s1", "writes thing:t", "reads action:x1"], affected.Path);
+        Assert.Equal([("surface:screen/s", "feature:p"), ("action:s1", "surface:screen/s"), ("action:s1", "thing:t"), ("action:x1", "thing:t")],
+            affected.Edges.Select(e => (e.From.Value, e.To.Value)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Between_equally_deep_paths_the_one_with_the_fewest_owns_hops_wins_even_when_it_sorts_later()
+    {
+        var graph = new GraphBuilder()
+            .Edge("surface:screen/a", EdgeType.PartOf, "feature:a").Edge("action:a1", EdgeType.On, "surface:screen/a")
+            .Edge("action:a1", EdgeType.Writes, "thing:t").Edge("surface:screen/a", EdgeType.Writes, "thing:t")
+            .Edge("action:x1", EdgeType.Reads, "thing:t")
+            .Build();
+
+        var affected = Assert.Single(Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 1).Affected);
+
+        Assert.Equal(["feature:a", "owns surface:screen/a", "writes thing:t", "reads action:x1"], affected.Path);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_later_frontier_prefers_the_fewest_owns_hops_even_when_the_longer_path_sorts_first()
+    {
+        // z1 is reached with one owns hop, y1 with two; y1 sorts first by key. Both lead to x1 one step further.
+        var graph = new GraphBuilder()
+            .Edge("surface:screen/s", EdgeType.PartOf, "feature:a").Edge("action:s1", EdgeType.On, "surface:screen/s")
+            .Edge("surface:screen/s", EdgeType.Writes, "thing:t").Edge("action:z1", EdgeType.Reads, "thing:t")
+            .Edge("action:s1", EdgeType.Writes, "thing:u").Edge("action:y1", EdgeType.Reads, "thing:u")
+            .Edge("action:z1", EdgeType.Writes, "thing:v").Edge("action:y1", EdgeType.Writes, "thing:w")
+            .Edge("action:x1", EdgeType.Reads, "thing:v").Edge("action:x1", EdgeType.Reads, "thing:w")
+            .Build();
+
+        var result = Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 2);
+
+        var x1 = Assert.Single(result.Affected, a => a.Node.Value == "action:x1");
+        Assert.Equal(2, x1.Depth);
+        Assert.Equal(["feature:a", "owns surface:screen/s", "writes thing:t", "reads action:z1", "writes thing:v", "reads action:x1"], x1.Path);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_sibling_is_not_affected_unless_a_step_reaches_it()
+    {
+        var graph = Features("a", "b").Edge("feature:a", EdgeType.PartOf, "feature:p").Edge("feature:b", EdgeType.PartOf, "feature:p")
+            .Edge("action:a1", EdgeType.Writes, "thing:t").Build();
+
+        var result = Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 4);
+
+        Assert.Empty(result.Affected);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_ascended_feature_does_not_re_enter_own_scope_but_its_reached_action_steps_on()
+    {
+        var graph = Features("a", "b", "c", "d")
+            .Edge("action:a1", EdgeType.Writes, "thing:t")
+            .Edge("action:b1", EdgeType.Reads, "thing:t")
+            .Edge("action:b1", EdgeType.Writes, "thing:v")
+            .Edge("action:d1", EdgeType.Reads, "thing:v")
+            .Edge("action:b2", EdgeType.On, "surface:screen/b2").Edge("surface:screen/b2", EdgeType.PartOf, "feature:b")
+            .Edge("action:b2", EdgeType.Writes, "thing:u")
+            .Edge("action:c1", EdgeType.Reads, "thing:u")
+            .Build();
+
+        var result = Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 3);
+
+        Assert.Equal([("feature:b", 1), ("feature:d", 2)], result.Affected.Select(a => (a.Node.Value, a.Depth)));
+        Assert.Equal(["feature:a", "owns surface:screen/a", "owns action:a1", "writes thing:t", "reads action:b1", "writes thing:v", "reads action:d1"], result.Affected[1].Path);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_dependency_hop_costs_one_and_chains()
+    {
+        var graph = new GraphBuilder().Edge("feature:b", EdgeType.DependsOn, "feature:a").Edge("feature:c", EdgeType.DependsOn, "feature:b").Build();
+
+        var result = Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 2);
+
+        Assert.Equal([("feature:b", 1), ("feature:c", 2)], result.Affected.Select(a => (a.Node.Value, a.Depth)));
+        Assert.Equal(["feature:a", "depended-on-by feature:b", "depended-on-by feature:c"], result.Affected[1].Path);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_flow_hop_reaches_the_next_step_of_a_shared_flow()
+    {
+        var graph = Features("a", "g")
+            .Edge("action:a1", EdgeType.StepOf, "flow:f", order: 1)
+            .Edge("action:g1", EdgeType.StepOf, "flow:f", order: 2)
+            .Build();
+
+        var affected = Assert.Single(Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 1).Affected);
+
+        Assert.Equal(("feature:g", 1), (affected.Node.Value, affected.Depth));
+        Assert.Equal(["feature:a", "owns surface:screen/a", "owns action:a1", "step-of flow:f", "next action:g1"], affected.Path);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(2, 2)]
+    public void The_depth_cap_stops_the_walk(int depth, int expected)
+    {
+        var graph = new GraphBuilder().Edge("feature:b", EdgeType.DependsOn, "feature:a").Edge("feature:c", EdgeType.DependsOn, "feature:b").Build();
+
+        Assert.Equal(expected, Cascade.Affects(graph, NodeKey.From("feature:a"), depth).Affected.Count);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_cycle_ends_and_each_node_is_reported_once_at_its_shortest_depth()
+    {
+        var graph = Features("a", "b")
+            .Edge("action:a1", EdgeType.Writes, "thing:t").Edge("action:b1", EdgeType.Reads, "thing:t")
+            .Edge("action:b1", EdgeType.Writes, "thing:u").Edge("action:a1", EdgeType.Reads, "thing:u")
+            .Build();
+
+        var result = Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 4);
+
+        Assert.Equal([("feature:b", 1)], result.Affected.Select(a => (a.Node.Value, a.Depth)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_reached_action_with_no_surface_is_reported_as_itself()
+    {
+        var graph = Features("a").Edge("action:a1", EdgeType.Writes, "thing:t").Edge("action:loose", EdgeType.Reads, "thing:t").Build();
+
+        var affected = Assert.Single(Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 1).Affected);
+
+        Assert.Equal("action:loose", affected.Node.Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_thing_anchor_affects_what_reads_it()
+    {
+        var affected = Assert.Single(Cascade.Affects(FixtureGraph.Applied(), FixtureGraph.Key("thing:pane-layout"), depth: 1).Affected);
+
+        Assert.Equal(TabManager, affected.Node.Value);
+        Assert.Equal(["thing:pane-layout", "reads action:tab-manager.restore-layout"], affected.Path);
+    }
+
+    /// <summary>Each feature 'feature:x' with a surface 'surface:screen/x' and an action 'action:x1' on it.</summary>
+    private static GraphBuilder Features(params string[] names)
+    {
+        var builder = new GraphBuilder();
+        foreach (var name in names)
+        {
+            _ = builder.Edge($"surface:screen/{name}", EdgeType.PartOf, $"feature:{name}").Edge($"action:{name}1", EdgeType.On, $"surface:screen/{name}");
+        }
+
+        return builder;
+    }
+}

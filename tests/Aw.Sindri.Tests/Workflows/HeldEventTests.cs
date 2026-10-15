@@ -19,7 +19,7 @@ public sealed class HeldEventTests(SindriTimeSkippingServer server) : IClassFixt
 
     public void Dispose() => _harness.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Held_event_expires()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -41,14 +41,18 @@ public sealed class HeldEventTests(SindriTimeSkippingServer server) : IClassFixt
             var rows = await WorkflowRows(sindri, static types => types.Contains("workflow.expired", StringComparer.Ordinal), ct);
 
             Assert.Equal(["workflow.started", "workflow.expired"], rows);
+            var expired = System.Text.Json.JsonDocument.Parse((await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 100, ct)).Value.Single(static e => e.Envelope.Type == "workflow.expired").Envelope.Payload).RootElement.GetProperty("detail");
+            Assert.Equal("service:workflow.events", expired.GetProperty("triggerActor").GetString());   // the expired event's own trigger
+            Assert.EndsWith(":" + held.KeyPart, expired.GetProperty("triggerId").GetString(), StringComparison.Ordinal);
+            Assert.Equal(7, expired.GetProperty("sourceSequence").GetInt64());
             Assert.Equal("triaged", (await WorkflowsHarness.Until(handle, static _ => true)).State);
             Assert.Null((await InterpreterEvalTests.Replay(handle, ct)).ReplayFailure);
             await handle.TerminateAsync("test over");
         }, ct);
     }
 
-    [Fact]
-    public async Task An_event_older_than_the_hold_when_it_arrives_is_dropped_instead_of_moving_the_wait()
+    [Fact(Timeout = 120_000)]
+    public async Task An_event_that_fits_the_wait_is_consumed_even_when_it_arrives_older_than_the_hold()
     {
         var ct = TestContext.Current.CancellationToken;
         var env = server.Environment;
@@ -62,8 +66,33 @@ public sealed class HeldEventTests(SindriTimeSkippingServer server) : IClassFixt
             var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.RecipeStart(sindri, "workflow.item", "T-62", ct));
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "triaged");
 
-            // why: the bridge delivered it late (serve was down for a day); it fits the wait but is past the hold
-            var stale = Event("item.routed", 8, OutcomeName.From("notStartable")) with { OccurredAt = DateTimeOffset.UtcNow - TimeSpan.FromHours(25) };
+            // why: the bridge delivered it late (serve was down for a day); it fits the wait, so it satisfies it (§5.4: only a buffered signal expires)
+            var late = Event("item.routed", 8, OutcomeName.From("notStartable")) with { OccurredAt = DateTimeOffset.UtcNow - TimeSpan.FromHours(25) };
+            await handle.SignalAsync(wf => wf.EventAsync(late));
+            var result = await handle.GetResultAsync();
+            var rows = await WorkflowRows(sindri, static types => types.Count >= 2, ct);
+
+            Assert.Equal(("dropped", "unresolved"), (result.State, result.Outcome));
+            Assert.Equal(["workflow.started", "workflow.transition"], rows);
+        }, ct);
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task An_event_that_fits_no_wait_and_arrives_older_than_the_hold_is_dropped()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var env = server.Environment;
+        await using var sindri = _harness.Sindri();
+        await WorkflowsHarness.HoldLease(sindri, ct);
+        _harness.Recipe("workflow.item", WorkflowsHarness.Shipped("sindri/workflow.item.yaml"));
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.RecipeStart(sindri, "workflow.item", "T-63", ct));
+            _ = await WorkflowsHarness.Until(handle, static v => v.State == "triaged");
+
+            var stale = Event("claim.created", 9, outcome: null) with { OccurredAt = DateTimeOffset.UtcNow - TimeSpan.FromHours(25) };
             await handle.SignalAsync(wf => wf.EventAsync(stale));
             var rows = await WorkflowRows(sindri, static types => types.Contains("workflow.expired", StringComparer.Ordinal), ct);
 

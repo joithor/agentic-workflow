@@ -35,7 +35,7 @@ public static partial class TransitionDecision
         }
 
         var entered = entering.Value;
-        var taking = request.TakenOver ? rules.TakeOver(entered.After, request.Actor) : entered.After;
+        var taking = request.TakenOver ? rules.TakeOver(entered.After, EngineActor.Name) : entered.After;
         if (taking.IsError)
         {
             return new Rejected(request.Key, taking.Error);

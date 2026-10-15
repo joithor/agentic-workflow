@@ -25,7 +25,7 @@ internal sealed class HomeFactStore(WorkflowsHome home) : IFactStore, IFactConte
         var file = Path.Combine(home.FactsDirectory, sha);
         try
         {
-            if (File.Exists(file))
+            if (File.Exists(file) && new FileInfo(file).Length == content.Length)   // why: a file of another size (an empty one a crash left) is rewritten
             {
                 return fact;
             }
@@ -42,6 +42,7 @@ internal sealed class HomeFactStore(WorkflowsHome home) : IFactStore, IFactConte
             await using (stream.ConfigureAwait(false))
             {
                 await stream.WriteAsync(content, cancellationToken).ConfigureAwait(false);
+                stream.Flush(flushToDisk: true);   // why: the move must not publish a name whose bytes a power cut could still lose
             }
 
             File.Move(temporary, file, overwrite: true);

@@ -18,4 +18,12 @@ public sealed record DecisionContext(
     ApprovalCheck Approval,
     BlockCatalog Catalog,
     IReadOnlySet<BlockId> Runtimes,
-    IChildRecipeResolver Children);
+    IChildRecipeResolver Children)
+{
+    /// <summary>
+    /// The profile's 'workflow.deskTimeout' (W20): a desk Step's timer runs at least this long, and the park its expiry
+    /// leaves names the time the Step had. Defaults to W20's 2d (Runtime.DeskTimeouts.DefaultFloor, which this namespace
+    /// can't name without a namespace cycle).
+    /// </summary>
+    public TimeSpan DeskTimeout { get; init; } = TimeSpan.FromDays(2);
+}

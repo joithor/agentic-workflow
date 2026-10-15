@@ -135,6 +135,15 @@
       "at": null
     },
     {
+      "key": "surface:command/switch-tab",
+      "label": "Switch tab (command)",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "attributes": null,
+      "at": null
+    },
+    {
       "key": "surface:command/toggle-orientation",
       "label": "Toggle split orientation (command)",
       "provenance": "human",
@@ -216,6 +225,16 @@
       "from": "action:split-pane.toggle-orientation",
       "to": "thing:pane-layout",
       "type": "writes",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "action:tab-manager.restore-layout",
+      "to": "surface:command/switch-tab",
+      "type": "on",
       "provenance": "human",
       "confidence": 1,
       "evidence": null,
@@ -330,6 +349,16 @@
     {
       "from": "surface:command/split-vertical",
       "to": "feature:layout.split-pane",
+      "type": "part-of",
+      "provenance": "human",
+      "confidence": 1,
+      "evidence": null,
+      "order": null,
+      "at": null
+    },
+    {
+      "from": "surface:command/switch-tab",
+      "to": "feature:tabs.tab-manager",
       "type": "part-of",
       "provenance": "human",
       "confidence": 1,

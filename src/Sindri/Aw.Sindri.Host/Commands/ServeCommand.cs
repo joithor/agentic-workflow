@@ -21,7 +21,7 @@ namespace Aw.Sindri.Host.Commands;
 /// lease, so a second serve is refused before it binds the port; then it listens, records the endpoint, and runs until a
 /// stop request, SIGTERM/SIGINT or a lost lease. A failure to listen records the stop and releases the lease. SIGHUP is
 /// ignored so closing the terminal doesn't stop it. Once the lease is taken (so a refused second serve never replaces the
-/// running one's token) it mints the per-start human token, and removes it on the way out (after the stop has removed control.json and released the lease; only while it is still this start's token). Every
+/// running one's token) it mints the per-start human token, and the stop removes it beside control.json (only while it is still this start's token); serve drops it again on the way out for a stop that had no lease or whose removal failed. Every
 /// in-process call runs as the caller 'service:host', the only place that caller is set (API spec §2.1).
 /// </summary>
 internal static class ServeCommand
@@ -94,14 +94,12 @@ internal static class ServeCommand
         catch (Exception e) when (e is IOException or SocketException)   // taken, privileged or refused
         {
             _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.PortInUse)).ConfigureAwait(false);
-            await DropToken(app).ConfigureAwait(false);
             await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} {e.Message} (fix: free the port, or set AW_SINDRI_PORT)").ConfigureAwait(false);
             return false;
         }
         catch (Exception e)   // a hosted service refused to start (ServeListenerCheck among them): never leave the lease held
         {
             _ = await Call<StopProcessRequest, StopProcessResponse>(app, new StopProcessRequest(StopReason.ListenFailed)).ConfigureAwait(false);
-            await DropToken(app).ConfigureAwait(false);
             await error.WriteLineAsync($"{SindriErrors.PortInUse.Code} serve couldn't start listening: {e.Message} (fix: see the log above; run sindri doctor)").ConfigureAwait(false);
             return false;
         }

@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
@@ -42,21 +43,56 @@ internal sealed partial class RecipeWorkflow
     }
 
     /// <summary>
-    /// Waits for the next trigger and decides it (§5.4, §5.8): in a wait state, the first delivered event that fits its
-    /// 'waitFor' or a submitted command, whichever is first; parked, escalated or taken over, a submitted command. Wait
-    /// timeouts are P5's. A child wait is P7's: the child isn't started yet, so only its delivered end or a command moves it.
+    /// Lets every Update that is still waiting on the loop finish once the instance has ended (engine P5 review): a command
+    /// the Update that ended it left queued (a takeover validated beside a cancel) is decided on the ended instance, which
+    /// refuses it (SND-WF-003), and a desk report that was never applied is refused; then the handlers return their results.
+    /// </summary>
+    private async Task SettleLeftovers(WorkflowInstance ended, Interpreting context)
+    {
+        while (true)
+        {
+            while (_submitted.TryDequeue(out var left))
+            {
+                _decided[left.Ticket] = TransitionDecision.Decide(new DecisionInput(ended, context.Recipe, left.Trigger, GateAnswers.None, context.Decisions));
+            }
+
+            if (_reportId is { } reportId)
+            {
+                _report = null;
+                _reportId = null;
+                Settle(reportId, new Reported(Result: null, WorkflowErrors.TriggerNotAllowed.With($"{ended.Address.Value} ended before the report was applied (fix: run status)")));
+            }
+
+            if (Workflow.AllHandlersFinished)
+            {
+                return;
+            }
+
+            await Workflow.WaitConditionAsync(() => Workflow.AllHandlersFinished || _submitted.Count > 0 || _reportId is not null).ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>
+    /// Waits for the next trigger and decides it (§5.4, §5.5, §5.8): in a wait state, the first delivered event that fits
+    /// its 'waitFor', a submitted command, or its timer running out, whichever is first; parked, escalated or taken over,
+    /// a submitted command (a park stops the timer). A child wait is P7's: the child isn't started yet, so only its
+    /// delivered end, a command or its timer moves it.
     /// </summary>
     private async Task<WorkflowInstance> Wait(WorkflowInstance instance, Interpreting context)
     {
         var wait = instance.Suspension is null && context.Recipe.States.TryGetValue(instance.Frame.State, out var state) ? state.WaitFor : null;
-        if (!await WaitHolding(() => _submitted.Count > 0 || _delivered.Any(e => Fits(e, wait, instance.Frame)), instance).ConfigureAwait(true))
+        if (!await WaitHolding(() => _submitted.Count > 0 || _timers.Fired || _delivered.Any(e => Fits(e, wait, instance.Frame)), instance, wait).ConfigureAwait(true))
         {
             return instance;   // woke only to expire a held event (§5.4); wait again
         }
 
-        return _submitted.TryDequeue(out var submission)
-            ? await Apply(instance, submission, context).ConfigureAwait(true)
-            : await Apply(instance, new Submission(Ticket: 0, Take(wait, instance.Frame)), context).ConfigureAwait(true);
+        if (_submitted.TryDequeue(out var submission))
+        {
+            return await Apply(instance, submission, context).ConfigureAwait(true);
+        }
+
+        Trigger next = _delivered.Any(e => Fits(e, wait, instance.Frame)) ? Take(wait, instance.Frame) : _timers.Take()!; // why: WaitHolding woke for an event that fits or a fired timer
+        return await Apply(instance, new Submission(Ticket: 0, next), context).ConfigureAwait(true);
     }
 
     /// <summary>
@@ -69,7 +105,7 @@ internal sealed partial class RecipeWorkflow
         var after = After(instance, decision);
         if (OwnChange(instance, decision) is { } change)
         {
-            Enter(after);
+            after = Enter(after);
             await Mirror(Record(instance, change, submission.Trigger), NeedsYou(after)).ConfigureAwait(true);
             Emit(instance, after, EffectsOf(decision), change.Event.Type);   // a takeoverIdle row (P5) is an engine notice
         }
@@ -135,16 +171,20 @@ internal sealed partial class RecipeWorkflow
             _ => null,
         },
         before.Frame.Run?.Token.Value,
-        Ids(change.Event.Effects));
+        trigger.Actor,
+        Detail: WorkflowEventDetail.Of(change.Event, trigger),
+        Causation: (trigger as OpenRequested)?.Launch);
 
-    private static string TypeOf(WorkflowEventType type) => type switch
+    internal static string TypeOf(WorkflowEventType type) => type switch
     {
         WorkflowEventType.Started => EventTypes.WorkflowStarted,
-        WorkflowEventType.Refused => "workflow.refused",
-        WorkflowEventType.Shifted => "workflow.shifted",
-        WorkflowEventType.Notified => "workflow.notified",
-        WorkflowEventType.Expired => "workflow.expired",
-        WorkflowEventType.EffectRefused => "workflow.effect-refused",
+        WorkflowEventType.Refused => EventTypes.WorkflowRefused,
+        WorkflowEventType.Shifted => EventTypes.WorkflowShifted,
+        WorkflowEventType.Notified => EventTypes.WorkflowNotified,
+        WorkflowEventType.Expired => EventTypes.WorkflowExpired,
+
+        // why: spec 5.7 names a dispatch refusal 'outbox.refused', written by P6's recheck; P4 runs no effects, so there is no kind to emit yet
+        WorkflowEventType.EffectRefused => throw new NotSupportedException("an effect refusal is mirrored from P6 (outbox.refused)"),
         WorkflowEventType.Transition or _ => EventTypes.WorkflowTransition,
     };
 

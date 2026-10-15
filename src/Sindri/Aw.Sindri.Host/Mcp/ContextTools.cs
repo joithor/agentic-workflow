@@ -103,7 +103,7 @@ internal static class ContextTools
         }
 
         return new QueryContextRequest(Get(texts, "q"), Get(texts, "node"), Get(texts, "item"), Get(texts, "symbol"),
-            numbers.TryGetValue("depth", out var depth) ? depth : null, numbers.TryGetValue("budget", out var budget) ? budget : null);
+            numbers.TryGetValue("depth", out var depth) ? depth.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, numbers.TryGetValue("budget", out var budget) ? budget.ToString(System.Globalization.CultureInfo.InvariantCulture) : null);
     }
 
     /// <summary>One argument into its map; false for an unknown name or a wrong type. An optional argument sent as null is absent.</summary>

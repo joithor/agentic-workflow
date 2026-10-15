@@ -2,6 +2,7 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 namespace Aw.Sindri.Testing.Workflow;
@@ -19,7 +20,7 @@ public sealed class InMemoryCommandNonces(TimeProvider clock) : ICommandNonces
         CommandNonce.From(Interlocked.Increment(ref _issued).ToString("x32", CultureInfo.InvariantCulture));
 
     /// <inheritdoc/>
-    public ValueTask<Result<bool>> Claim(CommandNonce nonce, string subject, CancellationToken cancellationToken)
+    public ValueTask<Result<NonceClaim>> Claim(CommandNonce nonce, string subject, CancellationToken cancellationToken)
     {
         lock (_gate)
         {
@@ -27,29 +28,28 @@ public sealed class InMemoryCommandNonces(TimeProvider clock) : ICommandNonces
             if (!_claims.TryGetValue(nonce, out var claim))
             {
                 _claims[nonce] = (subject, now, false);
-                return ValueTask.FromResult<Result<bool>>(false);
+                return ValueTask.FromResult<Result<NonceClaim>>(NonceClaim.Fresh);
             }
 
-            return ValueTask.FromResult<Result<bool>>(claim switch
+            return ValueTask.FromResult<Result<NonceClaim>>(claim switch
             {
                 _ when now - claim.At > ICommandNonces.Lifetime =>
-                    WorkflowErrors.NonceRefused.With($"nonce {nonce.Value} expired (fix: run the command again; the CLI fetches a new nonce)"),
+                    NonceExpiry.Refusal(nonce, string.Equals(claim.Subject, subject, StringComparison.Ordinal), claim.Applied),
                 _ when !string.Equals(claim.Subject, subject, StringComparison.Ordinal) =>
                     WorkflowErrors.NonceRefused.With($"nonce {nonce.Value} was used for another command (fix: run the command again; the CLI fetches a new nonce)"),
-                _ => claim.Applied,
+                _ => claim.Applied ? NonceClaim.Applied : NonceClaim.Pending,
             });
         }
     }
 
     /// <inheritdoc/>
-    public ValueTask<Result<Unit>> Applied(CommandNonce nonce, CancellationToken cancellationToken)
+    public ValueTask<Result<Unit>> Applied(CommandNonce nonce, string subject, CancellationToken cancellationToken)
     {
         lock (_gate)
         {
-            if (_claims.TryGetValue(nonce, out var claim))
-            {
-                _claims[nonce] = claim with { Applied = true };
-            }
+            _claims[nonce] = _claims.TryGetValue(nonce, out var claim)
+                ? claim with { Applied = true }
+                : (subject, clock.GetUtcNow(), true);   // the claim was given back or swept meanwhile: the command applied, so record that
         }
 
         return ValueTask.FromResult<Result<Unit>>(Unit.Value);

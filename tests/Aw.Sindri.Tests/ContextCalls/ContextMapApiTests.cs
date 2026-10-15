@@ -15,8 +15,22 @@ namespace Aw.Sindri.Tests.ContextCalls;
 /// <summary>The map routes (S-3a): GET /sindri/context/map, GET /sindri/context/map/export, POST /sindri/context/map/import (protected).</summary>
 public sealed class ContextMapApiTests
 {
-    private static string Body(string path, string? hash = null, bool confirmed = false) =>
-        JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal) { ["path"] = path, ["hash"] = hash, ["confirmed"] = confirmed });
+    private static string Body(string path, string? hash = null, (string Challenge, string Typed)? answer = null) =>
+        JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["path"] = path,
+            ["hash"] = hash,
+            ["answer"] = answer is { } a ? new Dictionary<string, string>(StringComparer.Ordinal) { ["challenge"] = a.Challenge, ["typed"] = a.Typed } : null,
+        });
+
+    /// <summary>The preview's content hash and the challenge it issued.</summary>
+    private static (string Hash, string Challenge, string Action) Issued(string previewBody)
+    {
+        var root = JsonDocument.Parse(previewBody).RootElement;
+        var challenge = root.GetProperty("challenge");
+        return (root.GetProperty("preview").GetProperty("hash").GetString() ?? string.Empty, challenge.GetProperty("challenge").GetString() ?? string.Empty,
+            challenge.GetProperty("action").GetString() ?? string.Empty);
+    }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
     public async Task Without_a_map_status_is_SND_CONTEXT_030()
@@ -29,25 +43,73 @@ public sealed class ContextMapApiTests
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task A_human_at_a_terminal_previews_then_imports_with_the_confirmed_hash_and_the_import_is_recorded()
+    public async Task A_human_at_a_terminal_previews_then_imports_by_answering_the_challenge_and_the_import_is_recorded()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Approved(sessions: false, ct);
         var file = FixtureMap.WriteTo(host.Home);
 
         var preview = await host.Http.Ask(Post("/sindri/context/map/import", Body(file), Human(host.Token.Value)));
-        var hash = JsonDocument.Parse(preview.Body).RootElement.GetProperty("preview").GetProperty("hash").GetString()!;   // why: a preview always carries the hash
-        var unconfirmed = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash), Human(host.Token.Value)));
-        var imported = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash, confirmed: true), Human(host.Token.Value)));
+        var (hash, challenge, action) = Issued(preview.Body);
+        var unanswered = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash), Human(host.Token.Value)));
+        var imported = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash, (challenge, action)), Human(host.Token.Value)));
         var status = await host.Http.Ask(Get("/sindri/context/map", Human(host.Token.Value)));
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapImported, ct);
 
         Assert.Equal(HttpStatusCode.OK, preview.Status);
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (unconfirmed.Status, unconfirmed.Code));
+        Assert.Equal("import map " + hash[..6], action);
+        Assert.NotEmpty(challenge);
+        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (unanswered.Status, unanswered.Code));
         Assert.Equal(HttpStatusCode.OK, imported.Status);
         Assert.Contains("\"status\":\"current\"", imported.Body, StringComparison.Ordinal);
-        Assert.Contains("\"nodes\":19", status.Body, StringComparison.Ordinal);
+        Assert.Contains("\"nodes\":20", status.Body, StringComparison.Ordinal);
         Assert.Contains(hash, recorded.Value!.Envelope.Payload, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task A_mistyped_answer_is_SND_AUTH_002_and_a_changed_file_is_SND_CONTEXT_034()
+    {
+        await using var host = await Approved(sessions: false, TestContext.Current.CancellationToken);
+        var file = FixtureMap.WriteTo(host.Home);
+
+        var (hash, challenge, action) = Issued(await PreviewBody(host, file));
+        var mistyped = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash, (challenge, "import map 000000")), Human(host.Token.Value)));
+        var afterMistype = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash, (challenge, action)), Human(host.Token.Value)));
+        var fresh = Issued(await PreviewBody(host, file));
+        await File.AppendAllTextAsync(file, "# edited\n", TestContext.Current.CancellationToken);
+        var changed = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash, (fresh.Challenge, fresh.Action)), Human(host.Token.Value)));
+        var status = await host.Http.Ask(Get("/sindri/context/map", Human(host.Token.Value)));
+
+        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (mistyped.Status, mistyped.Code));
+        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (afterMistype.Status, afterMistype.Code));
+        Assert.Equal("SND-CONTEXT-034", changed.Code);
+        Assert.Equal("SND-CONTEXT-030", status.Code);
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task A_challenge_is_spent_by_a_successful_import_and_is_bound_to_the_file_it_was_issued_for()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Approved(sessions: false, ct);
+        var file = FixtureMap.WriteTo(host.Home);
+        var ledger = host.App.Services.GetRequiredService<ILedgerStore>();
+
+        var (hash, challenge, action) = Issued(await PreviewBody(host, file));
+        var first = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash, (challenge, action)), Human(host.Token.Value)));
+        var recorded = await ledger.Latest(EventTypes.ContextMapImported, ct);
+        var replay = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash, (challenge, action)), Human(host.Token.Value)));
+        var afterReplay = await ledger.Latest(EventTypes.ContextMapImported, ct);
+
+        var other = Path.Combine(host.Home, "other-map.yaml");
+        await File.WriteAllTextAsync(other, (await File.ReadAllTextAsync(file, ct)).Replace("label: Split pane", "label: Split panes", StringComparison.Ordinal), ct);
+        var issuedForFile = Issued(await PreviewBody(host, file));
+        var issuedForOther = Issued(await PreviewBody(host, other));
+        var crossed = await host.Http.Ask(Post("/sindri/context/map/import", Body(other, issuedForOther.Hash, (issuedForFile.Challenge, "import map " + issuedForOther.Hash[..6])), Human(host.Token.Value)));
+
+        Assert.Equal(HttpStatusCode.OK, first.Status);
+        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (replay.Status, replay.Code));
+        Assert.Equal(recorded.Value!.Envelope.Payload, afterReplay.Value!.Envelope.Payload);
+        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (crossed.Status, crossed.Code));
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
@@ -100,17 +162,19 @@ public sealed class ContextMapApiTests
         Assert.True((await purge.Run(new ScheduledRun(grant, DateTimeOffset.UnixEpoch), ct)).IsSuccess);
     }
 
-    private static async Task Import(GoldenHost host)
+    internal static async Task Import(GoldenHost host)
     {
         var file = FixtureMap.WriteTo(host.Home);
-        var preview = await host.Http.Ask(Post("/sindri/context/map/import", Body(file), Human(host.Token.Value)));
-        var hash = JsonDocument.Parse(preview.Body).RootElement.GetProperty("preview").GetProperty("hash").GetString();
-        var imported = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash, confirmed: true), Human(host.Token.Value)));
+        var (hash, challenge, action) = Issued(await PreviewBody(host, file));
+        var imported = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash, (challenge, action)), Human(host.Token.Value)));
         Assert.Equal(HttpStatusCode.OK, imported.Status);
     }
 
+    private static async Task<string> PreviewBody(GoldenHost host, string file) =>
+        (await host.Http.Ask(Post("/sindri/context/map/import", Body(file), Human(host.Token.Value)))).Body;
+
     /// <summary>A host whose approved profile maps the fixture map's repo and 'other'.</summary>
-    private static async Task<GoldenHost> Approved(bool sessions, CancellationToken ct)
+    internal static async Task<GoldenHost> Approved(bool sessions, CancellationToken ct)
     {
         var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: {FixtureMap.Repo}, path: /work/{FixtureMap.Repo} }}\n  - {{ name: other, path: /work/other }}\n"
             + $"context:\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n";

@@ -14,8 +14,7 @@ namespace Aw.Sindri.Host.Catalog;
 /// <summary>
 /// The workflow engine's rows (engine spec §6.2, §6.3 route table; UI spec §7, E-9, E-12; API spec §2.1, §4.1). P2's
 /// recipe commands are bound to their types and flip to 'ready' as their units ship them; protected rows end as
-/// 'cli-only:typed-confirmation' once mapped. P4's instance rows are bound and mapped; P5's takeover and handback wait
-/// with no type yet, like PendingRows.
+/// 'cli-only:typed-confirmation' once mapped. P4's instance rows and P5's takeover and handback are bound and mapped.
 /// Queries (show, list, get, events) have no rows: the catalog lists commands, variants and issues only (API spec §3.3).
 /// </summary>
 internal static class EngineRows
@@ -32,8 +31,8 @@ internal static class EngineRows
         Protected("RevokeRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/revoke", "sindri recipe revoke <recipe>", "WF-P2") with { CommandType = typeof(RevokeRecipeRequest), Ui = TypedConfirmation },
         Protected("IssueChallenge", "POST /sindri/workflow/challenges", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(IssueChallengeRequest), Class = ActionClass.Issue, Ui = "ready" },
 
-        // ---- P4: instances (bound and mapped); P5's takeover and handback (pending, no type yet) ----
-        Ready("StartInstance", typeof(StartInstanceRequest), ActionClass.Desk, "POST /sindri/workflow/instances", "sindri workflow start <recipe> --item <itemId>"),
+        // ---- P4: instances (bound and mapped), and P5's takeover and handback ----
+        Ready("StartInstance", typeof(StartInstanceRequest), ActionClass.Desk, "POST /sindri/workflow/instances", "sindri workflow start <recipe> --item <itemId>") with { ReadsViews = true }, // UI spec E-19: it waits for the launches view head
         Ready("IssueNonce", typeof(IssueNonceRequest), ActionClass.Issue, "POST /sindri/workflow/instances/{instanceId}/nonce", "sindri workflow command <address> <verb>"),
         Ready("ApplyCommand:answer-text", typeof(ApplyCommandRequest), ActionClass.Desk, Commands, "sindri workflow answer <address> --text <text>"),
         Ready("ApplyCommand:answer-resume", typeof(ApplyCommandRequest), ActionClass.Desk, Commands, "sindri workflow answer <address> --resume"),
@@ -41,8 +40,8 @@ internal static class EngineRows
         Protected("ApplyCommand:answer-grant", Commands, "sindri workflow answer <address> --grant <rounds>", "WF-P4") with { CommandType = typeof(ApplyCommandRequest), Ui = TypedConfirmation },
         Protected("ApplyCommand:answer-grant-tokens", Commands, "sindri workflow answer <address> --grant-tokens <tokens>", "WF-P4") with { CommandType = typeof(ApplyCommandRequest), Ui = TypedConfirmation },
         Protected("ApplyCommand:answer-accept", Commands, "sindri workflow answer <address> --accept", "WF-P4") with { CommandType = typeof(ApplyCommandRequest), Ui = TypedConfirmation },
-        Pending("ApplyCommand:takeover", ActionClass.Pause, Commands, "sindri workflow takeover <address>", "WF-P5"),
-        Pending("ApplyCommand:handback", ActionClass.Desk, Commands, "sindri workflow handback <address>", "WF-P5"),
+        Ready("ApplyCommand:takeover", typeof(ApplyCommandRequest), ActionClass.Pause, Commands, "sindri workflow takeover <address>"),
+        Ready("ApplyCommand:handback", typeof(ApplyCommandRequest), ActionClass.Desk, Commands, "sindri workflow handback <address>"),
         Ready("ApplyCommand:cancel", typeof(ApplyCommandRequest), ActionClass.Desk, Commands, "sindri workflow cancel <address>") with { Destructive = true },
 
         // One row serves every recipe verb ('on: command.<verb>'): the verb is a field of the request's payload, so the
@@ -54,7 +53,7 @@ internal static class EngineRows
             "sindri workflow complete <address> --run <token> --outcome <outcome>"),
     ];
 
-    /// <summary>A P4 row bound to its type and mapped: 'ready' in the app.</summary>
+    /// <summary>A P4 or P5 row bound to its type and mapped: 'ready' in the app.</summary>
     private static CommandRow Ready(string action, Type type, ActionClass actionClass, string route, string cli) =>
         Pending(action, actionClass, route, cli, "WF-P4") with { CommandType = type, Ui = "ready" };
 

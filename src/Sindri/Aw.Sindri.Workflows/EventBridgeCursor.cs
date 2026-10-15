@@ -62,6 +62,7 @@ internal sealed class EventBridgeCursor(WorkflowsHome home)
             await using (stream.ConfigureAwait(false))
             {
                 await stream.WriteAsync(System.Text.Encoding.ASCII.GetBytes(sequence.ToString(CultureInfo.InvariantCulture) + "\n"), cancellationToken).ConfigureAwait(false);
+                stream.Flush(flushToDisk: true);   // why: the move must not publish a name whose bytes a power cut could still lose
             }
 
             File.Move(temporary, home.EventsCursorFile, overwrite: true);

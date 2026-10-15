@@ -97,13 +97,6 @@ internal sealed partial class RecipeWorkflow
         _ => [],
     };
 
-    /// <summary>The effect ids a change's ledger event lists (§5.6); null when it runs none.</summary>
-    private static List<string>? Ids(IReadOnlyList<EffectIdentity>? effects) => effects is { Count: > 0 } ? [.. effects.Select(static e => e.Text)] : null;
-
-    /// <summary>The effect ids of a decision's own change (§5.6); null for the desk timeout, which runs none.</summary>
-    private static List<string>? EffectIds(WorkflowInstance before, Decision? decision) =>
-        decision is null ? null : Ids(OwnChange(before, decision)?.Event.Effects);
-
     /// <summary>
     /// The engine's own notices for a change (§5.7 origin 'engine'): parks, escalations, takeoverIdle and desk tasks.
     /// </summary>

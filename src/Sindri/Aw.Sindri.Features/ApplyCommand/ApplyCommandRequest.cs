@@ -8,11 +8,11 @@ namespace Aw.Sindri.Features.ApplyCommand;
 
 /// <summary>
 /// A command on an instance (engine spec rev 8 §5.2, §5.8, §6.3 'POST /workflow/instances/{id}/commands'): 'workflow
-/// answer' in its variants, 'workflow command &lt;verb&gt;' or 'workflow cancel', sent as the Update its kind names with
+/// answer' in its variants, 'workflow command &lt;verb&gt;', 'workflow cancel', 'takeover' or 'handback', sent as the Update its kind names with
 /// the nonce as its id.
 /// </summary>
 /// <param name="Instance">The instance's address, or a bare item for the root of its latest attempt.</param>
-/// <param name="Kind">Answer, command or cancel.</param>
+/// <param name="Kind">Answer, command, cancel, takeover or handback.</param>
 /// <param name="Answer">The answer's variant, for an answer.</param>
 /// <param name="Text">The answer's text ('--text', '--file', '--resume --text'), at most 1 MiB.</param>
 /// <param name="Amount">The rounds of '--grant n' or the tokens of '--grant-tokens n'.</param>
@@ -31,7 +31,7 @@ public sealed record ApplyCommandRequest(
 {
     /// <summary>
     /// The catalog variant (engine spec §6.2, UI spec E-12): 'answer-&lt;variant&gt;' ('answer-text', 'answer-grant' …),
-    /// 'command' for every recipe verb, or 'cancel'. An answer without a variant is 'answer', which no row names, so it is
+    /// 'command' for every recipe verb, 'cancel', 'takeover' or 'handback'. An answer without a variant is 'answer', which no row names, so it is
     /// classified protected (fail-closed) and then refused as malformed.
     /// </summary>
     [JsonIgnore]
@@ -39,6 +39,8 @@ public sealed record ApplyCommandRequest(
     {
         ApplyCommandKind.Answer => Answer is { } variant ? "answer-" + AnswerName(variant) : "answer",
         ApplyCommandKind.Command => "command",
+        ApplyCommandKind.Takeover => "takeover",
+        ApplyCommandKind.Handback => "handback",
         ApplyCommandKind.Cancel or _ => "cancel",
     };
 

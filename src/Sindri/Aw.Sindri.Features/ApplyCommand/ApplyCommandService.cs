@@ -15,12 +15,12 @@ using Aw.Sindri.Core.Workflow.Engine.Triggers;
 namespace Aw.Sindri.Features.ApplyCommand;
 
 /// <summary>
-/// 'workflow answer', 'command' and 'cancel' (engine spec rev 8 §5.2, §5.8, §6.2, §6.3). In order: resolve the address
+/// 'workflow answer', 'command', 'cancel', 'takeover' and 'handback' (engine spec rev 8 §5.2, §5.8, §6.2, §6.3). In order: resolve the address
 /// (a bare item is the root of its latest attempt, SND-WF-006 when ambiguous); check the arguments; claim the nonce for
 /// exactly this command (SND-WF-009 when it named another); redeem a protected answer's challenge (SND-WF-013); check
-/// the recipe's approval unless the trigger is exempt (cancel; SND-RECIPE-005, -006); send the Update with the nonce
-/// as its id. A repeat of a command its nonce already applied skips the checks: Temporal returns the first outcome. The workflow's validator answers a trigger not allowed here or an answer that doesn't fit (SND-WF-003);
-/// a refusal gives the nonce back, so a refused command consumes nothing. A command already applied with this nonce
+/// the recipe's approval unless the trigger is exempt (cancel, takeover, handback; SND-RECIPE-005, -006); send the Update with the nonce
+/// as its id. A repeat of a command its nonce already holds (applied, or pending after an unconfirmed send) skips the checks and resends the same Update id: Temporal returns the first outcome. The workflow's validator answers a trigger not allowed here or an answer that doesn't fit (SND-WF-003);
+/// a refusal gives back a nonce this call claimed, so a refused command consumes nothing. A command already applied with this nonce
 /// returns the first outcome, marked 'already applied'. Without a nonce one is issued (the IssueNonce stand-in).
 /// The caller and action-class checks (SND-AUTH-002) are the API chain's, before this slice; the caller's
 /// actor sends the command.
@@ -57,38 +57,47 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
         var nonce = request.Nonce ?? nonces.Issue();
         var stamp = new CommandStamp(nonce, ArgumentsSha(request));
         var trigger = Trigger(request, caller.Actor, stamp);
-        var claim = await nonces.Claim(nonce, address.Value.Value + "\n" + stamp.ArgumentsSha256, cancellationToken).ConfigureAwait(false);
+        var subject = address.Value.Value + "\n" + stamp.ArgumentsSha256;
+        var claim = await nonces.Claim(nonce, subject, cancellationToken).ConfigureAwait(false);
         if (claim.IsError)
         {
             return claim.Error;
         }
 
-        if (!claim.Value && await Check(request, address.Value, trigger, cancellationToken).ConfigureAwait(false) is { IsError: true } refused)
+        // only a claim this call created is checked (a pending or applied one was checked by the call that made it: a protected
+        // answer's challenge is single use and bound to the version, so a second check would refuse an answer that applied)
+        if (claim.Value == NonceClaim.Fresh && await Check(request, address.Value, trigger, cancellationToken).ConfigureAwait(false) is { IsError: true } refused)
         {
             _ = await nonces.Release(nonce, cancellationToken).ConfigureAwait(false);
             return refused.Error;
         }
 
-        return await Send(address.Value, nonce, trigger, alreadyApplied: claim.Value, cancellationToken).ConfigureAwait(false);
+        return await Send(address.Value, new SentCommand(nonce, subject, claim.Value), trigger, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Sends the Update with the nonce as its id; a refusal gives the nonce back, so a refused command consumes nothing (W12).</summary>
-    private async ValueTask<Result<ApplyCommandResponse>> Send(InstanceAddress address, CommandNonce nonce, Trigger trigger, bool alreadyApplied, CancellationToken cancellationToken)
+    /// <summary>
+    /// Sends the Update with the nonce as its id. A refusal of a claim this call created gives it back, so a refused command
+    /// consumes nothing (W12); a pending claim stays (its Update id was used, and Temporal returns the first outcome for it).
+    /// </summary>
+    private async ValueTask<Result<ApplyCommandResponse>> Send(InstanceAddress address, SentCommand command, Trigger trigger, CancellationToken cancellationToken)
     {
-        var sent = await runtime.Send(address, nonce, trigger, cancellationToken).ConfigureAwait(false);
+        var sent = await runtime.Send(address, command.Nonce, trigger, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
         {
-            if (sent.Error.Kind is not (ErrorKind.Unavailable or ErrorKind.Timeout) && !alreadyApplied)
+            if (sent.Error.Kind is not (ErrorKind.Unavailable or ErrorKind.Timeout) && command.Claim == NonceClaim.Fresh)
             {
-                _ = await nonces.Release(nonce, cancellationToken).ConfigureAwait(false);
+                _ = await nonces.Release(command.Nonce, cancellationToken).ConfigureAwait(false);
             }
 
-            return sent.Error;   // unavailable or timed out: it may have applied, so the claim stays and a retry with this nonce is deduplicated
+            return sent.Error;   // unavailable or timed out: it may have applied, so the claim stays and a retry with this nonce resends the same Update id
         }
 
-        var applied = await nonces.Applied(nonce, cancellationToken).ConfigureAwait(false);
-        return applied.IsError ? applied.Error : new ApplyCommandResponse(sent.Value, nonce, alreadyApplied);
+        var applied = await nonces.Applied(command.Nonce, command.Subject, cancellationToken).ConfigureAwait(false);
+        return applied.IsError ? applied.Error : new ApplyCommandResponse(sent.Value, command.Nonce, command.Claim == NonceClaim.Applied);
     }
+
+    /// <summary>The nonce a command went out with, the subject it claimed it for and what the claim found.</summary>
+    private readonly record struct SentCommand(CommandNonce Nonce, string Subject, NonceClaim Claim);
 
     /// <summary>
     /// The checks before the Update (spec §4.2, §5.2): a protected answer redeems its challenge against the instance as it
@@ -119,13 +128,7 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
             return approval.Error;
         }
 
-        var recipe = view.Value.Recipe;
-        return approval.Value switch
-        {
-            ApprovalCheck.Revoked => WorkflowErrors.RecipeRevoked.With($"{recipe.Id.Value}@{recipe.Hash.Display} was revoked; nothing was sent (fix: approve a new version, or sindri workflow cancel {address.Value})"),
-            ApprovalCheck.Drifted => WorkflowErrors.RecipePinDrift.With($"a block {recipe.Id.Value}@{recipe.Hash.Display} pins changed since approval; nothing was sent (fix: re-approve it, see sindri recipe list --stale)"),
-            ApprovalCheck.Holds or _ => Unit.Value,
-        };
+        return ApprovalRefusal.Of(approval.Value, view.Value.Recipe.Id, view.Value.Recipe.Hash, address);
     }
 
     /// <summary>A protected answer's challenge (spec §4.2): its action text and the instance as it is now must match; any attempt uses it up (SND-WF-013).</summary>
@@ -148,6 +151,9 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
         { Kind: ApplyCommandKind.Answer, Answer: AnswerVariant.Text, Text: null or "" } => SindriErrors.InvalidInput.With("--text needs the answer's text (or --file <file>)"),
         { Kind: ApplyCommandKind.Answer, Answer: AnswerVariant.Grant or AnswerVariant.GrantTokens, Amount: null or < 1 } => SindriErrors.InvalidInput.With("--grant and --grant-tokens need a whole number from 1"),
         { Text.Length: > IFactStore.MaxBytes } => SindriErrors.InvalidInput.With("the answer's text is larger than 1 MiB (fix: answer with a smaller file)"),
+        { Kind: ApplyCommandKind.Cancel or ApplyCommandKind.Takeover or ApplyCommandKind.Handback } when request.Answer is not null || request.Text is not null
+            || request.Amount is not null || request.Verb is not null || request.Challenge is not null =>
+            SindriErrors.InvalidInput.With("cancel, takeover and handback take only the address and the nonce (fix: drop the answer, text, amount, verb and challenge fields)"),
         { Kind: ApplyCommandKind.Command, Verb: null } => SindriErrors.InvalidInput.With("a command needs its verb: sindri workflow command <address> <verb>"),
         _ => null,
     };
@@ -156,11 +162,13 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
     {
         ApplyCommandKind.Answer => new AnswerGiven(actor, stamp, request.Answer!.Value, request.Text, request.Amount, Forwarded: null), // why: Malformed refuses an answer with no variant
         ApplyCommandKind.Command => new CommandFired(actor, request.Verb!.Value, stamp), // why: Malformed refuses a command with no verb
+        ApplyCommandKind.Takeover => new TakeoverRequested(actor, stamp),
+        ApplyCommandKind.Handback => new HandbackRequested(actor, stamp),
         ApplyCommandKind.Cancel or _ => new CancelRequested(actor, CancelOrigin.Command, stamp, Sequence: null, Parent: null),
     };
 
     /// <summary>The SHA-256 of the command's canonical arguments, so two different commands never share a nonce's subject.</summary>
-    private static string ArgumentsSha(ApplyCommandRequest request)
+    internal static string ArgumentsSha(ApplyCommandRequest request)
     {
         var text = string.Create(CultureInfo.InvariantCulture,
             $"kind {request.Kind}\nanswer {request.Answer}\namount {request.Amount}\nverb {request.Verb?.Value}\ntext {(request.Text is { } t ? Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(t))) : string.Empty)}\n");
