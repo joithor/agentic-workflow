@@ -4,7 +4,7 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// The path order of a recipe's states (spec §3.10). A pure function of the transition graph, never hashed: a walk from
 /// 'initial' that follows transitions in list order. The first transition to a state not yet _seen continues the main
 /// path; a later one starts a branch, and every state only that branch reaches is folded under the state it leaves.
-/// A transition back to a state still on the walk is a loop edge. Terminal states are numbered after the _others.
+/// A terminal target neither takes the main-path slot nor decides 'orderedBy'. A transition back to a state still on the walk is a loop edge, named by the target's loop (else the looping state's). Terminal states are numbered after the others.
 /// </summary>
 public static class StatePathOrder
 {
@@ -28,7 +28,8 @@ public static class StatePathOrder
 
     private static string OrderedBy(Recipe recipe) =>
         recipe.Transitions
-            .Where(t => t.From.Contains(recipe.Initial, StringComparer.Ordinal) && t.To != recipe.Initial && recipe.States.ContainsKey(t.To))
+            .Where(t => t.From.Contains(recipe.Initial, StringComparer.Ordinal) && t.To != recipe.Initial
+                && recipe.States.TryGetValue(t.To, out var target) && target.Kind != StateKind.Terminal)
             .Select(t => t.To)
             .Distinct(StringComparer.Ordinal)
             .Skip(1)
@@ -65,7 +66,7 @@ public static class StatePathOrder
                 else if (!_seen.Contains(target))
                 {
                     Visit(target, descended ? branchOf ?? state : branchOf);
-                    descended = true;
+                    descended |= recipe.States[target].Kind != StateKind.Terminal;
                 }
             }
 
@@ -95,7 +96,7 @@ public static class StatePathOrder
         {
             if (!_loops.Exists(l => l.From == from && l.To == to))
             {
-                _loops.Add(new PathLoop(recipe.States[from].Loop ?? recipe.States[to].Loop, from, to));
+                _loops.Add(new PathLoop(recipe.States[to].Loop ?? recipe.States[from].Loop, from, to));
             }
         }
     }

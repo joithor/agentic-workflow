@@ -137,12 +137,12 @@ isn't running they print `SND-API-001 not running: …` and exit 1.
 
 **Path order (spec §3.10, UI E-20).** `recipe show` and `recipe list --json` carry the recipe's states in path order, computed from the
 transition graph by `StatePathOrder` and never hashed (a recipe's hash is the same with or without it): `orderedBy` (`path`, or
-`transition-list` when `initial` has more than one distinct first target other than itself), `states[]` (`id`, `order`, `branchOf`) and
+`transition-list` when `initial` has more than one distinct non-terminal first target other than itself), `states[]` (`id`, `order`, `branchOf`) and
 `loops[]` (`name`, `from`, `to`). Text form: `order: <orderedBy>`, one `state: <name> order=<n>|branch-of=<state>|order=-` line per state and
 one `loop: <name|-> <from> -> <to>` line per loop edge. The walk starts at `initial` and follows each state's transitions in list order:
-the first to a state not yet seen continues the main path, a later one is a branch and every state only that branch reaches is folded
-under the state it leaves (`branchOf`, no `order`); a transition back to a state still on the walk is a loop edge, named by the looping
-state's `loop:` (else the target's), listed in the order the walk finds them. Terminal states are numbered after the non-terminal ones in
+the first to a non-terminal state not yet seen continues the main path, a later one is a branch and every state only that branch reaches is folded
+under the state it leaves (`branchOf`, no `order`); a transition back to a state still on the walk is a loop edge, named by the target's
+`loop:` (the loop the engine counts the round on; else the looping state's), listed in the order the walk finds them. A terminal target neither takes the main-path slot nor decides `orderedBy`; terminal states are numbered after the non-terminal ones in
 the order the walk found them, wherever they were reached from; a state the walk never reaches is listed last with neither. `order`
 starts at 1 (WF spec §3.10; the API spec's StateCell says 0-based, an open cross-spec question), set in one place
 (`StatePathOrder.FirstOrder`).
