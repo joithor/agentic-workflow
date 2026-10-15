@@ -1,9 +1,9 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Tests.GetInstance;
 using Aw.Sindri.Tests.Workflow.Engine;
 using ActionClass = Aw.Sindri.Core.Commands.ActionClass;
@@ -207,7 +207,7 @@ public sealed class InstanceViewProducerTests
         var header = Produce().Status?.Header;
 
         Assert.Equal(
-            new StatusHeader(Core.Workflow.Engine.InstanceAddress.From("T-3/step/1"), Core.Workflow.Ids.RecipeId.From("workflow.step"), StatusText.Hash12(EngineFixture.Step.Hash!.Value.Value), 4, "produce", "desk task", StatusCases.Now - TimeSpan.FromMinutes(72), 72 * 60),
+            new StatusHeader(InstanceAddress.From("T-3/step/1"), RecipeId.From("workflow.step"), StatusText.Hash12(EngineFixture.Step.Hash!.Value.Value), 4, "produce", "desk task", StatusCases.Now - TimeSpan.FromMinutes(72), 72 * 60),
             header);
     }
 
@@ -263,7 +263,7 @@ public sealed class InstanceViewProducerTests
     {
         var status = StatusCases.View("parked-no-progress-child").Status!;
 
-        Assert.Equal(new StatusChild(Core.Workflow.Engine.WorkflowInstanceId.Of(Core.Workflow.Engine.InstanceAddress.From("T-3/step/1/step.4")), Core.Workflow.Engine.InstanceAddress.From("T-3/step/1/step.4"), "parked", "no-progress"), status.Child);
+        Assert.Equal(new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("T-3/step/1/step.4")), InstanceAddress.From("T-3/step/1/step.4"), "parked", "no-progress"), status.Child);
         Assert.Contains("T-3/step/1/step.4  parked: no-progress", status.Text, StringComparison.Ordinal);
     }
 
@@ -305,7 +305,7 @@ public sealed class InstanceViewProducerTests
         var status = StatusCases.View("parked-rounds-with-drift").Status!;
 
         Assert.Equal(AnswerKind.Grant, status.Answer?.Kind);
-        Assert.Equal(new StatusDrift(Core.Workflow.Ids.BlockId.From("step.produce"), NeedsReapproval: true), status.Drift);
+        Assert.Equal(new StatusDrift(BlockId.From("step.produce"), NeedsReapproval: true), status.Drift);
     }
 
     [Fact]
