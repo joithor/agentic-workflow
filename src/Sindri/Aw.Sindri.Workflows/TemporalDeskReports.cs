@@ -34,12 +34,13 @@ internal sealed class TemporalDeskReports(TemporalFrontend frontend)
             return client.Error;
         }
 
+        using var patience = TemporalUpdates.Wait(cancellationToken);
         var handle = client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value);
         try
         {
             return await handle.ExecuteUpdateAsync(
                 wf => wf.CompleteAsync(report),
-                new WorkflowUpdateOptions(nonce.Value) { Rpc = TemporalUpdates.Rpc(cancellationToken) }).ConfigureAwait(false);
+                new WorkflowUpdateOptions(nonce.Value) { Rpc = patience.Options }).ConfigureAwait(false);
         }
         catch (WorkflowUpdateFailedException e) when (e.InnerException is ApplicationFailureException { ErrorType: { } code } refusal)
         {

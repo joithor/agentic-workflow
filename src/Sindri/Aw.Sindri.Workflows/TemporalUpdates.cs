@@ -20,10 +20,32 @@ internal static class TemporalUpdates
     /// </summary>
     internal static readonly TimeSpan Patience = TimeSpan.FromSeconds(4);
 
-    /// <summary>The Update's RPC options: <see cref="Patience"/> and the caller's token.</summary>
-    /// <param name="cancellationToken">Cancels the wait.</param>
-    /// <returns>The options.</returns>
-    internal static RpcOptions Rpc(CancellationToken cancellationToken) => new() { CancellationToken = cancellationToken, Timeout = Patience };
+    /// <summary>
+    /// The Update's wait: one RPC bounded by <see cref="Patience"/> in total. The per-RPC timeout alone is not a bound: the
+    /// client core retries an RPC that timed out, so a serve without a worker took 8 s and sometimes 12 s to answer, past the
+    /// CLI's 10 s HTTP timeout. The linked token is cancelled after <see cref="Patience"/>, whatever the retries did.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the wait (the caller's).</param>
+    /// <returns>The options to send with the Update; dispose it when the call is over.</returns>
+    internal static UpdateWait Wait(CancellationToken cancellationToken) => new(cancellationToken);
+
+    /// <summary>The Update's RPC options with their total bound; see <see cref="Wait"/>.</summary>
+    internal sealed class UpdateWait : IDisposable
+    {
+        private readonly CancellationTokenSource _patience;
+
+        internal UpdateWait(CancellationToken cancellationToken)
+        {
+            _patience = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _patience.CancelAfter(Patience);
+            Options = new RpcOptions { CancellationToken = _patience.Token, Timeout = Patience };
+        }
+
+        /// <summary>The RPC options: the caller's token plus <see cref="Patience"/> in total, and <see cref="Patience"/> for one attempt.</summary>
+        internal RpcOptions Options { get; }
+
+        public void Dispose() => _patience.Dispose();
+    }
 
     /// <summary>Whether <paramref name="e"/> is the frontend saying it has no such namespace.</summary>
     /// <param name="e">The RPC failure.</param>

@@ -43,11 +43,12 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
             return client.Error;
         }
 
+        using var patience = TemporalUpdates.Wait(cancellationToken);
         try
         {
             return await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value).ExecuteUpdateAsync(
                 update,
-                new WorkflowUpdateOptions(nonce.Value) { Rpc = TemporalUpdates.Rpc(cancellationToken) }).ConfigureAwait(false);
+                new WorkflowUpdateOptions(nonce.Value) { Rpc = patience.Options }).ConfigureAwait(false);
         }
         catch (WorkflowUpdateFailedException e) when (e.InnerException is ApplicationFailureException { ErrorType: { } code } refusal) // boundary: the validator's refusal is the caller's answer
         {
