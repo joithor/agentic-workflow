@@ -4672,6 +4672,10 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.IFactStore.Put(System.ReadOnlyMemory<byte
 Aw.Sindri.Core.Control.TemporalRuntime.WaitForWorker(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 const Aw.Sindri.Core.Events.EventTypes.WorkflowStarted = "workflow.started" -> string!
 const Aw.Sindri.Core.Events.EventTypes.WorkflowTransition = "workflow.transition" -> string!
+const Aw.Sindri.Core.Events.EventTypes.WorkflowRefused = "workflow.refused" -> string!
+const Aw.Sindri.Core.Events.EventTypes.WorkflowShifted = "workflow.shifted" -> string!
+const Aw.Sindri.Core.Events.EventTypes.WorkflowNotified = "workflow.notified" -> string!
+const Aw.Sindri.Core.Events.EventTypes.WorkflowExpired = "workflow.expired" -> string!
 Aw.Sindri.Core.Events.WorkflowEventPayload.<Clone>$() -> Aw.Sindri.Core.Events.WorkflowEventPayload!
 Aw.Sindri.Core.Events.WorkflowEventPayload.Deconstruct(out string! Instance, out string! From, out string! To, out string! Trigger, out string? Outcome, out string? Run) -> void
 Aw.Sindri.Core.Events.WorkflowEventPayload.Equals(Aw.Sindri.Core.Events.WorkflowEventPayload? other) -> bool
