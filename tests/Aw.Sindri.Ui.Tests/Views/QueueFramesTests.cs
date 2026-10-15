@@ -243,9 +243,10 @@ public sealed class QueueFramesTests : IDisposable
         Assert.True((Focused(window) as Control)!.Classes.Contains(":focus-visible"), "Keep has focus without the ring");
 
         window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
-        Settle(window);
+        var run = Named<Button>(cancel, "RunButton");
+        await Until(window, () => ReferenceEquals(Focused(window), run));
 
-        Assert.True((Focused(window) as Control)!.Classes.Contains(":focus-visible"), "the run button has focus without the ring");
+        Assert.True(run.Classes.Contains(":focus-visible"), "the run button has focus without the ring");
     });
 
     // L12: Load more is named for the timeline it extends; when the page lands, focus goes to its first new row.

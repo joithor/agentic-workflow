@@ -90,11 +90,19 @@ public sealed class CreateItemViewModelTests
         form.Title = "Once";
         var gate = _server.CommandGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        var first = form.Submit(Token);
-        var second = form.Submit(Token);
-        gate.SetResult();
-        await Task.WhenAll(first, second);
-        await form.Submit(Token);
+        try
+        {
+            var first = form.Submit(Token);
+            var second = form.Submit(Token);
+            gate.SetResult();
+            await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
+
+        await form.Submit(Token).WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
 
         _ = Assert.Single(_server.Created);
         Assert.Equal((false, true), (form.CanSubmit, form.IsOpen));
