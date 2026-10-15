@@ -305,4 +305,96 @@ public sealed class ItemSheetActionsTests
 
         Assert.Equal(stays, sheet.HasProblem);
     }
+
+    // R4: the wait for a 409's re-read always ends. The sheet re-reads, a refresh takes the read over, and then ...
+    private async Task<(ItemSheetViewModel Sheet, ControlViewModel Close, TaskCompletionSource Gate, Task Press, CancellationTokenSource Refreshing)> Waiting()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        _server.Close = RouteAnswer.Problem("items-id-close", "stale-version");
+        _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
+        var gate = _server.ItemGates[A.NewItem] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var close = sheet.Actions[0];
+        var calls = _server.ItemCalls;
+        var press = close.Press(Token);
+        await Until(() => _server.ItemCalls == calls + 1);
+        var refreshing = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        return (sheet, close, gate, press, refreshing);
+    }
+
+    // (a) ... the refresh answers 404: the press completes, and the 404 is spoken once.
+    [Fact]
+    public async Task A_409_whose_re_read_a_refresh_took_over_and_found_the_item_gone_ends_and_speaks_the_404_once()
+    {
+        var (sheet, close, gate, press, refreshing) = await Waiting();
+        var spoken = Spoken(sheet);
+        var controlSpoke = Spoken(close);
+        try
+        {
+            _server.Items[A.NewItem] = RouteAnswer.Problem("items-id", "not-found");
+            var calls = _server.ItemCalls;
+            var refresh = sheet.Refresh(_api, refreshing.Token);
+            await Until(() => _server.ItemCalls == calls + 1);
+
+            gate.SetResult();
+            await Task.WhenAll(press, refresh).WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+            refreshing.Dispose();
+        }
+
+        Assert.Equal(1, spoken.Concat(controlSpoke).Count(t => t.Contains("SND-ITEM-404", StringComparison.Ordinal)));
+    }
+
+    // (b) ... the sheet moves to another item: the press completes and the other item shows nothing of the 409.
+    [Fact]
+    public async Task A_409_whose_re_read_is_waiting_when_the_sheet_opens_another_item_ends_and_shows_nothing_there()
+    {
+        var (sheet, _, gate, press, refreshing) = await Waiting();
+        _server.Items[A.DecisionItem] = RouteAnswer.SpecShaped("items-id", "after-close");
+        var spoken = Spoken(sheet);
+        try
+        {
+            await sheet.Open(_api, A.DecisionItem, Token);
+
+            gate.SetResult();
+            await press.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+            refreshing.Dispose();
+        }
+
+        Assert.Equal((A.DecisionItem, false, 0), (sheet.ItemId, sheet.HasProblem, spoken.Count));
+    }
+
+    // (c) ... the refresh itself is cancelled by its caller: the press completes, and the control speaks the 409 itself, once.
+    [Fact]
+    public async Task A_409_whose_superseding_refresh_is_cancelled_ends_and_the_control_speaks_it_once()
+    {
+        var (sheet, close, gate, press, refreshing) = await Waiting();
+        var spoken = Spoken(sheet);
+        var controlSpoke = Spoken(close);
+        try
+        {
+            var calls = _server.ItemCalls;
+            var refresh = sheet.Refresh(_api, refreshing.Token);
+            await Until(() => _server.ItemCalls == calls + 1);
+            await refreshing.CancelAsync();
+            _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => refresh);
+
+            await press.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+            refreshing.Dispose();
+        }
+
+        var code = "SND-ITEM-409";
+        Assert.Equal(1, spoken.Concat(controlSpoke).Count(t => t.Contains(code, StringComparison.Ordinal)));
+    }
 }
