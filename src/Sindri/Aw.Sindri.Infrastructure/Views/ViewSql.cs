@@ -24,6 +24,9 @@ internal static class ViewSql
     {
         [ViewNames.Services] = new ViewTable("view_services"),
         [ViewNames.Profile] = new ViewTable("view_profile"),
+        [ViewNames.Items] = new ViewTable("view_items"),
+        [ViewNames.ItemAliases] = new ViewTable("view_item_aliases"),
+        [ViewNames.ItemTimeline] = new ViewTable("view_item_timeline"),
     };
 
     /// <summary>The table behind <paramref name="view"/>, or null when it isn't a view.</summary>
