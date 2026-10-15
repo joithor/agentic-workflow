@@ -164,6 +164,8 @@ public sealed class CommandPaletteViewModelTests
 
         var run = _palette.Run(rebuild, Token);
 
+        _clock.Advance(ControlViewModel.SendingAfter);
+
         Assert.Equal((true, true, false, "Rebuild views", "Sending…"), (_palette.IsOpen, rebuild.IsSending, rebuild.IsEnabled, rebuild.Label, rebuild.Status));
         await _palette.Run(rebuild, Token);
         _server.RebuildGate.SetResult();
@@ -175,6 +177,37 @@ public sealed class CommandPaletteViewModelTests
         Assert.Equal(["RebuildViews"], _history, StringComparer.Ordinal);
         _clock.Advance(ControlViewModel.AcceptedFor);
         Assert.Equal("ready", rebuild.Status);
+    }
+
+    // G3 (a11y-0, corr-2): the selected entry that starts sending stays counted ("n of m", never "0 of"), the palette says
+    // "Sending…" only after the control does (300 ms), and arrowing away from it goes to its neighbour.
+    [Fact]
+    public async Task A_selection_that_is_sending_keeps_its_place_and_says_sending_only_after_300_ms()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected!;
+        var run = _palette.Run(rebuild, Token);
+
+        Assert.DoesNotContain("0 of", _palette.Announcement, StringComparison.Ordinal);
+        Assert.DoesNotContain("Sending", _palette.Announcement, StringComparison.Ordinal);
+        Assert.Equal("ready", rebuild.Status);
+
+        _clock.Advance(ControlViewModel.SendingAfter);
+
+        Assert.StartsWith("Rebuild views, Sending…, ", _palette.Announcement, StringComparison.Ordinal);
+        Assert.DoesNotContain("0 of", _palette.Announcement, StringComparison.Ordinal);
+        _palette.Move(1);
+        Assert.NotEqual("RebuildViews", _palette.Selected!.Id, StringComparer.Ordinal);
+        _palette.Move(-1);
+        Assert.Equal("RebuildViews", _palette.Selected!.Id, StringComparer.Ordinal);
+        _server.RebuildGate.SetResult();
+        await run;
     }
 
     // F2: a refusal shows Sindri's code as the entry's status and its detail as served; the palette stays open.
