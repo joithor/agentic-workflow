@@ -119,7 +119,7 @@ that graph plus rank fusion across adapters.
   the class check.
 - **Session reads, any transport.** `context.sessions.enabled` gates every `session`-class context read: MCP, the CLI
   run inside an agent session, and plain HTTP. Off, they answer `SND-CONTEXT-020`; `human` reads are unaffected.
-- **Denied paths.** The profile's `index.denyPaths` (added to the built-in secret globs) hide a path from every read of the map as soon as the profile with the glob is approved: its code nodes, the edges touching them, the features only they made, the surfaces only they produced and any evidence that names them are left out of lenses, file maps, queries, export, `map status` and the review queue, for every caller. The path leaves the stored map at the next promote.
+- **Denied paths.** The profile's `index.denyPaths` (added to the built-in secret globs) hide a path from every read of the map as soon as the profile with the glob is approved: its code nodes, the edges touching them, the features only they made, the surfaces only they produced and any evidence that names them are left out of lenses, file maps, queries, export, `map status`, the review queue (its counts, the bulk accept and the promote check), the history and a run's proposal statuses, for every caller. The decision is made once, on the map with the overrides applied, so a feature a person accepted goes with its only file. The path leaves the stored map when a draft is promoted, whether the draft came from a build or from a proposal.
 - **Repo scope.** A `session` caller sees only records reachable from its `X-Sindri-Repo`: that repo's files and code,
   graph nodes the repo implements and their cascade, and intent records linked to those nodes or from the Linear teams
   the profile maps to that repo (`context.repoTeams`). Anything else answers as an unknown anchor (`SND-CONTEXT-003`),
@@ -559,7 +559,10 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
   node in `current`), `new` (no such node, but a proposal for it exists in the latest draft, from this run or
   another), `unmapped` (cited in the brief, no node and no proposal: no kind or no evidence to propose one).
   `GET /sindri/context/map/proposals?run=ADDR` recomputes it for the run's surfaces, so a promoted proposal turns
-  from `new` to `mapped` without re-running the scope. The POST returns the same statuses.
+  from `new` to `mapped` without re-running the scope. The POST returns the same statuses. Each status carries `trust`
+  (always `untrusted`: the surface name is model text), and for a fenced caller (a session, MCP, a service) a `new`
+  surface has no node key, because the key is built from that text. Both maps are read through the one view every read uses
+  (§3 "Denied paths"), so a surface only a denied file evidences reads as unmapped.
 
 ### 8.8 Profile and setup
 

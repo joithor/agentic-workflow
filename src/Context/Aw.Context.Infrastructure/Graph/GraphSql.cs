@@ -65,7 +65,7 @@ internal static class GraphSql
     public const string SelectOverrides =
         "SELECT action, target, who, at, label, other, rejection, link, undoes, payload FROM map_override ORDER BY at, id";
 
-    // A store not yet upgraded to 0004 (reads never migrate): the same columns, the new ones as NULL.
+    // A store not yet upgraded to 0004 (defensive only: every read migrates first, ContextDatabase.Readable): the same columns, the new ones as NULL.
     public const string SelectOverridesBefore0004 =
         "SELECT action, target, who, at, label, other, rejection, NULL, NULL, NULL FROM map_override ORDER BY at, id";
 
@@ -74,7 +74,7 @@ internal static class GraphSql
 
     public const string SelectRun = "SELECT run, repo, surfaces FROM proposal_run WHERE run = $run";
 
-    // A store not yet upgraded to 0005 (reads never migrate) has no run table: no run was ever saved.
+    // A store not yet upgraded to 0005 (defensive only: every read migrates first) has no run table: no run was ever saved.
     public const string HasRunTable = "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'proposal_run'";
 
     public const string HasReviewColumns = "SELECT count(*) FROM pragma_table_info('map_override') WHERE name = 'payload'";

@@ -91,13 +91,13 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-043: no entry of the review file matches the latest draft (the others are listed as skipped).</summary>
     public static readonly ErrorDefinition ReviewFileNoMatch = new("SND-CONTEXT-043", ErrorKind.Conflict, "No entry in the review file matches the latest draft");
 
-    /// <summary>SND-CONTEXT-044: 'draft' was asked on lenses or filemap and no draft map exists.</summary>
+    /// <summary>SND-CONTEXT-044: there is no draft map: 'draft' was asked on lenses or filemap, or the review queue or a review decision that needs a draft was asked with none.</summary>
     public static readonly ErrorDefinition NoDraftMap = new("SND-CONTEXT-044", ErrorKind.NotFound, "No draft map");
 
     /// <summary>SND-CONTEXT-045: a repo the profile doesn't name, or one outside a session's X-Sindri-Repo (answered the same way, so the scope isn't revealed).</summary>
     public static readonly ErrorDefinition RepoOutsideScope = new("SND-CONTEXT-045", ErrorKind.NotFound, "Repo outside the scope");
 
-    /// <summary>SND-CONTEXT-046: 'map promote' refused: there is no draft, or the draft still has undecided review items.</summary>
+    /// <summary>SND-CONTEXT-046: 'map promote' refused: there is no draft, the draft still has undecided review items (the ones the review queue shows, not those a deny glob hides), or the draft changed after you confirmed.</summary>
     public static readonly ErrorDefinition PromoteRefused = new("SND-CONTEXT-046", ErrorKind.Conflict, "The draft can't be promoted");
 
     /// <summary>SND-CONTEXT-047: a stale review target: the node or link isn't in the latest draft's queue (decided already, or gone), or an undo names an override that is unknown or already undone.</summary>

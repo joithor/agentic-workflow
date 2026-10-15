@@ -269,6 +269,9 @@ public sealed class ReviewMapTests : IDisposable
 
         Assert.True(moved.IsSuccess, moved.IsError ? moved.Error.Message : null);
         Assert.Equal(2, moved.Value.Written.Count);
+        var rows = (await _world.Store.Overrides(MapWorld.None)).Value;
+        Assert.Contains(rows, o => o.Action == OverrideAction.Undo && o.Undoes == orphan.ToId());
+        Assert.Contains(rows, o => o.Action == OverrideAction.Rename && o.Target.Value == "feature:tabs.tab-groups" && o.Label == "Tab groups");
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -375,5 +378,17 @@ public sealed class ReviewMapTests : IDisposable
 
         Assert.Equal(newest, Assert.Single(history.Entries).Id);
         Assert.True(history.Truncated);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_refused_link_decision_with_no_draft_points_at_the_current_map_and_not_at_the_queue()
+    {
+        _ = await _world.ImportYaml(MapWorld.TabsMap);
+
+        var refused = await Decide(new ReviewDecision(ReviewVerb.Accept, Link: LinkId.From("edge:0123456789abcdef")));
+
+        Assert.Equal(ContextErrors.ReviewTargetStale.Code, refused.Error.Code);
+        Assert.Contains("the current map", refused.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("map review'", refused.Error.Message, StringComparison.Ordinal);
     }
 }
