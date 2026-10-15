@@ -1,14 +1,9 @@
 using Aw.Context.Core.Graph;
-using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 
 namespace Aw.Context.Core.Overrides;
 
-/// <summary>
-/// Applies the override layer over a map version (spec §6.1), oldest first. Pure: the stored version never changes.
-/// An undone override and the undo rows act as if absent. A 'propose' is pending until a person accepts or rejects it, and an
-/// undo only cancels another row, so neither is ever orphaned (S-4).
-/// </summary>
+/// <summary>Applies the override layer over a map version (spec §6.1), oldest first. Pure: the stored version never changes.</summary>
 public static class OverrideApplier
 {
     /// <summary>Applies <paramref name="overrides"/> to <paramref name="graph"/>.</summary>
@@ -21,14 +16,14 @@ public static class OverrideApplier
         ArgumentNullException.ThrowIfNull(overrides);
         var orphaned = new List<MapOverride>();
         var inapplicable = new List<MapOverride>();
-        foreach (var o in OverrideLog.Active(overrides))
+        foreach (var o in overrides.Select(o => (Override: o, Id: o.ToId().Value)).OrderBy(x => x.Override.At).ThenBy(x => x.Id, StringComparer.Ordinal).Select(x => x.Override))
         {
             var next = ApplyOne(graph, o);
             if (next is not null)
             {
                 graph = next;
             }
-            else if (IsOrphan(graph, o))
+            else if (o.Action != OverrideAction.Add && graph.Resolve(o.Target) is null)
             {
                 orphaned.Add(o);
             }
@@ -41,29 +36,11 @@ public static class OverrideApplier
         return new AppliedMap(graph, orphaned, inapplicable);
     }
 
-    // A link decision is orphaned when its edge is gone; a node decision when its target no longer resolves.
-    private static bool IsOrphan(GraphSnapshot graph, MapOverride o) => o.Action switch
-    {
-        OverrideAction.Add or OverrideAction.Propose => false,
-        _ when o.Link is { } link => !graph.Edges.Any(e => LinkIds.For(e).Value == link.Value),
-        _ => graph.Resolve(o.Target) is null,
-    };
-
     private static GraphSnapshot? ApplyOne(GraphSnapshot graph, MapOverride o)
     {
         if (o.Action == OverrideAction.Add)
         {
             return Add(graph, o);
-        }
-
-        if (o.Action == OverrideAction.Propose)
-        {
-            return Propose(graph, o);
-        }
-
-        if (o.Link is { } link)
-        {
-            return DecideLink(graph, o, link);
         }
 
         var target = graph.Resolve(o.Target);
@@ -74,52 +51,15 @@ public static class OverrideApplier
 
         return o.Action switch
         {
-            OverrideAction.Accept => Accept(Replace(graph, target, target with { Provenance = Provenance.Human }), target.Key),
+            OverrideAction.Accept => Replace(graph, target, target with { Provenance = Provenance.Human }),
             OverrideAction.Rename when !string.IsNullOrWhiteSpace(o.Label) => Replace(graph, target, target with { Label = o.Label }),
             OverrideAction.Reject => o.Rejection is null || o.Rejection == RejectionIdentity.For(target) ? Remove(graph, target.Key) : graph,
             OverrideAction.Delete => Remove(graph, target.Key),
             OverrideAction.Move or OverrideAction.Merge => WithOther(graph, target, o),
-            OverrideAction.Rename or OverrideAction.Add or OverrideAction.Propose or OverrideAction.Undo => null,   // add and propose are handled above; undo rows never reach here
+            OverrideAction.Rename or OverrideAction.Add or OverrideAction.Propose or OverrideAction.Undo => null,   // propose and undo are applied by the S-4 layer
 
             _ => null,
         };
-    }
-
-    // A proposal's own parent edge is confirmed with it.
-    private static GraphSnapshot Accept(GraphSnapshot graph, NodeKey key) => graph with
-    {
-        Edges = [.. graph.Edges.Select(e => e is { Type: EdgeType.PartOf, Provenance: Provenance.Model } && e.From.Value == key.Value ? e with { Provenance = Provenance.Human } : e)],
-    };
-
-    private static GraphSnapshot? DecideLink(GraphSnapshot graph, MapOverride o, LinkId link)
-    {
-        var edge = graph.Edges.FirstOrDefault(e => LinkIds.For(e).Value == link.Value);
-        return (o.Action, edge) switch
-        {
-            (_, null) => null,
-            (OverrideAction.Accept, _) => graph with { Edges = [.. graph.Edges.Select(e => ReferenceEquals(e, edge) ? e with { Provenance = Provenance.Human } : e)] },
-            (OverrideAction.Reject, _) => graph with { Edges = [.. graph.Edges.Where(e => !ReferenceEquals(e, edge))] },
-            _ => null,
-        };
-    }
-
-    private static GraphSnapshot? Propose(GraphSnapshot graph, MapOverride o)
-    {
-        if (graph.Resolve(o.Target) is not null)
-        {
-            return graph;
-        }
-
-        if (ProposalNodes.NodeOf(o) is not { } node)
-        {
-            return null;
-        }
-
-        var parent = o.Proposal?.Parent is { } key ? graph.Resolve(key)?.Key : null;
-        GraphEdge[] edges = parent is { } p && EdgeRules.Allows(EdgeType.PartOf, o.Target.Kind, p.Kind)
-            ? [new GraphEdge(o.Target, p, EdgeType.PartOf, Provenance.Model, node.Confidence, node.Evidence, At: o.At)]
-            : [];
-        return graph with { Nodes = [.. graph.Nodes, node], Edges = [.. graph.Edges, .. edges] };
     }
 
     private static GraphSnapshot? WithOther(GraphSnapshot graph, GraphNode target, MapOverride o)

@@ -17,41 +17,8 @@ public static class ProposalPlanner
     {
         ArgumentNullException.ThrowIfNull(proposal);
         ArgumentNullException.ThrowIfNull(basis);
-        var applied = OverrideApplier.Apply(basis, overrides).Graph;
-        var rejects = OverrideLog.Active(overrides).Where(o => o.Action == OverrideAction.Reject).ToList();
-        var rows = new List<MapOverride>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        (int existing, int rejected, int unmapped) = (0, 0, 0);
-        foreach (var surface in proposal.Surfaces)
-        {
-            if (ProposalNodes.KeyOf(surface) is not { } key)
-            {
-                unmapped++;
-            }
-            else if (applied.Resolve(key) is not null || !seen.Add(key.Value))
-            {
-                existing++;
-            }
-            else if (IsRejected(rejects, key, surface))
-            {
-                rejected++;
-            }
-            else
-            {
-                rows.Add(Row(proposal, surface, key, who, at));
-            }
-        }
-
-        return new ProposalPlan(rows, existing, rejected, unmapped);
+        ArgumentNullException.ThrowIfNull(overrides);
+        _ = (who, at);
+        throw new NotSupportedException("S-4: ProposalPlanner.Plan is not built yet");
     }
-
-    private static bool IsRejected(List<MapOverride> rejects, NodeKey key, ProposedSurface surface)
-    {
-        var identity = RejectionIdentity.For(ProposalNodes.Candidate(key, surface));
-        return rejects.Exists(r => r.Target.Value == key.Value && (r.Rejection is null || r.Rejection == identity));
-    }
-
-    private static MapOverride Row(ScopeProposal proposal, ProposedSurface surface, NodeKey key, string who, DateTimeOffset at) =>
-        new(OverrideAction.Propose, key, who, at, surface.Name,
-            Proposal: new ProposalPayload(proposal.Run, proposal.Repo, surface.Kind ?? key.Kind, surface.Parent, surface.Evidence, surface.Quote));
 }

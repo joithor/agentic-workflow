@@ -12,10 +12,9 @@ public static class GraphStatuses
     /// <returns>The surfaces, in proposal order.</returns>
     public static IReadOnlyList<ProposedSurface> ForRun(string run, IReadOnlyList<MapOverride> overrides)
     {
+        ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(overrides);
-        return [.. OverrideLog.Active(overrides)
-            .Where(o => o.Action == OverrideAction.Propose && o.Proposal is { } p && p.Run == run)
-            .Select(o => new ProposedSurface(o.Label ?? o.Target.Name, o.Target, o.Proposal!.Kind, o.Proposal.Parent, o.Proposal.Evidence, o.Proposal.Quote))];   // why: the filter keeps only rows with a payload
+        throw new NotSupportedException("S-4: GraphStatuses.ForRun is not built yet");
     }
 
     /// <summary>The status of each surface.</summary>
@@ -27,22 +26,7 @@ public static class GraphStatuses
     {
         ArgumentNullException.ThrowIfNull(surfaces);
         ArgumentNullException.ThrowIfNull(current);
-        return [.. surfaces.Select(s =>
-        {
-            var key = ProposalNodes.KeyOf(s);
-            if (key is null)
-            {
-                return new GraphStatus(s.Name, null, GraphStatusKind.Unmapped);
-            }
-
-            if (current.Resolve(key.Value) is { } mapped)
-            {
-                return new GraphStatus(s.Name, mapped.Key, GraphStatusKind.Mapped);
-            }
-
-            return draft?.Resolve(key.Value) is { } proposed
-                ? new GraphStatus(s.Name, proposed.Key, GraphStatusKind.New)
-                : new GraphStatus(s.Name, null, GraphStatusKind.Unmapped);
-        })];
+        _ = draft;
+        throw new NotSupportedException("S-4: GraphStatuses.Of is not built yet");
     }
 }

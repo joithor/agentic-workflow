@@ -10,13 +10,7 @@ public static class PromoteReadiness
     /// <returns>The queue when ready, else SND-CONTEXT-046 naming what is left.</returns>
     public static Result<ReviewQueueView> Check(ReviewQueueView? queue)
     {
-        if (queue is null)
-        {
-            return ContextErrors.PromoteRefused.With("there is no draft to promote (fix: run 'sindri context map build')");
-        }
-
-        return queue.Undecided > 0
-            ? ContextErrors.PromoteRefused.With($"draft {queue.Draft} has {queue.Undecided} undecided review items (fix: decide them with 'sindri context map review'; skipping doesn't decide)")
-            : queue;
+        _ = queue;
+        throw new NotSupportedException("S-4: PromoteReadiness.Check is not built yet");
     }
 }

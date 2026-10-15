@@ -1,5 +1,3 @@
-using Aw.Context.Core.Graph;
-
 namespace Aw.Context.Core.Overrides;
 
 /// <summary>The override history read as a log (S-4): oldest first, with the undone rows and the undo rows themselves set aside.</summary>
@@ -11,7 +9,7 @@ public static class OverrideLog
     public static IReadOnlyList<MapOverride> Ordered(IReadOnlyList<MapOverride> overrides)
     {
         ArgumentNullException.ThrowIfNull(overrides);
-        return [.. overrides.Select(o => (Override: o, Id: o.ToId().Value)).OrderBy(x => x.Override.At).ThenBy(x => x.Id, StringComparer.Ordinal).Select(x => x.Override)];
+        throw new NotSupportedException("S-4: OverrideLog.Ordered is not built yet");
     }
 
     /// <summary>The ids of the overrides an effective undo reverses. An undo that is itself undone reverses nothing, so the row it named counts again.</summary>
@@ -19,16 +17,8 @@ public static class OverrideLog
     /// <returns>The reversed ids.</returns>
     public static IReadOnlySet<string> Undone(IReadOnlyList<MapOverride> overrides)
     {
-        var undone = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var undo in Ordered(overrides).Reverse().Where(o => o is { Action: OverrideAction.Undo, Undoes: not null }))
-        {
-            if (!undone.Contains(undo.ToId().Value))
-            {
-                _ = undone.Add(undo.Undoes!.Value.Value);   // why: the filter above keeps only rows with an Undoes id
-            }
-        }
-
-        return undone;
+        ArgumentNullException.ThrowIfNull(overrides);
+        throw new NotSupportedException("S-4: OverrideLog.Undone is not built yet");
     }
 
     /// <summary>The overrides that still act: not reversed, and not undo rows.</summary>
@@ -36,8 +26,8 @@ public static class OverrideLog
     /// <returns>The rows, in application order.</returns>
     public static IReadOnlyList<MapOverride> Active(IReadOnlyList<MapOverride> overrides)
     {
-        var undone = Undone(overrides);
-        return [.. Ordered(overrides).Where(o => o.Action != OverrideAction.Undo && !undone.Contains(o.ToId().Value))];
+        ArgumentNullException.ThrowIfNull(overrides);
+        throw new NotSupportedException("S-4: OverrideLog.Active is not built yet");
     }
 
     /// <summary>Whether an override decides a proposal: an accept, a reject, a merge or a delete. A rename or a move doesn't.</summary>
@@ -46,6 +36,6 @@ public static class OverrideLog
     public static bool Decides(MapOverride o)
     {
         ArgumentNullException.ThrowIfNull(o);
-        return o.Action is OverrideAction.Accept or OverrideAction.Reject or OverrideAction.Merge or OverrideAction.Delete;
+        throw new NotSupportedException("S-4: OverrideLog.Decides is not built yet");
     }
 }

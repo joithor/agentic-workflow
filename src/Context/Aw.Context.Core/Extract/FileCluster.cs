@@ -4,4 +4,4 @@ namespace Aw.Context.Core.Extract;
 /// <param name="Id">A stable name for the cluster ('c3').</param>
 /// <param name="Files">Its files (paths from the repo root).</param>
 /// <param name="Confidence">0 to 1.</param>
-public sealed record FileCluster(string Id, IReadOnlyList<string> Files, double Confidence);
+public sealed record FileCluster(ClusterId Id, IReadOnlyList<string> Files, double Confidence);
