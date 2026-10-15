@@ -1,6 +1,7 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Results;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Map;
@@ -73,6 +74,31 @@ public static class MapAccess
             ? (mapped.IsError ? mapped.Error : null)
             : ContextErrors.MapFileInvalid.With(
                 $"repo: '{repo.Value}' isn't a repo the approved profile maps ({string.Join(", ", mapped.Value.Select(r => r.Name.Value))}); nothing was written (fix: name one of them, or add the repo to the profile and approve it)");
+    }
+
+    /// <summary>The graph without the code nodes of denied paths, every edge touching them, and the model-made features only those files implemented: a deny glob added after the map was built keeps the path out of every read (spec §6.2).</summary>
+    /// <param name="current">The graph.</param>
+    /// <param name="built">The repos whose deny globs apply.</param>
+    /// <returns>The graph itself when nothing is denied.</returns>
+    public static GraphSnapshot WithoutDenied(GraphSnapshot current, IReadOnlyList<ContextRepo> built)
+    {
+        ArgumentNullException.ThrowIfNull(current);
+        ArgumentNullException.ThrowIfNull(built);
+        var denied = current.Nodes.Where(n => n.Key.Kind == NodeKind.Code && built.Any(r => r.Denies(n.Key.Value["code:".Length..]))).Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
+        if (denied.Count == 0)
+        {
+            return current;
+        }
+
+        var edges = current.Edges.Where(e => !denied.Contains(e.From.Value) && !denied.Contains(e.To.Value)).ToList();
+        var features = current.Nodes.Where(n => n.Key.Kind == NodeKind.Feature && n.Provenance == Provenance.Model).Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
+        var orphaned = current.Edges.Where(e => e.Type == EdgeType.Implements && denied.Contains(e.From.Value)).Select(e => e.To.Value)
+            .Where(feature => features.Contains(feature) && !edges.Exists(e => e.Type == EdgeType.Implements && e.To.Value == feature)).ToHashSet(StringComparer.Ordinal);
+        return current with
+        {
+            Nodes = [.. current.Nodes.Where(n => !denied.Contains(n.Key.Value) && !orphaned.Contains(n.Key.Value))],
+            Edges = [.. edges.Where(e => !orphaned.Contains(e.From.Value) && !orphaned.Contains(e.To.Value))],
+        };
     }
 
     /// <summary>The export document for a version's visible graph: decision nodes and 'quotes' edges are left to the decisions, which imply them.</summary>

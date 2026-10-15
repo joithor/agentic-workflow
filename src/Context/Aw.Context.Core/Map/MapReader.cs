@@ -37,7 +37,9 @@ public sealed class MapReader(IGraphStore store)
         // A 'propose' row only adds its node to a draft: a pending proposal is never part of the current map (a promote makes an accepted one a node of the version).
         var layer = draft ? map.Overrides : [.. map.Overrides.Where(o => o.Action != OverrideAction.Propose)];
         var applied = OverrideApplier.Apply(map.Graph, layer).Graph;
-        var visible = MapAccess.Visible(applied, [], scope.Caller);
+        // A deny glob added after the map was built hides its code nodes now, before any rebuild (review #220 run 1: security-sentinel-1).
+        var allowed = MapAccess.WithoutDenied(applied, ScopeRules.Resolve(SettingsReader.Read(scope.Settings).Value, scope.Repos, scope.Caller).Value);
+        var visible = MapAccess.Visible(allowed, [], scope.Caller);
         return visible.IsError ? visible.Error : new VisibleMap(map, visible.Value.Graph);
     }
 

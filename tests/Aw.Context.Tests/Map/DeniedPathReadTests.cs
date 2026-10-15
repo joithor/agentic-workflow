@@ -1,6 +1,5 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
-using Aw.Context.Core.Lenses;
 using Aw.Context.Testing.Map;
 
 namespace Aw.Context.Tests.Map;
@@ -27,19 +26,6 @@ public sealed class DeniedPathReadTests : IDisposable
 
         Assert.Contains(before.Bands.Code.Files, f => string.Equals(f.Path, Denied, StringComparison.Ordinal));
         Assert.DoesNotContain(after.Bands.Code.Files, f => string.Equals(f.Path, Denied, StringComparison.Ordinal));
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task A_denied_code_file_leaves_the_file_map()
-    {
-        _ = await _world.ImportFixture();
-        var query = new FileMapQuery(ContextRepoName.From(FixtureMap.Repo), "src/layout/", UnmappedOnly: false, Draft: false);
-
-        var before = (await _world.Engine.FileMap(query, MapWorld.Human, MapWorld.None)).Value;
-        var after = (await _world.Engine.FileMap(query, Denying(Denied), MapWorld.None)).Value;
-
-        Assert.Contains(before.Entries, e => string.Equals(e.Name, "SplitPane.ts", StringComparison.Ordinal) && e.Status == FileMapStatus.Mapped);
-        Assert.DoesNotContain(after.Entries, e => e.Status == FileMapStatus.Mapped && string.Equals(e.Name, "SplitPane.ts", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]

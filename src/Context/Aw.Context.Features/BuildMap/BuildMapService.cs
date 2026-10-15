@@ -5,7 +5,6 @@ using Aw.Context.Core.Extract;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
-using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -176,31 +175,11 @@ internal sealed class BuildMapService(
     // The current map first: what a person put there wins over what the build found, and a promote loses nothing. A path any built repo now denies leaves the map (spec §6.2).
     private static GraphSnapshot Join(GraphSnapshot current, ExtractedMap found, IReadOnlyList<ContextRepo> built)
     {
-        var kept = WithoutDenied(current, built);
+        var kept = MapAccess.WithoutDenied(current, built);
         return kept with
         {
             Nodes = [.. kept.Nodes.Concat(found.Nodes).DistinctBy(n => n.Key.Value, StringComparer.Ordinal)],
             Edges = [.. kept.Edges.Concat(found.Edges).DistinctBy(e => (e.From.Value, e.To.Value, e.Type))],
-        };
-    }
-
-    // The code nodes of denied paths, every edge touching them, and the model-made features that only those files implemented: a deny glob added after the map was built still keeps the path out of every read.
-    private static GraphSnapshot WithoutDenied(GraphSnapshot current, IReadOnlyList<ContextRepo> built)
-    {
-        var denied = current.Nodes.Where(n => n.Key.Kind == NodeKind.Code && built.Any(r => r.Denies(n.Key.Value["code:".Length..]))).Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
-        if (denied.Count == 0)
-        {
-            return current;
-        }
-
-        var edges = current.Edges.Where(e => !denied.Contains(e.From.Value) && !denied.Contains(e.To.Value)).ToList();
-        var features = current.Nodes.Where(n => n.Key.Kind == NodeKind.Feature && n.Provenance == Provenance.Model).Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
-        var orphaned = current.Edges.Where(e => e.Type == EdgeType.Implements && denied.Contains(e.From.Value)).Select(e => e.To.Value)
-            .Where(feature => features.Contains(feature) && !edges.Exists(e => e.Type == EdgeType.Implements && e.To.Value == feature)).ToHashSet(StringComparer.Ordinal);
-        return current with
-        {
-            Nodes = [.. current.Nodes.Where(n => !denied.Contains(n.Key.Value) && !orphaned.Contains(n.Key.Value))],
-            Edges = [.. edges.Where(e => !orphaned.Contains(e.From.Value) && !orphaned.Contains(e.To.Value))],
         };
     }
 

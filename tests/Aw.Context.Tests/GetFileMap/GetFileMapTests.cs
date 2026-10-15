@@ -90,6 +90,18 @@ public sealed class GetFileMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_denied_file_is_neither_listed_nor_suggested_before_any_rebuild()
+    {
+        await ImportTabs();
+        var denying = new ContextScope(Settings: null, [MapWorld.Repos[0] with { DenyPaths = [.. PathDenylist.Defaults, "src/tabs/TabGroups.ts"] }], MapWorld.Human.Caller);
+
+        var view = (await Ask("src/tabs/", scope: denying)).Value;
+
+        Assert.DoesNotContain(view.Entries, e => string.Equals(e.Name, "TabGroups.ts", StringComparison.Ordinal));
+        Assert.Empty(view.Suggested);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task The_view_names_the_commit_the_tree_was_listed_at_by_its_first_seven_characters()
     {
         await ImportTabs();
