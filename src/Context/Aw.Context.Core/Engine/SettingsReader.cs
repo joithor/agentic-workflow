@@ -43,7 +43,12 @@ public static partial class SettingsReader
 
         if (UnknownKey(element) is { } unknown)
         {
-            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, deadline, maxBudget, minHits, scrub, sessions)");
+            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, deadline, maxBudget, minHits, scrub, sessions, sources)");
+        }
+
+        if (SourcesReader.Shape(element) is { } shape)
+        {
+            return shape;
         }
 
         var read = AwJson.Deserialize<ContextSection>(System.Text.Encoding.UTF8.GetBytes(element.GetRawText()), _json);
@@ -55,10 +60,12 @@ public static partial class SettingsReader
         var settings = new ContextSettings();
         var globs = section.Docs?.Globs ?? ContextSettings.DefaultDocGlobs;
         var deadline = section.Deadline is null ? settings.Deadline : Duration(section.Deadline);
-        return (Problem(section, globs), deadline) switch
+        var sources = SourcesReader.Check(section.Sources);
+        return (Problem(section, globs), deadline, sources) switch
         {
-            ({ } problem, _) => problem,
-            (_, null) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
+            ({ } problem, _, _) => problem,
+            (_, null, _) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
+            (_, _, { IsError: true }) => sources.Error,
             _ => settings with
             {
                 Repos = section.Repos?.Select(ContextRepoName.From).ToList(),
@@ -67,6 +74,8 @@ public static partial class SettingsReader
                 MaxBudget = section.MaxBudget ?? settings.MaxBudget,
                 MinHits = section.MinHits ?? settings.MinHits,
                 SessionsEnabled = section.Sessions?.Enabled ?? false,
+                Onyx = sources.Value.Onyx,
+                LinearTeams = sources.Value.Teams,
                 ExtraPatterns = Patterns(section.Scrub),
             },
         };
@@ -119,7 +128,7 @@ public static partial class SettingsReader
 
     private static string? UnknownKey(JsonElement element)
     {
-        string[] known = ["repos", "docs", "deadline", "maxBudget", "minHits", "scrub", "sessions"];
+        string[] known = ["repos", "docs", "deadline", "maxBudget", "minHits", "scrub", "sessions", "sources"];
         return element.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
@@ -137,9 +146,10 @@ public static partial class SettingsReader
     }
 
     /// <summary>A name or value from the profile, for a message: itself when it is plain, else a fixed word.</summary>
-    private static string Printable(string text) => PlainText.IsMatch(text) ? text : "(a value with unusual characters)";
+    internal static string Printable(string text) => PlainText.IsMatch(text) ? text : "(a value with unusual characters)";
 
-    private static Error Invalid(string keyPath, string problem) => ContextErrors.SettingsInvalid.With($"{keyPath}: {problem}");
+    /// <summary>SND-CONTEXT-001 with the key path first.</summary>
+    internal static Error Invalid(string keyPath, string problem) => ContextErrors.SettingsInvalid.With($"{keyPath}: {problem}");
 
     [GeneratedRegex("^(?<n>[0-9]{1,6})(?<u>ms|s)\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex DurationShape { get; }
