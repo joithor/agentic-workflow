@@ -34,10 +34,10 @@ public sealed class DescriptorDetourTests : IDisposable
 
     public void Dispose() => _root.Dispose();
 
-    // A child that writes to the given (inherited) descriptor of this process.
+    // A child that writes to the given (inherited) descriptor of this process. Through /dev/fd/N, not ">&N": dash (the Linux /bin/sh) only takes a one-digit N there.
     private static void Echo(int descriptor, string text)
     {
-        using var child = Process.Start("/bin/sh", ["-c", string.Create(CultureInfo.InvariantCulture, $"printf '%s\\n' '{text}' >&{descriptor}")]);
+        using var child = Process.Start("/bin/sh", ["-c", string.Create(CultureInfo.InvariantCulture, $"printf '%s\\n' '{text}' >> /dev/fd/{descriptor}")]);
         child.WaitForExit();
     }
 }
