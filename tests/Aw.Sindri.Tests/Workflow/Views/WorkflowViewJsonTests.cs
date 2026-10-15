@@ -9,6 +9,7 @@ namespace Aw.Sindri.Tests.Workflow.Views;
 /// <summary>The wire vocabulary of the rev-8 views (API spec section 3.8): kebab-case enums, grantTokens, an unknown fact type as payload, nulls present.</summary>
 public sealed class WorkflowViewJsonTests
 {
+    private static readonly JsonSerializerOptions _webOptions = new(JsonSerializerDefaults.Web);
     private static readonly JsonSerializerOptions _options = AwJson.CreateOptions(SindriJsonContext.Default);
 
     [Theory, Trait("Lane", "unit")]
@@ -69,7 +70,8 @@ public sealed class WorkflowViewJsonTests
                 "workflow/sentry-8809", "workflow/sentry-8812", "workflow/PRJ-exports", "workflow/PRJ-sync", "workflow/PRJ-tabs", "workflow/LIN-ENG",
                 "workflow/LIN-APP",
             ],
-            addresses);
+            addresses,
+            StringComparer.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -84,7 +86,7 @@ public sealed class WorkflowViewJsonTests
     [InlineData("{\"type\":null,\"n\":2}")]
     public void A_fact_type_that_is_not_a_name_reads_as_payload_and_leaves_the_rest_readable(string json)
     {
-        var typed = JsonSerializer.Deserialize<TypeHolder>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var typed = JsonSerializer.Deserialize<TypeHolder>(json, _webOptions);
 
         Assert.Equal(FactType.Payload, typed!.Type);
         Assert.Equal(2, typed.N);

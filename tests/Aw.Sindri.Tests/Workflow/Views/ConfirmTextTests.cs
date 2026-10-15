@@ -15,7 +15,7 @@ public sealed class ConfirmTextTests
     {
         var commands = WorkflowViewFixtures.StatusParkedChild().Commands;
 
-        Assert.Equal(ConfirmText.Cancel("workflow/PRJ-sync", 1, 5), Assert.Single(commands, c => c.Verb == "cancel").Confirm);
-        Assert.All(commands.Where(c => c.Verb != "cancel"), c => Assert.Null(c.Confirm));
+        Assert.Equal(ConfirmText.Cancel("workflow/PRJ-sync", 1, 5), Assert.Single(commands, c => c.Verb.Value == "cancel").Confirm);
+        Assert.All(commands.Where(c => c.Verb.Value != "cancel"), c => Assert.Null(c.Confirm));
     }
 }

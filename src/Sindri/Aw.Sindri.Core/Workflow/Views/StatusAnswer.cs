@@ -6,8 +6,8 @@ namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>The answer a status layout offers (E-23).</summary>
 /// <param name="Kind">The kind.</param>
-/// <param name="ActionId">The catalog action id of this answer kind (<c>ApplyCommand:answer-grant</c>, <c>-grant-tokens</c>, <c>-accept</c> are protected; <c>-text</c>, <c>-resume</c>, <c>-reject</c> are desk).</param>
-/// <param name="Class">The catalog row's action class: <c>desk</c> or <c>protected</c>.</param>
+/// <param name="ActionId">The catalog action id of this answer kind ("ApplyCommand:answer-grant", "-grant-tokens", "-accept" are protected; "-text", "-resume", "-reject" are desk).</param>
+/// <param name="Class">The catalog row's action class: "desk" or "protected".</param>
 /// <param name="Cli">The exact command printed.</param>
 /// <param name="AtTerminal">Whether it needs a terminal.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]

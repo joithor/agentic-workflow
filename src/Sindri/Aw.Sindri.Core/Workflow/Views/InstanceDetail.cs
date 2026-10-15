@@ -5,7 +5,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>One instance for the Workflows frame (API spec section 3.8, E-20, E-23); the spec calls it InstanceView, a name the engine's status view holds.</summary>
-/// <param name="Address">The CLI address (<c>workflow/PRJ-sync</c>, <c>T-3/item/1</c>): a display path the API resolves, not the engine's <c>InstanceAddress</c>, whose shape is narrower, so it stays text.</param>
+/// <param name="Address">The CLI address ("workflow/PRJ-sync", "T-3/item/1"): a display path the API resolves, not the engine's "InstanceAddress", whose shape is narrower, so it stays text.</param>
 /// <param name="Id">The engine's WFI id.</param>
 /// <param name="Parent">The parent instance, for a child.</param>
 /// <param name="ItemId">The item id.</param>

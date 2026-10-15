@@ -219,11 +219,12 @@ public static class WorkflowViewFixtures
 
             var (actionClass, cli, confirm) = verb switch
             {
-                "answer" => (answer!.Class, answer.Cli, (string?)null),
+                "cancel" => (ActionClass.Desk, $"sindri workflow cancel {row.Address}", ConfirmText.Cancel(row.Address, open.RunningSteps, open.OpenChildren)),
+                "answer" => (answer!.Class, answer.Cli, null),
                 "complete" => (ActionClass.Desk, open.CompleteCli!, null),
                 "takeover" => (ActionClass.Pause, $"sindri workflow takeover {row.Address}", null),
                 "handback" => (ActionClass.Desk, $"sindri workflow handback {row.Address}", null),
-                _ => (ActionClass.Desk, $"sindri workflow cancel {row.Address}", ConfirmText.Cancel(row.Address, open.RunningSteps, open.OpenChildren)),
+                _ => throw new InvalidOperationException($"no command line for the verb {verb}"),
             };
             commands.Add(new StatusCommand(CommandVerb.From(verb), found[0], actionClass, cli, confirm));
         }
@@ -247,6 +248,7 @@ public static class WorkflowViewFixtures
         AnswerKind.Accept => new(kind, Act("ApplyCommand:answer-accept"), ActionClass.Protected, $"sindri workflow answer {address} {arguments ?? "--accept"}", AtTerminal: true),
         AnswerKind.Resume => new(kind, Act("ApplyCommand:answer-resume"), ActionClass.Desk, $"sindri workflow answer {address} {arguments ?? "--resume"}", AtTerminal: false),
         AnswerKind.Text => new(kind, Act("ApplyCommand:answer-text"), ActionClass.Desk, $"sindri workflow answer {address} {arguments ?? "--text <answer>"}", AtTerminal: false),
+        AnswerKind.CancelOnly => throw new ArgumentOutOfRangeException(nameof(kind), kind, "no answer for this kind"),
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "no answer for this kind"),
     };
 

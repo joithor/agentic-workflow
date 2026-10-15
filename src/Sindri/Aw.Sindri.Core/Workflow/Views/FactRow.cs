@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>One input or output the recipe declares (E-20).</summary>
-/// <param name="Key">The fact row's key as the facts route takes it (text: the engine's <c>FactKey</c> carries a <c>fact:</c> prefix this key does not).</param>
+/// <param name="Key">The fact row's key as the facts route takes it (text: the engine's "FactKey" carries a "fact:" prefix this key does not).</param>
 /// <param name="Label">The label.</param>
 /// <param name="Type">The type.</param>
 /// <param name="Direction">Input or output.</param>

@@ -3,8 +3,8 @@ using System.Text.Json.Serialization;
 namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>One state of the recipe in path order (E-20).</summary>
-/// <param name="State">The state id (wire name <c>id</c>). Text, because a state id has no typed id yet; the name stays <c>State</c> and the wire name comes from the attribute.</param>
-/// <param name="Order">The 1-based position in path order on the main path; <c>null</c> for a branch state (WF section 3.10).</param>
+/// <param name="State">The state id (wire name "id"). Text, because a state id has no typed id yet; the name stays "State" and the wire name comes from the attribute.</param>
+/// <param name="Order">The 1-based position in path order on the main path; <see langword="null"/> for a branch state (WF section 3.10).</param>
 /// <param name="BranchOf">The state this one is folded under.</param>
 /// <param name="Glyph">The mark.</param>
 /// <param name="Badge">The badge replacing the glyph.</param>

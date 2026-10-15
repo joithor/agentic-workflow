@@ -74,7 +74,7 @@ public sealed class WorkflowViewFixtureTests
         {
             var lines = status.Text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
             var header = status.Header;
-            Assert.StartsWith($"{header.Address}  {header.Recipe.Value}@{header.Hash12}  v{header.Version}  {header.State}", lines[0], StringComparison.Ordinal);
+            Assert.StartsWith($"{header.Address}  {header.Recipe.Value}@{header.Hash12}  v{header.Version.ToString(CultureInfo.InvariantCulture)}  {header.State}", lines[0], StringComparison.Ordinal);
             Assert.Equal(status.Next.Length > 0, HasLine(lines, "next"));
             Assert.Equal(status.Child is not null, HasLine(lines, "child"));
             Assert.Equal(status.Drift is not null, HasLine(lines, "drift"));
@@ -123,7 +123,7 @@ public sealed class WorkflowViewFixtureTests
         foreach (var view in WorkflowViewFixtures.AllDetails())
         {
             var main = view.States.Where(s => s.BranchOf is null).Select(s => s.Order).ToList();
-            Assert.Equal(Enumerable.Range(1, main.Count).Select(n => (int?)n), main);
+            Assert.Equal(Enumerable.Range(1, main.Count).Cast<int?>(), main);
             Assert.All(view.States.Where(s => s.BranchOf is not null), s => Assert.Null(s.Order));
         }
 

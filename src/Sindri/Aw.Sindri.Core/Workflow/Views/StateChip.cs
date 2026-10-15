@@ -10,7 +10,7 @@ public sealed record StateChip(string Word, ChipTone Tone)
 {
     /// <summary>The chip of a state: an engine-owned badge decides first, then an open desk answer, then queued, terminal and running.</summary>
     /// <param name="state">The state id, or 'queued' for an instance waiting for a slot.</param>
-    /// <param name="engineOwned">The engine-owned badge, if any; a taken-over instance arrives here as the <c>taken-over</c> badge (the plan's <c>takenOver</c> flag).</param>
+    /// <param name="engineOwned">The engine-owned badge, if any; a taken-over instance arrives here as the "taken-over" badge (the plan's "takenOver" flag).</param>
     /// <param name="deskOpen">Whether a desk answer is open.</param>
     /// <param name="terminal">Whether the state is final.</param>
     /// <returns>The chip.</returns>

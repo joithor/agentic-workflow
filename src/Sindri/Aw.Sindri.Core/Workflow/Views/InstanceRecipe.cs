@@ -6,7 +6,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>A recipe as an instance pins it (E-20).</summary>
 /// <param name="Id">The recipe id.</param>
-/// <param name="Hash">The pinned hash (<c>sha256:</c> and 64 hex digits).</param>
+/// <param name="Hash">The pinned hash ("sha256:" and 64 hex digits).</param>
 /// <param name="Version">The author's version.</param>
 /// <param name="Urgency">The recipe's urgency.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]

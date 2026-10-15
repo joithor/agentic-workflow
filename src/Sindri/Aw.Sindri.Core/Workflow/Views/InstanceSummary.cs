@@ -5,7 +5,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>One row of the list (E-20).</summary>
-/// <param name="Address">The CLI address (see <see cref="InstanceDetail"/>): display text, not the engine's <c>InstanceAddress</c>.</param>
+/// <param name="Address">The CLI address (see <see cref="InstanceDetail"/>): display text, not the engine's "InstanceAddress".</param>
 /// <param name="Id">The engine's WFI id, which the id routes take.</param>
 /// <param name="ItemId">The item id when the instance is an item's.</param>
 /// <param name="Recipe">The recipe stamp.</param>

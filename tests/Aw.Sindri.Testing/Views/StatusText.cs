@@ -5,7 +5,7 @@ using Aw.Sindri.Core.Workflow.Views;
 namespace Aw.Sindri.Testing.Views;
 
 /// <summary>
-/// The WF section 6.4 text form of a status, rendered from the fields so the fixtures' <c>text</c> can't disagree with them
+/// The WF section 6.4 text form of a status, rendered from the fields so the fixtures' "text" can't disagree with them
 /// (API spec section 3.8, "cannot disagree"). The product renderer arrives with API P11 U3; the golden files pin its output.
 /// </summary>
 public static class StatusText
@@ -13,8 +13,8 @@ public static class StatusText
     private const int WrapAt = 100;
     private const string Label = "  ";
 
-    /// <summary>Renders the status the way <c>sindri workflow status</c> prints it.</summary>
-    /// <param name="status">The fields (their <c>Text</c> is ignored).</param>
+    /// <summary>Renders the status the way "sindri workflow status" prints it.</summary>
+    /// <param name="status">The fields (their "Text" is ignored).</param>
     /// <param name="now">The clock the ages are measured against.</param>
     /// <returns>The lines, each ended by a line feed.</returns>
     public static string Render(StatusFields status, DateTimeOffset now)
@@ -24,54 +24,71 @@ public static class StatusText
         var h = status.Header;
         var detail = h.Detail is null ? string.Empty : $": {h.Detail}";
         text.Append(CultureInfo.InvariantCulture, $"{h.Address}  {h.Recipe.Value}@{h.Hash12}  v{h.Version}  {h.State}{detail}  since {Clock(h.Since, now)} ({Span(h.AgeSeconds)})\n");
+        foreach (var (label, value) in Rows(status))
+        {
+            Line(text, label, value);
+        }
+
+        return text.ToString();
+    }
+
+    private static IEnumerable<(string Label, string Value)> Rows(StatusFields status) =>
+        Identity(status).Concat(Limits(status)).Concat(Actions(status));
+
+    private static IEnumerable<(string Label, string Value)> Identity(StatusFields status)
+    {
         if (status.Next.Length > 0)
         {
-            Line(text, "next", status.Next);
+            yield return ("next", status.Next);
         }
 
         if (status.Child is { } child)
         {
-            Line(text, "child", $"{child.Address}  {child.State}{(child.Reason is null ? string.Empty : $": {child.Reason}")}");
+            yield return ("child", $"{child.Address}  {child.State}{(child.Reason is null ? string.Empty : $": {child.Reason}")}");
         }
 
         if (status.Drift is { } drift)
         {
-            Line(text, "drift", $"{drift.Block.Value} changed{(drift.NeedsReapproval ? "; the answer needs the re-approval first" : string.Empty)}");
+            yield return ("drift", $"{drift.Block.Value} changed{(drift.NeedsReapproval ? "; the answer needs the re-approval first" : string.Empty)}");
         }
 
         foreach (var input in status.Inputs)
         {
-            Line(text, "inputs", $"{input.Key}  {input.Name}{(input.Hash is null ? string.Empty : $"  sha256:{input.Hash[..4]}…")}");
+            yield return ("inputs", $"{input.Key}  {input.Name}{(input.Hash is null ? string.Empty : $"  sha256:{input.Hash[..4]}…")}");
         }
+    }
 
+    private static IEnumerable<(string Label, string Value)> Limits(StatusFields status)
+    {
         if (status.Timeout is { } timeout)
         {
             var kind = timeout.Kind == TimeoutKind.Parks ? "parks" : "escalates";
-            Line(text, "timeout", $"{kind} in {Span(timeout.InSeconds)} ({timeout.On})");
+            yield return ("timeout", $"{kind} in {Span(timeout.InSeconds)} ({timeout.On})");
         }
 
         if (status.Budget is { } budget)
         {
-            Line(text, "budget", $"tokens {Tokens(budget.Used)} / {Tokens(budget.Limit)} ({budget.Scope}), {Tokens(budget.Instance.Used)} / {Tokens(budget.Instance.Limit)} (instance)");
+            yield return ("budget", $"tokens {Tokens(budget.Used)} / {Tokens(budget.Limit)} ({budget.Scope}), {Tokens(budget.Instance.Used)} / {Tokens(budget.Instance.Limit)} (instance)");
         }
 
         if (status.Paused is { } paused)
         {
-            Line(text, "paused", $"timeout {Span(paused.TimeoutLeftSeconds)} left");
+            yield return ("paused", $"timeout {Span(paused.TimeoutLeftSeconds)} left");
         }
+    }
 
+    private static IEnumerable<(string Label, string Value)> Actions(StatusFields status)
+    {
         if (status.Answer is { } answer)
         {
-            Line(text, "answer", answer.Cli + Suffix(status));
+            yield return ("answer", answer.Cli + Suffix(status));
         }
 
         if (status.Commands.Count > 0)
         {
             var verbs = status.Commands.Select(c => c.Verb.Value == "answer" && status.Child is not null ? "answer (forwarded)" : c.Verb.Value);
-            Line(text, "commands", string.Join(", ", verbs));
+            yield return ("commands", string.Join(", ", verbs));
         }
-
-        return text.ToString();
     }
 
     private static string Suffix(StatusFields status)
