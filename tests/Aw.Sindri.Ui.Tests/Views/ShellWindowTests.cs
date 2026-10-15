@@ -695,6 +695,23 @@ public sealed class ShellWindowTests : IDisposable
         Frame(window, "normal");
     });
 
+    // Screens spec R8-13 withdraws the attention band (rev 7 §3.2): the health pill carries the state, and needs-you
+    // shows as row tint and the panel's count chip. Whatever the page, the window has no such element.
+    [Fact]
+    public Task No_attention_band_on_any_page() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+
+        foreach (var page in Enum.GetValues<PageId>())
+        {
+            shell.GoTo(page);
+            Settle(window);
+
+            Assert.DoesNotContain(window.GetVisualDescendants().OfType<Control>(), c => c.Name == "AttentionBand");
+        }
+    });
+
     [Fact]
     public Task Unreadable_shows_the_banner_and_keeps_the_page() => OnUi(async () =>
     {
