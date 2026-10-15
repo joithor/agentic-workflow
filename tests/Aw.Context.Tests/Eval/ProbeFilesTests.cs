@@ -48,6 +48,19 @@ public sealed class ProbeFilesTests : IDisposable
     }
 
     [Fact]
+    public async Task An_unknown_key_is_SND_CONTEXT_035_at_its_key_path_without_the_parser_s_type_names()
+    {
+        var reader = new ProbeFileReader(_settings, EvalJson.Options);
+        var bad = Place("unknown.json", """{"probes":[{"id":"a","question":"q","expect":{"nodez":[]}}]}""");
+
+        var error = (await reader.Read(bad, None)).Error;
+
+        Assert.Equal(ContextErrors.ProbeFileInvalid.Code, error.Code);
+        Assert.Contains(": probes[0].expect.nodez: unknown key; nothing was run", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Aw.Context", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task A_report_is_written_0600_in_a_0700_folder_and_the_latest_is_the_newest_of_the_same_file()
     {
         var store = new FileProbeReportStore(_settings, EvalJson.Options);
