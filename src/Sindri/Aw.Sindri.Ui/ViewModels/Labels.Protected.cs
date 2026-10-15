@@ -6,6 +6,12 @@ internal static partial class Labels
     /// <summary>The lock button's title (the fixture's sentence, no full stop).</summary>
     internal const string ProtectedTitle = "Needs a typed confirmation at a terminal";
 
+    /// <summary>What the popover says when the served command holds a control or bidi character and is not shown.</summary>
+    internal const string CommandNotShown = "The served command can't be shown";
+
+    /// <summary>What Copy's name says when there is no command to copy.</summary>
+    internal const string NoCommandServed = "no command served";
+
     /// <summary>The popover's Open in an agent.</summary>
     internal const string OpenInAgent = "Open in an agent";
 

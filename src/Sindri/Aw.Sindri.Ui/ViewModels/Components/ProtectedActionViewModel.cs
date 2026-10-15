@@ -34,7 +34,7 @@ internal sealed class ProtectedActionViewModel(ProtectedAction action, IClipboar
     public string Cli { get; } = ControlViewModel.Safe(action.Cli) ? action.Cli : string.Empty;
 
     /// <summary>What the popover shows for the CLI.</summary>
-    public string CliText => Cli;
+    public string CliText => CanCopy ? Cli : Labels.CommandNotShown;
 
     /// <summary>True when the CLI can be copied.</summary>
     public bool CanCopy => Cli.Length > 0;
@@ -45,8 +45,8 @@ internal sealed class ProtectedActionViewModel(ProtectedAction action, IClipboar
     /// <summary>"Copy", or "Copied" for 1.5 s after a copy.</summary>
     public string CopyLabel { get; private set => Set(ref field, value); } = Labels.Copy;
 
-    /// <summary>The Copy button's accessible name: "Copy: sindri …". It stays put; the live region alone says Copied.</summary>
-    public string CopyName => Labels.Copy + ": " + Cli;
+    /// <summary>The Copy button's accessible name: "Copy: sindri …", or "Copy: no command served" when there is none. It stays put; the live region alone says Copied.</summary>
+    public string CopyName => Labels.Copy + ": " + (CanCopy ? Cli : Labels.NoCommandServed);
 
     /// <summary>True while the live region is live (set before its text changes): the resting label is never spoken.</summary>
     public bool IsAnnouncing { get; private set => Set(ref field, value); }
