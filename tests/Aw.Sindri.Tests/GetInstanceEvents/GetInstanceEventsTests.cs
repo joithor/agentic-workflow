@@ -233,10 +233,13 @@ public sealed class GetInstanceEventsTests
     }
 
     [Fact]
-    public void Only_events_with_follow_listens_for_an_interrupt()
+    public void Only_the_following_verbs_listen_for_an_interrupt()
     {
         Assert.True(Interrupt.Streams(["workflow", "events", "T-1", "--follow"]));
+        Assert.True(Interrupt.Streams(["status", "--follow"]));
+        Assert.True(Interrupt.Streams(["status", "--follow", "--json"]));
         Assert.False(Interrupt.Streams(["workflow", "events", "T-1"]));
+        Assert.False(Interrupt.Streams(["status"]));
         Assert.False(Interrupt.Streams(["workflow", "status", "T-1", "--follow"]));
     }
 
