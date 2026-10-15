@@ -116,4 +116,21 @@ public sealed class LegacyRecipeRowTests
         Assert.Equal(row.Hash, revoked.Value.Revocation.Hash);
         Assert.Equal(RecipeStanding.Revoked, (await r.Line(row)).Standing);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_diff_against_an_approved_old_row_shows_only_what_the_author_changed()
+    {
+        var (r, row) = await Seeded();
+        await using var _ = r;
+        var approved = await r.Approve(row);
+        Assert.True(approved.IsSuccess, approved.IsError ? approved.Error.ToString() : null);
+        var next = await r.Register(RecipeReaderTests.Bind(ShippedRecipes.Read("sindri/workflow.step.yaml")) with { Version = 2, Description = "A reworded step." });
+
+        var shown = await r.Show(next.Id, next.Hash.Display);
+
+        Assert.True(shown.IsSuccess, shown.IsError ? shown.Error.ToString() : null);
+        var changed = shown.Value.Preview.Diff!.Split('\n').Where(l => (l.StartsWith('+') || l.StartsWith('-')) && !l.StartsWith("+++", StringComparison.Ordinal) && !l.StartsWith("---", StringComparison.Ordinal)).ToList();
+        Assert.Contains(changed, l => l.Contains("A reworded step.", StringComparison.Ordinal));
+        Assert.DoesNotContain(changed, l => l.Contains("urgency", StringComparison.Ordinal) || l.Contains("outputs", StringComparison.Ordinal) || l.Contains("\"kind\": null", StringComparison.Ordinal));
+    }
 }
