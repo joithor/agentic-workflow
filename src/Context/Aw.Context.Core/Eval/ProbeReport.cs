@@ -7,10 +7,10 @@ namespace Aw.Context.Core.Eval;
 /// <param name="MapVersion">The map version the answers read (the first answer's), or null.</param>
 /// <param name="Probes">Each probe's score, in file order.</param>
 /// <param name="Totals">This run's means.</param>
-/// <param name="Previous">The previous run of the same file, or null for the first.</param>
-/// <param name="Regressed">True when a mean is lower than <paramref name="Previous"/>'s, or more absent nodes came back (SND-CONTEXT-038); never true for an incomplete run.</param>
+/// <param name="Baseline">The baseline this run was compared with: the newest complete run of the same file that did not regress (not necessarily the one just before), or null when there is none yet. Reports written before the rename carry it as 'previous' and still read.</param>
+/// <param name="Regressed">True when a mean is lower than <paramref name="Baseline"/>'s, or a probe returned more absent nodes than it did in the baseline (SND-CONTEXT-038); never true for an incomplete run.</param>
 public sealed record ProbeReport(int SchemaVersion, string ProbeFile, string ProbeFileHash, string? MapVersion, IReadOnlyList<ProbeScore> Probes,
-    ProbeTotals Totals, ProbeTotals? Previous, bool Regressed)
+    ProbeTotals Totals, ProbeTotals? Baseline, bool Regressed)
 {
     /// <summary>The report format this build writes.</summary>
     public const int CurrentSchemaVersion = 1;

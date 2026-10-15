@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Trust;
@@ -12,7 +14,7 @@ namespace Aw.Context.Core.Map;
 /// next answer; nothing cleaned is stored, so there is no ruleset to record.
 /// </summary>
 /// <param name="scrubbers">This call's scrubbers.</param>
-public sealed class MapText(Scrubbers scrubbers)
+public sealed partial class MapText(Scrubbers scrubbers)
 {
     private const string Blocked = "[REDACTED:blocked]";
     private const string Source = "map";
@@ -28,6 +30,11 @@ public sealed class MapText(Scrubbers scrubbers)
     /// <param name="trust">Its trust.</param>
     /// <returns>The text to write.</returns>
     public string Body(string text, Results.Trust trust) => Fenced(Clean(text, singleLine: false), trust);
+
+    /// <summary>The words a node-shape query searches the sources with: the cleaned label's words, minus the placeholders that cleaning left (egress only, so a planted secret never reaches a source).</summary>
+    /// <param name="label">The label as stored.</param>
+    /// <returns>The search terms (<see cref="QueryRules.Terms"/>).</returns>
+    public IReadOnlyList<string> SearchTerms(string label) => QueryRules.Terms(Placeholder.Replace(Clean(label, singleLine: true), " "));
 
     /// <summary>A line of keys and edge names: egress only (no markup to sanitize), never fenced.</summary>
     /// <param name="line">The line.</param>
@@ -50,6 +57,9 @@ public sealed class MapText(Scrubbers scrubbers)
         var ingested = scrubbers.Ingest.Clean(text, singleLine);
         return ingested.Blocked || scrubbers.Egress.Scrub(ingested.Text) is not { Blocked: false } scrubbed ? Blocked : scrubbed.Text;
     }
+
+    [GeneratedRegex("\\[REDACTED:[^\\]]*\\]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex Placeholder { get; }
 
     private static string Fenced(string text, Results.Trust trust) => trust == Results.Trust.Untrusted ? UntrustedFence.Wrap(Source, author: null, text) : text;
 }

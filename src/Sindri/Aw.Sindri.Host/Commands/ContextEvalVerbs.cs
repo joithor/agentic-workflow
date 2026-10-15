@@ -13,8 +13,8 @@ namespace Aw.Sindri.Host.Commands;
 /// question through GET /sindri/context/query as whoever runs it; the engine (EvalProbes) reads the file, scores the
 /// answers and writes the report under $AW_SINDRI_HOME/context/eval/probes/ (0600). Exit 0 when the run is no
 /// worse than the baseline (the newest complete run of the same file that did not regress); 1 when it regressed
-/// (SND-CONTEXT-038) or the file is refused; 2 when a probe's query failed (the run is incomplete and nothing is saved)
-/// or for a tool error. --json prints the run: the report and the path it was written to.
+/// (SND-CONTEXT-038) or the file is refused; 2 when any probe's query failed, every one included (the run is incomplete:
+/// the failed probes are listed and nothing is saved) or for a tool error. --json prints the run: {report, path, incomplete, failed}.
 /// </summary>
 /// <param name="client">The API client.</param>
 /// <param name="output">Where the verbs write.</param>

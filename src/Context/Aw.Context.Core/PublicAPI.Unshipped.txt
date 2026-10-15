@@ -102,7 +102,7 @@ Aw.Context.Core.Engine.ValidQuery.ValidQuery(System.Collections.Generic.IReadOnl
 Aw.Context.Core.Eval.IProbeFileReader
 Aw.Context.Core.Eval.IProbeFileReader.Read(string? path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.ProbeFile!>!>
 Aw.Context.Core.Eval.IProbeReportStore
-Aw.Context.Core.Eval.IProbeReportStore.Latest(string! probeFileHash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.ProbeReport?>!>
+Aw.Context.Core.Eval.IProbeReportStore.Baseline(string! probeFileHash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.ProbeReport?>!>
 Aw.Context.Core.Eval.IProbeReportStore.Write(Aw.Context.Core.Eval.ProbeReport! report, System.DateTimeOffset runAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Context.Core.Eval.ProbeCase
 Aw.Context.Core.Eval.ProbeCase.<Clone>$() -> Aw.Context.Core.Eval.ProbeCase!
@@ -164,17 +164,17 @@ Aw.Context.Core.Eval.ProbeId.ToString(System.IFormatProvider? provider) -> strin
 Aw.Context.Core.Eval.ProbeId.Value.get -> string!
 Aw.Context.Core.Eval.ProbeReport
 Aw.Context.Core.Eval.ProbeReport.<Clone>$() -> Aw.Context.Core.Eval.ProbeReport!
-Aw.Context.Core.Eval.ProbeReport.Deconstruct(out int SchemaVersion, out string! ProbeFile, out string! ProbeFileHash, out string? MapVersion, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeScore!>! Probes, out Aw.Context.Core.Eval.ProbeTotals! Totals, out Aw.Context.Core.Eval.ProbeTotals? Previous, out bool Regressed) -> void
+Aw.Context.Core.Eval.ProbeReport.Deconstruct(out int SchemaVersion, out string! ProbeFile, out string! ProbeFileHash, out string? MapVersion, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeScore!>! Probes, out Aw.Context.Core.Eval.ProbeTotals! Totals, out Aw.Context.Core.Eval.ProbeTotals? Baseline, out bool Regressed) -> void
 Aw.Context.Core.Eval.ProbeReport.Equals(Aw.Context.Core.Eval.ProbeReport? other) -> bool
 Aw.Context.Core.Eval.ProbeReport.MapVersion.get -> string?
 Aw.Context.Core.Eval.ProbeReport.MapVersion.init -> void
-Aw.Context.Core.Eval.ProbeReport.Previous.get -> Aw.Context.Core.Eval.ProbeTotals?
-Aw.Context.Core.Eval.ProbeReport.Previous.init -> void
+Aw.Context.Core.Eval.ProbeReport.Baseline.get -> Aw.Context.Core.Eval.ProbeTotals?
+Aw.Context.Core.Eval.ProbeReport.Baseline.init -> void
 Aw.Context.Core.Eval.ProbeReport.ProbeFile.get -> string!
 Aw.Context.Core.Eval.ProbeReport.ProbeFile.init -> void
 Aw.Context.Core.Eval.ProbeReport.ProbeFileHash.get -> string!
 Aw.Context.Core.Eval.ProbeReport.ProbeFileHash.init -> void
-Aw.Context.Core.Eval.ProbeReport.ProbeReport(int SchemaVersion, string! ProbeFile, string! ProbeFileHash, string? MapVersion, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeScore!>! Probes, Aw.Context.Core.Eval.ProbeTotals! Totals, Aw.Context.Core.Eval.ProbeTotals? Previous, bool Regressed) -> void
+Aw.Context.Core.Eval.ProbeReport.ProbeReport(int SchemaVersion, string! ProbeFile, string! ProbeFileHash, string? MapVersion, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeScore!>! Probes, Aw.Context.Core.Eval.ProbeTotals! Totals, Aw.Context.Core.Eval.ProbeTotals? Baseline, bool Regressed) -> void
 Aw.Context.Core.Eval.ProbeReport.Probes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeScore!>!
 Aw.Context.Core.Eval.ProbeReport.Probes.init -> void
 Aw.Context.Core.Eval.ProbeReport.Regressed.get -> bool
@@ -1876,7 +1876,7 @@ static Aw.Context.Core.Eval.ProbeReport.operator ==(Aw.Context.Core.Eval.ProbeRe
 static Aw.Context.Core.Eval.ProbeRun.operator !=(Aw.Context.Core.Eval.ProbeRun? left, Aw.Context.Core.Eval.ProbeRun? right) -> bool
 static Aw.Context.Core.Eval.ProbeRun.operator ==(Aw.Context.Core.Eval.ProbeRun? left, Aw.Context.Core.Eval.ProbeRun? right) -> bool
 static Aw.Context.Core.Eval.ProbeRunner.Check(Aw.Context.Core.Eval.ProbeSet! set) -> Aw.Kernel.Error?
-static Aw.Context.Core.Eval.ProbeRunner.Run(Aw.Context.Core.Eval.ProbeFile! file, System.Func<Aw.Context.Core.Eval.ProbeCase!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>>! ask, Aw.Context.Core.Eval.ProbeReport? previous, System.DateTimeOffset runAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.ProbeReport!>!>
+static Aw.Context.Core.Eval.ProbeRunner.Run(Aw.Context.Core.Eval.ProbeFile! file, System.Func<Aw.Context.Core.Eval.ProbeCase!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>>! ask, Aw.Context.Core.Eval.ProbeReport? baseline, System.DateTimeOffset runAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.ProbeReport!>!>
 static Aw.Context.Core.Eval.ProbeScore.operator !=(Aw.Context.Core.Eval.ProbeScore? left, Aw.Context.Core.Eval.ProbeScore? right) -> bool
 static Aw.Context.Core.Eval.ProbeScore.operator ==(Aw.Context.Core.Eval.ProbeScore? left, Aw.Context.Core.Eval.ProbeScore? right) -> bool
 static Aw.Context.Core.Eval.ProbeScoring.Keys(Aw.Context.Core.Results.ContextResult! result) -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -2596,3 +2596,6 @@ Aw.Context.Core.Eval.ProbeTotals.AbsentReturned.get -> int
 Aw.Context.Core.Eval.ProbeTotals.AbsentReturned.init -> void
 Aw.Context.Core.Eval.ProbeTotals.Deconstruct(out double PrecisionAt5, out double CitationCorrectness, out int Probes, out System.DateTimeOffset RunAt, out int AbsentReturned) -> void
 Aw.Context.Core.Eval.ProbeTotals.ProbeTotals(double PrecisionAt5, double CitationCorrectness, int Probes, System.DateTimeOffset RunAt, int AbsentReturned = 0) -> void
+Aw.Context.Core.Eval.ProbeRun.Incomplete.get -> bool
+Aw.Context.Core.Eval.ProbeRun.Failed.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Map.MapText.SearchTerms(string! label) -> System.Collections.Generic.IReadOnlyList<string!>!

@@ -82,7 +82,13 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
         if (query.Node is { } node)
         {
             var anchor = map.Bind(m => AnchorMatch.Resolve(m.Graph, node));
-            return anchor.IsError ? anchor.Error : (GraphAnswer.Build(map.Value, [anchor.Value], [], depth, new MapText(scrubbers)), QueryRules.Terms(anchor.Value.Label));
+            if (anchor.IsError)
+            {
+                return anchor.Error;
+            }
+
+            var text = new MapText(scrubbers);
+            return (GraphAnswer.Build(map.Value, [anchor.Value], [], depth, text), text.SearchTerms(anchor.Value.Label));
         }
 
         if (map.IsError)

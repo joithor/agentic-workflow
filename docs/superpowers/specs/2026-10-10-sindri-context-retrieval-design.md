@@ -352,7 +352,7 @@ value. Untrusted text is wrapped in the core spec's pack fence (§8.3: `<untrust
 attribute values and body escaped by one escaper, so no field can close its own fence. The labeling pass scrubs code
 and doc text before sending it.
 
-**Stored text:** text a model wrote (doc chunks, snippets, decision wording and labels from a model or a labeling pass) is scrubbed before storage. Human map text (an imported map's labels, decision wording and quotes) is stored as written in the owner-only `context.db`, because the owner wrote it; every answer cleans it again on the way out (`MapText`: the current rules, then the untrusted fence), so a rule change applies at once and no ruleset needs recording. A map export is a raw, owner-only copy of what is stored (0600, purged after 14 days), deliberately not scrubbed.
+**Stored text:** text ingested from sources (doc chunks, snippets) and text a model wrote (decision wording and labels from a model or a labeling pass) is scrubbed before storage. Human map text (an imported map's labels, decision wording and quotes) is stored as written in the owner-only `context.db`, because the owner wrote it; every answer cleans it again on the way out (`MapText`: the current rules, then the untrusted fence), so a rule change applies at once and no ruleset needs recording. A map export is a raw, owner-only copy of what is stored (0600, purged after 14 days by `context-purge` when that service is enabled; doctor `context:retention` warns otherwise), deliberately not scrubbed.
 
 **Logs and spans** carry codes, counts, hashes and timings, never query or record text (a Telemetry test plants
 work-like text and asserts it never reaches a log line).
@@ -462,10 +462,19 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-003` | Unknown anchor (node key, alias, item or symbol) | Use `suggestedAnchors`, or `context map status` |
 | `SND-CONTEXT-004` | Store schema mismatch or the store can't open | A newer build migrates the store on start; a store newer than the build means updating the build. Never delete `context.db` (it holds review decisions); check `$AW_SINDRI_HOME` permissions |
 | `SND-CONTEXT-005` | Output path inside a git worktree | Write outside repos |
+| `SND-CONTEXT-006` | The question itself is invalid (empty, two shapes, a value out of range, neighbors depth outside 0 to 4) | Fix the question |
 | `SND-CONTEXT-010` | A source is unavailable (degraded, not fatal) | `context sources status` |
 | `SND-CONTEXT-011` | **Every** source is unavailable (exit 2, not "no results") | `context sources status`; start Onyx or check the repos |
 | `SND-CONTEXT-020` | MCP is disabled (`context.sessions.enabled: false`); the `context_*` tools answer this code and `context sources status` says so | Enable it in the profile and approve |
 | `SND-CONTEXT-030` | No map yet | `context map import` or `context map build` |
+| `SND-CONTEXT-031` | The map file is invalid (schema version, shape, an unknown kind or a disallowed edge); the key path is given and nothing was written (exit 1) | Fix the file at that key path |
+| `SND-CONTEXT-032` | The map file refers to a node it doesn't define (an edge end, an alias target, a decided node); nothing was written (exit 1) | Define the node or fix the reference |
+| `SND-CONTEXT-033` | An export path outside `$AW_SINDRI_HOME/context/exports/` (a worktree path is `-005`) (exit 1) | Give a name or a path under the exports folder |
+| `SND-CONTEXT-034` | The map file changed since its hash was confirmed; nothing was written (exit 1) | Preview again and confirm the new hash |
+| `SND-CONTEXT-035` | The probe file is invalid (shape, unknown key, duplicate or non-slug id, empty question, schema version); the key path is given and nothing was run (exit 1) | Fix the file at that key path |
+| `SND-CONTEXT-036` | No probe file: the one named doesn't exist, or none was named and `context/eval/probes.json` doesn't exist (exit 1) | Name one with `--file` or place `context/eval/probes.json` |
+| `SND-CONTEXT-037` | A node name matches several nodes; the message lists their keys (exit 1) | Ask by key |
+| `SND-CONTEXT-038` | A probe run scored lower than the baseline of the same file (its newest complete run that did not regress) in precision@5 or citation correctness, or a probe returned more absent nodes than it did there (exit 1) | Fix the retrieval, or accept the new score by clearing that file's reports |
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy | Retry; the message names the holder |
 | `SND-CONTEXT-041` | Retired: applying a review, `import` and `promote` are `protected` commands and use the engine's challenge, refused with `SND-AUTH-002` | — |
 | `SND-CONTEXT-042` | Labeling disabled or over its token cap | Enable `context.labeling` or raise `maxTokens` |

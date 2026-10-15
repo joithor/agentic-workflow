@@ -65,6 +65,40 @@ public sealed class MapTextTests : IDisposable
         Assert.DoesNotContain("<!--", decision.Text, StringComparison.Ordinal);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_affected_node_relabelled_for_a_weaker_path_is_redacted_and_fenced()
+    {
+        _ = await _world.ImportYaml(MapWorld.Yaml(
+            "schemaVersion: 1",
+            "kind: authored",
+            "repo: aw-split-panes",
+            "nodes:",
+            "  - {key: \"feature:a\", label: \"A\"}",
+            "  - {key: \"feature:b\", label: \"B " + FakeScrubber.Secret + "\"}",
+            "edges:",
+            "  - {from: \"feature:b\", to: \"feature:a\", type: depends-on, provenance: model}"));
+
+        var query = (await _world.Engine.Query(new ContextQuery(Text: null, Node: "feature:a"), MapWorld.Human, MapWorld.None)).Value;
+
+        var affected = Assert.Single(query.Sections.Single(s => s.Name == "affects").Items);
+        Assert.DoesNotContain(FakeScrubber.Secret, Everything(query), StringComparison.Ordinal);
+        Assert.Contains("[REDACTED:fake]", affected.Title, StringComparison.Ordinal);
+        Assert.StartsWith("<untrusted source=\"map\">", affected.Title, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_terms_a_node_query_sends_to_the_sources_come_from_the_cleaned_label()
+    {
+        _ = await Import();
+
+        _ = await _world.Engine.Query(new ContextQuery(Text: null, Node: "feature:a"), MapWorld.Human, MapWorld.None);
+
+        var terms = _world.Docs.Searches.SelectMany(q => q.Terms).ToList();
+        Assert.NotEmpty(terms);
+        Assert.DoesNotContain(terms, t => FakeScrubber.Secret.Contains(t, StringComparison.OrdinalIgnoreCase) && t.Length > 1);
+        Assert.DoesNotContain(terms, t => string.Equals(t, "redacted", StringComparison.Ordinal));
+    }
+
     private static string Everything(Context.Core.Results.ContextResult result) =>
         string.Join('\n', result.Sections.SelectMany(s => s.Items).SelectMany(i => new[] { i.Title, i.Text }.Concat(i.Path ?? [])));
 }

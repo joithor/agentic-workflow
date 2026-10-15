@@ -70,11 +70,11 @@ public sealed class ProbeFilesTests : IDisposable
         var first = await store.Write(Report("hash-a", 0.4, at), at, None);
         _ = await store.Write(Report("hash-a", 0.6, at.AddMinutes(1)), at.AddMinutes(1), None);
         _ = await store.Write(Report("hash-b", 0.9, at.AddMinutes(2)), at.AddMinutes(2), None);
-        var latest = await store.Latest("hash-a", None);
-        var none = await store.Latest("hash-c", None);
+        var baseline = await store.Baseline("hash-a", None);
+        var none = await store.Baseline("hash-c", None);
 
         Assert.StartsWith(_settings.ProbesDirectory, first.Value, StringComparison.Ordinal);
-        Assert.Equal(0.6, latest.Value?.Totals.PrecisionAt5);
+        Assert.Equal(0.6, baseline.Value?.Totals.PrecisionAt5);
         Assert.Null(none.Value);
         if (!OperatingSystem.IsWindows())
         {
@@ -93,9 +93,25 @@ public sealed class ProbeFilesTests : IDisposable
         var failed = Report("hash-a", 0.1, at.AddMinutes(2)) with { Probes = [new ProbeScore(ProbeId.From("p"), 0, 0, [], [], [], "SND-CONTEXT-011")] };
         _ = await store.Write(failed, at.AddMinutes(2), None);
 
-        var latest = await store.Latest("hash-a", None);
+        var baseline = await store.Baseline("hash-a", None);
 
-        Assert.Equal(0.6, latest.Value?.Totals.PrecisionAt5);
+        Assert.Equal(0.6, baseline.Value?.Totals.PrecisionAt5);
+    }
+
+    [Fact]
+    public async Task A_report_written_before_the_rename_still_reads_with_its_previous_totals_as_the_baseline()
+    {
+        var store = new FileProbeReportStore(_settings, EvalJson.Options);
+        var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
+        _ = await store.Write(Report("hash-a", 0.6, at) with { Baseline = new ProbeTotals(0.5, 1.0, 1, at.AddDays(-1)) }, at, None);
+        var written = Directory.EnumerateFiles(_settings.ProbesDirectory).Single();
+        var json = (await File.ReadAllTextAsync(written, None)).Replace("\"baseline\":", "\"previous\":", StringComparison.Ordinal);
+        Assert.Contains("\"previous\":", json, StringComparison.Ordinal);
+        await File.WriteAllTextAsync(written, json, None);
+
+        var baseline = await store.Baseline("hash-a", None);
+
+        Assert.Equal((0.6, 0.5), (baseline.Value?.Totals.PrecisionAt5, baseline.Value?.Baseline?.PrecisionAt5));
     }
 
     [Fact]
@@ -133,5 +149,5 @@ public sealed class ProbeFilesTests : IDisposable
     }
 
     private static ProbeReport Report(string hash, double precision, DateTimeOffset at) =>
-        new(ProbeReport.CurrentSchemaVersion, "/probes.json", hash, "v1", [], new ProbeTotals(precision, 1.0, 1, at), Previous: null, Regressed: false);
+        new(ProbeReport.CurrentSchemaVersion, "/probes.json", hash, "v1", [], new ProbeTotals(precision, 1.0, 1, at), Baseline: null, Regressed: false);
 }

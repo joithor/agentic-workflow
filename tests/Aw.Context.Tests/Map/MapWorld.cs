@@ -29,6 +29,7 @@ internal sealed class MapWorld : IDisposable
 
     public MapWorld()
     {
+        Sources = new FixedSourceCatalog(Docs);
         Exports = new FakeExportStore(Clock);
         Reader.Put(MapPath, Maps.Fixture(), FixtureMap.Yaml);
         _provider = new ServiceCollection()
@@ -61,7 +62,9 @@ internal sealed class MapWorld : IDisposable
     public IContextEngine Engine => _scope.ServiceProvider.GetRequiredService<IContextEngine>();
 
     /// <summary>The sources the queries search: repo-docs over the fixture's docs by default.</summary>
-    public FixedSourceCatalog Sources { get; } = new(FakeContextSource.FixtureDocs());
+    public FakeContextSource Docs { get; } = FakeContextSource.FixtureDocs();
+
+    public FixedSourceCatalog Sources { get; }
 
     public static IReadOnlyList<ContextRepo> Repos { get; } = [new(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes"), new(ContextRepoName.From("other"), "/work/other")];
 

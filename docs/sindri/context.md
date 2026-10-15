@@ -353,6 +353,9 @@ $SINDRI context map export [<name-or-path>] [--json]
   its original timestamp and provenance; import it back to restore the map. It is written only under
   `$AW_SINDRI_HOME/context/exports/` (0700; files 0600, by temp file and rename): a name or relative path lands there,
   anything outside is `SND-CONTEXT-033`, a worktree path `SND-CONTEXT-005`.
+- An export is **not scrubbed**: map text is written as imported (answers clean it on the way out), and the file is owner-readable
+  only (0600). Exports older than 14 days are purged by the `context-purge` service, and only when it is enabled under
+  `services:` (`doctor` warns on `context:retention` otherwise).
 - HTTP: `GET /sindri/context/map` and `GET /sindri/context/map/export?path=…`.
 - **Sessions** (with `context.sessions.enabled: true`) see only the nodes their repo implements: the targets of
   `implements` edges whose file evidence is `repo:<their X-Sindri-Repo>/…`, and the edges between those nodes. A repo
@@ -459,7 +462,7 @@ $SINDRI context eval probes [--file ~/probes/probes.json] [--json]
 #   orientation-cascade      precision@5 0.60  citations 1.00
 #   …
 # mean precision@5 0.3250 · citation correctness 1.0000
-# previous run 2026-10-14T…: precision@5 0.3250 · citation correctness 1.0000
+# baseline run 2026-10-14T…: precision@5 0.3250 · citation correctness 1.0000
 # no regression
 # report $AW_SINDRI_HOME/context/eval/probes/probes-20261014T….json
 ```
@@ -467,15 +470,23 @@ $SINDRI context eval probes [--file ~/probes/probes.json] [--json]
 Without `--file` it reads `$AW_SINDRI_HOME/context/eval/probes.json` (`SND-CONTEXT-036` when there is none). The CLI
 asks each question through `GET /sindri/context/query`, as whoever runs it, and scores the answer:
 - **precision@5:** the expected nodes, records and files among the answer's first five keys. The keys are each item's
-  node, the nodes on an affects path, and its citations; code and repo-doc keys count as their file paths.
+  node, the nodes on an affects path, and its citations; code and repo-doc keys count as their file paths. The map
+  citation (`map:<repo>/vN`) changes with every map version, so it is not a key.
 - **Citation correctness:** the share of items whose citations all resolve with a version.
-- **Absent nodes:** any absent node the answer names is flagged, and a run that names more of them than the baseline did is a regression.
+- **Absent nodes:** any absent node the answer names is flagged, and a probe that names more of them than it did in the baseline is a regression, even when the total is unchanged.
 
-The report is written at 0600 under `context/eval/probes/`; `--json` prints `{report, path}`. The run is compared with
+The report is written at 0600 under `context/eval/probes/`; `--json` prints `{report, path, incomplete, failed}`
+(`path` is null and `failed` lists the probe ids when the run was incomplete). The run is compared with
 the baseline: the newest run of the same file that was complete and did not regress, so a regression stays one on an
 identical rerun. A run that scores lower than the baseline, or names more absent nodes, prints
-`REGRESSED: SND-CONTEXT-038` and exits 1. A run in which any probe's query failed is incomplete: it prints the failed
-probes, exits 2, and is neither saved nor a baseline. That's the "probes don't regress" line every later phase's signal
+`REGRESSED: SND-CONTEXT-038` and exits 1. A run in which any probe's query failed, every probe included (Sindri not
+running, session reads off), is incomplete: it prints the failed probes, exits 2, and is neither saved nor a baseline;
+`--json` says `"incomplete": true` and lists the failed probe ids.
+
+**Accepting a lower score you intend** (say a map change that trades some precision for correctness): the baseline is
+sticky, so every later run of the same file keeps comparing with the old one. Delete or move that probe file's reports
+under `$AW_SINDRI_HOME/context/eval/probes/` (they carry the file's hash); the next complete run becomes the new baseline.
+Editing the probe file works too, since a new file hash starts a new history. That's the "probes don't regress" line every later phase's signal
 carries.
 
 ### Exit codes (graph verbs and probes)
