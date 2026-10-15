@@ -177,14 +177,14 @@ internal sealed class WorkflowsHarness : IDisposable
         InstanceView? last = null;
         while (DateTime.UtcNow < deadline)
         {
-            // why: a Query with no bound can sit on a time-skipping server (a replay waiting for a worker) until the test's own timeout
+            // why: an unbounded Query can sit on a time-skipping server (a replay waiting for a worker) until the test's own timeout; 25 s is past the 10 s sticky-queue wait a restarted worker leaves behind
             var ct = TestContext.Current.CancellationToken;
-            var query = new WorkflowQueryOptions { Rpc = new RpcOptions { Timeout = TimeSpan.FromSeconds(10), CancellationToken = ct } };
+            var query = new WorkflowQueryOptions { Rpc = new RpcOptions { Timeout = TimeSpan.FromSeconds(25), CancellationToken = ct } };
             try
             {
                 last = await handle.QueryAsync(static wf => wf.GetInstance(), query);
             }
-            catch (Exception e) when (!ct.IsCancellationRequested && e is Temporalio.Exceptions.RpcException { Code: Temporalio.Exceptions.RpcException.StatusCode.DeadlineExceeded } or Temporalio.Exceptions.RpcTimeoutOrCanceledException)
+            catch (Exception e) when (!ct.IsCancellationRequested && e is Temporalio.Exceptions.RpcException { Code: Temporalio.Exceptions.RpcException.StatusCode.DeadlineExceeded or Temporalio.Exceptions.RpcException.StatusCode.Cancelled or Temporalio.Exceptions.RpcException.StatusCode.Unknown } or Temporalio.Exceptions.RpcTimeoutOrCanceledException)
             {
                 continue;   // boundary: one slow Query; the loop's deadline decides when to give up
             }
