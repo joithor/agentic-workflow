@@ -114,4 +114,19 @@ public sealed class ProposalPlannerTests
         _ = Assert.Single(plan.Rows);
         Assert.Equal(1, plan.Unmapped);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_surface_whose_propose_row_a_person_undid_is_proposed_again_as_a_new_row_the_undo_stands()
+    {
+        var first = Assert.Single(Plan(Run(Pinning())).Rows);
+        var undo = new MapOverride(OverrideAction.Undo, first.Target, "thor", SampleDrafts.At.AddMinutes(1), Undoes: first.ToId());
+
+        var again = Plan(Run(Pinning()), first, undo);
+        var next = Assert.Single(again.Rows);
+        var stable = Plan(Run(Pinning()), first, undo, next);
+
+        Assert.NotEqual(first.ToId().Value, next.ToId().Value, StringComparer.Ordinal);
+        Assert.Empty(stable.Rows);   // the new row stands, so a third submission finds the surface there
+        Assert.Equal(1, stable.Existing);
+    }
 }
