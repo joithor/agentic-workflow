@@ -176,7 +176,8 @@ public sealed class ItemSheetActionsTests
 
     // corr-0: the 409's re-read was superseded by a refresh that served the closed item; the refusal is not lost.
     [Fact]
-    public async Task A_409_whose_re_read_a_refresh_took_over_is_still_spoken_once_by_the_sheet()
+    public Task A_409_whose_re_read_a_refresh_took_over_is_still_spoken_once_by_the_sheet() =>
+        UiThread.Run(async () =>
     {
         var sheet = await Sheet();
         await sheet.Open(_api, A.NewItem, Token);
@@ -202,12 +203,13 @@ public sealed class ItemSheetActionsTests
 
         Assert.Equal("SND-ITEM-409", sheet.ProblemCode);
         Assert.Equal(["SND-ITEM-409: " + A.Detail("items-id-close", "stale-version")], spoken);
-    }
+    }, Token);
 
     // corr-0 (run 3): the control and the sheet both have a live region; a 409 whose re-read a refresh took over is spoken by
     // exactly one of them, once.
     [Fact]
-    public async Task A_409_whose_re_read_a_refresh_took_over_is_spoken_once_across_the_control_and_the_sheet()
+    public Task A_409_whose_re_read_a_refresh_took_over_is_spoken_once_across_the_control_and_the_sheet() =>
+        UiThread.Run(async () =>
     {
         var sheet = await Sheet();
         await sheet.Open(_api, A.NewItem, Token);
@@ -235,7 +237,7 @@ public sealed class ItemSheetActionsTests
 
         var code = "SND-ITEM-409";
         Assert.Equal(1, spoken.Concat(controlSpoke).Count(t => t.Contains(code, StringComparison.Ordinal)));
-    }
+    }, Token);
 
     // corr-1: the 409 belongs to the item it was sent for; the sheet has moved on, so item B shows nothing of it.
     [Fact]
@@ -324,7 +326,8 @@ public sealed class ItemSheetActionsTests
 
     // (a) ... the refresh answers 404: the press completes, and the 404 is spoken once.
     [Fact]
-    public async Task A_409_whose_re_read_a_refresh_took_over_and_found_the_item_gone_ends_and_speaks_the_404_once()
+    public Task A_409_whose_re_read_a_refresh_took_over_and_found_the_item_gone_ends_and_speaks_the_404_once() =>
+        UiThread.Run(async () =>
     {
         var (sheet, close, gate, press, refreshing) = await Waiting();
         var spoken = Spoken(sheet);
@@ -346,11 +349,12 @@ public sealed class ItemSheetActionsTests
         }
 
         Assert.Equal(1, spoken.Concat(controlSpoke).Count(t => t.Contains("SND-ITEM-404", StringComparison.Ordinal)));
-    }
+    }, Token);
 
     // (b) ... the sheet moves to another item: the press completes and the other item shows nothing of the 409.
     [Fact]
-    public async Task A_409_whose_re_read_is_waiting_when_the_sheet_opens_another_item_ends_and_shows_nothing_there()
+    public Task A_409_whose_re_read_is_waiting_when_the_sheet_opens_another_item_ends_and_shows_nothing_there() =>
+        UiThread.Run(async () =>
     {
         var (sheet, _, gate, press, refreshing) = await Waiting();
         _server.Items[A.DecisionItem] = RouteAnswer.SpecShaped("items-id", "after-close");
@@ -369,11 +373,12 @@ public sealed class ItemSheetActionsTests
         }
 
         Assert.Equal((A.DecisionItem, false, 0), (sheet.ItemId, sheet.HasProblem, spoken.Count));
-    }
+    }, Token);
 
     // (c) ... the refresh itself is cancelled by its caller: the press completes, and the control speaks the 409 itself, once.
     [Fact]
-    public async Task A_409_whose_superseding_refresh_is_cancelled_ends_and_the_control_speaks_it_once()
+    public Task A_409_whose_superseding_refresh_is_cancelled_ends_and_the_control_speaks_it_once() =>
+        UiThread.Run(async () =>
     {
         var (sheet, close, gate, press, refreshing) = await Waiting();
         var spoken = Spoken(sheet);
@@ -396,7 +401,7 @@ public sealed class ItemSheetActionsTests
 
         var code = "SND-ITEM-409";
         Assert.Equal(1, spoken.Concat(controlSpoke).Count(t => t.Contains(code, StringComparison.Ordinal)));
-    }
+    }, Token);
 
     // R7: the sheet's action set has one source: what the sheet sends is what the palette calls "on the item's sheet".
     [Theory]

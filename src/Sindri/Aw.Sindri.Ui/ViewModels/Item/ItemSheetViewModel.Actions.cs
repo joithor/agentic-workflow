@@ -152,20 +152,28 @@ internal sealed partial class ItemSheetViewModel
             return;
         }
 
-        EndConflict();
-        if (allowed.Contains(action, StringComparer.Ordinal))
+        _conflict = null;
+        try
         {
-            return;
-        }
+            if (allowed.Contains(action, StringComparer.Ordinal))
+            {
+                return;
+            }
 
-        if (_controls.TryGetValue(action, out var control))
+            if (_controls.TryGetValue(action, out var control))
+            {
+                control.IsMuted = true;
+            }
+
+            (_conflictAction, _conflictVersion) = (action, _version);
+            Problem(error.Code, error.Message);
+            Say($"{error.Code}: {error.Message}");
+        }
+        finally
         {
-            control.IsMuted = true;
+            // The waiter goes last: the press that waits for the settle returns only after the sheet has spoken.
+            EndConflict();
         }
-
-        (_conflictAction, _conflictVersion) = (action, _version);
-        Problem(error.Code, error.Message);
-        Say($"{error.Code}: {error.Message}");
     }
 
     // Says a text through the polite region, as the queue's does: dark first, the resting text set, then live, then the text.
