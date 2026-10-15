@@ -49,19 +49,36 @@ internal static class WorkflowAnswers
             ? new RouteAnswer(HttpStatusCode.OK, body.ToJsonString())
             : NotFound("workflow-instance", "not-found");
 
-    /// <summary>GET /workflow/instances/{id}/facts/{key}.</summary>
+    // A fact golden is one instance's body, so it is served only for the instance goldens whose fact row it fits (the same
+    // payload, the same counts); WorkflowGoldenTests holds each entry to the instance's facts[]. The unfrozen packet fits
+    // no instance golden yet: it is served for none, until the API lane adds an instance whose packet row is unfrozen.
+    private static readonly Dictionary<string, string[]> _factGoldens = new(StringComparer.Ordinal)
+    {
+        ["packet"] = ["project-build"],
+        ["packet-unfrozen"] = [],
+        ["evidence"] = ["project-build"],
+        ["scope-map"] = ["project-build"],
+        ["payload"] = ["incident-loop", "escalated-gate"],
+        ["text"] = ["incident-loop"],
+        ["truncated"] = ["incident-loop"],
+    };
+
+    /// <summary>The fact goldens, by scenario, with the instance goldens (by scenario) each is served for.</summary>
+    internal static IReadOnlyDictionary<string, string[]> FactGoldens => _factGoldens;
+
+    /// <summary>GET /workflow/instances/{id}/facts/{key}: the fact golden bound to this instance golden, when the instance lists the key.</summary>
     /// <param name="id">The opaque id.</param>
     /// <param name="key">The fact's key.</param>
     /// <returns>The answer.</returns>
     internal static RouteAnswer Fact(string id, string key)
     {
-        var listed = Served("workflow-instance").Any(g => IdOf(g.Body) == id && g.Body["facts"]!.AsArray().Any(f => Is(f!["key"], key))); // why: an instance lists its facts
-        if (!listed)
+        var (instanceScenario, instanceBody) = Served("workflow-instance").FirstOrDefault(g => IdOf(g.Body) == id && g.Body["facts"]!.AsArray().Any(f => Is(f!["key"], key))); // why: an instance lists its facts
+        if (instanceBody is null)
         {
             return NotFound("workflow-instance-fact", "not-found");
         }
 
-        return Served("workflow-instance-fact").FirstOrDefault(g => Is(g.Body["key"], key)) is { Body: { } body }
+        return Served("workflow-instance-fact").FirstOrDefault(g => Is(g.Body["key"], key) && _factGoldens.TryGetValue(g.Scenario, out var bound) && bound.Contains(instanceScenario, StringComparer.Ordinal)) is { Body: { } body }
             ? new RouteAnswer(HttpStatusCode.OK, body.ToJsonString())
             : NotFound("workflow-instance-fact", "not-found");
     }

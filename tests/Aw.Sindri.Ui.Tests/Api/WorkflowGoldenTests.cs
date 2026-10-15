@@ -125,6 +125,20 @@ public sealed class WorkflowGoldenTests
         Assert.Contains(WorkflowAnswers.RecipeStandIn, scenarios, StringComparer.Ordinal);
     }
 
+    // The same for the fact goldens: each is named in the fake's table, and every instance it is served for lists its key.
+    [Fact]
+    public void Each_fact_golden_is_bound_only_to_instances_that_list_its_key()
+    {
+        var scenarios = GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-instance-fact" && !g.Body.Contains("traceId", StringComparison.Ordinal)).Select(g => g.Scenario).ToList();
+
+        Assert.Equal(scenarios.Order(StringComparer.Ordinal), WorkflowAnswers.FactGoldens.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        foreach (var (scenario, instances) in WorkflowAnswers.FactGoldens)
+        {
+            var key = (string)JsonNode.Parse(GoldenFiles.Api("workflow-instance-fact", scenario))!["key"]!; // why: a fact has a key
+            Assert.All(instances, instance => Assert.Contains(key, JsonNode.Parse(GoldenFiles.Api("workflow-instance", instance))!["facts"]!.AsArray().Select(f => (string)f!["key"]!), StringComparer.Ordinal)); // why: an instance lists its facts
+        }
+    }
+
     [Fact]
     public void Unknown_fact_type_reads_as_payload()
     {

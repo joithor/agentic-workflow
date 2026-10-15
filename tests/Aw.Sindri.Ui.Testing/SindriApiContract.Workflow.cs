@@ -15,9 +15,6 @@ public abstract partial class SindriApiContract
     /// <summary>Every served instance golden.</summary>
     public static TheoryData<string> InstanceScenarios => Scenarios("workflow-instance");
 
-    /// <summary>Every served fact golden.</summary>
-    public static TheoryData<string> FactScenarios => Scenarios("workflow-instance-fact");
-
     /// <summary>Every served recipe golden.</summary>
     public static TheoryData<string> RecipeScenarios => Scenarios("workflow-recipe");
 
@@ -30,6 +27,10 @@ public abstract partial class SindriApiContract
         let json = JsonNode.Parse(g.Body)!
         from named in json["instances"] is JsonArray rows ? rows.Select(r => r!["recipe"]!) : [json["recipe"]!] // why: a list's rows and an instance both name their recipe
         select (string)named["id"]!; // why: a recipe has an id
+
+    /// <summary>Every fact golden with each instance golden it is served for (the fake's table).</summary>
+    public static TheoryData<string, string> BoundFacts =>
+        [.. WorkflowAnswers.FactGoldens.SelectMany(g => g.Value.Select(instance => (g.Key, instance)))];
 
     private static TheoryData<string> Scenarios(string slug) =>
         [.. GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == slug && !IsRefusal(g.Body)).Select(g => g.Scenario)];
@@ -127,20 +128,6 @@ public abstract partial class SindriApiContract
         Expect.Equal(new Error("SND-ITEM-404", ErrorKind.NotFound, (string)golden["detail"]!), refused.Error); // why: a refusal has a detail
     }
 
-    // A fact is served only for an instance whose facts[] lists its key (API §3.8): the id used is the first instance golden that does.
-    [Theory]
-    [MemberData(nameof(FactScenarios))]
-    public async Task InstanceFact_answers_each_golden_by_its_key_for_an_instance_that_lists_it(string scenario)
-    {
-        var golden = Golden("workflow-instance-fact", scenario);
-        var key = (string)golden["key"]!; // why: every fact has a key
-
-        var fact = (await Reach(new FakeSindriApi()).InstanceFact(_api, InstanceListing(key), key, Token)).Value;
-
-        Expect.Equal(key, fact.Key);
-        Expect.Equal((bool)golden["truncated"]!, fact.Truncated); // why: and says whether it is cut
-    }
-
     // A fact body belongs to one instance: where an instance's fact row counts what the body holds ("24 tasks", "6 of 24 packs"),
     // the fake serves a body that agrees with the row or refuses, never another instance's body under the same key.
     [Fact]
@@ -170,6 +157,20 @@ public abstract partial class SindriApiContract
         }
 
         Expect.True(checkedRows > 0);
+    }
+
+    [Theory]
+    [MemberData(nameof(BoundFacts))]
+    public async Task InstanceFact_serves_the_golden_of_its_scenario_for_the_instance_it_is_bound_to(string scenario, string instanceScenario)
+    {
+        var golden = Golden("workflow-instance-fact", scenario);
+        var key = (string)golden["key"]!; // why: every fact has a key
+        var id = (string)Golden("workflow-instance", instanceScenario)["id"]!; // why: every instance has an id
+
+        var fact = (await Reach(new FakeSindriApi()).InstanceFact(_api, id, key, Token)).Value;
+
+        Expect.Equal(golden["body"]!.ToJsonString(), JsonNode.Parse(fact.Body.GetRawText())!.ToJsonString()); // why: every fact has a body
+        Expect.Equal((bool)golden["truncated"]!, fact.Truncated);
     }
 
     [Fact]
