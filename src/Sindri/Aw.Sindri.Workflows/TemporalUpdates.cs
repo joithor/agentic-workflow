@@ -70,12 +70,43 @@ internal static class TemporalUpdates
     /// <param name="e">The RPC failure.</param>
     /// <param name="nonce">The Update's id when the call has one: a retry with it resends the same Update id.</param>
     /// <returns>The error; its kind (Unavailable) keeps a fresh nonce claim.</returns>
-    internal static Error Down(ITemporalClient client, RpcException e, CommandNonce? nonce = null) =>
-        SindriErrors.NotRunning.With($"Temporal at {client.Connection.Options.TargetHost} doesn't answer: {e.Message} ("
+    internal static Error Down(ITemporalClient client, RpcException e, CommandNonce? nonce = null) => Down(client, e.Message, nonce);
+
+    /// <summary><see cref="Down(ITemporalClient, RpcException, CommandNonce?)"/> with a reason that is not an RPC failure.</summary>
+    /// <param name="client">The client.</param>
+    /// <param name="reason">What the probe found.</param>
+    /// <param name="nonce">The Update's id when the call has one.</param>
+    /// <returns>The error.</returns>
+    internal static Error Down(ITemporalClient client, string reason, CommandNonce? nonce) =>
+        SindriErrors.NotRunning.With($"Temporal at {client.Connection.Options.TargetHost} doesn't answer: {reason} ("
             + (nonce is { } n
                 ? $"fix: check `sindri workflow status` or `sindri workflow events` first; if the command didn't apply, run the same command again with --nonce {n.Value}; "
                 : "fix: ")
             + "the Temporal dev server under serve is down, see `sindri doctor`)");
+
+    /// <summary>
+    /// What an Update that ran out of <see cref="Patience"/> means: a Temporal that doesn't answer a health check (the dev
+    /// server under serve died: the client core was still retrying Unavailable) is SND-API-001, else no worker took it
+    /// (<see cref="NoWorker"/>).
+    /// </summary>
+    /// <param name="client">The client.</param>
+    /// <param name="address">The instance.</param>
+    /// <param name="nonce">The Update's id.</param>
+    /// <param name="cancellationToken">The caller's token.</param>
+    /// <returns>The error.</returns>
+    internal static async ValueTask<Error> NoAnswer(ITemporalClient client, InstanceAddress address, CommandNonce nonce, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await client.Connection.CheckHealthAsync(options: new RpcOptions { Timeout = TimeSpan.FromSeconds(2), CancellationToken = cancellationToken }).ConfigureAwait(false)
+                ? NoWorker(address, nonce)
+                : Down(client, "its health check failed", nonce);
+        }
+        catch (RpcException e) // boundary: the probe says the frontend is gone
+        {
+            return Down(client, e, nonce);
+        }
+    }
 
     /// <summary>SND-API-002 for an Update no worker took in <see cref="Patience"/>; it may still apply once one runs.</summary>
     /// <param name="address">The instance.</param>

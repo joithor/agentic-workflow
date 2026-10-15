@@ -60,7 +60,7 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
         }
         catch (Exception e) when (!cancellationToken.IsCancellationRequested && e is WorkflowUpdateRpcTimeoutOrCanceledException or RpcException { Code: RpcException.StatusCode.DeadlineExceeded }) // boundary: no worker took it
         {
-            return TemporalUpdates.NoWorker(address, nonce);
+            return await TemporalUpdates.NoAnswer(client.Value, address, nonce, cancellationToken).ConfigureAwait(false);
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound) // boundary: no running execution with that id
         {
