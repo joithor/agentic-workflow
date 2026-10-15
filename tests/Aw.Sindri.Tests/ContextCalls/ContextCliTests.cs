@@ -4,6 +4,8 @@ using Aw.Context.Core.Eval;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
+using Aw.Kernel.Json;
+using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Host.Text;
 
@@ -48,6 +50,19 @@ public sealed class ContextCliTests
         Assert.Equal(ContextErrors.QueryInvalid.Code, parsed.Error.Code);
         Assert.Contains(QueryRules.MaxEncodedText.ToString(System.Globalization.CultureInfo.InvariantCulture), parsed.Error.Message, StringComparison.Ordinal);
         Assert.Contains("percent-encoded", parsed.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_over_long_question_exits_1_as_attention_without_calling_the_api()
+    {
+        using var error = new StringWriter();
+        var output = new Output(TextWriter.Null, error, AwJson.CreateOptions(SindriJsonContext.Default));
+        var verbs = new ContextVerbs(null!, output);   // why: the argument error returns before the client is touched
+
+        var exit = await verbs.Run(["query", new string('\u6f22', 900)], TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, exit);
+        Assert.Contains("SND-CONTEXT-006", error.ToString(), StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]

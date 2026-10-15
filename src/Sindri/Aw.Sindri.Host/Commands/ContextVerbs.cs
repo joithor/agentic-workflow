@@ -33,7 +33,7 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
         var parsed = QueryArguments.Parse(rest);
         if (parsed.IsError)
         {
-            return await output.Error(parsed.Error).ConfigureAwait(false);
+            return await Failed(parsed.Error).ConfigureAwait(false);   // a refused question (006) is attention (1); a usage error stays 2
         }
 
         var answer = await client.Get<ContextResult>("/sindri/context/query" + parsed.Value.QueryString, ct).ConfigureAwait(false);
