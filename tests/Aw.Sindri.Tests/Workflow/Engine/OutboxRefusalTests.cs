@@ -19,7 +19,7 @@ public sealed class OutboxRefusalTests
 {
     private const string Dispatcher = "system:dispatcher";
     private static readonly EffectIdentity _claim = new(Id, Entry: 3, Index: 0);   // startable -> claimed emits effect.claim.ref
-    private static readonly RefusedEffect _claimRef = new(BlockId.From("effect.claim.ref"), _claim, new Dictionary<string, WithValue>(StringComparer.Ordinal));
+    private static readonly RefusedEffect _claimRef = new(BlockId.From("effect.claim.ref"), _claim, new Dictionary<string, WithValue>(StringComparer.Ordinal), CommandOrigin.Recipe);
 
     [Fact, Trait("Lane", "unit")]
     public void A_revoked_refusal_parks_spec_conflict_revoked_with_only_cancel()
@@ -97,7 +97,7 @@ public sealed class OutboxRefusalTests
     {
         var earlier = new RefusedEffect(
             BlockId.From("effect.notify.desk"), new EffectIdentity(Id, Entry: 2, Index: 1),
-            new Dictionary<string, WithValue>(StringComparer.Ordinal) { ["to"] = new WithValue(Literal: null, Fact: null, Profile: "user") });
+            new Dictionary<string, WithValue>(StringComparer.Ordinal) { ["to"] = new WithValue(Literal: null, Fact: null, Profile: "user") }, CommandOrigin.Recipe);
         var moved = At(Item, "claimed", entry: 5);
 
         var parked = Parked(Decide(moved, Item, new OutboxRefused(Dispatcher, earlier, "SND-WF-011", Sequence: 93), rules: EngineRules.Default));

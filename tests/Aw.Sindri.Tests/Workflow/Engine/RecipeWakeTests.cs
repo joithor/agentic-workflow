@@ -19,7 +19,7 @@ public sealed class RecipeWakeTests
     private const string Dispatcher = "system:dispatcher";
     private const string Engine = "service:engine";
     private static readonly EffectIdentity _claim = new(Id, Entry: 3, Index: 0);
-    private static readonly RefusedEffect _claimRef = new(BlockId.From("effect.claim.ref"), _claim, new Dictionary<string, WithValue>(StringComparer.Ordinal));
+    private static readonly RefusedEffect _claimRef = new(BlockId.From("effect.claim.ref"), _claim, new Dictionary<string, WithValue>(StringComparer.Ordinal), CommandOrigin.Recipe);
 
     [Fact, Trait("Lane", "unit")]
     public void A_drift_approval_resumes_a_drift_park_and_resends_the_refused_effect()
@@ -76,7 +76,7 @@ public sealed class RecipeWakeTests
     [Fact, Trait("Lane", "unit")]
     public void Two_effects_refused_under_drift_are_both_resent_by_the_approval()
     {
-        var second = new RefusedEffect(BlockId.From("effect.notify.desk"), new EffectIdentity(Id, Entry: 3, Index: 1), new Dictionary<string, WithValue>(StringComparer.Ordinal));
+        var second = new RefusedEffect(BlockId.From("effect.notify.desk"), new EffectIdentity(Id, Entry: 3, Index: 1), new Dictionary<string, WithValue>(StringComparer.Ordinal), CommandOrigin.Recipe);
         var parked = Parked(Decide(DriftParked(), Item, new OutboxRefused(Dispatcher, second, "SND-RECIPE-006", Sequence: 92), rules: EngineRules.Default));
 
         var resumed = Assert.IsType<Applied>(Decide(parked, Item, Wake(RecipeWakeKind.Approved), rules: EngineRules.Default));

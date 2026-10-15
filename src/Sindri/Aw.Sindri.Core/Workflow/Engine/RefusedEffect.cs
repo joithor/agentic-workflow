@@ -13,4 +13,4 @@ namespace Aw.Sindri.Core.Workflow.Engine;
 /// <param name="Identity">Its stable identity: a re-emission keeps it.</param>
 /// <param name="With">Its arguments, as the recipe gave them.</param>
 /// <param name="Origin">Who emitted it: a re-send keeps it, so an engine notice is re-sent as the engine's (interrupt class, its own text, no reply) and a recipe's effect is checked again like any recipe effect.</param>
-public sealed record RefusedEffect(BlockId Kind, EffectIdentity Identity, IReadOnlyDictionary<string, WithValue> With, CommandOrigin Origin = CommandOrigin.Recipe);
+public sealed record RefusedEffect(BlockId Kind, EffectIdentity Identity, IReadOnlyDictionary<string, WithValue> With, CommandOrigin Origin);

@@ -22,8 +22,8 @@ public sealed class ParkBookkeepingTests
     private const string Engine = "service:engine";
     private static readonly EffectIdentity _e1 = new(Id, Entry: 3, Index: 0);
     private static readonly EffectIdentity _e2 = new(Id, Entry: 3, Index: 1);
-    private static readonly RefusedEffect _first = new(BlockId.From("effect.claim.ref"), _e1, new Dictionary<string, WithValue>(StringComparer.Ordinal));
-    private static readonly RefusedEffect _second = new(BlockId.From("effect.notify.desk"), _e2, new Dictionary<string, WithValue>(StringComparer.Ordinal));
+    private static readonly RefusedEffect _first = new(BlockId.From("effect.claim.ref"), _e1, new Dictionary<string, WithValue>(StringComparer.Ordinal), CommandOrigin.Recipe);
+    private static readonly RefusedEffect _second = new(BlockId.From("effect.notify.desk"), _e2, new Dictionary<string, WithValue>(StringComparer.Ordinal), CommandOrigin.Recipe);
 
     /// <summary>(b) A takeover over a timeout park keeps the dispatch park that waited behind it: the handback and the resume reach it, and its resume re-sends the effect.</summary>
     [Fact, Trait("Lane", "unit")]
@@ -184,6 +184,21 @@ public sealed class ParkBookkeepingTests
         Assert.Equal(ParkKind.Revoked, revoked.Suspension!.ParkKind);
         Assert.Empty(Suspensions.PendingParks(revoked));
         Assert.Empty(Held(revoked));
+    }
+
+    /// <summary>(I3) An engine notice refused for drift survives a takeover, the approval and the handback as the engine's: it is re-sent with the Engine origin.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void An_engine_notice_released_by_the_handback_is_re_sent_with_the_engine_origin()
+    {
+        var notice = new RefusedEffect(BlockId.From("effect.notify.desk"), _e2, new Dictionary<string, WithValue>(StringComparer.Ordinal), CommandOrigin.Engine);
+        var drifted = Refuse(Claimed(), notice, "SND-RECIPE-006");
+        var taken = Applied(drifted, Takeover());
+        var approved = Applied(taken, new RecipeWake(Engine, RecipeWakeKind.Approved, 8));
+
+        var back = Assert.IsType<Applied>(Decide(approved, Item, Handback(), rules: EngineRules.Default));
+
+        var sent = Assert.Single(back.Effects);
+        Assert.Equal((_e2, CommandOrigin.Engine), (sent.Identity, sent.Origin));
     }
 
     /// <summary>The identities of the effects any park of the instance holds.</summary>
