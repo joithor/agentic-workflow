@@ -22,44 +22,49 @@ namespace Aw.Sindri.Host.Endpoints;
 /// <param name="ledger">The ledger, for the head.</param>
 /// <param name="slots">The open streams.</param>
 /// <param name="callers">Who opens the stream.</param>
-/// <param name="pump">The loop the answer runs.</param>
 /// <param name="shutdown">Ends open streams on stop.</param>
-internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots, ICallerContextAccessor callers, EventPump pump, IShutdown shutdown)
+internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots, ICallerContextAccessor callers, IShutdown shutdown)
 {
     /// <summary>The answer for <paramref name="context"/>'s request: an open stream or the refusal.</summary>
     /// <param name="context">The request.</param>
     /// <param name="service">Reads each page.</param>
+    /// <param name="pump">The loop the answer runs.</param>
     /// <returns>The stream, or a ProblemDetails answer.</returns>
-    public async Task<IResult> Open(HttpContext context, IService<StreamEventsRequest, StreamEventsResponse> service)
+    public async Task<IResult> Open(HttpContext context, IService<StreamEventsRequest, StreamEventsResponse> service, EventPump pump)
     {
         ArgumentNullException.ThrowIfNull(context);
         var request = Bind(context.Request);
         if (request.IsError)
         {
-            return HttpResults.Problem(request.Error);
+            return Refused(request.Error, StatusCodes.Status400BadRequest);
         }
 
         var head = await ledger.Head(context.RequestAborted).ConfigureAwait(false);
         if (head.IsError)
         {
-            return HttpResults.Problem(head.Error);
+            return Refused(head.Error, head.Error.Kind == ErrorKind.Unavailable ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status500InternalServerError);
         }
 
         if (request.Value.After > head.Value)
         {
-            return HttpResults.Problem(SindriErrors.InvalidInput.With(
-                $"the cursor {request.Value.After.ToString(CultureInfo.InvariantCulture)} is past the ledger's head {head.Value.ToString(CultureInfo.InvariantCulture)} (fix: after={head.Value.ToString(CultureInfo.InvariantCulture)}, or leave it out)"));
+            return Refused(
+                SindriErrors.InvalidInput.With(string.Create(CultureInfo.InvariantCulture,
+                    $"the cursor {request.Value.After} is past the ledger's head {head.Value} (fix: after={head.Value}, or leave it out)")),
+                StatusCodes.Status400BadRequest);
         }
 
         var caller = callers.Current?.Class ?? CallerClass.Human;
         if (!slots.TryEnter(caller, out var slot))
         {
-            return HttpResults.Problem(SindriErrors.StreamsFull.With(SindriErrors.StreamsFull.Title));
+            return Refused(SindriErrors.StreamsFull.With(SindriErrors.StreamsFull.Title), StatusCodes.Status429TooManyRequests);
         }
 
         StreamTelemetry.Opened(caller, slots.Open(caller));
         return new SseResult(pump, service, request.Value, new Counted(slot, slots, caller), shutdown.Stopping);
     }
+
+    /// <summary>A ProblemDetails answer, as every other route sends one: title the code, detail the message.</summary>
+    private static Microsoft.AspNetCore.Http.HttpResults.ProblemHttpResult Refused(Error error, int status) => TypedResults.Problem(title: error.Code, detail: error.Message, statusCode: status);
 
     /// <summary>The filters and first cursor a request names, or the 400 for a malformed one.</summary>
     internal static Result<StreamEventsRequest> Bind(HttpRequest http)

@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
@@ -49,6 +50,19 @@ public sealed class EventStreamTests : IDisposable
 
         Assert.Equal(["write", "flush", "write", "flush"], _body.Operations);
         Assert.Equal("event: service.heartbeat\nid: 7\ndata: {\"a\":1}\n\n: ping\n\n", _body.Text);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_frames_match_the_framing_golden()
+    {
+        var writer = new SseWriter(_body);
+        var ct = TestContext.Current.CancellationToken;
+
+        await writer.Event(7, "service.heartbeat", "{\"slot\":\"2026-01-01T00:00:00Z\"}", ct);
+        await writer.Comment("ping", ct);
+        await writer.Event(id: null, "error", "{\"code\":\"SND-LEDGER-002\",\"detail\":\"ledger.db: database is locked\"}", ct);
+
+        Golden.Match(_body.Text, typeof(EventStreamTests).Assembly, "Golden/Api/events/framing.sse", Normalization.None);
     }
 
     [Fact(Timeout = 5_000), Trait("Lane", "unit")]

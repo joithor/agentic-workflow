@@ -1,18 +1,18 @@
 using Aw.Kernel.Ids;
-using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
-using Aw.Sindri.Core.Lease;
-using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Features.Items;
-using Aw.Sindri.Tests.Views;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items.Vocabulary;
+using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Text;
+using Aw.Sindri.Features.Items;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Views;
 
 namespace Aw.Sindri.Tests.StreamEvents;
 

@@ -14,6 +14,7 @@ internal static class Usage
         "       sindri profile approve [--no-start] [<hash>]   without a hash: show the hash and what changed; with it: approve (needs a terminal); starts the control plane unless --no-start",
         "       sindri views rebuild [--no-start]   replay the ledger into the views (the fix when they stall); starts the control plane unless --no-start",
         "       sindri queue [--json] [--no-start]   the queue's groups, one line per item; exit 1 while the views rebuild or stall; starts the control plane unless --no-start",
+        "       sindri ledger [--after N] [--item X] [--type T] [--max N] [--json] [--no-start]   the audit read: one line per event (a human also sees non-public types), then 'next: N' while more remain; starts the control plane unless --no-start",
         "       sindri items [--state <s>] [--repo <r>] [--json] [--no-start]   the item list, the oldest first",
         "       sindri item add <title> [--repo <r>] [--no-start]   create an item: 'ITM-… created (sequence N)'",
         "       sindri item close <item> [--cancelled] [--version <n>] [--no-start]   close an item (id or tracker key) as done, or cancelled; without --version it closes the version it reads first",
