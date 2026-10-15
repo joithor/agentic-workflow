@@ -1,7 +1,9 @@
 using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
+using Aw.Redaction;
 using Aw.Sindri.Core.Ledger;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -24,7 +26,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="lease">The lease this process holds; every append is fenced by it.</param>
 /// <param name="events">The control plane's event factory (its scope, clock, ids and the host's JSON options).</param>
 /// <param name="logger">Where a replay that mirrors a different event than the ledger holds is warned about.</param>
-internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLease lease, EventFactory events, ILogger<RecordEventActivities>? logger = null)
+/// <param name="redactor">Scrubs each serialized payload before it is appended (free text in a detail can carry a secret); the built-in rules when none is given.</param>
+internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLease lease, EventFactory events, ILogger<RecordEventActivities>? logger = null, IRedactor? redactor = null)
 {
     /// <summary>
     /// How the interpreter runs it: a local activity with unbounded retries and backoff, so the workflow does not move on
@@ -74,7 +77,7 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
         var payload = new WorkflowEventPayload(record.WorkflowId, record.From, record.To, record.Trigger, record.Outcome, record.Run, record.Detail);
         var own = events.Scope;
         var scope = new EventScope(record.Actor ?? own.Actor, record.Tenant ?? own.Tenant, record.Ring ?? own.Ring);
-        var entry = events.Entry(record.Type, payload, key, record.Item, scope) with { TemporalEvent = activityId };   // the key's third part (UI E-30)
+        var entry = Scrubbed(events.Entry(record.Type, payload, key, record.Item, scope) with { TemporalEvent = activityId }, record, payload, scope, key);   // the key's third part (UI E-30)
         var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         if (!appended.IsError && appended.Value.AlreadyRecorded && await Differs(appended.Value.Sequence, entry, cancellationToken).ConfigureAwait(false))
         {
@@ -86,6 +89,45 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
         return appended.IsError
             ? throw new InvalidOperationException($"{appended.Error.Code}: {appended.Error.Message}")
             : appended.Value;
+    }
+
+    /// <summary>
+    /// The entry with its serialized payload scrubbed (<see cref="IRedactor"/>), so what is stored, and what <see cref="Differs"/>
+    /// compares, never holds a secret. A payload the scrub blocked or broke (it must stay JSON) is stored without its detail,
+    /// which holds the only free text, and scrubbed again; a payload that still can't be scrubbed throws, and the activity retries.
+    /// </summary>
+    private LedgerEntry Scrubbed(LedgerEntry entry, WorkflowEventRecord record, WorkflowEventPayload payload, EventScope scope, string key)
+    {
+        var scrubber = redactor ?? Redactor.Default;
+        if (Scrub(scrubber, entry.Envelope.Payload) is { } text)
+        {
+            return entry with { Envelope = entry.Envelope with { Payload = text } };
+        }
+
+        var bare = events.Entry(record.Type, payload with { Detail = null }, key, record.Item, scope) with { TemporalEvent = entry.TemporalEvent };
+        return Scrub(scrubber, bare.Envelope.Payload) is { } kept
+            ? bare with { Envelope = bare.Envelope with { Payload = kept } }
+            : throw new InvalidOperationException($"the payload of {key} can't be scrubbed (a pattern timed out); the activity retries");
+    }
+
+    /// <summary>The scrubbed text when it is still JSON, else null.</summary>
+    private static string? Scrub(IRedactor scrubber, string payload)
+    {
+        var result = scrubber.Scrub(payload);
+        if (result.IsBlocked)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var _ = JsonDocument.Parse(result.Text);
+            return result.Text;
+        }
+        catch (JsonException) // boundary: a placeholder that swallowed a quote; the caller stores the payload without its detail
+        {
+            return null;
+        }
     }
 
     /// <summary>Whether the row at <paramref name="sequence"/> is another event than <paramref name="entry"/> (type or payload).</summary>

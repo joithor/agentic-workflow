@@ -9,7 +9,7 @@ namespace Aw.Sindri.Core.Events;
 /// What a mirrored workflow event carries beyond the state change (engine spec rev 8.1 §5.6): the trigger's kind, id and
 /// actor, any gate, evidence, grant or override data, the effects it runs, and the post-state delta. A public projection of
 /// the decision's <see cref="WorkflowEvent"/>: ids, digests, reasons and counters only. It never holds an answer's text, a
-/// parked question or a fact's content (the ledger scrubs the payload, and the rows stay free of such text by construction).
+/// parked question or a fact's content (RecordEvent scrubs the serialized payload before it is appended, and the rows stay free of such text by construction).
 /// </summary>
 /// <param name="TriggerId">The trigger's key, 'wf:{instance}:{trigger}': carries a command's nonce and arguments digest, a report's run and digest, an event's source sequence.</param>
 /// <param name="TriggerActor">Who fired the trigger.</param>
@@ -18,7 +18,7 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="ReportSha256">The report's digest, for a Step completion.</param>
 /// <param name="Answer">Which option a 'workflow answer' gave.</param>
 /// <param name="Amount">The rounds or tokens of a grant answer.</param>
-/// <param name="Reason">A step.failed's reason (already scrubbed by the decision).</param>
+/// <param name="Reason">A step.failed's reason (free text; RecordEvent scrubs the payload it is in).</param>
 /// <param name="Gates">The gates' answers, in order.</param>
 /// <param name="Evidence">The evidence checks.</param>
 /// <param name="Grant">A grant the trigger made.</param>

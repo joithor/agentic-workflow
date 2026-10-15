@@ -482,8 +482,8 @@ edges:
   - from: Sindri
     to: Redaction
     kind: project
-    status: planned
-    note: "replaces sindri's copy of the scrubbing patterns"
+    status: current
+    note: "replaces sindri's copy of the scrubbing patterns; Aw.Sindri.Workflows' RecordEvent scrubs each mirrored payload with it"
   - from: Sindri
     to: Packets
     kind: cli
