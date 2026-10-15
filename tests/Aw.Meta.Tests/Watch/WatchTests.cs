@@ -15,7 +15,7 @@ public sealed class WatchTests
 
     private WatchService Service() => new(
         _world.Config,
-        new WatchPoller(_world.Repo, _world.Resources, _world.Messages),
+        new WatchPoller(_world.Repo, _world.Resources, _world.Messages, _world.Values),
         _world.Values,
         _world.Delay,
         _world.Clock);
@@ -104,6 +104,18 @@ public sealed class WatchTests
 
         Assert.Equal(start.AddSeconds(240).ToString("O"), (await _world.Values.Get(KvKeys.WatchHeartbeat, CancellationToken.None)).Value);
         Assert.Equal("120", (await _world.Values.Get(KvKeys.WatchInterval, CancellationToken.None)).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Pull_requests_seen_merged_or_closed_are_kept_for_the_merge_queue_to_drop()
+    {
+        await _world.Ready();
+        _ = await _world.Values.Set(KvKeys.EndedPrs, "180", CancellationToken.None);
+        Script([List(Pr(190, "OPEN", "aaa1111"), Pr(191, "MERGED", "bbb2222"), Pr(192, "CLOSED", "ccc3333"))]);
+
+        _ = await Watch(TimeSpan.FromSeconds(120));
+
+        Assert.Equal("180,191,192", (await _world.Values.Get(KvKeys.EndedPrs, CancellationToken.None)).Value);
     }
 
     [Fact, Trait("Lane", "unit")]

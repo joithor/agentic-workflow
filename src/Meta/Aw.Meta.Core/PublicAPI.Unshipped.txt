@@ -799,6 +799,7 @@ const Aw.Meta.Core.Health.ProcessGroups.Claude = "claude" -> string!
 const Aw.Meta.Core.Health.ProcessGroups.Dotnet = "dotnet" -> string!
 const Aw.Meta.Core.Health.ProcessGroups.Mcp = "headroom/mcp" -> string!
 const Aw.Meta.Core.Health.ProcessGroups.Temporal = "temporal" -> string!
+const Aw.Meta.Core.KvKeys.EndedPrs = "watch.ended-prs" -> string!
 const Aw.Meta.Core.KvKeys.HealthLast = "health.last" -> string!
 const Aw.Meta.Core.KvKeys.StopCount = "stopcheck.count" -> string!
 const Aw.Meta.Core.KvKeys.StopFingerprint = "stopcheck.fingerprint" -> string!
@@ -1118,3 +1119,6 @@ Aw.Meta.Core.Commands.ProgramPath
 static Aw.Meta.Core.Commands.ProgramPath.Resolve(string! program, string? cwd) -> string!
 Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.get -> System.Collections.Generic.IReadOnlyDictionary<string!, int>?
 Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.init -> void
+Aw.Meta.Core.Watch.EndedPrs
+static Aw.Meta.Core.Watch.EndedPrs.Merge(string? stored, System.Collections.Generic.IEnumerable<Aw.Meta.Core.Watch.PrView!>! prs) -> string?
+static Aw.Meta.Core.Watch.EndedPrs.Parse(string? stored) -> System.Collections.Generic.IReadOnlySet<int>!
