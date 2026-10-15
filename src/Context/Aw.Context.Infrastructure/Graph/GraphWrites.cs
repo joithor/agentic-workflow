@@ -19,9 +19,10 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
     /// (with the file's overrides) in one transaction. Leftover 'building' versions (an earlier crash) are removed first;
     /// a failed or cancelled save removes its own.
     /// </summary>
-    public async ValueTask<Result<MapVersion>> Save(MapImport map, DateTimeOffset created, CancellationToken cancellationToken, bool draft = false)
+    public async ValueTask<Result<MapVersion>> Save(MapImport map, DateTimeOffset created, CancellationToken cancellationToken, bool draft = false, int? replacing = null)
     {
-        var swept = await Run([new SqlStatement(GraphSql.DeleteBuilding)], returnsId: false, cancellationToken).ConfigureAwait(false);
+        // A replacement sweeps nothing: a 'building' version is another build's, still being written.
+        var swept = replacing is null ? await Run([new SqlStatement(GraphSql.DeleteBuilding)], returnsId: false, cancellationToken).ConfigureAwait(false) : Results.Success(0L);
         var begun = swept.IsError ? swept : await Run([new SqlStatement(GraphSql.InsertVersion, c => c.Bind("$repo", map.Repo.Value).Bind("$commit", map.Commit)
             .Bind("$keyVersion", EntryKey.Version).Bind("$created", created))], returnsId: true, cancellationToken).ConfigureAwait(false);
         if (begun.IsError)
@@ -32,7 +33,7 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
         var version = begun.Value;
         try
         {
-            var written = await Write(map, version, draft, cancellationToken).ConfigureAwait(false);
+            var written = await Write(map, version, draft, replacing, cancellationToken).ConfigureAwait(false);
             return written.IsError
                 ? await Abandon(version, written.Error).ConfigureAwait(false)
                 : new MapVersion((int)version, map.Repo, map.Commit, EntryKey.Version, created, draft ? MapVersionStatus.Draft : MapVersionStatus.Current);
@@ -51,7 +52,7 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
         return deleted.IsError ? deleted.Error : (int)deleted.Value;
     }
 
-    private async ValueTask<Result<long>> Write(MapImport map, long version, bool draft, CancellationToken cancellationToken)
+    private async ValueTask<Result<long>> Write(MapImport map, long version, bool draft, int? replacing, CancellationToken cancellationToken)
     {
         foreach (var batch in GraphStatements.Graph(version, map.Graph).Chunk(batchSize))
         {
@@ -62,14 +63,14 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
             }
         }
 
-        return await Flip(map, version, cancellationToken, draft).ConfigureAwait(false);
+        return await Flip(map, version, cancellationToken, draft, replacing).ConfigureAwait(false);
     }
 
     /// <summary>
     /// Retires the current version (or, for a draft, deletes the open draft), makes this one current (or the draft) and adds the file's overrides, in one transaction that commits
     /// only when this version was still 'building' (another import's sweep may have removed it); otherwise nothing changes.
     /// </summary>
-    internal async ValueTask<Result<long>> Flip(MapImport map, long version, CancellationToken cancellationToken, bool draft = false)
+    internal async ValueTask<Result<long>> Flip(MapImport map, long version, CancellationToken cancellationToken, bool draft = false, int? replacing = null)
     {
         var begun = await sessions.BeginSession(cancellationToken).ConfigureAwait(false);
         if (begun.IsError)
@@ -86,22 +87,44 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
                     : ContextErrors.StoreUnavailable.With("another import removed this one before it became current; nothing changed (fix: import again)");
             }
 
-            SqlStatement[] switchOver = draft
-                ? [new(GraphSql.DeleteDrafts), new(GraphSql.MakeDraft, c => c.Bind("$v", version))]
-                : [new(GraphSql.RetireCurrent), new(GraphSql.MakeCurrent, c => c.Bind("$v", version))];
-            SqlStatement[] flip = [.. switchOver, .. map.Overrides.Select(GraphStatements.Override)];
-            foreach (var statement in flip)
+            var switched = await SwitchOver(begun.Value, map, (version, draft, replacing), cancellationToken).ConfigureAwait(false);
+            if (switched.IsError)
             {
-                var done = await SqliteQueries.Execute(begun.Value, statement, cancellationToken).ConfigureAwait(false);
-                if (done.IsError)
-                {
-                    return ContextDatabase.Translate(done.Error);
-                }
+                return switched.Error;
             }
 
             var committed = await begun.Value.Commit(cancellationToken).ConfigureAwait(false);
             return committed.IsError ? ContextDatabase.Translate(committed.Error) : version;
         }
+    }
+
+    // The statements that make the version current (or the draft) and add the file's overrides; a replacement removes only the draft it read, and 046 when that is gone.
+    private static async ValueTask<Result<Unit>> SwitchOver(ISqliteSession session, MapImport map, (long Version, bool Draft, int? Replacing) target, CancellationToken cancellationToken)
+    {
+        var (version, draft, replacing) = target;
+        if (replacing is { } source)
+        {
+            var removed = await SqliteQueries.Execute(session, new SqlStatement(GraphSql.DeleteDraft, c => c.Bind("$v", (long)source)), cancellationToken).ConfigureAwait(false);
+            if (removed.IsError || removed.Value != 1)
+            {
+                return removed.IsError ? ContextDatabase.Translate(removed.Error)
+                    : ContextErrors.PromoteRefused.With("the draft changed while it was being promoted (another build replaced it, or it was promoted); nothing was replaced (fix: read the queue again with 'sindri context map review --list')");
+            }
+        }
+
+        SqlStatement[] switchOver = draft
+            ? [.. replacing is null ? (SqlStatement[])[new(GraphSql.DeleteDrafts)] : [], new(GraphSql.MakeDraft, c => c.Bind("$v", version))]
+            : [new(GraphSql.RetireCurrent), new(GraphSql.MakeCurrent, c => c.Bind("$v", version))];
+        foreach (var statement in (SqlStatement[])[.. switchOver, .. map.Overrides.Select(GraphStatements.Override)])
+        {
+            var done = await SqliteQueries.Execute(session, statement, cancellationToken).ConfigureAwait(false);
+            if (done.IsError)
+            {
+                return ContextDatabase.Translate(done.Error);
+            }
+        }
+
+        return Unit.Value;
     }
 
     /// <summary>The open draft, or a copy of the current version made in one transaction when there is none.</summary>

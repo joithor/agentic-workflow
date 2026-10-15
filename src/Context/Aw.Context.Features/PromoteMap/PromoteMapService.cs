@@ -53,7 +53,8 @@ internal sealed class PromoteMapService(IGraphStore store) : IService<PromoteMap
             : new MapPromoted(promoted.Value, previous.Value is { } old ? old with { Status = MapVersionStatus.Retained } : null);
     }
 
-    // The draft's own number, or the number of a copy of it that holds the accepted proposals' nodes and none of what the deny globs hide.
+    // The draft's own number, or the number of a copy of it that holds the accepted proposals' nodes and none of what the deny globs hide. The copy replaces only the draft that was read:
+    // if a rebuild replaced it meanwhile the promote is refused (046), and the rebuild's draft and any build still being written stay.
     private async ValueTask<Result<int>> WithAcceptedProposals(MapSnapshot draft, MapView view, CancellationToken cancellationToken)
     {
         var proposed = OverrideLog.Active(view.Overrides).Where(o => o.Action == OverrideAction.Propose).Select(o => o.Target.Value).ToHashSet(StringComparer.Ordinal);
@@ -65,7 +66,7 @@ internal sealed class PromoteMapService(IGraphStore store) : IService<PromoteMap
 
         var edges = view.Applied.Edges.Where(e => proposed.Contains(e.From.Value) && !view.Graph.Edges.Any(e.SameFact));
         var joined = view.Graph with { Nodes = [.. view.Graph.Nodes, .. nodes], Edges = [.. view.Graph.Edges, .. edges] };
-        var saved = await store.SaveDraft(new MapImport(draft.Version.Repo, draft.Version.Commit, joined, []), draft.Version.Created, cancellationToken).ConfigureAwait(false);
+        var saved = await store.ReplaceDraft(draft.Version.Number, new MapImport(draft.Version.Repo, draft.Version.Commit, joined, []), draft.Version.Created, cancellationToken).ConfigureAwait(false);
         return saved.IsError ? saved.Error : saved.Value.Number;
     }
 }

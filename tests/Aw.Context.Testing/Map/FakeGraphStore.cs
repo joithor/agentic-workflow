@@ -82,8 +82,19 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     });
 
     /// <inheritdoc/>
-    public ValueTask<Result<MapVersion>> ReplaceDraft(int draft, MapImport map, DateTimeOffset created, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("red: ReplaceDraft is not written yet");
+    public ValueTask<Result<MapVersion>> ReplaceDraft(int draft, MapImport map, DateTimeOffset created, CancellationToken cancellationToken) => Done(() =>
+    {
+        ArgumentNullException.ThrowIfNull(map);
+        if (_versions.RemoveAll(v => v.Version.Number == draft && v.Version.Status == MapVersionStatus.Draft) == 0)
+        {
+            return Results.Failure<MapVersion>(ContextErrors.PromoteRefused.With("the draft changed while it was being promoted; nothing was replaced (fix: read the queue again with 'sindri context map review --list')"));
+        }
+
+        var version = new MapVersion(++_last, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Draft);
+        _versions.Add((version, map.Graph));
+        _ = Append(map.Overrides);
+        return Results.Success(version);
+    });
 
     /// <inheritdoc/>
     public ValueTask<Result<MapVersion>> OpenDraft(DateTimeOffset created, CancellationToken cancellationToken) => Done(() =>

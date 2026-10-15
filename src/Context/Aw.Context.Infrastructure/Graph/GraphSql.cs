@@ -81,6 +81,8 @@ internal static class GraphSql
 
     public const string DeleteDrafts = "DELETE FROM map_version WHERE status = 'draft'";
 
+    public const string DeleteDraft = "DELETE FROM map_version WHERE id = $v AND status = 'draft'";
+
     public const string MakeDraft = "UPDATE map_version SET status = 'draft' WHERE id = $v AND status = 'building'";
 
     public const string VersionStatus = "SELECT count(*) FROM map_version WHERE id = $v AND status = 'draft'";
