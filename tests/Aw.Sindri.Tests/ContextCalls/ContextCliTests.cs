@@ -1,8 +1,11 @@
+using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
+using Aw.Kernel.Json;
+using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Host.Text;
 
@@ -17,6 +20,78 @@ public sealed class ContextCliTests
 
         Assert.Equal("?q=split%20pane%26x%3D1&depth=2&draft=true", parsed.Value.QueryString);
         Assert.True(parsed.Value.Json);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("depth", "abc", "(fix: --depth 2)")]
+    [InlineData("depth", "9", "(fix: --depth 2)")]
+    [InlineData("budget", "abc", "(fix: --budget 4000)")]
+    public void The_cli_adds_its_own_flag_to_a_depth_or_budget_006(string field, string text, string fix)
+    {
+        var error = (field == "depth" ? QueryRules.ParseDepth(text) : QueryRules.ParseBudget(text)).Error;
+
+        var shown = QueryFlagHints.Add(error);
+
+        Assert.Equal(error.Code, shown.Code);
+        Assert.StartsWith(error.Message, shown.Message, StringComparison.Ordinal);
+        Assert.EndsWith(fix, shown.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("q")]
+    [InlineData("node")]
+    public void A_value_over_the_encoded_cap_is_006_before_anything_is_sent(string which)
+    {
+        var text = new string('\u6f22', 900);   // 900 characters, 8100 once percent-encoded
+        var args = which == "q" ? new[] { text } : ["x", "--node", text];
+
+        var parsed = ContextVerbs.QueryArguments.Parse(args);
+
+        Assert.Equal(ContextErrors.QueryInvalid.Code, parsed.Error.Code);
+        Assert.Contains(QueryRules.MaxEncodedText.ToString(System.Globalization.CultureInfo.InvariantCulture), parsed.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("percent-encoded", parsed.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_over_long_question_exits_1_as_attention_without_calling_the_api()
+    {
+        using var error = new StringWriter();
+        var output = new Output(TextWriter.Null, error, AwJson.CreateOptions(SindriJsonContext.Default));
+        var verbs = new ContextVerbs(null!, output);   // why: the argument error returns before the client is touched
+
+        var exit = await verbs.Run(["query", new string('\u6f22', 900)], TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, exit);
+        Assert.Contains("SND-CONTEXT-006", error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("x", "--node", "feature:a")]
+    public void The_cli_spells_its_flags_in_the_shape_and_node_006s(string word, string flag, string value)
+    {
+        var shape = QueryFlagHints.Add(QueryRules.Check(new ContextQuery(word, Node: value), new()).Error);
+        var node = QueryFlagHints.Add(QueryRules.Check(new ContextQuery(Text: null, Node: new string('n', 2_001)), new()).Error);
+
+        Assert.Contains(flag, shape.Message, StringComparison.Ordinal);
+        Assert.Contains(flag, node.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_hint_matcher_follows_the_engines_own_rule_text()
+    {
+        var depth = QueryRules.ParseDepth("abc").Error;
+        var budget = QueryRules.ParseBudget("abc").Error;
+
+        Assert.StartsWith(QueryRules.DepthMessage, depth.Message, StringComparison.Ordinal);
+        Assert.StartsWith(QueryRules.BudgetMessage, budget.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Any_other_error_passes_through_the_cli_hints_unchanged()
+    {
+        var other = ContextErrors.UnknownAnchor.With("no node is named 'x'");
+
+        Assert.Same(other, QueryFlagHints.Add(other));
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -104,8 +179,8 @@ public sealed class ContextCliTests
         ProbeScore Score(string id, string? error) => new(ProbeId.From(id), 0, 0, [], [], [], error);
         ProbeReport Report(params ProbeScore[] probes) => new(1, "/p/probes.json", "h", "v1", probes, new ProbeTotals(0, 0, probes.Length, at), Baseline: null, Regressed: false);
 
-        var complete = System.Text.Json.JsonDocument.Parse(Kernel.Json.AwJson.Serialize(new ProbeRun(Report(Score("one", error: null)), "/p/r.json"), SliceHarness.Json)).RootElement;
-        var incomplete = System.Text.Json.JsonDocument.Parse(Kernel.Json.AwJson.Serialize(new ProbeRun(Report(Score("one", "SND-CONTEXT-020"), Score("two", "SND-CONTEXT-020")), Path: null),
+        var complete = System.Text.Json.JsonDocument.Parse(AwJson.Serialize(new ProbeRun(Report(Score("one", error: null)), "/p/r.json"), SliceHarness.Json)).RootElement;
+        var incomplete = System.Text.Json.JsonDocument.Parse(AwJson.Serialize(new ProbeRun(Report(Score("one", "SND-CONTEXT-020"), Score("two", "SND-CONTEXT-020")), Path: null),
             SliceHarness.Json)).RootElement;
 
         Assert.Equal(["report", "path", "incomplete", "failed"], complete.EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
@@ -148,4 +223,35 @@ public sealed class ContextCliTests
         Assert.Contains("precision@5 0.60", text, StringComparison.Ordinal);
         Assert.Contains(verdict, text, StringComparison.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Text_output_shows_the_first_alias_beside_the_key_and_a_timestamp_version_in_full()
+    {
+        var cite = new Citation(RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000103"),
+            [new CitationRef(SourceId.From("onyx"), ExternalId.From("0e5a1b00-0000-4000-8000-000000000103"), SourceVersion.From("2026-07-23T09:00:00.0000000Z"))],
+            Permalink: null, Trust.Untrusted, CitationState.Unchecked)
+        { Aliases = ["SPL-103", "SPL-3"] };
+
+        var text = ContextText.Render(Only(cite));
+
+        Assert.Contains("[C1] linear:issue/0e5a1b00-0000-4000-8000-000000000103 (SPL-103)  onyx", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("SPL-3)", text, StringComparison.Ordinal);
+        Assert.Contains("version 2026-07-23T09:00:00.0000000Z  unchecked", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Text_output_still_shortens_a_git_sha_version_and_shows_no_alias_when_there_is_none()
+    {
+        var cite = new Citation(RecordKey.From("repo:split-panes/docs/architecture.md"),
+            [new CitationRef(SourceId.From("repo-docs"), ExternalId.From("split-panes/docs/architecture.md#L1-L9"), SourceVersion.From("3b18e512dba7c0ffee1234567890abcdef123456"))],
+            Permalink: null, Trust.Untrusted, CitationState.Current);
+
+        var text = ContextText.Render(Only(cite));
+
+        Assert.Contains("[C1] repo:split-panes/docs/architecture.md  repo-docs", text, StringComparison.Ordinal);
+        Assert.Contains("version 3b18e512dba7  current", text, StringComparison.Ordinal);
+    }
+
+    private static ContextResult Only(Citation cite) => new(1, QueryId.From("q_1"), new ContextQuery("x"), [], MapVersion: null, DateTimeOffset.UnixEpoch, [], [], [], [],
+        Truncated: false, new BudgetUse(10, 0, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal) { ["C1"] = cite });
 }

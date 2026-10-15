@@ -80,12 +80,21 @@ public static class SindriErrors
     /// <summary>SND-SCHED-001: a background service run failed.</summary>
     public static readonly ErrorDefinition ServiceFailed = new("SND-SCHED-001", ErrorKind.Unavailable, "A background service failed");
 
+    /// <summary>SND-SECRET-001: a secret pointer has no scheme, an unknown scheme or a malformed target.</summary>
+    public static readonly ErrorDefinition SecretPointerInvalid = new("SND-SECRET-001", ErrorKind.Invalid, "The secret pointer is invalid");
+
+    /// <summary>SND-SECRET-002: a secret pointer doesn't resolve (unset variable, missing file or entry, missing tool, timeout).</summary>
+    public static readonly ErrorDefinition SecretUnresolved = new("SND-SECRET-002", ErrorKind.Unavailable, "The secret doesn't resolve");
+
+    /// <summary>SND-SECRET-003: a file: pointer names a file others may read or write, or something that isn't a regular file.</summary>
+    public static readonly ErrorDefinition SecretFileUnsafe = new("SND-SECRET-003", ErrorKind.Forbidden, "The secret file is unsafe");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
-        InvalidInput, ServiceFailed,
+        InvalidInput, ServiceFailed, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
     ];
 }

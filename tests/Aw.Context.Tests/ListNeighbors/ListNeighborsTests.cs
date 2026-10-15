@@ -1,4 +1,5 @@
 using Aw.Context.Core;
+using Aw.Context.Core.Engine;
 using Aw.Context.Tests.Map;
 
 namespace Aw.Context.Tests.ListNeighbors;
@@ -32,6 +33,7 @@ public sealed class ListNeighborsTests : IDisposable
         var view = await _world.Engine.Neighbors("thing:pane-layout", depth, MapWorld.Human, MapWorld.None);
 
         Assert.Equal(ContextErrors.QueryInvalid.Code, view.Error.Code);
+        Assert.Equal(QueryRules.ParseDepth(depth.ToString(System.Globalization.CultureInfo.InvariantCulture)).Error.Message, view.Error.Message);   // one consistent message and fix
     }
 
     [Fact, Trait("Lane", "unit")]

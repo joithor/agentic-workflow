@@ -1,0 +1,37 @@
+using Aw.Context.Core.Facade;
+using Aw.Context.Core.Map;
+using Aw.Kernel;
+using Aw.Sindri.Core.Doctor;
+using Aw.Sindri.Core.Profile;
+
+namespace Aw.Sindri.Features.RunDoctor;
+
+/// <summary>
+/// The context engine's doctor rows, after Sindri's own lease, ledger, profile, api and temporal: 'context:map' and
+/// 'context:retention' (S-3a) and 'context:onyx' (S-5A, judged by <see cref="OnyxDoctor"/>).
+/// </summary>
+/// <param name="context">The context engine.</param>
+/// <param name="onyx">The onyx check.</param>
+internal sealed class ContextEngineChecks(IContextEngine context, OnyxDoctor onyx)
+{
+    /// <summary>The checks, in the order doctor prints them.</summary>
+    /// <param name="approved">The approved profile, or null.</param>
+    /// <param name="cancellationToken">Cancels the reads and the probe.</param>
+    /// <returns>The three checks.</returns>
+    internal async ValueTask<DoctorCheck[]> Check(LoadedProfile? approved, CancellationToken cancellationToken) =>
+    [
+        Line("context:map", await context.CheckMap(cancellationToken).ConfigureAwait(false)),
+        Line("context:retention", await context.CheckRetention(cancellationToken).ConfigureAwait(false)),
+        await onyx.Check(approved, cancellationToken).ConfigureAwait(false),
+    ];
+
+    private static DoctorCheck Line(string name, Result<MapHealth> health) => health.IsError
+        ? new DoctorCheck(name, CheckState.Fail, $"{health.Error.Code}: {health.Error.Message}", "check $AW_SINDRI_HOME/context")
+        : new DoctorCheck(health.Value.Name, health.Value.State switch
+        {
+            MapHealthState.Ok => CheckState.Ok,
+            MapHealthState.Warn => CheckState.Warn,
+            MapHealthState.Fail => CheckState.Fail,
+            _ => CheckState.Fail,
+        }, health.Value.Detail, health.Value.Fix);
+}

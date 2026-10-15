@@ -673,7 +673,7 @@ Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.Equals(Aw.Sindri.Featur
 Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.GetContextSourcesRequest() -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.QueryContextRequest!
-Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.get -> int?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.init -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Depth.init -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Draft.get -> bool
@@ -799,6 +799,6 @@ static Aw.Sindri.Features.ContextCalls.ShowContextNodeRequest.operator ==(Aw.Sin
 Aw.Sindri.Features.ContextCalls.ListContextNeighborsRequest.Deconstruct(out string! Key, out string? Depth) -> void
 Aw.Sindri.Features.ContextCalls.ListContextNeighborsRequest.Depth.get -> string?
 Aw.Sindri.Features.ContextCalls.ListContextNeighborsRequest.ListContextNeighborsRequest(string! Key, string? Depth = null) -> void
-Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out string? Depth, out int? Budget, out bool Draft) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out string? Depth, out string? Budget, out bool Draft) -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Depth.get -> string?
-Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null, int? Budget = null, bool Draft = false) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null, string? Budget = null, bool Draft = false) -> void

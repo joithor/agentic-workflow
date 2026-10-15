@@ -23,7 +23,7 @@ public static class Cascade
         var visited = new HashSet<string>(ownKeys, StringComparer.Ordinal);
         var affected = new List<AffectedNode>();
         var reported = new HashSet<string>(ownKeys, StringComparer.Ordinal);
-        var frontier = own.Select(d => new Reach(d.Key, d.Path, d.Edges)).ToList();
+        var frontier = own.Select(d => new Reach(d.Key, d.Path, d.Edges)).OrderBy(r => OwnsHops(r.Path)).ThenBy(r => r.Node.Value, StringComparer.Ordinal).ToList();
         for (var level = 1; level <= depth && frontier.Count > 0; level++)
         {
             var next = new List<Reach>();
@@ -41,14 +41,16 @@ public static class Cascade
                 }
             }
 
-            frontier = [.. next.OrderBy(r => r.Node.Value, StringComparer.Ordinal)];
+            frontier = [.. next.OrderBy(r => OwnsHops(r.Path)).ThenBy(r => r.Node.Value, StringComparer.Ordinal)];
         }
 
         return new CascadeResult([.. own.Select(d => d.Key)], [.. affected.OrderBy(a => a.Depth).ThenBy(a => a.Node.Value, StringComparer.Ordinal)]);
     }
 
-    /// <summary>The anchor first, then by key: a feature's descendant features, their surfaces and those surfaces' actions; a surface's actions.</summary>
-    // The anchor and everything it owns, each with the real hops down to it (part-of into a feature, on a surface), so an affects path never invents one.
+    /// <summary>
+    /// The anchor first, then by key: a feature's descendant features, their surfaces and those surfaces' actions (a surface's
+    /// actions), each with the real owns hops down to it (part-of into a feature, on a surface), so an affects path never invents one.
+    /// </summary>
     private static List<Descent> OwnScope(GraphIndex index, NodeKey anchor)
     {
         var root = new Descent(anchor, [anchor.Value], []);
@@ -108,6 +110,15 @@ public static class Cascade
         }
 
         return index.Out(s, EdgeType.PartOf).Select(e => (NodeKey?)e.To).FirstOrDefault(k => k is { Kind: NodeKind.Feature }) ?? node;
+    }
+
+    /// <summary>How many 'owns' steps a path walks down the anchor's own scope: among equally deep paths the one with the fewest claims a node, then key order.</summary>
+    /// <param name="path">The path as <see cref="AffectedNode.Path"/> writes it.</param>
+    /// <returns>The count.</returns>
+    public static int OwnsHops(IReadOnlyList<string> path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.Count(p => p.StartsWith("owns ", StringComparison.Ordinal));
     }
 
     private sealed record Descent(NodeKey Key, IReadOnlyList<string> Path, IReadOnlyList<GraphEdge> Edges)

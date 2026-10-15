@@ -1,7 +1,6 @@
-using System.Reflection;
+using Aw.Context.Core;
 using Aw.Context.Core.Eval;
-using Aw.Context.Core.Facade;
-using Aw.Kernel;
+using Aw.Context.Testing.Engine;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
 
@@ -15,10 +14,9 @@ public sealed class ContextEvalNotRunningTests
     {
         var stdout = new StringWriter();
         var stderr = new StringWriter();
-        var probe = new FakeControlPlaneProbe();
-        using var client = new ControlPlaneClient(probe, SliceHarness.Json);
-        var engine = DispatchProxy.Create<IContextEngine, ProbeOnlyEngine>();
-        var verbs = new ContextEvalVerbs(client, new Output(stdout, stderr, SliceHarness.Json), engine);
+        var set = new ProbeSet([new ProbeCase(ProbeId.From("one"), "what breaks", new ProbeExpect())]);
+        using var client = new ControlPlaneClient(new FakeControlPlaneProbe(), SliceHarness.Json);
+        var verbs = new ContextEvalVerbs(client, new Output(stdout, stderr, SliceHarness.Json), FakeContextEngine.WithProbes(set));
 
         var code = await verbs.Run(["probes"], TestContext.Current.CancellationToken);
 
@@ -27,21 +25,17 @@ public sealed class ContextEvalNotRunningTests
         Assert.Contains("one: SND-API-001", stdout.ToString() + stderr.ToString(), StringComparison.Ordinal);
     }
 
-    /// <summary>An engine that runs the real probe runner over one probe and nothing else.</summary>
-    public class ProbeOnlyEngine : DispatchProxy
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_engine_error_is_attention_exit_1_through_the_verb_s_failure_path()
     {
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
-        {
-            Assert.Equal(nameof(IContextEngine.EvalProbes), targetMethod?.Name);
-            var ask = (Func<ProbeCase, CancellationToken, ValueTask<Result<Context.Core.Results.ContextResult>>>)args![1]!;
-            return new ValueTask<Result<ProbeRun>>(Run(ask));
-        }
+        var stdout = new StringWriter();
+        var stderr = new StringWriter();
+        using var client = new ControlPlaneClient(new FakeControlPlaneProbe(), SliceHarness.Json);
+        var verbs = new ContextEvalVerbs(client, new Output(stdout, stderr, SliceHarness.Json), FakeContextEngine.Instance);
 
-        private static async Task<Result<ProbeRun>> Run(Func<ProbeCase, CancellationToken, ValueTask<Result<Context.Core.Results.ContextResult>>> ask)
-        {
-            var set = new ProbeSet([new ProbeCase(ProbeId.From("one"), "what breaks", new ProbeExpect())]);
-            var report = await ProbeRunner.Run(new ProbeFile("/p/probes.json", "h", set), ask, baseline: null, DateTimeOffset.UnixEpoch, TestContext.Current.CancellationToken);
-            return report.IsError ? report.Error : new ProbeRun(report.Value, Path: null);
-        }
+        var code = await verbs.Run(["probes"], TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, code);
+        Assert.Contains(ContextErrors.NoProbeFile.Code, stdout.ToString() + stderr.ToString(), StringComparison.Ordinal);
     }
 }

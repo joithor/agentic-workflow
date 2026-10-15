@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Text;
 using Aw.Context.Core;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Results;
 using Aw.Sindri.Core;
 using Aw.Sindri.Host.Text;
@@ -31,7 +33,7 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
         var parsed = QueryArguments.Parse(rest);
         if (parsed.IsError)
         {
-            return await output.Error(parsed.Error).ConfigureAwait(false);
+            return await Failed(parsed.Error).ConfigureAwait(false);   // a refused question (006) is attention (1); a usage error stays 2
         }
 
         var answer = await client.Get<ContextResult>("/sindri/context/query" + parsed.Value.QueryString, ct).ConfigureAwait(false);
@@ -60,7 +62,7 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
 
     private async Task<int> Failed(Kernel.Error error)
     {
-        var code = await output.Error(error).ConfigureAwait(false);
+        var code = await output.Error(QueryFlagHints.Add(error)).ConfigureAwait(false);
         return error.Code == "SND-API-001" || ContextErrors.Attention.Contains(error.Code) ? 1 : code;
     }
 
@@ -100,13 +102,25 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
                 pairs.Insert(0, ("q", string.Join(' ', words)));
             }
 
+            var query = EncodedQuery(pairs);
+            return query.IsError ? query.Error : new QueryArguments(query.Value, json);
+        }
+
+        private static Kernel.Result<string> EncodedQuery(List<(string Key, string Value)> pairs)
+        {
             var query = new StringBuilder();
             foreach (var (key, value) in pairs)
             {
+                if (!QueryRules.FitsQueryUrl(value))
+                {
+                    return ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture,
+                        $"{(key == "q" ? "the question" : "--" + key)} is over {QueryRules.MaxEncodedText} characters once percent-encoded for the query (shorten it)"));
+                }
+
                 _ = query.Append(query.Length == 0 ? '?' : '&').Append(key).Append('=').Append(Uri.EscapeDataString(value));
             }
 
-            return new QueryArguments(query.ToString(), json);
+            return query.ToString();
         }
     }
 }

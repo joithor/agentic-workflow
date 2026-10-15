@@ -4,7 +4,8 @@ namespace Aw.Context.Core;
 
 /// <summary>
 /// The context engine's error catalogue (spec §8.6), codes SND-CONTEXT-NNN. Stage S-1A owns 001–019 and defines 020
-/// (the session gate, spec §3); S-3a adds 030–034 (the map file and its store); S-3b adds 035–038 (the probe runner and anchors; 039 is reserved); S-4 adds 040 and 042–048 (041 stays retired, 049 is reserved); later stages
+/// (the session gate, spec §3); S-3a adds 030–034 (the map file and its store); S-3b adds 035–038 (the probe runner and anchors; 039 is reserved); S-4 adds 040 and 042–048 (041 stays retired, 049 is reserved); S-5A adds 050–055 (Onyx, in the
+/// S-5A/B range 050–069); later stages
 /// add theirs in their ranges. HTTP status follows the kind; the CLI exit code is 1 for attention (<see cref="Attention"/>) and 2 for a tool error.
 /// </summary>
 public static class ContextErrors
@@ -69,7 +70,7 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-034: the map file changed since its content hash was confirmed; nothing was written.</summary>
     public static readonly ErrorDefinition MapFileChanged = new("SND-CONTEXT-034", ErrorKind.Conflict, "The map file changed since its hash was confirmed");
 
-    /// <summary>SND-CONTEXT-035: the probe file is invalid (its shape, a duplicate or empty id, an empty question); the message names the key path and nothing was run.</summary>
+    /// <summary>SND-CONTEXT-035: the probe file is invalid (its shape or schema version, an unknown key, a duplicate, empty or non-slug id, an empty, wordless or over-long question); the message names the key path and nothing was run.</summary>
     public static readonly ErrorDefinition ProbeFileInvalid = new("SND-CONTEXT-035", ErrorKind.Invalid, "The probe file is invalid");
 
     /// <summary>SND-CONTEXT-036: no probe file: the one named doesn't exist, or none was named and $AW_SINDRI_HOME/context/eval/probes.json doesn't exist.</summary>
@@ -105,12 +106,41 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-048: extraction couldn't read the repo from git at the commit (a missing repo or sha).</summary>
     public static readonly ErrorDefinition ExtractionUnreadable = new("SND-CONTEXT-048", ErrorKind.Unavailable, "Extraction can't read the repo from git");
 
+    /// <summary>
+    /// SND-CONTEXT-050: Onyx refused the key (HTTP 403): it is missing, wrong, or lacks the admin role that
+    /// 'POST /api/admin/search' needs (spec §8.8). Fix: create an admin key for a dedicated service account, store it
+    /// behind 'context.sources.onyx.token', and approve the profile again.
+    /// </summary>
+    public static readonly ErrorDefinition OnyxKeyRefused = new("SND-CONTEXT-050", ErrorKind.Forbidden, "Onyx refused the key: it is missing, wrong, or lacks the admin role the search route needs");
+
+    /// <summary>
+    /// SND-CONTEXT-051: Onyx answered with an unexpected status or shape (a route or field the pinned v4.9.0 doesn't have).
+    /// The query goes on without Onyx (Unavailable). Fix: check the running release against 'context.sources.onyx.version'.
+    /// </summary>
+    public static readonly ErrorDefinition OnyxUnexpectedReply = new("SND-CONTEXT-051", ErrorKind.Unavailable, "Onyx answered with an unexpected shape; check the pinned version");
+
+    /// <summary>SND-CONTEXT-052: Onyx has no document with that id (it was deleted or its connector no longer indexes it).</summary>
+    public static readonly ErrorDefinition OnyxDocumentNotFound = new("SND-CONTEXT-052", ErrorKind.NotFound, "Onyx has no such document");
+
+    /// <summary>
+    /// SND-CONTEXT-053: the Onyx key is an admin key of a person's account, not of a dedicated service account (spec
+    /// §8.8). Doctor shows it as degraded. Fix: create a service account for Sindri alone and use its key.
+    /// </summary>
+    public static readonly ErrorDefinition OnyxKeyNotServiceAccount = new("SND-CONTEXT-053", ErrorKind.Forbidden, "The Onyx key doesn't belong to a dedicated service account");
+
+    /// <summary>
+    /// SND-CONTEXT-055: Onyx isn't on a loopback address, or its version differs from the pinned one (spec §8.8). The
+    /// message names the key path ('context.sources.onyx.url' or '.version') and the fix, never the token.
+    /// </summary>
+    public static readonly ErrorDefinition OnyxNotPinnedOrLoopback = new("SND-CONTEXT-055", ErrorKind.Invalid, "Onyx isn't on a loopback address, or its version differs from the pinned one");
+
     /// <summary>Every Context error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
         [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled,
          McpRepoMissing, McpArgumentsInvalid, McpToolUnknown, McpRegisterRepoUnknown, McpRegisterFailed, McpUserWide,
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
-         HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable];
+         HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
+         OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback];
 
     /// <summary>
     /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or

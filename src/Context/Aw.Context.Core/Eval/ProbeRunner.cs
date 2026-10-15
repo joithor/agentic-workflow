@@ -12,7 +12,6 @@ namespace Aw.Context.Core.Eval;
 /// </summary>
 public static partial class ProbeRunner
 {
-    private const int MaxQuestion = 2_000;
 
     /// <summary>Runs <paramref name="file"/>.</summary>
     /// <param name="file">The checked probe file.</param>
@@ -80,7 +79,8 @@ public static partial class ProbeRunner
                 { Expect: null } => Invalid(at + ".expect", "is required (an object, its lists optional)"),
                 _ when !Slug.IsMatch(probe.Id.Value) => Invalid(at + ".id", "is a slug: lower-case letters, digits and '-', 1 to 100 characters"),
                 _ when !seen.Add(probe.Id.Value) => Invalid(at + ".id", $"'{probe.Id.Value}' is already the id of an earlier probe"),
-                _ when string.IsNullOrWhiteSpace(probe.Question) || probe.Question.Length > MaxQuestion => Invalid(at + ".question", "is 1 to 2000 characters"),
+                _ when string.IsNullOrWhiteSpace(probe.Question) || probe.Question.Length > QueryRules.MaxTextLength => Invalid(at + ".question", "is 1 to 2000 characters"),
+                _ when !QueryRules.FitsQueryUrl(probe.Question) => Invalid(at + ".question", $"is over {QueryRules.MaxEncodedText} characters once percent-encoded for the query (shorten it)"),
                 _ when QueryRules.Terms(probe.Question).Count == 0 => Invalid(at + ".question", "needs at least one word (letters or digits)"),
                 _ => null,
             };

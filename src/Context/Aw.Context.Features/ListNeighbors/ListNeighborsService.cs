@@ -1,5 +1,4 @@
-using System.Globalization;
-using Aw.Context.Core;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Trust;
@@ -14,9 +13,9 @@ internal sealed class ListNeighborsService(MapReader reader, IScrubberFactory sc
     public async ValueTask<Result<NeighborsView>> Handle(ListNeighborsRequest request, CancellationToken cancellationToken)
     {
         var depth = request.Depth ?? 1;
-        if (depth is < 0 or > GraphWalk.MaxDepth)
+        if (QueryRules.CheckDepth(depth) is { } depthError)
         {
-            return ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture, $"depth is 0 to {GraphWalk.MaxDepth} (fix: --depth 1)"));
+            return depthError;
         }
 
         var call = await reader.Open(request.Scope, scrubbers, cancellationToken).ConfigureAwait(false);

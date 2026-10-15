@@ -118,6 +118,37 @@ public sealed class ProbeRunnerTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_baseline_with_only_totals_never_makes_a_run_regress_on_absent_nodes()
+    {
+        var file = new ProbeFile("/probes/probes.json", "abc123", new ProbeSet([Answers.Probe("one", nodes: ["feature:a"], absent: ["feature:b"])]));
+        var baseline = new ProbeReport(1, file.Path, file.Hash, "v1", Probes: [], new ProbeTotals(0.0, 1.0, 1, Answers.At.AddDays(-1), AbsentReturned: 0), Baseline: null, Regressed: false);
+        var items = _nodes.Take(2).Select(n => ("graph", Answers.Item(n))).ToArray();
+
+        var report = (await ProbeRunner.Run(file, (_, _) => ValueTask.FromResult(Results.Success(Answers.Of(items))), baseline, Answers.At, None)).Value;
+
+        Assert.Equal(1, report.Totals.AbsentReturned);
+        Assert.False(report.Regressed);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(600, false)]
+    [InlineData(700, true)]
+    public void A_question_whose_percent_encoded_form_is_over_6000_characters_is_SND_CONTEXT_035_at_its_key_path(int characters, bool refused)
+    {
+        var set = new ProbeSet([new ProbeCase(ProbeId.From("one"), new string('\u5b57', characters), new ProbeExpect())]);   // 9 encoded characters each
+
+        var error = ProbeRunner.Check(set);
+
+        Assert.Equal(refused, error is not null);
+        if (refused)
+        {
+            Assert.Equal(ContextErrors.ProbeFileInvalid.Code, error!.Code);
+            Assert.StartsWith("probes[0].question:", error.Message, StringComparison.Ordinal);
+            Assert.Contains("6000", error.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_fixture_probe_file_is_valid()
     {
         var set = Kernel.Json.AwJson.Deserialize<ProbeSet>(System.Text.Encoding.UTF8.GetBytes(Testing.Fixtures.SplitPanesFixture.ReadText("probes.json")), EvalJson.Options);

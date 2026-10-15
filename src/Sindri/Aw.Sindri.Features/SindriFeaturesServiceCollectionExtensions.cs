@@ -48,6 +48,8 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<RecordHeartbeatRequest, RecordHeartbeatResponse>, RecordHeartbeatService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddScoped<ProfileFacts>()
+            .AddScoped<OnyxDoctor>()
+            .AddScoped<ContextEngineChecks>()
             .AddScoped<RunDoctorService>()
             .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
                 new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))

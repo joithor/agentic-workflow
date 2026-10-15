@@ -11,7 +11,7 @@ public sealed class ContextErrorsTests
     [Fact, Trait("Lane", "unit")]
     public void S4_allocates_040_and_042_to_048_and_leaves_041_retired_and_049_reserved()
     {
-        var codes = ContextErrors.All.Select(e => e.Code).Where(c => string.CompareOrdinal(c, "SND-CONTEXT-040") >= 0).Order(StringComparer.Ordinal).ToList();
+        var codes = ContextErrors.All.Select(e => e.Code).Where(c => string.CompareOrdinal(c, "SND-CONTEXT-040") >= 0 && string.CompareOrdinal(c, "SND-CONTEXT-050") < 0).Order(StringComparer.Ordinal).ToList();
 
         Assert.Equal(
             ["SND-CONTEXT-040", "SND-CONTEXT-042", "SND-CONTEXT-043", "SND-CONTEXT-044", "SND-CONTEXT-045", "SND-CONTEXT-046", "SND-CONTEXT-047", "SND-CONTEXT-048"],

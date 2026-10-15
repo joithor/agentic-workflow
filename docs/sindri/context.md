@@ -21,7 +21,7 @@ Nothing in `setup.sh`, the providers or MCP registration points at it.
 
 The engine reads the approved profile's `context:` section and its `repos:`. Every key is optional; the defaults are
 shown. A key this build doesn't know is refused (`SND-CONTEXT-001` with its key path), so a section written for a later
-stage (`labeling`, `sources`, …) needs that stage's build.
+stage (`labeling`, …, or a key under `sources` beyond `onyx` and `linear.teams`) needs that stage's build.
 
 ```yaml
 repos:
@@ -64,6 +64,8 @@ $SINDRI context sources status [--json]                   # each source's state;
 HTTP: `GET /sindri/context/query?q=…&budget=…` and `GET /sindri/context/sources`, behind the loopback guard (a
 foreign `Host` is 400, a foreign browser `Origin` 403) and the API's caller rules. `--node`, `--item` and `--symbol`
 (graph anchors) answer `SND-CONTEXT-003` until the product map exists (S-3).
+
+The CLI sends the question and `--node` on the query string, so each must be at most 6000 characters once percent-encoded (Kestrel's request line is 8 KB; about 600 CJK characters reach it). A longer one is refused before sending with `SND-CONTEXT-006` ("shorten it"); the 2000-character text cap still applies on every transport.
 
 A text answer:
 
@@ -187,7 +189,8 @@ only. Answer: *pending the S-1M owner check*.
 
 - `context:sources`: the context engine read in-process from the same home and approved profile serve uses, so it
   works with the process stopped. It reports each source as of its last refresh (the `context-docs-refresh`
-  service), not a live probe: a repo moved away shows only after the next refresh. `ok` when every source is ok (it says whether session reads are on; off means MCP
+  service); repo-docs is not probed live (a repo moved away shows only after the next refresh), while a live source
+  such as Onyx is probed on each doctor run (its keyless `GET /api/version`, then `GET /api/me` with the key). `ok` when every source is ok (it says whether session reads are on; off means MCP
   calls answer `020`), `warn` when some are degraded (`SND-CONTEXT-010`), `fail` when every source is down (`011`) or
   the store can't open; `warn` with no approved profile, `ok` with no `context:` section.
 - `context:mcp-scope`: warns (`SND-CONTEXT-026`) on a user-wide `sindri` entry in Claude Code's `~/.claude.json`
@@ -267,6 +270,7 @@ context:
   is cited `scrub-blocked`. Remote link definitions with escaped
   brackets (`[a\]b]: https://…`) or a label over two lines are removed too. This also counts as a rules change: an index
   built before S-2W is cleaned again at its first refresh.
+
 ## S-3a: the product map: `context map import`, `export`, `status`
 
 The product map is a graph of what the product is: features, the surfaces people meet them on, the actions there, the
@@ -414,7 +418,7 @@ those surfaces' actions (the `graph` section). Each step costs 1:
 
 A reached surface or action is reported as the feature that owns it. Only the reached node steps on, never that
 feature's other surfaces, so a sibling such as "Pane resize" is never pulled in. The depth is `context.cascadeDepth`
-in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path, starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`.
+in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path (between equally deep paths, the one with the fewest `owns` steps, then key order), starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`.
 
 **A session sees only its repo.** A session sees only the nodes its repo implements (`implements` edges with file
 evidence in its `X-Sindri-Repo`) and the edges among them, so its cascade, neighbors and paths stay inside that set;
@@ -454,7 +458,7 @@ A probe file is JSON, kept outside every repo:
                             "records": ["linear:issue/…"], "files": ["src/layout/SplitPane.ts"], "decisions": [] } } ] }
 ```
 
-Ids are unique slugs; questions are 1–2000 characters; unknown keys are refused (`SND-CONTEXT-035` with the key path).
+Ids are unique slugs; questions are 1–2000 characters with at least one word (a letter or digit) and at most 6000 characters once percent-encoded for the query URL; unknown keys are refused. A wordless or over-long question is refused with `SND-CONTEXT-035` and its key path, and nothing runs.
 
 ```bash
 $SINDRI context eval probes [--file ~/probes/probes.json] [--json]
@@ -498,3 +502,119 @@ running (`SND-API-001`), unknown anchor or out of scope (`003`), a bad depth (`0
 `context eval probes`: `0` no regression · `1` a regression (`038`), or an invalid or missing probe file (`035`, `036`),
 or a worktree path (`005`) · `2` a tool error, or an incomplete run: any probe's query failed, and Sindri not running or
 session reads off make every probe fail, so they are exit 2 here, not 1.
+
+## S-5A: the onyx source, secret pointers, doctor `context:onyx`
+
+Onyx CE (pinned **v4.9.0**) indexes the work product's Linear records, Slack and docs; Sindri searches it as the
+`onyx` source beside repo-docs. Setting Onyx itself up (the pinned image, ports bound to `127.0.0.1`, local
+embeddings, telemetry off, connectors, the service account and its key) is `docs/sindri/onyx.md`.
+
+### Profile
+
+```yaml
+context:
+  sources:
+    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }
+    linear: { teams: [ENG, APP] }      # the Linear team keys an Onyx identifier alias (ENG-482) may name
+```
+
+- `url`: http or https on a loopback host (`127.0.0.0/8`, `[::1]`, `localhost`), no user, password, query or
+  fragment. Anything else is `SND-CONTEXT-055`.
+- `version`: the release tag that runs (`v4.9.0`), never `latest`; missing or `latest` is `SND-CONTEXT-055`.
+- `token`: a **secret pointer** to the Onyx admin key of a service account Sindri alone uses, never the key itself.
+  Missing, or text that isn't a pointer, is `SND-CONTEXT-002`; the message doesn't repeat the text (rotate a key that
+  was written into the profile).
+- `linear.teams`: team keys (a capital letter, then one or more capitals or digits, e.g. `ENG`). Linear's own `token` and `url` arrive
+  with the native Linear adapter (S-6); this build refuses them (`SND-CONTEXT-001`), like any unknown key under
+  `sources`, `onyx` or `linear`.
+
+`sindri profile validate` reports each of these with its key path (`context.sources.onyx.url: …`).
+
+### Secret pointers
+
+| Pointer | Resolves to |
+|---|---|
+| `env:NAME` | the environment variable `NAME`: for queries and `sources status`, of the control plane (`sindri serve`) as it was when it started; for `sindri doctor`, of the calling shell (fixtures and tests; beyond them use `keychain:` or `file:`, which read the same in both, except that on Linux `serve` must run in the login session to reach the keyring) |
+| `file:/absolute/path` | the file's contents without a trailing newline; the file must be a regular file (not a symbolic link) with mode `0600` or stricter |
+| `keychain:service/account` | macOS: `security find-generic-password -s service -a account -w` (store it with `security add-generic-password -s onyx -a sindri-onyx -w`); Linux (libsecret): `secret-tool lookup service <service> account <account>` (store it with `secret-tool store --label 'onyx/sindri-onyx' service 'onyx' account 'sindri-onyx'`; needs `libsecret-tools` on Debian/Ubuntu, and `sindri serve` must run in the login session to reach the keyring); any other OS: `SND-SECRET-002` |
+| `op:vault/item/field` | `op read op://vault/item/field` (1Password CLI) |
+
+Sindri resolves the pointer in its host (`Composition`), once per query (not per Onyx request); the context engine never reads the
+keychain or a file. The resolution runs under the query's deadline: a keychain that is locked or an `op` waiting for a
+sign-in degrades onyx with `SND-CONTEXT-010` on time instead of holding the answer, and the next query tries again.
+`sindri profile validate` checks only the pointer's scheme and that a target follows; it neither parses the target nor
+resolves it (resolving can prompt the keychain or run `op`), so `env:NO_SUCH_VAR` and `keychain:onyx` (no account)
+pass validate. A target's grammar: an `env:` name is letters, digits and `_`, not starting with a digit; `file:` is an
+absolute path; `keychain:` has exactly two `/`-separated segments and `op:` exactly three; no segment is empty or
+starts with `-`. At run time a pointer that doesn't resolve shows as
+`SND-CONTEXT-002` in the onyx row and a query's `degraded` entry, naming the pointer's scheme only; `sindri doctor`
+resolves it first and shows the reason: `SND-SECRET-001` (malformed), `002` (doesn't resolve: names the variable, file
+or entry) or `003` (an unsafe `file:`: names the file and the `chmod 600` fix), never a value
+(`docs/csharp/sindri.md`).
+
+### Asking, status and degraded answers
+
+`sindri context query` fuses Onyx's hits with repo-docs (reciprocal rank fusion). Onyx's Linear issues key on Linear's UUID
+(`linear:issue/<uuid>`, with its identifier alias, `ENG-482`, when its team is listed). The aliases are in the
+citation: `cites.<n>.aliases` in `--json` and HTTP (every alias of the record, merged across its refs, each scrubbed
+like a title), and the first one beside the key in the text form (`linear:issue/<uuid> (ENG-482)`). Documents Onyx marks `hidden` are dropped
+(the admin search returns them), so Sindri sees what a standard Onyx search would, and hiding a document in Onyx's admin
+UI removes it from Sindri's answers. Onyx v4.9.0 has no route that returns a
+document's `updated_at` by id, so **onyx citations stay `unchecked`** (version unchecked) instead of `current` or
+`stale`. A citation's `permalink` is scrubbed like every other field: a link the scrub changes at all (redacted or
+blocked) is left out, and the citation keeps its key and aliases. Onyx's titles, text, aliases and permalinks are
+scrubbed with the same rules as repo-docs, the profile's `context.scrub.extraPatterns` included (S-2W): a customer id
+in an Onyx record answers as `[REDACTED:<id>]`, and a permalink that holds one is left out.
+
+When Onyx doesn't answer, refuses the key, answers with an error status or replies in a shape the pinned release
+doesn't have, the answer still returns with repo-docs' results and a `degraded` entry `{ "source": "onyx", "code":
+"SND-CONTEXT-010", … }` (the cause leads its message, such as `SND-CONTEXT-051: …`). Only when every source is down is the
+answer `SND-CONTEXT-011`. A query doesn't check Onyx's version: version drift is doctor's and `sources status`'s check
+(`055`, naming both versions), and a query keeps using an Onyx that reports another version as long as its replies
+read; a reply that doesn't degrades onyx (`010`, cause `051`).
+
+Agent sessions don't read the onyx source yet: a session sees intent records only from the Linear teams the profile
+maps to its repo (`context.repoTeams`, a later stage), so until then onyx answers humans and services only. A caller
+whose scope maps no repo gets no source at all, onyx included.
+
+`sindri context sources status` shows an `onyx` row: `ok`, `degraded` (the key is an admin key of a person's account,
+`SND-CONTEXT-053`) or `unavailable` (no answer, `SND-CONTEXT-010`; another version, `055`; key refused, `050`; pointer
+unresolved, `002`), with the version and the key's role and account type in its detail.
+
+### Doctor `context:onyx`
+
+`sindri doctor` runs the onyx source's probe for the approved profile: `GET /api/version` (no key) against the pinned
+version, then `GET /api/me` with the key for its role and account type.
+
+| Result | When | Fix |
+|---|---|---|
+| `ok` | Onyx answers the pinned version and the key is an admin key of a service account; or the profile names no onyx (`not configured`) | — |
+| `warn` | the key is an admin key of a person's account (`053`); or onyx is named but no repo is mapped, so no source runs | create a service-account key; map a repo |
+| `fail` | the key's pointer doesn't resolve (`SND-SECRET-001`..`003`, checked before Onyx is called), Onyx is down (`010`), another version (`055`, naming both), the key lacks admin (`050`), the section is invalid | per the line; see `docs/sindri/onyx.md` |
+
+The adapter never reads Onyx's provider and telemetry settings (no settings route is on its allowlist); `docs/sindri/onyx.md` lists them as a manual check
+on each Onyx version change.
+
+### Trying it in a throwaway profile
+
+```bash
+$SINDRI stop                                    # first, with the old home: a running control plane keeps its port
+export AW_SINDRI_HOME="$(mktemp -d)"            # throwaway state
+read -rs SINDRI_ONYX_KEY && export SINDRI_ONYX_KEY   # paste the service account's admin key (not echoed, not in history); or keychain:onyx/sindri-onyx
+mkdir -p "$AW_SINDRI_HOME/profile"
+cat >"$AW_SINDRI_HOME/profile/profile.yaml" <<'YAML'
+schemaVersion: 1
+user: me
+repos: [{ name: work-app, path: /path/to/work-app }]
+context:
+  sources:
+    onyx: { url: "http://127.0.0.1:3000", token: "env:SINDRI_ONYX_KEY", version: "v4.9.0" }
+    linear: { teams: [ENG] }
+YAML
+$SINDRI profile validate                        # prints the hash; exit 1 = valid, not approved yet
+$SINDRI profile approve <hash>                  # type the challenge it shows: 'approve profile <first 6>'; starts the control plane
+$SINDRI doctor                                  # context:onyx
+$SINDRI context sources status
+$SINDRI context query "split pane orientation"
+$SINDRI stop                                    # free the port before going back to your real home
+```

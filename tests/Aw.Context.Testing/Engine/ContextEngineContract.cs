@@ -77,6 +77,16 @@ public abstract class ContextEngineContract<TEngine>
         Check(codes.All(c => c == ContextErrors.NoMap.Code), "a graph read without a map is 030");
     }
 
+    /// <summary>An eval with no probe file named and none on disk is SND-CONTEXT-036, whatever the engine.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task An_eval_with_no_probe_file_is_036()
+    {
+        var run = await CreateDown().EvalProbes(file: null, static (_, _) => throw new ContractViolationException("no probe may run without a probe file"), CancellationToken.None);
+
+        Check(run.IsError && run.Error.Code == ContextErrors.NoProbeFile.Code, "an eval with no probe file is 036");
+    }
+
     private static (string Code, string Path) Code(TEngine engine, string json)
     {
         var checkedSettings = engine.CheckSettings(JsonDocument.Parse(json).RootElement.Clone(), _repos);
