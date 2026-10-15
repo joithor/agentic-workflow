@@ -117,6 +117,32 @@ public sealed class EffectDispatchTests(SindriTimeSkippingServer server) : IClas
         }, Token);
     }
 
+    /// <summary>
+    /// The recheck runs for an engine notice too (it skips only the delay): the workflow history holds a RecheckEffect
+    /// local activity for it. Fails if the dispatch goes back to skipping 'Cleared' for engine-origin effects (PR 232 run 2, I5).
+    /// </summary>
+    [Fact]
+    public async Task An_engine_notice_is_rechecked_even_though_it_skips_the_delay()
+    {
+        var env = server.Environment;
+        await using var sindri = Sindri();
+        await WorkflowsHarness.HoldLease(sindri, Token);
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.StepStart(sindri, "T-74", Token));
+            _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
+            _ = await EffectRows.Eventually(sindri, OutboxEvents.Dispatched, CommandOrigin.Engine);
+
+            var history = await handle.FetchHistoryAsync();
+            var rechecked = history.Events.Count(static e => e.MarkerRecordedEventAttributes is { } marker
+                && marker.Details.Values.Any(static v => v.Payloads_.Any(static p => p.Data.ToStringUtf8().Contains("RecheckEffect", StringComparison.Ordinal))));
+            Assert.True(rechecked >= 1, "no RecheckEffect local activity ran for the engine notice");
+            await handle.TerminateAsync("test over");
+        }, Token);
+    }
+
     /// <summary>The host with the fake desk block and an approved profile whose 'workflow.effects' allowlists 'effect.notify.desk'.</summary>
     private ServiceProvider Sindri()
     {
