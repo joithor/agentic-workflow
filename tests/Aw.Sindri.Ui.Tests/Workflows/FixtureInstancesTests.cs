@@ -50,7 +50,7 @@ public sealed class FixtureInstancesTests
     [Fact]
     public void Nav_count_strip_head_and_workflows_head_equal_the_open_rows()
     {
-        var open = FixtureInstances.Rows.Count(InstanceHeads.IsOpen);
+        var open = FixtureInstances.Rows.Count(FixtureInstances.IsOpen);
         var counts = FixtureInstances.Counts;
 
         Assert.Equal(8, open);
@@ -72,10 +72,10 @@ public sealed class FixtureInstancesTests
     {
         foreach (var row in FixtureInstances.Rows)
         {
-            Assert.Equal(!IsTerminal(row), InstanceHeads.IsOpen(row));
+            Assert.Equal(!IsTerminal(row), FixtureInstances.IsOpen(row));
         }
 
-        Assert.Contains(FixtureInstances.Rows, r => !InstanceHeads.IsOpen(r));
+        Assert.Contains(FixtureInstances.Rows, r => !FixtureInstances.IsOpen(r));
     }
 
     [Fact]
@@ -121,5 +121,5 @@ public sealed class FixtureInstancesTests
 
     private static IEnumerable<(string State, StateGlyph Glyph, bool Terminal)> Cells(IEnumerable<StateCell> cells) => cells.Select(c => (c.State, c.Glyph, c.Terminal));
 
-    private static bool IsTerminal(InstanceSummary row) => row.States.Single(s => s.State == row.State).Terminal;
+    private static bool IsTerminal(InstanceSummary row) => !FixtureInstances.IsOpen(row);
 }

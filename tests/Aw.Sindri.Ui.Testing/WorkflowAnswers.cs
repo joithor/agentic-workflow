@@ -85,7 +85,7 @@ internal static class WorkflowAnswers
 
     // Open is "not terminal": the row's own state cell says.
     private static bool IsOpen(JsonNode row) =>
-        row["states"]!.AsArray().Any(c => Is(c!["id"], (string)row["state"]!) && !c["terminal"]!.GetValue<bool>());
+        FixtureInstances.IsOpen((string)row["state"]!, row["states"]!.AsArray().Select(c => ((string)c!["id"]!, c["terminal"]!.GetValue<bool>())));
 
     private static bool Is(JsonNode? node, string expected) => string.Equals((string?)node, expected, StringComparison.Ordinal);
 }

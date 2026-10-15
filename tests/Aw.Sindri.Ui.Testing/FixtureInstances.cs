@@ -42,6 +42,21 @@ internal static class FixtureInstances
     /// <returns>The rows.</returns>
     internal static IEnumerable<ChildRow> ChildRows(ChildGroup group) => group.Workstreams.SelectMany(w => w.Rows).Concat(group.Rows);
 
+    /// <summary>
+    /// The one open rule: a row is open unless its current state's cell is terminal. The API computes counts.open by it, the
+    /// fake's open=true filter applies it to the golden's JSON, and the checks hold the rows to it.
+    /// </summary>
+    /// <param name="state">The row's current state.</param>
+    /// <param name="cells">The row's state cells as (state, terminal).</param>
+    /// <returns>Whether the row is open.</returns>
+    internal static bool IsOpen(string state, IEnumerable<(string State, bool Terminal)> cells) =>
+        !cells.Any(c => c.Terminal && string.Equals(c.State, state, StringComparison.Ordinal));
+
+    /// <summary>The open rule on one row.</summary>
+    /// <param name="row">The row.</param>
+    /// <returns>Whether it is open.</returns>
+    internal static bool IsOpen(InstanceSummary row) => IsOpen(row.State, row.States.Select(s => (s.State, s.Terminal)));
+
     private static T Read<T>(string body)
         where T : class =>
         AwJson.Deserialize<T>(Encoding.UTF8.GetBytes(body), SindriApiClient.Json).Value;
