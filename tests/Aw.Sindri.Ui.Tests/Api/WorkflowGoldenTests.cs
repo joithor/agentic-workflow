@@ -87,6 +87,23 @@ public sealed class WorkflowGoldenTests
         Assert.True(matched > 0, "no status golden has an instance golden to equal");
     }
 
+    // A budget with no cap is served with "limit": null (the figure is the used count alone).
+    [Fact]
+    public void A_budget_served_with_a_null_limit_reads_as_no_cap()
+    {
+        var body = JsonNode.Parse(GoldenFiles.Api("workflow-status", "parked-budget"))!;
+        body["budget"]!["limit"] = null;
+        body["budget"]!["instance"]!["limit"] = null;
+
+        var status = AwJson.Deserialize<StatusFields>(Encoding.UTF8.GetBytes(body.ToJsonString()), SindriApiClient.Json);
+
+        Assert.True(status.IsSuccess, status.IsError ? status.Error.Message : string.Empty);
+        var budget = status.Value.Budget!; // why: the golden has a budget
+        Assert.Equal(200000, budget.Used);
+        Assert.Equal((long?)null, budget.Limit);
+        Assert.Equal((long?)null, budget.Instance.Limit);
+    }
+
     [Fact]
     public void Not_found_reads_as_ProblemDetails_SND_ITEM_404()
     {
