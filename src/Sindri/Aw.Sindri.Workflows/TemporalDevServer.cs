@@ -7,7 +7,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
 /// The Temporal dev server 'sindri serve' keeps beside itself (engine spec rev 8 §0 "Operations"):
-/// 'temporal server start-dev --db-filename &lt;home&gt;/temporal.db --ip 127.0.0.1 --port &lt;p&gt; --ui-port &lt;p&gt;
+/// 'temporal server start-dev --db-filename &lt;home&gt;/temporal.db --ip 127.0.0.1 --port &lt;p&gt; --ui-port &lt;p&gt; --http-port &lt;p&gt;
 /// --namespace &lt;the settings' namespace&gt;', plus the search attributes. It is launched detached: /bin/sh starts it in the background in its
 /// own session (perl's POSIX::setsid, as ServeLauncher does) with stdin from /dev/null and its output appended to
 /// &lt;home&gt;/logs/temporal.log under umask 077, prints its pid and exits. So the server is never serve's child: it holds no
@@ -20,15 +20,21 @@ internal sealed class TemporalDevServer
     private readonly TimeSpan _adoptWait = TimeSpan.FromSeconds(3);
     private readonly TimeSpan _readyWait = TimeSpan.FromSeconds(30);
     private readonly TimeSpan _stopWait = TimeSpan.FromSeconds(10);
+    private readonly Func<int> _pickPort;
+
+    /// <summary>How many times a start picks fresh ports when the server exits because one was taken (the pick-then-bind race).</summary>
     internal const int MaxPortAttempts = 3;
 
-    public TemporalDevServer()
+    /// <summary>The production server: free ports come from the OS (bind 0, read, release).</summary>
+    public TemporalDevServer() : this(FreePort)
     {
     }
 
+    /// <summary>A server whose ports come from <paramref name="pickPort"/> (tests inject one that loses the race).</summary>
+    /// <param name="pickPort">Returns a loopback port believed free.</param>
     internal TemporalDevServer(Func<int> pickPort)
     {
-        ArgumentNullException.ThrowIfNull(pickPort);
+        _pickPort = pickPort;
     }
 
     /// <summary>Starts the server, or adopts the one already running on the home's database, and waits until its frontend answers.</summary>
@@ -104,39 +110,82 @@ internal sealed class TemporalDevServer
             }
         }
         var log = Path.Combine(logs, SindriTemporal.LogFile);
-        var frontend = new IPEndPoint(IPAddress.Loopback, FreePort());
-        var ui = FreePort();
-        var pid = Detach(start.Executable, ServerArguments(database, frontend.Port, ui, start.Namespace), log);
-        var server = new RunningTemporalServer(pid, frontend, database) { UiPort = ui, Executable = start.Executable };
+        for (var attempt = 1; ; attempt++)
+        {
+            var from = File.Exists(log) ? new FileInfo(log).Length : 0;
+            var ports = PickPorts();
+            var pid = Detach(start.Executable, ServerArguments(database, ports, start.Namespace), log);
+            var frontend = new IPEndPoint(IPAddress.Loopback, ports.Frontend);
+            var server = new RunningTemporalServer(pid, frontend, database) { UiPort = ports.Ui, Executable = start.Executable };
+            if (await WaitUntilReady(server, start, new LogMark(log, from), attempt < MaxPortAttempts, cancellationToken).ConfigureAwait(false))
+            {
+                return server;
+            }
+
+            // why: between the pick and the bind another process can take a port; that is the one failure a new pick fixes
+            await File.AppendAllTextAsync(log, string.Create(CultureInfo.InvariantCulture, $"sindri: a picked port was taken (attempt {attempt} of {MaxPortAttempts}); picking new ports and starting again\n"), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>True once the frontend answers; false if the server exited because a port was taken and <paramref name="mayRetry"/>; throws otherwise.</summary>
+    private async Task<bool> WaitUntilReady(RunningTemporalServer server, TemporalServerStart start, LogMark mark, bool mayRetry, CancellationToken cancellationToken)
+    {
         var waited = Stopwatch.StartNew();
         while (true)
         {
-            if (DevServerProcesses.Gone(pid))
+            if (DevServerProcesses.Gone(server.ProcessId))
             {
-                throw new InvalidOperationException($"'temporal server start-dev' exited: {LastLine(log)}");
+                return mayRetry && AddressInUse(mark.Path, mark.From)
+                    ? false
+                    : throw new InvalidOperationException($"'temporal server start-dev' exited: {LastLine(mark.Path, mark.From)}");
             }
 
-            var (answer, problem) = await DevServerProbe.Ask(frontend, start.Namespace, TimeSpan.FromSeconds(2), cancellationToken).ConfigureAwait(false);
+            var (answer, problem) = await DevServerProbe.Ask(server.Frontend, start.Namespace, TimeSpan.FromSeconds(2), cancellationToken).ConfigureAwait(false);
             if (answer == DevServerAnswer.Ready)
             {
-                await DevServerProbe.RegisterSearchAttributes(frontend, start.Namespace, cancellationToken).ConfigureAwait(false);
-                return server;
+                await DevServerProbe.RegisterSearchAttributes(server.Frontend, start.Namespace, cancellationToken).ConfigureAwait(false);
+                return true;
             }
 
             if (waited.Elapsed > _readyWait)
             {
-                await Kill(pid).ConfigureAwait(false);
-                throw new TimeoutException(string.Create(CultureInfo.InvariantCulture, $"the dev server on {frontend} didn't answer within {_readyWait.TotalSeconds:0} s: {problem}"));
+                await Kill(server.ProcessId).ConfigureAwait(false);
+                throw new TimeoutException(string.Create(CultureInfo.InvariantCulture, $"the dev server on {server.Frontend} didn't answer within {_readyWait.TotalSeconds:0} s: {problem}"));
             }
 
             await Task.Delay(100, cancellationToken).ConfigureAwait(false);
         }
     }
 
+    private Ports PickPorts()
+    {
+        var taken = new HashSet<int>();
+        int Next()
+        {
+            for (var tries = 0; tries < 100; tries++)
+            {
+                var port = _pickPort();
+                if (taken.Add(port))
+                {
+                    return port;
+                }
+            }
+
+            throw new InvalidOperationException("couldn't pick three different free loopback ports");
+        }
+
+        return new Ports(Next(), Next(), Next());
+    }
+
+    /// <summary>Where in the log this attempt's output starts.</summary>
+    private sealed record LogMark(string Path, long From);
+
+    private sealed record Ports(int Frontend, int Ui, int Http);
+
     /// <summary>'temporal server start-dev' with the database, the ports, the namespace and the search attributes.</summary>
-    private static string[] ServerArguments(string database, int port, int ui, string @namespace) =>
+    private static string[] ServerArguments(string database, Ports ports, string @namespace) =>
     [
-        "server", "start-dev", "--db-filename", database, "--ip", "127.0.0.1", "--port", Text(port), "--ui-port", Text(ui),
+        "server", "start-dev", "--db-filename", database, "--ip", "127.0.0.1", "--port", Text(ports.Frontend), "--ui-port", Text(ports.Ui), "--http-port", Text(ports.Http),
         "--namespace", @namespace, "--log-level", "warn",
         .. SindriTemporal.SearchAttributes.SelectMany(a => new[] { "--search-attribute", $"{a.Name}={a.Type}" }),
     ];
@@ -185,8 +234,25 @@ internal sealed class TemporalDevServer
         return ((IPEndPoint)listener.LocalEndpoint).Port;
     }
 
-    private static string LastLine(string log) =>
-        File.Exists(log) ? File.ReadLines(log).LastOrDefault(l => l.Length > 0) ?? "no output" : "no log";
+    /// <summary>What the server wrote to the log since <paramref name="from"/>.</summary>
+    private static string Written(string log, long from)
+    {
+        if (!File.Exists(log))
+        {
+            return "";
+        }
+
+        using var stream = new FileStream(log, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        _ = stream.Seek(Math.Min(from, stream.Length), SeekOrigin.Begin);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
+
+    private static bool AddressInUse(string log, long from) =>
+        Written(log, from).Contains("address already in use", StringComparison.OrdinalIgnoreCase);
+
+    private static string LastLine(string log, long from) =>
+        File.Exists(log) ? Written(log, from).Split('\n').LastOrDefault(l => l.Length > 0) ?? "no output" : "no log";
 
     private static string Text(int value) => value.ToString(CultureInfo.InvariantCulture);
 }
