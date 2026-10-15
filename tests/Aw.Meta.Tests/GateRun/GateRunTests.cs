@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using Aw.Meta.Core;
 using Aw.Meta.Core.Gate;
 using Aw.Meta.Features.GateRun;
@@ -11,7 +10,12 @@ public sealed class GateRunTests
     private const string Tree = "/state/meta/gates/190/tree";
     private readonly MetaWorld _world = new();
 
-    private GateRunService Service() => new();
+    private GateRunService Service() => new(
+        _world.Config,
+        new GateWorkspace(_world.Repo, _world.Trees, _world.Paths),
+        new GateStepRunner(_world.Runner, _world.Paths),
+        _world.Gates,
+        _world.Clock);
 
     private void Script(string changed = "src/a.cs\n", int unitExit = 1)
     {

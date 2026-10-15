@@ -93,6 +93,8 @@ public static class MetaFeaturesServiceCollectionExtensions
         .Plain<StatusService, StatusRequest, StatusResponse>();
 
     private static IServiceCollection AddGateSlices(this IServiceCollection services) => services
+        .AddScoped<GateWorkspace>()
+        .AddScoped<GateStepRunner>()
         .AddScoped<GateRunService>()
         .AddScoped<IValidator<GateRunRequest>, GateRunValidator>()
         .Validated<GateRunService, GateRunRequest, GateRunResponse>()
