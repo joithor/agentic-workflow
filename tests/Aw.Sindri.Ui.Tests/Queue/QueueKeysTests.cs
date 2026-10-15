@@ -220,4 +220,80 @@ public sealed class QueueKeysTests
 
         Assert.Equal("Open " + A.NewItem, queue.Groups[3].Rows[3].OpenName);
     }
+
+    // The golden queue with the item removed (the projector cleared it), or its primary action set.
+    private static RouteAnswer Edited(string view, Action<System.Text.Json.Nodes.JsonArray> edit)
+    {
+        var root = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("queue", view))!;
+        foreach (var group in root["groups"]!.AsArray())
+        {
+            edit(group!["items"]!.AsArray());
+        }
+
+        return new RouteAnswer(System.Net.HttpStatusCode.OK, root.ToJsonString());
+    }
+
+    private static RouteAnswer Without(string view, string itemId) =>
+        Edited(view, items => items.Where(i => i!["id"]!.GetValue<string>() == itemId).ToList().ForEach(i => items.Remove(i)));
+
+    private static string Q(int n) => "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a30" + n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    private static List<string> FocusAsked(QueueViewModel queue)
+    {
+        var asked = new List<string>();
+        queue.FocusRequested += (_, e) => asked.Add(e.ItemId);
+        return asked;
+    }
+
+    // corr-3 (G R, Home): the Queued panel is Home's whatever the Queue page's filter shows; its cleared row passes to the next queued row.
+    [Fact]
+    public async Task A_queued_row_cleared_on_home_with_the_running_filter_on_selects_the_next_queued_row()
+    {
+        var queue = await Queue();
+        queue.Filter(QueueFilter.Running);
+        queue.Move(1, QueueScope.Home);
+        queue.Move(1, QueueScope.Home);
+        Assert.Equal(Q(2), queue.SelectedId);
+        var asked = FocusAsked(queue);
+
+        _server.QueueView = Without("extra-p4-waiting", Q(2));
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal((Q(3), [Q(3)], true), (queue.SelectedId, asked, queue.QueuedRows.Single(r => r.Id == Q(3)).IsSelected));
+    }
+
+    // corr-3 (G W left on, Home): the same, with the With you filter still on.
+    [Fact]
+    public async Task A_queued_row_cleared_on_home_with_the_with_you_filter_left_on_selects_the_next_queued_row()
+    {
+        var queue = await Queue();
+        queue.Filter(QueueFilter.WithYou);
+        queue.Move(1, QueueScope.Home);
+        Assert.Equal(Q(1), queue.SelectedId);
+
+        _server.QueueView = Without("extra-p4-waiting", Q(1));
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal(Q(2), queue.SelectedId);
+    }
+
+    // corr-3 (FilterText set, Home): Home's panels ignore the Queue page's text filter; so does the highlight and Y.
+    [Fact]
+    public async Task A_row_the_queue_pages_text_filter_hides_is_still_selected_and_copyable_on_home()
+    {
+        _server.QueueView = Edited("extra-p4-waiting", items =>
+        {
+            foreach (var item in items.Where(i => i!["id"]!.GetValue<string>() == Q(1)))
+            {
+                item!["primaryAction"] = "Decide";
+            }
+        });
+        var queue = await Queue();
+        queue.FilterText = "no row has this";
+
+        queue.Move(1, QueueScope.Home);
+
+        Assert.Equal((Q(1), true), (queue.SelectedId, queue.QueuedRows[0].IsSelected));
+        Assert.NotNull(queue.SelectedCopy());
+    }
 }
