@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
@@ -14,7 +16,8 @@ namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// Writes a scoping run's surfaces to the latest draft (context spec §8.5; README X63): the engine adds 'propose' rows (idempotent,
-/// never again after a reject, never the current map), and 'context.map.proposed' is appended when something was added. A job-class
+/// never again after a reject, never the current map), and 'context.map.proposed' is appended for the rows the run has in the draft (once per set of rows, so a retry
+/// after a failed append writes the missing event). A job-class
 /// command run synchronously: it is fast, and the app refreshes on the event.
 /// </summary>
 internal sealed class ProposeContextMapService(ContextScopes scopes, IContextEngine engine, HeldLease held, ILedgerStore ledger, EventFactory events)
@@ -53,7 +56,8 @@ internal sealed class ProposeContextMapService(ContextScopes scopes, IContextEng
             return standing.Error;
         }
 
-        return proposed.Value.Added == 0
+        // The event follows the rows the run has, not what this call added: a retry after a failed append finds the rows and writes the event they lack.
+        return proposed.Value.RowsOrEmpty.Count == 0
             ? new ProposeContextMapResponse(proposed.Value, Sequence: null, standing.Value.Surfaces)
             : await Record(proposal.Value, proposed.Value, standing.Value.Surfaces, grant, cancellationToken).ConfigureAwait(false);
     }
@@ -73,9 +77,11 @@ internal sealed class ProposeContextMapService(ContextScopes scopes, IContextEng
     private async ValueTask<Result<ProposeContextMapResponse>> Record(ScopeProposal proposal, ProposeResult result, IReadOnlyList<GraphStatus> surfaces, LeaseGrant grant, CancellationToken cancellationToken)
     {
         var payload = new ContextMapProposed(proposal.Run, proposal.Repo.Value, result.Draft.Number, result.Added, result.Existing, result.Rejected);
-        // The run, the draft and what this call did: a retry that adds nothing writes no event, and a call that adds more is a different event.
-        var key = string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ContextMapProposed}:{proposal.Run}:v{result.Draft.Number}:{result.Added}:{result.Existing}:{result.Rejected}");
+        // The run, the draft and the rows written (a hash of their ids): the same rows are one event however often they are sent, other rows are another.
+        var rows = string.Join(',', result.RowsOrEmpty.Select(id => id.Value));
+        var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(rows)))[..16];
+        var key = string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ContextMapProposed}:{proposal.Run}:v{result.Draft.Number}:{hash}");
         var appended = await ledger.Append(events.Entry(EventTypes.ContextMapProposed, payload, key), grant, cancellationToken).ConfigureAwait(false);
-        return appended.IsError ? appended.Error : new ProposeContextMapResponse(result, appended.Value.Sequence, surfaces);
+        return appended.IsError ? appended.Error : new ProposeContextMapResponse(result, appended.Value.AlreadyRecorded ? null : appended.Value.Sequence, surfaces);
     }
 }

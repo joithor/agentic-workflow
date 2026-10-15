@@ -1,6 +1,8 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Kernel;
@@ -36,7 +38,15 @@ internal sealed class ProposeFromScopeService(IGraphStore store, IProposalRuns r
 
         var plan = ProposalPlanner.Plan(proposal, draft.Value.Graph, draft.Value.Overrides, Who, now);
         var written = await runs.Propose(proposal, plan.Rows, cancellationToken).ConfigureAwait(false);
-        return written.IsError ? written.Error : new ProposeResult(opened.Value, plan.Rows.Count, plan.Existing, plan.Rejected);
+        return written.IsError ? written.Error : new ProposeResult(opened.Value, written.Value, plan.Existing, plan.Rejected, RowsOf(proposal, plan.Rows, draft.Value.Overrides));
+    }
+
+    // The run's propose rows for this call's surfaces: the ones just planned and the ones the draft already held (a retry names them again).
+    private static List<OverrideId> RowsOf(ScopeProposal proposal, IReadOnlyList<MapOverride> planned, IReadOnlyList<MapOverride> standing)
+    {
+        var keys = proposal.Surfaces.Select(ProposalNodes.KeyOf).OfType<NodeKey>().Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
+        return [.. planned.Concat(standing.Where(o => o.Action == OverrideAction.Propose && o.Proposal?.Run == proposal.Run && keys.Contains(o.Target.Value)))
+            .Select(o => o.ToId()).DistinctBy(id => id.Value, StringComparer.Ordinal).OrderBy(id => id.Value, StringComparer.Ordinal)];
     }
 
     private static Error? Addressable(ContextScope scope, ScopeProposal proposal)

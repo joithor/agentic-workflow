@@ -1252,6 +1252,7 @@ Aw.Context.Core.Lenses.ProductCounts.Equals(Aw.Context.Core.Lenses.ProductCounts
 Aw.Context.Core.Lenses.ProductCounts.Own.get -> int
 Aw.Context.Core.Lenses.ProductCounts.Own.init -> void
 Aw.Context.Core.Lenses.ProductCounts.ProductCounts(int Own, int Affects) -> void
+Aw.Context.Core.Lenses.RepoPaths
 Aw.Context.Core.Lenses.SymbolsState
 Aw.Context.Core.Lenses.SymbolsState.Ok = 2 -> Aw.Context.Core.Lenses.SymbolsState
 Aw.Context.Core.Lenses.SymbolsState.Stale = 1 -> Aw.Context.Core.Lenses.SymbolsState
@@ -1740,15 +1741,18 @@ Aw.Context.Core.Proposals.ProposeResult
 Aw.Context.Core.Proposals.ProposeResult.<Clone>$() -> Aw.Context.Core.Proposals.ProposeResult!
 Aw.Context.Core.Proposals.ProposeResult.Added.get -> int
 Aw.Context.Core.Proposals.ProposeResult.Added.init -> void
-Aw.Context.Core.Proposals.ProposeResult.Deconstruct(out Aw.Context.Core.Map.MapVersion! Draft, out int Added, out int Existing, out int Rejected) -> void
+Aw.Context.Core.Proposals.ProposeResult.Deconstruct(out Aw.Context.Core.Map.MapVersion! Draft, out int Added, out int Existing, out int Rejected, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Rows) -> void
 Aw.Context.Core.Proposals.ProposeResult.Draft.get -> Aw.Context.Core.Map.MapVersion!
 Aw.Context.Core.Proposals.ProposeResult.Draft.init -> void
 Aw.Context.Core.Proposals.ProposeResult.Equals(Aw.Context.Core.Proposals.ProposeResult? other) -> bool
 Aw.Context.Core.Proposals.ProposeResult.Existing.get -> int
 Aw.Context.Core.Proposals.ProposeResult.Existing.init -> void
-Aw.Context.Core.Proposals.ProposeResult.ProposeResult(Aw.Context.Core.Map.MapVersion! Draft, int Added, int Existing, int Rejected) -> void
+Aw.Context.Core.Proposals.ProposeResult.ProposeResult(Aw.Context.Core.Map.MapVersion! Draft, int Added, int Existing, int Rejected, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Rows = null) -> void
 Aw.Context.Core.Proposals.ProposeResult.Rejected.get -> int
 Aw.Context.Core.Proposals.ProposeResult.Rejected.init -> void
+Aw.Context.Core.Proposals.ProposeResult.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>?
+Aw.Context.Core.Proposals.ProposeResult.Rows.init -> void
+Aw.Context.Core.Proposals.ProposeResult.RowsOrEmpty.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>!
 Aw.Context.Core.Proposals.ProposedSurface
 Aw.Context.Core.Proposals.ProposedSurface.<Clone>$() -> Aw.Context.Core.Proposals.ProposedSurface!
 Aw.Context.Core.Proposals.ProposedSurface.Deconstruct(out string! Name, out Aw.Context.Core.Graph.NodeKey? Key, out Aw.Context.Core.Graph.NodeKind? Kind, out Aw.Context.Core.Graph.NodeKey? Parent, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence, out string? Quote) -> void
@@ -3243,6 +3247,7 @@ static Aw.Context.Core.Lenses.ProductBand.operator !=(Aw.Context.Core.Lenses.Pro
 static Aw.Context.Core.Lenses.ProductBand.operator ==(Aw.Context.Core.Lenses.ProductBand? left, Aw.Context.Core.Lenses.ProductBand? right) -> bool
 static Aw.Context.Core.Lenses.ProductCounts.operator !=(Aw.Context.Core.Lenses.ProductCounts? left, Aw.Context.Core.Lenses.ProductCounts? right) -> bool
 static Aw.Context.Core.Lenses.ProductCounts.operator ==(Aw.Context.Core.Lenses.ProductCounts? left, Aw.Context.Core.Lenses.ProductCounts? right) -> bool
+static Aw.Context.Core.Lenses.RepoPaths.Normalize(string! path) -> string!
 static Aw.Context.Core.Map.ExportedFile.operator !=(Aw.Context.Core.Map.ExportedFile? left, Aw.Context.Core.Map.ExportedFile? right) -> bool
 static Aw.Context.Core.Map.ExportedFile.operator ==(Aw.Context.Core.Map.ExportedFile? left, Aw.Context.Core.Map.ExportedFile? right) -> bool
 static Aw.Context.Core.Map.FencePolicies.For(Aw.Context.Core.Engine.ContextCaller! caller) -> Aw.Context.Core.Map.FencePolicy
@@ -3526,5 +3531,3 @@ static readonly Aw.Context.Core.ContextErrors.SourceNotConfigured -> Aw.Kernel.E
 static readonly Aw.Context.Core.ContextErrors.SourceUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.StoreUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.UnknownAnchor -> Aw.Kernel.ErrorDefinition!
-Aw.Context.Core.Lenses.RepoPaths
-static Aw.Context.Core.Lenses.RepoPaths.Normalize(string! path) -> string!

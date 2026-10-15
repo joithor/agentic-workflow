@@ -33,7 +33,9 @@ public sealed record MapOverride(
     /// <returns>The id.</returns>
     public OverrideId ToId()
     {
-        var text = $"{Action}\n{Target.Value}\n{Who}\n{At.ToUniversalTime():O}\n{Label}\n{Other?.Value}\n{Rejection}";
+        // A proposal is the same row whenever it was planned, so two concurrent proposes of one surface write it once.
+        var when = Action == OverrideAction.Propose ? string.Empty : At.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+        var text = $"{Action}\n{Target.Value}\n{Who}\n{when}\n{Label}\n{Other?.Value}\n{Rejection}";
         text += ReviewText();
         return OverrideId.From("ovr_" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)))[..16]);
     }

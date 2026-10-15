@@ -133,4 +133,32 @@ public sealed class ProposeFromScopeTests : IDisposable
         Assert.Equal(human.Error.Message, session.Error.Message);
         Assert.Equal(0, await ProposeRows());
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_result_names_the_propose_rows_of_this_calls_surfaces_new_ones_and_those_already_standing()
+    {
+        _ = await _world.ImportFixture();
+
+        var first = await Propose();
+        var again = await Propose();
+        var other = await Propose(Run() with { Surfaces = [new ProposedSurface("Zoom", Key: null, NodeKind.Feature, Parent: null, Evidence: null, Quote: null)] });
+
+        var row = Assert.Single((await _world.Store.Overrides(MapWorld.None)).Value, o => o.Target.Value == _restore.Value);
+        Assert.Equal([row.ToId()], first.Rows);
+        Assert.Equal([row.ToId()], again.Rows);   // a retry still names the rows the run has, so a lost event can be written again
+        var zoom = Assert.Single((await _world.Store.Overrides(MapWorld.None)).Value, o => o.Target.Value == "feature:zoom");
+        Assert.Equal([zoom.ToId()], other.Rows);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_propose_row_s_id_does_not_depend_on_when_it_was_planned_so_two_concurrent_proposes_write_it_once()
+    {
+        var t0 = DateTimeOffset.Parse("2026-08-01T12:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
+
+        var first = ProposalPlanner.Plan(Run(), GraphSnapshot.Empty, [], "service:engine", t0).Rows.Select(r => r.ToId());
+        var second = ProposalPlanner.Plan(Run(), GraphSnapshot.Empty, [], "service:engine", t0.AddSeconds(3)).Rows.Select(r => r.ToId());
+
+        Assert.NotEmpty(first);
+        Assert.Equal(first, second);
+    }
 }

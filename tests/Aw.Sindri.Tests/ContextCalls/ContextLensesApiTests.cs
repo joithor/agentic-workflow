@@ -250,7 +250,46 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Empty(Json(view.Body).GetProperty("surfaces").EnumerateArray());   // no row and no run list were written
         Assert.Equal(1, Json(accepted.Body).GetProperty("result").GetProperty("added").GetInt32());   // so the retry adds the row and records the event
         Assert.StartsWith("context.map.proposed:scope-2:v", recorded.Value!.IdempotencyKey, StringComparison.Ordinal);
-        Assert.EndsWith(":1:0:0", recorded.Value.IdempotencyKey, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Two_proposals_of_one_run_with_different_surfaces_each_record_an_event_and_a_repeat_records_none()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+        static string Body(string name) => $$"""{"run":"scope-3","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"{{name}}","kind":"feature"}]}""";
+
+        var one = await host.Http.Ask(Post("/sindri/context/map/proposals", Body("Zoom"), App(host)));
+        var two = await host.Http.Ask(Post("/sindri/context/map/proposals", Body("Pan"), App(host)));
+        var repeat = await host.Http.Ask(Post("/sindri/context/map/proposals", Body("Pan"), App(host)));
+
+        var sequences = new[] { one, two, repeat }.Select(r => Json(r.Body).GetProperty("sequence")).ToList();
+        Assert.Equal(JsonValueKind.Number, sequences[0].ValueKind);
+        Assert.Equal(JsonValueKind.Number, sequences[1].ValueKind);   // the second call added one row, so it has its own event even though its counts equal the first call's
+        Assert.NotEqual(sequences[0].GetInt64(), sequences[1].GetInt64());
+        Assert.Equal(JsonValueKind.Null, sequences[2].ValueKind);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_retry_after_the_event_append_failed_records_the_event_the_committed_rows_lack()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        var ledger = new FlakyLedger();
+        await using var host = await ContextHosts.Approved(_repo, sessions: true, TestContext.Current.CancellationToken,
+            s => { _ = s.RemoveAll<IClusterSource>(); _ = s.AddSingleton<IClusterSource>(new FakeClusterSource()); ledger.Wrap(s); }, name: FixtureMap.Repo);
+        await ContextMapApiTests.Import(host);
+        var body = $$"""{"run":"scope-4","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Zoom","kind":"feature"}]}""";
+
+        ledger.Failing = true;
+        var failed = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        ledger.Failing = false;
+        var retry = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var again = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+
+        Assert.NotEqual(HttpStatusCode.OK, failed.Status);
+        Assert.Equal(0, Json(retry.Body).GetProperty("result").GetProperty("added").GetInt32());   // the row committed the first time
+        Assert.Equal(JsonValueKind.Number, Json(retry.Body).GetProperty("sequence").ValueKind);   // and the retry wrote its event
+        Assert.Equal(JsonValueKind.Null, Json(again.Body).GetProperty("sequence").ValueKind);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
