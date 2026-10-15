@@ -60,17 +60,28 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return view.IsError ? view.Error : new StartInstanceResponse(view.Value, Existing: true, Finished: true);
         }
 
+        return await Begin(request, item, recipe.Version, plan.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Starts the instance: the launches are read before any write, so a read error leaves no facts behind (UI spec E-19).</summary>
+    private async ValueTask<Result<StartInstanceResponse>> Begin(StartInstanceRequest request, ResolvedItem item, RecipeVersion recipe, AttemptPlan plan, CancellationToken cancellationToken)
+    {
+        var launch = await launches.Requested(item.Id, cancellationToken).ConfigureAwait(false);
+        if (launch.IsError)
+        {
+            return launch.Error;
+        }
+
         var inputs = await Store(request, cancellationToken).ConfigureAwait(false);
         if (inputs.IsError)
         {
             return inputs.Error;
         }
 
-        var launch = await launches.Requested(item.Id, cancellationToken).ConfigureAwait(false);
-        var started = launch.IsError ? launch.Error : await runtime.Start(
-            new InstanceStart(recipe.Version, item.Id, plan.Value.Attempt, inputs.Value, Tenant, Ring: 0) { OpenLaunch = launch.Value?.Launch },
+        var started = await runtime.Start(
+            new InstanceStart(recipe, item.Id, plan.Attempt, inputs.Value, Tenant, Ring: 0) { OpenLaunch = launch.Value?.Launch },
             cancellationToken).ConfigureAwait(false);
-        return started.IsError ? started.Error : new StartInstanceResponse(started.Value, plan.Value.Existing, Finished: false);
+        return started.IsError ? started.Error : new StartInstanceResponse(started.Value, plan.Existing, Finished: false);
     }
 
     /// <summary>

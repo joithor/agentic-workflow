@@ -148,6 +148,9 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
         { Kind: ApplyCommandKind.Answer, Answer: AnswerVariant.Text, Text: null or "" } => SindriErrors.InvalidInput.With("--text needs the answer's text (or --file <file>)"),
         { Kind: ApplyCommandKind.Answer, Answer: AnswerVariant.Grant or AnswerVariant.GrantTokens, Amount: null or < 1 } => SindriErrors.InvalidInput.With("--grant and --grant-tokens need a whole number from 1"),
         { Text.Length: > IFactStore.MaxBytes } => SindriErrors.InvalidInput.With("the answer's text is larger than 1 MiB (fix: answer with a smaller file)"),
+        { Kind: ApplyCommandKind.Cancel or ApplyCommandKind.Takeover or ApplyCommandKind.Handback } when request.Answer is not null || request.Text is not null
+            || request.Amount is not null || request.Verb is not null || request.Challenge is not null =>
+            SindriErrors.InvalidInput.With("cancel, takeover and handback take only the address and the nonce (fix: drop the answer, text, amount, verb and challenge fields)"),
         { Kind: ApplyCommandKind.Command, Verb: null } => SindriErrors.InvalidInput.With("a command needs its verb: sindri workflow command <address> <verb>"),
         _ => null,
     };

@@ -36,6 +36,8 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
 
     private const string HandbackUsage = "usage: sindri workflow handback <address> [--nonce <n>] [--json]";
 
+    private const string HandbackShortUsage = "usage: sindri handback <item-or-address> [--nonce <n>] [--json]";
+
     /// <summary>The answer options that take no value.</summary>
     private static readonly string[] _switches = ["--accept", "--reject", "--resume"];
 
@@ -94,8 +96,12 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
     /// <summary>'workflow takeover &lt;address&gt;' (class pause: an agent session may take over).</summary>
     internal Task<int> Takeover(string[] args, CancellationToken ct) => Bare(args, ApplyCommandKind.Takeover, TakeoverUsage, ct);
 
-    /// <summary>'workflow handback &lt;address&gt;' (class desk: an agent session is refused SND-AUTH-002).</summary>
-    internal Task<int> Handback(string[] args, CancellationToken ct) => Bare(args, ApplyCommandKind.Handback, HandbackUsage, ct);
+    /// <summary>
+    /// 'workflow handback &lt;address&gt;' (class desk: an agent session is refused SND-AUTH-002), or its short form
+    /// 'sindri handback &lt;item-or-address&gt;' (<paramref name="shortForm"/>; engine spec §6.3): a bare item is the root of its latest attempt.
+    /// </summary>
+    internal Task<int> Handback(string[] args, CancellationToken ct, bool shortForm = false) =>
+        Bare(args, ApplyCommandKind.Handback, shortForm ? HandbackShortUsage : HandbackUsage, ct);
 
     /// <summary>A command that takes only the address and the optional nonce: cancel, takeover, handback.</summary>
     private async Task<int> Bare(string[] args, ApplyCommandKind kind, string usage, CancellationToken ct)
