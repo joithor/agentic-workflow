@@ -1,8 +1,6 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.IssueNonce;
-using Aw.Sindri.Features.ListInstances;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -22,24 +20,19 @@ internal static class InstanceTarget
             return down;
         }
 
-        var listed = await desk.Client.Get<ListInstancesResponse>($"/sindri/workflow/instances?address={Uri.EscapeDataString(reference)}", ct).ConfigureAwait(false);
-        if (listed.IsError)
+        var id = await InstanceReads.IdOf(desk, reference, ct).ConfigureAwait(false);   // the one place an address becomes an id
+        if (id.IsError)
         {
-            return listed.Error;
-        }
-
-        if (listed.Value.Value.Instances is not [var instance])
-        {
-            return WorkflowErrors.InstanceNotFound.With($"'{reference}' names no one instance (fix: sindri workflow list)");
+            return id.Error;
         }
 
         if (given is { } nonce)
         {
-            return (instance.Id, nonce);
+            return (id.Value, nonce);
         }
 
-        var issued = await desk.Client.Post<IssueNonceRequest, IssueNonceResponse>($"/sindri/workflow/instances/{instance.Id.Value}/nonce", body: null, ct)
+        var issued = await desk.Client.Post<IssueNonceRequest, IssueNonceResponse>($"{InstanceReads.Instances}/{id.Value.Value}/nonce", body: null, ct)
             .ConfigureAwait(false);
-        return issued.IsError ? issued.Error : (instance.Id, issued.Value.Value.Nonce);
+        return issued.IsError ? issued.Error : (id.Value, issued.Value.Value.Nonce);
     }
 }

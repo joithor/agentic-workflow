@@ -18,7 +18,8 @@ internal static class InstanceReads
 
     /// <summary>
     /// The opaque id of the instance <paramref name="reference"/> names (an address or a bare item), through
-    /// 'GET /workflow/instances?address=', the only place an address travels. Does not start the control plane.
+    /// 'GET /workflow/instances?address=', the only place an address travels. Does not start the control plane, and returns the error as it came
+    /// (a read says 'not running' with <see cref="NotRunning"/>; a write has already ensured it runs).
     /// </summary>
     /// <param name="desk">The API client.</param>
     /// <param name="reference">The address or bare item.</param>
@@ -29,7 +30,7 @@ internal static class InstanceReads
         var listed = await desk.Client.Get<ListInstancesResponse>($"{Instances}?address={Uri.EscapeDataString(reference)}", ct).ConfigureAwait(false);
         if (listed.IsError)
         {
-            return NotRunning(listed.Error);
+            return listed.Error;
         }
 
         return listed.Value.Value.Instances is [var instance]
@@ -51,7 +52,7 @@ internal static class InstanceReads
         return resolved.IsError && InstanceAddress.TryFrom(reference, out var typed)
             && (resolved.Error.Code == WorkflowErrors.InstanceNotFound.Code || resolved.Error.Code == SindriErrors.ApiTimeout.Code)
             ? WorkflowInstanceId.Of(typed)
-            : resolved;
+            : resolved.IsError ? NotRunning(resolved.Error) : resolved;
     }
 
     /// <summary>A query never starts the control plane; when it is down the error says so.</summary>
