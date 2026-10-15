@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Aw.Sindri.Infrastructure.Locks;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Locks;
 
@@ -228,15 +229,44 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_slot_with_an_empty_owner_file_is_a_holder_mid_write_and_is_left_alone()
+    public async Task A_slot_with_an_empty_owner_file_is_a_holder_mid_write_and_is_left_alone_even_past_the_six_hour_takeover()
     {
         Directory.CreateDirectory(Lock);
         await File.WriteAllTextAsync(Path.Combine(Lock, "owner"), string.Empty, TestContext.Current.CancellationToken);
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow + DirectoryHeavySlots.NoRecordGrace + TimeSpan.FromHours(1));   // the slot is older than the takeover age
+
+        var taken = (await new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), later).Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Null(taken.Lease);
+        Assert.True(File.Exists(Path.Combine(Lock, "owner")));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_slot_with_no_owner_file_at_all_is_taken_over_past_the_six_hours()
+    {
+        Directory.CreateDirectory(Lock);
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow + DirectoryHeavySlots.NoRecordGrace + TimeSpan.FromHours(1));
+
+        var taken = (await new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), later).Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
+
+        Assert.NotNull(taken.Lease);
+        await taken.Lease.DisposeAsync();
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_live_holder_that_took_its_slot_in_the_second_it_started_is_not_a_reused_pid()
+    {
+        // The record is written to the second, so it can name a time up to a second before the process's own start time: the tolerance keeps that holder's slot.
+        var started = Process.GetCurrentProcess().StartTime.ToUniversalTime().AddSeconds(-1);
+        Directory.CreateDirectory(Lock);
+        var owner = Path.Combine(Lock, "owner");
+        var line = $"{Pid} {started.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture)} live job\n";
+        await File.WriteAllTextAsync(owner, line, TestContext.Current.CancellationToken);
 
         var taken = (await OneSlot().Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
 
         Assert.Null(taken.Lease);
-        Assert.True(File.Exists(Path.Combine(Lock, "owner")));
+        Assert.Equal(line, await File.ReadAllTextAsync(owner, TestContext.Current.CancellationToken));
     }
 
     [Fact, Trait("Lane", "unit")]

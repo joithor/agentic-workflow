@@ -190,4 +190,23 @@ public sealed class GetProposalsTests : IDisposable
         Assert.Equal(3, own.Surfaces.Count);
         Assert.Empty(other.Value.Surfaces);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_mapped_nodes_key_goes_out_through_the_egress_scrubber_like_every_other_text()
+    {
+        _ = await _world.ImportYaml(MapWorld.Yaml(
+            "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
+            "  - {key: \"feature:billing.ACME-123456\", label: \"Billing\"}"));
+        var run = new ScopeProposal("run-s", ContextRepoName.From(FixtureMap.Repo), [new ProposedSurface("Billing", NodeKey.From("feature:billing.ACME-123456"), NodeKind.Feature, Parent: null, Evidence: null, Quote: null)]);
+        _ = await _world.Map.Propose(run, MapWorld.Human, MapWorld.None);
+        var scope = MapWorld.HumanWith("""{"scrub":{"extraPatterns":[{"id":"acme-customer-id","pattern":"acme-[0-9]{6}"}]}}""");
+
+        var view = await Proposals("run-s", scope);
+
+        var surface = Assert.Single(view.Surfaces);
+        Assert.Equal(GraphStatusKind.Mapped, surface.Status);
+        var node = Assert.NotNull(surface.Node);
+        Assert.DoesNotContain("acme-123456", node.Value, StringComparison.Ordinal);
+        Assert.Contains("[REDACTED:acme-customer-id]", node.Value, StringComparison.Ordinal);
+    }
 }

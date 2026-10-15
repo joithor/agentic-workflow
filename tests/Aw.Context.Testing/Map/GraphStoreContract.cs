@@ -264,6 +264,25 @@ public abstract class GraphStoreContract
         Expect.That(read.Single(o => o.Action == OverrideAction.Accept).Link == link.Link && read.Single(o => o.Action == OverrideAction.Undo).Undoes == link.ToId(), test, "the link or undo fields changed");
     }
 
+    /// <summary>A re-proposal's generation reads back (it is part of the row's id: a store that lost it would mint a different id for the row it wrote).</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_re_proposed_rows_generation_reads_back_and_keeps_its_id()
+    {
+        const string test = nameof(A_re_proposed_rows_generation_reads_back_and_keeps_its_id);
+        var store = CreateStore();
+        var at = SampleMap.At.AddHours(2);
+        var first = new MapOverride(OverrideAction.Propose, NodeKey.From("feature:tabs.groups"), "service:engine", at, "Tab groups", Proposal: new ProposalPayload(
+            "run-7", ContextRepoName.From("aw-split-panes"), NodeKind.Feature));
+        var again = first with { Proposal = first.Proposal! with { Generation = 2 } };
+
+        _ = Expect.Ok(await store.AppendOverrides([first, again], None), test);
+
+        var read = Expect.Ok(await store.Overrides(None), test);
+        Expect.That(read.Count == 2 && first.ToId() != again.ToId(), test, "the first proposal and its re-proposal must be two rows with different ids");
+        Expect.That(read.Select(o => (o.ToId().Value, o.Proposal!.Generation)).Order().SequenceEqual(new[] { (first.ToId().Value, 0), (again.ToId().Value, 2) }.Order()), test, "a generation or an id changed on the way through the store");
+    }
+
     /// <summary>A fresh, empty store.</summary>
     /// <returns>The store.</returns>
     protected abstract IGraphStore CreateStore();

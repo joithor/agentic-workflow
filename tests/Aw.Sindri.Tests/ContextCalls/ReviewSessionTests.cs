@@ -222,4 +222,22 @@ public sealed class ReviewSessionTests
         Assert.Equal(("accept", "feature:layout"), (accept.Send!.Verb, accept.Send.Node));
         Assert.Equal(1, session.Counts.Edited);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("n", "Pane layout")]
+    [InlineData("m", "feature:tabs")]
+    public void A_refused_rename_or_move_keeps_the_cursor_on_the_first_item_and_counts_nothing(string key, string value)
+    {
+        var session = new ReviewSession(ReviewQueueView.Of("v14@0a1b2c3", [Entry("feature:layout", ReviewGroup.Model, "Layout"), Entry("feature:zoom", ReviewGroup.Model, "Zoom")], 0));
+        _ = session.Start();
+        _ = session.Answer(key);
+        var edit = session.Answer(value);
+
+        var failed = session.Failed(edit);
+
+        Assert.Equal(edit.Prompt, failed.Prompt);   // the item it was on, not a step back (the first item has none before it)
+        Assert.Contains("[1/2] Layout", failed.Prompt, StringComparison.Ordinal);
+        Assert.Equal(0, session.Counts.Edited);
+        Assert.Equal("feature:layout", session.Answer("a").Send!.Node);
+    }
 }

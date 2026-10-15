@@ -9,6 +9,7 @@ using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Map;
+using Aw.Context.Testing.Review;
 using Aw.Context.Tests.ReviewMap;
 
 namespace Aw.Context.Tests.Map;
@@ -142,7 +143,34 @@ public sealed class OneVisibleViewTests : IDisposable
 
         Assert.Contains("surface:setting/open", seen["queue"], StringComparer.Ordinal);
         Assert.Contains("feature:kept", seen["export"], StringComparer.Ordinal);
-        Assert.Empty(seen["proposals"]);   // the one surface the run proposed has only denied evidence: it reads as unmapped
+        Assert.Contains("src/", seen["filemap"], StringComparer.Ordinal);   // the repo root lists its folders; private/ is not one
+        var proposals = (await _world.Map.Proposals("run-1", Denying(), MapWorld.None)).Value;
+        var surface = Assert.Single(proposals.Surfaces);
+        Assert.Equal(("Proposed", GraphStatusKind.Unmapped, null), (surface.Surface, surface.Status, surface.Node));   // the one surface the run proposed has only denied evidence: unmapped, no node
+
+        await Decide(Drafts.Scope, On(ReviewVerb.Accept, "surface:setting/open"));
+        var decided = await Listings(Denying());
+        Assert.Contains("surface:setting/open", decided["history"], StringComparer.Ordinal);   // a visible decision is listed
+        Assert.DoesNotContain(decided["history"], n => n.Contains("private/", StringComparison.Ordinal) || _hidden.Contains(n, StringComparer.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_applied_review_file_exported_before_the_glob_decides_only_what_the_denied_queue_shows()
+    {
+        await Scenario();
+        var all = (await _world.Map.ReviewQueue(limit: null, Drafts.Scope, MapWorld.None)).Value;
+        var shown = (await _world.Map.ReviewQueue(limit: null, Denying(), MapWorld.None)).Value;
+        var file = new ReviewFile(all.Draft, [.. all.Entries.Where(e => e.Group != ReviewGroup.Orphaned).Select(e =>
+            new ReviewFileEntry(e.Label, e.Group, e.Confidence, e.Link is null ? e.Node : null, e.Link, Decision: ReviewVerb.Accept))]);
+        var path = (await _world.ReviewFiles.Write(Path.Combine(FakeReviewFileStore.Folder, "old.json"), "old.json", file, MapWorld.None)).Value;
+
+        var applied = (await _world.Map.ApplyReviewFile(path, Denying(), MapWorld.None)).Value;
+
+        var targets = (await _world.Store.Overrides(MapWorld.None)).Value.Where(o => applied.Written.Contains(o.ToId())).Select(o => o.Target.Value).ToList();
+        Assert.NotEmpty(targets);
+        Assert.DoesNotContain(targets, t => _hidden.Contains(t, StringComparer.Ordinal));
+        Assert.Equal(file.Entries.Count - shown.Entries.Count, applied.Skipped.Count);   // every hidden entry is skipped
+        Assert.Equal((await _world.Map.ReviewQueue(limit: null, Denying(), MapWorld.None)).Value.Undecided, applied.Undecided);
     }
 
     [Fact, Trait("Lane", "unit")]
