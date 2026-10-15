@@ -67,7 +67,20 @@ public static partial class TransitionDecision
     /// </summary>
     private static Decision DecideRecipeTrigger(Deciding d, WorkflowInstance? from = null)
     {
-        var instance = from ?? Release(d);
+        if (from is not null)
+        {
+            return DecideRecipeTrigger(d, from, released: null);
+        }
+
+        var freed = Release(d);
+        return DecideRecipeTrigger(d, freed.Instance, freed.Released);
+    }
+
+    private static Decision DecideRecipeTrigger(Deciding d, WorkflowInstance instance, IReadOnlyList<RefusedEffect>? released) =>
+        WithReleased(DecideFrom(d, instance), released);
+
+    private static Decision DecideFrom(Deciding d, WorkflowInstance instance)
+    {
         var match = MatchFrom(instance, d.Recipe, d.Trigger);
         if (Invalid(d, instance, match) is { } invalid)
         {
@@ -100,10 +113,10 @@ public static partial class TransitionDecision
     };
 
     /// <summary>A child's end first ends the parent's suspension that mirrors that child (§5.8), so a child that ends releases its parent.</summary>
-    private static WorkflowInstance Release(Deciding d) =>
+    private static ParentReleased Release(Deciding d) =>
         d.Trigger is WaitSatisfied { Source: ChildWaitSource child } && Mirrors(d.Input.Instance, child.Child)
             ? d.Rules.Release(d.Input.Instance, child.Child)
-            : d.Input.Instance;
+            : new ParentReleased(d.Input.Instance);
 
     private static bool Mirrors(WorkflowInstance instance, WorkflowInstanceId child) =>
         instance.Suspension?.Mirrors == child || Suspensions.PendingParks(instance).Any(p => p.Mirrors == child);

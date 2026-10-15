@@ -42,21 +42,19 @@ public static partial class TransitionDecision
     private static Decision Reapproved(Deciding d, WorkflowInstance instance)
     {
         var queue = Suspensions.PendingParks(instance);
-        var behind = queue.Any(static p => p is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift, Approved: false });
         if (instance.Suspension is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift, Approved: false } park)
         {
-            var held = behind || queue.Any(static p => !p.Approved);
-            var asked = held ? Suspensions.WithPending(instance, [.. Approve(queue), park with { Approved = true }]) : instance;
-            var ending = d.Rules.End(asked, child: null);
+            var ending = d.Rules.End(Suspensions.WithPending(instance, Approve(queue)), child: null);
             if (ending.IsError)
             {
                 return new Rejected(d.Key, ending.Error);
             }
 
-            return held ? d.Changed(ending.Value.Instance) : WithReleased(Resume(d, ending.Value.Instance, park.Resume), ending.Value);
+            // Another park takes effect: the approved drift park stays queued as a holder (EndCurrent) and its effects go out when nothing holds the instance.
+            return ending.Value.PendingTookEffect ? d.Changed(ending.Value.Instance) : WithReleased(Resume(d, ending.Value.Instance, park.Resume), ending.Value.Released);
         }
 
-        return behind
+        return queue.Any(static p => p is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift, Approved: false })
             ? d.Changed(Suspensions.WithPending(instance, Approve(queue)))
             : new Absorbed(d.Key, "the approval resumes only a drift park, and this instance has none");
     }
@@ -64,21 +62,36 @@ public static partial class TransitionDecision
     private static List<Suspension> Approve(IReadOnlyList<Suspension> queue) =>
         [.. queue.Select(static p => p is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift, Approved: false } ? p with { Approved = true } : p)];
 
-    /// <summary>Effects released because the last park holding them ended: they run again as new commands, listed on the event.</summary>
-    private static Decision WithReleased(Decision decision, Ended ended)
+    /// <summary>Effects released because the last park holding them ended: they run again as new commands, listed on the event. Every caller of an ended suspension passes what it freed; none may drop it.</summary>
+    private static Decision WithReleased(Decision decision, IReadOnlyList<RefusedEffect>? released)
     {
-        if (ended.Released is not { Count: > 0 } released || decision is not Applied applied)
+        if (released is not { Count: > 0 })
         {
             return decision;
         }
 
-        var own = applied.Changes[0];
-        var sent = applied.Effects.Select(static e => e.Identity).ToHashSet();
-        var more = released.Where(e => !sent.Contains(e.Identity)).ToList();
-        return applied with
+        return decision switch
         {
-            Changes = [own with { Event = own.Event with { Effects = [.. own.Event.Effects ?? [], .. more.Select(static e => e.Identity)] } }, .. applied.Changes.Skip(1)],
-            Effects = [.. applied.Effects, .. more.Select(static e => new EffectCommand(e.Kind, e.Identity, e.Origin, e.With))],
+            Applied applied => applied with { Changes = Listed(applied.Changes, applied.Effects, released), Effects = Sent(applied.Effects, released) },
+            Refused refused => refused with { Changes = Listed(refused.Changes, refused.Effects, released), Effects = Sent(refused.Effects, released) },
+            _ => decision,
         };
+    }
+
+    private static IReadOnlyList<InstanceChange> Listed(IReadOnlyList<InstanceChange> changes, IReadOnlyList<EffectCommand> sent, IReadOnlyList<RefusedEffect> released)
+    {
+        var more = New(sent, released);
+        return more.Count == 0 || changes.Count == 0
+            ? changes
+            : [changes[0] with { Event = changes[0].Event with { Effects = [.. changes[0].Event.Effects ?? [], .. more.Select(static e => e.Identity)] } }, .. changes.Skip(1)];
+    }
+
+    private static List<EffectCommand> Sent(IReadOnlyList<EffectCommand> sent, IReadOnlyList<RefusedEffect> released) =>
+        [.. sent, .. New(sent, released).Select(static e => new EffectCommand(e.Kind, e.Identity, e.Origin, e.With))];
+
+    private static List<RefusedEffect> New(IReadOnlyList<EffectCommand> sent, IReadOnlyList<RefusedEffect> released)
+    {
+        var known = sent.Select(static e => e.Identity).ToHashSet();
+        return [.. released.Where(e => !known.Contains(e.Identity))];
     }
 }

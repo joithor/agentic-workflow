@@ -9,8 +9,9 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// takeover becomes the suspension and leaves the recipe frame as it was. A park that arrives while one is there waits in
 /// the queue (<see cref="WorkflowInstance.PendingPark"/>, then <see cref="WorkflowInstance.LaterParks"/>); a takeover
 /// over a park puts that park first in the queue, so the handback returns to it. Ending a suspension makes the first
-/// queued park the suspension. A refused effect is held by exactly one drift or dispatch park, wherever it sits. Nothing
-/// is ever dropped. Timers are the interpreter's (§5.5): it stops, pauses and re-arms them around these changes.
+/// queued park the suspension. A refused effect is held by exactly one drift or dispatch park, wherever it sits, until a resume or
+/// approval re-sends it. Nothing is ever dropped, with one exception: a revoke replaces every park (only 'cancel'
+/// follows; the outbox.refused rows keep the record). <see cref="EndCurrent"/> is the one rule for ending a suspension. Timers are the interpreter's (§5.5): it stops, pauses and re-arms them around these changes.
 /// </summary>
 internal static class Suspensions
 {
@@ -31,24 +32,33 @@ internal static class Suspensions
     };
 
     /// <summary>
-    /// Takes the first park that can become the suspension off the queue; drift parks the re-approval already ended
-    /// stay queued (they only hold effects to re-send).
+    /// The one rule for ending the current suspension, used by every caller (answer, handback, a drift approval, a child
+    /// release). The first queued park that isn't approved becomes the suspension. A refused effect is never dropped by
+    /// it: when the ended park holds effects to re-send and another park takes effect instead of its resume, it stays in
+    /// the queue as an approved holder; when nothing takes effect, the effects of every approved holder are
+    /// <see cref="Ended.Released"/> and the caller must send them (TransitionDecision.WithReleased). Only a revoke discards them.
     /// </summary>
-    /// <param name="instance">The instance whose suspension is ending.</param>
-    /// <returns>The instance with the queue after it, the park to make the suspension (null when none), and the effects of approved parks to re-send (null while a park takes effect).</returns>
-    internal static (WorkflowInstance Instance, Suspension? Next, IReadOnlyList<RefusedEffect>? Released) Advance(WorkflowInstance instance)
+    /// <param name="instance">The instance whose suspension is ending; it has one.</param>
+    /// <returns>The instance after it, what ended, whether a queued park took effect, and the effects to send now.</returns>
+    internal static Ended EndCurrent(WorkflowInstance instance)
     {
+        var ended = instance.Suspension ?? throw new InvalidOperationException("EndCurrent needs a suspension.");
         var queue = PendingParks(instance).ToList();
         var index = queue.FindIndex(static p => !p.Approved);
         if (index >= 0)
         {
             var next = queue[index];
             queue.RemoveAt(index);
-            return (WithPending(instance, queue) with { Suspension = next }, next, null);
+            if (HoldsEffects(ended))
+            {
+                queue.Add(ended with { Approved = true });
+            }
+
+            return new Ended(WithPending(instance, queue) with { Suspension = next }, ended, PendingTookEffect: true);
         }
 
         var released = queue.SelectMany(static p => p.Resume.Effects).DistinctBy(static e => e.Identity).ToList();
-        return (WithPending(instance, []) with { Suspension = null }, null, released.Count > 0 ? released : null);
+        return new Ended(WithPending(instance, []) with { Suspension = null }, ended, PendingTookEffect: false, released.Count > 0 ? released : null);
     }
 
     private static OutcomeName Cancelled { get; } = OutcomeName.From("cancelled");
@@ -102,8 +112,7 @@ internal static class Suspensions
                 FitRefusals.Status(address));
         }
 
-        var (after, next, released) = Advance(instance);
-        return new Ended(after, suspension, PendingTookEffect: next is not null, released);
+        return EndCurrent(instance);
     }
 
     /// <summary>A takeover (spec §3.8, §5.5): the human works the item; the interpreter pauses the state's timer and arms takeoverIdle.</summary>
@@ -215,8 +224,13 @@ internal static class Suspensions
             : WithPending(instance, [.. queue.Select((p, i) => i == at - (instance.Suspension is null ? 0 : 1) ? grown : p)]);
     }
 
-    private static bool Resendable(Suspension held) =>
-        held is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift or ParkKind.Dispatch, Resume.Kind: ResumeKind.Rearm or ResumeKind.Reemit, Approved: false };
+    private static bool Resendable(Suspension held) => !held.Approved && Resends(held);
+
+    /// <summary>A drift or dispatch park whose resume re-sends effects (it may hold none yet).</summary>
+    private static bool Resends(Suspension held) =>
+        held is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift or ParkKind.Dispatch, Resume.Kind: ResumeKind.Rearm or ResumeKind.Reemit };
+
+    private static bool HoldsEffects(Suspension held) => Resends(held) && held.Resume.Effects.Count > 0;
 
     private static bool ParkedForDrift(WorkflowInstance instance) =>
         instance.Suspension is { Approved: false, ParkKind: ParkKind.Drift } || PendingParks(instance).Any(static p => p is { Approved: false, ParkKind: ParkKind.Drift });

@@ -118,8 +118,8 @@ internal sealed class FakeEngineRules : IEngineRules
         ChildChange.Escalated or _ => new ParentEffect(ParentEffectKind.Ignore, Suspend: null),
     };
 
-    public WorkflowInstance Release(WorkflowInstance parent, WorkflowInstanceId child) =>
-        parent.Suspension?.Mirrors == child ? parent with { Suspension = parent.PendingPark, PendingPark = null } : parent;
+    public ParentReleased Release(WorkflowInstance parent, WorkflowInstanceId child) =>
+        new(parent.Suspension?.Mirrors == child ? parent with { Suspension = parent.PendingPark, PendingPark = null } : parent);
 
     public InstanceDelta Delta(WorkflowInstance? before, WorkflowInstance after) =>
         new(after.Frame, after.Suspension, after.PendingPark, after.Loops, after.Spent, after.Facts, after.Outcome);
