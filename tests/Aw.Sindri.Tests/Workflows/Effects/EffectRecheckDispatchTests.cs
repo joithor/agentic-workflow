@@ -189,7 +189,8 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
             _ = await handle.ExecuteUpdateAsync(wf => wf.AnswerAsync(Resume('e')), new WorkflowUpdateOptions(new string('e', 32)));
             var dispatch = await WorkflowsHarness.Until(handle, static v => v.State == "parked" && v.Detail == "spec-conflict (dispatch)");
             Assert.Equal("spec-conflict (dispatch)", dispatch.Detail);
-            await handle.TerminateAsync("test over");
+            _ = await handle.ExecuteUpdateAsync(wf => wf.CancelAsync(Cancel()), new WorkflowUpdateOptions(new string('c', 32)));   // ends the run cleanly: the shared server's next case must start with nothing open
+            Assert.Equal("cancelled", (await handle.GetResultAsync()).State);
         }, Token);
     }
 
@@ -214,9 +215,8 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
             Assert.InRange(tried, 1, Kernel.Outbox.OutboxRetryPolicy.Default.MaxAttempts - 1);   // one or more attempts failed; the next waits in its backoff
 
             _ = await handle.ExecuteUpdateAsync(wf => wf.CancelAsync(Cancel()), new WorkflowUpdateOptions(new string('c', 32)));
-            await env.DelayAsync(TimeSpan.FromHours(4), Token);
 
-            Assert.Equal("cancelled", (await handle.GetResultAsync()).State);
+            Assert.Equal("cancelled", (await handle.GetResultAsync()).State);   // the time-skipping server runs the backoff out while the result is awaited
             Assert.Equal(tried, _desk.RecipeCalls.Count);
         }, Token);
     }
