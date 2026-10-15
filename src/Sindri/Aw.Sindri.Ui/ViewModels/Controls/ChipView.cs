@@ -13,12 +13,20 @@ namespace Aw.Sindri.Ui.ViewModels.Controls;
 internal sealed record ChipView(string Word, ChipTone Tone)
 {
     /// <summary>The style class that colours the tone, or null for a neutral chip (the base chip class alone).</summary>
-    public string? ToneClass => Tone == ChipTone.Neutral && Word.Length == 0 ? null : throw new NotSupportedException();
+    public string? ToneClass => Tone switch
+    {
+        ChipTone.Attn => "attn",
+        ChipTone.Fail => "fail",
+        ChipTone.Ok => "ok",
+        ChipTone.Neutral => null,
+        _ => null,
+    };
 
     /// <summary>The chip to draw: the served one when there is one, else the fallback a view draws for itself, else none.</summary>
     /// <param name="served">The chip the API served, or null.</param>
     /// <param name="fallback">A chip the client draws itself (the lines that are not yet served), or null.</param>
     /// <returns>The chip, or null when there is nothing to draw.</returns>
-    internal static ChipView? Resolve(StateChip? served, StateChip? fallback = null) => throw new NotSupportedException();
+    internal static ChipView? Resolve(StateChip? served, StateChip? fallback = null) =>
+        (served ?? fallback) is { } chip ? new ChipView(chip.Word, chip.Tone) : null;
 }
 #pragma warning restore MA0182
