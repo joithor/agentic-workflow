@@ -81,6 +81,9 @@ internal static class WiringRecipe
     /// <summary>The findings of the wiring rules for <paramref name="recipe"/>.</summary>
     public static IReadOnlyList<RecipeFinding> CheckWiring(Recipe recipe, Located? located = null) => Run(new WiringRules(), recipe, located ?? Located.Nowhere);
 
+    /// <summary>The findings of the declaration rules for <paramref name="recipe"/>.</summary>
+    public static IReadOnlyList<RecipeFinding> CheckDeclarations(Recipe recipe, Located? located = null) => Run(new DeclarationRules(), recipe, located ?? Located.Nowhere);
+
     /// <summary>The findings of the block rules for <paramref name="recipe"/>.</summary>
     public static IReadOnlyList<RecipeFinding> CheckBlocks(Recipe recipe, Located? located = null) => Run(new BlockRules(), recipe, located ?? Located.Nowhere);
 
