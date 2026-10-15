@@ -255,4 +255,59 @@ public sealed class WorkflowViewRecipeShapeTests
             Assert.Contains(loop.EnumerateObject(), p => string.Equals(p.Name, "cap", StringComparison.OrdinalIgnoreCase) && p.Value.GetInt32() == 3);
         }
     }
+
+    private static System.Text.Json.JsonElement RecipeGolden(string id)
+    {
+        var path = Aw.Kernel.Testing.Golden.SourcePath(typeof(WorkflowViewRecipeShapeTests).Assembly, $"Golden/Api/workflow-recipe/{id}.json");
+        Assert.True(File.Exists(path), $"no recipe golden workflow-recipe/{id}.json");
+        return System.Text.Json.JsonDocument.Parse(File.ReadAllText(path)).RootElement.Clone();
+    }
+
+    private static string Text(System.Text.Json.JsonElement e, string name) => e.GetProperty(name).ValueKind == System.Text.Json.JsonValueKind.Null ? "" : e.GetProperty(name).ToString();
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_recipe_an_instance_or_list_golden_names_has_a_recipe_golden_that_agrees_with_them()
+    {
+        var ids = Instances().Select(i => i.Recipe.Id.Value)
+            .Concat(WorkflowViewFixtures.AllDetails().SelectMany(d => d.Children).Select(g => g.Recipe.Value))
+            .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        Assert.True(ids.Count >= 8, "too few recipes to be the whole fixture");
+        foreach (var id in ids)
+        {
+            var golden = RecipeGolden(id);
+            Assert.Equal(id, golden.GetProperty("id").GetString());
+            var instances = Instances().Where(i => i.Recipe.Id.Value == id).ToList();
+            foreach (var stamp in instances.Select(i => i.Recipe).DistinctBy(r => r.Hash.Value, StringComparer.Ordinal))
+            {
+                Assert.Equal(stamp.Hash.Value, golden.GetProperty("hash").GetString());
+                Assert.Equal(stamp.Version, golden.GetProperty("version").GetInt32());
+            }
+
+            if (instances.Count > 0)
+            {
+                AgreesWithInstances(golden, instances);
+            }
+        }
+    }
+
+    private static void AgreesWithInstances(System.Text.Json.JsonElement golden, List<Instance> instances)
+    {
+        var first = instances[0];
+        var states = golden.GetProperty("states").EnumerateArray().Select(s => $"{Text(s, "id")}|{Text(s, "order")}|{Text(s, "branchOf")}");
+        Assert.Equal(first.States.Select(c => string.Create(CultureInfo.InvariantCulture, $"{c.State}|{c.Order}|{c.BranchOf}")), states, StringComparer.Ordinal);
+        var loops = golden.GetProperty("loops").EnumerateArray().SelectMany(l => new[] { (Text(l, "from"), Text(l, "to")), (Text(l, "to"), Text(l, "from")) }).Distinct().Order();
+        Assert.Equal(first.States.SelectMany(c => c.Loops.Select(l => (c.State, l.With))).Distinct().Order(), loops);
+        var inputs = golden.GetProperty("inputs").EnumerateArray().Select(i => $"{Text(i, "key")}|{Text(i, "label")}|{Text(i, "kind")}").ToList();
+        foreach (var row in instances.Where(i => i.Inputs.Count > 0))
+        {
+            Assert.Equal(row.Inputs.Select(i => $"{i.Key}|{i.Label}|{i.Kind}"), inputs, StringComparer.Ordinal);
+        }
+
+        var declared = golden.GetProperty("inputs").EnumerateArray().Concat(golden.GetProperty("outputs").EnumerateArray())
+            .Select(d => $"{Text(d, "key")}|{Text(d, "label")}|{Text(d, "type")}").ToList();
+        foreach (var fact in instances.SelectMany(i => i.Facts))
+        {
+            Assert.Contains($"{fact.Key}|{fact.Label}|{fact.Type.ToString().Replace("-", string.Empty, StringComparison.Ordinal)}", declared.Select(d => d.Replace("-", string.Empty, StringComparison.Ordinal)), StringComparer.OrdinalIgnoreCase);
+        }
+    }
 }
