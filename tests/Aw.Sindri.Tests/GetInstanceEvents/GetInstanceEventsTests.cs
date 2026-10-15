@@ -172,8 +172,12 @@ public sealed class GetInstanceEventsTests
             h.Clock.Advance(EventsCommand.Poll);   // the poll's delay may not have started yet: advance until it has read the row
         }
 
-        h.Clock.Advance(EventsCommand.Poll);   // more polls after the row: none may print it again
-        h.Clock.Advance(EventsCommand.Poll);
+        while (!api.Calls.Where(static c => c.EndsWith("events?after=6", StringComparison.Ordinal)).Skip(1).Any())
+        {
+            h.Clock.Advance(EventsCommand.Poll);   // polls after the row: two must have read from its cursor, and none may print it again
+            await Task.Delay(20, TestContext.Current.CancellationToken);
+        }
+
         await interrupt.CancelAsync();
         var exit = await run.WaitAsync(TestContext.Current.CancellationToken);
 
