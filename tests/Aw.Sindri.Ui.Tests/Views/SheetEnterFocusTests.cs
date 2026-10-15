@@ -1,4 +1,6 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -13,7 +15,10 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Views;
 
-/// <summary>UI spec §11.2: with the sheet beside the page, Enter again on the row it shows moves focus to the sheet's first action.</summary>
+/// <summary>
+/// UI spec §11.2 with the sheet beside the page: Enter again on the row it shows moves focus to the sheet's first action,
+/// and the focused row's ring stays off the sheet (proof B2).
+/// </summary>
 [Lane(TestLane.Integration)]
 public sealed class SheetEnterFocusTests : IDisposable
 {
@@ -103,5 +108,20 @@ public sealed class SheetEnterFocusTests : IDisposable
         Settle(window);
 
         Assert.True(InFirstAction(window));
+    });
+
+    [Fact]
+    public Task The_focused_rows_ring_is_not_drawn_over_the_open_sheet() => OnUi(async () =>
+    {
+        var (window, _) = await OpenSheet(width: 1400);
+        var row = window.FocusManager?.GetFocusedElement() as Control;
+        Assert.NotNull(row);
+
+        var ring = AdornerLayer.GetAdornerLayer(row)!.Children.OfType<Border>().Single(b => b.IsEffectivelyVisible && AdornerLayer.GetAdornedElement(b) == row);
+        var sheet = window.Get<Border>("Sheet");
+        var ringRight = ring.TranslatePoint(new Point(ring.Bounds.Width, 0), window)!.Value.X;
+        var sheetLeft = sheet.TranslatePoint(default, window)!.Value.X;
+
+        Assert.True(ringRight <= sheetLeft + 0.5, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the ring ends at {ringRight}, the sheet starts at {sheetLeft}"));
     });
 }
