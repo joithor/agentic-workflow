@@ -35,13 +35,23 @@ public sealed class PosixProcessAncestryContractTests : ProcessAncestryContract
 
             var found = Assert.Single(parent);
             Assert.Equal((harness.Id, "aw-fake-harness"), (found.Pid, found.Name));
-            Assert.StartsWith("/bin/", found.Executable, StringComparison.Ordinal);   // the file the OS runs (/bin/sh, which is bash on macOS), never the link
+            var executable = Assert.IsType<string>(found.Executable);
+            Assert.NotEqual(link, executable, StringComparer.Ordinal);   // never the link
+            Assert.Equal(RealPath("/bin/sh"), RealPath(executable), StringComparer.Ordinal);   // the file the OS runs: /bin/sh itself (bash on macOS), or its target (/usr/bin/dash where /bin is a link to /usr/bin)
         }
         finally
         {
             harness.Kill(entireProcessTree: true);
             await harness.WaitForExitAsync(ct);
         }
+    }
+
+    /// <summary>The file a path names with its directory link and its own link followed ('/bin/sh' is '/usr/bin/dash' on usrmerge Linux).</summary>
+    private static string RealPath(string path)
+    {
+        var dir = new DirectoryInfo(Path.GetDirectoryName(path)!);
+        var file = new FileInfo(Path.Combine((dir.ResolveLinkTarget(returnFinalTarget: true) ?? dir).FullName, Path.GetFileName(path)));
+        return (file.ResolveLinkTarget(returnFinalTarget: true) ?? file).FullName;
     }
 
     protected override async ValueTask<int> GonePid()

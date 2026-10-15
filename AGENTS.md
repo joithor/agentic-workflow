@@ -129,6 +129,9 @@ node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid
 scripts/binaries-lock.sh check          # Shape of binaries.lock: six fields, one version per name, all four platforms
 scripts/binaries-lock.sh fetch <name>   # Download this platform's row, verify its sha256, install under $AW_STATE_DIR/cache/bin/<name>-<version>/
 
+# External tools, once per box (setup.sh runs it): uv, graphify at sindri's pin, both Temporal binaries, Linux system-package checks
+scripts/install-deps.sh                 # AW_DRY_RUN=1 prints only; a missing apt package prints its sudo command and exits 1
+
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
 node scripts/check-rules.mjs [--json]   # Every §4b rule has a record; every active check exists; pending ones wait on their PR
 
@@ -148,6 +151,7 @@ bash scripts/tests/check-rules.test.sh
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/check-env-example.test.sh
 bash scripts/tests/binaries-lock.test.sh
+bash scripts/tests/install-deps.test.sh
 bash scripts/tests/denylist-check.test.sh
 bash scripts/tests/owner-check.test.sh
 bash scripts/tests/repo-templates.test.sh
