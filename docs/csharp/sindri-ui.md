@@ -353,6 +353,12 @@ scripts/sindri-ui-fixture.sh down
 `u1-banner-rebuilding`, `u1-control-sending`, `u1-control-accepted`, `u1-health-controls`). The fake serves P1's and
 P2's goldens (`tests/Aw.Sindri.Tests/Golden/Api/**`) and U1's spec-shaped ones (`tests/Aw.Sindri.Ui.Tests/Golden/SpecShaped/**`, to be replaced by P2's as they land).
 
+**Real-app runs (the Linux proof).** A run of the real app on Linux uses its own Xvfb display (for example `:99`) and a
+private AT-SPI bus with a private `XDG_RUNTIME_DIR`. It never inherits `DISPLAY`, never uses the owner's desktop (`:0`,
+`:1`) and never touches `/run/user/<uid>/at-spi`. The proof tools under
+`~/.agentic-workflow/jthorare-agentic-workflow/proof/sindri-ui-u1/raw/tools` enforce this: `session-up.sh` brings the
+session up, `env.sh` refuses to load unless the session is private, and `privsession.py` is the private-bus helper.
+
 ## How it finds the control plane
 
 Every call carries this start's human token (`IHumanTokenSource`, read at each call; see the caller headers
