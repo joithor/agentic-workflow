@@ -130,7 +130,7 @@ internal sealed partial class FakeSindriApi : ISindriApi
         }
 
         _pinged = (Pong.Pid, Pong.Epoch);
-        return Task.FromResult(Refusal is { } refusal ? Refused<PingView>(refusal) : Down || FailPing ? Unreachable<PingView>(api) : Pong);
+        return Task.FromResult(Down ? Unreachable<PingView>(api) : Refusal is { } refusal ? Refused<PingView>(refusal) : FailPing ? Unreachable<PingView>(api) : Pong);
     }
 
     public Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken) => Status(api, after: null, cancellationToken);
@@ -153,10 +153,12 @@ internal sealed partial class FakeSindriApi : ISindriApi
             await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return Down || FailStatus ? Unreachable<StatusView>(api)
+        // The server's order: nothing answers, the caller check (a refusal), then the route's own answers.
+        return Down ? Unreachable<StatusView>(api)
+            : Refusal is { } refusal ? Refused<StatusView>(refusal)
+            : FailStatus ? Unreachable<StatusView>(api)
             : carried > 0 && Lag != ViewsLag.None ? Behind(carried)
             : StatusError is { } failure ? failure
-            : Refusal is { } refusal ? Refused<StatusView>(refusal)
             : UnreadableStatus ? SindriUiErrors.BadAnswer.With(UnreadableReason)
             : Current;
     }

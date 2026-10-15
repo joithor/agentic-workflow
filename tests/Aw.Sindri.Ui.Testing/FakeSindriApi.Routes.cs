@@ -48,7 +48,7 @@ internal sealed partial class FakeSindriApi
     {
         _ = Interlocked.Increment(ref _servicesCalls);
         var carried = Carried(after, unreachable: Down);
-        return Task.FromResult(carried > 0 && Lag != ViewsLag.None ? Behind(carried) : Answer<ServiceList>(api, "/sindri/services", ServiceView));
+        return Task.FromResult(!Down && Refusal is null && carried > 0 && Lag != ViewsLag.None ? Behind(carried) : Answer<ServiceList>(api, "/sindri/services", ServiceView));
     }
 
     public async Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken)
