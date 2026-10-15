@@ -8,4 +8,4 @@ namespace Aw.Sindri.Core.Workflow.Views;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record BudgetFigures(
     long Used,
-    long Limit);
+    long? Limit);

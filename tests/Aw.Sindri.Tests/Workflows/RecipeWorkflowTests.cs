@@ -44,7 +44,7 @@ public sealed class RecipeWorkflowTests : IDisposable
             Assert.Contains("fact:output", task.Outputs.Select(static o => o.Fact.Value), StringComparer.Ordinal);
             Assert.Equal("spec.md", task.Inputs.Single().Value.Name);
             Assert.Equal(["CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel"], [.. view.AllowedCommands.Select(static c => c.Action)]);
-            Assert.Equal($"sindri workflow complete {Address} --run 1.1 --outcome <outcome>", view.AllowedCommands[0].Cli);
+            Assert.Equal($"sindri workflow complete {Address} --run 1.1 --outcome done --output fact:output=<file>", view.AllowedCommands[0].Cli);
 
             var replayed = await new WorkflowReplayer(new WorkflowReplayerOptions().AddWorkflow<RecipeWorkflow>())
                 .ReplayWorkflowAsync(await handle.FetchHistoryAsync(), throwOnReplayFailure: false, ct);

@@ -1,0 +1,129 @@
+{
+  "address": "T-3/step/1",
+  "id": "WFI-95a5c2820bd88ec39379892be8909567",
+  "itemId": "T-3",
+  "recipe": {
+    "id": "workflow.step",
+    "hash": "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c",
+    "version": 1,
+    "urgency": "work"
+  },
+  "state": "taken-over",
+  "chip": {
+    "word": "WITH YOU",
+    "tone": "neutral"
+  },
+  "since": "2026-10-11T11:55:00.0000000Z",
+  "engineOwned": {
+    "kind": "taken-over",
+    "reason": "taken over by thor"
+  },
+  "subject": {
+    "kind": "text",
+    "key": "fact:spec",
+    "label": "spec.md",
+    "href": null
+  },
+  "inputs": [
+    {
+      "key": "fact:spec",
+      "label": "spec",
+      "kind": "text",
+      "required": true,
+      "present": true
+    }
+  ],
+  "states": [
+    {
+      "id": "produce",
+      "order": 1,
+      "branchOf": null,
+      "glyph": "active",
+      "badge": {
+        "kind": "taken-over",
+        "reason": "taken over by thor"
+      },
+      "round": {
+        "n": 1,
+        "max": 3
+      },
+      "loops": [
+        {
+          "with": "verify",
+          "n": 0,
+          "max": 3
+        },
+        {
+          "with": "checks",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "checks",
+      "order": 2,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "produce",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "verify",
+      "order": 3,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "produce",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "done",
+      "order": 4,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": true
+    }
+  ],
+  "now": "with you: produce the Step output for T-3 (round 1/3)",
+  "answer": null,
+  "actions": [
+    "ApplyCommand:handback",
+    "ApplyCommand:cancel"
+  ]
+}

@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
-/// <summary>The workflow list (API spec section 3.8, E-20), ordered by recipe urgency then oldest since.</summary>
+/// <summary>The workflow list (API spec section 3.8, E-20), ordered as InstanceOrder orders it: unfinished first, not parked or escalated first, urgency, subject label, address.</summary>
 /// <param name="Instances">The rows.</param>
 /// <param name="Counts">The head counts over the root set, before the open filter.</param>
 /// <param name="Empty">The empty-state sentence, null when there are rows.</param>

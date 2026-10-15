@@ -1,6 +1,5 @@
 using Aw.Context.Infrastructure.Extract;
 using Aw.Context.Infrastructure.Git;
-using Aw.Context.Testing.Fixtures;
 
 namespace Aw.Context.Tests.Infrastructure;
 
@@ -82,28 +81,61 @@ public sealed class GraphifyClusterSourceTests
         _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await source.Clusters(repo.Repo, repo.Head, Ct));
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task Unpack_writes_source_files_and_leaves_out_a_file_under_a_deny_glob()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["src/keys/bindings.ts"] = "export const bind = 1;\n",
+            ["config/secrets/keys.ts"] = "export const token = 'not-a-real-secret';\n",
+        });
+        var snapshot = Directory.CreateTempSubdirectory("aw-unpack-").FullName;
+        try
+        {
+            var exported = await new GitCli().Archive(repo.Path, repo.Head, (stream, token) => GraphifyClusterSource.Unpack(stream, snapshot, repo.Repo, token), Ct);
+
+            Assert.False(exported.IsError);
+            Assert.True(File.Exists(Path.Combine(snapshot, "src", "keys", "bindings.ts")), "a source file is unpacked");
+            Assert.False(File.Exists(Path.Combine(snapshot, "config", "secrets", "keys.ts")), "a denied file never reaches graphify");
+        }
+        finally
+        {
+            Directory.Delete(snapshot, recursive: true);
+        }
+    }
+
     /// <summary>
-    /// The real pinned graphify under the real sandbox on the fixture app at its head commit. Where the machine's sandbox
-    /// can't start (an AppArmor-restricted user namespace for bwrap), graphify must not run at all: the set is unavailable.
+    /// The real pinned graphify under the real sandbox on a small TS repo whose files import each other, one of them under a
+    /// deny glob. Where the machine can't run it (the production probe says why: no sandbox, no graphify, or not the pin) the test is
+    /// skipped with the reason; where it can, it must cluster: a silent pass without graphify running is not allowed.
     /// </summary>
     [Fact, Trait("Lane", "heavy")]
-    public async Task The_fixture_app_clusters_under_the_sandbox_or_degrades_without_running_graphify()
+    public async Task The_real_graphify_clusters_a_small_repo_under_the_sandbox_and_never_sees_a_denied_file()
     {
-        using var fixture = FixtureRepo.Build();
-        var repo = new Context.Core.Engine.ContextRepo(Context.Core.Engine.ContextRepoName.From("aw-split-panes"), fixture.Path);
         var source = new GraphifyClusterSource(new GitCli(), GraphifyOptions.Default);
+        var unrunnable = await source.WhyUnavailable(Ct);
+        Assert.SkipWhen(unrunnable is not null, $"the real graphify can't run here: {unrunnable}");
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["src/app.ts"] = "import { open } from './layout/pane';\nimport { bind } from './keys/bindings';\nexport const app = () => [open(), bind()];\n",
+            ["src/layout/pane.ts"] = "import { size } from './size';\nexport function open() { return size() + 1; }\n",
+            ["src/layout/size.ts"] = "export function size() { return 2; }\n",
+            ["src/keys/bindings.ts"] = "import { open } from '../layout/pane';\nimport { token } from '../../config/secrets/keys';\nexport function bind() { return [open(), token]; }\n",
+            ["config/secrets/keys.ts"] = "export const token = 'not-a-real-secret';\n",
+        });
 
-        var set = await source.Clusters(repo, fixture.Head, Ct);
+        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
 
         Assert.True(set.IsSuccess);
-        if (!set.Value.Available)
-        {
-            Assert.Empty(set.Value.Clusters);   // no usable sandbox here: graphify never ran unsandboxed
-            return;
-        }
-
+        Assert.True(set.Value.Available, "graphify and the sandbox are usable here, so the set must be available");
         Assert.NotEmpty(set.Value.Clusters);
-        Assert.All(set.Value.Clusters.SelectMany(c => c.Files), f => Assert.False(Path.IsPathRooted(f)));
-        Assert.Contains(set.Value.Clusters.SelectMany(c => c.Files), f => f.EndsWith("SplitPane.ts", StringComparison.Ordinal));
+        var members = set.Value.Clusters.SelectMany(c => c.Files).ToList();
+        Assert.NotEmpty(members);
+        var tracked = repo.Run("ls-files").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.All(members, f => Assert.Contains(f, tracked, StringComparer.Ordinal));
+        Assert.DoesNotContain(members, f => f.Contains("secrets/", StringComparison.Ordinal));
+        Assert.Contains(members, f => f.EndsWith("pane.ts", StringComparison.Ordinal));
+        Assert.Contains("src/keys/bindings.ts", members, StringComparer.Ordinal);   // the file that imports the denied one is clustered, so the absence of keys.ts below means something
+        TestContext.Current.SendDiagnosticMessage($"graphify produced {set.Value.Clusters.Count} cluster(s) over {members.Count} file(s)");
     }
 }

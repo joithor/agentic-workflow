@@ -137,7 +137,7 @@
           "terminal": true
         }
       ],
-      "now": "parked: needs-answer",
+      "now": "needs your answer",
       "answer": null,
       "actions": [
         "ApplyCommand:answer-text",

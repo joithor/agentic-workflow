@@ -226,6 +226,74 @@ public sealed class CheckMergeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_bash_suite_flake_vouched_by_a_rerun_is_accepted()
+    {
+        await _world.ReadyWithGate();
+        _world.LogFiles.Put(UnitLog, await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Gate", "Golden", "bash-runner-one-failed.log"), TestContext.Current.CancellationToken));
+        await SaveGate("headsha", "mainsha", ["repo", "dotnet"], GateVerdict.Fail, red: new GateStep("unit", GateVerdict.Fail, UnitLog));
+        _ = await _world.Gates.Classify(190, 1, "unit", new TestVerdict("scripts/tests/ci-bash-tests.test.sh", FlakeVerdict.Flake), CancellationToken.None);
+        Script();
+
+        var accepted = await Check();
+
+        Assert.True(accepted.Ready, string.Join("; ", accepted.Checks.Where(c => !c.Ok).Select(c => c.Detail)));
+    }
+
+    // Two gate runs at one head and main: run 1 ran repo and dotnet, run 2 re-ran only dotnet.
+    private async Task SaveRun(string head, string main, string[] scopes, GateVerdict verdict, params GateStep[] red)
+    {
+        var sync = scopes.Contains("repo") ? new[] { new GateStep("sync-rules", GateVerdict.Pass, "/l/sync.log") } : [];
+        GateStep[] steps = [.. sync, .. red];
+        _ = await _world.Gates.Save(new GateRecord(190, head, main, scopes, steps, verdict, A.At(5)), CancellationToken.None);
+    }
+
+    private static GateStep RedUnit() => new("unit", GateVerdict.Fail, "/l/unit-red.log");
+
+    private static GateStep GreenUnit() => new("unit", GateVerdict.Pass, "/l/unit-green.log");
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_scoped_re_gate_completes_an_earlier_run_at_the_same_head_and_main()
+    {
+        await _world.ReadyWithGate();
+        await SaveRun("headsha", "mainsha", ["repo", "dotnet"], GateVerdict.Fail, RedUnit());
+        await SaveRun("headsha", "mainsha", ["dotnet"], GateVerdict.Pass, GreenUnit());
+        Script();
+
+        var response = await Check();
+
+        Assert.True(response.Ready, string.Join("; ", response.Checks.Where(c => !c.Ok).Select(c => c.Detail)));
+        var scopes = response.Checks.Single(c => c.Name == "scopes").Detail;
+        Assert.Contains("repo (run 1)", scopes, StringComparison.Ordinal);
+        Assert.Contains("dotnet (run 2)", scopes, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_scope_whose_latest_run_failed_stays_red_even_if_an_earlier_run_passed_it()
+    {
+        await _world.ReadyWithGate();
+        await SaveRun("headsha", "mainsha", ["repo", "dotnet"], GateVerdict.Pass, GreenUnit());
+        await SaveRun("headsha", "mainsha", ["dotnet"], GateVerdict.Fail, RedUnit());
+        Script();
+
+        Assert.Equal(["gate-result"], Failed(await Check()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Runs_at_another_head_or_main_do_not_count()
+    {
+        await _world.ReadyWithGate();
+        await SaveRun("oldhead", "mainsha", ["repo", "dotnet"], GateVerdict.Pass, GreenUnit());
+        await SaveRun("headsha", "oldmain", ["repo", "dotnet"], GateVerdict.Pass, GreenUnit());
+        await SaveRun("headsha", "mainsha", ["dotnet"], GateVerdict.Pass, GreenUnit());
+        Script();
+
+        var response = await Check();
+
+        Assert.Equal(["scopes"], Failed(response));
+        Assert.Contains("the diff needs repo", response.Checks.Single(c => c.Name == "scopes").Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_diff_that_cannot_be_read_refuses_instead_of_assuming_the_scopes()
     {
         await _world.ReadyWithGate();

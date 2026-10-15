@@ -358,7 +358,7 @@
           "terminal": true
         }
       ],
-      "now": "ITM-01JD6 checks · 4 done · 1 running · 1 parked · 3 not started",
+      "now": "engine waiting in ITM-01JK3",
       "answer": null,
       "actions": [
         "ApplyCommand:takeover",
@@ -643,7 +643,7 @@
           "terminal": true
         }
       ],
-      "now": "challenger round 2 · 84k / 600k",
+      "now": "agent challenging in ITM-01JK5",
       "answer": null,
       "actions": [
         "ApplyCommand:takeover",
@@ -669,7 +669,7 @@
       "engineOwned": null,
       "subject": {
         "kind": "text",
-        "key": "APP",
+        "key": "Linear APP",
         "label": "Linear APP",
         "href": null
       },
@@ -726,7 +726,7 @@
           "terminal": true
         }
       ],
-      "now": "polling every 15m · last 12:15 · 2 new items",
+      "now": "engine waiting in ITM-01JKC",
       "answer": null,
       "actions": [
         "ApplyCommand:cancel"
@@ -751,7 +751,7 @@
       "engineOwned": null,
       "subject": {
         "kind": "text",
-        "key": "ENG",
+        "key": "Linear ENG",
         "label": "Linear ENG",
         "href": null
       },
@@ -808,7 +808,7 @@
           "terminal": true
         }
       ],
-      "now": "polling every 15m · last 12:15 · 2 new items",
+      "now": "engine waiting in ITM-01JKB",
       "answer": null,
       "actions": [
         "ApplyCommand:cancel"
@@ -910,7 +910,7 @@
           "terminal": true
         }
       ],
-      "now": "accept at a terminal",
+      "now": "needs your answer",
       "answer": {
         "kind": "accept",
         "actionId": "ApplyCommand:answer-accept",

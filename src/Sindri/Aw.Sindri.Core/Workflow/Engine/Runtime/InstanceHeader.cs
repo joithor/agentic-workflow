@@ -1,7 +1,6 @@
 using System.Globalization;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
-namespace Aw.Sindri.Host.Commands;
+namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 /// <summary>
 /// The status header (engine spec §6.4): '&lt;address&gt;  &lt;recipe&gt;@&lt;hash12&gt;  v&lt;n&gt;  &lt;state&gt;[: &lt;detail&gt;]
@@ -9,7 +8,7 @@ namespace Aw.Sindri.Host.Commands;
 /// ledger; times are UTC, with the date once the age is a day or more. Every write verb prints it after its command,
 /// 'status' first, and 'list' prints one per line.
 /// </summary>
-internal static class InstanceHeader
+public static class InstanceHeader
 {
     /// <summary>The header of <paramref name="view"/> at <paramref name="now"/>.</summary>
     /// <param name="view">The instance.</param>
