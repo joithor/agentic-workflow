@@ -38,7 +38,17 @@ internal static class ServerGuard
         }
 
         // why: one writer per (owner, executable): another test class may be exec'ing the script this very moment
-        return _launchers.GetOrAdd(string.Create(CultureInfo.InvariantCulture, $"{ownerPid}\n{executable}"), static (key, state) => new Lazy<string>(() => Write(state.Executable, state.OwnerPid)), (Executable: executable, OwnerPid: ownerPid)).Value;
+        var key = string.Create(CultureInfo.InvariantCulture, $"{ownerPid}\n{executable}");
+        var launcher = _launchers.GetOrAdd(key, static (_, state) => new Lazy<string>(() => Write(state.Executable, state.OwnerPid)), (Executable: executable, OwnerPid: ownerPid));
+        try
+        {
+            return launcher.Value;
+        }
+        catch
+        {
+            _ = _launchers.TryRemove(new KeyValuePair<string, Lazy<string>>(key, launcher));   // why: a failed write isn't cached for the whole host
+            throw;
+        }
     }
 
     private static string Write(string executable, int ownerPid)
@@ -59,9 +69,18 @@ internal static class ServerGuard
 
         // why: another host may share the name only if pids repeat; write complete and executable under a private name, then rename atomically
         var staging = Path.Combine(directory, name + "." + Path.GetRandomFileName());
-        File.WriteAllText(staging, script.ToString());
-        File.SetUnixFileMode(staging, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        File.Move(staging, path, overwrite: true);
+        try
+        {
+            File.WriteAllText(staging, script.ToString());
+            File.SetUnixFileMode(staging, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            File.Move(staging, path, overwrite: true);
+        }
+        catch
+        {
+            File.Delete(staging);
+            throw;
+        }
+
         return path;
     }
 

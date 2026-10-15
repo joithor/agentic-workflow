@@ -51,27 +51,39 @@ public sealed class ServeCallerTests : IDisposable
         Assert.Null((await new FileHumanToken(Settings).Read(ct)).Value);   // removed with control.json
     }
 
-    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task Stop_takes_the_real_dev_server_down_with_serve()
     {
         var ct = TestContext.Current.CancellationToken;
+        var temporal = new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer());
         var serve = ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null, services =>
         {
             NoTemporal.Use(services);
-            _ = services.Replace(ServiceDescriptor.Singleton<ITemporalServer>(
-                new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer())));
+            _ = services.Replace(ServiceDescriptor.Singleton<ITemporalServer>(temporal));
         });
-        var url = await Endpoint(ct);
-        var token = (await new FileHumanToken(Settings).Read(ct)).Value;
-        Assert.NotNull(token);
-        using var http = new HttpClient { BaseAddress = url, Timeout = TimeSpan.FromSeconds(30) };
+        var stopped = false;
+        try
+        {
+            var url = await Endpoint(ct, limitMs: 60_000);   // serve records it only after the dev server answers (up to 30 s)
+            var token = (await new FileHumanToken(Settings).Read(ct)).Value;
+            Assert.NotNull(token);
+            using var http = new HttpClient { BaseAddress = url, Timeout = TimeSpan.FromSeconds(30) };
 
-        var stop = await http.Ask(Post("/sindri/stop", json: null, Human(token.Value)));
-        var code = await serve.WaitAsync(TimeSpan.FromSeconds(30), ct);
+            var stop = await http.Ask(Post("/sindri/stop", json: null, Human(token.Value)));
+            stopped = true;
+            var code = await serve.WaitAsync(TimeSpan.FromSeconds(30), ct);
 
-        // why: serve's stop takes its dev server down before it releases the lease; a server left here would outlive the test
-        Assert.Equal((HttpStatusCode.OK, 0), (stop.Status, code));
-        Assert.Empty(TemporalDevServer.Find(_home.Path));
+            // why: serve's stop takes its dev server down before it releases the lease; a server left here would outlive the test
+            Assert.Equal((HttpStatusCode.OK, 0), (stop.Status, code));
+            Assert.Empty(TemporalDevServer.Find(_home.Path));
+        }
+        finally
+        {
+            if (!stopped)
+            {
+                _ = await temporal.Stop(CancellationToken.None);   // a red run leaves no dev server of its own behind
+            }
+        }
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
@@ -93,7 +105,7 @@ public sealed class ServeCallerTests : IDisposable
     }
 
     /// <summary>The endpoint serve recorded once it listens.</summary>
-    private async Task<Uri> Endpoint(CancellationToken ct)
+    private async Task<Uri> Endpoint(CancellationToken ct, int limitMs = 10_000)
     {
         var file = new FileEndpoint(Settings, SliceHarness.Json);
         for (var waited = 0; ; waited += 50)
@@ -103,7 +115,7 @@ public sealed class ServeCallerTests : IDisposable
                 return recorded.Url;
             }
 
-            Assert.True(waited < 10_000, "serve didn't record its endpoint within 10 s");
+            Assert.True(waited < limitMs, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"serve didn't record its endpoint within {limitMs / 1000} s"));
             await Task.Delay(50, ct);
         }
     }

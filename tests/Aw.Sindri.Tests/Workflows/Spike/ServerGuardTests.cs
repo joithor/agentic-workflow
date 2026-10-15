@@ -44,7 +44,10 @@ public sealed class ServerGuardTests
         }
         finally
         {
-            Process.GetProcessById(server).Kill();   // this test's own server
+            if (Alive(server))
+            {
+                Process.GetProcessById(server).Kill();   // this test's own server
+            }
         }
     }
 
@@ -105,12 +108,13 @@ public sealed class ServerGuardTests
             "read -r server; \"$server\" server start-dev --headless --db-filename \"$0\" --port \"$1\" --log-level error </dev/null >/dev/null 2>&1 & echo $!; if [ \"$2\" = wait ]; then wait; else read -r _; fi",
             database, FreePort(), wait ? "wait" : "exit"])
         { UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true })!;   // why: Start returns a process for a shell that exists
+        var server = 0;
         try
         {
             var path = guarded ? ServerGuard.Wrap(PinnedTemporal.Unwrapped(), host.Id) : PinnedTemporal.Unwrapped();
             await host.StandardInput.WriteLineAsync(path.AsMemory(), ct);
             await host.StandardInput.FlushAsync(ct);
-            var server = int.Parse((await host.StandardOutput.ReadLineAsync(ct))!, CultureInfo.InvariantCulture);
+            server = int.Parse((await host.StandardOutput.ReadLineAsync(ct))!, CultureInfo.InvariantCulture);
             await WaitFor(() => File.Exists(database), TimeSpan.FromSeconds(30), "the server never created its database", ct);
             Assert.True(Alive(server), "the server did not start");
             return (host, server);
@@ -119,6 +123,11 @@ public sealed class ServerGuardTests
         {
             host.Kill();
             host.Dispose();
+            if (server > 0 && Alive(server))
+            {
+                Process.GetProcessById(server).Kill();   // an unguarded server would otherwise be orphaned for good
+            }
+
             throw;
         }
     }
