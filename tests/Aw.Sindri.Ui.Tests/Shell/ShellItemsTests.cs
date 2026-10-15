@@ -214,21 +214,22 @@ public sealed class ShellItemsTests
 
     // R1, through the shell: leaving Home for a page without rows tells the queue, so a served row keeps its selection, silently.
     [Fact]
-    public async Task A_row_served_elsewhere_while_another_page_is_shown_keeps_its_selection_silently()
-    {
-        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
-        var shell = await Connected();
-        _ = shell.Press("J");
-        _ = shell.Press("J");
-        var selected = shell.Queue.SelectedId!;
-        shell.GoTo(PageId.Decisions);
+    public Task A_row_served_elsewhere_while_another_page_is_shown_keeps_its_selection_silently() =>
+        UiThread.Run(async () =>
+        {
+            _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+            var shell = await Connected();
+            _ = shell.Press("J");
+            _ = shell.Press("J");
+            var selected = shell.Queue.SelectedId!;
+            shell.GoTo(PageId.Decisions);
 
-        _server.QueueView = QueueKeysTests.Regrouped("extra-p11-running", selected, "waitingOnYou");
-        _server.Push(A.Event(59, "item.updated"));
+            _server.QueueView = QueueKeysTests.Regrouped("extra-p11-running", selected, "waitingOnYou");
+            await shell.Queue.Refresh(new Uri("http://127.0.0.1:7410/"), Token);   // awaited: an event's refresh would race the reads
 
-        await Until(() => shell.Queue.Groups.Single(g => g.Group == "waitingOnYou").Rows.Any(r => r.Id == selected));
-        Assert.Equal((selected, false, Labels.Sindri), (shell.Queue.SelectedId, shell.Queue.IsAnnouncing, shell.Queue.Announcement));
-    }
+            Assert.Contains(shell.Queue.Groups.Single(g => g.Group == "waitingOnYou").Rows, r => r.Id == selected);
+            Assert.Equal((selected, false, Labels.Sindri), (shell.Queue.SelectedId, shell.Queue.IsAnnouncing, shell.Queue.Announcement));
+        }, Token);
 
     // V1 through the shell: the selected row leaves the queue on Decisions; the settle is silent, so G H works on the first key.
     [Fact]
