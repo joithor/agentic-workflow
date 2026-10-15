@@ -316,4 +316,73 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.Equal("Nothing matches", live.Text);
         Assert.All(texts, Assert.NotEmpty);
     });
+
+    private static bool Inside(Window window, string card)
+    {
+        var focused = Focused(window);
+        var root = Named<Control>(window, card);
+        return focused is not null && (focused == root || root.IsVisualAncestorOf(focused));
+    }
+
+    // F6 (a11y-2): the overlays trap focus; F6 and Shift+F6 neither move it behind the scrim nor out of the card.
+    [Fact]
+    public Task F6_keeps_focus_inside_the_palette_and_the_shortcuts_sheet() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        Assert.True(Inside(window, "PaletteCard"));
+
+        Press(window, Key.F6, PhysicalKey.F6);
+        Assert.True(Inside(window, "PaletteCard"), "F6 stays in the palette");
+        Press(window, Key.F6, PhysicalKey.F6, RawInputModifiers.Shift);
+        Assert.True(Inside(window, "PaletteCard"), "Shift+F6 stays in the palette");
+        Press(window, Key.Escape, PhysicalKey.Escape);
+
+        Assert.True(Named<Control>(window, "Page").Focus(NavigationMethod.Tab));
+        Press(window, Key.OemQuestion, PhysicalKey.Slash, RawInputModifiers.Shift, "?");
+        Assert.True(shell.Shortcuts.IsOpen);
+
+        Press(window, Key.F6, PhysicalKey.F6);
+        Assert.True(Inside(window, "ShortcutsCard"), "F6 stays in the sheet");
+        Press(window, Key.F6, PhysicalKey.F6, RawInputModifiers.Shift);
+        Assert.True(Inside(window, "ShortcutsCard"), "Shift+F6 stays in the sheet");
+    });
+
+    // F7 (a11y-3): one overlay at a time. Ctrl+K over the ? sheet closes the sheet and opens the palette; Esc then returns
+    // focus to what had it before the sheet.
+    [Fact]
+    public Task Command_K_over_the_shortcuts_sheet_replaces_it_and_focus_returns_to_the_original_opener() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        var page = Named<Control>(window, "Page");
+        Assert.True(page.Focus(NavigationMethod.Tab));
+        Press(window, Key.OemQuestion, PhysicalKey.Slash, RawInputModifiers.Shift, "?");
+        Assert.True(shell.Shortcuts.IsOpen);
+
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+
+        Assert.Equal((false, true), (shell.Shortcuts.IsOpen, shell.Palette.IsOpen));
+        Assert.True(Inside(window, "PaletteCard"));
+        Press(window, Key.Escape, PhysicalKey.Escape);
+        Assert.False(shell.Palette.IsOpen);
+        Assert.Same(page, Focused(window));
+    });
+
+    // F10 (a11y-7): the sheet is longer than its card; the keyboard reaches the last row (Tab to the list, End).
+    [Fact]
+    public Task The_shortcuts_sheets_last_row_is_reachable_by_keyboard() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        Press(window, Key.OemQuestion, PhysicalKey.Slash, RawInputModifiers.Shift, "?");
+        var scroll = Named<ScrollViewer>(window, "ShortcutsScroll");
+
+        Press(window, Key.Tab, PhysicalKey.Tab);
+        Assert.Same(scroll, Focused(window));
+        Press(window, Key.End, PhysicalKey.End);
+
+        var last = Named<Control>(window, "ShortcutRows").GetVisualDescendants().OfType<Grid>().Last(g => g.IsEffectivelyVisible);
+        var at = last.TranslatePoint(new Point(0, last.Bounds.Height), scroll);
+        Assert.True(at is { } p && p.Y <= scroll.Viewport.Height + 1, "the last row is inside the viewport");
+        Assert.True(shell.Shortcuts.Rows.Count > 0);
+    });
 }
