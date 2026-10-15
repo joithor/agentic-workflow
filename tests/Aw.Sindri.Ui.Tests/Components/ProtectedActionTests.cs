@@ -159,6 +159,17 @@ public sealed class ProtectedActionTests
         Assert.Equal((vm.Label, false), (vm.Announcement, vm.IsAnnouncing));
     }
 
+    // a11y-1: with no command to show, the popover says so and Copy is named for what it lacks.
+    [Fact]
+    public void A_cli_that_cannot_be_shown_says_so_and_Copy_is_named_for_it()
+    {
+        var vm = Make(cli: "sindri decision accept‮ REQ");
+
+        Assert.Equal("The served command can't be shown", vm.CliText);
+        Assert.Equal("Copy: no command served", vm.CopyName);
+        Assert.Equal(Cli, Make().CliText);
+    }
+
     [Fact]
     public async Task A_refused_clipboard_says_nothing_copied()
     {

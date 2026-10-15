@@ -33,6 +33,9 @@ internal sealed class ProtectedActionViewModel(ProtectedAction action, IClipboar
     /// <summary>The served CLI line, or empty when it holds a control or bidi character.</summary>
     public string Cli { get; } = ControlViewModel.Safe(action.Cli) ? action.Cli : string.Empty;
 
+    /// <summary>What the popover shows for the CLI.</summary>
+    public string CliText => Cli;
+
     /// <summary>True when the CLI can be copied.</summary>
     public bool CanCopy => Cli.Length > 0;
 
