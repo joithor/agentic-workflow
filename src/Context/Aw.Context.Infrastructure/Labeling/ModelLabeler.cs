@@ -12,7 +12,8 @@ namespace Aw.Context.Infrastructure.Labeling;
 /// <summary>
 /// Names clusters with a model through <see cref="IModelPort"/>, within a token cap (SND-CONTEXT-042 when the pass would go
 /// over it). It sends file paths only, scrubbed, twenty clusters to a request; what comes back is untrusted text, so a
-/// label is cleaned (control characters, runs of spaces, 60 characters) and only an id that was asked about is kept.
+/// label is cleaned (control characters, runs of spaces, 60 characters) and only an id that was asked about is kept. A model error after some batches
+/// answered keeps their labels and marks the pass incomplete; before any answer it is the error.
 /// </summary>
 /// <param name="model">The model port.</param>
 /// <param name="scrubbers">Builds the scrubbers the prompt passes through.</param>
@@ -48,7 +49,8 @@ internal sealed class ModelLabeler(IModelPort model, IScrubberFactory scrubbers)
             var answer = await model.Ask(new ModelRequest(ModelPurpose.Labeling, prompt, answerCap, _budget), cancellationToken).ConfigureAwait(false);
             if (answer.IsError)
             {
-                return answer.Error;
+                // The batches already answered are kept (and paid for): the pass is incomplete, and the build says 'degraded: labels'.
+                return labels.Count > 0 || spent > 0 ? new LabelPass(labels, Complete: false) : answer.Error;
             }
 
             spent += answer.Value.InputTokens + answer.Value.OutputTokens;
