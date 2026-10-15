@@ -1,5 +1,6 @@
-using Aw.Kernel.Ids;
 using Aw.Context.Testing.Engine;
+using Aw.Kernel.Ids;
+using Aw.Kernel.Json;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Ids;
@@ -86,7 +87,7 @@ public sealed class StatusViewsHealthTests
     {
         var views = new ViewsStatus(Cursor: 6, LedgerHead: 9, ProjectedAt: null, Rebuilding: false, Stalled: true, StalledAt: 7, StalledType: "service.ran");
 
-        var json = System.Text.Encoding.UTF8.GetString(Aw.Kernel.Json.AwJson.Serialize(views, SliceHarness.Json));
+        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(views, SliceHarness.Json));
 
         Assert.Contains("\"cursor\":6", json, StringComparison.Ordinal);
         Assert.Contains("\"stalledType\":\"service.ran\"", json, StringComparison.Ordinal);
