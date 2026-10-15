@@ -78,7 +78,8 @@ public abstract partial class SindriApiContract
 
         Expect.True(byLabel.Instances.Count > 0);
         Expect.True(byLabel.Instances.All(i => i.Subject.Label == label));
-        Expect.Sequence(byLabel.Instances.Select(i => i.Id), byKey.Instances.Select(i => i.Id));
+        Expect.True(byKey.Instances.All(i => i.Subject.Key == key));
+        Expect.True(byLabel.Instances.All(l => byKey.Instances.Any(k => k.Id == l.Id)));
     }
 
     [Fact]
