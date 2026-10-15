@@ -10,8 +10,8 @@ namespace Aw.Sindri.Features.ReadLedger;
 
 /// <summary>
 /// Pages the ledger for audits (API spec §2.2, §3.1): the same public envelopes as the event stream, scrubbed and escaped, with
-/// a session limited to its repo, and, for a human, the types outside the catalog's public ones too (their payloads whole). The
-/// next cursor is how far the read looked while the ledger has more, so a filtered page that comes up short still pages on.
+/// a session limited to its repo, and, for a human, the types outside the catalog's public ones too and every payload whole. The
+/// next cursor is how far the read looked, set after a full page or while the read stopped short of the head.
 /// </summary>
 /// <param name="ledger">The ledger, for its head.</param>
 /// <param name="view">What the caller sees of a row.</param>

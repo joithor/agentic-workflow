@@ -88,7 +88,7 @@ public sealed class CallerEventView(ICallerContextAccessor callers, IItemRepos r
 
     /// <summary>The row as the current caller may see it, or null when it may not; an error when the item's repo can't be read.</summary>
     /// <param name="row">The ledger row.</param>
-    /// <param name="includeNonPublic">True for a human's ledger read: types outside the catalog's public ones come too.</param>
+    /// <param name="includeNonPublic">True for a human's ledger read: types outside the catalog's public ones come too, and every payload is whole.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The event, or null.</returns>
     public async ValueTask<Result<PublicEvent?>> Shown(LedgerEvent row, bool includeNonPublic, CancellationToken cancellationToken)
