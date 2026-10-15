@@ -132,6 +132,36 @@ public sealed class ShellSheetKindTests
         Assert.True(property >= 0 && u3 > property && u8 == u3 + 1 && fallback == u8 + 1, "the markers are adjacent inside the switch, above its '_ => true' arm");
     }
 
+    // a11y-1: the kind is part of the name, so "workflow/X" and "recipe/X" are not both "X". Ids that name themselves (ITM-, REQ-, JOB-) stay bare.
+    [Theory]
+    [InlineData("workflow/WFI-1", "Workflow WFI-1", "Reopen workflow WFI-1")]
+    [InlineData("recipe/workflow.project", "Recipe workflow.project", "Reopen recipe workflow.project")]
+    [InlineData("node/src.Api", "Node src.Api", "Reopen node src.Api")]
+    [InlineData("session/S1", "Session S1", "Reopen session S1")]
+    [InlineData("system/docker", "System docker", "Reopen system docker")]
+    [InlineData("service/serena", "Service serena", "Reopen service serena")]
+    [InlineData("item/ITM-1", "ITM-1", "Reopen ITM-1")]
+    [InlineData("decision/REQ-1", "REQ-1", "Reopen REQ-1")]
+    [InlineData("job/JOB-1", "JOB-1", "Reopen JOB-1")]
+    public async Task The_sheet_and_its_edge_tab_are_named_with_the_kind(string link, string sheet, string edge)
+    {
+        var shell = await Shell();
+
+        shell.Navigate(Link(link));
+
+        Assert.Equal(sheet, shell.SheetName);
+        Assert.Equal(edge, shell.EdgeTabName);
+    }
+
+    [Fact]
+    public void The_sheet_region_and_its_title_are_named_by_SheetName_and_the_edge_tab_by_EdgeTabName()
+    {
+        var xaml = File.ReadAllText(Path.Combine(UiSource.Library, "Views", "Shell", "ShellWindow.axaml"));
+
+        Assert.Contains("x:Name=\"Sheet\" Classes=\"sheet focus-region\" IsVisible=\"{Binding IsSheetShown}\" Focusable=\"True\"\n                AutomationProperties.Name=\"{Binding SheetName}\"", xaml.ReplaceLineEndings("\n"), StringComparison.Ordinal);
+        Assert.Contains("Text=\"{Binding SheetSubject}\" AutomationProperties.Name=\"{Binding SheetName}\"", xaml, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Every_marker_says_where_to_insert_and_not_between_the_markers()
     {

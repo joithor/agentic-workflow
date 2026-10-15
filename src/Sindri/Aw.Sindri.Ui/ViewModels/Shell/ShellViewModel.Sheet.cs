@@ -20,6 +20,9 @@ internal sealed partial class ShellViewModel
     /// <summary>The sheet shows when it's open over a visible page.</summary>
     public bool IsSheetShown => IsSheetOpen && IsConnected;
 
+    /// <summary>The sheet's accessible name: the kind's noun and the subject ("Workflow X"); an id that names itself stays bare.</summary>
+    public string SheetName => throw new NotSupportedException(SheetSubject);
+
     /// <summary>The edge tab's accessible name: "Reopen" and its subject.</summary>
     public string EdgeTabName => Labels.Reopen + " " + SheetSubject;
 
