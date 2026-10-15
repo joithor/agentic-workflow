@@ -39,7 +39,9 @@ public sealed class StatusViewsHealthTests
 
         Assert.Equal(_v.Progress.Current, status.Views);
         Assert.Null(status.Views!.Text);
-        Assert.Equal(new HealthReport(HealthWord.Healthy, [], Sentence: null), status.Health);
+        Assert.Equal(HealthWord.Healthy, status.Health!.Word);
+        Assert.Empty(status.Health.Problems);
+        Assert.Null(status.Health.Sentence);
     }
 
     [Fact, Trait("Lane", "unit")]
