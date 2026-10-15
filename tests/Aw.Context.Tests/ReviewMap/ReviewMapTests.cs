@@ -246,6 +246,32 @@ public sealed class ReviewMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task An_orphaned_override_of_the_current_map_is_dropped_with_no_draft()
+    {
+        _ = await _world.ImportYaml(MapWorld.TabsMap);
+        var orphan = new MapOverride(OverrideAction.Accept, NodeKey.From("surface:command/long-gone"), "avery", DateTimeOffset.Parse("2026-10-01T00:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+        _ = await _world.Store.AppendOverrides([orphan], MapWorld.None);
+
+        var dropped = await Decide(new ReviewDecision(ReviewVerb.Drop, Undoes: orphan.ToId()));
+
+        Assert.True(dropped.IsSuccess, dropped.IsError ? dropped.Error.Message : null);
+        Assert.Contains((await _world.Store.Overrides(MapWorld.None)).Value, o => o.Action == OverrideAction.Undo && o.Undoes == orphan.ToId());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_orphaned_override_of_the_current_map_is_repointed_with_no_draft()
+    {
+        _ = await _world.ImportYaml(MapWorld.TabsMap);
+        var orphan = new MapOverride(OverrideAction.Rename, NodeKey.From("surface:command/long-gone"), "avery", DateTimeOffset.Parse("2026-10-01T00:00:00Z", System.Globalization.CultureInfo.InvariantCulture), "Tab groups");
+        _ = await _world.Store.AppendOverrides([orphan], MapWorld.None);
+
+        var moved = await Decide(new ReviewDecision(ReviewVerb.Repoint, NodeKey.From("feature:tabs.tab-groups"), Undoes: orphan.ToId()));
+
+        Assert.True(moved.IsSuccess, moved.IsError ? moved.Error.Message : null);
+        Assert.Equal(2, moved.Value.Written.Count);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_list_undo_works_with_no_draft_too()
     {
         _ = await _world.ImportYaml(MapWorld.TabsMap);

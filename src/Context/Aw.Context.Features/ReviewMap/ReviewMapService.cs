@@ -48,7 +48,7 @@ internal sealed class ReviewMapService(IGraphStore store, ICurrentUser user, Tim
     private async ValueTask<Result<MapSnapshot>> Basis(ReviewDecision decision, CancellationToken cancellationToken)
     {
         var draft = await ReviewDrafts.Draft(store, cancellationToken).ConfigureAwait(false);
-        if (draft.IsSuccess || !(decision.Link is not null || decision.Verb == ReviewVerb.Undo) || draft.Error.Code != ContextErrors.NoDraftMap.Code)
+        if (draft.IsSuccess || !(decision.Link is not null || decision.Verb is ReviewVerb.Undo or ReviewVerb.Drop or ReviewVerb.Repoint) || draft.Error.Code != ContextErrors.NoDraftMap.Code)
         {
             return draft;
         }
