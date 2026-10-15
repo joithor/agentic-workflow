@@ -13,20 +13,50 @@ internal sealed partial class ShellWindow
     // §8: single keys never fire while typing in a field, over a layer, or with a modifier other than Shift ('.').
     private bool PageKey(KeyEventArgs e)
     {
-        if (Shell is not { IsChromeVisible: true, IsNavigationEnabled: true } shell || e.Source is TextBox
-            || shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen
-            || (e.KeyModifiers & ~KeyModifiers.Shift) != KeyModifiers.None)
+        if (Shell is not { } shell || KeysBlocked(shell, e) || KeyName(e) is not { } key)
         {
             return false;
         }
 
-        var key = KeyName(e);
-        if (key is null || !shell.Press(key, inSheet: FocusInSheet()))
+        if (key == "Enter" && EnterIntoSheet(shell))
+        {
+            return true;
+        }
+
+        if (!shell.Press(key, inSheet: FocusInSheet()))
         {
             return false;
         }
 
         FocusOpenedField(shell, key);
+        return true;
+    }
+
+    private static bool KeysBlocked(ViewModels.Shell.ShellViewModel shell, KeyEventArgs e) =>
+        shell is not { IsChromeVisible: true, IsNavigationEnabled: true } || e.Source is TextBox
+        || shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen
+        || (e.KeyModifiers & ~KeyModifiers.Shift) != KeyModifiers.None;
+
+    // §11.2: with the sheet beside the page and open on the selected row's item, Enter again moves into its first action
+    // (its heading when it has none). Covering the page, focus is already in the sheet.
+    private bool EnterIntoSheet(ViewModels.Shell.ShellViewModel shell)
+    {
+        if (!shell.IsSheetShown || Covering || FocusInSheet() || shell.Queue.IsGuarded || shell.Queue.SelectedId is not { } id
+            || !string.Equals(shell.Item.ItemId, id, StringComparison.Ordinal) || !(shell.IsHome || shell.IsQueue))
+        {
+            return false;
+        }
+
+        var action = SheetPanel.GetVisualDescendants().OfType<Controls.CommandControl>().FirstOrDefault(c => c.IsEffectivelyVisible);
+        if (action is not null)
+        {
+            action.FocusRun();
+        }
+        else
+        {
+            _ = this.Get<TextBlock>("SheetTitle").Focus(NavigationMethod.Tab);
+        }
+
         return true;
     }
 
