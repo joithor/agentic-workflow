@@ -199,7 +199,7 @@ and a body over 64 KiB. They get 400 or 415, and the host logs them; they aren't
 
 **Freshness: every view response carries `asOf`.**
 - It holds `{ cursor, ledgerHead, projectedAt, rebuilding, stalled }`.
-- `ledgerHead` comes from the projector's in-memory status (`IProjectorStatus`), not from the ledger store.
+- `ledgerHead` comes from the projector's in-memory status (`IProjectorStatus`), not from the ledger store. `views.ledgerHead` on GET /status is the exception: it is the ledger's current head, read fresh; `cursor` is the projector's, so the gap is the lag. Query answers' `asOf` keep the projector's view.
 - `projectedAt` is when the cursor last moved. It is the clock behind the UI's "updated Ns ago".
 - With `asOf`, a client can tell "empty" from "still loading" from "views are broken" (§3.6).
 
@@ -302,8 +302,8 @@ Every list view also returns `empty`, the `EmptyText` sentence (§3.6) for its c
 | `GET /services` | `ListServices` | — | `ServiceList(services, empty, asOf)`. Each service: <ul><li>name;</li><li>cadence;</li><li>paused;</li><li>last run (slot, outcome, code);</li><li>next slot.</li></ul> | P2 |
 | `GET /profile` | `GetProfile` | — | `ProfileView(asOf)`: <ul><li>approved hash and when it was approved;</li><li>live hash, as of the last drift check;</li><li>whether it changed since approval;</li><li>the changed key paths.</li></ul> | P2 |
 | `GET /queue` | `GetQueue` | — | `QueueView(groups, empty, asOf)`: the §3.6 groups in their fixed order, each a list of `ItemSummary` | P3 |
-| `GET /items?state=&repo=` | `ListItems` | `ListItemsQuery(ItemState?, RepoName?)` | `ItemList(items, empty, asOf)`. Each item: <ul><li>id, title, repo, state, step;</li><li>`since`;</li><li>its next action;</li><li>`actions`: the action ids allowed now.</li></ul> | P3 |
-| `GET /items/{itemId}` | `GetItem` | `GetItemQuery(ItemId)` | `ItemView`: <ul><li>the summary, plus version and who created it;</li><li>what it's waiting on (a decision id);</li><li>the engine instance id, once S2 exists;</li><li>timestamps;</li><li>`actions`;</li><li>`asOf`.</li></ul> | P3 |
+| `GET /items?state=&repo=` | `ListItems` | `ListItemsQuery(ItemState?, RepoName?)` | `ItemList(items, empty, asOf)`. Without `state` it lists open items only (a closed item shows only when `state` names `done` or `cancelled`), and its empty sentence then reads "No open items[ in <repo>].". Each item: <ul><li>id, title, repo, state, step;</li><li>`since`;</li><li>`primaryAction`: an action id from `actions`, or null;</li><li>`actions`: the action ids allowed now;</li><li>`owner`: reserved for multi-user (README X61), always null for now.</li></ul> | P3 |
+| `GET /items/{itemId}` | `GetItem` | `GetItemQuery(ItemId)` | `ItemView`: <ul><li>the summary, plus version and who created it;</li><li>`body` (scrubbed) and `link`: on this view only, never on a list row, the queue, a timeline line or a public event;</li><li>what it's waiting on (a decision id);</li><li>the engine instance id, once S2 exists;</li><li>timestamps;</li><li>`actions`;</li><li>`owner`: reserved for multi-user (README X61), always null for now;</li><li>`asOf`.</li></ul> | P3 |
 | `GET /items/{itemId}/timeline?after=` | `GetItemTimeline` | `GetItemTimelineQuery(ItemId, long?)` | `Timeline(entries, next, asOf)`. Each entry: sequence, time, type, actor, and one scrubbed line | P3 |
 | `GET /needs-you` | `GetNeedsYou` | — | `NeedsYouList(rows, empty, asOf)` (§3.6) | P4 |
 | `GET /requests?state=` | `ListRequests` | `ListRequestsQuery(RequestState?)` | `RequestList(requests, empty, asOf)`. Each request: <ul><li>id, kind, item;</li><li>text (scrubbed, at most 2,000 characters);</li><li>actor, state, decision id.</li></ul> | P4 |
@@ -342,7 +342,7 @@ They're in the catalog with class `local` and are never routes. `doctor` gains a
 | `POST /profile/approve` | `ApproveProfile` (S1) | S1's body | S1's response, plus `sequence` | **protected** | `sindri profile approve [<hash>]` | S1; class in P1 |
 | `POST /views/rebuild` | `RebuildViews` | — | `CommandAccepted` | desk | `sindri views rebuild` | P2 |
 | `POST /items` | `CreateItem` | `title`, `repo?`, `body?`, `link?` (a tracker record key, e.g. `linear:issue/<uuid>`) | `ItemCreated(accepted, ItemId)` | desk | `sindri item add "<title>" [--repo R]` | P3 |
-| `POST /items/{itemId}/close` | `CloseItem` | `reason` (`done` or `cancelled`), `itemVersion` | `CommandAccepted` | desk | `sindri item close <item> [--cancelled]` | P3 |
+| `POST /items/{itemId}/close` | `CloseItem` | `reason` (`done` or `cancelled`), `itemVersion` | `CommandAccepted` | desk | `sindri item close <item> [--cancelled] [--version <n>]` | P3 |
 | `POST /requests` | `FileRequest` | `kind` (`rescope`, `add-task`, `note` or `handback`), `itemId?`, `text` | `RequestFiled(accepted, RequestId, DecisionId)` | **request** | `sindri request <kind> [--item X] "<text>"` | P4 |
 | `POST /decisions/{decisionId}` | `Decide` | `choice`, `note?` | `CommandAccepted` | decision | `sindri decide <decisionId> <choice> [--note]` | P4 |
 | `POST /services/{name}/run` | `RunService` | — | `JobStarted(accepted, JobId)` | job | `sindri services run <name>` | P6 |
@@ -415,7 +415,7 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `views.rebuilt` | cursor before, events replayed | `views.rebuilt:<commandId>` | no | P2 |
 | `service.ran` | service, slot, outcome (`ok` or `failed`), code? | `service.ran:<name>:<epoch>:<slot>` | yes | P2 (C8) |
 | `profile.checked` | approved hash, live hash, drifted, changed paths, the approved profile's service names | `profile.checked:<previousCheckSequence>` | yes | P2 (C8) |
-| `item.created` | item, title, repo | `item.created:<itemId>` | yes | P3 |
+| `item.created` | item, title, repo, link?, body? (never public), owner? (reserved, README X61) | `item.created:<itemId>` | yes | P3 |
 | `item.state-changed` | item, from, to, version (the new one), reason? | `item.state-changed:<itemId>:v<version>` | yes | P3 |
 | `request.filed` | request, decision, kind, item?, repo? (the item's repo, else the session's `X-Sindri-Repo`), text (scrubbed, at most 2,000 characters) | `request.filed:<requestId>` | yes (text left out) | P4 |
 | `decision.recorded` | decision, choice, note?, by | `decision.recorded:<decisionId>` | yes | P4 |
@@ -425,7 +425,7 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `job.finished` | job, outcome, summary, code? | `job.finished:<jobId>` | yes | P6 |
 | `job.cancelled` | job | `job.cancelled:<jobId>` | yes | P6 |
 | `service.paused`, `service.resumed` | service | `service.paused:<name>:<commandId>` | yes | P6 |
-| `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | P3 (`CreateItem` with `link`); context Phase 6 (`service:context-sync`) |
+| `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | context Phase 6 only (`service:context-sync`); a `CreateItem` with `link` stores it on `item.created` and gives no alias, so `GET /items/<tracker key>` resolves only after a later `item.linked` |
 | `item.open-requested` | item, target, mode, launch | `item.open-requested:<itemId>:<launch>` | yes | P10 |
 | `launch.started`, `launch.failed`, `launch.probed`, `session.ended` | as UI E-1 and E-3; `session.ended`: launch, reason (`exit`, `lost`), exit code, token usage | `launch.started:<launch>`, `launch.failed:<launch>`, `session.ended:<launch>` | yes | P10a (written by `service:launcher`; the engine's agent runtime uses the same events) |
 | `session.usage` | launch, target, model, tokens in, tokens out (cumulative for the launch) | `session.usage:<launch>:<n>` | no | P10a (E-28; sampled every 60 s while the session is live by the target's usage reader, and once more at its end) |
@@ -1579,7 +1579,7 @@ conflicts.
 
 **Reserved so phases never collide.**
 - Error codes are reserved per phase in §9.
-- `views.db` migration numbers are reserved per phase: P2 `V0xx`, P3 `V1xx`, P4 `V2xx`, P6 `V3xx`, P11 `V4xx`, P12 `V5xx`.
+- `views.db` migrations take the next free number: the migration runner refuses a gap, so a phase can't reserve a range.
 
 **`PublicAPI.Unshipped.txt`**: each unit declares its own lines through `--slice-only`. The integrator re-derives the
 file from the build's `RS0016` output only when merges conflict.

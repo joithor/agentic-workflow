@@ -1,0 +1,23 @@
+{
+  "items": [
+    {
+      "id": "ITM-0000000000000000000000000000000e",
+      "title": "Finished",
+      "repo": "demo",
+      "state": "done",
+      "step": null,
+      "since": "2026-01-01T00:00:00.0000000Z",
+      "primaryAction": null,
+      "actions": [],
+      "owner": null
+    }
+  ],
+  "empty": null,
+  "asOf": {
+    "cursor": 10,
+    "ledgerHead": 10,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

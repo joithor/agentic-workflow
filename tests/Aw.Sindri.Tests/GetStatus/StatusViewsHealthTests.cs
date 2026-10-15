@@ -38,7 +38,7 @@ public sealed class StatusViewsHealthTests
 
         var status = (await Service().Handle(new GetStatusRequest(), Token)).Value;
 
-        Assert.Equal(_v.Progress.Current, status.Views);
+        Assert.Equal(_v.Progress.Current with { LedgerHead = (await H.Store.Head(Token)).Value }, status.Views);   // the head is the ledger's, read fresh
         Assert.Null(status.Views!.Text);
         Assert.Equal(HealthWord.Healthy, status.Health!.Word);
         Assert.Empty(status.Health.Problems);
@@ -66,7 +66,7 @@ public sealed class StatusViewsHealthTests
 
         var status = (await Service().Handle(new GetStatusRequest(), Token)).Value;
 
-        Assert.Equal(EmptyText.Rebuilding(0, 0), status.Views!.Text);
+        Assert.Equal(EmptyText.Rebuilding(0, (await H.Store.Head(Token)).Value), status.Views!.Text);
         Assert.Equal(HealthWord.Rebuilding, status.Health!.Word);
     }
 
