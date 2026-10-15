@@ -76,7 +76,9 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/commands" => Answer(Counted(await server.Commands(uri, cancellationToken), server.Catalog)),
             "/sindri/services" => Answer(Counted(await server.Services(uri, after), server.ServiceView)),
             "/sindri/views/rebuild" when request.Method == HttpMethod.Post => Answer(Counted(await server.RebuildViews(uri, cancellationToken), server.Rebuild)),
-            { } path when path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
+            // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
+            // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
+            { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
     }
@@ -218,7 +220,4 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     private static string Quoted(DateTimeOffset? t) => t is { } v ? $"\"{Time(v)}\"" : "null";
 
     private static string Time(DateTimeOffset t) => t.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
-
-    // LANE ANCHOR U3': add the Needs you routes below the existing ones, each a RouteAnswer from the goldens.
-    // LANE ANCHOR U8: add the workflow command routes below the existing ones, each a RouteAnswer from the goldens.
 }
