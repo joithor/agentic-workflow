@@ -150,6 +150,15 @@ public sealed class ProtectedActionTests
         Assert.Null(_clipboard.Text);
     }
 
+    // a11y-0: one resting text. The region starts on the label, as it rests on it after "Copied", never on "Copy" (the button's own word).
+    [Fact]
+    public void The_announcement_starts_on_the_label_like_it_rests_on_it()
+    {
+        var vm = Make();
+
+        Assert.Equal((vm.Label, false), (vm.Announcement, vm.IsAnnouncing));
+    }
+
     [Fact]
     public async Task A_refused_clipboard_says_nothing_copied()
     {

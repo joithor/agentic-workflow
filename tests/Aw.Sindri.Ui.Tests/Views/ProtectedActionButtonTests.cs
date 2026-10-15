@@ -115,6 +115,28 @@ public sealed class ProtectedActionButtonTests
         Assert.Equal(("OpenInAgent", false), (rows[1].Name, rows[1].IsEnabled));
     }
 
+    // a11y-0: the Copied region joins the tree when the popover opens (as Attach's does when its menu opens), so a list of
+    // lock buttons carries one only for the button in use.
+    [Fact]
+    public async Task The_Copied_region_joins_the_tree_when_the_popover_opens()
+    {
+        var (before, after) = await OnUi(() =>
+        {
+            var (window, control, button, _) = Show();
+            var region = Named<TextBlock>(control, "CopyAnnouncementRegion");
+            var beforeOpen = region.IsVisible;
+            _ = button.Focus(NavigationMethod.Tab);
+            Press(window, Key.Enter, PhysicalKey.Enter);
+            Settle(window);
+            var result = (beforeOpen, region.IsVisible);
+            window.Close();
+            return result;
+        });
+
+        Assert.False(before);
+        Assert.True(after);
+    }
+
     [Fact]
     public async Task Copy_puts_the_served_cli_on_the_clipboard()
     {
