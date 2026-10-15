@@ -228,4 +228,26 @@ public sealed class ShellItemsTests
         await Until(() => shell.Queue.Groups.Single(g => g.Group == "waitingOnYou").Rows.Any(r => r.Id == selected));
         Assert.Equal((selected, false, Labels.Sindri), (shell.Queue.SelectedId, shell.Queue.IsAnnouncing, shell.Queue.Announcement));
     }
+
+    // V1 through the shell: the selected row leaves the queue on Decisions; the settle is silent, so G H works on the first key.
+    [Fact]
+    public async Task A_selected_row_that_leaves_while_decisions_is_shown_does_not_guard_the_next_key()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var shell = await Connected();
+        _ = shell.Press("J");
+        _ = shell.Press("J");
+        var selected = shell.Queue.SelectedId!;
+        _ = shell.Press("G");
+        _ = shell.Press("D");
+        Assert.Equal(PageId.Decisions, shell.CurrentPage);
+
+        _server.QueueView = QueueKeysTests.Without("extra-p11-running", selected);
+        _server.Push(A.Event(59, "item.updated"));
+        await Until(() => shell.Queue.Groups.SelectMany(g => g.Rows).All(r => r.Id != selected));
+
+        _ = shell.Press("G");
+        _ = shell.Press("H");
+        Assert.Equal((PageId.Home, false), (shell.CurrentPage, shell.Queue.IsGuarded));
+    }
 }

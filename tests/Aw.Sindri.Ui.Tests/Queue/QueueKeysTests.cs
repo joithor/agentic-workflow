@@ -302,7 +302,7 @@ public sealed class QueueKeysTests
         return new RouteAnswer(System.Net.HttpStatusCode.OK, root.ToJsonString());
     }
 
-    private static RouteAnswer Without(string view, string itemId) =>
+    internal static RouteAnswer Without(string view, string itemId) =>
         Edited(view, items => items.Where(i => i!["id"]!.GetValue<string>() == itemId).ToList().ForEach(i => items.Remove(i)));
 
     private static string Q(int n) => "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a30" + n.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -553,6 +553,26 @@ public sealed class QueueKeysTests
         await queue.Refresh(_api, Token);
 
         Assert.Equal(Running(1), queue.SelectedId);
+        Assert.Equal((false, Labels.Sindri, false), (queue.IsAnnouncing, queue.Announcement, queue.IsGuarded));
+        Assert.Empty(asked);
+    }
+
+    // V1 (a11y-0): the selected row leaves the queue while a page without rows is shown: the selection passes on, silently.
+    [Fact]
+    public async Task A_selected_row_that_leaves_the_queue_while_another_page_is_shown_settles_silently()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        queue.Move(1, QueueScope.Home);
+        queue.Move(1, QueueScope.Home);
+        Assert.Equal(Running(1), queue.SelectedId);
+        var asked = FocusAsked(queue);
+        queue.PageShown(scope: null);
+
+        _server.QueueView = Without("extra-p11-running", Running(1));
+        await queue.Refresh(_api, Token);
+
+        Assert.NotEqual(Running(1), queue.SelectedId, StringComparer.Ordinal);
         Assert.Equal((false, Labels.Sindri, false), (queue.IsAnnouncing, queue.Announcement, queue.IsGuarded));
         Assert.Empty(asked);
     }
