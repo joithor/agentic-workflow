@@ -3400,7 +3400,6 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger.PrintMembers(System.Text
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource? other) -> bool
 virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.Text.StringBuilder! builder) -> bool
-<<<<<<< ours
 Aw.Sindri.Core.Ledger.ILedgerReader
 Aw.Sindri.Core.Ledger.ILedgerReader.Head(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
 Aw.Sindri.Core.Ledger.ILedgerReader.Latest(string! type, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ledger.LedgerEvent?>!>
@@ -3709,7 +3708,6 @@ static Aw.Sindri.Core.Health.HealthReport.operator ==(Aw.Sindri.Core.Health.Heal
 static Aw.Sindri.Core.Health.HealthSummary.For(bool running, Aw.Sindri.Core.Views.ViewsStatus! views, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! services, bool profileNeedsApproval, bool profileChanged) -> Aw.Sindri.Core.Health.HealthReport!
 Aw.Sindri.Core.Profile.ProfileCheck
 static Aw.Sindri.Core.Profile.ProfileCheck.Decide(Aw.Sindri.Core.Events.ProfileChecked? previous, Aw.Sindri.Core.Profile.LoadedProfile? approved, Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>! live, Aw.Sindri.Core.Ids.CommandId commandId) -> Aw.Sindri.Core.Events.ProfileChecked?
-=======
 Aw.Sindri.Core.Secrets.ISecretPointers
 Aw.Sindri.Core.Secrets.ISecretPointers.Resolve(Aw.Sindri.Core.Secrets.SecretPointer! secretPointer) -> Aw.Kernel.Result<string!>!
 Aw.Sindri.Core.Secrets.SecretPointer
@@ -3732,7 +3730,6 @@ static Aw.Sindri.Core.Secrets.SecretPointer.operator ==(Aw.Sindri.Core.Secrets.S
 static readonly Aw.Sindri.Core.SindriErrors.SecretFileUnsafe -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.SecretPointerInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.SecretUnresolved -> Aw.Kernel.ErrorDefinition!
->>>>>>> theirs
 Aw.Sindri.Core.Challenges.ChallengeId
 Aw.Sindri.Core.Challenges.ChallengeId.ChallengeId() -> void
 Aw.Sindri.Core.Challenges.ChallengeId.Equals(Aw.Sindri.Core.Challenges.ChallengeId other) -> bool
