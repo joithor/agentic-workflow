@@ -11,9 +11,12 @@ namespace Aw.Sindri.Infrastructure.Secrets;
 /// in an error message.
 /// </summary>
 /// <param name="environment">Reads an env: pointer's variable.</param>
-/// <param name="runner">Runs security and op.</param>
-internal sealed class PointerSecrets(Func<string, string?> environment, IToolRunner runner) : ISecretPointers
+/// <param name="runner">Runs security, secret-tool and op.</param>
+/// <param name="platform">Which store keychain: pointers read; null takes this machine's.</param>
+internal sealed class PointerSecrets(Func<string, string?> environment, IToolRunner runner, KeychainPlatform? platform = null) : ISecretPointers
 {
+    private readonly KeychainPlatform _platform = platform ?? Detect();
+
     // The keychain answers in milliseconds; a locked keychain's prompt must not hold Sindri. op may sign in first.
     private static readonly TimeSpan _keychainTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan _opTimeout = TimeSpan.FromSeconds(30);
@@ -34,6 +37,9 @@ internal sealed class PointerSecrets(Func<string, string?> environment, IToolRun
             _ => throw new ArgumentOutOfRangeException(nameof(secretPointer), secretPointer.Scheme, "unknown scheme"),
         };
     }
+
+    private static KeychainPlatform Detect()
+        => OperatingSystem.IsMacOS() ? KeychainPlatform.MacOS : OperatingSystem.IsLinux() ? KeychainPlatform.Linux : KeychainPlatform.Unsupported;
 
     private Result<string> Env(SecretPointer secretPointer)
         => environment(secretPointer.Target) is { Length: > 0 } value
@@ -77,6 +83,7 @@ internal sealed class PointerSecrets(Func<string, string?> environment, IToolRun
 
     private Result<string> Keychain(SecretPointer secretPointer)
     {
+        _ = _platform;   // red stub: every platform still reads 'security'
         var parts = secretPointer.Target.Split('/');
         return FromTool(secretPointer, "security", ["find-generic-password", "-s", parts[0], "-a", parts[1], "-w"], _keychainTimeout,
             $"add it with 'security add-generic-password -s {parts[0]} -a {parts[1]} -w' (macOS keychain)");

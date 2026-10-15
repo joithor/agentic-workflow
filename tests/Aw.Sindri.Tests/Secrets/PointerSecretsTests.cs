@@ -41,13 +41,63 @@ public sealed class PointerSecretsTests
     {
         var runner = new FakeToolRunner(new ToolRun(ToolOutcome.Exited, 0, Fixture + "\n"));
 
-        var result = Secrets(_ => null, runner).Resolve(Pointer("keychain:onyx/sindri-onyx"));
+        var result = Secrets(_ => null, runner, KeychainPlatform.MacOS).Resolve(Pointer("keychain:onyx/sindri-onyx"));
 
         Assert.Equal(Fixture, result.Value);
         var call = Assert.Single(runner.Calls);
         Assert.Equal("security", call.FileName);
         Assert.Equal(["find-generic-password", "-s", "onyx", "-a", "sindri-onyx", "-w"], call.Arguments);
         Assert.Equal(TimeSpan.FromSeconds(5), call.Timeout);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_keychain_pointer_on_Linux_runs_secret_tool_lookup_with_the_exact_arguments()
+    {
+        var runner = new FakeToolRunner(new ToolRun(ToolOutcome.Exited, 0, Fixture + "\n"));
+
+        var result = Secrets(_ => null, runner, KeychainPlatform.Linux).Resolve(Pointer("keychain:onyx/sindri-onyx"));
+
+        Assert.Equal(Fixture, result.Value);
+        var call = Assert.Single(runner.Calls);
+        Assert.Equal("secret-tool", call.FileName);
+        Assert.Equal(["lookup", "service", "onyx", "account", "sindri-onyx"], call.Arguments);
+        Assert.Equal(TimeSpan.FromSeconds(5), call.Timeout);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("exit 1")]
+    [InlineData("empty")]
+    [InlineData("missing")]
+    [InlineData("timed out")]
+    public void A_secret_tool_that_fails_is_SND_SECRET_002_with_the_Linux_store_command(string run)
+    {
+        var result = Secrets(_ => null, new FakeToolRunner(Run(run)), KeychainPlatform.Linux).Resolve(Pointer("keychain:onyx/sindri-onyx"));
+
+        Assert.Equal(SindriErrors.SecretUnresolved.Code, result.Error.Code);
+        Assert.Contains("keychain:onyx/sindri-onyx", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("secret-tool store --label \"onyx/sindri-onyx\" service onyx account sindri-onyx", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("security add-generic-password", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(Fixture, result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_macOS_failure_names_the_security_store_command()
+    {
+        var result = Secrets(_ => null, new FakeToolRunner(Run("exit 44")), KeychainPlatform.MacOS).Resolve(Pointer("keychain:onyx/sindri-onyx"));
+
+        Assert.Contains("security add-generic-password -s onyx -a sindri-onyx -w", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_keychain_pointer_on_another_OS_is_SND_SECRET_002_and_runs_nothing()
+    {
+        var runner = new FakeToolRunner(new ToolRun(ToolOutcome.Exited, 0, Fixture));
+
+        var result = Secrets(_ => null, runner, KeychainPlatform.Unsupported).Resolve(Pointer("keychain:onyx/sindri-onyx"));
+
+        Assert.Equal(SindriErrors.SecretUnresolved.Code, result.Error.Code);
+        Assert.Contains("keychain: isn't supported", result.Error.Message, StringComparison.Ordinal);
+        Assert.Empty(runner.Calls);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -76,7 +126,7 @@ public sealed class PointerSecretsTests
     [InlineData("op:Work/Onyx/credential", "timed out")]
     public void A_tool_that_fails_is_SND_SECRET_002_and_names_the_pointer(string text, string run)
     {
-        var result = Secrets(_ => null, new FakeToolRunner(Run(run))).Resolve(Pointer(text));
+        var result = Secrets(_ => null, new FakeToolRunner(Run(run)), KeychainPlatform.MacOS).Resolve(Pointer(text));
 
         Assert.Equal(SindriErrors.SecretUnresolved.Code, result.Error.Code);
         Assert.Contains(text, result.Error.Message, StringComparison.Ordinal);
@@ -95,6 +145,6 @@ public sealed class PointerSecretsTests
         _ => ToolRun.TimedOut,
     };
 
-    private static PointerSecrets Secrets(Func<string, string?> environment, FakeToolRunner? runner = null)
-        => new(environment, runner ?? new FakeToolRunner(ToolRun.Missing));
+    private static PointerSecrets Secrets(Func<string, string?> environment, FakeToolRunner? runner = null, KeychainPlatform platform = KeychainPlatform.MacOS)
+        => new(environment, runner ?? new FakeToolRunner(ToolRun.Missing), platform);
 }

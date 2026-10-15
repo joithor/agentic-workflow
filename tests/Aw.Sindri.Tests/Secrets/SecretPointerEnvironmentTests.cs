@@ -58,7 +58,7 @@ public sealed class SecretPointerEnvironmentTests
     private static string? Read(string name) => _environment.GetValueOrDefault(name);
 
     private static Func<string, string?> Wrapped(FakeToolRunner runner)
-        => SecretPointerEnvironment.Over(Read, new PointerSecrets(Read, runner));
+        => SecretPointerEnvironment.Over(Read, new PointerSecrets(Read, runner, KeychainPlatform.MacOS));
 
     private sealed class RecordingSecrets(List<SecretPointer> seen) : ISecretPointers
     {
