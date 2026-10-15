@@ -36,7 +36,14 @@ internal sealed class ProposeFromScopeService(IGraphStore store, IProposalRuns r
             return opened.IsError ? opened.Error : draft.Error;
         }
 
-        var plan = ProposalPlanner.Plan(proposal, draft.Value.Graph, draft.Value.Overrides, Who, now);
+        // Planned against what the caller may see, like every read: a node only a denied file evidences is not there to find existing.
+        var seen = MapAccess.View(draft.Value.Graph, draft.Value.Overrides, request.Scope, pending: true, callerScope: false);
+        if (seen.IsError)
+        {
+            return seen.Error;
+        }
+
+        var plan = ProposalPlanner.Plan(proposal, seen.Value, Who, now);
         var written = await runs.Propose(proposal, plan.Rows, cancellationToken).ConfigureAwait(false);
         return written.IsError ? written.Error : new ProposeResult(opened.Value, written.Value, plan.Existing, plan.Rejected, RowsOf(proposal, plan.Rows, draft.Value.Overrides));
     }

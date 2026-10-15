@@ -243,7 +243,10 @@ public sealed class OneVisibleViewTests : IDisposable
     }
 
     // The exports, the status counts and the promoted version name nothing under private/ and none of the keys a person's decision took out of the applied graph.
-    private async Task AssertNeitherSeenNorPromoted(int visibleNodes, params string[] hidden)
+    private async Task AssertNeitherSeenNorPromoted(int visibleNodes, params string[] hidden) => await AssertNeitherSeenNorPromoted(visibleNodes, hidden, notPromoted: hidden);
+
+    // 'hidden' keys are named by no export (the overrides about a proposal that is only rejected stay: a person decided them); 'notPromoted' keys are not in the promoted version.
+    private async Task AssertNeitherSeenNorPromoted(int visibleNodes, string[] hidden, string[] notPromoted)
     {
         var scope = Denying();
         var names = await ExportNames(scope);
@@ -255,7 +258,7 @@ public sealed class OneVisibleViewTests : IDisposable
 
         Assert.True(promoted.IsSuccess, promoted.IsError ? promoted.Error.Message : null);
         var stored = await StoredNames();
-        Assert.DoesNotContain(stored, n => n.Contains("private/", StringComparison.Ordinal) || hidden.Contains(n, StringComparer.Ordinal));
+        Assert.DoesNotContain(stored, n => n.Contains("private/", StringComparison.Ordinal) || notPromoted.Contains(n, StringComparer.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -366,7 +369,7 @@ public sealed class OneVisibleViewTests : IDisposable
         Assert.Equal((GraphStatusKind.Unmapped, null), (surface.Status, surface.Node));
         Assert.Equal(ContextErrors.UnknownAnchor.Code, lenses.Error.Code);
         Assert.Equal((0, 1), (again.Added, again.Rejected));
-        await AssertNeitherSeenNorPromoted(visibleNodes: 2, "surface:setting/mixed");
+        await AssertNeitherSeenNorPromoted(visibleNodes: 2, hidden: [], notPromoted: ["surface:setting/mixed"]);
     }
 
     [Fact, Trait("Lane", "unit")]

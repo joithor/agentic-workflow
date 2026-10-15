@@ -76,7 +76,7 @@ public static class OverrideApplier
         {
             OverrideAction.Accept => Accept(Replace(graph, target, target with { Provenance = Provenance.Human }), target.Key),
             OverrideAction.Rename when !string.IsNullOrWhiteSpace(o.Label) => Replace(graph, target, target with { Label = o.Label }),
-            OverrideAction.Reject => o.Rejection is null || o.Rejection == RejectionIdentity.For(target) ? Remove(graph, target.Key) : graph,
+            OverrideAction.Reject => o.Rejects(RejectionIdentity.For(target)) ? Remove(graph, target.Key) : graph,
             OverrideAction.Delete => Remove(graph, target.Key),
             OverrideAction.Move or OverrideAction.Merge => WithOther(graph, target, o),
             OverrideAction.Rename or OverrideAction.Add or OverrideAction.Propose or OverrideAction.Undo => null,   // add and propose are handled above; undo rows never reach here

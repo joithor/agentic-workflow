@@ -29,6 +29,18 @@ public sealed record MapOverride(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] OverrideId? Undoes = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ProposalPayload? Proposal = null)
 {
+    /// <summary>
+    /// For a reject read through a deny cut: the identity of the same proposal hashed over the evidence the globs leave, when the row was written before the glob and hashes the full evidence.
+    /// The row's <see cref="Rejection"/> stays as stored, so its id (and an undo of it) do not change; never stored, never part of the id.
+    /// </summary>
+    [JsonIgnore]
+    public string? AllowedRejection { get; init; }
+
+    /// <summary>Whether this reject names a proposal of the given <see cref="RejectionIdentity"/>: any proposal when it has no identity, otherwise by the identity it was written with or the one the deny cut gave it.</summary>
+    /// <param name="identity">The proposal's identity.</param>
+    /// <returns>True when it does.</returns>
+    public bool Rejects(string identity) => Rejection is null || Rejection == identity || AllowedRejection == identity;
+
     /// <summary>The id: a hash of the content, so the same decision imported twice is one row (a method: it is never read from a file).</summary>
     /// <returns>The id.</returns>
     public OverrideId ToId()

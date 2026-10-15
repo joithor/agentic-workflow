@@ -1617,6 +1617,9 @@ Aw.Context.Core.Overrides.MapOverride.Proposal.get -> Aw.Context.Core.Overrides.
 Aw.Context.Core.Overrides.MapOverride.Proposal.init -> void
 Aw.Context.Core.Overrides.MapOverride.Rejection.get -> string?
 Aw.Context.Core.Overrides.MapOverride.Rejection.init -> void
+Aw.Context.Core.Overrides.MapOverride.AllowedRejection.get -> string?
+Aw.Context.Core.Overrides.MapOverride.AllowedRejection.init -> void
+Aw.Context.Core.Overrides.MapOverride.Rejects(string! identity) -> bool
 Aw.Context.Core.Overrides.MapOverride.Target.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Overrides.MapOverride.Target.init -> void
 Aw.Context.Core.Overrides.MapOverride.ToId() -> Aw.Context.Core.Overrides.OverrideId
@@ -3341,6 +3344,7 @@ static Aw.Context.Core.Proposals.ProposalNodes.KeyOf(Aw.Context.Core.Proposals.P
 static Aw.Context.Core.Proposals.ProposalPlan.operator !=(Aw.Context.Core.Proposals.ProposalPlan? left, Aw.Context.Core.Proposals.ProposalPlan? right) -> bool
 static Aw.Context.Core.Proposals.ProposalPlan.operator ==(Aw.Context.Core.Proposals.ProposalPlan? left, Aw.Context.Core.Proposals.ProposalPlan? right) -> bool
 static Aw.Context.Core.Proposals.ProposalPlanner.Plan(Aw.Context.Core.Proposals.ScopeProposal! proposal, Aw.Context.Core.Graph.GraphSnapshot! basis, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, string! who, System.DateTimeOffset at) -> Aw.Context.Core.Proposals.ProposalPlan!
+static Aw.Context.Core.Proposals.ProposalPlanner.Plan(Aw.Context.Core.Proposals.ScopeProposal! proposal, Aw.Context.Core.Map.MapView! view, string! who, System.DateTimeOffset at) -> Aw.Context.Core.Proposals.ProposalPlan!
 static Aw.Context.Core.Proposals.ProposalsView.operator !=(Aw.Context.Core.Proposals.ProposalsView? left, Aw.Context.Core.Proposals.ProposalsView? right) -> bool
 static Aw.Context.Core.Proposals.ProposalsView.operator ==(Aw.Context.Core.Proposals.ProposalsView? left, Aw.Context.Core.Proposals.ProposalsView? right) -> bool
 static Aw.Context.Core.Proposals.ProposeResult.operator !=(Aw.Context.Core.Proposals.ProposeResult? left, Aw.Context.Core.Proposals.ProposeResult? right) -> bool
@@ -3534,6 +3538,7 @@ Aw.Context.Core.Map.MapView
 Aw.Context.Core.Map.MapView.<Clone>$() -> Aw.Context.Core.Map.MapView!
 Aw.Context.Core.Map.MapView.Applied.get -> Aw.Context.Core.Graph.GraphSnapshot!
 Aw.Context.Core.Map.MapView.Applied.init -> void
+Aw.Context.Core.Map.MapView.AllowedEvidence(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? evidence) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>?
 Aw.Context.Core.Map.MapView.Deconstruct(out Aw.Context.Core.Graph.GraphSnapshot! Graph, out Aw.Context.Core.Graph.GraphSnapshot! Applied, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides, out bool Filtered) -> void
 Aw.Context.Core.Map.MapView.Equals(Aw.Context.Core.Map.MapView? other) -> bool
 Aw.Context.Core.Map.MapView.Filtered.get -> bool

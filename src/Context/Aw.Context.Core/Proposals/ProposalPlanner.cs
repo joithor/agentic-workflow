@@ -1,4 +1,5 @@
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 
 namespace Aw.Context.Core.Proposals;
@@ -6,7 +7,7 @@ namespace Aw.Context.Core.Proposals;
 /// <summary>Decides which of a scoping run's surfaces become 'propose' rows (S-4): the new ones, once, and never one a person rejected. Pure.</summary>
 public static class ProposalPlanner
 {
-    /// <summary>Plans the rows for one proposal.</summary>
+    /// <summary>Plans the rows for one proposal against a graph no deny glob applies to.</summary>
     /// <param name="proposal">What the run posted.</param>
     /// <param name="basis">The graph the rows would join: the latest draft, or the current map when there is none.</param>
     /// <param name="overrides">Every override.</param>
@@ -15,9 +16,22 @@ public static class ProposalPlanner
     /// <returns>The new rows and what was left out.</returns>
     public static ProposalPlan Plan(ScopeProposal proposal, GraphSnapshot basis, IReadOnlyList<MapOverride> overrides, string who, DateTimeOffset at)
     {
-        ArgumentNullException.ThrowIfNull(proposal);
         ArgumentNullException.ThrowIfNull(basis);
-        var applied = OverrideApplier.Apply(basis, overrides).Graph;
+        ArgumentNullException.ThrowIfNull(overrides);
+        return Plan(proposal, new MapView(basis, OverrideApplier.Apply(basis, overrides).Graph, overrides, Filtered: false), who, at);
+    }
+
+    /// <summary>Plans the rows for one proposal against what the caller may see (<see cref="MapAccess.View"/>): a surface a hidden node matches is new, and a reject names it by either evidence.</summary>
+    /// <param name="proposal">What the run posted.</param>
+    /// <param name="view">The latest draft (or the current map when there is none) as the caller may see it, with pending proposals.</param>
+    /// <param name="who">Who proposes.</param>
+    /// <param name="at">When.</param>
+    /// <returns>The new rows and what was left out.</returns>
+    public static ProposalPlan Plan(ScopeProposal proposal, MapView view, string who, DateTimeOffset at)
+    {
+        ArgumentNullException.ThrowIfNull(proposal);
+        ArgumentNullException.ThrowIfNull(view);
+        var (applied, overrides) = (view.Applied, view.Overrides);
         var rejects = OverrideLog.Active(overrides).Where(o => o.Action == OverrideAction.Reject).ToList();
         var undone = OverrideLog.Undone(overrides);
         var rows = new List<MapOverride>();
@@ -33,7 +47,7 @@ public static class ProposalPlanner
             {
                 existing++;
             }
-            else if (IsRejected(rejects, key, surface))
+            else if (IsRejected(rejects, key, surface, view))
             {
                 rejected++;
             }
@@ -46,10 +60,12 @@ public static class ProposalPlanner
         return new ProposalPlan(rows, existing, rejected, unmapped);
     }
 
-    private static bool IsRejected(List<MapOverride> rejects, NodeKey key, ProposedSurface surface)
+    // A reject names the proposal by the evidence it had when it was written: all of it before a deny glob, what the glob leaves after.
+    private static bool IsRejected(List<MapOverride> rejects, NodeKey key, ProposedSurface surface, MapView view)
     {
-        var identity = RejectionIdentity.For(ProposalNodes.Candidate(key, surface));
-        return rejects.Exists(r => r.Target.Value == key.Value && (r.Rejection is null || r.Rejection == identity));
+        var whole = RejectionIdentity.For(ProposalNodes.Candidate(key, surface));
+        var allowed = RejectionIdentity.For(ProposalNodes.Candidate(key, surface with { Evidence = view.AllowedEvidence(surface.Evidence) }));
+        return rejects.Exists(r => r.Target.Value == key.Value && (r.Rejects(whole) || r.Rejects(allowed)));
     }
 
     // The undo of a run's propose row is respected, not overwritten: asking again is a new row, whose id carries how many were undone before it.

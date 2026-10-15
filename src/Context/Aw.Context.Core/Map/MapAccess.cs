@@ -13,11 +13,13 @@ namespace Aw.Context.Core.Map;
 public static class MapAccess
 {
     /// <summary>
-    /// The one function from a stored snapshot to what a caller may see (review #220 run 3), which every reader uses. The overrides are applied first (a pending
-    /// proposal only when <paramref name="pending"/>), then what the repos' deny globs hide is judged on that applied graph (<see cref="DenyCut"/>:
-    /// the code nodes of denied paths, the nodes only a denied file evidences, the features only those files implement, their edges and denied evidence,
-    /// and the overrides about them), then, for a session, only its repo's scope. The stored graph and the overrides are cut by the same decisions, so
-    /// lenses, status, export, the review queue, promote and the history can't disagree.
+    /// The one function from a stored snapshot to what a caller may see (review #220 run 4), which every reader and every planner uses, in one order: (1) what the repos'
+    /// deny globs hide is decided from the stored nodes and the nodes the overrides add (<see cref="DenyCut"/>: the code nodes of denied paths, the record nodes of denied documents
+    /// and the decisions quoting them, the nodes only a denied file evidences, the features only those files implement, their edges and denied evidence), whatever a person's
+    /// reject, delete, merge or accept made of them; (2) the stored graph is cut by that decision; (3) the overrides are cut by it (the ones about a hidden node, a proposal without
+    /// its allowed evidence, and a reject that names its proposal by either evidence); (4) the cut overrides are applied to the cut graph (a pending proposal only when
+    /// <paramref name="pending"/>), which is <see cref="MapView.Applied"/>; then, for a session, only its repo's scope. Lenses, status, export, the review queue, promote
+    /// and the history can't disagree.
     /// </summary>
     /// <param name="graph">The stored graph.</param>
     /// <param name="overrides">Every override.</param>
@@ -42,10 +44,10 @@ public static class MapAccess
             return repos.Error;
         }
 
-        var layer = pending ? overrides : [.. overrides.Where(o => o.Action != OverrideAction.Propose)];
-        var applied = OverrideApplier.Apply(graph, layer).Graph;
-        var cut = DenyCut.Of(graph, applied, repos.Value);
-        var view = new MapView(cut.Apply(graph), cut.Apply(applied), cut.Apply(overrides), cut.Any);
+        var cut = DenyCut.Of(graph, overrides, repos.Value);   // every override, pending or not: what is hidden doesn't depend on which reader asks
+        var (cutGraph, cutOverrides) = (cut.Apply(graph), cut.Apply(overrides));
+        var applied = OverrideApplier.Apply(cutGraph, pending ? cutOverrides : [.. cutOverrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
+        var view = new MapView(cutGraph, applied, cutOverrides, cut.Any) { Cut = cut };
         if (!callerScope || scope.Caller.Kind != ContextCallerKind.Session)
         {
             return view;
@@ -58,7 +60,7 @@ public static class MapAccess
         }
 
         var scopedGraph = scope.Caller.Repo is { } own ? view.Graph.ScopedTo(own) : GraphSnapshot.Empty;
-        return new MapView(scopedGraph, scopedApplied, [.. view.Overrides.Where(o => scopedGraph.Resolve(o.Target) is not null)], view.Filtered);
+        return new MapView(scopedGraph, scopedApplied, [.. view.Overrides.Where(o => scopedGraph.Resolve(o.Target) is not null)], view.Filtered) { Cut = view.Cut };
     }
 
     /// <summary>The checks that need no map, the same ones every engine read makes: the context section is valid (001), and a session needs sessions on (020) and a repo the profile maps (003).</summary>
@@ -100,7 +102,7 @@ public static class MapAccess
                 $"repo: '{repo.Value}' isn't a repo the approved profile maps ({string.Join(", ", mapped.Value.Select(r => r.Name.Value))}); nothing was written (fix: name one of them, or add the repo to the profile and approve it)");
     }
 
-    /// <summary>The graph a build keeps: <see cref="View"/>'s deny cut over a built graph with no overrides (the globs are the profile's 'index.denyPaths').</summary>
+    /// <summary>The graph a build keeps: <see cref="View"/>'s deny cut (steps 1 and 2) over a built graph with no overrides (the globs are the profile's 'index.denyPaths').</summary>
     /// <param name="current">The graph.</param>
     /// <param name="built">The repos whose deny globs apply.</param>
     /// <returns>The graph itself when nothing is denied.</returns>
@@ -108,7 +110,7 @@ public static class MapAccess
     {
         ArgumentNullException.ThrowIfNull(current);
         ArgumentNullException.ThrowIfNull(built);
-        return DenyCut.Of(current, current, built).Apply(current);
+        return DenyCut.Of(current, [], built).Apply(current);
     }
 
     /// <summary>The export document for a version's visible graph: decision nodes and 'quotes' edges are left to the decisions, which imply them.</summary>
