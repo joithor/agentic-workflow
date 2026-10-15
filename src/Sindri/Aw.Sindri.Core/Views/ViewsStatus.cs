@@ -13,4 +13,7 @@ public sealed record ViewsStatus(long Cursor, long LedgerHead, DateTimeOffset? P
 {
     /// <summary>The freshness a view answer carries.</summary>
     public AsOf AsOf => new(Cursor, LedgerHead, ProjectedAt, Rebuilding, Stalled);
+
+    /// <summary>The sentence for the stalled or rebuilding views (API spec §3.6), or null when they are fresh.</summary>
+    public string? Text => Stalled ? EmptyText.Stalled(StalledAt ?? Cursor + 1) : (Rebuilding ? EmptyText.Rebuilding(Cursor, LedgerHead) : null);
 }

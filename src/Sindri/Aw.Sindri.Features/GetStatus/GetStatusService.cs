@@ -6,10 +6,12 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Features.GetStatus;
 
-internal sealed class GetStatusService(HeldLease held, IApprovedProfile approvals, IProfileSource live, ILedgerReader ledger, EventFactory events)
+internal sealed class GetStatusService(HeldLease held, IApprovedProfile approvals, IProfileSource live, ILedgerReader ledger, EventFactory events,
+    IProjectorStatus projector, IViewReader viewRows)
     : IService<GetStatusRequest, GetStatusResponse>
 {
     public async ValueTask<Result<GetStatusResponse>> Handle(GetStatusRequest request, CancellationToken cancellationToken)
@@ -25,6 +27,8 @@ internal sealed class GetStatusService(HeldLease held, IApprovedProfile approval
             return approved.IsError ? approved.Error : recorded.Error;
         }
 
+        _ = projector.Current;   // red: the views and health come with the fix
+        _ = await viewRows.List<ServiceRow>(ViewNames.Services, cancellationToken).ConfigureAwait(false);
         var grant = held.Current;
         var status = new GetStatusResponse(grant is not null, grant?.Holder.Pid ?? 0, grant?.Epoch ?? 0, grant?.ExpiresAt,
             Profile(approvedProfile, recorded.Value, loaded), services);

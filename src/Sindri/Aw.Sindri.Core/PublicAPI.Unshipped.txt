@@ -4610,3 +4610,5 @@ Aw.Sindri.Core.Health.HealthReport.Deconstruct(out Aw.Sindri.Core.Health.HealthW
 Aw.Sindri.Core.Health.HealthReport.HealthReport(Aw.Sindri.Core.Health.HealthWord Word, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Health.HealthProblem!>! Problems, string? Sentence) -> void
 Aw.Sindri.Core.Health.HealthReport.Sentence.get -> string?
 Aw.Sindri.Core.Health.HealthReport.Sentence.init -> void
+Aw.Sindri.Core.Views.ViewsStatus.Text.get -> string?
+static Aw.Sindri.Core.Doctor.DoctorRules.Views(Aw.Kernel.Result<Aw.Sindri.Core.Views.ProjectorState?>! state, Aw.Kernel.Result<long>! head) -> Aw.Sindri.Core.Doctor.DoctorCheck!

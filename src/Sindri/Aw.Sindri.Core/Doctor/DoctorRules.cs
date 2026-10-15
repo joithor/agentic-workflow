@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Core.Doctor;
 
@@ -39,6 +40,13 @@ public static class DoctorRules
         { Value.IsCurrent: true } => new("ledger", CheckState.Ok, Text($"schema {schema.Value.Applied}/{schema.Value.Expected}"), Fix: null),
         _ => new("ledger", CheckState.Fail, Text($"schema {schema.Value.Applied}/{schema.Value.Expected}: written by another build"), "use the build that wrote it, or move the ledger aside"),
     };
+
+    /// <summary>The views: caught up, rebuilding, stalled on an event, or not built yet.</summary>
+    /// <param name="state">The projector_state row (null when the views store doesn't exist), or why it can't be read.</param>
+    /// <param name="head">The ledger's head, or why it can't be read.</param>
+    /// <returns>The check.</returns>
+    public static DoctorCheck Views(Result<ProjectorState?> state, Result<long> head) =>
+        throw new NotSupportedException("DoctorRules.Views: P2 unit E makes the Doctor_views tests pass");
 
     /// <summary>
     /// The profile: valid, and approved by <see cref="ProfileRules.IsApproved"/> (it is the saved approval and the latest

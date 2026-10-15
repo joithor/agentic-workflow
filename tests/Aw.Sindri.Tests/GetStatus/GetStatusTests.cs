@@ -1,5 +1,6 @@
 using Aw.Context.Testing.Engine;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.RecordHeartbeat;
@@ -12,7 +13,7 @@ public sealed class GetStatusTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private GetStatusService Service() => new(_h.Held, _h.Profiles, _h.Profiles, _h.Store, _h.Events);
+    private GetStatusService Service() => new(_h.Held, _h.Profiles, _h.Profiles, _h.Store, _h.Events, new ProjectorProgress(_h.Clock), new InMemoryViewStore(SliceHarness.Json));
 
     [Fact, Trait("Lane", "unit")]
     public async Task GetStatus_reports_not_running_when_no_lease_is_held()
@@ -70,7 +71,7 @@ public sealed class GetStatusTests
         _h.Profiles.Live = live;
         _ = await _h.Profiles.Save(live, Token);
 
-        var status = await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, new ReadFailingLedger(_h.Store), _h.Events).Handle(new GetStatusRequest(), Token);
+        var status = await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, new ReadFailingLedger(_h.Store), _h.Events, new ProjectorProgress(_h.Clock), new InMemoryViewStore(SliceHarness.Json)).Handle(new GetStatusRequest(), Token);
 
         Assert.Equal(ReadFailingLedger.Failure.Code, status.Error.Code);   // an error (exit 2), never "needs approval"
     }

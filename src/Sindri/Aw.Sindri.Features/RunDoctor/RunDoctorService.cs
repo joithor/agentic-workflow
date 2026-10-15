@@ -8,7 +8,7 @@ using Aw.Sindri.Core.Ledger;
 namespace Aw.Sindri.Features.RunDoctor;
 
 internal sealed class RunDoctorService(
-    ILease lease, IProcessProbe probe, ILedgerStore ledger, ProfileFacts profile, IControlPlaneProbe api, ITemporalServer temporal, TimeProvider clock)
+    ILease lease, IProcessProbe probe, LedgerFacts ledger, ProfileFacts profile, IControlPlaneProbe api, ITemporalServer temporal, TimeProvider clock)
     : IService<RunDoctorRequest, RunDoctorResponse>
 {
     public async ValueTask<Result<RunDoctorResponse>> Handle(RunDoctorRequest request, CancellationToken cancellationToken)

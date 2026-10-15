@@ -55,6 +55,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddScoped<ProfileFacts>()
+            .AddScoped<LedgerFacts>()
             .AddScoped<RunDoctorService>()
             .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
                 new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))

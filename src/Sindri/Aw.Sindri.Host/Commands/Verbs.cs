@@ -37,11 +37,15 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             return await output.Error(error).ConfigureAwait(false);
         }
 
-        var code = status.Value.Value.Profile.NeedsApproval ? 1 : 0;
+        var code = StatusExitCode(status.Value.Value);
         return json
             ? await output.Raw(status.Value.Body, code).ConfigureAwait(false)
             : await output.Text(SummaryText.Render(status.Value.Value, found.Value.Endpoint, showUi: false), code).ConfigureAwait(false);
     }
+
+    /// <summary>The 'sindri status' exit code: 1 unless the health is healthy (a server without health: unless the profile is approved).</summary>
+    internal static int StatusExitCode(GetStatusResponse status) =>
+        status.Profile.NeedsApproval ? 1 : 0;   // red: the health word comes with the fix
 
     internal async Task<int> Stop(CancellationToken ct)
     {
