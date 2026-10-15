@@ -21,6 +21,8 @@ public sealed class QueueViewModelTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
+    private static void IsObservable(object list) => _ = Assert.IsType<System.Collections.Specialized.INotifyCollectionChanged>(list, exactMatch: false);
+
     private async Task<QueueViewModel> Queue()
     {
         var catalog = new CatalogViewModel(new FakeClipboard(), _clock);
@@ -200,6 +202,44 @@ public sealed class QueueViewModelTests
         queue.Move(-1);
         Assert.Equal(A.DecisionItem, queue.SelectedId);
         Assert.True(queue.Groups[0].Rows[0].IsSelected);
+    }
+
+    // L1 (§3.3): a refresh reconciles; groups by name and rows by id are reused (updated in place), so a collapsed
+    // group stays collapsed and a control that has focus keeps its row.
+    [Fact]
+    public async Task A_refresh_reuses_groups_and_rows_and_keeps_a_collapsed_group_collapsed()
+    {
+        var queue = await Queue();
+        await queue.Refresh(_api, Token);
+        var (groups, queued, row) = (queue.Groups, queue.Groups[3], queue.Groups[3].Rows[3]);
+        queued.IsExpanded = false;
+
+        _server.QueueView = new RouteAnswer(HttpStatusCode.OK, GoldenFiles.SpecShaped("queue", "extra-p4-waiting").Replace("Try the queue", "Renamed item", StringComparison.Ordinal));
+        await queue.Refresh(_api, Token);
+
+        Assert.Same(groups, queue.Groups);
+        Assert.Same(queued, queue.Groups[3]);
+        Assert.False(queued.IsExpanded);
+        Assert.Same(row, queue.Groups[3].Rows[3]);
+        Assert.Equal(("Renamed item", A.NewItem + " Renamed item, New"), (row.Title, row.Name));
+    }
+
+    // L1: the lists the views bind are patched in place, so the controls built for them survive.
+    [Fact]
+    public async Task The_lists_the_views_bind_are_patched_in_place()
+    {
+        var queue = await Queue();
+        await queue.Refresh(_api, Token);
+
+        IsObservable(queue.Groups);
+        Assert.All(queue.Groups, g => IsObservable(g.Rows));
+        IsObservable(queue.RunningRows);
+        IsObservable(queue.QueuedRows);
+        var (running, queued) = (queue.RunningRows, queue.QueuedRows);
+
+        await queue.Refresh(_api, Token);
+        Assert.Same(running, queue.RunningRows);
+        Assert.Same(queued, queue.QueuedRows);
     }
 
     // §4.1: the skeleton ends when the rows are there, never before (a waiter on !IsLoading must find them).

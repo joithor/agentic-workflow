@@ -19,6 +19,8 @@ public sealed class ItemSheetViewModelTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
+    private static void IsObservable(object list) => _ = Assert.IsType<System.Collections.Specialized.INotifyCollectionChanged>(list, exactMatch: false);
+
     private async Task<ItemSheetViewModel> Sheet()
     {
         var catalog = new CatalogViewModel(new FakeClipboard(), _clock);
@@ -39,6 +41,22 @@ public sealed class ItemSheetViewModelTests
         Assert.Equal(100, sheet.Timeline.Count);
         Assert.Equal(("11:55:00", "human:cli", "Created “Try the queue” in agentic-workflow"), (sheet.Timeline[0].Time, sheet.Timeline[0].Actor, sheet.Timeline[0].Line));
         Assert.True(sheet.HasMore);
+    }
+
+    // L1: the timeline is patched by sequence, so a refresh keeps the rows (and the focus on one) as they were.
+    [Fact]
+    public async Task A_refresh_keeps_the_timeline_rows_it_already_shows()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        IsObservable(sheet.Timeline);
+        var (timeline, second) = (sheet.Timeline, sheet.Timeline[1]);
+
+        await sheet.Refresh(_api, Token);
+
+        Assert.Same(timeline, sheet.Timeline);
+        Assert.Same(second, sheet.Timeline[1]);
+        Assert.Equal(100, sheet.Timeline.Count);
     }
 
     // §4.6 (owner, 2026-10-12): the sheet shows the item's body and link as GET /items/{itemId} serves them.

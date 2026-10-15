@@ -1,0 +1,140 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Queue;
+using Aw.Sindri.Ui.Views.Shell;
+using Microsoft.Extensions.Time.Testing;
+
+namespace Aw.Sindri.Ui.Tests.Views;
+
+/// <summary>
+/// Focus and selection on the queue, Home's panels and the item sheet (UI spec §3.3, §8, §11.2) under the headless
+/// platform: a refresh never moves focus, one selection is the focus, the sheet returns focus to its row.
+/// </summary>
+[Lane(TestLane.Integration)]
+public sealed class QueueFocusTests : IDisposable
+{
+    private readonly List<Window> _windows = [];
+    private readonly CancellationTokenSource _stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+    private readonly InMemoryEndpointRecords _records = new();
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.SpecShaped("commands", "catalog") };
+    private readonly FakeTimeProvider _clock = new(A.Noon);
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    public void Dispose() => _stop.Dispose();
+
+    private async Task OnUi(Func<Task> body) =>
+        _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(QueueFocusTests).Assembly)
+            .Dispatch(async () =>
+            {
+                try
+                {
+                    await body();
+                }
+                finally
+                {
+                    await _stop.CancelAsync();
+                    _windows.ForEach(w => w.Close());
+                    Dispatcher.UIThread.RunJobs();
+                }
+
+                return true;
+            }, Token);
+
+    private async Task<(ShellWindow Window, ShellViewModel Shell)> Connected(double? width = null)
+    {
+        _records.Write(A.Record());
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+        await shell.Restore(Token);
+        var window = new ShellWindow { DataContext = shell };
+        if (width is { } w)
+        {
+            window.Width = w;
+        }
+
+        _windows.Add(window);
+        window.Show();
+        _ = shell.Run(_stop.Token);
+        await Until(window, () => shell.State == ShellState.Normal && shell.Queue.Total > 0 && shell.Queue.Groups.Count > 0);
+        return (window, shell);
+    }
+
+    private static void Settle(Window window)
+    {
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static async Task Until(Window window, Func<bool> condition)
+    {
+        for (var i = 0; i < 300 && !condition(); i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Settle(window);
+        Assert.True(condition(), "the view never reached the expected state");
+    }
+
+    private static T Named<T>(Visual within, string name)
+        where T : Control => within.GetVisualDescendants().OfType<T>().First(c => c.Name == name);
+
+    private static Control? Focused(Window window) => window.FocusManager?.GetFocusedElement() as Control;
+
+    private static List<ItemRow> Rows(Window window) =>
+        [.. Named<Control>(window, "QueuePage").GetVisualDescendants().OfType<ItemRow>().Where(r => r.IsEffectivelyVisible)];
+
+    private static void Renamed(FakeSindriApi server, string from, string to) =>
+        server.QueueView = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("queue", "fixture").Replace(from, to, StringComparison.Ordinal));
+
+    // L1 (§3.3): a re-served queue keeps the focused control: the row is updated in place, not rebuilt.
+    [Fact]
+    public Task A_refresh_keeps_focus_on_the_same_row_control() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+        var title = Named<Button>(Rows(window)[1], "TitleButton");
+        Assert.True(title.Focus(NavigationMethod.Tab));
+        var focusedId = Rows(window)[1].ItemId;
+
+        Renamed(_server, "Try the queue", "Renamed item");
+        _server.Push(A.Event(58, "item.state-changed"));
+        await Until(window, () => shell.Queue.Groups[3].Rows.Any(r => r.Title == "Renamed item"));
+
+        Assert.Same(title, Focused(window));
+        Assert.True(title.IsEffectivelyVisible);
+        Assert.Equal(focusedId, Rows(window)[1].ItemId);
+    });
+
+    // L1: the same for a focused timeline row, the item sheet re-read on the same event.
+    [Fact]
+    public Task A_refresh_keeps_focus_on_the_same_timeline_row() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.OpenItem(A.NewItem);
+        await Until(window, () => shell.Item.HasItem && shell.Item.Timeline.Count > 2);
+        var rows = Named<Control>(window, "TimelineList").GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("timeline-row")).ToList();
+        var row = rows[1];
+        Assert.True(row.Focus(NavigationMethod.Tab));
+        var calls = _server.TimelineCalls;
+
+        _server.Items[A.NewItem] = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("items-id", "new").Replace("Try the queue", "Renamed item", StringComparison.Ordinal));
+        _server.Push(A.Event(58, "item.state-changed"));
+        await Until(window, () => shell.Item.Title == "Renamed item" && _server.TimelineCalls > calls);
+
+        Assert.Same(row, Focused(window));
+        Assert.True(row.IsEffectivelyVisible);
+    });
+}
