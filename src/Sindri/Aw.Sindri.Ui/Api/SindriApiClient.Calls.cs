@@ -10,20 +10,25 @@ internal sealed partial class SindriApiClient
 {
     private const string TokenRefused = "SND-AUTH-001";
 
-    // The sequence of the last command the API accepted, sent once as X-Sindri-After on the next query (API §2.4,
-    // UI §9.1); 0 when there is none to send.
+    /// <summary>The code of "the views are behind the sequence you asked for": the read waited its 2 s and they hadn't caught up (API §2.4).</summary>
+    internal const string ViewsBehind = "SND-API-011";
+
+    // The sequence of the last command the API accepted, sent as X-Sindri-After on the view queries (status, services;
+    // API §2.4, UI §9.1) until one of them has used it; 0 when there is none to send.
     private long _after;
 
-    private Task<Result<T>> Get<T>(Uri api, string path, CancellationToken cancellationToken) =>
-        Call<T>(api, HttpMethod.Get, path, cancellationToken);
+    private Task<Result<T>> Get<T>(Uri api, string path, CancellationToken cancellationToken, bool view = false) =>
+        Call<T>(api, HttpMethod.Get, path, cancellationToken, view);
 
-    private async Task<Result<T>> Call<T>(Uri api, HttpMethod method, string path, CancellationToken cancellationToken)
+    private async Task<Result<T>> Call<T>(Uri api, HttpMethod method, string path, CancellationToken cancellationToken, bool view = false)
     {
-        using var timeout = new CancellationTokenSource(_callTimeout, clock);
+        // A read that carries a sequence is held by the server for up to 2 s before it answers SND-API-011, so its
+        // deadline is longer than an ordinary call's.
+        using var timeout = new CancellationTokenSource(view && Volatile.Read(ref _after) > 0 ? _waitingTimeout : _callTimeout, clock);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
-            var (code, body) = await Exchange(method, new Uri(api, path), deadline.Token).ConfigureAwait(false);
+            var (code, body) = await Exchange(method, new Uri(api, path), view, deadline.Token).ConfigureAwait(false);
             if (Refusal(code, body) is { } refused)
             {
                 return refused;
@@ -64,16 +69,28 @@ internal sealed partial class SindriApiClient
     }
 
     // A call, and its one retry when the token was stale.
-    private async Task<(HttpStatusCode Code, byte[] Body)> Exchange(HttpMethod method, Uri url, CancellationToken cancellationToken)
+    // A view query carries the pending sequence on both tries, and has used it once it got an answer that isn't "views behind".
+    private async Task<(HttpStatusCode Code, byte[] Body)> Exchange(HttpMethod method, Uri url, bool view, CancellationToken cancellationToken)
     {
-        var answer = await Send(method, url, cancellationToken).ConfigureAwait(false);
-        return StaleToken(answer.Code, answer.Body) ? await Send(method, url, cancellationToken).ConfigureAwait(false) : answer;
+        var after = view ? Volatile.Read(ref _after) : 0;
+        var answer = await Send(method, url, after, cancellationToken).ConfigureAwait(false);
+        if (StaleToken(answer.Code, answer.Body))
+        {
+            answer = await Send(method, url, after, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (after > 0 && !string.Equals(Refusal(answer.Code, answer.Body)?.Code, ViewsBehind, StringComparison.Ordinal))
+        {
+            _ = Interlocked.CompareExchange(ref _after, 0, after);   // a newer command's sequence stays
+        }
+
+        return answer;
     }
 
     // One call: the request with the token as it is now, and the answer's status and body.
-    private async Task<(HttpStatusCode Code, byte[] Body)> Send(HttpMethod method, Uri url, CancellationToken cancellationToken)
+    private async Task<(HttpStatusCode Code, byte[] Body)> Send(HttpMethod method, Uri url, long after, CancellationToken cancellationToken)
     {
-        using var request = await Request(method, url, query: method == HttpMethod.Get, cancellationToken).ConfigureAwait(false);
+        using var request = await Request(method, url, after, cancellationToken).ConfigureAwait(false);
         using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
         return (response.StatusCode, await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false));
     }
@@ -122,9 +139,9 @@ internal sealed partial class SindriApiClient
     // (read at each call, like the CLI's, so a restarted control plane's new one is sent with no app restart). Never
     // X-Sindri-Terminal (the app is no terminal, so protected actions stay at the CLI) and never Origin (commands refuse
     // it). With no token, or one the platform can't read, the call goes without it and Sindri's SND-AUTH-001 says why.
-    // The token goes only into this header: never into an error, the log or the window. The first query after an
-    // accepted command carries its sequence as X-Sindri-After; the event stream and commands never do.
-    private async ValueTask<HttpRequestMessage> Request(HttpMethod method, Uri url, bool query, CancellationToken cancellationToken)
+    // The token goes only into this header: never into an error, the log or the window. The view queries after an
+    // accepted command carries its sequence as X-Sindri-After; the event stream, pings, the catalog and commands never do.
+    private async ValueTask<HttpRequestMessage> Request(HttpMethod method, Uri url, long after, CancellationToken cancellationToken)
     {
         var request = new HttpRequestMessage(method, url);
         request.Headers.Add("X-Sindri-Caller", "human");
@@ -134,7 +151,7 @@ internal sealed partial class SindriApiClient
             request.Headers.Add("X-Sindri-Token", value);
         }
 
-        if (query && Interlocked.Exchange(ref _after, 0) is var after and > 0)
+        if (after > 0)
         {
             request.Headers.Add("X-Sindri-After", after.ToString(CultureInfo.InvariantCulture));
         }

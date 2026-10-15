@@ -30,16 +30,19 @@ internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource
 
     private static readonly TimeSpan _callTimeout = TimeSpan.FromSeconds(2);
 
+    // A view query carrying X-Sindri-After: the server waits up to 2 s for the views, so the client waits longer.
+    private static readonly TimeSpan _waitingTimeout = TimeSpan.FromSeconds(5);
+
     /// <summary>The app's JSON options (the AwJson profile over the app's context).</summary>
     internal static JsonSerializerOptions Json { get; } = AwJson.CreateOptions(SindriUiJsonContext.Default);
 
     public Task<Result<PingView>> Ping(Uri api, CancellationToken cancellationToken) => Get<PingView>(api, "/sindri/ping", cancellationToken);
 
-    public Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken) => Get<StatusView>(api, "/sindri/status", cancellationToken);
+    public Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken) => Get<StatusView>(api, "/sindri/status", cancellationToken, view: true);
 
     public Task<Result<CommandList>> Commands(Uri api, CancellationToken cancellationToken) => Get<CommandList>(api, "/sindri/commands", cancellationToken);
 
-    public Task<Result<ServiceList>> Services(Uri api, CancellationToken cancellationToken) => Get<ServiceList>(api, "/sindri/services", cancellationToken);
+    public Task<Result<ServiceList>> Services(Uri api, CancellationToken cancellationToken) => Get<ServiceList>(api, "/sindri/services", cancellationToken, view: true);
 
     public Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken) =>
         Call<CommandAcceptedView>(api, HttpMethod.Post, "/sindri/views/rebuild", cancellationToken);
@@ -83,7 +86,7 @@ internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource
         {
             for (var attempt = 1; ; attempt++)
             {
-                using var request = await Request(HttpMethod.Get, url, query: false, cancellationToken).ConfigureAwait(false);
+                using var request = await Request(HttpMethod.Get, url, after: 0, cancellationToken).ConfigureAwait(false);
                 request.Headers.Accept.ParseAdd("text/event-stream");
                 var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if (response.IsSuccessStatusCode)
