@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.ViewModels.Controls;
@@ -107,129 +106,6 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
 
     private long? Next { get; set { field = value; OnChanged(nameof(HasMore)); } }
 
-    /// <summary>Opens an item: reads it and its timeline's first page.</summary>
-    /// <param name="url">The API's base URL.</param>
-    /// <param name="itemId">The item's id.</param>
-    /// <param name="cancellationToken">Cancels the reads.</param>
-    /// <returns>A task that completes when the sheet shows the answer.</returns>
-    internal async Task Open(Uri url, string itemId, CancellationToken cancellationToken)
-    {
-        Show(itemId);
-        (_url, _pages) = (url, Math.Max(_pages, 1));
-        await Read(cancellationToken).ConfigureAwait(true);
-        IsLoading = false;
-    }
-
-    /// <summary>
-    /// Names the sheet's subject at once (a deep link, even before the app is connected): the skeleton shows until a read
-    /// answers, and the first re-read after connecting loads it (§3.3).
-    /// </summary>
-    /// <param name="itemId">The item's id.</param>
-    internal void Show(string itemId)
-    {
-        if (!string.Equals(itemId, ItemId, StringComparison.Ordinal))
-        {
-            Clear();
-            ItemId = itemId;
-        }
-
-        IsLoading = !HasItem;
-    }
-
-    /// <summary>Re-reads the open item and the timeline pages read so far (on every event, §9.2).</summary>
-    /// <param name="url">The API's base URL.</param>
-    /// <param name="cancellationToken">Cancels the reads.</param>
-    /// <returns>A task that completes when the sheet shows the answer.</returns>
-    internal Task Refresh(Uri url, CancellationToken cancellationToken)
-    {
-        if (ItemId.Length == 0)
-        {
-            return Task.CompletedTask;
-        }
-
-        _url = url;
-        _pages = Math.Max(_pages, 1);
-        return ReadAndSettle(cancellationToken);
-    }
-
-    private async Task ReadAndSettle(CancellationToken cancellationToken)
-    {
-        await Read(cancellationToken).ConfigureAwait(true);
-        IsLoading = false;
-    }
-
-    /// <summary>Load more: appends the page the API's 'next' names.</summary>
-    /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>A task that completes when the page is shown.</returns>
-    internal async Task LoadMore(CancellationToken cancellationToken)
-    {
-        if (_url is not { } url || Next is not { } next)
-        {
-            return;
-        }
-
-        var page = await api.Timeline(url, ItemId, next, cancellationToken).ConfigureAwait(true);
-        if (page.IsSuccess)
-        {
-            _pages++;
-            foreach (var row in Rows(page.Value))
-            {
-                Timeline.Add(row);
-            }
-
-            Next = page.Value.Next;
-        }
-    }
-
-    private async Task Read(CancellationToken cancellationToken)
-    {
-        if (_url is not { } url)
-        {
-            return;
-        }
-
-        var item = await api.Item(url, ItemId, cancellationToken).ConfigureAwait(true);
-        if (item.IsError)
-        {
-            Failed(item.Error);
-            return;
-        }
-
-        Show(item.Value);
-        await ReadTimeline(url, cancellationToken).ConfigureAwait(true);
-    }
-
-    // The pages read so far, from the first (a refresh never shrinks what Load more showed).
-    private async Task ReadTimeline(Uri url, CancellationToken cancellationToken)
-    {
-        var rows = new List<TimelineRow>();
-        long? after = 0;
-        for (var page = 0; page < _pages && after is { } cursor; page++)
-        {
-            var answer = await api.Timeline(url, ItemId, cursor, cancellationToken).ConfigureAwait(true);
-            if (answer.IsError)
-            {
-                return;
-            }
-
-            rows.AddRange(Rows(answer.Value));
-            after = answer.Value.Next;
-        }
-
-        // The row already shown for an entry (same sequence, same fields) stays, so its control and the focus on it do.
-        var shown = new Dictionary<long, TimelineRow>();
-        foreach (var row in Timeline)
-        {
-            _ = shown.TryAdd(row.Sequence, row);
-        }
-
-        Patch.To(Timeline, [.. rows.Select(r => shown.TryGetValue(r.Sequence, out var kept) && kept == r ? kept : r)]);
-        Next = after;
-    }
-
-    private IEnumerable<TimelineRow> Rows(TimelineView page) => page.Entries.Select(e => new TimelineRow(
-        e.Sequence, TimeZoneInfo.ConvertTime(e.Time, clock.LocalTimeZone).ToString("HH:mm:ss", CultureInfo.InvariantCulture), e.Type, e.Actor, e.Line));
-
     private void Show(ItemView item)
     {
         (HasItem, IsNotFound, IsStale, _version) = (true, false, false, item.Version);
@@ -269,6 +145,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private void Clear()
     {
         _controls.Clear();
+        _generation++;
         (_pages, Next, HasItem, IsNotFound, IsStale) = (0, null, false, false, false);
         (Title, Repo, StateWord, VersionText, Age, Step, CreatedBy, WaitingOn, Instance) =
             (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);

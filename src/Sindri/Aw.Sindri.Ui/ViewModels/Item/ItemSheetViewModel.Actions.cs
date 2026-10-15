@@ -60,7 +60,7 @@ internal sealed partial class ItemSheetViewModel
             // §9.1: the item changed since the human looked. Re-read it. The pressed control shows the API's detail
             // inline while the item still allows it; when the re-read item no longer does (closed elsewhere), the
             // control is gone and the sheet shows the detail in its own line instead.
-            await Read(cancellationToken).ConfigureAwait(true);
+            _ = await Read(cancellationToken).ConfigureAwait(true);
             if (!_controls.ContainsKey(action))
             {
                 Problem(answer.Error.Code, answer.Error.Message);
