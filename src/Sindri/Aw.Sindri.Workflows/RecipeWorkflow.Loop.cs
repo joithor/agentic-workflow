@@ -258,5 +258,5 @@ internal sealed partial class RecipeWorkflow
     /// <see cref="ApplicationFailureException"/> (the history shows no ActivityFailure around it), a failed ordinary one as an <see cref="ActivityFailureException"/>;
     /// a cancellation is neither, so it still ends the workflow.
     /// </summary>
-    private static bool IsActivityFailure(Exception failure) => failure is ActivityFailureException or ApplicationFailureException;
+    internal static bool IsActivityFailure(Exception failure) => failure is ActivityFailureException or ApplicationFailureException;
 }

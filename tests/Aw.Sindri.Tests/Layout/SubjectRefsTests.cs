@@ -79,6 +79,21 @@ public sealed class SubjectRefsTests
         Assert.Equal(("webhook", key, label), (subject.Kind, subject.Key, subject.Label));
     }
 
+    [Theory]
+    [InlineData("link")]
+    [InlineData("payload")]
+    public void A_first_input_with_a_type_and_no_declared_kind_has_a_null_subject_kind_equal_to_the_input_kind(string type)
+    {
+        var recipe = StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [new RecipeInput(_fact, "Input", type, Kind: null)] } };
+        var view = InstanceViews.Of(EngineFixture.At(recipe.Recipe, "produce"), recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        var subject = SubjectRefs.Of(recipe, _item, """{"id":"P-1","title":"A title"}""")!;
+
+        Assert.Null(subject.Kind);
+        Assert.Equal(Assert.Single(view.Inputs).Kind, subject.Kind);
+        Assert.Equal(("P-1", "A title"), (subject.Key, subject.Label));
+    }
+
     [Fact]
     public void Content_that_was_not_read_leaves_a_text_named_by_its_fact_key_and_file_name()
     {
