@@ -13,14 +13,13 @@ public static class HealthSummary
     /// <summary>The health for these inputs.</summary>
     /// <param name="running">Whether this process holds the lease.</param>
     /// <param name="views">The projector's status.</param>
-    /// <param name="services">The services view's rows.</param>
+    /// <param name="services">The services view's rows, or null when the views can't be read.</param>
     /// <param name="profileNeedsApproval">True when no profile is approved.</param>
     /// <param name="profileChanged">True when the live profile changed since approval.</param>
     /// <returns>The health.</returns>
-    public static HealthReport For(bool running, ViewsStatus views, IReadOnlyList<ServiceRow> services, bool profileNeedsApproval, bool profileChanged)
+    public static HealthReport For(bool running, ViewsStatus views, IReadOnlyList<ServiceRow>? services, bool profileNeedsApproval, bool profileChanged)
     {
         ArgumentNullException.ThrowIfNull(views);
-        ArgumentNullException.ThrowIfNull(services);
         List<HealthProblem> problems = [];
         if (!running)
         {
@@ -28,7 +27,12 @@ public static class HealthSummary
         }
 
         problems.AddRange(Views(views));
-        problems.AddRange(services.Where(s => s.LastRun is { Outcome: ServiceOutcome.Failed }).Select(s => Failed(s.Name, s.LastRun)));
+        if (services is null && !views.Stalled)
+        {
+            problems.Add(new("SND-VIEW-001", EmptyText.Unreadable(), "the views can't be read"));
+        }
+
+        problems.AddRange((services ?? []).Where(s => s.LastRun is { Outcome: ServiceOutcome.Failed }).Select(s => Failed(s.Name, s.LastRun)));
         if (profileChanged)
         {
             problems.Add(new("SND-PROFILE-003", "The live profile changed since approval: run `sindri profile approve`", "the profile changed since approval"));
@@ -46,8 +50,9 @@ public static class HealthSummary
     {
         if (views.Stalled)
         {
-            var at = views.StalledAt ?? (views.Cursor + 1);
-            yield return new("SND-VIEW-001", EmptyText.Stalled(at), string.Create(CultureInfo.InvariantCulture, $"the views stopped at event {at}"));
+            yield return views.StalledAt is { } at
+                ? new("SND-VIEW-001", EmptyText.Stalled(at), string.Create(CultureInfo.InvariantCulture, $"the views stopped at event {at}"))
+                : new("SND-VIEW-001", EmptyText.Failing(views.StalledType), "the views can't be updated");
         }
         else if (views.Rebuilding)
         {

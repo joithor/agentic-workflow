@@ -22,6 +22,15 @@ public static class EmptyText
     public static string Stalled(long at) =>
         string.Create(CultureInfo.InvariantCulture, $"Views are stalled at {at}: run `sindri views rebuild`");
 
+    /// <summary>The projector can't run (no event is to blame).</summary>
+    /// <param name="detail">Why, with its code.</param>
+    /// <returns>The sentence.</returns>
+    public static string Failing(string? detail) => $"The views can't be updated ({detail}): run `sindri views rebuild`";
+
+    /// <summary>The views can't be read.</summary>
+    /// <returns>The sentence.</returns>
+    public static string Unreadable() => "The views can't be read: run `sindri views rebuild`";
+
     /// <summary>The sentence a list answers with: stalled, then rebuilding, then its empty sentence when it has no rows, else null.</summary>
     /// <param name="asOf">The answer's freshness.</param>
     /// <param name="empty">True when the list has no rows.</param>

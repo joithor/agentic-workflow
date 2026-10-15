@@ -39,7 +39,7 @@ internal sealed class GetStatusService(HeldLease held, IApprovedProfile approval
     private async ValueTask<HealthReport> Health(bool running, ViewsStatus views, ProfileStatus profile, LoadedProfile? approved, CancellationToken cancellationToken)
     {
         var rows = await viewRows.List<ServiceRow>(ViewNames.Services, cancellationToken).ConfigureAwait(false);
-        return HealthSummary.For(running, views, ApprovedServices.Of(rows.IsSuccess ? rows.Value : [], approved), profile.NeedsApproval, profile.ChangedSinceApproval);
+        return HealthSummary.For(running, views, rows.IsSuccess ? ApprovedServices.Of(rows.Value, approved) : null, profile.NeedsApproval, profile.ChangedSinceApproval);
     }
 
     private static ProfileStatus Profile(LoadedProfile? approved, RecordedApproval? recorded, Result<LoadedProfile> loaded)

@@ -45,6 +45,18 @@ internal sealed class ProjectorProgress(TimeProvider clock) : IProjectorStatus, 
     }
 
     /// <inheritdoc/>
+    public bool RebuildRequested
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _rebuildRequested;
+            }
+        }
+    }
+
+    /// <inheritdoc/>
     public bool TakeRebuildRequest()
     {
         lock (_gate)

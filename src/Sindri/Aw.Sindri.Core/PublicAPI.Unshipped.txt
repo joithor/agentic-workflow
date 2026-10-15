@@ -927,6 +927,7 @@ Aw.Sindri.Core.Views.IProjectorControl
 Aw.Sindri.Core.Views.IProjectorControl.RequestRebuild() -> void
 Aw.Sindri.Core.Views.IProjectorFeed
 Aw.Sindri.Core.Views.IProjectorFeed.Publish(Aw.Sindri.Core.Views.ViewsStatus! status) -> void
+Aw.Sindri.Core.Views.IProjectorFeed.RebuildRequested.get -> bool
 Aw.Sindri.Core.Views.IProjectorFeed.TakeRebuildRequest() -> bool
 Aw.Sindri.Core.Views.IProjectorStatus
 Aw.Sindri.Core.Views.IProjectorStatus.Current.get -> Aw.Sindri.Core.Views.ViewsStatus!
@@ -4077,7 +4078,7 @@ static Aw.Sindri.Core.Health.HealthProblem.operator !=(Aw.Sindri.Core.Health.Hea
 static Aw.Sindri.Core.Health.HealthProblem.operator ==(Aw.Sindri.Core.Health.HealthProblem? left, Aw.Sindri.Core.Health.HealthProblem? right) -> bool
 static Aw.Sindri.Core.Health.HealthReport.operator !=(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
 static Aw.Sindri.Core.Health.HealthReport.operator ==(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
-static Aw.Sindri.Core.Health.HealthSummary.For(bool running, Aw.Sindri.Core.Views.ViewsStatus! views, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! services, bool profileNeedsApproval, bool profileChanged) -> Aw.Sindri.Core.Health.HealthReport!
+static Aw.Sindri.Core.Health.HealthSummary.For(bool running, Aw.Sindri.Core.Views.ViewsStatus! views, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>? services, bool profileNeedsApproval, bool profileChanged) -> Aw.Sindri.Core.Health.HealthReport!
 static Aw.Sindri.Core.Ids.ActionId.From(string! value) -> Aw.Sindri.Core.Ids.ActionId
 static Aw.Sindri.Core.Ids.ActionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.ActionId
 static Aw.Sindri.Core.Ids.ActionId.TryFrom(string? value, out Aw.Sindri.Core.Ids.ActionId vo) -> bool
@@ -4215,6 +4216,8 @@ static Aw.Sindri.Core.Views.AsOf.operator ==(Aw.Sindri.Core.Views.AsOf? left, Aw
 static Aw.Sindri.Core.Views.EmptyText.For(Aw.Sindri.Core.Views.AsOf! asOf, bool empty, System.Func<string!>! emptySentence) -> string?
 static Aw.Sindri.Core.Views.EmptyText.Rebuilding(long cursor, long head) -> string!
 static Aw.Sindri.Core.Views.EmptyText.Services() -> string!
+static Aw.Sindri.Core.Views.EmptyText.Failing(string? detail) -> string!
+static Aw.Sindri.Core.Views.EmptyText.Unreadable() -> string!
 static Aw.Sindri.Core.Views.EmptyText.Stalled(long at) -> string!
 static Aw.Sindri.Core.Views.LastRun.operator !=(Aw.Sindri.Core.Views.LastRun? left, Aw.Sindri.Core.Views.LastRun? right) -> bool
 static Aw.Sindri.Core.Views.LastRun.operator ==(Aw.Sindri.Core.Views.LastRun? left, Aw.Sindri.Core.Views.LastRun? right) -> bool

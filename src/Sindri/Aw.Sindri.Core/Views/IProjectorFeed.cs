@@ -7,7 +7,10 @@ public interface IProjectorFeed
     /// <param name="status">The status.</param>
     public void Publish(ViewsStatus status);
 
-    /// <summary>True once per rebuild request (RebuildViews) since the last call; clears the request.</summary>
+    /// <summary>True while a rebuild was requested and not yet taken.</summary>
+    public bool RebuildRequested { get; }
+
+    /// <summary>True once per rebuild request (RebuildViews) since the last call; clears the request; the projector takes it once the reset has worked, so a failed attempt keeps it.</summary>
     /// <returns>Whether a rebuild was requested.</returns>
     public bool TakeRebuildRequest();
 }
