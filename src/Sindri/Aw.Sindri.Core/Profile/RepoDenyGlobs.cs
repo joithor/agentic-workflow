@@ -14,4 +14,13 @@ public static class RepoDenyGlobs
         string[] globs = [.. profile.Index?.DenyPaths ?? [], .. repo.Index?.DenyPaths ?? []];
         return globs.Length == 0 ? null : globs;
     }
+
+    /// <summary>Every repo of <paramref name="profile"/> with its globs: the one mapping from the profile to the scope the context engine reads (every surface and the doctor use it).</summary>
+    /// <param name="profile">The approved profile.</param>
+    /// <returns>Each repo's name, path and globs (null when none), in profile order.</returns>
+    public static IReadOnlyList<(string Name, string Path, IReadOnlyList<string>? DenyPaths)> Entries(SindriProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        return [.. (profile.Repos ?? []).Select(r => (r.Name, r.Path, For(profile, r)))];
+    }
 }
