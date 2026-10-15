@@ -16,7 +16,7 @@ namespace Aw.Sindri.Tests.Workflow.Capabilities;
 internal static class CapabilityRecipe
 {
     /// <summary>The hash of Workflow/Recipes/base/workflow.cap-base.yaml, which the fixtures name in their 'base' (the end-to-end fixture test checks it).</summary>
-    public static readonly RecipeHash BaseHash = RecipeHash.From("sha256:5aa84cb58a5a6a2c70fa4c9b3a1758625a9e78b625734ec55e49f2e762125b03");
+    public static readonly RecipeHash BaseHash = RecipeHash.From("sha256:84b1571f2b8439caa58c35c4560095bc89b2fde1fef4ae7bd57e59569494ae47");
 
     /// <summary>
     /// The blocks the fixtures name: a desk Step and two gates without capabilities, the effects 'effect.claim.ref'
