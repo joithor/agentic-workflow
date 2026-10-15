@@ -5,8 +5,8 @@ using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Testing;
-using Aw.Sindri.Tests.Server;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Tests.Server;
 using Microsoft.Extensions.DependencyInjection;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
 
