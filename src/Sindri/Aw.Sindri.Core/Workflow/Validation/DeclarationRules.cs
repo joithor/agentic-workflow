@@ -13,8 +13,6 @@ namespace Aw.Sindri.Core.Workflow.Validation;
 /// </summary>
 internal sealed class DeclarationRules : IRecipeRules
 {
-    private static readonly string[] _urgencies = ["incident", "triage", "work"];
-
     public IEnumerable<RecipeFinding> Check(RecipeDocument document, ValidationContext context)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -31,10 +29,10 @@ internal sealed class DeclarationRules : IRecipeRules
 
     private static IEnumerable<RecipeFinding> Urgency(Recipe recipe, RecipeSource source)
     {
-        if (!_urgencies.Contains(recipe.Urgency, StringComparer.Ordinal))
+        if (!Urgencies.IsKnown(recipe.Urgency))
         {
             yield return source.Finding("RCP-URG-001", "urgency",
-                $"urgency '{recipe.Urgency}' isn't one of {string.Join(", ", _urgencies)}",
+                $"urgency '{recipe.Urgency}' isn't one of {string.Join(", ", Urgencies.All)}",
                 "use incident, triage or work, or remove urgency (the default is work)");
         }
     }

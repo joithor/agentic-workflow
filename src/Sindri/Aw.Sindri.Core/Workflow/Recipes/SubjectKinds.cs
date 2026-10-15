@@ -18,4 +18,19 @@ public static class SubjectKinds
         "linear-project" or "webhook" => "payload",
         _ => null,
     };
+
+    /// <summary>The kind an input has: the declared one, else the one its type implies (spec §3.3: item, file or text; a payload, link or other structured type has none).</summary>
+    /// <param name="input">A recipe input.</param>
+    /// <returns>The kind, or null when it has none.</returns>
+    public static string? Effective(RecipeInput input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        return input.Kind ?? (input.Type ?? FactTypes.Default) switch
+        {
+            "item" => "item",
+            "file" => "file",
+            "text" => "text",
+            _ => null,
+        };
+    }
 }

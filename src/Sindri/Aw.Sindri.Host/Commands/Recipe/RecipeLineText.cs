@@ -25,13 +25,13 @@ internal static class RecipeLineText
 
     /// <summary>
     /// What 'recipe show' adds under the line: 'urgency: &lt;urgency&gt;', then one 'input: &lt;key&gt; type=&lt;type&gt; kind=&lt;kind&gt;' line per input
-    /// (type text when none is declared, kind '-' when none) and one 'output: &lt;key&gt; type=&lt;type&gt; from=&lt;state&gt;' line per output, then the path order (spec §3.10): 'order: &lt;path|transition-list&gt;', one 'state: &lt;name&gt; order=&lt;n&gt;' (or 'branch-of=&lt;state&gt;', or 'order=-' for a state the walk never reaches) line per state and one 'loop: &lt;name|-&gt; &lt;from&gt; -&gt; &lt;to&gt;' line per loop edge.
+    /// (type text when none is declared; the kind is the declared one, else the one the type implies per spec §3.3, '-' when there is none) and one 'output: &lt;key&gt; type=&lt;type&gt; from=&lt;state&gt;' line per output, then the path order (spec §3.10): 'order: &lt;path|transition-list&gt;', one 'state: &lt;name&gt; order=&lt;n&gt;' (or 'branch-of=&lt;state&gt;', or 'order=-' for a state the walk never reaches) line per state and one 'loop: &lt;name|-&gt; &lt;from&gt; -&gt; &lt;to&gt;' line per loop edge.
     /// </summary>
     /// <param name="s">The recipe's line.</param>
     /// <returns>The lines, each with its newline.</returns>
     internal static string Detail(RecipeSummary s) =>
         $"urgency: {s.Urgency}\n"
-        + string.Concat(s.Inputs.Select(static i => $"input: {i.Key.Value} type={i.Type ?? FactTypes.Default} kind={i.Kind ?? "-"}\n"))
+        + string.Concat(s.Inputs.Select(static i => $"input: {i.Key.Value} type={i.Type ?? FactTypes.Default} kind={SubjectKinds.Effective(i) ?? "-"}\n"))
         + string.Concat(s.Outputs.Select(static o => $"output: {o.Key.Value} type={o.Type ?? FactTypes.Default} from={o.From}\n"))
         + $"order: {s.OrderedBy}\n"
         + string.Concat(s.States.Select(static p => $"state: {p.State} {(p.BranchOf is { } b ? $"branch-of={b}" : $"order={p.Order?.ToString(CultureInfo.InvariantCulture) ?? "-"}")}\n"))
