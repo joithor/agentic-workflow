@@ -12,6 +12,8 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
 
     private static string Pid => Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
+    private static string Now => DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture);
+
     private string Lock => Path.Combine(_root, "locks", "heavy-job.lock");
 
     private DirectoryHeavySlots Slots(int slots = 2, bool held = false) => new(new HeavyLockSettings(Lock, slots, held), TimeProvider.System);
@@ -86,10 +88,10 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_slot_with_no_owner_record_stays_held_however_old_it_is_because_locks_sh_and_ui_evidence_write_none()
+    public async Task A_slot_with_no_owner_record_stays_held_before_the_six_hour_last_resort_because_locks_sh_and_ui_evidence_write_none()
     {
         Directory.CreateDirectory(Lock);
-        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow.AddMinutes(-5));
+        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow.AddHours(-6).AddMinutes(1));   // just under the boundary
 
         var taken = (await Slots(slots: 1).Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
 
@@ -112,7 +114,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     public async Task A_TS_sindri_holder_record_with_a_live_pid_keeps_the_slot_held()
     {
         Directory.CreateDirectory(Lock);
-        await File.WriteAllTextAsync(Lock + ".holder.json", $"{{\"kind\":\"index-build:x\",\"pid\":{Pid},\"host\":\"{Environment.MachineName}\",\"startedAt\":\"2026-10-01T00:00:00Z\"}}", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Lock + ".holder.json", $"{{\"kind\":\"index-build:x\",\"pid\":{Pid},\"host\":\"{Environment.MachineName}\",\"startedAt\":\"{Now}\"}}", TestContext.Current.CancellationToken);
 
         var taken = (await Slots(slots: 1).Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
 
@@ -164,13 +166,154 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
         Assert.False(Directory.Exists(Lock));
     }
 
+    private DirectoryHeavySlots OneSlot() => new(new HeavyLockSettings(Lock, 1, Held: false), TimeProvider.System);
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_owner_write_after_the_file_was_created_removes_the_file_and_the_slot_and_says_so()
+    {
+        var slots = new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), TimeProvider.System)
+        {
+            WriteFile = (path, _) =>
+            {
+                File.WriteAllText(path, string.Empty);   // the file exists, then the write fails: a full disk
+                throw new IOException("No space left on device");
+            },
+        };
+
+        var taken = await slots.Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken);
+
+        Assert.True(taken.IsError);
+        Assert.Contains("so the slot was released", taken.Error.Message, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(Lock));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_owner_write_that_leaves_the_slot_behind_names_the_folder_and_does_not_say_released()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var slots = new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), TimeProvider.System)
+        {
+            WriteFile = (path, _) =>
+            {
+                File.WriteAllText(path, string.Empty);
+                if (!OperatingSystem.IsWindows())
+                {
+                    File.SetUnixFileMode(Path.GetDirectoryName(path)!, UnixFileMode.UserRead | UnixFileMode.UserExecute);   // why: the file sits in a folder; nothing in it can now be deleted
+                }
+
+                throw new IOException("No space left on device");
+            },
+        };
+
+        try
+        {
+            var taken = await slots.Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken);
+
+            Assert.True(taken.IsError);
+            Assert.DoesNotContain("so the slot was released", taken.Error.Message, StringComparison.Ordinal);
+            Assert.Contains(Lock, taken.Error.Message, StringComparison.Ordinal);
+            Assert.Contains("removed by hand", taken.Error.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(Lock, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_slot_with_an_empty_owner_file_is_a_holder_mid_write_and_is_left_alone()
+    {
+        Directory.CreateDirectory(Lock);
+        await File.WriteAllTextAsync(Path.Combine(Lock, "owner"), string.Empty, TestContext.Current.CancellationToken);
+
+        var taken = (await OneSlot().Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Null(taken.Lease);
+        Assert.True(File.Exists(Path.Combine(Lock, "owner")));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_TS_holder_record_older_than_the_slot_is_a_leftover_and_the_slot_stays_held()
+    {
+        Directory.CreateDirectory(Lock);
+        await File.WriteAllTextAsync(Lock + ".holder.json", $"{{\"kind\":\"k\",\"pid\":2147483646,\"host\":\"{Environment.MachineName}\",\"startedAt\":\"2026-10-01T00:00:00Z\"}}", TestContext.Current.CancellationToken);
+        File.SetLastWriteTimeUtc(Lock + ".holder.json", DateTime.UtcNow.AddHours(-1));
+        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow);   // a locks.sh holder took the slot after the record was written
+
+        var taken = (await OneSlot().Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Null(taken.Lease);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_TS_holder_on_a_host_whose_name_has_a_domain_is_judged_on_the_short_name()
+    {
+        Directory.CreateDirectory(Lock);
+        await File.WriteAllTextAsync(Lock + ".holder.json", $"{{\"kind\":\"k\",\"pid\":2147483646,\"host\":\"{Environment.MachineName}.local\",\"startedAt\":\"2026-10-01T00:00:00Z\"}}", TestContext.Current.CancellationToken);
+        File.SetLastWriteTimeUtc(Lock + ".holder.json", DateTime.UtcNow.AddMinutes(1));
+
+        await using var lease = await Taken(OneSlot());
+
+        Assert.Contains(Pid, await File.ReadAllTextAsync(Path.Combine(Lock, "owner"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_live_pid_that_started_after_the_record_was_written_is_a_reused_pid_and_the_slot_is_reclaimed()
+    {
+        Directory.CreateDirectory(Lock);
+        await File.WriteAllTextAsync(Path.Combine(Lock, "owner"), $"{Pid} 2020-01-01T00:00:00Z a job from before this process existed\n", TestContext.Current.CancellationToken);
+
+        await using var lease = await Taken(OneSlot());
+
+        Assert.DoesNotContain("2020", await File.ReadAllTextAsync(Path.Combine(Lock, "owner"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_slot_held_over_six_hours_is_taken_even_when_its_record_names_a_live_pid_like_the_TS_sindri_does()
+    {
+        Directory.CreateDirectory(Lock);
+        await File.WriteAllTextAsync(Path.Combine(Lock, "owner"), $"{Pid} {Now} long job\n", TestContext.Current.CancellationToken);
+        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow.AddHours(-7));
+
+        await using var lease = await Taken(OneSlot());
+
+        Assert.DoesNotContain("long job", await File.ReadAllTextAsync(Path.Combine(Lock, "owner"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Two_waiters_that_both_judged_a_record_less_old_slot_stale_leave_the_slot_to_the_one_that_retook_it()
+    {
+        Directory.CreateDirectory(Lock);
+        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow.AddHours(-7));
+        var slots = new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), TimeProvider.System)
+        {
+            BeforeTakeover = directory =>
+            {
+                Directory.Delete(directory, recursive: true);
+                Directory.CreateDirectory(directory);   // A took it: fresh, and (a moment later) with its owner
+            },
+        };
+
+        var b = (await slots.Take("b's job", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Null(b.Lease);
+        Assert.True(Directory.Exists(Lock));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Two_waiters_that_both_judged_a_dead_slot_stale_leave_the_slot_to_the_one_that_retook_it()
     {
         // B read the dead owner; before B takes the slot over, A reclaimed it and holds it now. B must leave A's slot alone.
         Directory.CreateDirectory(Lock);
         await File.WriteAllTextAsync(Path.Combine(Lock, "owner"), "2147483646 2026-10-01T00:00:00Z dead job\n", TestContext.Current.CancellationToken);
-        var aOwner = $"{Pid} 2026-10-02T00:00:00Z a's job\n";
+        var aOwner = $"{Pid} {Now} a's job\n";
         var slots = new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), TimeProvider.System)
         {
             BeforeTakeover = directory =>
@@ -205,7 +348,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     public async Task Waiting_tells_the_progress_once_and_gives_up_at_the_timeout()
     {
         Directory.CreateDirectory(Lock);
-        await File.WriteAllTextAsync(Path.Combine(Lock, "owner"), $"{Pid} 2026-10-01T00:00:00Z other\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(Lock, "owner"), $"{Pid} {Now} other\n", TestContext.Current.CancellationToken);
         var told = new SyncProgress();
         var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider();
         var slots = new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), clock);
@@ -228,13 +371,14 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
         var plain = HeavyLockSettings.Read(_ => null, "/state");
         var set = HeavyLockSettings.Read(name => name switch { "AW_HEAVY_JOB_LOCK" => "/x/lock", "AW_HEAVY_SLOTS" => "3", "AW_HEAVY_LOCK_HELD" => "1", _ => null }, "/state");
 
-        Assert.Equal(("/state/locks/heavy-job.lock", 2, false), (plain.Lock, plain.Slots, plain.Held));
+        Assert.Equal(("/state/locks/heavy-job.lock", 1, false), (plain.Lock, plain.Slots, plain.Held));
         Assert.Equal(("/x/lock", 3, true), (set.Lock, set.Slots, set.Held));
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(null, 2)]
-    [InlineData("", 2)]
+    [InlineData(null, 1)]
+    [InlineData("", 1)]
+    [InlineData("2", 2)]
     [InlineData("1", 1)]
     [InlineData("3", 3)]
     [InlineData("03", 3)]
@@ -242,7 +386,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     [InlineData("zero", 1)]
     [InlineData("-2", 1)]
     [InlineData("2.5", 1)]
-    public void The_slot_count_is_AW_HEAVY_SLOTS_when_set_2_when_unset_or_empty_and_1_when_malformed_as_config_lib_locks_sh_reads_it(string? value, int expected)
+    public void The_slot_count_is_AW_HEAVY_SLOTS_when_set_and_1_when_unset_empty_or_malformed_as_config_lib_locks_sh_reads_it(string? value, int expected)
     {
         var settings = HeavyLockSettings.Read(name => name == "AW_HEAVY_SLOTS" ? value : null, "/state");
 

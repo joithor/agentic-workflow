@@ -415,7 +415,7 @@ User-facing behaviour is in `docs/sindri/context.md` (S-4). This is where the co
 - **Sindri Core.** `IHeavySlots`/`HeavySlotTaken`; the events `context.map.reviewed`, `context.map.promoted`, `context.map.proposed`
   (the sixth public context event, added by S-4) and `context.map.built`; `IndexSettings` (`index.denyPaths` on the profile and on a repo).
 - **Sindri Infrastructure.** `DirectoryHeavySlots` over `locks/heavy-job.lock[.k]` (`mkdir` mutex, owner file `<pid> <utc> <who>`,
-  `AW_HEAVY_SLOTS` default 2, `AW_HEAVY_LOCK_HELD=1` makes it a no-op, a dead owner's slot is reclaimed like the heavy wrapper does);
+  `AW_HEAVY_SLOTS` default 1 (the box cap, as the heavy wrapper reads it), `AW_HEAVY_LOCK_HELD=1` makes it a no-op, a dead owner's slot is reclaimed like the heavy wrapper does);
   it interoperates with `config/lib/locks.sh` (an integration test takes both slots from bash).
 - **Sindri Features `ContextCalls/`.**
   - Queries: `GetContextReview`, `GetContextReviewHistory`, `ExportContextReview`, `GetContextProposals`, `GetContextLenses`, `GetContextFileMap`.
@@ -476,7 +476,7 @@ The goldens under `tests/Aw.Sindri.Tests/Golden/Api/context-*/` pin every body b
 - **Trust and the fence (provisional owner default, 2026-10-14 night; CTX §7).** Every lens item, record, decision, queue entry and node fact carries `trust`. A human at the CLI or in the app (`FencePolicies.For`: human and client `cli` or `http`) gets the label clean beside `trust`; a session, MCP and in-process callers get untrusted text inside `<untrusted source="map">…</untrusted>` as before. The CLI's text output fences an untrusted label itself when it called as a human (a session's answer is already fenced), `--json` prints the body unchanged. Query `ResultItem`s stay fenced for everyone. The file map carries only repo paths and node keys, so it has no `trust`. If the owner refuses the policy, drop `FencePolicies` to always-fenced and document the fence grammar for the app.
 - **Anchor errors** carry their candidates in text: 003 ends `(fix: try <key>, <key>)` (up to five), 037 lists the keys (goldens `unknown-anchor-003`, `ambiguous-037`). Structured extensions are follow-up F1.
 - **HTTP status per code.** 003 404, 037 409, 030 404, 044 404, 045 404, 046 409, 047 409, 043 409, 005 and 006 400, 042 400, 040 503 (CLI 75), 048 503 (CLI 2), 020 403, `SND-AUTH-002` 403, `SND-CLI-003` 400.
-- **Heavy-job slots.** `HeavyLockSettings` reads `AW_HEAVY_SLOTS` as `config/lib/locks.sh` does: unset or empty is 2, a whole number of at least 1 is that many, anything else is 1.
+- **Heavy-job slots.** `HeavyLockSettings` reads `AW_HEAVY_SLOTS` as `config/lib/locks.sh` does: unset or empty is 1, a whole number of at least 1 is that many, anything else is 1.
 
 ### Tests
 

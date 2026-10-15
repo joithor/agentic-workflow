@@ -24,7 +24,7 @@ public sealed class DirectoryHeavySlotsContractTests : HeavyJobLockContract, IDi
             {
                 var slot = k == 1 ? path : string.Create(CultureInfo.InvariantCulture, $"{path}.{k}");
                 _ = Directory.CreateDirectory(slot);
-                File.WriteAllText(Path.Combine(slot, DirectoryHeavySlots.OwnerFile), string.Create(CultureInfo.InvariantCulture, $"{Environment.ProcessId} 2026-10-01T00:00:00Z {busyHolder}\n"));
+                File.WriteAllText(Path.Combine(slot, DirectoryHeavySlots.OwnerFile), string.Create(CultureInfo.InvariantCulture, $"{Environment.ProcessId} {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ} {busyHolder}\n"));
             }
         }
 
