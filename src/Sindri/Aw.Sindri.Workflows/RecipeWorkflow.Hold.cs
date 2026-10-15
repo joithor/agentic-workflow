@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
@@ -60,7 +61,8 @@ internal sealed partial class RecipeWorkflow
         {
             var record = new WorkflowEventRecord(
                 _start!.WorkflowId().Value, // why: the loop runs only after RunAsync set _start
-                TypeOf(WorkflowEventType.Expired), _start.Item.Value, instance.State, instance.State, held.Name, held.Outcome?.Value, instance.Frame.Run?.Token.Value, Timers);
+                TypeOf(WorkflowEventType.Expired), _start.Item.Value, instance.State, instance.State, held.Name, held.Outcome?.Value, instance.Frame.Run?.Token.Value, Timers,
+                Detail: WorkflowEventDetail.Of(held, instance.Id, instance.Suspension));
             await Mirror(record, NeedsYou(instance)).ConfigureAwait(true);
         }
     }

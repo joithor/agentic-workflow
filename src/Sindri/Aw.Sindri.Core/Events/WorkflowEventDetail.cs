@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Events;
+using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 namespace Aw.Sindri.Core.Events;
@@ -42,6 +43,35 @@ public sealed record WorkflowEventDetail(
     IReadOnlyList<string> Effects,
     WorkflowEventDelta Delta)
 {
+    /// <summary>
+    /// The detail of a row mirrored without a decision: a desk timeout's park, or a held event's expiry. It names the trigger
+    /// (its key and actor, a wait's source sequence) and the instance's suspension after the row, and nothing else.
+    /// </summary>
+    /// <param name="trigger">The deadline that fired, or the held event that expired.</param>
+    /// <param name="instance">The instance the row is about.</param>
+    /// <param name="suspension">The instance's suspension after it; none when it has none.</param>
+    /// <returns>The detail the ledger row carries.</returns>
+    public static WorkflowEventDetail Of(Trigger trigger, WorkflowInstanceId instance, Suspension? suspension)
+    {
+        ArgumentNullException.ThrowIfNull(trigger);
+        return new WorkflowEventDetail(
+            trigger.KeyFor(instance),
+            trigger.Actor,
+            trigger is WaitSatisfied { Source: EventWaitSource e } ? e.Sequence : null,
+            ArgumentsSha256: null,
+            ReportSha256: null,
+            Answer: null,
+            Amount: null,
+            Reason: null,
+            Gates: [],
+            Evidence: [],
+            Grant: null,
+            Override: null,
+            Refusal: null,
+            Effects: [],
+            new WorkflowEventDelta(Frame: null, WorkflowEventDelta.Summary(suspension), PendingPark: null, Loops: null, TokensSpent: null, TokensGranted: null, Facts: null, Outcome: null));
+    }
+
     /// <summary>The public projection of a decision's event for <paramref name="trigger"/>.</summary>
     /// <param name="recorded">The decision's event for this instance.</param>
     /// <param name="trigger">The trigger the decision decided; none for a start, whose event carries only its key and actor.</param>

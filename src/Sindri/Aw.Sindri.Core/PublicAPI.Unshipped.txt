@@ -5204,3 +5204,4 @@ Aw.Sindri.Core.Workflow.Registry.RecipeSummary.RecipeSummary(Aw.Sindri.Core.Work
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.States.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.StatePlace!>!
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.States.init -> void
 static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.Effective(Aw.Sindri.Core.Workflow.Recipes.RecipeInput! input) -> string?
+static Aw.Sindri.Core.Events.WorkflowEventDetail.Of(Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger! trigger, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId instance, Aw.Sindri.Core.Workflow.Engine.Instances.Suspension? suspension) -> Aw.Sindri.Core.Events.WorkflowEventDetail!
