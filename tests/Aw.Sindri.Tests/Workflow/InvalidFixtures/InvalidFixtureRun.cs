@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -73,7 +74,7 @@ internal static class InvalidFixtureRun
 
     private static async Task<IReadOnlyList<RecipeFinding>> Service(IRecipeReader reader, InMemoryRecipeFiles files, BlockCatalog catalog, string path, CancellationToken cancellationToken)
     {
-        var service = new ValidateRecipeService(reader, files, catalog, new Aw.Sindri.Core.Profile.ApprovedRecipeProfileFacts(new InMemoryProfiles()));
+        var service = new ValidateRecipeService(reader, files, catalog, new ApprovedRecipeProfileFacts(new InMemoryProfiles()));
         return (await service.Handle(ValidateRecipeRequest.FromPath(path), cancellationToken)).Value.Findings;
     }
 

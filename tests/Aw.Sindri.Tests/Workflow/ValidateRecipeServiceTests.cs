@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -87,5 +88,5 @@ public sealed class ValidateRecipeServiceTests : IDisposable
     }
 
     private ValidateRecipeService Service() =>
-        new(RecipeReaderTests.Reader, _files, new BlockCatalog([TestBlocks.Step("step.produce")], []), new Aw.Sindri.Core.Profile.ApprovedRecipeProfileFacts(new InMemoryProfiles()));
+        new(RecipeReaderTests.Reader, _files, new BlockCatalog([TestBlocks.Step("step.produce")], []), new ApprovedRecipeProfileFacts(new InMemoryProfiles()));
 }
