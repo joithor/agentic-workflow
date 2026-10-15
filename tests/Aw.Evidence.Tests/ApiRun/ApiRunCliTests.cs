@@ -30,7 +30,8 @@ public sealed class ApiRunCliTests
         var step = Assert.Single(response.Summary.Steps);
         Assert.Equal((1, ApiAction.Cli, "out/tool list", ApiStepStatus.Passed, 0), (step.Index, step.Action, step.Target, step.Status, step.Code));
         var call = Assert.Single(harness.Cli.Calls);
-        Assert.Equal((Tool, ["list"]), (call.Executable, call.Args));
+        Assert.Equal(Tool, call.Executable);
+        Assert.Equal(["list"], call.Args);
         Assert.Null(response.Summary.Host);
     }
 

@@ -16,6 +16,12 @@ internal static partial class WriteWords
         "finish", "accept", "reject", "sync", "release", "merge", "logout", "signout", "register",
     };
 
+    // The words a CLI argument may carry on top of the UI list: commands that change or remove something.
+    private static readonly HashSet<string> _cliVerbs = new(StringComparer.Ordinal)
+    {
+        "push", "drop", "rm", "truncate", "destroy", "purge", "wipe", "kill", "commit", "put", "patch", "write", "rollback", "revert", "uninstall",
+    };
+
     private static readonly string[] _controlSuffixes = ["btn", "button", "link", "action"];
 
     internal static bool LooksLikeWrite(ScriptStep step)
@@ -29,6 +35,9 @@ internal static partial class WriteWords
         };
         return LabelLooksLikeWrite(label);
     }
+
+    /// <summary>The words of a CLI argument that read as write verbs (the UI list plus the CLI verbs).</summary>
+    internal static IEnumerable<string> CliWritesIn(string argument) => Words(argument).Where(static w => IsWriteWord(w) || _cliVerbs.Contains(w));
 
     internal static bool LabelLooksLikeWrite(string? label) => label is not null && Words(label).Any(IsWriteWord);
 

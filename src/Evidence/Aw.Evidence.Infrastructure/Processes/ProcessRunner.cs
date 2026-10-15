@@ -15,10 +15,20 @@ internal static class ProcessRunner
     /// <param name="failure">The error to report when it can't start or runs out of time.</param>
     /// <param name="cancellationToken">Cancels the run (the process is killed).</param>
     /// <returns>The outcome, or <paramref name="failure"/> saying what went wrong.</returns>
-    internal static async ValueTask<Result<ProcessOutcome>> RunAsync(
-        IReadOnlyList<string> command, string? standardInput, TimeSpan timeout, ErrorDefinition failure, CancellationToken cancellationToken)
+    internal static ValueTask<Result<ProcessOutcome>> RunAsync(
+        IReadOnlyList<string> command, string? standardInput, TimeSpan timeout, ErrorDefinition failure, CancellationToken cancellationToken) =>
+        RunAsync(new ProcessSpec(command, standardInput, Environment: null, WorkingDirectory: null), timeout, failure, cancellationToken);
+
+    /// <summary>Runs <paramref name="spec"/>: like the overload above, with an exact environment and a working directory when the spec gives them.</summary>
+    /// <param name="spec">The program, its arguments, input, environment and working directory.</param>
+    /// <param name="timeout">How long it may run before it is killed.</param>
+    /// <param name="failure">The error to report when it can't start or runs out of time.</param>
+    /// <param name="cancellationToken">Cancels the run (the process is killed).</param>
+    /// <returns>The outcome, or <paramref name="failure"/> saying what went wrong.</returns>
+    internal static async ValueTask<Result<ProcessOutcome>> RunAsync(ProcessSpec spec, TimeSpan timeout, ErrorDefinition failure, CancellationToken cancellationToken)
     {
-        using var process = new Process { StartInfo = StartInfo(command, standardInput is not null) };
+        var (command, standardInput) = (spec.Command, spec.StandardInput);
+        using var process = new Process { StartInfo = StartInfo(spec) };
         try
         {
             _ = process.Start();
@@ -72,18 +82,32 @@ internal static class ProcessRunner
         return new(process.ExitCode, await output.ConfigureAwait(false), await error.ConfigureAwait(false));
     }
 
-    private static ProcessStartInfo StartInfo(IReadOnlyList<string> command, bool redirectInput)
+    private static ProcessStartInfo StartInfo(ProcessSpec spec)
     {
-        var start = new ProcessStartInfo(command[0])
+        var start = new ProcessStartInfo(spec.Command[0])
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            RedirectStandardInput = redirectInput,
+            RedirectStandardInput = spec.StandardInput is not null,
             UseShellExecute = false,
         };
-        foreach (var argument in command.Skip(1))
+        foreach (var argument in spec.Command.Skip(1))
         {
             start.ArgumentList.Add(argument);
+        }
+
+        if (spec.WorkingDirectory is not null)
+        {
+            start.WorkingDirectory = spec.WorkingDirectory;
+        }
+
+        if (spec.Environment is not null)
+        {
+            start.Environment.Clear();
+            foreach (var (name, value) in spec.Environment)
+            {
+                start.Environment[name] = value;
+            }
         }
 
         return start;

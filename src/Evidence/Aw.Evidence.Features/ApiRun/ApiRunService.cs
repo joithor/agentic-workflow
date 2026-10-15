@@ -49,7 +49,7 @@ internal sealed class ApiRunService(ApiRunFiles files, ApiVetting vetting, Reque
         await using (lease.Value.ConfigureAwait(false))
         {
             await requests.RunAsync(vetted.Value, collected, cancellationToken).ConfigureAwait(false);
-            _ = calls;
+            await calls.RunAsync(vetted.Value, collected, cancellationToken).ConfigureAwait(false);
         }
 
         return await WriteAsync(run, Finished(run, vetted.Value, collected), cancellationToken).ConfigureAwait(false);
@@ -59,13 +59,13 @@ internal sealed class ApiRunService(ApiRunFiles files, ApiVetting vetting, Reque
         files.WriteSummaryAsync(run.Request.RunDirectory, summary, cancellationToken);
 
     private ApiSummary Refused(RunFacts run, ApiScript? script, Error error) =>
-        Compose(run, new SummaryParts(script, Host: null, ApiOutcome.Refused, Number.Text($"refused: {error.Code} {error.Message}"), files.NewCollected(), new CodedMessage(error.Code, error.Message), Error: null));
+        Compose(run, new SummaryParts(script, Host: null, ApiOutcome.Refused, Number.Text($"refused: {error.Code} {error.Message}"), files.NewCollected(), new CodedMessage(error.Code, error.Message), Error: null, PassedEnv: []));
 
     private ApiSummary Finished(RunFacts run, VettedRun vetted, Collected collected)
     {
         var headline = HeadlineOf(collected);
         var outcome = collected.Error is not null ? ApiOutcome.Errored : collected.Failures.Count > 0 ? ApiOutcome.Failed : ApiOutcome.Passed;
-        return Compose(run, new SummaryParts(vetted.Script, vetted.Host?.Origin, outcome, headline, collected, Refusal: null, collected.Error));
+        return Compose(run, new SummaryParts(vetted.Script, vetted.Host?.Origin, outcome, headline, collected, Refusal: null, collected.Error, vetted.PassedEnv));
     }
 
     private static string HeadlineOf(Collected collected)
@@ -87,9 +87,9 @@ internal sealed class ApiRunService(ApiRunFiles files, ApiVetting vetting, Reque
         new(
             ApiSummary.SchemaName, ApiSummary.KindName, RunId.From(RunPath.NameOf(run.Request.RunDirectory)), run.Instance, run.Started, clock.GetUtcNow(),
             run.Request.AppBuild, run.Sha256, run.Request.At, parts.Host, parts.Outcome, files.Safe(parts.Headline, RecordedText.HeadlineLimit), parts.Collected.Steps,
-            parts.Collected.Failures, [.. parts.Script?.DeclaredWrites ?? []], [], ApiSummary.Unseeded, SeedSha256: null, parts.Refusal, parts.Error, []);
+            parts.Collected.Failures, [.. parts.Script?.DeclaredWrites ?? []], parts.PassedEnv, ApiSummary.Unseeded, SeedSha256: null, parts.Refusal, parts.Error, []);
 
     private sealed record RunFacts(ApiRunRequest Request, string Sha256, RunInstanceId Instance, DateTimeOffset Started);
 
-    private sealed record SummaryParts(ApiScript? Script, string? Host, ApiOutcome Outcome, string Headline, Collected Collected, CodedMessage? Refusal, CodedMessage? Error);
+    private sealed record SummaryParts(ApiScript? Script, string? Host, ApiOutcome Outcome, string Headline, Collected Collected, CodedMessage? Refusal, CodedMessage? Error, IReadOnlyList<string> PassedEnv);
 }

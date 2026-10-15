@@ -11,8 +11,6 @@ namespace Aw.Evidence.Features.ApiRun;
 /// <summary>The guards that run before any lock: the host, the header variables and the golden files.</summary>
 internal sealed class ApiVetting(IEvidenceSettings settings, ISecretsSource secrets, ApiRunFiles files, IEvidenceTargets targets, IExecutableLocator locator)
 {
-    internal (IEvidenceTargets, IExecutableLocator) CliCollaborators { get; } = (targets, locator);
-
     internal async ValueTask<Result<VettedRun>> VetAsync(ApiRunRequest request, ApiScript script, CancellationToken cancellationToken)
     {
         var host = ResolveHost(request, script);
@@ -39,7 +37,67 @@ internal sealed class ApiVetting(IEvidenceSettings settings, ISecretsSource secr
             resolved.Add(new ResolvedRequest(step, headers.Value, golden.Value));
         }
 
-        return new VettedRun(script, host.Value, resolved);
+        var cli = await VetCliAsync(request, script, cancellationToken).ConfigureAwait(false);
+        return cli.Map(c => new VettedRun(script, host.Value, resolved, c.Calls, c.Environment));
+    }
+
+    private async ValueTask<Result<(IReadOnlyList<ResolvedCall> Calls, IReadOnlyDictionary<string, string> Environment)>> VetCliAsync(
+        ApiRunRequest request, ApiScript script, CancellationToken cancellationToken)
+    {
+        var loaded = await targets.LoadAsync(request.Repo, request.ConfigPath, cancellationToken).ConfigureAwait(false);
+        if (loaded.IsError)
+        {
+            return loaded.Error;
+        }
+
+        string[] names = [.. (script.PassEnv ?? []).Concat(loaded.Value.PassEnv).Distinct(StringComparer.Ordinal)];
+        var allowed = CliGuard.CheckPassEnv(names);
+        if (allowed.IsError)
+        {
+            return allowed.Error;
+        }
+
+        var calls = new List<ResolvedCall>();
+        foreach (var step in script.CliList)
+        {
+            var call = await VetCallAsync(request, script, loaded.Value, step, cancellationToken).ConfigureAwait(false);
+            if (call.IsError)
+            {
+                return call.Error;
+            }
+
+            calls.Add(call.Value);
+        }
+
+        return (calls, CliEnvironment(names));
+    }
+
+    private async ValueTask<Result<ResolvedCall>> VetCallAsync(ApiRunRequest request, ApiScript script, ResolvedTargets configured, CliStep step, CancellationToken cancellationToken)
+    {
+        var real = CliGuard.ResolveTarget(step, request.Repo, configured, locator);
+        var writes = real.IsError ? Results.Ok() : CliGuard.CheckWrites(step, script.DeclaredWrites ?? []);
+        if (real.IsError || writes.IsError)
+        {
+            return real.IsError ? real.Error : writes.Error;
+        }
+
+        var golden = await ReadGoldenAsync(request.ScriptPath, step.Expect, cancellationToken).ConfigureAwait(false);
+        return golden.Map(text => new ResolvedCall(step, real.Value, CliGuard.TargetText(step), text));
+    }
+
+    // LANG plus the declared variables that are set; nothing else of the process environment reaches a program.
+    private Dictionary<string, string> CliEnvironment(IEnumerable<string> names)
+    {
+        var environment = new Dictionary<string, string>(StringComparer.Ordinal) { ["LANG"] = secrets.Get("LANG") ?? "C.UTF-8" };
+        foreach (var name in names.Where(static n => n != "LANG"))
+        {
+            if (secrets.Get(name) is { } value)
+            {
+                environment[name] = value;
+            }
+        }
+
+        return environment;
     }
 
     internal async ValueTask<Result<string?>> ReadGoldenAsync(string scriptPath, Expectation expect, CancellationToken cancellationToken)
