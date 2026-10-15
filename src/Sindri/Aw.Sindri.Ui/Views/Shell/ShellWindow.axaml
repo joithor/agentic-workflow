@@ -276,6 +276,9 @@
     <!-- A command the palette started and closed on before its outcome: no control has a view on show to say it, so this region does. -->
     <TextBlock x:Name="CommandOutcomeLive" Classes="live-region" Classes.live="{Binding CommandOutcome.IsLive}" Text="{Binding CommandOutcome.Text}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- The queue's polite region (§3.3): "ITM-… cleared" and "N new", live only while it speaks (the view model changes the flag first). -->
+    <TextBlock x:Name="QueueLive" Classes="live-region" Classes.live="{Binding Queue.IsAnnouncing}" Text="{Binding Queue.Announcement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- The palette and the ? sheet (§8): layers over everything, shown by their view models; Esc closes the topmost. -->
     <Panel x:Name="PaletteLayer" IsVisible="{Binding Palette.IsOpen}">
       <root:CommandPalette x:Name="CommandPalette" DataContext="{Binding Palette}" />

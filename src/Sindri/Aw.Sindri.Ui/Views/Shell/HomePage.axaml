@@ -24,7 +24,7 @@
 
     <!-- §8: new rows wait behind this pill while the pointer is over Running or Queued. -->
     <Button x:Name="HomeHeldPill" Classes="held-pill" Click="OnShowHeld" IsVisible="{Binding Queue.HasHeld}" HorizontalAlignment="Center"
-            AutomationProperties.Name="{Binding Queue.HeldText}" AutomationProperties.LiveSetting="Polite">
+            AutomationProperties.Name="{Binding Queue.HeldText}">
       <TextBlock Classes="caption" Text="{Binding Queue.HeldText}" />
     </Button>
 

@@ -28,7 +28,7 @@
 
     <!-- §8: while the pointer is over the panel, new rows wait behind this pill instead of shifting the rows. -->
     <Button x:Name="QueueHeldPill" Classes="held-pill" Click="OnShowHeld" IsVisible="{Binding Queue.HasHeld}" HorizontalAlignment="Center"
-            AutomationProperties.Name="{Binding Queue.HeldText}" AutomationProperties.LiveSetting="Polite">
+            AutomationProperties.Name="{Binding Queue.HeldText}">
       <TextBlock Classes="caption" Text="{Binding Queue.HeldText}" />
     </Button>
 

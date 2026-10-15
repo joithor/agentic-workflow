@@ -5,7 +5,7 @@ namespace Aw.Sindri.Ui.ViewModels.Queue;
 
 /// <summary>
 /// §8's guards and filter (<see cref="QueueViewModel"/>, continued): while the pointer is over a panel new rows are held
-/// behind an "N new" pill instead of shifting the rows under it; for 500 ms after a refresh moved the selection on its
+/// behind an "N new" pill (spoken) instead of shifting the rows under it, while removals and updates show at once; for 500 ms after a refresh moved the selection on its
 /// own, single keys are ignored; `/` filters the Queue page by id, title and repo; `Y` copies the selected row's CLI.
 /// </summary>
 internal sealed partial class QueueViewModel
@@ -78,18 +78,32 @@ internal sealed partial class QueueViewModel
     internal ControlViewModel? SelectedCopy() =>
         Groups.SelectMany(g => g.Rows).FirstOrDefault(r => r.Id == SelectedId)?.PrimaryAction is { CanCopy: true } control ? control : null;
 
-    // While holding, a refresh is parked; the pill counts the rows it adds.
-    private bool Park(QueueView view)
+    // While holding, only rows the page doesn't show yet wait behind the pill (they would shift the rows under the
+    // pointer); removals and in-place updates show at once, so nothing stale sits under it. Returns what to show now.
+    private QueueView Hold(QueueView view)
     {
         if (!_holding || _view is not { } shown)
         {
-            return false;
+            (_held, HeldCount) = (null, 0);
+            return view;
+        }
+
+        var ids = shown.Groups.SelectMany(g => g.Items).Select(i => i.Id).ToHashSet(StringComparer.Ordinal);
+        var added = view.Groups.SelectMany(g => g.Items).Select(i => i.Id).Where(id => !ids.Contains(id)).ToHashSet(StringComparer.Ordinal);
+        if (added.Count == 0)
+        {
+            (_held, HeldCount) = (null, 0);
+            return view;
         }
 
         _held = view;
-        var ids = shown.Groups.SelectMany(g => g.Items).Select(i => i.Id).ToHashSet(StringComparer.Ordinal);
-        HeldCount = view.Groups.SelectMany(g => g.Items).Count(i => !ids.Contains(i.Id));
-        return true;
+        if (HeldCount != added.Count)
+        {
+            HeldCount = added.Count;
+            Say(HeldText);
+        }
+
+        return view with { Groups = [.. view.Groups.Select(g => g with { Items = [.. g.Items.Where(i => !added.Contains(i.Id))] })] };
     }
 
     private bool Matches(ItemRowViewModel row) =>
