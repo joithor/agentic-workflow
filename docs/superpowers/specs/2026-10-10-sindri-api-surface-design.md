@@ -302,8 +302,8 @@ Every list view also returns `empty`, the `EmptyText` sentence (§3.6) for its c
 | `GET /services` | `ListServices` | — | `ServiceList(services, empty, asOf)`. Each service: <ul><li>name;</li><li>cadence;</li><li>paused;</li><li>last run (slot, outcome, code);</li><li>next slot.</li></ul> | P2 |
 | `GET /profile` | `GetProfile` | — | `ProfileView(asOf)`: <ul><li>approved hash and when it was approved;</li><li>live hash, as of the last drift check;</li><li>whether it changed since approval;</li><li>the changed key paths.</li></ul> | P2 |
 | `GET /queue` | `GetQueue` | — | `QueueView(groups, empty, asOf)`: the §3.6 groups in their fixed order, each a list of `ItemSummary` | P3 |
-| `GET /items?state=&repo=` | `ListItems` | `ListItemsQuery(ItemState?, RepoName?)` | `ItemList(items, empty, asOf)`. Each item: <ul><li>id, title, repo, state, step;</li><li>`since`;</li><li>its next action;</li><li>`actions`: the action ids allowed now.</li></ul> | P3 |
-| `GET /items/{itemId}` | `GetItem` | `GetItemQuery(ItemId)` | `ItemView`: <ul><li>the summary, plus version and who created it;</li><li>what it's waiting on (a decision id);</li><li>the engine instance id, once S2 exists;</li><li>timestamps;</li><li>`actions`;</li><li>`asOf`.</li></ul> | P3 |
+| `GET /items?state=&repo=` | `ListItems` | `ListItemsQuery(ItemState?, RepoName?)` | `ItemList(items, empty, asOf)`. Each item: <ul><li>id, title, repo, state, step;</li><li>`since`;</li><li>`primaryAction`: an action id from `actions`, or null;</li><li>`actions`: the action ids allowed now;</li><li>`owner`: reserved for multi-user (README X61), always null for now.</li></ul> | P3 |
+| `GET /items/{itemId}` | `GetItem` | `GetItemQuery(ItemId)` | `ItemView`: <ul><li>the summary, plus version and who created it;</li><li>`body` (scrubbed) and `link`: on this view only, never on a list row, the queue, a timeline line or a public event;</li><li>what it's waiting on (a decision id);</li><li>the engine instance id, once S2 exists;</li><li>timestamps;</li><li>`actions`;</li><li>`owner`: reserved for multi-user (README X61), always null for now;</li><li>`asOf`.</li></ul> | P3 |
 | `GET /items/{itemId}/timeline?after=` | `GetItemTimeline` | `GetItemTimelineQuery(ItemId, long?)` | `Timeline(entries, next, asOf)`. Each entry: sequence, time, type, actor, and one scrubbed line | P3 |
 | `GET /needs-you` | `GetNeedsYou` | — | `NeedsYouList(rows, empty, asOf)` (§3.6) | P4 |
 | `GET /requests?state=` | `ListRequests` | `ListRequestsQuery(RequestState?)` | `RequestList(requests, empty, asOf)`. Each request: <ul><li>id, kind, item;</li><li>text (scrubbed, at most 2,000 characters);</li><li>actor, state, decision id.</li></ul> | P4 |
@@ -1579,7 +1579,7 @@ conflicts.
 
 **Reserved so phases never collide.**
 - Error codes are reserved per phase in §9.
-- `views.db` migration numbers are reserved per phase: P2 `V0xx`, P3 `V1xx`, P4 `V2xx`, P6 `V3xx`, P11 `V4xx`, P12 `V5xx`.
+- `views.db` migrations take the next free number: the migration runner refuses a gap, so a phase can't reserve a range.
 
 **`PublicAPI.Unshipped.txt`**: each unit declares its own lines through `--slice-only`. The integrator re-derives the
 file from the build's `RS0016` output only when merges conflict.
