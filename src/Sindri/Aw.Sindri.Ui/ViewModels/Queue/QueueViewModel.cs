@@ -138,7 +138,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     // Shows a view, keeping the selection by id (§3.3).
     private void Apply(QueueView view)
     {
-        var before = Seen(_scope).Select(r => (r.Id, r.Group)).ToList();
+        var before = Navigable(_scope).Select(r => (r.Id, r.Group)).ToList();
         _view = view;
         Show();
         Keep(before);

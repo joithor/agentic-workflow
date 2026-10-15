@@ -50,14 +50,11 @@ internal sealed partial class QueueViewModel
     /// <returns>True when there is a selected row on the page.</returns>
     internal bool HasSelectionOn(QueueScope scope) => Navigable(scope).Exists(r => string.Equals(r.Id, SelectedId, StringComparison.Ordinal));
 
-    // The rows a page draws, in order: Home's two panels, or the Queue page's visible groups that are open.
+    // The rows a page draws, in order: Home's two panels, or the Queue page's visible groups that are open. A refresh measures
+    // the selection's place by them too: the Queue page's filter doesn't apply to Home's panels (and the other way round).
     private List<ItemRowViewModel> Navigable(QueueScope scope) => scope == QueueScope.Home
         ? [.. RunningRows, .. QueuedRows]
         : [.. Groups.Where(g => g.IsVisible && g.IsExpanded).SelectMany(g => g.Rows)];
-
-    // The rows the page the selection lives on shows, for a refresh to measure the selection's place by: Home's panels, or the
-    // Queue page's visible groups. The Queue page's filter doesn't apply to Home's panels (and the other way round).
-    private IEnumerable<ItemRowViewModel> Seen(QueueScope scope) => scope == QueueScope.Home ? [.. RunningRows, .. QueuedRows] : Visible();
 
     // The list a row sits in on that page: its group on the Queue page, one of Home's two panels on Home.
     private static string Panel(QueueScope scope, string group) => scope == QueueScope.Home && group != "queued" ? "running" : group;
@@ -102,7 +99,7 @@ internal sealed partial class QueueViewModel
         }
     }
 
-    private bool Drawn(string id) => Seen(_scope).Any(r => string.Equals(r.Id, id, StringComparison.Ordinal));
+    private bool Drawn(string id) => Navigable(_scope).Exists(r => string.Equals(r.Id, id, StringComparison.Ordinal));
 
     // Still there, but in another group or panel: its element was built anew where it now sits, and focus on the old one is lost.
     private void Regrouped(string id, ItemRowViewModel kept, List<(string Id, string Group)> before)
@@ -120,13 +117,13 @@ internal sealed partial class QueueViewModel
         var old = before.FirstOrDefault(r => r.Id == id);
         if (old.Id is null)
         {
-            return Seen(_scope).FirstOrDefault();
+            return Navigable(_scope).FirstOrDefault();
         }
 
         var panel = Panel(_scope, old.Group);
-        var peers = Seen(_scope).Where(r => Panel(_scope, r.Group) == panel).ToList();
+        var peers = Navigable(_scope).Where(r => Panel(_scope, r.Group) == panel).ToList();
         var index = before.Where(r => Panel(_scope, r.Group) == panel).ToList().FindIndex(r => r.Id == id);
-        return peers.Count == 0 ? Seen(_scope).FirstOrDefault() : peers[Math.Min(index, peers.Count - 1)];
+        return peers.Count == 0 ? Navigable(_scope).FirstOrDefault() : peers[Math.Min(index, peers.Count - 1)];
     }
 
     // Every row there is, whatever the Queue page shows: Home's panels draw rows the page's filter hides.
