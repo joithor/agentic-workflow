@@ -41,7 +41,7 @@ per page at most, in copy, never decoration), adapt (the 900 × 600 minimum: the
 full width under 1100 px, note it in a comment), optimize (no fonts beyond the two; no layout-animated properties).
 
 ### home.html
-- Workflows strip: `12 open`, five rows, "… 7 more" as a link; the triage row's [Answer A].
+- Workflows strip: `8 open` (open = not terminal, owner 2026-10-14), five rows, "… 3 more" as a link, a collapsed "4 done today" line; the triage row's [Answer A].
 - Running panel: with-you row first, then the four running rows; "Show all 5 in Work".
 - Initial focus on the park row's "Open in Claude Code" (read action), not Accept.
 - Draw the empty state of Needs you as a comment block (`<!-- empty: "Nothing needs you. Last cleared 11:12." -->`).
@@ -177,7 +177,7 @@ Needs you                                                                       
   PROFILE     Profile changed since approval · 2 keys                                    2h    Approve · terminal
 ▒▒▒
 
-Workflows   12 open                                                                               all 12 →
+Workflows    8 open                                                                                all 8 →
   Outbox retry storm        incident      ▰▰▰▱▱▱  mitigate 1/3     agent rolling back · comms posting      1h 24m
   sentry #8812 TypeError    triage        ▰▱▱▱    classify         needs your severity                     4m   Answer
   Offline sync              project       ▰▰▰▰▰▱▱ build 4/9        1 running · 1 parked · 3 queued          3h
