@@ -20,7 +20,9 @@ public sealed class NamedControlsTests
 {
     private static readonly XNamespace _x = "http://schemas.microsoft.com/winfx/2006/xaml";
 
-    public static TheoryData<string> Views => ["SettingsView", "Palette/CommandPalette", "Palette/ShortcutsSheet", "Shell/ShellWindow", "Shell/TopBar", "Shell/HomePage", "Shell/HealthPage", "Shell/PlaceholderPage", "Components/AttachButton"];
+    private static readonly string[] _all = ["SettingsView", "Palette/CommandPalette", "Palette/ShortcutsSheet", "Shell/ShellWindow", "Shell/TopBar", "Shell/HomePage", "Shell/HealthPage", "Shell/PlaceholderPage", "Components/AttachButton", "Components/ProtectedActionButton"];
+
+    public static TheoryData<string> Views => [.. _all];
 
     private static Control Construct(string view) => view switch
     {
@@ -33,6 +35,7 @@ public sealed class NamedControlsTests
         "Shell/HealthPage" => new HealthPage(),
         "Shell/PlaceholderPage" => new PlaceholderPage(),
         "Components/AttachButton" => new AttachButton(),
+        "Components/ProtectedActionButton" => new ProtectedActionButton(),
         _ => throw new ArgumentOutOfRangeException(nameof(view), view, message: null),
     };
 
@@ -51,5 +54,29 @@ public sealed class NamedControlsTests
             }, TestContext.Current.CancellationToken);
 
         Assert.Empty(unset);
+    }
+
+    // Rev 8 critique run 5 P1: a lock is never a dead end. Every view that draws a locked "⌂ <verb> · terminal" button draws the
+    // ProtectedActionButton (one template with the popover); none draws the glyph by hand. The walk covers every view the app has.
+    [Fact]
+    public async Task Every_lock_button_has_a_popover()
+    {
+        var byHand = UiSource.Axaml
+            .Where(f => !Path.GetFileName(f).StartsWith("ProtectedActionButton", StringComparison.Ordinal) && File.ReadAllText(f).Contains('\u2302', StringComparison.Ordinal))
+            .Select(Path.GetFileName).ToList();
+        Assert.Empty(byHand);
+
+        var flyoutless = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(NamedControlsTests).Assembly)
+            .Dispatch(() => _all.SelectMany(v =>
+            {
+                var window = new Avalonia.Controls.Window { Content = Construct(v) };
+                window.Show();
+                var found = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<ProtectedActionButton>()
+                    .Where(b => !b.HasPopover).Select(_ => v).ToList();
+                window.Close();
+                return found;
+            }).ToList(), TestContext.Current.CancellationToken);
+
+        Assert.Empty(flyoutless);
     }
 }
