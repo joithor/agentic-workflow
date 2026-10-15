@@ -1,0 +1,24 @@
+#nullable enable
+Aw.Meta.Features.MetaFeaturesServiceCollectionExtensions
+Aw.Meta.Features.SyncInbox.SyncInboxRequest
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.<Clone>$() -> Aw.Meta.Features.SyncInbox.SyncInboxRequest!
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.Deconstruct(out Aw.Meta.Core.Ids.MessageId MessageId) -> void
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.Equals(Aw.Meta.Features.SyncInbox.SyncInboxRequest? other) -> bool
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.MessageId.get -> Aw.Meta.Core.Ids.MessageId
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.MessageId.init -> void
+Aw.Meta.Features.SyncInbox.SyncInboxRequest.SyncInboxRequest(Aw.Meta.Core.Ids.MessageId MessageId) -> void
+Aw.Meta.Features.SyncInbox.SyncInboxResponse
+Aw.Meta.Features.SyncInbox.SyncInboxResponse.<Clone>$() -> Aw.Meta.Features.SyncInbox.SyncInboxResponse!
+Aw.Meta.Features.SyncInbox.SyncInboxResponse.Equals(Aw.Meta.Features.SyncInbox.SyncInboxResponse? other) -> bool
+Aw.Meta.Features.SyncInbox.SyncInboxResponse.SyncInboxResponse() -> void
+override Aw.Meta.Features.SyncInbox.SyncInboxRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.SyncInbox.SyncInboxRequest.GetHashCode() -> int
+override Aw.Meta.Features.SyncInbox.SyncInboxRequest.ToString() -> string!
+override Aw.Meta.Features.SyncInbox.SyncInboxResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.SyncInbox.SyncInboxResponse.GetHashCode() -> int
+override Aw.Meta.Features.SyncInbox.SyncInboxResponse.ToString() -> string!
+static Aw.Meta.Features.MetaFeaturesServiceCollectionExtensions.AddMetaFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Meta.Features.SyncInbox.SyncInboxRequest.operator !=(Aw.Meta.Features.SyncInbox.SyncInboxRequest? left, Aw.Meta.Features.SyncInbox.SyncInboxRequest? right) -> bool
+static Aw.Meta.Features.SyncInbox.SyncInboxRequest.operator ==(Aw.Meta.Features.SyncInbox.SyncInboxRequest? left, Aw.Meta.Features.SyncInbox.SyncInboxRequest? right) -> bool
+static Aw.Meta.Features.SyncInbox.SyncInboxResponse.operator !=(Aw.Meta.Features.SyncInbox.SyncInboxResponse? left, Aw.Meta.Features.SyncInbox.SyncInboxResponse? right) -> bool
+static Aw.Meta.Features.SyncInbox.SyncInboxResponse.operator ==(Aw.Meta.Features.SyncInbox.SyncInboxResponse? left, Aw.Meta.Features.SyncInbox.SyncInboxResponse? right) -> bool

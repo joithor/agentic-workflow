@@ -1,0 +1,25 @@
+#nullable enable
+Aw.Meta.Core.Ids.MessageId
+Aw.Meta.Core.Ids.MessageId.Equals(Aw.Meta.Core.Ids.MessageId other) -> bool
+Aw.Meta.Core.Ids.MessageId.Equals(Aw.Meta.Core.Ids.MessageId other, System.Collections.Generic.IEqualityComparer<Aw.Meta.Core.Ids.MessageId>! comparer) -> bool
+Aw.Meta.Core.Ids.MessageId.GetTypeCode() -> System.TypeCode
+Aw.Meta.Core.Ids.MessageId.IsInitialized() -> bool
+Aw.Meta.Core.Ids.MessageId.MessageId() -> void
+Aw.Meta.Core.Ids.MessageId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Meta.Core.Ids.MessageId.Value.get -> string!
+Aw.Meta.Core.MetaCoreServiceCollectionExtensions
+Aw.Meta.Core.MetaErrors
+Aw.Meta.Core.Ports.IMessageStore
+Aw.Meta.Core.Ports.ITranscriptReader
+override Aw.Meta.Core.Ids.MessageId.Equals(object? obj) -> bool
+override Aw.Meta.Core.Ids.MessageId.GetHashCode() -> int
+override Aw.Meta.Core.Ids.MessageId.ToString() -> string!
+static Aw.Meta.Core.Ids.MessageId.From(string! value) -> Aw.Meta.Core.Ids.MessageId
+static Aw.Meta.Core.Ids.MessageId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Meta.Core.Ids.MessageId
+static Aw.Meta.Core.Ids.MessageId.TryFrom(string? value, out Aw.Meta.Core.Ids.MessageId vo) -> bool
+static Aw.Meta.Core.Ids.MessageId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Meta.Core.Ids.MessageId result) -> bool
+static Aw.Meta.Core.Ids.MessageId.operator !=(Aw.Meta.Core.Ids.MessageId left, Aw.Meta.Core.Ids.MessageId right) -> bool
+static Aw.Meta.Core.Ids.MessageId.operator ==(Aw.Meta.Core.Ids.MessageId left, Aw.Meta.Core.Ids.MessageId right) -> bool
+static Aw.Meta.Core.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Meta.Core.MetaErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static readonly Aw.Meta.Core.MetaErrors.Invalid -> Aw.Kernel.ErrorDefinition!

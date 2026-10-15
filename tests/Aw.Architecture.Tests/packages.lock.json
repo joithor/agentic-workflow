@@ -545,6 +545,17 @@
           "xunit.v3.runner.common": "[4.0.1]"
         }
       },
+      "aw-meta": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Telemetry": "[1.0.0, )",
+          "Aw.Meta.Core": "[1.0.0, )",
+          "Aw.Meta.Features": "[1.0.0, )",
+          "Aw.Meta.Infrastructure": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection": "[10.0.12, 10.0.12]"
+        }
+      },
       "aw-packets": {
         "type": "Project",
         "dependencies": {
@@ -682,6 +693,30 @@
           "Aw.Kernel": "[1.0.0, )",
           "Aw.Redaction": "[1.0.0, )",
           "OpenTelemetry": "[1.19.1, 1.19.1]"
+        }
+      },
+      "aw.meta.core": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Vogen": "[8.0.7, 8.0.7]"
+        }
+      },
+      "aw.meta.features": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Meta.Core": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
+        }
+      },
+      "aw.meta.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Meta.Core": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
         }
       },
       "aw.packets.core": {
