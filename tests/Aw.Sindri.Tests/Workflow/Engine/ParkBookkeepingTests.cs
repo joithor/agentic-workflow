@@ -111,6 +111,87 @@ public sealed class ParkBookkeepingTests
         Assert.Equal([_e1, _e2], ResumeEverything(two));
     }
 
+    /// <summary>(a) B1: answering a dispatch park while a drift park waits behind it keeps the dispatch park's effect held; the drift approval then re-sends it exactly once.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void Answering_a_dispatch_park_with_a_drift_park_queued_keeps_its_effect_until_the_approval()
+    {
+        var dispatched = Refuse(Claimed(), _first, "SND-WF-011");
+        var drifted = Applied(dispatched, new RecipeWake(Engine, RecipeWakeKind.Drifted, 7));
+
+        var answered = Applied(drifted, Resume());
+        var approved = Assert.IsType<Applied>(Decide(answered, Item, new RecipeWake(Engine, RecipeWakeKind.Approved, 8), rules: EngineRules.Default));
+
+        Assert.Equal(ParkKind.Drift, answered.Suspension!.ParkKind);
+        Assert.Contains(_e1, Held(answered));
+        Assert.Equal([_e1], [.. approved.Effects.Select(static e => e.Identity)]);
+        Assert.Null(approved.Changes[0].After.Suspension);
+    }
+
+    /// <summary>(a) I2: a child that resumes frees the parent's mirror park; the approved drift park's effect behind it is re-sent exactly once.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void A_child_release_resends_the_effect_of_an_approved_drift_park_behind_the_mirror()
+    {
+        var mirrored = Applied(Claimed() with { Frame = Claimed().Frame with { Child = ChildId } }, ChildParked());
+        var drifted = Refuse(mirrored, _first, "SND-RECIPE-006");
+        var approved = Applied(drifted, new RecipeWake(Engine, RecipeWakeKind.Approved, 8));
+        var resumed = new ChildChanged("service:workflow.inbox", ChildId, ChildChange.Resumed, Reason: null, Question: null, TriggerKey.For(ChildId, "cmd:x"));
+
+        var released = Assert.IsType<Applied>(Decide(approved, Item, resumed, rules: EngineRules.Default));
+
+        Assert.Null(released.Changes[0].After.Suspension);
+        Assert.Equal([_e1], [.. released.Effects.Select(static e => e.Identity)]);
+        Assert.Equal([_e1], [.. released.Changes[0].Event.Effects]);
+    }
+
+    /// <summary>(d) I4a: answering a timeout park with an approved drift park behind it re-sends the drift park's effect once.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void Answering_a_timeout_park_resends_the_effect_of_an_approved_drift_park_behind_it()
+    {
+        var drifted = Refuse(TimedOut(), _first, "SND-RECIPE-006");
+        var approved = Applied(drifted, new RecipeWake(Engine, RecipeWakeKind.Approved, 8));
+
+        var answered = Assert.IsType<Applied>(Decide(approved, Item, Resume(), rules: EngineRules.Default));
+
+        Assert.Null(answered.Changes[0].After.Suspension);
+        Assert.Equal([_e1], [.. answered.Effects.Select(static e => e.Identity)]);
+    }
+
+    /// <summary>(d) I4b: a drift approval with another park queued behind the drift park sends nothing; resuming that park later re-sends the effect once.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void A_drift_approval_with_a_park_queued_behind_sends_nothing_until_that_park_resumes()
+    {
+        var drifted = Refuse(Claimed(), _first, "SND-RECIPE-006");
+        var withTimeout = Suspensions.Suspend(drifted, DeskTimeouts.TimeoutPark("claimed", TimeSpan.FromDays(2), "service:workflow.timers"));
+
+        var approved = Assert.IsType<Applied>(Decide(withTimeout, Item, new RecipeWake(Engine, RecipeWakeKind.Approved, 8), rules: EngineRules.Default));
+        var resumed = Assert.IsType<Applied>(Decide(approved.Changes[0].After, Item, Resume(), rules: EngineRules.Default));
+
+        Assert.Empty(approved.Effects);
+        Assert.Equal(ParkReason.Timeout, approved.Changes[0].After.Suspension!.Reason);
+        Assert.Equal([_e1], [.. resumed.Effects.Select(static e => e.Identity)]);
+        Assert.Null(resumed.Changes[0].After.Suspension);
+    }
+
+    /// <summary>(a) S1, the one exception: a revoke replaces every park, the refused effect included; only 'cancel' follows, and nothing re-sends it.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void A_revoke_replaces_the_dispatch_park_and_its_effect_is_not_re_sent()
+    {
+        var dispatched = Refuse(Claimed(), _first, "SND-WF-011");
+
+        var revoked = Applied(dispatched, new RecipeWake(Engine, RecipeWakeKind.Revoked, 7));
+
+        Assert.Equal(ParkKind.Revoked, revoked.Suspension!.ParkKind);
+        Assert.Empty(Suspensions.PendingParks(revoked));
+        Assert.Empty(Held(revoked));
+    }
+
+    /// <summary>The identities of the effects any park of the instance holds.</summary>
+    private static IEnumerable<EffectIdentity> Held(WorkflowInstance instance) =>
+        AllParks(instance).SelectMany(static p => p.Resume.Effects).Select(static e => e.Identity);
+
+    private static ChildChanged ChildParked() =>
+        new("service:workflow.inbox", ChildId, ChildChange.Parked, ParkReason.NoProgress, "same findings twice", TriggerKey.For(ChildId, "run:3.1:abc"));
+
     private static WorkflowInstance Claimed() => At(Item, "claimed", entry: 3);
 
     private static WorkflowInstance TimedOut() => Suspensions.Suspend(Claimed(), DeskTimeouts.TimeoutPark("claimed", TimeSpan.FromDays(2), "service:workflow.timers"));
