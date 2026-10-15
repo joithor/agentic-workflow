@@ -8,7 +8,16 @@ internal static class HttpResults
     internal static IResult ToHttpResult<T>(this Result<T> result)
         => result.IsSuccess
             ? TypedResults.Ok(result.Value)
-            : TypedResults.Problem(title: result.Error.Code, detail: result.Error.Message, statusCode: StatusOf(result.Error.Kind));
+            : Problem(result.Error);
+
+    /// <summary>An error as a ProblemDetails answer: title the code, detail the message, the status its kind's; extension members (RFC 9457 §3.2) follow when it has any.</summary>
+    internal static IResult Problem(Error error) => Problem(error, StatusOf(error.Kind));
+
+    /// <summary>An error as a ProblemDetails answer with a status the caller chose (a middleware refusal).</summary>
+    internal static IResult Problem(Error error, int status)
+        => error.Extensions is { Count: > 0 }
+            ? new ProblemWithExtensions(error, status)
+            : TypedResults.Problem(title: error.Code, detail: error.Message, statusCode: status);
 
     private static int StatusOf(ErrorKind kind) => kind switch
     {
