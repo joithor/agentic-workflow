@@ -135,17 +135,31 @@ public sealed class ContextReviewVerbsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_refused_bulk_accept_leaves_the_deterministic_items_in_the_walk_and_the_exit_code_not_zero()
+    {
+        const string Queue = """{"draft":"v14@0a1b2c3","entries":[{"node":"surface:command/close-tab","link":null,"group":"deterministic","label":"Close tab","provenance":"deterministic","confidence":1,"impact":1,"files":[],"parent":null},{"node":"feature:layout","link":null,"group":"model","label":"Layout","provenance":"model","confidence":0.7,"impact":1,"files":[],"parent":null}],"decided":0,"proposals":2,"version":{"number":14,"commit":"0a1b2c3"},"counts":{"deterministic":1,"model":1,"orphaned":0},"byKind":{"surface":1},"truncated":{"deterministic":false,"model":false,"orphaned":false}}""";
+        var api = new ScriptedApi(Ok(Queue), Problem(HttpStatusCode.ServiceUnavailable, "SND-CONTEXT-004", "the context database is locked"));
+
+        var exit = await Run(api, interactive: true, "y\nq\n", "review");
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("[1/2] Close tab", _out.ToString(), StringComparison.Ordinal);   // the deterministic item is walked after all
+        Assert.Contains("accepted 0", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task The_loop_offers_the_whole_backlog_counts_only_what_the_server_took_and_says_how_many_it_did_not_show()
     {
         const string Queue = """{"draft":"v14@0a1b2c3","entries":[{"node":"surface:command/close-tab","link":null,"group":"deterministic","label":"Close tab","provenance":"deterministic","confidence":1,"impact":1,"files":[],"parent":null},{"node":"feature:layout","link":null,"group":"model","label":"Layout","provenance":"model","confidence":0.7,"impact":1,"files":[],"parent":null}],"decided":0,"proposals":8,"version":{"number":14,"commit":"0a1b2c3"},"counts":{"deterministic":3,"model":5,"orphaned":0},"byKind":{"surface":3},"truncated":{"deterministic":true,"model":true,"orphaned":false}}""";
-        const string Done = """{"result":{"written":["ovr_0123456789abcdef"],"skipped":[],"undecided":1},"sequence":9,"challenge":null,"summary":null}""";
-        var api = new ScriptedApi(Ok(Queue), Ok(Done), Problem(HttpStatusCode.Conflict, "SND-CONTEXT-047", "feature:layout is not in the review queue"));
+        const string Bulk = """{"result":{"written":["ovr_0123456789abcde1","ovr_0123456789abcde2","ovr_0123456789abcde3"],"skipped":[],"undecided":1},"sequence":9,"challenge":null,"summary":null}""";
+        var api = new ScriptedApi(Ok(Queue), Ok(Bulk), Problem(HttpStatusCode.Conflict, "SND-CONTEXT-047", "feature:layout is not in the review queue"));
 
-        var exit = await Run(api, interactive: true, "y\na\n", "review");
+        var exit = await Run(api, interactive: true, "y\na\ns\nq\n", "review");
 
         Assert.Equal(1, exit);
         Assert.Contains("Accept all 3 deterministic", _out.ToString(), StringComparison.Ordinal);
         Assert.Contains("accepted 3, rejected 0", _out.ToString(), StringComparison.Ordinal);   // the refused accept of Layout is not counted
+        Assert.Contains("skipped 1", _out.ToString(), StringComparison.Ordinal);   // and Layout is asked again, not passed over: the one skip is the answer to that second ask
         Assert.Contains("4 more undecided", _out.ToString(), StringComparison.Ordinal);
     }
 

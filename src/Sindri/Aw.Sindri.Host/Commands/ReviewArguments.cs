@@ -24,7 +24,7 @@ internal static class ReviewArguments
         ReviewCommand Send(ReviewContextMapRequest request) => new(ReviewMode.Request, json, request);
         var command = rest switch
         {
-            [] => new ReviewCommand(json ? ReviewMode.Queue : ReviewMode.Interactive, json),
+            [] => new ReviewCommand(json || limit is not null ? ReviewMode.Queue : ReviewMode.Interactive, json),   // a limit only caps a list: the queue tells you to raise it
             ["--list"] => new ReviewCommand(ReviewMode.Queue, json),
             ["--history"] => new ReviewCommand(ReviewMode.History, json),
             ["--export"] => new ReviewCommand(ReviewMode.Export, json),

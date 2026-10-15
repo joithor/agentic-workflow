@@ -22,6 +22,15 @@ public sealed class ReviewArgumentsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_bare_limit_means_the_queue_like_list_does_because_the_queue_tells_you_to_raise_it()
+    {
+        var capped = Ok("--limit", "500");
+
+        Assert.Equal((ReviewMode.Queue, "500", false), (capped.Mode, capped.Limit, capped.Json));
+        Assert.Equal(ReviewMode.Queue, Ok("--limit", "5", "--json").Mode);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void History_and_export_take_their_flags()
     {
         Assert.Equal(ReviewMode.History, Ok("--history").Mode);

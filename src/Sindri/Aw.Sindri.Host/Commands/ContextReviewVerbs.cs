@@ -172,9 +172,9 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
         {
             await output.Out.WriteAsync(step.Prompt).ConfigureAwait(false);
             step = session.Answer(await input.ReadLineAsync(ct).ConfigureAwait(false) ?? "q");
-            var code = await Apply(step, ct).ConfigureAwait(false);
+            var (code, written) = await Apply(step, ct).ConfigureAwait(false);
             exit = Math.Max(exit, code);
-            step = code == 0 ? session.Applied(step) : session.Failed(step);   // a count moves only when the server took the request
+            step = code == 0 ? session.Applied(step, written) : session.Failed(step);   // a count moves only when the server took the request
         }
 
         var c = session.Counts;
@@ -189,21 +189,22 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
         return exit;
     }
 
-    private async Task<int> Apply(ReviewStep step, CancellationToken ct)
+    // The exit code, and how many rows the server wrote (null when nothing was sent or it didn't say).
+    private async Task<(int Code, int? Written)> Apply(ReviewStep step, CancellationToken ct)
     {
         if (step.Send is not { } request)
         {
-            return 0;
+            return (0, null);
         }
 
         var answer = await client.Post<ReviewContextMapRequest, ReviewContextMapResponse>(Route + "/review", request, ct).ConfigureAwait(false);
         if (answer.IsError)
         {
-            return await Failed(answer.Error).ConfigureAwait(false);
+            return (await Failed(answer.Error).ConfigureAwait(false), null);
         }
 
         await output.Out.WriteAsync("\n" + ContextReviewText.Review(answer.Value.Value)).ConfigureAwait(false);
-        return 0;
+        return (0, answer.Value.Value.Result?.Written.Count);
     }
 
     /// <summary>The human's answer to the challenge: what they typed at the terminal, sent as is (the server compares it).</summary>

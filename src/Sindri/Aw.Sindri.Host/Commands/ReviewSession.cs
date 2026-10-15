@@ -44,8 +44,9 @@ internal sealed class ReviewSession(ReviewQueueView queue)
 
     /// <summary>The server took <paramref name="step"/>'s request: it counts now, and an item renamed or moved shows its new name or parent.</summary>
     /// <param name="step">The step that was sent.</param>
+    /// <param name="written">How many rows the server wrote for a bulk accept (the count is what it wrote, not what was listed), or null when it didn't say.</param>
     /// <returns>The step to go on with.</returns>
-    internal ReviewStep Applied(ReviewStep step)
+    internal ReviewStep Applied(ReviewStep step, int? written = null)
     {
         ArgumentNullException.ThrowIfNull(step);
         if (step.Tally is not { } tally)
@@ -61,7 +62,7 @@ internal sealed class ReviewSession(ReviewQueueView queue)
         switch (tally.Outcome)
         {
             case ReviewOutcome.Accepted:
-                _counts.Accepted += tally.Count;
+                _counts.Accepted += IsBulk(step) ? written ?? tally.Count : tally.Count;
                 break;
             case ReviewOutcome.Rejected:
                 _counts.Rejected += tally.Count;
@@ -97,6 +98,14 @@ internal sealed class ReviewSession(ReviewQueueView queue)
         ArgumentNullException.ThrowIfNull(step);
         if (!IsBulk(step))
         {
+            // A refused decision moved the cursor past its item: back to it, neither decided nor skipped. A rename or a move never left it.
+            if (step.Tally is { Outcome: not ReviewOutcome.Edited })
+            {
+                _index--;
+                _stage = Stage.Item;
+                return new ReviewStep(ItemPrompt());
+            }
+
             return step;
         }
 

@@ -175,8 +175,22 @@ public sealed class ReviewSessionTests
 
         var failed = session.Failed(accept);
 
-        Assert.Same(accept, failed);
         Assert.Equal(0, session.Counts.Accepted);
+        Assert.Equal(0, session.Counts.Skipped);   // it is not skipped either: the same item is asked again
+        Assert.Contains("[1/", failed.Prompt, StringComparison.Ordinal);
+        Assert.Equal(session.Answer("a").Send!.Node, accept.Send!.Node);   // the cursor stayed on the refused item
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_bulk_accept_counts_the_rows_the_server_wrote_not_the_number_listed()
+    {
+        var session = new ReviewSession(ReviewQueueView.Of("v14@0a1b2c3", [Entry("surface:a", ReviewGroup.Deterministic, "A"), Entry("surface:b", ReviewGroup.Deterministic, "B"), Entry("surface:c", ReviewGroup.Deterministic, "C")], 0));
+        _ = session.Start();
+        var bulk = session.Answer("y");
+
+        _ = session.Applied(bulk, written: 2);
+
+        Assert.Equal(2, session.Counts.Accepted);
     }
 
     [Fact, Trait("Lane", "unit")]
