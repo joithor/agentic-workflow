@@ -75,8 +75,29 @@ public sealed class EventBridgeFailureTests : IDisposable
         Assert.Equal(0, (await cursor.Read(Token)).Value);
     }
 
+    [Fact]
+    public async Task A_run_that_signals_nothing_is_quiet_so_the_scheduler_records_no_row_after_an_ok_one()
+    {
+        var (bridge, _, _) = await Prepared(SindriErrors.InvalidInput.With("refused"));
+
+        var first = await bridge.Run(Token);
+        var idle = await bridge.Run(Token);
+
+        Assert.Equal((ScheduledResult.Quiet, ScheduledResult.Quiet), (first.Value, idle.Value));
+    }
+
+    [Fact]
+    public async Task A_run_that_signals_an_instance_worked()
+    {
+        var (bridge, _, _) = await Prepared(Unit.Value);
+
+        var ran = await bridge.Run(Token);
+
+        Assert.Equal(ScheduledResult.Worked, ran.Value);
+    }
+
     /// <summary>A bridge over the real ledger whose live instance of 'T-47' answers a signal with the given errors (the last repeats), and its event.</summary>
-    private async Task<(Bridge Bridge, long Sequence, EventBridgeCursor Cursor)> Prepared(params Error[] answers)
+    private async Task<(Bridge Bridge, long Sequence, EventBridgeCursor Cursor)> Prepared(params Result<Unit>[] answers)
     {
         BridgeRecipes.WriteTo(_harness);
         var sindri = _harness.Sindri();
@@ -116,13 +137,13 @@ public sealed class EventBridgeFailureTests : IDisposable
             ValueTask.FromResult<Result<IReadOnlyList<InstanceRow>>>(rows.ToList());
     }
 
-    /// <summary>Answers every signal with the next of its errors, the last one for good.</summary>
-    private sealed class RefusingRuntime(Error[] answers) : IInstanceRuntime
+    /// <summary>Answers every signal with the next of its answers, the last one for good.</summary>
+    private sealed class RefusingRuntime(Result<Unit>[] answers) : IInstanceRuntime
     {
         private int _next;
 
         public ValueTask<Result<Unit>> Signal(InstanceAddress address, WaitSatisfied delivered, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Result<Unit>>(answers[Math.Min(_next++, answers.Length - 1)]);
+            ValueTask.FromResult(answers[Math.Min(_next++, answers.Length - 1)]);
 
         public ValueTask<Result<InstanceView>> Start(InstanceStart start, CancellationToken cancellationToken) => throw new NotSupportedException();
 
