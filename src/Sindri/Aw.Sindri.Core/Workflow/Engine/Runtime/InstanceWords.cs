@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -46,7 +47,8 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
 
     /// <summary>A drift recorded behind the open park (§6.4): the block, and that the answer needs the re-approval first.</summary>
     /// <returns>The line, or null.</returns>
-    public string? Drift() => Instance is { Suspension.Kind: SuspensionKind.Park, PendingPark: { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift } drift }
+    public string? Drift() => Instance is { Suspension.Kind: SuspensionKind.Park }
+        && Suspensions.PendingParks(Instance).FirstOrDefault(static p => p is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift, Approved: false }) is { } drift
         ? $"{Block(drift.Question)} changed since {Pinned} was approved; answer after the re-approval: sindri recipe approve {Pinned}"
         : null;
 

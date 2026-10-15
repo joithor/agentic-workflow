@@ -46,7 +46,7 @@ public static partial class TransitionDecision
         }
 
         var ending = d.Rules.End(instance, child: null);
-        return ending.IsError ? new Rejected(d.Key, ending.Error) : d.Changed(ending.Value.Instance);
+        return ending.IsError ? new Rejected(d.Key, ending.Error) : WithReleased(d.Changed(ending.Value.Instance), ending.Value);
     }
 
     /// <summary>

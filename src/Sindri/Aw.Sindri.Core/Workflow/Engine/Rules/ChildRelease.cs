@@ -15,12 +15,9 @@ internal static class ChildRelease
     public static WorkflowInstance Release(WorkflowInstance parent, WorkflowInstanceId child)
     {
         ArgumentNullException.ThrowIfNull(parent);
-        var pending = parent.PendingPark?.Mirrors == child ? null : parent.PendingPark;
-        if (parent.Suspension?.Mirrors == child)
-        {
-            return parent with { Suspension = pending, PendingPark = null };
-        }
-
-        return ReferenceEquals(pending, parent.PendingPark) ? parent : parent with { PendingPark = pending };
+        var queue = Suspensions.PendingParks(parent);
+        var kept = queue.Where(p => p.Mirrors != child).ToList();
+        var released = kept.Count == queue.Count ? parent : Suspensions.WithPending(parent, kept);
+        return parent.Suspension?.Mirrors == child ? Suspensions.Advance(released).Instance : released;
     }
 }

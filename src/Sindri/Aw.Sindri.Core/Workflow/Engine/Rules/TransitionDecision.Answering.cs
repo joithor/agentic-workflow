@@ -44,7 +44,7 @@ public static partial class TransitionDecision
         var ended = ending.Value;
         var resumed = ended.PendingTookEffect ? d.Changed(ended.Instance) : Resume(d, ended.Instance, fit.Value);
         // The grant was applied before the suspension ended, so both branches record it; an override exists only when the resume ran (§5.8).
-        return Recorded(resumed, answer, ended.PendingTookEffect ? fit.Value with { Gate = null } : fit.Value);
+        return Recorded(WithReleased(resumed, ended), answer, ended.PendingTookEffect ? fit.Value with { Gate = null } : fit.Value);
     }
 
     /// <summary>The answer's own event carries the grant or the override it made (§5.6).</summary>

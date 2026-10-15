@@ -175,7 +175,7 @@ internal static class ChildPropagation
             return ParentEffectKind.Release;
         }
 
-        return parent.PendingPark?.Mirrors == child ? ParentEffectKind.Hold : ParentEffectKind.Ignore;
+        return Suspensions.PendingParks(parent).Any(p => p.Mirrors == child) ? ParentEffectKind.Hold : ParentEffectKind.Ignore;
     }
 
     private static ParentEffect Effect(ParentEffectKind kind) => new(kind, Suspend: null);

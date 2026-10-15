@@ -32,7 +32,8 @@ public static partial class TransitionDecision
             return new Absorbed(d.Key, "already parked for the revoke");
         }
 
-        return d.ChangedOrAbsorbed(d.Rules.Suspend(instance, park), instance, "already parked for drift");
+        var absorbed = park.ParkKind == ParkKind.Drift ? "already parked for drift" : "this effect is already held by a park";
+        return d.ChangedOrAbsorbed(d.Rules.Suspend(instance, park), instance, absorbed);
     }
 
     private static Suspension RefusalPark(Deciding d, OutboxRefused refused)

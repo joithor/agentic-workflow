@@ -106,7 +106,7 @@ public static partial class TransitionDecision
             : d.Input.Instance;
 
     private static bool Mirrors(WorkflowInstance instance, WorkflowInstanceId child) =>
-        instance.Suspension?.Mirrors == child || instance.PendingPark?.Mirrors == child;
+        instance.Suspension?.Mirrors == child || Suspensions.PendingParks(instance).Any(p => p.Mirrors == child);
 
     /// <summary>Allowed, but no 'when' holds (§3.5): a step.failed parks with needs-answer; any other trigger is SND-WF-003.</summary>
     private static Decision Unmatched(Deciding d, WorkflowInstance instance)
