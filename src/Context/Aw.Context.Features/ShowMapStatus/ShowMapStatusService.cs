@@ -27,7 +27,7 @@ internal sealed class ShowMapStatusService(IGraphStore store) : IService<ShowMap
 
         var graph = await store.Read(version.Number, cancellationToken).ConfigureAwait(false);
         var overrides = await store.Overrides(cancellationToken).ConfigureAwait(false);
-        var visible = graph.IsError ? graph.Error : overrides.IsError ? overrides.Error : MapAccess.Visible(graph.Value, overrides.Value, request.Scope.Caller);
+        var visible = graph.IsError ? graph.Error : overrides.IsError ? overrides.Error : MapAccess.Visible(graph.Value, overrides.Value, request.Scope);
         if (visible.IsError)
         {
             return visible.Error;

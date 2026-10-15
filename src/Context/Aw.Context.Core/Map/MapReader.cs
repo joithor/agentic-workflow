@@ -38,8 +38,7 @@ public sealed class MapReader(IGraphStore store)
         var layer = draft ? map.Overrides : [.. map.Overrides.Where(o => o.Action != OverrideAction.Propose)];
         var applied = OverrideApplier.Apply(map.Graph, layer).Graph;
         // A deny glob added after the map was built hides its code nodes now, before any rebuild (review #220 run 1: security-sentinel-1).
-        var allowed = MapAccess.WithoutDenied(applied, ScopeRules.Resolve(SettingsReader.Read(scope.Settings).Value, scope.Repos, scope.Caller).Value);
-        var visible = MapAccess.Visible(allowed, [], scope.Caller);
+        var visible = MapAccess.Visible(applied, [], scope);
         return visible.IsError ? visible.Error : new VisibleMap(map, visible.Value.Graph);
     }
 

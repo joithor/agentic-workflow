@@ -1,6 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Testing.Map;
+using Aw.Context.Tests.ReviewMap;
 
 namespace Aw.Context.Tests.Map;
 
@@ -59,5 +60,83 @@ public sealed class DeniedPathReadTests : IDisposable
         Assert.Equal(ContextErrors.UnknownAnchor.Code, shown.Error.Code);
         Assert.Equal(ContextErrors.UnknownAnchor.Code, drafted.Error.Code);
         Assert.True(kept.IsSuccess);
+        var edgeEnds = kept.Value.In.Select(f => f.From.Value).ToList();
+        Assert.Contains("code:src/b.ts", edgeEnds, StringComparer.Ordinal);
+        Assert.DoesNotContain("code:private/a.ts", edgeEnds, StringComparer.Ordinal);
+        var near = (await _world.Engine.Neighbors("feature:kept", depth: 1, Denying("private/**"), MapWorld.None)).Value;
+        Assert.DoesNotContain(near.Nodes, n => string.Equals(n.Node.Key.Value, "code:private/a.ts", StringComparison.Ordinal));
+    }
+
+    private static readonly string[] _deniedMap =
+    [
+        "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
+        "  - {key: \"feature:kept\", label: \"Kept\"}",
+        "  - {key: \"code:private/a.ts\", label: \"a.ts\"}",
+        "  - {key: \"code:src/b.ts\", label: \"b.ts\"}",
+        "  - {key: \"surface:setting/secret\", label: \"secret\", provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/private/s.json\"}]}",
+        "  - {key: \"surface:setting/mixed\", label: \"mixed\", provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/private/s.json\"}, {key: \"repo:aw-split-panes/src/b.ts\"}]}",
+        "edges:",
+        "  - {from: \"code:private/a.ts\", to: \"feature:kept\", type: implements, evidence: [{key: \"repo:aw-split-panes/private/a.ts\"}]}",
+        "  - {from: \"code:src/b.ts\", to: \"feature:kept\", type: implements, evidence: [{key: \"repo:aw-split-panes/src/b.ts\"}]}",
+        "  - {from: \"surface:setting/secret\", to: \"feature:kept\", type: part-of, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/private/s.json\"}]}",
+        "  - {from: \"surface:setting/mixed\", to: \"feature:kept\", type: part-of, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/private/s.json\"}, {key: \"repo:aw-split-panes/src/b.ts\"}]}",
+    ];
+
+    private static ContextScope DenyingSession(params string[] globs)
+    {
+        using var section = System.Text.Json.JsonDocument.Parse("""{"sessions":{"enabled":true}}""");
+        return new(section.RootElement.Clone(), [new ContextRepo(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes") { DenyPaths = [.. PathDenylist.Defaults, .. globs] }],
+            new ContextCaller(ContextCallerKind.Session, ContextRepoName.From(FixtureMap.Repo), ContextClient.Http));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task An_export_leaves_out_denied_code_nodes_their_edges_and_surfaces_only_a_denied_file_produced(bool session)
+    {
+        _ = await _world.ImportYaml(MapWorld.Yaml(_deniedMap));
+        var scope = session ? DenyingSession("private/**") : Denying("private/**");
+
+        var exported = await _world.Map.ExportMap(path: null, scope, MapWorld.None);
+
+        var document = _world.Exports.Documents[exported.Value.Path];
+        var keys = document.Nodes.Select(n => n.Key.Value).ToList();
+        Assert.DoesNotContain("code:private/a.ts", keys, StringComparer.Ordinal);
+        Assert.DoesNotContain("surface:setting/secret", keys, StringComparer.Ordinal);
+        Assert.Equal(!session, keys.Contains("surface:setting/mixed", StringComparer.Ordinal));
+        Assert.DoesNotContain(document.Edges ?? [], e => e.From.Value.Contains("private/", StringComparison.Ordinal) || string.Equals(e.From.Value, "surface:setting/secret", StringComparison.Ordinal));
+        var evidence = document.Nodes.SelectMany(n => n.EvidenceOrEmpty).Concat((document.Edges ?? []).SelectMany(e => e.EvidenceOrEmpty)).Select(r => r.Key.Value).ToList();
+        Assert.DoesNotContain(evidence, e => e.Contains("private/", StringComparison.Ordinal));
+        Assert.Contains("repo:aw-split-panes/src/b.ts", evidence, StringComparer.Ordinal);   // the implements edge keeps its allowed evidence
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Map_status_with_an_anchor_covers_what_the_lenses_cover_once_a_path_is_denied()
+    {
+        _ = await _world.ImportYaml(MapWorld.Yaml(_deniedMap));
+        var scope = Denying("private/**");
+
+        var status = (await _world.Map.MapStatus("feature:kept", scope, MapWorld.None)).Value;
+        var lenses = (await _world.Engine.Lenses("feature:kept", draft: false, depth: null, scope, MapWorld.None)).Value;
+        var denied = await _world.Map.MapStatus("code:private/a.ts", scope, MapWorld.None);
+
+        Assert.Equivalent(lenses.Coverage, status.Coverage);
+        Assert.Equal(1, status.Coverage!.Code.Implemented);
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, denied.Error.Code);
+        Assert.Equal(3, status.Counts.Nodes);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_review_queue_leaves_out_a_denied_file_s_code_nodes()
+    {
+        _ = await Drafts.Build(_world);
+        var deny = new ContextRepo(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes") { DenyPaths = [.. PathDenylist.Defaults, "src/commands/**"] };
+        var scope = MapWorld.HumanWith(MapWorld.OnlyFixtureRepo, [deny]);
+
+        var plain = await Drafts.Queue(_world);
+        var queue = (await _world.Map.ReviewQueue(limit: null, scope, MapWorld.None)).Value;
+
+        Assert.Contains(plain.Entries, e => e.Files.Any(f => f.Value.Contains("src/commands/", StringComparison.Ordinal)) || e.Node.Value.Contains("close-pane", StringComparison.Ordinal));
+        Assert.DoesNotContain(queue.Entries, e => e.Files.Any(f => f.Value.Contains("src/commands/", StringComparison.Ordinal)) || e.Node.Value.Contains("close-pane", StringComparison.Ordinal));
     }
 }
