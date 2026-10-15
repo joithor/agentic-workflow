@@ -208,27 +208,27 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-OUT-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-OUT-001: output 'fact:output' comes from state 'draft', which the recipe doesn't declare at RCP-OUT-001.yaml:5:39 (outputs[0].from); name one of its states: produce, done",
+            "RCP-OUT-001: output 'fact:output' comes from state 'draft', which the recipe doesn't declare at RCP-OUT-001.yaml:5:37 (outputs[0].from); name one of its states: produce, done",
             []),
         ["RCP-OUT-002"] = new(
             FixtureSetup.Shipped,
-            "RCP-OUT-002: output 'fact:report' comes from state 'produce', but nothing there records it (step 'step.produce' records fact:output) at RCP-OUT-002.yaml:5:39 (outputs[0].from); have the state's Step, a transition leaving it ('produces') or its wait record 'fact:report', or name the state that does",
+            "RCP-OUT-002: output 'fact:report' comes from state 'produce', but nothing there records it (step 'step.produce' records fact:output) at RCP-OUT-002.yaml:5:37 (outputs[0].from); have the state's Step, a transition leaving it ('produces') or its wait record 'fact:report', or name the state that does",
             []),
         ["RCP-OUT-003"] = new(
             FixtureSetup.Shipped,
-            "RCP-OUT-003: output key 'fact:output' is declared twice (first at outputs[0]) at RCP-OUT-003.yaml:6:11 (outputs[1].key); remove the duplicate, or give it its own key",
+            "RCP-OUT-003: output key 'fact:output' is declared twice (first at outputs[0]) at RCP-OUT-003.yaml:6:7 (outputs[1].key); remove the duplicate, or give it its own key",
             []),
         ["RCP-TYPE-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-TYPE-001: output 'fact:output' has type 'document', which isn't one of text, file, item, link, scope-map, packet, evidence, decision, payload at RCP-TYPE-001.yaml:5:30 (outputs[0].type); use one of them",
+            "RCP-TYPE-001: output 'fact:output' has type 'document', which isn't one of text, file, item, link, scope-map, packet, evidence, decision, payload at RCP-TYPE-001.yaml:5:25 (outputs[0].type); use one of them",
             []),
         ["RCP-TYPE-002"] = new(
             FixtureSetup.Shipped,
-            "RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text at RCP-TYPE-002.yaml:5:42 (inputs[0].kind); use one of them",
+            "RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text at RCP-TYPE-002.yaml:5:35 (inputs[0].kind); use one of them",
             []),
         ["RCP-TYPE-003"] = new(
             FixtureSetup.Shipped,
-            "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'file'; kind item pairs with type item at RCP-TYPE-003.yaml:5:42 (inputs[0].kind); set type to item, or change kind",
+            "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'file'; kind item pairs with type item at RCP-TYPE-003.yaml:5:35 (inputs[0].kind); set type to item, or change kind",
             []),
     };
 }
