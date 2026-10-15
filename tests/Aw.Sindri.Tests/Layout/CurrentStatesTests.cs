@@ -99,14 +99,28 @@ public sealed class CurrentStatesTests
         Assert.Null(CurrentStates.Desk(task: null, Interpreted(EngineFixture.Step)));
 
     [Fact]
-    public void An_output_is_required_only_when_the_step_names_an_outcome_it_is_required_on()
+    public void The_outputs_are_exactly_those_required_on_the_reported_outcome_so_they_agree_with_the_command_and_the_checks()
     {
         var recipe = Interpreted(EngineFixture.Step with { Outputs = [new RecipeOutput(_output, "Output", "file", From: "produce"), new RecipeOutput(_notes, "Notes", "text", From: "produce")] });
         var done = OutcomeName.From("done");
 
         var form = CurrentStates.Desk(Task([done], new OutputSpec(_output, [done]), new OutputSpec(_notes, [])), recipe)!;
 
-        Assert.Equal([new DeskOutput("fact:output", FactType.File, Required: true), new DeskOutput("fact:notes", FactType.Text, Required: false)], form.Outputs);
+        Assert.Equal([new DeskOutput("fact:output", FactType.File, Required: true)], form.Outputs);
+        Assert.Equal(["output.file"], form.Checks);
+    }
+
+    [Fact]
+    public void An_output_required_only_on_a_later_outcome_is_not_listed_while_the_command_reports_the_first()
+    {
+        var recipe = Interpreted(EngineFixture.Step with { Outputs = [new RecipeOutput(_notes, "Findings", "text", From: "import")] });
+        var passed = OutcomeName.From("passed");
+        var failed = OutcomeName.From("failed");
+
+        var form = CurrentStates.Desk(Task([passed, failed], new OutputSpec(_notes, [failed])), recipe)!;
+
+        Assert.Empty(form.Outputs);
+        Assert.Empty(form.Checks);
     }
 
     [Fact]
