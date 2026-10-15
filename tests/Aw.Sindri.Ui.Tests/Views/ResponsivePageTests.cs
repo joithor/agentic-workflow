@@ -173,4 +173,19 @@ public sealed class ResponsivePageTests : IDisposable
         Assert.Equal(before, after);
         Assert.Equal(next, frames);
     });
+
+    [Fact]
+    public Task A_focused_title_draws_its_whole_ring_inside_the_button() => OnUi(async () =>
+    {
+        var (window, _) = await Open(sheetWidth: 520, PageId.Queue, windowWidth: 1500);
+        var title = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "TitleButton");
+        _ = title.Focus(NavigationMethod.Tab);
+        Settle(window);
+
+        // why: the button clips its template, so a ring drawn outside its bounds shows only its corners (proof B9)
+        var ring = title.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>().First(p => p.Name == "PART_ContentPresenter");
+        var box = new Rect(ring.TranslatePoint(default, title)!.Value, ring.Bounds.Size);
+        Assert.True(new Rect(title.Bounds.Size).Contains(box), $"ring {box} outside the button {title.Bounds.Size}");
+        Assert.Equal(new Thickness(2), ring.BorderThickness);
+    });
 }
