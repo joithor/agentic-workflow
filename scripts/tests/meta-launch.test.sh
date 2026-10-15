@@ -57,7 +57,9 @@ check "meta lane: role-set with its id and name" "$(cat "$CALLS.meta")" "role-se
 bash "$DIR/meta-lane.sh" demo 'Bad Lane' 2> /dev/null; RC=$?
 check "bad lane name refused" "$RC" "2"
 
-# meta-launch.sh: sessions created on a private server, then kept on a rerun; Warp YAML written.
+# meta-launch.sh: sessions created on a private server, then kept on a rerun; Warp YAML written. The stub lanes exit at
+# once, so a keepalive session stops the server from shutting down between the launcher's new-session calls.
+tmux new-session -d -s keepalive "sleep 600"
 OUT="$(bash "$DIR/meta-launch.sh" --no-open)"; RC=$?
 check "launch: exit 0" "$RC" "0"
 check "launch: three sessions started" "$(printf '%s\n' "$OUT" | grep -c ': started')" "3"
