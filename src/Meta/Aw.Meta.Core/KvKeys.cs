@@ -17,4 +17,7 @@ public static class KvKeys
 
     /// <summary>The last health check's one-line summary.</summary>
     public const string HealthLast = "health.last";
+
+    /// <summary>The pull requests the watch saw merged or closed on GitHub, comma separated; the merge queue leaves them out.</summary>
+    public const string EndedPrs = "watch.ended-prs";
 }
