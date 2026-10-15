@@ -66,7 +66,7 @@ public sealed class ShellWindowTests : IDisposable
 
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Show(Func<ShellViewModel, bool> ready, bool run = true)
     {
-        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences), new FakeClipboard());
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell };
         _windows.Add(window);

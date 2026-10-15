@@ -19,7 +19,7 @@ public sealed class ShellPreferencesTests
 
     private async Task<ShellViewModel> Shell()
     {
-        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), new Preferences(_store));
+        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), new Preferences(_store), new FakeClipboard());
         await shell.Restore(Token);
         return shell;
     }
@@ -90,7 +90,7 @@ public sealed class ShellPreferencesTests
     {
         var store = new GatedPreferencesStore();
         var preferences = new Preferences(store);
-        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), preferences);
+        var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), preferences, new FakeClipboard());
         await shell.Restore(Token);
         using var settings = new SettingsViewModel(preferences, new FakeMotionPreference(), _ => { });
         store.HoldReads();

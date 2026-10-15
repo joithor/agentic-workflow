@@ -25,7 +25,7 @@ public sealed class FreshnessTests : IDisposable
     public FreshnessTests()
     {
         _records.Write(A.Record());
-        _vm = new HealthViewModel(_records, _server, _clock);
+        _vm = new HealthViewModel(_records, _server, _clock, new FakeClipboard());
     }
 
     public void Dispose()

@@ -55,6 +55,7 @@ takes the ring, the darker primary hover and pressed fills, and `semantic-error`
 | `IMotionPreference` (`ReduceMotion`, `Changed`) | macOS `NSWorkspace`, Windows `SPI_GETCLIENTAREAANIMATION`, GNOME `enable-animations`; bound over a drivable OS seam | `MotionPreferenceContract` |
 | `ISingleInstance` (`TryClaim`, `Send`, `Messages`, `Retire`, `HolderProcessId`; `InstanceMessages.Focus`, `MaxLength` 512) | A local channel only the user can open, under `$AW_SINDRI_HOME/ui/`. A message only navigates: the app reads it as a `DeepLink` and ignores anything else. `Send` is true only once the running instance has **handled** the message, never because a lock is held: a holder that doesn't read gives no answer, and the message isn't handed over later. Handling is one decision, `InstanceMessage.TryAct()`: the app claims it on the UI thread just before acting (or the reader coming back for the next message claims it), the first claim wins and is the sender's answer, and the message is withdrawn (`InstanceMessage.Withdrawn` cancelled, `TryAct()` false) as soon as the sender has been answered or has given up, so a message acted on is never answered "not handled" and one whose wait ended is never acted on late (`SingleInstanceContract.A_message_acted_on_is_acknowledged_and_then_withdrawn`) | `SingleInstanceContract` |
 | `ITray` (`Show(TrayView)`, `Shown`, `OpenRequested`, `QuitRequested`; `TrayState` Neutral, NotRunning, Stale) | Avalonia `TrayIcon`; menu labels escape `_` | `TrayContract` |
+| `IClipboard` (`SetText`: true once the platform holds it, false when it refused) | `Views/AvaloniaClipboard` over the window's `TopLevel.Clipboard`: one adapter every head shares (Avalonia's clipboard belongs to the window), so it is not in `SindriPlatform`; the view models take it as a required constructor argument (no null object) | `ClipboardContract` (fake; the adapter under headless, which accepts a write but keeps nothing, so only the acknowledgement and the refusal are checked there) |
 | `IPreferencesStore` (`Location`, `Read`/`Write` of the bytes, like the endpoint record) | `$AW_SINDRI_HOME/ui/preferences.json`, 0600, temp file and rename | `PreferencesStoreContract` |
 
 A head hands its adapters to `SindriApp.Create(SindriPlatform, TimeProvider)` (`SindriPlatform` bundles them, so a
@@ -255,7 +256,7 @@ Copy, `cli-only:<reason>` the copy block (the CLI, Copy, and "Needs a typed conf
 `typed-confirmation`). A CLI with a control, bidi or invisible character is neither shown nor copied. Lifecycle (§4.1):
 sending (disabled, label kept, spinner; "Sending…" announced after 300 ms; a second click does nothing), accepted
 ("Rebuild views: done", 2 s), refused or failed (the code and `detail` inline, as served), Copy ("Copied", 1.5 s).
-The clipboard is a port (`Platform/IClipboard`, `Views/AvaloniaClipboard`).
+The clipboard is a port (`Platform/IClipboard`, `Views/AvaloniaClipboard`; see the ports table).
 
 **Freshness (U10, E-14).** The pill reads `health.word` (Healthy, Degraded, Stalled, Rebuilding), its age from
 `views.projectedAt`, then each `health.problems[].text`. Connection states win. While `views` or `health` is null (P1,

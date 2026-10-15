@@ -19,7 +19,7 @@ public sealed class HealthViewModelTests : IDisposable
 
     public HealthViewModelTests()
     {
-        _vm = new HealthViewModel(_records, _server, _clock);
+        _vm = new HealthViewModel(_records, _server, _clock, new FakeClipboard());
     }
 
     private Task _run = Task.CompletedTask;
