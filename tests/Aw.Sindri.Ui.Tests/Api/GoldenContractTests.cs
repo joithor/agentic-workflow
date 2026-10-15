@@ -104,6 +104,36 @@ public sealed class GoldenContractTests
         Assert.Equal(goldenEvent.Select(p => p.Key), fakeEvent.Select(p => p.Key), StringComparer.Ordinal);
     }
 
+    // F13 (test-1): the four spec-shaped status goldens (P2's, until P2 writes its own) say what the pill and the follower read.
+    [Theory]
+    [InlineData("running-healthy", "healthy", 41L, 41L, false, false, null, null, 0)]
+    [InlineData("running-degraded", "degraded", 41L, 41L, false, false, null, null, 1)]
+    [InlineData("running-rebuilding", "rebuilding", 12L, 42L, true, false, null, null, 0)]
+    [InlineData("running-stalled", "stalled", 41L, 42L, false, true, 42L, "service.ran", 1)]
+    public void The_spec_shaped_status_goldens_are_read_in_full(string scenario, string word, long cursor, long head, bool rebuilding, bool stalled, long? stalledAt, string? stalledType, int problems)
+    {
+        var status = AwJson.Deserialize<StatusView>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("status", scenario)), SindriApiClient.Json).Value;
+
+        Assert.Equal(1, status.ApiVersion);
+        Assert.Equal((word, problems), (status.Health!.Word, status.Health.Problems.Count));
+        Assert.Equal((cursor, head, rebuilding, stalled, stalledAt, stalledType), (status.Views!.Cursor, status.Views.LedgerHead, status.Views.Rebuilding, status.Views.Stalled, status.Views.StalledAt, status.Views.StalledType));
+        _ = Assert.NotNull(status.Views.ProjectedAt);
+    }
+
+    // F13: the handler writes the spec-shaped status goldens exactly, stalledAt and stalledType included.
+    [Theory]
+    [InlineData("running-healthy")]
+    [InlineData("running-degraded")]
+    [InlineData("running-rebuilding")]
+    [InlineData("running-stalled")]
+    public void The_fake_handler_writes_the_spec_shaped_status_goldens(string scenario)
+    {
+        var golden = GoldenFiles.SpecShaped("status", scenario);
+        var status = AwJson.Deserialize<StatusView>(Encoding.UTF8.GetBytes(golden), SindriApiClient.Json).Value;
+
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(golden), JsonNode.Parse(FakeSindriHandler.Status(status))), scenario);
+    }
+
     // A stale token: Sindri's human-stale-token golden as served, the token read again and the call retried once.
     [Fact]
     public async Task The_stale_token_golden_is_retried_once_with_the_token_read_again()

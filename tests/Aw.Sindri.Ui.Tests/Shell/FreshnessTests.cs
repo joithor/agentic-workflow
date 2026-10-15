@@ -255,6 +255,23 @@ public sealed class FreshnessTests : IDisposable
         Assert.True(condition());
     }
 
+    // F13: the pill words come from the goldens, not from records built by hand.
+    [Theory]
+    [InlineData("running-healthy", "Healthy · updated 2s ago")]
+    [InlineData("running-degraded", "Degraded · updated 2s ago · index failed")]
+    [InlineData("running-rebuilding", "Rebuilding · updated 2s ago")]
+    [InlineData("running-stalled", "Stalled · updated 30s ago · views stalled at 42")]
+    public async Task The_pill_reads_each_spec_shaped_status_golden(string scenario, string text)
+    {
+        var golden = Aw.Kernel.Json.AwJson.Deserialize<StatusView>(System.Text.Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("status", scenario)), SindriApiClient.Json).Value;
+        var age = golden.Views!.ProjectedAt - new DateTimeOffset(2026, 1, 1, 0, 1, 0, TimeSpan.Zero);   // the golden's own "updated Ns ago" at its 00:01:00 clock
+        _server.Current = golden with { Views = golden.Views with { ProjectedAt = A.Noon + age } };
+
+        await Connected();
+
+        Assert.Equal(text, _vm.Pill.Text);
+    }
+
     private static async Task Until(Func<bool> condition)
     {
         for (var i = 0; i < 200 && !condition(); i++)
