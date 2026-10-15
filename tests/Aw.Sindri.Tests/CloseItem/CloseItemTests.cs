@@ -128,4 +128,13 @@ public sealed class CloseItemTests
         Expect.Equal("done", A.CloseItemRequest().Build().Variant);
         Expect.Equal("cancelled", A.CloseItemRequest().WithReason(CloseReason.Cancelled).Build().Variant);
     }
+
+    [Fact]
+    public void An_undefined_reason_is_refused_by_the_validator_and_has_no_variant()
+    {
+        var request = A.CloseItemRequest().WithReason((CloseReason)7).Build();
+
+        Expect.Equal(SindriErrors.InvalidInput.Code, new CloseItemValidator().Validate(request).Error.Code);
+        Expect.Equal("undefined", request.Variant);
+    }
 }

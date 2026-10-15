@@ -40,6 +40,14 @@ public sealed class ItemDecisionsTests
     }
 
     [Fact]
+    public void Close_refuses_an_undefined_reason()
+    {
+        var item = new ItemRowBuilder().AtVersion(3).Build();
+
+        Expect.Equal(SindriErrors.InvalidInput.Code, ItemDecisions.Close(item, (CloseReason)7, seenVersion: 3, _command).Error.Code);
+    }
+
+    [Fact]
     public void Close_at_the_seen_version_changes_state()
     {
         var item = new ItemRowBuilder().AtVersion(3).Build();

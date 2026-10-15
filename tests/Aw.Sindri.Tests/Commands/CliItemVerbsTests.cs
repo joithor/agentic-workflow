@@ -148,6 +148,61 @@ public sealed class CliItemVerbsTests : IDisposable
         Assert.Equal((2, "SND-API-011 views at cursor 3, waiting for 7\n"), (code, _error.ToString().ReplaceLineEndings("\n")));
     }
 
+    private static GetStatusResponse StatusWith(ViewsStatus views) => _statusAtHead7 with { Views = views };
+
+    private static ViewsStatus Behind(bool rebuilding, bool stalled) =>
+        new(Cursor: 3, LedgerHead: 7, ProjectedAt: KnownInstants.Epoch, Rebuilding: rebuilding, Stalled: stalled, StalledAt: stalled ? 3 : null, StalledType: null);
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_queue_while_the_views_are_stalled_skips_the_header_and_exits_1_with_the_sentence()
+    {
+        var stalled = new AsOf(3, 7, KnownInstants.Epoch, Rebuilding: false, Stalled: true);
+        var api = new RoutedApi().HonouringAfter(cursor: 3).On("/sindri/status", HttpStatusCode.OK, StatusWith(Behind(rebuilding: false, stalled: true)))
+            .On("/sindri/queue", HttpStatusCode.OK, new QueueResponse([], EmptyText.Stalled(3), stalled));
+
+        var code = await Verbs(api, Human).Run(["queue"], Token);
+
+        Assert.Equal((1, null), (code, api.Calls[^1].Headers.GetValueOrDefault(SindriHeaders.After)));
+        Assert.Contains(EmptyText.Stalled(3), _out.ToString(), StringComparison.Ordinal);
+        Assert.Empty(_error.ToString());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_items_while_the_views_rebuild_skips_the_header_and_exits_1_with_the_sentence()
+    {
+        var rebuilding = new AsOf(3, 7, KnownInstants.Epoch, Rebuilding: true, Stalled: false);
+        var api = new RoutedApi().HonouringAfter(cursor: 3).On("/sindri/status", HttpStatusCode.OK, StatusWith(Behind(rebuilding: true, stalled: false)))
+            .On("/sindri/items", HttpStatusCode.OK, new ListItemsResponse([], EmptyText.Rebuilding(3, 7), rebuilding));
+
+        var code = await Verbs(api, Human).Run(["items"], Token);
+
+        Assert.Equal((1, null), (code, api.Calls[^1].Headers.GetValueOrDefault(SindriHeaders.After)));
+        Assert.Contains(EmptyText.Rebuilding(3, 7), _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_items_json_while_stalled_prints_the_body_and_exits_1()
+    {
+        var stalled = new AsOf(3, 7, KnownInstants.Epoch, Rebuilding: false, Stalled: true);
+        var list = new ListItemsResponse([], EmptyText.Stalled(3), stalled);
+        var api = new RoutedApi().HonouringAfter(cursor: 3).On("/sindri/status", HttpStatusCode.OK, StatusWith(Behind(rebuilding: false, stalled: true)))
+            .On("/sindri/items", HttpStatusCode.OK, list);
+
+        var code = await Verbs(api, Human).Run(["items", "--json"], Token);
+
+        Assert.Equal((1, Encoding.UTF8.GetString(AwJson.Serialize(list, SliceHarness.Json)) + "\n"), (code, _out.ToString().ReplaceLineEndings("\n")));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_queue_caught_up_sends_the_header_to_a_server_that_honours_it()
+    {
+        var api = new RoutedApi().HonouringAfter(cursor: 7).On("/sindri/queue", HttpStatusCode.OK, new QueueResponse([], EmptyText.Queue(), _fresh));
+
+        var code = await Verbs(api, Human).Run(["queue"], Token);
+
+        Assert.Equal((0, "7"), (code, api.Calls[^1].Headers.GetValueOrDefault(SindriHeaders.After)));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Cli_item_close_cancelled_posts_the_cancelled_variant()
     {
@@ -216,7 +271,15 @@ public sealed class CliItemVerbsTests : IDisposable
         {
             ["/sindri/status"] = (HttpStatusCode.OK, Encoding.UTF8.GetString(AwJson.Serialize(_statusAtHead7, SliceHarness.Json))),   // every view read asks for the head first
         };
+        private long? _cursor;
         public List<Call> Calls { get; } = [];
+
+        /// <summary>Answers 503 SND-API-011 to a call whose X-Sindri-After is past <paramref name="cursor"/>, as the server does once its views stay behind.</summary>
+        public RoutedApi HonouringAfter(long cursor)
+        {
+            _cursor = cursor;
+            return this;
+        }
 
         public RoutedApi On<T>(string path, HttpStatusCode status, T body)
         {
@@ -235,6 +298,14 @@ public sealed class CliItemVerbsTests : IDisposable
             var uri = request.RequestUri!;   // why: HttpClient always sets the URI
             var body = request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken);
             Calls.Add(new Call(request.Method.Method, uri.AbsolutePath, uri.Query, body, request.Headers.ToDictionary(h => h.Key, h => string.Join(',', h.Value), StringComparer.OrdinalIgnoreCase)));
+            if (_cursor is { } cursor && request.Headers.TryGetValues(SindriHeaders.After, out var after) && long.Parse(after.Single(), System.Globalization.CultureInfo.InvariantCulture) > cursor)
+            {
+                return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+                {
+                    Content = new StringContent("""{"type":"about:blank","title":"SND-API-011","status":503,"detail":"views are behind"}""", Encoding.UTF8, "application/problem+json"),
+                };
+            }
+
             var (status, text) = _routes.TryGetValue(uri.AbsolutePath, out var found) ? found : (HttpStatusCode.NotFound, """{"title":"SND-API-404","detail":"no route"}""");
             return new HttpResponseMessage(status) { Content = new StringContent(text, Encoding.UTF8, (int)status >= 400 ? "application/problem+json" : "application/json") };
         }
