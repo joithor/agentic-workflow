@@ -268,6 +268,14 @@ packages:
     src: null
     scan: [mods/aw-live/hooks]
     note: "Claude Code mod (stays TypeScript, §4a); calls `scorer live --json`"
+  - id: Meta
+    kind: package
+    tier: 2
+    projectPrefix: Aw.Meta
+    bins: [aw-meta]
+    ts: null
+    src: src/Meta
+    note: "aw-meta CLI for the /meta skill: the meta orchestrator's obligations (inbox/outbox), lane map, gate and merge runner, owner queue, health and running log; state under $AW_STATE_DIR/meta; a thin harness Sindri absorbs later"
 
 edges:
   # ---- current: found in the source today ----
@@ -301,6 +309,11 @@ edges:
     kind: cli
     status: current
     note: "bugfix-state runs the sibling ui-evidence entry point (same tier, through its CLI contract)"
+  - from: Hooks
+    to: Meta
+    kind: cli
+    status: current
+    note: "the meta Stop gate runs aw-meta stop-check and the SendMessage outbox hook runs aw-meta outbox-record (docs/csharp/meta.md)"
   - from: Sindri
     to: Evidence
     kind: file
@@ -550,6 +563,27 @@ edges:
 
 # Sindri -> SindriUi (cli) closes a cycle with SindriUi -> Sindri (http): bare `sindri` only spawns the app's process.
 # Renewed on review like every exception.
+  - from: Meta
+    to: Kernel
+    kind: project
+    status: current
+    note: "Result, IService, ports (scaffolded by /new-package)"
+  - from: Meta
+    to: KernelData
+    kind: project
+    status: current
+    note: "meta.db (SQLite stores and migrations)"
+  - from: Meta
+    to: KernelTelemetry
+    kind: project
+    status: current
+    note: "the host starts Kernel telemetry in Compose (scaffolded by /new-package)"
+  - from: Meta
+    to: Evidence
+    kind: file
+    status: current
+    note: "health lists who holds the box-wide heavy-job lock (locks/heavy-job.lock and its .k siblings, owner file's pid); it only reads them"
+
 exceptions:
   - rule: DEPS-CYCLE-001
     subject: Sindri

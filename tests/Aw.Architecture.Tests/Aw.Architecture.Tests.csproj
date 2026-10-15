@@ -50,6 +50,10 @@
     <ProjectReference Include="../../src/Context/Aw.Context.Features/Aw.Context.Features.csproj" />
     <ProjectReference Include="../../src/Context/Aw.Context.Infrastructure/Aw.Context.Infrastructure.csproj" />
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Workflows/Aw.Sindri.Workflows.csproj" />
+    <ProjectReference Include="../../src/Meta/Aw.Meta.Core/Aw.Meta.Core.csproj" />
+    <ProjectReference Include="../../src/Meta/Aw.Meta.Features/Aw.Meta.Features.csproj" />
+    <ProjectReference Include="../../src/Meta/Aw.Meta.Infrastructure/Aw.Meta.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Meta/Aw.Meta.Host/Aw.Meta.Host.csproj" />
   </ItemGroup>
 
   <ItemGroup>
