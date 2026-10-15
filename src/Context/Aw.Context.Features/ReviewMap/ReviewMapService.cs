@@ -10,7 +10,7 @@ namespace Aw.Context.Features.ReviewMap;
 /// <summary>
 /// One review decision (spec §8.7): checked against the latest draft by <see cref="ReviewPlanner"/> (SND-CONTEXT-047 when the
 /// target is gone or decided already), then appended as override rows, one per decision (accept-deterministic: one per entry),
-/// all or none. A suggested file link may also be decided with no draft: the current map is what its filemap shows.
+/// all or none. A suggested file link may also be decided, and any decision undone, with no draft: the current map is what its filemap shows.
 /// Sindri checks the verb's class first (X63); a session is refused here (SND-CONTEXT-020) only for the bulk accept.
 /// </summary>
 internal sealed class ReviewMapService(IGraphStore store, ICurrentUser user, TimeProvider clock) : IService<ReviewMapRequest, ReviewResult>
@@ -48,7 +48,7 @@ internal sealed class ReviewMapService(IGraphStore store, ICurrentUser user, Tim
     private async ValueTask<Result<MapSnapshot>> Basis(ReviewDecision decision, CancellationToken cancellationToken)
     {
         var draft = await ReviewDrafts.Draft(store, cancellationToken).ConfigureAwait(false);
-        if (draft.IsSuccess || decision.Link is null || draft.Error.Code != ContextErrors.NoDraftMap.Code)
+        if (draft.IsSuccess || !(decision.Link is not null || decision.Verb == ReviewVerb.Undo) || draft.Error.Code != ContextErrors.NoDraftMap.Code)
         {
             return draft;
         }

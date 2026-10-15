@@ -18,7 +18,8 @@ public static class FileMapBuilder
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(graph);
-        var path = query.Path.Length == 0 || query.Path.EndsWith('/') ? query.Path : query.Path + "/";
+        var normal = RepoPaths.Normalize(query.Path);
+        var path = normal.Length == 0 ? normal : normal + "/";
         var under = files.Where(f => f.StartsWith(path, StringComparison.Ordinal)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         if (path.Length > 0 && under.Count == 0)
         {

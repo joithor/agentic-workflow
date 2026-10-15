@@ -28,7 +28,7 @@ public static class ReviewBacklog
             .Concat(applied.Orphaned.Where(o => o.Action != OverrideAction.Propose).Select(Orphan))
             .ToList();
         var counts = QueueCounts.Of(ordered);
-        var decided = DecidedProposals(draft, overrides);
+        var decided = DecidedProposals(draft, overrides, ordered);
         return new ReviewQueueView(label, ReviewVersion.None, ordered, decided, decided + counts.Deterministic + counts.Model, counts, ByKind(ordered), ReviewTruncated.None);
     }
 
@@ -37,14 +37,16 @@ public static class ReviewBacklog
     private static bool IsSuggestion(GraphEdge e) => e.Provenance == Provenance.Model && e.Type is EdgeType.Implements or EdgeType.Tests;
 
     // The proposals of this draft with a standing decision: the draft's own proposals and its scoping run's, not every target someone ever decided about.
-    private static int DecidedProposals(GraphSnapshot draft, IReadOnlyList<MapOverride> overrides)
+    // One that is still in the queue is undecided whatever a row says: a reject whose cited span changed no longer applies, and the node is back.
+    private static int DecidedProposals(GraphSnapshot draft, IReadOnlyList<MapOverride> overrides, List<ReviewEntry> queued)
     {
         var active = OverrideLog.Active(overrides);
         var proposals = draft.Nodes.Where(IsProposal).Select(n => n.Key.Value)
             .Concat(draft.Edges.Where(IsSuggestion).Select(e => LinkIds.For(e).Value))
             .Concat(active.Where(o => o.Action == OverrideAction.Propose).Select(o => o.Target.Value)).ToHashSet(StringComparer.Ordinal);
         var deciding = active.Where(OverrideLog.Decides).Select(o => o.Link?.Value ?? o.Target.Value).ToHashSet(StringComparer.Ordinal);
-        return proposals.Count(deciding.Contains);
+        var waiting = queued.Where(e => e.Group != ReviewGroup.Orphaned).Select(e => e.Link?.Value ?? e.Node.Value).ToHashSet(StringComparer.Ordinal);
+        return proposals.Count(p => deciding.Contains(p) && !waiting.Contains(p));
     }
 
     private static Dictionary<string, int> ByKind(List<ReviewEntry> entries) =>

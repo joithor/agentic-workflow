@@ -197,15 +197,7 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
             return open.Error;
         }
 
-        var writes = new GraphWrites(open.Value, BatchSize);
-        var added = await writes.AppendOverrides(rows, cancellationToken).ConfigureAwait(false);
-        if (added.IsError)
-        {
-            return added;
-        }
-
-        var saved = await writes.SaveRun(proposal, cancellationToken).ConfigureAwait(false);
-        return saved.IsError ? saved.Error : added;
+        return await new GraphWrites(open.Value, BatchSize).Propose(proposal, rows, cancellationToken).ConfigureAwait(false);
     }
 
     public async ValueTask<Result<ScopeProposal?>> Run(string run, CancellationToken cancellationToken)

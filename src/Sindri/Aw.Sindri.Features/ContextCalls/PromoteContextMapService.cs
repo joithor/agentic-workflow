@@ -45,7 +45,7 @@ internal sealed class PromoteContextMapService(ContextScopes scopes, IContextEng
 
         if (!string.Equals(request.Draft, draft, StringComparison.Ordinal))
         {
-            return ContextErrors.ReviewTargetStale.With($"the latest draft is {draft}, not {request.Draft}, which you confirmed (fix: run 'sindri context map promote' again)");
+            return ContextErrors.PromoteRefused.With($"the latest draft is {draft}, not {request.Draft}, which you confirmed (fix: run 'sindri context map promote' again)");
         }
 
         var refused = challenges.Refuse(request.Answer, action, subject, "sindri context map promote");

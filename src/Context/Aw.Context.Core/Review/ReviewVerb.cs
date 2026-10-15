@@ -4,7 +4,7 @@ namespace Aw.Context.Core.Review;
 
 /// <summary>
 /// What one review call does. Sindri's catalog classes them (X63): accept, reject, rename, move, accept-deterministic,
-/// undo and drop are 'desk' (the app or a terminal); apply-file, merge, add and delete are 'protected' (a terminal, typed confirmation).
+/// undo, drop and repoint are 'desk' (the app or a terminal); apply-file, merge, add and delete are 'protected' (a terminal, typed confirmation).
 /// Every verb but skip (which writes nothing and isn't a call) is one override row, accept-deterministic one row per entry.
 /// </summary>
 [JsonConverter(typeof(StrictEnumConverter<ReviewVerb>))]

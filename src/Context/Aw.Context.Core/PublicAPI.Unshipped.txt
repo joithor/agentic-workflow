@@ -3525,3 +3525,5 @@ static readonly Aw.Context.Core.ContextErrors.SourceNotConfigured -> Aw.Kernel.E
 static readonly Aw.Context.Core.ContextErrors.SourceUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.StoreUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.UnknownAnchor -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Lenses.RepoPaths
+static Aw.Context.Core.Lenses.RepoPaths.Normalize(string! path) -> string!

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
@@ -5,7 +6,6 @@ using Aw.Context.Core.Proposals;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -17,7 +17,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// never again after a reject, never the current map), and 'context.map.proposed' is appended when something was added. A job-class
 /// command run synchronously: it is fast, and the app refreshes on the event.
 /// </summary>
-internal sealed class ProposeContextMapService(ContextScopes scopes, IContextEngine engine, HeldLease held, ILedgerStore ledger, EventFactory events, ICallerContextAccessor callers)
+internal sealed class ProposeContextMapService(ContextScopes scopes, IContextEngine engine, HeldLease held, ILedgerStore ledger, EventFactory events)
     : IService<ProposeContextMapRequest, ProposeContextMapResponse>
 {
     private const int MaxRun = 200;
@@ -28,6 +28,11 @@ internal sealed class ProposeContextMapService(ContextScopes scopes, IContextEng
         if (proposal.IsError)
         {
             return proposal.Error;
+        }
+
+        if (held.Current is not { } grant)
+        {
+            return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");   // before any row is written: a retry must find nothing half done
         }
 
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
@@ -50,7 +55,7 @@ internal sealed class ProposeContextMapService(ContextScopes scopes, IContextEng
 
         return proposed.Value.Added == 0
             ? new ProposeContextMapResponse(proposed.Value, Sequence: null, standing.Value.Surfaces)
-            : await Record(proposal.Value, proposed.Value, standing.Value.Surfaces, cancellationToken).ConfigureAwait(false);
+            : await Record(proposal.Value, proposed.Value, standing.Value.Surfaces, grant, cancellationToken).ConfigureAwait(false);
     }
 
     private static Result<ScopeProposal> Read(ProposeContextMapRequest request)
@@ -65,16 +70,12 @@ internal sealed class ProposeContextMapService(ContextScopes scopes, IContextEng
             : ContextErrors.RepoOutsideScope.With($"'{request.Repo}' is not a repo this scope can see (fix: name a repo of the approved profile)");
     }
 
-    private async ValueTask<Result<ProposeContextMapResponse>> Record(ScopeProposal proposal, ProposeResult result, IReadOnlyList<GraphStatus> surfaces, CancellationToken cancellationToken)
+    private async ValueTask<Result<ProposeContextMapResponse>> Record(ScopeProposal proposal, ProposeResult result, IReadOnlyList<GraphStatus> surfaces, LeaseGrant grant, CancellationToken cancellationToken)
     {
-        if (held.Current is not { } grant)
-        {
-            return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
-        }
-
         var payload = new ContextMapProposed(proposal.Run, proposal.Repo.Value, result.Draft.Number, result.Added, result.Existing, result.Rejected);
-        var call = callers.Current is { } caller ? caller.CorrelationId.Value.ToString("N") : Guid.NewGuid().ToString("N");
-        var appended = await ledger.Append(events.Entry(EventTypes.ContextMapProposed, payload, $"{EventTypes.ContextMapProposed}:{call}"), grant, cancellationToken).ConfigureAwait(false);
+        // The run, the draft and what this call did: a retry that adds nothing writes no event, and a call that adds more is a different event.
+        var key = string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ContextMapProposed}:{proposal.Run}:v{result.Draft.Number}:{result.Added}:{result.Existing}:{result.Rejected}");
+        var appended = await ledger.Append(events.Entry(EventTypes.ContextMapProposed, payload, key), grant, cancellationToken).ConfigureAwait(false);
         return appended.IsError ? appended.Error : new ProposeContextMapResponse(result, appended.Value.Sequence, surfaces);
     }
 }

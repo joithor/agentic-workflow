@@ -3,6 +3,7 @@ using Aw.Context.Core;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Ranking;
 using Aw.Context.Core.Results;
@@ -119,7 +120,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
     private static Result<IReadOnlyList<GraphNode>> FileFeatures(GraphSnapshot graph, string symbol)
     {
         var path = symbol.Trim();
-        path = path.StartsWith("code:", StringComparison.Ordinal) ? path["code:".Length..] : path;
+        path = RepoPaths.Normalize(path.StartsWith("code:", StringComparison.Ordinal) ? path["code:".Length..] : path);
         var file = NodeKey.TryFrom("code:" + path, out var key) ? graph.Resolve(key) : null;
         IReadOnlyList<GraphNode> features = file is null
             ? []

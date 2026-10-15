@@ -207,6 +207,13 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
         return added.IsError ? added.Error : (int)added.Value;
     }
 
+    /// <summary>Adds a scoping run's 'propose' rows and replaces its surface list in one transaction (all or none).</summary>
+    public async ValueTask<Result<int>> Propose(ScopeProposal proposal, IReadOnlyList<MapOverride> rows, CancellationToken cancellationToken)
+    {
+        var written = await Run([.. rows.Select(GraphStatements.Override), GraphStatements.Run(proposal)], returnsId: false, cancellationToken).ConfigureAwait(false);
+        return written.IsError ? written.Error : (int)written.Value - 1;   // the total counts the run's one upserted row
+    }
+
     /// <summary>Remembers a scoping run's surface list, replacing an earlier one of the same run.</summary>
     public async ValueTask<Result<int>> SaveRun(ScopeProposal proposal, CancellationToken cancellationToken)
     {
