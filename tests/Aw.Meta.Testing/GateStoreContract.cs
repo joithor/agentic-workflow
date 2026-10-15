@@ -47,6 +47,24 @@ public abstract class GateStoreContract
         Expect.That(none.IsSuccess && none.Value is null, "no run is null");
     }
 
+    /// <summary>The history lists every run of the pull request newest first, with steps.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task History_lists_every_run_newest_first()
+    {
+        var store = await Create();
+        _ = await store.Save(Gate(190, "h1"), _none);
+        _ = await store.Save(Gate(191, "h7"), _none);
+        _ = await store.Save(Gate(190, "h2", GateVerdict.Pass), _none);
+
+        var history = await store.History(190, _none);
+        var none = await store.History(404, _none);
+
+        Expect.That(history.Value.Select(g => (g.Run, g.Head)).SequenceEqual([(2, "h2"), (1, "h1")]), "newest run first, only this pull request");
+        Expect.That(history.Value.All(g => g.Steps.Count == 2), "each run carries its steps");
+        Expect.That(none.IsSuccess && none.Value.Count == 0, "no runs is an empty list");
+    }
+
     /// <summary>Classifying a failed step is stored; an unknown step is AW-META-007.</summary>
     /// <returns>A task.</returns>
     [Fact]

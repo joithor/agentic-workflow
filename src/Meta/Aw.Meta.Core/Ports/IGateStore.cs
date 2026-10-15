@@ -19,6 +19,12 @@ public interface IGateStore
     /// <returns>The run, or null when none was recorded.</returns>
     public ValueTask<Result<GateRecord?>> Latest(int pr, CancellationToken cancellationToken);
 
+    /// <summary>Every run for a pull request, newest first, each with its steps.</summary>
+    /// <param name="pr">The pull request number.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The runs; empty when none was recorded.</returns>
+    public ValueTask<Result<IReadOnlyList<GateRecord>>> History(int pr, CancellationToken cancellationToken);
+
     /// <summary>Stores a failed step's flake classification.</summary>
     /// <param name="pr">The pull request number.</param>
     /// <param name="run">The run number.</param>

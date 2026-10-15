@@ -52,6 +52,29 @@ internal sealed class SqliteGateStore(MetaDatabase database) : IGateStore
         return steps.IsError ? steps.Error : Results.Success<GateRecord?>(head with { Steps = steps.Value });
     }
 
+    public async ValueTask<Result<IReadOnlyList<GateRecord>>> History(int pr, CancellationToken cancellationToken)
+    {
+        var heads = await database.Query(GateSql.All(pr), GateSql.ReadHead, cancellationToken).ConfigureAwait(false);
+        if (heads.IsError)
+        {
+            return heads.Error;
+        }
+
+        var runs = new List<GateRecord>();
+        foreach (var head in heads.Value)
+        {
+            var steps = await database.Query(GateSql.Steps(pr, head.Run), GateSql.ReadStep, cancellationToken).ConfigureAwait(false);
+            if (steps.IsError)
+            {
+                return steps.Error;
+            }
+
+            runs.Add(head with { Steps = steps.Value });
+        }
+
+        return runs;
+    }
+
     public ValueTask<Result<Unit>> Classify(int pr, int run, string step, FlakeVerdict verdict, CancellationToken cancellationToken) =>
         database.Write(
             async work =>

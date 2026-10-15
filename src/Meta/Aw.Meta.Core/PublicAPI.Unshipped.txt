@@ -84,7 +84,7 @@ static Aw.Meta.Core.Config.ScopeConfig.operator !=(Aw.Meta.Core.Config.ScopeConf
 static Aw.Meta.Core.Config.ScopeConfig.operator ==(Aw.Meta.Core.Config.ScopeConfig? left, Aw.Meta.Core.Config.ScopeConfig? right) -> bool
 Aw.Meta.Core.Config.StepConfig
 Aw.Meta.Core.Config.StepConfig.<Clone>$() -> Aw.Meta.Core.Config.StepConfig!
-Aw.Meta.Core.Config.StepConfig.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Run, out bool Heavy) -> void
+Aw.Meta.Core.Config.StepConfig.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Run, out bool Heavy, out System.Collections.Generic.IReadOnlyList<string!>? Rerun) -> void
 Aw.Meta.Core.Config.StepConfig.Equals(Aw.Meta.Core.Config.StepConfig? other) -> bool
 override Aw.Meta.Core.Config.StepConfig.Equals(object? obj) -> bool
 override Aw.Meta.Core.Config.StepConfig.GetHashCode() -> int
@@ -92,9 +92,11 @@ Aw.Meta.Core.Config.StepConfig.Heavy.get -> bool
 Aw.Meta.Core.Config.StepConfig.Heavy.init -> void
 Aw.Meta.Core.Config.StepConfig.Name.get -> string!
 Aw.Meta.Core.Config.StepConfig.Name.init -> void
+Aw.Meta.Core.Config.StepConfig.Rerun.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Meta.Core.Config.StepConfig.Rerun.init -> void
 Aw.Meta.Core.Config.StepConfig.Run.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.StepConfig.Run.init -> void
-Aw.Meta.Core.Config.StepConfig.StepConfig(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run, bool Heavy = false) -> void
+Aw.Meta.Core.Config.StepConfig.StepConfig(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run, bool Heavy = false, System.Collections.Generic.IReadOnlyList<string!>? Rerun = null) -> void
 override Aw.Meta.Core.Config.StepConfig.ToString() -> string!
 static Aw.Meta.Core.Config.StepConfig.operator !=(Aw.Meta.Core.Config.StepConfig? left, Aw.Meta.Core.Config.StepConfig? right) -> bool
 static Aw.Meta.Core.Config.StepConfig.operator ==(Aw.Meta.Core.Config.StepConfig? left, Aw.Meta.Core.Config.StepConfig? right) -> bool
@@ -278,6 +280,43 @@ static Aw.Meta.Core.Guard.GuardState.operator ==(Aw.Meta.Core.Guard.GuardState? 
 Aw.Meta.Core.Guard.StopLoopGuard
 static Aw.Meta.Core.Guard.StopLoopGuard.Decide(Aw.Meta.Core.Guard.GuardState! previous, string! fingerprint, bool hookActive, int max) -> Aw.Meta.Core.Guard.GuardDecision!
 static Aw.Meta.Core.Guard.StopLoopGuard.Fingerprint(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! open) -> string!
+Aw.Meta.Core.Health.HeavyLock
+Aw.Meta.Core.Health.HeavyLock.<Clone>$() -> Aw.Meta.Core.Health.HeavyLock!
+Aw.Meta.Core.Health.HeavyLock.Alive.get -> bool
+Aw.Meta.Core.Health.HeavyLock.Alive.init -> void
+Aw.Meta.Core.Health.HeavyLock.Deconstruct(out string! Path, out int? Pid, out bool Alive, out string! Holder) -> void
+Aw.Meta.Core.Health.HeavyLock.Equals(Aw.Meta.Core.Health.HeavyLock? other) -> bool
+override Aw.Meta.Core.Health.HeavyLock.Equals(object? obj) -> bool
+override Aw.Meta.Core.Health.HeavyLock.GetHashCode() -> int
+Aw.Meta.Core.Health.HeavyLock.HeavyLock(string! Path, int? Pid, bool Alive, string! Holder) -> void
+Aw.Meta.Core.Health.HeavyLock.Holder.get -> string!
+Aw.Meta.Core.Health.HeavyLock.Holder.init -> void
+Aw.Meta.Core.Health.HeavyLock.Path.get -> string!
+Aw.Meta.Core.Health.HeavyLock.Path.init -> void
+Aw.Meta.Core.Health.HeavyLock.Pid.get -> int?
+Aw.Meta.Core.Health.HeavyLock.Pid.init -> void
+override Aw.Meta.Core.Health.HeavyLock.ToString() -> string!
+static Aw.Meta.Core.Health.HeavyLock.operator !=(Aw.Meta.Core.Health.HeavyLock? left, Aw.Meta.Core.Health.HeavyLock? right) -> bool
+static Aw.Meta.Core.Health.HeavyLock.operator ==(Aw.Meta.Core.Health.HeavyLock? left, Aw.Meta.Core.Health.HeavyLock? right) -> bool
+Aw.Meta.Core.Health.HostResources
+Aw.Meta.Core.Health.HostResources.<Clone>$() -> Aw.Meta.Core.Health.HostResources!
+Aw.Meta.Core.Health.HostResources.AvailablePercent.get -> int
+Aw.Meta.Core.Health.HostResources.Deconstruct(out long MemTotalKb, out long MemAvailableKb, out long SwapUsedKb, out long DiskFreeBytes) -> void
+Aw.Meta.Core.Health.HostResources.DiskFreeBytes.get -> long
+Aw.Meta.Core.Health.HostResources.DiskFreeBytes.init -> void
+Aw.Meta.Core.Health.HostResources.Equals(Aw.Meta.Core.Health.HostResources? other) -> bool
+override Aw.Meta.Core.Health.HostResources.Equals(object? obj) -> bool
+override Aw.Meta.Core.Health.HostResources.GetHashCode() -> int
+Aw.Meta.Core.Health.HostResources.HostResources(long MemTotalKb, long MemAvailableKb, long SwapUsedKb, long DiskFreeBytes) -> void
+Aw.Meta.Core.Health.HostResources.MemAvailableKb.get -> long
+Aw.Meta.Core.Health.HostResources.MemAvailableKb.init -> void
+Aw.Meta.Core.Health.HostResources.MemTotalKb.get -> long
+Aw.Meta.Core.Health.HostResources.MemTotalKb.init -> void
+Aw.Meta.Core.Health.HostResources.SwapUsedKb.get -> long
+Aw.Meta.Core.Health.HostResources.SwapUsedKb.init -> void
+override Aw.Meta.Core.Health.HostResources.ToString() -> string!
+static Aw.Meta.Core.Health.HostResources.operator !=(Aw.Meta.Core.Health.HostResources? left, Aw.Meta.Core.Health.HostResources? right) -> bool
+static Aw.Meta.Core.Health.HostResources.operator ==(Aw.Meta.Core.Health.HostResources? left, Aw.Meta.Core.Health.HostResources? right) -> bool
 Aw.Meta.Core.Health.HostSnapshot
 Aw.Meta.Core.Health.HostSnapshot.<Clone>$() -> Aw.Meta.Core.Health.HostSnapshot!
 Aw.Meta.Core.Health.HostSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Processes, out long MemAvailableKb, out long SwapUsedKb, out long DiskFreeBytes) -> void
@@ -609,6 +648,25 @@ Aw.Meta.Core.MetaCoreServiceCollectionExtensions
 static Aw.Meta.Core.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 Aw.Meta.Core.MetaErrors
 static Aw.Meta.Core.MetaErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+Aw.Meta.Core.MetaPaths
+Aw.Meta.Core.MetaPaths.<Clone>$() -> Aw.Meta.Core.MetaPaths!
+Aw.Meta.Core.MetaPaths.Deconstruct(out string! StateDirectory, out string! GatesDirectory, out string? Heavy, out string! Gh) -> void
+Aw.Meta.Core.MetaPaths.Equals(Aw.Meta.Core.MetaPaths? other) -> bool
+override Aw.Meta.Core.MetaPaths.Equals(object? obj) -> bool
+Aw.Meta.Core.MetaPaths.GateDirectory(int pr) -> string!
+Aw.Meta.Core.MetaPaths.GatesDirectory.get -> string!
+Aw.Meta.Core.MetaPaths.GatesDirectory.init -> void
+override Aw.Meta.Core.MetaPaths.GetHashCode() -> int
+Aw.Meta.Core.MetaPaths.Gh.get -> string!
+Aw.Meta.Core.MetaPaths.Gh.init -> void
+Aw.Meta.Core.MetaPaths.Heavy.get -> string?
+Aw.Meta.Core.MetaPaths.Heavy.init -> void
+Aw.Meta.Core.MetaPaths.MetaPaths(string! StateDirectory, string! GatesDirectory, string? Heavy, string! Gh) -> void
+Aw.Meta.Core.MetaPaths.StateDirectory.get -> string!
+Aw.Meta.Core.MetaPaths.StateDirectory.init -> void
+override Aw.Meta.Core.MetaPaths.ToString() -> string!
+static Aw.Meta.Core.MetaPaths.operator !=(Aw.Meta.Core.MetaPaths? left, Aw.Meta.Core.MetaPaths? right) -> bool
+static Aw.Meta.Core.MetaPaths.operator ==(Aw.Meta.Core.MetaPaths? left, Aw.Meta.Core.MetaPaths? right) -> bool
 Aw.Meta.Core.Obligations.MergeRecord
 Aw.Meta.Core.Obligations.MergeRecord.<Clone>$() -> Aw.Meta.Core.Obligations.MergeRecord!
 Aw.Meta.Core.Obligations.MergeRecord.At.get -> System.DateTimeOffset
@@ -723,18 +781,26 @@ Aw.Meta.Core.Owner.OwnerQuestionText
 static Aw.Meta.Core.Owner.OwnerQuestionText.From(string! body) -> string!
 Aw.Meta.Core.Ports.ICommandRunner
 Aw.Meta.Core.Ports.ICommandRunner.Run(Aw.Meta.Core.Commands.CommandRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Commands.CommandResult!>!>
+Aw.Meta.Core.Ports.IDelay
+Aw.Meta.Core.Ports.IDelay.Wait(System.TimeSpan duration, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Aw.Meta.Core.Ports.IGateStore
 Aw.Meta.Core.Ports.IGateStore.Classify(int pr, int run, string! step, Aw.Meta.Core.Gate.FlakeVerdict verdict, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.IGateStore.History(int pr, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.GateRecord!>!>!>
 Aw.Meta.Core.Ports.IGateStore.Latest(int pr, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Gate.GateRecord?>!>
 Aw.Meta.Core.Ports.IGateStore.LatestMerge(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Obligations.MergeRecord?>!>
 Aw.Meta.Core.Ports.IGateStore.RecordMerge(Aw.Meta.Core.Obligations.MergeRecord! merge, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Meta.Core.Ports.IGateStore.Save(Aw.Meta.Core.Gate.GateRecord! gate, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Gate.GateRecord!>!>
+Aw.Meta.Core.Ports.IHostResources
+Aw.Meta.Core.Ports.IHostResources.HeavyLocks(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>!>!>
+Aw.Meta.Core.Ports.IHostResources.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Health.HostResources!>!>
 Aw.Meta.Core.Ports.IKeyValueStore
 Aw.Meta.Core.Ports.IKeyValueStore.Get(string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string?>!>
 Aw.Meta.Core.Ports.IKeyValueStore.Set(string! key, string! value, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Meta.Core.Ports.ILaneStore
 Aw.Meta.Core.Ports.ILaneStore.Current(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Lanes.LaneMapState!>!>
 Aw.Meta.Core.Ports.ILaneStore.Save(Aw.Meta.Core.Lanes.LaneMapState! map, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.ILogFiles
+Aw.Meta.Core.Ports.ILogFiles.Tail(string! path, int maxCharacters, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Meta.Core.Ports.IMessageStore
 Aw.Meta.Core.Ports.IMessageStore.Messages(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Messages.InboxMessage!>!>!>
 Aw.Meta.Core.Ports.IMessageStore.Offset(string! transcript, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
@@ -859,15 +925,19 @@ Aw.Meta.Core.Watch.WatchedPr.WatchedPr(Aw.Meta.Core.Watch.PrState State, bool Is
 static Aw.Meta.Core.Watch.WatchedPr.operator !=(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
 static Aw.Meta.Core.Watch.WatchedPr.operator ==(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
 const Aw.Meta.Core.Health.OrphanRule.MinimumAgeSeconds = 300 -> long
+const Aw.Meta.Core.KvKeys.HealthLast = "health.last" -> string!
 const Aw.Meta.Core.KvKeys.StopCount = "stopcheck.count" -> string!
 const Aw.Meta.Core.KvKeys.StopFingerprint = "stopcheck.fingerprint" -> string!
 const Aw.Meta.Core.KvKeys.WatchHeartbeat = "watch.heartbeat" -> string!
+const Aw.Meta.Core.KvKeys.WatchInterval = "watch.interval" -> string!
+static readonly Aw.Meta.Core.MetaErrors.CommandFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.CommandNotStarted -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.ConfigExists -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.ConfigInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.GateStepNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.HostUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.LogUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.LogUnwritable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.MessageNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.NoTeamConfig -> Aw.Kernel.ErrorDefinition!

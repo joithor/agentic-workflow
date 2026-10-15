@@ -26,6 +26,7 @@ public static class MetaInfrastructureServiceCollectionExtensions
         var settings = SettingsFromEnvironment.Read(environment);
         return services
             .AddSingleton(settings)
+            .AddSingleton(settings.Paths)
             .AddSingleton(sp => new MetaDatabase(MetaDatabase.OptionsFor(settings.StateDirectory), sp.GetRequiredService<TimeProvider>()))
             .AddScoped<IMessageStore, SqliteMessageStore>()
             .AddScoped<ILaneStore, SqliteLaneStore>()
@@ -36,6 +37,9 @@ public static class MetaInfrastructureServiceCollectionExtensions
             .AddSingleton<ITranscriptReader, FileTranscriptReader>()
             .AddSingleton<ISessionDirectory>(new DirectorySessionDirectory(settings.SessionsDirectory))
             .AddSingleton<IProcessTable>(new ProcProcessTable(settings.StateDirectory))
+            .AddSingleton<IHostResources>(new ProcHostResources(settings.StateDirectory, settings.HeavyLock))
+            .AddSingleton<ILogFiles, FileLogFiles>()
+            .AddSingleton<IDelay>(sp => new ClockDelay(sp.GetRequiredService<TimeProvider>()))
             .AddSingleton<ICommandRunner, SystemCommandRunner>()
             .AddScoped<IRunningLog>(sp => new AppendRunningLog(async cancellationToken =>
             {

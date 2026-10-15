@@ -11,4 +11,10 @@ public static class KvKeys
 
     /// <summary>How many times in a row that set blocked.</summary>
     public const string StopCount = "stopcheck.count";
+
+    /// <summary>The watch's poll interval in seconds, so a stale heartbeat is measured against it.</summary>
+    public const string WatchInterval = "watch.interval";
+
+    /// <summary>The last health check's one-line summary.</summary>
+    public const string HealthLast = "health.last";
 }

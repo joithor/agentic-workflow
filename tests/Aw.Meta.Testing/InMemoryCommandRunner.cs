@@ -34,6 +34,30 @@ public sealed class InMemoryCommandRunner : ICommandRunner
     /// <returns>The argument vector.</returns>
     public static IReadOnlyList<string> Missing() => [Marker, "missing"];
 
+    private readonly List<(Func<CommandRequest, bool> Match, Func<CommandRequest, CommandResult> Result)> _script = [];
+
+    /// <summary>Answers every command whose argument vector, joined by spaces, contains <paramref name="text"/> (earlier rules win).</summary>
+    /// <param name="text">What the command line contains.</param>
+    /// <param name="stdout">The output.</param>
+    /// <param name="exitCode">The exit code.</param>
+    /// <returns>This fake.</returns>
+    public InMemoryCommandRunner When(string text, string stdout = "", int exitCode = 0) =>
+        When(text, _ => new CommandResult(exitCode, stdout, exitCode == 0 ? string.Empty : "failed: " + text, TimedOut: false));
+
+    /// <summary>Answers every command whose argument vector, joined by spaces, contains <paramref name="text"/> with a computed result.</summary>
+    /// <param name="text">What the command line contains.</param>
+    /// <param name="result">Computes the result from the request.</param>
+    /// <returns>This fake.</returns>
+    public InMemoryCommandRunner When(string text, Func<CommandRequest, CommandResult> result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        _script.Add((request => string.Join(' ', request.Argv).Contains(text, StringComparison.Ordinal), result));
+        return this;
+    }
+
+    /// <summary>The command lines run (argument vectors joined by spaces), in order.</summary>
+    public IReadOnlyList<string> Lines => [.. _requests.Select(r => string.Join(' ', r.Argv))];
+
     /// <summary>Every request run, in order.</summary>
     public IReadOnlyList<CommandRequest> Requests => _requests;
 
@@ -43,6 +67,11 @@ public sealed class InMemoryCommandRunner : ICommandRunner
         ArgumentNullException.ThrowIfNull(request);
         _requests.Add(request);
         var argv = request.Argv;
+        if (_script.FirstOrDefault(rule => rule.Match(request)) is { Result: { } answer })
+        {
+            return answer(request);
+        }
+
         if (argv.Count < 2 || argv[0] != Marker || argv[1] == "missing")
         {
             return MetaErrors.CommandNotStarted.With("program not found: " + (argv.Count > 0 ? argv[0] : string.Empty));

@@ -31,7 +31,7 @@ internal sealed class ProcProcessTable(string stateDirectory) : IProcessTable
             }
 
             var meminfo = ProcFormat.MemInfo(await File.ReadAllTextAsync("/proc/meminfo", cancellationToken).ConfigureAwait(false));
-            return new HostSnapshot(processes, meminfo.Available, meminfo.SwapUsed, DiskFree());
+            return new HostSnapshot(processes, meminfo.Available, meminfo.SwapUsed, DiskSpace.Free(stateDirectory));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or FormatException or ArgumentException)
         {
@@ -83,18 +83,6 @@ internal sealed class ProcProcessTable(string stateDirectory) : IProcessTable
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             return null;
-        }
-    }
-
-    private long DiskFree()
-    {
-        try
-        {
-            return new DriveInfo(Directory.Exists(stateDirectory) ? stateDirectory : "/").AvailableFreeSpace;
-        }
-        catch (Exception exception) when (exception is IOException or ArgumentException or UnauthorizedAccessException)
-        {
-            return 0;
         }
     }
 }

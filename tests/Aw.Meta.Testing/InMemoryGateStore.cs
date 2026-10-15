@@ -27,6 +27,10 @@ public sealed class InMemoryGateStore : IGateStore
         Done.Of(_gates.Where(g => g.Pr == pr).MaxBy(g => g.Run));
 
     /// <inheritdoc />
+    public ValueTask<Result<IReadOnlyList<GateRecord>>> History(int pr, CancellationToken cancellationToken) =>
+        Done.Of<IReadOnlyList<GateRecord>>([.. _gates.Where(g => g.Pr == pr).OrderByDescending(g => g.Run)]);
+
+    /// <inheritdoc />
     public ValueTask<Result<Unit>> Classify(int pr, int run, string step, FlakeVerdict verdict, CancellationToken cancellationToken)
     {
         var at = _gates.FindIndex(g => g.Pr == pr && g.Run == run);

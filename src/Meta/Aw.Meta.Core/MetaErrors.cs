@@ -38,7 +38,13 @@ public static class MetaErrors
     /// <summary>AW-META-011.</summary>
     public static readonly ErrorDefinition ConfigExists = new("AW-META-011", ErrorKind.Conflict, "A team config already exists");
 
+    /// <summary>AW-META-012.</summary>
+    public static readonly ErrorDefinition CommandFailed = new("AW-META-012", ErrorKind.Unavailable, "An external command failed");
+
+    /// <summary>AW-META-013.</summary>
+    public static readonly ErrorDefinition LogUnreadable = new("AW-META-013", ErrorKind.Unavailable, "A step log can't be read");
+
     /// <summary>Every Meta error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
-        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable, ConfigExists];
+        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable, ConfigExists, CommandFailed, LogUnreadable];
 }

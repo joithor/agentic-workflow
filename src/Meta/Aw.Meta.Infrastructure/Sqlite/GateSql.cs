@@ -40,6 +40,11 @@ internal static class GateSql
         c => c.Bind("$pr", pr),
         "latest gate");
 
+    internal static SqlStatement All(int pr) => new(
+        "SELECT pr, run, head, main, scopes, verdict, at FROM gates WHERE pr = $pr ORDER BY run DESC",
+        c => c.Bind("$pr", pr),
+        "gate history");
+
     internal static SqlStatement Steps(int pr, int run) => new(
         "SELECT name, verdict, log, flake FROM gate_steps WHERE pr = $pr AND run = $run ORDER BY position ASC",
         c => c.Bind("$pr", pr).Bind("$run", run),
