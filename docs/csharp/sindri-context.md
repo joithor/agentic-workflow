@@ -412,6 +412,7 @@ User-facing behaviour is in `docs/sindri/context.md` (S-4). This is where the co
   (042), `FileReviewFileStore`, migration `0004_s4_map_review.sql` (`map_override` rebuilt with `propose` and `undo`, `link`, `undoes` and `payload` columns).
 - **Features.** Slices `BuildMap`, `ReviewQueue`, `ReviewMap`, `ReviewHistory`, `ExportReview`, `PreviewReviewFile`, `ApplyReviewFile`, `PromoteMap`,
   `ProposeFromScope`, `GetProposals`, `GetLenses`, `GetFileMap`; the facade methods are on `IContextMap` and `IContextLenses`.
+- **Promote under a deny glob.** `MapAccess.View` decides the cut; `PromoteMap` replaces the draft with the cut graph and the undo rows for the person's accept, rename, move and merge decisions about what was cut (`MapView.UndoCutDecisions`, `who` = `service:deny-cut`) in one `ReplaceDraft` transaction, then promotes it, so `context.map.promoted` follows every committed promote. `BuildMap` writes the same rows with its `SaveDraft`. `DenyCut.Apply` drops a marked undo row and the row it undoes while their node is cut or gone (every view, history and export included); rejects and deletes are never undone, and a reject or delete whose node is gone is satisfied, not orphaned. The `context:map` doctor row counts over the same view. A store 046 from `ReplaceDraft` is neutral (the draft is no longer the open one); `PromoteMap` words it for a promote.
 - **Sindri Core.** `IHeavySlots`/`HeavySlotTaken`; the events `context.map.reviewed`, `context.map.promoted`, `context.map.proposed`
   (the sixth public context event, added by S-4) and `context.map.built`; `IndexSettings` (`index.denyPaths` on the profile and on a repo).
 - **Sindri Infrastructure.** `DirectoryHeavySlots` over `locks/heavy-job.lock[.k]` (`mkdir` mutex, owner file `<pid> <utc> <who>`,
@@ -448,7 +449,7 @@ API P6 (the job runtime) has not merged, so `map build` has no route; the `Build
 | `SND-CONTEXT-043` | Conflict (409) | 1 | No entry of the review file matches the latest draft |
 | `SND-CONTEXT-044` | NotFound (404) | 1 | A draft is needed and none exists (`draft` asked, or `map review` listing the queue) |
 | `SND-CONTEXT-045` | NotFound (404) | 1 | A repo outside the profile or the session's repo (one answer for both) |
-| `SND-CONTEXT-046` | Conflict (409) | 1 | Promote refused: no draft, undecided review items, or the draft changed after you confirmed it (run promote again) |
+| `SND-CONTEXT-046` | Conflict (409) | 1 | Promote refused: no draft, undecided review items, or the draft changed after you confirmed it (review the new draft, then promote again) |
 | `SND-CONTEXT-047` | Conflict (409) | 1 | Stale review target, or an undo of an unknown or undone override |
 | `SND-CONTEXT-048` | Unavailable (503) | 2 | Git can't read the repo at the commit |
 
@@ -476,7 +477,7 @@ The goldens under `tests/Aw.Sindri.Tests/Golden/Api/context-*/` pin every body b
 - **Trust and the fence (provisional owner default, 2026-10-14 night; CTX §7).** Every lens item, record, decision, queue entry and node fact carries `trust`. A human at the CLI or in the app (`FencePolicies.For`: human and client `cli` or `http`) gets the label clean beside `trust`; a session, MCP and in-process callers get untrusted text inside `<untrusted source="map">…</untrusted>` as before. The CLI's text output fences an untrusted label itself when it called as a human (a session's answer is already fenced), `--json` prints the body unchanged. Query `ResultItem`s stay fenced for everyone. The file map carries only repo paths and node keys, so it has no `trust`. If the owner refuses the policy, drop `FencePolicies` to always-fenced and document the fence grammar for the app.
 - **Anchor errors** carry their candidates in text: 003 ends `(fix: try <key>, <key>)` (up to five), 037 lists the keys (goldens `unknown-anchor-003`, `ambiguous-037`). Structured extensions are follow-up F1.
 - **HTTP status per code.** 003 404, 037 409, 030 404, 044 404, 045 404, 046 409, 047 409, 043 409, 005 and 006 400, 042 400, 040 503 (CLI 75), 048 503 (CLI 2), 020 403, `SND-AUTH-002` 403, `SND-CLI-003` 400.
-- **Heavy-job slots.** `HeavyLockSettings` reads `AW_HEAVY_SLOTS` as the heavy wrapper does: unset or empty is 1, a whole number of at least 1 is that many, anything else is 1 (as `acquire_any_lock` reads a malformed value). The callers of `config/lib/locks.sh` (the ui-evidence skill, scaffold `e2e.sh`) pass `${AW_HEAVY_SLOTS:-2}`, so an unset variable is 2 slots there.
+- **Heavy-job slots.** `HeavyLockSettings` reads `AW_HEAVY_SLOTS` as the heavy wrapper does: unset or empty is 1, a whole number of at least 1 is that many, anything else (`two`, `0`, `-1`) is 1 in the wrapper (and `AW_SESSION_HEAVY_SLOTS` likewise), in `config/lib/locks.sh`'s `acquire_any_lock` and here. The callers of `config/lib/locks.sh` (the ui-evidence skill, scaffold `e2e.sh`) pass `${AW_HEAVY_SLOTS:-2}`, so an unset variable is 2 slots there.
 
 ### Tests
 
