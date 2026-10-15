@@ -190,7 +190,7 @@ internal sealed class CommandPaletteViewModel : ObservableObject
 
     // Enter does something with a ready row that has a sender, with Stop Sindri (it goes to Health) and with a cli-only row it can copy.
     private static bool Runs(ControlViewModel control) =>
-        control.CanRun || (control.IsReady && control.Action == "StopProcess") || (control.IsCliOnly && control.CanCopy);
+        control.IsSendable || (control.IsReady && control.Action == "StopProcess") || (control.IsCliOnly && control.CanCopy);
 
     // The entries ↑/↓ stop at and the live region counts: those that run, and the selection even while it sends (it is
     // disabled then, but it is where the user is: "0 of 14" would be wrong, and arrowing off it goes to its neighbour).
