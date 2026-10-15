@@ -21,7 +21,7 @@
         <Flyout Placement="BottomEdgeAlignedLeft" ShowMode="Standard">
           <StackPanel Name="PopoverRoot" x:DataType="att:ProtectedActionViewModel" Spacing="8" MinWidth="280">
             <TextBlock Name="PopoverTitle" Classes="caption subtle" TextWrapping="Wrap" Text="{Binding Title}" />
-            <TextBlock Name="ServedCli" Classes="mono" TextWrapping="Wrap" Text="{Binding CliText}" AutomationProperties.Name="{Binding CliText}" />
+            <TextBlock Name="ServedCli" Classes="mono" TextWrapping="Wrap" Focusable="True" Text="{Binding CliText}" AutomationProperties.Name="{Binding CliText}" />
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button Name="CopyButton" IsEnabled="{Binding CanCopy}" Click="OnCopy" Content="{Binding CopyLabel}"
                       AutomationProperties.Name="{Binding CopyName}" />

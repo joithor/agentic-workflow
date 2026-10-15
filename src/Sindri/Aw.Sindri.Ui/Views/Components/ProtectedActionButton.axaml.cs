@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Aw.Sindri.Ui.ViewModels.Components;
 
@@ -19,7 +20,7 @@ internal sealed partial class ProtectedActionButton : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        Popover.Opened += (_, _) => _model?.SetOpen(open: true);
+        Popover.Opened += OnOpened;
         Popover.Closed += OnClosed;
     }
 
@@ -33,6 +34,18 @@ internal sealed partial class ProtectedActionButton : UserControl
         _model = DataContext as ProtectedActionViewModel;
         // why: the Flyout's content is the panel the XAML declares; it is outside the logical tree until it shows, so it takes the context here
         ((Control)Popover.Content!).DataContext = _model;
+    }
+
+    private void OnOpened(object? sender, EventArgs e)
+    {
+        _model?.SetOpen(open: true);
+        // why: with no command to copy and Open in an agent disabled, the popover holds nothing focusable; the served line takes focus so it is read
+        if (_model is { CanCopy: false } && Popover.Content is Control root)
+        {
+            Dispatcher.UIThread.Post(
+                () => root.GetLogicalDescendants().OfType<TextBlock>().FirstOrDefault(t => t.Name == "ServedCli")?.Focus(NavigationMethod.Tab),
+                DispatcherPriority.Loaded);
+        }
     }
 
     private void OnClosed(object? sender, EventArgs e)
