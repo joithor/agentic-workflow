@@ -94,7 +94,7 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         inner.FileMap(query, scope, cancellationToken);
 
-    public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) => inner.CheckMap(cancellationToken);
+    public ValueTask<Result<MapHealth>> CheckMap(ContextScope? scope, CancellationToken cancellationToken) => inner.CheckMap(scope, cancellationToken);
 
     public ValueTask<Result<MapHealth>> CheckRetention(CancellationToken cancellationToken) => inner.CheckRetention(cancellationToken);
 

@@ -47,7 +47,7 @@ public static class MapAccess
         var cut = DenyCut.Of(graph, overrides, repos.Value);   // every override, pending or not: what is hidden doesn't depend on which reader asks
         var (cutGraph, cutOverrides) = (cut.Apply(graph), cut.Apply(overrides));
         var applied = OverrideApplier.Apply(cutGraph, pending ? cutOverrides : [.. cutOverrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
-        var view = new MapView(cutGraph, applied, cutOverrides, cut.Any) { Cut = cut };
+        var view = new MapView(cutGraph, applied, cutOverrides, cut);
         if (!callerScope || scope.Caller.Kind != ContextCallerKind.Session)
         {
             return view;
@@ -60,7 +60,7 @@ public static class MapAccess
         }
 
         var scopedGraph = scope.Caller.Repo is { } own ? view.Graph.ScopedTo(own) : GraphSnapshot.Empty;
-        return new MapView(scopedGraph, scopedApplied, [.. view.Overrides.Where(o => scopedGraph.Resolve(o.Target) is not null)], view.Filtered) { Cut = view.Cut };
+        return view.Scoped(scopedGraph, scopedApplied, [.. view.Overrides.Where(o => scopedGraph.Resolve(o.Target) is not null)]);
     }
 
     /// <summary>The checks that need no map, the same ones every engine read makes: the context section is valid (001), and a session needs sessions on (020) and a repo the profile maps (003).</summary>
@@ -102,15 +102,23 @@ public static class MapAccess
                 $"repo: '{repo.Value}' isn't a repo the approved profile maps ({string.Join(", ", mapped.Value.Select(r => r.Name.Value))}); nothing was written (fix: name one of them, or add the repo to the profile and approve it)");
     }
 
-    /// <summary>The graph a build keeps: <see cref="View"/>'s deny cut (steps 1 and 2) over a built graph with no overrides (the globs are the profile's 'index.denyPaths').</summary>
-    /// <param name="current">The graph.</param>
+    /// <summary>
+    /// What a build keeps of the current map under the profile's deny globs (<c xml:lang="en">index.denyPaths</c>): <see cref="View"/>'s deny cut (steps 1 and 2) over the current graph, judged with the layer's
+    /// overrides as every reader judges it, and the undo rows that take a person's accepts, renames, moves and merges about what the cut removes out with it (the build writes them with the
+    /// draft, in one step, so the draft has no orphan the globs made).
+    /// </summary>
+    /// <param name="current">The current graph.</param>
+    /// <param name="overrides">Every override.</param>
     /// <param name="built">The repos whose deny globs apply.</param>
-    /// <returns>The graph itself when nothing is denied.</returns>
-    public static GraphSnapshot WithoutDenied(GraphSnapshot current, IReadOnlyList<ContextRepo> built)
+    /// <param name="at">When the build runs.</param>
+    /// <returns>The graph itself and no rows when nothing is denied.</returns>
+    public static (GraphSnapshot Graph, IReadOnlyList<MapOverride> Undo) WithoutDenied(GraphSnapshot current, IReadOnlyList<MapOverride> overrides, IReadOnlyList<ContextRepo> built, DateTimeOffset at)
     {
         ArgumentNullException.ThrowIfNull(current);
+        ArgumentNullException.ThrowIfNull(overrides);
         ArgumentNullException.ThrowIfNull(built);
-        return DenyCut.Of(current, [], built).Apply(current);
+        var cut = DenyCut.Of(current, overrides, built);
+        return (cut.Apply(current), cut.UndoRows(overrides, at));
     }
 
     /// <summary>The export document for a version's visible graph: decision nodes and 'quotes' edges are left to the decisions, which imply them.</summary>

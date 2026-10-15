@@ -406,7 +406,7 @@ Aw.Context.Core.Facade.IContextMap
 Aw.Context.Core.Facade.IContextMap.ApplyReview(Aw.Context.Core.Review.ReviewDecision! decision, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewResult!>!>
 Aw.Context.Core.Facade.IContextMap.ApplyReviewFile(string! path, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewResult!>!>
 Aw.Context.Core.Facade.IContextMap.BuildMap(System.IProgress<string!>? progress, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapBuildReport!>!>
-Aw.Context.Core.Facade.IContextMap.CheckMap(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapHealth!>!>
+Aw.Context.Core.Facade.IContextMap.CheckMap(Aw.Context.Core.Engine.ContextScope? scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapHealth!>!>
 Aw.Context.Core.Facade.IContextMap.CheckRetention(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapHealth!>!>
 Aw.Context.Core.Facade.IContextMap.ExportMap(string? path, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapExported!>!>
 Aw.Context.Core.Facade.IContextMap.ExportReview(string? path, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewExported!>!>
@@ -3258,7 +3258,6 @@ static Aw.Context.Core.Map.FencePolicies.For(Aw.Context.Core.Engine.ContextCalle
 static Aw.Context.Core.Map.MapAccess.Export(Aw.Context.Core.Map.MapVersion! version, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.DateTimeOffset exportedAt) -> Aw.Context.Core.Map.MapDocument!
 static Aw.Context.Core.Map.MapAccess.Gate(Aw.Context.Core.Engine.ContextScope! scope) -> Aw.Kernel.Error?
 static Aw.Context.Core.Map.MapAccess.Maps(Aw.Context.Core.Engine.ContextRepoName repo, Aw.Context.Core.Engine.ContextScope! scope) -> Aw.Kernel.Error?
-static Aw.Context.Core.Map.MapAccess.WithoutDenied(Aw.Context.Core.Graph.GraphSnapshot! current, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! built) -> Aw.Context.Core.Graph.GraphSnapshot!
 static Aw.Context.Core.Map.MapBuildReport.operator !=(Aw.Context.Core.Map.MapBuildReport? left, Aw.Context.Core.Map.MapBuildReport? right) -> bool
 static Aw.Context.Core.Map.MapBuildReport.operator ==(Aw.Context.Core.Map.MapBuildReport? left, Aw.Context.Core.Map.MapBuildReport? right) -> bool
 static Aw.Context.Core.Map.MapCounts.Of(Aw.Context.Core.Graph.GraphSnapshot! graph, int overrides) -> Aw.Context.Core.Map.MapCounts!
@@ -3344,7 +3343,6 @@ static Aw.Context.Core.Proposals.ProposalNodes.Candidate(Aw.Context.Core.Graph.N
 static Aw.Context.Core.Proposals.ProposalNodes.KeyOf(Aw.Context.Core.Proposals.ProposedSurface! surface) -> Aw.Context.Core.Graph.NodeKey?
 static Aw.Context.Core.Proposals.ProposalPlan.operator !=(Aw.Context.Core.Proposals.ProposalPlan? left, Aw.Context.Core.Proposals.ProposalPlan? right) -> bool
 static Aw.Context.Core.Proposals.ProposalPlan.operator ==(Aw.Context.Core.Proposals.ProposalPlan? left, Aw.Context.Core.Proposals.ProposalPlan? right) -> bool
-static Aw.Context.Core.Proposals.ProposalPlanner.Plan(Aw.Context.Core.Proposals.ScopeProposal! proposal, Aw.Context.Core.Graph.GraphSnapshot! basis, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, string! who, System.DateTimeOffset at) -> Aw.Context.Core.Proposals.ProposalPlan!
 static Aw.Context.Core.Proposals.ProposalPlanner.Plan(Aw.Context.Core.Proposals.ScopeProposal! proposal, Aw.Context.Core.Map.MapView! view, string! who, System.DateTimeOffset at) -> Aw.Context.Core.Proposals.ProposalPlan!
 static Aw.Context.Core.Proposals.ProposalsView.operator !=(Aw.Context.Core.Proposals.ProposalsView? left, Aw.Context.Core.Proposals.ProposalsView? right) -> bool
 static Aw.Context.Core.Proposals.ProposalsView.operator ==(Aw.Context.Core.Proposals.ProposalsView? left, Aw.Context.Core.Proposals.ProposalsView? right) -> bool
@@ -3536,20 +3534,12 @@ static readonly Aw.Context.Core.ContextErrors.SourceUnavailable -> Aw.Kernel.Err
 static readonly Aw.Context.Core.ContextErrors.StoreUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.UnknownAnchor -> Aw.Kernel.ErrorDefinition!
 Aw.Context.Core.Map.MapView
-Aw.Context.Core.Map.MapView.<Clone>$() -> Aw.Context.Core.Map.MapView!
 Aw.Context.Core.Map.MapView.Applied.get -> Aw.Context.Core.Graph.GraphSnapshot!
-Aw.Context.Core.Map.MapView.Applied.init -> void
 Aw.Context.Core.Map.MapView.AllowedEvidence(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? evidence) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>?
-Aw.Context.Core.Map.MapView.CutDecisions(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!
-Aw.Context.Core.Map.MapView.Deconstruct(out Aw.Context.Core.Graph.GraphSnapshot! Graph, out Aw.Context.Core.Graph.GraphSnapshot! Applied, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides, out bool Filtered) -> void
-Aw.Context.Core.Map.MapView.Equals(Aw.Context.Core.Map.MapView? other) -> bool
+Aw.Context.Core.Map.MapView.UndoCutDecisions(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.DateTimeOffset at) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!
 Aw.Context.Core.Map.MapView.Filtered.get -> bool
-Aw.Context.Core.Map.MapView.Filtered.init -> void
 Aw.Context.Core.Map.MapView.Graph.get -> Aw.Context.Core.Graph.GraphSnapshot!
-Aw.Context.Core.Map.MapView.Graph.init -> void
-Aw.Context.Core.Map.MapView.MapView(Aw.Context.Core.Graph.GraphSnapshot! Graph, Aw.Context.Core.Graph.GraphSnapshot! Applied, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides, bool Filtered) -> void
 Aw.Context.Core.Map.MapView.Overrides.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!
-Aw.Context.Core.Map.MapView.Overrides.init -> void
 Aw.Context.Core.Review.ReviewBasis
 Aw.Context.Core.Review.ReviewBasis.<Clone>$() -> Aw.Context.Core.Review.ReviewBasis!
 Aw.Context.Core.Review.ReviewBasis.Deconstruct(out Aw.Context.Core.Graph.GraphSnapshot! Graph, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides, out bool IsDraft) -> void
@@ -3561,15 +3551,10 @@ Aw.Context.Core.Review.ReviewBasis.IsDraft.init -> void
 Aw.Context.Core.Review.ReviewBasis.Overrides.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!
 Aw.Context.Core.Review.ReviewBasis.Overrides.init -> void
 Aw.Context.Core.Review.ReviewBasis.ReviewBasis(Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides, bool IsDraft = true) -> void
-override Aw.Context.Core.Map.MapView.Equals(object? obj) -> bool
-override Aw.Context.Core.Map.MapView.GetHashCode() -> int
-override Aw.Context.Core.Map.MapView.ToString() -> string!
 override Aw.Context.Core.Review.ReviewBasis.Equals(object? obj) -> bool
 override Aw.Context.Core.Review.ReviewBasis.GetHashCode() -> int
 override Aw.Context.Core.Review.ReviewBasis.ToString() -> string!
 static Aw.Context.Core.Map.MapAccess.View(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, Aw.Context.Core.Engine.ContextScope! scope, bool pending, bool callerScope = true) -> Aw.Kernel.Result<Aw.Context.Core.Map.MapView!>!
-static Aw.Context.Core.Map.MapView.operator !=(Aw.Context.Core.Map.MapView? left, Aw.Context.Core.Map.MapView? right) -> bool
-static Aw.Context.Core.Map.MapView.operator ==(Aw.Context.Core.Map.MapView? left, Aw.Context.Core.Map.MapView? right) -> bool
 static Aw.Context.Core.Review.ReviewBasis.operator !=(Aw.Context.Core.Review.ReviewBasis? left, Aw.Context.Core.Review.ReviewBasis? right) -> bool
 static Aw.Context.Core.Review.ReviewBasis.operator ==(Aw.Context.Core.Review.ReviewBasis? left, Aw.Context.Core.Review.ReviewBasis? right) -> bool
 static Aw.Context.Core.Review.ReviewDrafts.Visible(Aw.Context.Core.Map.MapSnapshot! draft, Aw.Context.Core.Engine.ContextScope! scope) -> Aw.Kernel.Result<(Aw.Context.Core.Map.MapView! View, Aw.Context.Core.Review.ReviewQueueView! Queue)>!
@@ -3593,3 +3578,8 @@ override Aw.Context.Core.Extract.LabelPass.GetHashCode() -> int
 override Aw.Context.Core.Extract.LabelPass.ToString() -> string!
 static Aw.Context.Core.Extract.LabelPass.operator !=(Aw.Context.Core.Extract.LabelPass? left, Aw.Context.Core.Extract.LabelPass? right) -> bool
 static Aw.Context.Core.Extract.LabelPass.operator ==(Aw.Context.Core.Extract.LabelPass? left, Aw.Context.Core.Extract.LabelPass? right) -> bool
+const Aw.Context.Core.Overrides.MapOverride.CutMarker = "service:deny-cut" -> string!
+Aw.Context.Core.Overrides.MapOverride.IsCutUndo.get -> bool
+static Aw.Context.Core.Overrides.MapOverride.UndoingCut(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
+
+static Aw.Context.Core.Map.MapAccess.WithoutDenied(Aw.Context.Core.Graph.GraphSnapshot! current, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! built, System.DateTimeOffset at) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Undo)

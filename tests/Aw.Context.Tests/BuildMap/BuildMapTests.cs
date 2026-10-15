@@ -5,6 +5,7 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Review;
 using Aw.Context.Features.BuildMap;
 using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.Map;
@@ -297,6 +298,42 @@ public sealed class BuildMapTests : IDisposable
         Assert.DoesNotContain(draft.Graph.Edges, e => e.From.Value.StartsWith("code:src/commands/", StringComparison.Ordinal) || e.To.Value.StartsWith("code:src/commands/", StringComparison.Ordinal));
         Assert.DoesNotContain(draft.Graph.Nodes, n => n.Key.Kind == NodeKind.Feature && n.Provenance == Provenance.Model);
         Assert.Contains(draft.Graph.Nodes, n => n.Key.Value == "code:src/keys.ts");
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_rebuild_after_a_deny_glob_undoes_the_accepts_about_what_it_cut_so_the_draft_has_no_orphan_and_promotes()
+    {
+        var first = (await _world.Map.BuildMap(progress: null, Scope, MapWorld.None)).Value;
+        Assert.True((await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.AcceptDeterministic), Scope, MapWorld.None)).IsSuccess);
+        Assert.True((await _world.Map.Promote(Scope, MapWorld.None)).IsSuccess);
+        var denying = MapWorld.HumanWith(MapWorld.OnlyFixtureRepo, [new ContextRepo(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes") { DenyPaths = [.. PathDenylist.Defaults, "src/commands/**"] }]);
+        Assert.Contains(first.Proposed, p => p.Key.Value == _split.Value);
+
+        _ = await _world.Map.BuildMap(progress: null, denying, MapWorld.None);
+
+        var queue = (await _world.Map.ReviewQueue(limit: null, denying, MapWorld.None)).Value;
+        var log = (await _world.Store.Overrides(MapWorld.None)).Value;
+        Assert.DoesNotContain(queue.Entries, e => e.Group == ReviewGroup.Orphaned);
+        Assert.Contains(log, o => o.IsCutUndo && o.Target.Value == _split.Value);
+        Assert.DoesNotContain(OverrideLog.Active(log), o => o.Target.Value == _split.Value);
+        var promoted = await _world.Map.Promote(denying, MapWorld.None);
+        Assert.True(promoted.IsSuccess, promoted.IsError ? promoted.Error.Message : null);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_build_whose_draft_cant_be_saved_writes_no_undo_rows()
+    {
+        _ = await _world.Map.BuildMap(progress: null, Scope, MapWorld.None);
+        Assert.True((await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.AcceptDeterministic), Scope, MapWorld.None)).IsSuccess);
+        Assert.True((await _world.Map.Promote(Scope, MapWorld.None)).IsSuccess);
+        var denying = MapWorld.HumanWith(MapWorld.OnlyFixtureRepo, [new ContextRepo(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes") { DenyPaths = [.. PathDenylist.Defaults, "src/commands/**"] }]);
+        var before = (await _world.Store.Overrides(MapWorld.None)).Value.Count;
+        _world.Store.SaveDraftFailure = ContextErrors.StoreUnavailable.With("disk full");
+
+        var failed = await _world.Map.BuildMap(progress: null, denying, MapWorld.None);
+
+        Assert.True(failed.IsError);
+        Assert.Equal(before, (await _world.Store.Overrides(MapWorld.None)).Value.Count);
     }
 
     [Fact, Trait("Lane", "unit")]

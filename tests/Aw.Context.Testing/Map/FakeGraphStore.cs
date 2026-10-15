@@ -21,6 +21,15 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     /// <summary>When set, every call fails with it (a store that can't open).</summary>
     public Error? Failure { get; set; }
 
+    /// <summary>When set, <see cref="ReplaceDraft"/> fails with it and changes nothing (a write that can't commit).</summary>
+    public Error? ReplaceDraftFailure { get; set; }
+
+    /// <summary>When set, <see cref="SaveDraft"/> fails with it and changes nothing.</summary>
+    public Error? SaveDraftFailure { get; set; }
+
+    /// <summary>When set, <see cref="Promote"/> fails with it and changes nothing.</summary>
+    public Error? PromoteFailure { get; set; }
+
     /// <inheritdoc/>
     public ValueTask<Result<MapVersion?>> Current(CancellationToken cancellationToken) =>
         Done(() => Results.Success(_versions.Select(v => v.Version).FirstOrDefault(v => v.Status == MapVersionStatus.Current)));
@@ -74,6 +83,11 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     public ValueTask<Result<MapVersion>> SaveDraft(MapImport map, DateTimeOffset created, CancellationToken cancellationToken) => Done(() =>
     {
         ArgumentNullException.ThrowIfNull(map);
+        if (SaveDraftFailure is { } failed)
+        {
+            return Results.Failure<MapVersion>(failed);
+        }
+
         _ = _versions.RemoveAll(v => v.Version.Status == MapVersionStatus.Draft);
         var version = new MapVersion(++_last, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Draft);
         _versions.Add((version, map.Graph));
@@ -85,9 +99,14 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     public ValueTask<Result<MapVersion>> ReplaceDraft(int draft, MapImport map, DateTimeOffset created, CancellationToken cancellationToken) => Done(() =>
     {
         ArgumentNullException.ThrowIfNull(map);
+        if (ReplaceDraftFailure is { } failed)
+        {
+            return Results.Failure<MapVersion>(failed);
+        }
+
         if (_versions.RemoveAll(v => v.Version.Number == draft && v.Version.Status == MapVersionStatus.Draft) == 0)
         {
-            return Results.Failure<MapVersion>(ContextErrors.PromoteRefused.With("the draft changed while it was being promoted; nothing was replaced (fix: read the queue again with 'sindri context map review --list')"));
+            return Results.Failure<MapVersion>(ContextErrors.PromoteRefused.With("the draft is no longer the open draft; nothing was replaced"));
         }
 
         var version = new MapVersion(++_last, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Draft);
@@ -117,6 +136,11 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     /// <inheritdoc/>
     public ValueTask<Result<MapVersion>> Promote(int draft, CancellationToken cancellationToken) => Done(() =>
     {
+        if (PromoteFailure is { } failed)
+        {
+            return Results.Failure<MapVersion>(failed);
+        }
+
         var index = _versions.FindIndex(v => v.Version.Number == draft && v.Version.Status == MapVersionStatus.Draft);
         if (index < 0)
         {

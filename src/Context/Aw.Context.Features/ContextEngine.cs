@@ -64,7 +64,7 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<MapStatusView>> MapStatus(string? anchor, ContextScope scope, CancellationToken cancellationToken) => map.MapStatus(anchor, scope, cancellationToken);
 
-    public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) => map.CheckMap(cancellationToken);
+    public ValueTask<Result<MapHealth>> CheckMap(ContextScope? scope, CancellationToken cancellationToken) => map.CheckMap(scope, cancellationToken);
 
     public ValueTask<Result<MapHealth>> CheckRetention(CancellationToken cancellationToken) => map.CheckRetention(cancellationToken);
 

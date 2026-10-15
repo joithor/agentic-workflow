@@ -20,13 +20,15 @@ internal sealed class DenyCut
     private readonly HashSet<string> _cutLinks;
     private readonly Dictionary<string, List<GraphNode>> _origin;
     private readonly Dictionary<string, string> _aliases;
+    private readonly HashSet<string> _stored;
+    private readonly HashSet<string> _added;
+    private readonly HashSet<string> _links;
 
-    private DenyCut(IReadOnlyList<ContextRepo> repos, HashSet<string> removed, HashSet<string> cutLinks, Dictionary<string, List<GraphNode>> origin, Dictionary<string, string> aliases, bool any)
+    private DenyCut(IReadOnlyList<ContextRepo> repos, (HashSet<string> Removed, HashSet<string> CutLinks, HashSet<string> Links) cut, (Dictionary<string, List<GraphNode>> Origin, HashSet<string> Stored, HashSet<string> Added) nodes, Dictionary<string, string> aliases, bool any)
     {
         _repos = repos;
-        _removed = removed;
-        _cutLinks = cutLinks;
-        _origin = origin;
+        (_removed, _cutLinks, _links) = cut;
+        (_origin, _stored, _added) = nodes;
         _aliases = aliases;
         Any = any;
     }
@@ -51,7 +53,9 @@ internal sealed class DenyCut
         var cutLinks = edges.Where(e => IsCut(e, removed, repos)).Select(e => LinkIds.For(e).Value).ToHashSet(StringComparer.Ordinal);
         var any = removed.Count > 0 || cutLinks.Count > 0 || deniedDecisions.Count > 0
             || origin.Values.Any(nodes => nodes.Exists(n => HasDenied(n.EvidenceOrEmpty, repos))) || stored.Edges.Any(e => HasDenied(e.EvidenceOrEmpty, repos));
-        return new DenyCut(repos, removed, cutLinks, origin, stored.Aliases.ToDictionary(a => a.Alias.Value, a => a.Target.Value, StringComparer.Ordinal), any);
+        var links = edges.Select(e => LinkIds.For(e).Value).ToHashSet(StringComparer.Ordinal);
+        var aliases = stored.Aliases.ToDictionary(a => a.Alias.Value, a => a.Target.Value, StringComparer.Ordinal);
+        return new DenyCut(repos, (removed, cutLinks, links), (origin, stored.Nodes.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal), OverrideLog.Active(overrides).Where(o => o.Action == OverrideAction.Add).Select(o => o.Target.Value).ToHashSet(StringComparer.Ordinal)), aliases, any);
     }
 
     /// <summary>The evidence a deny glob leaves.</summary>
@@ -84,9 +88,10 @@ internal sealed class DenyCut
     public IReadOnlyList<MapOverride> Apply(IReadOnlyList<MapOverride> overrides)
     {
         var kept = new List<MapOverride>(overrides.Count);
+        var gone = GoneByCut(overrides);
         foreach (var o in overrides)
         {
-            if (About(o))
+            if (gone.Contains(o.ToId().Value) || About(o))
             {
                 continue;
             }
@@ -99,13 +104,63 @@ internal sealed class DenyCut
     }
 
     /// <summary>
-    /// The decisions a person made about a node or link this cut takes out: once a promote stores the cut graph their target is gone, and a decision about a gone node whose key no glob
-    /// denies (a surface only a denied file evidenced) would be an orphan, shown in the queue and blocking the next promote. A promote undoes them, so they are cut rather than orphaned.
+    /// The decisions a person made about a node or link this cut takes out, which a promote or a build undoes with it: once the cut graph is stored their target is gone, and an accept, rename,
+    /// move or merge about a gone node whose key no glob denies (a surface only a denied file evidenced) would be an orphan, shown in the queue and blocking the next promote. A merge or
+    /// move whose other node is cut counts too. A reject or delete is not undone: it is satisfied once its target is gone and keeps the item rejected if the glob is removed. A decision about a
+    /// key a glob denies outright is dropped on every read (<see cref="About"/>), and one about a node only a propose row adds goes with that row, so neither is undone.
     /// </summary>
     /// <param name="overrides">Every override.</param>
-    /// <returns>The active decisions about what is cut (a proposal and an add are not decisions about a stored node).</returns>
+    /// <returns>The active accepts, renames, moves and merges about what is cut, targets matched through stored aliases.</returns>
     public IReadOnlyList<MapOverride> CutDecisions(IReadOnlyList<MapOverride> overrides) =>
-        [.. OverrideLog.Active(overrides).Where(o => o.Action is not (OverrideAction.Propose or OverrideAction.Add) && (_removed.Contains(o.Target.Value) || (o.Link is { } link && _cutLinks.Contains(link.Value))))];
+        [.. OverrideLog.Active(overrides).Where(o => o.Action is OverrideAction.Accept or OverrideAction.Rename or OverrideAction.Move or OverrideAction.Merge && TakenOut(o))];
+
+    /// <summary>The undo rows that take <see cref="CutDecisions"/> out, marked as the cut's (see <see cref="MapOverride.UndoingCut"/>).</summary>
+    /// <param name="overrides">Every override.</param>
+    /// <param name="at">When.</param>
+    /// <returns>One undo row per decision.</returns>
+    public IReadOnlyList<MapOverride> UndoRows(IReadOnlyList<MapOverride> overrides, DateTimeOffset at) => [.. CutDecisions(overrides).Select(o => MapOverride.UndoingCut(o, at))];
+
+    private bool TakenOut(MapOverride o)
+    {
+        var (target, other) = (Resolve(o.Target.Value), o.Other is { } to ? Resolve(to.Value) : null);
+        bool Stored(string key) => _stored.Contains(key) && _removed.Contains(key) && !IsDeniedKey(NodeKey.From(key), _repos);
+        return o.Link is { } link
+            ? _cutLinks.Contains(link.Value) && !IsDeniedKey(NodeKey.From(target), _repos)
+            : Stored(target) || (other is not null && Stored(other) && !IsDeniedKey(NodeKey.From(target), _repos));
+    }
+
+    private string Resolve(string key) => _aliases.TryGetValue(key, out var target) ? target : key;
+
+    // The ids of the undo rows a cut wrote and of the rows they undo, while the node or link they were about is still cut or gone: no view shows either, so no name a denied file
+    // produced is listed, exported or counted after the promote. If the glob goes and the node is back, both show again (the undo stays an undo).
+    private HashSet<string> GoneByCut(IReadOnlyList<MapOverride> overrides)
+    {
+        var gone = new HashSet<string>(StringComparer.Ordinal);
+        if (!overrides.Any(o => o.IsCutUndo))
+        {
+            return gone;
+        }
+
+        var byId = overrides.GroupBy(o => o.ToId().Value, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        foreach (var undo in overrides.Where(o => o.IsCutUndo))
+        {
+            if (undo.Undoes is { } undone && byId.TryGetValue(undone.Value, out var row) && !Present(row))
+            {
+                _ = gone.Add(undo.ToId().Value);
+                _ = gone.Add(undone.Value);
+            }
+        }
+
+        return gone;
+    }
+
+    // Whether what a decision is about is back in the map the globs leave (not removed, and known to the stored graph or a propose row).
+    private bool Present(MapOverride row) =>
+        row.Link is { } link
+            ? _links.Contains(link.Value) && !_cutLinks.Contains(link.Value)
+            : Alive(row.Target) && (row.Other is not { } other || Alive(other));
+
+    private bool Alive(NodeKey key) => Known(key) && Resolve(key.Value) is var k && !_removed.Contains(k) && !IsDeniedKey(NodeKey.From(k), _repos);
 
     // Every form a node was first seen in: as stored, and as each active propose row would add it. A reject names its proposal by the evidence it had then.
     private static Dictionary<string, List<GraphNode>> Origin(GraphSnapshot stored, IReadOnlyList<MapOverride> overrides)
@@ -140,9 +195,17 @@ internal sealed class DenyCut
     }
 
     private bool About(MapOverride o) =>
-        _removed.Contains(o.Target.Value) || IsDeniedKey(o.Target, _repos) || (o.Other is { } other && (_removed.Contains(other.Value) || IsDeniedKey(other, _repos)))
+        Removed(o.Target) || (o.Other is { } other && Removed(other))
         || (o.Link is { } link && _cutLinks.Contains(link.Value))
-        || (o.Proposal is { Evidence: { Count: > 0 } evidence } && OnlyDenied(evidence, _repos));
+        || (o.Proposal is { Evidence: { Count: > 0 } evidence } && OnlyDenied(evidence, _repos))
+        || (o.Action is OverrideAction.Reject or OverrideAction.Delete && o.Link is null && !Known(o.Target));
+
+    // A node the stored graph, a propose row or an add row knows. A reject or delete of one nothing knows is satisfied (the cut took its node out): it stays in the log, so the item
+    // stays rejected if the node comes back, and no view shows it while it is gone.
+    private bool Known(NodeKey key) => Resolve(key.Value) is var k && (_origin.ContainsKey(k) || _added.Contains(k));
+
+    // Removed by the cut or denied outright, by the key or through a stored alias of it.
+    private bool Removed(NodeKey key) => _removed.Contains(key.Value) || IsDeniedKey(key, _repos) || (Resolve(key.Value) is var k && k != key.Value && (_removed.Contains(k) || IsDeniedKey(NodeKey.From(k), _repos)));
 
     // A node the globs take: a denied path's code node, a denied document's record node, a decision quoting one, or a node a model or a scan made on denied files alone
     // (a person's accept doesn't give the file back: this judges the node as it was first seen).

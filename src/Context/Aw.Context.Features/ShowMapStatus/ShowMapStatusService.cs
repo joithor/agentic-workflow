@@ -33,7 +33,7 @@ internal sealed class ShowMapStatusService(IGraphStore store) : IService<ShowMap
             return visible.Error;
         }
 
-        var (shown, applied, layer, _) = visible.Value;
+        var (shown, applied, layer) = (visible.Value.Graph, visible.Value.Applied, visible.Value.Overrides);
         var coverage = request.Anchor is { } name ? Coverage(applied, name) : Results.Success<LensCoverage?>(value: null);
         if (coverage.IsError)
         {

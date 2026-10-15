@@ -36,6 +36,23 @@ public sealed record MapOverride(
     [JsonIgnore]
     public string? AllowedRejection { get; init; }
 
+    /// <summary>The 'who' of an undo row a deny cut writes for a decision about a node or link it takes out (see <see cref="UndoingCut"/>).</summary>
+    public const string CutMarker = "service:deny-cut";
+
+    /// <summary>Whether this is an undo row a deny cut wrote (never a person's).</summary>
+    [JsonIgnore]
+    public bool IsCutUndo => Action == OverrideAction.Undo && Who == CutMarker;
+
+    /// <summary>The undo row that takes a person's decision out with the node or link a deny cut removes.</summary>
+    /// <param name="decision">The decision.</param>
+    /// <param name="at">When.</param>
+    /// <returns>The undo row, marked as the cut's.</returns>
+    public static MapOverride UndoingCut(MapOverride decision, DateTimeOffset at)
+    {
+        ArgumentNullException.ThrowIfNull(decision);
+        return new MapOverride(OverrideAction.Undo, decision.Target, CutMarker, at, Undoes: decision.ToId());
+    }
+
     /// <summary>Whether this reject names a proposal of the given <see cref="RejectionIdentity"/>: any proposal when it has no identity, otherwise by the identity it was written with or the one the deny cut gave it.</summary>
     /// <param name="identity">The proposal's identity.</param>
     /// <returns>True when it does.</returns>

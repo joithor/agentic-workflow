@@ -7,18 +7,18 @@ namespace Aw.Context.Core.Proposals;
 /// <summary>Decides which of a scoping run's surfaces become 'propose' rows (S-4): the new ones, once, and never one a person rejected. Pure.</summary>
 public static class ProposalPlanner
 {
-    /// <summary>Plans the rows for one proposal against a graph no deny glob applies to.</summary>
+    /// <summary>Plans the rows for one proposal against a graph no deny glob applies to (internal: a caller plans against <see cref="MapAccess.View"/>, which cuts what the globs hide).</summary>
     /// <param name="proposal">What the run posted.</param>
     /// <param name="basis">The graph the rows would join: the latest draft, or the current map when there is none.</param>
     /// <param name="overrides">Every override.</param>
     /// <param name="who">Who proposes.</param>
     /// <param name="at">When.</param>
     /// <returns>The new rows and what was left out.</returns>
-    public static ProposalPlan Plan(ScopeProposal proposal, GraphSnapshot basis, IReadOnlyList<MapOverride> overrides, string who, DateTimeOffset at)
+    internal static ProposalPlan Plan(ScopeProposal proposal, GraphSnapshot basis, IReadOnlyList<MapOverride> overrides, string who, DateTimeOffset at)
     {
         ArgumentNullException.ThrowIfNull(basis);
         ArgumentNullException.ThrowIfNull(overrides);
-        return Plan(proposal, new MapView(basis, OverrideApplier.Apply(basis, overrides).Graph, overrides, Filtered: false), who, at);
+        return Plan(proposal, new MapView(basis, OverrideApplier.Apply(basis, overrides).Graph, overrides, cut: null), who, at);
     }
 
     /// <summary>Plans the rows for one proposal against what the caller may see (<see cref="MapAccess.View"/>): a surface a hidden node matches is new, and a reject names it by either evidence.</summary>

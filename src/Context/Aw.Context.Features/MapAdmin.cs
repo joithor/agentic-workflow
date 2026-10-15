@@ -34,8 +34,8 @@ internal sealed class MapAdmin(
     public ValueTask<Result<MapStatusView>> MapStatus(string? anchor, ContextScope scope, CancellationToken cancellationToken) =>
         status.Handle(new ShowMapStatusRequest(scope, anchor), cancellationToken);
 
-    public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) =>
-        checkMap.Handle(new CheckMapRequest(), cancellationToken);
+    public ValueTask<Result<MapHealth>> CheckMap(ContextScope? scope, CancellationToken cancellationToken) =>
+        checkMap.Handle(new CheckMapRequest(scope), cancellationToken);
 
     public ValueTask<Result<MapHealth>> CheckRetention(CancellationToken cancellationToken) =>
         checkRetention.Handle(new CheckRetentionRequest(), cancellationToken);

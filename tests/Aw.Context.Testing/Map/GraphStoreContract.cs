@@ -147,12 +147,17 @@ public abstract class GraphStoreContract
         var current = Expect.Ok(await store.SaveCurrent(SampleMap.Build(), SampleMap.At, None), test);
         var open = Expect.Ok(await store.SaveDraft(SampleMap.Build(" (one)"), SampleMap.At.AddDays(1), None), test);
 
-        var replaced = Expect.Ok(await store.ReplaceDraft(open.Number, SampleMap.Build(" (two)"), SampleMap.At.AddDays(2), None), test);
+        var decision = new MapOverride(OverrideAction.Undo, NodeKey.From("feature:a"), "avery", SampleMap.At.AddDays(2), Undoes: OverrideId.From("ovr_0123456789abcdef"));
+        var two = SampleMap.Build(" (two)");
+
+        var replaced = Expect.Ok(await store.ReplaceDraft(open.Number, two with { Overrides = [decision] }, SampleMap.At.AddDays(2), None), test);
+        _ = Expect.Ok(await store.AppendOverrides([decision], None), test);
 
         Expect.That(replaced.Status == MapVersionStatus.Draft && replaced.Number > open.Number, test, "the replacement isn't a newer draft");
         Expect.That(Expect.Ok(await store.Versions(None), test).Select(v => (v.Number, v.Status)).SequenceEqual([(replaced.Number, MapVersionStatus.Draft), (current.Number, MapVersionStatus.Current)]),
             test, "expected the new draft and the current version only");
-        Expect.That(Canonical.Of(Expect.Ok(await store.Snapshot(draft: true, None), test)!.Graph) == Canonical.Of(SampleMap.Build(" (two)").Graph), test, "the draft snapshot isn't the replacement");
+        Expect.That(Canonical.Of(Expect.Ok(await store.Snapshot(draft: true, None), test)!.Graph) == Canonical.Of(two.Graph), test, "the draft snapshot isn't the replacement");
+        Expect.That(Expect.Ok(await store.Overrides(None), test).Where(o => o.ToId() == decision.ToId()).Take(2).Count() == 1, test, "the replacement's override wasn't kept exactly once");
     }
 
     /// <summary>A draft that another caller replaced or promoted since it was read is not replaced again: SND-CONTEXT-046, and the newer one stays.</summary>
@@ -169,7 +174,7 @@ public abstract class GraphStoreContract
         var stale = await store.ReplaceDraft(read.Number, SampleMap.Build(" (cut)"), SampleMap.At.AddDays(3), None);
 
         Expect.That(stale.IsError && stale.Error.Code == "SND-CONTEXT-046", test, "replacing a draft that was replaced since wasn't SND-CONTEXT-046");
-        Expect.That(stale.Error.Message.Contains("changed", StringComparison.Ordinal) && stale.Error.Message.Contains("fix:", StringComparison.Ordinal), test, "the refusal doesn't say the draft changed and how to go on");
+        Expect.That(stale.Error.Message.Contains("no longer the open draft", StringComparison.Ordinal), test, "the refusal doesn't say the draft is no longer the open one");
         var drafts = Expect.Ok(await store.Versions(None), test).Where(v => v.Status == MapVersionStatus.Draft).ToList();
         Expect.That(drafts.Count == 1 && drafts[0].Number == rebuilt.Number, test, "the newer draft didn't stay the only one");
         Expect.That(Canonical.Of(Expect.Ok(await store.Read(rebuilt.Number, None), test)) == Canonical.Of(SampleMap.Build(" (rebuilt)").Graph), test, "the newer draft's graph changed");

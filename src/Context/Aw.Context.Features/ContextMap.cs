@@ -21,7 +21,7 @@ internal sealed class ContextMap(MapAdmin admin, MapReview review, MapProposals 
 
     public ValueTask<Result<MapStatusView>> MapStatus(string? anchor, ContextScope scope, CancellationToken cancellationToken) => admin.MapStatus(anchor, scope, cancellationToken);
 
-    public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) => admin.CheckMap(cancellationToken);
+    public ValueTask<Result<MapHealth>> CheckMap(ContextScope? scope, CancellationToken cancellationToken) => admin.CheckMap(scope, cancellationToken);
 
     public ValueTask<Result<MapHealth>> CheckRetention(CancellationToken cancellationToken) => admin.CheckRetention(cancellationToken);
 

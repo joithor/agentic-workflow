@@ -86,8 +86,9 @@ internal sealed class BuildMapService(
 
         var basis = current.Value?.Graph ?? GraphSnapshot.Empty;
         var (name, commit) = (primary!.Value.Name, primary.Value.Commit);   // why: mappedRepos is not empty, so the loop set it
-        var draft = await store.SaveDraft(new MapImport(name, commit, Join(basis, found, mappedRepos), []), clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(basis, found), degraded);
+        var (kept, undo) = MapAccess.WithoutDenied(basis, current.Value?.Overrides ?? [], mappedRepos, clock.GetUtcNow());
+        var draft = await store.SaveDraft(new MapImport(name, commit, Join(kept, found), undo), clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, found), degraded);
     }
 
     private async ValueTask<Result<RepoExtraction>> Extract(IProgress<string>? progress, ContextSettings settings, ContextRepo repo, CancellationToken cancellationToken)
@@ -172,16 +173,13 @@ internal sealed class BuildMapService(
     private static void Tell(IProgress<string>? progress, int done, int total) =>
         progress?.Report(string.Create(CultureInfo.InvariantCulture, $"extracting {done}/{total} files"));
 
-    // The current map first: what a person put there wins over what the build found, and a promote loses nothing. A path any built repo now denies leaves the map (spec §6.2).
-    private static GraphSnapshot Join(GraphSnapshot current, ExtractedMap found, IReadOnlyList<ContextRepo> built)
-    {
-        var kept = MapAccess.WithoutDenied(current, built);
-        return kept with
+    // The current map first (already without what the built repos' deny globs take out, spec §6.2): what a person put there wins over what the build found, and a promote loses nothing.
+    private static GraphSnapshot Join(GraphSnapshot kept, ExtractedMap found) =>
+        kept with
         {
             Nodes = [.. kept.Nodes.Concat(found.Nodes).DistinctBy(n => n.Key.Value, StringComparer.Ordinal)],
             Edges = [.. kept.Edges.Concat(found.Edges).DistinctBy(e => (e.From.Value, e.To.Value, e.Type))],
         };
-    }
 
     private static List<ProposedNode> Proposed(GraphSnapshot current, ExtractedMap found) =>
     [

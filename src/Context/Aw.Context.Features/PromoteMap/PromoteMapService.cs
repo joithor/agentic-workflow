@@ -1,4 +1,4 @@
-using Aw.Context.Core.Engine;
+using Aw.Context.Core;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Review;
@@ -13,7 +13,7 @@ namespace Aw.Context.Features.PromoteMap;
 /// because a 'propose' row only adds its node to a draft and a pending one is never part of the current map. Sindri checks
 /// the caller and the typed confirmation first (protected).
 /// </summary>
-internal sealed class PromoteMapService(IGraphStore store, ICurrentUser user, TimeProvider clock) : IService<PromoteMapRequest, MapPromoted>
+internal sealed class PromoteMapService(IGraphStore store, TimeProvider clock) : IService<PromoteMapRequest, MapPromoted>
 {
     public async ValueTask<Result<MapPromoted>> Handle(PromoteMapRequest request, CancellationToken cancellationToken)
     {
@@ -41,22 +41,27 @@ internal sealed class PromoteMapService(IGraphStore store, ICurrentUser user, Ti
         }
 
         var ready = PromoteReadiness.Check(seen.Value.Queue);
-        return ready.IsError ? ready.Error : await Promote(draft, seen.Value.View, request.Scope, cancellationToken).ConfigureAwait(false);
+        return ready.IsError ? ready.Error : await Promote(draft, seen.Value.View, cancellationToken).ConfigureAwait(false);
     }
 
-    private async ValueTask<Result<MapPromoted>> Promote(MapSnapshot draft, MapView view, ContextScope scope, CancellationToken cancellationToken)
+    private async ValueTask<Result<MapPromoted>> Promote(MapSnapshot draft, MapView view, CancellationToken cancellationToken)
     {
         var previous = await store.Current(cancellationToken).ConfigureAwait(false);
         var number = previous.IsError ? previous.Error : await WithAcceptedProposals(draft, view, cancellationToken).ConfigureAwait(false);
-        var promoted = number.IsError ? number.Error : await store.Promote(number.Value, cancellationToken).ConfigureAwait(false);
-        var undone = promoted.IsError ? Unit.Value : await UndoCutDecisions(draft, view, scope, cancellationToken).ConfigureAwait(false);
+        var promoted = number.IsError ? Reworded(number.Error) : await store.Promote(number.Value, cancellationToken).ConfigureAwait(false);
         return promoted.IsError
-            ? promoted.Error
-            : undone.IsError ? undone.Error : new MapPromoted(promoted.Value, previous.Value is { } old ? old with { Status = MapVersionStatus.Retained } : null);
+            ? Reworded(promoted.Error)
+            : new MapPromoted(promoted.Value, previous.Value is { } old ? old with { Status = MapVersionStatus.Retained } : null);
     }
 
+    // The store says only that the draft is gone (046); here the cause is a promote, and the way on is the one the docs name.
+    private static Error Reworded(Error error) => error.Code == ContextErrors.PromoteRefused.Code
+        ? ContextErrors.PromoteRefused.With("the draft changed while it was being promoted (a rebuild replaced it, or it was promoted); nothing was promoted (fix: review the new draft with 'sindri context map review', then promote again)")
+        : error;
+
     // The draft's own number, or the number of a copy of it that holds the accepted proposals' nodes and none of what the deny globs hide. The copy replaces only the draft that was read:
-    // if a rebuild replaced it meanwhile the promote is refused (046), and the rebuild's draft and any build still being written stay.
+    // if a rebuild replaced it meanwhile the promote is refused (046), and the rebuild's draft and any build still being written stay. The copy carries the undo rows for the person's
+    // accepts, renames, moves and merges about what it cuts, so they commit with the replacement or not at all (a cut leaves no orphan, and a committed promote is never reported as a failure).
     private async ValueTask<Result<int>> WithAcceptedProposals(MapSnapshot draft, MapView view, CancellationToken cancellationToken)
     {
         var proposed = OverrideLog.Active(view.Overrides).Where(o => o.Action == OverrideAction.Propose).Select(o => o.Target.Value).ToHashSet(StringComparer.Ordinal);
@@ -68,22 +73,8 @@ internal sealed class PromoteMapService(IGraphStore store, ICurrentUser user, Ti
 
         var edges = view.Applied.Edges.Where(e => proposed.Contains(e.From.Value) && !view.Graph.Edges.Any(e.SameFact));
         var joined = view.Graph with { Nodes = [.. view.Graph.Nodes, .. nodes], Edges = [.. view.Graph.Edges, .. edges] };
-        var saved = await store.ReplaceDraft(draft.Version.Number, new MapImport(draft.Version.Repo, draft.Version.Commit, joined, []), draft.Version.Created, cancellationToken).ConfigureAwait(false);
+        var undo = view.UndoCutDecisions(draft.Overrides, clock.GetUtcNow());
+        var saved = await store.ReplaceDraft(draft.Version.Number, new MapImport(draft.Version.Repo, draft.Version.Commit, joined, undo), draft.Version.Created, cancellationToken).ConfigureAwait(false);
         return saved.IsError ? saved.Error : saved.Value.Number;
-    }
-
-    // The decisions about what the promote cut are undone with it, so the next draft has no orphan to drop that the globs made.
-    private async ValueTask<Result<Unit>> UndoCutDecisions(MapSnapshot draft, MapView view, ContextScope scope, CancellationToken cancellationToken)
-    {
-        var who = ReviewDrafts.Who(scope.Caller, user);
-        var at = clock.GetUtcNow();
-        MapOverride[] rows = [.. view.CutDecisions(draft.Overrides).Select(o => new MapOverride(OverrideAction.Undo, o.Target, who, at, Undoes: o.ToId()))];
-        if (rows.Length == 0)
-        {
-            return Unit.Value;
-        }
-
-        var appended = await store.AppendOverrides(rows, cancellationToken).ConfigureAwait(false);
-        return appended.IsError ? appended.Error : Unit.Value;
     }
 }

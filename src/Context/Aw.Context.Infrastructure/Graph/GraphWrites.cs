@@ -84,6 +84,7 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
             if (building.IsError || building.Value != 1)
             {
                 return building.IsError ? ContextDatabase.Translate(building.Error)
+                    : replacing is not null ? ContextErrors.PromoteRefused.With("the draft is no longer the open draft: another build removed the copy being written; nothing was replaced")
                     : ContextErrors.StoreUnavailable.With("another import removed this one before it became current; nothing changed (fix: import again)");
             }
 
@@ -108,7 +109,7 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
             if (removed.IsError || removed.Value != 1)
             {
                 return removed.IsError ? ContextDatabase.Translate(removed.Error)
-                    : ContextErrors.PromoteRefused.With("the draft changed while it was being promoted (another build replaced it, or it was promoted); nothing was replaced (fix: read the queue again with 'sindri context map review --list')");
+                    : ContextErrors.PromoteRefused.With("the draft is no longer the open draft; nothing was replaced");
             }
         }
 

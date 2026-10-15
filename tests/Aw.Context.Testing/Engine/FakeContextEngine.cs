@@ -124,7 +124,7 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<FileMapView>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) =>
+    public ValueTask<Result<MapHealth>> CheckMap(ContextScope? scope, CancellationToken cancellationToken) =>
         ValueTask.FromResult(Results.Success(new MapHealth("context:map", MapHealthState.Warn, "no map yet", "sindri context map import <file>")));
 
     /// <inheritdoc/>

@@ -40,10 +40,11 @@ public static class OverrideApplier
         return new AppliedMap(graph, orphaned, inapplicable);
     }
 
-    // A link decision is orphaned when its edge is gone; a node decision when its target no longer resolves.
+    // A link decision is orphaned when its edge is gone; a node decision when its target no longer resolves. A reject or delete of something gone is satisfied, not orphaned.
     private static bool IsOrphan(GraphSnapshot graph, MapOverride o) => o.Action switch
     {
         OverrideAction.Add or OverrideAction.Propose or OverrideAction.Undo => false,
+        OverrideAction.Reject or OverrideAction.Delete => false,   // satisfied once its target is gone (a deny cut took it out); the row stays, so the item stays rejected if it returns
         _ when o.Link is { } link => !graph.Edges.Any(e => LinkIds.For(e).Value == link.Value),
         OverrideAction.Accept or OverrideAction.Reject or OverrideAction.Rename or OverrideAction.Merge or OverrideAction.Move or OverrideAction.Delete => graph.Resolve(o.Target) is null,
         _ => false,

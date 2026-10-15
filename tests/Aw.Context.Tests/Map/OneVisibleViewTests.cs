@@ -6,6 +6,7 @@ using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Proposals;
+using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Map;
@@ -390,7 +391,7 @@ public sealed class OneVisibleViewTests : IDisposable
             "  - {from: \"surface:setting/secret\", to: \"feature:kept\", type: part-of, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/private/s.json\"}]}");
         await Decide(Drafts.Scope, On(ReviewVerb.Delete, "code:private/a.ts"));
         await Decide(Drafts.Scope, On(ReviewVerb.Reject, "surface:setting/secret"));
-        Assert.True((await _world.Map.Promote(Denying(), MapWorld.None)).IsSuccess);
+        await PromoteOk();
         _ = await _world.Store.OpenDraft(_world.Clock.GetUtcNow(), MapWorld.None);
 
         var (orphans, queued) = await OrphansAfterTheCut(Denying());
@@ -419,13 +420,206 @@ public sealed class OneVisibleViewTests : IDisposable
         await Decide(Drafts.Scope, On(ReviewVerb.Accept, "feature:gone"));
         var draft = (await _world.Store.Snapshot(draft: true, MapWorld.None)).Value!;
         var without = draft.Graph with { Nodes = [.. draft.Graph.Nodes.Where(n => n.Key.Value != "feature:gone")] };
-        _ = await _world.Store.ReplaceDraft(draft.Version.Number, new MapImport(draft.Version.Repo, draft.Version.Commit, without, []), draft.Version.Created, MapWorld.None);   // a rebuild that no longer finds it
+        var replaced = await _world.Store.ReplaceDraft(draft.Version.Number, new MapImport(draft.Version.Repo, draft.Version.Commit, without, []), draft.Version.Created, MapWorld.None);   // a rebuild that no longer finds it
+        Assert.True(replaced.IsSuccess);
 
         var (_, queued) = await OrphansAfterTheCut(Denying());
         var refused = await _world.Map.Promote(Denying(), MapWorld.None);
 
         Assert.Equal(1, queued);
         Assert.True(refused.IsError);
+        Assert.Equal(ContextErrors.PromoteRefused.Code, refused.Error.Code);
+        Assert.Contains("undecided", refused.Error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ---- the decisions a deny cut undoes, and what it leaves (review #220 run 5) ----
+
+    private static readonly string[] _cutNames = ["secret", "token", "Token vault", "accepted", "drafted"];
+
+    // Decided before the glob: an accept of a kept model feature and of one only a private file implements, a reject of a private-only surface, a rename of another, and a merge
+    // of a kept feature into the private-only one.
+    private async Task DecidedBeforeTheGlob(params string[] extra)
+    {
+        await DraftOf(
+            [
+                "nodes:",
+                "  - {key: \"feature:kept\", label: \"Kept\"}",
+                "  - {key: \"feature:modelkept\", label: \"Model kept\", provenance: model}",
+                "  - {key: \"feature:other\", label: \"Other\"}",
+                "  - {key: \"feature:drafted\", label: \"Drafted\", provenance: model}",
+                "  - {key: \"feature:accepted\", label: \"Accepted\", provenance: model}",
+                "  - {key: \"code:private/a.ts\", label: \"a.ts\"}",
+                "  - {key: \"code:private/c.ts\", label: \"c.ts\"}",
+                "  - {key: \"code:src/b.ts\", label: \"b.ts\"}",
+                "  - {key: \"surface:setting/secret\", label: \"secret\", provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/private/s.json\"}]}",
+                "  - {key: \"surface:setting/token\", label: \"token\", provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/private/t.json\"}]}",
+                "edges:",
+                "  - {from: \"code:src/b.ts\", to: \"feature:kept\", type: implements}",
+                "  - {from: \"code:src/b.ts\", to: \"feature:modelkept\", type: implements}",
+                "  - {from: \"code:src/b.ts\", to: \"feature:other\", type: implements}",
+                "  - {from: \"code:private/a.ts\", to: \"feature:drafted\", type: implements}",
+                "  - {from: \"code:private/c.ts\", to: \"feature:accepted\", type: implements}",
+                .. extra,
+            ]);
+        await Decide(Drafts.Scope, On(ReviewVerb.Accept, "feature:accepted"));
+        await Decide(Drafts.Scope, On(ReviewVerb.Accept, "feature:modelkept"));
+        await Decide(Drafts.Scope, On(ReviewVerb.Reject, "surface:setting/secret"));
+        await Decide(Drafts.Scope, new ReviewDecision(ReviewVerb.Rename, NodeKey.From("surface:setting/token"), Label: "Token vault"));
+        await Decide(Drafts.Scope, On(ReviewVerb.Merge, "feature:other", other: "feature:drafted"));
+    }
+
+    private async Task PromoteOk()
+    {
+        var promoted = await _world.Map.Promote(Denying(), MapWorld.None);
+        Assert.True(promoted.IsSuccess, promoted.IsError ? promoted.Error.Message : null);
+    }
+
+    private async Task<List<string>> HistoryNames(ContextScope scope)
+    {
+        var history = (await _world.Map.ReviewHistory(limit: null, scope, MapWorld.None)).Value;
+        return [.. history.Entries.SelectMany(e => new[] { e.Target.Value, e.Label ?? string.Empty })];
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_promote_undoes_only_the_accepts_renames_moves_and_merges_about_what_it_cuts_and_keeps_rejects_and_deletes()
+    {
+        await DecidedBeforeTheGlob();
+
+        await PromoteOk();
+
+        var log = (await _world.Store.Overrides(MapWorld.None)).Value;
+        var active = OverrideLog.Active(log);
+        var undos = log.Where(o => o.Action == OverrideAction.Undo).ToList();
+        Assert.All(undos, u => Assert.True(u.IsCutUndo));
+        Assert.Equal("feature:accepted feature:other surface:setting/token", string.Join(' ', undos.Select(u => u.Target.Value).Order(StringComparer.Ordinal)));
+        Assert.Contains(active, o => o is { Action: OverrideAction.Accept } && o.Target.Value == "feature:modelkept");
+        Assert.Contains(active, o => o is { Action: OverrideAction.Reject } && o.Target.Value == "surface:setting/secret");
+        Assert.DoesNotContain(active, o => new[] { "feature:accepted", "surface:setting/token", "feature:other" }.Contains(o.Target.Value, StringComparer.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task After_a_cut_promote_the_history_and_the_export_name_nothing_a_denied_file_produced()
+    {
+        await DecidedBeforeTheGlob();
+        await PromoteOk();
+        _ = await _world.Store.OpenDraft(_world.Clock.GetUtcNow(), MapWorld.None);
+
+        var history = await HistoryNames(Denying());
+        var exported = await ExportNames(Denying());
+        var (orphans, queued) = await OrphansAfterTheCut(Denying());
+        var again = await _world.Map.Promote(Denying(), MapWorld.None);
+
+        Assert.Contains("feature:modelkept", history, StringComparer.Ordinal);   // a decision about what stays is still shown
+        Assert.DoesNotContain(history.Concat(exported), n => _cutNames.Any(c => n.Contains(c, StringComparison.Ordinal)));
+        Assert.Equal((0, 0), (orphans, queued));
+        Assert.True(again.IsSuccess, again.IsError ? again.Error.Message : null);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_reject_a_cut_promote_kept_applies_again_when_the_glob_goes_and_what_was_accepted_is_back_undecided()
+    {
+        await DecidedBeforeTheGlob();
+        await PromoteOk();
+        var draft = (await _world.Store.OpenDraft(_world.Clock.GetUtcNow(), MapWorld.None)).Value;
+        var stored = (await _world.Store.Snapshot(draft: true, MapWorld.None)).Value!;
+        var found = stored.Graph with
+        {
+            Nodes = [.. stored.Graph.Nodes,
+                new GraphNode(NodeKey.From("surface:setting/secret"), "secret", Provenance.Deterministic, 1, [new EvidenceRef(RecordKey.From("repo:aw-split-panes/private/s.json"))]),
+                new GraphNode(NodeKey.From("feature:accepted"), "Accepted", Provenance.Model, 0.5, [new EvidenceRef(RecordKey.From("repo:aw-split-panes/src/b.ts"))])],
+        };
+        var replaced = await _world.Store.ReplaceDraft(draft.Number, new MapImport(draft.Repo, draft.Commit, found, []), draft.Created, MapWorld.None);   // a rebuild with the glob gone
+        Assert.True(replaced.IsSuccess);
+
+        var queue = (await _world.Map.ReviewQueue(limit: null, Drafts.Scope, MapWorld.None)).Value;
+        var history = await HistoryNames(Drafts.Scope);
+
+        Assert.DoesNotContain(queue.Entries, e => e.Node.Value == "surface:setting/secret");
+        Assert.Contains(queue.Entries, e => e.Node.Value == "feature:accepted");
+        Assert.Contains("surface:setting/secret", history, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_decision_that_names_a_cut_node_by_a_stored_alias_is_undone_with_it()
+    {
+        await DecidedBeforeTheGlob("aliases:", "  - {alias: \"feature:old-accepted\", target: \"feature:accepted\"}");
+        _ = await _world.Store.AppendOverrides([new MapOverride(OverrideAction.Accept, NodeKey.From("feature:old-accepted"), "avery", _world.Clock.GetUtcNow())], MapWorld.None);
+        await PromoteOk();
+        _ = await _world.Store.OpenDraft(_world.Clock.GetUtcNow(), MapWorld.None);
+
+        var (orphans, queued) = await OrphansAfterTheCut(Denying());
+        var again = await _world.Map.Promote(Denying(), MapWorld.None);
+
+        Assert.Equal((0, 0), (orphans, queued));
+        Assert.True(again.IsSuccess, again.IsError ? again.Error.Message : null);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_link_accept_whose_link_the_cut_removes_is_undone()
+    {
+        await DecidedBeforeTheGlob("  - {from: \"code:src/b.ts\", to: \"feature:kept\", type: tests, provenance: model, evidence: [{key: \"repo:aw-split-panes/private/x.ts\"}]}");
+        var link = LinkIds.For(new GraphEdge(NodeKey.From("code:src/b.ts"), NodeKey.From("feature:kept"), EdgeType.Tests, Provenance.Model));
+        await Decide(Drafts.Scope, new ReviewDecision(ReviewVerb.Accept, Link: link));
+
+        await PromoteOk();
+
+        var log = (await _world.Store.Overrides(MapWorld.None)).Value;
+        Assert.DoesNotContain(OverrideLog.Active(log), o => o.Link == link);
+        _ = await _world.Store.OpenDraft(_world.Clock.GetUtcNow(), MapWorld.None);
+        Assert.Equal((0, 0), await OrphansAfterTheCut(Denying()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_promote_whose_draft_replacement_fails_leaves_neither_the_cut_draft_nor_the_undo_rows()
+    {
+        await DecidedBeforeTheGlob();
+        var before = (await _world.Store.Overrides(MapWorld.None)).Value.Count;
+        _world.Store.ReplaceDraftFailure = ContextErrors.StoreUnavailable.With("disk full");
+
+        var refused = await _world.Map.Promote(Denying(), MapWorld.None);
+
+        Assert.True(refused.IsError);
+        Assert.Equal(before, (await _world.Store.Overrides(MapWorld.None)).Value.Count);
+        Assert.Equal(1, (await _world.Store.Versions(MapWorld.None)).Value.Count(v => v.Status == MapVersionStatus.Current));
+        _world.Store.ReplaceDraftFailure = null;
+        await PromoteOk();
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_promote_that_fails_after_the_replacement_can_be_run_again_and_succeeds_without_orphans()
+    {
+        await DecidedBeforeTheGlob();
+        _world.Store.PromoteFailure = ContextErrors.StoreUnavailable.With("busy");
+
+        Assert.True((await _world.Map.Promote(Denying(), MapWorld.None)).IsError);
+        _world.Store.PromoteFailure = null;
+        var again = await _world.Map.Promote(Denying(), MapWorld.None);
+
+        Assert.True(again.IsSuccess, again.IsError ? again.Error.Message : null);
+        _ = await _world.Store.OpenDraft(_world.Clock.GetUtcNow(), MapWorld.None);
+        Assert.Equal((0, 0), await OrphansAfterTheCut(Denying()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_reject_or_delete_of_a_node_the_map_no_longer_holds_is_satisfied_and_blocks_nothing()
+    {
+        await DraftOf(
+            "nodes:",
+            "  - {key: \"feature:kept\", label: \"Kept\"}",
+            "  - {key: \"feature:gone\", label: \"Gone\", provenance: model}",
+            "  - {key: \"code:src/b.ts\", label: \"b.ts\"}",
+            "edges:",
+            "  - {from: \"code:src/b.ts\", to: \"feature:kept\", type: implements}");
+        await Decide(Drafts.Scope, On(ReviewVerb.Reject, "feature:gone"));
+        var draft = (await _world.Store.Snapshot(draft: true, MapWorld.None)).Value!;
+        var without = draft.Graph with { Nodes = [.. draft.Graph.Nodes.Where(n => n.Key.Value != "feature:gone")] };
+        _ = await _world.Store.ReplaceDraft(draft.Version.Number, new MapImport(draft.Version.Repo, draft.Version.Commit, without, []), draft.Version.Created, MapWorld.None);
+
+        var (orphans, queued) = await OrphansAfterTheCut(Denying());
+        var promoted = await _world.Map.Promote(Denying(), MapWorld.None);
+
+        Assert.Equal((0, 0), (orphans, queued));
+        Assert.True(promoted.IsSuccess, promoted.IsError ? promoted.Error.Message : null);
     }
 
     // ---- a reject names the same proposal whichever came first, the glob or the reject ----
