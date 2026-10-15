@@ -1,11 +1,14 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Meta.Core.Config;
+using Aw.Meta.Core.Ports;
 
 namespace Aw.Meta.Features.Team;
 
-internal sealed class TeamShowService : IService<TeamShowRequest, TeamConfig>
+/// <summary>Reads the team config.</summary>
+/// <param name="config">Stores the config.</param>
+internal sealed class TeamShowService(IMetaConfig config) : IService<TeamShowRequest, TeamConfig>
 {
     public ValueTask<Result<TeamConfig>> Handle(TeamShowRequest request, CancellationToken cancellationToken) =>
-        throw new NotSupportedException();
+        config.Load(cancellationToken);
 }

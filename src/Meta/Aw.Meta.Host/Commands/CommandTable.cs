@@ -12,6 +12,10 @@ internal static class CommandTable
 {
     private static readonly CommandEntry[] _entries =
     [
+        RoleSetCommand.Entry,
+        RoleShowCommand.Entry,
+        TeamInitCommand.Entry,
+        TeamShowCommand.Entry,
         SyncInboxCommand.Entry,
     ];
 

@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Features.Roles;
 using Aw.Meta.Testing;
@@ -9,9 +8,9 @@ public sealed class RoleTests
 {
     private readonly InMemoryMessageStore _store = new();
 
-    private SetRoleService Set() => new();
+    private SetRoleService Set() => new(_store);
 
-    private ShowRoleService Show() => new();
+    private ShowRoleService Show() => new(_store);
 
     [Fact, Trait("Lane", "unit")]
     public async Task SetRole_registers_the_session_and_ShowRole_reads_it_back()

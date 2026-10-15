@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using Aw.Meta.Core;
 using Aw.Meta.Features.Team;
 using Aw.Meta.Testing;
@@ -9,9 +8,9 @@ public sealed class TeamTests
 {
     private readonly InMemoryMetaConfig _config = new();
 
-    private TeamInitService Init() => new();
+    private TeamInitService Init() => new(_config);
 
-    private TeamShowService Show() => new();
+    private TeamShowService Show() => new(_config);
 
     private static TeamInitRequest Request(string team = "sindri", string[]? lanes = null, bool force = false) =>
         new(team, "/work/repo", lanes ?? ["api", "ui"], "meta", Log: null, force);
