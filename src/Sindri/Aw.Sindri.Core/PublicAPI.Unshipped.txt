@@ -6774,3 +6774,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.RecipeRef(Aw.Sindri.Core
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.RecipeRef.Urgency.get -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
 static Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeUrgencies.UrgencyOf(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe) -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
 static Aw.Sindri.Core.Workflow.Recipes.Urgencies.Word(Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency urgency) -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.Compare(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? x, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? y) -> int
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.InstanceOrder() -> void
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder.Instance.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceOrder!
