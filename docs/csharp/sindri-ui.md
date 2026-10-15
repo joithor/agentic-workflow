@@ -254,8 +254,8 @@ action id (labels in `Labels.Actions.cs`): `ready` is a button (it runs only whe
 `RebuildViews`), `pending:<phase>` a disabled button with a focusable `InkSubtle` line "arrives in <phase> · <cli>" and
 Copy, `cli-only:<reason>` the copy block (the CLI, Copy, and "Needs a typed confirmation at a terminal." for
 `typed-confirmation`). A CLI with a control, bidi or invisible character is neither shown nor copied. Lifecycle (§4.1):
-sending (disabled, label kept, spinner; "Sending…" announced after 300 ms; a second click does nothing), accepted
-("Rebuild views: done", 2 s), refused or failed (the code and `detail` inline, as served), Copy ("Copied", 1.5 s).
+sending (enabled for the keyboard so focus stays on it, the view model refuses a second run; label kept, spinner; "Sending…" announced after 300 ms; a second click does nothing), accepted
+("Rebuild views: done", 2 s), refused or failed (the code and `detail` inline, as served, and announced as "<code>: <detail>"; every run first rests the live region on the label so a repeat outcome is a change), Copy ("Copied", 1.5 s).
 The clipboard is a port (`Platform/IClipboard`, `Views/AvaloniaClipboard`; see the ports table).
 
 **Freshness (U10, E-14).** The pill reads `health.word` (Healthy, Degraded, Stalled, Rebuilding), its age from
@@ -265,7 +265,15 @@ or P2 before unit E) it reads "Running" with the age from the last event or ping
 **Rebuild views** (the catalog's row through the control renderer); rebuilding shows a progress banner. Each event
 re-reads the status and the services view at most once per view per 250 ms (§9.2; `HealthViewModel.RefreshEvery`,
 `ControlPlaneFollower.RefreshOnSignal`): the first event of a burst re-reads at once, the rest collapse into one
-re-read when the window ends. E-15's `invalidates` waits for P5.
+re-read when the window ends. A projection still behind the ledger (`cursor < ledgerHead`) or rebuilding is read again
+on the same beat with no event needed (a stalled one waits for an event, it won't move by itself). `X-Sindri-After`
+(the accepted command's sequence) rides the view queries only (status, services; never ping, the catalog, a command or
+the stream), stays until one of them has been answered with anything but SND-API-011, goes on the stale-token retry too,
+and gives that call a 5 s deadline (the server waits up to 2 s). SND-API-011 ("views behind") is not trouble: the last
+data stays, the shell stays Normal and the next beat reads again. A services read that fails for any reason but the
+missing route before P2 (SND-UI-003) leaves the banner as it was; a catalog that failed on connect is read again with
+the next refresh. The views banner has live regions (stalled sentence, "Rebuilding views", "Views are up to date"), flag
+then text. E-15's `invalidates` waits for P5.
 
 **The palette (§8, `ViewModels/Palette/*`, `Views/Palette/CommandPalette*`, `Views/Palette/ShortcutsSheet*`).** ⌘K (Ctrl+K off macOS), a click on the ⌘K field,
 or Enter or Space on it opens it with focus in its field. Sections: **Actions**, every catalog row not in Sindri,
