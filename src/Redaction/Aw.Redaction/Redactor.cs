@@ -10,7 +10,7 @@ public sealed class Redactor : IRedactor
     // timeout, and each doubling of the text doubles it, so input size alone never blocks; only a pathological match
     // does (spec §4c). The rules are compiled once per size tier, on first use.
     private const int Window = 128 * 1024;
-    private const int TierCount = 24;
+    private const int TierCount = 24; // a safe upper bound: an int length needs at most tier 14
 
     private readonly IReadOnlyList<RedactionRule> _rules;
     private readonly TimeSpan _matchTimeout;
@@ -157,7 +157,7 @@ public sealed class Redactor : IRedactor
         return raw;
     }
 
-    /// <summary>The match timeout the rules a text of <paramref name="length"/> characters is scanned with were compiled with.</summary>
+    /// <summary>The per-pattern match timeout used to scrub a text of <paramref name="length"/> characters.</summary>
     internal TimeSpan TimeoutFor(int length) => RulesFor(length).MatchTimeout;
 
     private CompiledRules RulesFor(int length)

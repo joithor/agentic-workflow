@@ -1,7 +1,7 @@
 namespace Aw.Redaction.Tests;
 
 /// <summary>Real-clock scale cases: megabytes of input against real regex timeouts. They are slow and sensitive to
-/// machine load, so they run in the nightly heavy lane; the unit lane checks the same rules on the timeout arithmetic
+/// machine load, so they are in the heavy lane, outside the unit lane and its budget (CI's unfiltered run still executes them); the unit lane checks the same rules on the timeout arithmetic
 /// (<see cref="AdversarialInputTests"/>) and on inputs of a few hundred kilobytes.</summary>
 [Trait("Lane", "heavy")]
 public sealed class HeavyScaleTests
