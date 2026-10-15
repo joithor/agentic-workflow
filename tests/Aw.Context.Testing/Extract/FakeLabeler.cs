@@ -10,6 +10,9 @@ public sealed class FakeLabeler : ILabeler
     /// <summary>When set, every pass fails with it.</summary>
     public Error? Failure { get; set; }
 
+    /// <summary>When true, the pass names every cluster but reports it incomplete (a later batch failed).</summary>
+    public bool Incomplete { get; set; }
+
     /// <summary>The clusters shown to the model, across passes.</summary>
     public IList<FileCluster> Shown { get; } = [];
 
@@ -31,6 +34,6 @@ public sealed class FakeLabeler : ILabeler
             Shown.Add(cluster);
         }
 
-        return ValueTask.FromResult(Results.Success(new LabelPass([.. clusters.Select(c => new ClusterLabel(c.Id, "Labeled " + c.Id.Value))])));
+        return ValueTask.FromResult(Results.Success(new LabelPass([.. clusters.Select(c => new ClusterLabel(c.Id, "Labeled " + c.Id.Value))], Complete: !Incomplete)));
     }
 }

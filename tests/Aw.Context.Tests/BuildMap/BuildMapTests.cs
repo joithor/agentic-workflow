@@ -150,6 +150,18 @@ public sealed class BuildMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_pass_that_lost_a_later_batch_keeps_the_labels_it_got_and_says_degraded_labels()
+    {
+        _world.Clusters.Set = new ClusterSet([Cluster("src/commands/ids.ts", "src/commands/registry.ts")], Available: true);
+        _world.Labeler.Incomplete = true;
+
+        var report = (await _world.Map.BuildMap(progress: null, Labeling(), MapWorld.None)).Value;
+
+        Assert.Equal(["labels"], report.Degraded);
+        Assert.Equal("Labeled c1", Assert.Single((await _world.Store.Read(report.Draft.Number, MapWorld.None)).Value.Nodes, n => n.Key.Kind == NodeKind.Feature).Label);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Labeling_turned_on_with_no_labeler_set_up_is_SND_CONTEXT_042()
     {
         var labels = await new DisabledLabeler().Label([Cluster("a.ts")], [], 400_000, MapWorld.None);

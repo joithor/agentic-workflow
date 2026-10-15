@@ -16,7 +16,7 @@ public sealed class ModelLabelerTests
 
     private static FileCluster Cluster(string id, params string[] files) => new(ClusterId.From(id), files, 0.7);
 
-    private static ModelLabeler Labeler(FakeModelPort model) => new(model, new RedactionScrubberFactory(new FakeTimeProvider()));
+    private static ModelLabeler Labeler(IModelPort model) => new(model, new RedactionScrubberFactory(new FakeTimeProvider()));
 
     [Fact]
     public async Task The_model_names_clusters_from_a_json_answer()
@@ -110,6 +110,37 @@ public sealed class ModelLabelerTests
         var labels = await new ModelLabeler(failing, new RedactionScrubberFactory(new FakeTimeProvider())).Label([Cluster("c1", "a.ts", "b.ts")], [], 10_000, Ct);
 
         Assert.Equal("SND-CONTEXT-010", labels.Error.Code);
+    }
+
+    [Fact]
+    public async Task A_model_call_that_fails_after_an_answered_batch_keeps_that_batchs_labels_and_says_incomplete()
+    {
+        var many = Enumerable.Range(0, 25).Select(i => Cluster(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"c{i}"), string.Create(System.Globalization.CultureInfo.InvariantCulture, $"src/f{i}/a.ts"))).ToList();
+        var model = new AnswersOnceThenFails("""[{"id":"c0","label":"Zero"},{"id":"c7","label":"Seven"}]""");
+
+        var pass = await Labeler(model).Label(many, [], 10_000, Ct);
+
+        Assert.True(pass.IsSuccess, pass.IsError ? pass.Error.Message : null);
+        Assert.Equal([("c0", "Zero"), ("c7", "Seven")], pass.Value.Labels.Select(l => (l.Id.Value, l.Label)));
+        Assert.False(pass.Value.Complete);
+    }
+
+    [Fact]
+    public async Task A_pass_whose_batches_all_answered_is_complete()
+    {
+        var pass = await Labeler(new FakeModelPort { Answer = "[]" }).Label([Cluster("c1", "a.ts")], [], 10_000, Ct);
+
+        Assert.True(pass.Value.Complete);
+    }
+
+    private sealed class AnswersOnceThenFails(string answer) : IModelPort
+    {
+        private int _calls;
+
+        public ValueTask<Kernel.Result<ModelAnswer>> Ask(ModelRequest request, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Kernel.Result<ModelAnswer>>(++_calls == 1
+                ? new ModelAnswer(answer, InputTokens: 10, OutputTokens: 10)
+                : Context.Core.ContextErrors.SourceUnavailable.With("the provider timed out"));
     }
 
     private sealed class FailingModel : IModelPort
