@@ -1,10 +1,12 @@
-using System.Net;
-using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.CompleteStep;
 using Aw.Sindri.Tests.Server;
 using Aw.Sindri.Tests.Workflows;
+using Microsoft.Extensions.DependencyInjection;
+using System.Net;
+using System.Text.Json;
 
 namespace Aw.Sindri.Tests.ApplyCommand;
 
@@ -79,6 +81,23 @@ public sealed class InstanceIdRoutesTests(DevServer server) : IClassFixture<DevS
         Assert.Equal(HttpStatusCode.BadRequest, address);
         Assert.Equal(0, bare.Exit);
         Assert.Equal(0, bareEvents.Exit);
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task Showing_an_instance_serve_did_not_start_remembers_its_id_so_the_second_hop_scans_nothing()
+    {
+        await using var served = await Served.Start(_harness.Home, server.Environment);
+        var handle = await WorkflowsHarness.Start(server.Environment.Client, await WorkflowsHarness.StepStart(served.Sindri, "T-54", TestContext.Current.CancellationToken));
+        _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
+        var id = WorkflowInstanceId.Of(InstanceAddress.From("T-54/step/1"));
+        var known = served.Sindri.GetRequiredService<KnownInstances>();
+        Assert.Null(known.Find(id));
+
+        var (listed, _) = await Send(served, HttpMethod.Get, "/sindri/workflow/instances?address=" + Uri.EscapeDataString("T-54/step/1"));
+
+        Assert.Equal(HttpStatusCode.OK, listed);
+        Assert.Equal(InstanceAddress.From("T-54/step/1"), known.Find(id));
+        await handle.TerminateAsync("test over");
     }
 
     private static async Task<(HttpStatusCode Status, JsonElement Body)> Send(Served served, HttpMethod method, string route)

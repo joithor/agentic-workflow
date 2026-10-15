@@ -103,6 +103,34 @@ public sealed class GetInstanceEventsTests
     }
 
     [Fact]
+    public async Task An_instance_Temporal_no_longer_knows_still_reads_its_ledger_rows_by_id()
+    {
+        var h = await Ledger();
+        var forgotten = Forgotten();
+
+        var read = await new GetInstanceEventsService(h.Store, h.Events, forgotten, forgotten).Handle(new GetInstanceEventsRequest(WorkflowInstanceId.Of(_address).Value), TestContext.Current.CancellationToken);
+
+        Assert.Equal([2L, 4L], read.Value.Events.Select(static e => e.Sequence));   // not its child's row, not T-2's
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task The_events_command_for_an_address_Temporal_has_dropped_still_prints_its_ledger_rows()
+    {
+        var h = await Ledger();
+        var forgotten = Forgotten();
+        var stdout = new StringWriter();
+        using var api = ReadApi.Over(forgotten, services => services.AddSingleton<IService<GetInstanceEventsRequest, GetInstanceEventsResponse>>(new GetInstanceEventsService(h.Store, h.Events, forgotten, forgotten)));
+
+        var exit = await EventsCommand.Run(["T-1/step/1"], api.Desk, Services(h), new Output(stdout, new StringWriter(), SliceHarness.Json), TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("workflow.transition", stdout.ToString(), StringComparison.Ordinal);
+    }
+
+    /// <summary>Temporal's side after retention: it knows one other instance, not <see cref="_address"/>.</summary>
+    private static OneInstance Forgotten() => new(StatusCases.View("done") with { Address = InstanceAddress.From("T-9/step/1"), Id = WorkflowInstanceId.Of(InstanceAddress.From("T-9/step/1")) });
+
+    [Fact]
     public async Task A_bare_item_reads_the_root_of_its_latest_attempt()
     {
         var h = await Ledger();
