@@ -5,6 +5,7 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveProfile;
@@ -26,6 +27,7 @@ using Aw.Sindri.Features.GetQueue;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.IssueNonce;
+using Aw.Sindri.Features.Items;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Features.ListItems;
@@ -66,6 +68,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
         _ = services
+            .AddScoped<IItemResolver, ViewItemResolver>()
             .AddScoped<IService<StartProcessRequest, StartProcessResponse>, StartProcessService>()
             .AddScoped<IService<RecordHeartbeatRequest, RecordHeartbeatResponse>, RecordHeartbeatService>()
             .AddScoped<IService<RecordServiceRunRequest, RecordServiceRunResponse>, RecordServiceRunService>()
