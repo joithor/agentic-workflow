@@ -22,6 +22,9 @@ internal sealed class CommandOutcomeRegion(Func<ControlViewModel, bool> viewSpea
     /// <returns>True when it speaks itself.</returns>
     internal bool ViewSpeaks(ControlViewModel control) => viewSpeaks(control);
 
+    /// <summary>Goes dark when the run it spoke for is released; the text stays, unspoken, and is never set to empty.</summary>
+    internal void Rest() => IsLive = false;
+
     /// <summary>Says a text.</summary>
     /// <param name="text">The text.</param>
     internal void Say(string text)

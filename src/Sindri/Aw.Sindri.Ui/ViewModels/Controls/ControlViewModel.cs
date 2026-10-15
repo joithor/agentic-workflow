@@ -166,8 +166,8 @@ internal sealed partial class ControlViewModel : ObservableObject
         catch (OperationCanceledException)
         {
             // Cancelled (the window is closing): nothing was answered, so the control is not left sending.
+            IsAnnouncingSending = false;   // first: the palette reads the name on every change, and Idle with this still set says "ready"
             Phase = CommandPhase.Idle;
-            IsAnnouncingSending = false;
             Rest();
             throw;
         }

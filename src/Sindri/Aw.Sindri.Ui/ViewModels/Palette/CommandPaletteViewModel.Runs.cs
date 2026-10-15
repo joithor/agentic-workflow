@@ -35,8 +35,13 @@ internal sealed partial class CommandPaletteViewModel
 
     private void Release(PaletteEntry entry)
     {
-        if (_ran.Remove(entry))
+        if (_ran.Remove(entry, out var ran))
         {
+            if (ran.Closed)
+            {
+                Outcomes?.Rest();   // the shell region spoke this run; with it released the region goes dark
+            }
+
             entry.PropertyChanged -= OnRanChanged;
             entry.Control?.IsMuted = false;
         }

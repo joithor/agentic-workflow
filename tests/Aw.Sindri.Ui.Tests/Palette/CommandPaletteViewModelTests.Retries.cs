@@ -216,7 +216,7 @@ public sealed partial class CommandPaletteViewModelTests
         await run;
 
         Assert.Equal(1, said.Count(t => t.Contains(outcome, StringComparison.Ordinal)));
-        Assert.True(region.IsLive);
+        Assert.False(region.IsLive);   // released with the run: dark again
         Assert.False(controlSpoke);
         Assert.False(control.IsMuted);   // the run is over: the control is back to speaking its own runs
     }
