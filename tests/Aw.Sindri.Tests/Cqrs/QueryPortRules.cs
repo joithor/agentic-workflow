@@ -18,7 +18,7 @@ internal static class QueryPortRules
     /// approve, revoke), so the registry queries read them through Core's read-only domain services instead.
     /// </summary>
     public static readonly IReadOnlyList<Type> WritePorts =
-        [typeof(ILedgerStore), typeof(ILease), typeof(IApprovals), typeof(IViewStore), typeof(IRecipeStore), typeof(IRecipeApprovals), typeof(IRecipeWake)];
+        [typeof(ILedgerStore), typeof(ILease), typeof(IApprovals), typeof(IViewStore), typeof(IProjectorControl), typeof(IProjectorFeed), typeof(IRecipeStore), typeof(IRecipeApprovals), typeof(IRecipeWake)];
 
     /// <summary>The query handlers among <paramref name="types"/> that take a write port. There is no allowlist (P1's G1 one went with C9).</summary>
     public static IReadOnlyList<string> Check(IEnumerable<Type> types) =>
