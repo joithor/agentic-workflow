@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Ledger/Migrations/*.sql" />
+    <EmbeddedResource Include="Views/Migrations/*.sql" />
   </ItemGroup>
 
   <ItemGroup>

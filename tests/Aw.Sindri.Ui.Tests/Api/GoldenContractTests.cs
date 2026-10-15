@@ -26,11 +26,11 @@ public sealed class GoldenContractTests
         ["events"] = As<EventView>,
     };
 
-    // Routes U0 never calls: the catalog is U1's, stop is Health's (U4), profile approve is protected (§6.5), and the
+    // Routes U0 never calls: the catalog is U1's, stop is Health's (U4), profile approve is protected (§6.5), the services, profile and views-rebuild routes are the later pages' (U2+), and the
     // rev-8 workflow views (API spec section 3.8) are read by the UI lanes that build on them (E-20, E-22, E-23).
     private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
     {
-        "commands", "stop", "profile-approve",
+        "commands", "stop", "profile-approve", "services", "profile", "views-rebuild",
         "workflow-instances", "workflow-instance", "workflow-instance-fact", "workflow-status", "workflow-recipe",
     };
 

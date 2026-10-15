@@ -10,7 +10,7 @@
 # temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
 # the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
 # approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client,
-# a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
+# the views rebuild refused to a session and requested by the human, status's views and health lines, a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
 # context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
 # fixture (RCP-REACH-001, exit 1). The normalized output (pids, ports, hashes, times, the host name and the temp path
@@ -127,6 +127,13 @@ mcp() { # $1 = JSON-RPC method, $2 = params: one stateless /sindri/mcp call as a
   curl -s -m 30 -X POST "${url%/}/sindri/mcp" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
     -H 'X-Sindri-Repo: smoke' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$1\",\"params\":$2}" | sed -n 's/^data: //p'
 }
+settle() { # the projector has caught up and isn't rebuilding (it polls once a second): status's views line is then stable
+  local i
+  for i in $(seq 1 40); do
+    jq -e '.views | (.cursor == .ledgerHead and (.rebuilding | not))' <<<"$(bounded "$bin" status --json </dev/null 2>/dev/null)" >/dev/null 2>&1 && return 0
+    sleep 0.25
+  done
+}
 session_tty() { # an agent session at a terminal (the CLI's own terminal check passes, so the server decides)
   echo "## sindri $* (session, terminal)"
   local rc=0
@@ -142,6 +149,7 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   run profile approve "$hash"
   printf '%s\n' "approve profile ${hash:0:6}" | session_tty profile approve "$hash"
   printf '%s\n' "approve profile ${hash:0:6}" | human profile approve "$hash"
+  settle
   run status
   echo "## sindri status --json | jq '{running, apiVersion}'"
   json="$({ bounded "$bin" status --json </dev/null 2>&1 || true; })"
@@ -149,6 +157,10 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   echo "## /sindri/mcp initialize, then tools/list (stateless)"
   mcp initialize '{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"1"}}' | jq -c '.result.serverInfo.name'
   mcp tools/list '{}' | jq -c '[.result.tools[].name]'
+  session views rebuild
+  human views rebuild </dev/null
+  settle
+  run status
   session stop
   human stop </dev/null
   run status

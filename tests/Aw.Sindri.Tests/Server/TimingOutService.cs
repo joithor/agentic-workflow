@@ -9,6 +9,6 @@ internal sealed class TimingOutService : IScheduledService
 {
     public ServiceName Identity() => ServiceName.From("slow");
 
-    public ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken) =>
+    public ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken) =>
         throw new TaskCanceledException("the request timed out");
 }

@@ -15,7 +15,7 @@ public sealed class ChainRegistrationTests
     private static readonly string _stateRoot = Path.Combine(Path.GetTempPath(), "aw-sindri-chain-test");
 
     [Fact, Trait("Lane", "unit")]
-    public void Every_registered_command_is_wrapped_gate_audit_authorize_validate_outermost_first()
+    public void Every_registered_command_is_wrapped_gate_audit_authorize_validate_await_views_outermost_first()
     {
         var (services, scope) = Composed();
         using (scope)
@@ -24,7 +24,7 @@ public sealed class ChainRegistrationTests
 
             Assert.NotEmpty(commands);
             Assert.All(commands, type => Assert.Equal(
-                [typeof(CommandGate<,>), typeof(AuditingService<,>), typeof(AuthorizingService<,>), typeof(ValidatingService<,>), null],
+                [typeof(CommandGate<,>), typeof(AuditingService<,>), typeof(AuthorizingService<,>), typeof(ValidatingService<,>), typeof(AwaitingViews<,>), null],
                 Chain(scope.ServiceProvider.GetRequiredService(type))));
         }
     }
