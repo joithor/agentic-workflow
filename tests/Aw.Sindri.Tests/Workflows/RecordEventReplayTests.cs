@@ -1,7 +1,9 @@
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Microsoft.Extensions.Time.Testing;
@@ -46,10 +48,70 @@ public sealed class RecordEventReplayTests
         Assert.Matches("^" + Key + ":[0-9a-f]{12}$", rows[1].IdempotencyKey);
     }
 
+    [Fact(Timeout = 30_000)]
+    public async Task Replays_that_differ_only_in_their_outcome_each_keep_their_own_row()
+    {
+        var (activities, ledger) = await Open();
+        var ct = TestContext.Current.CancellationToken;
+
+        _ = await activities.Record(Moved("checks"), Key, "event:3", ct);
+        _ = await activities.Record(Moved("checks") with { Outcome = "failed" }, Key, "event:3", ct);
+        _ = await activities.Record(Moved("checks") with { Outcome = "retry" }, Key, "event:3", ct);
+        var rows = (await ledger.ReadAfter(0, 100, ct)).Value;
+
+        Assert.Equal(3, rows.Count);
+        Assert.Equal(3, rows.Select(static r => r.IdempotencyKey).Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_failed_ledger_read_does_not_mean_the_event_is_the_same_so_the_retry_lands_it_under_a_content_hash()
+    {
+        ReadFailsOnce? flaky = null;
+        var (activities, ledger) = await Open(inner => flaky = new ReadFailsOnce(inner));
+        var ct = TestContext.Current.CancellationToken;
+        _ = await activities.Record(Moved("checks"), Key, "event:3", ct);
+
+        flaky!.Arm();
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(() => activities.Record(Moved("produce") with { Trigger = "answer" }, Key, "event:3", ct));
+        var retried = await activities.Record(Moved("produce") with { Trigger = "answer" }, Key, "event:3", ct);
+        var rows = (await ledger.ReadAfter(0, 100, ct)).Value;
+
+        Assert.False(retried.AlreadyRecorded);
+        Assert.Equal(2, rows.Count);
+        Assert.Matches("^" + Key + ":[0-9a-f]{12}$", rows[1].IdempotencyKey);
+    }
+
+    /// <summary>The real ledger, except that once armed its next read fails (a busy file).</summary>
+    private sealed class ReadFailsOnce(ILedgerStore inner) : ILedgerStore
+    {
+        private bool _armed;
+
+        public void Arm() => _armed = true;
+
+        public ValueTask<Result<LedgerAppend>> Append(LedgerEntry entry, LeaseGrant grant, CancellationToken cancellationToken) => inner.Append(entry, grant, cancellationToken);
+
+        public ValueTask<Result<IReadOnlyList<LedgerEvent>>> ReadAfter(long sequence, int max, CancellationToken cancellationToken)
+        {
+            if (!_armed)
+            {
+                return inner.ReadAfter(sequence, max, cancellationToken);
+            }
+
+            _armed = false;
+            return ValueTask.FromResult<Result<IReadOnlyList<LedgerEvent>>>(ReadFailingLedger.Failure);
+        }
+
+        public ValueTask<Result<LedgerEvent?>> Latest(string type, CancellationToken cancellationToken) => inner.Latest(type, cancellationToken);
+
+        public ValueTask<Result<long>> Head(CancellationToken cancellationToken) => inner.Head(cancellationToken);
+
+        public ValueTask<Result<SchemaStatus>> Schema(CancellationToken cancellationToken) => inner.Schema(cancellationToken);
+    }
+
     private static WorkflowEventRecord Moved(string to) =>
         new("T-1/step/1", EventTypes.WorkflowTransition, "T-1", "produce", to, "step.completed", "done", "1.1");
 
-    private static async Task<(RecordEventActivities Activities, Core.Ledger.ILedgerStore Ledger)> Open()
+    private static async Task<(RecordEventActivities Activities, Core.Ledger.ILedgerStore Ledger)> Open(Func<ILedgerStore, ILedgerStore>? wrap = null)
     {
         var clock = new FakeTimeProvider(KnownInstants.Epoch);
         var probe = new FakeProcessProbe();
@@ -58,6 +120,6 @@ public sealed class RecordEventReplayTests
         held.Hold((await store.Acquire(probe.Self(), TestContext.Current.CancellationToken)).Value);
         var ids = new SequentialIdGenerator();
         var events = new EventFactory(EventScope.ControlPlane, clock, ids, SliceHarness.Json, new AsyncLocalCallerContextAccessor(ids));
-        return (new RecordEventActivities(store, held, events), store);
+        return (new RecordEventActivities(wrap?.Invoke(store) ?? store, held, events), store);
     }
 }
