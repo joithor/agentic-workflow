@@ -33,8 +33,8 @@ internal sealed partial class ShellViewModel
 #pragma warning disable IDE0072 // the lanes populate the kinds they claim; every other kind keeps the placeholder
     public bool IsSheetPlaceholderShown => SheetLink?.Kind switch
     {
-        // LANE ANCHOR U3': one `DeepLinkKind.X or … => false` arm for the Needs you kinds claims them from the placeholder. Insert immediately above this marker, never between the markers.
-        // LANE ANCHOR U8: one `DeepLinkKind.X or … => false` arm for the instance kinds. Insert immediately below this marker, never between the markers.
+        // LANE ANCHOR U3': one `DeepLinkKind.X or … => false` arm claims the kinds from the placeholder (kinds: NeedsYou, Decision), as screens spec §8 assigns them. `Item` is U2's item sheet (#197): its arm, `DeepLinkKind.Item => false`, is written ABOVE both markers by whichever of #197 and #215 merges second. `HomeNeedsYou` is a page link, not a sheet. Insert immediately above this marker, never between the markers.
+        // LANE ANCHOR U8: one `DeepLinkKind.X or … => false` arm claims the kinds (kinds: Workflow); U8 re-bases the item sheet (§4.7), which is content and adds no arm. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers.
         _ => true,
     };
 #pragma warning restore IDE0072
