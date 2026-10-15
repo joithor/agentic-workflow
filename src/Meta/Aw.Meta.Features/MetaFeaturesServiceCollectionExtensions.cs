@@ -1,11 +1,16 @@
 using Aw.Kernel.Services;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Messages;
+using Aw.Meta.Features.CheckMerge;
+using Aw.Meta.Features.GateRerun;
+using Aw.Meta.Features.GateRun;
+using Aw.Meta.Features.Health;
 using Aw.Meta.Features.Inbox;
 using Aw.Meta.Features.InboxDefer;
 using Aw.Meta.Features.InboxDismiss;
 using Aw.Meta.Features.Lanes;
 using Aw.Meta.Features.LogAppend;
+using Aw.Meta.Features.MergeRun;
 using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Owner;
 using Aw.Meta.Features.OwnerAnswer;
@@ -15,6 +20,7 @@ using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Features.Team;
+using Aw.Meta.Features.Watch;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Meta.Features;
@@ -30,7 +36,9 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddInboxSlices()
         .AddHookSlices()
         .AddOwnerSlices()
-        .AddReportSlices();
+        .AddReportSlices()
+        .AddGateSlices()
+        .AddHostSlices();
 
     private static IServiceCollection AddSetupSlices(this IServiceCollection services) => services
         .AddScoped<SetRoleService>()
@@ -83,6 +91,27 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<StatusReader>()
         .AddScoped<StatusService>()
         .Plain<StatusService, StatusRequest, StatusResponse>();
+
+    private static IServiceCollection AddGateSlices(this IServiceCollection services) => services
+        .AddScoped<GateRunService>()
+        .AddScoped<IValidator<GateRunRequest>, GateRunValidator>()
+        .Validated<GateRunService, GateRunRequest, GateRunResponse>()
+        .AddScoped<GateRerunService>()
+        .AddScoped<IValidator<GateRerunRequest>, GateRerunValidator>()
+        .Validated<GateRerunService, GateRerunRequest, GateRerunResponse>()
+        .AddScoped<CheckMergeService>()
+        .AddScoped<IValidator<CheckMergeRequest>, CheckMergeValidator>()
+        .Validated<CheckMergeService, CheckMergeRequest, CheckMergeResponse>()
+        .AddScoped<MergeRunService>()
+        .AddScoped<IValidator<MergeRunRequest>, MergeRunValidator>()
+        .Validated<MergeRunService, MergeRunRequest, MergeRunResponse>();
+
+    private static IServiceCollection AddHostSlices(this IServiceCollection services) => services
+        .AddScoped<HealthService>()
+        .Plain<HealthService, HealthRequest, HealthResponse>()
+        .AddScoped<WatchService>()
+        .AddScoped<IValidator<WatchRequest>, WatchValidator>()
+        .Validated<WatchService, WatchRequest, WatchResponse>();
 
     // Exposes an already registered service as its IService.
     private static IServiceCollection Plain<TService, TRequest, TResponse>(this IServiceCollection services)
