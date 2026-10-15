@@ -11,6 +11,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Shell;
 using Microsoft.Extensions.Time.Testing;
@@ -299,9 +300,9 @@ public sealed class QueueFramesTests : IDisposable
         await Until(window, () => shell.Item.StateWord == "Done");
 
         Assert.Same(close, Focused(window));
-        Assert.Equal(1, shell.Item.Actions.Count(a => a.Phase == Ui.ViewModels.Controls.CommandPhase.Accepted));
+        Assert.Equal(1, shell.Item.Actions.Count(a => a.Phase == CommandPhase.Accepted));
 
-        _clock.Advance(Ui.ViewModels.Controls.ControlViewModel.AcceptedFor);
+        _clock.Advance(ControlViewModel.AcceptedFor);
         Settle(window);
 
         Assert.Same(Named<TextBlock>(window, "SheetTitle"), Focused(window));
