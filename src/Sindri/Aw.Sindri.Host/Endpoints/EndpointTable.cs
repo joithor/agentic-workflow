@@ -13,14 +13,17 @@ internal static class EndpointTable
         var commands = group.MapGroup(string.Empty).WithMetadata(CommandRouteMetadata.Instance);   // Origin refused before binding (SND-API-008)
 
         // ---- queries: one line per slice, sorted ----
-        _ = queries.MapGetProfile();
         _ = queries.MapExportContextMap();
         _ = queries.MapFindContextPath();
         _ = queries.MapGetContextMap();
         _ = queries.MapGetContextSources();
+        _ = queries.MapGetInstance();
+        _ = queries.MapGetInstanceEvents();
+        _ = queries.MapGetProfile();
         _ = queries.MapGetStatus();
         _ = queries.MapListContextNeighbors();
         _ = queries.MapListCommands();
+        _ = queries.MapListInstances();
         _ = queries.MapListServices();
         _ = queries.MapListRecipes();
         _ = queries.MapPingProcess();
@@ -31,13 +34,17 @@ internal static class EndpointTable
 
         // ---- commands: one line per slice, sorted ----
         _ = commands.MapApproveProfile();
-        _ = commands.MapRebuildViews();
         _ = commands.MapImportContextMap();
+        _ = commands.MapRebuildViews();
         _ = commands.MapStopProcess();
         _ = commands.MapApproveRecipe();
         _ = commands.MapRevokeRecipe();
         _ = commands.MapIssueChallenge();
         _ = commands.MapRegisterRecipe();
+        _ = commands.MapStartInstance();
+        _ = commands.MapIssueNonce();
+        _ = commands.MapApplyCommand();
+        _ = commands.MapCompleteStep();
         return app;
     }
 }

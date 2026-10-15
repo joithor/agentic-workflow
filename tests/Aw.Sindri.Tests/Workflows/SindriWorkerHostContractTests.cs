@@ -22,7 +22,7 @@ public sealed class SindriWorkerHostContractTests : TemporalWorkerContract
     {
         _env = await WorkflowEnvironment.StartLocalAsync(new WorkflowEnvironmentStartLocalOptions
         {
-            Namespace = SindriTemporal.Namespace,
+            Namespace = TemporalSettings.DefaultNamespace,
             UI = false,
             DevServerOptions = new DevServerOptions { ExistingPath = PinnedTemporal.Path() },
         });

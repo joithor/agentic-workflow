@@ -8,7 +8,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <summary>
 /// The Temporal dev server 'sindri serve' keeps beside itself (engine spec rev 8 §0 "Operations"):
 /// 'temporal server start-dev --db-filename &lt;home&gt;/temporal.db --ip 127.0.0.1 --port &lt;p&gt; --ui-port &lt;p&gt;
-/// --namespace sindri', plus the search attributes. It is launched detached: /bin/sh starts it in the background in its
+/// --namespace &lt;the settings' namespace&gt;', plus the search attributes. It is launched detached: /bin/sh starts it in the background in its
 /// own session (perl's POSIX::setsid, as ServeLauncher does) with stdin from /dev/null and its output appended to
 /// &lt;home&gt;/logs/temporal.log under umask 077, prints its pid and exits. So the server is never serve's child: it holds no
 /// pipe of serve's, a terminal's Ctrl-C doesn't reach it, it outlives a serve that dies, and serve gets no SIGCHLD from it
@@ -31,21 +31,25 @@ internal sealed class TemporalDevServer
         var database = Path.Combine(home, SindriTemporal.DatabaseFile);
         foreach (var found in DevServerProcesses.On(database))
         {
-            if ((await DevServerProbe.Ask(found.Frontend, _adoptWait, cancellationToken).ConfigureAwait(false)).Answer == DevServerAnswer.Ready)
+            if ((await DevServerProbe.Ask(found.Frontend, start.Namespace, _adoptWait, cancellationToken).ConfigureAwait(false)).Answer == DevServerAnswer.Ready)
             {
-                await DevServerProbe.RegisterSearchAttributes(found.Frontend, cancellationToken).ConfigureAwait(false);
+                await DevServerProbe.RegisterSearchAttributes(found.Frontend, start.Namespace, cancellationToken).ConfigureAwait(false);
                 return found with { Adopted = true };
             }
 
-            await Kill(found.ProcessId, cancellationToken).ConfigureAwait(false);   // ours by its database, but it doesn't answer: replace it
+            await Kill(found.ProcessId).ConfigureAwait(false);   // ours by its database, but it doesn't answer: replace it
         }
 
-        return await Launch(start.Executable, home, database, cancellationToken).ConfigureAwait(false);
+        return await Launch(start, home, database, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Stops a server: SIGTERM, then SIGKILL if it hasn't exited within 10 s.</summary>
+    /// <summary>
+    /// Stops a server: SIGTERM, then SIGKILL if it hasn't exited within 10 s. A cancelled stop doesn't leave it running:
+    /// the server is detached (setsid), so it would outlive serve and its caller; cancelling cuts the SIGTERM grace short
+    /// and kills it at once, and only then does the cancellation propagate.
+    /// </summary>
     /// <param name="server">The server.</param>
-    /// <param name="cancellationToken">Cancels the wait for its exit.</param>
+    /// <param name="cancellationToken">Cuts the wait for a clean exit short.</param>
     /// <returns>A task that completes when the process has exited.</returns>
     public async Task StopAsync(RunningTemporalServer server, CancellationToken cancellationToken)
     {
@@ -55,9 +59,20 @@ internal sealed class TemporalDevServer
         }
 
         DevServerProcesses.Signal(server.ProcessId, "TERM");
-        if (!await Exited(server.ProcessId, _stopWait, cancellationToken).ConfigureAwait(false))
+        bool exited;
+        try
         {
-            await Kill(server.ProcessId, cancellationToken).ConfigureAwait(false);
+            exited = await Exited(server.ProcessId, _stopWait, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            await Kill(server.ProcessId).ConfigureAwait(false);
+            throw;
+        }
+
+        if (!exited)
+        {
+            await Kill(server.ProcessId).ConfigureAwait(false);
         }
     }
 
@@ -67,7 +82,7 @@ internal sealed class TemporalDevServer
     public static IReadOnlyList<RunningTemporalServer> Find(string home) =>
         DevServerProcesses.On(Path.Combine(Path.GetFullPath(home), SindriTemporal.DatabaseFile));
 
-    private async Task<RunningTemporalServer> Launch(string executable, string home, string database, CancellationToken cancellationToken)
+    private async Task<RunningTemporalServer> Launch(TemporalServerStart start, string home, string database, CancellationToken cancellationToken)
     {
         var logs = Path.Combine(home, "logs");
         if (!Directory.Exists(logs))
@@ -81,8 +96,8 @@ internal sealed class TemporalDevServer
         var log = Path.Combine(logs, SindriTemporal.LogFile);
         var frontend = new IPEndPoint(IPAddress.Loopback, FreePort());
         var ui = FreePort();
-        var pid = Detach(executable, database, frontend.Port, ui, log);
-        var server = new RunningTemporalServer(pid, frontend, database) { UiPort = ui, Executable = executable };
+        var pid = Detach(start.Executable, ServerArguments(database, frontend.Port, ui, start.Namespace), log);
+        var server = new RunningTemporalServer(pid, frontend, database) { UiPort = ui, Executable = start.Executable };
         var waited = Stopwatch.StartNew();
         while (true)
         {
@@ -91,16 +106,16 @@ internal sealed class TemporalDevServer
                 throw new InvalidOperationException($"'temporal server start-dev' exited: {LastLine(log)}");
             }
 
-            var (answer, problem) = await DevServerProbe.Ask(frontend, TimeSpan.FromSeconds(2), cancellationToken).ConfigureAwait(false);
+            var (answer, problem) = await DevServerProbe.Ask(frontend, start.Namespace, TimeSpan.FromSeconds(2), cancellationToken).ConfigureAwait(false);
             if (answer == DevServerAnswer.Ready)
             {
-                await DevServerProbe.RegisterSearchAttributes(frontend, cancellationToken).ConfigureAwait(false);
+                await DevServerProbe.RegisterSearchAttributes(frontend, start.Namespace, cancellationToken).ConfigureAwait(false);
                 return server;
             }
 
             if (waited.Elapsed > _readyWait)
             {
-                await Kill(pid, cancellationToken).ConfigureAwait(false);
+                await Kill(pid).ConfigureAwait(false);
                 throw new TimeoutException(string.Create(CultureInfo.InvariantCulture, $"the dev server on {frontend} didn't answer within {_readyWait.TotalSeconds:0} s: {problem}"));
             }
 
@@ -108,26 +123,32 @@ internal sealed class TemporalDevServer
         }
     }
 
+    /// <summary>'temporal server start-dev' with the database, the ports, the namespace and the search attributes.</summary>
+    private static string[] ServerArguments(string database, int port, int ui, string @namespace) =>
+    [
+        "server", "start-dev", "--db-filename", database, "--ip", "127.0.0.1", "--port", Text(port), "--ui-port", Text(ui),
+        "--namespace", @namespace, "--log-level", "warn",
+        .. SindriTemporal.SearchAttributes.SelectMany(a => new[] { "--search-attribute", $"{a.Name}={a.Type}" }),
+    ];
+
     /// <summary>Starts the server detached (see the class summary) and returns its pid, which /bin/sh prints.</summary>
-    private static int Detach(string executable, string database, int port, int ui, string log)
+    private static int Detach(string executable, string[] server, string log)
     {
         const string Script = "umask 077; log=$1; shift; "
             + "if [ -x /usr/bin/perl ]; then /usr/bin/perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV or die \"exec $ARGV[0]: $!\\n\"' \"$@\" </dev/null >>\"$log\" 2>&1 & "
             + "else \"$@\" </dev/null >>\"$log\" 2>&1 & fi; echo $!";
-        string[] server = ["server", "start-dev", "--db-filename", database, "--ip", "127.0.0.1", "--port", Text(port), "--ui-port", Text(ui),
-            "--namespace", SindriTemporal.Namespace, "--log-level", "warn"];
-        string[] arguments = [.. new[] { "-c", Script, "sh", log, executable }, .. server,
-            .. SindriTemporal.SearchAttributes.SelectMany(a => new[] { "--search-attribute", $"{a.Name}={a.Type}" })];
+        string[] arguments = [.. new[] { "-c", Script, "sh", log, executable }, .. server];
         var printed = DevServerProcesses.Capture("/bin/sh", arguments).Trim();
         return int.TryParse(printed, NumberStyles.None, CultureInfo.InvariantCulture, out var pid)
             ? pid
             : throw new InvalidOperationException($"/bin/sh didn't print the dev server's pid (it printed '{printed}')");
     }
 
-    private async Task Kill(int pid, CancellationToken cancellationToken)
+    /// <summary>SIGKILL, then waits (at most 10 s, not cancellable: the signal is sent and the exit follows at once) for the exit.</summary>
+    private async Task Kill(int pid)
     {
         DevServerProcesses.Signal(pid, "KILL");
-        _ = await Exited(pid, _stopWait, cancellationToken).ConfigureAwait(false);
+        _ = await Exited(pid, _stopWait, CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <summary>Waits up to <paramref name="wait"/> for <paramref name="pid"/> to exit (it is never this process's child, so it is polled).</summary>

@@ -55,10 +55,15 @@ public sealed class SpikeEvalTests(TimeSkippingServer server) : IClassFixture<Ti
     public async Task Four_hour_timeout_parks_in_under_a_second_when_the_desk_step_is_an_update_wait()
     {
         var ct = TestContext.Current.CancellationToken;
-        var (spike, options) = await Worker("timeout-update", ct);
+
+        // why: a server of its own (finding F1). Time skipping on the shared fixture depends on what the other tests in
+        // the class left behind: an async-completion desk activity scheduled there by an earlier test keeps it off, and
+        // the 4h timer then waits in real time until the 30 s test timeout.
+        await using var env = await TemporalServerFixture.Start(ServerKind.TimeSkipping);
+        var (spike, options) = await Worker(env.Client, "timeout-update", ct);
         const string id = "TIMEOUT-U/workflow.step/1";
 
-        await SpikeWorker.Run(_env.Client, options, async () =>
+        await SpikeWorker.Run(env.Client, options, async () =>
         {
             var handle = await spike.Start(id, options.TaskQueue!, new SpikeRun("TIMEOUT-U", SpikeEvals.WorkflowStep, DeskByUpdate: true));
             await spike.Opened(id, "1.1", ct);
@@ -106,8 +111,6 @@ public sealed class SpikeEvalTests(TimeSkippingServer server) : IClassFixture<Ti
             await handle.TerminateAsync("spike: documented unsupported");
         }, ct);
     }
-
-    private Task<(SpikeDesk Spike, Temporalio.Worker.TemporalWorkerOptions Options)> Worker(string queue, CancellationToken ct) => Worker(_env.Client, queue, ct);
 
     private static async Task<(SpikeDesk Spike, Temporalio.Worker.TemporalWorkerOptions Options)> Worker(ITemporalClient client, string queue, CancellationToken ct)
     {
