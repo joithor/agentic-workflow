@@ -70,6 +70,9 @@ internal sealed class AttachControlViewModel : ObservableObject
     /// <summary>The confirm's live text: the confirm line while it shows, else a resting text (never empty).</summary>
     public string ConfirmAnnouncement { get; private set => Set(ref field, value); } = Labels.Sindri;
 
+    /// <summary>True when the confirm's live region is in the accessibility tree (it joins when the menu opens).</summary>
+    public bool IsRegionInTree => true;
+
     private bool IsAgent => _input.Kind == AttachStepKind.Agent;
 
     /// <summary>Takes a new input (the catalog became ready, the served confirm arrived).</summary>
@@ -115,6 +118,11 @@ internal sealed class AttachControlViewModel : ObservableObject
 
         Close();
         Chosen?.Invoke(this, new AttachChosenEventArgs(AttachAction.Cancel));
+    }
+
+    /// <summary>The chevron's menu opened.</summary>
+    public void MenuOpened()
+    {
     }
 
     /// <summary>Leaves the Step as it is.</summary>

@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Automation;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
@@ -76,6 +77,7 @@ public sealed class ProtectedActionButtonTests
             var result = (button.Flyout.IsOpen, Named<TextBlock>(root, "ServedCli").Text, Named<Button>(root, "CopyButton").Content?.ToString(),
                 AutomationProperties.GetName(Named<Button>(root, "CopyButton")), Named<Control>(root, "OpenInAgent").IsEffectivelyVisible,
                 AutomationProperties.GetName(Named<Control>(root, "OpenInAgent")), Named<Control>(root, "OpenInAgentChip").IsEffectivelyVisible);
+            _ = Named<Button>(root, "OpenInAgent");   // a Button, so it is a control a screen reader can reach
             window.Close();
             return result;
         });
@@ -85,8 +87,32 @@ public sealed class ProtectedActionButtonTests
         Assert.Equal("Copy", copy);
         Assert.Equal($"Copy: {Cli}", copyName);
         Assert.True(agent);
-        Assert.Equal($"Open {Subject} in an agent", agentName);
+        Assert.Equal($"Open {Subject} in an agent: available with API P10a", agentName);
         Assert.True(pending);
+    }
+
+    // The popover's focus targets are the controls a screen reader and the Tab key reach (a11y-0): each is a control
+    // element with a name, and Open in an agent is a disabled Button, not a focusable panel.
+    [Fact]
+    public async Task The_popovers_controls_are_exposed_with_names_and_Open_in_an_agent_is_a_disabled_button()
+    {
+        var rows = await OnUi(() =>
+        {
+            var (window, _, button, _) = Show();
+            _ = button.Focus(NavigationMethod.Tab);
+            Press(window, Key.Enter, PhysicalKey.Enter);
+            Settle(window);
+            var root = (Visual)((Flyout)button.Flyout!).Content!;
+            var agent = Named<Button>(root, "OpenInAgent");
+            var result = new[] { Named<Button>(root, "CopyButton"), agent }
+                .Select(c => (c.Name, Control: ControlAutomationPeer.CreatePeerForElement(c).IsControlElement(), AutomationProperties.GetName(c), c.IsEnabled)).ToList();
+            window.Close();
+            return result;
+        });
+
+        Assert.All(rows, r => Assert.True(r.Control));
+        Assert.All(rows, r => Assert.False(string.IsNullOrWhiteSpace(r.Item3)));
+        Assert.Equal(("OpenInAgent", false), (rows[1].Name, rows[1].IsEnabled));
     }
 
     [Fact]

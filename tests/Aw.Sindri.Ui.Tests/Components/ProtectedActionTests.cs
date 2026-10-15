@@ -68,7 +68,7 @@ public sealed class ProtectedActionTests
 
         Assert.Equal($"Accept {Subject}: needs a typed confirmation at a terminal", vm.ButtonName);
         Assert.Equal($"Copy: {Cli}", vm.CopyName);
-        Assert.Equal($"Open {Subject} in an agent", vm.OpenInAgentName);
+        Assert.Equal($"Open {Subject} in an agent: available with API P10a", vm.OpenInAgentName);
     }
 
     [Fact]
@@ -80,10 +80,45 @@ public sealed class ProtectedActionTests
 
         Assert.Equal(Cli, _clipboard.Text);
         Assert.Equal(("Copied", "Copied", true), (vm.CopyLabel, vm.Announcement, vm.IsAnnouncing));
-        Assert.Equal("Copied", vm.CopyName);
+        Assert.Equal($"Copy: {Cli}", vm.CopyName);   // the button's name stays put: the live region alone says Copied
         _clock.Advance(TimeSpan.FromMilliseconds(1499));
         Assert.Equal("Copied", vm.CopyLabel);
         _clock.Advance(TimeSpan.FromMilliseconds(1));
+        Assert.Equal(("Copy", false), (vm.CopyLabel, vm.IsAnnouncing));
+        Assert.Equal(vm.Label, vm.Announcement);   // a-11y-3: it rests on its label, not on the stale "Copied"
+    }
+
+    // Flag first, then text, on the way out too: the region goes dark before "Copied" is replaced by the resting text.
+    [Fact]
+    public async Task The_resting_text_replaces_Copied_only_after_the_flag_goes_off()
+    {
+        var vm = Make();
+        await vm.Copy(Token);
+        var seen = new List<(string Property, bool Flag, string Text)>();
+        vm.PropertyChanged += (_, e) => seen.Add((e.PropertyName ?? string.Empty, vm.IsAnnouncing, vm.Announcement));
+
+        _clock.Advance(ProtectedActionViewModel.CopiedFor);
+
+        var text = seen.FindIndex(s => string.Equals(s.Property, nameof(vm.Announcement), StringComparison.Ordinal));
+        Assert.True(text >= 0);
+        Assert.False(seen[text].Flag);   // already dark when the text changes
+        Assert.All(seen, s => Assert.False(string.IsNullOrEmpty(s.Text)));
+    }
+
+    // A second Copy inside the window restarts it: the first timer must not clear the second "Copied".
+    [Fact]
+    public async Task A_second_Copy_restarts_the_Copied_window()
+    {
+        var vm = Make();
+        await vm.Copy(Token);
+        _clock.Advance(TimeSpan.FromMilliseconds(1000));
+        await vm.Copy(Token);
+
+        _clock.Advance(TimeSpan.FromMilliseconds(500));   // 1.5 s after the first Copy: its timer fires, and is stale
+        Assert.Equal(("Copied", true), (vm.CopyLabel, vm.IsAnnouncing));
+        _clock.Advance(TimeSpan.FromMilliseconds(999));
+        Assert.Equal("Copied", vm.CopyLabel);
+        _clock.Advance(TimeSpan.FromMilliseconds(1));   // 1.5 s after the second
         Assert.Equal(("Copy", false), (vm.CopyLabel, vm.IsAnnouncing));
     }
 
