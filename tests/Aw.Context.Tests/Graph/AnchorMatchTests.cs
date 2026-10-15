@@ -40,6 +40,70 @@ public sealed class AnchorMatchTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void SND_CONTEXT_037_carries_the_candidate_keys_as_a_typed_list_and_keeps_its_detail()
+    {
+        var graph = new GraphBuilder().Node("feature:a", "Same").Node("feature:b", "same").Build();
+
+        var node = AnchorMatch.Resolve(graph, "Same");
+
+        Assert.Equal(["feature:a", "feature:b"], Members(node.Error, "candidates"));
+        Assert.Equal("'Same' is the name of 2 nodes: feature:a, feature:b (fix: ask by key)", node.Error.Message);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void SND_CONTEXT_037_candidates_stop_at_a_hundred_keys_while_the_detail_lists_all()
+    {
+        var builder = new GraphBuilder();
+        foreach (var i in Enumerable.Range(0, 120))
+        {
+            builder = builder.Node("feature:n" + i.ToString("000", System.Globalization.CultureInfo.InvariantCulture), "Same");
+        }
+
+        var node = AnchorMatch.Resolve(builder.Build(), "Same");
+
+        Assert.Equal(100, Members(node.Error, "candidates").Count);
+        Assert.Contains("feature:n119", node.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void SND_CONTEXT_003_carries_the_suggested_anchors_as_a_typed_list_matching_its_detail()
+    {
+        var node = AnchorMatch.Resolve(FixtureGraph.Applied(), "orientation toggles");
+
+        var suggested = Members(node.Error, "suggestedAnchors");
+        Assert.Contains(suggested, k => string.Equals(k, "feature:layout.split-pane.orientation", StringComparison.Ordinal));
+        Assert.InRange(suggested.Count, 1, 100);
+        Assert.Contains("try " + string.Join(", ", suggested), node.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void SND_CONTEXT_003_with_nothing_to_suggest_has_no_suggestedAnchors_member()
+    {
+        var graph = new GraphBuilder().Node("feature:a", "Alpha").Build();
+
+        var node = AnchorMatch.Resolve(graph, "zzz");
+
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, node.Error.Code);
+        Assert.DoesNotContain(node.Error.Extensions ?? Aw.Kernel.ErrorExtensions.Empty, m => m.Key == "suggestedAnchors");
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Suggestions_come_only_from_the_graph_the_caller_may_see()
+    {
+        var visible = new GraphBuilder().Node("feature:orientation.visible", "Orientation toggles").Build();
+
+        var node = AnchorMatch.Resolve(visible, "orientation toggle");
+
+        Assert.All(Members(node.Error, "suggestedAnchors"), key => Assert.True(NodeKey.TryFrom(key, out var parsed) && visible.Resolve(parsed) is not null));
+    }
+
+    private static List<string> Members(Aw.Kernel.Error error, string name)
+    {
+        var member = Assert.Single(error.Extensions ?? Aw.Kernel.ErrorExtensions.Empty, m => m.Key == name);
+        return [.. member.Value.EnumerateArray().Select(e => e.GetString()!)];
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_node_named_after_more_than_sixteen_other_words_still_anchors()
     {
         var question = "When I change the split pane layout in the settings dialog of the editor window, what else in the app could break, for example Tabs?";
