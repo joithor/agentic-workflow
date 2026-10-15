@@ -95,7 +95,7 @@ internal sealed partial class RecipeWorkflow
         instance = After(instance, decision);
         if (!ReferenceEquals(before, instance))
         {
-            instance = Enter(instance);
+            instance = Enter(instance, decision is null ? Timers : trigger.Actor);
             await Mirror(DeskRow(before, instance, trigger, open, decision), NeedsYou(instance)).ConfigureAwait(true);
         }
 

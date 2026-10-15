@@ -173,7 +173,7 @@ internal static class ContextTools
             : $"context_query has no argument '{name}' (fix: q, node, item, symbol, depth, budget)";
 
     /// <summary>An object schema with these properties and no others.</summary>
-    private static JsonElement Schema(JsonObject properties, string[]? required = null)
+    internal static JsonElement Schema(JsonObject properties, string[]? required = null)
     {
         var schema = new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = properties };
         if (required is not null)
@@ -185,7 +185,7 @@ internal static class ContextTools
         return document.RootElement.Clone();
     }
 
-    private static JsonObject Property(string type, string description, int? minimum = null)
+    internal static JsonObject Property(string type, string description, int? minimum = null)
     {
         var property = new JsonObject { ["type"] = type, ["description"] = description };
         if (minimum is { } min)

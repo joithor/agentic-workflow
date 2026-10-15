@@ -125,6 +125,9 @@ public sealed class HeldItemEventsTests
 
         public List<string> Queries { get; } = [];
 
+        public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(InstanceFilter filter, bool ended, CancellationToken cancellationToken) =>
+            List(InstanceFilters.ToQuery(filter), ended, cancellationToken);
+
         public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(string? query, bool ended, CancellationToken cancellationToken)
         {
             Queries.Add(query ?? string.Empty);

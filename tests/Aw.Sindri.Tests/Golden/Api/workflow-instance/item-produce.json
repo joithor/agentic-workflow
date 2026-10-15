@@ -21,7 +21,7 @@
   "engineOwned": null,
   "subject": {
     "kind": "text",
-    "key": "ITM-01JE7",
+    "key": "Linear ENG-511 · repo agentic-workflow ·",
     "label": "Linear ENG-511 · repo agentic-workflow · no project · feature:needs-you.ack",
     "href": null
   },
@@ -151,7 +151,7 @@
         {
           "key": "fact:spec",
           "name": "spec.md",
-          "hash": "1c0e5a77"
+          "hash": "sha256:1c0e5a7700000000000000000000000000000000000000000000000000000000"
         }
       ],
       "timeout": {
@@ -209,7 +209,7 @@
       "ref": {
         "name": "spec.md",
         "size": null,
-        "hash": "1c0e5a7700000000000000000000000000000000000000000000000000000000",
+        "hash": "sha256:1c0e5a7700000000000000000000000000000000000000000000000000000000",
         "path": null,
         "itemId": null,
         "url": null,

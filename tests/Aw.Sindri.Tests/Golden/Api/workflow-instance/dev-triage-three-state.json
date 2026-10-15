@@ -16,7 +16,7 @@
   "subject": {
     "kind": "item",
     "key": "ITM-01JL2",
-    "label": "dev-triage-three-state",
+    "label": "Three-state triage",
     "href": null
   },
   "orderedBy": "path",
@@ -97,7 +97,7 @@
         "since": "2026-10-12T12:00:00.0000000Z",
         "ageSeconds": 1560
       },
-      "next": "Write the draft for ITM-01JL2, then run: sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output fact:output=<file>",
+      "next": "Write the draft for ITM-01JL2, then run:\nsindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output fact:output=<file>",
       "answer": null,
       "child": null,
       "drift": null,
@@ -105,7 +105,7 @@
         {
           "key": "fact:item",
           "name": "item.json",
-          "hash": "5cd0e9a2"
+          "hash": "sha256:b6c9cf9454914db27a93569f823751647192bdf84677126620b7f62b45e063fb"
         }
       ],
       "timeout": {
@@ -138,7 +138,7 @@
           "confirm": "Cancel ITM-01JL2/dev-triage-three-state/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@88a0e8fc810f  v1  desk: desk task  since 12:00 (26m)\n  next      Write the draft for ITM-01JL2, then run: sindri workflow complete\n            ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output fact:output=<file>\n  inputs    fact:item  item.json  sha256:5cd0...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@88a0e8fc810f  v1  desk: desk task  since 12:00 (26m)\n  next      Write the draft for ITM-01JL2, then run:\n            sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output\n            fact:output=<file>\n  inputs    fact:item  item.json  sha256:b6c9...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [
