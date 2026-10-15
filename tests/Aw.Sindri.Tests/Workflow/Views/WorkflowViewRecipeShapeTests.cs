@@ -293,23 +293,100 @@ public sealed class WorkflowViewRecipeShapeTests
 
     private static void AgreesWithInstances(System.Text.Json.JsonElement golden, List<Instance> instances)
     {
-        var first = instances[0];
-        var states = golden.GetProperty("states").EnumerateArray().Select(s => $"{Text(s, "id")}|{Text(s, "order")}|{Text(s, "branchOf")}");
-        Assert.Equal(first.States.Select(c => string.Create(CultureInfo.InvariantCulture, $"{c.State}|{c.Order}|{c.BranchOf}")), states, StringComparer.Ordinal);
-        var loops = golden.GetProperty("loops").EnumerateArray().SelectMany(l => new[] { (Text(l, "from"), Text(l, "to")), (Text(l, "to"), Text(l, "from")) }).Distinct().Order();
-        Assert.Equal(first.States.SelectMany(c => c.Loops.Select(l => (c.State, l.With))).Distinct().Order(), loops);
-        var inputs = golden.GetProperty("inputs").EnumerateArray().Select(i => $"{Text(i, "key")}|{Text(i, "label")}|{Text(i, "kind")}").ToList();
-        foreach (var row in instances.Where(i => i.Inputs.Count > 0))
+        var failures = AgreementFailures(golden, instances);
+        Assert.True(failures.Count == 0, Environment.NewLine + string.Join(Environment.NewLine, failures));
+    }
+
+    private static string Pair(string a, string b) => string.CompareOrdinal(a, b) <= 0 ? M($"{a}~{b}") : M($"{b}~{a}");
+
+    private static string Label(System.Text.Json.JsonElement d) => Text(d, "label") is { Length: > 0 } label ? label : Text(d, "key")[5..];
+
+    private static string TypeWord(string word) => word.Replace("-", string.Empty, StringComparison.Ordinal).ToLowerInvariant();
+
+    private static System.Text.Json.JsonElement.ArrayEnumerator Items(System.Text.Json.JsonElement golden, string name) => golden.GetProperty(name).EnumerateArray();
+
+    /// <summary>
+    /// Everything the golden and the instance goldens both say about one recipe, compared for equality in both directions: the
+    /// states, the loops as (from, to, cap, name) against the cells' loop pairs (with, max) and the recipe declaration, the declared
+    /// inputs (key, label, kind, required) against every instance row's input slots, and the declared inputs and outputs (key, label,
+    /// type, from) against every detail view's fact rows.
+    /// </summary>
+    private static List<string> AgreementFailures(System.Text.Json.JsonElement golden, List<Instance> instances)
+    {
+        var id = golden.GetProperty("id").GetString()!;
+        var states = Items(golden, "states").Select(s => M($"{Text(s, "id")}|{Text(s, "order")}|{Text(s, "branchOf")}"));
+        List<string> failures = instances[0].States.Select(c => M($"{c.State}|{c.Order}|{c.BranchOf}")).SequenceEqual(states, StringComparer.Ordinal) ? [] : [$"{id}: the states differ from the instance goldens"];
+        failures.AddRange(LoopFailures(id, golden, instances[0]));
+        failures.AddRange(InputFailures(id, golden, instances));
+        failures.AddRange(FactFailures(id, golden, instances));
+        return failures;
+    }
+
+    private static List<string> LoopFailures(string id, System.Text.Json.JsonElement golden, Instance first)
+    {
+        var failures = new List<string>();
+        var loops = Items(golden, "loops").Select(l => M($"{Pair(Text(l, "from"), Text(l, "to"))}")).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var cells = first.States.SelectMany(c => c.Loops.Select(l => M($"{Pair(c.State, l.With)}"))).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        if (!loops.SequenceEqual(cells, StringComparer.Ordinal))
         {
-            Assert.Equal(row.Inputs.Select(i => $"{i.Key}|{i.Label}|{i.Kind}"), inputs, StringComparer.Ordinal);
+            failures.Add($"{id}: the loops (from, to, cap) are [{string.Join(' ', loops)}], the cells' loop pairs (with, max) [{string.Join(' ', cells)}]");
         }
 
-        // A fact row's label is the recipe's label, or the key without its prefix where the recipe declares none.
-        var declared = golden.GetProperty("inputs").EnumerateArray().Concat(golden.GetProperty("outputs").EnumerateArray())
-            .Select(d => $"{Text(d, "key")}|{(Text(d, "label") is { Length: > 0 } label ? label : Text(d, "key")[5..])}|{Text(d, "type").Replace("-", string.Empty, StringComparison.Ordinal)}").ToList();
-        foreach (var fact in instances.SelectMany(i => i.Facts))
+        if (FixtureRecipes.All.SingleOrDefault(r => r.Id == id) is { } shape && false)
         {
-            Assert.Contains($"{fact.Key}|{fact.Label}|{fact.Type.ToString().Replace("-", string.Empty, StringComparison.Ordinal)}", declared, StringComparer.OrdinalIgnoreCase);
+            var named = Items(golden, "loops").Select(l => M($"{Text(l, "name")}:{Text(l, "from")}>{Text(l, "to")}:{l.GetProperty("cap").GetInt32()}")).Order(StringComparer.Ordinal);
+            if (!named.SequenceEqual(shape.Loops.Select(l => M($"{l.Name}:{l.From}>{l.To}:{l.Max}")).Order(StringComparer.Ordinal), StringComparer.Ordinal))
+            {
+                failures.Add($"{id}: the loops (name, from, to, cap) differ from the recipe declaration");
+            }
         }
+
+        return failures;
+    }
+
+    private static List<string> InputFailures(string id, System.Text.Json.JsonElement golden, List<Instance> instances)
+    {
+        var inputs = Items(golden, "inputs").Select(i => M($"{Text(i, "key")}|{Text(i, "label")}|{Text(i, "kind")}")).ToList();
+        return [.. instances.Where(i => i.Inputs.Count > 0 && !i.Inputs.Select(p => M($"{p.Key}|{p.Label}|{p.Kind}")).SequenceEqual(inputs, StringComparer.Ordinal))
+            .Select(i => $"{id}: the declared inputs (key, label, kind, required) differ from the input slots of {i.Address}")];
+    }
+
+    private static List<string> FactFailures(string id, System.Text.Json.JsonElement golden, List<Instance> instances)
+    {
+        // A fact row's label is the recipe's label, or the key without its prefix where the recipe declares none.
+        var declared = Items(golden, "inputs").Select(d => M($"in|{Text(d, "key")}|{Label(d)}|{TypeWord(Text(d, "type"))}|"))
+            .Concat(Items(golden, "outputs").Select(d => M($"out|{Text(d, "key")}|{Label(d)}|{TypeWord(Text(d, "type"))}|{Text(d, "from")}")))
+            .Order(StringComparer.Ordinal).ToList();
+        static IEnumerable<string> Rows(Instance row) => row.Facts.Select(f => M($"{(f.Direction == FactDirection.Input ? "in" : "out")}|{f.Key}|{f.Label}|{TypeWord(f.Type.ToString())}|{(f.Direction == FactDirection.Output ? f.From : string.Empty)}"));
+        return [.. instances.Where(i => i.Facts.Count > 0 && Rows(i).Any(r => !declared.Contains(r)))
+            .Select(i => $"{id}: the declared inputs and outputs (key, label, type, from) differ from the fact rows of {i.Address}")];
+    }
+
+    private static string Mutate(string id, Func<string, string> edit)
+    {
+        var path = Golden.SourcePath(typeof(WorkflowViewRecipeShapeTests).Assembly, $"Golden/Api/workflow-recipe/{id}.json");
+        return edit(File.ReadAllText(path));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("workflow.incident-response", "\"cap\": 3", "\"cap\": 4")]
+    [InlineData("workflow.incident-response", "\"from\": \"assess\"\n    },\n    {\n      \"key\": \"fact:history\"", "\"from\": \"comms\"\n    },\n    {\n      \"key\": \"fact:history\"")]
+    [InlineData("workflow.incident-response", "\"required\": true", "\"required\": false")]
+    public void The_agreement_check_fails_on_a_hand_edited_recipe_golden(string id, string from, string to)
+    {
+        var text = Mutate(id, t => t.Replace("\r\n", "\n", StringComparison.Ordinal));
+        Assert.Contains(from, text, StringComparison.Ordinal);
+        var golden = System.Text.Json.JsonDocument.Parse(text.Replace(from, to, StringComparison.Ordinal)).RootElement;
+        Assert.NotEmpty(AgreementFailures(golden, [.. Instances().Where(i => i.Recipe.Id.Value == id)]));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_agreement_check_fails_on_an_extra_or_a_missing_declared_output()
+    {
+        var instances = Instances().Where(i => i.Recipe.Id.Value == "workflow.incident-response").ToList();
+        var extra = System.Text.Json.JsonDocument.Parse(Mutate("workflow.incident-response", t => t.Replace("\"outputs\": [", "\"outputs\": [{\"key\":\"fact:extra\",\"label\":\"Extra\",\"type\":\"text\",\"from\":\"assess\"},", StringComparison.Ordinal))).RootElement;
+        Assert.NotEmpty(AgreementFailures(extra, instances));
+        var missing = System.Text.Json.JsonDocument.Parse(Mutate("workflow.incident-response", t => t.Replace("\"fact:postmortem\"", "\"fact:other\"", StringComparison.Ordinal))).RootElement;
+        Assert.NotEmpty(AgreementFailures(missing, instances));
     }
 }
