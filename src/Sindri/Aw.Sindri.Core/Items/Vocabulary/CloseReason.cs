@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Json;
 
 namespace Aw.Sindri.Core.Items.Vocabulary;
 

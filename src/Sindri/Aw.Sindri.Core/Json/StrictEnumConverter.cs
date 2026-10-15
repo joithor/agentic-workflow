@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace Aw.Sindri.Core.Items.Vocabulary;
+namespace Aw.Sindri.Core.Json;
 
-/// <summary>A string enum converter that refuses numbers: a request body's '"reason": 1' is a binding error (400 SND-CLI-003), never a silent member or an undefined value.</summary>
+/// <summary>Mirrors Aw.Context.Core's converter (a shared Aw.Kernel copy is a follow-up). A string enum converter that refuses numbers: a request body's '"reason": 1' is a binding error (400 SND-CLI-003), never a silent member or an undefined value.</summary>
 /// <typeparam name="TEnum">The enum.</typeparam>
 public sealed class StrictEnumConverter<TEnum> : JsonStringEnumConverter<TEnum>
     where TEnum : struct, Enum

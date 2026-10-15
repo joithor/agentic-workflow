@@ -868,8 +868,8 @@ Aw.Sindri.Core.Items.Vocabulary.QueueGroup.Queued = 4 -> Aw.Sindri.Core.Items.Vo
 Aw.Sindri.Core.Items.Vocabulary.QueueGroup.Running = 3 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
 Aw.Sindri.Core.Items.Vocabulary.QueueGroup.WaitingOnYou = 0 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
 Aw.Sindri.Core.Items.Vocabulary.QueueGroup.WithYou = 1 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
-Aw.Sindri.Core.Items.Vocabulary.StrictEnumConverter<TEnum>
-Aw.Sindri.Core.Items.Vocabulary.StrictEnumConverter<TEnum>.StrictEnumConverter() -> void
+Aw.Sindri.Core.Json.StrictEnumConverter<TEnum>
+Aw.Sindri.Core.Json.StrictEnumConverter<TEnum>.StrictEnumConverter() -> void
 Aw.Sindri.Core.Lease.HeldLease
 Aw.Sindri.Core.Lease.HeldLease.Clear() -> void
 Aw.Sindri.Core.Lease.HeldLease.Current.get -> Aw.Sindri.Core.Lease.LeaseGrant?

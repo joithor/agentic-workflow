@@ -87,7 +87,7 @@ internal sealed class ItemVerbs(ControlPlaneClient client, Output output, Func<b
         var code = list.AsOf.Rebuilding || list.AsOf.Stalled ? 1 : 0;
         return command.Json
             ? await output.Raw(answer.Value.Body, code).ConfigureAwait(false)
-            : await output.Text(list.Items.Count > 0 ? Lines(list.Items, indent: string.Empty) : (list.Empty ?? EmptyText.Items(state: null, repo: null)) + "\n", code).ConfigureAwait(false);
+            : await output.Text(RenderList(list), code).ConfigureAwait(false);
     }
 
     private async Task<int> Add(ItemVerbArguments.Parsed command, CancellationToken ct)
@@ -131,6 +131,21 @@ internal sealed class ItemVerbs(ControlPlaneClient client, Output output, Func<b
             : await output.Text(string.Create(CultureInfo.InvariantCulture, $"{command.Text} closed: {(command.Cancelled ? "cancelled" : "done")} (sequence {closed.Value.Value.Sequence})\n"), 0).ConfigureAwait(false);
     }
 
+    private static string RenderList(ListItemsResponse list)
+    {
+        var text = new StringBuilder();
+        if (list.Empty is { } sentence)
+        {
+            _ = text.AppendLine(sentence);   // on stale views the rows may be partial, and this says why
+        }
+        else if (list.Items.Count == 0)
+        {
+            _ = text.AppendLine(EmptyText.Items(state: null, repo: null));
+        }
+
+        return text.Append(Lines(list.Items, indent: string.Empty)).ToString();
+    }
+
     private static string Render(QueueResponse queue)
     {
         var text = new StringBuilder();
@@ -144,7 +159,7 @@ internal sealed class ItemVerbs(ControlPlaneClient client, Output output, Func<b
             _ = text.AppendLine(GroupName(group.Group));
             _ = group.Items.Count > 0
                 ? text.Append(Lines(group.Items, indent: "  "))
-                : text.Append("  ").AppendLine(group.Empty ?? EmptyText.Group(group.Group));
+                : group.Empty is { } said && said == queue.Empty ? text : text.Append("  ").AppendLine(group.Empty ?? EmptyText.Group(group.Group));   // the stall sentence is said once, at the top
         }
 
         return text.ToString();

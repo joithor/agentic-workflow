@@ -12,7 +12,7 @@ public static class SafeText
     /// Makes every control visible: C0 and C1 controls and DEL become '\xNN'; format characters (zero-width and bidi marks,
     /// tags), line and paragraph separators and lone surrogates become '\u{XXXX}'. An ESC-introduced CSI or OSC sequence is
     /// escaped whole, because its ESC, BEL and C1 bytes are, and its printable bytes then show as text. Tab, line feed and
-    /// carriage return stay for <see cref="Line"/> to fold. Nothing is dropped silently.
+    /// carriage return stay for <see cref="Line"/> to fold (<see cref="CleanBlock"/> turns CRLF into LF and escapes a lone CR itself). Nothing is dropped silently.
     /// </summary>
     /// <param name="text">The text.</param>
     /// <returns>The escaped text.</returns>
@@ -85,7 +85,7 @@ public static class SafeText
     {
         ArgumentNullException.ThrowIfNull(scrubber);
         ArgumentOutOfRangeException.ThrowIfLessThan(max, 1);
-        return Cut(Escape(scrubber.Scrub(text)).Trim(), max);
+        return Cut(Escape(scrubber.Scrub(text).Replace("\r\n", "\n", StringComparison.Ordinal)).Replace("\r", "\\x0D", StringComparison.Ordinal).Trim(), max);
     }
 
     private static string Cut(string text, int max)
