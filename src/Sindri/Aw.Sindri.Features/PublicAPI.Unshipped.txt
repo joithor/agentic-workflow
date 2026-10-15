@@ -744,3 +744,35 @@ static Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.operator !=(Aw.Si
 static Aw.Sindri.Features.ContextCalls.ImportContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? left, Aw.Sindri.Features.ContextCalls.ImportContextMapRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.operator !=(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? left, Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? right) -> bool
 static Aw.Sindri.Features.ContextCalls.ImportContextMapResponse.operator ==(Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? left, Aw.Sindri.Features.ContextCalls.ImportContextMapResponse? right) -> bool
+Aw.Sindri.Features.GetInstanceFact.FactView
+Aw.Sindri.Features.GetInstanceFact.FactView.<Clone>$() -> Aw.Sindri.Features.GetInstanceFact.FactView!
+Aw.Sindri.Features.GetInstanceFact.FactView.Body.get -> System.Text.Json.JsonElement
+Aw.Sindri.Features.GetInstanceFact.FactView.Body.init -> void
+Aw.Sindri.Features.GetInstanceFact.FactView.Deconstruct(out string! Key, out Aw.Sindri.Core.Workflow.Views.FactType Type, out System.Text.Json.JsonElement Body, out bool Truncated) -> void
+Aw.Sindri.Features.GetInstanceFact.FactView.Equals(Aw.Sindri.Features.GetInstanceFact.FactView? other) -> bool
+Aw.Sindri.Features.GetInstanceFact.FactView.FactView(string! Key, Aw.Sindri.Core.Workflow.Views.FactType Type, System.Text.Json.JsonElement Body, bool Truncated) -> void
+Aw.Sindri.Features.GetInstanceFact.FactView.Key.get -> string!
+Aw.Sindri.Features.GetInstanceFact.FactView.Key.init -> void
+Aw.Sindri.Features.GetInstanceFact.FactView.Truncated.get -> bool
+Aw.Sindri.Features.GetInstanceFact.FactView.Truncated.init -> void
+Aw.Sindri.Features.GetInstanceFact.FactView.Type.get -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Features.GetInstanceFact.FactView.Type.init -> void
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.<Clone>$() -> Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest!
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Deconstruct(out string! Instance, out string! Key) -> void
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Equals(Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest? other) -> bool
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.GetInstanceFactRequest(string! Instance, string! Key) -> void
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Instance.get -> string!
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Instance.init -> void
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Key.get -> string!
+Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Key.init -> void
+override Aw.Sindri.Features.GetInstanceFact.FactView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetInstanceFact.FactView.GetHashCode() -> int
+override Aw.Sindri.Features.GetInstanceFact.FactView.ToString() -> string!
+override Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.ToString() -> string!
+static Aw.Sindri.Features.GetInstanceFact.FactView.operator !=(Aw.Sindri.Features.GetInstanceFact.FactView? left, Aw.Sindri.Features.GetInstanceFact.FactView? right) -> bool
+static Aw.Sindri.Features.GetInstanceFact.FactView.operator ==(Aw.Sindri.Features.GetInstanceFact.FactView? left, Aw.Sindri.Features.GetInstanceFact.FactView? right) -> bool
+static Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.operator !=(Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest? left, Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest? right) -> bool
+static Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest.operator ==(Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest? left, Aw.Sindri.Features.GetInstanceFact.GetInstanceFactRequest? right) -> bool

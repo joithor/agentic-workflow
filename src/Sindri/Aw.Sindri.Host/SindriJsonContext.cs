@@ -12,10 +12,12 @@ using Aw.Sindri.Core.Workflow.Engine.Evals;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.EvalRecipe;
+using Aw.Sindri.Features.GetInstanceFact;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.ListCommands;
@@ -95,4 +97,47 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(PurgeReport))]
 [JsonSerializable(typeof(ImportContextMapRequest))]
 [JsonSerializable(typeof(ImportContextMapResponse))]
+[JsonSerializable(typeof(BudgetFigures))]
+[JsonSerializable(typeof(ChildGroup))]
+[JsonSerializable(typeof(ChildRow))]
+[JsonSerializable(typeof(CurrentState))]
+[JsonSerializable(typeof(DeskForm))]
+[JsonSerializable(typeof(DeskOutput))]
+[JsonSerializable(typeof(EngineOwnedBadge))]
+[JsonSerializable(typeof(FactPending))]
+[JsonSerializable(typeof(FactRef))]
+[JsonSerializable(typeof(FactRow))]
+[JsonSerializable(typeof(GateLine))]
+[JsonSerializable(typeof(InputPresence))]
+[JsonSerializable(typeof(InstanceDetail))]
+[JsonSerializable(typeof(InstanceList))]
+[JsonSerializable(typeof(InstanceRecipe))]
+[JsonSerializable(typeof(InstanceSummary))]
+[JsonSerializable(typeof(LoopPair))]
+[JsonSerializable(typeof(Progress))]
+[JsonSerializable(typeof(RecipeInputView))]
+[JsonSerializable(typeof(RecipeLoopView))]
+[JsonSerializable(typeof(RecipeOutputView))]
+[JsonSerializable(typeof(RecipeStateView))]
+[JsonSerializable(typeof(RecipeView))]
+[JsonSerializable(typeof(Round))]
+[JsonSerializable(typeof(StateCell))]
+[JsonSerializable(typeof(StatusAnswer))]
+[JsonSerializable(typeof(StatusBudget))]
+[JsonSerializable(typeof(StatusChild))]
+[JsonSerializable(typeof(StatusCommand))]
+[JsonSerializable(typeof(StatusDrift))]
+[JsonSerializable(typeof(StatusFields))]
+[JsonSerializable(typeof(StatusHeader))]
+[JsonSerializable(typeof(StatusInput))]
+[JsonSerializable(typeof(StatusPaused))]
+[JsonSerializable(typeof(StatusTimeout))]
+[JsonSerializable(typeof(StepDeclaration))]
+[JsonSerializable(typeof(SubjectRef))]
+[JsonSerializable(typeof(ViewCounts))]
+[JsonSerializable(typeof(Workstream))]
+[JsonSerializable(typeof(StateChip))]
+[JsonSerializable(typeof(ListCounts))]
+[JsonSerializable(typeof(ParentRef))]
+[JsonSerializable(typeof(FactView))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

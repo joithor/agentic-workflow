@@ -4284,3 +4284,918 @@ override Aw.Sindri.Core.Events.ContextMapImported.GetHashCode() -> int
 override Aw.Sindri.Core.Events.ContextMapImported.ToString() -> string!
 static Aw.Sindri.Core.Events.ContextMapImported.operator !=(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapImported.operator ==(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool
+Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
+Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency.Incident = 1 -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
+Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency.Triage = 2 -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
+Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency.Work = 3 -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
+Aw.Sindri.Core.Workflow.Views.AnswerKind
+Aw.Sindri.Core.Workflow.Views.AnswerKind.Accept = 5 -> Aw.Sindri.Core.Workflow.Views.AnswerKind
+Aw.Sindri.Core.Workflow.Views.AnswerKind.CancelOnly = 6 -> Aw.Sindri.Core.Workflow.Views.AnswerKind
+Aw.Sindri.Core.Workflow.Views.AnswerKind.Grant = 3 -> Aw.Sindri.Core.Workflow.Views.AnswerKind
+Aw.Sindri.Core.Workflow.Views.AnswerKind.GrantTokens = 4 -> Aw.Sindri.Core.Workflow.Views.AnswerKind
+Aw.Sindri.Core.Workflow.Views.AnswerKind.Resume = 2 -> Aw.Sindri.Core.Workflow.Views.AnswerKind
+Aw.Sindri.Core.Workflow.Views.AnswerKind.Text = 1 -> Aw.Sindri.Core.Workflow.Views.AnswerKind
+Aw.Sindri.Core.Workflow.Views.BudgetFigures
+Aw.Sindri.Core.Workflow.Views.BudgetFigures.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.BudgetFigures!
+Aw.Sindri.Core.Workflow.Views.BudgetFigures.BudgetFigures(long Used, long Limit) -> void
+Aw.Sindri.Core.Workflow.Views.BudgetFigures.Deconstruct(out long Used, out long Limit) -> void
+Aw.Sindri.Core.Workflow.Views.BudgetFigures.Equals(Aw.Sindri.Core.Workflow.Views.BudgetFigures? other) -> bool
+Aw.Sindri.Core.Workflow.Views.BudgetFigures.Limit.get -> long
+Aw.Sindri.Core.Workflow.Views.BudgetFigures.Limit.init -> void
+Aw.Sindri.Core.Workflow.Views.BudgetFigures.Used.get -> long
+Aw.Sindri.Core.Workflow.Views.BudgetFigures.Used.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildGroup
+Aw.Sindri.Core.Workflow.Views.ChildGroup.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.ChildGroup!
+Aw.Sindri.Core.Workflow.Views.ChildGroup.ChildGroup(string! State, string! Recipe, int Done, int Total, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.Workstream!>! Workstreams, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildRow!>! Rows, int More) -> void
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Deconstruct(out string! State, out string! Recipe, out int Done, out int Total, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.Workstream!>! Workstreams, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildRow!>! Rows, out int More) -> void
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Done.get -> int
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Done.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Equals(Aw.Sindri.Core.Workflow.Views.ChildGroup? other) -> bool
+Aw.Sindri.Core.Workflow.Views.ChildGroup.More.get -> int
+Aw.Sindri.Core.Workflow.Views.ChildGroup.More.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Recipe.get -> string!
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Recipe.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildRow!>!
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Rows.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildGroup.State.get -> string!
+Aw.Sindri.Core.Workflow.Views.ChildGroup.State.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Total.get -> int
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Total.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Workstreams.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.Workstream!>!
+Aw.Sindri.Core.Workflow.Views.ChildGroup.Workstreams.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow
+Aw.Sindri.Core.Workflow.Views.ChildRow.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.ChildRow!
+Aw.Sindri.Core.Workflow.Views.ChildRow.Actions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Workflow.Views.ChildRow.Actions.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.Address.get -> string!
+Aw.Sindri.Core.Workflow.Views.ChildRow.Address.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.Agent.get -> string?
+Aw.Sindri.Core.Workflow.Views.ChildRow.Agent.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.AgeSeconds.get -> long
+Aw.Sindri.Core.Workflow.Views.ChildRow.AgeSeconds.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.ChildRow(string! Address, string? Item, string! Title, Aw.Sindri.Core.Workflow.Views.StateGlyph Glyph, string! State, Aw.Sindri.Core.Workflow.Views.StateChip! Chip, Aw.Sindri.Core.Workflow.Views.Round? Round, string? Agent, long AgeSeconds, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? MirroredPark, System.Collections.Generic.IReadOnlyList<string!>! Actions) -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.Chip.get -> Aw.Sindri.Core.Workflow.Views.StateChip!
+Aw.Sindri.Core.Workflow.Views.ChildRow.Chip.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.Deconstruct(out string! Address, out string? Item, out string! Title, out Aw.Sindri.Core.Workflow.Views.StateGlyph Glyph, out string! State, out Aw.Sindri.Core.Workflow.Views.StateChip! Chip, out Aw.Sindri.Core.Workflow.Views.Round? Round, out string? Agent, out long AgeSeconds, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? MirroredPark, out System.Collections.Generic.IReadOnlyList<string!>! Actions) -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.EngineOwned.get -> Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge?
+Aw.Sindri.Core.Workflow.Views.ChildRow.EngineOwned.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.Equals(Aw.Sindri.Core.Workflow.Views.ChildRow? other) -> bool
+Aw.Sindri.Core.Workflow.Views.ChildRow.Glyph.get -> Aw.Sindri.Core.Workflow.Views.StateGlyph
+Aw.Sindri.Core.Workflow.Views.ChildRow.Glyph.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.Item.get -> string?
+Aw.Sindri.Core.Workflow.Views.ChildRow.Item.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.MirroredPark.get -> Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge?
+Aw.Sindri.Core.Workflow.Views.ChildRow.MirroredPark.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.Round.get -> Aw.Sindri.Core.Workflow.Views.Round?
+Aw.Sindri.Core.Workflow.Views.ChildRow.Round.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.State.get -> string!
+Aw.Sindri.Core.Workflow.Views.ChildRow.State.init -> void
+Aw.Sindri.Core.Workflow.Views.ChildRow.Title.get -> string!
+Aw.Sindri.Core.Workflow.Views.ChildRow.Title.init -> void
+Aw.Sindri.Core.Workflow.Views.ChipTone
+Aw.Sindri.Core.Workflow.Views.ChipTone.Attn = 1 -> Aw.Sindri.Core.Workflow.Views.ChipTone
+Aw.Sindri.Core.Workflow.Views.ChipTone.Fail = 2 -> Aw.Sindri.Core.Workflow.Views.ChipTone
+Aw.Sindri.Core.Workflow.Views.ChipTone.Neutral = 4 -> Aw.Sindri.Core.Workflow.Views.ChipTone
+Aw.Sindri.Core.Workflow.Views.ChipTone.Ok = 3 -> Aw.Sindri.Core.Workflow.Views.ChipTone
+Aw.Sindri.Core.Workflow.Views.ConfirmText
+Aw.Sindri.Core.Workflow.Views.CurrentState
+Aw.Sindri.Core.Workflow.Views.CurrentState.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.CurrentState!
+Aw.Sindri.Core.Workflow.Views.CurrentState.CurrentState(string! State, Aw.Sindri.Core.Workflow.Views.StepDeclaration? Step, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.GateLine!>! Gates, Aw.Sindri.Core.Workflow.Views.DeskForm? Desk, Aw.Sindri.Core.Workflow.Views.StatusFields! Status) -> void
+Aw.Sindri.Core.Workflow.Views.CurrentState.Deconstruct(out string! State, out Aw.Sindri.Core.Workflow.Views.StepDeclaration? Step, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.GateLine!>! Gates, out Aw.Sindri.Core.Workflow.Views.DeskForm? Desk, out Aw.Sindri.Core.Workflow.Views.StatusFields! Status) -> void
+Aw.Sindri.Core.Workflow.Views.CurrentState.Desk.get -> Aw.Sindri.Core.Workflow.Views.DeskForm?
+Aw.Sindri.Core.Workflow.Views.CurrentState.Desk.init -> void
+Aw.Sindri.Core.Workflow.Views.CurrentState.Equals(Aw.Sindri.Core.Workflow.Views.CurrentState? other) -> bool
+Aw.Sindri.Core.Workflow.Views.CurrentState.Gates.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.GateLine!>!
+Aw.Sindri.Core.Workflow.Views.CurrentState.Gates.init -> void
+Aw.Sindri.Core.Workflow.Views.CurrentState.State.get -> string!
+Aw.Sindri.Core.Workflow.Views.CurrentState.State.init -> void
+Aw.Sindri.Core.Workflow.Views.CurrentState.Status.get -> Aw.Sindri.Core.Workflow.Views.StatusFields!
+Aw.Sindri.Core.Workflow.Views.CurrentState.Status.init -> void
+Aw.Sindri.Core.Workflow.Views.CurrentState.Step.get -> Aw.Sindri.Core.Workflow.Views.StepDeclaration?
+Aw.Sindri.Core.Workflow.Views.CurrentState.Step.init -> void
+Aw.Sindri.Core.Workflow.Views.DeskForm
+Aw.Sindri.Core.Workflow.Views.DeskForm.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.DeskForm!
+Aw.Sindri.Core.Workflow.Views.DeskForm.Checks.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Workflow.Views.DeskForm.Checks.init -> void
+Aw.Sindri.Core.Workflow.Views.DeskForm.CompleteAction.get -> string!
+Aw.Sindri.Core.Workflow.Views.DeskForm.CompleteAction.init -> void
+Aw.Sindri.Core.Workflow.Views.DeskForm.Deconstruct(out string! Run, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.DeskOutput!>! Outputs, out System.Collections.Generic.IReadOnlyList<string!>! Checks, out string! CompleteAction) -> void
+Aw.Sindri.Core.Workflow.Views.DeskForm.DeskForm(string! Run, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.DeskOutput!>! Outputs, System.Collections.Generic.IReadOnlyList<string!>! Checks, string! CompleteAction) -> void
+Aw.Sindri.Core.Workflow.Views.DeskForm.Equals(Aw.Sindri.Core.Workflow.Views.DeskForm? other) -> bool
+Aw.Sindri.Core.Workflow.Views.DeskForm.Outputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.DeskOutput!>!
+Aw.Sindri.Core.Workflow.Views.DeskForm.Outputs.init -> void
+Aw.Sindri.Core.Workflow.Views.DeskForm.Run.get -> string!
+Aw.Sindri.Core.Workflow.Views.DeskForm.Run.init -> void
+Aw.Sindri.Core.Workflow.Views.DeskOutput
+Aw.Sindri.Core.Workflow.Views.DeskOutput.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.DeskOutput!
+Aw.Sindri.Core.Workflow.Views.DeskOutput.Deconstruct(out string! Key, out Aw.Sindri.Core.Workflow.Views.FactType Type, out bool Required) -> void
+Aw.Sindri.Core.Workflow.Views.DeskOutput.DeskOutput(string! Key, Aw.Sindri.Core.Workflow.Views.FactType Type, bool Required) -> void
+Aw.Sindri.Core.Workflow.Views.DeskOutput.Equals(Aw.Sindri.Core.Workflow.Views.DeskOutput? other) -> bool
+Aw.Sindri.Core.Workflow.Views.DeskOutput.Key.get -> string!
+Aw.Sindri.Core.Workflow.Views.DeskOutput.Key.init -> void
+Aw.Sindri.Core.Workflow.Views.DeskOutput.Required.get -> bool
+Aw.Sindri.Core.Workflow.Views.DeskOutput.Required.init -> void
+Aw.Sindri.Core.Workflow.Views.DeskOutput.Type.get -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.DeskOutput.Type.init -> void
+Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge
+Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge!
+Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.Deconstruct(out Aw.Sindri.Core.Workflow.Views.EngineOwnedKind Kind, out string! Reason) -> void
+Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.EngineOwnedBadge(Aw.Sindri.Core.Workflow.Views.EngineOwnedKind Kind, string! Reason) -> void
+Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.Equals(Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? other) -> bool
+Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.Kind.get -> Aw.Sindri.Core.Workflow.Views.EngineOwnedKind
+Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.Kind.init -> void
+Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.Reason.get -> string!
+Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.Reason.init -> void
+Aw.Sindri.Core.Workflow.Views.EngineOwnedKind
+Aw.Sindri.Core.Workflow.Views.EngineOwnedKind.Escalated = 2 -> Aw.Sindri.Core.Workflow.Views.EngineOwnedKind
+Aw.Sindri.Core.Workflow.Views.EngineOwnedKind.Parked = 1 -> Aw.Sindri.Core.Workflow.Views.EngineOwnedKind
+Aw.Sindri.Core.Workflow.Views.EngineOwnedKind.TakenOver = 3 -> Aw.Sindri.Core.Workflow.Views.EngineOwnedKind
+Aw.Sindri.Core.Workflow.Views.FactDirection
+Aw.Sindri.Core.Workflow.Views.FactDirection.Input = 1 -> Aw.Sindri.Core.Workflow.Views.FactDirection
+Aw.Sindri.Core.Workflow.Views.FactDirection.Output = 2 -> Aw.Sindri.Core.Workflow.Views.FactDirection
+Aw.Sindri.Core.Workflow.Views.FactPending
+Aw.Sindri.Core.Workflow.Views.FactPending.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.FactPending!
+Aw.Sindri.Core.Workflow.Views.FactPending.Checks.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Workflow.Views.FactPending.Checks.init -> void
+Aw.Sindri.Core.Workflow.Views.FactPending.CompleteAction.get -> string!
+Aw.Sindri.Core.Workflow.Views.FactPending.CompleteAction.init -> void
+Aw.Sindri.Core.Workflow.Views.FactPending.Deconstruct(out bool Required, out System.Collections.Generic.IReadOnlyList<string!>! Checks, out string! CompleteAction) -> void
+Aw.Sindri.Core.Workflow.Views.FactPending.Equals(Aw.Sindri.Core.Workflow.Views.FactPending? other) -> bool
+Aw.Sindri.Core.Workflow.Views.FactPending.FactPending(bool Required, System.Collections.Generic.IReadOnlyList<string!>! Checks, string! CompleteAction) -> void
+Aw.Sindri.Core.Workflow.Views.FactPending.Required.get -> bool
+Aw.Sindri.Core.Workflow.Views.FactPending.Required.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRef
+Aw.Sindri.Core.Workflow.Views.FactRef.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.FactRef!
+Aw.Sindri.Core.Workflow.Views.FactRef.Deconstruct(out string? Name, out long? Size, out string? Hash, out string? Path, out string? Item, out string? Url, out string? Host, out string? Title, out string? FactKey) -> void
+Aw.Sindri.Core.Workflow.Views.FactRef.Equals(Aw.Sindri.Core.Workflow.Views.FactRef? other) -> bool
+Aw.Sindri.Core.Workflow.Views.FactRef.FactKey.get -> string?
+Aw.Sindri.Core.Workflow.Views.FactRef.FactKey.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRef.FactRef(string? Name, long? Size, string? Hash, string? Path, string? Item, string? Url, string? Host, string? Title, string? FactKey) -> void
+Aw.Sindri.Core.Workflow.Views.FactRef.Hash.get -> string?
+Aw.Sindri.Core.Workflow.Views.FactRef.Hash.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRef.Host.get -> string?
+Aw.Sindri.Core.Workflow.Views.FactRef.Host.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRef.Item.get -> string?
+Aw.Sindri.Core.Workflow.Views.FactRef.Item.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRef.Name.get -> string?
+Aw.Sindri.Core.Workflow.Views.FactRef.Name.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRef.Path.get -> string?
+Aw.Sindri.Core.Workflow.Views.FactRef.Path.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRef.Size.get -> long?
+Aw.Sindri.Core.Workflow.Views.FactRef.Size.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRef.Title.get -> string?
+Aw.Sindri.Core.Workflow.Views.FactRef.Title.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRef.Url.get -> string?
+Aw.Sindri.Core.Workflow.Views.FactRef.Url.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow
+Aw.Sindri.Core.Workflow.Views.FactRow.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.FactRow!
+Aw.Sindri.Core.Workflow.Views.FactRow.At.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Views.FactRow.At.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.By.get -> string?
+Aw.Sindri.Core.Workflow.Views.FactRow.By.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.Deconstruct(out string! Key, out string! Label, out Aw.Sindri.Core.Workflow.Views.FactType Type, out Aw.Sindri.Core.Workflow.Views.FactDirection Direction, out string? From, out Aw.Sindri.Core.Workflow.Views.FactStatus Status, out string! Summary, out System.DateTimeOffset? At, out string? By, out Aw.Sindri.Core.Workflow.Views.FactRef? Ref, out Aw.Sindri.Core.Workflow.Views.Progress? Progress, out Aw.Sindri.Core.Workflow.Views.FactPending? Pending) -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.Direction.get -> Aw.Sindri.Core.Workflow.Views.FactDirection
+Aw.Sindri.Core.Workflow.Views.FactRow.Direction.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.Equals(Aw.Sindri.Core.Workflow.Views.FactRow? other) -> bool
+Aw.Sindri.Core.Workflow.Views.FactRow.FactRow(string! Key, string! Label, Aw.Sindri.Core.Workflow.Views.FactType Type, Aw.Sindri.Core.Workflow.Views.FactDirection Direction, string? From, Aw.Sindri.Core.Workflow.Views.FactStatus Status, string! Summary, System.DateTimeOffset? At, string? By, Aw.Sindri.Core.Workflow.Views.FactRef? Ref, Aw.Sindri.Core.Workflow.Views.Progress? Progress, Aw.Sindri.Core.Workflow.Views.FactPending? Pending) -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.From.get -> string?
+Aw.Sindri.Core.Workflow.Views.FactRow.From.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.Key.get -> string!
+Aw.Sindri.Core.Workflow.Views.FactRow.Key.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.Label.get -> string!
+Aw.Sindri.Core.Workflow.Views.FactRow.Label.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.Pending.get -> Aw.Sindri.Core.Workflow.Views.FactPending?
+Aw.Sindri.Core.Workflow.Views.FactRow.Pending.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.Progress.get -> Aw.Sindri.Core.Workflow.Views.Progress?
+Aw.Sindri.Core.Workflow.Views.FactRow.Progress.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.Ref.get -> Aw.Sindri.Core.Workflow.Views.FactRef?
+Aw.Sindri.Core.Workflow.Views.FactRow.Ref.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.Status.get -> Aw.Sindri.Core.Workflow.Views.FactStatus
+Aw.Sindri.Core.Workflow.Views.FactRow.Status.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.Summary.get -> string!
+Aw.Sindri.Core.Workflow.Views.FactRow.Summary.init -> void
+Aw.Sindri.Core.Workflow.Views.FactRow.Type.get -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.FactRow.Type.init -> void
+Aw.Sindri.Core.Workflow.Views.FactStatus
+Aw.Sindri.Core.Workflow.Views.FactStatus.InProgress = 2 -> Aw.Sindri.Core.Workflow.Views.FactStatus
+Aw.Sindri.Core.Workflow.Views.FactStatus.Pending = 3 -> Aw.Sindri.Core.Workflow.Views.FactStatus
+Aw.Sindri.Core.Workflow.Views.FactStatus.Produced = 1 -> Aw.Sindri.Core.Workflow.Views.FactStatus
+Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.FactType.Decision = 8 -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.FactType.Evidence = 7 -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.FactType.File = 2 -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.FactType.Item = 3 -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.FactType.Link = 4 -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.FactType.Packet = 6 -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.FactType.Payload = 9 -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.FactType.ScopeMap = 5 -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.FactType.Text = 1 -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.FactTypeJsonConverter
+Aw.Sindri.Core.Workflow.Views.FactTypeJsonConverter.FactTypeJsonConverter() -> void
+Aw.Sindri.Core.Workflow.Views.GateLine
+Aw.Sindri.Core.Workflow.Views.GateLine.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.GateLine!
+Aw.Sindri.Core.Workflow.Views.GateLine.Deconstruct(out string! Gate, out string! On, out double? Threshold, out string! Description) -> void
+Aw.Sindri.Core.Workflow.Views.GateLine.Description.get -> string!
+Aw.Sindri.Core.Workflow.Views.GateLine.Description.init -> void
+Aw.Sindri.Core.Workflow.Views.GateLine.Equals(Aw.Sindri.Core.Workflow.Views.GateLine? other) -> bool
+Aw.Sindri.Core.Workflow.Views.GateLine.Gate.get -> string!
+Aw.Sindri.Core.Workflow.Views.GateLine.Gate.init -> void
+Aw.Sindri.Core.Workflow.Views.GateLine.GateLine(string! Gate, string! On, double? Threshold, string! Description) -> void
+Aw.Sindri.Core.Workflow.Views.GateLine.On.get -> string!
+Aw.Sindri.Core.Workflow.Views.GateLine.On.init -> void
+Aw.Sindri.Core.Workflow.Views.GateLine.Threshold.get -> double?
+Aw.Sindri.Core.Workflow.Views.GateLine.Threshold.init -> void
+Aw.Sindri.Core.Workflow.Views.InputPresence
+Aw.Sindri.Core.Workflow.Views.InputPresence.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.InputPresence!
+Aw.Sindri.Core.Workflow.Views.InputPresence.Deconstruct(out string! Key, out string! Label, out string! Kind, out bool Required, out bool Present) -> void
+Aw.Sindri.Core.Workflow.Views.InputPresence.Equals(Aw.Sindri.Core.Workflow.Views.InputPresence? other) -> bool
+Aw.Sindri.Core.Workflow.Views.InputPresence.InputPresence(string! Key, string! Label, string! Kind, bool Required, bool Present) -> void
+Aw.Sindri.Core.Workflow.Views.InputPresence.Key.get -> string!
+Aw.Sindri.Core.Workflow.Views.InputPresence.Key.init -> void
+Aw.Sindri.Core.Workflow.Views.InputPresence.Kind.get -> string!
+Aw.Sindri.Core.Workflow.Views.InputPresence.Kind.init -> void
+Aw.Sindri.Core.Workflow.Views.InputPresence.Label.get -> string!
+Aw.Sindri.Core.Workflow.Views.InputPresence.Label.init -> void
+Aw.Sindri.Core.Workflow.Views.InputPresence.Present.get -> bool
+Aw.Sindri.Core.Workflow.Views.InputPresence.Present.init -> void
+Aw.Sindri.Core.Workflow.Views.InputPresence.Required.get -> bool
+Aw.Sindri.Core.Workflow.Views.InputPresence.Required.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.InstanceDetail!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Actions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Actions.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Address.get -> string!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Address.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.AsOf.get -> System.DateTimeOffset
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.AsOf.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Children.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildGroup!>!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Children.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Counts.get -> Aw.Sindri.Core.Workflow.Views.ViewCounts!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Counts.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Current.get -> Aw.Sindri.Core.Workflow.Views.CurrentState!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Current.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Deconstruct(out string! Address, out string! Instance, out Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, out string? Item, out string! Title, out Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, out string! State, out System.DateTimeOffset Since, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, out Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, out Aw.Sindri.Core.Workflow.Views.CurrentState! Current, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>! Facts, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildGroup!>! Children, out Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, out System.Collections.Generic.IReadOnlyList<string!>! Actions, out System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.EngineOwned.get -> Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge?
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.EngineOwned.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Equals(Aw.Sindri.Core.Workflow.Views.InstanceDetail? other) -> bool
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Facts.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Facts.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Instance.get -> string!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Instance.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.InstanceDetail(string! Address, string! Instance, Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, string? Item, string! Title, Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, string! State, System.DateTimeOffset Since, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, Aw.Sindri.Core.Workflow.Views.CurrentState! Current, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>! Facts, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildGroup!>! Children, Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, System.Collections.Generic.IReadOnlyList<string!>! Actions, System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Item.get -> string?
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Item.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.OrderedBy.get -> Aw.Sindri.Core.Workflow.Views.PathOrdering
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.OrderedBy.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Parent.get -> Aw.Sindri.Core.Workflow.Views.ParentRef?
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Parent.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Recipe.get -> Aw.Sindri.Core.Workflow.Views.InstanceRecipe!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Recipe.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Since.get -> System.DateTimeOffset
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Since.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.State.get -> string!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.State.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.States.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.States.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Subject.get -> Aw.Sindri.Core.Workflow.Views.SubjectRef!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Subject.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Title.get -> string!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Title.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceList
+Aw.Sindri.Core.Workflow.Views.InstanceList.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.InstanceList!
+Aw.Sindri.Core.Workflow.Views.InstanceList.AsOf.get -> System.DateTimeOffset
+Aw.Sindri.Core.Workflow.Views.InstanceList.AsOf.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceList.Counts.get -> Aw.Sindri.Core.Workflow.Views.ListCounts!
+Aw.Sindri.Core.Workflow.Views.InstanceList.Counts.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceList.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InstanceSummary!>! Instances, out Aw.Sindri.Core.Workflow.Views.ListCounts! Counts, out string? Empty, out System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceList.Empty.get -> string?
+Aw.Sindri.Core.Workflow.Views.InstanceList.Empty.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceList.Equals(Aw.Sindri.Core.Workflow.Views.InstanceList? other) -> bool
+Aw.Sindri.Core.Workflow.Views.InstanceList.InstanceList(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InstanceSummary!>! Instances, Aw.Sindri.Core.Workflow.Views.ListCounts! Counts, string? Empty, System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceList.Instances.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InstanceSummary!>!
+Aw.Sindri.Core.Workflow.Views.InstanceList.Instances.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.InstanceRecipe!
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Deconstruct(out string! Name, out string! Hash, out int Version, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Equals(Aw.Sindri.Core.Workflow.Views.InstanceRecipe? other) -> bool
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Hash.get -> string!
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Hash.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.InstanceRecipe(string! Name, string! Hash, int Version, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Name.get -> string!
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Name.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Urgency.get -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Urgency.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Version.get -> int
+Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Version.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.InstanceSummary!
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Actions.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Actions.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Address.get -> string!
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Address.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Answer.get -> Aw.Sindri.Core.Workflow.Views.StatusAnswer?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Answer.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Chip.get -> Aw.Sindri.Core.Workflow.Views.StateChip!
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Chip.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Deconstruct(out string! Address, out string! Instance, out string? Item, out Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, out string! State, out Aw.Sindri.Core.Workflow.Views.StateChip! Chip, out System.DateTimeOffset Since, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, out string! Now, out Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, out System.Collections.Generic.IReadOnlyList<string!>! Actions) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.EngineOwned.get -> Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.EngineOwned.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Equals(Aw.Sindri.Core.Workflow.Views.InstanceSummary? other) -> bool
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Inputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>!
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Inputs.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Instance.get -> string!
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Instance.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.InstanceSummary(string! Address, string! Instance, string? Item, Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, string! State, Aw.Sindri.Core.Workflow.Views.StateChip! Chip, System.DateTimeOffset Since, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, string! Now, Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, System.Collections.Generic.IReadOnlyList<string!>! Actions) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Item.get -> string?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Item.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Now.get -> string!
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Now.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Recipe.get -> Aw.Sindri.Core.Workflow.Views.InstanceRecipe!
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Recipe.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Since.get -> System.DateTimeOffset
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Since.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.State.get -> string!
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.State.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.States.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>!
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.States.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Subject.get -> Aw.Sindri.Core.Workflow.Views.SubjectRef!
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Subject.init -> void
+Aw.Sindri.Core.Workflow.Views.ListCounts
+Aw.Sindri.Core.Workflow.Views.ListCounts.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.ListCounts!
+Aw.Sindri.Core.Workflow.Views.ListCounts.Deconstruct(out int Open, out int NeedsYou, out int WithYou, out int Running, out int Done) -> void
+Aw.Sindri.Core.Workflow.Views.ListCounts.Done.get -> int
+Aw.Sindri.Core.Workflow.Views.ListCounts.Done.init -> void
+Aw.Sindri.Core.Workflow.Views.ListCounts.Equals(Aw.Sindri.Core.Workflow.Views.ListCounts? other) -> bool
+Aw.Sindri.Core.Workflow.Views.ListCounts.ListCounts(int Open, int NeedsYou, int WithYou, int Running, int Done) -> void
+Aw.Sindri.Core.Workflow.Views.ListCounts.NeedsYou.get -> int
+Aw.Sindri.Core.Workflow.Views.ListCounts.NeedsYou.init -> void
+Aw.Sindri.Core.Workflow.Views.ListCounts.Open.get -> int
+Aw.Sindri.Core.Workflow.Views.ListCounts.Open.init -> void
+Aw.Sindri.Core.Workflow.Views.ListCounts.Running.get -> int
+Aw.Sindri.Core.Workflow.Views.ListCounts.Running.init -> void
+Aw.Sindri.Core.Workflow.Views.ListCounts.WithYou.get -> int
+Aw.Sindri.Core.Workflow.Views.ListCounts.WithYou.init -> void
+Aw.Sindri.Core.Workflow.Views.LoopPair
+Aw.Sindri.Core.Workflow.Views.LoopPair.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.LoopPair!
+Aw.Sindri.Core.Workflow.Views.LoopPair.Deconstruct(out string! With, out int N, out int Max) -> void
+Aw.Sindri.Core.Workflow.Views.LoopPair.Equals(Aw.Sindri.Core.Workflow.Views.LoopPair? other) -> bool
+Aw.Sindri.Core.Workflow.Views.LoopPair.LoopPair(string! With, int N, int Max) -> void
+Aw.Sindri.Core.Workflow.Views.LoopPair.Max.get -> int
+Aw.Sindri.Core.Workflow.Views.LoopPair.Max.init -> void
+Aw.Sindri.Core.Workflow.Views.LoopPair.N.get -> int
+Aw.Sindri.Core.Workflow.Views.LoopPair.N.init -> void
+Aw.Sindri.Core.Workflow.Views.LoopPair.With.get -> string!
+Aw.Sindri.Core.Workflow.Views.LoopPair.With.init -> void
+Aw.Sindri.Core.Workflow.Views.ParentRef
+Aw.Sindri.Core.Workflow.Views.ParentRef.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.ParentRef!
+Aw.Sindri.Core.Workflow.Views.ParentRef.Address.get -> string!
+Aw.Sindri.Core.Workflow.Views.ParentRef.Address.init -> void
+Aw.Sindri.Core.Workflow.Views.ParentRef.Deconstruct(out string! Address, out string! Title, out string? Task, out string? Workstream) -> void
+Aw.Sindri.Core.Workflow.Views.ParentRef.Equals(Aw.Sindri.Core.Workflow.Views.ParentRef? other) -> bool
+Aw.Sindri.Core.Workflow.Views.ParentRef.ParentRef(string! Address, string! Title, string? Task, string? Workstream) -> void
+Aw.Sindri.Core.Workflow.Views.ParentRef.Task.get -> string?
+Aw.Sindri.Core.Workflow.Views.ParentRef.Task.init -> void
+Aw.Sindri.Core.Workflow.Views.ParentRef.Title.get -> string!
+Aw.Sindri.Core.Workflow.Views.ParentRef.Title.init -> void
+Aw.Sindri.Core.Workflow.Views.ParentRef.Workstream.get -> string?
+Aw.Sindri.Core.Workflow.Views.ParentRef.Workstream.init -> void
+Aw.Sindri.Core.Workflow.Views.PathOrdering
+Aw.Sindri.Core.Workflow.Views.PathOrdering.Path = 1 -> Aw.Sindri.Core.Workflow.Views.PathOrdering
+Aw.Sindri.Core.Workflow.Views.PathOrdering.TransitionList = 2 -> Aw.Sindri.Core.Workflow.Views.PathOrdering
+Aw.Sindri.Core.Workflow.Views.Progress
+Aw.Sindri.Core.Workflow.Views.Progress.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.Progress!
+Aw.Sindri.Core.Workflow.Views.Progress.Deconstruct(out int Done, out int Total) -> void
+Aw.Sindri.Core.Workflow.Views.Progress.Done.get -> int
+Aw.Sindri.Core.Workflow.Views.Progress.Done.init -> void
+Aw.Sindri.Core.Workflow.Views.Progress.Equals(Aw.Sindri.Core.Workflow.Views.Progress? other) -> bool
+Aw.Sindri.Core.Workflow.Views.Progress.Progress(int Done, int Total) -> void
+Aw.Sindri.Core.Workflow.Views.Progress.Total.get -> int
+Aw.Sindri.Core.Workflow.Views.Progress.Total.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeInputView
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.RecipeInputView!
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Deconstruct(out string! Key, out string? Label, out Aw.Sindri.Core.Workflow.Recipes.InputType Type, out string? Kind, out bool Required) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Equals(Aw.Sindri.Core.Workflow.Views.RecipeInputView? other) -> bool
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Key.get -> string!
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Key.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Kind.get -> string?
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Kind.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Label.get -> string?
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Label.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.RecipeInputView(string! Key, string? Label, Aw.Sindri.Core.Workflow.Recipes.InputType Type, string? Kind, bool Required) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Required.get -> bool
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Required.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Type.get -> Aw.Sindri.Core.Workflow.Recipes.InputType
+Aw.Sindri.Core.Workflow.Views.RecipeInputView.Type.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.RecipeLoopView!
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Deconstruct(out string? Name, out string! From, out string! To) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Equals(Aw.Sindri.Core.Workflow.Views.RecipeLoopView? other) -> bool
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.From.get -> string!
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.From.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Name.get -> string?
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Name.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.RecipeLoopView(string? Name, string! From, string! To) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.To.get -> string!
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.To.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.RecipeOutputView!
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.Deconstruct(out string! Key, out string? Label, out Aw.Sindri.Core.Workflow.Views.FactType Type, out string! From) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.Equals(Aw.Sindri.Core.Workflow.Views.RecipeOutputView? other) -> bool
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.From.get -> string!
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.From.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.Key.get -> string!
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.Key.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.Label.get -> string?
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.Label.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.RecipeOutputView(string! Key, string? Label, Aw.Sindri.Core.Workflow.Views.FactType Type, string! From) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.Type.get -> Aw.Sindri.Core.Workflow.Views.FactType
+Aw.Sindri.Core.Workflow.Views.RecipeOutputView.Type.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeStateView
+Aw.Sindri.Core.Workflow.Views.RecipeStateView.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.RecipeStateView!
+Aw.Sindri.Core.Workflow.Views.RecipeStateView.BranchOf.get -> string?
+Aw.Sindri.Core.Workflow.Views.RecipeStateView.BranchOf.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeStateView.Deconstruct(out string! State, out int Order, out string? BranchOf) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeStateView.Equals(Aw.Sindri.Core.Workflow.Views.RecipeStateView? other) -> bool
+Aw.Sindri.Core.Workflow.Views.RecipeStateView.Order.get -> int
+Aw.Sindri.Core.Workflow.Views.RecipeStateView.Order.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeStateView.RecipeStateView(string! State, int Order, string? BranchOf) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeStateView.State.get -> string!
+Aw.Sindri.Core.Workflow.Views.RecipeStateView.State.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView
+Aw.Sindri.Core.Workflow.Views.RecipeView.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.RecipeView!
+Aw.Sindri.Core.Workflow.Views.RecipeView.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>! Outputs, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>! Loops) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView.Equals(Aw.Sindri.Core.Workflow.Views.RecipeView? other) -> bool
+Aw.Sindri.Core.Workflow.Views.RecipeView.Inputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>!
+Aw.Sindri.Core.Workflow.Views.RecipeView.Inputs.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView.Loops.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>!
+Aw.Sindri.Core.Workflow.Views.RecipeView.Loops.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView.Outputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>!
+Aw.Sindri.Core.Workflow.Views.RecipeView.Outputs.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView.RecipeView(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>! Outputs, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>! Loops) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView.States.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>!
+Aw.Sindri.Core.Workflow.Views.RecipeView.States.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView.Urgency.get -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
+Aw.Sindri.Core.Workflow.Views.RecipeView.Urgency.init -> void
+Aw.Sindri.Core.Workflow.Views.Round
+Aw.Sindri.Core.Workflow.Views.Round.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.Round!
+Aw.Sindri.Core.Workflow.Views.Round.Deconstruct(out int N, out int Max) -> void
+Aw.Sindri.Core.Workflow.Views.Round.Equals(Aw.Sindri.Core.Workflow.Views.Round? other) -> bool
+Aw.Sindri.Core.Workflow.Views.Round.Max.get -> int
+Aw.Sindri.Core.Workflow.Views.Round.Max.init -> void
+Aw.Sindri.Core.Workflow.Views.Round.N.get -> int
+Aw.Sindri.Core.Workflow.Views.Round.N.init -> void
+Aw.Sindri.Core.Workflow.Views.Round.Round(int N, int Max) -> void
+Aw.Sindri.Core.Workflow.Views.StateCell
+Aw.Sindri.Core.Workflow.Views.StateCell.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StateCell!
+Aw.Sindri.Core.Workflow.Views.StateCell.Badge.get -> Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge?
+Aw.Sindri.Core.Workflow.Views.StateCell.Badge.init -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.BranchOf.get -> string?
+Aw.Sindri.Core.Workflow.Views.StateCell.BranchOf.init -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.Child.get -> bool
+Aw.Sindri.Core.Workflow.Views.StateCell.Child.init -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.Children.get -> Aw.Sindri.Core.Workflow.Views.Progress?
+Aw.Sindri.Core.Workflow.Views.StateCell.Children.init -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.Deconstruct(out string! State, out int Order, out string? BranchOf, out Aw.Sindri.Core.Workflow.Views.StateGlyph Glyph, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? Badge, out Aw.Sindri.Core.Workflow.Views.Round? Round, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.LoopPair!>! Loops, out bool Desk, out bool Child, out Aw.Sindri.Core.Workflow.Views.Progress? Children, out string? Outcome, out bool Terminal) -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.Desk.get -> bool
+Aw.Sindri.Core.Workflow.Views.StateCell.Desk.init -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.Equals(Aw.Sindri.Core.Workflow.Views.StateCell? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StateCell.Glyph.get -> Aw.Sindri.Core.Workflow.Views.StateGlyph
+Aw.Sindri.Core.Workflow.Views.StateCell.Glyph.init -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.Loops.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.LoopPair!>!
+Aw.Sindri.Core.Workflow.Views.StateCell.Loops.init -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.Order.get -> int
+Aw.Sindri.Core.Workflow.Views.StateCell.Order.init -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.Outcome.get -> string?
+Aw.Sindri.Core.Workflow.Views.StateCell.Outcome.init -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.Round.get -> Aw.Sindri.Core.Workflow.Views.Round?
+Aw.Sindri.Core.Workflow.Views.StateCell.Round.init -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.State.get -> string!
+Aw.Sindri.Core.Workflow.Views.StateCell.State.init -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.StateCell(string! State, int Order, string? BranchOf, Aw.Sindri.Core.Workflow.Views.StateGlyph Glyph, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? Badge, Aw.Sindri.Core.Workflow.Views.Round? Round, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.LoopPair!>! Loops, bool Desk, bool Child, Aw.Sindri.Core.Workflow.Views.Progress? Children, string? Outcome, bool Terminal) -> void
+Aw.Sindri.Core.Workflow.Views.StateCell.Terminal.get -> bool
+Aw.Sindri.Core.Workflow.Views.StateCell.Terminal.init -> void
+Aw.Sindri.Core.Workflow.Views.StateChip
+Aw.Sindri.Core.Workflow.Views.StateChip.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StateChip!
+Aw.Sindri.Core.Workflow.Views.StateChip.Deconstruct(out string! Word, out Aw.Sindri.Core.Workflow.Views.ChipTone Tone) -> void
+Aw.Sindri.Core.Workflow.Views.StateChip.Equals(Aw.Sindri.Core.Workflow.Views.StateChip? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StateChip.StateChip(string! Word, Aw.Sindri.Core.Workflow.Views.ChipTone Tone) -> void
+Aw.Sindri.Core.Workflow.Views.StateChip.Tone.get -> Aw.Sindri.Core.Workflow.Views.ChipTone
+Aw.Sindri.Core.Workflow.Views.StateChip.Tone.init -> void
+Aw.Sindri.Core.Workflow.Views.StateChip.Word.get -> string!
+Aw.Sindri.Core.Workflow.Views.StateChip.Word.init -> void
+Aw.Sindri.Core.Workflow.Views.StateGlyph
+Aw.Sindri.Core.Workflow.Views.StateGlyph.Active = 2 -> Aw.Sindri.Core.Workflow.Views.StateGlyph
+Aw.Sindri.Core.Workflow.Views.StateGlyph.Done = 1 -> Aw.Sindri.Core.Workflow.Views.StateGlyph
+Aw.Sindri.Core.Workflow.Views.StateGlyph.Pending = 3 -> Aw.Sindri.Core.Workflow.Views.StateGlyph
+Aw.Sindri.Core.Workflow.Views.StatusAnswer
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusAnswer!
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Action.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Action.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.AtTerminal.get -> bool
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.AtTerminal.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Class.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Class.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Cli.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Cli.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Deconstruct(out Aw.Sindri.Core.Workflow.Views.AnswerKind Kind, out string! Action, out string! Class, out string! Cli, out bool AtTerminal) -> void
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Equals(Aw.Sindri.Core.Workflow.Views.StatusAnswer? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Kind.get -> Aw.Sindri.Core.Workflow.Views.AnswerKind
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Kind.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.StatusAnswer(Aw.Sindri.Core.Workflow.Views.AnswerKind Kind, string! Action, string! Class, string! Cli, bool AtTerminal) -> void
+Aw.Sindri.Core.Workflow.Views.StatusBudget
+Aw.Sindri.Core.Workflow.Views.StatusBudget.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusBudget!
+Aw.Sindri.Core.Workflow.Views.StatusBudget.Deconstruct(out string! Scope, out long Used, out long Limit, out Aw.Sindri.Core.Workflow.Views.BudgetFigures! Instance) -> void
+Aw.Sindri.Core.Workflow.Views.StatusBudget.Equals(Aw.Sindri.Core.Workflow.Views.StatusBudget? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusBudget.Instance.get -> Aw.Sindri.Core.Workflow.Views.BudgetFigures!
+Aw.Sindri.Core.Workflow.Views.StatusBudget.Instance.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusBudget.Limit.get -> long
+Aw.Sindri.Core.Workflow.Views.StatusBudget.Limit.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusBudget.Scope.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusBudget.Scope.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusBudget.StatusBudget(string! Scope, long Used, long Limit, Aw.Sindri.Core.Workflow.Views.BudgetFigures! Instance) -> void
+Aw.Sindri.Core.Workflow.Views.StatusBudget.Used.get -> long
+Aw.Sindri.Core.Workflow.Views.StatusBudget.Used.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusChild
+Aw.Sindri.Core.Workflow.Views.StatusChild.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusChild!
+Aw.Sindri.Core.Workflow.Views.StatusChild.Address.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusChild.Address.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusChild.Deconstruct(out string! Address, out string! State, out string? Reason) -> void
+Aw.Sindri.Core.Workflow.Views.StatusChild.Equals(Aw.Sindri.Core.Workflow.Views.StatusChild? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusChild.Reason.get -> string?
+Aw.Sindri.Core.Workflow.Views.StatusChild.Reason.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusChild.State.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusChild.State.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusChild.StatusChild(string! Address, string! State, string? Reason) -> void
+Aw.Sindri.Core.Workflow.Views.StatusCommand
+Aw.Sindri.Core.Workflow.Views.StatusCommand.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusCommand!
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Action.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Action.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Class.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Class.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Cli.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Cli.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Confirm.get -> string?
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Confirm.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Deconstruct(out string! Verb, out string! Action, out string! Class, out string! Cli, out string? Confirm) -> void
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Equals(Aw.Sindri.Core.Workflow.Views.StatusCommand? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusCommand.StatusCommand(string! Verb, string! Action, string! Class, string! Cli, string? Confirm) -> void
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Verb.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusCommand.Verb.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusDrift
+Aw.Sindri.Core.Workflow.Views.StatusDrift.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusDrift!
+Aw.Sindri.Core.Workflow.Views.StatusDrift.Block.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusDrift.Block.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusDrift.Deconstruct(out string! Block, out bool NeedsReapproval) -> void
+Aw.Sindri.Core.Workflow.Views.StatusDrift.Equals(Aw.Sindri.Core.Workflow.Views.StatusDrift? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusDrift.NeedsReapproval.get -> bool
+Aw.Sindri.Core.Workflow.Views.StatusDrift.NeedsReapproval.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusDrift.StatusDrift(string! Block, bool NeedsReapproval) -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields
+Aw.Sindri.Core.Workflow.Views.StatusFields.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusFields!
+Aw.Sindri.Core.Workflow.Views.StatusFields.Answer.get -> Aw.Sindri.Core.Workflow.Views.StatusAnswer?
+Aw.Sindri.Core.Workflow.Views.StatusFields.Answer.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Budget.get -> Aw.Sindri.Core.Workflow.Views.StatusBudget?
+Aw.Sindri.Core.Workflow.Views.StatusFields.Budget.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Child.get -> Aw.Sindri.Core.Workflow.Views.StatusChild?
+Aw.Sindri.Core.Workflow.Views.StatusFields.Child.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Commands.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusCommand!>!
+Aw.Sindri.Core.Workflow.Views.StatusFields.Commands.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Deconstruct(out Aw.Sindri.Core.Workflow.Views.StatusHeader! Header, out string! Next, out Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, out Aw.Sindri.Core.Workflow.Views.StatusChild? Child, out Aw.Sindri.Core.Workflow.Views.StatusDrift? Drift, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusInput!>! Inputs, out Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout, out Aw.Sindri.Core.Workflow.Views.StatusBudget? Budget, out Aw.Sindri.Core.Workflow.Views.StatusPaused? Paused, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusCommand!>! Commands, out string! Text) -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Drift.get -> Aw.Sindri.Core.Workflow.Views.StatusDrift?
+Aw.Sindri.Core.Workflow.Views.StatusFields.Drift.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Equals(Aw.Sindri.Core.Workflow.Views.StatusFields? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusFields.Header.get -> Aw.Sindri.Core.Workflow.Views.StatusHeader!
+Aw.Sindri.Core.Workflow.Views.StatusFields.Header.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Inputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusInput!>!
+Aw.Sindri.Core.Workflow.Views.StatusFields.Inputs.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Next.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusFields.Next.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Paused.get -> Aw.Sindri.Core.Workflow.Views.StatusPaused?
+Aw.Sindri.Core.Workflow.Views.StatusFields.Paused.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.StatusFields(Aw.Sindri.Core.Workflow.Views.StatusHeader! Header, string! Next, Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, Aw.Sindri.Core.Workflow.Views.StatusChild? Child, Aw.Sindri.Core.Workflow.Views.StatusDrift? Drift, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusInput!>! Inputs, Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout, Aw.Sindri.Core.Workflow.Views.StatusBudget? Budget, Aw.Sindri.Core.Workflow.Views.StatusPaused? Paused, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusCommand!>! Commands, string! Text) -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Text.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusFields.Text.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Timeout.get -> Aw.Sindri.Core.Workflow.Views.StatusTimeout?
+Aw.Sindri.Core.Workflow.Views.StatusFields.Timeout.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusHeader
+Aw.Sindri.Core.Workflow.Views.StatusHeader.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusHeader!
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Address.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Address.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusHeader.AgeSeconds.get -> long
+Aw.Sindri.Core.Workflow.Views.StatusHeader.AgeSeconds.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Deconstruct(out string! Address, out string! Recipe, out string! Hash12, out int Version, out string! State, out string? Detail, out System.DateTimeOffset Since, out long AgeSeconds) -> void
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Detail.get -> string?
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Detail.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Equals(Aw.Sindri.Core.Workflow.Views.StatusHeader? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Hash12.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Hash12.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Recipe.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Recipe.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Since.get -> System.DateTimeOffset
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Since.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusHeader.State.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusHeader.State.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusHeader.StatusHeader(string! Address, string! Recipe, string! Hash12, int Version, string! State, string? Detail, System.DateTimeOffset Since, long AgeSeconds) -> void
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Version.get -> int
+Aw.Sindri.Core.Workflow.Views.StatusHeader.Version.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusInput
+Aw.Sindri.Core.Workflow.Views.StatusInput.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusInput!
+Aw.Sindri.Core.Workflow.Views.StatusInput.Deconstruct(out string! Key, out string! Name, out string? Hash) -> void
+Aw.Sindri.Core.Workflow.Views.StatusInput.Equals(Aw.Sindri.Core.Workflow.Views.StatusInput? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusInput.Hash.get -> string?
+Aw.Sindri.Core.Workflow.Views.StatusInput.Hash.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusInput.Key.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusInput.Key.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusInput.Name.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusInput.Name.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusInput.StatusInput(string! Key, string! Name, string? Hash) -> void
+Aw.Sindri.Core.Workflow.Views.StatusPaused
+Aw.Sindri.Core.Workflow.Views.StatusPaused.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusPaused!
+Aw.Sindri.Core.Workflow.Views.StatusPaused.Deconstruct(out long TimeoutLeftSeconds) -> void
+Aw.Sindri.Core.Workflow.Views.StatusPaused.Equals(Aw.Sindri.Core.Workflow.Views.StatusPaused? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusPaused.StatusPaused(long TimeoutLeftSeconds) -> void
+Aw.Sindri.Core.Workflow.Views.StatusPaused.TimeoutLeftSeconds.get -> long
+Aw.Sindri.Core.Workflow.Views.StatusPaused.TimeoutLeftSeconds.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusTimeout
+Aw.Sindri.Core.Workflow.Views.StatusTimeout.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusTimeout!
+Aw.Sindri.Core.Workflow.Views.StatusTimeout.Deconstruct(out Aw.Sindri.Core.Workflow.Views.TimeoutKind Kind, out long InSeconds, out string! On) -> void
+Aw.Sindri.Core.Workflow.Views.StatusTimeout.Equals(Aw.Sindri.Core.Workflow.Views.StatusTimeout? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusTimeout.InSeconds.get -> long
+Aw.Sindri.Core.Workflow.Views.StatusTimeout.InSeconds.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusTimeout.Kind.get -> Aw.Sindri.Core.Workflow.Views.TimeoutKind
+Aw.Sindri.Core.Workflow.Views.StatusTimeout.Kind.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusTimeout.On.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusTimeout.On.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusTimeout.StatusTimeout(Aw.Sindri.Core.Workflow.Views.TimeoutKind Kind, long InSeconds, string! On) -> void
+Aw.Sindri.Core.Workflow.Views.StepDeclaration
+Aw.Sindri.Core.Workflow.Views.StepDeclaration.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StepDeclaration!
+Aw.Sindri.Core.Workflow.Views.StepDeclaration.Declaration.get -> string!
+Aw.Sindri.Core.Workflow.Views.StepDeclaration.Declaration.init -> void
+Aw.Sindri.Core.Workflow.Views.StepDeclaration.Deconstruct(out string! Kind, out string! Ref, out string! Declaration) -> void
+Aw.Sindri.Core.Workflow.Views.StepDeclaration.Equals(Aw.Sindri.Core.Workflow.Views.StepDeclaration? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StepDeclaration.Kind.get -> string!
+Aw.Sindri.Core.Workflow.Views.StepDeclaration.Kind.init -> void
+Aw.Sindri.Core.Workflow.Views.StepDeclaration.Ref.get -> string!
+Aw.Sindri.Core.Workflow.Views.StepDeclaration.Ref.init -> void
+Aw.Sindri.Core.Workflow.Views.StepDeclaration.StepDeclaration(string! Kind, string! Ref, string! Declaration) -> void
+Aw.Sindri.Core.Workflow.Views.SubjectRef
+Aw.Sindri.Core.Workflow.Views.SubjectRef.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.SubjectRef!
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Deconstruct(out string! Kind, out string! Key, out string! Label, out string? Href) -> void
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Equals(Aw.Sindri.Core.Workflow.Views.SubjectRef? other) -> bool
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Href.get -> string?
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Href.init -> void
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Key.get -> string!
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Key.init -> void
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Kind.get -> string!
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Kind.init -> void
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Label.get -> string!
+Aw.Sindri.Core.Workflow.Views.SubjectRef.Label.init -> void
+Aw.Sindri.Core.Workflow.Views.SubjectRef.SubjectRef(string! Kind, string! Key, string! Label, string? Href) -> void
+Aw.Sindri.Core.Workflow.Views.TimeoutKind
+Aw.Sindri.Core.Workflow.Views.TimeoutKind.Escalates = 2 -> Aw.Sindri.Core.Workflow.Views.TimeoutKind
+Aw.Sindri.Core.Workflow.Views.TimeoutKind.Parks = 1 -> Aw.Sindri.Core.Workflow.Views.TimeoutKind
+Aw.Sindri.Core.Workflow.Views.ViewCounts
+Aw.Sindri.Core.Workflow.Views.ViewCounts.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.ViewCounts!
+Aw.Sindri.Core.Workflow.Views.ViewCounts.Context.get -> int?
+Aw.Sindri.Core.Workflow.Views.ViewCounts.Context.init -> void
+Aw.Sindri.Core.Workflow.Views.ViewCounts.Decisions.get -> int
+Aw.Sindri.Core.Workflow.Views.ViewCounts.Decisions.init -> void
+Aw.Sindri.Core.Workflow.Views.ViewCounts.Deconstruct(out int Timeline, out int Decisions, out int Requests, out int? Context) -> void
+Aw.Sindri.Core.Workflow.Views.ViewCounts.Equals(Aw.Sindri.Core.Workflow.Views.ViewCounts? other) -> bool
+Aw.Sindri.Core.Workflow.Views.ViewCounts.Requests.get -> int
+Aw.Sindri.Core.Workflow.Views.ViewCounts.Requests.init -> void
+Aw.Sindri.Core.Workflow.Views.ViewCounts.Timeline.get -> int
+Aw.Sindri.Core.Workflow.Views.ViewCounts.Timeline.init -> void
+Aw.Sindri.Core.Workflow.Views.ViewCounts.ViewCounts(int Timeline, int Decisions, int Requests, int? Context) -> void
+Aw.Sindri.Core.Workflow.Views.WorkflowViewComposer
+Aw.Sindri.Core.Workflow.Views.Workstream
+Aw.Sindri.Core.Workflow.Views.Workstream.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.Workstream!
+Aw.Sindri.Core.Workflow.Views.Workstream.Deconstruct(out string! Stream, out string! Label, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildRow!>! Rows) -> void
+Aw.Sindri.Core.Workflow.Views.Workstream.Equals(Aw.Sindri.Core.Workflow.Views.Workstream? other) -> bool
+Aw.Sindri.Core.Workflow.Views.Workstream.Label.get -> string!
+Aw.Sindri.Core.Workflow.Views.Workstream.Label.init -> void
+Aw.Sindri.Core.Workflow.Views.Workstream.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildRow!>!
+Aw.Sindri.Core.Workflow.Views.Workstream.Rows.init -> void
+Aw.Sindri.Core.Workflow.Views.Workstream.Stream.get -> string!
+Aw.Sindri.Core.Workflow.Views.Workstream.Stream.init -> void
+Aw.Sindri.Core.Workflow.Views.Workstream.Workstream(string! Stream, string! Label, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildRow!>! Rows) -> void
+const Aw.Sindri.Core.Workflow.Views.InstanceList.EmptyText = "No workflows are open." -> string!
+override Aw.Sindri.Core.Workflow.Views.BudgetFigures.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.BudgetFigures.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.BudgetFigures.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.ChildGroup.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.ChildGroup.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.ChildGroup.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.ChildRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.ChildRow.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.ChildRow.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.CurrentState.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.CurrentState.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.CurrentState.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.DeskForm.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.DeskForm.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.DeskForm.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.DeskOutput.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.DeskOutput.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.DeskOutput.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.FactPending.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.FactPending.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.FactPending.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.FactRef.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.FactRef.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.FactRef.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.FactRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.FactRow.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.FactRow.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.FactTypeJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Sindri.Core.Workflow.Views.FactType
+override Aw.Sindri.Core.Workflow.Views.FactTypeJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Sindri.Core.Workflow.Views.FactType value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Sindri.Core.Workflow.Views.GateLine.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.GateLine.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.GateLine.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.InputPresence.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.InputPresence.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.InputPresence.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.InstanceDetail.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.InstanceDetail.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.InstanceDetail.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.InstanceList.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.InstanceList.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.InstanceList.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.InstanceRecipe.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.InstanceRecipe.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.InstanceSummary.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.InstanceSummary.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.InstanceSummary.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.ListCounts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.ListCounts.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.ListCounts.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.LoopPair.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.LoopPair.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.LoopPair.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.ParentRef.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.ParentRef.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.ParentRef.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.Progress.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.Progress.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.Progress.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.RecipeInputView.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.RecipeInputView.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.RecipeInputView.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.RecipeLoopView.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.RecipeLoopView.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.RecipeOutputView.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.RecipeOutputView.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.RecipeOutputView.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.RecipeStateView.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.RecipeStateView.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.RecipeStateView.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.RecipeView.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.RecipeView.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.RecipeView.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.Round.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.Round.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.Round.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StateCell.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StateCell.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StateCell.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StateChip.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StateChip.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StateChip.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StatusAnswer.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusAnswer.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusAnswer.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StatusBudget.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusBudget.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusBudget.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StatusChild.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusChild.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusChild.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StatusCommand.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusCommand.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusCommand.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StatusDrift.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusDrift.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusDrift.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StatusFields.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusFields.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusFields.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StatusHeader.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusHeader.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusHeader.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StatusInput.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusInput.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusInput.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StatusPaused.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusPaused.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusPaused.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StatusTimeout.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusTimeout.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusTimeout.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.StepDeclaration.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StepDeclaration.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StepDeclaration.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.SubjectRef.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.SubjectRef.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.SubjectRef.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.ViewCounts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.ViewCounts.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.ViewCounts.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.Workstream.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.Workstream.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.Workstream.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Views.BudgetFigures.operator !=(Aw.Sindri.Core.Workflow.Views.BudgetFigures? left, Aw.Sindri.Core.Workflow.Views.BudgetFigures? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.BudgetFigures.operator ==(Aw.Sindri.Core.Workflow.Views.BudgetFigures? left, Aw.Sindri.Core.Workflow.Views.BudgetFigures? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.ChildGroup.operator !=(Aw.Sindri.Core.Workflow.Views.ChildGroup? left, Aw.Sindri.Core.Workflow.Views.ChildGroup? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.ChildGroup.operator ==(Aw.Sindri.Core.Workflow.Views.ChildGroup? left, Aw.Sindri.Core.Workflow.Views.ChildGroup? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.ChildRow.operator !=(Aw.Sindri.Core.Workflow.Views.ChildRow? left, Aw.Sindri.Core.Workflow.Views.ChildRow? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.ChildRow.operator ==(Aw.Sindri.Core.Workflow.Views.ChildRow? left, Aw.Sindri.Core.Workflow.Views.ChildRow? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.ConfirmText.Cancel(string! address, int runningSteps, int openChildren) -> string!
+static Aw.Sindri.Core.Workflow.Views.CurrentState.operator !=(Aw.Sindri.Core.Workflow.Views.CurrentState? left, Aw.Sindri.Core.Workflow.Views.CurrentState? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.CurrentState.operator ==(Aw.Sindri.Core.Workflow.Views.CurrentState? left, Aw.Sindri.Core.Workflow.Views.CurrentState? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.DeskForm.operator !=(Aw.Sindri.Core.Workflow.Views.DeskForm? left, Aw.Sindri.Core.Workflow.Views.DeskForm? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.DeskForm.operator ==(Aw.Sindri.Core.Workflow.Views.DeskForm? left, Aw.Sindri.Core.Workflow.Views.DeskForm? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.DeskOutput.operator !=(Aw.Sindri.Core.Workflow.Views.DeskOutput? left, Aw.Sindri.Core.Workflow.Views.DeskOutput? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.DeskOutput.operator ==(Aw.Sindri.Core.Workflow.Views.DeskOutput? left, Aw.Sindri.Core.Workflow.Views.DeskOutput? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.operator !=(Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? left, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge.operator ==(Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? left, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.FactPending.operator !=(Aw.Sindri.Core.Workflow.Views.FactPending? left, Aw.Sindri.Core.Workflow.Views.FactPending? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.FactPending.operator ==(Aw.Sindri.Core.Workflow.Views.FactPending? left, Aw.Sindri.Core.Workflow.Views.FactPending? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.FactRef.operator !=(Aw.Sindri.Core.Workflow.Views.FactRef? left, Aw.Sindri.Core.Workflow.Views.FactRef? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.FactRef.operator ==(Aw.Sindri.Core.Workflow.Views.FactRef? left, Aw.Sindri.Core.Workflow.Views.FactRef? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.FactRow.operator !=(Aw.Sindri.Core.Workflow.Views.FactRow? left, Aw.Sindri.Core.Workflow.Views.FactRow? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.FactRow.operator ==(Aw.Sindri.Core.Workflow.Views.FactRow? left, Aw.Sindri.Core.Workflow.Views.FactRow? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.GateLine.operator !=(Aw.Sindri.Core.Workflow.Views.GateLine? left, Aw.Sindri.Core.Workflow.Views.GateLine? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.GateLine.operator ==(Aw.Sindri.Core.Workflow.Views.GateLine? left, Aw.Sindri.Core.Workflow.Views.GateLine? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.InputPresence.operator !=(Aw.Sindri.Core.Workflow.Views.InputPresence? left, Aw.Sindri.Core.Workflow.Views.InputPresence? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.InputPresence.operator ==(Aw.Sindri.Core.Workflow.Views.InputPresence? left, Aw.Sindri.Core.Workflow.Views.InputPresence? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.InstanceDetail.operator !=(Aw.Sindri.Core.Workflow.Views.InstanceDetail? left, Aw.Sindri.Core.Workflow.Views.InstanceDetail? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.InstanceDetail.operator ==(Aw.Sindri.Core.Workflow.Views.InstanceDetail? left, Aw.Sindri.Core.Workflow.Views.InstanceDetail? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.InstanceList.operator !=(Aw.Sindri.Core.Workflow.Views.InstanceList? left, Aw.Sindri.Core.Workflow.Views.InstanceList? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.InstanceList.operator ==(Aw.Sindri.Core.Workflow.Views.InstanceList? left, Aw.Sindri.Core.Workflow.Views.InstanceList? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.InstanceRecipe.operator !=(Aw.Sindri.Core.Workflow.Views.InstanceRecipe? left, Aw.Sindri.Core.Workflow.Views.InstanceRecipe? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.InstanceRecipe.operator ==(Aw.Sindri.Core.Workflow.Views.InstanceRecipe? left, Aw.Sindri.Core.Workflow.Views.InstanceRecipe? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.InstanceSummary.operator !=(Aw.Sindri.Core.Workflow.Views.InstanceSummary? left, Aw.Sindri.Core.Workflow.Views.InstanceSummary? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.InstanceSummary.operator ==(Aw.Sindri.Core.Workflow.Views.InstanceSummary? left, Aw.Sindri.Core.Workflow.Views.InstanceSummary? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.ListCounts.operator !=(Aw.Sindri.Core.Workflow.Views.ListCounts? left, Aw.Sindri.Core.Workflow.Views.ListCounts? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.ListCounts.operator ==(Aw.Sindri.Core.Workflow.Views.ListCounts? left, Aw.Sindri.Core.Workflow.Views.ListCounts? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.LoopPair.operator !=(Aw.Sindri.Core.Workflow.Views.LoopPair? left, Aw.Sindri.Core.Workflow.Views.LoopPair? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.LoopPair.operator ==(Aw.Sindri.Core.Workflow.Views.LoopPair? left, Aw.Sindri.Core.Workflow.Views.LoopPair? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.ParentRef.operator !=(Aw.Sindri.Core.Workflow.Views.ParentRef? left, Aw.Sindri.Core.Workflow.Views.ParentRef? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.ParentRef.operator ==(Aw.Sindri.Core.Workflow.Views.ParentRef? left, Aw.Sindri.Core.Workflow.Views.ParentRef? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.Progress.operator !=(Aw.Sindri.Core.Workflow.Views.Progress? left, Aw.Sindri.Core.Workflow.Views.Progress? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.Progress.operator ==(Aw.Sindri.Core.Workflow.Views.Progress? left, Aw.Sindri.Core.Workflow.Views.Progress? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.RecipeInputView.operator !=(Aw.Sindri.Core.Workflow.Views.RecipeInputView? left, Aw.Sindri.Core.Workflow.Views.RecipeInputView? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.RecipeInputView.operator ==(Aw.Sindri.Core.Workflow.Views.RecipeInputView? left, Aw.Sindri.Core.Workflow.Views.RecipeInputView? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.RecipeLoopView.operator !=(Aw.Sindri.Core.Workflow.Views.RecipeLoopView? left, Aw.Sindri.Core.Workflow.Views.RecipeLoopView? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.RecipeLoopView.operator ==(Aw.Sindri.Core.Workflow.Views.RecipeLoopView? left, Aw.Sindri.Core.Workflow.Views.RecipeLoopView? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.RecipeOutputView.operator !=(Aw.Sindri.Core.Workflow.Views.RecipeOutputView? left, Aw.Sindri.Core.Workflow.Views.RecipeOutputView? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.RecipeOutputView.operator ==(Aw.Sindri.Core.Workflow.Views.RecipeOutputView? left, Aw.Sindri.Core.Workflow.Views.RecipeOutputView? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.RecipeStateView.operator !=(Aw.Sindri.Core.Workflow.Views.RecipeStateView? left, Aw.Sindri.Core.Workflow.Views.RecipeStateView? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.RecipeStateView.operator ==(Aw.Sindri.Core.Workflow.Views.RecipeStateView? left, Aw.Sindri.Core.Workflow.Views.RecipeStateView? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.RecipeView.operator !=(Aw.Sindri.Core.Workflow.Views.RecipeView? left, Aw.Sindri.Core.Workflow.Views.RecipeView? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.RecipeView.operator ==(Aw.Sindri.Core.Workflow.Views.RecipeView? left, Aw.Sindri.Core.Workflow.Views.RecipeView? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.Round.operator !=(Aw.Sindri.Core.Workflow.Views.Round? left, Aw.Sindri.Core.Workflow.Views.Round? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.Round.operator ==(Aw.Sindri.Core.Workflow.Views.Round? left, Aw.Sindri.Core.Workflow.Views.Round? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StateCell.operator !=(Aw.Sindri.Core.Workflow.Views.StateCell? left, Aw.Sindri.Core.Workflow.Views.StateCell? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StateCell.operator ==(Aw.Sindri.Core.Workflow.Views.StateCell? left, Aw.Sindri.Core.Workflow.Views.StateCell? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StateChip.For(string! state, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? engineOwned, bool deskOpen, bool terminal) -> Aw.Sindri.Core.Workflow.Views.StateChip!
+static Aw.Sindri.Core.Workflow.Views.StateChip.operator !=(Aw.Sindri.Core.Workflow.Views.StateChip? left, Aw.Sindri.Core.Workflow.Views.StateChip? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StateChip.operator ==(Aw.Sindri.Core.Workflow.Views.StateChip? left, Aw.Sindri.Core.Workflow.Views.StateChip? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusAnswer.operator !=(Aw.Sindri.Core.Workflow.Views.StatusAnswer? left, Aw.Sindri.Core.Workflow.Views.StatusAnswer? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusAnswer.operator ==(Aw.Sindri.Core.Workflow.Views.StatusAnswer? left, Aw.Sindri.Core.Workflow.Views.StatusAnswer? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusBudget.operator !=(Aw.Sindri.Core.Workflow.Views.StatusBudget? left, Aw.Sindri.Core.Workflow.Views.StatusBudget? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusBudget.operator ==(Aw.Sindri.Core.Workflow.Views.StatusBudget? left, Aw.Sindri.Core.Workflow.Views.StatusBudget? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusChild.operator !=(Aw.Sindri.Core.Workflow.Views.StatusChild? left, Aw.Sindri.Core.Workflow.Views.StatusChild? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusChild.operator ==(Aw.Sindri.Core.Workflow.Views.StatusChild? left, Aw.Sindri.Core.Workflow.Views.StatusChild? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusCommand.operator !=(Aw.Sindri.Core.Workflow.Views.StatusCommand? left, Aw.Sindri.Core.Workflow.Views.StatusCommand? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusCommand.operator ==(Aw.Sindri.Core.Workflow.Views.StatusCommand? left, Aw.Sindri.Core.Workflow.Views.StatusCommand? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusDrift.operator !=(Aw.Sindri.Core.Workflow.Views.StatusDrift? left, Aw.Sindri.Core.Workflow.Views.StatusDrift? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusDrift.operator ==(Aw.Sindri.Core.Workflow.Views.StatusDrift? left, Aw.Sindri.Core.Workflow.Views.StatusDrift? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusFields.operator !=(Aw.Sindri.Core.Workflow.Views.StatusFields? left, Aw.Sindri.Core.Workflow.Views.StatusFields? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusFields.operator ==(Aw.Sindri.Core.Workflow.Views.StatusFields? left, Aw.Sindri.Core.Workflow.Views.StatusFields? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusHeader.operator !=(Aw.Sindri.Core.Workflow.Views.StatusHeader? left, Aw.Sindri.Core.Workflow.Views.StatusHeader? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusHeader.operator ==(Aw.Sindri.Core.Workflow.Views.StatusHeader? left, Aw.Sindri.Core.Workflow.Views.StatusHeader? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusInput.operator !=(Aw.Sindri.Core.Workflow.Views.StatusInput? left, Aw.Sindri.Core.Workflow.Views.StatusInput? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusInput.operator ==(Aw.Sindri.Core.Workflow.Views.StatusInput? left, Aw.Sindri.Core.Workflow.Views.StatusInput? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusPaused.operator !=(Aw.Sindri.Core.Workflow.Views.StatusPaused? left, Aw.Sindri.Core.Workflow.Views.StatusPaused? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusPaused.operator ==(Aw.Sindri.Core.Workflow.Views.StatusPaused? left, Aw.Sindri.Core.Workflow.Views.StatusPaused? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusTimeout.operator !=(Aw.Sindri.Core.Workflow.Views.StatusTimeout? left, Aw.Sindri.Core.Workflow.Views.StatusTimeout? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusTimeout.operator ==(Aw.Sindri.Core.Workflow.Views.StatusTimeout? left, Aw.Sindri.Core.Workflow.Views.StatusTimeout? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StepDeclaration.operator !=(Aw.Sindri.Core.Workflow.Views.StepDeclaration? left, Aw.Sindri.Core.Workflow.Views.StepDeclaration? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StepDeclaration.operator ==(Aw.Sindri.Core.Workflow.Views.StepDeclaration? left, Aw.Sindri.Core.Workflow.Views.StepDeclaration? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.SubjectRef.operator !=(Aw.Sindri.Core.Workflow.Views.SubjectRef? left, Aw.Sindri.Core.Workflow.Views.SubjectRef? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.SubjectRef.operator ==(Aw.Sindri.Core.Workflow.Views.SubjectRef? left, Aw.Sindri.Core.Workflow.Views.SubjectRef? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.ViewCounts.operator !=(Aw.Sindri.Core.Workflow.Views.ViewCounts? left, Aw.Sindri.Core.Workflow.Views.ViewCounts? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.ViewCounts.operator ==(Aw.Sindri.Core.Workflow.Views.ViewCounts? left, Aw.Sindri.Core.Workflow.Views.ViewCounts? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.WorkflowViewComposer.Children(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildGroup!>!
+static Aw.Sindri.Core.Workflow.Views.WorkflowViewComposer.Facts(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>!
+static Aw.Sindri.Core.Workflow.Views.WorkflowViewComposer.Status(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> Aw.Sindri.Core.Workflow.Views.StatusFields!
+static Aw.Sindri.Core.Workflow.Views.WorkflowViewComposer.Summary(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.DateTimeOffset since) -> Aw.Sindri.Core.Workflow.Views.InstanceSummary!
+static Aw.Sindri.Core.Workflow.Views.WorkflowViewComposer.View(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.DateTimeOffset asOf) -> Aw.Sindri.Core.Workflow.Views.InstanceDetail!
+static Aw.Sindri.Core.Workflow.Views.Workstream.operator !=(Aw.Sindri.Core.Workflow.Views.Workstream? left, Aw.Sindri.Core.Workflow.Views.Workstream? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.Workstream.operator ==(Aw.Sindri.Core.Workflow.Views.Workstream? left, Aw.Sindri.Core.Workflow.Views.Workstream? right) -> bool

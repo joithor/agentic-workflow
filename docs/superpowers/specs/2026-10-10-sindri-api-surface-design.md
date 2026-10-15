@@ -678,7 +678,7 @@ every §6.4 layout both ways. Lines the layout leaves out are `null` or `[]`.
 | `timeout?` | `{kind: parks \| escalates, inSeconds, on}` (`parks in 1d 22h 48m (desk)`) |
 | `budget?` | `{scope: state, used, limit, instance: {used, limit}}` in tokens |
 | `paused?` | `{timeoutLeftSeconds}` on a taken-over instance |
-| `commands[]` | The instance's own verbs first, in `answer, complete, handback, takeover, cancel` order: `{verb, actionId, class, cli}`, each a row of the catalog (§3.3) |
+| `commands[]` | The instance's own verbs first, in `answer, complete, handback, takeover, cancel` order: `{verb, actionId, class, cli, confirm?}`, each a row of the catalog (§3.3). `confirm` is `null` except on `cancel`, where it is `Cancel <address>? <N> running steps stop; <M> children are cancelled.` (owner decision, 2026-10-14; N is the open run's running steps and M the open children) |
 | `text` | The CLI's text form |
 
 **`FactRow` (E-20).** One per input and output the recipe declares, in declaration order (screens §5.2).
