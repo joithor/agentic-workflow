@@ -1,0 +1,209 @@
+{
+  "address": "T-3/step/1",
+  "recipe": {
+    "id": "workflow.step",
+    "version": 1,
+    "hash": "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c"
+  },
+  "state": "parked",
+  "detail": "spec-conflict (drift)",
+  "since": "2026-10-11T11:56:00.0000000Z",
+  "next": "step.produce changed since workflow.step@1b13bd920351 was approved.\nRe-approve it (\u0060sindri recipe approve workflow.step@1b13bd920351\u0060); the approval resumes this instance.",
+  "allowedCommands": [
+    {
+      "actionId": "ApplyCommand:takeover",
+      "cli": "sindri workflow takeover T-3/step/1"
+    },
+    {
+      "actionId": "ApplyCommand:cancel",
+      "cli": "sindri workflow cancel T-3/step/1"
+    }
+  ],
+  "question": {
+    "kind": "park",
+    "reason": "spec-conflict",
+    "question": "step.produce"
+  },
+  "task": null,
+  "run": "1.1",
+  "children": [],
+  "outcome": null,
+  "id": "WFI-95a5c2820bd88ec39379892be8909567",
+  "version": 4,
+  "answer": "none (drift): sindri recipe approve workflow.step@1b13bd920351     (at a terminal; the approval resumes it)",
+  "drift": null,
+  "budget": {
+    "state": 0,
+    "stateCap": 200000,
+    "instance": 0,
+    "instanceCap": 400000
+  },
+  "paused": null,
+  "itemId": "T-3",
+  "urgency": "work",
+  "engineOwned": {
+    "kind": "parked",
+    "reason": "spec-conflict (drift)"
+  },
+  "subject": {
+    "kind": "payload",
+    "key": "fact:spec",
+    "label": "spec.md",
+    "href": null
+  },
+  "inputs": [
+    {
+      "key": "fact:spec",
+      "label": "spec",
+      "kind": "payload",
+      "required": true,
+      "present": true
+    }
+  ],
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "produce",
+      "order": 1,
+      "branchOf": null,
+      "glyph": "active",
+      "badge": {
+        "kind": "parked",
+        "reason": "spec-conflict (drift)"
+      },
+      "round": {
+        "n": 1,
+        "max": 3
+      },
+      "loops": [
+        {
+          "with": "verify",
+          "n": 0,
+          "max": 3
+        },
+        {
+          "with": "checks",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "checks",
+      "order": 2,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "produce",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "verify",
+      "order": 3,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "produce",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "done",
+      "order": 4,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": true
+    }
+  ],
+  "status": {
+    "header": {
+      "address": "T-3/step/1",
+      "recipe": "workflow.step",
+      "hash12": "1b13bd920351",
+      "version": 4,
+      "state": "parked",
+      "detail": "spec-conflict (drift)",
+      "since": "2026-10-11T11:56:00.0000000Z",
+      "ageSeconds": 240
+    },
+    "next": "step.produce changed since workflow.step@1b13bd920351 was approved.\nRe-approve it (\u0060sindri recipe approve workflow.step@1b13bd920351\u0060); the approval resumes this instance.",
+    "answer": null,
+    "child": null,
+    "drift": null,
+    "inputs": [],
+    "timeout": null,
+    "budget": null,
+    "paused": null,
+    "commands": [
+      {
+        "verb": "takeover",
+        "actionId": "ApplyCommand:takeover",
+        "class": "pause",
+        "cli": "sindri workflow takeover T-3/step/1"
+      },
+      {
+        "verb": "cancel",
+        "actionId": "ApplyCommand:cancel",
+        "class": "desk",
+        "cli": "sindri workflow cancel T-3/step/1"
+      },
+      {
+        "verb": "approve",
+        "actionId": "ApproveRecipe",
+        "class": "protected",
+        "cli": "sindri recipe approve workflow.step@1b13bd920351"
+      }
+    ],
+    "text": "T-3/step/1  workflow.step@1b13bd920351  v4  parked: spec-conflict (drift)  since 11:56 (4m)\n  next      step.produce changed since workflow.step@1b13bd920351 was approved.\n            Re-approve it (\u0060sindri recipe approve workflow.step@1b13bd920351\u0060); the approval resumes this instance.\n  answer    none (drift): sindri recipe approve workflow.step@1b13bd920351     (at a terminal; the approval resumes it)\n  commands  takeover, cancel\n"
+  },
+  "facts": [
+    {
+      "key": "fact:spec",
+      "label": "spec",
+      "type": "payload",
+      "direction": "input",
+      "from": null,
+      "status": "pending",
+      "summary": "not produced yet",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": null
+    }
+  ],
+  "childGroups": []
+}

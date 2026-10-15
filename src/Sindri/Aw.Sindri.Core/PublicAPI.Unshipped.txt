@@ -5700,8 +5700,6 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.operator ==(Aw.Sindr
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Allowed(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? task) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand!>!
-static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe, System.DateTimeOffset since, System.DateTimeOffset? timeoutAt) -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
-static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe, System.DateTimeOffset since, System.DateTimeOffset? timeoutAt, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>! children) -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList.Of(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>! views) -> Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList!
@@ -6504,7 +6502,6 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Child.get -> Aw.Sindr
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Child.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Commands.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Commands.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.HeaderParts! Header, out string! Next, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine? Answer, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildPark? Child, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.DriftNote? Drift, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StepInput!>! Inputs, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.TimeoutLine? Timeout, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.BudgetLine? Budget, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.PausedLine? Paused, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow!>! Commands, out string! Text) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Drift.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.DriftNote?
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Drift.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields? other) -> bool
@@ -6512,11 +6509,9 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Header.get -> Aw.Sind
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Header.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Inputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StepInput!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Inputs.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Next.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Next.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Paused.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.PausedLine?
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Paused.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.StatusFields(Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.HeaderParts! Header, string! Next, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine? Answer, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildPark? Child, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.DriftNote? Drift, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StepInput!>! Inputs, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.TimeoutLine? Timeout, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.BudgetLine? Budget, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.PausedLine? Paused, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow!>! Commands, string! Text) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Text.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Text.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Timeout.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.TimeoutLine?
@@ -6774,3 +6769,59 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine.Deconstruct(out Aw.Sind
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.Class.get -> Aw.Sindri.Core.Commands.ActionClass
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.CommandRow(string! Verb, Aw.Sindri.Core.Ids.ActionId ActionId, Aw.Sindri.Core.Commands.ActionClass Class, string! Cli) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow.Deconstruct(out string! Verb, out Aw.Sindri.Core.Ids.ActionId ActionId, out Aw.Sindri.Core.Commands.ActionClass Class, out string! Cli) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance
+Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!
+Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.At.get -> System.DateTimeOffset
+Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.At.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.By.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.By.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.Deconstruct(out string! By, out System.DateTimeOffset At) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.FactProvenance(string! By, System.DateTimeOffset At) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.FactRows
+Aw.Sindri.Core.Workflow.Engine.Runtime.FactTypes
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputSlots
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceHeader
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Now.get -> System.DateTimeOffset
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Now.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Paused.get -> System.TimeSpan?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Paused.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Provenance.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Provenance.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Version.get -> int
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Version.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.HeaderParts! Header, out string? Next, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine? Answer, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildPark? Child, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.DriftNote? Drift, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StepInput!>! Inputs, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.TimeoutLine? Timeout, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.BudgetLine? Budget, out Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.PausedLine? Paused, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow!>! Commands, out string! Text) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.Next.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StatusFields.StatusFields(Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.HeaderParts! Header, string? Next, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.AnswerLine? Answer, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.ChildPark? Child, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.DriftNote? Drift, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StepInput!>! Inputs, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.TimeoutLine? Timeout, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.BudgetLine? Budget, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.PausedLine? Paused, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.CommandRow!>! Commands, string! Text) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.StateCells
+Aw.Sindri.Core.Workflow.Engine.Runtime.StatusLayout
+Aw.Sindri.Core.Workflow.Engine.Runtime.SubjectRefs
+const Aw.Sindri.Core.Workflow.Engine.Runtime.FactTypes.Payload = "payload" -> string!
+override Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance? left, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance? left, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.FactRows.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! interpreted, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? task, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>! provenance) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.FactRow!>!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.FactTypes.Of(string? declared) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InputSlots.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.InputSlot!>!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceHeader.Line(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view, System.DateTimeOffset now) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.StateCells.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! interpreted, Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.EngineBadge? badge) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.StateCell!>!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusLayout.Commands(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusLayout.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view, System.DateTimeOffset now) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusLayout.Verb(string! action) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.StatusText.Digest(string! sha256) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.SubjectRefs.Of(Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe) -> Aw.Sindri.Core.Workflow.Engine.Runtime.Layout.SubjectRef?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Children.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Children.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Deconstruct(out System.DateTimeOffset Now, out int Version, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance, out System.TimeSpan? Paused, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.InstanceViewContext(System.DateTimeOffset Now, int Version = 0, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance = null, System.TimeSpan? Paused = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children = null) -> void
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe, System.DateTimeOffset since, System.DateTimeOffset? timeoutAt, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext! context) -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!

@@ -56,6 +56,16 @@ public static class StatusText
         _ => tokens.ToString(CultureInfo.InvariantCulture),
     };
 
+    /// <summary>A fact's digest as status shortens it: its first four hex digits and '...'.</summary>
+    /// <param name="sha256">The digest, with or without its 'sha256:' prefix.</param>
+    /// <returns>The text.</returns>
+    public static string Digest(string sha256)
+    {
+        ArgumentNullException.ThrowIfNull(sha256);
+        var digits = sha256.StartsWith("sha256:", StringComparison.Ordinal) ? sha256["sha256:".Length..] : sha256;
+        return digits.Length > 4 ? digits[..4] + "..." : digits;
+    }
+
     /// <summary>The first 12 hex digits of a recipe hash, as status and the CLI name a recipe ('id@hash12').</summary>
     /// <param name="hash">The hash, with or without its 'sha256:' prefix.</param>
     /// <returns>The 12 digits.</returns>

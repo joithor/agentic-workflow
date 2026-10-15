@@ -51,6 +51,7 @@ internal sealed partial class RecipeWorkflow
     private string? _reportId;
     private int _runs;
     private int _mirrored;
+    private readonly Dictionary<FactKey, FactProvenance> _provenance = [];
 
     /// <summary>
     /// Interprets the recipe from its initial state to a terminal one (spec §5.1): an active state runs its Step (unit
@@ -97,7 +98,7 @@ internal sealed partial class RecipeWorkflow
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
         var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
         var instance = change.After;
-        Enter(instance);
+        Enter(instance, Desk);
         await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: WorkflowEventDetail.Of(change.Event, trigger: null)), NeedsYou(instance)).ConfigureAwait(true);
         return (instance, _context);
     }
@@ -109,7 +110,7 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt) with { Version = _mirrored, Id = instance.Id }
+            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt, new InstanceViewContext(Now, _mirrored, _provenance)) with { Id = instance.Id }
             : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
             {
                 Id = WorkflowInstanceId.Of(start.WorkflowId()),
@@ -188,8 +189,14 @@ internal sealed partial class RecipeWorkflow
         null => instance.Frame.Run is { Runtime: StepRuntime.Desk },
     };
 
-    private void Enter(WorkflowInstance instance)
+    /// <summary>
+    /// The instance after a change: when it entered its state, the desk deadline an answer ended, and who produced each
+    /// fact the change wrote (<paramref name="actor"/>, at the workflow's clock), which the fact rows show as 'by' and 'at'.
+    /// </summary>
+    private void Enter(WorkflowInstance instance, string actor)
     {
+        Stamp(instance, actor);
+
         if (_instance is null || !string.Equals(_instance.State, instance.State, StringComparison.Ordinal) || _instance.Frame.Entry != instance.Frame.Entry)
         {
             _since = Now;
@@ -201,6 +208,18 @@ internal sealed partial class RecipeWorkflow
         }
 
         _instance = instance;
+    }
+
+    /// <summary>Records <paramref name="actor"/> and now as the producer of every fact <paramref name="instance"/> holds that the previous state did not, or held with another value.</summary>
+    private void Stamp(WorkflowInstance instance, string actor)
+    {
+        foreach (var (key, value) in instance.Facts)
+        {
+            if (_instance is null || !_instance.Facts.TryGetValue(key, out var before) || before != value)
+            {
+                _provenance[key] = new FactProvenance(actor, Now);
+            }
+        }
     }
 
     /// <summary>The workflow's deterministic clock, as an offset in UTC.</summary>

@@ -133,9 +133,15 @@ public sealed class InstanceViewLayoutTests
     }
 
     [Fact]
-    public void A_view_without_layout_data_serializes_empty_lists_and_work_urgency()
+    public void The_view_of_an_instance_that_has_not_started_serializes_empty_lists_work_urgency_and_no_status()
     {
-        using var doc = JsonDocument.Parse(JsonSerializer.Serialize(StatusCases.View("done"), _options));
+        var starting = new InstanceView(
+            InstanceAddress.From("T-9/step/1"), StatusCases.View("done").Recipe, "starting", Detail: null, StatusCases.Now, string.Empty, [],
+            Question: null, Task: null, Run: null, Children: [], Outcome: null)
+        {
+            Id = StatusCases.View("done").Id,
+        };
+        using var doc = JsonDocument.Parse(JsonSerializer.Serialize(starting, _options));
         var root = doc.RootElement;
 
         Assert.Equal("work", Prop(root, "urgency").GetString());

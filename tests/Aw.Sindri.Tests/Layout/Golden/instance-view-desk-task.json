@@ -1,0 +1,247 @@
+{
+  "address": "T-3/step/1",
+  "recipe": {
+    "id": "workflow.step",
+    "version": 1,
+    "hash": "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c"
+  },
+  "state": "produce",
+  "detail": "desk task",
+  "since": "2026-10-11T10:48:00.0000000Z",
+  "next": "Produce the Step output for T-3 (round 1/3), then run:\nsindri workflow complete T-3/step/1 --run 1.1 --outcome done --output fact:output=\u003Cfile\u003E",
+  "allowedCommands": [
+    {
+      "actionId": "CompleteStep",
+      "cli": "sindri workflow complete T-3/step/1 --run 1.1 --outcome \u003Coutcome\u003E"
+    },
+    {
+      "actionId": "ApplyCommand:takeover",
+      "cli": "sindri workflow takeover T-3/step/1"
+    },
+    {
+      "actionId": "ApplyCommand:cancel",
+      "cli": "sindri workflow cancel T-3/step/1"
+    }
+  ],
+  "question": null,
+  "task": {
+    "run": "1.1",
+    "state": "produce",
+    "step": "step.produce",
+    "outcomes": [
+      "done"
+    ],
+    "outputs": [
+      {
+        "fact": "fact:output",
+        "requiredOn": [
+          "done"
+        ]
+      }
+    ],
+    "inputs": {
+      "fact:spec": {
+        "name": "spec.md",
+        "value": {
+          "ref": "blob:688b9329eddb9906e3a69a6f19f534c57619ee19b01ad476763cdd1975b9892a",
+          "sha256": "688b9329eddb9906e3a69a6f19f534c57619ee19b01ad476763cdd1975b9892a",
+          "headSha": null
+        }
+      }
+    },
+    "timeoutAt": "2026-10-13T10:48:00.0000000Z"
+  },
+  "run": "1.1",
+  "children": [],
+  "outcome": null,
+  "id": "WFI-95a5c2820bd88ec39379892be8909567",
+  "version": 4,
+  "answer": null,
+  "drift": null,
+  "budget": {
+    "state": 0,
+    "stateCap": 200000,
+    "instance": 0,
+    "instanceCap": 400000
+  },
+  "paused": null,
+  "itemId": "T-3",
+  "urgency": "work",
+  "engineOwned": null,
+  "subject": {
+    "kind": "payload",
+    "key": "fact:spec",
+    "label": "spec.md",
+    "href": null
+  },
+  "inputs": [
+    {
+      "key": "fact:spec",
+      "label": "spec",
+      "kind": "payload",
+      "required": true,
+      "present": true
+    }
+  ],
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "produce",
+      "order": 1,
+      "branchOf": null,
+      "glyph": "active",
+      "badge": null,
+      "round": {
+        "n": 1,
+        "max": 3
+      },
+      "loops": [
+        {
+          "with": "verify",
+          "n": 0,
+          "max": 3
+        },
+        {
+          "with": "checks",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "checks",
+      "order": 2,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "produce",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "verify",
+      "order": 3,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "produce",
+          "n": 0,
+          "max": 3
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "done",
+      "order": 4,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": true
+    }
+  ],
+  "status": {
+    "header": {
+      "address": "T-3/step/1",
+      "recipe": "workflow.step",
+      "hash12": "1b13bd920351",
+      "version": 4,
+      "state": "produce",
+      "detail": "desk task",
+      "since": "2026-10-11T10:48:00.0000000Z",
+      "ageSeconds": 4320
+    },
+    "next": "Produce the Step output for T-3 (round 1/3), then run:\nsindri workflow complete T-3/step/1 --run 1.1 --outcome done --output fact:output=\u003Cfile\u003E",
+    "answer": null,
+    "child": null,
+    "drift": null,
+    "inputs": [
+      {
+        "key": "fact:spec",
+        "name": "spec.md",
+        "hash": "sha256:688b9329eddb9906e3a69a6f19f534c57619ee19b01ad476763cdd1975b9892a"
+      }
+    ],
+    "timeout": {
+      "kind": "parks",
+      "inSeconds": 168480,
+      "on": "produce"
+    },
+    "budget": {
+      "scope": "state",
+      "used": 0,
+      "limit": 200000,
+      "instance": {
+        "used": 0,
+        "limit": 400000
+      }
+    },
+    "paused": null,
+    "commands": [
+      {
+        "verb": "complete",
+        "actionId": "CompleteStep",
+        "class": "desk",
+        "cli": "sindri workflow complete T-3/step/1 --run 1.1 --outcome \u003Coutcome\u003E"
+      },
+      {
+        "verb": "takeover",
+        "actionId": "ApplyCommand:takeover",
+        "class": "pause",
+        "cli": "sindri workflow takeover T-3/step/1"
+      },
+      {
+        "verb": "cancel",
+        "actionId": "ApplyCommand:cancel",
+        "class": "desk",
+        "cli": "sindri workflow cancel T-3/step/1"
+      }
+    ],
+    "text": "T-3/step/1  workflow.step@1b13bd920351  v4  produce: desk task  since 10:48 (1h 12m)\n  next      Produce the Step output for T-3 (round 1/3), then run:\n            sindri workflow complete T-3/step/1 --run 1.1 --outcome done --output fact:output=\u003Cfile\u003E\n  inputs    fact:spec  spec.md  sha256:688b...\n  timeout   parks in 1d 22h 48m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
+  },
+  "facts": [
+    {
+      "key": "fact:spec",
+      "label": "spec",
+      "type": "payload",
+      "direction": "input",
+      "from": null,
+      "status": "pending",
+      "summary": "not produced yet",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": null
+    }
+  ],
+  "childGroups": []
+}

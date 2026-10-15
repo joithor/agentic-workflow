@@ -8,7 +8,7 @@ namespace Aw.Sindri.Tests.GetInstance;
 
 /// <summary>
 /// One instance per §6.4 layout and per §3.8 row P4 can reach, over the shipped workflow.step, as 'GetInstance' builds
-/// its view (<see cref="InstanceViews.Of(WorkflowInstance, InterpretedRecipe, DateTimeOffset, DateTimeOffset?, IReadOnlyList{ChildView})"/>).
+/// its view (<see cref="InstanceViews.Of(WorkflowInstance, InterpretedRecipe, DateTimeOffset, DateTimeOffset?, InstanceViewContext)"/>).
 /// </summary>
 internal static class StatusCases
 {
@@ -34,7 +34,7 @@ internal static class StatusCases
         "parked-no-progress-child" => Of(MirroringChild(), Ago(12), children: [new ChildView(InstanceAddress.From("T-3/step/1/step.4"), "parked: no-progress")]),
         "parked-budget" => Of(Park(ParkReason.Budget, ParkKind.Step, "produce used 200k of 200k tokens") with { Spent = Spent(200_000) }, Ago(3)),
         "escalated-gate" => Of(Escalated(), Ago(120)),
-        "taken-over" => Of(TakenOver(), Ago(5)) with { Paused = TimeSpan.FromSeconds(40) },
+        "taken-over" => Of(TakenOver(), Ago(5), paused: TimeSpan.FromSeconds(40)),
         "done" => Of(Ended("done", "resolved"), Ago(1)),
         "parked-rounds" => Of(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds"), Ago(30)),
         "parked-needs-answer-step" => Of(Park(ParkReason.NeedsAnswer, ParkKind.Step, "step.produce failed: the spec is ambiguous"), Ago(8)),
@@ -48,8 +48,8 @@ internal static class StatusCases
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "no such status case"),
     };
 
-    private static InstanceView Of(WorkflowInstance instance, DateTimeOffset since, DateTimeOffset? timeoutAt = null, IReadOnlyList<ChildView>? children = null) =>
-        InstanceViews.Of(instance, Recipe, since, timeoutAt, children ?? []) with { Version = 4 };
+    private static InstanceView Of(WorkflowInstance instance, DateTimeOffset since, DateTimeOffset? timeoutAt = null, IReadOnlyList<ChildView>? children = null, TimeSpan? paused = null) =>
+        InstanceViews.Of(instance, Recipe, since, timeoutAt, new InstanceViewContext(Now, Version: 4, Paused: paused, Children: children));
 
     private static DateTimeOffset Ago(int minutes) => Now - TimeSpan.FromMinutes(minutes);
 

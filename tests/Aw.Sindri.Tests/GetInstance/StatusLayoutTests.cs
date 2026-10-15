@@ -1,5 +1,5 @@
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Host.Commands;
 
 namespace Aw.Sindri.Tests.GetInstance;
 

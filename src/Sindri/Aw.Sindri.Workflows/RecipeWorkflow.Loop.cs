@@ -71,7 +71,7 @@ internal sealed partial class RecipeWorkflow
         var after = After(instance, decision);
         if (OwnChange(instance, decision) is { } change)
         {
-            Enter(after);
+            Enter(after, submission.Trigger.Actor);
             await Mirror(Record(instance, change, submission.Trigger), NeedsYou(after)).ConfigureAwait(true);
         }
 

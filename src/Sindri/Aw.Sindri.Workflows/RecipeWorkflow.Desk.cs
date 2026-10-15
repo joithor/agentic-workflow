@@ -102,7 +102,7 @@ internal sealed partial class RecipeWorkflow
                 _timeoutAt = null;   // a new run arms its own deadline in RunStep
             }
 
-            Enter(instance);
+            Enter(instance, decision is null ? Timers : trigger.Actor);
             await Mirror(DeskRow(before, instance, trigger, open, decision), NeedsYou(instance)).ConfigureAwait(true);
         }
 

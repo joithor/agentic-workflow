@@ -1,4 +1,7 @@
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
+using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
@@ -10,41 +13,29 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// </summary>
 public static class InstanceViews
 {
-    /// <summary>The view of <paramref name="instance"/>, with no children (P7 adds them).</summary>
+    /// <summary>The view of <paramref name="instance"/>, with every layout member filled: item, urgency, engine badge, subject, inputs, state cells, fact rows and the status record.</summary>
     /// <param name="instance">The interpreter's state.</param>
     /// <param name="recipe">The recipe it runs, its blocks' descriptors and the input facts.</param>
     /// <param name="since">When it entered its state.</param>
     /// <param name="timeoutAt">When the state's timeout fires, if it has one armed.</param>
-    /// <returns>The view.</returns>
-    public static InstanceView Of(
-        WorkflowInstance instance,
-        InterpretedRecipe recipe,
-        DateTimeOffset since,
-        DateTimeOffset? timeoutAt) => Of(instance, recipe, since, timeoutAt, []);
-
-    /// <summary>The view of <paramref name="instance"/> and its live children (a park or escalation mirroring a child names the first).</summary>
-    /// <param name="instance">The interpreter's state.</param>
-    /// <param name="recipe">The recipe it runs, its blocks' descriptors and the input facts.</param>
-    /// <param name="since">When it entered its state.</param>
-    /// <param name="timeoutAt">When the state's timeout fires, if it has one armed.</param>
-    /// <param name="children">The live children.</param>
+    /// <param name="context">The time it is as of, the version, the live children and the facts' provenance.</param>
     /// <returns>The view.</returns>
     public static InstanceView Of(
         WorkflowInstance instance,
         InterpretedRecipe recipe,
         DateTimeOffset since,
         DateTimeOffset? timeoutAt,
-        IReadOnlyList<ChildView> children)
+        InstanceViewContext context)
     {
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(recipe);
-        ArgumentNullException.ThrowIfNull(children);
+        ArgumentNullException.ThrowIfNull(context);
+        var children = context.Children ?? [];
         var task = instance is { Ended: false, Suspension: null, Frame.Run: { Runtime: StepRuntime.Desk } open }
             ? Task(instance.Frame.State, open.Token, recipe, timeoutAt)
             : null;
-        var question = instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question) : null;
         var words = new InstanceWords(instance, recipe, since, children.Count > 0 ? children[0] : null);
-        return new InstanceView(
+        var view = new InstanceView(
             instance.Address,
             recipe.Version,
             instance.State,
@@ -52,17 +43,42 @@ public static class InstanceViews
             since,
             words.Next(task),
             Allowed(instance, task),
-            question,
+            instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question) : null,
             task,
             instance.Frame.Run?.Token,
             children,
             instance.Outcome)
         {
             Id = WorkflowInstanceId.Of(instance.Address),
+            Version = context.Version,
             Answer = words.Answer(),
             Drift = words.Drift(),
             Budget = Budget(instance, recipe),
+            Paused = context.Paused,
         };
+        return WithLayout(view, new Layout(instance, recipe, task, words), context);
+    }
+
+    /// <summary>The state the layout members are built from.</summary>
+    private sealed record Layout(WorkflowInstance Instance, InterpretedRecipe Recipe, DeskTask? Task, InstanceWords Words);
+
+    /// <summary>The layout members (UI screens E-20, E-23), each from the interpreted recipe, the instance and its facts; the status record last, since it renders the rest.</summary>
+    private static InstanceView WithLayout(InstanceView view, Layout from, InstanceViewContext context)
+    {
+        var badge = from.Words.EngineBadge();
+        var complete = view with
+        {
+            ItemId = from.Instance.Item,
+            Urgency = RecipeUrgencies.UrgencyOf(from.Recipe),
+            EngineOwned = badge,
+            Subject = SubjectRefs.Of(from.Recipe),
+            Inputs = InputSlots.Of(from.Instance, from.Recipe),
+            OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? OrderedBy.TransitionList : OrderedBy.Path,
+            States = StateCells.Of(from.Instance, from.Recipe, badge),
+            Facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>()),
+            ChildGroups = [],
+        };
+        return complete with { Status = StatusRecords.Of(complete, from.Words, context.Now) };
     }
 
     /// <summary>
