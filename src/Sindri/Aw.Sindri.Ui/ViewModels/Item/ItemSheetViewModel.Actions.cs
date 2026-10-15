@@ -122,7 +122,15 @@ internal sealed partial class ItemSheetViewModel
             // item no longer does (closed elsewhere), the sheet shows the detail in its own line instead, speaks it once, and
             // the control (muted) goes when it settles. An answer for an item the sheet has since left is no concern of the sheet.
             _conflict = (action, answer.Error);
+            var ended = _conflictEnded ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             _ = await Read(cancellationToken).ConfigureAwait(true);
+
+            // A refresh may have taken the re-read over: Close does not return (and so the control does not speak the refusal)
+            // until a read has settled the conflict, so the sheet and the control never both speak it.
+            if (_conflict is not null)
+            {
+                await ended.Task.WaitAsync(cancellationToken).ConfigureAwait(true);
+            }
         }
 
         return answer;
@@ -136,7 +144,7 @@ internal sealed partial class ItemSheetViewModel
             return;
         }
 
-        _conflict = null;
+        EndConflict();
         if (allowed.Contains(action, StringComparer.Ordinal))
         {
             return;

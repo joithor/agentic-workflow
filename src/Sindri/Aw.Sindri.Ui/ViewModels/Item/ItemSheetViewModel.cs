@@ -22,6 +22,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private long _version;
     private int _subject;   // bumped when the sheet moves to another item
     private (string Action, Error Error)? _conflict;
+    private TaskCompletionSource? _conflictEnded;   // completed when the pending conflict is settled, failed or abandoned: Close waits for it
     private string _conflictAction = string.Empty;   // the 409 line shown, if any: the action it refused and the version it was shown at
     private long _conflictVersion;
     private int _pages;
@@ -163,7 +164,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
 
     private void Failed(Error error)
     {
-        _conflict = null;
+        EndConflict();
         if (error.Code == NotFound)
         {
             var first = ProblemCode != NotFound;
@@ -187,6 +188,14 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
         }
     }
 
+    // The pending conflict is over (settled, its re-read failed, or the sheet left the item): whoever waits for it goes on.
+    private void EndConflict()
+    {
+        _conflict = null;
+        _ = _conflictEnded?.TrySetResult();
+        _conflictEnded = null;
+    }
+
     private void Problem(string code, string detail)
     {
         (ProblemCode, ProblemDetail) = (code, detail);
@@ -196,7 +205,8 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private void Clear()
     {
         _controls.Clear();
-        (_conflict, _subject) = (null, _subject + 1);
+        EndConflict();
+        _subject++;
         _generation++;
         (_pages, Next, HasItem, IsNotFound, IsStale) = (0, null, false, false, false);
         (Title, Repo, StateWord, VersionText, Age, Step, CreatedBy, WaitingOn, Instance) =

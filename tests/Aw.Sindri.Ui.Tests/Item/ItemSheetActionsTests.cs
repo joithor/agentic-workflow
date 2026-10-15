@@ -191,10 +191,9 @@ public sealed class ItemSheetActionsTests
             await Until(() => _server.ItemCalls == calls + 1);
             var refresh = sheet.Refresh(_api, Token);
             await Until(() => _server.ItemCalls == calls + 2);
-            await press.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
 
             gate.SetResult();
-            await refresh.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+            await Task.WhenAll(press, refresh).WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
         }
         finally
         {
