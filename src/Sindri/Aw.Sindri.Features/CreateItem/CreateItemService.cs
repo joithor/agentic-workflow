@@ -38,7 +38,7 @@ internal sealed class CreateItemService(IApprovedProfile approvals, HeldLease he
         }
 
         var repo = request.Repo ?? caller.Repo;
-        if (repo is { } named && await Unknown(named, cancellationToken).ConfigureAwait(false) is { } unknown)
+        if (repo is { } named && await Unknown(named, fromHeader: request.Repo is null, cancellationToken).ConfigureAwait(false) is { } unknown)
         {
             return unknown;
         }
@@ -50,8 +50,8 @@ internal sealed class CreateItemService(IApprovedProfile approvals, HeldLease he
         return appended.IsError ? appended.Error : new ItemCreatedResponse(new CommandAccepted(caller.CommandId, appended.Value.Sequence), item);
     }
 
-    /// <summary>The refusal when <paramref name="repo"/> isn't a repo of the approved profile; null when it is.</summary>
-    private async ValueTask<Error?> Unknown(RepoName repo, CancellationToken cancellationToken)
+    /// <summary>The refusal when <paramref name="repo"/> isn't a repo of the approved profile; null when it is. A header repo is the checkout the human ran from, so its message says that.</summary>
+    private async ValueTask<Error?> Unknown(RepoName repo, bool fromHeader, CancellationToken cancellationToken)
     {
         var latest = await approvals.Latest(cancellationToken).ConfigureAwait(false);
         if (latest.IsError)
@@ -60,6 +60,8 @@ internal sealed class CreateItemService(IApprovedProfile approvals, HeldLease he
         }
 
         var known = latest.Value?.Profile.Repos?.Any(r => string.Equals(r.Name, repo.Value, StringComparison.Ordinal)) ?? false;
-        return known ? null : SindriErrors.InvalidInput.With($"'{repo.Value}' isn't a repo of the approved profile (fix: sindri profile approve, or name one of its repos)");
+        return known ? null
+            : fromHeader ? SindriErrors.InvalidInput.With($"this checkout, {repo.Value}, isn't a repo of the approved profile; pass --repo <name> or add it to the profile")
+            : SindriErrors.InvalidInput.With($"'{repo.Value}' isn't a repo of the approved profile (fix: sindri profile approve, or name one of its repos)");
     }
 }

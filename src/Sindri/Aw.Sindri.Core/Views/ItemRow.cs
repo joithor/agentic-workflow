@@ -15,7 +15,7 @@ namespace Aw.Sindri.Core.Views;
 /// <param name="Since">When it entered its current state.</param>
 /// <param name="UpdatedAt">When the row last changed.</param>
 /// <param name="Link">The tracker record it is linked to, or null.</param>
-/// <param name="Alias">The record's human key, or null.</param>
+/// <param name="Alias">The human key of the last record this item was linked under, or null (an item the key moved away from keeps it in its row; the alias view names the owner).</param>
 /// <param name="Body">Its body, or null (shown only by item detail).</param>
 /// <param name="WaitingOn">The pending decision it waits on ('DEC-…', API P4), or null.</param>
 /// <param name="Instance">The workflow instance running it (API P11), or null.</param>
