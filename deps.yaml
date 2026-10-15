@@ -567,6 +567,11 @@ edges:
     kind: project
     status: current
     note: "the host starts Kernel telemetry in Compose (scaffolded by /new-package)"
+  - from: Meta
+    to: Evidence
+    kind: file
+    status: current
+    note: "health lists who holds the box-wide heavy-job lock (locks/heavy-job.lock and its .k siblings, owner file's pid); it only reads them"
 
 exceptions:
   - rule: DEPS-CYCLE-001
