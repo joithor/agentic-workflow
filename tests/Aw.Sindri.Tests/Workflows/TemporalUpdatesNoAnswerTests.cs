@@ -1,6 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Infrastructure.Workflows;
+using Temporalio.Client;
 using Temporalio.Exceptions;
 
 namespace Aw.Sindri.Tests.Workflows;
@@ -34,6 +35,23 @@ public sealed class TemporalUpdatesNoAnswerTests
         Assert.Equal("SND-API-001", error.Code);
         Assert.Contains($"--nonce {_nonce.Value}", error.Message, StringComparison.Ordinal);
         Assert.Contains("connection refused", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task The_health_probe_is_bounded_to_2_s_and_stops_with_the_caller()
+    {
+        using var caller = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        RpcOptions? handed = null;
+
+        _ = await TemporalUpdates.NoAnswer(Target, options =>
+        {
+            handed = options;
+            return Task.FromResult(true);
+        }, _address, _nonce, caller.Token);
+
+        Assert.NotNull(handed);
+        Assert.Equal(TimeSpan.FromSeconds(2), handed.Timeout);
+        Assert.Equal(caller.Token, handed.CancellationToken);
     }
 
     [Fact(Timeout = 30_000)]

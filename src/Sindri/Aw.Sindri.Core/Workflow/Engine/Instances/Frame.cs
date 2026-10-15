@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Core.Workflow.Engine.Instances;
 
 /// <summary>
@@ -10,4 +12,19 @@ namespace Aw.Sindri.Core.Workflow.Engine.Instances;
 /// <param name="Entry">The entry number, from 1.</param>
 /// <param name="Run">The open Step run, in an active state.</param>
 /// <param name="Child">The child this frame's child wait waits on.</param>
-public sealed record Frame(string State, int Entry, OpenRun? Run, WorkflowInstanceId? Child);
+public sealed record Frame(string State, int Entry, OpenRun? Run, WorkflowInstanceId? Child)
+{
+    /// <summary>
+    /// The recipe transition (its index) that entered this frame; null for the initial state. A 'then: retry' re-emits
+    /// its effects under the same identities (spec §3.4, §5.7).
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? EnteredBy { get; init; }
+
+    /// <summary>
+    /// Whether this entry used its one 'then: retry' (spec §3.4, §5.5): the interpreter then runs the retry timer, and
+    /// any later expiry in the entry parks with 'timeout'.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Retried { get; init; }
+}

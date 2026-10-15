@@ -18,6 +18,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Tenant">The instance's tenant; none records the process's.</param>
 /// <param name="Ring">The instance's ring; none records the process's.</param>
 /// <param name="Detail">The rest of the event the decision recorded (spec §5.6); a row mirrored without a decision (a held event's expiry, the desk deadline's park) carries the trigger and the suspension only.</param>
+/// <param name="Causation">What caused it beyond the trigger: the launch ('LCH-…') an open-request or a start taken over answers (UI E-6, E-19).</param>
 internal sealed record WorkflowEventRecord(
     string WorkflowId,
     string Type,
@@ -30,4 +31,5 @@ internal sealed record WorkflowEventRecord(
     string? Actor = null,
     string? Tenant = null,
     int? Ring = null,
-    WorkflowEventDetail? Detail = null);
+    WorkflowEventDetail? Detail = null,
+    string? Causation = null);

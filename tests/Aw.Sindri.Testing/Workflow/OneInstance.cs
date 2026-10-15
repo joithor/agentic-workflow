@@ -37,6 +37,9 @@ public sealed class OneInstance(InstanceView view) : IInstanceDirectory, IInstan
     public ValueTask<Result<CommandResult>> Send(InstanceAddress address, CommandNonce nonce, Trigger command, CancellationToken cancellationToken) =>
         throw new NotSupportedException("no commands in this fake");
 
+    public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, LaunchId launch, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("no open-requests in this fake");
+
     public ValueTask<Result<Unit>> Signal(InstanceAddress address, WaitSatisfied delivered, CancellationToken cancellationToken) =>
         throw new NotSupportedException("no signals in this fake");
 
