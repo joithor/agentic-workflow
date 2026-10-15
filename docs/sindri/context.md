@@ -65,6 +65,8 @@ HTTP: `GET /sindri/context/query?q=…&budget=…` and `GET /sindri/context/sour
 foreign `Host` is 400, a foreign browser `Origin` 403) and the API's caller rules. `--node`, `--item` and `--symbol`
 (graph anchors) answer `SND-CONTEXT-003` until the product map exists (S-3).
 
+The CLI sends the question and `--node` on the query string, so each must be at most 6000 characters once percent-encoded (Kestrel's request line is 8 KB; about 600 CJK characters reach it). A longer one is refused before sending with `SND-CONTEXT-006` ("shorten it"); the 2000-character text cap still applies on every transport.
+
 A text answer:
 
 ```text
