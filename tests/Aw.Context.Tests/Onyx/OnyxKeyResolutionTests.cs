@@ -89,4 +89,28 @@ public sealed class OnyxKeyResolutionTests
             stuck.Set();
         }
     }
+
+    [Fact]
+    public async Task A_resolution_that_throws_is_002_not_an_exception()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        using var harness = new OnyxSourceHarness(onyx.Url, _ => throw new IOException("fixture: the pointer's file can't be read"));
+
+        var search = await harness.Source.Search(OnyxSourceHarness.Query("pane"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(ContextErrors.SourceNotConfigured.Code, search.Error.Code);
+        Assert.DoesNotContain("fixture: the pointer's file", search.Error.Message, StringComparison.Ordinal);
+        Assert.Empty(onyx.Requests);
+    }
+
+    [Fact]
+    public async Task A_search_whose_deadline_is_already_spent_is_010_not_an_exception()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        using var harness = new OnyxSourceHarness(onyx.Url, name => name == OnyxSourceHarness.Pointer ? onyx.Token : null);
+
+        var search = await harness.Source.Search(OnyxSourceHarness.Query("pane") with { Deadline = TimeSpan.FromMilliseconds(-250) }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(ContextErrors.SourceUnavailable.Code, search.Error.Code);
+    }
 }
