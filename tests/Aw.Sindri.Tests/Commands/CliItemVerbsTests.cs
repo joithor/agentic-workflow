@@ -167,7 +167,7 @@ public sealed class CliItemVerbsTests : IDisposable
         var code = await Verbs(api, Human).Run(["items", "--state", "done", "--repo", "demo"], Token);
 
         Assert.Equal((0, "No done items in demo.\n"), (code, _out.ToString().ReplaceLineEndings("\n")));
-        Assert.Equal("?state=done&repo=demo", Assert.Single(api.Calls).Query);
+        Assert.Equal("?state=done&repo=demo", api.Calls[^1].Query);
     }
 
     [Fact(Timeout = 10_000), Trait("Lane", "unit")]
@@ -212,7 +212,10 @@ public sealed class CliItemVerbsTests : IDisposable
     /// <summary>An API that answers each route with its canned body and records every call.</summary>
     private sealed class RoutedApi : HttpMessageHandler
     {
-        private readonly Dictionary<string, (HttpStatusCode Status, string Body)> _routes = [];
+        private readonly Dictionary<string, (HttpStatusCode Status, string Body)> _routes = new(StringComparer.Ordinal)
+        {
+            ["/sindri/status"] = (HttpStatusCode.OK, Encoding.UTF8.GetString(AwJson.Serialize(_statusAtHead7, SliceHarness.Json))),   // every view read asks for the head first
+        };
         public List<Call> Calls { get; } = [];
 
         public RoutedApi On<T>(string path, HttpStatusCode status, T body)

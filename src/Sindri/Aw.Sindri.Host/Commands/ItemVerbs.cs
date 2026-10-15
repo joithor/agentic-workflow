@@ -53,7 +53,7 @@ internal sealed class ItemVerbs(ControlPlaneClient client, Output output, Func<b
 
     private async Task<int> Queue(ItemVerbArguments.Parsed command, CancellationToken ct)
     {
-        var answer = await client.Get<QueueResponse>("/sindri/queue", ct).ConfigureAwait(false);
+        var answer = await client.GetView<QueueResponse>("/sindri/queue", ct).ConfigureAwait(false);
         if (answer.IsError)
         {
             return await output.Error(answer.Error).ConfigureAwait(false);
@@ -77,7 +77,7 @@ internal sealed class ItemVerbs(ControlPlaneClient client, Output output, Func<b
             }
         }
 
-        var answer = await client.Get<ListItemsResponse>("/sindri/items" + query, ct).ConfigureAwait(false);
+        var answer = await client.GetView<ListItemsResponse>("/sindri/items" + query, ct).ConfigureAwait(false);
         if (answer.IsError)
         {
             return await output.Error(answer.Error).ConfigureAwait(false);
@@ -114,7 +114,7 @@ internal sealed class ItemVerbs(ControlPlaneClient client, Output output, Func<b
         var version = command.Version;
         if (version is null)
         {
-            var read = await client.Get<ItemView>(route, ct).ConfigureAwait(false);   // the API always wants a version: read the one the human would have seen (G12)
+            var read = await client.GetView<ItemView>(route, ct).ConfigureAwait(false);   // the API always wants a version: read the one the human would have seen (G12)
             if (read.IsError)
             {
                 return await output.Error(read.Error).ConfigureAwait(false);

@@ -199,7 +199,7 @@ and a body over 64 KiB. They get 400 or 415, and the host logs them; they aren't
 
 **Freshness: every view response carries `asOf`.**
 - It holds `{ cursor, ledgerHead, projectedAt, rebuilding, stalled }`.
-- `ledgerHead` comes from the projector's in-memory status (`IProjectorStatus`), not from the ledger store.
+- `ledgerHead` comes from the projector's in-memory status (`IProjectorStatus`), not from the ledger store. `views.ledgerHead` on GET /status is the exception: it is the ledger's current head, read fresh; `cursor` is the projector's, so the gap is the lag. Query answers' `asOf` keep the projector's view.
 - `projectedAt` is when the cursor last moved. It is the clock behind the UI's "updated Ns ago".
 - With `asOf`, a client can tell "empty" from "still loading" from "views are broken" (§3.6).
 
