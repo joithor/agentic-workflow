@@ -31,7 +31,7 @@ public sealed class ExportMapTests : IDisposable
         var exported = await _world.Map.ExportMap(path: null, MapWorld.Human, MapWorld.None);
 
         Assert.Equal(FakeExportStore.Folder + "/map-v1-20260801T120000Z.json", exported.Value.Path);
-        Assert.Equal((1, new MapCounts(19, 19, 1, 1, 2)), (exported.Value.Version, exported.Value.Counts));
+        Assert.Equal((1, new MapCounts(20, 21, 1, 1, 2)), (exported.Value.Version, exported.Value.Counts));
         var document = _world.Exports.Documents[exported.Value.Path];
         Assert.Equal((MapDocumentKind.Export, 1, 1), (document.Kind, document.SchemaVersion, document.MapVersion));
         Assert.Equal(_world.Clock.GetUtcNow(), document.ExportedAt);

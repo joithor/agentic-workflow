@@ -21,7 +21,7 @@ internal static class ContextHosts
     {
         var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: split-panes, path: \"{repo.Path}\" }}\n"
             + $"context:\n  docs: {{ globs: [\"docs/**/*.md\"] }}\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n";
-        var host = await GoldenHost.Start(temporary: true, ct, yaml, extra);
+        var host = await GoldenHost.Start(temporary: true, ct, yaml, extra: extra);
         var hash = (await host.LiveHash(ct)).Value;
         var approved = await host.Http.Ask(Post("/sindri/profile/approve", await ApiScenarios.Confirmed(host, hash), Human(host.Token.Value)));
         Assert.Equal(HttpStatusCode.OK, approved.Status);

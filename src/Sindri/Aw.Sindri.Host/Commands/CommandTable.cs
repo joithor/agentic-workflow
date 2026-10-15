@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Context.Core.Facade;
 using Aw.Kernel.Telemetry;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Auth;
@@ -79,6 +80,8 @@ internal static class CommandTable
             ["doctor", "--probe", "--harness", var name, .. var rest] when Json(rest) is not null => await output.Json(await harnesses.Probe(name, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
             ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct, harnesses.DoctorChecks).ConfigureAwait(false),
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
+            ["context", "show" or "neighbors" or "path", ..] => await new ContextGraphVerbs(client, output).Run(args[1..], ct).ConfigureAwait(false),
+            ["context", "eval", .. var rest] => await new ContextEvalVerbs(client, output, services.GetRequiredService<IContextEngine>()).Run(rest, ct).ConfigureAwait(false),
             ["context", "map", .. var rest] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(rest, ct).ConfigureAwait(false),
             ["context", .. var rest] => await new ContextVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),

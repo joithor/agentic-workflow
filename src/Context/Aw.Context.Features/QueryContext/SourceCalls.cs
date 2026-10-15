@@ -27,5 +27,5 @@ internal static class SourceCalls
     }
 
     internal static DegradedSource Degraded(SourceId source, Error error, DateTimeOffset since) =>
-        new(source, ContextErrors.SourceUnavailable.Code, error.Kind == ErrorKind.Unavailable ? error.Message : $"{error.Code}: {error.Message}", since);
+        new(source, ContextErrors.SourceUnavailable.Code, error.Code == ContextErrors.SourceUnavailable.Code ? error.Message : $"{error.Code}: {error.Message}", since);   // the cause, when it isn't 010 itself
 }

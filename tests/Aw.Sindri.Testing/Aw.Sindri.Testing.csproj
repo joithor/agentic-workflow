@@ -9,11 +9,18 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Core/Aw.Sindri.Core.csproj" />
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Features/Aw.Sindri.Features.csproj" />
+    <!-- ToolRunnerContract binds the internal IToolRunner seam (Infrastructure grants this project its internals). -->
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Infrastructure/Aw.Sindri.Infrastructure.csproj" />
     <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ToolRunnerContract's binding hook names the internal IToolRunner, so the bindings in Aw.Sindri.Tests override it. -->
+    <InternalsVisibleTo Include="Aw.Sindri.Tests" />
   </ItemGroup>
 
   <ItemGroup>

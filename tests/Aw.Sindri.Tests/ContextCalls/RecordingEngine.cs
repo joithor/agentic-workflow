@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
@@ -47,6 +49,16 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) => inner.ExportMap(path, scope, cancellationToken);
 
     public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken) => inner.MapStatus(scope, cancellationToken);
+
+    public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
+        inner.EvalProbes(file, ask, cancellationToken);
+
+    public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => inner.ShowNode(key, scope, cancellationToken);
+
+    public ValueTask<Result<NeighborsView>> Neighbors(string key, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.Neighbors(key, depth, scope, cancellationToken);
+
+    public ValueTask<Result<PathView>> Path(string from, string to, ContextScope scope, CancellationToken cancellationToken) => inner.Path(from, to, scope, cancellationToken);
 
     public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) => inner.CheckMap(cancellationToken);
 

@@ -232,9 +232,10 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
   rules leave a regex lookaround (`(?<![0-9])`) alone unless a `(` or `]` follows it. The remote
   definition's label takes backslash escapes and one line break (not a blank line), and labels are matched as
   CommonMark does (whitespace runs collapsed, case ignored), so `[x][p q]` meets `[p\nq]: https://…`.
-- **Not here: the map's text.** S-3a's map export and status (and S-3b's `node`/`affects` answers) don't scrub yet;
-  they must build `Scrubbers` per call through `IScrubberFactory` and pass every text field through `Egress`, as the
-  repo-docs pipeline does (follow-up for S-3b).
+- **The map's text.** Graph answers (show, neighbors, path, and the query's graph, affects, decisions and code
+  sections) clean every label, wording and quote through `MapText` (S-3b). Human map text is stored as written in the
+  owner-only `context.db` and cleaned on every answer; map status carries no map text. The export is the owner's raw
+  round-trip copy (0600, purged after 14 days by `context-purge` when that service is enabled; doctor `context:retention` warns otherwise) and is deliberately not scrubbed (spec §7 "Stored text").
 - **Not here: telemetry.** Telemetry's redactor stays `Redactor.Default`: log lines and spans carry codes, counts and hashes,
   never record or query text (§7), and the telemetry redactor is fixed at start while the profile changes at run time.
 
@@ -267,11 +268,12 @@ Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatt
 
 **Sindri's side** (`Aw.Sindri.Features.ContextCalls`): the queries `GetContextMapRequest` → `MapStatusView`
 (`GET /sindri/context/map`) and `ExportContextMapRequest` → `MapExported` (`GET /sindri/context/map/export?path=`);
-the command `ImportContextMapRequest(Path, Hash?, Confirmed)` → `ImportContextMapResponse`
+the command `ImportContextMapRequest(Path, Hash?, Answer: ChallengeAnswer?)` → `ImportContextMapResponse(Preview, Imported?, Sequence?, Challenge: MapImportChallenge?)`
 (`POST /sindri/context/map/import`; catalog row `ImportContextMap`: `protected`, terminal only,
 `cli-only:typed-confirmation`), which appends `context.map.imported` (`ContextMapImported`: version, repo, hash,
 counts); the scheduled service `ContextPurgeService` (`context-purge`); doctor rows `context:map` and
-`context:retention` in `RunDoctorService`. CLI: `Host/Commands/ContextMapVerbs` and `ContextMapText`. The map JSON
+`context:retention` in the `RunDoctor` slice's `ContextEngineChecks`, which `ProfileFacts.Context` runs (so
+`RunDoctorService` stays within AW1007's dependency limit). CLI: `Host/Commands/ContextMapVerbs` and `ContextMapText`. The map JSON
 types are in `SindriJsonContext`; the reader and the exports folder take its `JsonSerializerOptions`.
 
 `GET /sindri/context/map/export` is the one query that writes: a file under `exports/` (owner-only, purged after 14
@@ -279,9 +281,11 @@ days), never the store or the ledger. It is a query because the API spec lists i
 command or event describes; a later file-writing route should not take it as a precedent without the same reasons.
 Import and preview refuse a session-kind caller in the engine too (SND-CONTEXT-020), whatever surface reaches them.
 
-**Still to adopt:** the engine's shared challenge, which shipped with engine P2 (`POST /sindri/workflow/challenges`;
-`profile approve` uses it). The import still confirms with a human at a terminal, the content hash and `confirmed`;
-moving it onto the challenge is a follow-up, and `ProtectedCommandTests` names it as the one exemption until then.
+**The challenge (S-3b):** the import uses the engine's shared challenge (engine spec §4.2, README X30). The preview
+(`ImportContextMapRequest` without a hash) issues `import map <hash6>` with the subject `map:<content hash>` through
+`IChallenges` and returns it as `MapImportChallenge`; the import's `ChallengeAnswer` must redeem it
+(`SindriErrors.AuthRefused`, SND-AUTH-002, when missing or stale), after a hash that isn't the file's now is refused
+with SND-CONTEXT-034. `ProtectedCommandTests` has no exemption left for it.
 
 ### Store
 
@@ -300,7 +304,7 @@ the file's overrides) in one transaction; a failed batch deletes the building ve
 | `SND-CONTEXT-031` | Invalid (400) | 1 | The map file is invalid (schema version, shape, unknown kind, disallowed edge, unreadable); key paths given; nothing written |
 | `SND-CONTEXT-032` | Invalid (400) | 1 | The map file refers to a node it doesn't define (edge end, alias target); nothing written |
 | `SND-CONTEXT-033` | Invalid (400) | 1 | Export path outside `$AW_SINDRI_HOME/context/exports/` |
-| `SND-CONTEXT-034` | Conflict (409) | 1 | The map file changed since its hash was confirmed; nothing written |
+| `SND-CONTEXT-034` | Conflict (409) | 1 | The map file changed since its hash was confirmed; nothing written (fix: run `context map import <file>` again) |
 
 ### Tests
 
@@ -311,3 +315,166 @@ adapters, the store's file modes and the YAML → store round trip); `ImportMap/
 `tests/Aw.Context.Testing/Map`: `FakeGraphStore`, `FakeExportStore`, `FakeMapFileReader` and their contract bases,
 `SampleMap`, `FixtureMap` (the split-panes product map). `tests/Aw.Sindri.Tests/ContextCalls/ContextMapApiTests`: the
 routes through the real pipeline (preview, protected import and its refusals, event, export, session scope, purge).
+
+## S-3b: the cascade, graph reads, the node and text shapes, the probe runner
+
+### Shape
+
+- **Core `Graph/`.** These are pure:
+  - `Cascade.Affects` (§6.1): own scope, state, dependency and flow hops, the ascend, BFS with a visited set under the depth cap.
+  - `GraphWalk.Neighbors` (depth 0–4) and `GraphWalk.ShortestPath` (at most 8 edges, either way).
+  - `AnchorMatch.Resolve` (key, alias, label; 037 or 003) and `AnchorMatch.FromText` (whole-label matches, most specific first).
+  - `GraphIndex` (internal adjacency in a fixed order).
+  - The answer views `NodeFact`, `EdgeFact`, `NodeView`, `NeighborsView` and `PathView`.
+- **Core `Map/`.**
+  - `IGraphStore.Snapshot(draft)` reads the version, its graph and the overrides in one read session (S-3a's follow-up).
+  - `MapReader`, a domain service shared by every graph read: gate, then snapshot, then overrides applied, then
+    `MapAccess.Visible`. A session's walks run on its scoped graph, so they can't leave it.
+  - `VisibleMap`.
+- **Core `Map/MapText`.** Every label, wording and quote crosses this call's `Scrubbers`: ingest (sanitize, the
+  built-in rules, the extra patterns), then egress, one field at a time. Labels are capped at 200 characters and
+  untrusted ones are fenced (`<untrusted source="map">`). The text is cleaned on the way out with the current rules and
+  nothing cleaned is stored (human map text is stored as written), so the map needs no ruleset fingerprint (S-2W's follow-up, closed).
+- **Core `Eval/`.**
+  - `ProbeSet`, `ProbeCase`, `ProbeExpect` and `ProbeDecision` (probes.json's shape plus an optional `schemaVersion`; unknown keys refused).
+  - `ProbeId`.
+  - `ProbeScoring` (keys in answer order, precision@5, citation correctness, absent nodes).
+  - `ProbeRunner`. `Run` asks through a delegate and compares with the baseline (038: lower means, or a probe with more absent nodes than the same probe in the baseline); `Check` validates the file (035 with a key path).
+  - `ProbeReport` and `ProbeTotals`.
+  - The ports `IProbeFileReader` and `IProbeReportStore`.
+- **Core settings and errors.** `ContextSettings.CascadeDepth` (`context.cascadeDepth`, 0–4, default 2).
+  `ContextErrors.Attention`, the CLI's exit-1 set, moved here from the verbs (S-3a's follow-up).
+- **Features.** `IContextGraph` (`ShowNode`, `Neighbors`, `Path`; `IContextEngine` extends it) over the slices
+  `ShowNode`, `ListNeighbors`, `FindPath` and `EvalProbes` (`IContextEngine.EvalProbes`, `EvalProbesService` over
+  `IProbeFileReader` and `IProbeReportStore`: reads the file, finds the baseline, scores, writes the report). In `QueryContext`, `QueryRules` accepts the node shape (item and symbol
+  stay 003 until their phases), and `GraphAnswer` builds the `graph`, `affects`, `decisions` and `code` sections, all
+  citing the map version as `C1`. An affects item takes the weakest provenance on its path and is confirmed only if
+  every node and edge is. `ResultAssembly` puts the graph part first, then the records.
+- **Infrastructure.** `ProbeFileReader`: the named file or `context/eval/probes.json`; 036, 005, 035; SHA-256.
+  `FileProbeReportStore`: `context/eval/probes/probes-<time>.json`, 0600 in 0700 folders, the baseline by probe file hash: the newest run that was complete and did not regress.
+- **Sindri.**
+  - Query routes `GET /sindri/context/node`, `/neighbors` and `/path`, with their `ContextCalls` services.
+  - CLI `context show | neighbors | path` (`ContextGraphVerbs`) and `context eval probes` (`ContextEvalVerbs`). Probes
+    have no route (a lead decision): the CLI asks each probe through `GET /sindri/context/query`; the engine's
+    `EvalProbes` slice reads the file, scores and writes the report. A run in which a probe's query failed is
+    incomplete, whether some or every probe failed: exit 2, the failed probes listed, nothing saved, never a baseline.
+    `ProbeRun` carries `incomplete` and `failed` beside `{report, path}` in `--json`. The report's `baseline` field was
+    `previous`; old report files still read.
+  - Text renderers in `Text/`. `ContextText` prints an affects item's depth and path.
+- **The map import's challenge.** Described in S-3a above. `ProtectedCommandTests` lost its `ImportContextMap`
+  exemption, #192's context-lane waiver.
+
+### Errors
+
+| Code | Kind (HTTP) | CLI exit | Meaning |
+|---|---|---|---|
+| `SND-CONTEXT-035` | Invalid (400) | 1 | The probe file is invalid (shape, unknown key, duplicate or non-slug id, empty, wordless or over-long question (6000 characters percent-encoded), schema version); key path given; nothing run |
+| `SND-CONTEXT-036` | NotFound (404) | 1 | No probe file: the named one doesn't exist, or none was named and `context/eval/probes.json` doesn't exist |
+| `SND-CONTEXT-037` | Conflict (409) | 1 | A node name matches several nodes; the message lists their keys (fix: ask by key) |
+| `SND-CONTEXT-038` | Conflict (409) | 1 | A probe run scored lower than the baseline of the same file (its newest complete run that did not regress) in precision@5 or citation correctness, or a probe returned more absent nodes than it did there |
+
+039 is reserved. A depth (neighbors, query) or a budget that is out of range (depth 0–4, budget 1 or more) is `SND-CONTEXT-006` on every transport, and one that is not a whole number is 006 in the CLI (exit 1) and HTTP (MCP's binder answers `SND-CONTEXT-022` for an argument that isn't a 32-bit JSON integer, even one that is only too large), parsed once in `QueryRules.ParseDepth` and `ParseBudget`; the CLI also refuses a question or `--node` over `QueryRules.MaxEncodedText` (6000) characters once percent-encoded with 006 before sending, so Kestrel's 8 KB request line never answers 414; the CLI adds its own `--depth` or `--budget` hint; a graph read with no map reuses 030; a key, alias
+or name not in the caller's map reuses 003.
+
+### Tests
+
+- **Unit.**
+  - Cascade (the §6.1 fixtures: orientation reaches the tab manager at depth 1 through pane-layout; sibling exclusion;
+    ascend not re-entering own scope; dependency and flow hops; depth cap; cycles; unowned actions; thing anchors).
+  - GraphWalk, AnchorMatch, ProbeScoring and ProbeRunner (numbers by hand; regression; the file check with key paths;
+    the fixture probes.json).
+  - The slices over the fakes (aliases, names, overrides, scrubbed and fenced labels, 003/020/030/037/006, a session's
+    scope); the query's node and text shapes (the Phase 3 signal, depth 0, `--draft` with no draft, text anchors, no map).
+  - Text renderers.
+- **Integration.** `IGraphStore.Snapshot` on SQLite (the contract); the probe file reader and reports folder on disk;
+  one Sindri host test for the three routes, a node query, a session's scope, a bad depth and a foreign Origin; the
+  import challenge (`ContextMapApiTests`).
+- **Fixture.** `surface:command/switch-tab` (part-of the tab manager, restore-layout `on` it) lets the ascend reach the
+  tab manager; S-3a's golden export follows.
+
+## S-5A: the onyx adapter
+
+### Shape
+
+- `Aw.Context.Core.Onyx`: `OnyxSettings` (only `Create` makes one: loopback url, a secret-pointer token, a pinned
+  release tag; `CheckVersion` compares a reported version), `OnyxRecordKeys` and `OnyxRecordIdentity` (canonical key
+  and alias). `SourceHit.Aliases` carries the aliases a hit adds; `RankFusion` merges every hit's aliases into
+  `FusedItem.Aliases` (source by source, best first, each once); the query cleans each at ingest and `ResultAssembly`
+  egress-scrubs each on its own into `Citation.Aliases` (a blocked or empty one is dropped). JSON `cites.<n>.aliases`;
+  the text form shows the first beside the key.
+- `Aw.Context.Core.Engine`: `SourcesReader` reads `context.sources` (`onyx`, `linear.teams`) for `SettingsReader`;
+  `ContextSettings.Onyx` and `ContextSettings.LinearTeams` hold the result. `ScopeRules.MayRead` keeps intent sources
+  from session callers until `context.repoTeams` exists.
+- `Aw.Context.Infrastructure.Onyx` (all internal): `OnyxSource` (`IContextSource`), `OnyxClient`, `OnyxRequests` and
+  `OnyxRoute` (the allowlist), `OnyxVersionProbe`, the wire records and their own `OnyxWireJsonContext`, and
+  `OnyxSources.Create(OnyxSettings, IReadOnlySet<string> teams)`, the per-call factory registered by
+  `AddContextInfrastructure`.
+- `Aw.Context.Infrastructure.Sources.ContextSourceCatalog` replaces S-1A's repo-docs catalog: repo-docs, then onyx when
+  the profile names it; no repo in scope gives no source (`SourceCatalogContract`).
+- Sindri: `Composition` passes `ContextEnvironment(environment)` to `AddContextInfrastructure`, which resolves a name
+  that is a secret pointer through `ISecretPointers` (`SecretPointerEnvironment`); every other name reads the real
+  environment. Doctor's `context:onyx` is `OnyxDoctor` in the `RunDoctor` slice, the third row of `ContextEngineChecks` (after
+  S-3a's `context:map` and `context:retention`): it resolves the key's pointer first, then asks the facade's `Sources`
+  for the approved profile as a service caller and judges the `onyx` row.
+
+### Routes and allowlist
+
+The adapter can send only these requests to Onyx v4.9.0; `OnyxRequests` refuses anything else before it reaches the
+network (tested), and the client has no proxy and follows no redirects. `Search` drops every document Onyx marks
+`hidden` (`OnyxSearchDoc.Hidden`; the admin search returns them), so Sindri sees what a standard Onyx search would.
+
+| Route | Use | Key |
+|---|---|---|
+| `POST /api/admin/search` | `Search`: document ids, `updated_at`, `semantic_identifier`, links; no model | admin |
+| `GET /api/document/document-size-info` | `Fetch`: how many chunks a document has | admin |
+| `GET /api/document/chunk-info` | `Fetch`: the chunks' text | admin |
+| `GET /api/version` | `Probe` and doctor: `backend_version` against the pin | none |
+| `GET /api/me` | `Probe` and doctor: the key's role and account type | the key |
+
+### Keys and aliases
+
+Onyx's Linear connector uses the issue's UUID as its document id, so those hits key directly on
+`linear:issue/<uuid>` (lower case). The identifier (`ENG-482`) becomes an alias only when the connector-built title
+prefix (`[ENG-482] `) and the `linear.app` link name the same identifier and its team is in
+`context.sources.linear.teams`. Slack threads (`<channel>__<thread_ts>`) key as `slack:<channel>/<thread_ts>`; anything
+else as `onyx:<source_type>/<document id>`. Body text never contributes. Fusion deduplicates on the canonical key, so
+the same issue from Onyx and the native Linear adapter (S-6) is one item.
+
+### Versions
+
+`Versions` is always `SND-CONTEXT-010`: no v4.9.0 route gives `updated_at` by id, so onyx citations are `unchecked`.
+`SupportsAsOf` is false.
+
+### Errors
+
+| Code | Kind (HTTP) | Exit | Meaning |
+|---|---|---|---|
+| `SND-CONTEXT-002` | Invalid (400) | 2 | `context.sources.onyx.token` is missing or isn't a secret pointer (`profile validate`; the text isn't repeated); at run time, a pointer that doesn't resolve (a row and doctor code) |
+| `SND-CONTEXT-050` | Forbidden | — | Onyx refused the key (403), or the key lacks the admin role `POST /api/admin/search` needs: a row, doctor or `degraded` code |
+| `SND-CONTEXT-051` | Unavailable | — | Onyx answered with an unexpected status or shape (not the pinned version's): a `degraded` code |
+| `SND-CONTEXT-052` | NotFound | — | Onyx has no such document: the item is dropped, not degraded |
+| `SND-CONTEXT-053` | Forbidden | — | The admin key belongs to a person's account, not a service account: a `degraded` row and a doctor `warn` |
+| `SND-CONTEXT-055` | Invalid (400) | 2 | The url isn't loopback or the version isn't a pinned release tag (`profile validate`); at run time, Onyx reports another version (a row and doctor `fail`) |
+
+An onyx failure during a query is always the `degraded` entry `SND-CONTEXT-010` with the cause in its message; the
+answer's own error is `011` only when repo-docs is down too. The pointer errors are Sindri's: `SND-SECRET-001`
+(malformed), `002` (doesn't resolve) and `003` (unsafe `file:`), in `docs/csharp/sindri.md`; through the context
+environment a pointer that fails resolves to nothing, which the onyx client reports as `SND-CONTEXT-002` naming only
+the pointer's scheme and pointing to `sindri doctor`. `OnyxClient` resolves the pointer once per client (one source,
+one query) as a task started off the calling thread and awaited under the call's linked deadline and cancellation, so
+a locked keychain or an `op` sign-in degrades onyx with `SND-CONTEXT-010` within the deadline; a resolution that
+failed or timed out lives only as long as that source, and the next query tries again. Doctor's `OnyxDoctor` resolves the pointer through
+`ISecretPointers` before the probe and fails with that `SND-SECRET-00x` code and message. A query never checks the
+version (§8.8 makes it a doctor check; §5.1's errors are Unavailable, NotFound and Fatal): `055` shows in doctor and
+the row, and a reply the pinned shape can't read degrades onyx (`010` with cause `051`).
+
+### Tests
+
+- `tests/Aw.Context.Testing/Fakes/FakeOnyxServer`: a loopback fake that answers like v4.9.0 (auth by key kind, admin
+  search, document size and chunk info, version, `/api/me`).
+- `tests/Aw.Context.Tests/Onyx`: `ContextSourceContract` against `FakeOnyxServer`, the client's allowlist, failures,
+  settings and record keys; `Core/SourcesSettingsTests` (profile keys, pointer forms, session rule);
+  `Infrastructure/ContextSourceCatalogContractTests`.
+- `tests/Aw.Sindri.Tests/ContextCalls/OnyxContextTests` (integration, the real host with `env:` fixture pointers):
+  fused query with `unchecked` onyx citations, the status row, doctor ok / warn / fail, Onyx down degrading only
+  itself; `OnyxProfileTests` (validate and doctor without Onyx); `Secrets/*` for the pointers.
