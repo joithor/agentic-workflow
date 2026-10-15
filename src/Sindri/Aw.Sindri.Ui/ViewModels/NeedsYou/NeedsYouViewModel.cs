@@ -27,12 +27,15 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     ];
 
     private NeedsYouFeed _feed = new([], "");
+    private readonly TimeProvider _clock;
+    private DateTimeOffset _lastAutoMove = DateTimeOffset.MinValue;
     private List<NeedsYouEntry> _visible = [];
     private HashSet<string> _shownIds = new(StringComparer.Ordinal);
     private bool _hasShown;
 
     internal NeedsYouViewModel(Preferences preferences, IMotionPreference motion, TimeProvider clock)
     {
+        _clock = clock;
         Seen = new NeedsYouSeenViewModel(preferences, motion, clock);
         Seen.PropertyChanged += (_, e) =>
         {
@@ -191,6 +194,11 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
         {
             Announcement = Labels.Cleared(shown.ShownId.Length > 0 ? shown.ShownId : shown.Id);
             OnChanged(nameof(Announcement));
+        }
+
+        if (next is not null)
+        {
+            _lastAutoMove = _clock.GetUtcNow();
         }
 
         OnChanged(nameof(SelectedId));

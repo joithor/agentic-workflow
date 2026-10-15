@@ -176,10 +176,12 @@ public sealed class NeedsYouKeysTests
         list.Select("decision:DEC-1");
 
         Assert.True(list.Press(NeedsYouKey.Enter));
-        Assert.Equal(("decision:DEC-1", ["decision:DEC-1"]), (list.SheetRowId, _sheets));
+        Assert.Equal("decision:DEC-1", list.SheetRowId);
+        Assert.Equal(["decision:DEC-1"], _sheets);
 
         Assert.True(list.Press(NeedsYouKey.Escape));
-        Assert.Equal((null, ["decision:DEC-1"]), (list.SheetRowId, _focus));
+        Assert.Null(list.SheetRowId);
+        Assert.Equal(["decision:DEC-1"], _focus);
     }
 
     [Fact]
