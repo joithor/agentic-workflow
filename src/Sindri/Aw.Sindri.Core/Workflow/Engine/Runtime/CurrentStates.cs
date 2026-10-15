@@ -1,6 +1,7 @@
 using System.Globalization;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -35,12 +36,14 @@ internal static class CurrentStates
             .Select(static g => new GateLine(g.Use, "exit", g.Threshold, g.Threshold is { } at ? string.Create(CultureInfo.InvariantCulture, $"{g.Use.Value} passes at {at} or above.") : $"{g.Use.Value} passes.")),
     ];
 
-    /// <summary>The desk form of the open task: its run, the outputs owed and the action that completes it.</summary>
+    /// <summary>The desk form of the open task: its run, the outputs owed, the checks the engine runs on a report and the action that completes it.</summary>
     public static DeskForm? Desk(DeskTask? task, InterpretedRecipe interpreted) => task is null
         ? null
         : new DeskForm(
             task.Run,
-            [.. task.Outputs.Select(o => new DeskOutput(o.Fact.Value, FactTypes.Parse(interpreted.Recipe.Outputs.FirstOrDefault(r => r.Key == o.Fact)?.Type), o.RequiredOn.Count > 0))],
-            [],
+            [.. task.Outputs.Select(o => new DeskOutput(o.Fact.Value, FactTypes.Parse(TypeOf(interpreted, o.Fact)), o.RequiredOn.Count > 0))],
+            [.. task.Outputs.Where(o => DeskChecks.Applies(task, o)).Select(o => DeskChecks.Id(interpreted, o.Fact))],
             ActionId.From("CompleteStep"));
+
+    private static string? TypeOf(InterpretedRecipe interpreted, FactKey fact) => interpreted.Recipe.Outputs.FirstOrDefault(r => r.Key == fact)?.Type;
 }

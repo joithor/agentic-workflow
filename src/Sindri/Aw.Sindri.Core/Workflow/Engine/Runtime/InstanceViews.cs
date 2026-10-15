@@ -14,12 +14,15 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// </summary>
 public static class InstanceViews
 {
-    /// <summary>The view of <paramref name="instance"/>, with every layout member filled: item, urgency, engine badge, subject, inputs, state cells, fact rows and the status record.</summary>
+    /// <summary>The state of a view whose workflow has not built its instance yet (the Query answers before the start finishes): it carries no layout.</summary>
+    public const string StartingState = "starting";
+
+    /// <summary>The view of <paramref name="instance"/>, with every layout member filled: item, urgency, engine badge, subject, inputs, state cells, fact rows and the status record's time-independent parts.</summary>
     /// <param name="instance">The interpreter's state.</param>
     /// <param name="recipe">The recipe it runs, its blocks' descriptors and the input facts.</param>
     /// <param name="since">When it entered its state.</param>
     /// <param name="timeoutAt">When the state's timeout fires, if it has one armed.</param>
-    /// <param name="context">The time it is as of, the version, the live children and the facts' provenance.</param>
+    /// <param name="context">The version, the live children, the facts' provenance and the subject.</param>
     /// <returns>The view.</returns>
     public static InstanceView Of(
         WorkflowInstance instance,
@@ -69,7 +72,7 @@ public static class InstanceViews
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(context);
-        var status = view.Status ?? throw new ArgumentException("the view has no status record; build it with InstanceViews.Of", nameof(view));
+        var status = Status(view, context.AsOf);
         return new InstanceDetail(
             view.Address,
             view.Id,
@@ -80,7 +83,7 @@ public static class InstanceViews
             view.State,
             view.Since,
             view.EngineOwned,
-            view.Subject ?? InstanceSummaries.NoSubject(view),
+            InstanceSummaries.SubjectOf(view, context.Title),
             view.OrderedBy,
             view.States,
             new CurrentState(view.State, view.Step, view.Gates, view.Desk, status),
@@ -89,6 +92,16 @@ public static class InstanceViews
             context.Counts,
             [.. status.Commands.Select(static c => c.ActionId)],
             context.AsOf);
+    }
+
+    /// <summary>The status layout of <paramref name="view"/> as fields, as of <paramref name="now"/>: a pure function of the view and the time, so the ages, the timeout and the text move with the caller's clock.</summary>
+    /// <param name="view">The instance view.</param>
+    /// <param name="now">The time the caller reads at.</param>
+    /// <returns>The status record.</returns>
+    public static StatusFields Status(InstanceView view, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        return StatusRecords.Of(view, now);
     }
 
     /// <summary>The state the layout members are built from.</summary>
@@ -103,7 +116,7 @@ public static class InstanceViews
             ItemId = from.Instance.Item,
             Urgency = RecipeUrgencies.UrgencyOf(from.Recipe),
             EngineOwned = badge,
-            Subject = SubjectRefs.Of(from.Recipe),
+            Subject = context.Subject ?? SubjectRefs.Of(from.Recipe, from.Instance.Item),
             Inputs = InputSlots.Of(from.Instance, from.Recipe),
             OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
             States = StateCells.Of(from.Instance, from.Recipe, badge),
@@ -112,8 +125,13 @@ public static class InstanceViews
             Step = CurrentStates.Step(from.Instance, from.Recipe),
             Gates = CurrentStates.Gates(from.Instance, from.Recipe),
             Desk = CurrentStates.Desk(from.Task, from.Recipe),
+            AnswerLine = from.Words.AnswerLine(),
+            ChildPark = from.Words.ChildPark(),
+            DriftNote = from.Words.DriftNote(),
+            ApproveRow = from.Words.ApproveRow(),
+            Activity = from.Words.Activity(),
         };
-        return complete with { Status = StatusRecords.Of(complete, from.Words, context.Now) };
+        return complete;
     }
 
     /// <summary>

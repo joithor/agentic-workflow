@@ -56,6 +56,15 @@ public static class StatusText
         _ => tokens.ToString(CultureInfo.InvariantCulture),
     };
 
+    /// <summary>A digest as every hash on the wire is written: 'sha256:' and the 64 hex digits.</summary>
+    /// <param name="sha256">The digest, with or without its 'sha256:' prefix.</param>
+    /// <returns>The prefixed digest.</returns>
+    public static string Prefixed(string sha256)
+    {
+        ArgumentNullException.ThrowIfNull(sha256);
+        return sha256.StartsWith("sha256:", StringComparison.Ordinal) ? sha256 : "sha256:" + sha256;
+    }
+
     /// <summary>A fact's digest as status shortens it: its first four hex digits and '...'.</summary>
     /// <param name="sha256">The digest, with or without its 'sha256:' prefix.</param>
     /// <returns>The text.</returns>

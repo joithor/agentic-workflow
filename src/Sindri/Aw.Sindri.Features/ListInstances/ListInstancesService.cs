@@ -18,7 +18,8 @@ namespace Aw.Sindri.Features.ListInstances;
 /// <param name="directory">Resolves an address or a bare item ('address').</param>
 /// <param name="instances">The visibility query.</param>
 /// <param name="runtime">Each instance's 'GetInstance' Query; one that ended between the list and its query (SND-WF-001) is left out.</param>
-internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceReader runtime) : IService<ListInstancesRequest, ListInstancesResponse>
+/// <param name="clock">The time the rows are read at: their ages and timeouts are worked out from it, not from when the workflow last ran.</param>
+internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceReader runtime, TimeProvider clock) : IService<ListInstancesRequest, ListInstancesResponse>
 {
     public async ValueTask<Result<ListInstancesResponse>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {
@@ -113,7 +114,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             ? views
             : [.. views.Where(v => v.Subject is { } s && (string.Equals(s.Key, subject, StringComparison.Ordinal) || s.Label.Contains(subject, StringComparison.OrdinalIgnoreCase)))];
 
-    private static ListInstancesResponse Listed(bool needsMe, List<InstanceView> views)
+    private ListInstancesResponse Listed(bool needsMe, List<InstanceView> views)
     {
         if (needsMe)
         {
@@ -126,20 +127,21 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
     }
 
     /// <summary>The response with a list row per instance, each built by <see cref="InstanceSummaries.Of"/>.</summary>
-    private static ListInstancesResponse Rows(ListInstancesResponse listed) =>
-        listed with { Rows = [.. listed.Instances.Select(static v => InstanceSummaries.Of(v))] };
+    private ListInstancesResponse Rows(ListInstancesResponse listed)
+    {
+        var context = new InstanceSummaryContext(clock.GetUtcNow());
+        return listed with { Rows = [.. listed.Instances.Select(v => InstanceSummaries.Of(v, context))] };
+    }
 
     private static Error? NotTrueOrFalse(string? value, string name, string meaning) =>
         value is not null && Flag(value) is null
             ? SindriErrors.InvalidInput.With($"{name}='{value}' isn't true or false (fix: {name}=true or {name}=false; {meaning})")
             : null;
 
-    private static bool? Flag(string? value) => value switch
-    {
-        "true" => true,
-        "false" => false,
-        _ => null,
-    };
+    private static bool? Flag(string? value) =>
+        string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) ? true
+        : string.Equals(value, "false", StringComparison.OrdinalIgnoreCase) ? false
+        : null;
 
     private static InstanceFilter Filter(ListInstancesRequest request) => new(
         request.Recipe,

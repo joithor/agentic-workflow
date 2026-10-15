@@ -49,7 +49,7 @@ internal static class StatusCases
     };
 
     private static InstanceView Of(WorkflowInstance instance, DateTimeOffset since, DateTimeOffset? timeoutAt = null, IReadOnlyList<ChildView>? children = null) =>
-        InstanceViews.Of(instance, Recipe, since, timeoutAt, new InstanceViewContext(Now, Version: 4, Children: children));
+        InstanceViews.Of(instance, Recipe, since, timeoutAt, new InstanceViewContext(Version: 4, Children: children));
 
     private static DateTimeOffset Ago(int minutes) => Now - TimeSpan.FromMinutes(minutes);
 

@@ -15,7 +15,7 @@ internal static class DevInstances
     public static readonly DateTimeOffset Since = new(2026, 10, 12, 12, 0, 0, TimeSpan.Zero);
     public static readonly DateTimeOffset AsOf = new(2026, 10, 12, 12, 26, 0, TimeSpan.Zero);
 
-    public static (InstanceView View, InstanceDetail Detail) Produce(string file, string state, string item, string title, string requestFact, string requestText)
+    public static (InstanceView View, InstanceDetail Detail) Produce(string file, string state, string item, string title, string requestFact, string requestText, string inputName = "request.txt")
     {
         var path = ShippedRecipes.Recipes.Single(p => p.EndsWith(file, StringComparison.Ordinal));
         var loaded = RecipeComposition.ReadClean(ShippedRecipes.Read(path), path);
@@ -29,9 +29,9 @@ internal static class DevInstances
             Facts = new Dictionary<FactKey, FactValue> { [key] = value },
         };
         var recipe = new InterpretedRecipe(
-            new RecipeVersion(loaded.Recipe.Id, loaded.Recipe.Version, loaded.Hash), loaded.Recipe, EngineFixture.Catalog, new Dictionary<FactKey, InputFact> { [key] = new("request.txt", value) });
+            new RecipeVersion(loaded.Recipe.Id, loaded.Recipe.Version, loaded.Hash), loaded.Recipe, EngineFixture.Catalog, new Dictionary<FactKey, InputFact> { [key] = new(inputName, value) });
         var provenance = new Dictionary<FactKey, FactProvenance> { [key] = new("human:cli", Since) };
-        var view = InstanceViews.Of(instance, recipe, Since, Since.AddDays(2), new InstanceViewContext(AsOf, Version: 1, provenance));
+        var view = InstanceViews.Of(instance, recipe, Since, Since.AddDays(2), new InstanceViewContext(Version: 1, provenance, Subject: SubjectRefs.Of(recipe, ItemKey.From(item), requestText)));
         return (view, InstanceViews.Detail(view, new InstanceDetailContext(title, Parent: null, new ViewCounts(2, 0, 0, Context: null), AsOf)));
     }
 
@@ -39,6 +39,6 @@ internal static class DevInstances
     public static IReadOnlyList<(InstanceView View, InstanceDetail Detail)> All { get; } =
     [
         Produce("desk-round-trip.yaml", "export", "ITM-01JL1", "Desk round trip", "fact:request", "Summarize the week"),
-        Produce("triage-three-state.yaml", "desk", "ITM-01JL2", "Three-state triage", "fact:item", "ITM-01JL2 Crash on launch"),
+        Produce("triage-three-state.yaml", "desk", "ITM-01JL2", "Three-state triage", "fact:item", "ITM-01JL2 Crash on launch", "item.json"),
     ];
 }

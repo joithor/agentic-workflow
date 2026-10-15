@@ -38,18 +38,13 @@ public sealed class InstanceViewLayoutTests
             [
                 new StateCell("build", Order: null, BranchOf: "intake", StateGlyph.Pending, badge, round, [new LoopPair("verify", 1, 3)], Desk: true, Child: true, progress, Outcome: null, Terminal: false),
             ],
-            Status = new StatusFields(
-                new StatusHeader(InstanceAddress.From("T-3/step/1"), RecipeId.From("workflow.step"), "0123456789ab", 4, "produce", "desk task", StatusCases.Now, 4320),
-                "next text",
-                new StatusAnswer(AnswerKind.GrantTokens, ActionId.From("ApplyCommand:answer"), ActionClass.Protected, "sindri workflow answer", AtTerminal: true),
-                park,
-                new StatusDrift(BlockId.From("step.produce"), NeedsReapproval: true),
-                [new StatusInput("spec", "spec.md", Hash: null)],
-                new StatusTimeout(TimeoutKind.Parks, 1000, "desk"),
-                new StatusBudget("state", 1, Limit: null, new BudgetFigures(2, 3)),
-                new StatusPaused(40),
-                [new StatusCommand(StatusVerb.Cancel, ActionId.From("ApplyCommand:cancel"), ActionClass.Desk, "sindri workflow cancel", Confirm: null)],
-                "text form"),
+            AnswerLine = new StatusAnswer(AnswerKind.GrantTokens, ActionId.From("ApplyCommand:answer"), ActionClass.Protected, "sindri workflow answer", AtTerminal: true),
+            ChildPark = park,
+            DriftNote = new StatusDrift(BlockId.From("step.produce"), NeedsReapproval: true),
+            ApproveRow = new StatusCommand(StatusVerb.Approve, ActionId.From("ApproveRecipe"), ActionClass.Protected, "sindri recipe approve workflow.step", Confirm: null),
+            Activity = "import the design output",
+            Budget = new BudgetView(1, StateCap: null, 2, InstanceCap: 3),
+            Paused = TimeSpan.FromSeconds(40),
             Facts =
             [
                 new FactRow("spec", "Spec", FactType.File, FactDirection.Input, From: null, FactStatus.InProgress, "a file", At: null, By: null,
@@ -75,7 +70,7 @@ public sealed class InstanceViewLayoutTests
         using var doc = JsonDocument.Parse(JsonSerializer.Serialize(Full(), _options));
         var root = doc.RootElement;
 
-        foreach (var name in new[] { "itemId", "urgency", "engineOwned", "subject", "inputs", "orderedBy", "states", "status", "facts", "childGroups" })
+        foreach (var name in new[] { "itemId", "urgency", "engineOwned", "subject", "inputs", "orderedBy", "states", "answerLine", "childPark", "driftNote", "approveRow", "activity", "facts", "childGroups" })
         {
             _ = Prop(root, name);
         }
@@ -96,7 +91,8 @@ public sealed class InstanceViewLayoutTests
         HasExactly(Prop(cell, "loops")[0], "with", "n", "max");
         HasExactly(Prop(cell, "children"), "done", "total");
 
-        AssertStatus(Prop(root, "status"));
+        using var status = JsonDocument.Parse(JsonSerializer.Serialize(InstanceViews.Status(Full(), StatusCases.Now), _options));
+        AssertStatus(status.RootElement);
         AssertFactsAndChildren(root);
     }
 
@@ -134,7 +130,7 @@ public sealed class InstanceViewLayoutTests
     }
 
     [Fact]
-    public void The_view_of_an_instance_that_has_not_started_serializes_empty_lists_work_urgency_and_no_status()
+    public void The_view_of_an_instance_that_has_not_started_serializes_empty_lists_work_urgency_and_no_status_parts()
     {
         var starting = new InstanceView(
             InstanceAddress.From("T-9/step/1"), StatusCases.View("done").Recipe, "starting", Detail: null, StatusCases.Now, string.Empty, [],
@@ -147,7 +143,7 @@ public sealed class InstanceViewLayoutTests
 
         Assert.Equal("work", Prop(root, "urgency").GetString());
         Assert.Equal("path", Prop(root, "orderedBy").GetString());
-        Assert.Equal(JsonValueKind.Null, Prop(root, "status").ValueKind);
+        Assert.Equal(JsonValueKind.Null, Prop(root, "answerLine").ValueKind);
         Assert.Equal(0, Prop(root, "states").GetArrayLength());
         Assert.Equal(0, Prop(root, "childGroups").GetArrayLength());
     }
@@ -165,29 +161,30 @@ public sealed class InstanceViewLayoutTests
     }
 
     [Fact]
-    public void The_summary_cuts_now_at_80_and_maps_recipe_and_actions()
+    public void The_summary_cuts_its_own_sentence_at_80_and_maps_recipe_and_actions()
     {
-        var long80 = new string('x', 120);
-        var view = Full() with { Next = long80 };
+        var view = Full() with { Activity = new string('x', 120) };
 
-        var summary = InstanceSummaries.Of(view);
+        var summary = InstanceSummaries.Of(view, new InstanceSummaryContext(StatusCases.Now));
 
-        Assert.Equal(new string('x', 77) + "...", summary.Now);
+        Assert.Equal(("with you: " + new string('x', 67))[..77] + "...", summary.Now);
         Assert.Equal(80, summary.Now.Length);
         Assert.Equal(view.Address, summary.Address);
         Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, RecipeUrgency.Incident), summary.Recipe);
-        Assert.Equal(view.Status!.Commands.Select(c => c.ActionId), summary.Actions);
+        Assert.Equal(InstanceViews.Status(view, StatusCases.Now).Commands.Select(c => c.ActionId), summary.Actions);
         Assert.Equal((ItemKey.From("ITM-1"), view.State, view.Since), (summary.ItemId, summary.State, summary.Since));
         Assert.Same(view.States, summary.States);
         Assert.Equal(view.EngineOwned, summary.EngineOwned);
     }
 
-    [Fact]
-    public void The_summary_keeps_a_short_now_whole()
+    [Theory]
+    [InlineData(70, "with you: ", false)]   // 80 characters: kept whole
+    [InlineData(71, "with you: ", true)]    // 81: cut to 77 and an ellipsis
+    public void The_sentence_is_kept_at_80_characters_and_cut_at_81(int length, string prefix, bool cut)
     {
-        var exactly80 = new string('y', 80);
+        var now = InstanceSummaries.Of(Full() with { Activity = new string('y', length) }, new InstanceSummaryContext(StatusCases.Now)).Now;
 
-        Assert.Equal(exactly80, InstanceSummaries.Of(Full() with { Next = exactly80 }).Now);
-        Assert.Equal("short", InstanceSummaries.Of(Full() with { Next = "short" }).Now);
+        Assert.Equal(cut ? (prefix + new string('y', length))[..77] + "..." : prefix + new string('y', length), now);
+        Assert.Equal(80, now.Length);
     }
 }

@@ -9,6 +9,7 @@ using Aw.Sindri.Host.Endpoints;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.ListInstances;
 
@@ -55,7 +56,7 @@ public sealed class ListInstancesEndpointTests
     [InlineData("?needsMe=1", "needsMe='1' isn't true or false")]
     public async Task A_value_that_is_not_true_or_false_reaches_the_service_so_the_answer_is_its_error(string query, string message)
     {
-        var service = new ListInstancesService(new NoDirectory(), new RecordingInstances([]), new FixedReader([]));
+        var service = new ListInstancesService(new NoDirectory(), new RecordingInstances([]), new FixedReader([]), new FakeTimeProvider());
         var builder = WebApplication.CreateSlimBuilder();
         _ = builder.WebHost.UseTestServer();
         _ = builder.Services.AddSingleton<IService<ListInstancesRequest, ListInstancesResponse>>(service);

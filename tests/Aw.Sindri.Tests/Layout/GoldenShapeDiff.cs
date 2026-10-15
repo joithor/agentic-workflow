@@ -6,7 +6,7 @@ namespace Aw.Sindri.Tests.Layout;
 
 /// <summary>
 /// Compares a produced JSON document with a golden: the same names, the same JSON types and nulls everywhere, and the same values
-/// except under the paths the fixture authored (compared for type only). Array indexes in a path read as '[]' when matching.
+/// except under the paths named as wording (compared for type only; no array length is exempt). Array indexes in a path read as '[]' when matching.
 /// </summary>
 internal sealed partial class GoldenShapeDiff(IReadOnlyList<string> authored)
 {
@@ -57,11 +57,6 @@ internal sealed partial class GoldenShapeDiff(IReadOnlyList<string> authored)
 
     private List<string> Arrays(JsonArray golden, JsonArray produced, string path)
     {
-        if (IsAuthored(path) && golden.Count != produced.Count)
-        {
-            return [];
-        }
-
         if (golden.Count != produced.Count)
         {
             return [string.Create(CultureInfo.InvariantCulture, $"{path}: {golden.Count} items in the golden, {produced.Count} produced")];

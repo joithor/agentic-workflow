@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Tests.GetInstance;
 using RecipeUrgency = Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.ListInstances;
 
@@ -29,7 +30,7 @@ public sealed class ListInstancesServiceTests
     private static async Task<(Result<ListInstancesResponse> Result, RecordingInstances Port)> Run(ListInstancesRequest request, params InstanceView[] views)
     {
         var port = new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
-        var service = new ListInstancesService(new NoDirectory(), port, new FixedReader(views));
+        var service = new ListInstancesService(new NoDirectory(), port, new FixedReader(views), new FakeTimeProvider());
         return (await service.Handle(request, CancellationToken.None), port);
     }
 
@@ -44,7 +45,7 @@ public sealed class ListInstancesServiceTests
 
     [Theory]
     [InlineData("yes")]
-    [InlineData("TRUE")]
+    [InlineData("1")]
     [InlineData("")]
     public async Task A_root_that_is_not_true_or_false_is_invalid_input(string root)
     {
@@ -52,6 +53,18 @@ public sealed class ListInstancesServiceTests
 
         Assert.Equal(SindriErrors.InvalidInput.Code, result.Error.Code);
         Assert.Empty(port.Calls);
+    }
+
+    [Theory]
+    [InlineData("TRUE")]
+    [InlineData("False")]
+    [InlineData("true")]
+    public async Task A_root_is_true_or_false_in_any_case(string root)
+    {
+        var (result, port) = await Run(new ListInstancesRequest(Root: root));
+
+        Assert.True(result.IsSuccess);
+        _ = Assert.Single(port.Calls);
     }
 
     [Fact]
@@ -158,7 +171,7 @@ public sealed class ListInstancesServiceTests
             View("desk-task", "T-4/step/1", RecipeUrgency.Triage));
 
         Assert.Equal(
-            result.Value.Instances.Select(static v => InstanceSummaries.Of(v)).Select(static r => (r.Address, r.State, r.Now, r.Recipe, r.Since)),
+            result.Value.Instances.Select(static v => InstanceSummaries.Of(v, new InstanceSummaryContext(new FakeTimeProvider().GetUtcNow()))).Select(static r => (r.Address, r.State, r.Now, r.Recipe, r.Since)),
             result.Value.Rows.Select(static r => (r.Address, r.State, r.Now, r.Recipe, r.Since)));
         Assert.Equal(["T-4/step/1", "T-3/step/1"], result.Value.Rows.Select(static r => r.Address.Value), StringComparer.Ordinal);
     }

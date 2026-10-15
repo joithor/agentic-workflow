@@ -12,7 +12,7 @@ public sealed partial class WorkflowEngineInvariantsTests
     {
         var produced = DevInstances.All.Select(p =>
             new View(p.Detail.Address.Value, p.Detail.Recipe, p.Detail.State, p.Detail.Since, p.Detail.EngineOwned, p.Detail.Subject, p.Detail.States,
-                InstanceSummaries.Of(p.View).Chip, p.Detail, [p.Detail.Current.Status])).ToList();
+                InstanceSummaries.Of(p.View, new InstanceSummaryContext(DevInstances.AsOf)).Chip, p.Detail, [p.Detail.Current.Status])).ToList();
 
         foreach (var check in new Func<View, RecipeShape, IEnumerable<string>>[] { Children, Timeouts, Declared, Answers, Tokens, DeskTasks, OneCurrent, Subjects })
         {

@@ -10,7 +10,7 @@ namespace Aw.Sindri.Testing.Views;
 /// </summary>
 public static class StatusText
 {
-    private const int WrapAt = 100;
+    private const int WrapAt = 120;
     private const string Label = "  ";
 
     /// <summary>Renders the status the way "sindri workflow status" prints it.</summary>
@@ -54,7 +54,7 @@ public static class StatusText
 
         foreach (var input in status.Inputs)
         {
-            yield return ("inputs", $"{input.Key}  {input.Name}{(input.Hash is null ? string.Empty : $"  sha256:{(input.Hash.Length > 4 ? input.Hash[..4] : input.Hash)}...")}");
+            yield return ("inputs", $"{input.Key}  {input.Name}{(input.Hash is null ? string.Empty : $"  sha256:{Digits(input.Hash)}...")}");
         }
     }
 
@@ -157,6 +157,13 @@ public static class StatusText
     // WF section 6.4: 'since' adds the date once the age is a day or more.
     private static string Clock(DateTimeOffset at, DateTimeOffset now) =>
         at.UtcDateTime.ToString(now - at >= TimeSpan.FromDays(1) ? "MM-dd HH:mm" : "HH:mm", CultureInfo.InvariantCulture);
+
+    /// <summary>The first four hex digits of a 'sha256:'-prefixed (or bare) digest, as the text form shortens it (WF 6.4).</summary>
+    private static string Digits(string hash)
+    {
+        var digits = hash.StartsWith("sha256:", StringComparison.Ordinal) ? hash["sha256:".Length..] : hash;
+        return digits.Length > 4 ? digits[..4] : digits;
+    }
 
     private static string Pinned(StatusHeader header) => $"{header.Recipe.Value}@{header.Hash12}";
 

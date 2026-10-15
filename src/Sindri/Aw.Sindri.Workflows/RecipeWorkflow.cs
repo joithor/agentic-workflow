@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Views;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
@@ -46,6 +47,7 @@ internal sealed partial class RecipeWorkflow
     private DateTimeOffset _since;
     private TimeSpan _deskTimeout;
     private string? _repo;
+    private SubjectRef? _subject;
     private string? _recorded;
     private StepCompleted? _report;
     private string? _reportId;
@@ -95,6 +97,7 @@ internal sealed partial class RecipeWorkflow
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
+        _subject = SubjectRefs.Of(_recipe, start.Item, SubjectRefs.NeedsContent(_recipe) && start.Inputs.TryGetValue(loaded.Recipe.Inputs[0].Key, out var first) ? await SubjectTextOf(first.Value).ConfigureAwait(true) : null);
         var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
         var instance = Enter(change.After, Desk);
         await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: WorkflowEventDetail.Of(change.Event, trigger: null), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
@@ -108,8 +111,8 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt(), new InstanceViewContext(Now, _mirrored, _provenance)) with { Id = instance.Id }
-            : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
+            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt(), new InstanceViewContext(_mirrored, _provenance, Subject: _subject)) with { Id = instance.Id }
+            : new InstanceView(start.WorkflowId(), start.Recipe, InstanceViews.StartingState, Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
             {
                 Id = WorkflowInstanceId.Of(start.WorkflowId()),
             };

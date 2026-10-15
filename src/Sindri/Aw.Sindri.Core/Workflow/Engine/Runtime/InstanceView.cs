@@ -92,11 +92,20 @@ public sealed record InstanceView(
     /// <summary>Every state of the recipe, in <see cref="OrderedBy"/> order.</summary>
     public IReadOnlyList<StateCell> States { get; init; } = [];
 
-    /// <summary>
-    /// The status layout as fields (E-23). Nullable because it has no empty value: it is null on a view the layout was
-    /// not computed for.
-    /// </summary>
-    public StatusFields? Status { get; init; }
+    /// <summary>The answer the open park or escalation takes, as the status record's field; null when none applies. Time-independent, so the view can carry it.</summary>
+    public StatusAnswer? AnswerLine { get; init; }
+
+    /// <summary>The first live child a park or escalation mirrors, as the status record's field.</summary>
+    public StatusChild? ChildPark { get; init; }
+
+    /// <summary>The drift recorded behind the open park, as the status record's field.</summary>
+    public StatusDrift? DriftNote { get; init; }
+
+    /// <summary>The re-approval a drift or a revoked child waits for: the protected 'approve' command row.</summary>
+    public StatusCommand? ApproveRow { get; init; }
+
+    /// <summary>What the active state asks of a person, as a short lower-case clause ('import the design output'); the list row's 'with you: ...' names it.</summary>
+    public string? Activity { get; init; }
 
     /// <summary>One row per input and output the recipe declares, in declaration order.</summary>
     public IReadOnlyList<FactRow> Facts { get; init; } = [];

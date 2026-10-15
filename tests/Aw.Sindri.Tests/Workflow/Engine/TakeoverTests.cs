@@ -130,8 +130,8 @@ public sealed class TakeoverTests
         var kept = taken with { Suspension = taken.Suspension! with { Remaining = new RemainingTimer(DeadlineKind.State, TimeSpan.FromSeconds(40)) } };
         var recipe = new InterpretedRecipe(Version(), Step, EngineFixture.Catalog, new Dictionary<FactKey, InputFact>());
 
-        Assert.Equal(TimeSpan.FromSeconds(40), InstanceViews.Of(kept, recipe, Now, timeoutAt: null, new InstanceViewContext(Now)).Paused);
-        Assert.Null(InstanceViews.Of(taken, recipe, Now, timeoutAt: null, new InstanceViewContext(Now)).Paused);
+        Assert.Equal(TimeSpan.FromSeconds(40), InstanceViews.Of(kept, recipe, Now, timeoutAt: null, new InstanceViewContext()).Paused);
+        Assert.Null(InstanceViews.Of(taken, recipe, Now, timeoutAt: null, new InstanceViewContext()).Paused);
     }
 
     /// <summary>Decides through the real rules, not the fixture's fake ones.</summary>

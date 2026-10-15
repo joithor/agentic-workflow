@@ -16,6 +16,7 @@ using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.GetInstance;
 
@@ -68,7 +69,7 @@ internal sealed class ReadApi : HttpMessageHandler
             .AddSingleton<IInstanceDirectory>(instances)
             .AddSingleton<IInstanceReader>(instances)
             .AddSingleton<IService<GetInstanceRequest, GetInstanceResponse>>(new GetInstanceService(instances, instances))
-            .AddSingleton<IService<ListInstancesRequest, ListInstancesResponse>>(new ListInstancesService(instances, new NoRows(), instances));
+            .AddSingleton<IService<ListInstancesRequest, ListInstancesResponse>>(new ListInstancesService(instances, new NoRows(), instances, new FakeTimeProvider()));
         configure?.Invoke(services);
     }, running: true);
 

@@ -8,7 +8,6 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.GetInstance;
-using ActionClass = Aw.Sindri.Core.Commands.ActionClass;
 using RecipeUrgency = Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency;
 
 namespace Aw.Sindri.Tests.Layout;
@@ -25,16 +24,11 @@ public sealed class InstanceComposersTests
     private static InstanceView Built()
     {
         var recipe = new RecipeVersion(RecipeId.From("workflow.step"), 3, RecipeHash.From("sha256:" + new string('a', 64)));
-        var cancel = new StatusCommand(StatusVerb.Cancel, ActionId.From("ApplyCommand:cancel"), ActionClass.Desk, "sindri workflow cancel ITM-9/step/1", ConfirmText.Cancel(_address, 0, 0));
-        var status = new StatusFields(
-            new StatusHeader(_address, recipe.Id, "aaaaaaaaaaaa", 5, "produce", Detail: null, _since, 1800),
-            "wait", Answer: null, Child: null, Drift: null, [], Timeout: null, Budget: null, Paused: null, [cancel], "text");
-        return new InstanceView(_address, recipe, "produce", Detail: null, _since, "wait", [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
+        return new InstanceView(_address, recipe, "produce", Detail: null, _since, "wait", [new AllowedCommand("ApplyCommand:cancel", "sindri workflow cancel ITM-9/step/1")], Question: null, Task: null, Run: null, Children: [], Outcome: null)
         {
             Id = WorkflowInstanceId.Of(_address),
             ItemId = ItemKey.From("ITM-9"),
             Urgency = RecipeUrgency.Triage,
-            Status = status,
             Step = new StepDeclaration("active", "step.produce", "step.produce"),
         };
     }
@@ -51,7 +45,7 @@ public sealed class InstanceComposersTests
         Assert.Equal(("A title", parent, counts, _asOf), (detail.Title, detail.Parent, detail.Counts, detail.AsOf));
         Assert.Equal((view.Address, view.Id, view.ItemId, view.State, view.Since), (detail.Address, detail.Id, detail.ItemId, detail.State, detail.Since));
         Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, 3, RecipeUrgency.Triage), detail.Recipe);
-        Assert.Equal(new CurrentState("produce", view.Step, [], Desk: null, view.Status!), detail.Current);
+        Assert.Equal(JsonSerializer.Serialize(new CurrentState("produce", view.Step, [], Desk: null, InstanceViews.Status(view, _asOf)), _options), JsonSerializer.Serialize(detail.Current, _options));
         Assert.Equal([ActionId.From("ApplyCommand:cancel")], detail.Actions);
         Assert.Equal("item", detail.Subject.Kind);   // a recipe with no input is subject-less: the item stands in
     }
@@ -69,19 +63,29 @@ public sealed class InstanceComposersTests
     {
         var view = Built();
 
-        var summary = InstanceSummaries.Of(view);
+        var summary = InstanceSummaries.Of(view, new InstanceSummaryContext(_asOf));
 
         Assert.Equal((view.Id, new StateChip("RUNNING", ChipTone.Ok)), (summary.Id, summary.Chip));
         Assert.Equal([ActionId.From("ApplyCommand:cancel")], summary.Actions);
         Assert.Null(summary.Answer);
-        Assert.Equal(new StateChip("QUEUED", ChipTone.Neutral), InstanceSummaries.Of(view, new InstanceSummaryContext(NotStarted: true)).Chip);
+        Assert.Equal(new StateChip("QUEUED", ChipTone.Neutral), InstanceSummaries.Of(view, new InstanceSummaryContext(_asOf, NotStarted: true)).Chip);
     }
 
     [Fact]
-    public void A_view_with_no_status_record_is_refused_not_guessed()
+    public void A_view_that_is_still_starting_is_a_queued_row_and_a_detail_not_an_error()
     {
-        _ = Assert.Throws<ArgumentException>(() => InstanceSummaries.Of(Built() with { Status = null }));
-        _ = Assert.Throws<ArgumentException>(() => InstanceViews.Detail(Built() with { Status = null }, new InstanceDetailContext("t", Parent: null, new ViewCounts(0, 0, 0, Context: null), _asOf)));
+        var starting = new InstanceView(_address, Built().Recipe, InstanceViews.StartingState, Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
+        {
+            Id = WorkflowInstanceId.Of(_address),
+        };
+
+        var summary = InstanceSummaries.Of(starting, new InstanceSummaryContext(_asOf));
+        var detail = InstanceViews.Detail(starting, new InstanceDetailContext("t", Parent: null, new ViewCounts(0, 0, 0, Context: null), _asOf));
+
+        Assert.Equal((new StateChip("QUEUED", ChipTone.Neutral), "queued", InstanceViews.StartingState), (summary.Chip, summary.Now, summary.State));
+        Assert.Empty(summary.States);
+        Assert.Empty(summary.Actions);
+        Assert.Equal(InstanceViews.StartingState, detail.Current.Status.Header.State);
     }
 
     [Fact]

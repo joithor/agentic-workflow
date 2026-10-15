@@ -42,7 +42,7 @@ public sealed class InstanceViewProducerTests
             _incident,
             StatusCases.Now - TimeSpan.FromMinutes(72),
             StatusCases.Now + TimeSpan.FromHours(3),
-            new InstanceViewContext(StatusCases.Now, Version: 4, provenance));
+            new InstanceViewContext(Version: 4, Provenance: provenance));
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public sealed class InstanceViewProducerTests
 
         Assert.Equal((ItemKey.From("T-3"), RecipeUrgency.Incident, PathOrdering.Path), (view.ItemId, view.Urgency, view.OrderedBy));
         Assert.Null(view.EngineOwned);
-        Assert.Equal(new SubjectRef("file", "fact:spec", "spec.md", Href: null), view.Subject);
+        Assert.Equal(new SubjectRef("file", "spec.md", "spec.md", Href: null), view.Subject);
         Assert.Equal([new InputPresence("fact:spec", "Spec", "file", Required: true, Present: true)], view.Inputs);
         Assert.Empty(view.ChildGroups);
     }
@@ -61,14 +61,15 @@ public sealed class InstanceViewProducerTests
     public void An_input_the_instance_does_not_hold_is_not_present_and_a_recipe_without_inputs_has_no_subject()
     {
         var absent = InstanceViews.Of(
-            EngineFixture.At(_incident.Recipe, "produce"), _incident with { Inputs = new Dictionary<FactKey, InputFact>() }, StatusCases.Now, timeoutAt: null, new InstanceViewContext(StatusCases.Now));
+            EngineFixture.At(_incident.Recipe, "produce"), _incident with { Inputs = new Dictionary<FactKey, InputFact>() }, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
         var none = InstanceViews.Of(
             EngineFixture.At(EngineFixture.Step with { Inputs = [] }, "produce"),
             StatusCases.Recipe with { Recipe = EngineFixture.Step with { Inputs = [] }, Inputs = new Dictionary<FactKey, InputFact>() },
-            StatusCases.Now, timeoutAt: null, new InstanceViewContext(StatusCases.Now));
+            StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
         Assert.False(Assert.Single(absent.Inputs).Present);
         Assert.Equal("Spec", absent.Subject?.Label);   // the declared label, as no file name was given
+        Assert.Equal("Spec", absent.Subject?.Key);
         Assert.Null(none.Subject);
         Assert.Empty(none.Inputs);
     }
@@ -117,7 +118,7 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void A_state_after_the_active_one_is_pending_and_one_before_it_is_done()
     {
-        var view = InstanceViews.Of(EngineFixture.At(_incident.Recipe, "verify"), _incident, StatusCases.Now, timeoutAt: null, new InstanceViewContext(StatusCases.Now));
+        var view = InstanceViews.Of(EngineFixture.At(_incident.Recipe, "verify"), _incident, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
         Assert.Equal([StateGlyph.Done, StateGlyph.Done, StateGlyph.Active, StateGlyph.Pending], view.States.Select(static c => c.Glyph));
     }
@@ -154,7 +155,7 @@ public sealed class InstanceViewProducerTests
         Assert.Equal((FactDirection.Input, FactStatus.Produced, FactType.File, "Spec"), (spec.Direction, spec.Status, spec.Type, spec.Label));
         Assert.Equal(("human:thor", StatusCases.Now - TimeSpan.FromMinutes(90), "spec.md"), (spec.By, spec.At, spec.Summary));
         Assert.Equal("spec.md", spec.Ref?.Name);
-        Assert.Equal(EngineFixture.Fact("the spec").Sha256, spec.Ref?.Hash);
+        Assert.Equal("sha256:" + EngineFixture.Fact("the spec").Sha256, spec.Ref?.Hash);   // every hash on the wire is sha256:<64 hex>
     }
 
     [Fact]
@@ -183,7 +184,7 @@ public sealed class InstanceViewProducerTests
         };
         var at = StatusCases.Now - TimeSpan.FromMinutes(5);
         var view = InstanceViews.Of(instance, _incident, at, timeoutAt: null,
-            new InstanceViewContext(StatusCases.Now, Provenance: new Dictionary<FactKey, FactProvenance> { [_output] = new("step.produce", at) }));
+            new InstanceViewContext(Provenance: new Dictionary<FactKey, FactProvenance> { [_output] = new("step.produce", at) }));
 
         var output = view.Facts[1];
         Assert.Equal((FactStatus.Produced, "step.produce", at), (output.Status, output.By, output.At));
@@ -197,14 +198,14 @@ public sealed class InstanceViewProducerTests
     {
         var view = Produce();
 
-        Assert.Equal(StatusLayout.Render(view, StatusCases.Now), view.Status?.Text);
-        Assert.Equal(InstanceHeader.Line(view, StatusCases.Now), view.Status?.Text.Split('\n')[0]);
+        Assert.Equal(StatusLayout.Render(view, StatusCases.Now), InstanceViews.Status(view, StatusCases.Now).Text);
+        Assert.Equal(InstanceHeader.Line(view, StatusCases.Now), InstanceViews.Status(view, StatusCases.Now).Text.Split('\n')[0]);
     }
 
     [Fact]
     public void The_header_since_and_age_in_whole_seconds_are_those_of_the_state_entry()
     {
-        var header = Produce().Status?.Header;
+        var header = InstanceViews.Status(Produce(), StatusCases.Now).Header;
 
         Assert.Equal(
             new StatusHeader(InstanceAddress.From("T-3/step/1"), RecipeId.From("workflow.step"), StatusText.Hash12(EngineFixture.Step.Hash!.Value.Value), 4, "produce", "desk task", StatusCases.Now - TimeSpan.FromMinutes(72), 72 * 60),
@@ -214,16 +215,16 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void The_age_is_whole_seconds_and_never_negative()
     {
-        var odd = InstanceViews.Of(EngineFixture.At(_incident.Recipe, "produce"), _incident, StatusCases.Now - TimeSpan.FromMilliseconds(61_900), timeoutAt: null, new InstanceViewContext(StatusCases.Now));
-        var future = InstanceViews.Of(EngineFixture.At(_incident.Recipe, "produce"), _incident, StatusCases.Now + TimeSpan.FromMinutes(1), timeoutAt: null, new InstanceViewContext(StatusCases.Now));
+        var odd = InstanceViews.Of(EngineFixture.At(_incident.Recipe, "produce"), _incident, StatusCases.Now - TimeSpan.FromMilliseconds(61_900), timeoutAt: null, new InstanceViewContext());
+        var future = InstanceViews.Of(EngineFixture.At(_incident.Recipe, "produce"), _incident, StatusCases.Now + TimeSpan.FromMinutes(1), timeoutAt: null, new InstanceViewContext());
 
-        Assert.Equal((61L, 0L), (odd.Status?.Header.AgeSeconds, future.Status?.Header.AgeSeconds));
+        Assert.Equal((61L, 0L), (InstanceViews.Status(odd, StatusCases.Now).Header.AgeSeconds, InstanceViews.Status(future, StatusCases.Now).Header.AgeSeconds));
     }
 
     [Fact]
     public void A_desk_task_has_the_inputs_the_timeout_in_whole_seconds_on_its_state_and_the_budget_with_its_figures()
     {
-        var status = Produce().Status!;
+        var status = InstanceViews.Status(Produce(), StatusCases.Now);
 
         Assert.Equal([new StatusInput("fact:spec", "spec.md", $"sha256:{EngineFixture.Fact("the spec").Sha256}")], status.Inputs);
         Assert.Equal(new StatusTimeout(TimeoutKind.Parks, 3 * 3600, "produce"), status.Timeout);
@@ -237,7 +238,7 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void A_budget_figure_in_the_text_is_a_token_count_in_k_or_M_units()
     {
-        var parked = StatusCases.View("parked-budget").Status!;
+        var parked = InstanceViews.Status(StatusCases.View("parked-budget"), StatusCases.Now);
 
         Assert.Contains("200k", parked.Text, StringComparison.Ordinal);
         Assert.Equal("1.5k", StatusText.Tokens(1500));
@@ -245,12 +246,12 @@ public sealed class InstanceViewProducerTests
 
     [Fact]
     public void Nothing_in_the_status_text_is_outside_printable_ASCII() =>
-        Assert.All(StatusCases.Names, name => Assert.All(StatusCases.View(name).Status!.Text, static c => Assert.True(c is '\n' or (>= ' ' and <= '~'), $"not plain ASCII: '{c}'")));
+        Assert.All(StatusCases.Names, name => Assert.All(InstanceViews.Status(StatusCases.View(name), StatusCases.Now).Text, static c => Assert.True(c is '\n' or (>= ' ' and <= '~'), $"not plain ASCII: '{c}'")));
 
     [Fact]
     public void A_taken_over_instance_has_the_paused_line_and_no_answer()
     {
-        var status = StatusCases.View("taken-over").Status!;
+        var status = InstanceViews.Status(StatusCases.View("taken-over"), StatusCases.Now);
 
         Assert.Equal(new StatusPaused(40), status.Paused);
         Assert.Null(status.Answer);
@@ -261,7 +262,7 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void A_park_mirroring_a_child_names_it()
     {
-        var status = StatusCases.View("parked-no-progress-child").Status!;
+        var status = InstanceViews.Status(StatusCases.View("parked-no-progress-child"), StatusCases.Now);
 
         Assert.Equal(new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("T-3/step/1/step.4")), InstanceAddress.From("T-3/step/1/step.4"), "parked", "no-progress"), status.Child);
         Assert.Contains("T-3/step/1/step.4  parked: no-progress", status.Text, StringComparison.Ordinal);
@@ -279,7 +280,7 @@ public sealed class InstanceViewProducerTests
     [InlineData("parked-revoked", AnswerKind.CancelOnly, "ApplyCommand:cancel", ActionClass.Desk, "sindri workflow cancel T-3/step/1", false)]
     public void The_answer_line_is_the_kind_the_catalog_action_and_the_command_the_text_prints(string name, AnswerKind kind, string action, ActionClass actionClass, string cli, bool atTerminal)
     {
-        var status = StatusCases.View(name).Status!;
+        var status = InstanceViews.Status(StatusCases.View(name), StatusCases.Now);
 
         Assert.Equal(new StatusAnswer(kind, Core.Ids.ActionId.From(action), actionClass, cli, atTerminal), status.Answer);
         Assert.Contains(cli, status.Text, StringComparison.Ordinal);
@@ -288,7 +289,7 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void A_drift_park_has_no_answer_no_drift_line_and_the_protected_approve_command_after_cancel()
     {
-        var status = StatusCases.View("parked-drift").Status!;
+        var status = InstanceViews.Status(StatusCases.View("parked-drift"), StatusCases.Now);
 
         Assert.Null(status.Answer);
         Assert.Null(status.Drift);   // the text has no 'drift' line either: the park's own next sentence names the block
@@ -302,7 +303,7 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void A_drift_waiting_behind_another_park_is_the_note_beside_that_parks_own_answer()
     {
-        var status = StatusCases.View("parked-rounds-with-drift").Status!;
+        var status = InstanceViews.Status(StatusCases.View("parked-rounds-with-drift"), StatusCases.Now);
 
         Assert.Equal(AnswerKind.Grant, status.Answer?.Kind);
         Assert.Equal(new StatusDrift(BlockId.From("step.produce"), NeedsReapproval: true), status.Drift);
@@ -311,7 +312,7 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void A_finished_instance_has_no_next_no_answer_and_no_commands()
     {
-        var status = StatusCases.View("done").Status!;
+        var status = InstanceViews.Status(StatusCases.View("done"), StatusCases.Now);
 
         Assert.Equal((null, null, 0), (status.Next, status.Answer, status.Commands.Count));
     }
@@ -323,7 +324,7 @@ public sealed class InstanceViewProducerTests
 
         foreach (var name in StatusCases.Names)
         {
-            foreach (var row in StatusCases.View(name).Status!.Commands)
+            foreach (var row in InstanceViews.Status(StatusCases.View(name), StatusCases.Now).Commands)
             {
                 Assert.True(catalog.TryGetValue(row.ActionId.Value, out var actionClass), $"{name}: {row.ActionId.Value} is no catalog row");
                 Assert.Equal(actionClass, row.Class);

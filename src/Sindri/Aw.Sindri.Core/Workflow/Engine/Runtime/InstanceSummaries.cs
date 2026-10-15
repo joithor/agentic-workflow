@@ -9,42 +9,57 @@ public static class InstanceSummaries
     public const int NowLength = 80;
 
     /// <summary>The list row of <paramref name="view"/>: a pure function of the view and the context (no clock, no I/O).</summary>
-    /// <param name="view">The instance view.</param>
-    /// <param name="context">What the row needs besides the view; null reads as a started instance.</param>
-    /// <returns>The row: the view's identity, recipe, chip, layout cells, its answer line and its 'next' cut to <see cref="NowLength"/>.</returns>
-    public static InstanceSummary Of(InstanceView view, InstanceSummaryContext? context = null)
+    /// <param name="view">The instance view; a view that is still starting (no layout yet) reads as a QUEUED row with empty cells.</param>
+    /// <param name="context">The time the row is read at, and what only the caller knows (whether a child has not run, the item's title).</param>
+    /// <returns>The row: the view's identity, recipe, chip, layout cells, its answer line and its own 'now' sentence.</returns>
+    public static InstanceSummary Of(InstanceView view, InstanceSummaryContext context)
     {
         ArgumentNullException.ThrowIfNull(view);
-        var status = view.Status ?? throw new ArgumentException("the view has no status record; build it with InstanceViews.Of", nameof(view));
+        ArgumentNullException.ThrowIfNull(context);
+        var chip = StateChip.For(view.EngineOwned, deskOpen: view.Task is not null, terminal: view.Outcome is not null, context.NotStarted || view.State == InstanceViews.StartingState);
         return new InstanceSummary(
             view.Address,
             view.Id,
             view.ItemId,
             new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency),
             view.State,
-            StateChip.For(view.EngineOwned, deskOpen: view.Task is not null, terminal: view.Outcome is not null, context?.NotStarted ?? false),
+            chip,
             view.Since,
             view.EngineOwned,
-            view.Subject ?? NoSubject(view),
+            SubjectOf(view, context.ItemTitle),
             view.Inputs,
             view.States,
-            Cut(view.Next),
-            status.Answer,
-            [.. status.Commands.Select(static c => c.ActionId)]);
+            Cut(RowSentences.Now(view, chip)),
+            view.AnswerLine,
+            [.. InstanceViews.Status(view, context.Now).Commands.Select(static c => c.ActionId)]);
     }
 
-    /// <summary>The subject of an instance whose recipe declares no input: the item itself.</summary>
-    internal static SubjectRef NoSubject(InstanceView view) => new("item", view.ItemId?.Value ?? string.Empty, view.Address.Value, Href: null);
+    /// <summary>
+    /// The subject the list row and the detail show: the view's, with an item's title in place of its id when the subject is the
+    /// item and the caller knows the title; an instance whose recipe declares no input is about the item itself, labelled by its address.
+    /// </summary>
+    /// <param name="view">The instance view.</param>
+    /// <param name="itemTitle">The title of the item the instance is on; null when the caller has none.</param>
+    /// <returns>The subject.</returns>
+    public static SubjectRef SubjectOf(InstanceView view, string? itemTitle)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        return view.Subject switch
+        {
+            null => new("item", view.ItemId?.Value ?? string.Empty, view.Address.Value, Href: null),
+            { Kind: "item" } item when itemTitle is { Length: > 0 } && item.Key == view.ItemId?.Value => item with { Label = itemTitle },
+            { } subject => subject,
+        };
+    }
 
     /// <summary>The text cut to <see cref="NowLength"/> with the ellipsis inside it, never between the two halves of a surrogate pair.</summary>
-    private static string Cut(string next)
+    private static string Cut(string sentence)
     {
-        if (next.Length <= NowLength)
+        if (sentence.Length <= NowLength)
         {
-            return next;
+            return sentence;
         }
 
-        var keep = NowLength - 3;
-        return string.Concat(next.AsSpan(0, char.IsHighSurrogate(next[keep - 1]) ? keep - 1 : keep), "...");
+        return string.Concat(SubjectRefs.Cut(sentence, NowLength - 3), "...");
     }
 }

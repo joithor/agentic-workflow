@@ -12,6 +12,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="home">Where the facts are.</param>
 internal sealed class ItemFactActivities(WorkflowsHome home)
 {
+    private const int SubjectBytes = 64 * 1024;
+
     private static readonly System.Text.Json.JsonSerializerOptions _options = AwJson.CreateOptions(WorkflowsJsonContext.Default);
 
     /// <summary>The repo 'fact:item' names.</summary>
@@ -25,5 +27,25 @@ internal sealed class ItemFactActivities(WorkflowsHome home)
         var content = await File.ReadAllBytesAsync(file, ActivityExecutionContext.Current.CancellationToken).ConfigureAwait(false);
         var read = AwJson.Deserialize<ItemFact>(content, _options);
         return read.IsError || read.Value.Repo is not { Length: > 0 } repo ? null : repo;
+    }
+
+    /// <summary>
+    /// 'ReadSubject': the first input's stored content, at most 64 KiB as text, so the interpreter names the subject (a text's
+    /// first line, a link's tracker key, a payload's id) without I/O in workflow code.
+    /// </summary>
+    /// <param name="fact">The stored first input.</param>
+    /// <returns>Its text.</returns>
+    [Activity("ReadSubject")]
+    public async Task<string> ReadSubjectAsync(FactValue fact)
+    {
+        ArgumentNullException.ThrowIfNull(fact);
+        var file = Path.Combine(home.FactsDirectory, Path.GetFileName(fact.Sha256));
+        var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.Asynchronous);
+        await using (stream.ConfigureAwait(false))
+        {
+            var buffer = new byte[SubjectBytes];
+            var read = await stream.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: false, ActivityExecutionContext.Current.CancellationToken).ConfigureAwait(false);
+            return System.Text.Encoding.UTF8.GetString(buffer, 0, read);
+        }
     }
 }

@@ -68,6 +68,26 @@ internal sealed partial record InstanceWords
         }
         : null;
 
+    /// <summary>
+    /// What the active state asks of a person, as a short clause ('import the design output'): the state's 'next' text up to
+    /// its first ', then' or sentence end, with its first letter lower-cased; the state's id when the recipe gives none.
+    /// </summary>
+    /// <returns>The clause.</returns>
+    public string Activity()
+    {
+        var text = RecipeNext().Trim();
+        var end = text.IndexOf(", then ", StringComparison.Ordinal);
+        if (end < 0)
+        {
+            end = text.IndexOf(". ", StringComparison.Ordinal);
+        }
+
+        var clause = (end < 0 ? text : text[..end]).TrimEnd('.').Trim();
+        return clause.Length == 0
+            ? Instance.Frame.State
+            : clause.Length > 1 && char.IsUpper(clause[0]) && char.IsLower(clause[1]) ? char.ToLowerInvariant(clause[0]) + clause[1..] : clause;
+    }
+
     /// <summary>Who took the instance over: the actor without its kind ('human:thor' is 'thor').</summary>
     private static string Taker(string actor) => actor[(actor.IndexOf(':', StringComparison.Ordinal) + 1)..];
 

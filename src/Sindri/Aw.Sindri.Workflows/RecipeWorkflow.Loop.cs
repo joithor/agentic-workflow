@@ -190,7 +190,7 @@ internal sealed partial class RecipeWorkflow
 
     /// <summary>
     /// Sets the search attributes (spec §5.1) as they stand: 'Item', 'Recipe', 'State', 'NeedsYou', 'Tenant', 'Ring' and
-    /// 'Root' from the input and the instance, 'Urgency' and 'Subject' (the first declared input's key) from the recipe,
+    /// 'Root' from the input and the instance, 'Urgency' from the recipe, 'Subject' (the key <see cref="SubjectRefs"/> names from the first declared input's value),
     /// and 'Repo' when 'fact:item' named one.
     /// </summary>
     private void Upsert(string state, bool needsYou)
@@ -209,9 +209,9 @@ internal sealed partial class RecipeWorkflow
         if (_recipe is { } recipe)
         {
             updates.Add(SindriTemporal.UrgencyKey.ValueSet(Urgencies.Word(RecipeUrgencies.UrgencyOf(recipe))));
-            if (recipe.Recipe.Inputs.Count > 0)
+            if (_subject is { Key.Length: > 0 } subject)
             {
-                updates.Add(SindriTemporal.SubjectKey.ValueSet(recipe.Recipe.Inputs[0].Key.Value));
+                updates.Add(SindriTemporal.SubjectKey.ValueSet(subject.Key));
             }
         }
 
@@ -221,6 +221,21 @@ internal sealed partial class RecipeWorkflow
         }
 
         Workflow.UpsertTypedSearchAttributes([.. updates]);
+    }
+
+    /// <summary>The first input's stored content as text ('ReadSubject', a local activity on start); none when it can't be read.</summary>
+    private static async Task<string?> SubjectTextOf(FactValue fact)
+    {
+        try
+        {
+            return await Workflow.ExecuteLocalActivityAsync(
+                (ItemFactActivities a) => a.ReadSubjectAsync(fact),
+                new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), RetryPolicy = new RetryPolicy { MaximumAttempts = 3 } }).ConfigureAwait(true);
+        }
+        catch (ActivityFailureException)
+        {
+            return null; // boundary: content that can't be read leaves the subject named by its fact key; the start goes on
+        }
     }
 
     /// <summary>The repo 'fact:item' names ('ReadItemRepo', a local activity on start); none when it can't be read.</summary>
