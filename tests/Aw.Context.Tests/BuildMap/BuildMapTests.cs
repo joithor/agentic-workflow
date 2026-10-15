@@ -140,7 +140,7 @@ public sealed class BuildMapTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Labeling_turned_on_with_no_labeler_set_up_is_SND_CONTEXT_042()
     {
-        var labels = await new DisabledLabeler().Label([Cluster("a.ts")], MapWorld.None);
+        var labels = await new DisabledLabeler().Label([Cluster("a.ts")], 400_000, MapWorld.None);
 
         Assert.Equal(ContextErrors.LabelingUnavailable.Code, labels.Error.Code);
     }

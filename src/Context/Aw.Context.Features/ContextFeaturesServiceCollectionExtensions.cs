@@ -22,11 +22,13 @@ using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.ImportMap;
 using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.PreviewMap;
+using Aw.Context.Features.PreviewReviewFile;
 using Aw.Context.Features.PromoteMap;
 using Aw.Context.Features.ProposeFromScope;
 using Aw.Context.Features.PurgeMap;
 using Aw.Context.Features.QueryContext;
 using Aw.Context.Features.RefreshDocs;
+using Aw.Context.Features.ReviewHistory;
 using Aw.Context.Features.ReviewMap;
 using Aw.Context.Features.ReviewQueue;
 using Aw.Context.Features.ShowMapStatus;
@@ -69,8 +71,10 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()
         .AddScoped<IService<BuildMapRequest, MapBuildReport>, BuildMapService>()
         .AddScoped<IService<ReviewQueueRequest, ReviewQueueView>, ReviewQueueService>()
+        .AddScoped<IService<ReviewHistoryRequest, ReviewHistoryView>, ReviewHistoryService>()
         .AddScoped<IService<ReviewMapRequest, ReviewResult>, ReviewMapService>()
         .AddScoped<IService<ExportReviewRequest, ReviewExported>, ExportReviewService>()
+        .AddScoped<IService<PreviewReviewFileRequest, ReviewFilePreview>, PreviewReviewFileService>()
         .AddScoped<IService<ApplyReviewFileRequest, ReviewResult>, ApplyReviewFileService>()
         .AddScoped<IService<PromoteMapRequest, MapPromoted>, PromoteMapService>()
         .AddScoped<IService<ProposeFromScopeRequest, ProposeResult>, ProposeFromScopeService>()

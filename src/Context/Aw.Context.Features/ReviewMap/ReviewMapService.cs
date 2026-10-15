@@ -11,13 +11,13 @@ namespace Aw.Context.Features.ReviewMap;
 /// One review decision (spec §8.7): checked against the latest draft by <see cref="ReviewPlanner"/> (SND-CONTEXT-047 when the
 /// target is gone or decided already), then appended as override rows, one per decision (accept-deterministic: one per entry),
 /// all or none. A suggested file link may also be decided with no draft: the current map is what its filemap shows.
-/// Sindri checks the verb's class first (X63).
+/// Sindri checks the verb's class first (X63); a session is refused here (SND-CONTEXT-020) only for the bulk accept.
 /// </summary>
 internal sealed class ReviewMapService(IGraphStore store, ICurrentUser user, TimeProvider clock) : IService<ReviewMapRequest, ReviewResult>
 {
     public async ValueTask<Result<ReviewResult>> Handle(ReviewMapRequest request, CancellationToken cancellationToken)
     {
-        if (ReviewDrafts.Gate(request.Scope, "deciding a review item") is { } refused)
+        if (ReviewDrafts.GateDecision(request.Scope, request.Decision) is { } refused)
         {
             return refused;
         }

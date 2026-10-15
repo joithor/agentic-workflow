@@ -27,10 +27,13 @@ public static class ReviewPlanner
             ReviewVerb.Accept or ReviewVerb.Reject => One(decision.Link is { } link ? world.DecideLink(decision, link) : world.DecideNode(decision)),
             ReviewVerb.Undo => One(world.Undo(decision)),
             ReviewVerb.Drop => One(world.Drop(decision)),
+            ReviewVerb.Repoint => Plan_Repoint(),
             ReviewVerb.Rename or ReviewVerb.Move or ReviewVerb.Merge or ReviewVerb.Add or ReviewVerb.Delete => One(world.Edit(decision)),
             _ => One(Stale($"{decision.Verb.ToString().ToLowerInvariant()} is not a review action")),
         };
     }
+
+    private static Result<IReadOnlyList<MapOverride>> Plan_Repoint() => throw new NotSupportedException();
 
     private static Result<IReadOnlyList<MapOverride>> One(Result<MapOverride> row) => row.Map<IReadOnlyList<MapOverride>>(r => [r]);
 
@@ -104,7 +107,7 @@ public static class ReviewPlanner
                 ReviewVerb.Move when other is not null && EdgeRules.Allows(EdgeType.PartOf, node.Key.Kind, other.Key.Kind) && other.Key.Value != node.Key.Value => Row(OverrideAction.Move, node.Key, other: other.Key),
                 ReviewVerb.Merge when other is not null && node.Key.Kind == other.Key.Kind && other.Key.Value != node.Key.Value => Row(OverrideAction.Merge, node.Key, other: other.Key),
                 ReviewVerb.Delete => Row(OverrideAction.Delete, node.Key),
-                ReviewVerb.Accept or ReviewVerb.Reject or ReviewVerb.AcceptDeterministic or ReviewVerb.Undo or ReviewVerb.Drop or ReviewVerb.Add or ReviewVerb.Move or ReviewVerb.Merge =>
+                ReviewVerb.Accept or ReviewVerb.Reject or ReviewVerb.AcceptDeterministic or ReviewVerb.Undo or ReviewVerb.Drop or ReviewVerb.Repoint or ReviewVerb.Add or ReviewVerb.Move or ReviewVerb.Merge =>
                     Stale($"{d.Verb.ToString().ToLowerInvariant()} needs another node that exists and fits (fix: pass --under or --into with a node of the draft)"),
                 _ => Stale($"{d.Verb.ToString().ToLowerInvariant()} is not an edit"),
             };

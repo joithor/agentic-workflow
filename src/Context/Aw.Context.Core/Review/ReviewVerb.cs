@@ -49,4 +49,8 @@ public enum ReviewVerb
     /// <summary>Removes a node.</summary>
     [JsonStringEnumMemberName("delete")]
     Delete,
+
+    /// <summary>Points an orphaned override at a node of the draft (an undo of the orphan and the same decision on the new node).</summary>
+    [JsonStringEnumMemberName("repoint")]
+    Repoint,
 }

@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Aw.Context.Core.Review;
@@ -8,6 +11,19 @@ namespace Aw.Context.Core.Review;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ReviewFile(string Draft, IReadOnlyList<ReviewFileEntry> Entries)
 {
+    /// <summary>The hash of the file's entries, in order: what a protected apply binds its confirmation to.</summary>
+    /// <returns>The hash, as lower-case hex.</returns>
+    public string Fingerprint()
+    {
+        var text = new StringBuilder(Draft);
+        foreach (var e in Entries)
+        {
+            _ = text.Append(CultureInfo.InvariantCulture, $"\n{e.Label}|{e.Group}|{e.Confidence:R}|{e.Node?.Value}|{e.Link?.Value}|{e.Decision}|{e.Other?.Value}");
+        }
+
+        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
+    }
+
     /// <summary>The file for a queue: every entry undecided.</summary>
     /// <param name="queue">The queue.</param>
     /// <returns>The file.</returns>

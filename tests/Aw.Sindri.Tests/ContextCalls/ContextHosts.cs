@@ -16,10 +16,11 @@ internal static class ContextHosts
     /// <param name="sessions">'context.sessions.enabled'.</param>
     /// <param name="ct">Cancels the start.</param>
     /// <param name="extra">More service registrations, or null.</param>
+    /// <param name="name">The repo's name in the profile.</param>
     /// <returns>The started host.</returns>
-    internal static async Task<GoldenHost> Approved(FixtureRepo repo, bool sessions, CancellationToken ct, Action<IServiceCollection>? extra = null)
+    internal static async Task<GoldenHost> Approved(FixtureRepo repo, bool sessions, CancellationToken ct, Action<IServiceCollection>? extra = null, string name = "split-panes")
     {
-        var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: split-panes, path: \"{repo.Path}\" }}\n"
+        var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: {name}, path: \"{repo.Path}\" }}\n"
             + $"context:\n  docs: {{ globs: [\"docs/**/*.md\"] }}\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n";
         var host = await GoldenHost.Start(temporary: true, ct, yaml, extra: extra);
         var hash = (await host.LiveHash(ct)).Value;

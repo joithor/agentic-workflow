@@ -18,6 +18,7 @@ namespace Aw.Sindri.Core.Profile;
 /// keeps the JSON and the engine checks it (IContextEngine.CheckSettings) at validate and approve. Left out of the
 /// canonical JSON when absent, so a profile without it keeps its hash (and its approval).
 /// </param>
+/// <param name="Index">The 'index:' section (docs/sindri/profile.md): deny paths for every repo. Left out of the canonical JSON when absent, like Context.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record SindriProfile(
     int SchemaVersion,
@@ -26,7 +27,8 @@ public sealed record SindriProfile(
     IReadOnlyList<RepoEntry>? Repos = null,
     IReadOnlyDictionary<string, ServiceSettings>? Services = null,
     ApiSettings? Api = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Context = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Context = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IndexSettings? Index = null)
 {
     /// <summary>The tenant key until team mode.</summary>
     public const string DefaultTenant = "local";

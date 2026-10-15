@@ -46,16 +46,27 @@ public sealed class ReviewMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_session_cant_read_the_queue_or_decide()
+    public async Task A_session_cant_read_the_queue_or_decide_in_bulk()
     {
         _ = await Drafts.Build(_world);
         var session = MapWorld.Session(FixtureMap.Repo);
 
         var queue = await _world.Map.ReviewQueue(session, MapWorld.None);
-        var decision = await Decide(new ReviewDecision(ReviewVerb.Accept, _split), session);
+        var bulk = await Decide(new ReviewDecision(ReviewVerb.AcceptDeterministic), session);
 
-        Assert.Equal((ContextErrors.SessionsDisabled.Code, ContextErrors.SessionsDisabled.Code), (queue.Error.Code, decision.Error.Code));
+        Assert.Equal((ContextErrors.SessionsDisabled.Code, ContextErrors.SessionsDisabled.Code), (queue.Error.Code, bulk.Error.Code));
         Assert.Equal(0, await Drafts.Rows(_world));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_single_decision_from_a_session_is_left_to_the_class_check_so_the_engine_doesnt_refuse_it()
+    {
+        _ = await Drafts.Build(_world);
+
+        var decision = await Decide(new ReviewDecision(ReviewVerb.Accept, _split), MapWorld.Session(FixtureMap.Repo));
+
+        Assert.True(decision.IsSuccess);
+        Assert.Equal(1, await Drafts.Rows(_world));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -175,6 +186,35 @@ public sealed class ReviewMapTests : IDisposable
         _ = Assert.Single(dropped.Written);
         Assert.DoesNotContain((await Drafts.Queue(_world)).Entries, e => e.Group == ReviewGroup.Orphaned);
         Assert.Equal(2, await Drafts.Rows(_world));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_history_lists_decisions_newest_first_and_a_session_cant_read_it()
+    {
+        _ = await Drafts.Build(_world);
+        var accepted = (await Decide(new ReviewDecision(ReviewVerb.Accept, _split))).Value.Written.Single();
+        var rejected = (await Decide(new ReviewDecision(ReviewVerb.Reject, _close))).Value.Written.Single();
+
+        var history = await _world.Map.ReviewHistory(Drafts.Scope, MapWorld.None);
+        var session = await _world.Map.ReviewHistory(MapWorld.Session(FixtureMap.Repo), MapWorld.None);
+
+        Assert.Equal([rejected, accepted], history.Value.Entries.Select(e => e.Id));
+        Assert.Equal(ContextErrors.SessionsDisabled.Code, session.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_orphaned_override_is_repointed_with_an_undo_row_and_a_copy_on_the_new_node()
+    {
+        _ = await Drafts.Build(_world);
+        var orphan = new MapOverride(OverrideAction.Rename, NodeKey.From("surface:command/long-gone"), "avery", DateTimeOffset.Parse("2026-10-01T00:00:00Z", System.Globalization.CultureInfo.InvariantCulture), "Split");
+        _ = await _world.Store.AppendOverrides([orphan], MapWorld.None);
+        var entry = Assert.Single((await Drafts.Queue(_world)).Entries, e => e.Group == ReviewGroup.Orphaned);
+
+        var moved = (await Decide(new ReviewDecision(ReviewVerb.Repoint, _split, Undoes: entry.Override))).Value;
+
+        Assert.Equal(2, moved.Written.Count);
+        Assert.DoesNotContain((await Drafts.Queue(_world)).Entries, e => e.Group == ReviewGroup.Orphaned);
+        Assert.Contains((await _world.Store.Overrides(MapWorld.None)).Value, o => o.Action == OverrideAction.Rename && o.Target.Value == _split.Value && o.Label == "Split");
     }
 
     [Fact, Trait("Lane", "unit")]

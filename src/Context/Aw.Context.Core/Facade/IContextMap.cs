@@ -78,12 +78,25 @@ public interface IContextMap
     /// <returns>The rows written, or SND-CONTEXT-001/004/044/047 (stale target) with nothing written.</returns>
     public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken);
 
+    /// <summary>The override log, newest first, with what each undo cancelled: the ids "map review --undo" takes.</summary>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The history, or SND-CONTEXT-001/004/020.</returns>
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(ContextScope scope, CancellationToken cancellationToken);
+
     /// <summary>Writes the queue as a review file under the exports folder, to be edited and applied with <see cref="ApplyReviewFile"/>.</summary>
     /// <param name="path">A name or path under the exports folder, or null.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The file, or SND-CONTEXT-001/004/005/033/044.</returns>
     public ValueTask<Result<ReviewExported>> ExportReview(string? path, ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>Checks a review file and answers its hash and counts, writing nothing: what the protected apply shows before the human's typed confirmation.</summary>
+    /// <param name="path">The file.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The preview, or SND-CONTEXT-001/005/020/031.</returns>
+    public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>Applies a review file (a protected command: Sindri checks the caller first). Entries that match nothing in the latest draft are listed as skipped.</summary>
     /// <param name="path">The file.</param>

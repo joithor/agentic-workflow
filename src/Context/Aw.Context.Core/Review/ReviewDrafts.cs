@@ -31,6 +31,20 @@ public static class ReviewDrafts
             : MapAccess.Gate(scope);
     }
 
+    /// <summary>
+    /// A single review decision (accept, reject, rename, move, undo, repoint, drop): the engine doesn't refuse a session here, since
+    /// Sindri's catalog class (desk) alone decides who may call it (X63); only the settings gate (001, and 020 when sessions are off) applies.
+    /// The bulk accept is a whole-map path and keeps <see cref="Gate"/>.
+    /// </summary>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="decision">The decision.</param>
+    /// <returns>Null when allowed, else the error.</returns>
+    public static Error? GateDecision(ContextScope scope, ReviewDecision decision)
+    {
+        ArgumentNullException.ThrowIfNull(decision);
+        return decision.Verb == ReviewVerb.AcceptDeterministic ? Gate(scope, "the bulk accept") : MapAccess.Gate(scope);
+    }
+
     /// <summary>The newest draft with its overrides, or SND-CONTEXT-044 when there is none.</summary>
     /// <param name="store">The graph store.</param>
     /// <param name="cancellationToken">Cancels the read.</param>

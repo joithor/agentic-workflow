@@ -59,13 +59,12 @@ public static class ContextInfrastructureServiceCollectionExtensions
                 OnyxHttp.Client, environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<OnyxClient>>())));
 
     /// <summary>
-    /// Adds the labeling pass ('context.labeling'): <see cref="ILabeler"/> over the host's <see cref="Core.Models.IModelPort"/>, held to
-    /// <paramref name="maxTokens"/> tokens per pass. Registered only when the approved profile turns labeling on.
+    /// Adds the labeling pass ('context.labeling'): <see cref="ILabeler"/> over the host's <see cref="Core.Models.IModelPort"/>. The token cap
+    /// ('context.labeling.maxTokens') arrives with each pass; a build asks the labeler only when the approved profile turns labeling on.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="maxTokens">The profile's 'context.labeling.maxTokens'.</param>
     /// <returns>The same collection.</returns>
-    public static IServiceCollection AddContextLabeling(this IServiceCollection services, int maxTokens)
+    public static IServiceCollection AddContextLabeling(this IServiceCollection services)
         => services.AddSingleton<ILabeler>(sp => new ModelLabeler(
-            sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>(), maxTokens));
+            sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>()));
 }

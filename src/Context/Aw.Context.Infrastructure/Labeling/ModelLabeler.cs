@@ -16,8 +16,7 @@ namespace Aw.Context.Infrastructure.Labeling;
 /// </summary>
 /// <param name="model">The model port.</param>
 /// <param name="scrubbers">Builds the scrubbers the prompt passes through.</param>
-/// <param name="maxTokens">The most tokens (sent and received) one pass may spend ('context.labeling.maxTokens').</param>
-internal sealed class ModelLabeler(IModelPort model, IScrubberFactory scrubbers, int maxTokens) : ILabeler
+internal sealed class ModelLabeler(IModelPort model, IScrubberFactory scrubbers) : ILabeler
 {
     private const int BatchSize = 20;
     private const int FilesPerCluster = 12;
@@ -25,7 +24,7 @@ internal sealed class ModelLabeler(IModelPort model, IScrubberFactory scrubbers,
     private const int LabelLength = 60;
     private static readonly TimeSpan _budget = TimeSpan.FromMinutes(2);
 
-    public async ValueTask<Result<IReadOnlyList<ClusterLabel>>> Label(IReadOnlyList<FileCluster> clusters, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<ClusterLabel>>> Label(IReadOnlyList<FileCluster> clusters, int maxTokens, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(clusters);
         var built = scrubbers.For([]);

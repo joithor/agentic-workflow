@@ -78,8 +78,13 @@ internal sealed class ContextEngine(
     public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) =>
         map.ApplyReview(decision, scope, cancellationToken);
 
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(ContextScope scope, CancellationToken cancellationToken) => map.ReviewHistory(scope, cancellationToken);
+
     public ValueTask<Result<ReviewExported>> ExportReview(string? path, ContextScope scope, CancellationToken cancellationToken) =>
         map.ExportReview(path, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
+        map.PreviewReviewFile(path, scope, cancellationToken);
 
     public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
         map.ApplyReviewFile(path, scope, cancellationToken);

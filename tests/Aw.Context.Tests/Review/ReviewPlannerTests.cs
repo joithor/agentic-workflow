@@ -121,6 +121,29 @@ public sealed class ReviewPlannerTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Repointing_an_orphan_undoes_it_and_writes_the_same_decision_on_a_node_of_the_draft()
+    {
+        var orphan = SampleDrafts.Row(OverrideAction.Rename, "feature:gone", "Panes");
+        var decision = new ReviewDecision(ReviewVerb.Repoint, SampleDrafts.Key("feature:layout"), Undoes: orphan.ToId());
+
+        var rows = Plan(decision, orphan).Value;
+
+        Assert.Equal([OverrideAction.Undo, OverrideAction.Rename], rows.Select(r => r.Action));
+        Assert.Equal(orphan.ToId(), rows[0].Undoes);
+        Assert.Equal(("feature:layout", "Panes", Who, SampleDrafts.At), (rows[1].Target.Value, rows[1].Label, rows[1].Who, rows[1].At));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Repointing_to_a_node_that_is_not_in_the_draft_or_a_live_override_is_stale_047()
+    {
+        var orphan = SampleDrafts.Row(OverrideAction.Rename, "feature:gone", "Panes");
+        var live = SampleDrafts.Row(OverrideAction.Rename, "feature:layout", "Panes");
+
+        Assert.Equal(ContextErrors.ReviewTargetStale.Code, Plan(new ReviewDecision(ReviewVerb.Repoint, SampleDrafts.Key("feature:nowhere"), Undoes: orphan.ToId()), orphan).Error.Code);
+        Assert.Equal(ContextErrors.ReviewTargetStale.Code, Plan(new ReviewDecision(ReviewVerb.Repoint, SampleDrafts.Key("feature:tabs"), Undoes: live.ToId()), orphan, live).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Rename_move_merge_and_delete_work_on_any_node_of_the_draft()
     {
         Assert.Equal((OverrideAction.Rename, "Tab strip"), Row(On(ReviewVerb.Rename, "feature:tabs", label: "Tab strip"), r => (r.Action, r.Label!)));

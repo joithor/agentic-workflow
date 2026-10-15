@@ -61,7 +61,7 @@ public static class ReviewFileMatcher
         ReviewVerb.Accept or ReviewVerb.Reject => true,
         ReviewVerb.Rename => entry.Link is null && !string.IsNullOrWhiteSpace(entry.Label),
         ReviewVerb.Move or ReviewVerb.Merge => entry.Link is null && entry.Other is not null,
-        ReviewVerb.AcceptDeterministic or ReviewVerb.Undo or ReviewVerb.Drop or ReviewVerb.Add or ReviewVerb.Delete => false,
+        ReviewVerb.AcceptDeterministic or ReviewVerb.Undo or ReviewVerb.Drop or ReviewVerb.Repoint or ReviewVerb.Add or ReviewVerb.Delete => false,
         _ => false,
     };
 }

@@ -6,7 +6,8 @@ using Aw.Sindri.Features.ContextCalls;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// 'context map import &lt;file&gt; | export [&lt;path&gt;] | status' (context spec §8.5). Import is a protected command typed
+/// 'context map import &lt;file&gt; | export [&lt;path&gt;] | status | review … | promote | propose | proposals | build' (context spec §8.5, §8.7;
+/// the review half is <see cref="ContextReviewVerbs"/>). Import is a protected command typed
 /// like 'profile approve': it shows the file and its hash, asks the human to type the server's challenge ('import map
 /// &lt;hash6&gt;') at an interactive terminal, then sends the answer, which the server redeems.
 /// </summary>
@@ -24,14 +25,24 @@ internal sealed class ContextMapVerbs(ControlPlaneClient client, Output output, 
         "SND-CONTEXT-031", "SND-CONTEXT-032", "SND-CONTEXT-033", "SND-CONTEXT-034",
     ];
 
+    private readonly ContextReviewVerbs _review = new(client, output, interactive, input);
+
     internal Task<int> Run(string[] args, CancellationToken ct) => args switch
     {
         ["import", var file] => Import(Path.GetFullPath(file), ct),
         ["export", .. var rest] when Options(rest) is { } o => Export(o.Path, o.Json, ct),
         ["status"] => Status(json: false, ct),
         ["status", "--json"] => Status(json: true, ct),
+        ["review", .. var rest] => _review.Review(rest, ct),
+        ["promote"] => _review.Promote(ct),
+        ["propose", var file] => _review.Propose(file, json: false, ct),
+        ["propose", var file, "--json"] => _review.Propose(file, json: true, ct),
+        ["proposals", "--run", var run] => _review.Proposals(run, json: false, ct),
+        ["proposals", "--run", var run, "--json"] => _review.Proposals(run, json: true, ct),
+        ["build", ..] => output.Error(SindriErrors.UnknownVerb.With(
+            "'context map build' is pending:API-P6 (a job: it ships once API P6's job runtime merges); a draft appears through 'context map propose <file>' and the context-rebuild service: name it under services: in the profile")),
         _ => output.Error(SindriErrors.UnknownVerb.With(
-            $"'context map {string.Join(' ', args)}' is not a map command: context map import <file> | context map export [<path>] [--json] | context map status [--json]")),
+            $"'context map {string.Join(' ', args)}' is not a map command: context map import <file> | export [<path>] [--json] | status [--json] | review … | promote | propose <file> [--json] | proposals --run <id> [--json] | build")),
     };
 
     private async Task<int> Import(string file, CancellationToken ct)
@@ -95,7 +106,7 @@ internal sealed class ContextMapVerbs(ControlPlaneClient client, Output output, 
     private async Task<int> Failed(Kernel.Error error)
     {
         var code = await output.Error(error).ConfigureAwait(false);
-        return _attention.Contains(error.Code, StringComparer.Ordinal) ? 1 : code;
+        return _attention.Contains(error.Code, StringComparer.Ordinal) ? 1 : ContextExit.For(error, code);
     }
 
     /// <summary>'[&lt;path&gt;] [--json]' in either order.</summary>

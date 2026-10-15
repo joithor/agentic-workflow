@@ -50,6 +50,26 @@ public sealed class ReviewFileTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Previewing_a_file_answers_its_hash_and_counts_and_changes_with_an_edit_and_a_session_cant()
+    {
+        _ = await Drafts.Build(_world);
+        var queue = await Drafts.Queue(_world);
+        var first = queue.Entries[0];
+        var plain = await Place(new ReviewFile(queue.Draft, [new ReviewFileEntry(first.Label, first.Group, first.Confidence, first.Node)]));
+        var preview = (await _world.Map.PreviewReviewFile(plain, Drafts.Scope, MapWorld.None)).Value;
+        var edited = await Place(new ReviewFile(queue.Draft, [new ReviewFileEntry(first.Label, first.Group, first.Confidence, first.Node, Decision: ReviewVerb.Accept)]));
+
+        var after = (await _world.Map.PreviewReviewFile(edited, Drafts.Scope, MapWorld.None)).Value;
+        var session = await _world.Map.PreviewReviewFile(edited, MapWorld.Session(FixtureMap.Repo), MapWorld.None);
+
+        Assert.Equal((1, 0), (preview.Entries, preview.Decided));
+        Assert.Equal((1, 1), (after.Entries, after.Decided));
+        Assert.NotEqual(preview.Hash, after.Hash, StringComparer.Ordinal);
+        Assert.Equal(ContextErrors.SessionsDisabled.Code, session.Error.Code);
+        Assert.Equal(0, await Drafts.Rows(_world));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Applying_a_file_decides_the_entries_that_still_match_and_lists_the_rest_as_skipped()
     {
         _ = await Drafts.Build(_world);

@@ -103,6 +103,12 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewResult>();
 
     /// <inheritdoc/>
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewHistoryView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewFilePreview>();
+
+    /// <inheritdoc/>
     public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => NoMap<MapPromoted>();
 
     /// <inheritdoc/>

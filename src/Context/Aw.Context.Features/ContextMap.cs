@@ -35,8 +35,13 @@ internal sealed class ContextMap(MapAdmin admin, MapReview review, MapProposals 
     public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) =>
         review.ApplyReview(decision, scope, cancellationToken);
 
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(ContextScope scope, CancellationToken cancellationToken) => review.ReviewHistory(scope, cancellationToken);
+
     public ValueTask<Result<ReviewExported>> ExportReview(string? path, ContextScope scope, CancellationToken cancellationToken) =>
         review.ExportReview(path, scope, cancellationToken);
+
+    public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
+        review.PreviewReviewFile(path, scope, cancellationToken);
 
     public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
         review.ApplyReviewFile(path, scope, cancellationToken);

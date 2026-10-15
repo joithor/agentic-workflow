@@ -28,8 +28,20 @@ internal sealed class ContextScopes(IApprovedProfile approvals, ICallerContextAc
             return approved.IsError ? approved.Error : SindriErrors.ProfileNotApproved.With("no profile is approved, so no repo is mapped (fix: sindri profile approve)");
         }
 
-        var repos = ScopeRules.Usable([.. (loaded.Profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path))]);
+        var repos = ScopeRules.Usable(Entries(loaded.Profile));
         return new ContextScope(loaded.Profile.Context, repos, Caller(callers.Current));
+    }
+
+    /// <summary>
+    /// The profile's repos as the engine takes them: each with the globs of the profile's 'index.denyPaths' and its own (extraction
+    /// adds them to the built-in secret globs and never reads a path they match), or none when neither names any.
+    /// </summary>
+    /// <param name="profile">The approved profile.</param>
+    /// <returns>The repo entries, in profile order.</returns>
+    internal static IReadOnlyList<ProfileRepoEntry> Entries(SindriProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        return [.. (profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path))];
     }
 
     /// <summary>The engine's caller for a Sindri caller; no caller at all is an in-process service.</summary>

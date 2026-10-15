@@ -13,7 +13,7 @@ public sealed class FakeLabeler : ILabeler
     public IList<FileCluster> Shown { get; } = [];
 
     /// <inheritdoc/>
-    public ValueTask<Result<IReadOnlyList<ClusterLabel>>> Label(IReadOnlyList<FileCluster> clusters, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<ClusterLabel>>> Label(IReadOnlyList<FileCluster> clusters, int maxTokens, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(clusters);
         if (Failure is { } failure)

@@ -166,7 +166,7 @@ internal sealed class BuildMapService(
         }
 
         progress?.Report(string.Create(CultureInfo.InvariantCulture, $"labeling {clusters.Clusters.Count} clusters"));
-        return await labeler.Label(clusters.Clusters, cancellationToken).ConfigureAwait(false);
+        return await labeler.Label(clusters.Clusters, settings.Labeling.MaxTokens, cancellationToken).ConfigureAwait(false);
     }
 
     private static void Tell(IProgress<string>? progress, int done, int total) =>
