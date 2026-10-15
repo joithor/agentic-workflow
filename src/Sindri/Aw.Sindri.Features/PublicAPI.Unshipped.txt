@@ -236,7 +236,7 @@ Aw.Sindri.Features.CreateItem.CreateItemRequest
 Aw.Sindri.Features.CreateItem.CreateItemRequest.<Clone>$() -> Aw.Sindri.Features.CreateItem.CreateItemRequest!
 Aw.Sindri.Features.CreateItem.CreateItemRequest.Body.get -> string?
 Aw.Sindri.Features.CreateItem.CreateItemRequest.Body.init -> void
-Aw.Sindri.Features.CreateItem.CreateItemRequest.CreateItemRequest(string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, string? Body, Aw.Sindri.Core.Ids.RecordKey? Link) -> void
+Aw.Sindri.Features.CreateItem.CreateItemRequest.CreateItemRequest(string! Title, Aw.Sindri.Core.Ids.RepoName? Repo = null, string? Body = null, Aw.Sindri.Core.Ids.RecordKey? Link = null) -> void
 Aw.Sindri.Features.CreateItem.CreateItemRequest.Deconstruct(out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out string? Body, out Aw.Sindri.Core.Ids.RecordKey? Link) -> void
 Aw.Sindri.Features.CreateItem.CreateItemRequest.Equals(Aw.Sindri.Features.CreateItem.CreateItemRequest? other) -> bool
 Aw.Sindri.Features.CreateItem.CreateItemRequest.Link.get -> Aw.Sindri.Core.Ids.RecordKey?
