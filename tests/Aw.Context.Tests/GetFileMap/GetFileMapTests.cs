@@ -28,7 +28,7 @@ public sealed class GetFileMapTests : IDisposable
     private async Task ImportTabs() =>
         _ = await _world.ImportYaml(MapWorld.TabsMap);
 
-    private async Task<Aw.Kernel.Result<FileMapView>> Ask(string path = "src/", bool unmapped = false, bool draft = false, ContextScope? scope = null, ContextRepoName? repo = null) =>
+    private async Task<Kernel.Result<FileMapView>> Ask(string path = "src/", bool unmapped = false, bool draft = false, ContextScope? scope = null, ContextRepoName? repo = null) =>
         await _world.Engine.FileMap(new FileMapQuery(repo ?? _repo, path, unmapped, draft), scope ?? MapWorld.Human, MapWorld.None);
 
     [Fact, Trait("Lane", "unit")]

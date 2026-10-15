@@ -34,9 +34,24 @@ public sealed class MapReader(IGraphStore store)
                 : ContextErrors.NoMap.With("there is no map yet (fix: sindri context map import <file>)");
         }
 
-        var applied = OverrideApplier.Apply(map.Graph, map.Overrides).Graph;
+        // A 'propose' row only adds its node to a draft: a pending proposal is never part of the current map (a promote makes an accepted one a node of the version).
+        var layer = draft ? map.Overrides : [.. map.Overrides.Where(o => o.Action != OverrideAction.Propose)];
+        var applied = OverrideApplier.Apply(map.Graph, layer).Graph;
         var visible = MapAccess.Visible(applied, [], scope.Caller);
         return visible.IsError ? visible.Error : new VisibleMap(map, visible.Value.Graph);
+    }
+
+    /// <summary>The map the app's lenses and file-map reads start from: <see cref="Read"/>, but a draft that doesn't exist is SND-CONTEXT-044 (a missing map stays 030).</summary>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="draft">True for the newest draft instead of the current version.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The visible map, or SND-CONTEXT-001/003/004/020/030/044.</returns>
+    public async ValueTask<Result<VisibleMap>> ReadView(ContextScope scope, bool draft, CancellationToken cancellationToken)
+    {
+        var map = await Read(scope, draft, cancellationToken).ConfigureAwait(false);
+        return draft && map.IsError && map.Error.Code == ContextErrors.NoMap.Code
+            ? ContextErrors.NoDraftMap.With("there is no draft map (fix: sindri context map build, then retry; or drop --draft)")
+            : map;
     }
 
     /// <summary>The current map and this call's text scrubbing, for the graph reads: the settings (001), the scrubbers built from them (001), then <see cref="Read"/>.</summary>

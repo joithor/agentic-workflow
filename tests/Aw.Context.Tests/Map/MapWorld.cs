@@ -68,11 +68,12 @@ internal sealed class MapWorld : IDisposable
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
             .AddSingleton<IProbeFileReader>(new NoProbes())
             .AddSingleton<IProbeReportStore>(new NoProbes())
-            .AddSingleton<IRepoReader>(repoReader ?? new FakeRepoReader(Repos[0], Head, BuildFiles))
+            .AddSingleton(repoReader ?? new FakeRepoReader(Repos[0], Head, BuildFiles))
             .AddSingleton<IClusterSource>(Clusters)
             .AddSingleton<ILabeler>(Labeler)
             .AddSingleton<IHeavyJobLock>(HeavyLock)
             .AddSingleton<IReviewFileStore>(ReviewFiles)
+            .AddSingleton<ICurrentUser>(new FakeCurrentUser())
             .AddContextFeatures()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = true });
         _scope = _provider.CreateScope();

@@ -10,6 +10,9 @@ public sealed class FakeClusterSource : IClusterSource
     /// <summary>What every call answers.</summary>
     public ClusterSet Set { get; set; } = new([], Available: false);
 
+    /// <summary>When set, every call fails with it (graphify crashed in a way the source didn't absorb).</summary>
+    public Error? Failure { get; set; }
+
     /// <summary>The repos asked about, in order.</summary>
     public IList<string> Asked { get; } = [];
 
@@ -18,6 +21,6 @@ public sealed class FakeClusterSource : IClusterSource
     {
         ArgumentNullException.ThrowIfNull(repo);
         Asked.Add($"{repo.Name.Value}@{commit}");
-        return ValueTask.FromResult<Result<ClusterSet>>(Set);
+        return ValueTask.FromResult<Result<ClusterSet>>(Failure is { } failure ? failure : Set);
     }
 }

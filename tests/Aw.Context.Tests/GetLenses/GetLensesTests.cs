@@ -46,13 +46,31 @@ public sealed class GetLensesTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_model_label_is_fenced_as_untrusted_text()
+    public async Task Only_text_a_model_wrote_and_nobody_confirmed_is_fenced()
+    {
+        _ = await _world.ImportYaml(MapWorld.Yaml(
+            "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
+            "  - {key: \"feature:a\", label: \"A\"}",
+            "  - {key: \"feature:b\", label: \"Drafted B\", provenance: model}",
+            "edges:",
+            "  - {from: \"feature:b\", to: \"feature:a\", type: part-of}"));
+
+        var view = (await _world.Engine.Lenses("feature:a", draft: false, MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.Equal("A", view.Product.Items.Single(i => i.Key.Value == "feature:a").Label);
+        var model = view.Product.Items.Single(i => i.Key.Value == "feature:b").Label;
+        Assert.NotEqual("Drafted B", model, StringComparer.Ordinal);
+        Assert.Contains("Drafted B", model, StringComparison.Ordinal);
+        Assert.StartsWith("<untrusted", model, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_file_name_is_not_fenced_even_when_its_link_is_a_models_suggestion()
     {
         await ImportTabs();
 
         var view = (await _world.Engine.Lenses(Anchor, draft: false, MapWorld.Human, MapWorld.None)).Value;
 
-        Assert.Equal("Tab manager", view.Product.Items.Single(i => i.Key.Value == Anchor).Label);
         Assert.Equal("TabGroups.ts", view.Code.Items.Single(i => i.Key.Value == "code:src/tabs/TabGroups.ts").Label);
     }
 

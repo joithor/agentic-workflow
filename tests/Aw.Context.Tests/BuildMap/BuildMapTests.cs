@@ -6,6 +6,7 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Results;
 using Aw.Context.Features.BuildMap;
+using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
 
@@ -252,5 +253,57 @@ public sealed class BuildMapTests : IDisposable
         Assert.Equal(["src/commands/ids.ts"], world.Labeler.Shown.SelectMany(c => c.Files), StringComparer.Ordinal);
         var draft = (await world.Store.Snapshot(draft: true, MapWorld.None)).Value!;
         Assert.DoesNotContain(draft.Graph.Nodes, n => n.Key.Value.Contains("private/", StringComparison.Ordinal) || n.Key.Value.Contains("secrets/", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_cluster_source_that_fails_reads_like_an_absent_one()
+    {
+        _world.Clusters.Failure = ContextErrors.SourceUnavailable.With("graphify crashed");
+
+        var report = (await _world.Map.BuildMap(progress: null, Scope, MapWorld.None)).Value;
+
+        Assert.Equal(["clusters"], report.Degraded);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_big_repo_reports_progress_every_fifty_files_and_at_the_end()
+    {
+        var files = Enumerable.Range(0, 120).ToDictionary(i => "src/c" + i.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".ts", i => "export type CommandId = \"cmd-" + i.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\";", StringComparer.Ordinal);
+        using var big = new MapWorld(new FakeRepoReader(MapWorld.Repos[0], MapWorld.Head, files));
+        var progress = new SyncProgress();
+
+        _ = await big.Map.BuildMap(progress, Scope, MapWorld.None);
+
+        Assert.Equal(["extracting 50/120 files", "extracting 100/120 files", "extracting 120/120 files"], progress.Lines.Where(l => l.StartsWith("extracting ", StringComparison.Ordinal)), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_file_git_cant_read_part_way_is_SND_CONTEXT_048_and_writes_no_draft()
+    {
+        var reader = new LeakyRepoReader(MapWorld.Head, new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export type CommandId = \"a\";" });
+        using var broken = new MapWorld(new VanishingRepoReader(reader, "src/a.ts"));
+
+        var report = await broken.Map.BuildMap(progress: null, Scope, MapWorld.None);
+
+        Assert.Equal(ContextErrors.ExtractionUnreadable.Code, report.Error.Code);
+        Assert.Empty((await broken.Store.Versions(MapWorld.None)).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Every_mapped_repo_joins_one_draft_named_for_the_first()
+    {
+        var other = new ContextRepo(ContextRepoName.From("other"), "/work/other");
+        var routing = new RoutingRepoReader(new Dictionary<string, IRepoReader>(StringComparer.Ordinal)
+        {
+            [FixtureMap.Repo] = new FakeRepoReader(MapWorld.Repos[0], MapWorld.Head, MapWorld.BuildFiles),
+            ["other"] = new FakeRepoReader(other, "fedcba9876543210fedcba9876543210fedcba98", new Dictionary<string, string>(StringComparer.Ordinal) { ["src/other.ts"] = "export type CommandId = \"only-here\";" }),
+        });
+        using var both = new MapWorld(routing);
+
+        var report = (await both.Map.BuildMap(progress: null, MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.Equal((FixtureMap.Repo, MapWorld.Head), (report.Draft.Repo.Value, report.Draft.Commit));
+        Assert.Contains(report.Proposed, p => p.Key.Value == "surface:command/only-here");
+        Assert.Contains(report.Proposed, p => p.Key.Value == "surface:command/split-vertical");
     }
 }

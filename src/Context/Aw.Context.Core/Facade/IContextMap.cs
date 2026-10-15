@@ -95,7 +95,7 @@ public interface IContextMap
     /// <summary>Makes the latest draft current (a protected command with the typed challenge: Sindri checks the caller first).</summary>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The new current version, or SND-CONTEXT-001/004/044/046 (undecided items).</returns>
+    /// <returns>The new current version, or SND-CONTEXT-001/004/046 (no draft, or undecided items).</returns>
     public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>Writes a scoping run's surfaces as 'propose' rows in the latest draft (opening one as a copy of current when there is none); never changes current.</summary>

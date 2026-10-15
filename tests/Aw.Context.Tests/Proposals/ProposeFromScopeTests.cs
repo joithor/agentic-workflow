@@ -4,8 +4,8 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Proposals;
-using Aw.Context.Core.Sources;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
 using Aw.Context.Tests.ReviewMap;
@@ -93,6 +93,7 @@ public sealed class ProposeFromScopeTests : IDisposable
     {
         _ = await _world.ImportFixture();
         _ = await Propose();
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));   // rows apply in time order: the reject comes after the proposal
         var decision = new ReviewDecision(ReviewVerb.Reject, _restore);
         Assert.True((await _world.Map.ApplyReview(decision, MapWorld.Human, MapWorld.None)).IsSuccess);
 

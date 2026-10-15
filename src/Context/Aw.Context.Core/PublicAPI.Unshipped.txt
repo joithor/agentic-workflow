@@ -2934,3 +2934,12 @@ static Aw.Context.Core.Engine.LabelingSettings.operator ==(Aw.Context.Core.Engin
 static Aw.Context.Core.Engine.PathDenylist.Defaults.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Context.Core.Engine.PathDenylist.Matches(string! path, System.Collections.Generic.IReadOnlyList<string!>! globs) -> bool
 static Aw.Context.Core.Extract.Recognizers.MayRead(string! path) -> bool
+const Aw.Context.Core.Engine.QueryRules.SymbolMessage = "a symbol anchor is a file path of 1 to 2000 characters" -> string!
+Aw.Context.Core.Map.MapReader.ReadView(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
+Aw.Context.Core.Engine.ICurrentUser
+Aw.Context.Core.Engine.ICurrentUser.Name.get -> string!
+Aw.Context.Core.Review.ReviewDrafts
+static Aw.Context.Core.Review.ReviewDrafts.Draft(Aw.Context.Core.Map.IGraphStore! store, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapSnapshot!>!>
+static Aw.Context.Core.Review.ReviewDrafts.Gate(Aw.Context.Core.Engine.ContextScope! scope, string! what) -> Aw.Kernel.Error?
+static Aw.Context.Core.Review.ReviewDrafts.Load(Aw.Context.Core.Map.IGraphStore! store, Aw.Context.Core.Trust.IScrubberFactory! scrubbers, Aw.Context.Core.Engine.ContextScope! scope, string! what, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Context.Core.Map.MapSnapshot! Draft, Aw.Context.Core.Review.ReviewQueueView! Queue)>!>
+static Aw.Context.Core.Review.ReviewDrafts.Who(Aw.Context.Core.Engine.ContextCaller! caller, Aw.Context.Core.Engine.ICurrentUser! user) -> string!

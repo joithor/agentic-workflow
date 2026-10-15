@@ -2,8 +2,8 @@ using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Proposals;
-using Aw.Context.Core.Sources;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
 using Aw.Context.Tests.ReviewMap;
@@ -60,6 +60,7 @@ public sealed class GetProposalsTests : IDisposable
     {
         _ = await _world.ImportFixture();
         _ = await _world.Map.Propose(Run(), MapWorld.Human, MapWorld.None);
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));   // rows apply in time order: the reject comes after the proposal
         Assert.True((await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.Reject, _restore), MapWorld.Human, MapWorld.None)).IsSuccess);
 
         var view = await Proposals();
@@ -72,6 +73,7 @@ public sealed class GetProposalsTests : IDisposable
     {
         _ = await _world.ImportYaml(MapWorld.Yaml("schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:", "  - {key: \"feature:a\", label: \"A\"}"));
         _ = await _world.Map.Propose(Run(), MapWorld.Human, MapWorld.None);
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));   // rows apply in time order: the accept comes after the proposal
         var accept = new ReviewDecision(ReviewVerb.Accept, _restore);
         Assert.True((await _world.Map.ApplyReview(accept, MapWorld.Human, MapWorld.None)).IsSuccess);
 
@@ -84,7 +86,7 @@ public sealed class GetProposalsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_session_sees_only_the_proposals_of_its_own_repo_and_cant_read_with_sessions_off()
+    public async Task A_session_sees_only_the_proposals_of_its_own_repo_and_nothing_with_sessions_off()
     {
         _ = await _world.ImportFixture();
         _ = await _world.Map.Propose(Run(), MapWorld.Human, MapWorld.None);
@@ -94,7 +96,7 @@ public sealed class GetProposalsTests : IDisposable
         var off = await _world.Map.Proposals("run-1", MapWorld.Session(FixtureMap.Repo, enabled: false), MapWorld.None);
 
         _ = Assert.Single(own.Surfaces);
-        Assert.Equal(ContextErrors.UnknownAnchor.Code, other.Error.Code);
+        Assert.Empty(other.Value.Surfaces);   // a profile repo of its own, with no proposal of its own
         Assert.Equal(ContextErrors.SessionsDisabled.Code, off.Error.Code);
     }
 }

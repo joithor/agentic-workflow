@@ -16,7 +16,7 @@ public sealed class ReviewMapTests : IDisposable
 
     public void Dispose() => _world.Dispose();
 
-    private async Task<Aw.Kernel.Result<ReviewResult>> Decide(ReviewDecision decision, ContextScope? scope = null) =>
+    private async Task<Kernel.Result<ReviewResult>> Decide(ReviewDecision decision, ContextScope? scope = null) =>
         await _world.Map.ApplyReview(decision, scope ?? Drafts.Scope, MapWorld.None);
 
     [Fact, Trait("Lane", "unit")]
@@ -67,7 +67,7 @@ public sealed class ReviewMapTests : IDisposable
         var result = (await Decide(new ReviewDecision(ReviewVerb.Accept, _split))).Value;
 
         var row = Assert.Single((await _world.Store.Overrides(MapWorld.None)).Value);
-        Assert.Equal((OverrideAction.Accept, _split.Value, Environment.UserName), (row.Action, row.Target.Value, row.Who));
+        Assert.Equal((OverrideAction.Accept, _split.Value, "avery"), (row.Action, row.Target.Value, row.Who));
         Assert.Equal([row.ToId().Value], result.Written.Select(w => w.Value), StringComparer.Ordinal);
         Assert.Equal(before.Undecided - 1, result.Undecided);
         Assert.DoesNotContain((await Drafts.Queue(_world)).Entries, e => e.Node.Value == _split.Value);
