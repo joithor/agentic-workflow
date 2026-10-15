@@ -109,6 +109,9 @@ public static class MetaFeaturesServiceCollectionExtensions
         .Validated<MergeRunService, MergeRunRequest, MergeRunResponse>();
 
     private static IServiceCollection AddHostSlices(this IServiceCollection services) => services
+        .AddScoped<HostProbe>()
+        .AddScoped<LaneCheck>()
+        .AddScoped<OrphanKiller>()
         .AddScoped<HealthService>()
         .Plain<HealthService, HealthRequest, HealthResponse>()
         .AddScoped<WatchService>()

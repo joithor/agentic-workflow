@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using Aw.Meta.Core;
 using Aw.Meta.Core.Health;
 using Aw.Meta.Features.Health;
@@ -12,7 +11,12 @@ public sealed class HealthTests
     private const string Headroom = "node /x/headroom-mcp.js";
     private readonly MetaWorld _world = new();
 
-    private HealthService Service() => new();
+    private HealthService Service() => new(
+        new HostProbe(_world.Processes, _world.Resources),
+        new LaneCheck(_world.Config, _world.Sessions, _world.Messages, _world.Lanes),
+        new OrphanKiller(_world.Processes, _world.Log, _world.Clock),
+        _world.Values,
+        _world.Clock);
 
     private async Task<HealthResponse> Check(bool kill = false)
     {
