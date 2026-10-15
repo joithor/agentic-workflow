@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
@@ -258,7 +259,7 @@ public sealed class WorkflowViewRecipeShapeTests
 
     private static System.Text.Json.JsonElement RecipeGolden(string id)
     {
-        var path = Aw.Kernel.Testing.Golden.SourcePath(typeof(WorkflowViewRecipeShapeTests).Assembly, $"Golden/Api/workflow-recipe/{id}.json");
+        var path = Golden.SourcePath(typeof(WorkflowViewRecipeShapeTests).Assembly, $"Golden/Api/workflow-recipe/{id}.json");
         Assert.True(File.Exists(path), $"no recipe golden workflow-recipe/{id}.json");
         return System.Text.Json.JsonDocument.Parse(File.ReadAllText(path)).RootElement.Clone();
     }
