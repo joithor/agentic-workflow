@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Sindri.Core.Text;
@@ -13,6 +14,9 @@ namespace Aw.Sindri.Host;
 internal sealed class ProblemWithExtensions(Error error, int status) : IResult
 {
     internal const int MaxString = 200;
+
+    /// <summary>The most items of one array that are written; the rest become one final "…(N more)" string item.</summary>
+    internal const int MaxItems = 100;
 
     public Task ExecuteAsync(HttpContext httpContext)
     {
@@ -36,7 +40,8 @@ internal sealed class ProblemWithExtensions(Error error, int status) : IResult
             Write(writer, scrubber, value);
         }
 
-        return JsonDocument.Parse(buffer.ToArray()).RootElement.Clone();
+        using var document = JsonDocument.Parse(buffer.ToArray());
+        return document.RootElement.Clone();
     }
 
     private static void Write(Utf8JsonWriter writer, ITextScrubber scrubber, JsonElement value)
@@ -52,9 +57,20 @@ internal sealed class ProblemWithExtensions(Error error, int status) : IResult
         else if (value.ValueKind == JsonValueKind.Array)
         {
             writer.WriteStartArray();
+            var written = 0;
             foreach (var item in value.EnumerateArray())
             {
+                if (written++ == MaxItems)
+                {
+                    break;
+                }
+
                 Write(writer, scrubber, item);
+            }
+
+            if (value.GetArrayLength() > MaxItems)
+            {
+                writer.WriteStringValue(string.Create(CultureInfo.InvariantCulture, $"…({value.GetArrayLength() - MaxItems} more)"));
             }
 
             writer.WriteEndArray();
@@ -68,9 +84,17 @@ internal sealed class ProblemWithExtensions(Error error, int status) : IResult
     private static void WriteObject(Utf8JsonWriter writer, ITextScrubber scrubber, JsonElement value)
     {
         writer.WriteStartObject();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var member in value.EnumerateObject())
         {
-            writer.WritePropertyName(SafeText.Clean(scrubber, member.Name, MaxString));
+            var cleaned = SafeText.Clean(scrubber, member.Name, MaxString);
+            var name = cleaned;
+            for (var n = 2; !seen.Add(name); n++)
+            {
+                name = string.Create(CultureInfo.InvariantCulture, $"{cleaned}~{n}");   // two names that clean alike stay two members
+            }
+
+            writer.WritePropertyName(name);
             Write(writer, scrubber, member.Value);
         }
 

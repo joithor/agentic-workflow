@@ -21,9 +21,9 @@ public sealed class ErrorExtensionsProblemTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         var tooLong = new string('x', 300);
         var error = ErrorOf(KernelErrors.NotFound.With("no anchor 'intro'")
-            .WithExtension("suggestedAnchors", JsonDocument.Parse($$"""[{"key":"a\u001b[31m","label":"line one\nline two"},{"key":"b","label":"{{tooLong}}"}]""").RootElement)
-            .WithExtension("count", JsonDocument.Parse("2").RootElement)
-            .WithExtension("closest", JsonDocument.Parse("""{"why":"tab\there","exact":true,"none":null}""").RootElement));
+            .WithExtension("suggestedAnchors", Element($$"""[{"key":"a\u001b[31m","label":"line one\nline two"},{"key":"b","label":"{{tooLong}}"}]"""))
+            .WithExtension("count", Element("2"))
+            .WithExtension("closest", Element("""{"why":"tab\there","exact":true,"none":null}""")));
 
         var (status, body) = await Get(error, ct);
         var names = body.EnumerateObject().Select(p => p.Name).ToList();
@@ -55,6 +55,84 @@ public sealed class ErrorExtensionsProblemTests : IDisposable
         Assert.Equal(["type", "title", "status", "detail", "traceId"], body.EnumerateObject().Select(p => p.Name).ToList());
     }
 
+    [Fact(Timeout = Deadline), Trait("Lane", "integration")]
+    public async Task The_trace_id_is_still_last_a_secret_in_a_leaf_is_redacted_and_a_nested_member_name_is_escaped()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var secret = string.Concat("sk", "-ant-", new string('q', 30));   // built at runtime: a literal key trips the repo's secret hook
+        var error = ErrorOf(KernelErrors.NotFound.With("no anchor")
+            .WithExtension("hint", Element($$"""{"note":"key {{secret}} here","a\u001bb":1}""")));
+
+        var (_, body) = await Get(error, ct);
+        var names = body.EnumerateObject().Select(p => p.Name).ToList();
+
+        Assert.Equal("traceId", names[^1]);
+        Assert.Equal("hint", names[^2]);
+        var hint = body.GetProperty("hint");
+        Assert.DoesNotContain(secret, hint.GetRawText(), StringComparison.Ordinal);
+        Assert.DoesNotContain("qqqqqqqq", hint.GetRawText(), StringComparison.Ordinal);
+        Assert.True(hint.TryGetProperty("a\\x1Bb", out _), hint.GetRawText());
+    }
+
+    [Fact(Timeout = Deadline), Trait("Lane", "integration")]
+    public async Task An_array_is_cut_at_100_items_with_a_marker()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var items = string.Join(',', Enumerable.Range(0, 130));
+        var error = ErrorOf(KernelErrors.NotFound.With("many")
+            .WithExtension("candidates", Element($"[{items}]")));
+
+        var (_, body) = await Get(error, ct);
+        var candidates = body.GetProperty("candidates");
+
+        Assert.Equal(101, candidates.GetArrayLength());
+        Assert.Equal(99, candidates[99].GetInt32());
+        Assert.Equal("…(30 more)", candidates[100].GetString());
+    }
+
+    [Fact(Timeout = Deadline), Trait("Lane", "integration")]
+    public async Task Names_that_clean_to_the_same_text_get_a_numbered_suffix()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var tooLong = new string('n', 250);
+        var error = ErrorOf(KernelErrors.NotFound.With("dup")
+            .WithExtension("clash", Element($$"""{"{{tooLong}}1":1,"{{tooLong}}2":2,"{{tooLong}}3":3}""")));
+
+        var (_, body) = await Get(error, ct);
+        var names = body.GetProperty("clash").EnumerateObject().Select(p => p.Name).ToList();
+
+        Assert.Equal(3, names.Count);
+        Assert.Equal(3, names.Distinct(StringComparer.Ordinal).Count());
+        Assert.EndsWith("~2", names[1], StringComparison.Ordinal);
+        Assert.EndsWith("~3", names[2], StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = Deadline), Trait("Lane", "integration")]
+    public async Task A_middleware_refusal_carries_the_errors_extensions_too()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var error = KernelErrors.NotFound.With("refused").WithExtension("why", Element("\"tab\\there\""));
+
+        await using var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => _home.Path, _ => null }, TimeProvider.System, NoTemporal.Use);
+        _ = Pipeline.Configure(app);
+        _ = app.MapGet("/probe-write", context => ApiProblems.Write(context, error, 503));
+        await app.StartAsync(ct);
+        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };
+        var answer = await http.GetAsync(new Uri("/probe-write", UriKind.Relative), ct);
+        using var body = JsonDocument.Parse(await answer.Content.ReadAsStringAsync(ct));
+        await app.StopAsync(ct);
+
+        Assert.Equal(503, (int)answer.StatusCode);
+        Assert.Equal("AW-KERNEL-002", body.RootElement.GetProperty("title").GetString());
+        Assert.Equal("tab here", body.RootElement.GetProperty("why").GetString());
+    }
+
+    private static JsonElement Element(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
+
     private static Result<Unit> ErrorOf(Error error) => error;
 
     private async Task<(int Status, JsonElement Body)> Get(Result<Unit> result, CancellationToken ct)
@@ -66,7 +144,8 @@ public sealed class ErrorExtensionsProblemTests : IDisposable
         using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };
 
         var answer = await http.GetAsync(new Uri("/probe-ext", UriKind.Relative), ct);
-        var body = JsonDocument.Parse(await answer.Content.ReadAsStringAsync(ct)).RootElement.Clone();
+        using var document = JsonDocument.Parse(await answer.Content.ReadAsStringAsync(ct));
+        var body = document.RootElement.Clone();
         await app.StopAsync(ct);
         return ((int)answer.StatusCode, body);
     }

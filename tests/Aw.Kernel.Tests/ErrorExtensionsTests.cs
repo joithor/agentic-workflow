@@ -124,7 +124,7 @@ public sealed class ErrorExtensionsTests
     public void The_reserved_names_cannot_be_mutated_through_a_cast()
     {
         Assert.False(ErrorExtensions.ReservedNames is string[]);
-        Assert.True(ErrorExtensions.ReservedNames is not System.Collections.Generic.IList<string> list || list.IsReadOnly);
+        Assert.True(ErrorExtensions.ReservedNames is not IList<string> list || list.IsReadOnly);
     }
 
     [Fact]
