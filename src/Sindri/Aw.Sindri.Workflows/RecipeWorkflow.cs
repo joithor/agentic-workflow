@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Views;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
@@ -46,11 +47,13 @@ internal sealed partial class RecipeWorkflow
     private DateTimeOffset _since;
     private TimeSpan _deskTimeout;
     private string? _repo;
+    private SubjectRef? _subject;
     private string? _recorded;
     private StepCompleted? _report;
     private string? _reportId;
     private int _runs;
     private int _mirrored;
+    private readonly Dictionary<FactKey, FactProvenance> _provenance = [];
 
     /// <summary>
     /// Interprets the recipe from its initial state to a terminal one (spec §5.1): an active state runs its Step (unit
@@ -94,8 +97,9 @@ internal sealed partial class RecipeWorkflow
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
+        _subject = SubjectRefs.Of(_recipe, start.Item, SubjectRefs.NeedsContent(_recipe) && start.Inputs.TryGetValue(loaded.Recipe.Inputs[0].Key, out var first) ? await SubjectTextOf(first.Value).ConfigureAwait(true) : null);
         var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
-        var instance = Enter(change.After);
+        var instance = Enter(change.After, Desk);
         await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: WorkflowEventDetail.Of(change.Event, trigger: null), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
         return (instance, _context);
     }
@@ -107,11 +111,8 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt()) with { Version = _mirrored, Id = instance.Id }
-            : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
-            {
-                Id = WorkflowInstanceId.Of(start.WorkflowId()),
-            };
+            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt(), new InstanceViewContext(_mirrored, _provenance, Subject: _subject)) with { Id = instance.Id }
+            : InstanceViews.Starting(start.WorkflowId(), start.Recipe, _since, start.Item, _subject);
     }
 
     /// <summary>
@@ -169,11 +170,14 @@ internal sealed partial class RecipeWorkflow
     /// timers (spec §5.5, <see cref="StateTimers.Between"/>): a new entry or run, or an answer that ended a park, arms the
     /// state's full timeout; a park, escalation or end stops it; a 'then: retry' arms the retry timer; a takeover pauses
     /// it and keeps what was left on its suspension, which the handback re-arms. The first entry arms its state's
-    /// timeout unless it parked at once; a start taken over (E-19) keeps the full timeout for the handback.
+    /// timeout unless it parked at once; a start taken over (E-19) keeps the full timeout for the handback. It also
+    /// records who produced each fact the change wrote (<paramref name="actor"/>, at the workflow's clock), which the
+    /// fact rows show as 'by' and 'at'.
     /// </summary>
     /// <returns>The instance as the interpreter holds it: a takeover's suspension carries what it paused.</returns>
-    private WorkflowInstance Enter(WorkflowInstance instance)
+    private WorkflowInstance Enter(WorkflowInstance instance, string actor)
     {
+        Stamp(instance, actor);
         var before = _instance;
         if (before is null || !string.Equals(before.State, instance.State, StringComparison.Ordinal) || before.Frame.Entry != instance.Frame.Entry)
         {
@@ -203,6 +207,18 @@ internal sealed partial class RecipeWorkflow
             (null, { } after) => _timers.Apply(new TimerAction(TimerActionKind.Arm, DeadlineKind.State, after), instance.Frame.Entry),
             _ => _timers.Apply(TimerAction.Stop, instance.Frame.Entry),
         };
+    }
+
+    /// <summary>Records <paramref name="actor"/> and now as the producer of every fact <paramref name="instance"/> holds that the previous state did not, or held with another value.</summary>
+    private void Stamp(WorkflowInstance instance, string actor)
+    {
+        foreach (var (key, value) in instance.Facts)
+        {
+            if (_instance is null || !_instance.Facts.TryGetValue(key, out var before) || before != value)
+            {
+                _provenance[key] = new FactProvenance(actor, Now);
+            }
+        }
     }
 
     /// <summary>The workflow's deterministic clock, as an offset in UTC.</summary>
