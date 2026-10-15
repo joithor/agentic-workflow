@@ -479,6 +479,14 @@ Aw.Context.Core.Models.ModelRequest.Prompt.get -> string!
 Aw.Context.Core.Models.ModelRequest.Prompt.init -> void
 Aw.Context.Core.Models.ModelRequest.Purpose.get -> Aw.Context.Core.Models.ModelPurpose
 Aw.Context.Core.Models.ModelRequest.Purpose.init -> void
+Aw.Context.Core.Onyx.OnyxSettings
+Aw.Context.Core.Onyx.OnyxSettings.<Clone>$() -> Aw.Context.Core.Onyx.OnyxSettings!
+Aw.Context.Core.Onyx.OnyxSettings.Address.get -> string!
+Aw.Context.Core.Onyx.OnyxSettings.CheckVersion(string! reported) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Context.Core.Onyx.OnyxSettings.Equals(Aw.Context.Core.Onyx.OnyxSettings? other) -> bool
+Aw.Context.Core.Onyx.OnyxSettings.Token.get -> string!
+Aw.Context.Core.Onyx.OnyxSettings.Url.get -> System.Uri!
+Aw.Context.Core.Onyx.OnyxSettings.Version.get -> string!
 Aw.Context.Core.Packing.PackCandidate
 Aw.Context.Core.Packing.PackCandidate.<Clone>$() -> Aw.Context.Core.Packing.PackCandidate!
 Aw.Context.Core.Packing.PackCandidate.Deconstruct(out string! Section, out Aw.Context.Core.Results.ResultItem! Item, out string! Marker) -> void
@@ -1013,6 +1021,9 @@ override Aw.Context.Core.Models.ModelAnswer.ToString() -> string!
 override Aw.Context.Core.Models.ModelRequest.Equals(object? obj) -> bool
 override Aw.Context.Core.Models.ModelRequest.GetHashCode() -> int
 override Aw.Context.Core.Models.ModelRequest.ToString() -> string!
+override Aw.Context.Core.Onyx.OnyxSettings.Equals(object? obj) -> bool
+override Aw.Context.Core.Onyx.OnyxSettings.GetHashCode() -> int
+override Aw.Context.Core.Onyx.OnyxSettings.ToString() -> string!
 override Aw.Context.Core.Packing.PackCandidate.Equals(object? obj) -> bool
 override Aw.Context.Core.Packing.PackCandidate.GetHashCode() -> int
 override Aw.Context.Core.Packing.PackCandidate.ToString() -> string!
@@ -1130,6 +1141,9 @@ static Aw.Context.Core.Models.ModelAnswer.operator !=(Aw.Context.Core.Models.Mod
 static Aw.Context.Core.Models.ModelAnswer.operator ==(Aw.Context.Core.Models.ModelAnswer? left, Aw.Context.Core.Models.ModelAnswer? right) -> bool
 static Aw.Context.Core.Models.ModelRequest.operator !=(Aw.Context.Core.Models.ModelRequest? left, Aw.Context.Core.Models.ModelRequest? right) -> bool
 static Aw.Context.Core.Models.ModelRequest.operator ==(Aw.Context.Core.Models.ModelRequest? left, Aw.Context.Core.Models.ModelRequest? right) -> bool
+static Aw.Context.Core.Onyx.OnyxSettings.Create(string? url, string? token, string? version) -> Aw.Kernel.Result<Aw.Context.Core.Onyx.OnyxSettings!>!
+static Aw.Context.Core.Onyx.OnyxSettings.operator !=(Aw.Context.Core.Onyx.OnyxSettings? left, Aw.Context.Core.Onyx.OnyxSettings? right) -> bool
+static Aw.Context.Core.Onyx.OnyxSettings.operator ==(Aw.Context.Core.Onyx.OnyxSettings? left, Aw.Context.Core.Onyx.OnyxSettings? right) -> bool
 static Aw.Context.Core.Packing.PackCandidate.operator !=(Aw.Context.Core.Packing.PackCandidate? left, Aw.Context.Core.Packing.PackCandidate? right) -> bool
 static Aw.Context.Core.Packing.PackCandidate.operator ==(Aw.Context.Core.Packing.PackCandidate? left, Aw.Context.Core.Packing.PackCandidate? right) -> bool
 static Aw.Context.Core.Packing.Packed.operator !=(Aw.Context.Core.Packing.Packed? left, Aw.Context.Core.Packing.Packed? right) -> bool
@@ -1222,6 +1236,7 @@ static Aw.Context.Core.Trust.ScrubbedField.operator ==(Aw.Context.Core.Trust.Scr
 static Aw.Context.Core.Trust.UntrustedFence.Escape(string! text) -> string!
 static Aw.Context.Core.Trust.UntrustedFence.Wrap(string! source, string? author, string! body) -> string!
 static readonly Aw.Context.Core.ContextErrors.AllSourcesUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.OnyxNotPinnedOrLoopback -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.PathInWorktree -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.QueryInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.SessionsDisabled -> Aw.Kernel.ErrorDefinition!
@@ -1230,12 +1245,42 @@ static readonly Aw.Context.Core.ContextErrors.SourceNotConfigured -> Aw.Kernel.E
 static readonly Aw.Context.Core.ContextErrors.SourceUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.StoreUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.UnknownAnchor -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Onyx.OnyxRecordIdentity
+Aw.Context.Core.Onyx.OnyxRecordIdentity.<Clone>$() -> Aw.Context.Core.Onyx.OnyxRecordIdentity!
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Alias.get -> string?
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Alias.init -> void
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Canonical.get -> Aw.Context.Core.Sources.RecordKey
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Canonical.init -> void
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Deconstruct(out Aw.Context.Core.Sources.RecordKey Canonical, out Aw.Context.Core.Sources.RecordKind Kind, out string? Alias) -> void
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Equals(Aw.Context.Core.Onyx.OnyxRecordIdentity? other) -> bool
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Kind.get -> Aw.Context.Core.Sources.RecordKind
+Aw.Context.Core.Onyx.OnyxRecordIdentity.Kind.init -> void
+Aw.Context.Core.Onyx.OnyxRecordIdentity.OnyxRecordIdentity(Aw.Context.Core.Sources.RecordKey Canonical, Aw.Context.Core.Sources.RecordKind Kind, string? Alias) -> void
+Aw.Context.Core.Onyx.OnyxRecordKeys
+Aw.Context.Core.Sources.SourceHit.Aliases.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Sources.SourceHit.Aliases.init -> void
+override Aw.Context.Core.Onyx.OnyxRecordIdentity.Equals(object? obj) -> bool
+override Aw.Context.Core.Onyx.OnyxRecordIdentity.GetHashCode() -> int
+override Aw.Context.Core.Onyx.OnyxRecordIdentity.ToString() -> string!
+static Aw.Context.Core.Onyx.OnyxRecordIdentity.operator !=(Aw.Context.Core.Onyx.OnyxRecordIdentity? left, Aw.Context.Core.Onyx.OnyxRecordIdentity? right) -> bool
+static Aw.Context.Core.Onyx.OnyxRecordIdentity.operator ==(Aw.Context.Core.Onyx.OnyxRecordIdentity? left, Aw.Context.Core.Onyx.OnyxRecordIdentity? right) -> bool
+static Aw.Context.Core.Onyx.OnyxRecordKeys.Identify(Aw.Context.Core.Sources.ExternalId document, string! sourceType, string! semanticIdentifier, string? link, System.Collections.Generic.IReadOnlySet<string!>! teams) -> Aw.Context.Core.Onyx.OnyxRecordIdentity?
+static Aw.Context.Core.Onyx.OnyxRecordKeys.KindOf(Aw.Context.Core.Sources.RecordKey canonical) -> Aw.Context.Core.Sources.RecordKind
+static readonly Aw.Context.Core.ContextErrors.OnyxDocumentNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.OnyxKeyNotServiceAccount -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.OnyxKeyRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.OnyxUnexpectedReply -> Aw.Kernel.ErrorDefinition!
 Aw.Context.Core.Docs.RepoDocs
 Aw.Context.Core.Engine.SettingsReader
 Aw.Context.Core.Trust.Permalinks
 static Aw.Context.Core.Docs.RepoDocs.Id.get -> Aw.Context.Core.Sources.SourceId
 static Aw.Context.Core.Engine.SettingsReader.Read(System.Text.Json.JsonElement? section) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ContextSettings!>!
 static Aw.Context.Core.Trust.Permalinks.Allowed(System.Uri? link) -> System.Uri?
+Aw.Context.Core.Engine.ContextSettings.Onyx.get -> Aw.Context.Core.Onyx.OnyxSettings?
+Aw.Context.Core.Engine.ContextSettings.Onyx.init -> void
+Aw.Context.Core.Engine.ContextSettings.LinearTeams.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Engine.ContextSettings.LinearTeams.init -> void
+static Aw.Context.Core.Engine.ScopeRules.MayRead(Aw.Context.Core.Engine.ContextCaller! caller, Aw.Context.Core.Sources.SourceDescriptor! source) -> bool
 Aw.Context.Core.Engine.ContextCaller.ContextCaller(Aw.Context.Core.Engine.ContextCallerKind Kind, Aw.Context.Core.Engine.ContextRepoName? Repo, Aw.Context.Core.Engine.ContextClient Client) -> void
 Aw.Context.Core.Engine.ContextCaller.Deconstruct(out Aw.Context.Core.Engine.ContextCallerKind Kind, out Aw.Context.Core.Engine.ContextRepoName? Repo, out Aw.Context.Core.Engine.ContextClient Client) -> void
 Aw.Context.Core.Engine.ContextCaller.Repo.get -> Aw.Context.Core.Engine.ContextRepoName?
@@ -1289,6 +1334,10 @@ override Aw.Context.Core.Engine.ProfileRepoEntry.ToString() -> string!
 static Aw.Context.Core.Engine.ProfileRepoEntry.operator !=(Aw.Context.Core.Engine.ProfileRepoEntry? left, Aw.Context.Core.Engine.ProfileRepoEntry? right) -> bool
 static Aw.Context.Core.Engine.ProfileRepoEntry.operator ==(Aw.Context.Core.Engine.ProfileRepoEntry? left, Aw.Context.Core.Engine.ProfileRepoEntry? right) -> bool
 static Aw.Context.Core.Engine.ScopeRules.Usable(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ProfileRepoEntry!>! repos) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
+Aw.Context.Core.Ranking.FusedItem.Aliases.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Ranking.FusedItem.Aliases.init -> void
+Aw.Context.Core.Results.Citation.Aliases.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Results.Citation.Aliases.init -> void
 static Aw.Context.Core.Trust.UntrustedFence.Prefix(string! text, int length) -> string!
 static Aw.Context.Core.Engine.SettingsReader.Check(System.Text.Json.JsonElement? section, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ProfileRepoEntry!>! repos) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ContextSettings!>!
 static Aw.Context.Core.Docs.RepoDocs.TryChunkId(Aw.Context.Core.Engine.ContextRepoName repo, string! path, int start, int end, out Aw.Context.Core.Sources.ExternalId id) -> bool

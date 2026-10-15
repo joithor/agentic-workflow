@@ -179,8 +179,11 @@ public sealed record SourceRef(SourceId Source, ExternalId Id, SourceVersion Ver
 // Canonical: one key per real-world record across adapters, e.g. linear:issue/<uuid> (alias ENG-482), linear:doc/<uuid>,
 // slack:<channel>/<ts>, repo:<repo>/<path>. Each adapter maps its own ids to it. Onyx's Linear connector uses the
 // issue's UUID as its document id, so Onyx's Linear records key directly on linear:issue/<uuid>; the identifier
-// (ENG-482) from the document's structured metadata (never from text, matching `^[A-Z][A-Z0-9]+-[0-9]+$` with a team
-// key from the profile) is written as an alias. Decision keys use the UUID key, so they never change.
+// (ENG-482) is written as an alias. It comes from the connector-built title prefix "[ENG-482]" and must match the
+// issue link's path (`https://linear.app/<workspace>/issue/ENG-482/…`); both are built by Onyx's connector from
+// Linear's own fields, never taken from body text. It matches `^[A-Z][A-Z0-9]+-[0-9]+$` with a team key from the
+// profile, and a prefix and link that disagree give no alias. (Onyx CE v4.9.0 doesn't return the identifier in a search
+// hit's metadata.) Decision keys use the UUID key, so they never change.
 
 public interface IContextSource
 {
@@ -204,8 +207,9 @@ public sealed record SourceRecord(SourceRef Ref, RecordKind Kind, string Title, 
 public sealed record ChangePage(IReadOnlyList<SourceRef> Changed, IReadOnlyList<ExternalId> Removed, SourceCursor Next);
 ```
 
-- **Read-only by construction.** Credentials are read-only and least-privilege (§8.8); `context sources status`
-  reports the scope each token actually has where the source exposes it.
+- **Read-only by construction.** Adapters only read. Credentials are the least privilege that serves the contract:
+  Onyx's is an admin key on its own service account, held to read requests by an allowlist (§8.8); `context sources
+  status` reports the scope each token actually has where the source exposes it.
 - **Errors** (`Result<T>`): `Unavailable` (the query goes on without the source and reports `degraded`), `NotFound`,
   `Fatal`. No `RateLimited` for Local sources (D6); a Shared source's declared limits are README X61's later work.
 - **Freshness:** every hit carries `AsOf`. `Search`, `Fetch` and `Versions` are live; `Changes` drives a scheduled sync.
@@ -224,7 +228,7 @@ public sealed record ChangePage(IReadOnlyList<SourceRef> Changed, IReadOnlyList<
 |---|---|---|---|---|---|
 | `repo-docs` | Doc | Lexical: SQLite FTS5 over **scrubbed** doc chunks at HEAD of the profile repos' doc globs | `git cat-file` at the blob sha; line spans | Commits touching the globs, run by a scheduled service (every 5 min by default) and on `context sources sync` | 1 |
 | `linear` (native) | Intent | Title and key lookup only (Onyx searches issue text) | Projects, Linear Documents, project updates, issues **with their comments**, issue↔PR attachments; version `updatedAt`. Writes identifier → UUID aliases on every fetch and search hit; hand-written GraphQL (D18) | `updatedAt` filter, by the profile's teams || 6 |
-| `onyx` | Intent | Onyx search (HTTP search API preferred; MCP `search` only if it exposes `updatedAt` and the federated lane), several sub-queries, top-k candidates | Onyx document by id; version `updatedAt` | Document listing by updated time (verified in Phase 5) || 5 |
+| `onyx` | Intent | Onyx CE v4.9.0's `POST /api/admin/search` (keyword retrieval, document ids, `updated_at`; §8.8 for the key), several sub-queries, top-k candidates | Onyx document by id (`GET /api/document/document-size-info`, then `chunk-info` per chunk); version `updatedAt` from the search hit. `Versions` answers `Unavailable` (no route gives `updated_at` by id), so Onyx citations say `version unchecked` until S-6's native Linear source versions the same records | None (§12) || 5 |
 | `code` | Code | Index lookup: symbol name, path, embedding neighbors | Symbol at a commit sha | Index rebuilds | 9 |
 
 Files are a code-layer source from Phase 4 without the index block: the extractor reads them from git at a commit
@@ -553,7 +557,7 @@ context:
   sessions: { enabled: false }           # every session-class read, any transport; off until approved (§3)
   sources:
     linear: { token: "keychain:linear/work-read", teams: [ENG, APP] }   # url: Linear's API host (or loopback, tests)
-    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-read", version: "<pinned tag>" }
+    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "<pinned tag>" }
   eval: { adjudicator: false }
 services:                                 # S1's map; the engine's services run only when named here
   context-docs-refresh: { every: 5m }
@@ -565,17 +569,29 @@ services:                                 # S1's map; the engine's services run 
 Defaults are what's shown; `profile validate` reports any `context.*` error with its key path.
 
 **Linear key:** a personal API key created with read-only permission, stored with `security add-generic-password -s
-linear -a work-read -w`; `context sources status` checks it can read projects, documents and issues of the listed
+linear -a work-read -w` (Linux: `secret-tool store --label "linear/work-read" service linear account work-read`); `context sources status` checks it can read projects, documents and issues of the listed
 teams.
 
 **Onyx setup (Phase 5 deliverable, `docs/sindri/onyx.md`):** a pinned Onyx release (the tag, not `latest`, recorded in
 the profile and checked by doctor); the compose file's published ports bound to `127.0.0.1`; the local embedding model
 server, with no cloud LLM or embedding provider configured; Onyx telemetry off; connectors scoped (Linear from a start
-date covering the backtest projects; Slack federated or the product's channels; docs connectors limited to the
-product's spaces); an Onyx API key with the narrowest role that can search, stored by pointer. Doctor
-`context:onyx` checks the loopback bind, the version and that the key can search. The no-cloud-provider and telemetry-off
-settings can't be read with a search-only key, so the setup doc lists them as a manual check on each Onyx version change. First indexing time is reported by
-`context sources status` from Onyx's own connector status.
+date covering the backtest projects; Slack through Onyx's indexing connector, limited to the product's channels; docs
+connectors limited to the product's spaces); an Onyx API key, stored by pointer. Doctor `context:onyx` checks the
+loopback bind, the version, that the key can search, and shows the key's role and account type.
+
+**Pinned release and the key (owner decision, 2026-10-12):** Onyx CE **v4.9.0** (commit `f1738ed5`). Its key is an
+**admin** key of its own service account, not the narrowest key that can search: no v4.9.0 CE route keeps D3 and D16
+with a read key. The public `POST /api/search` (scope `read:search`) needs an LLM, lets the LLM pick the results and
+returns no document id; only `POST /api/admin/search` returns document ids and `updated_at` without a model. Mitigations:
+the `onyx` adapter can send only its own requests (search, the two document reads, the version and the key's own
+`/api/me`), an allowlist enforced in Infrastructure and tested; doctor shows the key's role so it stays visible; and the
+key belongs to a service account used by Sindri alone. Admin search also returns documents an Onyx admin hid from
+search (`include_hidden`); the adapter drops every hit Onyx marks `hidden`. The adapter never reads Onyx's settings or
+connector status (neither route is on its allowlist), so the no-cloud-provider and telemetry-off settings are a manual
+check in the setup doc on each Onyx version change, and indexing progress, first indexing included, is read in Onyx's
+own admin UI, not reported by `context sources status`. A future shared Onyx (README X61) would declare its placement
+and limits through `SourceDescriptor.Placement` and `SourceDescriptor.Limits`; today's local one keeps the defaults
+(`Local`, no limits).
 
 ### 8.9 Lenses and the file map (UI E-26, E-27)
 
@@ -765,10 +781,13 @@ fake passes `ContextSourceContract<TSource>`. Tests never touch work data or the
 
 ## 12. Open items (each owned by the named phase)
 
-- Whether Onyx's HTTP search returns `updatedAt` and the federated Slack lane (Phase 5; fall back to Onyx's MCP
-  `search` only if it does both).
-- An Onyx change feed by updated time (Phase 5); without one, links are re-derived from search hits and the gap is
-  reported by `context sources status`.
+- **Closed (S-5A, Onyx CE v4.9.0):** search returns `updated_at` (`POST /api/admin/search`, §5.2, §8.8). The
+  federated Slack lane is not used: Slack comes through Onyx's indexing connector. The MCP `search` adds nothing (it
+  wraps `POST /api/search`, which has no document id). Admin search includes hidden documents; the adapter drops
+  them (§8.8).
+- **Closed (S-5A):** Onyx has no change feed: its document listing (`/onyx-api/connector-docs`) is per connector, has no
+  times and isn't on the adapter's allowlist, so links are re-derived from search hits. The gap is documented in `docs/sindri/onyx.md` §7, not
+  reported by `context sources status`, which reads no Onyx connector status (§8.8).
 - Linear document content history for as-of cuts (Phase 6).
 - Feature weights (Phase 8), starting equal.
 - Where this engine meets TS `sindri scope` before the switch: none. `sindri scope` keeps running as it is; the scoping
@@ -1044,8 +1063,8 @@ defaults:
    After a restart, resume from your stage's row in `stages.md` and your `$STAGE_DIR` files.
 7. **A stage with a partial dependency** (S-4 and S-5B on API P6's job route, S-6 on S-5B): before the dependency
    merges, run steps 1–2 for the whole stage, late part included (the verification plan names its journey), and
-   step 3 for everything except the late part; then report `parked: <dependency>` and open no PR yet (step 7 needs the
-   hand test). A parked stage holds no building slot and is not a base to stack on. When the lead says the dependency
+   step 3 for everything except the late part; then push the work so far, open a draft PR (so progress isn't lost if
+   storage fills up; owner decision 2026-10-12) and report `parked: <dependency>`. A parked stage holds no building slot and is not a base to stack on. When the lead says the dependency
    merged, rebase, do step 3 for the late part, then run steps 4–9 in full on the whole stage (for S-4 the hand test
    is the first time `map build` runs); a woken stage takes the next free building slot, ahead of new stages (a woken stage is not a new stage for the caps). If the
    stage still stacks on an unmerged base (S-4 on S-3b, or S-5B on S-3b or S-5A), the lead first has the stack

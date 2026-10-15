@@ -93,7 +93,7 @@ public sealed class QueryRulesTests
     [Fact, Trait("Lane", "unit")]
     public void The_depth_check_for_a_number_gives_the_same_006_as_the_text_parse()
     {
-        Assert.Null(QueryRules.CheckDepth(null));
+        Assert.Null(QueryRules.CheckDepth(depth: null));
         Assert.Null(QueryRules.CheckDepth(3));
         Assert.Equal(QueryRules.ParseDepth("9").Error, QueryRules.CheckDepth(9));
         Assert.Equal(QueryRules.ParseDepth("-1").Error, QueryRules.CheckDepth(-1));

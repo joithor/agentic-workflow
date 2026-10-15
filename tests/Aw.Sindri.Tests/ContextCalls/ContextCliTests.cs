@@ -172,4 +172,35 @@ public sealed class ContextCliTests
         Assert.Contains("precision@5 0.60", text, StringComparison.Ordinal);
         Assert.Contains(verdict, text, StringComparison.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Text_output_shows_the_first_alias_beside_the_key_and_a_timestamp_version_in_full()
+    {
+        var cite = new Citation(RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000103"),
+            [new CitationRef(SourceId.From("onyx"), ExternalId.From("0e5a1b00-0000-4000-8000-000000000103"), SourceVersion.From("2026-07-23T09:00:00.0000000Z"))],
+            Permalink: null, Trust.Untrusted, CitationState.Unchecked)
+        { Aliases = ["SPL-103", "SPL-3"] };
+
+        var text = ContextText.Render(Only(cite));
+
+        Assert.Contains("[C1] linear:issue/0e5a1b00-0000-4000-8000-000000000103 (SPL-103)  onyx", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("SPL-3)", text, StringComparison.Ordinal);
+        Assert.Contains("version 2026-07-23T09:00:00.0000000Z  unchecked", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Text_output_still_shortens_a_git_sha_version_and_shows_no_alias_when_there_is_none()
+    {
+        var cite = new Citation(RecordKey.From("repo:split-panes/docs/architecture.md"),
+            [new CitationRef(SourceId.From("repo-docs"), ExternalId.From("split-panes/docs/architecture.md#L1-L9"), SourceVersion.From("3b18e512dba7c0ffee1234567890abcdef123456"))],
+            Permalink: null, Trust.Untrusted, CitationState.Current);
+
+        var text = ContextText.Render(Only(cite));
+
+        Assert.Contains("[C1] repo:split-panes/docs/architecture.md  repo-docs", text, StringComparison.Ordinal);
+        Assert.Contains("version 3b18e512dba7  current", text, StringComparison.Ordinal);
+    }
+
+    private static ContextResult Only(Citation cite) => new(1, QueryId.From("q_1"), new ContextQuery("x"), [], MapVersion: null, DateTimeOffset.UnixEpoch, [], [], [], [],
+        Truncated: false, new BudgetUse(10, 0, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal) { ["C1"] = cite });
 }
