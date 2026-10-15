@@ -36,12 +36,12 @@ internal static class CurrentStates
             .Select(static g => new GateLine(g.Use, "exit", g.Threshold, g.Threshold is { } at ? string.Create(CultureInfo.InvariantCulture, $"{g.Use.Value} passes at {at} or above.") : $"{g.Use.Value} passes.")),
     ];
 
-    /// <summary>The desk form of the open task: its run, the outputs owed, the checks the engine runs on a report and the action that completes it.</summary>
+    /// <summary>The desk form of the open task: its run, the outputs required on the outcome the form's command reports (API spec §3.8 'Desk runtime until P8'), the checks the engine runs on a report and the action that completes it.</summary>
     public static DeskForm? Desk(DeskTask? task, InterpretedRecipe interpreted) => task is null
         ? null
         : new DeskForm(
             task.Run,
-            [.. task.Outputs.Select(o => new DeskOutput(o.Fact.Value, FactTypes.Parse(TypeOf(interpreted, o.Fact)), o.RequiredOn.Count > 0))],
+            [.. task.Outputs.Where(o => DeskChecks.Applies(task, o)).Select(o => new DeskOutput(o.Fact.Value, FactTypes.Parse(TypeOf(interpreted, o.Fact)), Required: true))],
             [.. task.Outputs.Where(o => DeskChecks.Applies(task, o)).Select(o => DeskChecks.Id(interpreted, o.Fact))],
             ActionId.From("CompleteStep"));
 
