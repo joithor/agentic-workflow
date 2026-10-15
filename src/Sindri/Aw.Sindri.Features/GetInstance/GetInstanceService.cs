@@ -10,7 +10,7 @@ namespace Aw.Sindri.Features.GetInstance;
 /// </summary>
 /// <param name="directory">Resolves the reference to the instance's address.</param>
 /// <param name="runtime">The instances on Temporal.</param>
-internal sealed class GetInstanceService(IInstanceDirectory directory, IInstanceRuntime runtime) : IService<GetInstanceRequest, GetInstanceResponse>
+internal sealed class GetInstanceService(IInstanceDirectory directory, IInstanceReader runtime) : IService<GetInstanceRequest, GetInstanceResponse>
 {
     public async ValueTask<Result<GetInstanceResponse>> Handle(GetInstanceRequest request, CancellationToken cancellationToken)
     {

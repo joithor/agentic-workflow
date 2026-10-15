@@ -15,7 +15,7 @@ namespace Aw.Sindri.Features.GetInstanceEvents;
 /// <param name="events">Reads each event's payload.</param>
 /// <param name="directory">Resolves the reference to the instance's address.</param>
 /// <param name="runtime">The existence check for an instance with no events.</param>
-internal sealed class GetInstanceEventsService(ILedgerReader ledger, EventFactory events, IInstanceDirectory directory, IInstanceRuntime runtime) : IService<GetInstanceEventsRequest, GetInstanceEventsResponse>
+internal sealed class GetInstanceEventsService(ILedgerReader ledger, EventFactory events, IInstanceDirectory directory, IInstanceReader runtime) : IService<GetInstanceEventsRequest, GetInstanceEventsResponse>
 {
     private const int Page = 500;
 

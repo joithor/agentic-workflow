@@ -59,7 +59,7 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         }
         catch (WorkflowAlreadyStartedException) // boundary: the attempt ended; RejectDuplicate keeps its id, and Get shows it as it ended
         {
-            return await Get(address, cancellationToken).ConfigureAwait(false);
+            return Remembered(await Get(address, cancellationToken).ConfigureAwait(false));
         }
         catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal
         {
@@ -71,11 +71,22 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
             var view = await Get(address, cancellationToken).ConfigureAwait(false);
             if (view.IsError || view.Value.State != "starting" || poll >= StartPolls)
             {
-                return view;
+                return Remembered(view);
             }
 
             await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>A start remembers the instance it shows (the directory finds its id); a read (Get) changes nothing.</summary>
+    private Result<InstanceView> Remembered(Result<InstanceView> view)
+    {
+        if (view.IsSuccess)
+        {
+            known.Remember(view.Value.Address);
+        }
+
+        return view;
     }
 
     /// <summary>
@@ -96,7 +107,6 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
             var view = await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value)
                 .QueryAsync(static wf => wf.GetInstance(), new WorkflowQueryOptions { Rpc = new RpcOptions { Timeout = QueryPatience, CancellationToken = cancellationToken } })
                 .ConfigureAwait(false);
-            known.Remember(view.Address);
             return view;
         }
         catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal; says nothing about the instance

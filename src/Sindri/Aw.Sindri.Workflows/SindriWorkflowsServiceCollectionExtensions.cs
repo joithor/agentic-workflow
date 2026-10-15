@@ -34,6 +34,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<KnownInstances>()                            // engine P4: the opaque ids this process has seen (spec §6.3)
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items
             .AddSingleton<IInstanceRuntime, TemporalInstanceRuntime>()
+            .AddSingleton<IInstanceReader>(provider => provider.GetRequiredService<IInstanceRuntime>())   // the queries' read port (ARCH-CQRS-002)
             .AddSingleton<IWorkflowInstances, TemporalWorkflowInstances>()
             .AddSingleton<ITemporalWorker, SindriWorkerHost>()
             .AddSingleton<IFactStore, HomeFactStore>()               // engine P4 unit (c): facts stored 0600 before the report

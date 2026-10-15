@@ -65,6 +65,7 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddSingleton<IRecipeWake>(Wake)
             .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceDirectory>(_instances)
             .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceRuntime>(_instances)
+            .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceReader>(_instances)
             .AddSingleton(SliceHarness.Json)
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddRecipeBlocks()
