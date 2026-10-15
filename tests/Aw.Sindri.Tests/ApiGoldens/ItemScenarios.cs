@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Host;
 using Microsoft.Extensions.DependencyInjection;
@@ -276,8 +277,8 @@ internal static class ItemScenarios
     private static async Task AppendFor<TPayload>(GoldenHost host, string item, string type, TPayload payload, string key, CancellationToken ct)
     {
         await using var scope = ViewScenarios.Service(host, out var grant);
-        var events = scope.ServiceProvider.GetRequiredService<Sindri.Core.Events.EventFactory>();
-        var appended = await scope.ServiceProvider.GetRequiredService<Sindri.Core.Ledger.ILedgerStore>().Append(events.Entry(type, payload, key, item), grant, ct);
+        var events = scope.ServiceProvider.GetRequiredService<EventFactory>();
+        var appended = await scope.ServiceProvider.GetRequiredService<ILedgerStore>().Append(events.Entry(type, payload, key, item), grant, ct);
         _ = appended.Value;
     }
 }
