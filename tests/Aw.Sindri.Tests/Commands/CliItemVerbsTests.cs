@@ -181,6 +181,34 @@ public sealed class CliItemVerbsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Cli_items_while_stalled_with_rows_prints_the_sentence_before_the_rows()
+    {
+        var stalled = new AsOf(3, 7, KnownInstants.Epoch, Rebuilding: false, Stalled: true);
+        var api = new RoutedApi().On("/sindri/items", HttpStatusCode.OK, new ListItemsResponse([Summary(A.FirstItemId, "Partial", ItemState.New)], EmptyText.Stalled(3), stalled));
+
+        var code = await Verbs(api, Human).Run(["items"], Token);
+
+        var text = _out.ToString().ReplaceLineEndings("\n");
+        Assert.Equal(1, code);
+        Assert.StartsWith(EmptyText.Stalled(3) + "\n" + A.FirstItemId.Value + "  Partial", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_queue_while_stalled_says_the_sentence_once()
+    {
+        var stalled = new AsOf(3, 7, KnownInstants.Epoch, Rebuilding: false, Stalled: true);
+        var sentence = EmptyText.Stalled(3);
+        var queue = new QueueResponse([new(QueueGroup.WaitingOnYou, [], sentence), new(QueueGroup.Queued, [], sentence)], sentence, stalled);
+        var api = new RoutedApi().On("/sindri/queue", HttpStatusCode.OK, queue);
+
+        _ = await Verbs(api, Human).Run(["queue"], Token);
+
+        var text = _out.ToString();
+        Assert.Equal(1, text.Split(sentence).Length - 1);
+        Assert.Contains("waitingOnYou", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Cli_items_json_while_stalled_prints_the_body_and_exits_1()
     {
         var stalled = new AsOf(3, 7, KnownInstants.Epoch, Rebuilding: false, Stalled: true);

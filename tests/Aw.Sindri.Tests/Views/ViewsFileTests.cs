@@ -39,7 +39,9 @@ public sealed class ViewsFileTests : IDisposable
         var state = await views.Reader.State(Token);
         var rows = await views.Reader.List<ServiceRow>(ViewNames.Services, Token);
         var row = await views.Reader.Get<ServiceRow>(ViewNames.Services, "any", Token);
+        var range = await views.Reader.Range<TimelineRow>(ViewNames.ItemTimeline, "", beforeKey: null, 10, Token);
 
+        Assert.Empty(range.Value);
         Assert.Null(state.Value);
         Assert.Empty(rows.Value);
         Assert.Null(row.Value);

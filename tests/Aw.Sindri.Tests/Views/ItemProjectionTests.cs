@@ -75,11 +75,11 @@ public sealed class ItemProjectionTests
     [Fact, Trait("Lane", "unit")]
     public void Body_keeps_its_line_breaks_and_tabs_but_not_its_controls()
     {
-        var created = CreatedPayload("t", link: null, body: "Steps:\n\n1.\tOpen\r\n2. \u001b[31mSECRET\u001b[0m");
+        var created = CreatedPayload("t", link: null, body: "Steps:\n\n1.\tOpen\r\n2. \u001b[31mSECRET\u001b[0m\rback");
 
         var row = ItemsProjection.Fold(created, Created("x", 1), new MaskScrubber("SECRET"));
 
-        Assert.Equal("Steps:\n\n1.\tOpen\r\n2. \\x1B[31m[masked]\\x1B[0m", row.Body);
+        Assert.Equal("Steps:\n\n1.\tOpen\n2. \\x1B[31m[masked]\\x1B[0m\\x0Dback", row.Body);
     }
 
     [Fact, Trait("Lane", "unit")]

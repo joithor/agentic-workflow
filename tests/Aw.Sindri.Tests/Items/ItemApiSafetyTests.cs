@@ -36,7 +36,8 @@ public sealed class ItemApiSafetyTests
         await ViewScenarios.Approve(host, ct);
         var other = await Create(host, "Hidden in other", "other", body: null);
         await ViewScenarios.CatchUp(host, ct);
-        _ = await host.Http.Ask(Post($"/sindri/items/{other}/close", """{"reason":"done","itemVersion":1}""", Human(host.Token.Value)));
+        var closed = await host.Http.Ask(Post($"/sindri/items/{other}/close", """{"reason":"done","itemVersion":1}""", Human(host.Token.Value)));
+        Assert.Equal(HttpStatusCode.Accepted, closed.Status);   // the state-change row exists, so the scoping below is tested
         _ = await Create(host, "Visible in demo", "demo", body: null);
 
         var seen = await Read(host, Session("demo"), stopAt: "Visible in demo", ct);
