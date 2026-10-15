@@ -163,4 +163,89 @@ public sealed class ItemSheetActionsTests
 
         Assert.True(cancel.IsConfirming);
     }
+
+    private static async Task Until(Func<bool> condition)
+    {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        limit.CancelAfter(TimeSpan.FromSeconds(5));
+        while (!condition())
+        {
+            await Task.Delay(5, limit.Token);
+        }
+    }
+
+    // corr-0: the 409's re-read was superseded by a refresh that served the closed item; the refusal is not lost.
+    [Fact]
+    public async Task A_409_whose_re_read_a_refresh_took_over_is_still_spoken_once_by_the_sheet()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        _server.Close = RouteAnswer.Problem("items-id-close", "stale-version");
+        _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
+        var gate = _server.ItemGates[A.NewItem] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var spoken = Spoken(sheet);
+        var calls = _server.ItemCalls;
+        try
+        {
+            var press = sheet.Actions[0].Press(Token);
+            await Until(() => _server.ItemCalls == calls + 1);
+            var refresh = sheet.Refresh(_api, Token);
+            await Until(() => _server.ItemCalls == calls + 2);
+            await press.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+
+            gate.SetResult();
+            await refresh.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
+
+        Assert.Equal("SND-ITEM-409", sheet.ProblemCode);
+        Assert.Equal(["SND-ITEM-409: " + A.Detail("items-id-close", "stale-version")], spoken);
+    }
+
+    // corr-1: the 409 belongs to the item it was sent for; the sheet has moved on, so item B shows nothing of it.
+    [Fact]
+    public async Task A_409_for_an_item_the_sheet_has_moved_on_from_is_not_shown_or_spoken_on_the_next_one()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        _server.Close = RouteAnswer.Problem("items-id-close", "stale-version");
+        _server.Items[A.DecisionItem] = RouteAnswer.SpecShaped("items-id", "after-close");
+        var gate = _server.CommandGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var spoken = Spoken(sheet);
+        try
+        {
+            var press = sheet.Actions[0].Press(Token);
+            await Until(() => _server.Closed.Count == 1);
+            await sheet.Open(_api, A.DecisionItem, Token);
+
+            gate.SetResult();
+            await press.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
+
+        Assert.Equal((A.DecisionItem, false, 0), (sheet.ItemId, sheet.HasProblem, spoken.Count));
+    }
+
+    // corr-4: the 409 line is the state at the conflict; once the version moves past it, a good read clears the line.
+    [Fact]
+    public async Task The_409_line_goes_when_the_version_moves_past_the_conflict()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        _server.Close = RouteAnswer.Problem("items-id-close", "stale-version");
+        _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
+        await sheet.Actions[0].Press(Token);
+        Assert.True(sheet.HasProblem);
+
+        _server.Items[A.NewItem] = NewAtVersion(5);
+        await sheet.Refresh(_api, Token);
+
+        Assert.Equal((false, 2), (sheet.HasProblem, sheet.Actions.Count));
+    }
 }
