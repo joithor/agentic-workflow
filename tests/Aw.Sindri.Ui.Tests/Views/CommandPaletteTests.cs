@@ -368,7 +368,7 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.Same(page, Focused(window));
     });
 
-    // F10 (a11y-7): the sheet is longer than its card; the keyboard reaches the last row (Tab to the list, End).
+    // F10 (a11y-7): the sheet is longer than its card; the keyboard reaches the last row (End).
     [Fact]
     public Task The_shortcuts_sheets_last_row_is_reachable_by_keyboard() => OnUi(async () =>
     {
@@ -376,8 +376,8 @@ public sealed class CommandPaletteTests : IDisposable
         Press(window, Key.OemQuestion, PhysicalKey.Slash, RawInputModifiers.Shift, "?");
         var scroll = Named<ScrollViewer>(window, "ShortcutsScroll");
 
-        Press(window, Key.Tab, PhysicalKey.Tab);
-        Assert.Same(scroll, Focused(window));
+        Assert.True(Inside(window, "ShortcutsCard"));
+        Assert.True(scroll.Extent.Height > scroll.Viewport.Height, "the sheet is longer than its card");
         Press(window, Key.End, PhysicalKey.End);
 
         var last = Named<Control>(window, "ShortcutRows").GetVisualDescendants().OfType<Grid>().Last(g => g.IsEffectivelyVisible);

@@ -21,6 +21,7 @@ internal sealed partial class ShellWindow
 
         if (e.Key == Key.K && e.KeyModifiers == _command)
         {
+            shell.Shortcuts.Close();   // one overlay at a time; focus goes back to the original opener first (OnOverlayChanged)
             shell.Palette.Open();
             return true;
         }
@@ -41,6 +42,8 @@ internal sealed partial class ShellWindow
         Dispatcher.UIThread.Post(() => FirstFocusable(this.Get<Control>("SettingsSlot"))?.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
         return true;
     }
+
+    private bool OverlayOpen => Shell is { } shell && (shell.Palette.IsOpen || shell.Shortcuts.IsOpen);
 
     // `?` is Shift+/ on most layouts; the key symbol says so on the rest.
     private static bool IsQuestionMark(KeyEventArgs e) =>

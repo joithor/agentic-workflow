@@ -135,6 +135,11 @@ internal sealed partial class ShellWindow : Window
     // region itself, so Tab then moves inside it (or its first focusable control when the region itself can't take focus).
     private bool CycleRegion(bool back)
     {
+        if (OverlayOpen)
+        {
+            return true;   // the palette and the ? sheet trap focus: the regions behind the scrim are out of reach (WCAG 2.4.3)
+        }
+
         Control[] regions = [.. _regions.Select(this.Get<Control>).Where(c => c.IsEffectivelyVisible && c.IsEffectivelyEnabled)];
         var focused = FocusManager?.GetFocusedElement() as Visual;
         var current = Array.FindIndex(regions, r => focused is not null && (r == focused || r.IsVisualAncestorOf(focused)));
