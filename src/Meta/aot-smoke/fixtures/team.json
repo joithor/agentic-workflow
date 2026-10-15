@@ -1,0 +1,14 @@
+{
+  "team": "smoke",
+  "repo": "@WORK@/repo",
+  "metaLane": "meta",
+  "lanes": ["api", "ui"],
+  "log": "@WORK@/log.md",
+  "gate": {
+    "always": ["repo"],
+    "docsOnly": ["**/*.md"],
+    "scopes": { "repo": { "paths": ["**"], "steps": [ { "name": "check", "run": ["true"] } ] } }
+  },
+  "mergeOrder": [ { "before": 1, "after": 2 } ],
+  "knownFlakes": []
+}

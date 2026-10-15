@@ -1,6 +1,6 @@
 # AGENTS.md — Agentic Workflow
 
-> Agentic Workflow — provider-agnostic agent workflow toolkit for Claude Code, Codex, and Cursor: 52 native skills + 3 fetched external packs (impeccable, emil-design-eng, taste-skill), config archive, repo bootstrapper, and token-efficiency tools (rtk + headroom).
+> Agentic Workflow — provider-agnostic agent workflow toolkit for Claude Code, Codex, and Cursor: 53 native skills + 3 fetched external packs (impeccable, emil-design-eng, taste-skill), config archive, repo bootstrapper, and token-efficiency tools (rtk + headroom).
 
 Domain-specific rules live in `.agents/rules/` — one file per rule, the only copy. `.claude/rules` and `.cursor/rules/*.mdc` are symlinks to it (auto-loaded by Claude Code and Cursor), and `CLAUDE.md` is a symlink to this file. Codex reads the Rules Index at the bottom of this file. After adding or removing a rule, run `scripts/sync-rules.sh`.
 
@@ -28,7 +28,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 | Test | Vitest (in-memory SQLite) |
 | Build | tsc (ESM, Node16 module resolution) |
 
-**C# build — in progress, not installed until the cutover.** The toolkit is moving to C# (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` §4a–§4e). The tool ports stop after `Judge` (#156) and `Evidence` (#158); `scorer` and `sindri` are not ported. Sindri is **built new in C# as an application** (control plane, workflow engine, context retrieval engine; factory addendum §17.29, decision Q7; overview in `docs/sindri/README.md`), the finished tool ports become its blocks, and the TS `sindri/` stays the reference and keeps running until the switch. This is a clean cutover and a **reimplementation in idiomatic C#, not a translation**: the TS package is a guideline for what a package does, never for how (no TS formatting, quirks or workarounds; type-driven JSON through `AwJson`; contracts defined by the C# tests; `.agents/rules/csharp.md` "Porting a TS package"). The C# build keeps no byte or state compatibility with the TS build, and no TS state is migrated. The one exception is the **hook contract**: only what the bash hooks and statusline that keep running read (the commands and arguments they call, the JSON fields they `jq`, the exit codes and stderr prefixes they branch on, and the files they write, such as `judge/sessions`, `judge/outbox` and `judge/teammate-names.jsonl`; spec §4c). It stays frozen until the switch, checked in CI by running the real hook scripts against the C# binaries. The installed toolkit stays TypeScript until the C# build is complete; then one switch moves the install. Before that, nothing in `setup.sh`, the providers, MCP registration or launchd points at the C# build. Separately, `aw-readiness` and `aw-packets` run before the switch as standalone NativeAOT CLIs that write only under `readiness/` and `packets/` (spec §4c).
+**C# build — in progress, not installed until the cutover.** The toolkit is moving to C# (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` §4a–§4e). The tool ports stop after `Judge` (#156) and `Evidence` (#158); `scorer` and `sindri` are not ported. Sindri is **built new in C# as an application** (control plane, workflow engine, context retrieval engine; factory addendum §17.29, decision Q7; overview in `docs/sindri/README.md`), the finished tool ports become its blocks, and the TS `sindri/` stays the reference and keeps running until the switch. This is a clean cutover and a **reimplementation in idiomatic C#, not a translation**: the TS package is a guideline for what a package does, never for how (no TS formatting, quirks or workarounds; type-driven JSON through `AwJson`; contracts defined by the C# tests; `.agents/rules/csharp.md` "Porting a TS package"). The C# build keeps no byte or state compatibility with the TS build, and no TS state is migrated. The one exception is the **hook contract**: only what the bash hooks and statusline that keep running read (the commands and arguments they call, the JSON fields they `jq`, the exit codes and stderr prefixes they branch on, and the files they write, such as `judge/sessions`, `judge/outbox` and `judge/teammate-names.jsonl`; spec §4c). It stays frozen until the switch, checked in CI by running the real hook scripts against the C# binaries. The installed toolkit stays TypeScript until the C# build is complete; then one switch moves the install. Before that, nothing in `setup.sh`, the providers, MCP registration or launchd points at the C# build. Separately, `aw-readiness` and `aw-packets` run before the switch as standalone NativeAOT CLIs that write only under `readiness/` and `packets/` (spec §4c), and so does `aw-meta` (the `/meta` harness), which keeps its state under `meta/` and appends to its team's running log (its gate and merge commands also act on the team's checkout and PRs: `git fetch`, a gate worktree, the configured gate steps, `gh pr merge`); it is the one C# tool installed before the switch, and only opt-in through `./setup.sh --with-meta` (owner, 2026-10-14).
 
 | Layer | Technology (C# build) |
 |-------|------------|
@@ -49,16 +49,16 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 
 ```
 agentic-workflow/
-├── skills/        # 51 provider-neutral skills (linked into each provider's skills dir)
+├── skills/        # 52 provider-neutral skills (linked into each provider's skills dir)
 ├── bootstrap/     # /bootstrap skill — repo documentation generator
-├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook (+ hooks/adapters/ per provider)
+├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook, meta Stop/outbox hooks (+ hooks/adapters/ per provider)
 ├── providers/     # Per-provider installers (claude, codex, cursor)
 ├── scorer/        # Daily cost/involvement report from provider session transcripts
 ├── judge/         # Cheap-agent-harness judge CLI (decisions, config, health)
 ├── sindri/        # Sindri in TypeScript (runs until the switch; reference for the C# app): profile, ledger, lock, scrubber, observe, index, scope, evolve, doctor (CLI)
 ├── mods/          # Claude Code mods (in-process function hooks): aw-live /live pane. Claude-only
 ├── planning/      # Project documentation
-├── src/           # C# build (in progress): Aw.Kernel (+ .Data, .Telemetry), Redaction, Aw.Analyzers, the tool ports (Packets, Readiness, BugFix; Judge, Evidence) and later the new Sindri app — each Core · Features · Infrastructure · Host
+├── src/           # C# build (in progress): Aw.Kernel (+ .Data, .Telemetry), Redaction, Aw.Analyzers, the tool ports (Packets, Readiness, BugFix; Judge, Evidence), Meta (aw-meta, the /meta harness) and later the new Sindri app — each Core · Features · Infrastructure · Host
 ├── tests/         # C# tests: Aw.<Pkg>.Tests (by feature), Aw.<Pkg>.Testing (fakes, builders, contract bases), Aw.Architecture.Tests
 ├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Build.targets · Directory.Packages.props · nuget.config · .editorconfig · CodeMetricsConfig.txt · BannedSymbols.txt
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
@@ -118,6 +118,10 @@ bash src/Sindri/aot-smoke/run.sh         # sindri, framework-dependent (the Temp
 dotnet run --project src/Sindri/Aw.Sindri.Ui.Desktop       # the Sindri app (S1b shell, U0 theme and shell; docs/csharp/sindri-ui.md): top bar, Home, Health, Settings, tray, single instance, live from the event stream; bare `sindri` opens it (sindri-ui next to sindri, or AW_SINDRI_UI)
 bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # sindri-ui under NativeAOT: publish (on a copy) and fail on any IL2xxx/IL3xxx warning or a missing binary; copies it and its native libraries to <dir> when given
 
+dotnet run --project src/Meta/Aw.Meta.Host -- <command> [--json]   # aw-meta, the /meta harness CLI (docs/csharp/meta.md): obligations (inbox-sync, stop-check, outbox-record, inbox-*), lanes-*, gate-run, gate-rerun, merge-check, merge-run, owner-*, health, watch, log-append, status, team-*, role-*; exit 0 ok, 1 attention, 2 usage or tool error
+bash src/Meta/aot-smoke/run.sh           # aw-meta under NativeAOT: publish (on a copy), drive the obligation flow in a temp state dir, compare with expected.txt
+scripts/install-meta.sh                  # Publish aw-meta (NativeAOT) to $AW_STATE_DIR/bin, install its Claude hooks, link aw-meta and aw-meta-launch (or ./setup.sh --with-meta)
+scripts/meta-launch.sh [--lanes a,b] [--no-open] [--dry-run]   # The team in one Warp window: a pane per lane on tmux session <team>-<lane>, resumed by id (team config: aw-meta team-init)
 # Rules (edit .agents/rules/, then regenerate)
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index
 scripts/sync-rules.sh --check           # Exit 1 if links or the Rules Index are out of date
@@ -170,6 +174,8 @@ bash scripts/tests/ci-bash-tests.test.sh
 bash scripts/tests/ci-lane-budgets.test.sh
 bash scripts/tests/ci-no-any.test.sh
 bash scripts/tests/sindri-smoke-normalize.test.sh
+bash scripts/tests/meta-launch.test.sh
+bash scripts/tests/install-meta.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh
@@ -177,6 +183,7 @@ bash config/hooks/tests/probe-log.test.sh
 bash config/hooks/tests/judge-health.test.sh
 bash config/hooks/tests/sindri-nudge.test.sh
 bash config/hooks/tests/failopen.test.sh
+bash config/hooks/tests/meta-hooks.test.sh
 for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers, and judge-cs-hook-surface (the hook contract: real hooks vs the C# judge, and the TS judge when judge/dist is built; needs dotnet)
 
 # Levers and probe (default provider: claude)

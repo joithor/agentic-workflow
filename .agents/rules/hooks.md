@@ -79,12 +79,14 @@ All hook scripts live in `config/hooks/`:
 | `prism-context.sh` | SessionStart | — |
 | `sindri-nudge.sh` | SessionStart | — |
 | `prompt-sort.sh` | UserPromptSubmit | — |
+| `meta-stop-gate.sh` | Stop | — |
+| `meta-outbox.sh` | PostToolUse | `SendMessage` |
 
 Each provider's `install-hooks.sh` installs them by copying, not symlinking, so they survive repo moves. Claude Code's copies go to `~/.claude/hooks/`, and Codex and Cursor copies go to `~/.agentic-workflow/hooks/`. The script then registers the command in that provider's hook config, wrapped by the adapter for Codex and Cursor.
 
 **Lever hooks** (context-guard, done-gate, scope-gate, external-write-guard, wake gating, judge-health, prompt-sort, sindri-nudge) are installed by `scripts/install-*.sh --provider claude|codex|cursor`, with `claude` as the default. `setup.sh` runs them for each selected provider. A lever with no equivalent event on a provider prints `skipped for <provider>` and writes nothing. For example, context-guard is skipped on Cursor.
 
-Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,failopen,provider-install-hooks,probe-log,judge-health,sindri-nudge}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
+Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,failopen,provider-install-hooks,probe-log,judge-health,sindri-nudge,meta-hooks}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
 
 ## Fail-open logging (HOOK-FAILOPEN)
 
@@ -103,6 +105,8 @@ A hook **fails open** when its own error turns into an allow or a let-through: j
   - `external-write-guard`: `session-id-missing`, `session-state-unreadable`
   - `done-gate`: `transcript-unreadable`, `no-assistant-line`, `transcript-line-unparsable`, `judge-ask-check-exit-<N>`, `judge-brief-exit-<N>` (but not "no brief for …")
   - `outbox-flush`: `outbox-unreadable`
+  - `meta-stop-gate`: `meta-exit-<N>` (aw-meta erroring; exit 1 is its block, not a failure)
+  - `meta-outbox`: `meta-exit-<N>`
   - the three Bash safety hooks: the input causes only
   - the Codex/Cursor adapters (`<provider>-adapter`): the input causes, `args-invalid`, `payload-unparsable`, `hook-script-missing`, `hook-exit-<N>`, and `result-unparsable` (Cursor only)
 
@@ -133,3 +137,12 @@ The steps below apply to **PreToolUse hooks**. SessionStart hooks have different
 `prompt-sort.sh` (`# aw:prompt-sort`) is the prompt sorter's UserPromptSubmit hook. It sorts the real prompt with `judge prompt-sort` (one Jev request), prints a scaffold note only when a scaffold switch is on and fires, never prints skill names (Prism's `prism-route` hook owns skill routing), always exits 0, and kills the judge after `AW_PROMPT_SORT_BUDGET_MS` (default 1500). A non-zero exit or crash of the judge is swallowed. Skips machine text, slash commands and `AW_JUDGE_CHILD`. Install opt-out: `AW_NO_PROMPT_SORT=1`.
 
 `sindri-nudge.sh` (`# aw:sindri-nudge`) is installed only by `scripts/install-sindri.sh --hook-only --provider X` (`setup.sh --with-sindri` runs it per provider); a plain `install-sindri.sh` prints the hint. It runs `sindri repo status --nudge`, which reads the approved profile read-only and never writes the ledger, prints at most one line, kills the CLI after `AW_SINDRI_NUDGE_BUDGET_MS` (default 1500), always exits 0, and is silent outside git, without sindri, before any approval, for an onboarded repo (a linked worktree counts), on any error, and for `AW_JUDGE_CHILD` / `AW_SINDRI_CHILD` sessions.
+
+## Meta harness hooks (`/meta`, Claude Code only)
+
+`meta-stop-gate.sh` (`# aw:meta-stop-gate`, Stop) and `meta-outbox.sh` (`# aw:meta-outbox`, PostToolUse matcher `SendMessage`) are installed only by `scripts/install-meta.sh` (`./setup.sh --with-meta`), for Claude Code only: Codex and Cursor have no messages between sessions. Both exit 0 at once without `aw-meta` (`$AW_META_BIN`, default `$AW_STATE_DIR/bin/aw-meta`) and for every session except the one `aw-meta role-set` registered as the meta orchestrator (aw-meta decides that).
+
+- `meta-stop-gate.sh` runs `aw-meta stop-check --session <session_id> --transcript <transcript_path> [--hook-active]`, which reads new inbound messages from the transcript (they reach no hook any other way) and lists what the meta still owes. aw-meta exit 1 → the hook exits 2 with the list on stderr, so the meta can't go idle with a reply owed. It blocks even when `stop_hook_active` is set: aw-meta's own loop guard lets an unchanged list through after `AW_META_STOP_MAX` (default 3) re-blocks in one turn and logs an incident; its warning comes back with exit 0 and the hook shows it as a `systemMessage`. Any other aw-meta exit fails open (`meta-exit-<N>`).
+- `meta-outbox.sh` pipes the hook payload to `aw-meta outbox-record`, which closes the obligations a send answers. It always exits 0 and prints nothing.
+
+Contract: `docs/csharp/meta.md`. Tests: `config/hooks/tests/meta-hooks.test.sh` (a stub aw-meta).
