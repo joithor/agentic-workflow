@@ -181,7 +181,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
             var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));
 
             Assert.Equal("SND-WF-015", refused.Code);   // the state's 10 m timeout parked the instance meanwhile; the dispatch park waits behind it
-            Assert.Equal(Aw.Kernel.Outbox.OutboxRetryPolicy.Default.MaxAttempts, _desk.RecipeCalls.Count);
+            Assert.Equal(Kernel.Outbox.OutboxRetryPolicy.Default.MaxAttempts, _desk.RecipeCalls.Count);
             Assert.Equal(WorkflowExecutionStatus.Running, (await handle.DescribeAsync()).Status);
             await handle.TerminateAsync("test over");
         }, Token);
