@@ -2,14 +2,17 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Features.GetStatus;
 
-internal sealed class GetStatusService(HeldLease held, IApprovedProfile approvals, IProfileSource live, ILedgerReader ledger, EventFactory events)
+internal sealed class GetStatusService(HeldLease held, IApprovedProfile approvals, IProfileSource live, ILedgerReader ledger, EventFactory events,
+    IProjectorStatus projector, IViewReader viewRows)
     : IService<GetStatusRequest, GetStatusResponse>
 {
     public async ValueTask<Result<GetStatusResponse>> Handle(GetStatusRequest request, CancellationToken cancellationToken)
@@ -26,9 +29,17 @@ internal sealed class GetStatusService(HeldLease held, IApprovedProfile approval
         }
 
         var grant = held.Current;
-        var status = new GetStatusResponse(grant is not null, grant?.Holder.Pid ?? 0, grant?.Epoch ?? 0, grant?.ExpiresAt,
-            Profile(approvedProfile, recorded.Value, loaded), services);
-        return status with { ApiVersion = SindriApi.Version };
+        var profile = Profile(approvedProfile, recorded.Value, loaded);
+        var views = projector.Current;
+        var health = await Health(grant is not null, views, profile, approvedProfile, cancellationToken).ConfigureAwait(false);
+        var status = new GetStatusResponse(grant is not null, grant?.Holder.Pid ?? 0, grant?.Epoch ?? 0, grant?.ExpiresAt, profile, services);
+        return status with { ApiVersion = SindriApi.Version, Views = views, Health = health };
+    }
+
+    private async ValueTask<HealthReport> Health(bool running, ViewsStatus views, ProfileStatus profile, LoadedProfile? approved, CancellationToken cancellationToken)
+    {
+        var rows = await viewRows.List<ServiceRow>(ViewNames.Services, cancellationToken).ConfigureAwait(false);
+        return HealthSummary.For(running, views, rows.IsSuccess ? ApprovedServices.Of(rows.Value, approved) : null, profile.NeedsApproval, profile.ChangedSinceApproval);
     }
 
     private static ProfileStatus Profile(LoadedProfile? approved, RecordedApproval? recorded, Result<LoadedProfile> loaded)

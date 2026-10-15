@@ -30,8 +30,8 @@ public sealed class GoldenContractTests
         ["views-rebuild"] = As<CommandAcceptedView>,
     };
 
-    // Routes the app never calls: stop is Health's (U4), and profile approve is protected (the app shows the CLI, §6.5).
-    private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal) { "stop", "profile-approve" };
+    // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), and the services, profile and views-rebuild routes are the later pages' (U2+).
+    private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal) { "stop", "profile-approve", "services", "profile", "views-rebuild" };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 

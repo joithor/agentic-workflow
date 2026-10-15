@@ -160,12 +160,12 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     // Absent before API P1 (the field doesn't exist on S1's status), so the app must read a status without it.
     private static string ApiVersion(int? version) => version is { } v ? string.Create(CultureInfo.InvariantCulture, $",\"apiVersion\":{v}") : string.Empty;
 
-    // Null until API P2's projector fills them; the status always carries both fields, as Sindri's does.
+    // Null until API P2's projector fills them; the status always carries both fields, as Sindri's does. Written with P2's full shape (text, clause, sentence).
     private static string Views(AsOfView? v) => v is null ? ",\"views\":null" : string.Create(CultureInfo.InvariantCulture,
-        $$""","views":{"cursor":{{v.Cursor}},"ledgerHead":{{v.LedgerHead}},"projectedAt":{{Quoted(v.ProjectedAt)}},"rebuilding":{{Bool(v.Rebuilding)}},"stalled":{{Bool(v.Stalled)}},"stalledAt":{{Number(v.StalledAt)}},"stalledType":{{Quoted(v.StalledType)}}}""");
+        $$""","views":{"cursor":{{v.Cursor}},"ledgerHead":{{v.LedgerHead}},"projectedAt":{{Quoted(v.ProjectedAt)}},"rebuilding":{{Bool(v.Rebuilding)}},"stalled":{{Bool(v.Stalled)}},"stalledAt":{{Number(v.StalledAt)}},"stalledType":{{Quoted(v.StalledType)}},"text":{{Quoted(v.Stalled ? $"Views are stalled at {v.StalledAt}: run `sindri views rebuild`" : null)}}}""");
 
     private static string Health(HealthView? h) => h is null ? ",\"health\":null" :
-        $$""","health":{"word":"{{h.Word}}","problems":[{{string.Join(',', h.Problems.Select(p => $$"""{"code":"{{p.Code}}","text":"{{p.Text}}"}"""))}}]}""";
+        $$""","health":{"word":"{{h.Word}}","problems":[{{string.Join(',', h.Problems.Select(p => $$"""{"code":"{{p.Code}}","text":"{{p.Text}}","clause":"{{p.Text}}"}"""))}}],"sentence":{{Quoted(h.Problems.Count == 0 ? null : $"Sindri is {h.Word}: {string.Join("; ", h.Problems.Select(p => p.Text))}.")}}}""";
 
     private static string Service(ServiceView v) => $$"""{"name":"{{v.Name}}","every":"{{v.Every}}","lastRun":{{Quoted(v.LastRun)}}}""";
 

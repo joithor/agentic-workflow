@@ -14,11 +14,11 @@ internal static class QueryPortRules
     public const string Rule = "ARCH-CQRS-002";
 
     /// <summary>
-    /// The ports a query handler may not take: the ledger and lease writers, the approvals writer, the projection writer (IViewStore) and the
-    /// registry's stores (register, approve, revoke), which queries read through Core's read-only domain services instead.
+    /// The ports a query handler may not take: the ledger and lease writers, the approvals writer, the projection writer (IViewStore). The registry's stores write too (register,
+    /// approve, revoke), so the registry queries read them through Core's read-only domain services instead.
     /// </summary>
     public static readonly IReadOnlyList<Type> WritePorts =
-        [typeof(ILedgerStore), typeof(ILease), typeof(IApprovals), typeof(IViewStore), typeof(IRecipeStore), typeof(IRecipeApprovals), typeof(IRecipeWake)];
+        [typeof(ILedgerStore), typeof(ILease), typeof(IApprovals), typeof(IViewStore), typeof(IProjectorControl), typeof(IProjectorFeed), typeof(IRecipeStore), typeof(IRecipeApprovals), typeof(IRecipeWake)];
 
     /// <summary>The query handlers among <paramref name="types"/> that take a write port. There is no allowlist (P1's G1 one went with C9).</summary>
     public static IReadOnlyList<string> Check(IEnumerable<Type> types) =>

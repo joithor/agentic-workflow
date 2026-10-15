@@ -21,6 +21,7 @@ internal sealed partial class Projector(
     private readonly SemaphoreSlim _gate = new(1, 1);
     private DateTimeOffset? _stalledSince;
     private string? _problem;
+    private ViewsStatus _last = new(0, 0, ProjectedAt: null, Rebuilding: false, Stalled: false, StalledAt: null, StalledType: null);
 
     /// <inheritdoc/>
     public void Dispose() => _gate.Dispose();
@@ -44,7 +45,7 @@ internal sealed partial class Projector(
 
     private async ValueTask<ProjectorPass> Pass(CancellationToken ct)
     {
-        var rebuild = feed.TakeRebuildRequest();
+        var rebuild = feed.RebuildRequested;   // taken only once the reset worked: a failed attempt keeps the request
         if (!rebuild && _stalledSince is { } since && clock.GetUtcNow() - since < StallRetry)
         {
             return ProjectorPass.Stalled;
@@ -54,7 +55,7 @@ internal sealed partial class Projector(
         var opened = head.IsError ? head.Error : await Prepare(rebuild, head.Value, ct).ConfigureAwait(false);
         if (opened.IsError)
         {
-            return Failed(opened.Error.Code, opened.Error.Message);
+            return Failed(opened.Error.Code, opened.Error.Message, head.IsSuccess ? head.Value : null);
         }
 
         return await Fold(opened.Value, head.Value, ct).ConfigureAwait(false);
@@ -76,9 +77,18 @@ internal sealed partial class Projector(
         }
 
         LogRebuilding(log, reason, state.SchemaVersion, ViewSchema.Version, head);
-        _stalledSince = null;
         IReadOnlyList<string> views = [.. ViewNames.All.Concat(_projections.SelectMany(p => p.Views)).Distinct(StringComparer.Ordinal)];
-        return await store.Reset(views, ViewSchema.Version, clock.GetUtcNow(), ct).ConfigureAwait(false);
+        var reset = await store.Reset(views, ViewSchema.Version, clock.GetUtcNow(), ct).ConfigureAwait(false);
+        if (reset.IsSuccess)
+        {
+            _stalledSince = null;
+            if (requested)
+            {
+                _ = feed.TakeRebuildRequest();
+            }
+        }
+
+        return reset;
     }
 
     private async ValueTask<ProjectorPass> Fold(ProjectorState state, long head, CancellationToken ct)
@@ -92,7 +102,7 @@ internal sealed partial class Projector(
                 : await store.Apply(page.Value, _projections, clock.GetUtcNow(), ct).ConfigureAwait(false);
             if (applied.IsError)
             {
-                return Failed(applied.Error.Code, applied.Error.Message);
+                return Failed(applied.Error.Code, applied.Error.Message, head);
             }
 
             state = applied.Value.State;
@@ -118,7 +128,7 @@ internal sealed partial class Projector(
             var finished = await store.FinishRebuild(ct).ConfigureAwait(false);
             if (finished.IsError)
             {
-                return Failed(finished.Error.Code, finished.Error.Message);
+                return Failed(finished.Error.Code, finished.Error.Message, head);
             }
 
             state = state with { Rebuilding = false };
@@ -142,8 +152,10 @@ internal sealed partial class Projector(
         return ProjectorPass.Stalled;
     }
 
-    private ProjectorPass Failed(string code, string detail)
+    private ProjectorPass Failed(string code, string detail, long? head)
     {
+        // no event is to blame, so StalledAt stays null: the status says the projector can't run, until a pass works
+        Publish(_last with { LedgerHead = head ?? _last.LedgerHead, Stalled = true, StalledAt = null, StalledType = $"{code}: {detail}" });
         if (!string.Equals(_problem, detail, StringComparison.Ordinal))
         {
             _problem = detail;
@@ -155,8 +167,14 @@ internal sealed partial class Projector(
 
     private void Publish(ProjectorState state, long head)
     {
-        feed.Publish(new ViewsStatus(state.Cursor, head, state.ProjectedAt, state.Rebuilding, state.StalledAt is not null, state.StalledAt, state.StalledType));
+        Publish(new ViewsStatus(state.Cursor, head, state.ProjectedAt, state.Rebuilding, state.StalledAt is not null, state.StalledAt, state.StalledType));
         ProjectorTelemetry.Lag.Record(Math.Max(head - state.Cursor, 0));
+    }
+
+    private void Publish(ViewsStatus status)
+    {
+        _last = status;
+        feed.Publish(status);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Views rebuilding ({Reason}; schema {From} -> {To}) up to ledger head {Head}")]
