@@ -63,22 +63,23 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
 
     internal async Task<int> Propose(string file, bool json, CancellationToken ct)
     {
-        ProposeContextMapRequest? request;
+        byte[] bytes;
         try
         {
-            await using var stream = File.OpenRead(file);
-            request = await System.Text.Json.JsonSerializer.DeserializeAsync(stream, SindriJsonContext.Default.ProposeContextMapRequest, ct).ConfigureAwait(false);
+            bytes = await File.ReadAllBytesAsync(file, ct).ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return await output.Error(SindriErrors.InvalidInput.With($"can't read the proposals file {file}: {ex.Message} (fix: a JSON file with run, repo and surfaces)")).ConfigureAwait(false);
         }
 
-        if (request is null)
+        var read = output.Read<ProposeContextMapRequest>(bytes);
+        if (read.IsError)
         {
-            return await output.Error(SindriErrors.InvalidInput.With($"{file} is empty (fix: a JSON file with run, repo and surfaces)")).ConfigureAwait(false);
+            return await output.Error(SindriErrors.InvalidInput.With($"can't read the proposals file {file}: {read.Error.Message} (fix: a JSON file with run, repo and surfaces)")).ConfigureAwait(false);
         }
 
+        var request = read.Value;
         var answer = await client.Post<ProposeContextMapRequest, ProposeContextMapResponse>(Route + "/proposals", request, ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
