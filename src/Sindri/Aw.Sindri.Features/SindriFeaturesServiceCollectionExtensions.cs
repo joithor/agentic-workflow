@@ -62,13 +62,8 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<RecordServiceRunRequest, RecordServiceRunResponse>, RecordServiceRunService>()
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
-            .AddScoped<ProfileFacts>()
-            .AddScoped<OnyxDoctor>()
-            .AddScoped<ContextEngineChecks>()
-            .AddScoped<RunDoctorService>()
-            .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
-                new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
-            .AddScoped<IDoctorChecks, ContextDoctorChecks>()
+            .AddDoctor()
+            .AddScoped<ServeRecords>()
             .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddScoped<ContextScopes>()
@@ -86,11 +81,12 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<ApproveProfileRequest>, AcceptAllValidator<ApproveProfileRequest>>().AddCommand<ApproveProfileRequest, ApproveProfileResponse, ApproveProfileService>();
         _ = services.AddScoped<IValidator<StopProcessRequest>, AcceptAllValidator<StopProcessRequest>>().AddCommand<StopProcessRequest, StopProcessResponse, StopProcessService>();
 
-        return services.AddQueries();
+        _ = services.AddQuerySlices();
+        return services;
     }
 
-    /// <summary>The query slices, each behind validation (API spec §2.1).</summary>
-    private static IServiceCollection AddQueries(this IServiceCollection services)
+    /// <summary>The queries, one line per slice.</summary>
+    private static IServiceCollection AddQuerySlices(this IServiceCollection services)
     {
         // ---- queries (one line per slice) ----
         _ = services.AddScoped<IValidator<ExportContextMapRequest>, AcceptAllValidator<ExportContextMapRequest>>().AddQuery<ExportContextMapRequest, MapExported, ExportContextMapService>();
@@ -121,6 +117,17 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<GetInstanceEventsRequest>, AcceptAllValidator<GetInstanceEventsRequest>>().AddQuery<GetInstanceEventsRequest, GetInstanceEventsResponse, GetInstanceEventsService>();
         return services;
     }
+
+    /// <summary>The doctor: its fact readers, the core checks and the extra checks decorator.</summary>
+    private static IServiceCollection AddDoctor(this IServiceCollection services) => services
+        .AddScoped<ProfileFacts>()
+        .AddScoped<LedgerFacts>()
+        .AddScoped<OnyxDoctor>()
+        .AddScoped<ContextEngineChecks>()
+        .AddScoped<RunDoctorService>()
+        .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
+            new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
+        .AddScoped<IDoctorChecks, ContextDoctorChecks>();
 
     /// <summary>The registry's slices (engine P2): register, approve and revoke (commands), the challenge (an issue), list and show (queries).</summary>
     private static IServiceCollection AddRegistrySlices(this IServiceCollection services)

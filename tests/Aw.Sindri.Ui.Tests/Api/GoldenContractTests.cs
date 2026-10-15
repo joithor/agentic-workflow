@@ -11,23 +11,27 @@ namespace Aw.Sindri.Ui.Tests.Api;
 /// <summary>
 /// UI spec E-17: every API golden reads through the app's own JSON context, so a wire change in Sindri fails this unit
 /// lane, not a prover run. A golden is a record the app reads, a ProblemDetails refusal, or a route the app never calls.
-/// The goldens are Sindri's own (tests/Aw.Sindri.Tests/Golden/Api, linked into this test output as Golden/Api).
+/// The goldens are Sindri's own (tests/Aw.Sindri.Tests/Golden/Api, linked into this test output as Golden/Api), plus
+/// U1's spec-shaped stand-ins for P2's routes (Golden/SpecShaped) until P2 writes them.
 /// </summary>
 [Lane(TestLane.Unit)]
 public sealed class GoldenContractTests
 {
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
 
-    // The routes U0 reads, by slug, and how; a new slug fails until it is placed here or in _notRead.
+    // The routes the app reads, by slug, and how; a new slug fails until it is placed here or in _notRead.
     private static readonly Dictionary<string, Func<byte[], Result<object>>> _read = new(StringComparer.Ordinal)
     {
         ["ping"] = As<PingView>,
         ["status"] = As<StatusView>,
         ["events"] = As<EventView>,
+        ["commands"] = As<CommandList>,
+        ["services"] = As<ServiceList>,
+        ["views-rebuild"] = As<CommandAcceptedView>,
     };
 
-    // Routes U0 never calls: the catalog is U1's, stop is Health's (U4), and profile approve is protected (§6.5).
-    private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal) { "commands", "stop", "profile-approve" };
+    // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), and the services, profile and views-rebuild routes are the later pages' (U2+).
+    private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal) { "stop", "profile-approve", "services", "profile", "views-rebuild" };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -36,6 +40,7 @@ public sealed class GoldenContractTests
     {
         var goldens = GoldenFiles.All().ToList();
         Assert.Contains(goldens, g => g.Kind == "Api" && g.Slug == "status");
+        Assert.Contains(goldens, g => g.Kind == "SpecShaped");
 
         foreach (var (kind, slug, scenario, body) in goldens)
         {
@@ -99,6 +104,36 @@ public sealed class GoldenContractTests
         Assert.Equal(goldenEvent.Select(p => p.Key), fakeEvent.Select(p => p.Key), StringComparer.Ordinal);
     }
 
+    // F13 (test-1): the four spec-shaped status goldens (P2's, until P2 writes its own) say what the pill and the follower read.
+    [Theory]
+    [InlineData("running-healthy", "healthy", 41L, 41L, false, false, null, null, 0)]
+    [InlineData("running-degraded", "degraded", 41L, 41L, false, false, null, null, 1)]
+    [InlineData("running-rebuilding", "rebuilding", 12L, 42L, true, false, null, null, 0)]
+    [InlineData("running-stalled", "stalled", 41L, 42L, false, true, 42L, "service.ran", 1)]
+    public void The_spec_shaped_status_goldens_are_read_in_full(string scenario, string word, long cursor, long head, bool rebuilding, bool stalled, long? stalledAt, string? stalledType, int problems)
+    {
+        var status = AwJson.Deserialize<StatusView>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("status", scenario)), SindriApiClient.Json).Value;
+
+        Assert.Equal(1, status.ApiVersion);
+        Assert.Equal((word, problems), (status.Health!.Word, status.Health.Problems.Count));
+        Assert.Equal((cursor, head, rebuilding, stalled, stalledAt, stalledType), (status.Views!.Cursor, status.Views.LedgerHead, status.Views.Rebuilding, status.Views.Stalled, status.Views.StalledAt, status.Views.StalledType));
+        _ = Assert.NotNull(status.Views.ProjectedAt);
+    }
+
+    // F13: the handler writes the spec-shaped status goldens exactly, stalledAt and stalledType included.
+    [Theory]
+    [InlineData("running-healthy")]
+    [InlineData("running-degraded")]
+    [InlineData("running-rebuilding")]
+    [InlineData("running-stalled")]
+    public void The_fake_handler_writes_the_spec_shaped_status_goldens(string scenario)
+    {
+        var golden = GoldenFiles.SpecShaped("status", scenario);
+        var status = AwJson.Deserialize<StatusView>(Encoding.UTF8.GetBytes(golden), SindriApiClient.Json).Value;
+
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(golden), JsonNode.Parse(FakeSindriHandler.Status(status))), scenario);
+    }
+
     // A stale token: Sindri's human-stale-token golden as served, the token read again and the call retried once.
     [Fact]
     public async Task The_stale_token_golden_is_retried_once_with_the_token_read_again()
@@ -129,6 +164,19 @@ public sealed class GoldenContractTests
         Assert.Equal(["/sindri/status", "/sindri/status"], handler.Requests.Select(r => r.Path), StringComparer.Ordinal);
     }
 
+    [Fact]
+    public void The_p1_catalog_carries_every_field_the_control_renderer_reads()
+    {
+        var catalog = AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", "catalog")), SindriApiClient.Json).Value;
+
+        var rebuild = Assert.Single(catalog.Rows, r => r.Action == "RebuildViews");
+        Assert.Equal(("desk", "ready", "sindri views rebuild", false, false), (rebuild.Class, rebuild.Ui, rebuild.Cli, rebuild.Destructive, rebuild.ReadsViews));
+        var stop = Assert.Single(catalog.Rows, r => r.Action == "StopProcess");
+        Assert.Equal(("ready", true), (stop.Ui, stop.Destructive));
+        Assert.Equal("cli-only:typed-confirmation", Assert.Single(catalog.Rows, r => r.Action == "ApproveProfile").Ui);
+    }
+
+    // A refusal's ProblemDetails names its SND code in title; any other body has none.
     private static T Read<T>(string slug, string scenario)
         where T : class =>
         AwJson.Deserialize<T>(Encoding.UTF8.GetBytes(GoldenFiles.Api(slug, scenario)), SindriApiClient.Json).Value;
