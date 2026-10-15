@@ -130,6 +130,25 @@ public abstract class ViewStoreContract
         Expect.True((await reader.State(Token)).Value is { Cursor: 1, StalledAt: 2 });
     }
 
+    /// <summary>A range reads the keys strictly between its bounds, in key order, and stops at max (the item timeline's pages).</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Range_returns_keys_between_the_bounds_in_order()
+    {
+        var (store, reader) = Create();
+        _ = await store.Open(ViewSchema.Version, Token);
+        _ = await store.Apply([Event(1, Put, "k-03"), Event(2, Put, "k-01"), Event(3, Put, "k-04"), Event(4, Put, "k-02"), Event(5, Put, "l-01")],
+            Projections(), Clock.GetUtcNow(), Token);
+
+        async Task<IEnumerable<string>> Keys(string after, string? before, int max) =>
+            (await reader.Range<ServiceRow>(ViewNames.Services, after, before, max, Token)).Value.Select(r => r.Name.Value);
+
+        Expect.Sequence(["k-02", "k-03"], await Keys("k-01", "k-04", max: 10));
+        Expect.Sequence(["k-01", "k-02"], await Keys("k-", "k-~", max: 2));
+        Expect.Sequence(["k-04", "l-01"], await Keys("k-03", before: null, max: 10));
+        Expect.True(!(await Keys("l-01", before: null, max: 10)).Any());
+    }
+
     private static IReadOnlyList<IProjection> Projections() =>
         [new FixtureProjection(ViewNames.Services, Put), new FixtureProjection(ViewNames.Profile, Put), new FixtureProjection(ViewNames.Services, Fail, fails: true)];
 

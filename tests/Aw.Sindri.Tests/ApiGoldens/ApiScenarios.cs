@@ -22,15 +22,24 @@ internal static class ApiScenarios
         ("profile-approve", "refused-session"), ("profile-approve", "refused-no-terminal"), ("profile-approve", "refused-origin"),
         ("profile-approve", "stale-hash"), ("profile-approve", "bad-body"),
         .. ViewScenarios.All,
+        .. ItemScenarios.All,
     ];
 
     /// <summary>Whether the scenario's host must refuse the prover label (its home isn't temporary).</summary>
     public static bool NeedsNonTemporaryHome(string slug, string scenario) => (slug, scenario) is ("status", "prover-refused");
 
+    /// <summary>The live profile the scenario's host starts with: the item scenarios need two repos.</summary>
+    public static string ProfileYaml(string slug, string scenario) => ItemScenarios.Handles(slug, scenario) ? ItemScenarios.ProfileYaml : GoldenHost.ProfileYaml;
+
     /// <summary>Runs the scenario against <paramref name="host"/> and returns the body to compare.</summary>
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
     {
         var token = host.Token.Value;
+        if (ItemScenarios.Handles(slug, scenario))
+        {
+            return await ItemScenarios.Body(host, slug, scenario, ct);
+        }
+
         if (ViewScenarios.Handles(slug, scenario))
         {
             return await ViewScenarios.Body(host, slug, scenario, ct);

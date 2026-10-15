@@ -1,0 +1,453 @@
+{
+  "groups": [
+    {
+      "group": "waitingOnYou",
+      "items": [],
+      "empty": "Nothing is waiting on you."
+    },
+    {
+      "group": "withYou",
+      "items": [],
+      "empty": "Nothing is with you."
+    },
+    {
+      "group": "running",
+      "items": [],
+      "empty": "Nothing running."
+    },
+    {
+      "group": "queued",
+      "items": [
+        {
+          "id": "ITM-0000000000000000000000000000000e",
+          "title": "Item 1",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000013",
+          "title": "Item 2",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000018",
+          "title": "Item 3",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-0000000000000000000000000000001d",
+          "title": "Item 4",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000022",
+          "title": "Item 5",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000027",
+          "title": "Item 6",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-0000000000000000000000000000002c",
+          "title": "Item 7",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000031",
+          "title": "Item 8",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000036",
+          "title": "Item 9",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-0000000000000000000000000000003b",
+          "title": "Item 10",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000040",
+          "title": "Item 11",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000045",
+          "title": "Item 12",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-0000000000000000000000000000004a",
+          "title": "Item 13",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-0000000000000000000000000000004f",
+          "title": "Item 14",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000054",
+          "title": "Item 15",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000059",
+          "title": "Item 16",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-0000000000000000000000000000005e",
+          "title": "Item 17",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000063",
+          "title": "Item 18",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000068",
+          "title": "Item 19",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-0000000000000000000000000000006d",
+          "title": "Item 20",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000072",
+          "title": "Item 21",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000077",
+          "title": "Item 22",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-0000000000000000000000000000007c",
+          "title": "Item 23",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000081",
+          "title": "Item 24",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000086",
+          "title": "Item 25",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-0000000000000000000000000000008b",
+          "title": "Item 26",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000090",
+          "title": "Item 27",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-00000000000000000000000000000095",
+          "title": "Item 28",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-0000000000000000000000000000009a",
+          "title": "Item 29",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        },
+        {
+          "id": "ITM-0000000000000000000000000000009f",
+          "title": "Item 30",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        }
+      ],
+      "empty": null
+    }
+  ],
+  "empty": null,
+  "asOf": {
+    "cursor": 64,
+    "ledgerHead": 64,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

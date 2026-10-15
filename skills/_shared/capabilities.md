@@ -13,6 +13,8 @@ Referenced via: SHARED_DIR pattern (CD2).
 | **Spawn a subagent** | `Agent` (`subagent_type`, `prompt`) | `spawn_agent`, then `wait_agent` | `Task` (`subagent_type`, `prompt`) |
 | **Dispatch in parallel** | N `Agent` calls in one message | N `spawn_agent` calls, then one `wait_agent` over all ids | N `Task` calls in one message |
 | **Message a running agent** | `SendMessage` | `send_message` | `Task` resume / follow-up |
+| **List agents** (other live sessions and their names) | `ListAgents` | — (no cross-session messaging) | — |
+| **Watch in the background** (a long-running command whose output lines arrive as events) | `Monitor` | run it in a background shell and poll its output | run it in a background shell and poll its output |
 | **Invoke another skill** | `Skill` tool (`skill: <name>`) | Mention `$<name>` or read `$TOOLKIT/skills/<name>/SKILL.md` and follow it | `/<name>` or read `$TOOLKIT/skills/<name>/SKILL.md` and follow it |
 | **Run shell** | `Bash` | `exec` / shell | `Shell` |
 | **Read / search files** | `Read`, `Grep`, `Glob` | shell (`rg`, `sed -n`) | `Read`, `Grep`, `Glob` |

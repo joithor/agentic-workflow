@@ -1,0 +1,53 @@
+{
+  "id": "workflow.step",
+  "hash": "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c",
+  "version": 1,
+  "inputs": [
+    {
+      "key": "fact:spec",
+      "label": null,
+      "type": "text",
+      "kind": null,
+      "required": true
+    }
+  ],
+  "outputs": [],
+  "urgency": "work",
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "produce",
+      "order": 1,
+      "branchOf": null
+    },
+    {
+      "id": "checks",
+      "order": 2,
+      "branchOf": null
+    },
+    {
+      "id": "verify",
+      "order": 3,
+      "branchOf": null
+    },
+    {
+      "id": "done",
+      "order": 4,
+      "branchOf": null
+    }
+  ],
+  "loops": [
+    {
+      "name": "revisions",
+      "from": "checks",
+      "to": "produce",
+      "cap": 3
+    },
+    {
+      "name": "revisions",
+      "from": "verify",
+      "to": "produce",
+      "cap": 3
+    }
+  ]
+}

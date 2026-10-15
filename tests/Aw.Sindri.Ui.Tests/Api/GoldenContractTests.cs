@@ -40,6 +40,7 @@ public sealed class GoldenContractTests
     private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
     {
         "stop", "profile-approve", "profile",
+        "queue", "items", "items-id", "items-id-timeline", "items-id-close",   // API P3: the queue and item screens (U2) place these
     };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
