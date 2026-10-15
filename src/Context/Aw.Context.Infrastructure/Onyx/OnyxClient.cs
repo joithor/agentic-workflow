@@ -41,6 +41,7 @@ internal sealed partial class OnyxClient(OnyxSettings settings, OnyxSourceParts 
     public async ValueTask<Result<T>> Call<T>(OnyxCall call, TimeSpan deadline, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(call);
+        cancellationToken.ThrowIfCancellationRequested();   // before the spent-deadline answer: a cancelled caller gets the thrown cancellation
         if (deadline <= TimeSpan.Zero)
         {
             return Failed(call, Unavailable($"wasn't called: the query's deadline was spent before {call.Route}"), status: null);   // never a race, never an ArgumentOutOfRangeException

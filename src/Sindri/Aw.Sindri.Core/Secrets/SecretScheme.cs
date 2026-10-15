@@ -9,7 +9,7 @@ public enum SecretScheme
     /// <summary>A file readable by its owner only (no group or other permission bits): 'file:/absolute/path'.</summary>
     File = 2,
 
-    /// <summary>A macOS keychain generic password: 'keychain:&lt;service&gt;/&lt;account&gt;'.</summary>
+    /// <summary>A keychain entry (macOS keychain generic password, libsecret on Linux; unsupported elsewhere): 'keychain:&lt;service&gt;/&lt;account&gt;'.</summary>
     Keychain = 3,
 
     /// <summary>A 1Password field read through the 'op' CLI: 'op:&lt;vault&gt;/&lt;item&gt;/&lt;field&gt;'.</summary>

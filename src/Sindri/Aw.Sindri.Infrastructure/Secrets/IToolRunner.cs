@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Infrastructure.Secrets;
 
-/// <summary>Runs a secret tool ('security', 'op') synchronously, with an argument list (never a shell string) and a timeout.</summary>
+/// <summary>Runs a secret tool ('security', 'secret-tool', 'op') synchronously, with an argument list (never a shell string) and a timeout.</summary>
 internal interface IToolRunner
 {
     /// <summary>Runs the tool and waits for it, killing it past <paramref name="timeout"/>.</summary>

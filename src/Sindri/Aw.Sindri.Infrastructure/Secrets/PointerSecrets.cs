@@ -70,7 +70,7 @@ internal sealed class PointerSecrets(Func<string, string?> environment, IToolRun
 
         if (!File.Exists(path))
         {
-            return Unresolved(secretPointer, $"{path} doesn't exist; create it with mode 0600");
+            return Unresolved(secretPointer, $"{path} doesn't exist or can't be reached; create it with mode 0600, or check the directory's owner and mode");
         }
 
         if (!OperatingSystem.IsWindows() && (File.GetUnixFileMode(path) & GroupOrOther) != UnixFileMode.None)
@@ -88,9 +88,11 @@ internal sealed class PointerSecrets(Func<string, string?> environment, IToolRun
         return _platform switch
         {
             KeychainPlatform.MacOS => FromTool(secretPointer, "security", ["find-generic-password", "-s", service, "-a", account, "-w"], _keychainTimeout,
-                $"add it with 'security add-generic-password -s {service} -a {account} -w' (macOS keychain)"),
+                new ToolHints($"add it with 'security add-generic-password -s {service} -a {account} -w' (macOS keychain)")),
             KeychainPlatform.Linux => FromTool(secretPointer, "secret-tool", ["lookup", "service", service, "account", account], _keychainTimeout,
-                $"add it with 'secret-tool store --label \"{service}/{account}\" service {service} account {account}' (libsecret)"),
+                new ToolHints($"add it with: secret-tool store --label {Quote($"{service}/{account}")} service {Quote(service)} account {Quote(account)} (libsecret)",
+                    ExitedWhy: "no such entry, or no keyring reachable (sindri serve needs the login session's D-Bus)",
+                    MissingFix: "install libsecret-tools (Debian/Ubuntu) or your distribution's secret-tool package, then store the entry")),
             KeychainPlatform.Unsupported => Unresolved(secretPointer, "keychain: isn't supported on this OS (macOS uses the keychain, Linux libsecret); use env:, file: or op:"),
             _ => throw new ArgumentOutOfRangeException(nameof(secretPointer), _platform, "unknown platform"),
         };
@@ -98,23 +100,30 @@ internal sealed class PointerSecrets(Func<string, string?> environment, IToolRun
 
     private Result<string> OnePassword(SecretPointer secretPointer)
         => FromTool(secretPointer, "op", ["read", $"op://{secretPointer.Target}"], _opTimeout,
-            "check the vault, item and field, and that the 1Password CLI is installed and signed in");
+            new ToolHints("check the vault, item and field, and that the 1Password CLI is installed and signed in"));
 
-    private Result<string> FromTool(SecretPointer secretPointer, string tool, string[] arguments, TimeSpan timeout, string fix)
+    private Result<string> FromTool(SecretPointer secretPointer, string tool, string[] arguments, TimeSpan timeout, ToolHints hints)
     {
+        var fix = hints.Fix;
         var run = runner.Run(tool, arguments, timeout);
         var why = run.Outcome switch
         {
             ToolOutcome.Missing => $"'{tool}' isn't on PATH",
             ToolOutcome.TimedOut => string.Create(CultureInfo.InvariantCulture, $"'{tool}' didn't answer within {timeout.TotalSeconds:0} s (a locked keychain or a sign-in prompt?)"),
-            ToolOutcome.Exited when run.ExitCode != 0 => string.Create(CultureInfo.InvariantCulture, $"'{tool}' exited with {run.ExitCode} (no such entry?)"),
+            ToolOutcome.Exited when run.ExitCode != 0 => string.Create(CultureInfo.InvariantCulture, $"'{tool}' exited with {run.ExitCode} ({hints.ExitedWhy ?? "no such entry?"})"),
             ToolOutcome.Exited => null,
             _ => throw new ArgumentOutOfRangeException(nameof(tool), run.Outcome, "unknown outcome"),
         };
         return why is null
             ? NonEmpty(secretPointer, TrimNewline(run.Output), $"'{tool}' printed an empty value; {fix}")
-            : Unresolved(secretPointer, $"{why}; {fix}");
+            : Unresolved(secretPointer, $"{why}; {(run.Outcome == ToolOutcome.Missing ? hints.MissingFix ?? fix : fix)}");
     }
+
+    // Single-quotes a shell word for the hint (an embedded quote is closed, escaped and reopened).
+    private static string Quote(string word) => "'" + word.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
+
+    // What a tool failure says beyond the pointer: the fix, what a non-zero exit may mean, and the fix when the tool isn't installed.
+    private sealed record ToolHints(string Fix, string? ExitedWhy = null, string? MissingFix = null);
 
     private static Result<string> NonEmpty(SecretPointer secretPointer, string value, string why)
         => value.Length > 0 ? value : Unresolved(secretPointer, why);
