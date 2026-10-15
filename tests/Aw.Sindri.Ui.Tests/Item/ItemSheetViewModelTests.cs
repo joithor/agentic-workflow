@@ -234,4 +234,21 @@ public sealed class ItemSheetViewModelTests
         Assert.Equal(calls + 1, _server.TimelineCalls);
         Assert.Equal(101, sheet.Timeline.Count);
     }
+
+    // L7 (corr-7): a first read that fails with anything but 404 shows the API's code and detail; the next good read clears them.
+    [Fact]
+    public async Task A_failed_first_read_shows_the_apis_code_and_detail_until_a_read_succeeds()
+    {
+        _server.Items[A.NewItem] = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)");
+        var sheet = await Sheet();
+
+        await sheet.Open(_api, A.NewItem, Token);
+
+        Assert.Equal((false, false, true, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)"), (sheet.IsLoading, sheet.HasItem, sheet.HasProblem, sheet.ProblemCode, sheet.ProblemDetail));
+
+        _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "new");
+        await sheet.Refresh(_api, Token);
+
+        Assert.Equal((true, false), (sheet.HasItem, sheet.HasProblem));
+    }
 }

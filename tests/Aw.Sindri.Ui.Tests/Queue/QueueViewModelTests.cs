@@ -307,4 +307,21 @@ public sealed class QueueViewModelTests
 
         Assert.Equal((5, true, false), (queue.Total, queue.IsStale, queue.IsLoading));
     }
+
+    // L7 (corr-7): a first read that fails ends the skeleton and says what the API said, so the page is never blank.
+    [Fact]
+    public async Task A_failed_first_read_ends_loading_and_shows_the_apis_code_and_detail()
+    {
+        _server.QueueView = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)");
+        var queue = await Queue();
+
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal((false, true, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)", false), (queue.IsLoading, queue.HasProblem, queue.ProblemCode, queue.ProblemDetail, queue.IsStale));
+
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p4-waiting");
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal((false, false, 5), (queue.HasProblem, queue.IsLoading, queue.Total));
+    }
 }

@@ -285,4 +285,40 @@ public sealed class QueueFramesTests : IDisposable
         Assert.Equal("linear:issue/ENG-142", Named<TextBlock>(window, "ItemLinkText").Text);
         Frame(window, "item-body");
     });
+
+    // L7 (corr-7): a failed first read shows the code and detail on the page; a later failed read marks what is shown stale.
+    [Fact]
+    public Task A_failed_first_queue_read_shows_its_problem_and_a_later_failure_marks_the_panels_stale() => OnUi(async () =>
+    {
+        _server.QueueView = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)");
+        var (window, shell) = await Connected(s => !s.Queue.IsLoading);
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+        Assert.Equal((true, "SND-API-011"), (Visible(window, "QueueProblem"), Named<TextBlock>(window, "QueueProblemCode").Text));
+        Assert.False(Visible(window, "QueueSkeleton"));
+
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "fixture");
+        await shell.Queue.Refresh(new Uri("http://127.0.0.1:7410/"), Token);
+        _server.QueueView = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-011", "behind");
+        await shell.Queue.Refresh(new Uri("http://127.0.0.1:7410/"), Token);
+        Settle(window);
+        Assert.Equal((false, true), (Visible(window, "QueueProblem"), Visible(window, "QueueStale")));
+
+        shell.GoTo(PageId.Home);
+        Settle(window);
+        Assert.Equal((true, true), (Visible(window, "RunningStale"), Visible(window, "QueuedStale")));
+    });
+
+    [Fact]
+    public Task A_stale_item_read_marks_the_sheet_stale() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+        Assert.False(Visible(window, "ItemStale"));
+
+        _server.Items[A.NewItem] = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-011", "behind");
+        await shell.Item.Refresh(new Uri("http://127.0.0.1:7410/"), Token);
+        Settle(window);
+
+        Assert.True(Visible(window, "ItemStale"));
+    });
 }

@@ -38,6 +38,15 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     /// <summary>True when the last read failed: the rows shown are the last good ones (§4.1 Stale).</summary>
     public bool IsStale { get; private set => Set(ref field, value); }
 
+    /// <summary>True while the first read's failure is shown (nothing was ever read, so there are no rows to mark stale).</summary>
+    public bool HasProblem => ProblemCode.Length > 0;
+
+    /// <summary>The failed first read's code (the API's title, or the app's SND-UI code), or empty.</summary>
+    public string ProblemCode { get; private set { Set(ref field, value); OnChanged(nameof(HasProblem)); } } = string.Empty;
+
+    /// <summary>The failed first read's detail, as served, or empty.</summary>
+    public string ProblemDetail { get; private set => Set(ref field, value); } = string.Empty;
+
     /// <summary>Home's left panel: With you first, then running, at most five (§3.2).</summary>
     public ObservableCollection<ItemRowViewModel> RunningRows { get; } = [];
 
