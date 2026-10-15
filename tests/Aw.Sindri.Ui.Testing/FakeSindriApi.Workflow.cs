@@ -6,6 +6,9 @@ namespace Aw.Sindri.Ui.Testing;
 /// <summary>The workflow reads of the fake: served from the goldens in the contract slice that follows the client.</summary>
 internal sealed partial class FakeSindriApi
 {
+    /// <summary>When set, every workflow read answers this instead of the golden (a refusal, an odd body).</summary>
+    public RouteAnswer? WorkflowAnswer { get; set; }
+
     public Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken) => throw new NotSupportedException();
 
     public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken) => throw new NotSupportedException();
