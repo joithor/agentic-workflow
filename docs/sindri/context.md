@@ -565,7 +565,7 @@ Accept all 31 deterministic proposals at once? [y]es / [n]o, go through them one
 | `review accept\|reject <node\|edge:id>` | Decide one proposal or one suggested file link | desk |
 | `review rename <node> <name>`, `review move <node> --under <node>` | Edit a proposal | desk |
 | `review --accept-deterministic` | Accept every deterministic proposal at once | desk |
-| `review --undo <id>[,<id>…]`, `--history` | Reverse one decision (a reject too); list the log with the ids | desk, query |
+| `review --undo <id>[,<id>…]`, `--history` | Reverse one decision (a reject too); list the log with the ids. A reject or delete of a node the map no longer holds (cut by a deny glob, or no longer found by a build or import) counts as satisfied and isn't listed until the node returns, and it still applies then | desk, query |
 | `review --drop <id>`, `--repoint <id> --to <node>` | An orphaned override (its node vanished): drop it, or point it at another node | desk |
 | `review --export [<path>]` | Write the queue as a review file under `$AW_SINDRI_HOME/context/exports/` | query |
 | `review --apply <file>` | Apply a review file you edited | protected |
