@@ -577,6 +577,56 @@ public sealed class QueueKeysTests
         Assert.Empty(asked);
     }
 
+    // The golden fixture's queued group grown to n rows (clones of its first), appended in order.
+    private static RouteAnswer QueuedGrownTo(int n) => Edited("fixture", items =>
+    {
+        if (items.Count == 0 || !items[0]!["id"]!.GetValue<string>().StartsWith("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a30", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        for (var i = items.Count; i < n; i++)
+        {
+            var copy = System.Text.Json.Nodes.JsonNode.Parse(items[0]!.ToJsonString())!;
+            copy["id"] = "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a4" + i.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
+            items.Add(copy);
+        }
+    });
+
+    // V2 (a11y-1): a row past Home's cap is drawn nowhere, so nothing under the pointer can move: no pill, the view applies at once.
+    [Fact]
+    public async Task A_queued_row_past_homes_cap_is_not_held_and_the_view_applies_at_once()
+    {
+        _server.QueueView = QueuedGrownTo(5);
+        var queue = await Queue();
+        queue.PageShown(QueueScope.Home);
+        Assert.Equal(5, queue.QueuedRows.Count);
+        queue.Hold(holding: true);
+
+        _server.QueueView = QueuedGrownTo(6);
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal((false, 6, 5, Labels.QueuedHeader(6)), (queue.HasHeld, queue.Total, queue.QueuedRows.Count, queue.QueuedHeader));
+        Assert.Equal((false, Labels.Sindri), (queue.IsAnnouncing, queue.Announcement));
+    }
+
+    // One new row Home draws and one past its cap: the pill counts the drawn one.
+    [Fact]
+    public async Task The_pill_counts_only_the_new_rows_the_page_draws()
+    {
+        _server.QueueView = QueuedGrownTo(4);
+        var queue = await Queue();
+        queue.PageShown(QueueScope.Home);
+        queue.Hold(holding: true);
+
+        _server.QueueView = QueuedGrownTo(6);
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal((true, "1 new", 4), (queue.HasHeld, queue.HeldText, queue.Total));
+        queue.Hold(holding: false);
+        Assert.Equal((false, 6, 5), (queue.HasHeld, queue.Total, queue.QueuedRows.Count));
+    }
+
     // R2: a collapsed group draws no rows: a focused running row served into one has left the page, like a cleared row.
     [Fact]
     public async Task A_focused_page_row_served_into_a_collapsed_group_passes_to_the_next_running_row_and_is_spoken_once()
