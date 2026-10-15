@@ -390,6 +390,8 @@ U3' and U8.
   consistency checks on the fixture, not app code. `GoldenContractTests` deserializes every `workflow-instances`,
   `-instance`, `-instance-fact`, `-status` and `-recipe` golden through the app's JSON context, and
   `SindriApiContract.Workflow` runs the same scenarios against the fake and the real client.
+  The fake answers a recipe id that has a recipe golden with that golden's body and every other id with SND-ITEM-404, never another
+  recipe's content; recipe goldens for the other ids (the ones instances run) are requested from the API lane.
 
 ## Lane anchors (U3' and U8)
 

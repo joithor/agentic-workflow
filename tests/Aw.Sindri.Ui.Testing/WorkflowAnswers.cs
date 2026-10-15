@@ -84,33 +84,19 @@ internal static class WorkflowAnswers
     }
 
     // A recipe golden carries no id of its own, so this says which recipe each stands for. WorkflowGoldenTests holds each
-    // entry to the instance goldens that run the recipe (the golden's states are the instance's).
+    // entry to the instance goldens that run the recipe (the golden's states are the instance's). A recipe that has no golden
+    // is not found: the fake never serves another recipe's content for it (recipe goldens for the other ids come from the API lane).
     private static readonly Dictionary<string, string> _recipeGoldens = new(StringComparer.Ordinal)
     {
         ["workflow-project"] = "workflow.project",
         ["incident-response"] = "workflow.incident-response",
+        ["no-outputs"] = "no.outputs",   // no instance runs it: it is served under its own scenario only
     };
 
-    /// <summary>The recipe golden that answers every recipe an instance runs and no golden is named for: a plain recipe with no outputs.</summary>
-    internal const string RecipeStandIn = "no-outputs";
-
-    /// <summary>The recipes the instance goldens and the list rows run, by id.</summary>
-    /// <returns>The ids, once each.</returns>
-    internal static IEnumerable<string> RunningRecipes() =>
-        Served("workflow-instance").Select(g => g.Body["recipe"]).Concat(Rows().Select(r => r["recipe"]))
-            .Select(r => (string)r!["id"]!).Distinct(StringComparer.Ordinal); // why: a running recipe has an id
-
-    /// <summary>The recipe goldens that name a recipe, by scenario.</summary>
+    /// <summary>The recipe goldens, by scenario, with the recipe id each is named for.</summary>
     internal static IReadOnlyDictionary<string, string> NamedRecipeGoldens => _recipeGoldens;
 
-    /// <summary>The recipes a recipe golden answers: the one it is named for, or (for the stand-in) every running recipe no golden is named for.</summary>
-    /// <param name="scenario">The recipe golden's scenario.</param>
-    /// <returns>The recipe ids.</returns>
-    internal static IEnumerable<string> RecipesAnsweredBy(string scenario) =>
-        _recipeGoldens.TryGetValue(scenario, out var named) ? [named]
-            : string.Equals(scenario, RecipeStandIn, StringComparison.Ordinal) ? RunningRecipes().Where(r => !_recipeGoldens.ContainsValue(r)) : [];
-
-    /// <summary>GET /workflow/recipes/{recipe}[@hash]: the golden named for the recipe, else the stand-in for a recipe an instance runs; a hash must be one an instance runs.</summary>
+    /// <summary>GET /workflow/recipes/{recipe}[@hash]: the golden named for the recipe; a recipe with none is not found, and a hash must be one an instance runs.</summary>
     /// <param name="recipe">The recipe id.</param>
     /// <param name="hash">The hash the caller names, or null for the current one.</param>
     /// <returns>The answer.</returns>
@@ -120,8 +106,7 @@ internal static class WorkflowAnswers
             : RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-ITEM-404", hash is null ? $"No recipe {recipe} in this repo." : $"No recipe {recipe}@{hash} in this repo.");
 
     private static string? ScenarioOf(string recipe) =>
-        _recipeGoldens.FirstOrDefault(g => string.Equals(g.Value, recipe, StringComparison.Ordinal)).Key
-        ?? (RunningRecipes().Contains(recipe, StringComparer.Ordinal) ? RecipeStandIn : null);
+        _recipeGoldens.FirstOrDefault(g => string.Equals(g.Value, recipe, StringComparison.Ordinal)).Key;
 
     // A recipe's hash is whatever an instance of it reports running; none named means the current one.
     private static bool HashKnown(string recipe, string? hash) =>
