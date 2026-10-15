@@ -48,13 +48,20 @@ internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource
     public Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken) =>
         Call<CommandAcceptedView>(api, HttpMethod.Post, "/sindri/views/rebuild", cancellationToken);
 
-    public Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return Get<InstanceList>(api, WorkflowRoutes.Instances(query), cancellationToken, view: true);
+    }
 
-    public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken) =>
+        Get<InstanceDetail>(api, WorkflowRoutes.Instance(id), cancellationToken, view: true);
 
-    public Task<Result<FactView>> InstanceFact(Uri api, string id, string key, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public Task<Result<FactView>> InstanceFact(Uri api, string id, string key, CancellationToken cancellationToken) =>
+        Get<FactView>(api, WorkflowRoutes.Fact(id, key), cancellationToken);
 
-    public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken) =>
+        Get<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), cancellationToken);
 
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
