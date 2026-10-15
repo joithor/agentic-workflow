@@ -164,6 +164,52 @@ public sealed class ChordKeysTests : IDisposable
         Assert.Equal(PageId.Home, shell.CurrentPage);
     });
 
+    // The clock fires on another thread. Advancing it there queues the wait's continuation to the UI thread, so the flag
+    // changes and PropertyChanged is raised there, never on the advancing thread.
+    private void AdvanceOnAnotherThread(TimeSpan by)
+    {
+        var thread = new Thread(() => _clock.Advance(by));
+        thread.Start();
+        thread.Join();
+    }
+
+    [Fact]
+    public Task An_expiring_chord_raises_its_change_on_the_UI_thread() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (_, shell) = await Show(ShellState.Normal);
+        var seenOn = new List<(string? Property, bool OnUi)>();
+        shell.PropertyChanged += (_, e) => seenOn.Add((e.PropertyName, Dispatcher.UIThread.CheckAccess()));
+        Assert.True(shell.PressKey("G"));
+        seenOn.Clear();
+
+        AdvanceOnAnotherThread(ShellViewModel.ChordWait);
+
+        Assert.True(shell.IsChordPending);
+        Assert.Empty(seenOn);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(shell.IsChordPending);
+        Assert.Contains((nameof(ShellViewModel.IsChordPending), true), seenOn);
+        Assert.All(seenOn, seen => Assert.True(seen.OnUi, seen.Property));
+    });
+
+    [Fact]
+    public Task A_finished_wait_queued_for_an_old_chord_cannot_end_a_newer_one() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (_, shell) = await Show(ShellState.Normal);
+        Assert.True(shell.PressKey("G"));
+        AdvanceOnAnotherThread(ShellViewModel.ChordWait);   // the first chord's wait is over; its continuation waits for the UI thread
+        Assert.True(shell.PressKey("W"));
+        Assert.True(shell.PressKey("G"));
+
+        Dispatcher.UIThread.RunJobs();   // the old continuation runs now
+
+        Assert.True(shell.IsChordPending);
+        Assert.True(shell.PressKey("Q"));
+        Assert.Equal(PageId.Work, shell.CurrentPage);
+    });
+
     // The hint is an overlay: it takes no room in the bar, so it can be seen at the narrowest window and the largest text
     // scale. It is drawn at its desired width (not squeezed to the spacer column's), inside the window, clear of the ⌘K field.
     [Theory]

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
@@ -25,14 +26,18 @@ public sealed class ShellChordTests
         return shell;
     }
 
-    // The wait ends on the clock's thread, so a test waits for the flag with a bound, never for a count of yields.
+    // The wait ends on the clock's thread, so a test waits for the flag with a bound, never for a count of yields. The bound is
+    // well below ChordWait (1 s): a wait that ran on a real timer would still be pending when it runs out.
     private static async Task Expired(ShellViewModel shell)
     {
-        for (var i = 0; i < 200 && shell.IsChordPending; i++)
+        var bound = Stopwatch.StartNew();
+        while (shell.IsChordPending && bound.Elapsed < _expiryBound)
         {
-            await Task.Delay(5, Token);
+            await Task.Delay(2, Token);
         }
     }
+
+    private static readonly TimeSpan _expiryBound = TimeSpan.FromMilliseconds(250);
 
     [Fact]
     public async Task A_chord_just_inside_its_wait_still_takes_the_second_key()
