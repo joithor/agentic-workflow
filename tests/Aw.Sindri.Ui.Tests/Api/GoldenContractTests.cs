@@ -31,11 +31,13 @@ public sealed class GoldenContractTests
     };
 
     // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), the profile route is a later page's (U2+), and the
-    // rev-8 workflow views (API spec section 3.8) are read by the UI lanes that build on them (E-20, E-22, E-23).
+    // rev-8 workflow views (API spec section 3.8) are read by the UI lanes that build on them (E-20, E-22, E-23); the context routes are U9's (the context lens), read once U9 lands, until U9 (context records).
     private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
     {
         "stop", "profile-approve", "profile",
         "workflow-instances", "workflow-instance", "workflow-instance-fact", "workflow-status", "workflow-recipe",
+        "context-filemap", "context-lenses", "context-map", "context-map-promote", "context-map-proposals", "context-map-review", "context-map-review-history", "context-node",
+        "queue", "items", "items-id", "items-id-timeline", "items-id-close",   // API P3: the queue and item screens (U2) place these
     };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;

@@ -46,14 +46,35 @@ internal sealed class InMemoryViewRows(Dictionary<string, SortedDictionary<strin
     /// <returns>The rows.</returns>
     public Result<IReadOnlyList<TRow>> List<TRow>(string view)
         where TRow : class
+        => tables.TryGetValue(view, out var table) ? Read<TRow>(table.Values) : Unknown(view);
+
+    /// <summary>The rows of <paramref name="view"/> with keys strictly between the bounds, in key order, at most <paramref name="max"/>.</summary>
+    /// <typeparam name="TRow">The row record.</typeparam>
+    /// <param name="view">The view.</param>
+    /// <param name="afterKey">The lower bound (exclusive).</param>
+    /// <param name="beforeKey">The upper bound (exclusive), or null.</param>
+    /// <param name="max">The most rows.</param>
+    /// <returns>The rows.</returns>
+    public Result<IReadOnlyList<TRow>> Range<TRow>(string view, string afterKey, string? beforeKey, int max)
+        where TRow : class
     {
         if (!tables.TryGetValue(view, out var table))
         {
             return Unknown(view);
         }
 
+        var texts = table
+            .Where(r => string.CompareOrdinal(r.Key, afterKey) > 0 && (beforeKey is null || string.CompareOrdinal(r.Key, beforeKey) < 0))
+            .Take(max)
+            .Select(r => r.Value);
+        return Read<TRow>(texts);
+    }
+
+    private Result<IReadOnlyList<TRow>> Read<TRow>(IEnumerable<string> texts)
+        where TRow : class
+    {
         var rows = new List<TRow>();
-        foreach (var text in table.Values)
+        foreach (var text in texts)
         {
             var row = AwJson.Deserialize<TRow>(Encoding.UTF8.GetBytes(text), options);
             if (row.IsError)

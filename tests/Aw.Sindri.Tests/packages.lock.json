@@ -578,6 +578,32 @@
           "xunit.v3.extensibility.core": "[4.0.1, 4.0.1]"
         }
       },
+      "aw.judge.core": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Vogen": "[8.0.7, 8.0.7]"
+        }
+      },
+      "aw.judge.features": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Judge.Core": "[1.0.0, )",
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
+        }
+      },
+      "aw.judge.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Judge.Core": "[1.0.0, )",
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.Kernel.Data": "[1.0.0, )",
+          "Aw.Redaction": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]"
+        }
+      },
       "aw.kernel": {
         "type": "Project"
       },
@@ -637,6 +663,7 @@
         "dependencies": {
           "Aw.Kernel": "[1.0.0, )",
           "Aw.Kernel.Data": "[1.0.0, )",
+          "Aw.Redaction": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
           "YamlDotNet": "[18.1.0, 18.1.0]"
@@ -668,6 +695,9 @@
           "Aw.Context.Core": "[1.0.0, )",
           "Aw.Context.Features": "[1.0.0, )",
           "Aw.Context.Infrastructure": "[1.0.0, )",
+          "Aw.Judge.Core": "[1.0.0, )",
+          "Aw.Judge.Features": "[1.0.0, )",
+          "Aw.Judge.Infrastructure": "[1.0.0, )",
           "Aw.Kernel": "[1.0.0, )",
           "Aw.Kernel.Telemetry": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",

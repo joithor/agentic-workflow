@@ -28,6 +28,9 @@
     <!-- compose edge (deps.yaml): only AddContextFeatures and AddContextInfrastructure, in Composition (ARCH-COMPOSE-001) -->
     <ProjectReference Include="../../Context/Aw.Context.Features/Aw.Context.Features.csproj" />
     <ProjectReference Include="../../Context/Aw.Context.Infrastructure/Aw.Context.Infrastructure.csproj" />
+    <!-- the labeler's model port (Host/Models): Sindri adapts Judge's provider catalog; compose edge in deps.yaml -->
+    <ProjectReference Include="../../Judge/Aw.Judge.Core/Aw.Judge.Core.csproj" />
+    <ProjectReference Include="../../Judge/Aw.Judge.Infrastructure/Aw.Judge.Infrastructure.csproj" />
     <ProjectReference Include="../Aw.Sindri.Workflows/Aw.Sindri.Workflows.csproj" />
     <ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" />
     <ProjectReference Include="../../Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj" />

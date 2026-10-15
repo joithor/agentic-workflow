@@ -1,0 +1,109 @@
+using Aw.Context.Infrastructure.Extract;
+using Aw.Context.Infrastructure.Git;
+using Aw.Context.Testing.Fixtures;
+
+namespace Aw.Context.Tests.Infrastructure;
+
+public sealed class GraphifyClusterSourceTests
+{
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task An_absent_graphify_is_an_empty_unavailable_set_not_an_error()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
+        var source = new GraphifyClusterSource(new GitCli(), GraphifyOptions.Default with { Binary = "/nonexistent/graphify" });
+
+        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+
+        Assert.True(set.IsSuccess);
+        Assert.False(set.Value.Available);
+        Assert.Empty(set.Value.Clusters);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_graphify_of_another_version_is_not_run_on_a_repo()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
+        using var stub = new StubGraphify("0.0.1");
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options);
+
+        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+
+        Assert.True(set.IsSuccess);
+        Assert.False(set.Value.Available);
+        Assert.False(File.Exists(stub.RanMarker), "a graphify of another version must not be run on the repo");
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_pinned_graphify_runs_in_a_private_folder_inside_the_snapshot_and_its_communities_become_clusters()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n", ["src/b.ts"] = "export const b = 2;\n" });
+        using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options);
+
+        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+
+        Assert.True(set.IsSuccess);
+        Assert.True(set.Value.Available);
+        var cluster = Assert.Single(set.Value.Clusters);
+        Assert.Equal(["src/a.ts", "src/b.ts"], cluster.Files);
+        var env = (await File.ReadAllTextAsync(stub.RanMarker, Ct)).Trim().Split('|');
+        Assert.Equal(env[0], env[1]);   // HOME and TMPDIR are the one private folder
+        Assert.Contains("/aw-graphify-", env[0], StringComparison.Ordinal);   // inside the snapshot, not the system temp folder itself
+        Assert.Contains(GraphifyClusterSource.PrivateFolder, env[0], StringComparison.Ordinal);
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Equal("700", env[2]);
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_run_that_throws_for_an_unexpected_io_reason_is_a_degraded_unavailable_set_not_an_exception()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
+        using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new IOException("disk full") : command });
+
+        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+
+        Assert.True(set.IsSuccess);
+        Assert.False(set.Value.Available);
+        Assert.False(File.Exists(stub.RanMarker));   // the --version probe passed and the run itself is what threw
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_programming_error_in_the_run_is_not_swallowed_as_degraded_clusters()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
+        using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new ArgumentNullException(nameof(command)) : command });
+
+        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await source.Clusters(repo.Repo, repo.Head, Ct));
+    }
+
+    /// <summary>
+    /// The real pinned graphify under the real sandbox on the fixture app at its head commit. Where the machine's sandbox
+    /// can't start (an AppArmor-restricted user namespace for bwrap), graphify must not run at all: the set is unavailable.
+    /// </summary>
+    [Fact, Trait("Lane", "heavy")]
+    public async Task The_fixture_app_clusters_under_the_sandbox_or_degrades_without_running_graphify()
+    {
+        using var fixture = FixtureRepo.Build();
+        var repo = new Context.Core.Engine.ContextRepo(Context.Core.Engine.ContextRepoName.From("aw-split-panes"), fixture.Path);
+        var source = new GraphifyClusterSource(new GitCli(), GraphifyOptions.Default);
+
+        var set = await source.Clusters(repo, fixture.Head, Ct);
+
+        Assert.True(set.IsSuccess);
+        if (!set.Value.Available)
+        {
+            Assert.Empty(set.Value.Clusters);   // no usable sandbox here: graphify never ran unsandboxed
+            return;
+        }
+
+        Assert.NotEmpty(set.Value.Clusters);
+        Assert.All(set.Value.Clusters.SelectMany(c => c.Files), f => Assert.False(Path.IsPathRooted(f)));
+        Assert.Contains(set.Value.Clusters.SelectMany(c => c.Files), f => f.EndsWith("SplitPane.ts", StringComparison.Ordinal));
+    }
+}

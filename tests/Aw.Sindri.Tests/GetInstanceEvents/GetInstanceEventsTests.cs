@@ -7,6 +7,7 @@ using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Host.Endpoints;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.GetInstance;
+using Aw.Sindri.Tests.StreamEvents;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.GetInstanceEvents;
@@ -52,7 +53,7 @@ public sealed class GetInstanceEventsTests
     public async Task The_event_stream_filters_by_instance_or_by_item_and_reports_how_far_it_read()
     {
         var h = await Ledger();
-        var service = new StreamEventsService(h.Store);
+        var service = StreamEventsServices.Over(h);
         var ct = TestContext.Current.CancellationToken;
 
         var byInstance = (await service.Handle(new StreamEventsRequest(0, Instance: _address), ct)).Value;

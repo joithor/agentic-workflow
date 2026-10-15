@@ -14,7 +14,7 @@ namespace Aw.Sindri.Host.Mcp;
 /// </summary>
 internal static class McpToolTable
 {
-    private static readonly IReadOnlyList<Tool> _tools = [ContextTools.QueryTool, ContextTools.SourcesTool];
+    private static readonly IReadOnlyList<Tool> _tools = [ContextTools.QueryTool, ContextTools.SourcesTool, ContextTools.LensesTool];
 
     /// <summary>tools/list: every tool, whatever the profile says (a refused call explains itself; context spec §8.6).</summary>
     /// <param name="_">The request (unused).</param>
@@ -47,6 +47,7 @@ internal static class McpToolTable
         {
             ContextTools.Query => ContextTools.CallQuery(services, call.Arguments, cancellationToken),
             ContextTools.Sources => ContextTools.CallSources(services, call.Arguments, cancellationToken),
+            ContextTools.Lenses => ContextTools.CallLenses(services, call.Arguments, cancellationToken),
             _ => throw new UnreachableException($"McpToolTable lists '{call.Name}' but has no handler for it"),
         };
     }

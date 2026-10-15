@@ -2,6 +2,7 @@ using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -37,6 +38,9 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjectorFeed>(static sp => sp.GetRequiredService<ProjectorProgress>())
             .AddSingleton<IProjection, ServicesProjection>()
             .AddSingleton<IProjection, ProfileProjection>()
+            .AddSingleton<IProjection, ItemsProjection>()
+            .AddSingleton<IProjection, ItemAliasesProjection>()
+            .AddSingleton<IProjection, ItemTimelineProjection>()
             .AddScoped<RecipeApprovalPlanner>()
             .AddScoped<RecipeRevokePlanner>()
             .AddScoped<RecipeRegistryReader>()

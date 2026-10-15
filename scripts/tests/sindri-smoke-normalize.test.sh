@@ -21,4 +21,6 @@ check "the repo root is ROOT" "## sindri recipe validate /tmp/smoke-root/recipes
 check "status's views line keeps its words and drops the numbers" "  views     cursor 7 of 9 (rebuilding: cursor 3 of 9)" "  views     cursor N of M (rebuilding: cursor N of M)"
 check "doctor's views line keeps 'head'" "ok    views             cursor 12 of head 12" "ok    views             cursor N of head M"
 check "a rebuild's sequence is SEQ" "views rebuild requested (sequence 31)" "views rebuild requested (sequence SEQ)"
+check "an item id is ITM-ID, its time and sequence fixed words" "ITM-0000000000000000000000000000000e  Smoke item  new  since 2026-10-15T09:00:01Z" "ITM-ID  Smoke item  new  since TIME"
+check "an item add's sequence is SEQ" "ITM-00000000000000000000000000000014 created (sequence 12)" "ITM-ID created (sequence SEQ)"
 [ "$fail" -eq 0 ] && echo "PASS: sindri-smoke-normalize tests" || { echo "FAIL: sindri-smoke-normalize tests"; exit 1; }

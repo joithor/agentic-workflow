@@ -145,7 +145,7 @@ public sealed class ContextCliTests
     [Fact, Trait("Lane", "unit")]
     public void Graph_text_words_every_state_and_its_empty_answers()
     {
-        var node = new NodeFact(NodeKey.From("feature:a"), NodeKind.Feature, "A", Provenance.Model, Confirmed: false, Trust.Untrusted);
+        var node = new NodeFact(NodeKey.From("feature:a"), NodeKind.Feature, "A", Provenance.Model, Confirmed: false, Trust.Untrusted, Confidence: 0.5);
         var view = new NodeView("v1", node, [], [], []);
 
         var shown = ContextGraphText.Node(view);

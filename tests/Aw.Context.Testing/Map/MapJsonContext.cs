@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Review;
 
 namespace Aw.Context.Testing.Map;
 
@@ -10,4 +11,5 @@ namespace Aw.Context.Testing.Map;
 [JsonSerializable(typeof(MapExported))]
 [JsonSerializable(typeof(MapFilePreview))]
 [JsonSerializable(typeof(MapHealth))]
+[JsonSerializable(typeof(ReviewFile))]
 internal sealed partial class MapJsonContext : JsonSerializerContext;

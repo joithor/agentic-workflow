@@ -1,0 +1,11 @@
+using Aw.Meta.Core.Merge;
+
+namespace Aw.Meta.Features.MergeRun;
+
+/// <summary>The MergeRun response.</summary>
+/// <param name="Pr">The pull request number.</param>
+/// <param name="Merged">Whether the pull request was merged; false when a check refused it.</param>
+/// <param name="Checks">The merge checks.</param>
+/// <param name="Sha">The sha main moved to, when merged.</param>
+/// <param name="Announce">The text to send every lane (opens the announce-main obligation), when merged.</param>
+public sealed record MergeRunResponse(int Pr, bool Merged, IReadOnlyList<MergeCheck> Checks, string? Sha, string? Announce);

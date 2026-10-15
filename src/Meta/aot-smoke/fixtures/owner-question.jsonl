@@ -1,0 +1,1 @@
+{"type":"user","origin":{"kind":"peer","from":"uds:/run/smoke-api.sock","msg_id":"m-owner","name":"smoke-api","body":"OWNER QUESTION: sqlite or postgres?"},"timestamp":"2026-10-15T04:07:00.000Z"}

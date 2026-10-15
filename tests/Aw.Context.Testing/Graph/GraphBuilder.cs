@@ -14,11 +14,12 @@ public sealed class GraphBuilder
     /// <param name="key">Its key.</param>
     /// <param name="label">Its label, or null for the key's name.</param>
     /// <param name="provenance">Its provenance.</param>
+    /// <param name="confidence">Its confidence.</param>
     /// <returns>This builder.</returns>
-    public GraphBuilder Node(string key, string? label = null, Provenance provenance = Provenance.Human)
+    public GraphBuilder Node(string key, string? label = null, Provenance provenance = Provenance.Human, double confidence = 1.0)
     {
         var k = NodeKey.From(key);
-        _nodes.Add(new GraphNode(k, label ?? k.Name, provenance));
+        _nodes.Add(new GraphNode(k, label ?? k.Name, provenance, confidence));
         return this;
     }
 
@@ -28,15 +29,16 @@ public sealed class GraphBuilder
     /// <param name="to">The target key.</param>
     /// <param name="order">The flow order, for step-of.</param>
     /// <param name="provenance">Its provenance.</param>
+    /// <param name="confidence">Its confidence.</param>
     /// <returns>This builder.</returns>
-    public GraphBuilder Edge(string from, EdgeType type, string to, int? order = null, Provenance provenance = Provenance.Human)
+    public GraphBuilder Edge(string from, EdgeType type, string to, int? order = null, Provenance provenance = Provenance.Human, double confidence = 1.0)
     {
         foreach (var key in new[] { from, to }.Where(k => !_nodes.Exists(n => n.Key.Value == k)))
         {
             _ = Node(key);
         }
 
-        _edges.Add(new GraphEdge(NodeKey.From(from), NodeKey.From(to), type, provenance, Order: order));
+        _edges.Add(new GraphEdge(NodeKey.From(from), NodeKey.From(to), type, provenance, confidence, Order: order));
         return this;
     }
 

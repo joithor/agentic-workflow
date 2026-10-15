@@ -47,6 +47,18 @@ public static class EventTypes
     /// <summary>A human imported a map file as the current product map (context spec §3, §8.7; stage S-3a).</summary>
     public const string ContextMapImported = "context.map.imported";
 
+    /// <summary>A review decision was recorded in the draft map (context spec §3).</summary>
+    public const string ContextMapReviewed = "context.map.reviewed";
+
+    /// <summary>A draft map became current (context spec §3).</summary>
+    public const string ContextMapPromoted = "context.map.promoted";
+
+    /// <summary>A scoping run's surfaces were written to the draft map (context spec §3; S-4 adds this sixth event).</summary>
+    public const string ContextMapProposed = "context.map.proposed";
+
+    /// <summary>The map was proposed from the repo into a draft (context spec §3).</summary>
+    public const string ContextMapBuilt = "context.map.built";
+
     /// <summary>A command attempt reached the chain: its audit row (not public).</summary>
     public const string CommandHandled = "command.handled";
 
@@ -58,6 +70,15 @@ public static class EventTypes
 
     /// <summary>A human asked for the views to be rebuilt (not public).</summary>
     public const string ViewsRebuilt = "views.rebuilt";
+
+    /// <summary>A human created a work item.</summary>
+    public const string ItemCreated = "item.created";
+
+    /// <summary>An item moved from one state to another.</summary>
+    public const string ItemStateChanged = "item.state-changed";
+
+    /// <summary>An existing item was linked to a tracker record.</summary>
+    public const string ItemLinked = "item.linked";
 
     /// <summary>The event a background service records per run: 'service.&lt;name&gt;'.</summary>
     /// <param name="service">The service.</param>

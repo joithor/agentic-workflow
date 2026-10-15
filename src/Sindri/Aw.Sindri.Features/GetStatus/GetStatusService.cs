@@ -30,10 +30,17 @@ internal sealed class GetStatusService(HeldLease held, IApprovedProfile approval
 
         var grant = held.Current;
         var profile = Profile(approvedProfile, recorded.Value, loaded);
-        var views = projector.Current;
+        var views = await Views(cancellationToken).ConfigureAwait(false);
         var health = await Health(grant is not null, views, profile, approvedProfile, cancellationToken).ConfigureAwait(false);
         var status = new GetStatusResponse(grant is not null, grant?.Holder.Pid ?? 0, grant?.Epoch ?? 0, grant?.ExpiresAt, profile, services);
         return status with { ApiVersion = SindriApi.Version, Views = views, Health = health };
+    }
+
+    /// <summary>The projector's status with the ledger's head read fresh, not the projector's last-seen one: cursor below ledgerHead is the real lag.</summary>
+    private async ValueTask<ViewsStatus> Views(CancellationToken cancellationToken)
+    {
+        var head = await ledger.Head(cancellationToken).ConfigureAwait(false);
+        return head.IsSuccess ? projector.Current with { LedgerHead = head.Value } : projector.Current;
     }
 
     private async ValueTask<HealthReport> Health(bool running, ViewsStatus views, ProfileStatus profile, LoadedProfile? approved, CancellationToken cancellationToken)

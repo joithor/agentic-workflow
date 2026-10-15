@@ -53,4 +53,16 @@ public sealed class ScopeRulesTests
         Assert.Equal(ContextErrors.SettingsInvalid.Code, scoped.Error.Code);
         Assert.StartsWith("context.repos: 'work_app' is not a profile repo", scoped.Error.Message, StringComparison.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_usable_repo_carries_the_profiles_deny_paths_on_top_of_the_built_in_secret_globs()
+    {
+        var usable = ScopeRules.Usable([new ProfileRepoEntry("split-panes", "/r/a", ["**/fixtures/**"]), new ProfileRepoEntry("other", "/r/b")]);
+
+        var (withDeny, without) = (usable[0], usable[1]);
+        Assert.True(withDeny.Denies("src/fixtures/big.ts"));
+        Assert.True(withDeny.Denies(".env"));
+        Assert.False(without.Denies("src/fixtures/big.ts"));
+        Assert.True(without.Denies(".env"));
+    }
 }

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Meta.Tests (scaffolded by /new-package): by feature, one Lane trait per test (spec §4b.5). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Aw.Meta.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meta/Aw.Meta.Core/Aw.Meta.Core.csproj" />
+    <ProjectReference Include="../../src/Meta/Aw.Meta.Features/Aw.Meta.Features.csproj" />
+    <ProjectReference Include="../../src/Meta/Aw.Meta.Infrastructure/Aw.Meta.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Meta/Aw.Meta.Host/Aw.Meta.Host.csproj" />
+    <ProjectReference Include="../Aw.Meta.Testing/Aw.Meta.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

@@ -591,13 +591,19 @@ public static class WorkflowViewFixtures
     /// <summary>workflow.project: a Linear project input, outputs with their producing states, urgency work.</summary>
     public static RecipeView ProjectRecipe() => _project.View();
 
-    /// <summary>incident.response: urgency incident and the mitigate and verify loop.</summary>
+    /// <summary>workflow.incident-response: urgency incident and the mitigate and verify loop.</summary>
     public static RecipeView IncidentRecipe() => _incident.View();
 
-    /// <summary>A recipe with no outputs: 'outputs: []', and a kind on the first input only.</summary>
+    /// <summary>workflow.no-outputs, a fixture-only preview: no instance names it, and its optional input is a future schema (v1 serves every input required). 'outputs: []', and a kind on the first input only.</summary>
     public static RecipeView NoOutputsRecipe() => new(
+        RecipeId.From("workflow.no-outputs"), RecipeHash.From("sha256:" + "3c9d51e2".PadRight(64, '0')), 1,
         [new RecipeInputView("fact:request", "Request", FactType.Text, "text", true), new RecipeInputView("fact:context", null, FactType.File, null, false)],
         [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], []);
+
+    /// <summary>The recipe view of one fixture recipe, by recipe id ('workflow.step'): the same declaration its instances and list rows are built from.</summary>
+    /// <param name="id">A recipe id of <see cref="FixtureRecipes.All"/>.</param>
+    /// <returns>The view.</returns>
+    public static RecipeView Recipe(string id) => FixtureRecipes.All.Single(r => r.Id == id).View();
 
     // ---- the facts route (GetInstanceFact) ---------------------------------------------------------------------------
 

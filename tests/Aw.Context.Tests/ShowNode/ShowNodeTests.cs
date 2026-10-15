@@ -1,4 +1,5 @@
 using Aw.Context.Core;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 using Aw.Context.Testing.Engine;
@@ -50,11 +51,25 @@ public sealed class ShowNodeTests : IDisposable
             "  - {key: \"feature:a\", label: \"A " + FakeScrubber.Secret + " <!-- hidden -->\"}",
             "  - {key: \"feature:b\", label: \"Model said so\", provenance: model, confidence: 0.5}"));
 
-        var a = (await _world.Engine.ShowNode("feature:a", MapWorld.Human, MapWorld.None)).Value.Node;
-        var b = (await _world.Engine.ShowNode("feature:b", MapWorld.Human, MapWorld.None)).Value.Node;
+        var a = (await _world.Engine.ShowNode("feature:a", MapWorld.HumanVia(ContextClient.Mcp), MapWorld.None)).Value.Node;
+        var b = (await _world.Engine.ShowNode("feature:b", MapWorld.HumanVia(ContextClient.Mcp), MapWorld.None)).Value.Node;
 
         Assert.Equal("A [REDACTED:fake]", a.Label);
         Assert.Equal(("<untrusted source=\"map\">Model said so</untrusted>", false, Trust.Untrusted), (b.Label, b.Confirmed, b.Trust));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_human_in_the_app_or_the_cli_reads_the_model_label_clean_beside_its_trust_and_confidence()
+    {
+        _ = await _world.ImportYaml(MapWorld.Yaml(
+            "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
+            "  - {key: \"feature:b\", label: \"Model said so\", provenance: model, confidence: 0.5}"));
+
+        var app = (await _world.Engine.ShowNode("feature:b", MapWorld.HumanVia(ContextClient.Http), MapWorld.None)).Value.Node;
+        var cli = (await _world.Engine.ShowNode("feature:b", MapWorld.Human, MapWorld.None)).Value.Node;
+
+        Assert.Equal(("Model said so", Trust.Untrusted, 0.5), (app.Label, app.Trust, app.Confidence));
+        Assert.Equal(("Model said so", Trust.Untrusted, 0.5), (cli.Label, cli.Trust, cli.Confidence));
     }
 
     [Fact, Trait("Lane", "unit")]

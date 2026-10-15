@@ -34,6 +34,7 @@ public sealed class GoldenHost : IAsyncDisposable
     public const string ProfileYaml = "schemaVersion: 1\nuser: golden\nservices:\n  heartbeat: { every: 5s }\n";
 
     private readonly TempHome _home = new();
+    private readonly List<IDisposable> _owned = [];
     private readonly TempHome? _elsewhere;
     private WebApplication? _app;
 
@@ -84,6 +85,10 @@ public sealed class GoldenHost : IAsyncDisposable
         }
     }
 
+    /// <summary>Hands the host something to dispose after it stops (a fixture repo the profile maps).</summary>
+    /// <param name="resource">The resource.</param>
+    public void Own(IDisposable resource) => _owned.Add(resource);
+
     /// <summary>The live profile's hash.</summary>
     /// <param name="ct">Cancellation.</param>
     /// <returns>The hash.</returns>
@@ -101,6 +106,7 @@ public sealed class GoldenHost : IAsyncDisposable
 
         _home.Dispose();
         _elsewhere?.Dispose();
+        _owned.ForEach(o => o.Dispose());
     }
 
     private async Task Run(CancellationToken ct)
