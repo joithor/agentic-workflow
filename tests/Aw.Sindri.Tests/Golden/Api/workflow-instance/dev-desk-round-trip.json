@@ -1,0 +1,208 @@
+{
+  "address": "ITM-01JL1/dev-desk-round-trip/1",
+  "id": "WFI-44393da815f188cea9c6fe30ae2a30a6",
+  "parent": null,
+  "itemId": "ITM-01JL1",
+  "title": "Desk round trip",
+  "recipe": {
+    "id": "workflow.dev-desk-round-trip",
+    "hash": "sha256:42e9e8ab897f90e38c74f9a3a5aa499f9a56475b4c1a416c0ad5b01a79bb2346",
+    "version": 1,
+    "urgency": "work"
+  },
+  "state": "export",
+  "since": "2026-10-12T12:00:00.0000000Z",
+  "engineOwned": null,
+  "subject": {
+    "kind": "text",
+    "key": "desk-round-trip",
+    "label": "desk-round-trip",
+    "href": null
+  },
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "export",
+      "order": 1,
+      "branchOf": null,
+      "glyph": "active",
+      "badge": null,
+      "round": {
+        "n": 1,
+        "max": 2
+      },
+      "loops": [
+        {
+          "with": "import",
+          "n": 0,
+          "max": 2
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "import",
+      "order": 2,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "export",
+          "n": 0,
+          "max": 2
+        }
+      ],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "done",
+      "order": 3,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": true
+    }
+  ],
+  "current": {
+    "state": "export",
+    "step": {
+      "kind": "active",
+      "ref": "step.produce",
+      "declaration": "a person exports the file"
+    },
+    "gates": [],
+    "desk": {
+      "run": "1.1",
+      "outputs": [
+        {
+          "key": "fact:output",
+          "type": "file",
+          "required": true
+        }
+      ],
+      "checks": [
+        "output.file"
+      ],
+      "completeAction": "CompleteStep"
+    },
+    "status": {
+      "header": {
+        "address": "ITM-01JL1/dev-desk-round-trip/1",
+        "recipe": "workflow.dev-desk-round-trip",
+        "hash12": "42e9e8ab897f",
+        "version": 1,
+        "state": "export",
+        "detail": "desk task",
+        "since": "2026-10-12T12:00:00.0000000Z",
+        "ageSeconds": 1560
+      },
+      "next": "Export the file for the request (round 1/2), then run: sindri workflow complete ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output fact:output=<file>",
+      "answer": null,
+      "child": null,
+      "drift": null,
+      "inputs": [
+        {
+          "key": "fact:request",
+          "name": "request.txt",
+          "hash": "7ab2c013"
+        }
+      ],
+      "timeout": {
+        "kind": "parks",
+        "inSeconds": 171240,
+        "on": "export"
+      },
+      "budget": null,
+      "paused": null,
+      "commands": [
+        {
+          "verb": "complete",
+          "actionId": "CompleteStep",
+          "class": "desk",
+          "cli": "sindri workflow complete ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output fact:output=<file>",
+          "confirm": null
+        },
+        {
+          "verb": "takeover",
+          "actionId": "ApplyCommand:takeover",
+          "class": "pause",
+          "cli": "sindri workflow takeover ITM-01JL1/dev-desk-round-trip/1",
+          "confirm": null
+        },
+        {
+          "verb": "cancel",
+          "actionId": "ApplyCommand:cancel",
+          "class": "desk",
+          "cli": "sindri workflow cancel ITM-01JL1/dev-desk-round-trip/1",
+          "confirm": "Cancel ITM-01JL1/dev-desk-round-trip/1? 0 running steps stop; 0 children are cancelled."
+        }
+      ],
+      "text": "ITM-01JL1/dev-desk-round-trip/1  workflow.dev-desk-round-trip@42e9e8ab897f  v1  export: desk task  since 12:00 (26m)\n  next      Export the file for the request (round 1/2), then run: sindri workflow complete\n            ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output fact:output=<file>\n  inputs    fact:request  request.txt  sha256:7ab2...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n"
+    }
+  },
+  "facts": [
+    {
+      "key": "fact:request",
+      "label": "Request",
+      "type": "text",
+      "direction": "input",
+      "from": null,
+      "status": "produced",
+      "summary": "Summarize the week",
+      "at": "2026-10-12T12:00:00.0000000Z",
+      "by": "human:cli",
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "fact:output",
+      "label": "Exported file",
+      "type": "file",
+      "direction": "output",
+      "from": "export",
+      "status": "pending",
+      "summary": "awaiting your file",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": {
+        "required": true,
+        "checks": [
+          "output.file"
+        ],
+        "completeAction": "CompleteStep"
+      }
+    }
+  ],
+  "children": [],
+  "counts": {
+    "timeline": 2,
+    "decisions": 0,
+    "requests": 0,
+    "context": null
+  },
+  "actions": [
+    "CompleteStep",
+    "ApplyCommand:takeover",
+    "ApplyCommand:cancel"
+  ],
+  "asOf": "2026-10-12T12:26:00.0000000Z"
+}
