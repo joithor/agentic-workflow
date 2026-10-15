@@ -2,6 +2,8 @@ using System.Globalization;
 using Aw.Context.Core;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Ranking;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
@@ -13,13 +15,16 @@ using Aw.Kernel.Services;
 namespace Aw.Context.Features.QueryContext;
 
 /// <summary>
-/// The query pipeline (spec §8.2) for Phase 1's text shape: scope and gate, terms, every source searched under the
+/// The query pipeline (spec §8.2): scope and gate; anchors from the map (the node shape's key, alias or name; the text
+/// shape's whole node names) with their graph sections (<see cref="GraphAnswer"/>); terms (the question's, or the node
+/// anchor's name); every source searched under the
 /// deadline (a missing source is degraded; all of them missing is SND-CONTEXT-011), canonical dedup and RRF, the top
 /// items fetched and cleaned once at the ingest boundary, one batched version check per source, then packing,
 /// citations and per-field egress scrubbing (<see cref="ResultAssembly"/>). Ingest and egress both use this call's
-/// scrubbers, built from the approved profile's extra patterns. No model is called.
+/// scrubbers, built from the approved profile's extra patterns, and so does the map's text. A text question asked with no
+/// map (or by a session whose repo implements none of it) is answered from the sources alone. No model is called.
 /// </summary>
-internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFactory scrubberFactory, IIdGenerator ids, TimeProvider clock)
+internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFactory scrubberFactory, IIdGenerator ids, TimeProvider clock, MapReader graphs)
     : IService<QueryContextRequest, ContextResult>
 {
     /// <summary>The most fused items fetched (and so cited) per query.</summary>
@@ -39,10 +44,17 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
             return valid.Error;
         }
 
+        var anchored = await Anchored(request, valid.Value, settings.Value, scrubbers.Value, cancellationToken).ConfigureAwait(false);
+        if (anchored.IsError)
+        {
+            return anchored.Error;
+        }
+
+        var (graph, terms) = anchored.Value;
         var deadline = clock.GetUtcNow() + settings.Value.Deadline;
-        var sources = catalog.For(settings.Value, repos.Value, scrubbers.Value).Where(s => ScopeRules.MayRead(request.Scope.Caller, s.Describe())).ToList();
-        var searched = await Search(sources, valid.Value.Terms, deadline, cancellationToken).ConfigureAwait(false);
-        if (sources.Count > 0 && searched.Answers.Count == 0)
+        var sources = terms.Count == 0 ? [] : catalog.For(settings.Value, repos.Value, scrubbers.Value).Where(s => ScopeRules.MayRead(request.Scope.Caller, s.Describe())).ToList();
+        var searched = await Search(sources, terms, deadline, cancellationToken).ConfigureAwait(false);
+        if (sources.Count > 0 && searched.Answers.Count == 0 && graph.Anchors.Count == 0)
         {
             return ContextErrors.AllSourcesUnavailable.With(
                 $"no source answered ({string.Join(", ", searched.Degraded.Select(d => d.Source.Value))}); fix: sindri context sources status");
@@ -53,7 +65,41 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
         var fetched = await Fetch(fused, (sources, scrubbers.Value.Ingest), deadline, degraded, cancellationToken).ConfigureAwait(false);
         var versions = await Versions(fetched, sources, deadline, cancellationToken).ConfigureAwait(false);
         var assembly = new ResultAssembly(scrubbers.Value.Egress, QueryId.From("q_" + ids.NewId().ToString("N", CultureInfo.InvariantCulture)), clock.GetUtcNow());
-        return assembly.Build(request.Query, valid.Value.Budget, fetched, versions, degraded);
+        return assembly.Build(request.Query, valid.Value.Budget, new RecordPart(fetched, versions, degraded), graph);
+    }
+
+    /// <summary>
+    /// The anchors and their graph sections, and the terms the sources are searched with. The node shape needs the map
+    /// (030 without one, 003 for an unknown name, 037 for an ambiguous one); a text question goes on without it unless it
+    /// asked for the draft or the store failed.
+    /// </summary>
+    private async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms)>> Anchored(QueryContextRequest request, ValidQuery valid, ContextSettings settings,
+        Scrubbers scrubbers, CancellationToken cancellationToken)
+    {
+        var query = request.Query;
+        var depth = query.Depth ?? settings.CascadeDepth;
+        var map = await graphs.Read(request.Scope, query.Draft, cancellationToken).ConfigureAwait(false);
+        if (query.Node is { } node)
+        {
+            var anchor = map.Bind(m => AnchorMatch.Resolve(m.Graph, node));
+            if (anchor.IsError)
+            {
+                return anchor.Error;
+            }
+
+            var text = new MapText(scrubbers);
+            return (GraphAnswer.Build(map.Value, [anchor.Value], [], depth, text), text.SearchTerms(anchor.Value.Label));
+        }
+
+        if (map.IsError)
+        {
+            var unanchored = (map.Error.Code == ContextErrors.NoMap.Code && !query.Draft) || map.Error.Code == ContextErrors.UnknownAnchor.Code;
+            return unanchored ? (GraphPart.None, valid.Terms) : map.Error;
+        }
+
+        var found = AnchorMatch.FromText(map.Value.Graph, query.Text ?? string.Empty);
+        var anchors = found.Anchors.Select(map.Value.Graph.Resolve).OfType<GraphNode>().ToList();
+        return (GraphAnswer.Build(map.Value, anchors, found.Suggested, depth, new MapText(scrubbers)), valid.Terms);
     }
 
     private async Task<Searched> Search(IReadOnlyList<IContextSource> sources, IReadOnlyList<string> terms, DateTimeOffset deadline, CancellationToken ct)

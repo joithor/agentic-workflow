@@ -1,6 +1,7 @@
 # The split-panes product map, hand-authored (stage S-3a). Synthetic, like the rest of the fixture.
 # Keys match probes.json. 'implements' edges carry file evidence in repo aw-split-panes, so a session scoped to that
-# repo sees the nodes they point at (spec §3). Pane resize's action only writes pane-layout; restore-layout reads it.
+# repo sees the nodes they point at (spec §3). Pane resize's action only writes pane-layout; restore-layout reads it,
+# on the switch-tab surface of the tab manager (S-3b: the surface lets the cascade's ascend reach its feature, spec §6.1).
 schemaVersion: 1
 kind: authored
 repo: aw-split-panes
@@ -21,6 +22,8 @@ nodes:
     label: Ctrl+Shift+D
   - key: surface:setting/paneResizeStep
     label: paneResizeStep setting
+  - key: surface:command/switch-tab
+    label: Switch tab (command)
   - key: action:split-pane.split-vertical
     label: Split a pane vertically
   - key: action:split-pane.toggle-orientation
@@ -53,10 +56,12 @@ edges:
   - {from: "surface:keybinding/ctrl+shift+d", to: "feature:layout.split-pane", type: part-of}
   - {from: "surface:command/toggle-orientation", to: "feature:layout.split-pane.orientation", type: part-of}
   - {from: "surface:setting/paneResizeStep", to: "feature:layout.pane-resize", type: part-of}
+  - {from: "surface:command/switch-tab", to: "feature:tabs.tab-manager", type: part-of}
   - {from: "surface:keybinding/ctrl+shift+d", to: "surface:command/split-vertical", type: moves-to}
   - {from: "action:split-pane.split-vertical", to: "surface:command/split-vertical", type: "on"}
   - {from: "action:split-pane.toggle-orientation", to: "surface:command/toggle-orientation", type: "on"}
   - {from: "action:pane-resize.resize-focused", to: "surface:setting/paneResizeStep", type: "on"}
+  - {from: "action:tab-manager.restore-layout", to: "surface:command/switch-tab", type: "on"}
   - {from: "action:split-pane.toggle-orientation", to: "thing:pane-layout", type: writes}
   - {from: "action:pane-resize.resize-focused", to: "thing:pane-layout", type: writes}
   - {from: "action:tab-manager.restore-layout", to: "thing:pane-layout", type: reads}

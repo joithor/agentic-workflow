@@ -23,6 +23,12 @@ public interface IGraphStore
     /// <returns>The graph, or SND-CONTEXT-004.</returns>
     public ValueTask<Result<GraphSnapshot>> Read(int version, CancellationToken cancellationToken);
 
+    /// <summary>The current version (or the newest draft) with its graph and every override, read in one session so they belong together.</summary>
+    /// <param name="draft">True for the newest draft version instead of the current one.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The snapshot, null when there is no such version, or SND-CONTEXT-004.</returns>
+    public ValueTask<Result<MapSnapshot?>> Snapshot(bool draft, CancellationToken cancellationToken);
+
     /// <summary>Every override, oldest first.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The overrides, or SND-CONTEXT-004.</returns>
