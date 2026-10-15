@@ -33,6 +33,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return refused;
         }
 
+        var needsMe = Flag(request.NeedsMe) == true;
         var filter = Filter(request);
         var ended = request.Item is not null || request.State is not null;
         var rows = request.Query is { Length: > 0 } query
@@ -49,7 +50,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return views.Error;
         }
 
-        return Listed(request.NeedsMe == "true", views.Value, byAddress: request.Query is { Length: > 0 });
+        return Listed(needsMe, Matching(views.Value, request.Subject));
     }
 
     /// <summary>Each row's 'GetInstance' view; one that ended between the list and its query is left out.</summary>
@@ -85,9 +86,12 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return SindriErrors.InvalidInput.With($"'{state}' isn't a state name (fix: --state <name>, e.g. --state produce or --state parked)");
         }
 
-        return request.Urgency is { } urgency && !Urgencies.IsKnown(urgency)
-            ? SindriErrors.InvalidInput.With($"'{urgency}' isn't an urgency (fix: urgency incident, triage or work)")
-            : null;
+        if (request.Urgency is { } urgency && !Urgencies.IsKnown(urgency))
+        {
+            return SindriErrors.InvalidInput.With($"'{urgency}' isn't an urgency (fix: urgency incident, triage or work)");
+        }
+
+        return NotTrueOrFalse(request.NeedsMe, "needsMe", "true for what needs you") ?? NotTrueOrFalse(request.Root, "root", "true for top-level instances, false for children");
     }
 
     /// <summary>The one instance an address or bare item names, as 'GetInstance' shows it (its id included).</summary>
@@ -103,7 +107,13 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         return view.IsError ? view.Error : new ListInstancesResponse([view.Value], NeedsYou: null, Empty: null);
     }
 
-    private static ListInstancesResponse Listed(bool needsMe, List<InstanceView> views, bool byAddress)
+    /// <summary>The views whose subject has the key <paramref name="subject"/> or a label containing it; all of them when none is asked for. A label match can't be a search attribute (a keyword has no substring match), so it is made here.</summary>
+    private static List<InstanceView> Matching(List<InstanceView> views, string? subject) =>
+        subject is null
+            ? views
+            : [.. views.Where(v => v.Subject is { } s && (string.Equals(s.Key, subject, StringComparison.Ordinal) || s.Label.Contains(subject, StringComparison.OrdinalIgnoreCase)))];
+
+    private static ListInstancesResponse Listed(bool needsMe, List<InstanceView> views)
     {
         if (needsMe)
         {
@@ -111,24 +121,30 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return new([.. sections.Decisions, .. sections.Tasks], sections, sections.IsEmpty ? NeedsYouList.Nothing : null);
         }
 
-        var sorted = views;   // a typed list keeps the port's order: urgency, then oldest
-        if (byAddress)
-        {
-            sorted = [.. views.OrderBy(static v => v.Address.Value, StringComparer.Ordinal)];
-        }
-
+        var sorted = views.Order(InstanceOrder.Instance).ToList();   // API spec §3.8: one order on every list path
         return new(sorted, NeedsYou: null, sorted.Count == 0 ? "no instances match" : null);
     }
 
-    /// <summary>The typed filters the request gives ('--needs-me' is "NeedsYou = true").</summary>
+    private static Error? NotTrueOrFalse(string? value, string name, string meaning) =>
+        value is not null && Flag(value) is null
+            ? SindriErrors.InvalidInput.With($"{name}='{value}' isn't true or false (fix: {name}=true or {name}=false; {meaning})")
+            : null;
+
+    private static bool? Flag(string? value) => value switch
+    {
+        "true" => true,
+        "false" => false,
+        _ => null,
+    };
+
     private static InstanceFilter Filter(ListInstancesRequest request) => new(
         request.Recipe,
         request.State,
-        request.NeedsMe == "true" ? true : null,
+        Flag(request.NeedsMe) == true ? true : null,
         request.Urgency is { } urgency ? Urgencies.Parse(urgency) : null,
         request.Item?.Value,
-        request.Subject,
-        request.Root == "true" ? true : request.Root == "false" ? false : null);
+        Subject: null,   // why: matched on the views (Matching): a search attribute can match the key but not a part of the label
+        Root: Flag(request.Root));
 
     /// <summary>The typed filters' query, ANDed with the caller's raw one.</summary>
     private static string Joined(string? typed, string query) => typed is null ? $"({query})" : $"{typed} AND ({query})";
