@@ -68,8 +68,20 @@ internal sealed partial class QueueViewModel
     // A row hidden by the filter is not gone: it is checked against the unfiltered view.
     private void Keep(List<(string Id, string Group)> before)
     {
-        if (SelectedId is not { } id || _rows.ContainsKey(id))
+        if (SelectedId is not { } id)
         {
+            return;
+        }
+
+        if (_rows.TryGetValue(id, out var kept))
+        {
+            // Still there, but in another group or panel: its element was built anew where it now sits, and focus on the old one is lost.
+            var was = before.FirstOrDefault(r => string.Equals(r.Id, id, StringComparison.Ordinal));
+            if (was.Id is not null && !string.Equals(Panel(_scope, was.Group), Panel(_scope, kept.Group), StringComparison.Ordinal))
+            {
+                FocusRequested?.Invoke(this, new FocusRequestedEventArgs(id, onlyIfLost: true));
+            }
+
             return;
         }
 
