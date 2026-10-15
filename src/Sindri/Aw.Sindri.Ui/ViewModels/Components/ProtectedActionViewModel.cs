@@ -63,6 +63,9 @@ internal sealed class ProtectedActionViewModel(ProtectedAction action, IClipboar
     /// <summary>True: the rev-8 spec defines no action for Open in an agent yet, so it shows as a pending control.</summary>
     public bool IsOpenInAgentPending => true;
 
+    /// <summary>True when the popover holds a control that takes focus (Copy, or Open in an agent once it is served); when false the served line is the focus stop.</summary>
+    public bool HasFocusableAction => CanCopy || !IsOpenInAgentPending;
+
     /// <summary>The dashed chip that stands for Open in an agent: the phase that serves agent sessions (as Attach's).</summary>
     public string OpenInAgentChip => Labels.AvailableWithP10a;
 

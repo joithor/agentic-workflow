@@ -40,7 +40,7 @@ internal sealed partial class ProtectedActionButton : UserControl
     {
         _model?.SetOpen(open: true);
         // why: with no command to copy and Open in an agent disabled, the popover holds nothing focusable; the served line takes focus so it is read
-        if (_model is { CanCopy: false } && Popover.Content is Control root)
+        if (_model is { HasFocusableAction: false } && Popover.Content is Control root)
         {
             Dispatcher.UIThread.Post(
                 () => root.GetLogicalDescendants().OfType<TextBlock>().FirstOrDefault(t => t.Name == "ServedCli")?.Focus(NavigationMethod.Tab),
