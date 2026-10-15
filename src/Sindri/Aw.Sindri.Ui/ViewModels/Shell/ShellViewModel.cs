@@ -47,6 +47,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health = new HealthViewModel(records, api, clock);
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;
+        Attention = NeedsYou.AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
     }
 
     /// <summary>The app's copy, for the view.</summary>
@@ -244,6 +245,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         {
             case nameof(HealthViewModel.State):
                 Changed(_stateProperties);
+                Reattend();
                 Announce();
                 break;
             case nameof(HealthViewModel.Reason):

@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
-using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -51,6 +50,7 @@ internal sealed class AppLifetime : IDisposable
         _window.Closing += OnClosing;
         _tray.OpenRequested += OnOpen;
         _tray.QuitRequested += OnQuit;
+        _tray.RowRequested += OnRow;
     }
 
     /// <summary>
@@ -64,40 +64,35 @@ internal sealed class AppLifetime : IDisposable
         desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         _desktop = desktop;
         desktop.ShutdownRequested += OnShutdownRequested;
-        ShowState(shell.State);
-        shell.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(ShellViewModel.State))
-            {
-                ShowState(shell.State);
-            }
-        };
+        Follow(shell);
     }
 
     /// <summary>What the tray shows for a shell state: "running" only once connected and fresh; hollow until then.</summary>
     /// <param name="state">The shell's state.</param>
     /// <returns>The tray's view.</returns>
-    internal static TrayView TrayViewFor(ShellState state) => state switch
-    {
-        ShellState.Normal => new TrayView(TrayState.Neutral, Labels.TrayRunning, Labels.TrayOpen, Labels.TrayQuit),
-        ShellState.NotRunning => new TrayView(TrayState.NotRunning, Labels.TrayNotRunning, Labels.TrayOpen, Labels.TrayQuit),
-        ShellState.VersionMismatch or ShellState.Connecting or ShellState.Unreadable or ShellState.Stale => Hollow,
-        _ => throw new ArgumentOutOfRangeException(nameof(state), state, message: null),
-    };
-
-    private static TrayView Hollow { get; } = new(TrayState.Stale, Labels.TrayNotResponding, Labels.TrayOpen, Labels.TrayQuit);
+    internal static TrayView TrayViewFor(ShellState state) => AttentionSummary.For(feed: null, state, default).Tray;
 
     /// <summary>Shows what the needs-you rows add up to in the tray and on the dock or taskbar badge.</summary>
     /// <param name="summary">The summary.</param>
     internal void ShowAttention(AttentionSummary summary)
     {
-        _ = (summary, _badge);
-        throw new NotSupportedException();
+        _tray.Show(summary.Tray);
+        _badge.Show(summary.Badge);
     }
 
     /// <summary>Follows the shell's attention summary from now on, whether or not the window is shown.</summary>
     /// <param name="shell">The shell.</param>
-    internal void Follow(ShellViewModel shell) => throw new NotSupportedException();
+    internal void Follow(ShellViewModel shell)
+    {
+        ShowAttention(shell.Attention);
+        shell.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(ShellViewModel.Attention), StringComparison.Ordinal))
+            {
+                ShowAttention(shell.Attention);
+            }
+        };
+    }
 
     /// <summary>Shows the shell's state in the tray.</summary>
     /// <param name="state">The state.</param>
@@ -130,6 +125,7 @@ internal sealed class AppLifetime : IDisposable
         _window.Closing -= OnClosing;
         _tray.OpenRequested -= OnOpen;
         _tray.QuitRequested -= OnQuit;
+        _tray.RowRequested -= OnRow;
     }
 
     private void BringForward()
@@ -156,6 +152,18 @@ internal sealed class AppLifetime : IDisposable
     }
 
     private void OnOpen(object? sender, EventArgs e) => BringForward();
+
+    // A row picked in the tray's menu opens the app at needs-you/<rowId>: it navigates and runs nothing (UI spec §5).
+    private void OnRow(object? sender, TrayRowEventArgs e)
+    {
+        if (_quitting)
+        {
+            return;
+        }
+
+        BringForward();
+        _navigate(new DeepLink(DeepLinkKind.NeedsYou, e.RowId));
+    }
 
     private void OnQuit(object? sender, EventArgs e) => _ = Quit();
 

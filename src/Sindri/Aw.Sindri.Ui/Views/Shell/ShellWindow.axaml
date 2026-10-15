@@ -6,7 +6,7 @@
         xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
         x:DataType="shell:ShellViewModel"
-        Title="{Binding Text.Sindri}"
+        Title="{Binding WindowTitle}"
         Width="1280" Height="800"
         MinWidth="{StaticResource Size.WindowMinWidth}" MinHeight="{StaticResource Size.WindowMinHeight}">
   <!-- The shell (UI spec §3.2, §4.1): a top bar, the page, and the detail sheet over it; a version mismatch takes the whole
