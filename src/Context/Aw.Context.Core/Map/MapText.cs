@@ -56,7 +56,7 @@ public sealed partial class MapText(Scrubbers scrubbers, FencePolicy policy)
     {
         ArgumentNullException.ThrowIfNull(node);
         var confirmed = node.Provenance == Provenance.Human;
-        var trust = TrustPolicy.For(node.Provenance, confirmed);
+        var trust = node.Key.Kind == NodeKind.Record ? Results.Trust.Untrusted : TrustPolicy.For(node.Provenance, confirmed);   // a record's title is someone else's text, whoever imported it
         return new NodeFact(node.Key, node.Key.Kind, Label(node.Label, trust), node.Provenance, confirmed, trust, node.Confidence);
     }
 
