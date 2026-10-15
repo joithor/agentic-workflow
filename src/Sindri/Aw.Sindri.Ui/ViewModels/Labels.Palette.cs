@@ -15,6 +15,9 @@ internal static partial class Labels
     /// <summary>A ready entry's status.</summary>
     internal const string Ready = "ready";
 
+    /// <summary>A ready row the app has no sender for: shown, never run (K8).</summary>
+    internal const string NotInApp = "not in the app yet";
+
     /// <summary>The palette's line when nothing matches.</summary>
     internal const string NoMatches = "Nothing matches";
 

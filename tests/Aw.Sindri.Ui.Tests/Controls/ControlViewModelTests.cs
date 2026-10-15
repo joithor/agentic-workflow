@@ -149,8 +149,8 @@ public sealed class ControlViewModelTests
     [Theory]
     [InlineData("ApplyCommand:answer-grant", "Grant rounds")]
     [InlineData("ApplyCommand:answer-grant-tokens", "Grant tokens")]
-    [InlineData("SomeFutureCommand:variant", "SomeFutureCommand:variant")]
-    public void Labels_are_keyed_by_action_id_and_an_unknown_one_shows_its_id(string action, string label) =>
+    [InlineData("SomeFutureCommand:variant", "Some future command variant")]
+    public void Labels_are_keyed_by_action_id_and_an_unknown_one_shows_it_humanised(string action, string label) =>
         Assert.Equal(label, Control(Row(action, "cli-only:typed-confirmation", "sindri workflow answer <address> --grant <n>")).Label);
 
     // F4 (corr-2): a refusal is announced with its code and detail, so a screen reader hears what the eyes read.

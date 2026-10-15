@@ -14,13 +14,12 @@ public sealed class ActionLabelsTests
     private static readonly CommandList _catalog = AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", "catalog")), SindriApiClient.Json).Value;
 
     [Fact]
-    public void Every_action_id_in_the_catalog_has_a_label_that_is_not_its_id()
+    public void Every_action_id_in_the_catalog_has_a_label_of_its_own()
     {
         Assert.All(_catalog.Rows, row =>
         {
-            var label = Labels.Action(row.Action);
-            Assert.NotEqual(row.Action, label, StringComparer.Ordinal);
-            Assert.DoesNotContain(':', label);
+            Assert.True(Labels.HasLabel(row.Action), row.Action + " has no label");
+            Assert.DoesNotContain(':', Labels.Action(row.Action));
         });
     }
 

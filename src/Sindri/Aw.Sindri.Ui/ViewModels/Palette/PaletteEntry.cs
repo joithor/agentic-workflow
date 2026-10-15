@@ -45,7 +45,7 @@ internal sealed class PaletteEntry : ObservableObject
         { IsSending: true } => Control.IsAnnouncingSending ? Labels.Sending : string.Empty,   // "Sending…" after 300 ms, as the control's own live region says it; silent before, never "ready"
         { IsAccepted: true } => Control.Outcome,
         { IsFailed: true } => Control.ErrorCode,
-        { IsReady: true } => Labels.Ready,
+        { IsReady: true } => Runs ? Labels.Ready : Labels.NotInApp,   // a ready row is called ready only when Enter does something with it
         { IsPending: true } => Labels.Arrives(Control.Stage),
         { CopyLabel: Labels.Copied } => Labels.Copied,
         _ => Labels.CopyCli(Control.Cli),
