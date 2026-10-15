@@ -53,8 +53,7 @@ internal sealed partial class ShellViewModel
             return false;
         }
 
-        GoTo(target.Page);
-        SetHomeFilter(target.Filter);
+        GoTo(target.Page, target.Filter);
         return true;
     }
 

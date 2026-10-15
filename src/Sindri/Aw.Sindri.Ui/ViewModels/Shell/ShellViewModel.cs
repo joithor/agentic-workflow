@@ -169,12 +169,16 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>The detail sheet's width (420–760).</summary>
     public double SheetWidth => _preferences.SheetWidth;
 
-    /// <summary>Shows a page (the G-chords, the top bar, the pill) and remembers it.</summary>
+    /// <summary>Shows a page (the G-chords, the top bar, the pill) and remembers it. Any way to a page but G D clears the Home filter.</summary>
     /// <param name="page">The page.</param>
-    internal void GoTo(PageId page)
+    internal void GoTo(PageId page) => GoTo(page, HomeFilter.All);
+
+    /// <summary>Shows a page with a Home filter, which is set once (G D is the one way to a filter but All).</summary>
+    /// <param name="page">The page.</param>
+    /// <param name="filter">The Home filter.</param>
+    internal void GoTo(PageId page, HomeFilter filter)
     {
-        // Only G D sets the Home filter, after it gets here; any other way to a page, Home included, clears it.
-        SetHomeFilter(HomeFilter.All);
+        SetHomeFilter(filter);
         if (page == CurrentPage)
         {
             return;
@@ -188,15 +192,6 @@ internal sealed partial class ShellViewModel : ObservableObject
         CurrentPage = page;
         Changed(_pageProperties);
         Remember(p => p with { LastPage = page.ToString() });
-    }
-
-    /// <summary>Shows a page with a Home filter.</summary>
-    /// <param name="page">The page.</param>
-    /// <param name="filter">The Home filter.</param>
-    internal void GoTo(PageId page, HomeFilter filter)
-    {
-        GoTo(page);
-        SetHomeFilter(filter);
     }
 
     /// <summary>
