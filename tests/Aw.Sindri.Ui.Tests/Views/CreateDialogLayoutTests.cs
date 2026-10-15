@@ -149,4 +149,28 @@ public sealed class CreateDialogLayoutTests : IDisposable
         Assert.Equal("Close sheet", AutomationProperties.GetName(Named<Button>(window, "SheetClose")));
         await Task.CompletedTask;
     });
+
+    // Proof B6 (UI spec §4.6): the 404 state has Back, which closes the sheet like Esc and leaves focus on the page.
+    [Fact]
+    public Task The_not_found_state_has_a_Back_that_closes_the_sheet() => OnUi(async () =>
+    {
+        var (window, shell) = await Opened();
+        shell.Create.Close();
+        shell.Navigate(new DeepLink(DeepLinkKind.Item, A.MissingItem));
+        for (var i = 0; i < 100 && !shell.Item.IsNotFound; i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Settle(window);
+        var back = Named<Button>(window, "NotFoundBack");
+        Assert.Equal(("Back", true), (AutomationProperties.GetName(back), back.IsEffectivelyVisible));
+
+        back.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+
+        Assert.False(shell.IsSheetShown);
+        Assert.NotNull(window.FocusManager?.GetFocusedElement());
+    });
 }
