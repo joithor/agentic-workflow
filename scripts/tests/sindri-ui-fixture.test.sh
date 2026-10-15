@@ -42,21 +42,52 @@ check "the refused up wrote no profile" "$(ls -A "$WORK/elsewhere")" ""
 AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" drift >/dev/null 2>&1; check "drift outside TMPDIR is refused" "$?" "2"
 
 # --- stall / unstall against a ledger made from the first migration ---
-command -v sqlite3 >/dev/null || { echo "not ok - sqlite3 is needed"; exit 1; }
-sqlite3 "$H/ledger.db" < "$ROOT/src/Sindri/Aw.Sindri.Infrastructure/Ledger/Migrations/0001_events.sql"
-sqlite3 "$H/ledger.db" "INSERT INTO events (id, type, schema_version, occurred_at, actor, tenant, ring, correlation_id, epoch, idempotency_key, payload_json)
+# sqlite3 CLI when there is one, else python3's module (this box has no CLI); the fixture has the same fallback.
+command -v python3 >/dev/null || command -v sqlite3 >/dev/null || { echo "not ok - sqlite3 or python3 is needed"; exit 1; }
+sqlq() { # $1 db, $2 sql: statements in order, rows printed '|'-joined
+  if command -v sqlite3 >/dev/null 2>&1; then sqlite3 "$1" "$2"; else
+    python3 -I -c '
+import sqlite3, sys
+con = sqlite3.connect(sys.argv[1], isolation_level=None)
+for row in con.execute(sys.argv[2]):
+    print("|".join("" if v is None else str(v) for v in row))' "$1" "$2"
+  fi
+}
+migrate() { # $1 db, $2 migration file
+  if command -v sqlite3 >/dev/null 2>&1; then sqlite3 "$1" < "$2"; else
+    python3 -I -c '
+import sqlite3, sys
+con = sqlite3.connect(sys.argv[1], isolation_level=None)
+con.executescript(open(sys.argv[2]).read())' "$1" "$2"
+  fi
+}
+migrate "$H/ledger.db" "$ROOT/src/Sindri/Aw.Sindri.Infrastructure/Ledger/Migrations/0001_events.sql"
+sqlq "$H/ledger.db" "INSERT INTO events (id, type, schema_version, occurred_at, actor, tenant, ring, correlation_id, epoch, idempotency_key, payload_json)
   VALUES ('e1', 'process.started', 1, '2026-10-12T12:00:00Z', 'host:sindri', 'local', 0, 'c1', 3, 'process.started:3', '{}');"
 
 out="$(AW_SINDRI_HOME="$H" bash "$FIXTURE" stall 2>&1)"; check "stall exits 0" "$?" "0"
 check "stall prints the row it inserted" "$out" "2 service.ran"
-row="$(sqlite3 "$H/ledger.db" "SELECT type, epoch, json_valid(payload_json), actor FROM events WHERE seq = 2")"
+row="$(sqlq "$H/ledger.db" "SELECT type, epoch, json_valid(payload_json), actor FROM events WHERE seq = 2")"
 check "the row is a registered type at the ledger's epoch with an unparseable payload" "$row" "service.ran|3|0|prover:fixture"
+# K7(b): the ledger's reader takes GUIDs for id and correlation_id and the 7-digit round-trip timestamp, or it rejects the row.
+shape="$(sqlq "$H/ledger.db" "SELECT id, correlation_id, occurred_at FROM events WHERE seq = 2")"
+IFS='|' read -r row_id row_correlation row_at <<< "$shape"
+guid='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+[[ "$row_id" =~ $guid ]]; check "the stall row's id is a GUID" "$?" "0"
+[[ "$row_correlation" =~ $guid ]]; check "the stall row's correlation_id is a GUID" "$?" "0"
+[[ "$row_at" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{7}Z$ ]]; check "the stall row's occurred_at has seven fractional digits" "$?" "0"
 AW_SINDRI_HOME="$H" bash "$FIXTURE" stall >/dev/null 2>&1
-check "a second stall adds nothing" "$(sqlite3 "$H/ledger.db" "SELECT COUNT(*) FROM events")" "2"
+check "a second stall adds nothing" "$(sqlq "$H/ledger.db" "SELECT COUNT(*) FROM events")" "2"
 out="$(AW_SINDRI_HOME="$H" STALL_TYPE="x'; DROP TABLE events; --" bash "$FIXTURE" stall 2>&1)"; check "a STALL_TYPE that isn't a type is refused" "$?" "2"
 out="$(AW_SINDRI_HOME="$H" bash "$FIXTURE" unstall 2>&1)"; check "unstall exits 0" "$?" "0"
 check "unstall says what it removed" "$out" "1 row(s) removed"
-check "unstall leaves the other rows" "$(sqlite3 "$H/ledger.db" "SELECT GROUP_CONCAT(type) FROM events")" "process.started"
+check "unstall leaves the other rows" "$(sqlq "$H/ledger.db" "SELECT GROUP_CONCAT(type) FROM events")" "process.started"
+
+# The python fallback (a box without the sqlite3 CLI) does the same.
+out="$(AW_SINDRI_HOME="$H" SINDRI_UI_FIXTURE_SQL=python bash "$FIXTURE" stall 2>&1)"; check "stall through python3 exits 0" "$?" "0"
+contains "stall through python3 prints the row it inserted" "$out" " service.ran"
+check "the python3 row has the same shape" "$(sqlq "$H/ledger.db" "SELECT id, correlation_id, length(occurred_at) FROM events WHERE idempotency_key = 'sindri-ui-fixture:stall'")" "7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b04|7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b05|28"
+out="$(AW_SINDRI_HOME="$H" SINDRI_UI_FIXTURE_SQL=python bash "$FIXTURE" unstall 2>&1)"; check "unstall through python3 says what it removed" "$out" "1 row(s) removed"
 out="$(AW_SINDRI_HOME="$TMPDIR/empty" bash "$FIXTURE" stall 2>&1)"; check "stall with no ledger exits 2" "$?" "2"
 contains "stall with no ledger says to run up" "$out" "run 'up' first"
 
@@ -77,8 +108,8 @@ U="$TMPDIR/up"
 mkdir -p "$U"
 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" up >/dev/null 2>&1; check "up exits 0" "$?" "0"
 contains "up writes a profile with a heartbeat" "$(cat "$U/profile/profile.yaml")" "heartbeat: { every: 5s }"
-check "up validates, approves with the hash's first six characters, then starts headless" "$(tr '\n' ';' < "$STUB_LOG")" \
-  "profile validate --json;profile approve abcdef0123456789;typed=abcdef;--headless;"
+check "up validates, approves by typing 'approve profile' and the hash's first six characters (K7a), then starts headless" "$(tr '\n' ';' < "$STUB_LOG")" \
+  "profile validate --json;profile approve abcdef0123456789;typed=approve profile abcdef;--headless;"
 AW_SINDRI_HOME="$U" bash "$FIXTURE" drift >/dev/null 2>&1; check "drift exits 0" "$?" "0"
 contains "drift changes the cadence" "$(cat "$U/profile/profile.yaml")" "every: 7s"
 AW_SINDRI_HOME="$U" bash "$FIXTURE" drift >/dev/null 2>&1
