@@ -402,9 +402,9 @@ context:
 
 | Pointer | Resolves to |
 |---|---|
-| `env:NAME` | the environment variable `NAME`: for queries and `sources status`, of the control plane (`sindri serve`) as it was when it started; for `sindri doctor`, of the calling shell (fixtures and tests; beyond them use `keychain:` or `file:`, which read the same in both) |
+| `env:NAME` | the environment variable `NAME`: for queries and `sources status`, of the control plane (`sindri serve`) as it was when it started; for `sindri doctor`, of the calling shell (fixtures and tests; beyond them use `keychain:` or `file:`, which read the same in both, except that on Linux `serve` must run in the login session to reach the keyring) |
 | `file:/absolute/path` | the file's contents without a trailing newline; the file must be a regular file (not a symbolic link) with mode `0600` or stricter |
-| `keychain:service/account` | macOS: `security find-generic-password -s service -a account -w` (store it with `security add-generic-password -s onyx -a sindri-onyx -w`); Linux (libsecret): `secret-tool lookup service service account account` (store it with `secret-tool store --label "onyx/sindri-onyx" service onyx account sindri-onyx`); any other OS: `SND-SECRET-002` |
+| `keychain:service/account` | macOS: `security find-generic-password -s service -a account -w` (store it with `security add-generic-password -s onyx -a sindri-onyx -w`); Linux (libsecret): `secret-tool lookup service <service> account <account>` (store it with `secret-tool store --label 'onyx/sindri-onyx' service 'onyx' account 'sindri-onyx'`; needs `libsecret-tools` on Debian/Ubuntu, and `sindri serve` must run in the login session to reach the keyring); any other OS: `SND-SECRET-002` |
 | `op:vault/item/field` | `op read op://vault/item/field` (1Password CLI) |
 
 Sindri resolves the pointer in its host (`Composition`), once per query (not per Onyx request); the context engine never reads the

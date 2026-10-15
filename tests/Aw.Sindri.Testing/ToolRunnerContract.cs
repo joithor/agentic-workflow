@@ -4,7 +4,7 @@ using Xunit;
 namespace Aw.Sindri.Testing;
 
 /// <summary>
-/// The contract every IToolRunner (the seam PointerSecrets runs 'security' and 'op' through) honours, run against the
+/// The contract every IToolRunner (the seam PointerSecrets runs 'security', 'secret-tool' and 'op' through) honours, run against the
 /// scripted fake and the real ProcessToolRunner. Each case names a harmless command (printf, sh, sleep) the real runner
 /// runs and the run it must end in; the fake binding answers with that run. So the outcomes the pointer tests script
 /// on the fake (missing tool, timeout, exit code and output) are the ones the real runner produces.

@@ -85,12 +85,12 @@ both, and `docs/sindri/context.md` "Trying it in a throwaway profile" writes a w
 
 ```bash
 security add-generic-password -s onyx -a sindri-onyx -w      # macOS: prompts for the key
-secret-tool store --label "onyx/sindri-onyx" service onyx account sindri-onyx   # Linux (libsecret): prompts for the key
+secret-tool store --label 'onyx/sindri-onyx' service 'onyx' account 'sindri-onyx'   # Linux (libsecret): prompts for the key
 ```
 
 The profile pointer is the same on both machines: `keychain:onyx/sindri-onyx`. Sindri reads it with `security
 find-generic-password -s onyx -a sindri-onyx -w` on macOS and `secret-tool lookup service onyx account sindri-onyx` on
-Linux; on any other OS a `keychain:` pointer doesn't resolve (`SND-SECRET-002`), so use `env:`, `file:` or `op:`.
+Linux (install `libsecret-tools` on Debian/Ubuntu if `secret-tool` is missing; it exits 1 both for no such entry and when no keyring is reachable); on any other OS a `keychain:` pointer doesn't resolve (`SND-SECRET-002`), so use `env:`, `file:` or `op:`.
 
 ```yaml
 context:
@@ -103,7 +103,7 @@ Pointers Sindri accepts: `keychain:<service>/<account>`, `env:<VAR>`, `op:<vault
 `file:<absolute path>` (a regular file, not a symbolic link, mode 0600 or stricter). A value without one of these
 schemes is refused (`SND-CONTEXT-002`). An `env:` pointer is for fixtures and tests: queries read the variable from the
 control plane's environment as it was when `$SINDRI serve` started (export it first, `$SINDRI stop` a running one),
-while doctor reads the calling shell's, so the two can disagree; `keychain:` and `file:` read the same in both. Then,
+while doctor reads the calling shell's, so the two can disagree; `file:` reads the same in both, and so does `keychain:` on macOS (on Linux `serve` must run in the login session to reach the keyring, since `secret-tool` needs its D-Bus). Then,
 at a terminal:
 
 ```bash
