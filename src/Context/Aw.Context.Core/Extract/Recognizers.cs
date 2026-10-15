@@ -31,12 +31,20 @@ public static partial class Recognizers
     public static bool Source(RepoFile file)
     {
         ArgumentNullException.ThrowIfNull(file);
-        var path = "/" + file.Path;
-        return file.Text.Length <= MaxFileLength
-            && _extensions.Any(e => file.Path.EndsWith(e, StringComparison.Ordinal))
-            && !_skipped.Any(s => path.Contains("/" + s, StringComparison.Ordinal))
-            && !file.Path.Contains(".test.", StringComparison.Ordinal)
-            && !file.Path.Contains(".spec.", StringComparison.Ordinal);
+        return file.Text.Length <= MaxFileLength && MayRead(file.Path);
+    }
+
+    /// <summary>Whether a path could be a source file the extractor reads, before its text is fetched.</summary>
+    /// <param name="path">The path from the repo root.</param>
+    /// <returns>True for a path with a source extension outside tests and build output.</returns>
+    public static bool MayRead(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        var rooted = "/" + path;
+        return _extensions.Any(e => path.EndsWith(e, StringComparison.Ordinal))
+            && !_skipped.Any(s => rooted.Contains("/" + s, StringComparison.Ordinal))
+            && !path.Contains(".test.", StringComparison.Ordinal)
+            && !path.Contains(".spec.", StringComparison.Ordinal);
     }
 
     private static bool IsComponentFile(string path) => path.EndsWith(".tsx", StringComparison.Ordinal) || path.EndsWith(".jsx", StringComparison.Ordinal);

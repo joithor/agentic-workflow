@@ -71,7 +71,7 @@ public sealed class SettingsReaderTests
     [InlineData("""{"repos":[null]}""", "context.repos:")]
     [InlineData("""{"repos":["a/b"]}""", "context.repos:")]
     [InlineData("""{"docs":{"globs":[null]}}""", "context.docs.globs:")]
-    [InlineData("""{"labeling":{"enabled":true}}""", "context.labeling:")]
+    [InlineData("""{"rerank":{"enabled":true}}""", "context.rerank:")]
     [InlineData("""{"sessions":{"enabled":true,"x":1}}""", "context:")]
     [InlineData("""[1]""", "context:")]
     public void A_bad_key_is_001_with_its_key_path(string json, string path)

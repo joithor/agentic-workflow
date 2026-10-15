@@ -29,6 +29,8 @@ using Aw.Context.Features.ShowMapStatus;
 using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.SourcesStatus;
 using Aw.Context.Testing.Engine;
+using Aw.Context.Testing.Extract;
+using Aw.Context.Testing.Locks;
 using Aw.Context.Testing.Map;
 using Aw.Context.Tests.EvalProbes;
 using Aw.Kernel.Testing;
@@ -66,8 +68,12 @@ internal static class Engines
         var admin = new MapAdmin(new PreviewMapService(reader), new ImportMapService(reader, store, clock), new ExportMapService(store, exports, clock),
             new ShowMapStatusService(store), new CheckMapService(store), new CheckRetentionService(store, exports, clock), new PurgeMapService(store, exports, clock));
         var review = new MapReview(new ReviewQueueService(), new ReviewMapService(), new ExportReviewService(), new ApplyReviewFileService(), new PromoteMapService());
-        return new ContextMap(admin, review, new MapProposals(new BuildMapService(), new ProposeFromScopeService(), new GetProposalsService()));
+        return new ContextMap(admin, review, new MapProposals(Build(clock, store), new ProposeFromScopeService(), new GetProposalsService()));
     }
+
+    /// <summary>The build slice over empty fakes (the query tests never build).</summary>
+    private static BuildMapService Build(TimeProvider clock, FakeGraphStore store) =>
+        new(new FakeRepoReader(Repos[0], "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", new Dictionary<string, string>(StringComparer.Ordinal)), new FakeClusterSource(), new FakeLabeler(), new FakeHeavyJobLock(), store, clock);
 
     internal static IContextEngine Over(params IContextSource[] sources) => Over(new FixedSourceCatalog(sources));
 

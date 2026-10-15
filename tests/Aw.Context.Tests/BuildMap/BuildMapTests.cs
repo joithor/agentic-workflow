@@ -32,8 +32,6 @@ public sealed class BuildMapTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task A_build_writes_a_draft_with_each_proposed_node_its_provenance_confidence_and_files()
     {
-        _ = await _world.ImportFixture();
-
         var report = (await _world.Map.BuildMap(progress: null, Scope, MapWorld.None)).Value;
 
         Assert.Equal((MapVersionStatus.Draft, FixtureMap.Repo, MapWorld.Head), (report.Draft.Status, report.Draft.Repo.Value, report.Draft.Commit));
@@ -43,6 +41,19 @@ public sealed class BuildMapTests : IDisposable
         Assert.Contains(report.Proposed, p => p.Key.Value == "surface:setting/paneResizeStep");
         Assert.Contains(report.Proposed, p => p.Key.Value == "surface:keybinding/ctrl+shift+d");
         Assert.DoesNotContain(report.Proposed, p => p.Key.Kind == NodeKind.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_build_over_a_current_map_adds_to_it_and_proposes_only_what_it_lacks()
+    {
+        _ = await _world.ImportFixture();
+
+        var report = (await _world.Map.BuildMap(progress: null, Scope, MapWorld.None)).Value;
+
+        Assert.Equal(["surface:command/close-pane"], report.Proposed.Select(p => p.Key.Value).Where(k => k.StartsWith("surface:command/", StringComparison.Ordinal)), StringComparer.Ordinal);
+        var draft = (await _world.Store.Snapshot(draft: true, MapWorld.None)).Value!;
+        Assert.NotNull(draft.Graph.Resolve(NodeKey.From("feature:layout.split-pane")));   // the current map's own nodes stay, so promoting the draft loses nothing
+        Assert.Contains(draft.Graph.Edges, e => e.From.Value == "code:src/commands/ids.ts" && e.To.Value == _split.Value && e.Type == EdgeType.Implements);
     }
 
     [Fact, Trait("Lane", "unit")]

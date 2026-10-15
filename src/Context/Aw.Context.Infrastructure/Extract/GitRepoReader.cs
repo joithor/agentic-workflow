@@ -6,7 +6,7 @@ using Aw.Kernel;
 
 namespace Aw.Context.Infrastructure.Extract;
 
-/// <summary>Reads a repo's files at a commit through git (never the working tree). Any git failure is SND-CONTEXT-048.</summary>
+/// <summary>Reads a repo's files at a commit through git (never the working tree), leaving out the paths the repo denies: they are not listed and reading one is refused like a missing path. Any git failure is SND-CONTEXT-048.</summary>
 /// <param name="git">The read-only git calls.</param>
 internal sealed class GitRepoReader(GitCli git) : IRepoReader
 {
@@ -21,14 +21,14 @@ internal sealed class GitRepoReader(GitCli git) : IRepoReader
     {
         ArgumentNullException.ThrowIfNull(repo);
         var tree = await git.Tree(repo.Path, commit, cancellationToken).ConfigureAwait(false);
-        return tree.IsError ? Unreadable(repo, commit) : Results.Success<IReadOnlyList<string>>([.. tree.Value.Keys.Order(StringComparer.Ordinal)]);
+        return tree.IsError ? Unreadable(repo, commit) : Results.Success<IReadOnlyList<string>>([.. tree.Value.Keys.Where(p => !repo.Denies(p)).Order(StringComparer.Ordinal)]);
     }
 
     public async ValueTask<Result<string>> Read(ContextRepo repo, string commit, string path, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repo);
         ArgumentNullException.ThrowIfNull(path);
-        if (path.Length == 0 || Path.IsPathRooted(path) || path.Any(char.IsControl) || path.Split('/').Contains(".."))
+        if (path.Length == 0 || Path.IsPathRooted(path) || path.Any(char.IsControl) || path.Split('/').Contains("..") || repo.Denies(path))
         {
             return Unreadable(repo, commit, "a path inside the repo");
         }

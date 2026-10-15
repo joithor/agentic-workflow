@@ -124,17 +124,16 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
         }
     }
 
-    // Writes the tar's regular files under the snapshot: no link, no path that climbs out, nothing in graphify's own folders, no oversized file.
+    // Writes the tar's regular files under the snapshot: no link, no path that climbs out, nothing in graphify's own folders, no oversized file, and no path the repo denies (secrets never reach graphify).
     internal static async Task Unpack(Stream tar, string snapshot, ContextRepo repo, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(repo);
         long total = 0;
         var reader = new TarReader(tar, leaveOpen: true);
         await using (reader.ConfigureAwait(false))
         {
             while (await reader.GetNextEntryAsync(copyData: false, cancellationToken).ConfigureAwait(false) is { } entry)
             {
-                if (SafePath(entry) is not { } relative || entry.DataStream is null || entry.Length > MaxFileBytes || (total += entry.Length) > MaxTotalBytes)
+                if (SafePath(entry) is not { } relative || repo.Denies(relative) || entry.DataStream is null || entry.Length > MaxFileBytes || (total += entry.Length) > MaxTotalBytes)
                 {
                     continue;
                 }
