@@ -141,6 +141,37 @@ public abstract partial class SindriApiContract
         Expect.Equal((bool)golden["truncated"]!, fact.Truncated); // why: and says whether it is cut
     }
 
+    // A fact body belongs to one instance: where an instance's fact row counts what the body holds ("24 tasks", "6 of 24 packs"),
+    // the fake serves a body that agrees with the row or refuses, never another instance's body under the same key.
+    [Fact]
+    public async Task InstanceFact_never_serves_a_body_that_contradicts_its_instance_s_fact_row()
+    {
+        var api = Reach(new FakeSindriApi());
+        var checkedRows = 0;
+        foreach (var instance in GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-instance" && !IsRefusal(g.Body)).Select(g => JsonNode.Parse(g.Body)!))
+        {
+            foreach (var row in instance["facts"]!.AsArray().Select(f => f!)) // why: an instance lists its facts
+            {
+                var key = (string)row["key"]!; // why: every row has a key
+                var summary = (string?)row["summary"] ?? string.Empty;
+                var served = await api.InstanceFact(_api, (string)instance["id"]!, key, Token); // why: every instance has an id
+                if (served.IsError || (key is not ("fact:packet" or "fact:evidence")))
+                {
+                    continue;
+                }
+
+                checkedRows++;
+                var body = JsonNode.Parse(served.Value.Body.GetRawText())!;
+                var counted = key == "fact:packet"
+                    ? Count(body["workstreams"]!.AsArray().Sum(w => w!["tasks"]!.AsArray().Count)) + " tasks" // why: a packet has workstreams of tasks
+                    : Count((int)body["done"]!) + " of " + Count((int)body["total"]!) + " packs"; // why: an evidence fact counts its packs
+                Expect.True(summary.Contains(counted, StringComparison.Ordinal));
+            }
+        }
+
+        Expect.True(checkedRows > 0);
+    }
+
     [Fact]
     public async Task InstanceFact_of_an_instance_that_does_not_list_the_key_is_not_found()
     {
@@ -154,6 +185,8 @@ public abstract partial class SindriApiContract
 
         Expect.Equal(new Error("SND-ITEM-404", ErrorKind.NotFound, (string)golden["detail"]!), refused.Error); // why: a refusal has a detail
     }
+
+    private static string Count(int n) => n.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     private static string InstanceListing(string key) =>
         (string)GoldenFiles.All().Where(g => g.Kind == "Api" && g.Slug == "workflow-instance" && !IsRefusal(g.Body)).Select(g => JsonNode.Parse(g.Body)!)
