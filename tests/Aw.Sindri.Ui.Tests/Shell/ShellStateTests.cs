@@ -226,10 +226,13 @@ public sealed class ShellStateTests
         _server.Lag = ViewsLag.Behind;
         _ = await _server.RebuildViews(new Uri("http://127.0.0.1:7410/"), Token);
 
+        var before = _server.StatusCalls;
+
         await shell.Health.Refresh(Token);
 
         Assert.Equal(ShellState.Normal, shell.State);
-        Assert.Equal([0L, 43L, 0L], _server.StatusAfters.TakeLast(3));
+        Assert.Equal(before + 2, _server.StatusCalls);   // the read that carried the sequence, then the re-read without it
+        Assert.Equal([43L, 0L], _server.StatusAfters.TakeLast(2));
     }
 
     [Fact]
