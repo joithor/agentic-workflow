@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# meta-launch.sh — stand up a meta-orchestrated team in one Warp window: a pane per lane (the meta lane first, then
+# the team config's lanes), each attached to tmux session <team>-<lane> running that lane's Claude session
+# (scripts/meta-lane.sh: resumed by id when one exists, else started from its kickoff prompt). Missing tmux sessions
+# are recreated first (tmux may have died with the box), so the panes only attach. Writes the Warp launch
+# configuration and opens it. One command restores the whole team after a crash.
+#   meta-launch.sh [--lanes a,b,...] [--no-open] [--dry-run]
+#   AW_META_CONFIG      team config (default $AW_STATE_DIR/meta/team.json; `aw-meta team-init` writes it)
+#   AW_WARP_LAUNCH_DIR  default ${XDG_DATA_HOME:-~/.local/share}/warp-terminal/launch_configurations
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+only=""; open=1; dry=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --lanes) only="${2:?--lanes needs a list}"; shift 2 ;;
+    --no-open) open=0; shift ;;
+    --dry-run) dry=1; shift ;;
+    *) echo "usage: meta-launch.sh [--lanes a,b,...] [--no-open] [--dry-run]" >&2; exit 2 ;;
+  esac
+done
+command -v jq > /dev/null || { echo "meta-launch: jq is not installed" >&2; exit 1; }
+command -v tmux > /dev/null || { echo "meta-launch: tmux is not installed" >&2; exit 1; }
+config="${AW_META_CONFIG:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/meta/team.json}"
+[ -f "$config" ] || { echo "meta-launch: no team config at $config (run: aw-meta team-init --team <t> --repo <dir> --lanes a,b)" >&2; exit 1; }
+team="$(jq -r '.team // empty' "$config")"
+repo="$(jq -r '.repo // empty' "$config")"
+if [ -n "$only" ]; then lanes="$only"
+else lanes="$(jq -r '[(.metaLane // "meta")] + (.lanes // []) | join(",")' "$config")"; fi
+IFS=, read -r -a L <<< "$lanes"
+for n in "$team" "${L[@]}"; do
+  case "$n" in *[!a-z0-9-]*|"") echo "meta-launch: bad team or lane name '$n'" >&2; exit 2 ;; esac
+done
+case "$repo" in /*) [ -d "$repo" ] || { echo "meta-launch: repo $repo not found" >&2; exit 1; } ;;
+  *) echo "meta-launch: repo must be an absolute path (Warp requires it): '$repo'" >&2; exit 1 ;; esac
+dir="${AW_WARP_LAUNCH_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/warp-terminal/launch_configurations}"
+yaml="$dir/$team-team.yaml"
+
+# 1. tmux sessions: create the missing ones (detached), keep the live ones.
+for l in "${L[@]}"; do
+  s="$team-$l"
+  if tmux has-session -t "=$s" 2> /dev/null; then echo "tmux $s: running"
+  elif [ "$dry" = 1 ]; then echo "[dry-run] tmux new-session -d -s $s -c $repo $here/meta-lane.sh $team $l"
+  else
+    tmux new-session -d -s "$s" -c "$repo" -e "AW_META_CONFIG=$config" "$here/meta-lane.sh $team $l"
+    echo "tmux $s: started"
+  fi
+done
+
+# 2. Warp launch configuration: the first lane on the left, the others stacked on the right.
+pane() { # indent lane
+  printf '%s- cwd: %s\n%s  commands:\n%s    - exec: tmux new -A -s %s\n' "$1" "$repo" "$1" "$1" "$team-$2"
+}
+render() {
+  echo "# Written by scripts/meta-launch.sh from $config; rerun it rather than editing."
+  echo "name: $team team"
+  echo "windows:"
+  echo "  - tabs:"
+  echo "      - title: $team"
+  echo "        layout:"
+  if [ "${#L[@]}" = 1 ]; then
+    printf '          cwd: %s\n          commands:\n            - exec: tmux new -A -s %s\n' "$repo" "$team-${L[0]}"
+    return
+  fi
+  echo "          split_direction: vertical"
+  echo "          panes:"
+  pane "            " "${L[0]}"
+  echo "            - split_direction: horizontal"
+  echo "              panes:"
+  for l in "${L[@]:1}"; do pane "                " "$l"; done
+}
+if [ "$dry" = 1 ]; then echo "[dry-run] would write $yaml:"; render; exit 0; fi
+mkdir -p "$dir"
+render > "$yaml.tmp"
+mv "$yaml.tmp" "$yaml"
+echo "warp: $yaml"
+
+# 3. Open it in Warp.
+if [ "$open" = 1 ]; then
+  uri="warp://launch/$(jq -rn --arg p "$yaml" '$p|@uri')"
+  if command -v xdg-open > /dev/null; then xdg-open "$uri" > /dev/null 2>&1 &
+  elif command -v warp-terminal > /dev/null; then warp-terminal "$uri" > /dev/null 2>&1 &
+  else echo "open $uri in Warp (Command Palette → Launch Configuration → $team team)"; fi
+fi
