@@ -174,7 +174,7 @@ The setup script:
 | C# scaffolds | `new-package`, `new-slice` |
 | Review | `review`, `postReview`, `addressReview`, `cso` |
 | Debug & QA | `rootCause`, `bugHunt`, `bugReport`, `bugFixOrchestrator`, `testAudit` |
-| Ship & operate | `shipRelease`, `landAndDeploy`, `canary`, `syncDocs`, `weeklyRetro`, `prismStatus`, `judge` |
+| Ship & operate | `shipRelease`, `landAndDeploy`, `canary`, `syncDocs`, `weeklyRetro`, `prismStatus`, `judge`, `meta` (opt-in: `./setup.sh --with-meta`) |
 | Repo setup | `bootstrap` |
 | Self-evolution | `reflect`, `correct` |
 
