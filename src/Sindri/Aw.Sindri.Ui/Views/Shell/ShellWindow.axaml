@@ -53,11 +53,6 @@
     <DockPanel IsVisible="{Binding IsChromeVisible}">
       <views:TopBar x:Name="TopBar" DockPanel.Dock="Top" />
 
-      <!-- The attention band (§3.2): hidden until needs-you is served (U3). -->
-      <Border x:Name="AttentionBand" DockPanel.Dock="Top" Height="{StaticResource Size.AttentionBand}"
-              Background="{DynamicResource Brush.Attention}" IsVisible="{Binding IsAttentionBandVisible}"
-              AutomationProperties.Name="{Binding Text.NeedsYouPanel}" />
-
       <!-- Stale after three failed refreshes (§4.1): "Sindri not responding: run sindri doctor" in full under the top bar,
            since the pill keeps ⌛ stale and its Refresh at the 900 px minimum. -->
       <Border x:Name="NotRespondingBanner" DockPanel.Dock="Top" Classes="banner" IsVisible="{Binding IsNotRespondingBanner}"

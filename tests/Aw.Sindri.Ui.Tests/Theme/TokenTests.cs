@@ -93,7 +93,7 @@ public sealed class TokenTests
         { "Space.XXS", 4 }, { "Space.XS", 8 }, { "Space.SM", 12 }, { "Space.MD", 16 }, { "Space.LG", 24 }, { "Space.XL", 32 }, { "Space.XXL", 48 },
         { "Size.Row", 36 }, { "Size.RowComfortable", 40 }, { "Size.TopBar", 48 }, { "Size.Sheet", 520 }, { "Size.SheetMin", 420 }, { "Size.SheetMax", 760 },
         { "Size.SheetCoversBelow", 1100 }, { "Size.WindowMinWidth", 900 }, { "Size.WindowMinHeight", 600 },
-        { "Size.AttentionBand", 2 }, { "Size.PanelGap", 16 }, { "Size.Control", 30 }, { "Size.FocusRing", 2 },
+        { "Size.PanelGap", 16 }, { "Size.Control", 30 }, { "Size.FocusRing", 2 },
     };
 
     [Theory]

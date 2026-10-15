@@ -173,9 +173,6 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
     public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
 
-    /// <summary>The attention band under the top bar (§3.2): always false in U0, since needs-you arrives in U3.</summary>
-    public bool IsAttentionBandVisible { get; }
-
     /// <summary>The window's remembered bounds, or null to let the platform place it.</summary>
     public WindowBounds? Window => _preferences.Window;
 

@@ -225,9 +225,6 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
-    public async Task The_attention_band_stays_hidden_until_needs_you_is_served() => Assert.False((await Shell()).IsAttentionBandVisible);
-
-    [Fact]
     public async Task Before_the_first_answer_the_shell_is_connecting()
     {
         var shell = await Shell();

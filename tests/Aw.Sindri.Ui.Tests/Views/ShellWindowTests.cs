@@ -688,7 +688,6 @@ public sealed class ShellWindowTests : IDisposable
 
         Assert.Equal((StateGlyph.Ok, Labels.Running, "updated 0s ago"), (Glyph(window, "PillGlyph"), Text(window, "HealthPillText"), Text(window, "PillAgeText")));
         Assert.Equal("Running · updated 0s ago", AutomationProperties.GetName(Named<Button>(window, "HealthPill")));
-        Assert.False(Visible(window, "AttentionBand"));
         Assert.Equal(1280, window.Width);
         Assert.Equal((900d, 600d), (window.MinWidth, window.MinHeight));
         EveryControlIsNamed(window);
