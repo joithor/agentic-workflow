@@ -72,7 +72,7 @@ answers and what the key is, not how far indexing has got.
 
 ## 5. The key
 
-Create a **dedicated service account** in Admin → API Keys named `sindri-read` and copy its key (`on_…`).
+Create a **dedicated service account** in Admin → API Keys named `sindri-onyx` and copy its key (`on_…`).
 The search route Sindri uses (`POST /api/admin/search`, the only v4.9.0 CE route that returns document ids without
 an LLM) needs an **admin** key, so this key could change Onyx settings (owner decision 2026-10-12, context spec §8.8).
 Sindri only ever sends the five requests in §7; its Onyx adapter refuses any other request before sending it, and a
@@ -84,13 +84,13 @@ Store it by pointer, never in the profile. Add the `context:` section below to y
 both, and `docs/sindri/context.md` "Trying it in a throwaway profile" writes a whole one):
 
 ```bash
-security add-generic-password -s onyx -a sindri-read -w      # prompts for the key
+security add-generic-password -s onyx -a sindri-onyx -w      # prompts for the key
 ```
 
 ```yaml
 context:
   sources:
-    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-read", version: "v4.9.0" }
+    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }
     linear: { teams: [ENG] }        # team keys whose ENG-n identifiers become aliases
 ```
 
@@ -122,6 +122,7 @@ $SINDRI context sources status
 | Code | Meaning | Fix |
 |---|---|---|
 | `SND-SECRET-001`..`003` | The key's pointer is malformed (`001`), doesn't resolve (`002`, naming the variable, file or entry), or is an unsafe `file:` (`003`) | Fix the pointer or the secret as the line says (§5) |
+| `SND-CONTEXT-002` | The key's pointer doesn't resolve to a usable key (queries degrade with it as the cause) | `$SINDRI doctor` names the `SND-SECRET` reason |
 | `SND-CONTEXT-050` | Onyx refused the key (403: missing, wrong, or not admin) | Recreate the key as in §5 and update the pointer |
 | `SND-CONTEXT-053` | The admin key isn't a service account's | Create a service account for Sindri (§5) |
 | `SND-CONTEXT-055` | `onyx.url` isn't loopback, or Onyx reports a version other than the pinned one | §1, §2 |
@@ -149,6 +150,6 @@ Nothing else: the adapter refuses any other request before sending it. Linear is
 read from Onyx's title prefix `[ENG-482]` and checked against the issue link. Onyx doesn't serve `updated_at` by
 id, so Onyx citations show `version unchecked` until the native Linear source versions them.
 
-Onyx has no change feed a key can read (its document listing needs `manage:connectors` and carries no times), so
+Onyx has no change feed: its document listing is per connector, carries no times and isn't on the allowlist above, so
 Sindri re-derives links from search hits: a document that no longer matches any query is never read again, and
 `context sources status` doesn't report the gap (context spec §12).

@@ -228,7 +228,7 @@ public sealed record ChangePage(IReadOnlyList<SourceRef> Changed, IReadOnlyList<
 |---|---|---|---|---|---|
 | `repo-docs` | Doc | Lexical: SQLite FTS5 over **scrubbed** doc chunks at HEAD of the profile repos' doc globs | `git cat-file` at the blob sha; line spans | Commits touching the globs, run by a scheduled service (every 5 min by default) and on `context sources sync` | 1 |
 | `linear` (native) | Intent | Title and key lookup only (Onyx searches issue text) | Projects, Linear Documents, project updates, issues **with their comments**, issue↔PR attachments; version `updatedAt`. Writes identifier → UUID aliases on every fetch and search hit; hand-written GraphQL (D18) | `updatedAt` filter, by the profile's teams || 6 |
-| `onyx` | Intent | Onyx CE v4.9.0's `POST /api/admin/search` (keyword retrieval, document ids, `updated_at`; §8.8 for the key), several sub-queries, top-k candidates | Onyx document by id (`GET /api/document/document-size-info`, then `chunk-info` per chunk); version `updatedAt` from the search hit. `Versions` answers `Unavailable` (no route gives `updated_at` by id), so Onyx citations say `version unchecked` until S-6's native Linear source versions the same records | None for a read key (§12) || 5 |
+| `onyx` | Intent | Onyx CE v4.9.0's `POST /api/admin/search` (keyword retrieval, document ids, `updated_at`; §8.8 for the key), several sub-queries, top-k candidates | Onyx document by id (`GET /api/document/document-size-info`, then `chunk-info` per chunk); version `updatedAt` from the search hit. `Versions` answers `Unavailable` (no route gives `updated_at` by id), so Onyx citations say `version unchecked` until S-6's native Linear source versions the same records | None (§12) || 5 |
 | `code` | Code | Index lookup: symbol name, path, embedding neighbors | Symbol at a commit sha | Index rebuilds | 9 |
 
 Files are a code-layer source from Phase 4 without the index block: the extractor reads them from git at a commit
@@ -548,7 +548,7 @@ context:
   sessions: { enabled: false }           # every session-class read, any transport; off until approved (§3)
   sources:
     linear: { token: "keychain:linear/work-read", teams: [ENG, APP] }   # url: Linear's API host (or loopback, tests)
-    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-read", version: "<pinned tag>" }
+    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "<pinned tag>" }
   eval: { adjudicator: false }
 services:                                 # S1's map; the engine's services run only when named here
   context-docs-refresh: { every: 5m }
@@ -776,8 +776,8 @@ fake passes `ContextSourceContract<TSource>`. Tests never touch work data or the
   federated Slack lane is not used: Slack comes through Onyx's indexing connector. The MCP `search` adds nothing (it
   wraps `POST /api/search`, which has no document id). Admin search includes hidden documents; the adapter drops
   them (§8.8).
-- **Closed (S-5A):** Onyx has no change feed for a read key (its document listing needs `manage:connectors` and has no
-  times), so links are re-derived from search hits. The gap is documented in `docs/sindri/onyx.md` §7, not
+- **Closed (S-5A):** Onyx has no change feed: its document listing (`/onyx-api/connector-docs`) is per connector, has no
+  times and isn't on the adapter's allowlist, so links are re-derived from search hits. The gap is documented in `docs/sindri/onyx.md` §7, not
   reported by `context sources status`, which reads no Onyx connector status (§8.8).
 - Linear document content history for as-of cuts (Phase 6).
 - Feature weights (Phase 8), starting equal.

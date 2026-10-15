@@ -382,7 +382,7 @@ embeddings, telemetry off, connectors, the service account and its key) is `docs
 ```yaml
 context:
   sources:
-    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-read", version: "v4.9.0" }
+    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }
     linear: { teams: [ENG, APP] }      # the Linear team keys an Onyx identifier alias (ENG-482) may name
 ```
 
@@ -404,7 +404,7 @@ context:
 |---|---|
 | `env:NAME` | the environment variable `NAME`: for queries and `sources status`, of the control plane (`sindri serve`) as it was when it started; for `sindri doctor`, of the calling shell (fixtures and tests; beyond them use `keychain:` or `file:`, which read the same in both) |
 | `file:/absolute/path` | the file's contents without a trailing newline; the file must be a regular file (not a symbolic link) with mode `0600` or stricter |
-| `keychain:service/account` | `security find-generic-password -s service -a account -w` (store it with `security add-generic-password -s onyx -a sindri-read -w`) |
+| `keychain:service/account` | `security find-generic-password -s service -a account -w` (store it with `security add-generic-password -s onyx -a sindri-onyx -w`) |
 | `op:vault/item/field` | `op read op://vault/item/field` (1Password CLI) |
 
 Sindri resolves the pointer in its host (`Composition`), once per query (not per Onyx request); the context engine never reads the
@@ -468,7 +468,7 @@ on each Onyx version change.
 ```bash
 $SINDRI stop                                    # first, with the old home: a running control plane keeps its port
 export AW_SINDRI_HOME="$(mktemp -d)"            # throwaway state
-export SINDRI_ONYX_KEY='on_…'                   # the service account's admin key (or use keychain:onyx/sindri-read)
+read -rs SINDRI_ONYX_KEY && export SINDRI_ONYX_KEY   # paste the service account's admin key (not echoed, not in history); or keychain:onyx/sindri-onyx
 mkdir -p "$AW_SINDRI_HOME/profile"
 cat >"$AW_SINDRI_HOME/profile/profile.yaml" <<'YAML'
 schemaVersion: 1
@@ -484,4 +484,5 @@ $SINDRI profile approve <hash>                  # type the challenge it shows: '
 $SINDRI doctor                                  # context:onyx
 $SINDRI context sources status
 $SINDRI context query "split pane orientation"
+$SINDRI stop                                    # free the port before going back to your real home
 ```
