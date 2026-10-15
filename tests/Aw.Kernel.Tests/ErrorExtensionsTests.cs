@@ -32,7 +32,7 @@ public sealed class ErrorExtensionsTests
     {
         var extended = _base.WithExtension<Anchor[]>("suggestedAnchors", [new Anchor("a", "A")], TestJsonContext.Default.AnchorArray);
 
-        Assert.Equal("""[{"key":"a","label":"A"}]""", extended.Extensions![0].Value.GetRawText());
+        Assert.Equal("""[{"Key":"a","Label":"A"}]""", extended.Extensions![0].Value.GetRawText());   // the context's naming, not the Kernel's
     }
 
     [Fact]

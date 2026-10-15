@@ -497,6 +497,8 @@ blocks.
 
 ## Errors
 
+**Extension members (RFC 9457 §3.2).** A slice may attach typed members to its `Error` with `error.WithExtension(name, value, typeInfo)` (or a `JsonElement` built with its own source-generated type info; `Aw.Kernel.ErrorExtensions`). The names are camelCase, at most 64 characters and not `type`, `title`, `status`, `detail`, `instance` or `traceId` (a bad or repeated name throws `ArgumentException`: a bug in the slice). `HttpResults.Problem` writes them as top-level members of the ProblemDetails body in the order attached, after the standard ones (ASP.NET's `traceId` follows), and cleans every string in them (values, and member names inside objects) with `SafeText.Clean`: scrubbed, escaped, one line, at most 200 characters; sessions and the human get the same body. An error without extensions answers byte for byte as before. The CLI (`Output.Error`) ignores them and prints the code and message. Each code that uses them lists the members in its row below. Not carried over MCP tool errors or the event stream's refusals yet.
+
 | Code | When |
 |---|---|
 | `SND-LEASE-001` | Another live process holds the lease |

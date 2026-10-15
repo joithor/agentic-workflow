@@ -1138,6 +1138,10 @@ S1's `HttpResults` mapping is unchanged: `ErrorKind` sets the status, and `Probl
 code and `detail` = the message with its `(fix: …)`. The CLI prints `SND-… message` and exits 0 for ok, 1 for attention,
 2 for an error (S1), and 75 when a heavy-job lock stayed busy (as Evidence and the context engine do).
 
+An error may carry extension members (RFC 9457 §3.2), named camelCase and written as top-level members of the problem body
+after the standard ones; their string values are cleaned (scrubbed, escaped, one line, at most 200 characters), and each code
+that uses them lists them in its row. The CLI ignores them.
+
 The phase that reserves a code registers it in `SindriErrors` and its `All` list, and documents it in the error table
 of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated from the TS build.
 

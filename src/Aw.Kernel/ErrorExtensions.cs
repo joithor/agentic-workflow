@@ -63,7 +63,19 @@ public sealed class ErrorExtensions : IReadOnlyList<KeyValuePair<string, JsonEle
     /// <returns>The new extensions.</returns>
     /// <exception cref="ArgumentException">The name isn't valid or is already present (a bug in the slice, not an expected failure).</exception>
     public ErrorExtensions With(string name, JsonElement value)
-    => throw new NotSupportedException();
+    {
+        if (!IsValidName(name))
+        {
+            throw new ArgumentException($"'{name}' isn't a valid extension name: camelCase, at most {MaxNameLength} characters, and not one of {string.Join(", ", _reserved)}.", nameof(name));
+        }
+
+        if (Array.Exists(_members, m => string.Equals(m.Key, name, StringComparison.Ordinal)))
+        {
+            throw new ArgumentException($"The extension '{name}' is already set.", nameof(name));
+        }
+
+        return new([.. _members, new(name, value.Clone())]);
+    }
 
     /// <inheritdoc />
     public IEnumerator<KeyValuePair<string, JsonElement>> GetEnumerator() => ((IEnumerable<KeyValuePair<string, JsonElement>>)_members).GetEnumerator();

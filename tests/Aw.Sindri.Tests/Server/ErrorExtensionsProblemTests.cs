@@ -30,7 +30,7 @@ public sealed class ErrorExtensionsProblemTests : IDisposable
 
         Assert.Equal(404, status);
         Assert.Equal("AW-KERNEL-002", body.GetProperty("title").GetString());
-        Assert.Equal(["suggestedAnchors", "count", "closest"], names.Skip(names.IndexOf("suggestedAnchors")).ToList());
+        Assert.Equal(["suggestedAnchors", "count", "closest"], names.Skip(names.IndexOf("suggestedAnchors")).Take(3).ToList());
         Assert.True(names.IndexOf("detail") < names.IndexOf("suggestedAnchors"));
         var anchors = body.GetProperty("suggestedAnchors");
         Assert.Equal("a\\x1B[31m", anchors[0].GetProperty("key").GetString());

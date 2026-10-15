@@ -8,7 +8,13 @@ internal static class HttpResults
     internal static IResult ToHttpResult<T>(this Result<T> result)
         => result.IsSuccess
             ? TypedResults.Ok(result.Value)
-            : TypedResults.Problem(title: result.Error.Code, detail: result.Error.Message, statusCode: StatusOf(result.Error.Kind));
+            : Problem(result.Error);
+
+    /// <summary>An error as a ProblemDetails answer: title the code, detail the message, the status its kind's; extension members (RFC 9457 §3.2) follow when it has any.</summary>
+    internal static IResult Problem(Error error)
+        => error.Extensions is { Count: > 0 }
+            ? new ProblemWithExtensions(error, StatusOf(error.Kind))
+            : TypedResults.Problem(title: error.Code, detail: error.Message, statusCode: StatusOf(error.Kind));
 
     private static int StatusOf(ErrorKind kind) => kind switch
     {
