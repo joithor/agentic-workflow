@@ -1,14 +1,14 @@
 {
-  "address": "ITM-01JE7/item/1/step.1",
-  "id": "WFI-a7981510993b83cab742557716a484dd",
+  "address": "ITM-01JE7/item/1/step.4",
+  "id": "WFI-4f14112a8de78b9ca346156f29de714c",
   "parent": {
     "address": "ITM-01JE7/item/1",
-    "title": "ITM-01JE7 · Receipt retries",
+    "title": "ITM-01JE7 · Add needs-you ack route",
     "task": null,
     "workstream": null
   },
   "itemId": "ITM-01JE7",
-  "title": "Receipt retries",
+  "title": "Add needs-you ack route",
   "recipe": {
     "id": "workflow.step",
     "hash": "sha256:1b13bd920351e56227141fe24e59f2f90cb46bc3549e1e90f2da2af1c3be9f5c",
@@ -16,12 +16,12 @@
     "urgency": "work"
   },
   "state": "produce",
-  "since": "2026-10-12T11:30:00.0000000Z",
+  "since": "2026-10-12T12:20:00.0000000Z",
   "engineOwned": null,
   "subject": {
-    "kind": "item",
+    "kind": "text",
     "key": "ITM-01JE7",
-    "label": "ITM-01JE7",
+    "label": "Linear ENG-511 · repo agentic-workflow · no project · feature:needs-you.ack",
     "href": null
   },
   "orderedBy": "path",
@@ -39,16 +39,16 @@
       "loops": [
         {
           "with": "checks",
-          "n": 2,
+          "n": 1,
           "max": 3
         },
         {
           "with": "verify",
-          "n": 2,
+          "n": 1,
           "max": 3
         }
       ],
-      "desk": false,
+      "desk": true,
       "child": false,
       "children": null,
       "outcome": null,
@@ -64,11 +64,11 @@
       "loops": [
         {
           "with": "produce",
-          "n": 2,
+          "n": 1,
           "max": 3
         }
       ],
-      "desk": false,
+      "desk": true,
       "child": false,
       "children": null,
       "outcome": null,
@@ -84,11 +84,11 @@
       "loops": [
         {
           "with": "produce",
-          "n": 2,
+          "n": 1,
           "max": 3
         }
       ],
-      "desk": false,
+      "desk": true,
       "child": false,
       "children": null,
       "outcome": null,
@@ -112,24 +112,29 @@
   "current": {
     "state": "produce",
     "step": {
-      "kind": "step.produce",
-      "ref": "produce.output",
+      "kind": "active",
+      "ref": "step.produce",
       "declaration": "produce the output for the item"
     },
     "gates": [],
-    "desk": null,
+    "desk": {
+      "run": "3.1",
+      "outputs": [],
+      "checks": [],
+      "completeAction": "CompleteStep"
+    },
     "status": {
       "header": {
-        "address": "ITM-01JE7/item/1/step.1",
+        "address": "ITM-01JE7/item/1/step.4",
         "recipe": "workflow.step",
         "hash12": "1b13bd920351",
         "version": 1,
         "state": "produce",
-        "detail": null,
-        "since": "2026-10-12T11:30:00.0000000Z",
-        "ageSeconds": 3360
+        "detail": "desk task",
+        "since": "2026-10-12T12:20:00.0000000Z",
+        "ageSeconds": 360
       },
-      "next": "Produce the Step output for ITM-01JE7 (round 2/3).",
+      "next": "Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete ITM-01JE7/item/1/step.4 --run 3.1 --outcome done",
       "answer": null,
       "child": null,
       "drift": null,
@@ -137,10 +142,14 @@
         {
           "key": "fact:spec",
           "name": "spec.md",
-          "hash": "9d3e41aa"
+          "hash": "1c0e5a77"
         }
       ],
-      "timeout": null,
+      "timeout": {
+        "kind": "parks",
+        "inSeconds": 172440,
+        "on": "produce"
+      },
       "budget": {
         "scope": "state",
         "used": 84000,
@@ -153,21 +162,28 @@
       "paused": null,
       "commands": [
         {
+          "verb": "complete",
+          "actionId": "CompleteStep",
+          "class": "desk",
+          "cli": "sindri workflow complete ITM-01JE7/item/1/step.4 --run 3.1 --outcome done",
+          "confirm": null
+        },
+        {
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
           "class": "pause",
-          "cli": "sindri workflow takeover ITM-01JE7/item/1/step.1",
+          "cli": "sindri workflow takeover ITM-01JE7/item/1/step.4",
           "confirm": null
         },
         {
           "verb": "cancel",
           "actionId": "ApplyCommand:cancel",
           "class": "desk",
-          "cli": "sindri workflow cancel ITM-01JE7/item/1/step.1",
-          "confirm": "Cancel ITM-01JE7/item/1/step.1? 1 running step stops; 0 children are cancelled."
+          "cli": "sindri workflow cancel ITM-01JE7/item/1/step.4",
+          "confirm": "Cancel ITM-01JE7/item/1/step.4? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JE7/item/1/step.1  workflow.step@1b13bd920351  v1  produce  since 11:30 (56m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3).\n  inputs    fact:spec  spec.md  sha256:9d3e...\n  budget    tokens 84k / 200k (state), 84k / 400k (instance)\n  commands  takeover, cancel\n"
+      "text": "ITM-01JE7/item/1/step.4  workflow.step@1b13bd920351  v1  produce: desk task  since 12:20 (6m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete\n            ITM-01JE7/item/1/step.4 --run 3.1 --outcome done\n  inputs    fact:spec  spec.md  sha256:1c0e...\n  timeout   parks in 1d 23h 54m (produce)\n  budget    tokens 84k / 200k (state), 84k / 400k (instance)\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [
@@ -178,10 +194,20 @@
       "direction": "input",
       "from": null,
       "status": "produced",
-      "summary": "ITM-01JE7 spec",
-      "at": "2026-10-12T11:30:00.0000000Z",
+      "summary": "spec.md",
+      "at": "2026-10-12T12:20:00.0000000Z",
       "by": "service:item",
-      "ref": null,
+      "ref": {
+        "name": "spec.md",
+        "size": null,
+        "hash": "1c0e5a7700000000000000000000000000000000000000000000000000000000",
+        "path": null,
+        "itemId": null,
+        "url": null,
+        "host": null,
+        "title": null,
+        "factKey": null
+      },
       "progress": null,
       "pending": null
     }
@@ -194,6 +220,7 @@
     "context": null
   },
   "actions": [
+    "CompleteStep",
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],

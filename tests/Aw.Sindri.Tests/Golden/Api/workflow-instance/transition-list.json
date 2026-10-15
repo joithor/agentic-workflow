@@ -95,8 +95,8 @@
   "current": {
     "state": "right",
     "step": {
-      "kind": "step.tool",
-      "ref": "branch.right",
+      "kind": "active",
+      "ref": "step.agent",
       "declaration": "the right branch"
     },
     "gates": [],
@@ -117,7 +117,11 @@
       "child": null,
       "drift": null,
       "inputs": [],
-      "timeout": null,
+      "timeout": {
+        "kind": "parks",
+        "inSeconds": 2040,
+        "on": "right"
+      },
       "budget": null,
       "paused": null,
       "commands": [
@@ -136,7 +140,7 @@
           "confirm": "Cancel ITM-01JL3/fork-demo/1? 1 running step stops; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JL3/fork-demo/1  workflow.fork-demo@1f08c6a90000  v1  right  since 12:00 (26m)\n  next      branch.right is running.\n  commands  takeover, cancel\n"
+      "text": "ITM-01JL3/fork-demo/1  workflow.fork-demo@1f08c6a90000  v1  right  since 12:00 (26m)\n  next      branch.right is running.\n  timeout   parks in 34m (right)\n  commands  takeover, cancel\n"
     }
   },
   "facts": [

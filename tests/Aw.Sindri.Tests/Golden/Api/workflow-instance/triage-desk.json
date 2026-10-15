@@ -81,13 +81,13 @@
   "current": {
     "state": "classify",
     "step": {
-      "kind": "step.desk",
-      "ref": "classify.severity",
+      "kind": "active",
+      "ref": "step.produce",
       "declaration": "a person classifies the alert"
     },
     "gates": [],
     "desk": {
-      "run": "1.1",
+      "run": "2.1",
       "outputs": [
         {
           "key": "fact:severity",
@@ -111,7 +111,7 @@
         "since": "2026-10-12T12:22:00.0000000Z",
         "ageSeconds": 240
       },
-      "next": "Classify the severity for sentry-8812, then run: sindri workflow complete ITM-01JK2/triage-alert/1 --run 1.1 --outcome done --output fact:severity=<file>",
+      "next": "Classify the severity for sentry-8812, then run: sindri workflow complete ITM-01JK2/triage-alert/1 --run 2.1 --outcome done --output fact:severity=<file>",
       "answer": null,
       "child": null,
       "drift": null,
@@ -124,8 +124,8 @@
       ],
       "timeout": {
         "kind": "parks",
-        "inSeconds": 165000,
-        "on": "desk"
+        "inSeconds": 172560,
+        "on": "classify"
       },
       "budget": {
         "scope": "state",
@@ -142,7 +142,7 @@
           "verb": "complete",
           "actionId": "CompleteStep",
           "class": "desk",
-          "cli": "sindri workflow complete ITM-01JK2/triage-alert/1 --run 1.1 --outcome done --output fact:severity=<file>",
+          "cli": "sindri workflow complete ITM-01JK2/triage-alert/1 --run 2.1 --outcome done --output fact:severity=<file>",
           "confirm": null
         },
         {
@@ -160,7 +160,7 @@
           "confirm": "Cancel ITM-01JK2/triage-alert/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JK2/triage-alert/1  workflow.triage-alert@d41f2a070000  v2  classify: desk task  since 12:22 (4m)\n  next      Classify the severity for sentry-8812, then run: sindri workflow complete\n            ITM-01JK2/triage-alert/1 --run 1.1 --outcome done --output fact:severity=<file>\n  inputs    fact:alert  alert.json  sha256:1c0e...\n  timeout   parks in 1d 21h 50m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JK2/triage-alert/1  workflow.triage-alert@d41f2a070000  v2  classify: desk task  since 12:22 (4m)\n  next      Classify the severity for sentry-8812, then run: sindri workflow complete\n            ITM-01JK2/triage-alert/1 --run 2.1 --outcome done --output fact:severity=<file>\n  inputs    fact:alert  alert.json  sha256:1c0e...\n  timeout   parks in 1d 23h 56m (classify)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [

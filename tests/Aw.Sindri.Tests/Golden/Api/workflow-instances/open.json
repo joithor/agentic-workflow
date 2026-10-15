@@ -60,7 +60,7 @@
           "loops": [
             {
               "with": "verify",
-              "n": 1,
+              "n": 0,
               "max": 3
             }
           ],
@@ -80,7 +80,7 @@
           "loops": [
             {
               "with": "mitigate",
-              "n": 1,
+              "n": 0,
               "max": 3
             }
           ],
@@ -94,16 +94,13 @@
           "id": "comms",
           "order": 4,
           "branchOf": null,
-          "glyph": "active",
+          "glyph": "pending",
           "badge": null,
           "round": null,
           "loops": [],
           "desk": false,
           "child": true,
-          "children": {
-            "done": 0,
-            "total": 1
-          },
+          "children": null,
           "outcome": null,
           "terminal": false
         },
@@ -122,7 +119,7 @@
           "terminal": true
         }
       ],
-      "now": "agent rolling back in ITM-01JG2 · comms posting",
+      "now": "agent rolling back in ITM-01JG2",
       "answer": null,
       "actions": [
         "ApplyCommand:takeover",
@@ -548,7 +545,7 @@
           "label": "PRD",
           "kind": null,
           "required": true,
-          "present": false
+          "present": true
         }
       ],
       "states": [
@@ -579,7 +576,7 @@
           "loops": [
             {
               "with": "scoping",
-              "n": 2,
+              "n": 1,
               "max": 3
             }
           ],
@@ -671,7 +668,7 @@
       "since": "2026-10-12T12:15:00.0000000Z",
       "engineOwned": null,
       "subject": {
-        "kind": "linear-team",
+        "kind": "text",
         "key": "APP",
         "label": "Linear APP",
         "href": null
@@ -753,7 +750,7 @@
       "since": "2026-10-12T12:10:00.0000000Z",
       "engineOwned": null,
       "subject": {
-        "kind": "linear-team",
+        "kind": "text",
         "key": "ENG",
         "label": "Linear ENG",
         "href": null

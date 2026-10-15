@@ -87,8 +87,8 @@
   "current": {
     "state": "route",
     "step": {
-      "kind": "step.tool",
-      "ref": "route.severity",
+      "kind": "active",
+      "ref": "step.agent",
       "declaration": "route by severity"
     },
     "gates": [

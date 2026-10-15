@@ -48,7 +48,7 @@
       "loops": [
         {
           "with": "verify",
-          "n": 1,
+          "n": 0,
           "max": 3
         }
       ],
@@ -68,7 +68,7 @@
       "loops": [
         {
           "with": "mitigate",
-          "n": 1,
+          "n": 0,
           "max": 3
         }
       ],
@@ -82,16 +82,13 @@
       "id": "comms",
       "order": 4,
       "branchOf": null,
-      "glyph": "active",
+      "glyph": "pending",
       "badge": null,
       "round": null,
       "loops": [],
       "desk": false,
       "child": true,
-      "children": {
-        "done": 0,
-        "total": 1
-      },
+      "children": null,
       "outcome": null,
       "terminal": false
     },
@@ -113,8 +110,8 @@
   "current": {
     "state": "mitigate",
     "step": {
-      "kind": "step.agent",
-      "ref": "mitigate.rollback",
+      "kind": "active",
+      "ref": "step.agent",
       "declaration": "roll back the last release"
     },
     "gates": [],
@@ -130,14 +127,14 @@
         "since": "2026-10-12T11:02:00.0000000Z",
         "ageSeconds": 5040
       },
-      "next": "Mitigate the outage in round 1/3: ITM-01JG2 rolls back the last release; comms posts the update.",
+      "next": "Mitigate the outage in round 1/3: ITM-01JG2 rolls back the last release.",
       "answer": null,
       "child": null,
       "drift": null,
       "inputs": [],
       "timeout": {
         "kind": "escalates",
-        "inSeconds": 3600,
+        "inSeconds": 9360,
         "on": "mitigate"
       },
       "budget": null,
@@ -155,10 +152,10 @@
           "actionId": "ApplyCommand:cancel",
           "class": "desk",
           "cli": "sindri workflow cancel ITM-01JK1/incident-response/1",
-          "confirm": "Cancel ITM-01JK1/incident-response/1? 1 running step stops; 1 child is cancelled."
+          "confirm": "Cancel ITM-01JK1/incident-response/1? 1 running step stops; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JK1/incident-response/1  workflow.incident-response@5d90e1b20000  v4  mitigate  since 11:02 (1h 24m)\n  next      Mitigate the outage in round 1/3: ITM-01JG2 rolls back the last release; comms posts the\n            update.\n  timeout   escalates in 1h (mitigate)\n  commands  takeover, cancel\n"
+      "text": "ITM-01JK1/incident-response/1  workflow.incident-response@5d90e1b20000  v4  mitigate  since 11:02 (1h 24m)\n  next      Mitigate the outage in round 1/3: ITM-01JG2 rolls back the last release.\n  timeout   escalates in 2h 36m (mitigate)\n  commands  takeover, cancel\n"
     }
   },
   "facts": [
@@ -249,38 +246,7 @@
       "pending": null
     }
   ],
-  "children": [
-    {
-      "state": "comms",
-      "recipe": "workflow.step",
-      "done": 0,
-      "total": 1,
-      "workstreams": [],
-      "rows": [
-        {
-          "address": "ITM-01JK1/incident-response/1/step.1",
-          "itemId": "ITM-01JG3",
-          "title": "Post status updates",
-          "glyph": "active",
-          "state": "produce",
-          "chip": {
-            "word": "RUNNING",
-            "tone": "ok"
-          },
-          "round": null,
-          "agent": null,
-          "ageSeconds": 300,
-          "engineOwned": null,
-          "mirroredPark": null,
-          "actions": [
-            "OpenItem",
-            "ApplyCommand:takeover"
-          ]
-        }
-      ],
-      "more": 0
-    }
-  ],
+  "children": [],
   "counts": {
     "timeline": 12,
     "decisions": 1,

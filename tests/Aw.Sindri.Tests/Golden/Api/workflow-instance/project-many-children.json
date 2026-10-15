@@ -118,8 +118,8 @@
   "current": {
     "state": "build",
     "step": {
-      "kind": "step.children",
-      "ref": "builder.feature",
+      "kind": "wait",
+      "ref": "workflow.step",
       "declaration": "one child per packet task"
     },
     "gates": [],
@@ -140,8 +140,20 @@
       "child": null,
       "drift": null,
       "inputs": [],
-      "timeout": null,
-      "budget": null,
+      "timeout": {
+        "kind": "escalates",
+        "inSeconds": 72840,
+        "on": "build"
+      },
+      "budget": {
+        "scope": "state",
+        "used": 900000,
+        "limit": 4000000,
+        "instance": {
+          "used": 1100000,
+          "limit": 6000000
+        }
+      },
       "paused": null,
       "commands": [
         {
@@ -159,7 +171,7 @@
           "confirm": "Cancel ITM-01JKG/project/1? 0 running steps stop; 18 children are cancelled."
         }
       ],
-      "text": "ITM-01JKG/project/1  workflow.project@a8c21e7f0000  v12  build  since 08:40 (3h 46m)\n  next      Waiting on 24 children: 6 done, 2 running, 16 not started.\n  commands  takeover, cancel\n"
+      "text": "ITM-01JKG/project/1  workflow.project@a8c21e7f0000  v12  build  since 08:40 (3h 46m)\n  next      Waiting on 24 children: 6 done, 2 running, 16 not started.\n  timeout   escalates in 20h 14m (build)\n  budget    tokens 900k / 4M (state), 1.1M / 6M (instance)\n  commands  takeover, cancel\n"
     }
   },
   "facts": [
@@ -170,7 +182,7 @@
       "direction": "input",
       "from": null,
       "status": "produced",
-      "summary": "Linear APP · Offline sync",
+      "summary": "Linear DOCS · Handbook",
       "at": "2026-10-12T08:40:00.0000000Z",
       "by": "human:cli",
       "ref": {
@@ -179,9 +191,9 @@
         "hash": null,
         "path": null,
         "itemId": null,
-        "url": "https://linear.app/example/project/offline-sync",
+        "url": "https://linear.app/example/project/handbook",
         "host": "linear.app",
-        "title": "APP · Offline sync",
+        "title": "DOCS · Handbook",
         "factKey": null
       },
       "progress": null,
@@ -194,14 +206,14 @@
       "direction": "input",
       "from": null,
       "status": "produced",
-      "summary": "PRD-sync.md",
+      "summary": "PRD-handbook.md",
       "at": "2026-10-12T08:40:00.0000000Z",
       "by": "human:cli",
       "ref": {
-        "name": "PRD-sync.md",
-        "size": 18432,
-        "hash": "1c0e5a7700000000000000000000000000000000000000000000000000000000",
-        "path": "docs/PRD-sync.md",
+        "name": "PRD-handbook.md",
+        "size": 9216,
+        "hash": "6be7a41300000000000000000000000000000000000000000000000000000000",
+        "path": "docs/PRD-handbook.md",
         "itemId": null,
         "url": null,
         "host": null,
@@ -218,8 +230,8 @@
       "direction": "output",
       "from": "scoping",
       "status": "produced",
-      "summary": "4 areas, 9 cited files",
-      "at": "2026-10-12T09:40:00.0000000Z",
+      "summary": "3 areas, 24 cited files",
+      "at": "2026-10-12T08:55:00.0000000Z",
       "by": "step.scope.draft",
       "ref": {
         "name": null,
@@ -242,8 +254,8 @@
       "direction": "output",
       "from": "design",
       "status": "produced",
-      "summary": "9 tasks in 4 workstreams, frozen",
-      "at": "2026-10-12T10:05:00.0000000Z",
+      "summary": "24 tasks, no workstreams, frozen",
+      "at": "2026-10-12T09:05:00.0000000Z",
       "by": "step.packet.freeze",
       "ref": {
         "name": null,
@@ -416,11 +428,11 @@
           "glyph": "active",
           "state": "checks",
           "chip": {
-            "word": "RUNNING",
-            "tone": "ok"
+            "word": "DECISION",
+            "tone": "attn"
           },
           "round": null,
-          "agent": "factory worker",
+          "agent": null,
           "ageSeconds": 1020,
           "engineOwned": null,
           "mirroredPark": null,
@@ -436,11 +448,11 @@
           "glyph": "active",
           "state": "checks",
           "chip": {
-            "word": "RUNNING",
-            "tone": "ok"
+            "word": "DECISION",
+            "tone": "attn"
           },
           "round": null,
-          "agent": "factory worker",
+          "agent": null,
           "ageSeconds": 1080,
           "engineOwned": null,
           "mirroredPark": null,
