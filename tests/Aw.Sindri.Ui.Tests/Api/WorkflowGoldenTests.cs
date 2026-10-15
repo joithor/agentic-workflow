@@ -100,8 +100,8 @@ public sealed class WorkflowGoldenTests
         Assert.True(status.IsSuccess, status.IsError ? status.Error.Message : string.Empty);
         var budget = status.Value.Budget!; // why: the golden has a budget
         Assert.Equal(200000, budget.Used);
-        Assert.Equal((long?)null, budget.Limit);
-        Assert.Equal((long?)null, budget.Instance.Limit);
+        Assert.Null(budget.Limit);
+        Assert.Null(budget.Instance.Limit);
     }
 
     [Fact]
