@@ -9,6 +9,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Shell;
 using Microsoft.Extensions.Time.Testing;
@@ -256,6 +257,8 @@ public sealed class CommandPaletteTests : IDisposable
         Press(window, Key.Enter, PhysicalKey.Enter);
 
         Assert.True(shell.Palette.IsOpen);
+        _clock.Advance(ControlViewModel.SendingAfter);   // G3: "Sending…" is said after 300 ms, as the control does
+        Settle(window);
         var entry = EntryButton(window, "Rebuild views");
         Assert.Equal(("Rebuild views, Sending…", false), (AutomationProperties.GetName(entry), entry.IsEnabled));
         Assert.True(entry.GetVisualDescendants().OfType<Control>().First(c => c.Classes.Contains("entry-spinner")).IsEffectivelyVisible);
