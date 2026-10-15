@@ -61,8 +61,8 @@ fi
 # rewrite. If the rewrite can't be built, allow the original unchanged (fail open).
 allow() {
   local msg="${1:-}" out=""
-  if [ -n "$msg" ] && [ -n "${INPUT:-}" ]; then
-    out="$(printf '%s' "$INPUT" | jq -ce --arg m "$msg" '(.tool_input | select(type == "object" and (.to // "") != "") | .message = $m) as $u | {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","updatedInput":$u}}' 2>/dev/null)" || out=""
+  if [ -n "$msg" ] && [ -n "${input:-}" ]; then
+    out="$(printf '%s' "$input" | jq -ce --arg m "$msg" '(.tool_input | select(type == "object" and (.to // "") != "") | .message = $m) as $u | {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","updatedInput":$u}}' 2>/dev/null)" || out=""
   fi
   if [ -n "$out" ]; then
     printf '%s\n' "$out"
@@ -77,21 +77,21 @@ deny() {
   exit 0
 }
 
-INPUT="$(cat 2>/dev/null || true)"
-[ -n "$INPUT" ] || { failopen empty-input; allow; }
+input="$(cat 2>/dev/null || true)"
+[ -n "$input" ] || { failopen empty-input; allow; }
 
-SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // "unknown"')"
-AGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.agent_type // empty')"
-MESSAGE="$(printf '%s' "$INPUT" | jq -r '.tool_input.message // empty')"
-TO="$(printf '%s' "$INPUT" | jq -r '.tool_input.to // empty' 2>/dev/null)"   # stderr silenced: an unparsable payload is already reported by the jq calls above
+SESSION_ID="$(printf '%s' "$input" | jq -r '.session_id // "unknown"')"
+AGENT_TYPE="$(printf '%s' "$input" | jq -r '.agent_type // empty')"
+MESSAGE="$(printf '%s' "$input" | jq -r '.tool_input.message // empty')"
+TO="$(printf '%s' "$input" | jq -r '.tool_input.to // empty' 2>/dev/null)"   # stderr silenced: an unparsable payload is already reported by the jq calls above
 # A control message carries no message and is not a failure; a plain
 # SendMessage without one means the payload shape changed.
-[ -n "$MESSAGE" ] || { failopen input "$INPUT" '.tool_name == "SendMessage" and ((.tool_input.type // "message") == "message")'; allow; }
+[ -n "$MESSAGE" ] || { failopen input "$input" '.tool_name == "SendMessage" and ((.tool_input.type // "message") == "message")'; allow; }
 
 # BLOCKER fix (Step 2, F6): a control message (shutdown_request,
 # shutdown_response, ...) is never routed through the classifier —
 # deterministic, checked before senderKind derivation or any judge call.
-TOOL_INPUT_TYPE="$(printf '%s' "$INPUT" | jq -r '.tool_input.type // "message"')"
+TOOL_INPUT_TYPE="$(printf '%s' "$input" | jq -r '.tool_input.type // "message"')"
 [ "$TOOL_INPUT_TYPE" = "message" ] || allow
 
 # senderKind (Probe gate item 4): agent_type absent -> main; agent_type found

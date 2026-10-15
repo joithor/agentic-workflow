@@ -97,7 +97,7 @@ bounded() {
 # run_case <name> <hook path inside the stage dir> <stdin> <expected> [VAR=value ...]
 # Env: CASE_PATH (default fake judge on PATH), LOCKS (default 1), WANT_RC,
 # NO_HOME=1 (HOME and AW_STATE_DIR unset), FIFO_LOG=1 (logs/failopen.log is a
-# FIFO), HOOK_ARGS (adapter argv), INJECT (a line inserted after INPUT=$(cat)
+# FIFO), HOOK_ARGS (adapter argv), INJECT (a line inserted after INPUT=$(cat) or input=$(cat)
 # in both copies of the hook).
 run_case() {
   local name="$1" hook="$2" input="$3" want="$4"; shift 4
@@ -106,7 +106,7 @@ run_case() {
   st="$(mktemp -d)"; t="$(mktemp -d)"
   if [ -n "${INJECT:-}" ]; then
     for d in "$cur" "$base"; do
-      sed -i.bak "/^INPUT=/a\\
+      sed -i.bak -E "/^(INPUT|input)=/a\\
 $INJECT
 " "$d/$hook"
     done
