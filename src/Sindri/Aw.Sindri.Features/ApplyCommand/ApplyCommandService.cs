@@ -15,10 +15,10 @@ using Aw.Sindri.Core.Workflow.Engine.Triggers;
 namespace Aw.Sindri.Features.ApplyCommand;
 
 /// <summary>
-/// 'workflow answer', 'command' and 'cancel' (engine spec rev 8 §5.2, §5.8, §6.2, §6.3). In order: resolve the address
+/// 'workflow answer', 'command', 'cancel', 'takeover' and 'handback' (engine spec rev 8 §5.2, §5.8, §6.2, §6.3). In order: resolve the address
 /// (a bare item is the root of its latest attempt, SND-WF-006 when ambiguous); check the arguments; claim the nonce for
 /// exactly this command (SND-WF-009 when it named another); redeem a protected answer's challenge (SND-WF-013); check
-/// the recipe's approval unless the trigger is exempt (cancel; SND-RECIPE-005, -006); send the Update with the nonce
+/// the recipe's approval unless the trigger is exempt (cancel, takeover, handback; SND-RECIPE-005, -006); send the Update with the nonce
 /// as its id. A repeat of a command its nonce already holds (applied, or pending after an unconfirmed send) skips the checks and resends the same Update id: Temporal returns the first outcome. The workflow's validator answers a trigger not allowed here or an answer that doesn't fit (SND-WF-003);
 /// a refusal gives back a nonce this call claimed, so a refused command consumes nothing. A command already applied with this nonce
 /// returns the first outcome, marked 'already applied'. Without a nonce one is issued (the IssueNonce stand-in).
@@ -151,6 +151,9 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
         { Kind: ApplyCommandKind.Answer, Answer: AnswerVariant.Text, Text: null or "" } => SindriErrors.InvalidInput.With("--text needs the answer's text (or --file <file>)"),
         { Kind: ApplyCommandKind.Answer, Answer: AnswerVariant.Grant or AnswerVariant.GrantTokens, Amount: null or < 1 } => SindriErrors.InvalidInput.With("--grant and --grant-tokens need a whole number from 1"),
         { Text.Length: > IFactStore.MaxBytes } => SindriErrors.InvalidInput.With("the answer's text is larger than 1 MiB (fix: answer with a smaller file)"),
+        { Kind: ApplyCommandKind.Cancel or ApplyCommandKind.Takeover or ApplyCommandKind.Handback } when request.Answer is not null || request.Text is not null
+            || request.Amount is not null || request.Verb is not null || request.Challenge is not null =>
+            SindriErrors.InvalidInput.With("cancel, takeover and handback take only the address and the nonce (fix: drop the answer, text, amount, verb and challenge fields)"),
         { Kind: ApplyCommandKind.Command, Verb: null } => SindriErrors.InvalidInput.With("a command needs its verb: sindri workflow command <address> <verb>"),
         _ => null,
     };
@@ -159,6 +162,8 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
     {
         ApplyCommandKind.Answer => new AnswerGiven(actor, stamp, request.Answer!.Value, request.Text, request.Amount, Forwarded: null), // why: Malformed refuses an answer with no variant
         ApplyCommandKind.Command => new CommandFired(actor, request.Verb!.Value, stamp), // why: Malformed refuses a command with no verb
+        ApplyCommandKind.Takeover => new TakeoverRequested(actor, stamp),
+        ApplyCommandKind.Handback => new HandbackRequested(actor, stamp),
         ApplyCommandKind.Cancel or _ => new CancelRequested(actor, CancelOrigin.Command, stamp, Sequence: null, Parent: null),
     };
 

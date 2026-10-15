@@ -1,10 +1,11 @@
 namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 /// <summary>
-/// Reserved for P5 (UI spec E-6, X18): an 'item.open-requested', an Update the engine sends itself wherever a takeover is
-/// allowed (§5.2), keyed 'wf:{instance}:open:{launch}'. It is a trigger, not a command (no nonce), exempt from the approval
-/// check like a takeover, with actor 'service:engine' and the request event as its causation; a no-op when the
-/// instance is already taken over.
+/// An 'item.open-requested' (UI spec E-6, X18): an Update the engine sends itself wherever a takeover is allowed (§5.2),
+/// keyed 'wf:{instance}:open:{launch}'. The contract: the actor is 'service:engine' (any other is SND-WF-003) and the launch
+/// is a <see cref="LaunchId"/> (a malformed one is SND-WF-003 too); it is a trigger, not a command, so it has no nonce; it
+/// is exempt from the approval check like a takeover; the request event is its causation; and it is absorbed (nothing
+/// recorded) when the instance is already taken over.
 /// </summary>
 /// <param name="Actor">'service:engine'.</param>
 /// <param name="Launch">The launch request's id ('LCH-…').</param>

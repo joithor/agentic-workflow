@@ -94,7 +94,7 @@ internal static class TemporalUpdates
     /// <summary>
     /// What an Update that ran out of <see cref="Patience"/> means: a Temporal that doesn't answer a health check (the dev
     /// server under serve died: the client core was still retrying Unavailable) is SND-API-001, else no worker took it
-    /// (<see cref="NoWorker"/>).
+    /// (<see cref="NoWorker(InstanceAddress, CommandNonce)"/>).
     /// </summary>
     /// <param name="client">The client.</param>
     /// <param name="address">The instance.</param>
@@ -125,6 +125,31 @@ internal static class TemporalUpdates
         }
     }
 
+    /// <summary><see cref="NoAnswer(ITemporalClient, InstanceAddress, CommandNonce, CancellationToken)"/> for an Update id that may be the engine's own ('wf:{instance}:open:{launch}') and no nonce.</summary>
+    /// <param name="client">The client.</param>
+    /// <param name="address">The instance.</param>
+    /// <param name="updateId">The Update's id.</param>
+    /// <param name="cancellationToken">The caller's token.</param>
+    /// <returns>The error.</returns>
+    internal static ValueTask<Error> NoAnswer(ITemporalClient client, InstanceAddress address, string updateId, CancellationToken cancellationToken) =>
+        CommandNonce.TryFrom(updateId, out var nonce)
+            ? NoAnswer(client, address, nonce, cancellationToken)
+            : NoAnswerEngine(client, address, updateId, cancellationToken);
+
+    private static async ValueTask<Error> NoAnswerEngine(ITemporalClient client, InstanceAddress address, string updateId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await client.Connection.CheckHealthAsync(options: new RpcOptions { Timeout = TimeSpan.FromSeconds(2), CancellationToken = cancellationToken }).ConfigureAwait(false)
+                ? NoWorker(address, updateId)
+                : Down(client, "its health check failed", nonce: null);
+        }
+        catch (RpcException e) // boundary: the probe says the frontend is gone
+        {
+            return Down(client, e);
+        }
+    }
+
     /// <summary>SND-API-002 for an Update no worker took in <see cref="Patience"/>; it may still apply once one runs.</summary>
     /// <param name="address">The instance.</param>
     /// <param name="nonce">The Update's id, for the retry.</param>
@@ -132,4 +157,12 @@ internal static class TemporalUpdates
     internal static Error NoWorker(InstanceAddress address, CommandNonce nonce) =>
         SindriErrors.ApiTimeout.With($"no worker took the command for {address.Value} within {Patience.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s; it may still apply once one runs "
             + $"(fix: start sindri serve, which runs the worker, then run the same command again with --nonce {nonce.Value})");
+
+    /// <summary>SND-API-002 for the engine's own Update (an 'open-request') no worker took in <see cref="Patience"/>.</summary>
+    /// <param name="address">The instance.</param>
+    /// <param name="updateId">The Update's id ('wf:{instance}:open:{launch}'): a repeat with it applies once.</param>
+    /// <returns>The error.</returns>
+    internal static Error NoWorker(InstanceAddress address, string updateId) =>
+        SindriErrors.ApiTimeout.With($"no worker took {updateId} for {address.Value} within {Patience.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s; it may still apply once one runs "
+            + "(fix: start sindri serve, which runs the worker; sending it again applies it once)");
 }

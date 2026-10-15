@@ -74,7 +74,7 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
     internal async Task<LedgerAppend> Record(WorkflowEventRecord record, string key, string activityId, CancellationToken cancellationToken)
     {
         var grant = lease.Current ?? throw new InvalidOperationException("SND-LEASE-002: this process holds no lease; the event waits for one");
-        var payload = new WorkflowEventPayload(record.WorkflowId, record.From, record.To, record.Trigger, record.Outcome, record.Run, record.Detail);
+        var payload = new WorkflowEventPayload(record.WorkflowId, record.From, record.To, record.Trigger, record.Outcome, record.Run, record.Detail) { Causation = record.Causation };
         var own = events.Scope;
         var scope = new EventScope(record.Actor ?? own.Actor, record.Tenant ?? own.Tenant, record.Ring ?? own.Ring);
         var entry = Scrubbed(events.Entry(record.Type, payload, key, record.Item, scope) with { TemporalEvent = activityId }, record, payload, scope, key);   // the key's third part (UI E-30)
@@ -99,34 +99,36 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
     private LedgerEntry Scrubbed(LedgerEntry entry, WorkflowEventRecord record, WorkflowEventPayload payload, EventScope scope, string key)
     {
         var scrubber = redactor ?? Redactor.Default;
-        if (Scrub(scrubber, entry.Envelope.Payload) is { } text)
+        var (text, why) = Scrub(scrubber, entry.Envelope.Payload);
+        if (text is not null)
         {
             return entry with { Envelope = entry.Envelope with { Payload = text } };
         }
 
+        DetailDropped(logger ?? NullLogger<RecordEventActivities>.Instance, key, why);   // the code or 'not json', never the text
         var bare = events.Entry(record.Type, payload with { Detail = null }, key, record.Item, scope) with { TemporalEvent = entry.TemporalEvent };
-        return Scrub(scrubber, bare.Envelope.Payload) is { } kept
+        return Scrub(scrubber, bare.Envelope.Payload).Text is { } kept
             ? bare with { Envelope = bare.Envelope with { Payload = kept } }
             : throw new InvalidOperationException($"the payload of {key} can't be scrubbed (a pattern timed out); the activity retries");
     }
 
-    /// <summary>The scrubbed text when it is still JSON, else null.</summary>
-    private static string? Scrub(IRedactor scrubber, string payload)
+    /// <summary>The scrubbed text when it is still JSON; else no text and why (the block code, or 'not json').</summary>
+    private static (string? Text, string Why) Scrub(IRedactor scrubber, string payload)
     {
         var result = scrubber.Scrub(payload);
         if (result.IsBlocked)
         {
-            return null;
+            return (null, result.BlockCode ?? "blocked");
         }
 
         try
         {
             using var _ = JsonDocument.Parse(result.Text);
-            return result.Text;
+            return (result.Text, string.Empty);
         }
         catch (JsonException) // boundary: a placeholder that swallowed a quote; the caller stores the payload without its detail
         {
-            return null;
+            return (null, "not json");
         }
     }
 
@@ -157,6 +159,9 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
     /// <summary>The first 12 hex digits of SHA-256 over exactly what <see cref="Differs"/> compares: the type and the serialized payload.</summary>
     private static string ContentHash(LedgerEntry entry) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(entry.Envelope.Type + "\n" + entry.Envelope.Payload)))[..12];
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "RecordEvent under {Key} dropped the event's detail (scrub: {Why}); the row is stored without it")]
+    private static partial void DetailDropped(ILogger logger, string key, string why);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "RecordEvent replay under {Key} mirrors a different event than the ledger holds ({Stored} there, {Replayed} now); recording it under a content-hash key")]
     private static partial void ReplayDiffers(ILogger logger, string key, string stored, string replayed);

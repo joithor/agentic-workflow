@@ -69,18 +69,38 @@ internal sealed class WorkflowsHarness : IDisposable
             new RpcOptions { Timeout = TimeSpan.FromMinutes(3), CancellationToken = cancellationToken });
     }
 
-    /// <summary>The 'temporal' dev server pinned in binaries.lock, with Sindri's namespace (or <paramref name="namespace"/>) and search attributes.</summary>
-    public static Task<WorkflowEnvironment> StartDevServer(string @namespace = TemporalSettings.DefaultNamespace, CancellationToken ct = default) =>
-        WorkflowEnvironment.StartLocalAsync(new WorkflowEnvironmentStartLocalOptions
+    /// <summary>
+    /// The 'temporal' dev server pinned in binaries.lock, with Sindri's namespace (or <paramref name="namespace"/>) and search attributes.
+    /// The SDK picks the server's port (bind 0, read, release) and the server then binds it, so a parallel test can take it in between
+    /// ("bind: address already in use"); that start is tried again, three times at most.
+    /// </summary>
+    public static async Task<WorkflowEnvironment> StartDevServer(string @namespace = TemporalSettings.DefaultNamespace, CancellationToken ct = default)
+    {
+        const int Attempts = 3;
+        for (var attempt = 1; ; attempt++)
         {
-            Namespace = @namespace,
-            UI = false,
-            DevServerOptions = new DevServerOptions
+            try
             {
-                ExistingPath = PinnedTemporal.Path(),
-                ExtraArgs = [.. SindriTemporal.SearchAttributes.SelectMany(static a => new[] { "--search-attribute", $"{a.Name}={a.Type}" })],
-            },
-        }).WaitAsync(TimeSpan.FromSeconds(120), ct);   // a dev server that never comes up fails the test instead of hanging the lane
+                return await WorkflowEnvironment.StartLocalAsync(new WorkflowEnvironmentStartLocalOptions
+                {
+                    Namespace = @namespace,
+                    UI = false,
+                    DevServerOptions = new DevServerOptions
+                    {
+                        ExistingPath = PinnedTemporal.Path(),
+                        ExtraArgs = [.. SindriTemporal.SearchAttributes.SelectMany(static a => new[] { "--search-attribute", $"{a.Name}={a.Type}" })],
+                    },
+                }).WaitAsync(TimeSpan.FromSeconds(120), ct);   // a dev server that never comes up fails the test instead of hanging the lane
+            }
+            catch (Exception e) when (attempt < Attempts && !ct.IsCancellationRequested && e is not TimeoutException && IsPortTaken(e))
+            {
+                await Console.Error.WriteLineAsync(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"dev server start {attempt} of {Attempts} lost its port ({e.Message.ReplaceLineEndings(" ")}); starting again"));
+            }
+        }
+    }
+
+    private static bool IsPortTaken(Exception e) =>
+        e.ToString().Contains("address already in use", StringComparison.OrdinalIgnoreCase);
 
     public static string Target(WorkflowEnvironment env) => env.Client.Connection.Options.TargetHost!;
 
