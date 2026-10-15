@@ -78,74 +78,117 @@ internal sealed partial class FakeSindriApi
         TimelinePages.TryGetValue(after, out var page) ? page
             : new RouteAnswer(System.Net.HttpStatusCode.OK, """{"entries":[],"next":null,"asOf":{"cursor":57,"ledgerHead":57,"projectedAt":null,"rebuilding":false,"stalled":false}}""");
 
-    public async Task<Result<QueueView>> Queue(Uri api, CancellationToken cancellationToken)
+    public Task<Result<QueueView>> Queue(Uri api, CancellationToken cancellationToken) => Queue(api, sequence: null, cancellationToken);
+
+    /// <summary>A queue read that carries <paramref name="sequence"/> as X-Sindri-After (see <see cref="Status(Uri, long?, CancellationToken)"/>).</summary>
+    /// <param name="api">The API.</param>
+    /// <param name="sequence">The sequence the request carried, or null for a direct call.</param>
+    /// <param name="cancellationToken">Cancels the wait.</param>
+    /// <returns>The answer.</returns>
+    internal Task<Result<QueueView>> Queue(Uri api, long? sequence, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _queueCalls);
-        if (QueueGate is { } gate)
-        {
-            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        return Answer<QueueView>(api, "/sindri/queue", QueueView);
+        return View<QueueView>(api, "/sindri/queue", QueueView, sequence, QueueGate, cancellationToken);
     }
 
-    public async Task<Result<ItemView>> Item(Uri api, string itemId, CancellationToken cancellationToken)
+    public Task<Result<ItemView>> Item(Uri api, string itemId, CancellationToken cancellationToken) => Item(api, itemId, sequence: null, cancellationToken);
+
+    /// <summary>An item read that carries <paramref name="sequence"/> as X-Sindri-After.</summary>
+    /// <param name="api">The API.</param>
+    /// <param name="itemId">The item.</param>
+    /// <param name="sequence">The sequence the request carried, or null for a direct call.</param>
+    /// <param name="cancellationToken">Cancels the wait.</param>
+    /// <returns>The answer.</returns>
+    internal Task<Result<ItemView>> Item(Uri api, string itemId, long? sequence, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _itemCalls);
-        var answer = ItemAnswer(itemId);
-        if (ItemGates.TryGetValue(itemId, out var gate))
-        {
-            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        return Answer<ItemView>(api, "/sindri/items/{id}", answer);
+        return View<ItemView>(api, "/sindri/items/{id}", ItemAnswer(itemId), sequence, ItemGates.GetValueOrDefault(itemId), cancellationToken);
     }
 
-    public async Task<Result<TimelineView>> Timeline(Uri api, string itemId, long after, CancellationToken cancellationToken)
+    public Task<Result<TimelineView>> Timeline(Uri api, string itemId, long after, CancellationToken cancellationToken) =>
+        Timeline(api, after, sequence: null, cancellationToken);
+
+    /// <summary>A timeline read that carries <paramref name="sequence"/> as X-Sindri-After.</summary>
+    /// <param name="api">The API.</param>
+    /// <param name="after">The timeline cursor.</param>
+    /// <param name="sequence">The sequence the request carried, or null for a direct call.</param>
+    /// <param name="cancellationToken">Cancels the wait.</param>
+    /// <returns>The answer.</returns>
+    internal Task<Result<TimelineView>> Timeline(Uri api, long after, long? sequence, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _timelineCalls);
-        var answer = TimelineAnswer(after);
-        if (TimelineGates.TryGetValue(after, out var gate))
-        {
-            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        return Answer<TimelineView>(api, "/sindri/items/{id}/timeline", answer);
+        return View<TimelineView>(api, "/sindri/items/{id}/timeline", TimelineAnswer(after), sequence, TimelineGates.GetValueOrDefault(after), cancellationToken);
     }
 
     public async Task<Result<ItemCreatedView>> CreateItem(Uri api, CreateItemRequest request, CancellationToken cancellationToken)
     {
+        if (NotReceived<ItemCreatedView>(api) is { } unanswered)
+        {
+            return unanswered;
+        }
+
         lock (_gate)
         {
             _created.Add(request);
         }
 
-        if (CommandGate is { } gate)
+        await WaitFor(CommandGate, cancellationToken).ConfigureAwait(false);
+        var created = Answer<ItemCreatedView>(api, "/sindri/items", Create);
+        if (created.IsSuccess)
         {
-            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            _ = Interlocked.Exchange(ref _pending, created.Value.Accepted.Sequence);
         }
 
-        return Answer<ItemCreatedView>(api, "/sindri/items", Create);
+        return created;
     }
 
     public async Task<Result<CommandAcceptedView>> CloseItem(Uri api, string itemId, CloseItemRequest request, CancellationToken cancellationToken)
     {
+        if (NotReceived<CommandAcceptedView>(api) is { } unanswered)
+        {
+            return unanswered;
+        }
+
         lock (_gate)
         {
             _closed.Add((itemId, request));
         }
 
-        if (CommandGate is { } gate)
-        {
-            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
-        }
-
+        await WaitFor(CommandGate, cancellationToken).ConfigureAwait(false);
         var answer = Answer<CommandAcceptedView>(api, "/sindri/items/{id}/close", Close);
         if (answer.IsSuccess)
         {
+            _ = Interlocked.Exchange(ref _pending, answer.Value.Sequence);
             OnClosed?.Invoke(itemId, request);
         }
 
         return answer;
+    }
+
+    // The server's order, as for status: nothing answers, then the caller check; a command that never got there is not recorded.
+    private Result<T>? NotReceived<T>(Uri api)
+    {
+        if (Down)
+        {
+            return Unreachable<T>(api);
+        }
+
+        return Refusal is { } refusal ? Refused<T>(refusal) : null;
+    }
+
+    // A view read: the sequence is used once, whatever the answer is; the views lag only for a read that carried one.
+    private async Task<Result<T>> View<T>(Uri api, string path, RouteAnswer answer, long? sequence, TaskCompletionSource? gate, CancellationToken cancellationToken)
+    {
+        var carried = Carried(sequence, unreachable: Down);
+        await WaitFor(gate, cancellationToken).ConfigureAwait(false);
+        return !Down && Refusal is null && carried > 0 && Lag != ViewsLag.None ? Behind(carried) : Answer<T>(api, path, answer);
+    }
+
+    private static async Task WaitFor(TaskCompletionSource? gate, CancellationToken cancellationToken)
+    {
+        if (gate is not null)
+        {
+            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 }

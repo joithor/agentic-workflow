@@ -75,10 +75,10 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/commands" => Answer(Counted(await server.Commands(uri, cancellationToken), server.Catalog)),
             "/sindri/services" => Answer(Counted(await server.Services(uri, after), server.ServiceView)),
             "/sindri/views/rebuild" when request.Method == HttpMethod.Post => Answer(Counted(await server.RebuildViews(uri, cancellationToken), server.Rebuild)),
-            "/sindri/queue" => Answer(Counted(await server.Queue(uri, cancellationToken), server.QueueView)),
+            "/sindri/queue" => Answer(Counted(await server.Queue(uri, after, cancellationToken), server.QueueView)),
             "/sindri/items" when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.CreateItem(uri, await Body<CreateItemRequest>(request, cancellationToken), cancellationToken), server.Create)),
-            var path when path.StartsWith("/sindri/items/", StringComparison.Ordinal) => await Item(request, path["/sindri/items/".Length..], cancellationToken),
+            var path when path.StartsWith("/sindri/items/", StringComparison.Ordinal) => await Item(request, path["/sindri/items/".Length..], after, cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
     }
@@ -104,14 +104,14 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     }
 
     // /sindri/items/{id}, /sindri/items/{id}/timeline and POST /sindri/items/{id}/close (API P3).
-    private async Task<HttpResponseMessage> Item(HttpRequestMessage request, string rest, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> Item(HttpRequestMessage request, string rest, long sequence, CancellationToken cancellationToken)
     {
         var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
         var parts = rest.Split('/');
         return parts switch
         {
-            [var id] => Answer(Counted(await server.Item(uri, id, cancellationToken), server.ItemAnswer(id))),
-            [var id, "timeline"] => Answer(Counted(await server.Timeline(uri, id, After(uri), cancellationToken), server.TimelineAnswer(After(uri)))),
+            [var id] => Answer(Counted(await server.Item(uri, id, sequence, cancellationToken), server.ItemAnswer(id))),
+            [_, "timeline"] => Answer(Counted(await server.Timeline(uri, After(uri), sequence, cancellationToken), server.TimelineAnswer(After(uri)))),
             [var id, "close"] when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.CloseItem(uri, id, await Body<CloseItemRequest>(request, cancellationToken), cancellationToken), server.Close)),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
