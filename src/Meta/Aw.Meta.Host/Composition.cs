@@ -1,6 +1,6 @@
 using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
-using Aw.Meta.Core;
+using Aw.Meta.Core.Registration;
 using Aw.Meta.Features;
 using Aw.Meta.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;

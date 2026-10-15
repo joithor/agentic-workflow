@@ -1,7 +1,7 @@
 using Aw.Meta.Core.Coordination;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Aw.Meta.Core;
+namespace Aw.Meta.Core.Registration;
 
 /// <summary>Registers Aw.Meta.Core's types.</summary>
 public static class MetaCoreServiceCollectionExtensions

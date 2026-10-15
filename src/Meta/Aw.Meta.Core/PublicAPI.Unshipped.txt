@@ -773,8 +773,8 @@ static Aw.Meta.Core.Messages.TranscriptChunk.operator !=(Aw.Meta.Core.Messages.T
 static Aw.Meta.Core.Messages.TranscriptChunk.operator ==(Aw.Meta.Core.Messages.TranscriptChunk? left, Aw.Meta.Core.Messages.TranscriptChunk? right) -> bool
 Aw.Meta.Core.Messages.TranscriptRecordParser
 static Aw.Meta.Core.Messages.TranscriptRecordParser.Parse(string! line, System.DateTimeOffset fallbackAt) -> Aw.Meta.Core.Messages.PeerMessage?
-Aw.Meta.Core.MetaCoreServiceCollectionExtensions
-static Aw.Meta.Core.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Aw.Meta.Core.Registration.MetaCoreServiceCollectionExtensions
+static Aw.Meta.Core.Registration.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 Aw.Meta.Core.MetaErrors
 static Aw.Meta.Core.MetaErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 Aw.Meta.Core.MetaPaths
