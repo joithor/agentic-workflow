@@ -233,9 +233,13 @@
               <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button x:Name="SheetBack" Classes="back" Content="{Binding Text.Back}" Click="OnCloseSheet"
                         AutomationProperties.Name="{Binding Text.Back}" Margin="0,0,12,0" />
-                <TextBlock x:Name="SheetTitle" Grid.Column="1" Classes="detail-title mono" Focusable="True"
-                           Text="{Binding SheetSubject}" AutomationProperties.Name="{Binding SheetName}"
-                           VerticalAlignment="Center" />
+                <!-- The focus target is a Text-typed wrapper named for the kind and subject ("Workflow WFI-1"); the visible subject inside it is Raw, as ChordHint's key is (a TextBlock's peer reads its Text and ignores a Name). -->
+                <Border x:Name="SheetTitle" Grid.Column="1" Focusable="True" VerticalAlignment="Center"
+                        AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text"
+                        AutomationProperties.Name="{Binding SheetName}">
+                  <TextBlock x:Name="SheetSubjectText" Classes="detail-title mono" Text="{Binding SheetSubject}"
+                             AutomationProperties.AccessibilityView="Raw" />
+                </Border>
                 <Button x:Name="SheetClose" Grid.Column="2" Click="OnCloseSheet" Margin="12,0,0,0"
                         AutomationProperties.Name="{Binding Text.CloseSheet}">
                   <StackPanel Orientation="Horizontal" Spacing="6">

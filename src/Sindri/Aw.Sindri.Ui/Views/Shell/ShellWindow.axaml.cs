@@ -246,7 +246,7 @@ internal sealed partial class ShellWindow : Window
     {
         if (Shell is { IsSheetShown: true } && (Covering || !HasUsableFocus))
         {
-            _ = this.Get<TextBlock>("SheetTitle").Focus(Method());
+            _ = this.Get<Border>("SheetTitle").Focus(Method());
         }
     }
 

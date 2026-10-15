@@ -203,7 +203,7 @@ public sealed class ShellWindowTests : IDisposable
         shell.Navigate(link);
         Settle(window);
 
-        var title = window.Get<TextBlock>("SheetTitle");
+        var title = window.Get<TextBlock>("SheetSubjectText");
         Assert.Equal(18, title.FontSize);
         Assert.Equal(FontWeight.Medium, title.FontWeight);
         Assert.Contains("JetBrains Mono", title.FontFamily.ToString(), StringComparison.Ordinal);
@@ -1181,7 +1181,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.DoesNotContain("covers", sheet.Classes, StringComparer.Ordinal);
         Assert.False(tab.IsEffectivelyVisible);
         Assert.True(Focused(window) is Visual focused && sheet.IsVisualAncestorOf(focused), $"focus is on {(Focused(window) as Control)?.Name ?? Focused(window)?.GetType().Name ?? "nothing"}, not in the sheet");
-        Assert.Same(window.Get<TextBlock>("SheetTitle"), Focused(window));
+        Assert.Same(window.Get<Border>("SheetTitle"), Focused(window));
     });
 
     // Review run 4 (accessibility-tester-1; WCAG 2.4.3): narrowing the window below 1100 px while the sheet is open makes
@@ -1315,7 +1315,7 @@ public sealed class ShellWindowTests : IDisposable
         shell.Navigate(link);
         Settle(window);
         Assert.True(Visible(window, "Sheet"));
-        Assert.Equal("ITM-01JC8", Text(window, "SheetTitle"));
+        Assert.Equal("ITM-01JC8", Text(window, "SheetSubjectText"));
         Assert.Equal(UiPreferences.DefaultSheetWidth, window.Get<Border>("Sheet").Bounds.Width);
         Frame(window, "sheet");
 
@@ -1823,7 +1823,7 @@ public sealed class ShellWindowTests : IDisposable
     {
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
-        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        Assert.True(DeepLink.TryParse("workflow/WFI-1", out var link));
         shell.Navigate(link);
         Settle(window);
         var title = window.Get<Border>("SheetTitle");
@@ -1832,8 +1832,8 @@ public sealed class ShellWindowTests : IDisposable
 
         Assert.True(peer.IsControlElement());
         Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Text, peer.GetAutomationControlType());
-        Assert.Equal(shell.SheetName, peer.GetName());
-        Assert.NotEqual(shell.SheetSubject, peer.GetName());
+        Assert.Equal("Workflow WFI-1", peer.GetName());
+        Assert.NotEqual(shell.SheetSubject, peer.GetName(), StringComparer.Ordinal);
         Assert.Equal(shell.SheetSubject, title.GetVisualDescendants().OfType<TextBlock>().Single().Text);
     });
 }

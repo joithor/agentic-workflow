@@ -60,7 +60,7 @@ internal sealed partial class ShellWindow
     // region, or the sheet's heading while the sheet covers the page.
     private Control? Neighbour(Control last)
     {
-        var page = Usable(this.Get<Control>("Page")) ?? (Covering ? Usable(this.Get<TextBlock>("SheetTitle")) : null);
+        var page = Usable(this.Get<Control>("Page")) ?? (Covering ? Usable(this.Get<Border>("SheetTitle")) : null);
         if (SheetPanel == last || SheetPanel.IsVisualAncestorOf(last))
         {
             return Usable(_sheetOpener) ?? page;
