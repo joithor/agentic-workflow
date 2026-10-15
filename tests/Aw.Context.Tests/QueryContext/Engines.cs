@@ -7,6 +7,7 @@ using Aw.Context.Features.CheckMap;
 using Aw.Context.Features.CheckRetention;
 using Aw.Context.Features.ExportMap;
 using Aw.Context.Features.FindPath;
+using Aw.Context.Core.Map;
 using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.ImportMap;
@@ -34,9 +35,10 @@ internal static class Engines
         var scrubbers = new FakeScrubberFactory();
         var docs = index ?? new FakeDocIndex(clock);
         var store = new FakeGraphStore();
-        return new ContextEngine(new QueryContextService(catalog, scrubbers, new SequentialIdGenerator(), clock),
+        var graphs = new MapReader(store);
+        return new ContextEngine(new QueryContextService(catalog, scrubbers, new SequentialIdGenerator(), clock, graphs),
             new SourcesStatusService(docs, catalog, scrubbers, clock), new RefreshDocsService(docs, scrubbers), scrubbers, Map(clock, store),
-            new ContextGraph(new ShowNodeService(), new ListNeighborsService(), new FindPathService()));
+            new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers)));
     }
 
     /// <summary>The map part over its fakes (S-3a); the query tests never touch it.</summary>

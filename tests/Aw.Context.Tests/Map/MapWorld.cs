@@ -36,6 +36,7 @@ internal sealed class MapWorld : IDisposable
             .AddSingleton<IMapFileReader>(Reader)
             .AddSingleton<IScrubberFactory>(new FakeScrubberFactory())
             .AddSingleton<ISourceCatalog>(Sources)
+            .AddSingleton<IDocIndex>(new FakeDocIndex(Clock))
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
             .AddContextFeatures()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = true });

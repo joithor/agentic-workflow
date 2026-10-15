@@ -21,8 +21,9 @@ public sealed class GraphQueryTests : IDisposable
 
         var result = (await _world.Engine.Query(new ContextQuery(Text: null, Node: Orientation), MapWorld.Human, MapWorld.None)).Value;
 
-        Assert.Equal(([Orientation], "v1"), (result.Anchors, result.MapVersion));
-        Assert.Equal([Orientation, "surface:command/toggle-orientation", "action:split-pane.toggle-orientation"],
+        Assert.Equal([Orientation], result.Anchors, StringComparer.Ordinal);
+        Assert.Equal("v1", result.MapVersion);
+        Assert.Equal([Orientation, "action:split-pane.toggle-orientation", "surface:command/toggle-orientation"],
             Section(result, "graph").Items.Select(i => i.Node), StringComparer.Ordinal);
         var affects = Assert.Single(Section(result, "affects").Items);
         Assert.Equal(("feature:tabs.tab-manager", 1, "Tabs"), (affects.Node, affects.Depth, affects.Title));
@@ -38,9 +39,10 @@ public sealed class GraphQueryTests : IDisposable
 
         var result = (await _world.Engine.Query(new ContextQuery(Text: null, Node: Orientation), MapWorld.Human, MapWorld.None)).Value;
 
-        foreach (var item in result.Sections.Where(s => s.Name != "records").SelectMany(s => s.Items))
+        foreach (var (section, item) in result.Sections.Where(s => s.Name != "records").SelectMany(s => s.Items.Select(i => (s.Name, i))))
         {
-            Assert.Equal((Provenance.Human, true, Trust.Trusted), (item.Provenance, item.Confirmed, item.Trust));
+            var expected = section == "code" ? (Provenance.Deterministic, false, Trust.Trusted) : (Provenance.Human, true, Trust.Trusted);   // the fixture's implements edges are deterministic
+            Assert.Equal(expected, (item.Provenance, item.Confirmed, item.Trust));
             var cite = result.Cites[Assert.Single(item.Cites)];
             Assert.Equal(("map:aw-split-panes/v1", "v1"), (cite.Key.Value, cite.Refs.Single().Version.Value));
         }

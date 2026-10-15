@@ -412,6 +412,10 @@ Aw.Context.Core.Graph.TextAnchors.Suggested.get -> System.Collections.Generic.IR
 Aw.Context.Core.Graph.TextAnchors.Suggested.init -> void
 Aw.Context.Core.Graph.TextAnchors.TextAnchors(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Anchors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Suggested) -> void
 Aw.Context.Core.Map.IGraphStore.Snapshot(bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapSnapshot?>!>
+Aw.Context.Core.Map.MapReader
+Aw.Context.Core.Map.MapReader.MapReader(Aw.Context.Core.Map.IGraphStore! store) -> void
+Aw.Context.Core.Map.MapReader.Open(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Trust.IScrubberFactory! scrubbers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Context.Core.Map.VisibleMap! Map, Aw.Context.Core.Trust.MapText! Text)>!>
+Aw.Context.Core.Map.MapReader.Read(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
 Aw.Context.Core.Map.MapSnapshot
 Aw.Context.Core.Map.MapSnapshot.<Clone>$() -> Aw.Context.Core.Map.MapSnapshot!
 Aw.Context.Core.Map.MapSnapshot.Deconstruct(out Aw.Context.Core.Map.MapVersion! Version, out Aw.Context.Core.Graph.GraphSnapshot! Graph, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides) -> void
@@ -424,6 +428,15 @@ Aw.Context.Core.Map.MapSnapshot.Overrides.get -> System.Collections.Generic.IRea
 Aw.Context.Core.Map.MapSnapshot.Overrides.init -> void
 Aw.Context.Core.Map.MapSnapshot.Version.get -> Aw.Context.Core.Map.MapVersion!
 Aw.Context.Core.Map.MapSnapshot.Version.init -> void
+Aw.Context.Core.Map.VisibleMap
+Aw.Context.Core.Map.VisibleMap.<Clone>$() -> Aw.Context.Core.Map.VisibleMap!
+Aw.Context.Core.Map.VisibleMap.Deconstruct(out Aw.Context.Core.Map.MapSnapshot! Snapshot, out Aw.Context.Core.Graph.GraphSnapshot! Graph) -> void
+Aw.Context.Core.Map.VisibleMap.Equals(Aw.Context.Core.Map.VisibleMap? other) -> bool
+Aw.Context.Core.Map.VisibleMap.Graph.get -> Aw.Context.Core.Graph.GraphSnapshot!
+Aw.Context.Core.Map.VisibleMap.Graph.init -> void
+Aw.Context.Core.Map.VisibleMap.Snapshot.get -> Aw.Context.Core.Map.MapSnapshot!
+Aw.Context.Core.Map.VisibleMap.Snapshot.init -> void
+Aw.Context.Core.Map.VisibleMap.VisibleMap(Aw.Context.Core.Map.MapSnapshot! Snapshot, Aw.Context.Core.Graph.GraphSnapshot! Graph) -> void
 Aw.Context.Core.Models.IModelPort
 Aw.Context.Core.Models.IModelPort.Ask(Aw.Context.Core.Models.ModelRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Models.ModelAnswer!>!>
 Aw.Context.Core.Models.ModelAnswer
@@ -883,6 +896,12 @@ Aw.Context.Core.Trust.IEgressScrubber
 Aw.Context.Core.Trust.IEgressScrubber.Scrub(string! value) -> Aw.Context.Core.Trust.ScrubbedField!
 Aw.Context.Core.Trust.IIngestFilter
 Aw.Context.Core.Trust.IIngestFilter.Clean(string! raw, bool singleLine) -> Aw.Context.Core.Trust.ScrubbedField!
+Aw.Context.Core.Trust.MapText
+Aw.Context.Core.Trust.MapText.Body(string! text, Aw.Context.Core.Results.Trust trust) -> string!
+Aw.Context.Core.Trust.MapText.Fact(Aw.Context.Core.Graph.GraphNode! node) -> Aw.Context.Core.Graph.NodeFact!
+Aw.Context.Core.Trust.MapText.Label(string! label, Aw.Context.Core.Results.Trust trust) -> string!
+Aw.Context.Core.Trust.MapText.Line(string! line) -> string!
+Aw.Context.Core.Trust.MapText.MapText(Aw.Context.Core.Trust.Scrubbers! scrubbers) -> void
 Aw.Context.Core.Trust.ScrubbedField
 Aw.Context.Core.Trust.ScrubbedField.<Clone>$() -> Aw.Context.Core.Trust.ScrubbedField!
 Aw.Context.Core.Trust.ScrubbedField.Blocked.get -> bool
@@ -979,6 +998,7 @@ override Aw.Context.Core.Graph.PathStep.ToString() -> string!
 override Aw.Context.Core.Graph.TextAnchors.Equals(object? obj) -> bool
 override Aw.Context.Core.Graph.TextAnchors.GetHashCode() -> int
 override Aw.Context.Core.Graph.TextAnchors.ToString() -> string!
+override Aw.Context.Core.Map.VisibleMap.ToString() -> string!
 override Aw.Context.Core.Models.ModelAnswer.Equals(object? obj) -> bool
 override Aw.Context.Core.Models.ModelAnswer.GetHashCode() -> int
 override Aw.Context.Core.Models.ModelAnswer.ToString() -> string!
@@ -1819,6 +1839,8 @@ override Aw.Context.Core.Map.MapVersion.ToString() -> string!
 override Aw.Context.Core.Map.PurgeReport.Equals(object? obj) -> bool
 override Aw.Context.Core.Map.PurgeReport.GetHashCode() -> int
 override Aw.Context.Core.Map.PurgeReport.ToString() -> string!
+override Aw.Context.Core.Map.VisibleMap.Equals(object? obj) -> bool
+override Aw.Context.Core.Map.VisibleMap.GetHashCode() -> int
 override Aw.Context.Core.Overrides.AppliedMap.Equals(object? obj) -> bool
 override Aw.Context.Core.Overrides.AppliedMap.GetHashCode() -> int
 override Aw.Context.Core.Overrides.AppliedMap.ToString() -> string!
@@ -1955,6 +1977,8 @@ static Aw.Context.Core.Map.MapVersion.operator !=(Aw.Context.Core.Map.MapVersion
 static Aw.Context.Core.Map.MapVersion.operator ==(Aw.Context.Core.Map.MapVersion? left, Aw.Context.Core.Map.MapVersion? right) -> bool
 static Aw.Context.Core.Map.PurgeReport.operator !=(Aw.Context.Core.Map.PurgeReport? left, Aw.Context.Core.Map.PurgeReport? right) -> bool
 static Aw.Context.Core.Map.PurgeReport.operator ==(Aw.Context.Core.Map.PurgeReport? left, Aw.Context.Core.Map.PurgeReport? right) -> bool
+static Aw.Context.Core.Map.VisibleMap.operator !=(Aw.Context.Core.Map.VisibleMap? left, Aw.Context.Core.Map.VisibleMap? right) -> bool
+static Aw.Context.Core.Map.VisibleMap.operator ==(Aw.Context.Core.Map.VisibleMap? left, Aw.Context.Core.Map.VisibleMap? right) -> bool
 static Aw.Context.Core.Overrides.AppliedMap.operator !=(Aw.Context.Core.Overrides.AppliedMap? left, Aw.Context.Core.Overrides.AppliedMap? right) -> bool
 static Aw.Context.Core.Overrides.AppliedMap.operator ==(Aw.Context.Core.Overrides.AppliedMap? left, Aw.Context.Core.Overrides.AppliedMap? right) -> bool
 static Aw.Context.Core.Overrides.MapOverride.operator !=(Aw.Context.Core.Overrides.MapOverride? left, Aw.Context.Core.Overrides.MapOverride? right) -> bool

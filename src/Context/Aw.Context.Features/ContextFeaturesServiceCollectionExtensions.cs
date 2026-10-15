@@ -6,7 +6,6 @@ using Aw.Context.Features.CheckMap;
 using Aw.Context.Features.CheckRetention;
 using Aw.Context.Features.ExportMap;
 using Aw.Context.Features.FindPath;
-using Aw.Context.Features.Graph;
 using Aw.Context.Features.ImportMap;
 using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.PreviewMap;
@@ -41,7 +40,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ShowNodeRequest, NodeView>, ShowNodeService>()
         .AddScoped<IService<ListNeighborsRequest, NeighborsView>, ListNeighborsService>()
         .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
-        .AddScoped<GraphReader>()
+        .AddScoped<MapReader>()
         .AddScoped<IContextMap, ContextMap>()
         .AddScoped<IContextGraph, ContextGraph>()
         .AddScoped<IContextEngine, ContextEngine>();

@@ -8,7 +8,8 @@ using Aw.Context.Core.Trust;
 namespace Aw.Context.Features.QueryContext;
 
 /// <summary>
-/// Turns fetched records into the result (spec §8.3, §8.4): one 'record' item and one citation per record, every field
+/// Turns the graph's sections and the fetched records into the result (spec §8.3, §8.4): the graph's items and the map's
+/// citation first, then one 'record' item and one citation per record, every field
 /// scrubbed on its own before it is written (a blocked field is '[REDACTED:blocked]' in that field only), untrusted
 /// text inside the fence, then packed into the budget.
 /// </summary>
@@ -17,21 +18,20 @@ namespace Aw.Context.Features.QueryContext;
 /// <param name="asOf">When the answer is assembled.</param>
 internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, DateTimeOffset asOf)
 {
-    internal ContextResult Build(ContextQuery query, int budget, IReadOnlyList<FetchedRecord> fetched,
-        IReadOnlyDictionary<SourceRef, (bool Ran, SourceVersion? Current)> versions, IReadOnlyList<DegradedSource> degraded)
+    internal ContextResult Build(ContextQuery query, int budget, RecordPart records, GraphPart graph)
     {
-        var cites = new Dictionary<string, Citation>(StringComparer.Ordinal);
-        var candidates = new List<PackCandidate>();
-        foreach (var record in fetched)
+        var cites = new Dictionary<string, Citation>(graph.Cites, StringComparer.Ordinal);
+        var candidates = new List<PackCandidate>(graph.Candidates);
+        foreach (var record in records.Fetched)
         {
             var marker = "C" + (cites.Count + 1).ToString(CultureInfo.InvariantCulture);
-            cites[marker] = Cite(record, versions);
+            cites[marker] = Cite(record, records.Versions);
             candidates.Add(new PackCandidate("records", Item(record, marker), marker));
         }
 
         var packed = Packer.Pack(candidates, budget);
-        return new ContextResult(ContextResult.CurrentSchemaVersion, queryId, query, Anchors: [], MapVersion: null, asOf, packed.Sections,
-            Conflicts: [], SuggestedAnchors: [], degraded, packed.Truncated, new BudgetUse(budget, packed.Used, Estimate: true), cites);
+        return new ContextResult(ContextResult.CurrentSchemaVersion, queryId, query, graph.Anchors, graph.MapVersion, asOf, packed.Sections,
+            Conflicts: [], graph.Suggested, records.Degraded, packed.Truncated, new BudgetUse(budget, packed.Used, Estimate: true), cites);
     }
 
     private ResultItem Item(FetchedRecord record, string marker)

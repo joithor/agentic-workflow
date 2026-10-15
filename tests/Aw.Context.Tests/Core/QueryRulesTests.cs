@@ -38,11 +38,20 @@ public sealed class QueryRulesTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("feature:layout.split-pane", null, null)]
-    [InlineData(null, "ENG-1", null)]
-    [InlineData(null, null, "src/a.ts")]
-    public void An_anchor_shape_is_an_unknown_anchor_before_the_graph_exists(string? node, string? item, string? symbol) =>
-        Assert.Equal(ContextErrors.UnknownAnchor.Code, QueryRules.Check(new ContextQuery(Text: null, node, item, symbol), new()).Error.Code);
+    [InlineData("ENG-1", null)]
+    [InlineData(null, "src/a.ts")]
+    public void Item_and_symbol_anchors_are_unknown_until_their_phases(string? item, string? symbol) =>
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, QueryRules.Check(new ContextQuery(Text: null, Node: null, item, symbol), new()).Error.Code);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_node_anchor_passes_with_no_terms_of_its_own_and_an_empty_one_is_006()
+    {
+        var node = QueryRules.Check(new ContextQuery(Text: null, Node: "feature:layout.split-pane"), new());
+        var empty = QueryRules.Check(new ContextQuery(Text: null, Node: " "), new());
+
+        Assert.Empty(node.Value.Terms);
+        Assert.Equal(ContextErrors.QueryInvalid.Code, empty.Error.Code);
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void Terms_stop_at_sixteen_and_words_at_64_characters()

@@ -4,7 +4,7 @@ using Aw.Kernel;
 
 namespace Aw.Context.Core.Engine;
 
-/// <summary>Checks a question before any source sees it (spec §8.1, §8.3 caps). Phase 1 answers the text shape only.</summary>
+/// <summary>Checks a question before any source sees it (spec §8.1, §8.3 caps): the text and node shapes; item and symbol anchors arrive in later phases.</summary>
 public static class QueryRules
 {
     /// <summary>The budget a request gets when it names none.</summary>
@@ -22,7 +22,7 @@ public static class QueryRules
     /// <summary>Checks <paramref name="query"/>.</summary>
     /// <param name="query">The question.</param>
     /// <param name="settings">The checked settings.</param>
-    /// <returns>The terms and budget; SND-CONTEXT-006 for a malformed question; SND-CONTEXT-003 for an anchor shape (no graph before Phase 3).</returns>
+    /// <returns>The terms (none for the node shape: they come from its anchor) and budget; SND-CONTEXT-006 for a malformed question; SND-CONTEXT-003 for the item and symbol shapes.</returns>
     public static Result<ValidQuery> Check(ContextQuery query, ContextSettings settings)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -39,9 +39,22 @@ public static class QueryRules
                 $"depth is 0 to {MaxDepth} and budget a positive number of tokens"));
         }
 
+        return Shaped(query, Math.Min(query.Budget ?? DefaultBudget, settings.MaxBudget));
+    }
+
+    /// <summary>The one shape's own checks: a node name's length; the text's words; item and symbol not yet (003).</summary>
+    private static Result<ValidQuery> Shaped(ContextQuery query, int budget)
+    {
+        if (query.Node is { } node)
+        {
+            return string.IsNullOrWhiteSpace(node) || node.Length > MaxTextLength
+                ? ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture, $"--node names a node key, alias or name of 1 to {MaxTextLength} characters"))
+                : new ValidQuery([], budget);
+        }
+
         if (query.Text is null)
         {
-            return ContextErrors.UnknownAnchor.With("no product map exists yet, so node, item and symbol anchors can't resolve; ask a text question");
+            return ContextErrors.UnknownAnchor.With("item and symbol anchors arrive in later phases; ask by --node or a text question");
         }
 
         var terms = Terms(query.Text);
@@ -51,7 +64,7 @@ public static class QueryRules
                 $"the question needs at least one word and at most {MaxTextLength} characters"));
         }
 
-        return new ValidQuery(terms, Math.Min(query.Budget ?? DefaultBudget, settings.MaxBudget));
+        return new ValidQuery(terms, budget);
     }
 
     /// <summary>The distinct words of <paramref name="text"/>: runs of letters and digits, lower-cased, at most 64 characters each.</summary>
