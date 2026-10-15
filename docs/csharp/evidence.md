@@ -20,7 +20,7 @@ every path it writes into a run file is absolute.
 | Command | Does | Exit |
 |---|---|---|
 | `run <script.json> <run-dir> [--baseline png] [--app-build sha] [--fixtures id] [--cache verdict-cache.json] [--host url] [--allow-preview-host] [--allow-writes] [--lock-timeout s]` | Once both locks are held, deletes `<run-dir>/summary.json`; runs every step of a UI script in each of its viewports, writes `summary.json` and prints it | 0 every step passed · 2 a step failed or broke · 1 · 4 · 75 |
-| `api-run <script.json> <run-dir> --at base\|head [--repo dir] [--app-build sha] [--host url] [--allow-preview-host] [--allow-writes] [--config file] [--lock-timeout s]` | Deletes `<run-dir>/summary.json`; vets the script (host, redirects, CLI targets, write verbs, environment) before any lock; once both locks are held, runs the HTTP requests, then the CLI calls, in order; writes `summary.json` (`evidence.api.summary/1`) and prints it | 0 every expectation held · 2 one did not · 1 · 4 · 75 |
+| `api-run <script.json> <run-dir> --at base\|head [--repo dir] [--app-build sha] --host url [--allow-preview-host] [--config file] [--lock-timeout s]` | Deletes `<run-dir>/summary.json`; vets the script (host, redirects, CLI targets, write verbs, environment) before any lock; once both locks are held, runs the HTTP requests, then the CLI calls, in order; writes `summary.json` (`evidence.api.summary/1`) and prints it | 0 every expectation held · 2 one did not · 1 · 4 · 75 |
 | `parity <manifest.json> <run-dir> [--host url] [--allow-preview-host] [--allow-writes] [--app-build sha] [--db-provenance seeded\|unknown] [--lock-timeout s]` | Once both locks are held, deletes `<run-dir>/parity.json`; measures each design frame, writes `parity.json` and prints it; each failed box check is also a stderr line `ui-evidence: geometry: <frame> <target>: <failure>` | 0 every geometry check passed · 2 one failed · 1 · 4 · 75 |
 | `parity-plan <run-dir> [--reviewed file,file]` | Prints the Linear attachment plan (one side-by-side image per frame) | 0 every image reviewed · 3 an image is unreviewed · 1 provenance unknown (AW-EVIDENCE-016: the evidence stays local) |
 | `parity-comment <run-dir> --for linear\|github` | Prints the comment as markdown (Linear: a table with geometry; GitHub: a table, images stay on Linear) | 0 · 1 |
@@ -173,7 +173,7 @@ SHA-256 is the summary's `scriptSha256`. Writing the script is the plan Step's j
 | `requests` | request[] | no | HTTP requests, run first, in order |
 | `cli` | call[] | no | CLI calls, run after the requests, in order. `requests` and `cli` together hold at least one entry |
 | `declaredWrites` | string[] | no | words (`add`, `delete`) the script declares as its writes; a CLI argument that reads as a write verb is refused unless it is declared here. Shown in the summary |
-| `passEnv` | string[] | no | UPPER_SNAKE names of environment variables a CLI call may inherit, on top of the machine file's `cli.passEnv`. A name that reads as a secret is refused |
+| `passEnv` | string[] | no | UPPER_SNAKE names of environment variables a CLI call may inherit, on top of the targets file's `cli.passEnv`. A name that reads as a secret is refused |
 
 A request:
 
@@ -315,9 +315,9 @@ something), not a determined agent.
 
 | Guard | Rule | Code |
 |---|---|---|
-| Host | requests go only to `--host`, which has no default (a script with `requests` and no `--host` is refused). The host guard above decides it: a bare loopback origin, or a preview host with `--allow-preview-host` | AW-EVIDENCE-004 |
+| Host | requests go only to `--host`, which is required and has no default (a script with `requests` and no `--host` is refused). The host guard above decides it: a bare loopback origin, or a preview host with `--allow-preview-host` | AW-EVIDENCE-004 |
 | Redirects | a redirect to the same origin is followed (up to five hops) unless the expectation's `status` is itself a 3xx; a redirect to any other origin is never followed, and ends the run (exit 4) naming the origin it refused | AW-EVIDENCE-023 |
-| Writes | a method other than `GET` and `HEAD` on a preview host is refused without `--allow-writes`; a loopback host allows it | AW-EVIDENCE-005 |
+| Writes | none refused: API evidence allows any HTTP method on the host the script names (owner decision, 2026-10-15). There is no `--allow-writes` for `api-run` | |
 | Header secrets | values come only from named environment variables; only the names are recorded | AW-EVIDENCE-017 (a literal), AW-EVIDENCE-006 (unset) |
 | CLI target | `argv[0]` contains a `/`: it resolves, against `--repo` (default: the working directory) and after following every symlink, to an executable file inside a build output directory or equal to a `cli.allow` path. A bare name is never looked up on `PATH`. With nothing configured, every CLI call is refused, and the message names the files to write | AW-EVIDENCE-019 |
 | CLI writes | an argument that reads as a write verb (the UI guard's list, plus `push`, `drop`, `rm`, `truncate`, `destroy`, `purge`, `wipe`, `kill`, `commit`, `put`, `patch`, `write`, `rollback`, `revert`, `uninstall`) is refused unless the script's `declaredWrites` names it | AW-EVIDENCE-019 |
@@ -326,26 +326,25 @@ something), not a determined agent.
 
 ### Targets config
 
-What a script may reach comes from configuration the script cannot change; there is no built-in default (no
+What a script may reach comes from configuration beside the repo under test, not from the script; there is no built-in default (no
 `bin/Release`, `dist` or `target`).
 
-- **Machine-wide**, owner-written, outside every repo: `${AW_STATE_DIR:-~/.agentic-workflow}/evidence/targets.json`, or the file
-  `--config <file>` names. A missing default file is an empty config; a `--config` file that is missing is AW-EVIDENCE-010.
+- **Per repo**: `<repo>/.agentic-workflow/evidence.json` (`--repo`, default the working directory), or the file `--config <file>`
+  names instead (an explicit override; a missing file is AW-EVIDENCE-010). There is no machine-wide default file. A missing
+  repo file is an empty config.
   ```json
   {
     "schema": "evidence.targets/1",
+    "cli": { "buildOutputs": ["out", "build/bin"], "allow": ["/abs/path/to/tool"], "passEnv": ["LANG"] },
     "databases": { "<name>": { "engine": "postgres", "host": "127.0.0.1", "port": 55432, "database": "fixture",
                                "user": "evidence_ro", "passwordEnv": "EVIDENCE_PG_PASSWORD", "disposable": true,
-                               "identity": { "serverAddress": "172.17.0.2", "database": "fixture" } } },
-    "cli": { "allow": ["/abs/path/to/tool"], "passEnv": ["LANG"] }
+                               "identity": { "serverAddress": "172.17.0.2", "database": "fixture" } } }
   }
   ```
-  `cli.allow` holds absolute paths; `cli.passEnv` names variables every CLI call may inherit. `databases` belongs to
-  `db-run` (a later stage); `api-run` reads and validates the file whole, so one file serves both.
-- **Per repo**: `<repo>/.agentic-workflow/evidence.json`, `{"schema":"evidence.repo/1","cli":{"buildOutputs":["out","build/bin"]}}`.
-  It can only point inside the repo: `buildOutputs` are relative directories, resolved after symlinks, that stay inside
-  the repo. A repo file that names a database, an allowlist, a pass-through or an absolute path is AW-EVIDENCE-022,
-  as is invalid JSON in either file (the message names the file and the JSON location).
+  `schema` is `evidence.targets/1` or `evidence.repo/1`. `cli.buildOutputs` are relative directories that, after symlinks, stay
+  inside the repo; `cli.allow` holds absolute paths; `cli.passEnv` names variables every CLI call may inherit. `databases`
+  belongs to `db-run` (a later stage); `api-run` reads and validates the file whole. Unknown keys, an absolute or escaping
+  build output, a relative allow path, and invalid JSON are AW-EVIDENCE-022 (the message names the file and the JSON location).
 
 The use cases see only the Core port `IEvidenceTargets`; the file names and the state directory are the adapter's.
 
@@ -429,8 +428,8 @@ These are read by Infrastructure's `EnvironmentEvidenceSettings` and lock settin
 | `UI_EVIDENCE_DB_CONTAINER`, `UI_EVIDENCE_DB_USER` | `doctor`, `provenance`: the Docker container running the local Postgres and its user (default `postgres`). No container: `doctor` skips the database and `provenance` is `unknown` |
 | `UI_EVIDENCE_SEED_TABLE` | `provenance`: the `[schema.]table` whose `email` column is read (a plain identifier only, since it is spliced into the SQL; anything else counts as unset). Unset: `unknown` |
 | `UI_EVIDENCE_SEED_DOMAINS`, `UI_EVIDENCE_SEED_EMAIL_PATTERN` | `provenance`: the seed policy (defaults match only `example.com`, so an unconfigured install stays `unknown`) |
-| `AW_QA_STACK_LOCK`, `AW_HEAVY_JOB_LOCK`, `AW_HEAVY_SLOTS`, `AW_HEAVY_LOCK_HELD`, `AW_STATE_DIR` | the lock adapter; `AW_STATE_DIR` is also where `evidence/targets.json` lives |
-| the script's `headers.*.env` and `passEnv`, the machine file's `cli.passEnv` | `api-run`: values by the name the script or file gives, never recorded |
+| `AW_QA_STACK_LOCK`, `AW_HEAVY_JOB_LOCK`, `AW_HEAVY_SLOTS`, `AW_HEAVY_LOCK_HELD`, `AW_STATE_DIR` | the lock adapter |
+| the script's `headers.*.env` and `passEnv`, the targets file's `cli.passEnv` | `api-run`: values by the name the script or file gives, never recorded |
 | the manifest's `login.emailEnv` / `login.passwordEnv` | `parity` sign-in |
 
 `doctor` checks `http://localhost:3000/login`'s title, `docker exec <container> pg_isready -U <user>` when a container is
