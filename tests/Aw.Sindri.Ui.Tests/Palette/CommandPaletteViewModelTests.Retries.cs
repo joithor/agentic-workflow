@@ -1,7 +1,6 @@
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Palette;
-using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.Tests.Palette;
 
@@ -63,7 +62,7 @@ public sealed partial class CommandPaletteViewModelTests
     {
         _palette.Open();
         _palette.Query = "approve profile";
-        var entry = _palette.Selected!;
+        var entry = _palette.Selected;
         var spoken = Spoken();
 
         await _palette.Run(entry, Token);

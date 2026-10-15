@@ -312,7 +312,7 @@ accepted retry inside the 2 s, a second Copy inside the 1.5 s): the palette's re
 (`IsAnnouncing`) dark, then says it, flag before text. The mute ends when the palette has announced the run's outcome
 (accepted or refused) or, for a copy, when "Copied" clears. **A closed palette.** When the palette closes while a send is
 still in flight (Esc, or the `CloseFirst` policy), the control stays muted and the shell's command-outcome region
-(`ShellWindow`'s `CommandOutcomeLive`, `ShellViewModel.CommandOutcome`; always in the tree, zero-width and transparent,
+(`ShellWindow`'s `CommandOutcomeLive`, `ShellViewModel.CommandOutcome`, a `CommandOutcomeRegion` in `ViewModels/Palette`; always in the tree, zero-width and transparent,
 flag then text, never "") speaks the rest of the run once: "Sending…" if it was not said yet, then the outcome or the
 refusal. Only a control whose own view is on show (the Rebuild views control of the stalled banner while the banner
 shows) is handed back at the close and speaks itself; the Rebuild views control has no view otherwise, so its outcome

@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.ViewModels.Palette;
+
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>

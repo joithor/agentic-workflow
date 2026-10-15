@@ -231,8 +231,8 @@ public sealed class ShellWindowTests : IDisposable
 
         var item = navigation.GetVisualDescendants().OfType<ListBoxItem>().Single(i => i.DataContext is NavEntry { Page: PageId.Services });
         var at = item.TranslatePoint(new Point(item.Bounds.Width / 2, item.Bounds.Height / 2), window)!.Value;
-        window.MouseDown(at, Avalonia.Input.MouseButton.Left);
-        window.MouseUp(at, Avalonia.Input.MouseButton.Left);
+        window.MouseDown(at, MouseButton.Left);
+        window.MouseUp(at, MouseButton.Left);
         Settle(window);
 
         Assert.Equal(PageId.Services, shell.CurrentPage);

@@ -1,6 +1,6 @@
 using Aw.Sindri.Ui.ViewModels.Controls;
 
-namespace Aw.Sindri.Ui.ViewModels.Shell;
+namespace Aw.Sindri.Ui.ViewModels.Palette;
 
 /// <summary>
 /// The shell's polite live region for a command's lifecycle when no control of its own can speak it (UI spec §5, "every outcome

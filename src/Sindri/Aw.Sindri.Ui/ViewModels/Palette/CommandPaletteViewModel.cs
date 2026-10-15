@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Controls;
-using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.ViewModels.Palette;
 
