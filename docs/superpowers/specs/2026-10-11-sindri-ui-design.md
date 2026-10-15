@@ -202,7 +202,7 @@ Every view is in exactly one of these states, taken from the API, in this priori
 
 | Phase | Shows |
 |---|---|
-| `sending` | The control disabled with a spinner, its label kept; a polite announcement ("Sending…") after 300 ms |
+| `sending` | A spinner, the label kept. The control stays enabled so keyboard focus is kept; the view model refuses a second run. A polite announcement ("Sending…") after 300 ms |
 | `accepted` | An inline check and the outcome in words for 2 s ("Resumed ITM-01JC8"), announced; the row then clears or updates on the next refresh |
 | `refused` / `failed` | The inline error (above); focus stays on the control |
 | Copy | "Copied" for 1.5 s, announced |
