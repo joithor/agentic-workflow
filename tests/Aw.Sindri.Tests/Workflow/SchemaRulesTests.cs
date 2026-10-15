@@ -41,7 +41,7 @@ public sealed class SchemaRulesTests
         },
         {
             "RCP-HASH-001",
-            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is bf21a0f792f6 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:bf21a0f792f68562707433eb71ae250767113da2997c3d497a1b654af246c4b5, or remove it"
+            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is e69eeb6a8547 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:e69eeb6a8547f69896a6b6b63f18a392b5b999cd22705e9286e461c2f7071b2c, or remove it"
         },
     };
 

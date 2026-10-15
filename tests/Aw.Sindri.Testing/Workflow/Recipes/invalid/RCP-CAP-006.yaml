@@ -1,7 +1,7 @@
 schema: 1
 id: workflow.cap-006
 version: 1
-base: { id: workflow.cap-base, hash: "sha256:5aa84cb58a5a6a2c70fa4c9b3a1758625a9e78b625734ec55e49f2e762125b03" }
+base: { id: workflow.cap-base, hash: "sha256:84b1571f2b8439caa58c35c4560095bc89b2fde1fef4ae7bd57e59569494ae47" }
 initial: produce
 states:
   produce:
