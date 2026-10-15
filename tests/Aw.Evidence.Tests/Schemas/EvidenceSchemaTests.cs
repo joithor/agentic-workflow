@@ -64,7 +64,7 @@ public sealed class EvidenceSchemaTests
         return root;
     }
 
-    // A typed id and a header source have user-code converters, so the exporter can't see their shape ('true'): describe them.
+    // A typed id and a header source have user-code converters, so the exporter can't see their shape: describe them.
     private static JsonNode Transform(Type type, JsonNode node)
     {
         if (type == typeof(RunId) || type == typeof(RunInstanceId))
@@ -72,9 +72,9 @@ public sealed class EvidenceSchemaTests
             return new JsonObject { ["type"] = "string", ["pattern"] = "\\S" };
         }
 
-        if (type == typeof(HeaderSource))
+        if (type == typeof(IReadOnlyDictionary<string, HeaderSource>) && node is JsonObject headers)
         {
-            return new JsonObject
+            headers["additionalProperties"] = new JsonObject
             {
                 ["type"] = "object",
                 ["properties"] = new JsonObject { ["env"] = new JsonObject { ["type"] = "string", ["pattern"] = "^[A-Z][A-Z0-9_]*$" } },

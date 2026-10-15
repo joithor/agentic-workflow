@@ -64,7 +64,7 @@ internal static class CommandTable
             DoctorCommand.Name => DoctorCommand.Run(rest, services, json, cancellationToken),
             CheckProvenanceCommand.Name => CheckProvenanceCommand.Run(rest, services, json, cancellationToken),
             InstallBrowserCommand.Name => InstallBrowserCommand.Run(rest, services, json, cancellationToken),
-            ApiRunCommand.Name => ApiRunCommand.Run(rest, services, json, cancellationToken),
+            ApiRunCommand.Name => ApiRunCommand.Run(rest, services, cancellationToken),
             _ => Task.FromResult(CommandOutput.Usage($"<{_commands}> [arguments] (unknown command '{command}')")),
         };
 

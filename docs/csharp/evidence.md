@@ -20,7 +20,7 @@ every path it writes into a run file is absolute.
 | Command | Does | Exit |
 |---|---|---|
 | `run <script.json> <run-dir> [--baseline png] [--app-build sha] [--fixtures id] [--cache verdict-cache.json] [--host url] [--allow-preview-host] [--allow-writes] [--lock-timeout s]` | Once both locks are held, deletes `<run-dir>/summary.json`; runs every step of a UI script in each of its viewports, writes `summary.json` and prints it | 0 every step passed · 2 a step failed or broke · 1 · 4 · 75 |
-| `api-run <script.json> <run-dir> --at base\|head [--repo dir] [--app-build sha] --host url [--allow-preview-host] [--config file] [--lock-timeout s]` | Deletes `<run-dir>/summary.json`; vets the script (host, redirects, CLI targets, write verbs, environment) before any lock; once both locks are held, runs the HTTP requests, then the CLI calls, in order; writes `summary.json` (`evidence.api.summary/1`) and prints it | 0 every expectation held · 2 one did not · 1 · 4 · 75 |
+| `api-run <script.json> <run-dir> --at base\|head [--repo dir] [--app-build sha] [--host url] [--allow-preview-host] [--config file] [--lock-timeout s]` | Deletes `<run-dir>/summary.json`; vets the script (host, redirects, CLI targets, write verbs, environment) before any lock; once both locks are held, runs the HTTP requests, then the CLI calls, in order; writes `summary.json` (`evidence.api.summary/1`) and prints it | 0 every expectation held · 2 one did not · 1 · 4 · 75 |
 | `parity <manifest.json> <run-dir> [--host url] [--allow-preview-host] [--allow-writes] [--app-build sha] [--db-provenance seeded\|unknown] [--lock-timeout s]` | Once both locks are held, deletes `<run-dir>/parity.json`; measures each design frame, writes `parity.json` and prints it; each failed box check is also a stderr line `ui-evidence: geometry: <frame> <target>: <failure>` | 0 every geometry check passed · 2 one failed · 1 · 4 · 75 |
 | `parity-plan <run-dir> [--reviewed file,file]` | Prints the Linear attachment plan (one side-by-side image per frame) | 0 every image reviewed · 3 an image is unreviewed · 1 provenance unknown (AW-EVIDENCE-016: the evidence stays local) |
 | `parity-comment <run-dir> --for linear\|github` | Prints the comment as markdown (Linear: a table with geometry; GitHub: a table, images stay on Linear) | 0 · 1 |
@@ -274,8 +274,9 @@ and the box-wide locks.
 A step's `broken` is a request that failed or a program that would not start (exit 4); `refused` is the step a guard
 named (exit 1); `skipped` is a step after either. An assertion that does not hold marks its step `failed`, and the
 remaining steps still run (a request or call is an action that already happened or never will). The whole document, and so
-every value in it, goes through `Aw.Redaction` before it is written; stdout is exactly the file's content and logs go to
-stderr.
+every value in it, goes through `Aw.Redaction` before it is written; stdout is exactly the file's content (no trailing newline) and logs go to
+stderr. The JSON Schemas of the script and the summary are generated from the records and committed as
+`schemas/evidence/api-script.schema.json` and `schemas/evidence/api-summary.schema.json`; a test validates a produced summary against its schema.
 
 ### `parity.json` (`schema: "ui-evidence.parity/1"`)
 
@@ -463,7 +464,7 @@ move behind an AOT host if the browser adapter ever allowed it.
 | `IEvidenceSettings` (user agent, visual model, preview host pattern, API port, seed policy, app title) | `EnvironmentEvidenceSettings` | `FakeEvidenceSettings` |
 | `IApiTransport` (one HTTP request, never following a redirect) | `HttpApiTransport` | `FakeApiTransport` |
 | `ICliRunner` (one program, a fresh temporary directory, an exact environment) | `ProcessCliRunner` | `FakeCliRunner` |
-| `IExecutableLocator` (the real path of an executable file, symlinks followed) | `FileExecutableLocator` | `FakeExecutableLocator` |
+| `IExecutableLocator` (the real path of an executable file or a directory, symlinks followed) | `FileExecutableLocator` | `FakeExecutableLocator` |
 | `IEvidenceTargets` (the merged targets config) | `FileEvidenceTargets` | `FakeEvidenceTargets` |
 | `ITextScrubber` | `RedactionScrubber` (`Aw.Redaction`) | `FakeTextScrubber` |
 | `IIdGenerator` (Kernel; the run instance) | `RandomIds` | `SequentialIds` |

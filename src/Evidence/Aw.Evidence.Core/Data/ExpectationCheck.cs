@@ -49,9 +49,9 @@ public static class ExpectationCheck
     {
         var found = root is { } document ? JsonPointer.Resolve(document, check.Location) : null;
         var actual = root is null ? NotJson : found?.GetRawText() ?? Missing;
-        if (check.EqualTo.ValueKind != JsonValueKind.Undefined)
+        if (check.EqualTo is { } expected)
         {
-            return found is { } value && JsonEquality.Equal(value, check.EqualTo) ? null : new ApiFailure(step, check.Location, check.EqualTo.GetRawText(), actual);
+            return found is { } value && JsonEquality.Equal(value, expected) ? null : new ApiFailure(step, check.Location, expected.GetRawText(), actual);
         }
 
         return check.Exists is { } exists ? CheckExists(step, check, found is not null, exists, actual) : CheckMatches(step, check, found, actual);

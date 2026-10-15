@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/evidence/api-summary.schema.json",
+  "title": "ui-evidence api-run summary (evidence.api.summary/1)",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "runInstance": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "startedAt": true,
+    "finishedAt": true,
+    "appBuild": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "scriptSha256": {
+      "type": "string"
+    },
+    "at": {
+      "enum": [
+        "base",
+        "head"
+      ]
+    },
+    "host": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "outcome": {
+      "enum": [
+        "passed",
+        "failed",
+        "refused",
+        "errored"
+      ]
+    },
+    "headline": {
+      "type": "string"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "action": {
+            "enum": [
+              "request",
+              "cli"
+            ]
+          },
+          "target": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed",
+              "refused",
+              "broken",
+              "skipped"
+            ]
+          },
+          "code": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "output": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "headerNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "index",
+          "action",
+          "target",
+          "status",
+          "code",
+          "output",
+          "headerNames"
+        ]
+      }
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "integer"
+          },
+          "pointer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expected": {
+            "type": "string"
+          },
+          "actual": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "step",
+          "pointer",
+          "expected",
+          "actual"
+        ]
+      }
+    },
+    "declaredWrites": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "passedEnv": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "provenance": {
+      "type": "string"
+    },
+    "seedSha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "refusal": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "error": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "invocations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "phase": {
+            "enum": [
+              "planning",
+              "selector-repair",
+              "visual-critique"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "elapsedMs": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "inputTokens": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "outputTokens": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "cacheHit": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "phase",
+          "model",
+          "elapsedMs",
+          "ok",
+          "inputTokens",
+          "outputTokens",
+          "cacheHit"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "kind",
+    "runId",
+    "runInstance",
+    "startedAt",
+    "finishedAt",
+    "appBuild",
+    "scriptSha256",
+    "at",
+    "host",
+    "outcome",
+    "headline",
+    "steps",
+    "failures",
+    "declaredWrites",
+    "passedEnv",
+    "provenance",
+    "seedSha256",
+    "refusal",
+    "error",
+    "invocations"
+  ]
+}

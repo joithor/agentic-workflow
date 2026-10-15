@@ -1634,7 +1634,6 @@ Aw.Evidence.Core.Data.HttpVerb.Put = 3 -> Aw.Evidence.Core.Data.HttpVerb
 Aw.Evidence.Core.Data.JsonPointer
 Aw.Evidence.Core.Data.PointerCheck
 Aw.Evidence.Core.Data.PointerCheck.<Clone>$() -> Aw.Evidence.Core.Data.PointerCheck!
-Aw.Evidence.Core.Data.PointerCheck.EqualTo.get -> System.Text.Json.JsonElement
 Aw.Evidence.Core.Data.PointerCheck.EqualTo.init -> void
 Aw.Evidence.Core.Data.PointerCheck.Equals(Aw.Evidence.Core.Data.PointerCheck? other) -> bool
 Aw.Evidence.Core.Data.PointerCheck.Exists.get -> bool?
@@ -1696,10 +1695,8 @@ static readonly Aw.Evidence.Core.EvidenceErrors.DbScriptInvalid -> Aw.Kernel.Err
 static readonly Aw.Evidence.Core.EvidenceErrors.IdentityMismatch -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Evidence.Core.EvidenceErrors.RequestFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Evidence.Core.EvidenceErrors.TargetsInvalid -> Aw.Kernel.ErrorDefinition!
-Aw.Evidence.Core.Data.PointerCheck.Deconstruct(out string! Location, out System.Text.Json.JsonElement EqualTo, out bool? Exists, out string? Matches) -> void
 Aw.Evidence.Core.Data.PointerCheck.Location.get -> string!
 Aw.Evidence.Core.Data.PointerCheck.Location.init -> void
-Aw.Evidence.Core.Data.PointerCheck.PointerCheck(string! Location, System.Text.Json.JsonElement EqualTo = default(System.Text.Json.JsonElement), bool? Exists = null, string? Matches = null) -> void
 static Aw.Evidence.Core.Data.JsonPointer.Problem(string! reference) -> string?
 static Aw.Evidence.Core.Data.JsonPointer.Resolve(System.Text.Json.JsonElement document, string! reference) -> System.Text.Json.JsonElement?
 static Aw.Evidence.Core.Data.ApiScriptReader.Validate(Aw.Evidence.Core.Data.ApiScript! script) -> Aw.Kernel.Result<Aw.Evidence.Core.Data.ApiScript!>!
@@ -1994,3 +1991,11 @@ static Aw.Evidence.Core.Data.TargetsFile.SchemaNames.get -> System.Collections.G
 static Aw.Evidence.Core.Data.TargetsFile.operator !=(Aw.Evidence.Core.Data.TargetsFile? left, Aw.Evidence.Core.Data.TargetsFile? right) -> bool
 static Aw.Evidence.Core.Data.TargetsFile.operator ==(Aw.Evidence.Core.Data.TargetsFile? left, Aw.Evidence.Core.Data.TargetsFile? right) -> bool
 static Aw.Evidence.Core.Data.TargetsReader.Read(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions! options) -> Aw.Kernel.Result<Aw.Evidence.Core.Data.ResolvedTargets!>!
+Aw.Evidence.Core.Data.OptionalElementConverter
+Aw.Evidence.Core.Data.OptionalElementConverter.OptionalElementConverter() -> void
+override Aw.Evidence.Core.Data.OptionalElementConverter.HandleNull.get -> bool
+Aw.Evidence.Core.Data.PointerCheck.Deconstruct(out string! Location, out System.Text.Json.JsonElement? EqualTo, out bool? Exists, out string? Matches) -> void
+Aw.Evidence.Core.Data.PointerCheck.EqualTo.get -> System.Text.Json.JsonElement?
+Aw.Evidence.Core.Data.PointerCheck.PointerCheck(string! Location, System.Text.Json.JsonElement? EqualTo = null, bool? Exists = null, string? Matches = null) -> void
+override Aw.Evidence.Core.Data.OptionalElementConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> System.Text.Json.JsonElement?
+override Aw.Evidence.Core.Data.OptionalElementConverter.Write(System.Text.Json.Utf8JsonWriter! writer, System.Text.Json.JsonElement? value, System.Text.Json.JsonSerializerOptions! options) -> void

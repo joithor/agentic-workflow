@@ -87,7 +87,7 @@ public static partial class ApiScriptReader
             problems.Add($"{at}: pointer {bad}");
         }
 
-        var given = (check.EqualTo.ValueKind != JsonValueKind.Undefined ? 1 : 0) + (check.Exists is null ? 0 : 1) + (check.Matches is null ? 0 : 1);
+        var given = (check.EqualTo is null ? 0 : 1) + (check.Exists is null ? 0 : 1) + (check.Matches is null ? 0 : 1);
         problems.AddIf(given != 1, $"{at}: give exactly one of equals, exists and matches");
         if (check.Matches is { } pattern && !IsRegex(pattern))
         {

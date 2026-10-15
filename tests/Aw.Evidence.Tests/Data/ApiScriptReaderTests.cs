@@ -25,7 +25,7 @@ public sealed class ApiScriptReaderTests
         Assert.Equal(2, script.RequestList.Count);
         Assert.Equal(HttpVerb.Post, script.RequestList[0].Method);
         Assert.Equal("NOTES_TOKEN", script.RequestList[0].Headers!["Authorization"].Env);
-        Assert.Equal("hello", script.RequestList[0].Expect.Pointers![0].EqualTo.GetString());
+        Assert.Equal("hello", script.RequestList[0].Expect.Pointers![0].EqualTo!.Value.GetString());
         Assert.True(script.RequestList[0].Expect.Pointers![1].Exists);
         Assert.Equal("^20", script.RequestList[0].Expect.Pointers![2].Matches);
         Assert.Equal("notes.json", script.RequestList[1].Expect.Golden);
@@ -38,7 +38,7 @@ public sealed class ApiScriptReaderTests
     {
         var script = Read(OneRequest("""{"method":"GET","path":"/a","expect":{"status":200,"pointers":[{"pointer":"/a","equals":null}]}}""")).Value;
 
-        Assert.Equal(JsonValueKind.Null, script.RequestList[0].Expect.Pointers![0].EqualTo.ValueKind);
+        Assert.Equal(JsonValueKind.Null, script.RequestList[0].Expect.Pointers![0].EqualTo?.ValueKind);
     }
 
     [Fact, Trait("Lane", "unit")]

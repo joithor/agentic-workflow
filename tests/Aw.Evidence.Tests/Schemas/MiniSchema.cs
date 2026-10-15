@@ -139,6 +139,10 @@ internal sealed class MiniSchema(JsonNode root)
             {
                 Check(memberSchema, member, $"{at}.{name}", found);
             }
+            else if (rules["additionalProperties"] is JsonObject valueSchema)
+            {
+                Check(valueSchema, member, $"{at}.{name}", found);
+            }
             else if (closed)
             {
                 found.Add($"{at}: unknown property \"{name}\"");

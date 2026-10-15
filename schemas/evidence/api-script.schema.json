@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/evidence/api-script.schema.json",
+  "title": "ui-evidence api-run script (evidence.api.run/1)",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "requests": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "enum": [
+              "GET",
+              "HEAD",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE",
+              "OPTIONS"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "expect": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "default": null
+              },
+              "exitCode": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "default": null
+              },
+              "pointers": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "pointer": {
+                      "type": "string"
+                    },
+                    "equals": {
+                      "default": null
+                    },
+                    "exists": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ],
+                      "default": null
+                    },
+                    "matches": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "default": null
+                    }
+                  },
+                  "required": [
+                    "pointer"
+                  ],
+                  "additionalProperties": false
+                },
+                "default": null
+              },
+              "golden": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "default": null
+              }
+            },
+            "additionalProperties": false
+          },
+          "headers": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "default": null,
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "env": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9_]*$"
+                }
+              },
+              "required": [
+                "env"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "body": {
+            "default": null
+          }
+        },
+        "required": [
+          "method",
+          "path",
+          "expect"
+        ],
+        "additionalProperties": false
+      },
+      "default": null
+    },
+    "cli": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "properties": {
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expect": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "default": null
+              },
+              "exitCode": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "default": null
+              },
+              "pointers": {
+                "$ref": "#/properties/requests/items/properties/expect/properties/pointers",
+                "default": null
+              },
+              "golden": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "default": null
+              }
+            },
+            "additionalProperties": false
+          },
+          "stdin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "argv",
+          "expect"
+        ],
+        "additionalProperties": false
+      },
+      "default": null
+    },
+    "declaredWrites": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "default": null
+    },
+    "passEnv": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "default": null
+    }
+  },
+  "additionalProperties": false
+}
