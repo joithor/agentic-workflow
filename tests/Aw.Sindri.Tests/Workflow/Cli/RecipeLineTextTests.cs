@@ -14,10 +14,10 @@ public sealed class RecipeLineTextTests
             [new PathLoop("rounds", "a", "a"), new PathLoop(Name: null, "b", "a")]);
 
     [Fact, Trait("Lane", "unit")]
-    public void The_detail_lists_urgency_then_each_input_then_each_output_then_the_path_order()
+    public void The_detail_shows_the_effective_kind_declared_or_implied_by_the_type_and_lists_urgency_then_each_input_then_each_output_then_the_path_order()
     {
         var summary = Summary(
-            [new RecipeInput(FactKey.From("fact:item"), "Item", "item", "item"), new RecipeInput(FactKey.From("fact:note"), Label: null, Type: null, Kind: null)],
+            [new RecipeInput(FactKey.From("fact:item"), "Item", "item", "item"), new RecipeInput(FactKey.From("fact:note"), Label: null, Type: null, Kind: null), new RecipeInput(FactKey.From("fact:doc"), Label: null, Type: "file", Kind: null), new RecipeInput(FactKey.From("fact:hook"), Label: null, Type: "payload", Kind: null), new RecipeInput(FactKey.From("fact:repo"), Label: null, Type: "payload", Kind: "webhook")],
             [new RecipeOutput(FactKey.From("fact:draft"), "Draft", "file", "a"), new RecipeOutput(FactKey.From("fact:plain"), Label: null, Type: null, "b")],
             urgency: "triage");
 
@@ -26,7 +26,10 @@ public sealed class RecipeLineTextTests
         Assert.Equal(
             "urgency: triage\n"
             + "input: fact:item type=item kind=item\n"
-            + "input: fact:note type=text kind=-\n"
+            + "input: fact:note type=text kind=text\n"
+            + "input: fact:doc type=file kind=file\n"
+            + "input: fact:hook type=payload kind=-\n"
+            + "input: fact:repo type=payload kind=webhook\n"
             + "output: fact:draft type=file from=a\n"
             + "output: fact:plain type=text from=b\n"
             + "order: path\n"
