@@ -203,10 +203,42 @@ public sealed class CommandPaletteViewModelTests
 
         Assert.StartsWith("Rebuild views, Sending…, ", _palette.Announcement, StringComparison.Ordinal);
         Assert.DoesNotContain("0 of", _palette.Announcement, StringComparison.Ordinal);
+        var next = Neighbour(rebuild, by: 1);
         _palette.Move(1);
-        Assert.NotEqual("RebuildViews", _palette.Selected!.Id, StringComparer.Ordinal);
+        Assert.Same(next, _palette.Selected);
         _server.RebuildGate.SetResult();
         await run;
+    }
+
+    // H5 (test-1): arrowing up off a sending selection goes to the entry above it, not to the first one. Before G3 the
+    // sending entry was not among the stops, its index was -1, and any move landed on the first entry that runs.
+    [Fact]
+    public async Task Arrowing_up_from_a_sending_selection_goes_to_the_previous_entry_that_runs()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected!;
+        var run = _palette.Run(rebuild, Token);
+        var previous = Neighbour(rebuild, by: -1);
+
+        _palette.Move(-1);
+
+        Assert.Same(previous, _palette.Selected);
+        Assert.NotSame(_palette.Entries.First(e => e.IsEnabled), previous);
+        _server.RebuildGate.SetResult();
+        await run;
+    }
+
+    // The nearest entry that runs above (-1) or below (+1) an entry in the list.
+    private PaletteEntry Neighbour(PaletteEntry from, int by)
+    {
+        var at = _palette.Entries.ToList().IndexOf(from);
+        return by > 0 ? _palette.Entries.Skip(at + 1).First(e => e.IsEnabled) : _palette.Entries.Take(at).Last(e => e.IsEnabled);
     }
 
     // H1 (corr-0): the palette built for the first time while a command is in flight must still run that entry once the
