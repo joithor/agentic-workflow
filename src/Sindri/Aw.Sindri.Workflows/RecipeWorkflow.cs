@@ -95,9 +95,10 @@ internal sealed partial class RecipeWorkflow
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance);
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
-        var instance = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
+        var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
+        var instance = change.After;
         Enter(instance);
-        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null), NeedsYou(instance)).ConfigureAwait(true);
+        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: WorkflowEventDetail.Of(change.Event, trigger: null)), NeedsYou(instance)).ConfigureAwait(true);
         return (instance, _context);
     }
 
@@ -228,9 +229,9 @@ internal sealed partial class RecipeWorkflow
             start.Ring);
     }
 
-    private static WorkflowInstance Started(Decision decision) => decision switch
+    private static InstanceChange Started(Decision decision) => decision switch
     {
-        Applied applied => applied.Changes[0].After,
+        Applied applied => applied.Changes[0],
         Rejected rejected => throw new ApplicationFailureException($"the start was rejected: {rejected.Error.Code} {rejected.Error.Message}", errorType: rejected.Error.Code, nonRetryable: true),
         _ => throw new ApplicationFailureException($"the start was {decision.GetType().Name}", nonRetryable: true),
     };

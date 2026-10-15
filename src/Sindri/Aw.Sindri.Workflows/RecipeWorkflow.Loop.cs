@@ -158,7 +158,8 @@ internal sealed partial class RecipeWorkflow
             _ => null,
         },
         before.Frame.Run?.Token.Value,
-        trigger.Actor);
+        trigger.Actor,
+        Detail: WorkflowEventDetail.Of(change.Event, trigger));
 
     internal static string TypeOf(WorkflowEventType type) => type switch
     {

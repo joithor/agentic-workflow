@@ -4699,7 +4699,6 @@ const Aw.Sindri.Core.Events.EventTypes.WorkflowShifted = "workflow.shifted" -> s
 const Aw.Sindri.Core.Events.EventTypes.WorkflowNotified = "workflow.notified" -> string!
 const Aw.Sindri.Core.Events.EventTypes.WorkflowExpired = "workflow.expired" -> string!
 Aw.Sindri.Core.Events.WorkflowEventPayload.<Clone>$() -> Aw.Sindri.Core.Events.WorkflowEventPayload!
-Aw.Sindri.Core.Events.WorkflowEventPayload.Deconstruct(out string! Instance, out string! From, out string! To, out string! Trigger, out string? Outcome, out string? Run) -> void
 Aw.Sindri.Core.Events.WorkflowEventPayload.Equals(Aw.Sindri.Core.Events.WorkflowEventPayload? other) -> bool
 Aw.Sindri.Core.Events.WorkflowEventPayload.From.get -> string!
 Aw.Sindri.Core.Events.WorkflowEventPayload.From.init -> void
@@ -4713,13 +4712,136 @@ Aw.Sindri.Core.Events.WorkflowEventPayload.To.get -> string!
 Aw.Sindri.Core.Events.WorkflowEventPayload.To.init -> void
 Aw.Sindri.Core.Events.WorkflowEventPayload.Trigger.get -> string!
 Aw.Sindri.Core.Events.WorkflowEventPayload.Trigger.init -> void
-Aw.Sindri.Core.Events.WorkflowEventPayload.WorkflowEventPayload(string! Instance, string! From, string! To, string! Trigger, string? Outcome, string? Run) -> void
 Aw.Sindri.Core.Events.WorkflowEventPayload
 override Aw.Sindri.Core.Events.WorkflowEventPayload.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Events.WorkflowEventPayload.GetHashCode() -> int
 override Aw.Sindri.Core.Events.WorkflowEventPayload.ToString() -> string!
 static Aw.Sindri.Core.Events.WorkflowEventPayload.operator !=(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
 static Aw.Sindri.Core.Events.WorkflowEventPayload.operator ==(Aw.Sindri.Core.Events.WorkflowEventPayload? left, Aw.Sindri.Core.Events.WorkflowEventPayload? right) -> bool
+Aw.Sindri.Core.Events.FrameSummary
+Aw.Sindri.Core.Events.FrameSummary.<Clone>$() -> Aw.Sindri.Core.Events.FrameSummary!
+Aw.Sindri.Core.Events.FrameSummary.Child.get -> string?
+Aw.Sindri.Core.Events.FrameSummary.Child.init -> void
+Aw.Sindri.Core.Events.FrameSummary.Deconstruct(out string! State, out int Entry, out string? Run, out string? Child) -> void
+Aw.Sindri.Core.Events.FrameSummary.Entry.get -> int
+Aw.Sindri.Core.Events.FrameSummary.Entry.init -> void
+Aw.Sindri.Core.Events.FrameSummary.Equals(Aw.Sindri.Core.Events.FrameSummary? other) -> bool
+Aw.Sindri.Core.Events.FrameSummary.FrameSummary(string! State, int Entry, string? Run, string? Child) -> void
+Aw.Sindri.Core.Events.FrameSummary.Run.get -> string?
+Aw.Sindri.Core.Events.FrameSummary.Run.init -> void
+Aw.Sindri.Core.Events.FrameSummary.State.get -> string!
+Aw.Sindri.Core.Events.FrameSummary.State.init -> void
+Aw.Sindri.Core.Events.LoopCounter
+Aw.Sindri.Core.Events.LoopCounter.<Clone>$() -> Aw.Sindri.Core.Events.LoopCounter!
+Aw.Sindri.Core.Events.LoopCounter.Allowed.get -> int
+Aw.Sindri.Core.Events.LoopCounter.Allowed.init -> void
+Aw.Sindri.Core.Events.LoopCounter.Deconstruct(out int Round, out int Allowed) -> void
+Aw.Sindri.Core.Events.LoopCounter.Equals(Aw.Sindri.Core.Events.LoopCounter? other) -> bool
+Aw.Sindri.Core.Events.LoopCounter.LoopCounter(int Round, int Allowed) -> void
+Aw.Sindri.Core.Events.LoopCounter.Round.get -> int
+Aw.Sindri.Core.Events.LoopCounter.Round.init -> void
+Aw.Sindri.Core.Events.SuspensionSummary
+Aw.Sindri.Core.Events.SuspensionSummary.<Clone>$() -> Aw.Sindri.Core.Events.SuspensionSummary!
+Aw.Sindri.Core.Events.SuspensionSummary.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, out Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, out string? Mirrors) -> void
+Aw.Sindri.Core.Events.SuspensionSummary.Equals(Aw.Sindri.Core.Events.SuspensionSummary? other) -> bool
+Aw.Sindri.Core.Events.SuspensionSummary.Escalation.get -> Aw.Sindri.Core.Workflow.Engine.EscalationKind?
+Aw.Sindri.Core.Events.SuspensionSummary.Escalation.init -> void
+Aw.Sindri.Core.Events.SuspensionSummary.Kind.get -> Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind
+Aw.Sindri.Core.Events.SuspensionSummary.Kind.init -> void
+Aw.Sindri.Core.Events.SuspensionSummary.Mirrors.get -> string?
+Aw.Sindri.Core.Events.SuspensionSummary.Mirrors.init -> void
+Aw.Sindri.Core.Events.SuspensionSummary.ParkKind.get -> Aw.Sindri.Core.Workflow.Engine.ParkKind?
+Aw.Sindri.Core.Events.SuspensionSummary.ParkKind.init -> void
+Aw.Sindri.Core.Events.SuspensionSummary.Reason.get -> Aw.Sindri.Core.Workflow.Engine.ParkReason?
+Aw.Sindri.Core.Events.SuspensionSummary.Reason.init -> void
+Aw.Sindri.Core.Events.SuspensionSummary.SuspensionSummary(Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, string? Mirrors) -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta
+Aw.Sindri.Core.Events.WorkflowEventDelta.<Clone>$() -> Aw.Sindri.Core.Events.WorkflowEventDelta!
+Aw.Sindri.Core.Events.WorkflowEventDelta.Deconstruct(out Aw.Sindri.Core.Events.FrameSummary? Frame, out Aw.Sindri.Core.Events.SuspensionSummary? Suspension, out Aw.Sindri.Core.Events.SuspensionSummary? PendingPark, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Events.LoopCounter!>? Loops, out int? TokensSpent, out int? TokensGranted, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts, out string? Outcome) -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.Equals(Aw.Sindri.Core.Events.WorkflowEventDelta? other) -> bool
+Aw.Sindri.Core.Events.WorkflowEventDelta.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Sindri.Core.Events.WorkflowEventDelta.Facts.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.Frame.get -> Aw.Sindri.Core.Events.FrameSummary?
+Aw.Sindri.Core.Events.WorkflowEventDelta.Frame.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.Loops.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Events.LoopCounter!>?
+Aw.Sindri.Core.Events.WorkflowEventDelta.Loops.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.Outcome.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventDelta.Outcome.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.PendingPark.get -> Aw.Sindri.Core.Events.SuspensionSummary?
+Aw.Sindri.Core.Events.WorkflowEventDelta.PendingPark.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.Suspension.get -> Aw.Sindri.Core.Events.SuspensionSummary?
+Aw.Sindri.Core.Events.WorkflowEventDelta.Suspension.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.TokensGranted.get -> int?
+Aw.Sindri.Core.Events.WorkflowEventDelta.TokensGranted.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.TokensSpent.get -> int?
+Aw.Sindri.Core.Events.WorkflowEventDelta.TokensSpent.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDelta.WorkflowEventDelta(Aw.Sindri.Core.Events.FrameSummary? Frame, Aw.Sindri.Core.Events.SuspensionSummary? Suspension, Aw.Sindri.Core.Events.SuspensionSummary? PendingPark, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Events.LoopCounter!>? Loops, int? TokensSpent, int? TokensGranted, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts, string? Outcome) -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail
+Aw.Sindri.Core.Events.WorkflowEventDetail.<Clone>$() -> Aw.Sindri.Core.Events.WorkflowEventDetail!
+Aw.Sindri.Core.Events.WorkflowEventDetail.Amount.get -> int?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Amount.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Answer.get -> Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Answer.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.ArgumentsSha256.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventDetail.ArgumentsSha256.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Delta.get -> Aw.Sindri.Core.Events.WorkflowEventDelta!
+Aw.Sindri.Core.Events.WorkflowEventDetail.Delta.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Effects.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Events.WorkflowEventDetail.Effects.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Equals(Aw.Sindri.Core.Events.WorkflowEventDetail? other) -> bool
+Aw.Sindri.Core.Events.WorkflowEventDetail.Evidence.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>!
+Aw.Sindri.Core.Events.WorkflowEventDetail.Evidence.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Gates.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>!
+Aw.Sindri.Core.Events.WorkflowEventDetail.Gates.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Grant.get -> Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Grant.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Override.get -> Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Override.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Reason.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Reason.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Refusal.get -> Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Refusal.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.ReportSha256.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventDetail.ReportSha256.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.SourceSequence.get -> long?
+Aw.Sindri.Core.Events.WorkflowEventDetail.SourceSequence.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.TriggerActor.get -> string!
+Aw.Sindri.Core.Events.WorkflowEventDetail.TriggerActor.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.TriggerId.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Deconstruct(out string! Instance, out string! From, out string! To, out string! Trigger, out string? Outcome, out string? Run, out Aw.Sindri.Core.Events.WorkflowEventDetail? Detail) -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Detail.get -> Aw.Sindri.Core.Events.WorkflowEventDetail?
+Aw.Sindri.Core.Events.WorkflowEventPayload.Detail.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.WorkflowEventPayload(string! Instance, string! From, string! To, string! Trigger, string? Outcome, string? Run, Aw.Sindri.Core.Events.WorkflowEventDetail? Detail = null) -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.TriggerKey TriggerId, out string! TriggerActor, out long? SourceSequence, out string? ArgumentsSha256, out string? ReportSha256, out Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, out int? Amount, out string? Reason, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>! Gates, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>! Evidence, out Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord? Grant, out Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord? Override, out Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord? Refusal, out System.Collections.Generic.IReadOnlyList<string!>! Effects, out Aw.Sindri.Core.Events.WorkflowEventDelta! Delta) -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.TriggerId.get -> Aw.Sindri.Core.Workflow.Engine.TriggerKey
+Aw.Sindri.Core.Events.WorkflowEventDetail.WorkflowEventDetail(Aw.Sindri.Core.Workflow.Engine.TriggerKey TriggerId, string! TriggerActor, long? SourceSequence, string? ArgumentsSha256, string? ReportSha256, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, int? Amount, string? Reason, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>! Gates, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>! Evidence, Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord? Grant, Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord? Override, Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord? Refusal, System.Collections.Generic.IReadOnlyList<string!>! Effects, Aw.Sindri.Core.Events.WorkflowEventDelta! Delta) -> void
+override Aw.Sindri.Core.Events.FrameSummary.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.FrameSummary.GetHashCode() -> int
+override Aw.Sindri.Core.Events.FrameSummary.ToString() -> string!
+override Aw.Sindri.Core.Events.LoopCounter.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.LoopCounter.GetHashCode() -> int
+override Aw.Sindri.Core.Events.LoopCounter.ToString() -> string!
+override Aw.Sindri.Core.Events.SuspensionSummary.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.SuspensionSummary.GetHashCode() -> int
+override Aw.Sindri.Core.Events.SuspensionSummary.ToString() -> string!
+override Aw.Sindri.Core.Events.WorkflowEventDelta.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.WorkflowEventDelta.GetHashCode() -> int
+override Aw.Sindri.Core.Events.WorkflowEventDelta.ToString() -> string!
+override Aw.Sindri.Core.Events.WorkflowEventDetail.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.WorkflowEventDetail.GetHashCode() -> int
+override Aw.Sindri.Core.Events.WorkflowEventDetail.ToString() -> string!
+static Aw.Sindri.Core.Events.FrameSummary.operator !=(Aw.Sindri.Core.Events.FrameSummary? left, Aw.Sindri.Core.Events.FrameSummary? right) -> bool
+static Aw.Sindri.Core.Events.FrameSummary.operator ==(Aw.Sindri.Core.Events.FrameSummary? left, Aw.Sindri.Core.Events.FrameSummary? right) -> bool
+static Aw.Sindri.Core.Events.LoopCounter.operator !=(Aw.Sindri.Core.Events.LoopCounter? left, Aw.Sindri.Core.Events.LoopCounter? right) -> bool
+static Aw.Sindri.Core.Events.LoopCounter.operator ==(Aw.Sindri.Core.Events.LoopCounter? left, Aw.Sindri.Core.Events.LoopCounter? right) -> bool
+static Aw.Sindri.Core.Events.SuspensionSummary.operator !=(Aw.Sindri.Core.Events.SuspensionSummary? left, Aw.Sindri.Core.Events.SuspensionSummary? right) -> bool
+static Aw.Sindri.Core.Events.SuspensionSummary.operator ==(Aw.Sindri.Core.Events.SuspensionSummary? left, Aw.Sindri.Core.Events.SuspensionSummary? right) -> bool
+static Aw.Sindri.Core.Events.WorkflowEventDelta.Of(Aw.Sindri.Core.Workflow.Engine.Events.InstanceDelta! delta) -> Aw.Sindri.Core.Events.WorkflowEventDelta!
+static Aw.Sindri.Core.Events.WorkflowEventDelta.operator !=(Aw.Sindri.Core.Events.WorkflowEventDelta? left, Aw.Sindri.Core.Events.WorkflowEventDelta? right) -> bool
+static Aw.Sindri.Core.Events.WorkflowEventDelta.operator ==(Aw.Sindri.Core.Events.WorkflowEventDelta? left, Aw.Sindri.Core.Events.WorkflowEventDelta? right) -> bool
+static Aw.Sindri.Core.Events.WorkflowEventDetail.Of(Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEvent! recorded, Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger? trigger) -> Aw.Sindri.Core.Events.WorkflowEventDetail!
+static Aw.Sindri.Core.Events.WorkflowEventDetail.operator !=(Aw.Sindri.Core.Events.WorkflowEventDetail? left, Aw.Sindri.Core.Events.WorkflowEventDetail? right) -> bool
+static Aw.Sindri.Core.Events.WorkflowEventDetail.operator ==(Aw.Sindri.Core.Events.WorkflowEventDetail? left, Aw.Sindri.Core.Events.WorkflowEventDetail? right) -> bool
 Aw.Sindri.Core.Profile.SindriProfile.Workflow.get -> Aw.Sindri.Core.Profile.WorkflowSettings?
 Aw.Sindri.Core.Profile.SindriProfile.Workflow.init -> void
 Aw.Sindri.Core.Profile.WorkflowSettings

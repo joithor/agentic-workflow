@@ -71,7 +71,7 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
     internal async Task<LedgerAppend> Record(WorkflowEventRecord record, string key, string activityId, CancellationToken cancellationToken)
     {
         var grant = lease.Current ?? throw new InvalidOperationException("SND-LEASE-002: this process holds no lease; the event waits for one");
-        var payload = new WorkflowEventPayload(record.WorkflowId, record.From, record.To, record.Trigger, record.Outcome, record.Run);
+        var payload = new WorkflowEventPayload(record.WorkflowId, record.From, record.To, record.Trigger, record.Outcome, record.Run, record.Detail);
         var own = events.Scope;
         var scope = new EventScope(record.Actor ?? own.Actor, record.Tenant ?? own.Tenant, record.Ring ?? own.Ring);
         var entry = events.Entry(record.Type, payload, key, record.Item, scope) with { TemporalEvent = activityId };   // the key's third part (UI E-30)

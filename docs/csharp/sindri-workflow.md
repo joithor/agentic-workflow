@@ -565,7 +565,12 @@ active state runs its desk Step (`RunDeskStep`, unit (c)); a wait state, a park,
 Update), or a delivered `event` signal whose source fits the wait's `waitFor` (its event kind, its resource, or its
 child's end). A delivered event that fits no wait yet stays buffered until one does. An applied or refused trigger writes
 one ledger event (`workflow.transition` or `workflow.refused`) and sets the search attributes; a rejected one records
-nothing. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
+nothing. The row's payload is `WorkflowEventPayload` (instance, from, to, trigger kind, outcome, run) plus a `detail` projection of
+the decision's event (`WorkflowEventDetail`, §5.6): the trigger's id (its key: a command's nonce and arguments digest, a
+report's run and digest, an event's source sequence), actor, source sequence, answer variant and amount, any gates, evidence,
+grant, override and refusal records, the effect identities and the post-state delta (state names, reasons, counters and fact
+digests). It never holds an answer's text, a parked question or a fact's content. The `started` row carries the start's key
+and actor; a held event's expiry and the desk deadline's park, which have no decision, carry no `detail`. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
 refusal follows §5.8's precedence. Wait timeouts are P5's (P3 doesn't decide `DeadlineFired`), and a child wait doesn't
 start its child until P7.
 
