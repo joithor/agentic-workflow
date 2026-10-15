@@ -40,7 +40,7 @@ public sealed class ReviewMapTests : IDisposable
     {
         _ = await _world.ImportFixture();
 
-        var queue = await _world.Map.ReviewQueue(Drafts.Scope, MapWorld.None);
+        var queue = await _world.Map.ReviewQueue(limit: null, Drafts.Scope, MapWorld.None);
 
         Assert.Equal(ContextErrors.NoDraftMap.Code, queue.Error.Code);
     }
@@ -51,7 +51,7 @@ public sealed class ReviewMapTests : IDisposable
         _ = await Drafts.Build(_world);
         var session = MapWorld.Session(FixtureMap.Repo);
 
-        var queue = await _world.Map.ReviewQueue(session, MapWorld.None);
+        var queue = await _world.Map.ReviewQueue(limit: null, session, MapWorld.None);
         var bulk = await Decide(new ReviewDecision(ReviewVerb.AcceptDeterministic), session);
 
         Assert.Equal((ContextErrors.SessionsDisabled.Code, ContextErrors.SessionsDisabled.Code), (queue.Error.Code, bulk.Error.Code));
@@ -195,8 +195,8 @@ public sealed class ReviewMapTests : IDisposable
         var accepted = (await Decide(new ReviewDecision(ReviewVerb.Accept, _split))).Value.Written.Single();
         var rejected = (await Decide(new ReviewDecision(ReviewVerb.Reject, _close))).Value.Written.Single();
 
-        var history = await _world.Map.ReviewHistory(Drafts.Scope, MapWorld.None);
-        var session = await _world.Map.ReviewHistory(MapWorld.Session(FixtureMap.Repo), MapWorld.None);
+        var history = await _world.Map.ReviewHistory(limit: null, Drafts.Scope, MapWorld.None);
+        var session = await _world.Map.ReviewHistory(limit: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None);
 
         Assert.Equal(new[] { rejected.Value, accepted.Value }.Order(StringComparer.Ordinal), history.Value.Entries.Select(e => e.Id.Value).Order(StringComparer.Ordinal));
         Assert.Equal(ContextErrors.SessionsDisabled.Code, session.Error.Code);
@@ -227,5 +227,97 @@ public sealed class ReviewMapTests : IDisposable
 
         var row = Assert.Single((await _world.Store.Overrides(MapWorld.None)).Value, o => o.Link is not null);
         Assert.Equal((link, 1), (row.Link!.Value, result.Written.Count));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Undo_of_a_list_undoes_every_decision_with_one_row_each_in_one_call()
+    {
+        _ = await Drafts.Build(_world);
+        var first = (await Decide(new ReviewDecision(ReviewVerb.Accept, _split))).Value.Written.Single();
+        var second = (await Decide(new ReviewDecision(ReviewVerb.Reject, _close))).Value.Written.Single();
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));   // why: the clock stands still, and an undo is ordered after what it undoes by its time
+
+        var undone = (await Decide(new ReviewDecision(ReviewVerb.Undo, UndoesAll: [first, second]))).Value;
+
+        Assert.Equal(2, undone.Written.Count);
+        Assert.Equal(4, await Drafts.Rows(_world));
+        var queue = await Drafts.Queue(_world);
+        Assert.Contains(queue.Entries, e => e.Node.Value == _split.Value);
+        Assert.Contains(queue.Entries, e => e.Node.Value == _close.Value);
+        Assert.Equal(queue.Undecided, undone.Undecided);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Undo_list_with_one_undone_id_is_047_and_writes_nothing()
+    {
+        _ = await Drafts.Build(_world);
+        var first = (await Decide(new ReviewDecision(ReviewVerb.Accept, _split))).Value.Written.Single();
+        var second = (await Decide(new ReviewDecision(ReviewVerb.Reject, _close))).Value.Written.Single();
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+        _ = await Decide(new ReviewDecision(ReviewVerb.Undo, Undoes: second));
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+        var before = await Drafts.Rows(_world);
+
+        var refused = await Decide(new ReviewDecision(ReviewVerb.Undo, UndoesAll: [first, second]));
+
+        Assert.Equal(ContextErrors.ReviewTargetStale.Code, refused.Error.Code);
+        Assert.Contains(second.Value, refused.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(before, await Drafts.Rows(_world));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_queue_names_its_draft_version_and_commit_and_counts_by_group_and_kind()
+    {
+        var draft = (await Drafts.Build(_world)).Draft;
+
+        var queue = await Drafts.Queue(_world);
+
+        Assert.Equal((draft.Number, MapWorld.Head[..7]), (queue.Version.Number, queue.Version.Commit));
+        Assert.Equal(queue.Entries.Count(e => e.Group == ReviewGroup.Deterministic), queue.Counts.Deterministic);
+        Assert.Equal(queue.Counts.Deterministic, queue.ByKind.Values.Sum());
+        Assert.Equal(queue.Decided + queue.Counts.Deterministic + queue.Counts.Model, queue.Proposals);
+        Assert.Equal(ReviewTruncated.None, queue.Truncated);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Queue_caps_each_group_and_keeps_full_counts_over_the_facade()
+    {
+        _ = await Drafts.Build(_world);
+        var full = await Drafts.Queue(_world);
+
+        var capped = (await _world.Map.ReviewQueue(limit: 1, Drafts.Scope, MapWorld.None)).Value;
+
+        Assert.True(full.Counts.Deterministic > 1);
+        Assert.Equal(1, capped.Entries.Count(e => e.Group == ReviewGroup.Deterministic));
+        Assert.Equal(full.Counts, capped.Counts);
+        Assert.True(capped.Truncated.Deterministic);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(0)]
+    [InlineData(-3)]
+    [InlineData(1001)]
+    public async Task A_limit_outside_1_to_1000_is_006_for_the_queue_and_the_history(int limit)
+    {
+        _ = await Drafts.Build(_world);
+
+        var queue = await _world.Map.ReviewQueue(limit, Drafts.Scope, MapWorld.None);
+        var history = await _world.Map.ReviewHistory(limit, Drafts.Scope, MapWorld.None);
+
+        Assert.Equal((ContextErrors.QueryInvalid.Code, ContextErrors.QueryInvalid.Code), (queue.Error.Code, history.Error.Code));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_history_limit_keeps_the_newest_decisions_and_says_so()
+    {
+        _ = await Drafts.Build(_world);
+        _ = await Decide(new ReviewDecision(ReviewVerb.Accept, _split));
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+        var newest = (await Decide(new ReviewDecision(ReviewVerb.Reject, _close))).Value.Written.Single();
+
+        var history = (await _world.Map.ReviewHistory(limit: 1, Drafts.Scope, MapWorld.None)).Value;
+
+        Assert.Equal(newest, Assert.Single(history.Entries).Id);
+        Assert.True(history.Truncated);
     }
 }

@@ -112,7 +112,7 @@ public sealed class ProposeFromScopeTests : IDisposable
         var result = await Propose();
         _ = await Drafts.Build(_world);
 
-        var queue = (await _world.Map.ReviewQueue(MapWorld.Human, MapWorld.None)).Value;
+        var queue = (await _world.Map.ReviewQueue(limit: null, MapWorld.Human, MapWorld.None)).Value;
         Assert.Equal(MapVersionStatus.Draft, result.Draft.Status);
         Assert.Contains(queue.Entries, e => e.Node.Value == _restore.Value && e.Group == ReviewGroup.Model);
     }

@@ -23,14 +23,14 @@ internal sealed class MapReview(
     IService<ApplyReviewFileRequest, ReviewResult> applyFile,
     IService<PromoteMapRequest, MapPromoted> promote)
 {
-    public ValueTask<Result<ReviewQueueView>> ReviewQueue(ContextScope scope, CancellationToken cancellationToken) =>
-        queue.Handle(new ReviewQueueRequest(scope), cancellationToken);
+    public ValueTask<Result<ReviewQueueView>> ReviewQueue(int? limit, ContextScope scope, CancellationToken cancellationToken) =>
+        queue.Handle(new ReviewQueueRequest(scope, limit), cancellationToken);
 
     public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) =>
         review.Handle(new ReviewMapRequest(decision, scope), cancellationToken);
 
-    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(ContextScope scope, CancellationToken cancellationToken) =>
-        history.Handle(new ReviewHistoryRequest(scope), cancellationToken);
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(int? limit, ContextScope scope, CancellationToken cancellationToken) =>
+        history.Handle(new ReviewHistoryRequest(scope, limit), cancellationToken);
 
     public ValueTask<Result<ReviewExported>> ExportReview(string? path, ContextScope scope, CancellationToken cancellationToken) =>
         exportReview.Handle(new ExportReviewRequest(path, scope), cancellationToken);

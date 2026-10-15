@@ -56,8 +56,10 @@ public sealed class ContextLensesApiTests : IDisposable
 
         Assert.Equal(HttpStatusCode.OK, lenses.Status);
         var view = Json(lenses.Body);
-        Assert.Equal(Anchor, view.GetProperty("anchor").GetString());
-        Assert.All(["intent", "product", "code", "coverage", "conflicts"], name => Assert.True(view.TryGetProperty(name, out _), name));
+        Assert.Equal(Anchor, view.GetProperty("anchor").GetProperty("key").GetString());
+        Assert.All(["intent", "product", "code"], name => Assert.True(view.GetProperty("bands").TryGetProperty(name, out _), name));
+        Assert.All(["coverage", "conflicts", "edges", "degraded", "cites", "mapVersion", "asOf"], name => Assert.True(view.TryGetProperty(name, out _), name));
+        Assert.Equal((1, 2), (view.GetProperty("schemaVersion").GetInt32(), view.GetProperty("depth").GetInt32()));
         Assert.Equal(HttpStatusCode.OK, session.Status);
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (unknown.Status, unknown.Code));
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-044"), (draft.Status, draft.Code));
@@ -78,7 +80,8 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, root.Status);
         var view = Json(root.Body);
         Assert.Equal("src/", view.GetProperty("path").GetString());
-        Assert.Contains(view.GetProperty("entries").EnumerateArray(), e => e.GetProperty("name").GetString() == "layout" && e.GetProperty("directory").GetBoolean());
+        Assert.Contains(view.GetProperty("entries").EnumerateArray(), e => e.GetProperty("name").GetString() == "layout" && e.GetProperty("type").GetString() == "dir");
+        Assert.Equal(1, view.GetProperty("schemaVersion").GetInt32());
         Assert.Equal(HttpStatusCode.OK, unmapped.Status);
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-045"), (nope.Status, nope.Code));
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-045"), (outside.Status, outside.Code));
@@ -100,7 +103,7 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Contains("context_lenses", tools.Select(t => t.Name), StringComparer.Ordinal);
         Assert.True(tools.Single(t => t.Name == "context_lenses").ProtocolTool.Annotations?.ReadOnlyHint);
         Assert.NotEqual(true, result.IsError);
-        Assert.Equal(Anchor, result.StructuredContent!.Value.GetProperty("anchor").GetString());
+        Assert.Equal(Anchor, result.StructuredContent!.Value.GetProperty("anchor").GetProperty("key").GetString());
         Assert.Equal(true, bad.IsError);   // no draft argument over MCP
         await using var off = await OffHost();
         await using var offMcp = await McpSession.Open(off, FixtureMap.Repo, ct);
@@ -110,6 +113,72 @@ public sealed class ContextLensesApiTests : IDisposable
     }
 
     private async Task<GoldenHost> OffHost() => await Host(sessions: false);
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Lenses_depth_is_0_to_4_and_anything_else_is_006_over_http()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+        var route = "/sindri/context/lenses?anchor=" + Uri.EscapeDataString(Anchor);
+
+        var zero = await host.Http.Ask(Get(route + "&depth=0", Terminal(host)));
+        var four = await host.Http.Ask(Get(route + "&depth=4", Terminal(host)));
+        var five = await host.Http.Ask(Get(route + "&depth=5", Terminal(host)));
+        var negative = await host.Http.Ask(Get(route + "&depth=-1", Terminal(host)));
+
+        Assert.Equal((HttpStatusCode.OK, 0), (zero.Status, Json(zero.Body).GetProperty("depth").GetInt32()));
+        Assert.Equal((HttpStatusCode.OK, 4), (four.Status, Json(four.Body).GetProperty("depth").GetInt32()));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (five.Status, five.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (negative.Status, negative.Code));
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task An_app_caller_reads_a_clean_label_with_trust_untrusted()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+        await ImportDrafted(host);
+
+        var app = await host.Http.Ask(Get("/sindri/context/lenses?anchor=feature%3Aa", App(host)));
+        var terminal = await host.Http.Ask(Get("/sindri/context/lenses?anchor=feature%3Aa", Terminal(host)));
+
+        Assert.Equal(("Drafted B", "untrusted"), DraftedLabel(app.Body));
+        Assert.Equal(("Drafted B", "untrusted"), DraftedLabel(terminal.Body));
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_session_caller_reads_the_fenced_label()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+        await ImportDrafted(host);
+
+        var session = await host.Http.Ask(Get("/sindri/context/lenses?anchor=feature%3Aa", Session()));
+
+        Assert.Equal(("<untrusted source=\"map\">Drafted B</untrusted>", "untrusted"), DraftedLabel(session.Body));
+    }
+
+    private static (string Label, string Trust) DraftedLabel(string body)
+    {
+        var item = Json(body).GetProperty("bands").GetProperty("product").GetProperty("own").EnumerateArray().Single(i => i.GetProperty("node").GetString() == "feature:b");
+        return (item.GetProperty("label").GetString()!, item.GetProperty("trust").GetString()!);
+    }
+
+    /// <summary>A map whose feature B is a model's draft, with a deterministic file that implements both in the fixture repo (so a session of that repo sees them).</summary>
+    private static async Task ImportDrafted(GoldenHost host)
+    {
+        var file = Path.Combine(host.Home, "drafted-map.yaml");
+        await File.WriteAllTextAsync(file, string.Join('\n',
+            "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
+            "  - {key: \"feature:a\", label: \"A\"}",
+            "  - {key: \"feature:b\", label: \"Drafted B\", provenance: model, confidence: 0.5}",
+            "  - {key: \"code:src/a.ts\", label: \"a.ts\", provenance: deterministic}",
+            "edges:",
+            "  - {from: \"feature:b\", to: \"feature:a\", type: part-of}",
+            "  - {from: \"code:src/a.ts\", to: \"feature:a\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/a.ts\"}]}",
+            "  - {from: \"code:src/a.ts\", to: \"feature:b\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/a.ts\"}]}") + "\n", TestContext.Current.CancellationToken);
+        await ContextMapApiTests.Import(host, file);
+    }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task A_scoping_run_proposes_into_a_draft_idempotently_never_again_after_a_reject_and_never_into_current()

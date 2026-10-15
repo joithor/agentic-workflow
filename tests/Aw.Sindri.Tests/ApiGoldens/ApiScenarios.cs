@@ -21,14 +21,26 @@ internal static class ApiScenarios
         ("profile-approve", "preview"), ("profile-approve", "approved"), ("profile-approve", "already-approved"),
         ("profile-approve", "refused-session"), ("profile-approve", "refused-no-terminal"), ("profile-approve", "refused-origin"),
         ("profile-approve", "stale-hash"), ("profile-approve", "bad-body"),
+        .. ContextApiScenarios.Rows,
     ];
 
     /// <summary>Whether the scenario's host must refuse the prover label (its home isn't temporary).</summary>
     public static bool NeedsNonTemporaryHome(string slug, string scenario) => (slug, scenario) is ("status", "prover-refused");
 
+    /// <summary>Starts the host the scenario runs on: the plain golden host, or for the context routes one over a small git repo with a map.</summary>
+    public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct) =>
+        ContextApiScenarios.Handles(slug)
+            ? await ContextApiScenarios.Start(slug, scenario, ct)
+            : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct);
+
     /// <summary>Runs the scenario against <paramref name="host"/> and returns the body to compare.</summary>
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
     {
+        if (ContextApiScenarios.Handles(slug))
+        {
+            return await ContextApiScenarios.Body(host, slug, scenario, ct);
+        }
+
         var token = host.Token.Value;
         return (slug, scenario) switch
         {

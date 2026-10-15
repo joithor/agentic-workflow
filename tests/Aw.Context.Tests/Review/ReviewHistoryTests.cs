@@ -22,4 +22,19 @@ public sealed class ReviewHistoryTests
 
     [Fact, Trait("Lane", "unit")]
     public void No_overrides_is_an_empty_history() => Assert.Empty(ReviewHistory.Of([]).Entries);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_limit_keeps_the_newest_entries_and_says_when_older_ones_were_cut()
+    {
+        var rows = Enumerable.Range(0, 5).Select(i => SampleDrafts.Row(OverrideAction.Accept, "feature:n" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), at: SampleDrafts.At.AddMinutes(i))).ToArray();
+
+        var cut = ReviewHistory.Of(rows, limit: 2);
+        var all = ReviewHistory.Of(rows, limit: 5);
+
+        Assert.Equal([rows[4].ToId(), rows[3].ToId()], cut.Entries.Select(e => e.Id));
+        Assert.True(cut.Truncated);
+        Assert.Equal((5, false), (all.Entries.Count, all.Truncated));
+        Assert.Equal(200, ReviewHistory.DefaultLimit);
+        Assert.Equal(1000, ReviewHistory.MaxLimit);
+    }
 }

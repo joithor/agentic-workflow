@@ -11,6 +11,6 @@ internal sealed class GetContextReviewService(ContextScopes scopes, IContextEngi
     public async ValueTask<Result<ReviewQueueView>> Handle(GetContextReviewRequest request, CancellationToken cancellationToken)
     {
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
-        return scope.IsError ? scope.Error : await engine.ReviewQueue(scope.Value, cancellationToken).ConfigureAwait(false);
+        return scope.IsError ? scope.Error : await engine.ReviewQueue(request.Limit, scope.Value, cancellationToken).ConfigureAwait(false);
     }
 }

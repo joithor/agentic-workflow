@@ -35,16 +35,19 @@ internal static class McpSummaries
         return text.Append("The records, their text fenced as untrusted, are in structuredContent; cite them as [Cn].").ToString();
     }
 
-    /// <summary>context_lenses' summary: the band sizes, the conflicts and the coverage; never record text.</summary>
+    /// <summary>context_lenses' summary: the band sizes, the conflicts and the coverage line; never record text.</summary>
     /// <param name="view">The lenses.</param>
     /// <returns>The text.</returns>
     internal static string Lenses(LensesView view)
     {
+        var bands = view.Bands;
         var text = new StringBuilder(string.Create(CultureInfo.InvariantCulture,
-            $"lenses of {view.Anchor.Value} · map {view.Map}: intent {view.Intent.Items.Count}, product {view.Product.Items.Count}, code {view.Code.Items.Count}\n"));
-        _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"{view.Conflicts.Count} conflicts{(view.Conflicts.Count == 0 ? string.Empty : ": " + string.Join(", ", view.Conflicts.Select(c => c.Kind)))}"));
+            $"lenses of {view.Anchor.Key.Value} · map {view.MapVersion}: intent {bands.Intent.Counts.Records} records and {bands.Intent.Counts.Decisions} decisions, product {bands.Product.Counts.Own} own and {bands.Product.Counts.Affects} affected, code {bands.Code.Counts.Files} files\n"));
+        _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"{view.Conflicts.Count} conflicts{(view.Conflicts.Count == 0 ? string.Empty : ": " + string.Join(", ", view.Conflicts.Select(c => c.Kind.ToString().ToLowerInvariant())))}"));
         var c = view.Coverage;
-        _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"coverage: {c.Covered} of {c.Scope} in scope have a record, {c.Confirmed} confirmed, {c.Implemented} implemented in code"));
+        _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture,
+            $"coverage: {c.Intent.Covered} of {c.Scope} in scope have a record or decision, {c.Product.Confirmed} confirmed, {c.Code.Implemented} implemented in code ({c.Code.Suggested} suggested), {c.Gaps.Count} gaps"));
+        _ = text.AppendLine(view.Degraded.Count == 0 ? "degraded: none" : "degraded: " + string.Join(", ", view.Degraded));
         return text.Append("The bands, their text fenced as untrusted, are in structuredContent.").ToString();
     }
 

@@ -14,7 +14,7 @@ public sealed class ReviewSessionTests
     private static ReviewEntry Entry(string node, ReviewGroup group, string label, LinkId? link = null, OverrideId? orphan = null) =>
         new(NodeKey.From(node), link, group, label, group == ReviewGroup.Deterministic ? Provenance.Deterministic : Provenance.Model, 0.7, 1, [NodeKey.From("code:src/a.ts")], Parent: null, orphan);
 
-    private static ReviewQueueView Queue() => new("v14@0a1b2c3",
+    private static ReviewQueueView Queue() => ReviewQueueView.Of("v14@0a1b2c3",
     [
         Entry("surface:command/close-tab", ReviewGroup.Deterministic, "Close tab"),
         Entry("surface:command/switch-tab", ReviewGroup.Deterministic, "Switch tab"),
@@ -22,7 +22,7 @@ public sealed class ReviewSessionTests
         Entry("feature:groups", ReviewGroup.Model, "Tab groups"),
         Entry("feature:zoom", ReviewGroup.Model, "Zoom"),
         Entry("surface:command/long-gone", ReviewGroup.Orphaned, "accept long-gone", orphan: _orphan),
-    ], Decided: 0);
+    ], decided: 0);
 
     [Fact, Trait("Lane", "unit")]
     public void It_starts_by_offering_the_bulk_accept_of_the_deterministic_proposals_with_their_count()
@@ -96,7 +96,7 @@ public sealed class ReviewSessionTests
     [Fact, Trait("Lane", "unit")]
     public void An_unknown_key_asks_again_and_the_end_of_the_queue_ends_the_loop()
     {
-        var session = new ReviewSession(new ReviewQueueView("v14@0a1b2c3", [Entry("feature:layout", ReviewGroup.Model, "Layout")], 0));
+        var session = new ReviewSession(ReviewQueueView.Of("v14@0a1b2c3", [Entry("feature:layout", ReviewGroup.Model, "Layout")], 0));
         _ = session.Start();
 
         var again = session.Answer("zzz");
@@ -112,12 +112,12 @@ public sealed class ReviewSessionTests
     public void A_link_entry_is_decided_by_its_link_id_and_an_empty_queue_has_nothing_to_ask()
     {
         var link = LinkId.From("edge:0123456789abcdef");
-        var session = new ReviewSession(new ReviewQueueView("v14@0a1b2c3", [Entry("code:src/a.ts", ReviewGroup.Model, "src/a.ts implements Layout", link)], 0));
+        var session = new ReviewSession(ReviewQueueView.Of("v14@0a1b2c3", [Entry("code:src/a.ts", ReviewGroup.Model, "src/a.ts implements Layout", link)], 0));
 
         _ = session.Start();
         var accept = session.Answer("a");
 
         Assert.Equal(("accept", link.Value, null), (accept.Send!.Verb, accept.Send.Link, accept.Send.Node));
-        Assert.Null(new ReviewSession(new ReviewQueueView("v14@0a1b2c3", [], 0)).Start().Prompt);
+        Assert.Null(new ReviewSession(ReviewQueueView.Of("v14@0a1b2c3", [], 0)).Start().Prompt);
     }
 }

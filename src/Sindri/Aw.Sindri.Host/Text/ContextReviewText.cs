@@ -13,7 +13,14 @@ internal static class ContextReviewText
 
     internal static string Queue(ReviewQueueView queue)
     {
-        var text = new StringBuilder(Invariant($"draft {queue.Draft} · {queue.Undecided} undecided, {queue.Decided} decided\n"));
+        var counts = queue.Counts;
+        var text = new StringBuilder(Invariant($"draft {queue.Draft} · {queue.Undecided} undecided ({counts.Deterministic} deterministic, {counts.Model} model, {counts.Orphaned} orphaned), {queue.Decided} decided, {queue.Proposals} proposals\n"));
+        var cut = new[] { (queue.Truncated.Deterministic, "deterministic"), (queue.Truncated.Model, "model"), (queue.Truncated.Orphaned, "orphaned") }.Where(t => t.Item1).Select(t => t.Item2).ToList();
+        if (cut.Count > 0)
+        {
+            _ = text.AppendLine($"showing the first entries of each group; cut: {string.Join(", ", cut)} (fix: raise --limit)");
+        }
+
         if (queue.Entries.Count == 0)
         {
             return text.AppendLine("nothing left to decide: 'sindri context map promote' makes the draft current").ToString();
@@ -48,7 +55,7 @@ internal static class ContextReviewText
             _ = text.AppendLine(Invariant($"{e.Id.Value}  {e.Action.ToString().ToLowerInvariant()} {e.Link?.Value ?? e.Target.Value}{(e.Label is null ? string.Empty : $" '{e.Label}'")}  by {e.Who} at {e.At:O}{(e.Undoes is { } u ? $"  (undoes {u.Value})" : string.Empty)}{(e.Undone ? "  undone" : string.Empty)}"));
         }
 
-        return text.ToString();
+        return (history.Truncated ? text.AppendLine("older decisions were cut (fix: raise --limit)") : text).ToString();
     }
 
     internal static string Result(string verb, ReviewResult result)

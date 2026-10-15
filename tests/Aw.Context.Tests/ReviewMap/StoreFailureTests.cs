@@ -39,14 +39,14 @@ public sealed class StoreFailureTests : IDisposable
         var code = slice switch
         {
             "build" => Code(await _world.Map.BuildMap(progress: null, scope, MapWorld.None)),
-            "queue" => Code(await _world.Map.ReviewQueue(scope, MapWorld.None)),
+            "queue" => Code(await _world.Map.ReviewQueue(limit: null, scope, MapWorld.None)),
             "review" => Code(await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.Accept, Link: link), scope, MapWorld.None)),
             "export" => Code(await _world.Map.ExportReview(path: null, scope, MapWorld.None)),
             "apply" => Code(await _world.Map.ApplyReviewFile(file, scope, MapWorld.None)),
             "promote" => Code(await _world.Map.Promote(scope, MapWorld.None)),
             "propose" => Code(await _world.Map.Propose(proposal, scope, MapWorld.None)),
             "proposals" => Code(await _world.Map.Proposals("run-1", scope, MapWorld.None)),
-            "lenses" => Code(await _world.Engine.Lenses("feature:a", draft: false, scope, MapWorld.None)),
+            "lenses" => Code(await _world.Engine.Lenses("feature:a", draft: false, depth: null, scope, MapWorld.None)),
             "filemap" => Code(await _world.Engine.FileMap(new FileMapQuery(ContextRepoName.From(FixtureMap.Repo), "src/", UnmappedOnly: false, Draft: false), scope, MapWorld.None)),
             _ => Code(await _world.Engine.Query(new ContextQuery(Text: null, Symbol: "src/a.ts"), scope, MapWorld.None)),
         };

@@ -2,6 +2,7 @@ using Aw.Context.Core;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Proposals;
 using Aw.Kernel;
 
 namespace Aw.Context.Testing.Map;
@@ -11,6 +12,7 @@ public sealed class FakeGraphStore : IGraphStore
 {
     private readonly List<(MapVersion Version, GraphSnapshot Graph)> _versions = [];
     private readonly List<MapOverride> _overrides = [];
+    private readonly Dictionary<string, ScopeProposal> _runs = new(StringComparer.Ordinal);
     private int _last;   // version numbers are never reused, as with the SQLite store's AUTOINCREMENT
 
     /// <summary>When set, every call fails with it (a store that can't open).</summary>
@@ -119,6 +121,18 @@ public sealed class FakeGraphStore : IGraphStore
         ArgumentNullException.ThrowIfNull(overrides);
         return Results.Success(Append(overrides));
     });
+
+    /// <inheritdoc/>
+    public ValueTask<Result<int>> SaveRun(ScopeProposal proposal, CancellationToken cancellationToken) => Done(() =>
+    {
+        ArgumentNullException.ThrowIfNull(proposal);
+        _runs[proposal.Run] = proposal;
+        return Results.Success(proposal.Surfaces.Count);
+    });
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ScopeProposal?>> Run(string run, CancellationToken cancellationToken) =>
+        Done(() => Results.Success(_runs.TryGetValue(run, out var saved) ? saved : null));
 
     private int Append(IReadOnlyList<MapOverride> overrides)
     {

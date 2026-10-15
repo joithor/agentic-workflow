@@ -1,6 +1,7 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Proposals;
 using Aw.Context.Infrastructure.Store;
 using Aw.Kernel;
 using Aw.Kernel.Data;
@@ -178,6 +179,10 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         var open = await database.Writable(cancellationToken).ConfigureAwait(false);
         return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).AppendOverrides(overrides, cancellationToken).ConfigureAwait(false);
     }
+
+    public ValueTask<Result<int>> SaveRun(ScopeProposal proposal, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public ValueTask<Result<ScopeProposal?>> Run(string run, CancellationToken cancellationToken) => throw new NotSupportedException();
 
     private async ValueTask<Result<IReadOnlyList<T>>> Query<T>(SqlStatement statement, IRowMapper<T> mapper, CancellationToken cancellationToken)
     {

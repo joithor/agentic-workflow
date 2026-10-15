@@ -26,7 +26,7 @@ internal sealed class GetFileMapService(MapReader reader, IRepoReader repos) : I
             return repo.IsError ? repo.Error : map.IsError ? map.Error : files.Error;
         }
 
-        return FileMapBuilder.Build(map.Value.Snapshot.Label, query, files.Value, map.Value.Graph);
+        return FileMapBuilder.Build(new FileMapBasis(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"v{map.Value.Snapshot.Version.Number}"), string.Empty), query, files.Value, map.Value.Graph);
     }
 
     private static Result<ContextRepo> Addressed(ContextScope scope, ContextRepoName name)

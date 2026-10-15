@@ -26,7 +26,7 @@ internal static class Drafts
 
     public static async Task<ReviewQueueView> Queue(MapWorld world)
     {
-        var queue = await world.Map.ReviewQueue(Scope, MapWorld.None);
+        var queue = await world.Map.ReviewQueue(limit: null, Scope, MapWorld.None);
         return queue.IsSuccess ? queue.Value : throw new InvalidOperationException(queue.Error.Message);
     }
 

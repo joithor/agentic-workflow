@@ -13,7 +13,7 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="output">Where the verbs write.</param>
 internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
 {
-    private const string Forms = "context lenses <anchor> [--draft] [--json] | context filemap --repo <repo> [--path <dir>] [--unmapped] [--draft] [--json] | context filemap accept|reject <link-id>";
+    private const string Forms = "context lenses <anchor> [--depth <0-4>] [--draft] [--json] | context filemap --repo <repo> [--path <dir>] [--unmapped] [--draft] [--json] | context filemap accept|reject <link-id>";
 
     internal Task<int> Run(string[] args, CancellationToken ct) => args switch
     {
@@ -22,12 +22,13 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
         _ => output.Error(SindriErrors.UnknownVerb.With($"'context {string.Join(' ', args)}' is not a lenses or filemap command: {Forms}")),
     };
 
-    private async Task<int> Lenses((string Anchor, bool Draft, bool Json) o, CancellationToken ct)
+    private async Task<int> Lenses((string Anchor, string? Depth, bool Draft, bool Json) o, CancellationToken ct)
     {
-        var answer = await client.Get<LensesView>("/sindri/context/lenses?anchor=" + Uri.EscapeDataString(o.Anchor) + (o.Draft ? "&draft=true" : string.Empty), ct).ConfigureAwait(false);
+        var query = "?anchor=" + Uri.EscapeDataString(o.Anchor) + (o.Depth is null ? string.Empty : "&depth=" + Uri.EscapeDataString(o.Depth)) + (o.Draft ? "&draft=true" : string.Empty);
+        var answer = await client.Get<LensesView>("/sindri/context/lenses" + query, ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text(ContextLensText.Lenses(answer.Value.Value), 0).ConfigureAwait(false);
+            : await output.Text(ContextLensText.Lenses(answer.Value.Value, fence: client.SessionReason is null), 0).ConfigureAwait(false);
     }
 
     private async Task<int> FileMap((string Repo, string? Path, bool Unmapped, bool Draft, bool Json) o, CancellationToken ct)
@@ -42,11 +43,11 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
 
     private async Task<int> Failed(Kernel.Error error) => ContextExit.For(error, await output.Error(error).ConfigureAwait(false));
 
-    /// <summary>'&lt;anchor&gt;' with [--draft] and [--json] in any order.</summary>
-    private static (string Anchor, bool Draft, bool Json)? Lenses(string[] rest)
+    /// <summary>'&lt;anchor&gt;' with [--depth N], [--draft] and [--json] in any order.</summary>
+    private static (string Anchor, string? Depth, bool Draft, bool Json)? Lenses(string[] rest)
     {
-        var flags = Flags(rest, valued: [], bare: ["--draft", "--json"]);
-        return flags is { Words: [var anchor] } ? (anchor, flags.Bare.Contains("--draft"), flags.Bare.Contains("--json")) : null;
+        var flags = Flags(rest, valued: ["--depth"], bare: ["--draft", "--json"]);
+        return flags is { Words: [var anchor] } ? (anchor, flags.Values.GetValueOrDefault("--depth"), flags.Bare.Contains("--draft"), flags.Bare.Contains("--json")) : null;
     }
 
     /// <summary>'--repo R' with [--path P] [--unmapped] [--draft] [--json] in any order.</summary>

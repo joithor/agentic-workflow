@@ -57,7 +57,7 @@ internal static class Engines
         return new ContextEngine(new QueryContextService(catalog, scrubbers, new SequentialIdGenerator(), clock, graphs),
             new SourcesStatusService(docs, catalog, scrubbers, clock), new RefreshDocsService(docs, scrubbers), scrubbers, Map(clock, store, scrubbers),
             new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers),
-                new GetLensesService(graphs, scrubbers), new GetFileMapService(graphs, repos)),
+                new GetLensesService(graphs, scrubbers, clock), new GetFileMapService(graphs, repos)),
             Probes(clock));
     }
 

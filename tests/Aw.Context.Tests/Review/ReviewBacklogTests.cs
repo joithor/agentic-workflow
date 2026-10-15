@@ -149,4 +149,67 @@ public sealed class ReviewBacklogTests
         Assert.Empty(queue.Entries);
         Assert.Equal(0, queue.Undecided);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Counts_split_the_undecided_entries_by_group_and_proposals_add_what_is_decided()
+    {
+        var queue = Queue(SampleDrafts.Row(OverrideAction.Accept, "surface:command/close-tab"), SampleDrafts.Row(OverrideAction.Rename, "feature:gone", "Gone"));
+
+        Assert.Equal(new QueueCounts(Deterministic: 1, Model: 5, Orphaned: 1), queue.Counts);
+        Assert.Equal(7, queue.Undecided);
+        Assert.Equal((1, 7), (queue.Decided, queue.Proposals));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void By_kind_counts_the_undecided_deterministic_proposals_per_node_kind()
+    {
+        var graph = new GraphBuilder().Node("feature:tabs")
+            .Node("surface:command/a", provenance: Provenance.Deterministic).Node("surface:command/b", provenance: Provenance.Deterministic)
+            .Node("action:tabs.open", provenance: Provenance.Deterministic).Node("feature:tabs.x", provenance: Provenance.Model).Build();
+
+        var queue = ReviewBacklog.Build("v1@a", graph, []);
+
+        Assert.Equal([("action", 1), ("surface", 2)], queue.ByKind.OrderBy(k => k.Key, StringComparer.Ordinal).Select(k => (k.Key, k.Value)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Decided_counts_only_proposals_of_this_draft_not_every_target_with_a_standing_decision()
+    {
+        var queue = Queue(SampleDrafts.Row(OverrideAction.Accept, "feature:tabs"), SampleDrafts.Row(OverrideAction.Accept, "feature:elsewhere"), SampleDrafts.Row(OverrideAction.Reject, "feature:layout"));
+
+        Assert.Equal(1, queue.Decided);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_decided_scoping_proposal_counts_as_decided()
+    {
+        var run = new ProposalPayload("run-1", ContextRepoName.From("aw-split-panes"), NodeKind.Feature, SampleDrafts.Key("feature:tabs"));
+        var proposal = new MapOverride(OverrideAction.Propose, SampleDrafts.Key("feature:tabs.pinning"), "service:engine", SampleDrafts.At, "Tab pinning", Proposal: run);
+
+        var queue = Queue(proposal, SampleDrafts.Row(OverrideAction.Accept, "feature:tabs.pinning", at: SampleDrafts.At.AddMinutes(1)));
+
+        Assert.Equal(1, queue.Decided);
+        Assert.DoesNotContain(queue.Entries, e => e.Node.Value == "feature:tabs.pinning");
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Queue_caps_each_group_and_keeps_full_counts()
+    {
+        var builder = new GraphBuilder().Node("feature:tabs");
+        for (var i = 0; i < 3; i++)
+        {
+            _ = builder.Node("surface:command/c" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), provenance: Provenance.Deterministic);
+        }
+
+        _ = builder.Node("feature:m", provenance: Provenance.Model);
+        var full = ReviewBacklog.Build("v1@a", builder.Build(), []);
+
+        var capped = full.Capped(2);
+
+        Assert.Equal(["deterministic", "deterministic", "model"], capped.Entries.Select(e => e.Group.ToString().ToLowerInvariant()), StringComparer.Ordinal);
+        Assert.Equal(new QueueCounts(3, 1, 0), capped.Counts);
+        Assert.Equal(new ReviewTruncated(Deterministic: true, Model: false, Orphaned: false), capped.Truncated);
+        Assert.Equal(4, capped.Undecided);
+        Assert.Equal(full.Truncated, ReviewTruncated.None);
+    }
 }

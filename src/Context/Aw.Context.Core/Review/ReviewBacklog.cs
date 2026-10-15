@@ -27,7 +27,7 @@ public static class ReviewBacklog
             .Concat(undecided.Where(e => e.Group == ReviewGroup.Model).OrderByDescending(e => e.Impact).ThenBy(e => e.Node.Value, StringComparer.Ordinal).ThenBy(e => e.Link?.Value, StringComparer.Ordinal))
             .Concat(applied.Orphaned.Where(o => o.Action != OverrideAction.Propose).Select(Orphan));
         var decided = OverrideLog.Active(overrides).Where(OverrideLog.Decides).Select(o => o.Link?.Value ?? o.Target.Value).Distinct(StringComparer.Ordinal).Count();
-        return new ReviewQueueView(label, [.. ordered], decided);
+        return ReviewQueueView.Of(label, [.. ordered], decided);
     }
 
     private static ReviewEntry NodeEntry(GraphSnapshot graph, GraphNode node)

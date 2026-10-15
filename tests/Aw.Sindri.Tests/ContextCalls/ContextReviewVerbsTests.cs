@@ -32,9 +32,13 @@ public sealed class ContextReviewVerbsTests : IDisposable
         return await verbs.Run(args, Token);
     }
 
-    private async Task<int> Lens(ScriptedApi api, params string[] args)
+    private async Task<int> Lens(ScriptedApi api, params string[] args) => await LensAs(session: null, api, args);
+
+    /// <summary>The lens verbs as a human at a terminal (<paramref name="session"/> with no signal) or as a session.</summary>
+    private async Task<int> LensAs(AgentSession? session, ScriptedApi api, params string[] args)
     {
-        using var client = new ControlPlaneClient(_probe, SliceHarness.Json, handler: api);
+        var headers = session is null ? null : CallerHeaders.For(session, new InMemoryHumanTokenStore(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null));
+        using var client = new ControlPlaneClient(_probe, SliceHarness.Json, headers, handler: api);
         return await new ContextLensVerbs(client, new Output(_out, _error, SliceHarness.Json)).Run(args, Token);
     }
 
@@ -117,7 +121,7 @@ public sealed class ContextReviewVerbsTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task The_loop_sends_the_bulk_accept_and_each_decision_and_skip_sends_nothing()
     {
-        const string Queue = """{"draft":"v14@0a1b2c3","entries":[{"node":"surface:command/close-tab","link":null,"group":"deterministic","label":"Close tab","provenance":"deterministic","confidence":1,"impact":1,"files":[],"parent":null},{"node":"feature:layout","link":null,"group":"model","label":"Layout","provenance":"model","confidence":0.7,"impact":1,"files":[],"parent":null},{"node":"feature:zoom","link":null,"group":"model","label":"Zoom","provenance":"model","confidence":0.6,"impact":0,"files":[],"parent":null}],"decided":0}""";
+        const string Queue = """{"draft":"v14@0a1b2c3","entries":[{"node":"surface:command/close-tab","link":null,"group":"deterministic","label":"Close tab","provenance":"deterministic","confidence":1,"impact":1,"files":[],"parent":null},{"node":"feature:layout","link":null,"group":"model","label":"Layout","provenance":"model","confidence":0.7,"impact":1,"files":[],"parent":null},{"node":"feature:zoom","link":null,"group":"model","label":"Zoom","provenance":"model","confidence":0.6,"impact":0,"files":[],"parent":null}],"decided":0,"proposals":3,"version":{"number":14,"commit":"0a1b2c3"},"counts":{"deterministic":1,"model":2,"orphaned":0},"byKind":{"surface":1},"truncated":{"deterministic":false,"model":false,"orphaned":false}}""";
         const string Done = """{"result":{"written":["ovr_0123456789abcdef"],"skipped":[],"undecided":1},"sequence":9,"challenge":null,"summary":null}""";
         var api = new ScriptedApi(Ok(Queue), Ok(Done), Ok(Done));
 
@@ -155,5 +159,50 @@ public sealed class ContextReviewVerbsTests : IDisposable
 
         Assert.Equal(("GET", "/sindri/context/lenses?anchor=feature%3Atabs.tab-manager&draft=true"), (empty.Calls[0].Method, empty.Calls[0].Route));
         Assert.Equal((1, 1, 2), (lenses, filemap, bad));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Lenses_send_the_depth_and_a_human_cli_fences_the_untrusted_labels_a_session_cli_leaves_them()
+    {
+        const string Lenses = """{"schemaVersion":1,"anchor":{"key":"feature:a","label":"A","kind":"feature","trust":"trusted"},"mapVersion":"v1","draft":false,"depth":3,"asOf":"2026-10-14T09:12:40Z","bands":{"intent":{"records":[{"key":"record:linear:issue/1","label":"Spec <x>","source":"linear","mentions":["feature:a"],"trust":"untrusted","state":"unchecked","cites":[]}],"decisions":[],"counts":{"records":1,"decisions":0,"orphaned":null},"truncated":false},"product":{"own":[],"neighbors":[],"affects":[],"counts":{"own":0,"affects":0},"edges":[],"truncated":false},"code":{"files":[],"symbols":{"state":"unavailable","reason":"index not built","items":[]},"counts":{"files":0,"symbols":0,"featuresWithNoCode":0},"truncated":false}},"edges":[],"conflicts":[],"coverage":{"scope":1,"intent":{"covered":1,"of":1},"product":{"confirmed":1,"of":1},"code":{"implemented":0,"of":1,"level":"file","suggested":0},"gaps":[]},"degraded":[],"cites":{}}""";
+        var human = new ScriptedApi(Ok(Lenses));
+        var humanExit = await LensAs(new AgentSession(Signal: null, Terminal: true, Prover: false), human, "lenses", "feature:a", "--depth", "3");
+        var humanText = _out.ToString();
+        _out.GetStringBuilder().Clear();
+        var session = new ScriptedApi(Ok(Lenses));
+
+        var sessionExit = await LensAs(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false), session, "lenses", "feature:a");
+
+        Assert.True(humanExit == 0 && sessionExit == 0, _error.ToString());
+        Assert.Equal("/sindri/context/lenses?anchor=feature%3Aa&depth=3", human.Calls[0].Route);
+        Assert.Contains("<untrusted source=\"map\">Spec &lt;x&gt;</untrusted>", humanText, StringComparison.Ordinal);
+        Assert.Contains("Spec <x>", _out.ToString(), StringComparison.Ordinal);   // the server fenced it for a session; the CLI doesn't fence again
+        Assert.DoesNotContain("<untrusted", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Map_status_with_an_anchor_sends_it_and_prints_the_coverage()
+    {
+        const string Status = """{"version":{"number":1,"repo":"aw-split-panes","commit":null,"keyVersion":1,"created":"2026-10-15T00:00:00Z","status":"current"},"counts":{"nodes":10,"edges":13,"aliases":0,"decisions":2,"overrides":1},"orphaned":1,"retained":0,"scopedTo":null,"coverage":{"scope":6,"intent":{"covered":2,"of":6},"product":{"confirmed":6,"of":6},"code":{"implemented":2,"of":6,"level":"file","suggested":1},"gaps":[]}}""";
+        var api = new ScriptedApi(Ok(Status));
+
+        var exit = await Run(api, interactive: false, string.Empty, "status", "--anchor", "feature:tabs.tab-manager");
+
+        Assert.True(exit == 0, _error.ToString());
+        Assert.Equal("/sindri/context/map?anchor=feature%3Atabs.tab-manager", api.Calls[0].Route);
+        Assert.Contains("coverage: scope 6 · intent 2 of 6", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_review_queue_and_history_send_the_limit_flag()
+    {
+        var queue = new ScriptedApi(Problem(HttpStatusCode.Conflict, "SND-CONTEXT-044", "none"));
+        var history = new ScriptedApi(Problem(HttpStatusCode.Conflict, "SND-CONTEXT-044", "none"));
+
+        _ = await Run(queue, interactive: false, string.Empty, "review", "--list", "--limit", "5");
+        _ = await Run(history, interactive: false, string.Empty, "review", "--history", "--limit", "7");
+
+        Assert.Equal("/sindri/context/map/review?limit=5", queue.Calls[0].Route);
+        Assert.Equal("/sindri/context/map/review/history?limit=7", history.Calls[0].Route);
     }
 }

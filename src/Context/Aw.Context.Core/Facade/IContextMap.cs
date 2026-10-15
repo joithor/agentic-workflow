@@ -35,10 +35,11 @@ public interface IContextMap
     public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>The current version and its counts.</summary>
+    /// <param name="anchor">A node key, alias or label whose own scope the answer also reports the coverage of, or null for none.</param>
     /// <param name="scope">The profile's context section and repos, and the caller: a session sees its repo's scope only.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The status, or SND-CONTEXT-001/003/020/030.</returns>
-    public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken);
+    public ValueTask<Result<MapStatusView>> MapStatus(string? anchor, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>Doctor 'context:map': whether there is a current map and whether overrides are orphaned.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>
@@ -66,10 +67,11 @@ public interface IContextMap
     public ValueTask<Result<MapBuildReport>> BuildMap(IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>What is left to decide in the latest draft.</summary>
+    /// <param name="limit">The most entries per group (1 to 1000), or null for 100.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The queue, or SND-CONTEXT-001/004/044.</returns>
-    public ValueTask<Result<ReviewQueueView>> ReviewQueue(ContextScope scope, CancellationToken cancellationToken);
+    public ValueTask<Result<ReviewQueueView>> ReviewQueue(int? limit, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>Applies one review decision: one override row (accept-deterministic: one per entry). Sindri checks the verb's class first (X63).</summary>
     /// <param name="decision">The decision.</param>
@@ -79,10 +81,11 @@ public interface IContextMap
     public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>The override log, newest first, with what each undo cancelled: the ids "map review --undo" takes.</summary>
+    /// <param name="limit">The most entries (1 to 1000), or null for 200.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The history, or SND-CONTEXT-001/004/020.</returns>
-    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(ContextScope scope, CancellationToken cancellationToken);
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(int? limit, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>Writes the queue as a review file under the exports folder, to be edited and applied with <see cref="ApplyReviewFile"/>.</summary>
     /// <param name="path">A name or path under the exports folder, or null.</param>

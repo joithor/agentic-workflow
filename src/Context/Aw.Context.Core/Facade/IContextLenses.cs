@@ -13,10 +13,11 @@ public interface IContextLenses
     /// <summary>The intent, product and code bands around one node.</summary>
     /// <param name="anchor">A node key, alias or label.</param>
     /// <param name="draft">True to read the latest draft instead of the current map.</param>
+    /// <param name="depth">How far the neighbors reach and the cascade runs (0 to 4), or null for the profile's 'context.cascadeDepth'.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The lenses, or SND-CONTEXT-001/003/004/020/030/037/044.</returns>
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, ContextScope scope, CancellationToken cancellationToken);
+    /// <returns>The lenses, or SND-CONTEXT-001/003/004/006/020/030/037/044.</returns>
+    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>The direct children of a repo path with their status.</summary>
     /// <param name="query">The repo, the path and the filters.</param>

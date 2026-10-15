@@ -66,7 +66,7 @@ public sealed class ContextReviewApiTests : IDisposable
         return await run.Run(new ScheduledRun(grant, DateTimeOffset.UnixEpoch), TestContext.Current.CancellationToken);
     }
 
-    private static string Review(string verb, string? node = null, string? override_ = null, object? answer = null, string? path = null, string? label = null, string? other = null) =>
+    private static string Review(string verb, string? node = null, string? override_ = null, object? answer = null, string? path = null, string? label = null, string? other = null, string[]? overrides = null) =>
         JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["verb"] = verb,
@@ -76,6 +76,7 @@ public sealed class ContextReviewApiTests : IDisposable
             ["path"] = path,
             ["label"] = label,
             ["other"] = other,
+            ["overrides"] = overrides,
         });
 
     private static JsonElement Json(string body) => JsonDocument.Parse(body).RootElement;
@@ -123,6 +124,67 @@ public sealed class ContextReviewApiTests : IDisposable
         Assert.Contains("\"verb\":\"undo\"", recorded.Value!.Envelope.Payload, StringComparison.Ordinal);
         Assert.Contains(id, history.Body, StringComparison.Ordinal);
         Assert.Contains("\"undone\":true", history.Body, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Undo_of_a_list_is_all_or_none_and_records_one_event_with_the_row_count()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host(sessions: false);
+        Assert.True((await Run(host, "context-rebuild")).IsSuccess);
+        var entries = (await Queue(host)).GetProperty("entries");
+        var ids = new List<string>();
+        foreach (var node in new[] { entries[0].GetProperty("node").GetString()!, entries[1].GetProperty("node").GetString()! })
+        {
+            var accepted = await host.Http.Ask(Post("/sindri/context/map/review", Review("accept", node), App(host)));
+            ids.Add(Json(accepted.Body).GetProperty("result").GetProperty("written")[0].GetString()!);
+        }
+
+        ((Microsoft.Extensions.Time.Testing.FakeTimeProvider)host.App.Services.GetRequiredService<TimeProvider>()).Advance(TimeSpan.FromMinutes(1));   // why: the golden host's clock stands still, and an undo is ordered after what it undoes by its time
+        var undone = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", overrides: [.. ids]), App(host)));
+        var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapReviewed, ct);
+        var again = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", overrides: [.. ids]), App(host)));
+        var both = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", override_: ids[0], overrides: [ids[1]]), App(host)));
+        var empty = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", overrides: []), App(host)));
+        var tooMany = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", overrides: [.. Enumerable.Repeat("ovr_0123456789abcdef", 1001)]), App(host)));
+        var history = Json((await host.Http.Ask(Get("/sindri/context/map/review/history", Terminal(host)))).Body).GetProperty("entries");
+
+        Assert.Equal(HttpStatusCode.OK, undone.Status);
+        Assert.Equal(2, Json(undone.Body).GetProperty("result").GetProperty("written").GetArrayLength());
+        Assert.Contains("\"rows\":2", recorded.Value!.Envelope.Payload, StringComparison.Ordinal);
+        Assert.Equal((HttpStatusCode.Conflict, "SND-CONTEXT-047"), (again.Status, again.Code));
+        Assert.Contains(ids[0], again.Body, StringComparison.Ordinal);
+        Assert.Equal(("SND-CLI-003", "SND-CLI-003", "SND-CLI-003"), (both.Code, empty.Code, tooMany.Code));
+        Assert.Equal(4, history.GetArrayLength());
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task The_queue_carries_its_version_counts_and_kinds_and_caps_each_group_at_the_limit()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host(sessions: false);
+        Assert.True((await Run(host, "context-rebuild")).IsSuccess);
+
+        var full = Json((await host.Http.Ask(Get("/sindri/context/map/review", Terminal(host)))).Body);
+        var capped = Json((await host.Http.Ask(Get("/sindri/context/map/review?limit=1", Terminal(host)))).Body);
+        var zero = await host.Http.Ask(Get("/sindri/context/map/review?limit=0", Terminal(host)));
+        var huge = await host.Http.Ask(Get("/sindri/context/map/review?limit=1001", Terminal(host)));
+        var historyZero = await host.Http.Ask(Get("/sindri/context/map/review/history?limit=0", Terminal(host)));
+        var history = Json((await host.Http.Ask(Get("/sindri/context/map/review/history?limit=1", Terminal(host)))).Body);
+
+        var deterministic = full.GetProperty("counts").GetProperty("deterministic").GetInt32();
+        Assert.True(deterministic > 1);
+        Assert.True(full.GetProperty("version").GetProperty("number").GetInt32() > 0);
+        Assert.Equal(7, full.GetProperty("version").GetProperty("commit").GetString()!.Length);
+        Assert.Equal(deterministic, full.GetProperty("byKind").EnumerateObject().Sum(k => k.Value.GetInt32()));
+        Assert.Equal(deterministic, capped.GetProperty("counts").GetProperty("deterministic").GetInt32());
+        Assert.Equal(1, capped.GetProperty("entries").EnumerateArray().Count(e => e.GetProperty("group").GetString() == "deterministic"));
+        Assert.True(capped.GetProperty("truncated").GetProperty("deterministic").GetBoolean());
+        Assert.False(full.GetProperty("truncated").GetProperty("deterministic").GetBoolean());
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (zero.Status, zero.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (huge.Status, huge.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (historyZero.Status, historyZero.Code));
+        Assert.False(history.GetProperty("truncated").GetBoolean());
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

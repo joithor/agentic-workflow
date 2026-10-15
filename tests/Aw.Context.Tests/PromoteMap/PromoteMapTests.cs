@@ -79,7 +79,7 @@ public sealed class PromoteMapTests : IDisposable
 
         var promoted = (await _world.Map.Promote(Drafts.Scope, MapWorld.None)).Value;
 
-        var status = (await _world.Map.MapStatus(Drafts.Scope, MapWorld.None)).Value;
+        var status = (await _world.Map.MapStatus(anchor: null, Drafts.Scope, MapWorld.None)).Value;
         Assert.Equal(promoted.Version.Number, status.Version.Number);
         Assert.True(status.Counts.Nodes > 0);
     }

@@ -11,6 +11,6 @@ internal sealed class GetContextReviewHistoryService(ContextScopes scopes, ICont
     public async ValueTask<Result<ReviewHistoryView>> Handle(GetContextReviewHistoryRequest request, CancellationToken cancellationToken)
     {
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
-        return scope.IsError ? scope.Error : await engine.ReviewHistory(scope.Value, cancellationToken).ConfigureAwait(false);
+        return scope.IsError ? scope.Error : await engine.ReviewHistory(request.Limit, scope.Value, cancellationToken).ConfigureAwait(false);
     }
 }

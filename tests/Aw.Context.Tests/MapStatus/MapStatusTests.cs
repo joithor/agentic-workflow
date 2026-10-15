@@ -14,7 +14,7 @@ public sealed class MapStatusTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Without_a_map_status_is_SND_CONTEXT_030_with_its_fix()
     {
-        var status = await _world.Map.MapStatus(MapWorld.Human, MapWorld.None);
+        var status = await _world.Map.MapStatus(anchor: null, MapWorld.Human, MapWorld.None);
 
         Assert.Equal(ContextErrors.NoMap.Code, status.Error.Code);
         Assert.Contains("fix: sindri context map import <file>", status.Error.Message, StringComparison.Ordinal);
@@ -26,7 +26,7 @@ public sealed class MapStatusTests : IDisposable
         _ = await _world.ImportFixture();
         _ = await _world.ImportFixture();
 
-        var status = (await _world.Map.MapStatus(MapWorld.Human, MapWorld.None)).Value;
+        var status = (await _world.Map.MapStatus(anchor: null, MapWorld.Human, MapWorld.None)).Value;
 
         Assert.Equal((2, MapVersionStatus.Current), (status.Version.Number, status.Version.Status));
         Assert.Equal(new MapCounts(20, 21, 1, 1, 2), status.Counts);
@@ -39,7 +39,7 @@ public sealed class MapStatusTests : IDisposable
     {
         _ = await _world.ImportFixture();
 
-        var status = (await _world.Map.MapStatus(MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
+        var status = (await _world.Map.MapStatus(anchor: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
 
         Assert.Equal(new MapCounts(FixtureMap.ScopedNodes.Count, 2, 1, 0, 1), status.Counts);
         Assert.Equal(FixtureMap.Repo, status.ScopedTo?.Value);
@@ -52,7 +52,7 @@ public sealed class MapStatusTests : IDisposable
     {
         _ = await _world.ImportFixture();
 
-        var status = await _world.Map.MapStatus(MapWorld.Session(repo, enabled), MapWorld.None);
+        var status = await _world.Map.MapStatus(anchor: null, MapWorld.Session(repo, enabled), MapWorld.None);
 
         Assert.Equal(code, status.Error.Code);
     }
@@ -60,8 +60,33 @@ public sealed class MapStatusTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Sessions_off_is_SND_CONTEXT_020_even_without_a_map()
     {
-        var status = await _world.Map.MapStatus(MapWorld.Session(FixtureMap.Repo, enabled: false), MapWorld.None);
+        var status = await _world.Map.MapStatus(anchor: null, MapWorld.Session(FixtureMap.Repo, enabled: false), MapWorld.None);
 
         Assert.Equal(ContextErrors.SessionsDisabled.Code, status.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Map_status_coverage_for_an_anchor_equals_the_lenses_coverage()
+    {
+        _ = await _world.ImportYaml(MapWorld.TabsMap);
+
+        var status = (await _world.Map.MapStatus("feature:tabs.tab-manager", MapWorld.Human, MapWorld.None)).Value;
+        var lenses = (await _world.Engine.Lenses("feature:tabs.tab-manager", draft: false, depth: null, MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.NotNull(status.Coverage);
+        Assert.Equivalent(lenses.Coverage, status.Coverage);
+        Assert.Equal((6, 2, 6, 2), (status.Coverage.Scope, status.Coverage.Intent.Covered, status.Coverage.Product.Confirmed, status.Coverage.Code.Implemented));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Without_an_anchor_there_is_no_coverage_and_an_unknown_anchor_is_003()
+    {
+        _ = await _world.ImportYaml(MapWorld.TabsMap);
+
+        var plain = (await _world.Map.MapStatus(anchor: null, MapWorld.Human, MapWorld.None)).Value;
+        var unknown = await _world.Map.MapStatus("feature:no-such", MapWorld.Human, MapWorld.None);
+
+        Assert.Null(plain.Coverage);
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, unknown.Error.Code);
     }
 }

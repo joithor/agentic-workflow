@@ -11,6 +11,6 @@ internal sealed class GetContextLensesService(ContextScopes scopes, IContextEngi
     public async ValueTask<Result<LensesView>> Handle(GetContextLensesRequest request, CancellationToken cancellationToken)
     {
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
-        return scope.IsError ? scope.Error : await engine.Lenses(request.Anchor, request.Draft, scope.Value, cancellationToken).ConfigureAwait(false);
+        return scope.IsError ? scope.Error : await engine.Lenses(request.Anchor, request.Draft, request.Depth, scope.Value, cancellationToken).ConfigureAwait(false);
     }
 }

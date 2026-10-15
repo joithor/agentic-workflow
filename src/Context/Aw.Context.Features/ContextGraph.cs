@@ -29,8 +29,8 @@ internal sealed class ContextGraph(
     public ValueTask<Result<PathView>> Path(string from, string to, ContextScope scope, CancellationToken cancellationToken) =>
         path.Handle(new FindPathRequest(from, to, scope), cancellationToken);
 
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, ContextScope scope, CancellationToken cancellationToken) =>
-        lenses.Handle(new GetLensesRequest(anchor, draft, scope), cancellationToken);
+    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        lenses.Handle(new GetLensesRequest(anchor, draft, depth, scope), cancellationToken);
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         fileMap.Handle(new GetFileMapRequest(query, scope), cancellationToken);

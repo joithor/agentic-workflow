@@ -10,10 +10,12 @@ namespace Aw.Context.Core.Review;
 /// <param name="Undoes">The override to reverse (undo), or null.</param>
 /// <param name="Label">The new label (rename, add), or null.</param>
 /// <param name="Other">The node to merge into or move under (merge, move; for add its parent), or null.</param>
+/// <param name="UndoesAll">The overrides to reverse together (undo with a list: all or none), or null; not together with <paramref name="Undoes"/>.</param>
 public sealed record ReviewDecision(
     ReviewVerb Verb,
     NodeKey? Node = null,
     LinkId? Link = null,
     OverrideId? Undoes = null,
     string? Label = null,
-    NodeKey? Other = null);
+    NodeKey? Other = null,
+    IReadOnlyList<OverrideId>? UndoesAll = null);

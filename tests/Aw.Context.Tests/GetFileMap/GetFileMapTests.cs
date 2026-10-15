@@ -38,10 +38,10 @@ public sealed class GetFileMapTests : IDisposable
 
         var view = (await Ask()).Value;
 
-        Assert.Equal(("v1", false, "src/"), (view.Map, view.Draft, view.Path));
+        Assert.Equal(("v1", false, "src/"), (view.MapVersion, view.Draft, view.Path));
         Assert.Equal(["layout/", "tabs/"], view.Entries.Select(e => e.Name + "/"), StringComparer.Ordinal);
-        Assert.All(view.Entries, e => Assert.True(e.Directory));
-        Assert.Equal(new FileMapTotals(Mapped: 1, Suggested: 1, Unmapped: 2), view.Totals);
+        Assert.All(view.Entries, e => Assert.Equal(FileEntryType.Dir, e.Type));
+        Assert.Equal(new FileMapTotals(Files: 4, Mapped: 1, Suggested: 1, Unmapped: 2), view.Totals);
         var tabs = view.Entries.Single(e => e.Name == "tabs");
         Assert.Equal((3, FileMapStatus.Unmapped), (tabs.Files, tabs.Status));
         Assert.DoesNotContain(".env", view.Entries.Select(e => e.Name), StringComparer.Ordinal);
@@ -55,9 +55,20 @@ public sealed class GetFileMapTests : IDisposable
         var view = (await Ask("src/tabs/")).Value;
 
         var suggestion = Assert.Single(view.Suggested);
-        Assert.Equal(("code:src/tabs/TabGroups.ts", "feature:tabs.tab-groups", 0.74), (suggestion.File.Value, suggestion.Feature.Value, suggestion.Confidence));
+        Assert.Equal(("src/tabs/TabGroups.ts", "feature:tabs.tab-groups", 0.74), (suggestion.File, suggestion.Feature.Value, suggestion.Confidence));
+        Assert.Equal(view.Entries.Single(e => e.Name == "TabGroups.ts").Features[0].LinkId, suggestion.LinkId);
         Assert.Equal(FileMapStatus.Suggested, view.Entries.Single(e => e.Name == "TabGroups.ts").Status);
         Assert.Equal(FileMapStatus.Mapped, view.Entries.Single(e => e.Name == "TabManager.ts").Status);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_view_names_the_commit_the_tree_was_listed_at_by_its_first_seven_characters()
+    {
+        await ImportTabs();
+
+        var view = (await Ask()).Value;
+
+        Assert.Equal((MapWorld.Head[..7], 1, "aw-split-panes"), (view.Sha, view.SchemaVersion, view.Repo.Value));
     }
 
     [Fact, Trait("Lane", "unit")]

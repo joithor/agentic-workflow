@@ -99,4 +99,66 @@ public sealed class GetProposalsTests : IDisposable
         Assert.Empty(other.Value.Surfaces);   // a profile repo of its own, with no proposal of its own
         Assert.Equal(ContextErrors.SessionsDisabled.Code, off.Error.Code);
     }
+
+    private static ScopeProposal Mixed(string run = "run-1") => new(run, ContextRepoName.From(FixtureMap.Repo),
+    [
+        new ProposedSurface("Layout split pane", NodeKey.From("feature:layout.split-pane")),
+        new ProposedSurface("Restore session", _restore, NodeKind.Feature, Parent: null, [new EvidenceRef(RecordKey.From("repo:aw-split-panes/src/tabs/restore.ts"))], Quote: null),
+        new ProposedSurface("Something vague"),
+    ]);
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Every_surface_of_the_run_is_reported_mapped_new_and_unmapped_not_only_those_with_a_propose_row()
+    {
+        _ = await _world.ImportFixture();
+        _ = await _world.Map.Propose(Mixed(), MapWorld.Human, MapWorld.None);
+
+        var view = await Proposals();
+
+        Assert.Equal(
+            [("Layout split pane", GraphStatusKind.Mapped), ("Restore session", GraphStatusKind.New), ("Something vague", GraphStatusKind.Unmapped)],
+            view.Surfaces.Select(s => (s.Surface, s.Status)));
+        Assert.Equal("feature:layout.split-pane", view.Surfaces[0].Node!.Value.Value);
+        Assert.Null(view.Surfaces[2].Node);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_rejected_proposal_turns_unmapped_and_a_mapped_surface_stays_mapped_in_the_full_list()
+    {
+        _ = await _world.ImportFixture();
+        _ = await _world.Map.Propose(Mixed(), MapWorld.Human, MapWorld.None);
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+        Assert.True((await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.Reject, _restore), MapWorld.Human, MapWorld.None)).IsSuccess);
+
+        var view = await Proposals();
+
+        Assert.Equal([GraphStatusKind.Mapped, GraphStatusKind.Unmapped, GraphStatusKind.Unmapped], view.Surfaces.Select(s => s.Status));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Submitting_the_run_again_replaces_its_surface_list()
+    {
+        _ = await _world.ImportFixture();
+        _ = await _world.Map.Propose(Mixed(), MapWorld.Human, MapWorld.None);
+        _ = await _world.Map.Propose(Mixed() with { Surfaces = [Mixed().Surfaces[2]] }, MapWorld.Human, MapWorld.None);
+
+        var view = await Proposals();
+
+        var surface = Assert.Single(view.Surfaces, s => s.Surface == "Something vague");
+        Assert.Equal(GraphStatusKind.Unmapped, surface.Status);
+        Assert.Contains(view.Surfaces, s => s.Surface == "Restore session");   // its propose row stays in the draft
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_session_of_another_repo_sees_none_of_a_runs_surfaces()
+    {
+        _ = await _world.ImportFixture();
+        _ = await _world.Map.Propose(Mixed(), MapWorld.Human, MapWorld.None);
+
+        var own = await Proposals(scope: MapWorld.Session(FixtureMap.Repo));
+        var other = await _world.Map.Proposals("run-1", MapWorld.Session("other"), MapWorld.None);
+
+        Assert.Equal(3, own.Surfaces.Count);
+        Assert.Empty(other.Value.Surfaces);
+    }
 }

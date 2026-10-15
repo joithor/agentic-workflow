@@ -68,6 +68,17 @@ public sealed class ReviewArgumentsTests
         Assert.Equal("delete", delete.Verb);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void Undo_takes_one_id_or_a_comma_separated_list()
+    {
+        var one = Ok("--undo", "ovr_0123456789abcdef").Request!;
+        var list = Ok("--undo", "ovr_0123456789abcdef,ovr_fedcba9876543210").Request!;
+
+        Assert.Equal(("ovr_0123456789abcdef", null), (one.Override, one.Overrides));
+        Assert.Null(list.Override);
+        Assert.Equal(["ovr_0123456789abcdef", "ovr_fedcba9876543210"], list.Overrides, StringComparer.Ordinal);
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("--undo")]
     [InlineData("--apply")]

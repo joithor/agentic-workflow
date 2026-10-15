@@ -2,16 +2,15 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Results;
+using Aw.Context.Testing.Fixtures;
 using Aw.Context.Tests.Map;
 
 namespace Aw.Context.Tests.Lenses;
 
-/// <summary>The tabs map ('Fixtures/map-tabs.json') the S-4 lenses and file-map tests read: what it must hold.</summary>
+/// <summary>The tabs map (map-tabs.json) the S-4 lenses and file-map tests read: what it must hold.</summary>
 public sealed class MapTabsFixtureTests
 {
-    private static readonly string _path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "map-tabs.json");
-
-    private static MapImport Load() => Maps.Checked(Maps.Parse(File.ReadAllText(_path)));
+    private static MapImport Load() => Maps.Checked(Maps.Parse(MapTabsRepo.MapJson));
 
     [Fact, Trait("Lane", "unit")]
     public void It_passes_the_map_file_checks_for_the_split_panes_repo()

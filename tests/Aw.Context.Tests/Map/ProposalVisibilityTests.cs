@@ -24,7 +24,7 @@ public sealed class ProposalVisibilityTests : IDisposable
         _ = await _world.Store.AppendOverrides([Pending()], MapWorld.None);
 
         var shown = await _world.Engine.ShowNode(_restore.Value, MapWorld.Human, MapWorld.None);
-        var status = (await _world.Map.MapStatus(MapWorld.Human, MapWorld.None)).Value;
+        var status = (await _world.Map.MapStatus(anchor: null, MapWorld.Human, MapWorld.None)).Value;
 
         Assert.Equal(ContextErrors.UnknownAnchor.Code, shown.Error.Code);
         Assert.Equal(0, status.Orphaned);

@@ -21,7 +21,7 @@ public sealed class PromoteReadinessTests
     [Fact, Trait("Lane", "unit")]
     public void A_draft_with_undecided_items_is_046_and_names_how_many()
     {
-        var ready = PromoteReadiness.Check(new ReviewQueueView("v14@7c3e1a2", [Entry(), Entry()], Decided: 3));
+        var ready = PromoteReadiness.Check(ReviewQueueView.Of("v14@7c3e1a2", [Entry(), Entry()], decided: 3));
 
         Assert.Equal(ContextErrors.PromoteRefused.Code, ready.Error.Code);
         Assert.Contains("2 undecided", ready.Error.Message, StringComparison.Ordinal);
@@ -31,7 +31,7 @@ public sealed class PromoteReadinessTests
     [Fact, Trait("Lane", "unit")]
     public void A_fully_decided_draft_is_ready()
     {
-        var queue = new ReviewQueueView("v14@7c3e1a2", [], Decided: 5);
+        var queue = ReviewQueueView.Of("v14@7c3e1a2", [], decided: 5);
 
         Assert.Same(queue, PromoteReadiness.Check(queue).Value);
     }

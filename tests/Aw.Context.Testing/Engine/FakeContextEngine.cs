@@ -64,7 +64,7 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapExported>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken) => NoMap<MapStatusView>();
+    public ValueTask<Result<MapStatusView>> MapStatus(string? anchor, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapStatusView>();
 
     /// <summary>With no probes a run answers SND-CONTEXT-036; with <see cref="WithProbes"/> it runs them.</summary>
     public async ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken)
@@ -91,7 +91,7 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<MapBuildReport>> BuildMap(IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapBuildReport>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<ReviewQueueView>> ReviewQueue(ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewQueueView>();
+    public ValueTask<Result<ReviewQueueView>> ReviewQueue(int? limit, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewQueueView>();
 
     /// <inheritdoc/>
     public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewResult>();
@@ -103,7 +103,7 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewResult>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewHistoryView>();
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(int? limit, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewHistoryView>();
 
     /// <inheritdoc/>
     public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewFilePreview>();
@@ -118,7 +118,7 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken) => NoMap<ProposalsView>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesView>();
+    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesView>();
 
     /// <inheritdoc/>
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<FileMapView>();

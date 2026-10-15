@@ -55,7 +55,7 @@ internal sealed class PromoteContextMapService(ContextScopes scopes, IContextEng
     /// <summary>The latest draft's label when nothing in it is left to decide; else SND-CONTEXT-046 (a missing draft too).</summary>
     private async ValueTask<Result<string>> Ready(ContextScope scope, CancellationToken cancellationToken)
     {
-        var queue = await engine.ReviewQueue(scope, cancellationToken).ConfigureAwait(false);
+        var queue = await engine.ReviewQueue(limit: null, scope, cancellationToken).ConfigureAwait(false);
         var ready = queue.IsError && queue.Error.Code == ContextErrors.NoDraftMap.Code ? PromoteReadiness.Check(queue: null)
             : queue.IsError ? queue.Error
             : PromoteReadiness.Check(queue.Value);

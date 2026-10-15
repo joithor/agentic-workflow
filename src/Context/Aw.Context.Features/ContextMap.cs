@@ -19,7 +19,7 @@ internal sealed class ContextMap(MapAdmin admin, MapReview review, MapProposals 
     public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) =>
         admin.ExportMap(path, scope, cancellationToken);
 
-    public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken) => admin.MapStatus(scope, cancellationToken);
+    public ValueTask<Result<MapStatusView>> MapStatus(string? anchor, ContextScope scope, CancellationToken cancellationToken) => admin.MapStatus(anchor, scope, cancellationToken);
 
     public ValueTask<Result<MapHealth>> CheckMap(CancellationToken cancellationToken) => admin.CheckMap(cancellationToken);
 
@@ -30,12 +30,12 @@ internal sealed class ContextMap(MapAdmin admin, MapReview review, MapProposals 
     public ValueTask<Result<MapBuildReport>> BuildMap(IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken) =>
         proposals.BuildMap(progress, scope, cancellationToken);
 
-    public ValueTask<Result<ReviewQueueView>> ReviewQueue(ContextScope scope, CancellationToken cancellationToken) => review.ReviewQueue(scope, cancellationToken);
+    public ValueTask<Result<ReviewQueueView>> ReviewQueue(int? limit, ContextScope scope, CancellationToken cancellationToken) => review.ReviewQueue(limit, scope, cancellationToken);
 
     public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) =>
         review.ApplyReview(decision, scope, cancellationToken);
 
-    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(ContextScope scope, CancellationToken cancellationToken) => review.ReviewHistory(scope, cancellationToken);
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(int? limit, ContextScope scope, CancellationToken cancellationToken) => review.ReviewHistory(limit, scope, cancellationToken);
 
     public ValueTask<Result<ReviewExported>> ExportReview(string? path, ContextScope scope, CancellationToken cancellationToken) =>
         review.ExportReview(path, scope, cancellationToken);

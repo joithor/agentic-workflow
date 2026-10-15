@@ -10,6 +10,7 @@ using Aw.Context.Core.Trust;
 using Aw.Context.Features;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Extract;
+using Aw.Context.Testing.Fixtures;
 using Aw.Context.Testing.Locks;
 using Aw.Context.Testing.Map;
 using Aw.Context.Testing.Review;
@@ -28,8 +29,8 @@ namespace Aw.Context.Tests.Map;
 /// </summary>
 internal sealed class MapWorld : IDisposable
 {
-    /// <summary>The tabs map (Fixtures/map-tabs.json): a conflict, a suggested file link and an orphaned override.</summary>
-    public static string TabsMap { get; } = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "map-tabs.json"));
+    /// <summary>The tabs map (map-tabs.json): a conflict, a suggested file link and an orphaned override.</summary>
+    public static string TabsMap => MapTabsRepo.MapJson;
 
     public const string MapPath = "/maps/product-map.yaml";
 
@@ -108,6 +109,9 @@ internal sealed class MapWorld : IDisposable
     public static IReadOnlyList<ContextRepo> Repos { get; } = [new(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes"), new(ContextRepoName.From("other"), "/work/other")];
 
     public static ContextScope Human { get; } = new(Settings: null, Repos, new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
+
+    /// <summary>A human whose call arrives through <paramref name="client"/> (the app is plain HTTP; the CLI, MCP and services are the others).</summary>
+    public static ContextScope HumanVia(ContextClient client) => new(Settings: null, Repos, new ContextCaller(ContextCallerKind.Human, Repo: null, client));
 
     /// <summary>A human's scope with the given 'context:' section (JSON) over the repos, or over <paramref name="repos"/> when given.</summary>
     public static ContextScope HumanWith(string sectionJson, IReadOnlyList<ContextRepo>? repos = null)

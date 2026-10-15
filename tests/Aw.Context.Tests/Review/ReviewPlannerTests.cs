@@ -121,7 +121,7 @@ public sealed class ReviewPlannerTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Repointing_an_orphan_undoes_it_and_writes_the_same_decision_on_a_node_of_the_draft()
+    public void Repoint_writes_an_undo_of_the_orphan_and_the_same_decision_on_the_new_node()
     {
         var orphan = SampleDrafts.Row(OverrideAction.Rename, "feature:gone", "Panes");
         var decision = new ReviewDecision(ReviewVerb.Repoint, SampleDrafts.Key("feature:layout"), Undoes: orphan.ToId());
@@ -134,13 +134,80 @@ public sealed class ReviewPlannerTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Repointing_to_a_node_that_is_not_in_the_draft_or_a_live_override_is_stale_047()
+    public void Repoint_to_a_node_not_in_the_draft_is_047()
     {
         var orphan = SampleDrafts.Row(OverrideAction.Rename, "feature:gone", "Panes");
         var live = SampleDrafts.Row(OverrideAction.Rename, "feature:layout", "Panes");
 
         Assert.Equal(ContextErrors.ReviewTargetStale.Code, Plan(new ReviewDecision(ReviewVerb.Repoint, SampleDrafts.Key("feature:nowhere"), Undoes: orphan.ToId()), orphan).Error.Code);
         Assert.Equal(ContextErrors.ReviewTargetStale.Code, Plan(new ReviewDecision(ReviewVerb.Repoint, SampleDrafts.Key("feature:tabs"), Undoes: live.ToId()), orphan, live).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Undoing_both_rows_of_a_repoint_restores_the_orphan()
+    {
+        var orphan = SampleDrafts.Row(OverrideAction.Rename, "feature:gone", "Panes");
+        var rows = ReviewPlanner.Plan(new ReviewDecision(ReviewVerb.Repoint, SampleDrafts.Key("feature:layout"), Undoes: orphan.ToId()), SampleDrafts.Draft(), [orphan], Who, SampleDrafts.At.AddMinutes(1)).Value;
+        var log = new[] { orphan }.Concat(rows).ToArray();
+
+        var undo = ReviewPlanner.Plan(new ReviewDecision(ReviewVerb.Undo, UndoesAll: [rows[0].ToId(), rows[1].ToId()]), SampleDrafts.Draft(), log, Who, SampleDrafts.At.AddMinutes(2)).Value;
+
+        Assert.Equal([OverrideAction.Undo, OverrideAction.Undo], undo.Select(r => r.Action));
+        Assert.Equal([rows[0].ToId(), rows[1].ToId()], undo.Select(r => r.Undoes!.Value));
+        var applied = OverrideApplier.Apply(SampleDrafts.Draft(), [.. log, .. undo]);
+        Assert.Equal(orphan.ToId(), Assert.Single(applied.Orphaned).ToId());
+        Assert.DoesNotContain(OverrideLog.Active([.. log, .. undo]), o => o.Target.Value == "feature:layout");
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Undo_of_a_list_is_all_or_none()
+    {
+        var accept = SampleDrafts.Row(OverrideAction.Accept, "surface:command/close-tab");
+        var reject = SampleDrafts.Row(OverrideAction.Reject, "feature:layout", at: SampleDrafts.At.AddMinutes(1));
+
+        var rows = Plan(new ReviewDecision(ReviewVerb.Undo, UndoesAll: [accept.ToId(), reject.ToId()]), accept, reject).Value;
+
+        Assert.Equal([accept.ToId(), reject.ToId()], rows.Select(r => r.Undoes!.Value));
+        Assert.All(rows, r => Assert.Equal((OverrideAction.Undo, Who, SampleDrafts.At), (r.Action, r.Who, r.At)));
+        Assert.Equal(["surface:command/close-tab", "feature:layout"], rows.Select(r => r.Target.Value), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Undo_list_with_one_undone_id_is_047_and_writes_nothing()
+    {
+        var accept = SampleDrafts.Row(OverrideAction.Accept, "surface:command/close-tab");
+        var reject = SampleDrafts.Row(OverrideAction.Reject, "feature:layout", at: SampleDrafts.At.AddMinutes(1));
+        var undoReject = SampleDrafts.Undo(reject, SampleDrafts.At.AddMinutes(2));
+
+        var plan = Plan(new ReviewDecision(ReviewVerb.Undo, UndoesAll: [accept.ToId(), reject.ToId()]), accept, reject, undoReject);
+
+        Assert.Equal(ContextErrors.ReviewTargetStale.Code, plan.Error.Code);
+        Assert.Contains(reject.ToId().Value, plan.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(accept.ToId().Value, plan.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Undo_list_names_the_first_stale_id_and_an_unknown_id_is_stale_too()
+    {
+        var accept = SampleDrafts.Row(OverrideAction.Accept, "surface:command/close-tab");
+        var unknown = OverrideId.From("ovr_0123456789abcdef");
+
+        var plan = Plan(new ReviewDecision(ReviewVerb.Undo, UndoesAll: [unknown, accept.ToId()]), accept);
+
+        Assert.Equal(ContextErrors.ReviewTargetStale.Code, plan.Error.Code);
+        Assert.Contains(unknown.Value, plan.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Undo_list_ignores_a_repeated_id_and_an_empty_list_names_no_override()
+    {
+        var accept = SampleDrafts.Row(OverrideAction.Accept, "surface:command/close-tab");
+
+        var rows = Plan(new ReviewDecision(ReviewVerb.Undo, UndoesAll: [accept.ToId(), accept.ToId()]), accept).Value;
+        var empty = Plan(new ReviewDecision(ReviewVerb.Undo, UndoesAll: []), accept);
+
+        _ = Assert.Single(rows);
+        Assert.Equal(ContextErrors.ReviewTargetStale.Code, empty.Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]

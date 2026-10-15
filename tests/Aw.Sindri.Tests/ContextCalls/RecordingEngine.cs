@@ -51,7 +51,7 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
 
     public ValueTask<Result<MapExported>> ExportMap(string? path, ContextScope scope, CancellationToken cancellationToken) => inner.ExportMap(path, scope, cancellationToken);
 
-    public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken) => inner.MapStatus(scope, cancellationToken);
+    public ValueTask<Result<MapStatusView>> MapStatus(string? anchor, ContextScope scope, CancellationToken cancellationToken) => inner.MapStatus(anchor, scope, cancellationToken);
 
     public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
         inner.EvalProbes(file, ask, cancellationToken);
@@ -66,7 +66,7 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     public ValueTask<Result<MapBuildReport>> BuildMap(IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken) =>
         inner.BuildMap(progress, scope, cancellationToken);
 
-    public ValueTask<Result<ReviewQueueView>> ReviewQueue(ContextScope scope, CancellationToken cancellationToken) => inner.ReviewQueue(scope, cancellationToken);
+    public ValueTask<Result<ReviewQueueView>> ReviewQueue(int? limit, ContextScope scope, CancellationToken cancellationToken) => inner.ReviewQueue(limit, scope, cancellationToken);
 
     public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) =>
         inner.ApplyReview(decision, scope, cancellationToken);
@@ -77,7 +77,7 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
         inner.ApplyReviewFile(path, scope, cancellationToken);
 
-    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(ContextScope scope, CancellationToken cancellationToken) => inner.ReviewHistory(scope, cancellationToken);
+    public ValueTask<Result<ReviewHistoryView>> ReviewHistory(int? limit, ContextScope scope, CancellationToken cancellationToken) => inner.ReviewHistory(limit, scope, cancellationToken);
 
     public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => inner.PreviewReviewFile(path, scope, cancellationToken);
 
@@ -88,8 +88,8 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
 
     public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken) => inner.Proposals(run, scope, cancellationToken);
 
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, ContextScope scope, CancellationToken cancellationToken) =>
-        inner.Lenses(anchor, draft, scope, cancellationToken);
+    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.Lenses(anchor, draft, depth, scope, cancellationToken);
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         inner.FileMap(query, scope, cancellationToken);

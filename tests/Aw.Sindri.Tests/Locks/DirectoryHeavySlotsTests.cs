@@ -122,11 +122,42 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     {
         var plain = HeavyLockSettings.Read(_ => null, "/state");
         var set = HeavyLockSettings.Read(name => name switch { "AW_HEAVY_JOB_LOCK" => "/x/lock", "AW_HEAVY_SLOTS" => "3", "AW_HEAVY_LOCK_HELD" => "1", _ => null }, "/state");
-        var bad = HeavyLockSettings.Read(name => name == "AW_HEAVY_SLOTS" ? "zero" : null, "/state");
 
         Assert.Equal(("/state/locks/heavy-job.lock", 2, false), (plain.Lock, plain.Slots, plain.Held));
         Assert.Equal(("/x/lock", 3, true), (set.Lock, set.Slots, set.Held));
-        Assert.Equal(2, bad.Slots);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null, 2)]
+    [InlineData("", 2)]
+    [InlineData("1", 1)]
+    [InlineData("3", 3)]
+    [InlineData("03", 3)]
+    [InlineData("0", 1)]
+    [InlineData("zero", 1)]
+    [InlineData("-2", 1)]
+    [InlineData("2.5", 1)]
+    public void The_slot_count_is_AW_HEAVY_SLOTS_when_set_2_when_unset_or_empty_and_1_when_malformed_as_config_lib_locks_sh_reads_it(string? value, int expected)
+    {
+        var settings = HeavyLockSettings.Read(name => name == "AW_HEAVY_SLOTS" ? value : null, "/state");
+
+        Assert.Equal(expected, settings.Slots);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_lock_read_from_AW_HEAVY_SLOTS_3_takes_three_holders_and_names_slot_3_of_3_to_the_fourth()
+    {
+        var settings = HeavyLockSettings.Read(name => name switch { "AW_HEAVY_SLOTS" => "3", "AW_HEAVY_JOB_LOCK" => Lock, _ => null }, _root);
+        var slots = new DirectoryHeavySlots(settings, TimeProvider.System);
+
+        await using var one = await Taken(slots);
+        await using var two = await Taken(slots);
+        await using var three = await Taken(slots);
+        var fourth = (await slots.Take("fourth", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Null(fourth.Lease);
+        Assert.Contains("slot 3/3", fourth.Busy, StringComparison.Ordinal);
+        Assert.True(Directory.Exists(Lock + ".3"));
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
