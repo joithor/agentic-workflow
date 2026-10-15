@@ -24,6 +24,10 @@
                  AutomationProperties.Name="{Binding ProblemDetail}" />
     </StackPanel>
 
+    <!-- SND-ITEM-404 (§4.6): Back closes the sheet like Esc. Where the sheet covers the page its header's Back does the same, so this one hides. -->
+    <Button x:Name="NotFoundBack" Classes="not-found-back" Classes.shown="{Binding IsNotFound}" Content="{Binding Text.Back}" Click="OnBack"
+            HorizontalAlignment="Left" AutomationProperties.Name="{Binding Text.Back}" />
+
     <StackPanel x:Name="ItemBody" Spacing="{StaticResource Space.MD}" IsVisible="{Binding HasItem}">
       <StackPanel Spacing="4">
         <TextBlock x:Name="ItemTitle" Classes="detail-title" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />

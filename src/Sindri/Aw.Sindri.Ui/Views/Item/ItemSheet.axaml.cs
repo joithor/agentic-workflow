@@ -57,6 +57,9 @@ internal sealed partial class ItemSheet : UserControl
         }
     }
 
+    // Back (the 404 state) is Esc on the sheet: the shell closes it and moves focus to the opener or the page.
+    private void OnBack(object? sender, RoutedEventArgs e) => (TopLevel.GetTopLevel(this)?.DataContext as ViewModels.Shell.ShellViewModel)?.CloseSheet();
+
     private void OnLoadMore(object? sender, RoutedEventArgs e)
     {
         if (DataContext is ItemSheetViewModel sheet)
