@@ -67,7 +67,7 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
         {
-            return TemporalUpdates.Down(client.Value, e);
+            return TemporalUpdates.Down(client.Value, e, nonce);
         }
     }
 }

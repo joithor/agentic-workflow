@@ -39,12 +39,21 @@ internal static class TemporalUpdates
         SindriErrors.NotRunning.With($"Temporal at {client.Connection.Options.TargetHost} has no '{client.Options.Namespace}' namespace: {e.Message} "
             + "(fix: start sindri serve on this home, or set AW_SINDRI_TEMPORAL_NAMESPACE to the namespace serve uses)");
 
-    /// <summary>SND-API-001 for a frontend that went away under a live client (a dev server that died): Unavailable is the transport saying so.</summary>
+    /// <summary>
+    /// SND-API-001 for a frontend that went away under a live client (the dev server under serve died; serve itself answered):
+    /// Unavailable is the transport saying so. A call that carries a nonce says what to check and how to resend it, because the
+    /// Update may have reached the server before it went; a start or a signal has no nonce.
+    /// </summary>
     /// <param name="client">The client.</param>
     /// <param name="e">The RPC failure.</param>
-    /// <returns>The error; its kind (Unavailable) keeps a fresh nonce claim, so a retry with the same nonce resends the same Update id.</returns>
-    internal static Error Down(ITemporalClient client, RpcException e) =>
-        SindriErrors.NotRunning.With($"Temporal at {client.Connection.Options.TargetHost} doesn't answer: {e.Message} (fix: start sindri serve, then run the same command again)");
+    /// <param name="nonce">The Update's id when the call has one: a retry with it resends the same Update id.</param>
+    /// <returns>The error; its kind (Unavailable) keeps a fresh nonce claim.</returns>
+    internal static Error Down(ITemporalClient client, RpcException e, CommandNonce? nonce = null) =>
+        SindriErrors.NotRunning.With($"Temporal at {client.Connection.Options.TargetHost} doesn't answer: {e.Message} ("
+            + (nonce is { } n
+                ? $"fix: check `sindri workflow status` or `sindri workflow events` first; if the command didn't apply, run the same command again with --nonce {n.Value}; "
+                : "fix: ")
+            + "the Temporal dev server under serve is down, see `sindri doctor`)");
 
     /// <summary>SND-API-002 for an Update no worker took in <see cref="Patience"/>; it may still apply once one runs.</summary>
     /// <param name="address">The instance.</param>
