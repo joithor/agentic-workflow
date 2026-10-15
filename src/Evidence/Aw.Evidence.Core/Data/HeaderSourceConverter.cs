@@ -4,8 +4,9 @@ using System.Text.Json.Serialization;
 namespace Aw.Evidence.Core.Data;
 
 /// <summary>Reads a header source. A JSON string (a literal value) is refused so no secret sits in a script; an object is read by its shape.</summary>
-internal sealed class HeaderSourceConverter : JsonConverter<HeaderSource>
+public sealed class HeaderSourceConverter : JsonConverter<HeaderSource>
 {
+    /// <inheritdoc/>
     public override HeaderSource? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.StartObject)
@@ -29,6 +30,7 @@ internal sealed class HeaderSourceConverter : JsonConverter<HeaderSource>
         return env is null ? throw JsonInputProblem.At("$", "missing required property \"env\"") : new HeaderSource(env);
     }
 
+    /// <inheritdoc/>
     public override void Write(Utf8JsonWriter writer, HeaderSource value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();

@@ -1702,3 +1702,8 @@ Aw.Evidence.Core.Data.PointerCheck.Location.init -> void
 Aw.Evidence.Core.Data.PointerCheck.PointerCheck(string! Location, System.Text.Json.JsonElement EqualTo = default(System.Text.Json.JsonElement), bool? Exists = null, string? Matches = null) -> void
 static Aw.Evidence.Core.Data.JsonPointer.Problem(string! reference) -> string?
 static Aw.Evidence.Core.Data.JsonPointer.Resolve(System.Text.Json.JsonElement document, string! reference) -> System.Text.Json.JsonElement?
+static Aw.Evidence.Core.Data.ApiScriptReader.Validate(Aw.Evidence.Core.Data.ApiScript! script) -> Aw.Kernel.Result<Aw.Evidence.Core.Data.ApiScript!>!
+Aw.Evidence.Core.Data.HeaderSourceConverter
+Aw.Evidence.Core.Data.HeaderSourceConverter.HeaderSourceConverter() -> void
+override Aw.Evidence.Core.Data.HeaderSourceConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Evidence.Core.Data.HeaderSource?
+override Aw.Evidence.Core.Data.HeaderSourceConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Evidence.Core.Data.HeaderSource! value, System.Text.Json.JsonSerializerOptions! options) -> void
