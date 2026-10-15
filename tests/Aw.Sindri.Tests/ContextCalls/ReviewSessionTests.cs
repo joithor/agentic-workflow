@@ -46,6 +46,11 @@ public sealed class ReviewSessionTests
         var reject = session.Answer("r");
         var skip = session.Answer("s");
         var quit = session.Answer("q");
+        Assert.Equal(new ReviewCounts(0, 0, 0, Skipped: 1, 0), session.Counts);   // nothing counts until the server answers
+        foreach (var step in new[] { bulk, accept, reject })
+        {
+            _ = session.Applied(step);
+        }
 
         Assert.Equal("accept-deterministic", bulk.Send!.Verb);
         Assert.Contains("Layout", bulk.Prompt, StringComparison.Ordinal);
@@ -73,24 +78,29 @@ public sealed class ReviewSessionTests
     {
         var session = new ReviewSession(Queue());
         _ = session.Start();
-        _ = session.Answer("y");
+        _ = session.Applied(session.Answer("y"));
 
         var ask = session.Answer("n");
         var rename = session.Answer("Pane layout");
+        _ = session.Applied(rename);
         var askMove = session.Answer("m");
         var move = session.Answer("feature:tabs");
+        _ = session.Applied(move);
+        _ = session.Applied(session.Answer("a"));
+        _ = session.Answer("s");
         _ = session.Answer("s");
         var orphan = session.Answer("p");
         var repoint = session.Answer("feature:zoom");
+        _ = session.Applied(repoint);
 
         Assert.Null(ask.Send);
         Assert.Contains("new name", ask.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(("rename", "feature:layout", "Pane layout"), (rename.Send!.Verb, rename.Send.Node, rename.Send.Label));
         Assert.Null(askMove.Send);
-        Assert.Equal(("move", "feature:groups", "feature:tabs"), (move.Send!.Verb, move.Send.Node, move.Send.Other));
+        Assert.Equal(("move", "feature:layout", "feature:tabs"), (move.Send!.Verb, move.Send.Node, move.Send.Other));   // a rename or a move leaves the item current until it is accepted, rejected or skipped
         Assert.Contains("node", orphan.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(("repoint", _orphan.Value, "feature:zoom"), (repoint.Send!.Verb, repoint.Send.Override, repoint.Send.Node));
-        Assert.Equal(new ReviewCounts(Accepted: 2, Rejected: 0, Edited: 2, Skipped: 1, Dropped: 1), session.Counts);
+        Assert.Equal(new ReviewCounts(Accepted: 3, Rejected: 0, Edited: 2, Skipped: 2, Dropped: 1), session.Counts);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -119,5 +129,53 @@ public sealed class ReviewSessionTests
 
         Assert.Equal(("accept", link.Value, null), (accept.Send!.Verb, accept.Send.Link, accept.Send.Node));
         Assert.Null(new ReviewSession(ReviewQueueView.Of("v14@0a1b2c3", [], 0)).Start().Prompt);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_queue_cut_to_its_cap_offers_the_bulk_accept_of_the_whole_backlog_and_counts_it_once_the_server_answers()
+    {
+        var shown = ReviewQueueView.Of("v14@0a1b2c3", [Entry("surface:command/close-tab", ReviewGroup.Deterministic, "Close tab"), Entry("feature:layout", ReviewGroup.Model, "Layout")], 0);
+        var capped = shown with { Counts = new QueueCounts(Deterministic: 412, Model: 1, Orphaned: 0), Truncated = new ReviewTruncated(Deterministic: true, Model: false, Orphaned: false) };
+        var session = new ReviewSession(capped);
+
+        var prompt = session.Start().Prompt;
+        var bulk = session.Answer("y");
+        Assert.Equal(0, session.Counts.Accepted);
+        _ = session.Applied(bulk);
+
+        Assert.Contains("412 deterministic", prompt, StringComparison.Ordinal);
+        Assert.Equal(412, session.Counts.Accepted);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_session_says_how_many_undecided_items_the_queue_did_not_show()
+    {
+        var shown = ReviewQueueView.Of("v14@0a1b2c3", [Entry("feature:layout", ReviewGroup.Model, "Layout")], 0);
+        var capped = shown with { Counts = new QueueCounts(Deterministic: 0, Model: 250, Orphaned: 0), Truncated = new ReviewTruncated(Deterministic: false, Model: true, Orphaned: false) };
+
+        Assert.Equal(249, new ReviewSession(capped).Hidden);
+        Assert.Equal(0, new ReviewSession(Queue()).Hidden);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_rename_keeps_the_item_current_shows_its_new_name_once_the_server_agrees_and_a_refused_one_counts_for_nothing()
+    {
+        var session = new ReviewSession(ReviewQueueView.Of("v14@0a1b2c3", [Entry("feature:layout", ReviewGroup.Model, "Layout"), Entry("feature:zoom", ReviewGroup.Model, "Zoom")], 0));
+        _ = session.Start();
+        _ = session.Answer("n");
+
+        var rename = session.Answer("Pane layout");
+        var refused = session.Refused(rename);
+        var renamed = session.Answer("n");
+        var again = session.Answer("Pane layout");
+        var shown = session.Applied(again);
+        var accept = session.Answer("a");
+
+        Assert.Contains("[1/2] Layout", rename.Prompt, StringComparison.Ordinal);
+        Assert.Contains("[1/2] Layout", refused.Prompt, StringComparison.Ordinal);
+        Assert.Contains("new name", renamed.Prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("[1/2] Pane layout", shown.Prompt, StringComparison.Ordinal);
+        Assert.Equal(("accept", "feature:layout"), (accept.Send!.Verb, accept.Send.Node));
+        Assert.Equal(1, session.Counts.Edited);
     }
 }

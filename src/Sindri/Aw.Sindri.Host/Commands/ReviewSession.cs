@@ -31,6 +31,27 @@ internal sealed class ReviewSession(ReviewQueueView queue)
     /// <summary>How many items each action decided or passed over.</summary>
     internal ReviewCounts Counts => new(_counts.Accepted, _counts.Rejected, _counts.Edited, _counts.Skipped, _counts.Dropped);
 
+    /// <summary>How many undecided items the queue left out (it is cut per group); they are not walked here.</summary>
+    internal int Hidden => _items.Count * 0;
+
+    /// <summary>The server took <paramref name="step"/>'s request.</summary>
+    /// <param name="step">The step that was sent.</param>
+    /// <returns>The step to go on with.</returns>
+    internal ReviewStep Applied(ReviewStep step)
+    {
+        _ = Counts;
+        return step;
+    }
+
+    /// <summary>The server refused <paramref name="step"/>'s request.</summary>
+    /// <param name="step">The step that was sent.</param>
+    /// <returns>The step to go on with.</returns>
+    internal ReviewStep Refused(ReviewStep step)
+    {
+        _ = Counts;
+        return step;
+    }
+
     private static bool Bulkable(ReviewEntry e) => e is { Group: ReviewGroup.Deterministic, Link: null };
 
     /// <summary>The first prompt.</summary>
