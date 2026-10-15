@@ -164,7 +164,11 @@ public sealed class CatalogFramesTests : IDisposable
         var lines = page.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "PendingLine" && b.IsEffectivelyVisible).ToList();
         Assert.Equal(shell.Health.Catalog.Pending.Sum(p => p.Controls.Count), lines.Count);
         Assert.All(lines, l => Assert.True(l.Focusable));
-        Assert.Contains("arrives in P6 · sindri jobs cancel <jobId>", lines.Select(AutomationProperties.GetName), StringComparer.Ordinal);
+        Assert.Contains("Cancel job, arrives in P6 · sindri jobs cancel <jobId>", lines.Select(AutomationProperties.GetName), StringComparer.Ordinal);
+        var copies = page.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("copy") && b.IsEffectivelyVisible).Select(AutomationProperties.GetName).ToList();
+        Assert.Contains("Copy: Cancel job", copies, StringComparer.Ordinal);
+        Assert.Contains("Copy: Run doctor", copies, StringComparer.Ordinal);
+        Assert.All(page.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "TerminalGlyph"), g => Assert.Equal(AccessibilityView.Raw, AutomationProperties.GetAccessibilityView(g)));
         var pendingRun = page.GetVisualDescendants().OfType<Button>().First(b => b.Name == "RunButton" && b.IsEffectivelyVisible);
         Assert.False(pendingRun.IsEffectivelyEnabled);
 

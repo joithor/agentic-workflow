@@ -200,4 +200,24 @@ public sealed class ControlViewModelTests
         _server.RebuildGate.SetResult();
         await first;
     }
+
+    // F11 (a11y-8): a name read out of context says whose it is.
+    [Fact]
+    public async Task Pending_line_and_copy_button_names_carry_the_controls_label()
+    {
+        var pending = Control(Row("CancelJob", "pending:P6", "sindri jobs cancel <jobId>"));
+        var cliOnly = Control(Row("RunDoctor", "cli-only:no-server", "sindri doctor"));
+
+        Assert.Equal("Cancel job, arrives in P6 · sindri jobs cancel <jobId>", pending.PendingName);
+        Assert.Equal(("Copy: Cancel job", "Copy: Run doctor"), (pending.CopyName, cliOnly.CopyName));
+        var heard = new List<string?>();
+        cliOnly.PropertyChanged += (_, e) => heard.Add(e.PropertyName);
+
+        await cliOnly.Copy(Token);
+
+        Assert.Equal("Copied", cliOnly.CopyName);
+        Assert.Contains(nameof(ControlViewModel.CopyName), heard, StringComparer.Ordinal);
+        _clock.Advance(ControlViewModel.CopiedFor);
+        Assert.Equal("Copy: Run doctor", cliOnly.CopyName);
+    }
 }

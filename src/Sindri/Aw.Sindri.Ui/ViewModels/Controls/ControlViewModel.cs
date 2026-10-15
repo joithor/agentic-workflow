@@ -125,6 +125,12 @@ internal sealed class ControlViewModel : ObservableObject
     /// <summary>The refusal's detail as served, or empty.</summary>
     public string ErrorDetail { get; private set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>A pending row's line with its subject: "Cancel job, arrives in P6 · sindri jobs cancel &lt;jobId&gt;".</summary>
+    public string PendingName => PendingLine;
+
+    /// <summary>The Copy button's accessible name: "Copy: Cancel job", then "Copied".</summary>
+    public string CopyName => CopyLabel;
+
     /// <summary>"Copy", or "Copied" for 1.5 s after a copy.</summary>
     public string CopyLabel { get; private set => Set(ref field, value); } = Labels.Copy;
 
