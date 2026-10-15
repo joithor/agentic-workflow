@@ -62,8 +62,75 @@ Aw.Meta.Core.Config.TeamConfig.Repo.init -> void
 Aw.Meta.Core.Config.TeamConfig.Team.get -> string!
 Aw.Meta.Core.Config.TeamConfig.Team.init -> void
 Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! Team, string! Repo, System.Collections.Generic.IReadOnlyList<string!>! Lanes) -> void
+Aw.Meta.Core.Gate.FlakeRule
+Aw.Meta.Core.Gate.FlakeVerdict
+Aw.Meta.Core.Gate.FlakeVerdict.Flake = 1 -> Aw.Meta.Core.Gate.FlakeVerdict
+Aw.Meta.Core.Gate.FlakeVerdict.Real = 2 -> Aw.Meta.Core.Gate.FlakeVerdict
+Aw.Meta.Core.Gate.GateRecord
+Aw.Meta.Core.Gate.GateRecord.<Clone>$() -> Aw.Meta.Core.Gate.GateRecord!
+Aw.Meta.Core.Gate.GateRecord.At.get -> System.DateTimeOffset
+Aw.Meta.Core.Gate.GateRecord.At.init -> void
+Aw.Meta.Core.Gate.GateRecord.Deconstruct(out int Pr, out string! Head, out string! Main, out System.Collections.Generic.IReadOnlyList<string!>! Scopes, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.GateStep!>! Steps, out Aw.Meta.Core.Gate.GateVerdict Verdict, out System.DateTimeOffset At) -> void
+Aw.Meta.Core.Gate.GateRecord.Equals(Aw.Meta.Core.Gate.GateRecord? other) -> bool
+Aw.Meta.Core.Gate.GateRecord.GateRecord(int Pr, string! Head, string! Main, System.Collections.Generic.IReadOnlyList<string!>! Scopes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.GateStep!>! Steps, Aw.Meta.Core.Gate.GateVerdict Verdict, System.DateTimeOffset At) -> void
+Aw.Meta.Core.Gate.GateRecord.Head.get -> string!
+Aw.Meta.Core.Gate.GateRecord.Head.init -> void
+Aw.Meta.Core.Gate.GateRecord.Main.get -> string!
+Aw.Meta.Core.Gate.GateRecord.Main.init -> void
+Aw.Meta.Core.Gate.GateRecord.Pr.get -> int
+Aw.Meta.Core.Gate.GateRecord.Pr.init -> void
+Aw.Meta.Core.Gate.GateRecord.Run.get -> int
+Aw.Meta.Core.Gate.GateRecord.Run.init -> void
+Aw.Meta.Core.Gate.GateRecord.Scopes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Gate.GateRecord.Scopes.init -> void
+Aw.Meta.Core.Gate.GateRecord.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.GateStep!>!
+Aw.Meta.Core.Gate.GateRecord.Steps.init -> void
+Aw.Meta.Core.Gate.GateRecord.Verdict.get -> Aw.Meta.Core.Gate.GateVerdict
+Aw.Meta.Core.Gate.GateRecord.Verdict.init -> void
+Aw.Meta.Core.Gate.GateStep
+Aw.Meta.Core.Gate.GateStep.<Clone>$() -> Aw.Meta.Core.Gate.GateStep!
+Aw.Meta.Core.Gate.GateStep.Deconstruct(out string! Name, out Aw.Meta.Core.Gate.GateVerdict Verdict, out string! Log) -> void
+Aw.Meta.Core.Gate.GateStep.Equals(Aw.Meta.Core.Gate.GateStep? other) -> bool
+Aw.Meta.Core.Gate.GateStep.Flake.get -> Aw.Meta.Core.Gate.FlakeVerdict?
+Aw.Meta.Core.Gate.GateStep.Flake.init -> void
+Aw.Meta.Core.Gate.GateStep.GateStep(string! Name, Aw.Meta.Core.Gate.GateVerdict Verdict, string! Log) -> void
+Aw.Meta.Core.Gate.GateStep.Log.get -> string!
+Aw.Meta.Core.Gate.GateStep.Log.init -> void
+Aw.Meta.Core.Gate.GateStep.Name.get -> string!
+Aw.Meta.Core.Gate.GateStep.Name.init -> void
+Aw.Meta.Core.Gate.GateStep.Verdict.get -> Aw.Meta.Core.Gate.GateVerdict
+Aw.Meta.Core.Gate.GateStep.Verdict.init -> void
+Aw.Meta.Core.Gate.GateVerdict
+Aw.Meta.Core.Gate.GateVerdict.Conflict = 3 -> Aw.Meta.Core.Gate.GateVerdict
+Aw.Meta.Core.Gate.GateVerdict.Fail = 2 -> Aw.Meta.Core.Gate.GateVerdict
+Aw.Meta.Core.Gate.GateVerdict.Pass = 1 -> Aw.Meta.Core.Gate.GateVerdict
 Aw.Meta.Core.Gate.GlobMatcher
+Aw.Meta.Core.Gate.RerunOutcome
+Aw.Meta.Core.Gate.RerunOutcome.<Clone>$() -> Aw.Meta.Core.Gate.RerunOutcome!
+Aw.Meta.Core.Gate.RerunOutcome.Deconstruct(out bool Passed, out string? Failure) -> void
+Aw.Meta.Core.Gate.RerunOutcome.Equals(Aw.Meta.Core.Gate.RerunOutcome? other) -> bool
+Aw.Meta.Core.Gate.RerunOutcome.Failure.get -> string?
+Aw.Meta.Core.Gate.RerunOutcome.Failure.init -> void
+Aw.Meta.Core.Gate.RerunOutcome.Passed.get -> bool
+Aw.Meta.Core.Gate.RerunOutcome.Passed.init -> void
+Aw.Meta.Core.Gate.RerunOutcome.RerunOutcome(bool Passed, string? Failure = null) -> void
 Aw.Meta.Core.Gate.ScopePlanner
+Aw.Meta.Core.Health.OrphanRule
+Aw.Meta.Core.Health.ProcessInfo
+Aw.Meta.Core.Health.ProcessInfo.<Clone>$() -> Aw.Meta.Core.Health.ProcessInfo!
+Aw.Meta.Core.Health.ProcessInfo.AgeSeconds.get -> long
+Aw.Meta.Core.Health.ProcessInfo.AgeSeconds.init -> void
+Aw.Meta.Core.Health.ProcessInfo.Cmdline.get -> string!
+Aw.Meta.Core.Health.ProcessInfo.Cmdline.init -> void
+Aw.Meta.Core.Health.ProcessInfo.Deconstruct(out int Pid, out int Ppid, out string! Cmdline, out long RssKb, out long AgeSeconds) -> void
+Aw.Meta.Core.Health.ProcessInfo.Equals(Aw.Meta.Core.Health.ProcessInfo? other) -> bool
+Aw.Meta.Core.Health.ProcessInfo.Pid.get -> int
+Aw.Meta.Core.Health.ProcessInfo.Pid.init -> void
+Aw.Meta.Core.Health.ProcessInfo.Ppid.get -> int
+Aw.Meta.Core.Health.ProcessInfo.Ppid.init -> void
+Aw.Meta.Core.Health.ProcessInfo.ProcessInfo(int Pid, int Ppid, string! Cmdline, long RssKb, long AgeSeconds) -> void
+Aw.Meta.Core.Health.ProcessInfo.RssKb.get -> long
+Aw.Meta.Core.Health.ProcessInfo.RssKb.init -> void
 Aw.Meta.Core.Ids.MessageId
 Aw.Meta.Core.Ids.MessageId.Equals(Aw.Meta.Core.Ids.MessageId other) -> bool
 Aw.Meta.Core.Ids.MessageId.Equals(Aw.Meta.Core.Ids.MessageId other, System.Collections.Generic.IEqualityComparer<Aw.Meta.Core.Ids.MessageId>! comparer) -> bool
@@ -121,6 +188,42 @@ Aw.Meta.Core.Lanes.LiveSession.Session.get -> Aw.Meta.Core.Ids.SessionId
 Aw.Meta.Core.Lanes.LiveSession.Session.init -> void
 Aw.Meta.Core.Lanes.LiveSession.Status.get -> string!
 Aw.Meta.Core.Lanes.LiveSession.Status.init -> void
+Aw.Meta.Core.Merge.MergeCheck
+Aw.Meta.Core.Merge.MergeCheck.<Clone>$() -> Aw.Meta.Core.Merge.MergeCheck!
+Aw.Meta.Core.Merge.MergeCheck.Deconstruct(out string! Name, out bool Ok, out string! Detail) -> void
+Aw.Meta.Core.Merge.MergeCheck.Detail.get -> string!
+Aw.Meta.Core.Merge.MergeCheck.Detail.init -> void
+Aw.Meta.Core.Merge.MergeCheck.Equals(Aw.Meta.Core.Merge.MergeCheck? other) -> bool
+Aw.Meta.Core.Merge.MergeCheck.MergeCheck(string! Name, bool Ok, string! Detail) -> void
+Aw.Meta.Core.Merge.MergeCheck.Name.get -> string!
+Aw.Meta.Core.Merge.MergeCheck.Name.init -> void
+Aw.Meta.Core.Merge.MergeCheck.Ok.get -> bool
+Aw.Meta.Core.Merge.MergeCheck.Ok.init -> void
+Aw.Meta.Core.Merge.MergeFacts
+Aw.Meta.Core.Merge.MergeFacts.<Clone>$() -> Aw.Meta.Core.Merge.MergeFacts!
+Aw.Meta.Core.Merge.MergeFacts.CurrentHead.get -> string!
+Aw.Meta.Core.Merge.MergeFacts.CurrentHead.init -> void
+Aw.Meta.Core.Merge.MergeFacts.CurrentMain.get -> string!
+Aw.Meta.Core.Merge.MergeFacts.CurrentMain.init -> void
+Aw.Meta.Core.Merge.MergeFacts.DeltaPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Meta.Core.Merge.MergeFacts.DeltaPaths.init -> void
+Aw.Meta.Core.Merge.MergeFacts.DocsOnly.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Merge.MergeFacts.DocsOnly.init -> void
+Aw.Meta.Core.Merge.MergeFacts.Equals(Aw.Meta.Core.Merge.MergeFacts? other) -> bool
+Aw.Meta.Core.Merge.MergeFacts.Gate.get -> Aw.Meta.Core.Gate.GateRecord?
+Aw.Meta.Core.Merge.MergeFacts.Gate.init -> void
+Aw.Meta.Core.Merge.MergeFacts.IsDraft.get -> bool
+Aw.Meta.Core.Merge.MergeFacts.IsDraft.init -> void
+Aw.Meta.Core.Merge.MergeFacts.MergeFacts() -> void
+Aw.Meta.Core.Merge.MergeFacts.MergeOrder.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>!
+Aw.Meta.Core.Merge.MergeFacts.MergeOrder.init -> void
+Aw.Meta.Core.Merge.MergeFacts.OpenPrs.get -> System.Collections.Generic.IReadOnlyList<int>!
+Aw.Meta.Core.Merge.MergeFacts.OpenPrs.init -> void
+Aw.Meta.Core.Merge.MergeFacts.Pr.get -> int
+Aw.Meta.Core.Merge.MergeFacts.Pr.init -> void
+Aw.Meta.Core.Merge.MergeFacts.RepoGatePassedOnHead.get -> bool
+Aw.Meta.Core.Merge.MergeFacts.RepoGatePassedOnHead.init -> void
+Aw.Meta.Core.Merge.MergeGate
 Aw.Meta.Core.Messages.Classification
 Aw.Meta.Core.Messages.Classification.<Clone>$() -> Aw.Meta.Core.Messages.Classification!
 Aw.Meta.Core.Messages.Classification.Classification(Aw.Meta.Core.Messages.MessageKind Kind, int? Pr = null, string? Lane = null) -> void
@@ -271,6 +374,77 @@ Aw.Meta.Core.Obligations.OwnerAnswer.Text.get -> string!
 Aw.Meta.Core.Obligations.OwnerAnswer.Text.init -> void
 Aw.Meta.Core.Ports.IMessageStore
 Aw.Meta.Core.Ports.ITranscriptReader
+Aw.Meta.Core.Watch.PrState
+Aw.Meta.Core.Watch.PrState.Closed = 2 -> Aw.Meta.Core.Watch.PrState
+Aw.Meta.Core.Watch.PrState.Merged = 3 -> Aw.Meta.Core.Watch.PrState
+Aw.Meta.Core.Watch.PrState.Open = 1 -> Aw.Meta.Core.Watch.PrState
+Aw.Meta.Core.Watch.PrView
+Aw.Meta.Core.Watch.PrView.<Clone>$() -> Aw.Meta.Core.Watch.PrView!
+Aw.Meta.Core.Watch.PrView.Deconstruct(out int Number, out Aw.Meta.Core.Watch.PrState State, out bool IsDraft, out string! Head, out string! Mergeable) -> void
+Aw.Meta.Core.Watch.PrView.Equals(Aw.Meta.Core.Watch.PrView? other) -> bool
+Aw.Meta.Core.Watch.PrView.Head.get -> string!
+Aw.Meta.Core.Watch.PrView.Head.init -> void
+Aw.Meta.Core.Watch.PrView.IsDraft.get -> bool
+Aw.Meta.Core.Watch.PrView.IsDraft.init -> void
+Aw.Meta.Core.Watch.PrView.Mergeable.get -> string!
+Aw.Meta.Core.Watch.PrView.Mergeable.init -> void
+Aw.Meta.Core.Watch.PrView.Number.get -> int
+Aw.Meta.Core.Watch.PrView.Number.init -> void
+Aw.Meta.Core.Watch.PrView.PrView(int Number, Aw.Meta.Core.Watch.PrState State, bool IsDraft, string! Head, string! Mergeable) -> void
+Aw.Meta.Core.Watch.PrView.State.get -> Aw.Meta.Core.Watch.PrState
+Aw.Meta.Core.Watch.PrView.State.init -> void
+Aw.Meta.Core.Watch.WatchDiff
+Aw.Meta.Core.Watch.WatchSnapshot
+Aw.Meta.Core.Watch.WatchSnapshot.<Clone>$() -> Aw.Meta.Core.Watch.WatchSnapshot!
+Aw.Meta.Core.Watch.WatchSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, out string! MainSha, out bool DiskLow) -> void
+Aw.Meta.Core.Watch.WatchSnapshot.DiskLow.get -> bool
+Aw.Meta.Core.Watch.WatchSnapshot.DiskLow.init -> void
+Aw.Meta.Core.Watch.WatchSnapshot.Equals(Aw.Meta.Core.Watch.WatchSnapshot? other) -> bool
+Aw.Meta.Core.Watch.WatchSnapshot.MainSha.get -> string!
+Aw.Meta.Core.Watch.WatchSnapshot.MainSha.init -> void
+Aw.Meta.Core.Watch.WatchSnapshot.Prs.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>!
+Aw.Meta.Core.Watch.WatchSnapshot.Prs.init -> void
+Aw.Meta.Core.Watch.WatchSnapshot.WatchSnapshot(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, string! MainSha, bool DiskLow) -> void
+Aw.Meta.Core.Watch.WatchState
+Aw.Meta.Core.Watch.WatchState.<Clone>$() -> Aw.Meta.Core.Watch.WatchState!
+Aw.Meta.Core.Watch.WatchState.Deconstruct(out bool Initialized, out System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, out string? MainSha, out bool DiskLow) -> void
+Aw.Meta.Core.Watch.WatchState.DiskLow.get -> bool
+Aw.Meta.Core.Watch.WatchState.DiskLow.init -> void
+Aw.Meta.Core.Watch.WatchState.Equals(Aw.Meta.Core.Watch.WatchState? other) -> bool
+Aw.Meta.Core.Watch.WatchState.Initialized.get -> bool
+Aw.Meta.Core.Watch.WatchState.Initialized.init -> void
+Aw.Meta.Core.Watch.WatchState.MainSha.get -> string?
+Aw.Meta.Core.Watch.WatchState.MainSha.init -> void
+Aw.Meta.Core.Watch.WatchState.Prs.get -> System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>!
+Aw.Meta.Core.Watch.WatchState.Prs.init -> void
+Aw.Meta.Core.Watch.WatchState.WatchState(bool Initialized, System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, string? MainSha, bool DiskLow) -> void
+Aw.Meta.Core.Watch.WatchStep
+Aw.Meta.Core.Watch.WatchStep.<Clone>$() -> Aw.Meta.Core.Watch.WatchStep!
+Aw.Meta.Core.Watch.WatchStep.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Lines, out Aw.Meta.Core.Watch.WatchState! State) -> void
+Aw.Meta.Core.Watch.WatchStep.Equals(Aw.Meta.Core.Watch.WatchStep? other) -> bool
+Aw.Meta.Core.Watch.WatchStep.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Watch.WatchStep.Lines.init -> void
+Aw.Meta.Core.Watch.WatchStep.State.get -> Aw.Meta.Core.Watch.WatchState!
+Aw.Meta.Core.Watch.WatchStep.State.init -> void
+Aw.Meta.Core.Watch.WatchStep.WatchStep(System.Collections.Generic.IReadOnlyList<string!>! Lines, Aw.Meta.Core.Watch.WatchState! State) -> void
+Aw.Meta.Core.Watch.WatchedPr
+Aw.Meta.Core.Watch.WatchedPr.<Clone>$() -> Aw.Meta.Core.Watch.WatchedPr!
+Aw.Meta.Core.Watch.WatchedPr.Deconstruct(out Aw.Meta.Core.Watch.PrState State, out bool IsDraft, out string! Head, out string? Mergeable, out string? Pending, out int PendingPolls) -> void
+Aw.Meta.Core.Watch.WatchedPr.Equals(Aw.Meta.Core.Watch.WatchedPr? other) -> bool
+Aw.Meta.Core.Watch.WatchedPr.Head.get -> string!
+Aw.Meta.Core.Watch.WatchedPr.Head.init -> void
+Aw.Meta.Core.Watch.WatchedPr.IsDraft.get -> bool
+Aw.Meta.Core.Watch.WatchedPr.IsDraft.init -> void
+Aw.Meta.Core.Watch.WatchedPr.Mergeable.get -> string?
+Aw.Meta.Core.Watch.WatchedPr.Mergeable.init -> void
+Aw.Meta.Core.Watch.WatchedPr.Pending.get -> string?
+Aw.Meta.Core.Watch.WatchedPr.Pending.init -> void
+Aw.Meta.Core.Watch.WatchedPr.PendingPolls.get -> int
+Aw.Meta.Core.Watch.WatchedPr.PendingPolls.init -> void
+Aw.Meta.Core.Watch.WatchedPr.State.get -> Aw.Meta.Core.Watch.PrState
+Aw.Meta.Core.Watch.WatchedPr.State.init -> void
+Aw.Meta.Core.Watch.WatchedPr.WatchedPr(Aw.Meta.Core.Watch.PrState State, bool IsDraft, string! Head, string? Mergeable, string? Pending, int PendingPolls) -> void
+const Aw.Meta.Core.Health.OrphanRule.MinimumAgeSeconds = 300 -> long
 override Aw.Meta.Core.Config.GateConfig.Equals(object? obj) -> bool
 override Aw.Meta.Core.Config.GateConfig.GetHashCode() -> int
 override Aw.Meta.Core.Config.GateConfig.ToString() -> string!
@@ -286,6 +460,18 @@ override Aw.Meta.Core.Config.StepConfig.ToString() -> string!
 override Aw.Meta.Core.Config.TeamConfig.Equals(object? obj) -> bool
 override Aw.Meta.Core.Config.TeamConfig.GetHashCode() -> int
 override Aw.Meta.Core.Config.TeamConfig.ToString() -> string!
+override Aw.Meta.Core.Gate.GateRecord.Equals(object? obj) -> bool
+override Aw.Meta.Core.Gate.GateRecord.GetHashCode() -> int
+override Aw.Meta.Core.Gate.GateRecord.ToString() -> string!
+override Aw.Meta.Core.Gate.GateStep.Equals(object? obj) -> bool
+override Aw.Meta.Core.Gate.GateStep.GetHashCode() -> int
+override Aw.Meta.Core.Gate.GateStep.ToString() -> string!
+override Aw.Meta.Core.Gate.RerunOutcome.Equals(object? obj) -> bool
+override Aw.Meta.Core.Gate.RerunOutcome.GetHashCode() -> int
+override Aw.Meta.Core.Gate.RerunOutcome.ToString() -> string!
+override Aw.Meta.Core.Health.ProcessInfo.Equals(object? obj) -> bool
+override Aw.Meta.Core.Health.ProcessInfo.GetHashCode() -> int
+override Aw.Meta.Core.Health.ProcessInfo.ToString() -> string!
 override Aw.Meta.Core.Ids.MessageId.Equals(object? obj) -> bool
 override Aw.Meta.Core.Ids.MessageId.GetHashCode() -> int
 override Aw.Meta.Core.Ids.MessageId.ToString() -> string!
@@ -301,6 +487,12 @@ override Aw.Meta.Core.Lanes.LaneMapState.ToString() -> string!
 override Aw.Meta.Core.Lanes.LiveSession.Equals(object? obj) -> bool
 override Aw.Meta.Core.Lanes.LiveSession.GetHashCode() -> int
 override Aw.Meta.Core.Lanes.LiveSession.ToString() -> string!
+override Aw.Meta.Core.Merge.MergeCheck.Equals(object? obj) -> bool
+override Aw.Meta.Core.Merge.MergeCheck.GetHashCode() -> int
+override Aw.Meta.Core.Merge.MergeCheck.ToString() -> string!
+override Aw.Meta.Core.Merge.MergeFacts.Equals(object? obj) -> bool
+override Aw.Meta.Core.Merge.MergeFacts.GetHashCode() -> int
+override Aw.Meta.Core.Merge.MergeFacts.ToString() -> string!
 override Aw.Meta.Core.Messages.Classification.Equals(object? obj) -> bool
 override Aw.Meta.Core.Messages.Classification.GetHashCode() -> int
 override Aw.Meta.Core.Messages.Classification.ToString() -> string!
@@ -328,6 +520,21 @@ override Aw.Meta.Core.Obligations.ObligationFacts.ToString() -> string!
 override Aw.Meta.Core.Obligations.OwnerAnswer.Equals(object? obj) -> bool
 override Aw.Meta.Core.Obligations.OwnerAnswer.GetHashCode() -> int
 override Aw.Meta.Core.Obligations.OwnerAnswer.ToString() -> string!
+override Aw.Meta.Core.Watch.PrView.Equals(object? obj) -> bool
+override Aw.Meta.Core.Watch.PrView.GetHashCode() -> int
+override Aw.Meta.Core.Watch.PrView.ToString() -> string!
+override Aw.Meta.Core.Watch.WatchSnapshot.Equals(object? obj) -> bool
+override Aw.Meta.Core.Watch.WatchSnapshot.GetHashCode() -> int
+override Aw.Meta.Core.Watch.WatchSnapshot.ToString() -> string!
+override Aw.Meta.Core.Watch.WatchState.Equals(object? obj) -> bool
+override Aw.Meta.Core.Watch.WatchState.GetHashCode() -> int
+override Aw.Meta.Core.Watch.WatchState.ToString() -> string!
+override Aw.Meta.Core.Watch.WatchStep.Equals(object? obj) -> bool
+override Aw.Meta.Core.Watch.WatchStep.GetHashCode() -> int
+override Aw.Meta.Core.Watch.WatchStep.ToString() -> string!
+override Aw.Meta.Core.Watch.WatchedPr.Equals(object? obj) -> bool
+override Aw.Meta.Core.Watch.WatchedPr.GetHashCode() -> int
+override Aw.Meta.Core.Watch.WatchedPr.ToString() -> string!
 static Aw.Meta.Core.Config.GateConfig.Empty.get -> Aw.Meta.Core.Config.GateConfig!
 static Aw.Meta.Core.Config.GateConfig.operator !=(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
 static Aw.Meta.Core.Config.GateConfig.operator ==(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
@@ -339,8 +546,18 @@ static Aw.Meta.Core.Config.StepConfig.operator !=(Aw.Meta.Core.Config.StepConfig
 static Aw.Meta.Core.Config.StepConfig.operator ==(Aw.Meta.Core.Config.StepConfig? left, Aw.Meta.Core.Config.StepConfig? right) -> bool
 static Aw.Meta.Core.Config.TeamConfig.operator !=(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
 static Aw.Meta.Core.Config.TeamConfig.operator ==(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
+static Aw.Meta.Core.Gate.FlakeRule.Classify(Aw.Meta.Core.Gate.RerunOutcome! alone, Aw.Meta.Core.Gate.RerunOutcome! onMain, string! gateFailure) -> Aw.Meta.Core.Gate.FlakeVerdict
+static Aw.Meta.Core.Gate.GateRecord.operator !=(Aw.Meta.Core.Gate.GateRecord? left, Aw.Meta.Core.Gate.GateRecord? right) -> bool
+static Aw.Meta.Core.Gate.GateRecord.operator ==(Aw.Meta.Core.Gate.GateRecord? left, Aw.Meta.Core.Gate.GateRecord? right) -> bool
+static Aw.Meta.Core.Gate.GateStep.operator !=(Aw.Meta.Core.Gate.GateStep? left, Aw.Meta.Core.Gate.GateStep? right) -> bool
+static Aw.Meta.Core.Gate.GateStep.operator ==(Aw.Meta.Core.Gate.GateStep? left, Aw.Meta.Core.Gate.GateStep? right) -> bool
 static Aw.Meta.Core.Gate.GlobMatcher.IsMatch(string! pattern, string! path) -> bool
+static Aw.Meta.Core.Gate.RerunOutcome.operator !=(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
+static Aw.Meta.Core.Gate.RerunOutcome.operator ==(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
 static Aw.Meta.Core.Gate.ScopePlanner.Plan(System.Collections.Generic.IReadOnlyList<string!>! changedPaths, Aw.Meta.Core.Config.GateConfig! gate) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Meta.Core.Health.OrphanRule.IsOrphan(Aw.Meta.Core.Health.ProcessInfo! process, string? parentCmdline) -> bool
+static Aw.Meta.Core.Health.ProcessInfo.operator !=(Aw.Meta.Core.Health.ProcessInfo? left, Aw.Meta.Core.Health.ProcessInfo? right) -> bool
+static Aw.Meta.Core.Health.ProcessInfo.operator ==(Aw.Meta.Core.Health.ProcessInfo? left, Aw.Meta.Core.Health.ProcessInfo? right) -> bool
 static Aw.Meta.Core.Ids.MessageId.From(string! value) -> Aw.Meta.Core.Ids.MessageId
 static Aw.Meta.Core.Ids.MessageId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Meta.Core.Ids.MessageId
 static Aw.Meta.Core.Ids.MessageId.TryFrom(string? value, out Aw.Meta.Core.Ids.MessageId vo) -> bool
@@ -361,6 +578,11 @@ static Aw.Meta.Core.Lanes.LaneMapState.operator !=(Aw.Meta.Core.Lanes.LaneMapSta
 static Aw.Meta.Core.Lanes.LaneMapState.operator ==(Aw.Meta.Core.Lanes.LaneMapState? left, Aw.Meta.Core.Lanes.LaneMapState? right) -> bool
 static Aw.Meta.Core.Lanes.LiveSession.operator !=(Aw.Meta.Core.Lanes.LiveSession? left, Aw.Meta.Core.Lanes.LiveSession? right) -> bool
 static Aw.Meta.Core.Lanes.LiveSession.operator ==(Aw.Meta.Core.Lanes.LiveSession? left, Aw.Meta.Core.Lanes.LiveSession? right) -> bool
+static Aw.Meta.Core.Merge.MergeCheck.operator !=(Aw.Meta.Core.Merge.MergeCheck? left, Aw.Meta.Core.Merge.MergeCheck? right) -> bool
+static Aw.Meta.Core.Merge.MergeCheck.operator ==(Aw.Meta.Core.Merge.MergeCheck? left, Aw.Meta.Core.Merge.MergeCheck? right) -> bool
+static Aw.Meta.Core.Merge.MergeFacts.operator !=(Aw.Meta.Core.Merge.MergeFacts? left, Aw.Meta.Core.Merge.MergeFacts? right) -> bool
+static Aw.Meta.Core.Merge.MergeFacts.operator ==(Aw.Meta.Core.Merge.MergeFacts? left, Aw.Meta.Core.Merge.MergeFacts? right) -> bool
+static Aw.Meta.Core.Merge.MergeGate.Evaluate(Aw.Meta.Core.Merge.MergeFacts! facts) -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.MergeCheck!>!
 static Aw.Meta.Core.Messages.Classification.operator !=(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
 static Aw.Meta.Core.Messages.Classification.operator ==(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
 static Aw.Meta.Core.Messages.InboxMessage.Of(Aw.Meta.Core.Messages.PeerMessage! peer) -> Aw.Meta.Core.Messages.InboxMessage!
@@ -385,4 +607,16 @@ static Aw.Meta.Core.Obligations.ObligationFacts.operator !=(Aw.Meta.Core.Obligat
 static Aw.Meta.Core.Obligations.ObligationFacts.operator ==(Aw.Meta.Core.Obligations.ObligationFacts? left, Aw.Meta.Core.Obligations.ObligationFacts? right) -> bool
 static Aw.Meta.Core.Obligations.OwnerAnswer.operator !=(Aw.Meta.Core.Obligations.OwnerAnswer? left, Aw.Meta.Core.Obligations.OwnerAnswer? right) -> bool
 static Aw.Meta.Core.Obligations.OwnerAnswer.operator ==(Aw.Meta.Core.Obligations.OwnerAnswer? left, Aw.Meta.Core.Obligations.OwnerAnswer? right) -> bool
+static Aw.Meta.Core.Watch.PrView.operator !=(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool
+static Aw.Meta.Core.Watch.PrView.operator ==(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool
+static Aw.Meta.Core.Watch.WatchDiff.Step(Aw.Meta.Core.Watch.WatchState! state, Aw.Meta.Core.Watch.WatchSnapshot! snapshot) -> Aw.Meta.Core.Watch.WatchStep!
+static Aw.Meta.Core.Watch.WatchSnapshot.operator !=(Aw.Meta.Core.Watch.WatchSnapshot? left, Aw.Meta.Core.Watch.WatchSnapshot? right) -> bool
+static Aw.Meta.Core.Watch.WatchSnapshot.operator ==(Aw.Meta.Core.Watch.WatchSnapshot? left, Aw.Meta.Core.Watch.WatchSnapshot? right) -> bool
+static Aw.Meta.Core.Watch.WatchState.Initial.get -> Aw.Meta.Core.Watch.WatchState!
+static Aw.Meta.Core.Watch.WatchState.operator !=(Aw.Meta.Core.Watch.WatchState? left, Aw.Meta.Core.Watch.WatchState? right) -> bool
+static Aw.Meta.Core.Watch.WatchState.operator ==(Aw.Meta.Core.Watch.WatchState? left, Aw.Meta.Core.Watch.WatchState? right) -> bool
+static Aw.Meta.Core.Watch.WatchStep.operator !=(Aw.Meta.Core.Watch.WatchStep? left, Aw.Meta.Core.Watch.WatchStep? right) -> bool
+static Aw.Meta.Core.Watch.WatchStep.operator ==(Aw.Meta.Core.Watch.WatchStep? left, Aw.Meta.Core.Watch.WatchStep? right) -> bool
+static Aw.Meta.Core.Watch.WatchedPr.operator !=(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
+static Aw.Meta.Core.Watch.WatchedPr.operator ==(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
 static readonly Aw.Meta.Core.MetaErrors.Invalid -> Aw.Kernel.ErrorDefinition!
