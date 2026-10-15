@@ -202,6 +202,25 @@ public sealed class QueueViewModelTests
         Assert.True(queue.Groups[0].Rows[0].IsSelected);
     }
 
+    // §4.1: the skeleton ends when the rows are there, never before (a waiter on !IsLoading must find them).
+    [Fact]
+    public async Task Loading_ends_only_once_the_first_answer_is_shown()
+    {
+        var queue = await Queue();
+        var seen = new List<(int Total, int Groups, string Tab)>();
+        queue.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(QueueViewModel.IsLoading) && !queue.IsLoading)
+            {
+                seen.Add((queue.Total, queue.Groups.Count, queue.RunningHeader));
+            }
+        };
+
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal([(5, 4, "RUNNING 0 · WITH YOU 0")], seen);
+    }
+
     // §4.1: skeleton rows on the first load only; a failed read keeps the last rows, marked stale.
     [Fact]
     public async Task The_first_load_is_loading_and_a_failed_read_keeps_the_rows_marked_stale()
