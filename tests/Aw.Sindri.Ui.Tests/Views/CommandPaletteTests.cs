@@ -189,6 +189,28 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.Same(page, Focused(window));
     });
 
+    // G5 (a11y-2): Ctrl+, / ⌘, with the palette or the ? sheet open does nothing: the card keeps focus and Settings does not
+    // open behind it (the card is modal, §11.2).
+    [Fact]
+    public Task The_settings_chord_does_nothing_over_the_palette_or_the_sheet() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        var page = shell.CurrentPage;
+
+        Press(window, Key.K, PhysicalKey.K, _command, "k");
+        Press(window, Key.OemComma, PhysicalKey.Comma, _command, ",");
+
+        Assert.Equal((true, page), (shell.Palette.IsOpen, shell.CurrentPage));
+        Assert.Same(Named<TextBox>(window, "PaletteQuery"), Focused(window));
+
+        Press(window, Key.Escape, PhysicalKey.Escape);
+        Press(window, Key.OemQuestion, PhysicalKey.Slash, RawInputModifiers.Shift, "?");
+        Press(window, Key.OemComma, PhysicalKey.Comma, _command, ",");
+
+        Assert.Equal((true, page), (shell.Shortcuts.IsOpen, shell.CurrentPage));
+        Assert.Same(Named<Control>(window, "ShortcutsCard"), Focused(window));
+    });
+
     // §8: single keys never fire while typing in a text field.
     [Fact]
     public Task A_question_mark_typed_in_the_palette_stays_in_its_field() => OnUi(async () =>
