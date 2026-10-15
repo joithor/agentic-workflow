@@ -94,9 +94,7 @@ public sealed class MapTextTests : IDisposable
         _ = await _world.Engine.Query(new ContextQuery(Text: null, Node: "feature:a"), MapWorld.Human, MapWorld.None);
 
         var terms = _world.Docs.Searches.SelectMany(q => q.Terms).ToList();
-        Assert.NotEmpty(terms);
-        Assert.DoesNotContain(terms, t => FakeScrubber.Secret.Contains(t, StringComparison.OrdinalIgnoreCase) && t.Length > 1);
-        Assert.DoesNotContain(terms, t => string.Equals(t, "redacted", StringComparison.Ordinal));
+        Assert.Equal(["a"], terms.Distinct(StringComparer.Ordinal).ToList());
     }
 
     private static string Everything(Context.Core.Results.ContextResult result) =>

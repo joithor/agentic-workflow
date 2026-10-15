@@ -14,7 +14,7 @@ public sealed class EvalProbesServiceTests
     private static CancellationToken None => TestContext.Current.CancellationToken;
 
     [Fact, Trait("Lane", "unit")]
-    public async Task With_no_previous_run_the_report_is_written_and_does_not_regress()
+    public async Task With_no_baseline_run_the_report_is_written_and_does_not_regress()
     {
         var world = new World();
 
@@ -25,7 +25,7 @@ public sealed class EvalProbesServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_worse_run_of_the_same_file_hash_regresses_against_the_previous_run()
+    public async Task A_worse_run_of_the_same_file_hash_regresses_against_the_baseline_run()
     {
         var world = new World();
         var first = await world.Run(Hit);
@@ -61,7 +61,7 @@ public sealed class EvalProbesServiceTests
 
         Assert.True(run.IsSuccess, run.IsError ? run.Error.Message : null);
         Assert.True(run.Value.Incomplete);
-        Assert.Equal(["p1", "p2"], run.Value.Failed);
+        Assert.Equal(["p1", "p2"], run.Value.Failed.Select(i => i.Value), StringComparer.Ordinal);
         Assert.Null(run.Value.Path);
         Assert.Empty(world.Written);
     }

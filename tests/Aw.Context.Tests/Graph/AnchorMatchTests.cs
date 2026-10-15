@@ -40,6 +40,16 @@ public sealed class AnchorMatchTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_node_named_after_more_than_sixteen_other_words_still_anchors()
+    {
+        var question = "When I change the split pane layout in the settings dialog of the editor window, what else in the app could break, for example Tabs?";
+
+        var anchors = AnchorMatch.FromText(FixtureGraph.Applied(), question);
+
+        Assert.Contains(anchors.Anchors, k => k.Value == "feature:tabs.tab-manager");
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_question_naming_a_whole_label_anchors_on_it()
     {
         var anchors = AnchorMatch.FromText(FixtureGraph.Applied(), "What else is affected if I change how split orientation works?");

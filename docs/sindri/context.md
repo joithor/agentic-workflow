@@ -394,7 +394,7 @@ $SINDRI context query --node feature:layout.split-pane.orientation [--depth N] [
 # ## affects
 # [C1] Tabs
 #     trust trusted · cascade depth 1
-#     depth 1 · path feature:layout.split-pane.orientation → writes thing:pane-layout → reads action:tab-manager.restore-layout
+#     depth 1 · path feature:layout.split-pane.orientation → owns surface:command/toggle-orientation → owns action:split-pane.toggle-orientation → writes thing:pane-layout → reads action:tab-manager.restore-layout
 #
 # ## code
 # [C1] src/layout/SplitPane.ts (draft)
@@ -414,7 +414,7 @@ those surfaces' actions (the `graph` section). Each step costs 1:
 
 A reached surface or action is reported as the feature that owns it. Only the reached node steps on, never that
 feature's other surfaces, so a sibling such as "Pane resize" is never pulled in. The depth is `context.cascadeDepth`
-in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path.
+in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path, starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`.
 
 **A session sees only its repo.** A session sees only the nodes its repo implements (`implements` edges with file
 evidence in its `X-Sindri-Repo`) and the edges among them, so its cascade, neighbors and paths stay inside that set;
@@ -485,13 +485,16 @@ running, session reads off), is incomplete: it prints the failed probes, exits 2
 
 **Accepting a lower score you intend** (say a map change that trades some precision for correctness): the baseline is
 sticky, so every later run of the same file keeps comparing with the old one. Delete or move that probe file's reports
-under `$AW_SINDRI_HOME/context/eval/probes/` (they carry the file's hash); the next complete run becomes the new baseline.
+under `$AW_SINDRI_HOME/context/eval/probes/` (each report's `probeFileHash` field holds the file's hash; reports of other probe files can stay); the next complete run becomes the new baseline.
 Editing the probe file works too, since a new file hash starts a new history. That's the "probes don't regress" line every later phase's signal
 carries.
 
 ### Exit codes (graph verbs and probes)
 
-`0` an answer (empty and "no path" included), or a run that didn't regress · `1` attention: not running
-(`SND-API-001`), unknown anchor or out of scope (`003`), a bad depth (`006`), session reads off (`020`), no map
-(`030`), a worktree path (`005`), an invalid or missing probe file (`035`, `036`), an ambiguous name (`037`), a
-regression (`038`) · `2` a tool error, or an incomplete probe run.
+Graph verbs (`show`, `neighbors`, `path`, `query`): `0` an answer (empty and "no path" included) · `1` attention: not
+running (`SND-API-001`), unknown anchor or out of scope (`003`), a bad depth (`006`), session reads off (`020`), no map
+(`030`), a worktree path (`005`), an ambiguous name (`037`) · `2` a tool error.
+
+`context eval probes`: `0` no regression · `1` a regression (`038`), or an invalid or missing probe file (`035`, `036`),
+or a worktree path (`005`) · `2` a tool error, or an incomplete run: any probe's query failed, and Sindri not running or
+session reads off make every probe fail, so they are exit 2 here, not 1.

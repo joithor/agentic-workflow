@@ -16,8 +16,8 @@ public sealed class CascadeTests
 
         var affected = Assert.Single(result.Affected);
         Assert.Equal((TabManager, 1), (affected.Node.Value, affected.Depth));
-        Assert.Equal([Orientation, "writes thing:pane-layout", "reads action:tab-manager.restore-layout"], affected.Path);
-        Assert.Equal([EdgeType.Writes, EdgeType.Reads], affected.Edges.Select(e => e.Type));
+        Assert.Equal([Orientation, "owns surface:command/toggle-orientation", "owns action:split-pane.toggle-orientation", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"], affected.Path);
+        Assert.Equal([EdgeType.PartOf, EdgeType.On, EdgeType.Writes, EdgeType.Reads], affected.Edges.Select(e => e.Type));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -66,7 +66,7 @@ public sealed class CascadeTests
         var result = Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 3);
 
         Assert.Equal([("feature:b", 1), ("feature:d", 2)], result.Affected.Select(a => (a.Node.Value, a.Depth)));
-        Assert.Equal(["feature:a", "writes thing:t", "reads action:b1", "writes thing:v", "reads action:d1"], result.Affected[1].Path);
+        Assert.Equal(["feature:a", "owns surface:screen/a", "owns action:a1", "writes thing:t", "reads action:b1", "writes thing:v", "reads action:d1"], result.Affected[1].Path);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -91,7 +91,7 @@ public sealed class CascadeTests
         var affected = Assert.Single(Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 1).Affected);
 
         Assert.Equal(("feature:g", 1), (affected.Node.Value, affected.Depth));
-        Assert.Equal(["feature:a", "step-of flow:f", "next action:g1"], affected.Path);
+        Assert.Equal(["feature:a", "owns surface:screen/a", "owns action:a1", "step-of flow:f", "next action:g1"], affected.Path);
     }
 
     [Theory, Trait("Lane", "unit")]

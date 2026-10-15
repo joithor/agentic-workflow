@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
 
@@ -47,12 +48,10 @@ public static partial class ProbeRunner
         return report.Incomplete || baseline is null ? report : report with { Regressed = Worse(report, baseline) };
     }
 
-    /// <summary>Lower means than the baseline's, or a probe naming more absent nodes than the same probe did there (a baseline without per-probe scores compares the totals).</summary>
+    /// <summary>Lower means than the baseline's, or a probe naming more absent nodes than the same probe did there.</summary>
     private static bool Worse(ProbeReport now, ProbeReport before) =>
         now.Totals.PrecisionAt5 < before.Totals.PrecisionAt5 || now.Totals.CitationCorrectness < before.Totals.CitationCorrectness
-        || (before.Probes.Count == 0
-            ? now.Totals.AbsentReturned > before.Totals.AbsentReturned
-            : now.Probes.Any(p => before.Probes.FirstOrDefault(b => b.Id == p.Id) is { } was && p.AbsentReturned.Count > was.AbsentReturned.Count));
+        || now.Probes.Any(p => before.Probes.FirstOrDefault(b => b.Id == p.Id) is { } was && p.AbsentReturned.Count > was.AbsentReturned.Count);
 
     /// <summary>Checks a probe file's content: at least one probe, ids unique slugs, questions 1 to 2000 characters, schema version 1.</summary>
     /// <param name="set">The parsed file.</param>
@@ -82,6 +81,7 @@ public static partial class ProbeRunner
                 _ when !Slug.IsMatch(probe.Id.Value) => Invalid(at + ".id", "is a slug: lower-case letters, digits and '-', 1 to 100 characters"),
                 _ when !seen.Add(probe.Id.Value) => Invalid(at + ".id", $"'{probe.Id.Value}' is already the id of an earlier probe"),
                 _ when string.IsNullOrWhiteSpace(probe.Question) || probe.Question.Length > MaxQuestion => Invalid(at + ".question", "is 1 to 2000 characters"),
+                _ when QueryRules.Terms(probe.Question).Count == 0 => Invalid(at + ".question", "needs at least one word (letters or digits)"),
                 _ => null,
             };
             if (problem is not null)

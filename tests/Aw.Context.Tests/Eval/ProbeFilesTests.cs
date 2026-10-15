@@ -62,7 +62,7 @@ public sealed class ProbeFilesTests : IDisposable
     }
 
     [Fact]
-    public async Task A_report_is_written_0600_in_a_0700_folder_and_the_latest_is_the_newest_of_the_same_file()
+    public async Task A_report_is_written_0600_in_a_0700_folder_and_the_baseline_is_the_newest_of_the_same_file()
     {
         var store = new FileProbeReportStore(_settings, EvalJson.Options);
         var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
@@ -96,6 +96,34 @@ public sealed class ProbeFilesTests : IDisposable
         var baseline = await store.Baseline("hash-a", None);
 
         Assert.Equal(0.6, baseline.Value?.Totals.PrecisionAt5);
+    }
+
+    [Fact]
+    public async Task A_file_that_is_not_JSON_among_the_reports_is_skipped_and_the_rest_still_read()
+    {
+        var store = new FileProbeReportStore(_settings, EvalJson.Options);
+        var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
+        _ = await store.Write(Report("hash-a", 0.6, at), at, None);
+        await File.WriteAllTextAsync(Path.Combine(_settings.ProbesDirectory, "probes-20991231T000000000Z.json"), "not json", None);
+
+        var baseline = await store.Baseline("hash-a", None);
+
+        Assert.Equal(0.6, baseline.Value?.Totals.PrecisionAt5);
+    }
+
+    [Fact]
+    public async Task A_report_with_both_the_baseline_and_the_previous_key_keeps_the_baseline()
+    {
+        var store = new FileProbeReportStore(_settings, EvalJson.Options);
+        var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
+        _ = await store.Write(Report("hash-a", 0.6, at) with { Baseline = new ProbeTotals(0.5, 1.0, 1, at.AddDays(-1)) }, at, None);
+        var written = Directory.EnumerateFiles(_settings.ProbesDirectory).Single();
+        var json = (await File.ReadAllTextAsync(written, None)).Replace("\"baseline\":", "\"previous\":{\"precisionAt5\":0.1,\"citationCorrectness\":1,\"probes\":1,\"at\":\"2026-10-13T09:00:00Z\",\"absentReturned\":0},\"baseline\":", StringComparison.Ordinal);
+        await File.WriteAllTextAsync(written, json, None);
+
+        var baseline = await store.Baseline("hash-a", None);
+
+        Assert.Equal(0.5, baseline.Value?.Baseline?.PrecisionAt5);
     }
 
     [Fact]

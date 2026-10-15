@@ -61,4 +61,14 @@ public sealed class QueryRulesTests
         Assert.Equal(QueryRules.MaxTerms, terms.Count);
         Assert.Equal(64, QueryRules.Terms(new string('z', 70)).Single().Length);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Words_take_the_cap_of_the_caller_and_Terms_keeps_sixteen()
+    {
+        var text = string.Join(' ', Enumerable.Range(0, 40).Select(i => "w" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+
+        Assert.Equal(40, QueryRules.Words(text, 256).Count);
+        Assert.Equal(5, QueryRules.Words(text, 5).Count);
+        Assert.Equal(QueryRules.Words(text, QueryRules.MaxTerms), QueryRules.Terms(text));
+    }
 }
