@@ -28,13 +28,13 @@ public static class EmptyText
         _ => throw new ArgumentOutOfRangeException(nameof(group), group, "not a queue group"),
     };
 
-    /// <summary>The item list is empty for its filters.</summary>
+    /// <summary>The item list is empty for its filters. Without a state filter the list holds open items only, so the sentence says "open".</summary>
     /// <param name="state">The state filter, or null.</param>
     /// <param name="repo">The repo filter, or null.</param>
     /// <returns>The sentence.</returns>
     public static string Items(ItemState? state, RepoName? repo)
     {
-        var what = state is { } s ? "No " + Name(s) + " items" : "No items";
+        var what = state is { } s ? "No " + Name(s) + " items" : "No open items";
         return repo is { } r ? what + " in " + r.Value + "." : what + ".";
     }
 

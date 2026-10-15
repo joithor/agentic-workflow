@@ -1,6 +1,6 @@
 {
   "items": [],
-  "empty": "No items.",
+  "empty": "No open items.",
   "asOf": {
     "cursor": 4,
     "ledgerHead": 4,

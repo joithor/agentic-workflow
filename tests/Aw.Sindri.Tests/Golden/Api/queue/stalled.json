@@ -3,17 +3,17 @@
     {
       "group": "waitingOnYou",
       "items": [],
-      "empty": "Nothing is waiting on you."
+      "empty": "Views are stalled at 9: run `sindri views rebuild`"
     },
     {
       "group": "withYou",
       "items": [],
-      "empty": "Nothing is with you."
+      "empty": "Views are stalled at 9: run `sindri views rebuild`"
     },
     {
       "group": "running",
       "items": [],
-      "empty": "Nothing running."
+      "empty": "Views are stalled at 9: run `sindri views rebuild`"
     },
     {
       "group": "queued",
@@ -47,7 +47,7 @@
           "owner": null
         }
       ],
-      "empty": null
+      "empty": "Views are stalled at 9: run `sindri views rebuild`"
     }
   ],
   "empty": "Views are stalled at 9: run `sindri views rebuild`",
