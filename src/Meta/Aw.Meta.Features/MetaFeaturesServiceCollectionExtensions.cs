@@ -2,6 +2,7 @@ using Aw.Kernel.Services;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Messages;
 using Aw.Meta.Features.Lanes;
+using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Roles;
 using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
@@ -35,7 +36,10 @@ public static class MetaFeaturesServiceCollectionExtensions
             .Plain<RefreshLanesService, RefreshLanesRequest, LanesResponse>()
             .AddScoped<StopCheckService>()
             .AddScoped<IValidator<StopCheckRequest>, StopCheckValidator>()
-            .Validated<StopCheckService, StopCheckRequest, StopCheckResponse>();
+            .Validated<StopCheckService, StopCheckRequest, StopCheckResponse>()
+            .AddScoped<OutboxRecordService>()
+            .AddScoped<IValidator<OutboxRecordRequest>, OutboxRecordValidator>()
+            .Validated<OutboxRecordService, OutboxRecordRequest, OutboxRecordResponse>();
         return services;
     }
 

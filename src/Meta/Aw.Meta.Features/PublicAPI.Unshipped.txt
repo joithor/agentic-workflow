@@ -30,6 +30,40 @@ static Aw.Meta.Features.Lanes.RefreshLanesRequest.operator !=(Aw.Meta.Features.L
 static Aw.Meta.Features.Lanes.RefreshLanesRequest.operator ==(Aw.Meta.Features.Lanes.RefreshLanesRequest? left, Aw.Meta.Features.Lanes.RefreshLanesRequest? right) -> bool
 Aw.Meta.Features.MetaFeaturesServiceCollectionExtensions
 static Aw.Meta.Features.MetaFeaturesServiceCollectionExtensions.AddMetaFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.<Clone>$() -> Aw.Meta.Features.OutboxRecord.OutboxRecordRequest!
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! To, out string! Message, out Aw.Meta.Core.Ids.MessageId? Id) -> void
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.Equals(Aw.Meta.Features.OutboxRecord.OutboxRecordRequest? other) -> bool
+override Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.GetHashCode() -> int
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.Id.get -> Aw.Meta.Core.Ids.MessageId?
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.Id.init -> void
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.Message.get -> string!
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.Message.init -> void
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.OutboxRecordRequest(Aw.Meta.Core.Ids.SessionId Session, string! To, string! Message, Aw.Meta.Core.Ids.MessageId? Id) -> void
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.Session.get -> Aw.Meta.Core.Ids.SessionId
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.Session.init -> void
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.To.get -> string!
+Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.To.init -> void
+override Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.ToString() -> string!
+static Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.operator !=(Aw.Meta.Features.OutboxRecord.OutboxRecordRequest? left, Aw.Meta.Features.OutboxRecord.OutboxRecordRequest? right) -> bool
+static Aw.Meta.Features.OutboxRecord.OutboxRecordRequest.operator ==(Aw.Meta.Features.OutboxRecord.OutboxRecordRequest? left, Aw.Meta.Features.OutboxRecord.OutboxRecordRequest? right) -> bool
+Aw.Meta.Features.OutboxRecord.OutboxRecordResponse
+Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.<Clone>$() -> Aw.Meta.Features.OutboxRecord.OutboxRecordResponse!
+Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.Closed.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>!
+Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.Closed.init -> void
+Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.Deconstruct(out bool Recorded, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! Closed) -> void
+Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.Equals(Aw.Meta.Features.OutboxRecord.OutboxRecordResponse? other) -> bool
+override Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.GetHashCode() -> int
+Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.OutboxRecordResponse(bool Recorded, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! Closed) -> void
+Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.Recorded.get -> bool
+Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.Recorded.init -> void
+override Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.ToString() -> string!
+static Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.operator !=(Aw.Meta.Features.OutboxRecord.OutboxRecordResponse? left, Aw.Meta.Features.OutboxRecord.OutboxRecordResponse? right) -> bool
+static Aw.Meta.Features.OutboxRecord.OutboxRecordResponse.operator ==(Aw.Meta.Features.OutboxRecord.OutboxRecordResponse? left, Aw.Meta.Features.OutboxRecord.OutboxRecordResponse? right) -> bool
+Aw.Meta.Features.OutboxRecord.PostToolUseParser
+static Aw.Meta.Features.OutboxRecord.PostToolUseParser.Parse(string! json) -> Aw.Kernel.Result<Aw.Meta.Features.OutboxRecord.OutboxRecordRequest?>!
 Aw.Meta.Features.Roles.SetRoleRequest
 Aw.Meta.Features.Roles.SetRoleRequest.<Clone>$() -> Aw.Meta.Features.Roles.SetRoleRequest!
 Aw.Meta.Features.Roles.SetRoleRequest.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! Name) -> void
