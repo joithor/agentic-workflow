@@ -184,8 +184,9 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     }
 
     // Enter does something with a ready row that has a sender, with Stop Sindri (it goes to Health) and with a cli-only row it can copy.
+    // Never sends a destructive one: its in-app confirm is on its own control (Stop Sindri's is on Health, where Enter goes).
     private static bool Runs(ControlViewModel control) =>
-        control.IsSendable || (control.IsReady && control.Action == "StopProcess") || (control.IsCliOnly && control.CanCopy);
+        (control.IsSendable && !control.IsDestructive) || (control.IsReady && control.Action == "StopProcess") || (control.IsCliOnly && control.CanCopy);
 
     // The entries ↑/↓ stop at: those that run now, and the selection even while it sends (it is disabled then, but it is
     // where the user is: arrowing off it goes to its neighbour).
