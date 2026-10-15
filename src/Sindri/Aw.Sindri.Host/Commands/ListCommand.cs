@@ -10,8 +10,8 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>
 /// 'sindri workflow list [--needs-me | --item &lt;id&gt; | --state &lt;s&gt;] [--recipe &lt;id&gt;] [--urgency incident|triage|work] [--subject &lt;fact&gt;] [--root true|false] [--query &lt;visibility query&gt;] [--json]'
 /// (engine spec §6.3; engine P4 unit (e)): one status header per line. A client of serve's 'GET /workflow/instances' (review run 2); it never starts serve. '--needs-me' shows <b>Decisions</b> and then
-/// <b>Tasks</b>, each under its heading; the typed filters AND together and the list runs incidents, triage, then work,
-/// the oldest first; empty, it prints 'nothing needs you', and the other filters 'no instances match'.
+/// <b>Tasks</b>, each under its heading; the typed filters AND together and the list is in the API order (<see cref="InstanceOrder"/>:
+/// unfinished before finished, not parked or escalated before parked or escalated, incident, triage, then work, the subject label, the address); empty, it prints 'nothing needs you', and the other filters 'no instances match'.
 /// Exit 0, empty included; 1 when Sindri isn't running; 2 on any other error.
 /// </summary>
 internal static class ListCommand

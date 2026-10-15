@@ -6,7 +6,7 @@ namespace Aw.Sindri.Tests.ListInstances;
 
 internal sealed class NoDirectory : IInstanceDirectory
 {
-    public ValueTask<Result<AttemptState?>> Latest(ItemKey item, Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, CancellationToken cancellationToken) =>
+    public ValueTask<Result<AttemptState?>> Latest(ItemKey item, Core.Workflow.Ids.RecipeId recipe, CancellationToken cancellationToken) =>
         throw new NotSupportedException("a list never resolves a reference here");
 
     public ValueTask<Result<InstanceAddress>> Resolve(string reference, CancellationToken cancellationToken) =>

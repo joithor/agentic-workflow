@@ -32,7 +32,7 @@ public sealed class InstanceViewProducerTests
         },
     };
 
-    private static InstanceView Produce(Func<Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance>? with = null)
+    private static InstanceView Produce(Func<Core.Workflow.Engine.Instances.WorkflowInstance, Core.Workflow.Engine.Instances.WorkflowInstance>? with = null)
     {
         var instance = EngineFixture.At(_incident.Recipe, "produce");
         instance = instance with { Facts = new Dictionary<FactKey, FactValue> { [_spec] = EngineFixture.Fact("the spec") } };
@@ -107,7 +107,7 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void A_loop_pair_counts_the_rounds_completed_so_far()
     {
-        var view = Produce(i => i with { Loops = new Dictionary<string, Aw.Sindri.Core.Workflow.Engine.Instances.LoopState>(StringComparer.Ordinal) { ["revisions"] = new(3, 3, Last: null) } });
+        var view = Produce(i => i with { Loops = new Dictionary<string, Core.Workflow.Engine.Instances.LoopState>(StringComparer.Ordinal) { ["revisions"] = new(3, 3, Last: null) } });
 
         Assert.Equal(new RoundOf(3, 3), view.States[0].Round);
         Assert.Equal([new LoopPair("verify", 2, 3), new LoopPair("checks", 2, 3)], view.States[0].Loops);
@@ -281,7 +281,7 @@ public sealed class InstanceViewProducerTests
     {
         var status = StatusCases.View(name).Status!;
 
-        Assert.Equal(new AnswerLine(kind, Aw.Sindri.Core.Ids.ActionId.From(action), actionClass, cli, atTerminal), status.Answer);
+        Assert.Equal(new AnswerLine(kind, Core.Ids.ActionId.From(action), actionClass, cli, atTerminal), status.Answer);
         Assert.Contains(cli, status.Text, StringComparison.Ordinal);
     }
 
@@ -294,7 +294,7 @@ public sealed class InstanceViewProducerTests
         Assert.Null(status.Drift);   // the text has no 'drift' line either: the park's own next sentence names the block
         Assert.Equal(["takeover", "cancel", "approve"], status.Commands.Select(static c => c.Verb), StringComparer.Ordinal);
         Assert.Equal(
-            new CommandRow("approve", Aw.Sindri.Core.Ids.ActionId.From("ApproveRecipe"), ActionClass.Protected, $"sindri recipe approve workflow.step@{StatusText.Hash12(EngineFixture.Step.Hash!.Value.Value)}"),
+            new CommandRow("approve", Core.Ids.ActionId.From("ApproveRecipe"), ActionClass.Protected, $"sindri recipe approve workflow.step@{StatusText.Hash12(EngineFixture.Step.Hash!.Value.Value)}"),
             status.Commands[^1]);
         Assert.Contains("step.produce changed since", status.Text, StringComparison.Ordinal);
     }
@@ -319,7 +319,7 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void Every_command_row_is_a_row_of_the_catalog_with_the_same_class()
     {
-        var catalog = Aw.Sindri.Host.Catalog.EngineRows.All.ToDictionary(static r => r.Action.Value, static r => r.Class, StringComparer.Ordinal);
+        var catalog = Host.Catalog.EngineRows.All.ToDictionary(static r => r.Action.Value, static r => r.Class, StringComparer.Ordinal);
 
         foreach (var name in StatusCases.Names)
         {

@@ -4,7 +4,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 
 /// <summary>One state of the recipe as the band draws it (E-20).</summary>
 /// <param name="State">The state's name (wire name 'id').</param>
-/// <param name="Order">The 0-based position in path order for a main-path state; null for a branch state.</param>
+/// <param name="Order">The 1-based position in path order for a main-path state (terminal states last); null for a branch state. The numbers are those of StatePlace.Order, which <see cref="StateCells"/> copies.</param>
 /// <param name="BranchOf">The state this one is folded under, for a branch.</param>
 /// <param name="Glyph">Done, active or pending.</param>
 /// <param name="Badge">The badge on the state the instance is interrupted in.</param>
