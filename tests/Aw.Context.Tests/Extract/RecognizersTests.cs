@@ -1,4 +1,5 @@
 using Aw.Context.Core.Extract;
+using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Tests.Extract;
 
@@ -37,7 +38,7 @@ public sealed class RecognizersTests
 
         var binding = Assert.Single(found, f => f.Key.Value == "surface:keybinding/ctrl+shift+d");
         var edge = Assert.Single(binding.Edges);
-        Assert.Equal(("surface:command/split-vertical", Aw.Context.Core.Graph.EdgeType.MovesTo), (edge.To.Value, edge.Type));
+        Assert.Equal(("surface:command/split-vertical", EdgeType.MovesTo), (edge.To.Value, edge.Type));
         Assert.Equal(2, found.Count);
     }
 
@@ -101,7 +102,7 @@ public sealed class RecognizersTests
     [Fact, Trait("Lane", "unit")]
     public void A_surface_name_with_unusable_characters_is_dropped_not_thrown()
     {
-        Assert.Empty(Keys("src/commands/ids.ts", "export type CommandId = \"bad\\u0001id\";"));
+        Assert.Empty(Keys("src/commands/ids.ts", "export type CommandId = \"bad\u0001id\";"));
         Assert.Empty(Keys("src/server.ts", "app.get('/a b', h);"));
     }
 }

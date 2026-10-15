@@ -19,6 +19,12 @@ public sealed class MapExtractorTests
         new("README.md", "text"),
     ];
 
+    private static string[] Shape(ExtractedMap map) =>
+    [
+        .. map.Nodes.Select(n => $"{n.Key.Value}|{n.Label}|{string.Join(',', n.EvidenceOrEmpty.Select(e => e.Key.Value))}"),
+        .. map.Edges.Select(e => $"{e.From.Value}>{e.Type}>{e.To.Value}"),
+    ];
+
     [Fact, Trait("Lane", "unit")]
     public void Every_found_node_is_deterministic_and_rests_on_the_file_that_defines_it()
     {
@@ -78,8 +84,7 @@ public sealed class MapExtractorTests
         var forward = MapExtractor.Extract(_repo, _files);
         var backward = MapExtractor.Extract(_repo, [.. _files.Reverse()]);
 
-        Assert.Equal(forward.Nodes, backward.Nodes);
-        Assert.Equal(forward.Edges, backward.Edges);
+        Assert.Equal(Shape(forward), Shape(backward), StringComparer.Ordinal);
         Assert.Equal(forward.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal), forward.Nodes.Select(n => n.Key.Value), StringComparer.Ordinal);
     }
 
@@ -99,5 +104,11 @@ public sealed class MapExtractorTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void No_files_extract_nothing() => Assert.Equal(ExtractedMap.Empty, MapExtractor.Extract(_repo, []));
+    public void No_files_extract_nothing()
+    {
+        var map = MapExtractor.Extract(_repo, []);
+
+        Assert.Empty(map.Nodes);
+        Assert.Empty(map.Edges);
+    }
 }

@@ -16,7 +16,8 @@ public sealed record ExtractedMap(IReadOnlyList<GraphNode> Nodes, IReadOnlyList<
     public ExtractedMap Plus(ExtractedMap other)
     {
         ArgumentNullException.ThrowIfNull(other);
-        _ = Nodes;
-        throw new NotSupportedException("S-4: ExtractedMap.Plus is not built yet");
+        return new ExtractedMap(
+            [.. Nodes.Concat(other.Nodes).DistinctBy(n => n.Key.Value, StringComparer.Ordinal).OrderBy(n => n.Key.Value, StringComparer.Ordinal)],
+            [.. Edges.Concat(other.Edges).DistinctBy(e => (e.From.Value, e.To.Value, e.Type)).OrderBy(e => e.From.Value, StringComparer.Ordinal).ThenBy(e => e.To.Value, StringComparer.Ordinal).ThenBy(e => e.Type)]);
     }
 }

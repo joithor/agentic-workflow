@@ -14,6 +14,7 @@ public sealed record ReviewFile(string Draft, IReadOnlyList<ReviewFileEntry> Ent
     public static ReviewFile Of(ReviewQueueView queue)
     {
         ArgumentNullException.ThrowIfNull(queue);
-        throw new NotSupportedException("S-4: ReviewFile.Of is not built yet");
+        return new ReviewFile(queue.Draft, [.. queue.Entries.Where(e => e.Group != ReviewGroup.Orphaned).Select(e =>
+            new ReviewFileEntry(e.Link is null ? e.Node : null, e.Link, e.Label, e.Group, e.Confidence))]);
     }
 }

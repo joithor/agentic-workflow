@@ -12,7 +12,14 @@ public static class UndoRules
     public static Result<MapOverride> Check(IReadOnlyList<MapOverride> overrides, OverrideId target)
     {
         ArgumentNullException.ThrowIfNull(overrides);
-        _ = target;
-        throw new NotSupportedException("S-4: UndoRules.Check is not built yet");
+        var row = overrides.FirstOrDefault(o => o.ToId().Value == target.Value);
+        if (row is null)
+        {
+            return ContextErrors.ReviewTargetStale.With($"no override {target.Value} (fix: list the history with 'sindri context map review --history')");
+        }
+
+        return OverrideLog.Undone(overrides).Contains(target.Value)
+            ? ContextErrors.ReviewTargetStale.With($"override {target.Value} is already undone (fix: nothing to do)")
+            : row;
     }
 }

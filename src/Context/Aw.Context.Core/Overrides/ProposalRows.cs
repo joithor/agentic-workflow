@@ -1,4 +1,5 @@
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Results;
 
 namespace Aw.Context.Core.Overrides;
 
@@ -14,6 +15,6 @@ public static class ProposalRows
     public static GraphNode? NodeOf(MapOverride o)
     {
         ArgumentNullException.ThrowIfNull(o);
-        throw new NotSupportedException("S-4: ProposalRows.NodeOf is not built yet");
+        return o.Proposal is { } p ? new GraphNode(o.Target, o.Label ?? o.Target.Name, Provenance.Model, Confidence, p.Evidence, At: o.At) : null;
     }
 }

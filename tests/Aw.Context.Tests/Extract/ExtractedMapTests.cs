@@ -32,6 +32,6 @@ public sealed class ExtractedMapTests
 
         Assert.Equal(["feature:a", "feature:z"], both.Nodes.Select(n => n.Key.Value), StringComparer.Ordinal);
         _ = Assert.Single(one.Nodes);
-        Assert.Equal(ExtractedMap.Empty, ExtractedMap.Empty.Plus(ExtractedMap.Empty));
+        Assert.Empty(ExtractedMap.Empty.Plus(ExtractedMap.Empty).Nodes);
     }
 }

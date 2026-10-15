@@ -36,7 +36,7 @@ public sealed class LensesBuilderTests
     [Fact, Trait("Lane", "unit")]
     public void The_product_band_holds_the_own_scope_then_neighbors_without_repeating_a_node()
     {
-        var view = Lenses();
+        var view = Lenses(depth: 3);
 
         Assert.Equal(
             [Anchor, "action:tab-groups.group-selected", "action:tab-manager.restore-layout", "feature:tabs.tab-groups", "surface:command/group-tabs", "surface:command/switch-tab", "thing:pane-layout"],

@@ -9,9 +9,5 @@ public static class Confirmation
     /// <param name="provenance">Who produced the node or link.</param>
     /// <param name="accepted">Whether an active accept override covers it (the applied graph already shows that as human provenance).</param>
     /// <returns>True when confirmed.</returns>
-    public static bool Of(Provenance provenance, bool accepted = false)
-    {
-        _ = (provenance, accepted);
-        throw new NotSupportedException("S-4: Confirmation.Of is not built yet");
-    }
+    public static bool Of(Provenance provenance, bool accepted = false) => accepted || provenance != Provenance.Model;
 }
