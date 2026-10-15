@@ -39,6 +39,13 @@ internal static class TemporalUpdates
         SindriErrors.NotRunning.With($"Temporal at {client.Connection.Options.TargetHost} has no '{client.Options.Namespace}' namespace: {e.Message} "
             + "(fix: start sindri serve on this home, or set AW_SINDRI_TEMPORAL_NAMESPACE to the namespace serve uses)");
 
+    /// <summary>SND-API-001 for a frontend that went away under a live client (a dev server that died): Unavailable is the transport saying so.</summary>
+    /// <param name="client">The client.</param>
+    /// <param name="e">The RPC failure.</param>
+    /// <returns>The error; its kind (Unavailable) keeps a fresh nonce claim, so a retry with the same nonce resends the same Update id.</returns>
+    internal static Error Down(ITemporalClient client, RpcException e) =>
+        SindriErrors.NotRunning.With($"Temporal at {client.Connection.Options.TargetHost} doesn't answer: {e.Message} (fix: start sindri serve, then run the same command again)");
+
     /// <summary>SND-API-002 for an Update no worker took in <see cref="Patience"/>; it may still apply once one runs.</summary>
     /// <param name="address">The instance.</param>
     /// <param name="nonce">The Update's id, for the retry.</param>

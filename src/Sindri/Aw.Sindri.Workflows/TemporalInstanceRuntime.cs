@@ -65,7 +65,17 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         {
             return TemporalUpdates.NotServes(client.Value, e);
         }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client.Value, e);
+        }
 
+        return await WaitStarted(address, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Asks every 50 ms whether the new instance has left 'starting', up to <see cref="StartPolls"/> times.</summary>
+    private async ValueTask<Result<InstanceView>> WaitStarted(InstanceAddress address, CancellationToken cancellationToken)
+    {
         for (var poll = 1; ; poll++)
         {
             var view = await Get(address, cancellationToken).ConfigureAwait(false);
@@ -160,6 +170,10 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)   // boundary: no such instance, or it has ended
         {
             return WorkflowErrors.InstanceNotFound.With($"no running instance {address.Value} (fix: sindri workflow list)");
+        }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client.Value, e);
         }
     }
 }

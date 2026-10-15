@@ -57,6 +57,10 @@ internal sealed class TemporalDeskReports(TemporalFrontend frontend)
         {
             return WorkflowErrors.InstanceNotFound.With($"no running instance {address.Value} (fix: sindri workflow list)");
         }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client.Value, e);
+        }
     }
 
     /// <summary>The catalogue error a validator's ApplicationFailure names; an unknown type stays a not-allowed trigger.</summary>
