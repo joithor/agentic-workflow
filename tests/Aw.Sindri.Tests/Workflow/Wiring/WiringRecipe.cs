@@ -71,7 +71,7 @@ internal static class WiringRecipe
         IEnumerable<string>? loops = null) =>
         ARecipe.Minimal(RecipeId.From(id)) with
         {
-            Inputs = [.. (inputs ?? []).Select(k => new RecipeInput(FactKey.From(k), Label: null, Type: null))],
+            Inputs = [.. (inputs ?? []).Select(k => new RecipeInput(FactKey.From(k), Label: null, Type: null, Kind: null))],
             Initial = initial,
             States = states.ToDictionary(s => s.Name, s => s.State, StringComparer.Ordinal),
             Transitions = [.. transitions],
@@ -80,6 +80,9 @@ internal static class WiringRecipe
 
     /// <summary>The findings of the wiring rules for <paramref name="recipe"/>.</summary>
     public static IReadOnlyList<RecipeFinding> CheckWiring(Recipe recipe, Located? located = null) => Run(new WiringRules(), recipe, located ?? Located.Nowhere);
+
+    /// <summary>The findings of the declaration rules for <paramref name="recipe"/>.</summary>
+    public static IReadOnlyList<RecipeFinding> CheckDeclarations(Recipe recipe, Located? located = null) => Run(new DeclarationRules(), recipe, located ?? Located.Nowhere);
 
     /// <summary>The findings of the block rules for <paramref name="recipe"/>.</summary>
     public static IReadOnlyList<RecipeFinding> CheckBlocks(Recipe recipe, Located? located = null) => Run(new BlockRules(), recipe, located ?? Located.Nowhere);

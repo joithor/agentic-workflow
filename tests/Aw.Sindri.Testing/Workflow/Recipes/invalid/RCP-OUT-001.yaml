@@ -1,0 +1,17 @@
+schema: 1
+id: workflow.output-from-unknown
+version: 1
+outputs:
+  - { key: fact:output, type: file, from: draft }
+initial: produce
+states:
+  produce:
+    kind: active
+    step: step.produce
+    timeout: { after: 4h, then: park }
+    next: "Produce the Step output."
+  done:
+    kind: terminal
+    outcome: resolved
+transitions:
+  - { from: produce, to: done, on: step.completed, when: { outcome: done } }
