@@ -28,6 +28,9 @@ namespace Aw.Context.Tests.Map;
 /// </summary>
 internal sealed class MapWorld : IDisposable
 {
+    /// <summary>The tabs map (Fixtures/map-tabs.json): a conflict, a suggested file link and an orphaned override.</summary>
+    public static string TabsMap { get; } = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "map-tabs.json"));
+
     public const string MapPath = "/maps/product-map.yaml";
 
     private readonly ServiceProvider _provider;
