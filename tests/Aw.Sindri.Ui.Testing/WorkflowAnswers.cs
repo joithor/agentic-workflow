@@ -7,10 +7,12 @@ namespace Aw.Sindri.Ui.Testing;
 /// <summary>
 /// What the API answers on the workflow reads (API §3.8), taken from its goldens on disk. Every golden is found by
 /// enumerating the directory, never listed here, so one the API lane adds or renames is served the moment it lands.
-/// The instance list is the golden of the whole root set (and, unless root=true, the child instances the goldens show in
+/// Two tables say how goldens belong together, and WorkflowGoldenTests holds each to the files on disk: the fact goldens,
+/// each bound to the instance goldens that list its key, and the recipe goldens, each named for a recipe id. The instance list is the golden of the whole root set (and, unless root=true, the child instances the goldens show in
 /// full), narrowed by the query the way the API narrows it (the counts stay root-wide); an instance and a recipe are the
-/// golden whose own id or name matches (a recipe also its hash); a fact is the golden whose key the instance lists; anything
-/// else is the same not-found refusal the API writes.
+/// golden whose own id matches, a recipe the golden its table names for the id (and its hash must be one an instance runs),
+/// and a fact the golden its table binds to that instance and whose key the instance lists; anything else is the same
+/// not-found refusal the API writes.
 /// </summary>
 internal static class WorkflowAnswers
 {
@@ -50,8 +52,9 @@ internal static class WorkflowAnswers
             : NotFound("workflow-instance", "not-found");
 
     // A fact golden is one instance's body, so it is served only for the instance goldens whose fact row it fits (the same
-    // payload, the same counts); WorkflowGoldenTests holds each entry to the instance's facts[]. The unfrozen packet fits
-    // no instance golden yet: it is served for none, until the API lane adds an instance whose packet row is unfrozen.
+    // payload, the same counts). WorkflowGoldenTests holds the table's keys to the fact goldens on disk (every served one is
+    // here) and each bound instance to listing the golden's key in facts[]. The unfrozen packet fits no instance golden yet:
+    // its list is empty, so it is served for none, until the API lane adds an instance whose packet row is unfrozen.
     private static readonly Dictionary<string, string[]> _factGoldens = new(StringComparer.Ordinal)
     {
         ["packet"] = ["project-build"],
