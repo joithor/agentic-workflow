@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Results;
 
 namespace Aw.Context.Core.Review;
@@ -13,6 +15,7 @@ namespace Aw.Context.Core.Review;
 /// <param name="Impact">How many links and decisions hang on it; the model group is ordered by it.</param>
 /// <param name="Files">The files that implement it ('code:' keys).</param>
 /// <param name="Parent">The feature it is under, or null.</param>
+/// <param name="Override">For an orphaned entry: the override whose target is gone (the id a 'drop' names), else null.</param>
 public sealed record ReviewEntry(
     NodeKey Node,
     LinkId? Link,
@@ -22,4 +25,5 @@ public sealed record ReviewEntry(
     double Confidence,
     int Impact,
     IReadOnlyList<NodeKey> Files,
-    NodeKey? Parent);
+    NodeKey? Parent,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] OverrideId? Override = null);
