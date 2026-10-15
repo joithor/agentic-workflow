@@ -342,7 +342,7 @@ Aw.Sindri.Core.Profile.SindriProfile.User.init -> void
 Aw.Sindri.Core.Registration.SindriCoreServiceCollectionExtensions
 Aw.Sindri.Core.Scheduling.IScheduledService
 Aw.Sindri.Core.Scheduling.IScheduledService.Identity() -> Aw.Sindri.Core.Ids.ServiceName
-Aw.Sindri.Core.Scheduling.IScheduledService.Run(Aw.Sindri.Core.Scheduling.ScheduledRun! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Scheduling.IScheduledService.Run(Aw.Sindri.Core.Scheduling.ScheduledRun! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Scheduling.ScheduledResult!>!>
 Aw.Sindri.Core.Scheduling.ScheduledRun
 Aw.Sindri.Core.Scheduling.ScheduledRun.<Clone>$() -> Aw.Sindri.Core.Scheduling.ScheduledRun!
 Aw.Sindri.Core.Scheduling.ScheduledRun.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out System.DateTimeOffset Slot) -> void
@@ -352,6 +352,13 @@ Aw.Sindri.Core.Scheduling.ScheduledRun.Grant.init -> void
 Aw.Sindri.Core.Scheduling.ScheduledRun.ScheduledRun(Aw.Sindri.Core.Lease.LeaseGrant! Grant, System.DateTimeOffset Slot) -> void
 Aw.Sindri.Core.Scheduling.ScheduledRun.Slot.get -> System.DateTimeOffset
 Aw.Sindri.Core.Scheduling.ScheduledRun.Slot.init -> void
+Aw.Sindri.Core.Scheduling.ScheduledResult
+Aw.Sindri.Core.Scheduling.ScheduledResult.<Clone>$() -> Aw.Sindri.Core.Scheduling.ScheduledResult!
+Aw.Sindri.Core.Scheduling.ScheduledResult.Deconstruct(out bool Idle) -> void
+Aw.Sindri.Core.Scheduling.ScheduledResult.Equals(Aw.Sindri.Core.Scheduling.ScheduledResult? other) -> bool
+Aw.Sindri.Core.Scheduling.ScheduledResult.Idle.get -> bool
+Aw.Sindri.Core.Scheduling.ScheduledResult.Idle.init -> void
+Aw.Sindri.Core.Scheduling.ScheduledResult.ScheduledResult(bool Idle) -> void
 Aw.Sindri.Core.Scheduling.ServiceSchedule
 Aw.Sindri.Core.Scheduling.ServiceSchedule.<Clone>$() -> Aw.Sindri.Core.Scheduling.ServiceSchedule!
 Aw.Sindri.Core.Scheduling.ServiceSchedule.Advance(System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.ServiceSchedule!
@@ -430,6 +437,9 @@ override Aw.Sindri.Core.Profile.SindriProfile.ToString() -> string!
 override Aw.Sindri.Core.Scheduling.ScheduledRun.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Scheduling.ScheduledRun.GetHashCode() -> int
 override Aw.Sindri.Core.Scheduling.ScheduledRun.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.ScheduledResult.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.ScheduledResult.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.ScheduledResult.ToString() -> string!
 override Aw.Sindri.Core.Scheduling.ServiceSchedule.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Scheduling.ServiceSchedule.GetHashCode() -> int
 override Aw.Sindri.Core.Scheduling.ServiceSchedule.ToString() -> string!
@@ -500,6 +510,10 @@ static Aw.Sindri.Core.Profile.SindriProfile.operator !=(Aw.Sindri.Core.Profile.S
 static Aw.Sindri.Core.Profile.SindriProfile.operator ==(Aw.Sindri.Core.Profile.SindriProfile? left, Aw.Sindri.Core.Profile.SindriProfile? right) -> bool
 static Aw.Sindri.Core.Scheduling.ScheduledRun.operator !=(Aw.Sindri.Core.Scheduling.ScheduledRun? left, Aw.Sindri.Core.Scheduling.ScheduledRun? right) -> bool
 static Aw.Sindri.Core.Scheduling.ScheduledRun.operator ==(Aw.Sindri.Core.Scheduling.ScheduledRun? left, Aw.Sindri.Core.Scheduling.ScheduledRun? right) -> bool
+static Aw.Sindri.Core.Scheduling.ScheduledResult.operator !=(Aw.Sindri.Core.Scheduling.ScheduledResult? left, Aw.Sindri.Core.Scheduling.ScheduledResult? right) -> bool
+static Aw.Sindri.Core.Scheduling.ScheduledResult.operator ==(Aw.Sindri.Core.Scheduling.ScheduledResult? left, Aw.Sindri.Core.Scheduling.ScheduledResult? right) -> bool
+static Aw.Sindri.Core.Scheduling.ScheduledResult.Quiet.get -> Aw.Sindri.Core.Scheduling.ScheduledResult!
+static Aw.Sindri.Core.Scheduling.ScheduledResult.Worked.get -> Aw.Sindri.Core.Scheduling.ScheduledResult!
 static Aw.Sindri.Core.Scheduling.ServiceSchedule.From(Aw.Sindri.Core.Profile.SindriProfile! profile, System.DateTimeOffset start) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.ServiceSchedule!>!
 static Aw.Sindri.Core.Scheduling.ServiceSchedule.operator !=(Aw.Sindri.Core.Scheduling.ServiceSchedule? left, Aw.Sindri.Core.Scheduling.ServiceSchedule? right) -> bool
 static Aw.Sindri.Core.Scheduling.ServiceSchedule.operator ==(Aw.Sindri.Core.Scheduling.ServiceSchedule? left, Aw.Sindri.Core.Scheduling.ServiceSchedule? right) -> bool

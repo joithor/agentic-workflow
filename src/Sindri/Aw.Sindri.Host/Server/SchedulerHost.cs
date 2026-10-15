@@ -101,12 +101,12 @@ internal sealed partial class SchedulerHost(
         await using (scope.ConfigureAwait(false))
         {
             var outcome = await Outcome(scope.ServiceProvider, schedule.Name, run, ct).ConfigureAwait(false);
-            await Record(scope.ServiceProvider, new RecordServiceRunRequest(schedule.Name, run, outcome), ct).ConfigureAwait(false);
+            await Record(scope.ServiceProvider, new RecordServiceRunRequest(schedule.Name, run, outcome.Map(_ => Unit.Value)), ct).ConfigureAwait(false);
         }
     }
 
     /// <summary>Runs the service and returns how it ended: its result, a throw as SND-SCHED-001, or SND-SCHED-001 when this build lacks it (G8).</summary>
-    private async Task<Result<Unit>> Outcome(IServiceProvider services, ServiceName name, ScheduledRun run, CancellationToken ct)
+    private async Task<Result<ScheduledResult>> Outcome(IServiceProvider services, ServiceName name, ScheduledRun run, CancellationToken ct)
     {
         var service = services.GetServices<IScheduledService>().FirstOrDefault(s => s.Identity() == name);
         if (service is null)
