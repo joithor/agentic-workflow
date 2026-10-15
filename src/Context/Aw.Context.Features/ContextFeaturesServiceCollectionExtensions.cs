@@ -1,9 +1,11 @@
+using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Features.CheckMap;
 using Aw.Context.Features.CheckRetention;
+using Aw.Context.Features.EvalProbes;
 using Aw.Context.Features.ExportMap;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Features.ImportMap;
@@ -40,6 +42,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ShowNodeRequest, NodeView>, ShowNodeService>()
         .AddScoped<IService<ListNeighborsRequest, NeighborsView>, ListNeighborsService>()
         .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
+        .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()
         .AddScoped<MapReader>()
         .AddScoped<IContextMap, ContextMap>()
         .AddScoped<IContextGraph, ContextGraph>()

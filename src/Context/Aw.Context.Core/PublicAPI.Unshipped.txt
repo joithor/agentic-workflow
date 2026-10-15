@@ -183,6 +183,15 @@ Aw.Context.Core.Eval.ProbeReport.SchemaVersion.get -> int
 Aw.Context.Core.Eval.ProbeReport.SchemaVersion.init -> void
 Aw.Context.Core.Eval.ProbeReport.Totals.get -> Aw.Context.Core.Eval.ProbeTotals!
 Aw.Context.Core.Eval.ProbeReport.Totals.init -> void
+Aw.Context.Core.Eval.ProbeRun
+Aw.Context.Core.Eval.ProbeRun.<Clone>$() -> Aw.Context.Core.Eval.ProbeRun!
+Aw.Context.Core.Eval.ProbeRun.Deconstruct(out Aw.Context.Core.Eval.ProbeReport! Report, out string! Path) -> void
+Aw.Context.Core.Eval.ProbeRun.Equals(Aw.Context.Core.Eval.ProbeRun? other) -> bool
+Aw.Context.Core.Eval.ProbeRun.Path.get -> string!
+Aw.Context.Core.Eval.ProbeRun.Path.init -> void
+Aw.Context.Core.Eval.ProbeRun.ProbeRun(Aw.Context.Core.Eval.ProbeReport! Report, string! Path) -> void
+Aw.Context.Core.Eval.ProbeRun.Report.get -> Aw.Context.Core.Eval.ProbeReport!
+Aw.Context.Core.Eval.ProbeRun.Report.init -> void
 Aw.Context.Core.Eval.ProbeRunner
 Aw.Context.Core.Eval.ProbeScore
 Aw.Context.Core.Eval.ProbeScore.<Clone>$() -> Aw.Context.Core.Eval.ProbeScore!
@@ -227,6 +236,7 @@ Aw.Context.Core.Eval.ProbeTotals.Probes.init -> void
 Aw.Context.Core.Eval.ProbeTotals.RunAt.get -> System.DateTimeOffset
 Aw.Context.Core.Eval.ProbeTotals.RunAt.init -> void
 Aw.Context.Core.Facade.IContextEngine
+Aw.Context.Core.Facade.IContextEngine.EvalProbes(string? file, System.Func<Aw.Context.Core.Eval.ProbeCase!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>>! ask, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.ProbeRun!>!>
 Aw.Context.Core.Facade.IContextEngine.Query(Aw.Context.Core.Engine.ContextQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>
 Aw.Context.Core.Facade.IContextEngine.Refresh(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.RefreshReport!>!>
 Aw.Context.Core.Facade.IContextEngine.Sources(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.SourcesView!>!>
@@ -414,7 +424,7 @@ Aw.Context.Core.Graph.TextAnchors.TextAnchors(System.Collections.Generic.IReadOn
 Aw.Context.Core.Map.IGraphStore.Snapshot(bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapSnapshot?>!>
 Aw.Context.Core.Map.MapReader
 Aw.Context.Core.Map.MapReader.MapReader(Aw.Context.Core.Map.IGraphStore! store) -> void
-Aw.Context.Core.Map.MapReader.Open(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Trust.IScrubberFactory! scrubbers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Context.Core.Map.VisibleMap! Map, Aw.Context.Core.Trust.MapText! Text)>!>
+Aw.Context.Core.Map.MapReader.Open(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Trust.IScrubberFactory! scrubbers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Context.Core.Map.VisibleMap! Map, Aw.Context.Core.Map.MapText! Text)>!>
 Aw.Context.Core.Map.MapReader.Read(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
 Aw.Context.Core.Map.MapSnapshot
 Aw.Context.Core.Map.MapSnapshot.<Clone>$() -> Aw.Context.Core.Map.MapSnapshot!
@@ -428,6 +438,12 @@ Aw.Context.Core.Map.MapSnapshot.Overrides.get -> System.Collections.Generic.IRea
 Aw.Context.Core.Map.MapSnapshot.Overrides.init -> void
 Aw.Context.Core.Map.MapSnapshot.Version.get -> Aw.Context.Core.Map.MapVersion!
 Aw.Context.Core.Map.MapSnapshot.Version.init -> void
+Aw.Context.Core.Map.MapText
+Aw.Context.Core.Map.MapText.Body(string! text, Aw.Context.Core.Results.Trust trust) -> string!
+Aw.Context.Core.Map.MapText.Fact(Aw.Context.Core.Graph.GraphNode! node) -> Aw.Context.Core.Graph.NodeFact!
+Aw.Context.Core.Map.MapText.Label(string! label, Aw.Context.Core.Results.Trust trust) -> string!
+Aw.Context.Core.Map.MapText.Line(string! line) -> string!
+Aw.Context.Core.Map.MapText.MapText(Aw.Context.Core.Trust.Scrubbers! scrubbers) -> void
 Aw.Context.Core.Map.VisibleMap
 Aw.Context.Core.Map.VisibleMap.<Clone>$() -> Aw.Context.Core.Map.VisibleMap!
 Aw.Context.Core.Map.VisibleMap.Deconstruct(out Aw.Context.Core.Map.MapSnapshot! Snapshot, out Aw.Context.Core.Graph.GraphSnapshot! Graph) -> void
@@ -896,12 +912,6 @@ Aw.Context.Core.Trust.IEgressScrubber
 Aw.Context.Core.Trust.IEgressScrubber.Scrub(string! value) -> Aw.Context.Core.Trust.ScrubbedField!
 Aw.Context.Core.Trust.IIngestFilter
 Aw.Context.Core.Trust.IIngestFilter.Clean(string! raw, bool singleLine) -> Aw.Context.Core.Trust.ScrubbedField!
-Aw.Context.Core.Trust.MapText
-Aw.Context.Core.Trust.MapText.Body(string! text, Aw.Context.Core.Results.Trust trust) -> string!
-Aw.Context.Core.Trust.MapText.Fact(Aw.Context.Core.Graph.GraphNode! node) -> Aw.Context.Core.Graph.NodeFact!
-Aw.Context.Core.Trust.MapText.Label(string! label, Aw.Context.Core.Results.Trust trust) -> string!
-Aw.Context.Core.Trust.MapText.Line(string! line) -> string!
-Aw.Context.Core.Trust.MapText.MapText(Aw.Context.Core.Trust.Scrubbers! scrubbers) -> void
 Aw.Context.Core.Trust.ScrubbedField
 Aw.Context.Core.Trust.ScrubbedField.<Clone>$() -> Aw.Context.Core.Trust.ScrubbedField!
 Aw.Context.Core.Trust.ScrubbedField.Blocked.get -> bool
@@ -963,6 +973,9 @@ override Aw.Context.Core.Eval.ProbeId.ToString() -> string!
 override Aw.Context.Core.Eval.ProbeReport.Equals(object? obj) -> bool
 override Aw.Context.Core.Eval.ProbeReport.GetHashCode() -> int
 override Aw.Context.Core.Eval.ProbeReport.ToString() -> string!
+override Aw.Context.Core.Eval.ProbeRun.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.ProbeRun.GetHashCode() -> int
+override Aw.Context.Core.Eval.ProbeRun.ToString() -> string!
 override Aw.Context.Core.Eval.ProbeScore.Equals(object? obj) -> bool
 override Aw.Context.Core.Eval.ProbeScore.GetHashCode() -> int
 override Aw.Context.Core.Eval.ProbeScore.ToString() -> string!
@@ -1867,6 +1880,8 @@ static Aw.Context.Core.Eval.ProbeId.operator !=(Aw.Context.Core.Eval.ProbeId lef
 static Aw.Context.Core.Eval.ProbeId.operator ==(Aw.Context.Core.Eval.ProbeId left, Aw.Context.Core.Eval.ProbeId right) -> bool
 static Aw.Context.Core.Eval.ProbeReport.operator !=(Aw.Context.Core.Eval.ProbeReport? left, Aw.Context.Core.Eval.ProbeReport? right) -> bool
 static Aw.Context.Core.Eval.ProbeReport.operator ==(Aw.Context.Core.Eval.ProbeReport? left, Aw.Context.Core.Eval.ProbeReport? right) -> bool
+static Aw.Context.Core.Eval.ProbeRun.operator !=(Aw.Context.Core.Eval.ProbeRun? left, Aw.Context.Core.Eval.ProbeRun? right) -> bool
+static Aw.Context.Core.Eval.ProbeRun.operator ==(Aw.Context.Core.Eval.ProbeRun? left, Aw.Context.Core.Eval.ProbeRun? right) -> bool
 static Aw.Context.Core.Eval.ProbeRunner.Check(Aw.Context.Core.Eval.ProbeSet! set) -> Aw.Kernel.Error?
 static Aw.Context.Core.Eval.ProbeRunner.Run(Aw.Context.Core.Eval.ProbeFile! file, System.Func<Aw.Context.Core.Eval.ProbeCase!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>>! ask, Aw.Context.Core.Eval.ProbeReport? previous, System.DateTimeOffset runAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.ProbeReport!>!>
 static Aw.Context.Core.Eval.ProbeScore.operator !=(Aw.Context.Core.Eval.ProbeScore? left, Aw.Context.Core.Eval.ProbeScore? right) -> bool

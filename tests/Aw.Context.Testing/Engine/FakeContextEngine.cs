@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
@@ -53,6 +54,10 @@ public sealed class FakeContextEngine : IContextEngine
 
     /// <inheritdoc/>
     public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken) => NoMap<MapStatusView>();
+
+    /// <summary>No probe file: a run answers SND-CONTEXT-036.</summary>
+    public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<ProbeRun>>(ContextErrors.NoProbeFile.With("this test engine has no probe file"));
 
     /// <inheritdoc/>
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => NoMap<NodeView>();

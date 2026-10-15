@@ -1,7 +1,8 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Trust;
 
-namespace Aw.Context.Core.Trust;
+namespace Aw.Context.Core.Map;
 
 /// <summary>
 /// The map's text as answers write it (spec §7): every label, wording and quote crosses this call's ingest boundary

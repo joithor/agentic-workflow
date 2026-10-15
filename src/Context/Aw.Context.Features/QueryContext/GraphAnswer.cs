@@ -4,7 +4,6 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Packing;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
-using Aw.Context.Core.Trust;
 
 namespace Aw.Context.Features.QueryContext;
 

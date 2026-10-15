@@ -1,5 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Facade;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Aw.Sindri.Core;
@@ -9,16 +10,15 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri context eval probes [--file F] [--json]' (context spec §8.5, §9.2 item 3). No route: the CLI asks each probe's
-/// question through GET /sindri/context/query as whoever runs it, scores the answers with the engine's own scoring
-/// (ProbeRunner), and writes the report under $AW_SINDRI_HOME/context/eval/probes/ (0600). Exit 0 when the run is no
+/// question through GET /sindri/context/query as whoever runs it; the engine (EvalProbes) reads the file, scores the
+/// answers and writes the report under $AW_SINDRI_HOME/context/eval/probes/ (0600). Exit 0 when the run is no
 /// worse than the previous run of the same file; 1 when it regressed (SND-CONTEXT-038) or the file is refused; 2 for a
 /// tool error.
 /// </summary>
 /// <param name="client">The API client.</param>
 /// <param name="output">Where the verbs write.</param>
-/// <param name="eval">The probe file reader and the reports folder.</param>
-/// <param name="clock">The time a run is stamped with.</param>
-internal sealed class ContextEvalVerbs(ControlPlaneClient client, Output output, (IProbeFileReader Files, IProbeReportStore Reports) eval, TimeProvider clock)
+/// <param name="engine">The context engine, which reads the file, scores and writes the report.</param>
+internal sealed class ContextEvalVerbs(ControlPlaneClient client, Output output, IContextEngine engine)
 {
     internal Task<int> Run(string[] args, CancellationToken ct) => args switch
     {
@@ -28,25 +28,16 @@ internal sealed class ContextEvalVerbs(ControlPlaneClient client, Output output,
 
     private async Task<int> Probes(string? file, bool json, CancellationToken ct)
     {
-        var probes = await eval.Files.Read(file is null ? null : System.IO.Path.GetFullPath(file), ct).ConfigureAwait(false);
-        var previous = await probes.BindAsync(p => eval.Reports.Latest(p.Hash, ct)).ConfigureAwait(false);
-        if (previous.IsError)
+        var run = await engine.EvalProbes(file is null ? null : System.IO.Path.GetFullPath(file), Ask, ct).ConfigureAwait(false);
+        if (run.IsError)
         {
-            return await Failed(previous.Error).ConfigureAwait(false);
+            return await Failed(run.Error).ConfigureAwait(false);
         }
 
-        var runAt = clock.GetUtcNow();
-        var report = await ProbeRunner.Run(probes.Value, Ask, previous.Value, runAt, ct).ConfigureAwait(false);
-        var written = await report.BindAsync(r => eval.Reports.Write(r, runAt, ct)).ConfigureAwait(false);
-        if (written.IsError)
-        {
-            return await Failed(written.Error).ConfigureAwait(false);
-        }
-
-        var exit = report.Value.Regressed ? 1 : 0;
+        var exit = run.Value.Report.Regressed ? 1 : 0;
         return json
-            ? await output.Json(report.Value, exit).ConfigureAwait(false)
-            : await output.Text(ContextEvalText.Report(report.Value, written.Value), exit).ConfigureAwait(false);
+            ? await output.Json(run.Value.Report, exit).ConfigureAwait(false)
+            : await output.Text(ContextEvalText.Report(run.Value.Report, run.Value.Path), exit).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<ContextResult>> Ask(ProbeCase probe, CancellationToken ct)

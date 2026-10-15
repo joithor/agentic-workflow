@@ -5,6 +5,8 @@ using Aw.Context.Core.Sources;
 using Aw.Context.Features;
 using Aw.Context.Features.CheckMap;
 using Aw.Context.Features.CheckRetention;
+using Aw.Context.Features.EvalProbes;
+using Aw.Context.Tests.EvalProbes;
 using Aw.Context.Features.ExportMap;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Core.Map;
@@ -38,8 +40,12 @@ internal static class Engines
         var graphs = new MapReader(store);
         return new ContextEngine(new QueryContextService(catalog, scrubbers, new SequentialIdGenerator(), clock, graphs),
             new SourcesStatusService(docs, catalog, scrubbers, clock), new RefreshDocsService(docs, scrubbers), scrubbers, Map(clock, store),
-            new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers)));
+            new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers)),
+            Probes(clock));
     }
+
+    /// <summary>The probe runner over no probe file (the query tests never run probes).</summary>
+    private static EvalProbesService Probes(TimeProvider clock) => new(new NoProbes(), new NoProbes(), clock);
 
     /// <summary>The map part over its fakes (S-3a); the query tests never touch it.</summary>
     private static ContextMap Map(TimeProvider clock, FakeGraphStore store)

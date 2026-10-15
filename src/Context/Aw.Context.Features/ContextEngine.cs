@@ -1,10 +1,12 @@
 using System.Text.Json;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Trust;
+using Aw.Context.Features.EvalProbes;
 using Aw.Context.Features.QueryContext;
 using Aw.Context.Features.RefreshDocs;
 using Aw.Context.Features.SourcesStatus;
@@ -23,7 +25,8 @@ internal sealed class ContextEngine(
     IService<RefreshDocsRequest, RefreshReport> refresh,
     IScrubberFactory scrubbers,
     IContextMap map,
-    IContextGraph graph) : IContextEngine
+    IContextGraph graph,
+    IService<EvalProbesRequest, ProbeRun> probes) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
         SettingsReader.Read(section).Bind(read => scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
@@ -36,6 +39,9 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) =>
         refresh.Handle(new RefreshDocsRequest(scope), cancellationToken);
+
+    public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
+        probes.Handle(new EvalProbesRequest(file, ask), cancellationToken);
 
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => graph.ShowNode(key, scope, cancellationToken);
 

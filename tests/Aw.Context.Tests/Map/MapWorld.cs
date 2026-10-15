@@ -1,6 +1,8 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Docs;
+using Aw.Context.Core.Eval;
+using Aw.Context.Tests.EvalProbes;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Trust;
 using Aw.Context.Testing.Engine;
@@ -38,6 +40,8 @@ internal sealed class MapWorld : IDisposable
             .AddSingleton<ISourceCatalog>(Sources)
             .AddSingleton<IDocIndex>(new FakeDocIndex(Clock))
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
+            .AddSingleton<IProbeFileReader>(new NoProbes())
+            .AddSingleton<IProbeReportStore>(new NoProbes())
             .AddContextFeatures()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = true });
         _scope = _provider.CreateScope();
