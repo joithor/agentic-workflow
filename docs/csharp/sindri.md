@@ -62,8 +62,9 @@ directory keeps its mode; files are 0600.
 | `temporal.db` | The Temporal dev server's SQLite file (`--db-filename`); the server is found by it, so one home has one server |
 | `logs/temporal.log` | The dev server's output (`--log-level warn`, appended under umask 077). The server runs detached in its own session, never as serve's child, so it outlives a serve that dies and the next start adopts it |
 | `recipes/<id>.yaml` | P4a: the recipes the worker's `LoadRecipe` reads by id (P4 reads approved recipes from the registry instead) |
-| `workflow/tasks/<address with / as ~>/<run>` | P4a: one file per open desk run, its Temporal task token (0600), written by `RunStep` and removed by `workflow complete` |
-| `workflow/facts/<sha256>` | P4a: the output files `workflow complete` reported, stored 0600 by their SHA-256 |
+| `workflow/nonces/<nonce>` | P4: the stand-in for the API's nonce table (0600 files in a 0700 directory, a 10-minute lifetime, not swept yet): a command's claim, so a retry with the same nonce is recognised |
+| `workflow/events.cursor` | P4: the ledger-to-Temporal bridge's last delivered ledger sequence |
+| `workflow/facts/<sha256>` | P4: the fact files `StartInstance` takes as inputs and `CompleteStep` takes as outputs, stored 0600 and named by their SHA-256 |
 | `profile/profile.yaml` | The live profile (`AW_SINDRI_PROFILE` overrides the path) |
 
 ## Profile
@@ -138,10 +139,9 @@ in-memory store and the SQLite adapter). Append-only, idempotent and fenced.
 | `id`, `type`, `schema_version`, `occurred_at`, `actor`, `tenant`, `ring`, `correlation_id`, `causation_id`, `trace_id` | the §17.21 envelope (`Aw.Kernel.Events.EventEnvelope`) |
 | `item` | the work item, when there is one (S2+) |
 | `epoch` | the writer's lease epoch |
-| `temporal_event_id` | nullable integer (workflow-engine spec §5.6, UI screens E-30). The Temporal history event id a mirrored `workflow.*` or `recipe.*` row was written for; null on every other row. Added with the interpreter's mirror (engine phase P4) and indexed where not null, so `GET /engine/instances/{address}/history` can link a history line to its ledger sequence. Part of `RecordEvent`'s idempotency `(workflow id, run id, history event id)` |
 | `idempotency_key` | unique: a second append with the same key writes nothing and returns the first event's position |
 | `payload_json` | the payload record, through AwJson |
-| `temporal_event_id` | nullable (migration 0005, UI E-30): on a row the Temporal mirror (`RecordEvent`) wrote, the id of the Temporal activity it ran as, which is the third part of its `idempotency_key` (`workflow:<workflow id>:<run id>:<activity id>`), so the column and the key never disagree; null on every other row. Indexed with the payload's `instance` (`events_instance_temporal`, mirrored rows only), so `GET /engine/instances/{address}/history` joins a page of event ids to ledger sequences with one query |
+| `temporal_event_id` | nullable (migration 0005, UI E-30): on a row the Temporal mirror (`RecordEvent`) wrote, the id of the Temporal activity it ran as, which is the third part of its `idempotency_key` (`workflow:<workflow id>:<run id>:<activity id>`), so the column and the key never disagree; null on every other row. Indexed with the payload's `instance` (`events_instance_temporal`, mirrored rows only), so `GET /engine/instances/{address}/history` joins a page of event ids to ledger sequences with one query. The join is on `idempotency_key`, which carries the run id; `(instance, temporal_event_id)` alone is not unique across a reset (a new run reuses the activity ids), so nothing may treat it as a key |
 
 S1 events and their keys: `process.started` (`process.started:<epoch>`), `process.stopped` (`process.stopped:<epoch>`),
 `profile.approved` (`profile.approved:<hash>:after:<seq of the latest profile.approved event, or 0>`, so each
