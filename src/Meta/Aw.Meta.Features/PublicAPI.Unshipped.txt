@@ -1,29 +1,95 @@
 #nullable enable
 Aw.Meta.Features.MetaFeaturesServiceCollectionExtensions
+static Aw.Meta.Features.MetaFeaturesServiceCollectionExtensions.AddMetaFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Aw.Meta.Features.Roles.SetRoleRequest
+Aw.Meta.Features.Roles.SetRoleRequest.<Clone>$() -> Aw.Meta.Features.Roles.SetRoleRequest!
+Aw.Meta.Features.Roles.SetRoleRequest.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! Name) -> void
+Aw.Meta.Features.Roles.SetRoleRequest.Equals(Aw.Meta.Features.Roles.SetRoleRequest? other) -> bool
+override Aw.Meta.Features.Roles.SetRoleRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.Roles.SetRoleRequest.GetHashCode() -> int
+Aw.Meta.Features.Roles.SetRoleRequest.Name.get -> string!
+Aw.Meta.Features.Roles.SetRoleRequest.Name.init -> void
+Aw.Meta.Features.Roles.SetRoleRequest.Session.get -> Aw.Meta.Core.Ids.SessionId
+Aw.Meta.Features.Roles.SetRoleRequest.Session.init -> void
+Aw.Meta.Features.Roles.SetRoleRequest.SetRoleRequest(Aw.Meta.Core.Ids.SessionId Session, string! Name) -> void
+override Aw.Meta.Features.Roles.SetRoleRequest.ToString() -> string!
+static Aw.Meta.Features.Roles.SetRoleRequest.operator !=(Aw.Meta.Features.Roles.SetRoleRequest? left, Aw.Meta.Features.Roles.SetRoleRequest? right) -> bool
+static Aw.Meta.Features.Roles.SetRoleRequest.operator ==(Aw.Meta.Features.Roles.SetRoleRequest? left, Aw.Meta.Features.Roles.SetRoleRequest? right) -> bool
+Aw.Meta.Features.Roles.ShowRoleRequest
+Aw.Meta.Features.Roles.ShowRoleRequest.<Clone>$() -> Aw.Meta.Features.Roles.ShowRoleRequest!
+Aw.Meta.Features.Roles.ShowRoleRequest.Equals(Aw.Meta.Features.Roles.ShowRoleRequest? other) -> bool
+override Aw.Meta.Features.Roles.ShowRoleRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.Roles.ShowRoleRequest.GetHashCode() -> int
+Aw.Meta.Features.Roles.ShowRoleRequest.ShowRoleRequest() -> void
+override Aw.Meta.Features.Roles.ShowRoleRequest.ToString() -> string!
+static Aw.Meta.Features.Roles.ShowRoleRequest.operator !=(Aw.Meta.Features.Roles.ShowRoleRequest? left, Aw.Meta.Features.Roles.ShowRoleRequest? right) -> bool
+static Aw.Meta.Features.Roles.ShowRoleRequest.operator ==(Aw.Meta.Features.Roles.ShowRoleRequest? left, Aw.Meta.Features.Roles.ShowRoleRequest? right) -> bool
+Aw.Meta.Features.Roles.ShowRoleResponse
+Aw.Meta.Features.Roles.ShowRoleResponse.<Clone>$() -> Aw.Meta.Features.Roles.ShowRoleResponse!
+Aw.Meta.Features.Roles.ShowRoleResponse.Deconstruct(out Aw.Meta.Core.Messages.MetaRole? Role) -> void
+Aw.Meta.Features.Roles.ShowRoleResponse.Equals(Aw.Meta.Features.Roles.ShowRoleResponse? other) -> bool
+override Aw.Meta.Features.Roles.ShowRoleResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.Roles.ShowRoleResponse.GetHashCode() -> int
+Aw.Meta.Features.Roles.ShowRoleResponse.Role.get -> Aw.Meta.Core.Messages.MetaRole?
+Aw.Meta.Features.Roles.ShowRoleResponse.Role.init -> void
+Aw.Meta.Features.Roles.ShowRoleResponse.ShowRoleResponse(Aw.Meta.Core.Messages.MetaRole? Role) -> void
+override Aw.Meta.Features.Roles.ShowRoleResponse.ToString() -> string!
+static Aw.Meta.Features.Roles.ShowRoleResponse.operator !=(Aw.Meta.Features.Roles.ShowRoleResponse? left, Aw.Meta.Features.Roles.ShowRoleResponse? right) -> bool
+static Aw.Meta.Features.Roles.ShowRoleResponse.operator ==(Aw.Meta.Features.Roles.ShowRoleResponse? left, Aw.Meta.Features.Roles.ShowRoleResponse? right) -> bool
 Aw.Meta.Features.SyncInbox.SyncInboxRequest
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.<Clone>$() -> Aw.Meta.Features.SyncInbox.SyncInboxRequest!
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! Transcript) -> void
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.Equals(Aw.Meta.Features.SyncInbox.SyncInboxRequest? other) -> bool
+override Aw.Meta.Features.SyncInbox.SyncInboxRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.SyncInbox.SyncInboxRequest.GetHashCode() -> int
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.Session.get -> Aw.Meta.Core.Ids.SessionId
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.Session.init -> void
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.SyncInboxRequest(Aw.Meta.Core.Ids.SessionId Session, string! Transcript) -> void
+override Aw.Meta.Features.SyncInbox.SyncInboxRequest.ToString() -> string!
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.Transcript.get -> string!
 Aw.Meta.Features.SyncInbox.SyncInboxRequest.Transcript.init -> void
+static Aw.Meta.Features.SyncInbox.SyncInboxRequest.operator !=(Aw.Meta.Features.SyncInbox.SyncInboxRequest? left, Aw.Meta.Features.SyncInbox.SyncInboxRequest? right) -> bool
+static Aw.Meta.Features.SyncInbox.SyncInboxRequest.operator ==(Aw.Meta.Features.SyncInbox.SyncInboxRequest? left, Aw.Meta.Features.SyncInbox.SyncInboxRequest? right) -> bool
 Aw.Meta.Features.SyncInbox.SyncInboxResponse
 Aw.Meta.Features.SyncInbox.SyncInboxResponse.<Clone>$() -> Aw.Meta.Features.SyncInbox.SyncInboxResponse!
 Aw.Meta.Features.SyncInbox.SyncInboxResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ids.MessageId>! NewMessages) -> void
 Aw.Meta.Features.SyncInbox.SyncInboxResponse.Equals(Aw.Meta.Features.SyncInbox.SyncInboxResponse? other) -> bool
+override Aw.Meta.Features.SyncInbox.SyncInboxResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.SyncInbox.SyncInboxResponse.GetHashCode() -> int
 Aw.Meta.Features.SyncInbox.SyncInboxResponse.NewMessages.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ids.MessageId>!
 Aw.Meta.Features.SyncInbox.SyncInboxResponse.NewMessages.init -> void
 Aw.Meta.Features.SyncInbox.SyncInboxResponse.SyncInboxResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ids.MessageId>! NewMessages) -> void
-override Aw.Meta.Features.SyncInbox.SyncInboxRequest.Equals(object? obj) -> bool
-override Aw.Meta.Features.SyncInbox.SyncInboxRequest.GetHashCode() -> int
-override Aw.Meta.Features.SyncInbox.SyncInboxRequest.ToString() -> string!
-override Aw.Meta.Features.SyncInbox.SyncInboxResponse.Equals(object? obj) -> bool
-override Aw.Meta.Features.SyncInbox.SyncInboxResponse.GetHashCode() -> int
 override Aw.Meta.Features.SyncInbox.SyncInboxResponse.ToString() -> string!
-static Aw.Meta.Features.MetaFeaturesServiceCollectionExtensions.AddMetaFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Aw.Meta.Features.SyncInbox.SyncInboxRequest.operator !=(Aw.Meta.Features.SyncInbox.SyncInboxRequest? left, Aw.Meta.Features.SyncInbox.SyncInboxRequest? right) -> bool
-static Aw.Meta.Features.SyncInbox.SyncInboxRequest.operator ==(Aw.Meta.Features.SyncInbox.SyncInboxRequest? left, Aw.Meta.Features.SyncInbox.SyncInboxRequest? right) -> bool
 static Aw.Meta.Features.SyncInbox.SyncInboxResponse.operator !=(Aw.Meta.Features.SyncInbox.SyncInboxResponse? left, Aw.Meta.Features.SyncInbox.SyncInboxResponse? right) -> bool
 static Aw.Meta.Features.SyncInbox.SyncInboxResponse.operator ==(Aw.Meta.Features.SyncInbox.SyncInboxResponse? left, Aw.Meta.Features.SyncInbox.SyncInboxResponse? right) -> bool
+Aw.Meta.Features.Team.TeamInitRequest
+Aw.Meta.Features.Team.TeamInitRequest.<Clone>$() -> Aw.Meta.Features.Team.TeamInitRequest!
+Aw.Meta.Features.Team.TeamInitRequest.Deconstruct(out string! Team, out string! Repo, out System.Collections.Generic.IReadOnlyList<string!>! Lanes, out string! MetaLane, out string? Log, out bool Force) -> void
+Aw.Meta.Features.Team.TeamInitRequest.Equals(Aw.Meta.Features.Team.TeamInitRequest? other) -> bool
+override Aw.Meta.Features.Team.TeamInitRequest.Equals(object? obj) -> bool
+Aw.Meta.Features.Team.TeamInitRequest.Force.get -> bool
+Aw.Meta.Features.Team.TeamInitRequest.Force.init -> void
+override Aw.Meta.Features.Team.TeamInitRequest.GetHashCode() -> int
+Aw.Meta.Features.Team.TeamInitRequest.Lanes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Features.Team.TeamInitRequest.Lanes.init -> void
+Aw.Meta.Features.Team.TeamInitRequest.Log.get -> string?
+Aw.Meta.Features.Team.TeamInitRequest.Log.init -> void
+Aw.Meta.Features.Team.TeamInitRequest.MetaLane.get -> string!
+Aw.Meta.Features.Team.TeamInitRequest.MetaLane.init -> void
+Aw.Meta.Features.Team.TeamInitRequest.Repo.get -> string!
+Aw.Meta.Features.Team.TeamInitRequest.Repo.init -> void
+Aw.Meta.Features.Team.TeamInitRequest.Team.get -> string!
+Aw.Meta.Features.Team.TeamInitRequest.Team.init -> void
+Aw.Meta.Features.Team.TeamInitRequest.TeamInitRequest(string! Team, string! Repo, System.Collections.Generic.IReadOnlyList<string!>! Lanes, string! MetaLane, string? Log, bool Force) -> void
+override Aw.Meta.Features.Team.TeamInitRequest.ToString() -> string!
+static Aw.Meta.Features.Team.TeamInitRequest.operator !=(Aw.Meta.Features.Team.TeamInitRequest? left, Aw.Meta.Features.Team.TeamInitRequest? right) -> bool
+static Aw.Meta.Features.Team.TeamInitRequest.operator ==(Aw.Meta.Features.Team.TeamInitRequest? left, Aw.Meta.Features.Team.TeamInitRequest? right) -> bool
+Aw.Meta.Features.Team.TeamShowRequest
+Aw.Meta.Features.Team.TeamShowRequest.<Clone>$() -> Aw.Meta.Features.Team.TeamShowRequest!
+Aw.Meta.Features.Team.TeamShowRequest.Equals(Aw.Meta.Features.Team.TeamShowRequest? other) -> bool
+override Aw.Meta.Features.Team.TeamShowRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.Team.TeamShowRequest.GetHashCode() -> int
+Aw.Meta.Features.Team.TeamShowRequest.TeamShowRequest() -> void
+override Aw.Meta.Features.Team.TeamShowRequest.ToString() -> string!
+static Aw.Meta.Features.Team.TeamShowRequest.operator !=(Aw.Meta.Features.Team.TeamShowRequest? left, Aw.Meta.Features.Team.TeamShowRequest? right) -> bool
+static Aw.Meta.Features.Team.TeamShowRequest.operator ==(Aw.Meta.Features.Team.TeamShowRequest? left, Aw.Meta.Features.Team.TeamShowRequest? right) -> bool
