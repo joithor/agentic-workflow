@@ -71,7 +71,7 @@ internal sealed partial class RecipeWorkflow
                 : await Wait(instance, context).ConfigureAwait(true);
         }
 
-        await Workflow.WaitConditionAsync(static () => Workflow.AllHandlersFinished).ConfigureAwait(true);   // the Update that ended it returns its result
+        await SettleLeftovers(instance, context).ConfigureAwait(true);
         return new RecipeResult(instance.State, instance.Outcome?.Value);
     }
 
@@ -197,7 +197,7 @@ internal sealed partial class RecipeWorkflow
         var full = instance.Ended ? null : StateTimers.Timeout(recipe.States[instance.Frame.State], instance.Frame.Run, _deskTimeout);
         return (instance.Suspension, full) switch
         {
-            ({ Kind: SuspensionKind.Takeover }, _) => _timers.Held(full, instance.Frame.Entry),
+            ({ Kind: SuspensionKind.Takeover }, _) => _timers.Held(instance.PendingPark is null ? full : null, instance.Frame.Entry),   // parked at once: the handback returns to the park, no timer to resume
             (null, { } after) => _timers.Apply(new TimerAction(TimerActionKind.Arm, DeadlineKind.State, after), instance.Frame.Entry),
             _ => _timers.Apply(TimerAction.Stop, instance.Frame.Entry),
         };

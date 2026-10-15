@@ -58,7 +58,7 @@ internal sealed class TimerScopes(string actor)
     private DeadlineFired? _idleFired;
     private int _idleArmed;
 
-    /// <summary>Whether a state or retry timer ran out and waits for <see cref="Take"/>: the loop's waits wake for it.</summary>
+    /// <summary>Whether a state timer, a retry timer or 'takeoverIdle' ran out and waits for <see cref="Take"/>: the loop's waits wake for it.</summary>
     public bool Fired => _fired is not null || _idleFired is not null;
 
     /// <summary>Cancels the running state scope, if any, and arms <paramref name="kind"/> to fire after <paramref name="after"/> in a new one. Unit (a).</summary>
@@ -120,7 +120,7 @@ internal sealed class TimerScopes(string actor)
     /// </summary>
     private async Task RunAsync(DeadlineFired fired, TimeSpan after, int arming)
     {
-        using var scope = new CancellationTokenSource();
+        using var scope = CancellationTokenSource.CreateLinkedTokenSource(Workflow.CancellationToken);   // the workflow's own cancellation cancels the scope too
         _cancel = scope.Cancel;   // finding F3: Cancel, not CancelAsync, in workflow code
         try
         {
@@ -205,7 +205,7 @@ internal sealed class TimerScopes(string actor)
 
     private async Task IdleAsync(DeadlineFired fired, int arming)
     {
-        using var scope = new CancellationTokenSource();
+        using var scope = CancellationTokenSource.CreateLinkedTokenSource(Workflow.CancellationToken);   // the workflow's own cancellation cancels the scope too
         _idleCancel = scope.Cancel;   // finding F3: Cancel, not CancelAsync, in workflow code
         try
         {

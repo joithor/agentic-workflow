@@ -41,7 +41,7 @@ public static class StateTimers
     /// <summary>
     /// What the interpreter does with its timers after a decided change from <paramref name="before"/> to
     /// <paramref name="after"/> (spec §5.5): a takeover's pause or a handback's resume (unit (b)) first, else what a new
-    /// entry, a new run, a park, an answer or an end asks for (unit (a)).
+    /// entry, a new run, a park, an answer or an end asks for (unit (a)); a handback that kept nothing resumes the full timeout.
     /// </summary>
     /// <param name="before">The instance before the change.</param>
     /// <param name="after">The instance after it.</param>
@@ -49,7 +49,16 @@ public static class StateTimers
     /// <param name="deskFloor">The profile's 'workflow.deskTimeout'.</param>
     /// <returns>The action.</returns>
     public static TimerAction Between(WorkflowInstance before, WorkflowInstance after, Recipe recipe, TimeSpan deskFloor) =>
-        Takeovers(before, after) ?? Entries(before, after, recipe, deskFloor);
+        Takeovers(before, after) ?? HandedBack(before, after, Entries(before, after, recipe, deskFloor));
+
+    /// <summary>
+    /// A handback whose takeover kept nothing (a start taken over, E-19) arms the entered state's full timeout; it is a
+    /// resume, not a plain arm, so the interpreter also stops 'takeoverIdle', which only a resume cancels.
+    /// </summary>
+    private static TimerAction HandedBack(WorkflowInstance before, WorkflowInstance after, TimerAction entries) =>
+        before.Suspension?.Kind == SuspensionKind.Takeover && after.Suspension?.Kind != SuspensionKind.Takeover && entries.Kind == TimerActionKind.Arm
+            ? entries with { Kind = TimerActionKind.Resume }
+            : entries;
 
     /// <summary>
     /// A takeover pauses the running timer (and arms 'takeoverIdle'); a handback resumes the timer its suspension kept,

@@ -19,7 +19,7 @@ namespace Aw.Sindri.Tests.Workflows;
 public sealed class QueuedUpdateTests(SindriTimeSkippingServer server) : IClassFixture<SindriTimeSkippingServer>, IDisposable
 {
     private const string Launch = "LCH-0123456789abcdef0123456789abcdef";
-    private static readonly TimeSpan _patience = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan _patience = TimeSpan.FromSeconds(20);
     private readonly WorkflowsHarness _harness = new();
 
     public void Dispose() => _harness.Dispose();
@@ -56,6 +56,9 @@ public sealed class QueuedUpdateTests(SindriTimeSkippingServer server) : IClassF
         await second.ExecuteAsync(async () =>
         {
             var cancelled = await cancelling.WaitAsync(_patience, ct);
+            var done = await handle.GetResultAsync().WaitAsync(_patience, ct);
+            var hist = await handle.FetchHistoryAsync();
+            Assert.Fail("DBG " + done.State + " " + string.Join(',', hist.Events.Select(e => e.EventType.ToString())));
             var refused = await Assert.ThrowsAsync<WorkflowUpdateFailedException>(() => takingOver.WaitAsync(_patience, ct));
             var ended = await handle.GetResultAsync().WaitAsync(_patience, ct);
 

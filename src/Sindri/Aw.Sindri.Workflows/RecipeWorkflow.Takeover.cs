@@ -1,3 +1,5 @@
+using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Temporalio.Workflows;
@@ -47,12 +49,33 @@ internal sealed partial class RecipeWorkflow
     /// <param name="request">The open-request.</param>
     /// <returns>The instance after it: taken over, or as it was.</returns>
     [WorkflowUpdate("open-request")]
-    public Task<CommandResult> OpenRequestAsync(OpenRequested request) => Applied(request);
+    public async Task<CommandResult> OpenRequestAsync(OpenRequested request)
+    {
+        await Workflow.WaitConditionAsync(() => _instance is not null).ConfigureAwait(true);   // E-6: a launch for an instance still starting takes it over once it has started
+        return await Applied(request).ConfigureAwait(true);
+    }
 
-    /// <summary>Rejects an open-request where no takeover is allowed: an ended instance (SND-WF-003).</summary>
+    /// <summary>
+    /// Rejects an open-request where no takeover is allowed: an ended instance, or any actor but 'service:engine'
+    /// (SND-WF-003). One that arrives while the instance is starting is accepted; the Update waits for the start.
+    /// </summary>
     /// <param name="request">The open-request.</param>
     [WorkflowUpdateValidator(nameof(OpenRequestAsync))]
-    public void ValidateOpenRequest(OpenRequested request) => Validate(request);
+    public void ValidateOpenRequest(OpenRequested request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (_instance is null)
+        {
+            if (!string.Equals(request.Actor, EngineActor.Name, StringComparison.Ordinal))
+            {
+                throw Refusal(WorkflowErrors.TriggerNotAllowed.With($"an open-request comes from {EngineActor.Name}, not {request.Actor} (fix: the launcher sends it)"));
+            }
+
+            return;   // starting: nothing to decide against yet, and an instance that hasn't started hasn't ended
+        }
+
+        Validate(request);
+    }
 
     /// <summary>Hands <paramref name="trigger"/> to the loop and returns the instance after it and what happened.</summary>
     private async Task<CommandResult> Applied(Trigger trigger)

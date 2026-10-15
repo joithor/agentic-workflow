@@ -11,9 +11,6 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </summary>
 internal static class InstanceIds
 {
-    /// <summary>The engine's actor for the triggers it sends itself (spec §5.2, §6.2): 'open-request' and an E-19 start taken over.</summary>
-    public const string Engine = "service:engine";
-
     /// <summary>The id of the instance at <paramref name="address"/>.</summary>
     /// <param name="address">The address.</param>
     /// <returns>The first 16 bytes of the SHA-256 of the address, as a 'WFI-…' id.</returns>
