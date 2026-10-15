@@ -67,7 +67,7 @@ internal sealed partial class RecipeWorkflow
         while (!instance.Ended)
         {
             instance = instance is { Suspension: null, Frame.Run: { } open }
-                ? await RunDeskStep(instance, open, start, context).ConfigureAwait(true)
+                ? await RunDeskStep(instance, open, context).ConfigureAwait(true)
                 : await Wait(instance, context).ConfigureAwait(true);
         }
 

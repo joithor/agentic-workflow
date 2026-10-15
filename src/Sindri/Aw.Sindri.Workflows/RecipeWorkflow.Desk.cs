@@ -75,7 +75,7 @@ internal sealed partial class RecipeWorkflow
     /// One pass over an active state's desk Step: wait for its report or its timeout, decide, mirror a change into the
     /// ledger, and hand the outcome to the 'complete' Update that carried the report.
     /// </summary>
-    private async Task<WorkflowInstance> RunDeskStep(WorkflowInstance instance, OpenRun open, InstanceStart start, Interpreting context)
+    private async Task<WorkflowInstance> RunDeskStep(WorkflowInstance instance, OpenRun open, Interpreting context)
     {
         if (await RunStep(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true) is not { } trigger)
         {
@@ -103,7 +103,7 @@ internal sealed partial class RecipeWorkflow
             }
 
             Enter(instance);
-            await Mirror(Transition(start, before, instance, trigger, open), NeedsYou(instance)).ConfigureAwait(true);
+            await Mirror(DeskRow(before, instance, trigger, open, decision), NeedsYou(instance)).ConfigureAwait(true);
         }
 
         Settle(reportId, new Reported(new CommandResult(GetInstance(), Happened(before, instance, decision)), Refusal: null));
@@ -125,7 +125,13 @@ internal sealed partial class RecipeWorkflow
         return after;
     }
 
-    /// <summary>The 'workflow.transition' row for a desk report or the desk timeout.</summary>
+    /// <summary>The report's row comes from its decision, as the loop's rows do; the deadline's park has none.</summary>
+    private WorkflowEventRecord DeskRow(WorkflowInstance before, WorkflowInstance after, Trigger trigger, OpenRun open, Decision? decision) =>
+        decision is not null && OwnChange(before, decision) is { } change
+            ? Record(before, change, trigger)
+            : Transition(_start!, before, after, trigger, open);   // why: the loop runs only after RunAsync set _start
+
+    /// <summary>The 'workflow.transition' row for the desk timeout's park (a report's row comes from its decision).</summary>
     private static WorkflowEventRecord Transition(InstanceStart start, WorkflowInstance before, WorkflowInstance after, Trigger trigger, OpenRun open)
     {
         var (kind, outcome) = trigger switch
