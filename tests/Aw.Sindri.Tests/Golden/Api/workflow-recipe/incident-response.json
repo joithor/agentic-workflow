@@ -29,6 +29,7 @@
     }
   ],
   "urgency": "incident",
+  "orderedBy": "path",
   "states": [
     {
       "id": "assess",

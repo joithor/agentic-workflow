@@ -36,6 +36,7 @@
     }
   ],
   "urgency": "work",
+  "orderedBy": "path",
   "states": [
     {
       "id": "intake",

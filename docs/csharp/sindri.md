@@ -534,37 +534,40 @@ a block are in `docs/csharp/sindri-workflow.md`.
 
 The instance, recipe and status view shapes the UI codes against (screens spec E-20, E-22, E-23) are records in
 `Aw.Sindri.Core/Workflow/Views/` (ids typed where Core has a typed id; a state, workstream or fact-row key stays text, and
-the display address `workflow/PRJ-sync` is text because the engine's `InstanceAddress` has a narrower shape), plus
+an address is the typed `InstanceAddress`), plus
 `FactView` in `Features/GetInstanceFact`. The routes are not served yet (API P11):
 
 | Route | Slice | Shape |
 |---|---|---|
 | `GET /workflow/instances?root=&open=&recipe=&subject=&state=&needsMe=` | `ListInstances` (engine) | `InstanceList` |
-| `GET /workflow/instances/{address}` | `GetInstance` (engine) | `InstanceDetail` |
-| `GET /workflow/instances/{address}/facts/{key}` | `GetInstanceFact` (not written yet) | `FactView` |
+| `GET /workflow/instances/{id}` (or `?address=`) | `GetInstance` (engine) | `InstanceDetail` |
+| `GET /workflow/instances/{id}/facts/{key}` | `GetInstanceFact` (not written yet) | `FactView` |
 | `GET /workflow/recipes/{id}` | `ShowRecipe` (engine) | `RecipeView` |
 
-**Golden contract.** Each scenario's fixture (`tests/Aw.Sindri.Testing/Views/WorkflowViewFixtures.cs`, `FactFixtures.cs`)
-is serialized through the host's own JSON options and pinned at `tests/Aw.Sindri.Tests/Golden/Api/<slug>/<scenario>.json`
-(`workflow-instances`, `workflow-instance`, `workflow-instance-fact`, `workflow-status`, `workflow-recipe`; 32 files, in
-`WorkflowViewGoldenTests`). The UI lanes build their fake `ISindriApi` on these files, so a change to one is a contract
-change the UI lane is told about; re-record with `AW_GOLDEN_UPDATE=1`. Every instance fixture carries its own status
-(address, recipe stamp, commands and cancel sentence come from its row), the status text is rendered from the fields,
-and its commands are catalog rows of the same class (`WorkflowViewFixtureTests`). `WorkflowViewConsistencyTests` pins that the files agree with each other (one taken-over shape, fact bodies behind
-their rows, loops per recipe hash, children under their parent), and the golden test reads every file back into its
-record. The `not-found` files are hand-written
-ProblemDetails until API P11 U7 swaps in the served body. The composer and the `GetInstanceFact` service arrive with
-P11 U2 to U5 and their real inputs; U7 serves the routes from the engine's views and leaves the files alone, and
-whoever lands engine P2b re-records the goldens (only the recipe hashes the engine has published are real; the rest
-are placeholders until their recipe exists).
+**Golden contract.** Each scenario's fixture (`tests/Aw.Sindri.Testing/Views/WorkflowViewFixtures.cs`, `FactFixtures.cs`,
+and the recipe declarations in `FixtureRecipes.cs`/`RecipeShape.cs`, one declaration per recipe) is serialized through the
+host's own JSON options and pinned at `tests/Aw.Sindri.Tests/Golden/Api/<slug>/<scenario>.json` (`workflow-instances`,
+`workflow-instance`, `workflow-instance-fact`, `workflow-status`, `workflow-recipe`; 34 files, in `WorkflowViewGoldenTests`).
+Addresses are the engine's form (`ITM-01JK3/project/1`, child `ITM-01JK3/project/1/step.1`), every root has an item, and a
+fixture's `id` is the engine's minting rule applied to its address (`IdOf`, pinned by a test vector). The UI lanes build
+their fake `ISindriApi` on these files, so a change to one is a contract change; re-record with `AW_GOLDEN_UPDATE=1`.
 
-The recipe files (`workflow-recipe/`) are partial: they hold the E-22 additions (inputs, outputs, urgency, states,
-loops) only, not the full `RecipeView` body (id, hash, version, the engine's own fields), until engine P2b and UI U1.
+**Who may change the files.** The files change only at these points, and each change is announced to the UI lane: (1) engine
+P4b, if its wording moves (the engine re-records); (2) when a recipe that still carries a placeholder hash lands, its hash
+becomes the real one; (3) the `not-found` files, when API P11 U7 (or P4) swaps in the served ProblemDetails body. Every
+instance fixture carries its own status (address, recipe stamp, commands and cancel sentence come from its row), the status
+text is rendered from the fields, and its commands are catalog rows of the same class (`WorkflowViewFixtureTests`).
+`WorkflowViewConsistencyTests` and `WorkflowViewRecipeShapeTests` pin that the files agree with each other and with
+`recipes/**` (ids, versions, hashes, states, orders, terminals, inputs and outputs), and the golden test reads every file
+back into its record. The composer and the `GetInstanceFact` service arrive with P11 U2 to U5 and their real inputs.
 
-**`status.text` is rendered verbatim by the UI and never parsed.** Its wording, the `since` clock, token counts, the
-drift line and the instance `id` values are provisional until engine P4b: the fixtures render them with a test-only
-renderer that follows the engine's helpers (P4b `StatusText`, `InstanceWords`; the id is `WorkflowInstanceId.Of` from
-#192), and the engine re-records the goldens if P4b's wording moves.
+The recipe files (`workflow-recipe/`) are partial: they hold the E-22 additions (inputs, outputs, urgency, `orderedBy`,
+states, loops) only, not the full `RecipeView` body (id, hash, version, the engine's own fields), until UI U1.
+
+**`status.text` is rendered verbatim by the UI and never parsed.** The fixtures render it with a test-only renderer that
+follows the engine's helpers (P4b `StatusText`, `InstanceWords`), in ASCII; its wording, the `since` clock and token counts
+are a provisional rendering until engine P4b confirms them (the change then goes through point (1) above). The cancel
+sentence is singular at 1 (a provisional owner default, 2026-10-14 night).
 
 ## Hook contract
 

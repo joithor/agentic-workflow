@@ -57,8 +57,9 @@ public static class WorkflowViewFixtures
     }
 
     /// <summary>
-    /// The engine's id of an address: a copy of WorkflowInstanceId.Of from engine #192 (feat/sindri-wf-p4-interpreter), a UUIDv8
-    /// over the SHA-256 of the address, so the goldens carry the ids the engine mints. Delete this once #192 is on main.
+    /// The engine's id of an address: the minting rule written out here (a UUIDv8 over the SHA-256 of the address), pinned by a
+    /// test vector (IdOf("T-50/step/1")), so the goldens carry the ids the engine mints. Swap it for the engine's own
+    /// factory when that lands on main; the vector test then proves the two agree.
     /// </summary>
     public static WorkflowInstanceId IdOf(string address)
     {
@@ -551,7 +552,7 @@ public static class WorkflowViewFixtures
     /// <summary>A recipe with no outputs: 'outputs: []', and a kind on the first input only.</summary>
     public static RecipeView NoOutputsRecipe() => new(
         [new RecipeInputView("fact:request", "Request", FactType.Text, "text", true), new RecipeInputView("fact:context", null, FactType.File, null, false)],
-        [], RecipeUrgency.Work, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], []);
+        [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], []);
 
     // ---- the facts route (GetInstanceFact) ---------------------------------------------------------------------------
 

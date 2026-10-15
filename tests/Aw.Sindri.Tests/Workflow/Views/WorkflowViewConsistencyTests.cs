@@ -303,8 +303,8 @@ public sealed class WorkflowViewConsistencyTests
         Assert.Contains("changed since workflow.project@", drift, StringComparison.Ordinal);
         Assert.Contains("was approved answer none (drift): sindri recipe approve workflow.project@", drift, StringComparison.Ordinal);
 
-        var old = WorkflowViewFixtures.StatusNeedsAnswerWait();
-        Assert.Matches(new Regex("since \\d\\d:\\d\\d \\(", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1)), old.Text);
+        var waiting = WorkflowViewFixtures.StatusNeedsAnswerWait();
+        Assert.Matches(new Regex("since \\d\\d:\\d\\d \\(", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1)), waiting.Text);
 
         var fields = WorkflowViewFixtures.StatusDeskTask() with { Budget = new StatusBudget("state", 1_500, 200_000, new BudgetFigures(0, 400_000)) };
         Assert.Contains("tokens 1.5k / 200k (state)", StatusText.Render(fields, WorkflowViewFixtures.Now), StringComparison.Ordinal);

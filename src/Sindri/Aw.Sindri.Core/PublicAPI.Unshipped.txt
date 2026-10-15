@@ -5127,7 +5127,7 @@ Aw.Sindri.Core.Workflow.Views.RecipeStateView.State.get -> string!
 Aw.Sindri.Core.Workflow.Views.RecipeStateView.State.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView
 Aw.Sindri.Core.Workflow.Views.RecipeView.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.RecipeView!
-Aw.Sindri.Core.Workflow.Views.RecipeView.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>! Outputs, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>! Loops) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>! Outputs, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, out Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>! Loops) -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView.Equals(Aw.Sindri.Core.Workflow.Views.RecipeView? other) -> bool
 Aw.Sindri.Core.Workflow.Views.RecipeView.Inputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>!
 Aw.Sindri.Core.Workflow.Views.RecipeView.Inputs.init -> void
@@ -5135,7 +5135,7 @@ Aw.Sindri.Core.Workflow.Views.RecipeView.Loops.get -> System.Collections.Generic
 Aw.Sindri.Core.Workflow.Views.RecipeView.Loops.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView.Outputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>!
 Aw.Sindri.Core.Workflow.Views.RecipeView.Outputs.init -> void
-Aw.Sindri.Core.Workflow.Views.RecipeView.RecipeView(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>! Outputs, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>! Loops) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeView.RecipeView(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>! Outputs, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>! Loops) -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView.States.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>!
 Aw.Sindri.Core.Workflow.Views.RecipeView.States.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView.Urgency.get -> Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency
@@ -5647,3 +5647,5 @@ static Aw.Sindri.Core.Workflow.Recipes.Urgencies.Parse(string? urgency) -> Aw.Si
 ~Aw.Sindri.Core.Ids.CorrelationId.ToString(string format, System.IFormatProvider provider) -> string
 Aw.Sindri.Core.Views.ApprovedServices
 static Aw.Sindri.Core.Views.ApprovedServices.Of(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! rows, Aw.Sindri.Core.Profile.LoadedProfile? approved) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>!
+Aw.Sindri.Core.Workflow.Views.RecipeView.OrderedBy.get -> Aw.Sindri.Core.Workflow.Views.PathOrdering
+Aw.Sindri.Core.Workflow.Views.RecipeView.OrderedBy.init -> void
