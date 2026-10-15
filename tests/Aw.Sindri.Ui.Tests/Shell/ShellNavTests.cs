@@ -12,10 +12,12 @@ namespace Aw.Sindri.Ui.Tests.Shell;
 [Lane(TestLane.Unit)]
 public sealed class ShellNavTests
 {
+    private static readonly string[] _views = ["extra-p11-running", "empty", "fixture"];
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task The_queue_tab_stays_selected_across_count_changes()
+    public Task The_queue_tab_stays_selected_across_count_changes() => UiThread.Run(async () =>
     {
         var records = new InMemoryEndpointRecords();
         records.Write(A.Record());
@@ -37,21 +39,20 @@ public sealed class ShellNavTests
             watched.PropertyChanged += (_, e) => counts.Add(e.PropertyName);
         }
 
-        var seq = 60;
-        foreach (var view in new[] { "extra-p11-running", "empty", "fixture" })
+        foreach (var view in _views)
         {
             clock.Advance(TimeSpan.FromSeconds(5));
             var before = shell.Navigation[1].Count;
             server.QueueView = RouteAnswer.SpecShaped("queue", view);
-            server.Push(A.Event(seq++, "item.created"));
-            await Until(() => shell.Navigation[1].Count != before, view);
+            await shell.Queue.Refresh(new Uri("http://127.0.0.1:7410/"), Token);   // awaited on the one thread: an event's refresh would race the reads
+            Assert.NotEqual(before, shell.Navigation[1].Count, StringComparer.Ordinal);
             Assert.Same(tab, shell.SelectedNav);
         }
 
         Assert.Equal(tabs, shell.Navigation);
         Assert.DoesNotContain(swaps, name => name == nameof(ShellViewModel.Navigation));
         Assert.Contains(counts, name => name == "Count");
-    }
+    }, Token);
 
     private static async Task Until(Func<bool> condition, string? what = null)
     {
