@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Tests for scripts/install-deps.sh: the dry run prints each new step and writes nothing, a missing system package is
-# named with its exact sudo command (exit 1), and with everything present the checks pass. Runs on a PATH of symlinks to
+# installed through sudo + the package manager (brew on macOS) and checked again, AW_NO_SYSTEM_INSTALL=1 only prints the
+# command, the AppArmor profile for bwrap is applied, and with everything present the checks pass. Runs on a PATH of symlinks to
 # just the core tools plus fakes, so the host's real bwrap/uv/graphify never leak in.
 set -euo pipefail
 
@@ -39,7 +40,23 @@ DATE="$(jq -r '.sindri.graphifyPinDate' "$REPO/sindri/package.json")"
 
 echo "install-deps"
 
-fake apt-get
+LOG="$TMPROOT/calls.log"; : >"$LOG"
+# Fakes: sudo logs and runs only the package manager (tee and apparmor_parser are logged, never run: they'd touch the real
+# system); apt-get and brew log, and their `install` creates a fake command for each name in AW_FAKE_PROVIDES.
+cat >"$BIN/sudo" <<EOF
+#!/bin/sh
+echo "sudo \$*" >>"$LOG"
+case "\$1" in apt-get) exec "\$@" ;; apparmor_parser) : >"$TMPROOT/applied" ;; *) cat >/dev/null ;; esac
+EOF
+for m in apt-get brew; do
+  cat >"$BIN/$m" <<EOF
+#!/bin/sh
+echo "$m \$*" >>"$LOG"
+[ "\$1" = install ] || exit 0
+for t in \${AW_FAKE_PROVIDES:-}; do printf '#!/bin/sh\nexit 0\n' >"$BIN/\$t"; $(command -v chmod) +x "$BIN/\$t"; done
+EOF
+done
+chmod +x "$BIN/sudo" "$BIN/apt-get" "$BIN/brew"
 # 1. Dry run on a bare Linux box: every step printed, the sudo line names every missing package, nothing is written.
 run AW_DEPS_OS=Linux AW_DRY_RUN=1
 expect "dry run prints the new steps" 0 \
@@ -48,7 +65,7 @@ expect "dry run prints the new steps" 0 \
   "would run: scripts/binaries-lock.sh fetch temporal\$" \
   "would run: scripts/binaries-lock.sh fetch temporal-test-server" \
   "bwrap: MISSING" "secret-tool: MISSING" \
-  "sudo apt-get install -y .*bubblewrap.*libsecret-tools.*clang.*zlib1g-dev"
+  "would run: sudo apt-get install -y bubblewrap libsecret-tools clang zlib1g-dev lsof tmux curl git"
 [ -z "$(ls -A "$HOME_DIR")" ] && ok "dry run wrote nothing into HOME" || fail "dry run wrote: $(ls -A "$HOME_DIR")"
 
 # 2. uv and graphify at the pin are recognised.
@@ -70,13 +87,22 @@ run AW_DEPS_OS=Linux AW_DRY_RUN=1
 expect "all system packages present" 0 "bwrap: found" "secret-tool: found"
 printf '%s\n' "$OUT" | grep -q "sudo apt-get" && fail "no sudo line when nothing is missing" || ok "no sudo line when nothing is missing"
 
-# 4b. bwrap present but its sandbox fails with the AppArmor restriction on: root fix printed, exit 1 (real run), note in dry run.
+# 4b. bwrap present but its sandbox fails with the AppArmor restriction on: the profile is written and loaded through
+# sudo, then the sandbox is probed again (the fake probe passes once apparmor_parser ran).
 fake bwrap
 echo 1 >"$TMPROOT/userns"
-run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE='echo "setting up uid map: Permission denied" >&2; false' AW_DEPS_USERNS_FILE="$TMPROOT/userns"
-expect "a bwrap that cannot sandbox under AppArmor exits 1 with the fix" 1 "cannot create a sandbox \\(setting up uid map" "profile bwrap /usr/bin/bwrap flags=\\(unconfined\\)" "sudo apparmor_parser -r /etc/apparmor.d/bwrap"
-run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_DEPS_BWRAP_PROBE=false AW_DEPS_USERNS_FILE="$TMPROOT/userns"
-expect "dry run shows the fix and notes a real run would stop" 0 "apparmor_parser -r" "a real run would stop here"
+PROBE="[ -e '$TMPROOT/applied' ] || { echo 'setting up uid map: Permission denied' >&2; false; }"
+: >"$LOG"
+run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_DEPS_BWRAP_PROBE="$PROBE" AW_DEPS_USERNS_FILE="$TMPROOT/userns"
+expect "dry run shows the AppArmor profile and the commands" 0 "cannot create a sandbox \\(setting up uid map" "profile bwrap /usr/bin/bwrap flags=\\(unconfined\\)" "would run: sudo tee /etc/apparmor.d/bwrap; sudo apparmor_parser -r"
+[ -s "$LOG" ] && fail "dry run ran sudo: $(cat "$LOG")" || ok "dry run runs nothing as root"
+run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE="$PROBE" AW_DEPS_USERNS_FILE="$TMPROOT/userns" AW_STATE_DIR="$TMPROOT/nostate"
+grep -q "^sudo tee /etc/apparmor.d/bwrap" "$LOG" && grep -q "^sudo apparmor_parser -r /etc/apparmor.d/bwrap" "$LOG" \
+  && ok "a real run writes and loads the profile through sudo" || fail "profile not applied: $(cat "$LOG")"
+printf '%s\n' "$OUT" | grep -q "bwrap: sandbox works" && ok "the sandbox is probed again and works" \
+  || { fail "no second probe"; printf '%s\n' "$OUT" | sed 's/^/      | /'; }
+run AW_DEPS_OS=Linux AW_NO_SYSTEM_INSTALL=1 AW_DEPS_BWRAP_PROBE=false AW_DEPS_USERNS_FILE="$TMPROOT/userns"
+expect "AW_NO_SYSTEM_INSTALL=1 prints the AppArmor fix and fails" 1 "nothing is applied" "sudo apparmor_parser -r /etc/apparmor.d/bwrap"
 echo 0 >"$TMPROOT/userns"
 run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=false AW_DEPS_USERNS_FILE="$TMPROOT/userns"
 expect "a failing bwrap with the restriction off still fails, without the AppArmor advice" 1 "cannot create a sandbox"
@@ -84,15 +110,36 @@ printf '%s\n' "$OUT" | grep -q "apparmor_parser" && fail "no AppArmor advice whe
 run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=true AW_DRY_RUN=1
 expect "a working bwrap probe passes" 0 "bwrap: sandbox works"
 
-# 5. Real run with a package missing: exit 1 and the sudo command.
+# 5. Real run with a package missing: installed through sudo apt-get (after an update), then checked again.
+rm "$BIN/bwrap"; : >"$LOG"
+run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=true AW_FAKE_PROVIDES=bwrap AW_STATE_DIR="$TMPROOT/nostate"
+grep -q "^sudo apt-get update" "$LOG" && grep -q "^apt-get install -y bubblewrap$" "$LOG" \
+  && ok "a missing package is installed with sudo apt-get" || fail "install not run: $(cat "$LOG")"
+printf '%s\n' "$OUT" | grep -q "Checking again" && printf '%s\n' "$OUT" | grep -q "bwrap: found" \
+  && ok "the packages are checked again after the install" || { fail "no re-check"; printf '%s\n' "$OUT" | sed 's/^/      | /'; }
+
+# 5b. The install runs but the command is still missing: exit 1.
 rm "$BIN/bwrap"
-run AW_DEPS_OS=Linux
-expect "a real run with bwrap missing exits 1 and names the command" 1 "sudo apt-get install -y bubblewrap"
+run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=true
+expect "a package still missing after the install fails" 1 "still missing after the install: bubblewrap"
+
+# 5c. AW_NO_SYSTEM_INSTALL=1: nothing installed, the exact command printed, exit 1.
+: >"$LOG"
+run AW_DEPS_OS=Linux AW_NO_SYSTEM_INSTALL=1 AW_DEPS_BWRAP_PROBE=true
+expect "AW_NO_SYSTEM_INSTALL=1 prints the command and fails" 1 "sudo apt-get install -y bubblewrap"
+grep -q "install" "$LOG" && fail "AW_NO_SYSTEM_INSTALL=1 still installed: $(cat "$LOG")" || ok "AW_NO_SYSTEM_INSTALL=1 installs nothing"
+fake bwrap
 
 # 6. macOS: no Linux-only packages are required.
 run AW_DEPS_OS=Darwin AW_DRY_RUN=1
 expect "macOS does not ask for bwrap" 0 "tmux: found"
 printf '%s\n' "$OUT" | grep -q "bwrap" && fail "macOS must not mention bwrap" || ok "macOS must not mention bwrap"
+
+# 6b. macOS without tmux: brew installs it.
+rm "$BIN/tmux"; : >"$LOG"
+run AW_DEPS_OS=Darwin AW_FAKE_PROVIDES=tmux AW_STATE_DIR="$TMPROOT/nostate"
+grep -q "^brew install tmux$" "$LOG" && ok "macOS installs a missing tmux with brew" || fail "brew not run: $(cat "$LOG")"
+fake tmux
 
 # 7. Temporal: a cached fetch is found in the cache layout sindri serve reads, and `temporal --version` is run.
 STATE="$TMPROOT/state"
