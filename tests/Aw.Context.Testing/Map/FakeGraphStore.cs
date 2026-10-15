@@ -86,7 +86,7 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
 
         if (_versions.FirstOrDefault(v => v.Version.Status == MapVersionStatus.Current) is not { Version: { } current } source)
         {
-            return Results.Failure<MapVersion>(ContextErrors.NoMap.With("there is no current map to open a draft from"));
+            return Results.Failure<MapVersion>(ContextErrors.NoMap.With("there is no current map to open a draft from (fix: sindri context map import <file>)"));
         }
 
         var copy = current with { Number = ++_last, Created = created, Status = MapVersionStatus.Draft };

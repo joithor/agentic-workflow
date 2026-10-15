@@ -13,7 +13,7 @@ public static class PromoteReadiness
     {
         if (queue is null)
         {
-            return ContextErrors.PromoteRefused.With("there is no draft to promote (fix: run 'sindri context map build')");
+            return ContextErrors.PromoteRefused.With("there is no draft to promote (fix: sindri context map propose <file>, or name context-rebuild under services: in the profile)");
         }
 
         return queue.Undecided > 0

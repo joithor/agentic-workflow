@@ -33,7 +33,7 @@ internal sealed class GetProposalsService(IGraphStore store, IProposalRuns runs,
         }
 
         var (current, draft) = loaded.Value;
-        var text = new MapText(built.Value);
+        var text = new MapText(built.Value, FencePolicies.For(request.Scope.Caller));
         var saved = await runs.Run(request.Run, cancellationToken).ConfigureAwait(false);
         if (saved.IsError)
         {
@@ -44,7 +44,7 @@ internal sealed class GetProposalsService(IGraphStore store, IProposalRuns runs,
         var currentGraph = OverrideApplier.Apply(current.Graph, [.. overrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
         var draftGraph = draft is null ? null : OverrideApplier.Apply(draft.Graph, overrides).Graph;
         var statuses = GraphStatuses.Of(GraphStatuses.ForRun(request.Run, overrides, Visible(saved.Value, request.Scope.Caller)), currentGraph, draftGraph)
-            .Select(s => s with { Surface = text.Label(s.Surface, Trust.Trusted) });
+            .Select(s => s with { Surface = text.Label(s.Surface, Trust.Untrusted) });
         return new ProposalsView(request.Run, current.Label, draft?.Label, [.. statuses]);
     }
 

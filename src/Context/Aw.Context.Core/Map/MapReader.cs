@@ -30,7 +30,7 @@ public sealed class MapReader(IGraphStore store)
         if (snapshot.IsError || snapshot.Value is not { } map)
         {
             return snapshot.IsError ? snapshot.Error
-                : draft ? ContextErrors.NoMap.With("there is no draft map: drafts come from 'context map build' (S-4) (fix: ask without --draft)")
+                : draft ? ContextErrors.NoMap.With("there is no draft map: drafts come from 'context map propose <file>' and the context-rebuild service (fix: ask without --draft)")
                 : ContextErrors.NoMap.With("there is no map yet (fix: sindri context map import <file>)");
         }
 
@@ -50,7 +50,7 @@ public sealed class MapReader(IGraphStore store)
     {
         var map = await Read(scope, draft, cancellationToken).ConfigureAwait(false);
         return draft && map.IsError && map.Error.Code == ContextErrors.NoMap.Code
-            ? ContextErrors.NoDraftMap.With("there is no draft map (fix: sindri context map build, then retry; or drop --draft)")
+            ? ContextErrors.NoDraftMap.With("there is no draft map (fix: sindri context map propose <file>, or name context-rebuild under services: in the profile, then retry; or drop --draft)")
             : map;
     }
 

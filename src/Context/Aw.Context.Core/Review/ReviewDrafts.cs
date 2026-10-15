@@ -59,7 +59,7 @@ public static class ReviewDrafts
 
         return draft.Value is { } found
             ? found
-            : ContextErrors.NoDraftMap.With("there is no draft map (fix: sindri context map build)");
+            : ContextErrors.NoDraftMap.With("there is no draft map (fix: sindri context map propose <file>, or name context-rebuild under services: in the profile)");
     }
 
     /// <summary>The latest draft and what is left to decide in it, with labels cleaned the way every answer cleans them.</summary>

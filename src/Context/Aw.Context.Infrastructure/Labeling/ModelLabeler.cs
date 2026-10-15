@@ -27,7 +27,7 @@ internal sealed class ModelLabeler(IModelPort model, IScrubberFactory scrubbers)
     public async ValueTask<Result<IReadOnlyList<ClusterLabel>>> Label(IReadOnlyList<FileCluster> clusters, IReadOnlyList<ScrubPattern> extraPatterns, int maxTokens, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(clusters);
-        var built = scrubbers.For([]);
+        var built = scrubbers.For(extraPatterns);
         if (built.IsError)
         {
             return built.Error;

@@ -128,7 +128,7 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
 
             if (versions.Value.FirstOrDefault(v => v.Status == MapVersionStatus.Current) is not { } current)
             {
-                return ContextErrors.NoMap.With("there is no current map to open a draft from (fix: run 'sindri context map build' or import a map file)");
+                return ContextErrors.NoMap.With("there is no current map to open a draft from (fix: sindri context map import <file>)");
             }
 
             var copy = await SqliteQueries.One(begun.Value, new SqlStatement(GraphSql.CopyVersion, c => c.Bind("$created", created).Bind("$from", (long)current.Number)), GraphRows.Id, cancellationToken).ConfigureAwait(false);

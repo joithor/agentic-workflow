@@ -19,7 +19,7 @@ public static partial class Recognizers
         new("command-ids", Source, CommandIds),
         new("command-registry", Source, Registry),
         new("keybindings", Source, Keybindings),
-        new("settings", f => Source(f) && SettingsFile.IsMatch(f.Path), SettingKeys),
+        new("settings", f => Source(f) && SettingsFile.IsMatch(f.Path) && !InToolFolder(f.Path), SettingKeys),
         new("routes", Source, Routes),
         new("components", f => Source(f) && IsComponentFile(f.Path), Components),
         new("test-ids", Source, TestIds),
@@ -46,6 +46,9 @@ public static partial class Recognizers
             && !path.Contains(".test.", StringComparison.Ordinal)
             && !path.Contains(".spec.", StringComparison.Ordinal);
     }
+
+    // The app's own settings registry is a tracked file of its source; a dot-folder (.vscode, .devcontainer, .idea) holds a tool's settings, not the product's.
+    private static bool InToolFolder(string path) => path.Split('/').SkipLast(1).Any(segment => segment.StartsWith('.'));
 
     private static bool IsComponentFile(string path) => path.EndsWith(".tsx", StringComparison.Ordinal) || path.EndsWith(".jsx", StringComparison.Ordinal);
 
@@ -128,7 +131,7 @@ public static partial class Recognizers
     [GeneratedRegex("\\b(?:app|router)\\.(?<m>get|post|put|patch|delete)\\(\\s*[\"'`](?<p>/[^\"'`\\s]*)[\"'`]", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Route { get; }
 
-    [GeneratedRegex("\\bexport\\s+(?:default\\s+)?(?:function|const|class)\\s+(?<n>[A-Z][A-Za-z0-9]{2,})", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("\\bexport\\s+(?:default\\s+)?(?:function|const|class)\\s+(?<n>[A-Z][a-z][A-Za-z0-9]+)(?![A-Za-z0-9_])", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Component { get; }
 
     [GeneratedRegex("data-testid=[\"'](?<id>[A-Za-z0-9][\\w.-]*)[\"']", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]

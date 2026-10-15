@@ -28,6 +28,18 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
     public async ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repo);
+        try
+        {
+            return await Cluster(repo, commit, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return _unavailable;   // a temp folder that can't be made, a disk that fills: the build goes on, degraded: clusters
+        }
+    }
+
+    private async ValueTask<Result<ClusterSet>> Cluster(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    {
         var host = SandboxHost.Current();
         if (Find(options.Binary) is not { } binary || !await Usable(host, binary, cancellationToken).ConfigureAwait(false))
         {
@@ -49,7 +61,7 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
     private async ValueTask<Result<ClusterSet>> Run(SandboxHost host, string binary, string snapshot, CancellationToken cancellationToken)
     {
         var real = host.RealPath(snapshot);
-        var priv = Directory.CreateTempSubdirectory(Path.Combine(real, PrivateFolder + "-")).FullName;
+        var priv = PrivateDirectory(real);
         _ = Directory.CreateDirectory(Path.Combine(priv, "cache"));
         var argv = options.Sandbox(host, [binary, "extract", real, "--code-only", "--no-viz"], [real]);
         if (argv is null)
@@ -66,6 +78,16 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
 
         var clusters = GraphifyGraph.Clusters(json, [snapshot, real]);
         return clusters.IsError ? _unavailable : new ClusterSet(clusters.Value, Available: true);
+    }
+
+    // graphify's private folder, made inside the snapshot (the only path it may write) and readable by this user alone. CreateTempSubdirectory only takes a name prefix and always lands in the system temp folder.
+    private static string PrivateDirectory(string snapshot)
+    {
+        var path = Path.Combine(snapshot, PrivateFolder + "-" + Path.GetRandomFileName());
+        _ = OperatingSystem.IsWindows()
+            ? Directory.CreateDirectory(path)
+            : Directory.CreateDirectory(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        return path;
     }
 
     // Absent, the wrong version, or a sandbox that can't start all read the same: --version run inside the sandbox must print the pin.
