@@ -1775,4 +1775,45 @@ public sealed class ShellWindowTests : IDisposable
         Assert.NotNull(stored);
         Assert.Equal((1100d, 720d), (stored.Width, stored.Height));
     });
+
+    // W3 (a11y-0): the focus regions are control elements of type Group named for the region; a Border has no peer otherwise.
+    [Fact]
+    public Task The_focus_regions_are_exposed_as_named_groups() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        Settle(window);
+        var regions = new (Control Region, string Name)[]
+        {
+            (window.Get<Border>("Page"), shell.PageName),
+            (window.Get<Border>("Sheet"), shell.SheetName),
+            (window.Get<TopBar>("TopBar").GetVisualDescendants().OfType<Border>().First(b => b.Classes.Contains("focus-region")), shell.Text.Sindri),
+        };
+
+        foreach (var (region, name) in regions)
+        {
+            var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(region);
+            Assert.True(peer.IsControlElement(), name);
+            Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Group, peer.GetAutomationControlType());
+            Assert.Equal(name, peer.GetName());
+        }
+    });
+
+    // W3: the element F6 and a page change focus is a control named by the page.
+    [Fact]
+    public Task The_focused_page_region_has_a_peer_named_by_the_page() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        shell.GoTo(PageId.Work);
+        Settle(window);
+        Assert.True(window.Get<Border>("Page").Focus(NavigationMethod.Tab));
+
+        var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement((Control)window.FocusManager!.GetFocusedElement()!);
+
+        Assert.True(peer.IsControlElement());
+        Assert.Equal(shell.PageName, peer.GetName());
+    });
 }
