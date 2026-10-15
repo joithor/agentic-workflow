@@ -159,6 +159,36 @@ public sealed class QueueFocusTests : IDisposable
         await Until(window, () => Focused(window) is Border frame && string.Equals(frame.Name, "RowFrame", StringComparison.Ordinal) && (frame.DataContext as ViewModels.Queue.ItemRowViewModel)?.Id == shell.Queue.SelectedId);
     });
 
+    // The queue served with one queued item moved to the running group (its row is rebuilt in the other group).
+    private static RouteAnswer Moved(string id)
+    {
+        var view = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("queue", "fixture"))!.AsObject();
+        var groups = view["groups"]!.AsArray();
+        var queued = groups.First(g => g!["group"]!.GetValue<string>() == "queued")!["items"]!.AsArray();
+        var running = groups.First(g => g!["group"]!.GetValue<string>() == "running")!["items"]!.AsArray();
+        var item = queued.First(i => i!["id"]!.GetValue<string>() == id)!;
+        _ = queued.Remove(item);
+        running.Add(item);
+        return new RouteAnswer(System.Net.HttpStatusCode.OK, view.ToJsonString());
+    }
+
+    // a11y-1: the focused row served in another group is rebuilt there: focus follows it, keyed by the same id.
+    [Fact]
+    public Task A_focused_row_that_changes_group_keeps_focus_on_its_new_frame() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+        var moving = Rows(window)[1].ItemId;
+        Assert.True(Named<Border>(Rows(window)[1], "RowFrame").Focus(NavigationMethod.Tab));
+
+        _server.QueueView = Moved(moving);
+        _server.Push(A.Event(58, "item.state-changed"));
+        await Until(window, () => shell.Queue.Groups.First(g => g.Group == "running").Rows.Any(r => r.Id == moving));
+
+        await Until(window, () => OnRowFrame(window, moving), "focus did not follow the row into its new group");
+    });
+
     private static string? FocusedRowId(Window window) =>
         Focused(window)?.GetSelfAndVisualAncestors().OfType<Control>().Select(c => c.DataContext).OfType<ViewModels.Queue.ItemRowViewModel>().FirstOrDefault()?.Id;
 
