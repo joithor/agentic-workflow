@@ -57,6 +57,22 @@ public sealed class RecipeApproveCliTests : IDisposable
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task Approving_the_same_pins_again_exits_0_and_says_it_woke_the_instances_again()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var app = await Started(ct);
+        var step = await Register(app, ct);
+        var name = $"workflow.step@{step.Hash.Display}";
+        Assert.Equal(0, await Commands(app, human: true, "approve workflow.step 1").Approve(name, ct));
+        _out.GetStringBuilder().Clear();
+
+        var again = await Commands(app, human: true, "approve workflow.step 1").Approve(name, ct);
+
+        Assert.True(again == 0, _error.ToString());
+        Assert.EndsWith($"already approved {name}; woke 0 instances\n", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task Session_and_mistyped_approvals_exit_2_and_record_nothing()
     {
         var ct = TestContext.Current.CancellationToken;

@@ -66,9 +66,18 @@ public sealed class TemporalRecipeWakeTests : IDisposable
             Assert.Contains(a.Id, failed.Error.Message, StringComparison.Ordinal);
             Assert.Contains(b.Id, failed.Error.Message, StringComparison.Ordinal);
             Assert.Equal(2, failing.Tried);
+            await AssertApprovalFixIsRetry(failing, drifted);
 
             await Task.WhenAll(a.TerminateAsync("test over"), b.TerminateAsync("test over"));
         }, Token);
+    }
+
+    /// <summary>The error's fix works: an approval that missed an instance is retried by approving again, which sends the wake again.</summary>
+    private static async Task AssertApprovalFixIsRetry(TemporalRecipeWake failing, RecipeWakeNotice drifted)
+    {
+        var missed = await failing.Wake(drifted with { Kind = RecipeWakeKind.Approved, Sequence = 8 }, Token);
+        Assert.Contains("sindri recipe approve", missed.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("again", missed.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

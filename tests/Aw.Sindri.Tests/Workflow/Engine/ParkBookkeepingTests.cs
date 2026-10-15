@@ -118,9 +118,11 @@ public sealed class ParkBookkeepingTests
         var dispatched = Refuse(Claimed(), _first, "SND-WF-011");
         var drifted = Applied(dispatched, new RecipeWake(Engine, RecipeWakeKind.Drifted, 7));
 
-        var answered = Applied(drifted, Resume());
+        var answer = Assert.IsType<Applied>(Decide(drifted, Item, Resume(), rules: EngineRules.Default));
+        var answered = answer.Changes[0].After;
         var approved = Assert.IsType<Applied>(Decide(answered, Item, new RecipeWake(Engine, RecipeWakeKind.Approved, 8), rules: EngineRules.Default));
 
+        Assert.Empty(answer.Effects);   // why: the dispatch park's effect stays held; the answer itself sends nothing
         Assert.Equal(ParkKind.Drift, answered.Suspension!.ParkKind);
         Assert.Contains(_e1, Held(answered));
         Assert.Equal([_e1], [.. approved.Effects.Select(static e => e.Identity)]);
