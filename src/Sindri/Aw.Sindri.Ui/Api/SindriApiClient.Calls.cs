@@ -10,7 +10,10 @@ internal sealed partial class SindriApiClient
 {
     private const string TokenRefused = "SND-AUTH-001";
 
-    /// <summary>The code of "the views are behind the sequence you asked for": the read waited its 2 s and they hadn't caught up (API §2.4).</summary>
+    /// <summary>
+    /// The code of "the views are behind the sequence you asked for" (API §2.4): answered at once when the projection is
+    /// stalled (it won't move by itself), and after the read waited its 2 s when the views are behind but still moving.
+    /// </summary>
     internal const string ViewsBehind = "SND-API-011";
 
     // The sequence of the last command the API accepted, sent as X-Sindri-After on the view queries (status, services;

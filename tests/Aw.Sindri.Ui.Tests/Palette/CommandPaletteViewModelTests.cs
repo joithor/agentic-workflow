@@ -193,16 +193,17 @@ public sealed class CommandPaletteViewModelTests
         }
 
         var rebuild = _palette.Selected!;
+        var position = PositionOf(_palette.Announcement);
         var run = _palette.Run(rebuild, Token);
 
-        Assert.DoesNotContain("0 of", _palette.Announcement, StringComparison.Ordinal);
+        Assert.Equal(position, PositionOf(_palette.Announcement));
         Assert.DoesNotContain("Sending", _palette.Announcement, StringComparison.Ordinal);
         Assert.Equal(string.Empty, rebuild.Status);
 
         _clock.Advance(ControlViewModel.SendingAfter);
 
         Assert.StartsWith("Rebuild views, Sending…, ", _palette.Announcement, StringComparison.Ordinal);
-        Assert.DoesNotContain("0 of", _palette.Announcement, StringComparison.Ordinal);
+        Assert.Equal(position, PositionOf(_palette.Announcement));
         var next = Neighbour(rebuild, by: 1);
         _palette.Move(1);
         Assert.Same(next, _palette.Selected);
