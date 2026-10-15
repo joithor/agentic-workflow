@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
@@ -99,7 +100,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     public bool HasActions => Actions.Count > 0;
 
     /// <summary>The timeline entries read so far, in the API's order.</summary>
-    public IReadOnlyList<TimelineRow> Timeline { get; private set => Set(ref field, value); } = [];
+    public ObservableCollection<TimelineRow> Timeline { get; } = [];
 
     /// <summary>True when the API names a next page.</summary>
     public bool HasMore => Next is not null;
@@ -153,7 +154,11 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
         if (page.IsSuccess)
         {
             _pages++;
-            Timeline = [.. Timeline, .. Rows(page.Value)];
+            foreach (var row in Rows(page.Value))
+            {
+                Timeline.Add(row);
+            }
+
             Next = page.Value.Next;
         }
     }
@@ -193,7 +198,15 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
             after = answer.Value.Next;
         }
 
-        (Timeline, Next) = (rows, after);
+        // The row already shown for an entry (same sequence, same fields) stays, so its control and the focus on it do.
+        var shown = new Dictionary<long, TimelineRow>();
+        foreach (var row in Timeline)
+        {
+            _ = shown.TryAdd(row.Sequence, row);
+        }
+
+        Patch.To(Timeline, [.. rows.Select(r => shown.TryGetValue(r.Sequence, out var kept) && kept == r ? kept : r)]);
+        Next = after;
     }
 
     private IEnumerable<TimelineRow> Rows(TimelineView page) => page.Entries.Select(e => new TimelineRow(
@@ -241,7 +254,8 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
         (_pages, Next, HasItem, IsNotFound, IsStale) = (0, null, false, false, false);
         (Title, Repo, StateWord, VersionText, Age, Step, CreatedBy, WaitingOn, Instance) =
             (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
-        (Timeline, Actions, Body, Link) = ([], [], string.Empty, string.Empty);
+        Timeline.Clear();
+        (Actions, Body, Link) = ([], string.Empty, string.Empty);
         Problem(string.Empty, string.Empty);
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
@@ -15,8 +16,12 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
 
     private QueueView? _view;
 
+    // The rows and groups as last shown, by id and by name: a refresh updates them in place (§3.3).
+    private Dictionary<string, ItemRowViewModel> _rows = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, QueueGroupViewModel> _groups = new(StringComparer.Ordinal);
+
     /// <summary>The groups in the API's order (empty ones included, hidden by <see cref="QueueGroupViewModel.IsVisible"/>).</summary>
-    public IReadOnlyList<QueueGroupViewModel> Groups { get; private set => Set(ref field, value); } = [];
+    public ObservableCollection<QueueGroupViewModel> Groups { get; } = [];
 
     /// <summary>How many items the queue holds across its groups (the Queue tab's count).</summary>
     public int Total { get; private set => Set(ref field, value); }
@@ -34,7 +39,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     public bool IsStale { get; private set => Set(ref field, value); }
 
     /// <summary>Home's left panel: With you first, then running, at most five (§3.2).</summary>
-    public IReadOnlyList<ItemRowViewModel> RunningRows { get; private set => Set(ref field, value); } = [];
+    public ObservableCollection<ItemRowViewModel> RunningRows { get; } = [];
 
     /// <summary>"RUNNING N · WITH YOU N".</summary>
     public string RunningHeader { get; private set => Set(ref field, value); } = Labels.RunningHeader(0, 0);
@@ -49,7 +54,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     public string ShowAllRunning { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>Home's right panel: the queued group's first five rows.</summary>
-    public IReadOnlyList<ItemRowViewModel> QueuedRows { get; private set => Set(ref field, value); } = [];
+    public ObservableCollection<ItemRowViewModel> QueuedRows { get; } = [];
 
     /// <summary>"QUEUED N".</summary>
     public string QueuedHeader { get; private set => Set(ref field, value); } = Labels.QueuedHeader(0);
@@ -129,7 +134,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     // Shows a view, keeping the selection by id (§3.3).
     private void Apply(QueueView view)
     {
-        var before = Visible().ToList();
+        var before = Visible().Select(r => (r.Id, r.Group)).ToList();
         _view = view;
         Show();
         Keep(before);
@@ -145,8 +150,10 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         }
 
         var now = clock.GetUtcNow();
-        var all = view.Groups.ToDictionary(g => g.Group, g => g.Items.Select(i => new ItemRowViewModel(i, g.Group, Primary(i), now)).ToList(), StringComparer.Ordinal);
-        Groups = [.. view.Groups.Select(g => Group(g, all[g.Group]))];
+        var fresh = new Dictionary<string, ItemRowViewModel>(StringComparer.Ordinal);
+        var all = view.Groups.ToDictionary(g => g.Group, g => g.Items.Select(i => Row(i, g.Group, now, fresh)).ToList(), StringComparer.Ordinal);
+        _rows = fresh;
+        Patch.To(Groups, [.. view.Groups.Select(g => Group(g, all[g.Group]))]);
         Total = all.Values.Sum(r => r.Count);
         var unmatched = FilterText.Length > 0 && !Visible().Any();
         IsEmpty = (Showing == QueueFilter.All && Total == 0) || unmatched;
@@ -155,9 +162,25 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         Mark();
     }
 
+    // The row for an item: the one already shown, updated, or a new one.
+    private ItemRowViewModel Row(ItemSummaryView item, string group, DateTimeOffset now, Dictionary<string, ItemRowViewModel> fresh)
+    {
+        var action = Primary(item);
+        if (_rows.TryGetValue(item.Id, out var row))
+        {
+            row.Update(item, group, action, now);
+        }
+        else
+        {
+            row = new ItemRowViewModel(item, group, action, now);
+        }
+
+        fresh[item.Id] = row;
+        return row;
+    }
+
     private QueueGroupViewModel Group(QueueGroupView group, List<ItemRowViewModel> all)
     {
-        var rows = all.Where(Matches).ToList();
         var picked = Showing switch
         {
             QueueFilter.Running => group.Group == "running",
@@ -165,7 +188,13 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
             QueueFilter.All => true,
             _ => true,
         };
-        return new QueueGroupViewModel(group.Group, rows, group.Empty, picked) { IsFiltered = picked && Showing != QueueFilter.All };
+        if (!_groups.TryGetValue(group.Group, out var shown))
+        {
+            shown = _groups[group.Group] = new QueueGroupViewModel(group.Group);
+        }
+
+        shown.Update([.. all.Where(Matches)], group.Empty, picked, filtered: picked && Showing != QueueFilter.All);
+        return shown;
     }
 
     // The row's primary action as the catalog's control. A row sends nothing itself: its item actions need the version the
@@ -180,11 +209,11 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         var running = all.GetValueOrDefault("running") ?? [];
         var queued = all.GetValueOrDefault("queued") ?? [];
         var left = withYou.Concat(running).ToList();
-        RunningRows = [.. left.Take(PanelCap)];
+        Patch.To(RunningRows, [.. left.Take(PanelCap)]);
         RunningHeader = Labels.RunningHeader(running.Count, withYou.Count);
         RunningEmpty = left.Count == 0 ? EmptyOf("running") : string.Empty;
         (HasMoreRunning, ShowAllRunning) = (left.Count > PanelCap, Labels.ShowAllInQueue(left.Count));
-        QueuedRows = [.. queued.Take(PanelCap)];
+        Patch.To(QueuedRows, [.. queued.Take(PanelCap)]);
         QueuedHeader = Labels.QueuedHeader(queued.Count);
         QueuedEmpty = queued.Count == 0 ? EmptyOf("queued") : string.Empty;
         (HasMoreQueued, ShowAllQueued) = (queued.Count > PanelCap, Labels.ShowAllInQueue(queued.Count));
@@ -194,7 +223,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
 
     // §3.3: a refresh keeps the selected row by id; if it cleared, the selection moves to the row now at its place in the
     // same group (else the group's last row, else the first visible row) and the clearing is announced.
-    private void Keep(List<ItemRowViewModel> before)
+    private void Keep(List<(string Id, string Group)> before)
     {
         Announcement = string.Empty;
         if (SelectedId is not { } id || Visible().Any(r => r.Id == id))
@@ -203,8 +232,8 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         }
 
         var old = before.FirstOrDefault(r => r.Id == id);
-        var group = old is null ? null : Groups.FirstOrDefault(g => g.Group == old.Group && g.IsVisible && g.Rows.Count > 0);
-        var index = old is null ? 0 : before.Where(r => r.Group == old.Group).ToList().IndexOf(old);
+        var group = old.Id is null ? null : Groups.FirstOrDefault(g => g.Group == old.Group && g.IsVisible && g.Rows.Count > 0);
+        var index = old.Id is null ? 0 : before.Where(r => r.Group == old.Group).ToList().FindIndex(r => r.Id == id);
         var next = group is null ? Visible().FirstOrDefault() : group.Rows[Math.Min(index, group.Rows.Count - 1)];
         Announcement = Labels.Cleared(id);
         SelectedId = next?.Id;
