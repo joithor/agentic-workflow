@@ -10,7 +10,7 @@ namespace Aw.Sindri.Tests.ContextCalls;
 public sealed class ContextErrorExtensionsApiTests
 {
     private const string Near = "/sindri/context/node?key=feature%3Atabs.nope";
-    private const string Hidden = "thing:pane-layout";
+    private const string Hidden = "surface:command/switch-tab";   // why: its label shares "tab" with the query and the node is outside the session's scope
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
     public async Task An_unknown_anchor_carries_suggestedAnchors_for_a_human_and_only_in_scope_keys_for_a_session()
@@ -25,10 +25,8 @@ public sealed class ContextErrorExtensionsApiTests
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (human.Status, human.Code));
         var humanKeys = Strings(human.Body, "suggestedAnchors");
         var sessionKeys = Strings(scoped.Body, "suggestedAnchors");
-        Assert.InRange(humanKeys.Count, 1, 100);
-        Assert.NotEmpty(sessionKeys);
-        Assert.All(sessionKeys, key => Assert.Contains(humanKeys, h => string.Equals(h, key, StringComparison.Ordinal)));
-        Assert.DoesNotContain(sessionKeys, k => string.Equals(k, Hidden, StringComparison.Ordinal));
+        Assert.Contains(humanKeys, h => string.Equals(h, Hidden, StringComparison.Ordinal));
+        Assert.Equal(["action:tab-manager.restore-layout", "feature:tabs.tab-manager"], sessionKeys);
         Assert.Contains("(fix: try " + string.Join(", ", humanKeys) + ")", JsonDocument.Parse(human.Body).RootElement.GetProperty("detail").GetString(), StringComparison.Ordinal);
     }
 
@@ -51,6 +49,23 @@ public sealed class ContextErrorExtensionsApiTests
         Assert.DoesNotContain("feature:layout.", scoped.Body, StringComparison.Ordinal);
         Assert.DoesNotContain("candidates", scoped.Body, StringComparison.Ordinal);
         Assert.Contains("feature:layout.a, feature:layout.b", JsonDocument.Parse(human.Body).RootElement.GetProperty("detail").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task An_unknown_anchor_with_suggestions_is_still_only_code_and_message_over_mcp()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await ContextMapApiTests.Approved(sessions: true, ct);
+        await ContextMapApiTests.Import(host);
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var result = await mcp.Call("context_query", """{"node":"feature:tabs.nope"}""", ct);
+
+        Assert.Equal(true, result.IsError);
+        var content = result.StructuredContent!.Value;
+        Assert.Equal(["code", "message"], content.EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal("SND-CONTEXT-003", content.GetProperty("code").GetString());
+        Assert.Contains("try action:tab-manager.restore-layout, feature:tabs.tab-manager", content.GetProperty("message").GetString(), StringComparison.Ordinal);
     }
 
     private static List<string> Strings(string body, string member) =>

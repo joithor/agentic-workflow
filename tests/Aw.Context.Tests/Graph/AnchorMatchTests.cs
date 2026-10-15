@@ -72,7 +72,7 @@ public sealed class AnchorMatchTests
 
         var suggested = Members(node.Error, "suggestedAnchors");
         Assert.Contains(suggested, k => string.Equals(k, "feature:layout.split-pane.orientation", StringComparison.Ordinal));
-        Assert.InRange(suggested.Count, 1, 100);
+        Assert.InRange(suggested.Count, 1, 5);
         Assert.Contains("try " + string.Join(", ", suggested), node.Error.Message, StringComparison.Ordinal);
     }
 
@@ -85,16 +85,6 @@ public sealed class AnchorMatchTests
 
         Assert.Equal(ContextErrors.UnknownAnchor.Code, node.Error.Code);
         Assert.DoesNotContain(node.Error.Extensions ?? Aw.Kernel.ErrorExtensions.Empty, m => m.Key == "suggestedAnchors");
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public void Suggestions_come_only_from_the_graph_the_caller_may_see()
-    {
-        var visible = new GraphBuilder().Node("feature:orientation.visible", "Orientation toggles").Build();
-
-        var node = AnchorMatch.Resolve(visible, "orientation toggle");
-
-        Assert.All(Members(node.Error, "suggestedAnchors"), key => Assert.True(NodeKey.TryFrom(key, out var parsed) && visible.Resolve(parsed) is not null));
     }
 
     private static List<string> Members(Aw.Kernel.Error error, string name)
