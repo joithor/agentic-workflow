@@ -197,6 +197,27 @@ public sealed class ChordKeysTests : IDisposable
         Assert.Equal(PageId.Home, shell.CurrentPage);
     });
 
+    // Esc is the key that ends a chord; it is spent on that, so the sheet behind the chord stays open (a11y-2).
+    [Fact]
+    public Task Esc_with_a_chord_waiting_only_cancels_the_chord_and_the_sheet_stays_open() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(ShellState.Normal);
+        Assert.True(DeepLink.TryParse("decision/DEC-7", out var link));
+        shell.Navigate(link);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(shell.IsSheetShown);
+        Press(window, Key.G);
+        Assert.True(shell.IsChordPending);
+
+        Press(window, Key.Escape);
+
+        Assert.False(shell.IsChordPending);
+        Assert.True(shell.IsSheetShown);
+        Press(window, Key.Escape);
+        Assert.False(shell.IsSheetShown);   // with no chord waiting, Esc closes the sheet as before
+    });
+
     // The clock fires on another thread. Advancing it there queues the wait's continuation to the UI thread, so the flag
     // changes and PropertyChanged is raised there, never on the advancing thread.
     private void AdvanceOnAnotherThread(TimeSpan by)
