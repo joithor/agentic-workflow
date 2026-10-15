@@ -1,3 +1,7 @@
+using System.Text;
+using System.Text.Json;
+using Aw.Kernel;
+using Aw.Kernel.Json;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 
@@ -10,4 +14,14 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 /// <param name="Text">The normalized text the hash covers.</param>
 /// <param name="Base">The base a generated recipe was made from, or null for a hand-written one.</param>
 /// <param name="RegisteredAt">When it was first registered.</param>
-public sealed record RegisteredRecipe(RecipeId Id, int Version, RecipeHash Hash, string Text, RecipeRef? Base, DateTimeOffset RegisteredAt);
+public sealed record RegisteredRecipe(RecipeId Id, int Version, RecipeHash Hash, string Text, RecipeRef? Base, DateTimeOffset RegisteredAt)
+{
+    /// <summary>
+    /// The recipe this row's text reads back as. A row registered before urgency, outputs and an input's kind existed
+    /// keeps its text (and its hash) as written; the reader fills what such text leaves out, and nothing rehashes it.
+    /// </summary>
+    /// <param name="json">The JSON options with the recipe records' context.</param>
+    /// <returns>The recipe, or the read error.</returns>
+    public Result<Recipe> Read(JsonSerializerOptions json) =>
+        AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(Text), json);
+}

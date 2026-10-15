@@ -10,5 +10,7 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 /// <param name="Standing">Unapproved, approved or revoked.</param>
 /// <param name="Via">How its latest approval was given, or null when unapproved.</param>
 /// <param name="Stale">Why it is stale (empty when it isn't).</param>
-/// <param name="Inputs">The facts a start supplies.</param>
-public sealed record RecipeSummary(RecipeId Id, int Version, RecipeHash Hash, RecipeStanding Standing, ApprovalVia? Via, IReadOnlyList<StaleReason> Stale, IReadOnlyList<RecipeInput> Inputs);
+/// <param name="Inputs">The facts a start supplies (the first is the subject), with their types and kinds.</param>
+/// <param name="Urgency">The recipe's urgency: incident, triage or work.</param>
+/// <param name="Outputs">What the recipe produces for a human, each with the state it comes from.</param>
+public sealed record RecipeSummary(RecipeId Id, int Version, RecipeHash Hash, RecipeStanding Standing, ApprovalVia? Via, IReadOnlyList<StaleReason> Stale, IReadOnlyList<RecipeInput> Inputs, string Urgency, IReadOnlyList<RecipeOutput> Outputs);

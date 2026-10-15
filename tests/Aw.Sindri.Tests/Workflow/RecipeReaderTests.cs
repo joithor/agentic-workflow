@@ -224,7 +224,7 @@ public sealed class RecipeReaderTests
         var recipe = Reader.Read(RecipeFixtures.Read("valid/short-forms.yaml"), "short-forms.yaml").Document!.Recipe;
         var review = recipe.States["review"];
 
-        Assert.Equal([new RecipeInput(FactKey.From("fact:item"), Label: null, Type: null)], recipe.Inputs);
+        Assert.Equal([new RecipeInput(FactKey.From("fact:item"), Label: null, Type: null, Kind: null)], recipe.Inputs);
         Assert.Equal("step.produce", recipe.States["produce"].Step!.Use.Value);
         Assert.Empty(recipe.States["produce"].Step!.With);
         Assert.Equal("input.context.retrieve", Assert.Single(review.Step!.Inputs).Use.Value);

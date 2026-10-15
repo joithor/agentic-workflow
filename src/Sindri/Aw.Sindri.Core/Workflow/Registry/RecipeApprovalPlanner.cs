@@ -1,8 +1,6 @@
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
-using Aw.Kernel.Json;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -86,7 +84,7 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
     public async ValueTask<Result<ApprovalPreview>> Preview(RegisteredRecipe recipe, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(recipe);
-        var parsed = AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(recipe.Text), json);
+        var parsed = recipe.Read(json);
         var current = parsed.IsError ? parsed.Error : await approvals.Current(cancellationToken).ConfigureAwait(false);
         var latest = current.IsError ? current.Error : await approvals.Latest(recipe.Id, recipe.Version, recipe.Hash, cancellationToken).ConfigureAwait(false);
         if (latest.IsError)
@@ -184,7 +182,7 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
             return refused;
         }
 
-        var parsed = AwJson.Deserialize<Recipe>(Encoding.UTF8.GetBytes(recipe.Text), json);
+        var parsed = recipe.Read(json);
         if (parsed.IsError || parsed.Value.Evals.Count == 0)
         {
             return parsed.IsError ? parsed.Error : WorkflowErrors.RecipeEvalsFailing.With(

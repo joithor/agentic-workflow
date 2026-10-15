@@ -71,7 +71,7 @@ internal static class WiringRecipe
         IEnumerable<string>? loops = null) =>
         ARecipe.Minimal(RecipeId.From(id)) with
         {
-            Inputs = [.. (inputs ?? []).Select(k => new RecipeInput(FactKey.From(k), Label: null, Type: null))],
+            Inputs = [.. (inputs ?? []).Select(k => new RecipeInput(FactKey.From(k), Label: null, Type: null, Kind: null))],
             Initial = initial,
             States = states.ToDictionary(s => s.Name, s => s.State, StringComparer.Ordinal),
             Transitions = [.. transitions],
