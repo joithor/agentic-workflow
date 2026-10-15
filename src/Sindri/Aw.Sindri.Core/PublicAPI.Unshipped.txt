@@ -3513,9 +3513,7 @@ Aw.Sindri.Core.Health.HealthProblem
 Aw.Sindri.Core.Health.HealthProblem.<Clone>$() -> Aw.Sindri.Core.Health.HealthProblem!
 Aw.Sindri.Core.Health.HealthProblem.Code.get -> string!
 Aw.Sindri.Core.Health.HealthProblem.Code.init -> void
-Aw.Sindri.Core.Health.HealthProblem.Deconstruct(out string! Code, out string! Text) -> void
 Aw.Sindri.Core.Health.HealthProblem.Equals(Aw.Sindri.Core.Health.HealthProblem? other) -> bool
-Aw.Sindri.Core.Health.HealthProblem.HealthProblem(string! Code, string! Text) -> void
 Aw.Sindri.Core.Health.HealthProblem.Text.get -> string!
 Aw.Sindri.Core.Health.HealthProblem.Text.init -> void
 Aw.Sindri.Core.Health.HealthSummary
@@ -3730,9 +3728,7 @@ static Aw.Sindri.Core.Views.ViewsStatus.operator !=(Aw.Sindri.Core.Views.ViewsSt
 static Aw.Sindri.Core.Views.ViewsStatus.operator ==(Aw.Sindri.Core.Views.ViewsStatus? left, Aw.Sindri.Core.Views.ViewsStatus? right) -> bool
 Aw.Sindri.Core.Health.HealthReport
 Aw.Sindri.Core.Health.HealthReport.<Clone>$() -> Aw.Sindri.Core.Health.HealthReport!
-Aw.Sindri.Core.Health.HealthReport.Deconstruct(out Aw.Sindri.Core.Health.HealthWord Word, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Health.HealthProblem!>! Problems) -> void
 Aw.Sindri.Core.Health.HealthReport.Equals(Aw.Sindri.Core.Health.HealthReport? other) -> bool
-Aw.Sindri.Core.Health.HealthReport.HealthReport(Aw.Sindri.Core.Health.HealthWord Word, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Health.HealthProblem!>! Problems) -> void
 Aw.Sindri.Core.Health.HealthReport.Problems.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Health.HealthProblem!>!
 Aw.Sindri.Core.Health.HealthReport.Problems.init -> void
 Aw.Sindri.Core.Health.HealthReport.Word.get -> Aw.Sindri.Core.Health.HealthWord
@@ -4606,3 +4602,11 @@ override Aw.Sindri.Core.Events.ContextMapImported.GetHashCode() -> int
 override Aw.Sindri.Core.Events.ContextMapImported.ToString() -> string!
 static Aw.Sindri.Core.Events.ContextMapImported.operator !=(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapImported.operator ==(Aw.Sindri.Core.Events.ContextMapImported? left, Aw.Sindri.Core.Events.ContextMapImported? right) -> bool
+Aw.Sindri.Core.Health.HealthProblem.Clause.get -> string!
+Aw.Sindri.Core.Health.HealthProblem.Clause.init -> void
+Aw.Sindri.Core.Health.HealthProblem.Deconstruct(out string! Code, out string! Text, out string! Clause) -> void
+Aw.Sindri.Core.Health.HealthProblem.HealthProblem(string! Code, string! Text, string! Clause) -> void
+Aw.Sindri.Core.Health.HealthReport.Deconstruct(out Aw.Sindri.Core.Health.HealthWord Word, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Health.HealthProblem!>! Problems, out string? Sentence) -> void
+Aw.Sindri.Core.Health.HealthReport.HealthReport(Aw.Sindri.Core.Health.HealthWord Word, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Health.HealthProblem!>! Problems, string? Sentence) -> void
+Aw.Sindri.Core.Health.HealthReport.Sentence.get -> string?
+Aw.Sindri.Core.Health.HealthReport.Sentence.init -> void
