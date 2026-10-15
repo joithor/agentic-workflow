@@ -79,6 +79,13 @@ mkdir -p "$WORK/path"; printf '#!/usr/bin/env bash\necho "$1" > "%s"\n' "$WORK/o
 OUT="$(PATH="$WORK/path:$PATH" bash "$DIR/meta-launch.sh" --lanes api)"
 for _ in $(seq 50); do [ -s "$WORK/opened" ] && break; sleep 0.1; done   # xdg-open runs in the background
 check "open: by the config's name, URI-encoded" "$(tail -1 <<< "$OUT"):$(cat "$WORK/opened" 2> /dev/null)" "warp: opening warp://launch/demo%20team:warp://launch/demo%20team"
+# claude restarted by hand in the fallback shell: the marker is still there, but a claude runs in the pane.
+mkdir -p "$WORK/fakebin"; cp "$(command -v sleep)" "$WORK/fakebin/claude"
+: > "$AW_STATE_DIR/meta/lane-sessions/api.exited"
+tmux kill-session -t demo-api; tmux new-session -d -s demo-api "bash -c '$WORK/fakebin/claude 60; true'"
+for _ in $(seq 50); do pgrep -f "$WORK/fakebin/claude 60" > /dev/null && break; sleep 0.1; done
+OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes api)"
+check "rerun: a claude restarted by hand under a stale marker is left alone" "$(head -1 <<< "$OUT")" "tmux demo-api: running"
 tmux kill-session -t demo-api; tmux new-session -d -s demo-api bash   # claude exited; the pane is back at its shell
 : > "$AW_STATE_DIR/meta/lane-sessions/api.exited"                       # as meta-lane.sh leaves it
 OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes api)"

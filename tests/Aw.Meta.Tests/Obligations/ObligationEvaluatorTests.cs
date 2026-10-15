@@ -118,6 +118,20 @@ public sealed class ObligationEvaluatorTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void An_announcement_giving_the_full_sha_closes_it()
+    {
+        var merge = new MergeRecord(190, "abcdef1234567890", A.At(10));
+        var facts = A.Facts() with
+        {
+            Lanes = Lanes(0),
+            LatestMerge = merge,
+            Outbound = [A.Sent("sindri-api", "main is now abcdef1234567890", 11), A.Sent("sindri-engine", "main moved to abcdef1: #190 merged.", 11)],
+        };
+
+        Assert.Empty(ObligationEvaluator.Evaluate(facts));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void An_announcement_of_an_unknown_sha_merge_names_the_pull_request_as_a_whole_number()
     {
         var merge = new MergeRecord(22, MergeRecord.Unknown, A.At(10));

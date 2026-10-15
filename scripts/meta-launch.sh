@@ -39,13 +39,26 @@ else default_dir="${XDG_DATA_HOME:-$HOME/.local/share}/warp-terminal/launch_conf
 dir="${AW_WARP_LAUNCH_DIR:-$default_dir}"
 yaml="$dir/$team-team.yaml"
 
+# claude_in_pane <session>: a claude process runs under the pane (started by meta-lane.sh, or by hand from the
+# fallback shell after an exit, which leaves the .exited marker behind).
+claude_in_pane() {
+  local root; root="$(tmux display-message -p -t "=$1:" '#{pane_pid}' 2> /dev/null)" || return 1
+  [ -n "$root" ] || return 1
+  ps -A -o pid= -o ppid= -o comm= 2> /dev/null | awk -v root="$root" '
+    { pid[NR] = $1; ppid[NR] = $2; comm[NR] = $3 }
+    END { tree[root] = 1; grew = 1
+      while (grew) { grew = 0; for (i = 1; i <= NR; i++) if ((ppid[i] in tree) && !(pid[i] in tree)) { tree[pid[i]] = 1; grew = 1 } }
+      for (i = 1; i <= NR; i++) if ((pid[i] in tree) && comm[i] ~ /(^|\/)claude$/) exit 0
+      exit 1 }'
+}
+
 # 1. tmux sessions: create the missing ones (detached), keep the live ones.
 for l in "${L[@]}"; do
   s="$team-$l"
   if tmux has-session -t "=$s" 2> /dev/null; then
     # Claude exited or crashed and the pane fell back to its shell (meta-lane.sh left <lane>.exited): start the lane
     # again in place, resumed by id. A pane still running claude is never touched.
-    if [ ! -f "$state_dir/meta/lane-sessions/$l.exited" ]; then echo "tmux $s: running"
+    if [ ! -f "$state_dir/meta/lane-sessions/$l.exited" ] || claude_in_pane "$s"; then echo "tmux $s: running"
     elif [ "$dry" = 1 ]; then echo "[dry-run] tmux respawn-pane -k -t $s $here/meta-lane.sh $team $l"
     else
       tmux respawn-pane -k -t "=$s:" -c "$repo" -e "AW_META_CONFIG=$config" "$here/meta-lane.sh $team $l"

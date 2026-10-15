@@ -73,7 +73,10 @@ public static class ObligationEvaluator
             yield break;
         }
 
-        var missing = Missing(facts, Targets(facts), o => o.At >= merge.At && Recipient.Contains(o.Message, merge.Marker));
+        // A short sha also matches inside the full one; "#N" must match as a whole number (#22 is not in #221).
+        var missing = Missing(facts, Targets(facts), o => o.At >= merge.At && (merge.IsKnown
+            ? o.Message.Contains(merge.ShortSha, StringComparison.Ordinal)
+            : Recipient.Contains(o.Message, merge.Marker)));
         if (missing.Count > 0)
         {
             var moved = merge.IsKnown ? $"main moved to {merge.ShortSha}" : "main moved";
