@@ -18,7 +18,7 @@ public sealed class HandbackShortFormTests(DevServer server) : IClassFixture<Dev
     [Fact]
     public async Task Handback_with_a_bare_item_hands_back_its_latest_attempt()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await TakenOver(served, "T-70");
 
         var (exit, stderr) = await Short.Run(served.Sindri, signal: null, "handback", "T-70");
@@ -30,7 +30,7 @@ public sealed class HandbackShortFormTests(DevServer server) : IClassFixture<Dev
     [Fact]
     public async Task An_agent_session_is_refused_SND_AUTH_002_as_for_the_long_form()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await TakenOver(served, "T-71");
 
         var (shortExit, shortError) = await Short.Run(served.Sindri, "agent-session", "handback", "T-71");

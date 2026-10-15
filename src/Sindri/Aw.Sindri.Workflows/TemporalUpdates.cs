@@ -87,7 +87,7 @@ internal static class TemporalUpdates
     /// <summary>
     /// What an Update that ran out of <see cref="Patience"/> means: a Temporal that doesn't answer a health check (the dev
     /// server under serve died: the client core was still retrying Unavailable) is SND-API-001, else no worker took it
-    /// (<see cref="NoWorker"/>).
+    /// (<see cref="NoWorker(InstanceAddress, CommandNonce)"/>).
     /// </summary>
     /// <param name="client">The client.</param>
     /// <param name="address">The instance.</param>

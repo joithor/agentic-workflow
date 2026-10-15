@@ -37,7 +37,7 @@ public sealed class TakeoverCommandTests(DevServer server) : IClassFixture<DevSe
     [Fact]
     public async Task Session_may_take_over_but_not_hand_back()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await Started(served, "T-60");
         var route = "/sindri/workflow/instances/" + Id(address) + "/commands";
 
@@ -58,7 +58,7 @@ public sealed class TakeoverCommandTests(DevServer server) : IClassFixture<DevSe
     [Fact]
     public async Task Handback_when_not_taken_over_is_SND_WF_003_and_records_nothing()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await Started(served, "T-61");
         var events = await served.Events(address);
 
@@ -72,7 +72,7 @@ public sealed class TakeoverCommandTests(DevServer server) : IClassFixture<DevSe
     [Fact]
     public async Task Open_request_twice_with_the_same_launch_applies_once_with_one_ledger_row()
     {
-        await using var served = await Served.Start(_harness.Home, server.Environment);
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await Started(served, "T-62");
         var runtime = served.Sindri.GetRequiredService<IInstanceRuntime>();
         var open = new OpenRequested("service:engine", Launch);
@@ -94,7 +94,7 @@ public sealed class TakeoverCommandTests(DevServer server) : IClassFixture<DevSe
     {
         var launches = new InMemoryLaunchRequests();
         launches.Request(ItemKey.From("T-63"), Launch);
-        await using var served = await Served.Start(_harness.Home, server.Environment, s => s.AddSingleton<ILaunchRequests>(launches));
+        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken, s => s.AddSingleton<ILaunchRequests>(launches));
 
         var started = await served.Cli("start", "workflow.step", "--item", "T-63", "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
         var view = await served.Until("T-63/step/1", static v => v.State == "taken-over");
