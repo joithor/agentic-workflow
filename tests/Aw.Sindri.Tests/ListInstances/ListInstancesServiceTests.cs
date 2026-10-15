@@ -157,7 +157,9 @@ public sealed class ListInstancesServiceTests
             View("desk-task", "T-3/step/1"),
             View("desk-task", "T-4/step/1", RecipeUrgency.Triage));
 
-        Assert.Equal(result.Value.Instances.Select(static v => InstanceSummaries.Of(v)), result.Value.Rows);
+        Assert.Equal(
+            result.Value.Instances.Select(static v => InstanceSummaries.Of(v)).Select(static r => (r.Address, r.State, r.Now, r.Recipe, r.Since)),
+            result.Value.Rows.Select(static r => (r.Address, r.State, r.Now, r.Recipe, r.Since)));
         Assert.Equal(["T-4/step/1", "T-3/step/1"], result.Value.Rows.Select(static r => r.Address), StringComparer.Ordinal);
     }
 

@@ -104,7 +104,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var view = await runtime.Get(address.Value, cancellationToken).ConfigureAwait(false);
-        return view.IsError ? view.Error : new ListInstancesResponse([view.Value], NeedsYou: null, Empty: null);
+        return view.IsError ? view.Error : Rows(new ListInstancesResponse([view.Value], NeedsYou: null, Empty: null));
     }
 
     /// <summary>The views whose subject has the key <paramref name="subject"/> or a label containing it; all of them when none is asked for. A label match can't be a search attribute (a keyword has no substring match), so it is made here.</summary>
@@ -118,12 +118,16 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         if (needsMe)
         {
             var sections = NeedsYouList.Of(views);
-            return new([.. sections.Decisions, .. sections.Tasks], sections, sections.IsEmpty ? NeedsYouList.Nothing : null);
+            return Rows(new([.. sections.Decisions, .. sections.Tasks], sections, sections.IsEmpty ? NeedsYouList.Nothing : null));
         }
 
         var sorted = views.Order(InstanceOrder.Instance).ToList();   // API spec §3.8: one order on every list path
-        return new(sorted, NeedsYou: null, sorted.Count == 0 ? "no instances match" : null);
+        return Rows(new(sorted, NeedsYou: null, sorted.Count == 0 ? "no instances match" : null));
     }
+
+    /// <summary>The response with a list row per instance, each built by <see cref="InstanceSummaries.Of"/>.</summary>
+    private static ListInstancesResponse Rows(ListInstancesResponse listed) =>
+        listed with { Rows = [.. listed.Instances.Select(static v => InstanceSummaries.Of(v))] };
 
     private static Error? NotTrueOrFalse(string? value, string name, string meaning) =>
         value is not null && Flag(value) is null
