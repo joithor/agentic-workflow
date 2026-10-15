@@ -8,6 +8,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Queue;
 using Aw.Sindri.Ui.Views.Shell;
@@ -403,5 +404,26 @@ public sealed class QueueFocusTests : IDisposable
         Assert.True(Named<Button>(window, "SheetClose").Focus(NavigationMethod.Tab));
         window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
         await Until(window, () => !shell.IsSheetShown && OnRowFrame(window, opener));
+    });
+
+    // R6: a row asked for focus is gone by the time the request runs (its group is hidden by a filter pressed in between): the
+    // request is not lost with it, whoever had focus still gets its neighbour.
+    [Fact]
+    public Task A_focus_request_for_a_row_that_is_no_longer_drawn_still_keeps_focus_on_the_page() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+        var title = Named<Button>(Rows(window)[^1], "TitleButton");
+        Assert.True(title.Focus(NavigationMethod.Tab));
+        shell.Queue.Move(1, QueueScope.Page);   // asks for focus on a row; the request runs at the next Loaded job
+
+        shell.GoToQueue(QueueFilter.Running);   // hides every group that has a row: the focused one and the asked-for one
+        Settle(window);
+
+        var focused = Focused(window);
+        Assert.NotNull(focused);
+        Assert.True(focused.IsEffectivelyVisible && focused.IsEffectivelyEnabled);
+        Assert.NotSame(title, focused);
     });
 }
