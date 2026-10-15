@@ -21,12 +21,15 @@ public abstract partial class SindriApiContract
     /// <summary>Every distinct recipe id an instance golden or a list golden's row runs: each is a link the app can follow to the recipe.</summary>
     public static TheoryData<string> RunningRecipeIds => [.. RunningRecipes().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
 
-    private static IEnumerable<string> RunningRecipes() =>
+    private static IEnumerable<string> RunningRecipes() => RunningRecipeRefs().Select(r => (string)r["id"]!); // why: a recipe has an id
+
+    // The recipe each instance golden and each list row names: its id and the hash it runs.
+    private static IEnumerable<JsonNode> RunningRecipeRefs() =>
         from g in GoldenFiles.All()
         where g.Kind == "Api" && (string.Equals(g.Slug, "workflow-instance", StringComparison.Ordinal) || string.Equals(g.Slug, "workflow-instances", StringComparison.Ordinal)) && !IsRefusal(g.Body)
         let json = JsonNode.Parse(g.Body)!
         from named in json["instances"] is JsonArray rows ? rows.Select(r => r!["recipe"]!) : [json["recipe"]!] // why: a list's rows and an instance both name their recipe
-        select (string)named["id"]!; // why: a recipe has an id
+        select named;
 
     /// <summary>Every fact golden with each instance golden it is served for (the fake's table).</summary>
     public static TheoryData<string, string> BoundFacts =>
@@ -212,21 +215,20 @@ public abstract partial class SindriApiContract
 
     [Theory]
     [MemberData(nameof(RunningRecipeIds))]
-    public async Task Every_recipe_an_instance_runs_answers_with_its_golden_when_it_has_one_and_is_not_found_when_not(string recipeId)
+    public async Task Every_recipe_an_instance_runs_has_a_golden_and_answers_with_it(string recipeId)
     {
         var golden = WorkflowAnswers.NamedRecipeGoldens.FirstOrDefault(g => string.Equals(g.Value, recipeId, StringComparison.Ordinal)).Key;
+        Expect.True(golden is not null, $"no recipe golden for {recipeId}, which an instance runs");
 
-        var recipe = await Reach(new FakeSindriApi()).Recipe(_api, recipeId, hash: null, Token);
+        var recipe = (await Reach(new FakeSindriApi()).Recipe(_api, recipeId, hash: null, Token)).Value;
 
-        if (golden is null)
+        var served = Golden("workflow-recipe", golden!);
+        Expect.Equal(served["inputs"]!.AsArray().Count, recipe.Inputs.Count);
+        Expect.Equal(string.Join(',', served["states"]!.AsArray().Select(c => (string)c!["id"]!)), string.Join(',', recipe.States.Select(c => c.State))); // why: a recipe lists states, each with an id
+        Expect.Equal(((string)served["id"]!, (string)served["hash"]!, (int)served["version"]!), (recipe.Id, recipe.Hash, recipe.Version)); // why: both are always served
+        foreach (var running in RunningRecipeRefs().Where(r => string.Equals((string)r["id"]!, recipeId, StringComparison.Ordinal)))
         {
-            Expect.Equal(("SND-RECIPE-002", ErrorKind.NotFound), (recipe.Error.Code, recipe.Error.Kind));
-        }
-        else
-        {
-            var served = Golden("workflow-recipe", golden);
-            Expect.Equal(served["inputs"]!.AsArray().Count, recipe.Value.Inputs.Count);
-            Expect.Equal(string.Join(',', served["states"]!.AsArray().Select(c => (string)c!["id"]!)), string.Join(',', recipe.Value.States.Select(c => c.State))); // why: a recipe lists states, each with an id
+            Expect.Equal(recipe.Hash, (string)running["hash"]!); // why: an instance always names the hash it runs
         }
     }
 
