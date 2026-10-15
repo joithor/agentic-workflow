@@ -19,7 +19,7 @@ internal sealed partial class QueuePage : UserControl
     {
         if (ItemRow.ItemIdOf(e) is { Length: > 0 } id && DataContext is ShellViewModel shell)
         {
-            shell.Queue.Select(id);
+            shell.Queue.Select(id, ViewModels.Queue.QueueScope.Page);
         }
     }
 
@@ -27,7 +27,7 @@ internal sealed partial class QueuePage : UserControl
     {
         if (ItemRow.ItemIdOf(e) is { Length: > 0 } id && DataContext is ShellViewModel shell)
         {
-            shell.Queue.Select(id);
+            shell.Queue.Select(id, ViewModels.Queue.QueueScope.Page);
             shell.OpenItem(id);
         }
     }

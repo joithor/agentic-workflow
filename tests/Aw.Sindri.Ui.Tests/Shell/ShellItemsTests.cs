@@ -197,7 +197,7 @@ public sealed class ShellItemsTests
     public async Task Single_keys_are_ignored_while_the_key_guard_holds()
     {
         var shell = await Connected();
-        shell.Queue.Select(A.NewItem);
+        shell.Queue.Select(A.NewItem, QueueScope.Page);
         _server.QueueView = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("queue", "fixture").Replace(A.NewItem, "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff", StringComparison.Ordinal));
         _server.Push(A.Event(58, "item.state-changed"));
         await Until(() => shell.Queue.IsGuarded);

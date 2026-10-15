@@ -173,7 +173,7 @@ public sealed class QueueViewModelTests
     {
         var queue = await Queue();
         await queue.Refresh(_api, Token);
-        queue.Select("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302");
+        queue.Select("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302", QueueScope.Page);
 
         await queue.Refresh(_api, Token);
         Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302", queue.SelectedId);
@@ -195,7 +195,7 @@ public sealed class QueueViewModelTests
     {
         var queue = await Queue();
         await queue.Refresh(_api, Token);
-        queue.Select("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302");
+        queue.Select("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302", QueueScope.Page);
         var states = new List<(bool Live, string Text)>();
         queue.PropertyChanged += (_, e) =>
         {
@@ -238,7 +238,7 @@ public sealed class QueueViewModelTests
     {
         var queue = await Queue();
         await queue.Refresh(_api, Token);
-        queue.Select(A.DecisionItem);
+        queue.Select(A.DecisionItem, QueueScope.Page);
 
         _server.QueueView = RouteAnswer.SpecShaped("queue", "fixture");
         await queue.Refresh(_api, Token);
@@ -252,7 +252,7 @@ public sealed class QueueViewModelTests
     {
         var queue = await Queue();
         await queue.Refresh(_api, Token);
-        queue.Select(A.NewItem);
+        queue.Select(A.NewItem, QueueScope.Page);
 
         var view = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("queue", "extra-p4-waiting"))!;
         var queued = view["groups"]!.AsArray().Single(g => (string?)g!["group"] == "queued")!["items"]!.AsArray();
@@ -270,13 +270,13 @@ public sealed class QueueViewModelTests
         var queue = await Queue();
         await queue.Refresh(_api, Token);
 
-        queue.Move(1);
+        queue.Move(1, QueueScope.Page);
         Assert.Equal(A.DecisionItem, queue.SelectedId);
-        queue.Move(1);
+        queue.Move(1, QueueScope.Page);
         Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a301", queue.SelectedId);
-        queue.Move(-1);
+        queue.Move(-1, QueueScope.Page);
         Assert.Equal(A.DecisionItem, queue.SelectedId);
-        queue.Move(-1);
+        queue.Move(-1, QueueScope.Page);
         Assert.Equal(A.DecisionItem, queue.SelectedId);
         Assert.True(queue.Groups[0].Rows[0].IsSelected);
     }

@@ -55,7 +55,7 @@ public sealed class QueueKeysTests
         _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
         await queue.Refresh(_api, Token);
 
-        queue.ShowHeld();
+        queue.ShowHeld(QueueScope.Page);
 
         Assert.Equal((12, false), (queue.Total, queue.HasHeld));
         _server.QueueView = RouteAnswer.SpecShaped("queue", "fixture");
@@ -75,7 +75,7 @@ public sealed class QueueKeysTests
         var known = queue.Groups.SelectMany(g => g.Rows).Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
         queue.FocusRequested += (_, e) => asked.Add(e);
 
-        queue.ShowHeld();
+        queue.ShowHeld(QueueScope.Page);
 
         var first = queue.Groups.Where(g => g.IsVisible).SelectMany(g => g.Rows).First(r => !known.Contains(r.Id));
         Assert.Equal([(first.Id, false)], asked.Select(a => (a.ItemId, a.OnlyIfLost)));
@@ -86,7 +86,7 @@ public sealed class QueueKeysTests
     public async Task New_rows_and_a_cleared_row_in_one_refresh_are_spoken_as_one_sentence()
     {
         var queue = await Queue();
-        queue.Select(A.NewItem);
+        queue.Select(A.NewItem, QueueScope.Page);
         queue.Hold(holding: true);
         var view = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("queue", "extra-p11-running"))!;
         foreach (var group in view["groups"]!.AsArray())
@@ -171,7 +171,7 @@ public sealed class QueueKeysTests
     public async Task A_selection_moved_by_a_refresh_guards_single_keys_for_500_ms()
     {
         var queue = await Queue();
-        queue.Select(A.NewItem);
+        queue.Select(A.NewItem, QueueScope.Page);
         Assert.False(queue.IsGuarded);
 
         _server.QueueView = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("queue", "fixture").Replace(A.NewItem, "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff", StringComparison.Ordinal));
@@ -212,9 +212,9 @@ public sealed class QueueKeysTests
         var queue = await Queue();
 
         Assert.Null(queue.SelectedCopy());
-        queue.Select(A.DecisionItem);
+        queue.Select(A.DecisionItem, QueueScope.Page);
         Assert.Equal("sindri decide <decisionId> <choice> [--note <note>]", queue.SelectedCopy()?.Cli);
-        queue.Select(A.NewItem);
+        queue.Select(A.NewItem, QueueScope.Page);
         Assert.Null(queue.SelectedCopy());
     }
 
@@ -235,7 +235,7 @@ public sealed class QueueKeysTests
 
         Assert.Equal(home, walked.Select(w => w), StringComparer.Ordinal);
 
-        queue.Select(string.Empty);
+        queue.Select(string.Empty, QueueScope.Page);
         queue.Groups.Single(g => g.Group == "queued").IsExpanded = false;
         var page = queue.Groups.Where(g => g.IsVisible && g.IsExpanded).SelectMany(g => g.Rows).Select(r => r.Id).ToList();
         var seen = new List<string?>();
@@ -253,7 +253,7 @@ public sealed class QueueKeysTests
     public async Task A_filter_change_clears_a_selection_it_hides_silently()
     {
         var queue = await Queue();
-        queue.Select(A.NewItem);
+        queue.Select(A.NewItem, QueueScope.Page);
 
         queue.FilterText = "Try the";
         Assert.Equal(A.NewItem, queue.SelectedId);
@@ -261,9 +261,9 @@ public sealed class QueueKeysTests
         queue.FilterText = "RETRY";
         Assert.Equal((null, Labels.Sindri, false), (queue.SelectedId, queue.Announcement, queue.IsGuarded));
 
-        queue.Select(A.NewItem);
+        queue.Select(A.NewItem, QueueScope.Page);
         queue.ClearFilter();
-        queue.Select(A.NewItem);
+        queue.Select(A.NewItem, QueueScope.Page);
         queue.Filter(QueueFilter.Running);
         Assert.Null(queue.SelectedId);
     }
@@ -274,7 +274,7 @@ public sealed class QueueKeysTests
     {
         var queue = await Queue();
         queue.FilterText = "RETRY";
-        queue.Select(A.NewItem);
+        queue.Select(A.NewItem, QueueScope.Page);
 
         await queue.Refresh(_api, Token);
 

@@ -70,7 +70,7 @@ internal sealed partial class QueueViewModel
 
     /// <summary>The pill: shows the held rows now, and moves focus to the first of them (the pill hides as it is pressed).</summary>
     /// <param name="scope">The page whose pill was pressed.</param>
-    internal void ShowHeld(QueueScope scope = QueueScope.Page)
+    internal void ShowHeld(QueueScope scope)
     {
         var known = Navigable(scope).Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
         if (Release() && Navigable(scope).FirstOrDefault(r => !known.Contains(r.Id)) is { } first)

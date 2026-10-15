@@ -147,7 +147,7 @@ public sealed class QueueFocusTests : IDisposable
         Settle(window);
         var gone = Rows(window)[1].ItemId;
         Assert.True(Named<Border>(Rows(window)[1], "RowFrame").Focus(NavigationMethod.Tab));
-        shell.Queue.Select(gone);
+        shell.Queue.Select(gone, ViewModels.Queue.QueueScope.Page);
         var live = Named<TextBlock>(window, "QueueLive");
         Assert.Equal(Labels.Sindri, live.Text);
 
@@ -204,6 +204,65 @@ public sealed class QueueFocusTests : IDisposable
 
         shell.Queue.Hold(holding: false);
         await Until(window, () => !pill.IsEffectivelyVisible && Focused(window) is { IsEffectivelyVisible: true } && !ReferenceEquals(Focused(window), pill), "focus was left on the hidden pill");
+    });
+
+    // testing-0: Home passes QueueScope.Home. With the Queue page filtered to Running (G R) and Home shown again (G H), a
+    // cleared queued row on Home still passes to the next queued row, and focus follows it.
+    [Fact]
+    public Task A_cleared_queued_row_on_home_under_the_running_filter_passes_to_the_next_queued_row() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.GoToQueue(ViewModels.Queue.QueueFilter.Running);
+        shell.GoTo(PageId.Home);
+        Settle(window);
+        var panel = Named<Control>(window, "QueuedPanel");
+        var row = panel.GetVisualDescendants().OfType<CompactItemRow>().First(r => r.IsEffectivelyVisible);
+        Assert.True(Named<Border>(row, "RowFrame").Focus(NavigationMethod.Tab));
+        var gone = shell.Queue.SelectedId!;
+        var queued = shell.Queue.QueuedRows.Select(r => r.Id).ToList();
+        var next = queued[queued.IndexOf(gone) + 1];
+
+        var view = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("queue", "fixture"))!;
+        foreach (var group in view["groups"]!.AsArray())
+        {
+            var items = group!["items"]!.AsArray();
+            foreach (var item in items.Where(i => i!["id"]!.GetValue<string>() == gone).ToList())
+            {
+                _ = items.Remove(item);
+            }
+        }
+
+        _server.QueueView = new RouteAnswer(System.Net.HttpStatusCode.OK, view.ToJsonString());
+        _server.Push(A.Event(58, "item.state-changed"));
+        await Until(window, () => shell.Queue.QueuedRows.All(r => r.Id != gone));
+
+        Assert.Equal(next, shell.Queue.SelectedId);
+        await Until(window, () => FocusedRowId(window) == next, "focus did not follow the selection to the next queued row");
+    });
+
+    // testing-5 / corr-3: pressing the "N new" pill puts focus on the first row it showed, and moves it once (not to the page region first).
+    [Fact]
+    public Task Pressing_the_held_pill_moves_focus_once_onto_the_first_new_row() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        Settle(window);
+        shell.Queue.Hold(holding: true);
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        _server.Push(A.Event(58, "item.state-changed"));
+        await Until(window, () => shell.Queue.HasHeld);
+        var pill = Named<Button>(window, "HomeHeldPill");
+        Assert.True(pill.Focus(NavigationMethod.Tab));
+        var moves = new List<Control?>();
+        window.AddHandler(InputElement.GotFocusEvent, (_, e) => moves.Add(e.Source as Control));
+
+        pill.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        await Until(window, () => !shell.Queue.HasHeld && shell.Queue.RunningRows.Count > 0);
+        var first = shell.Queue.RunningRows[0].Id;
+        await Until(window, () => OnRowFrame(window, first), "focus did not reach the first new row");
+        await Task.Delay(50, Token);
+        Settle(window);
+
+        Assert.Equal("RowFrame", Assert.Single(moves)?.Name);
     });
 
     private static string? FocusedRowId(Window window) =>

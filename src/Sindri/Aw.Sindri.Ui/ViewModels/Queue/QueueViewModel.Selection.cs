@@ -10,7 +10,7 @@ internal sealed partial class QueueViewModel
     /// <summary>Selects a row by id (a click, focus arriving on it); focus is already there.</summary>
     /// <param name="itemId">The row's id.</param>
     /// <param name="scope">The page the row is on: a refresh that clears it looks for its successor there.</param>
-    internal void Select(string itemId, QueueScope scope = QueueScope.Page)
+    internal void Select(string itemId, QueueScope scope)
     {
         _scope = scope;
         SelectedId = itemId;
@@ -23,7 +23,7 @@ internal sealed partial class QueueViewModel
     /// </summary>
     /// <param name="by">+1 for next, -1 for previous.</param>
     /// <param name="scope">The page the key was pressed on.</param>
-    internal void Move(int by, QueueScope scope = QueueScope.Page)
+    internal void Move(int by, QueueScope scope)
     {
         var rows = Navigable(scope);
         if (rows.Count == 0)
