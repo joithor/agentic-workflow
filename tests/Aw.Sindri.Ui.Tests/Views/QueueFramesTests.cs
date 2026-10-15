@@ -232,6 +232,22 @@ public sealed class QueueFramesTests : IDisposable
         Assert.Same(Named<Button>(cancel, "RunButton"), Focused(window));
     });
 
+    // a11y-4: focus put on a control by the app shows the keyboard's ring (:focus-visible), both on Keep and back on the control.
+    [Fact]
+    public Task Focus_the_app_puts_on_a_command_control_shows_the_keyboard_ring() => OnUi(async () =>
+    {
+        var (window, _) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+        var cancel = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Ui.Views.Controls.CommandControl>().ElementAt(1);
+        Named<Button>(cancel, "RunButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Until(window, () => string.Equals((Focused(window) as Control)?.Name, "KeepButton", StringComparison.Ordinal));
+        Assert.True((Focused(window) as Control)!.Classes.Contains(":focus-visible"), "Keep has focus without the ring");
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Settle(window);
+
+        Assert.True((Focused(window) as Control)!.Classes.Contains(":focus-visible"), "the run button has focus without the ring");
+    });
+
     // L12: Load more is named for the timeline it extends; when the page lands, focus goes to its first new row.
     [Fact]
     public Task Load_more_is_named_for_its_timeline_and_focus_moves_to_the_first_new_row() => OnUi(async () =>
