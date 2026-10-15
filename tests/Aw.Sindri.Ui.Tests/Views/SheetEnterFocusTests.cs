@@ -152,7 +152,7 @@ public sealed class SheetEnterFocusTests : IDisposable
     });
 
     [Fact]
-    public Task The_page_reserve_follows_the_sheets_clamped_width_while_it_is_dragged() => OnUi(async () =>
+    public Task The_sheets_width_stays_clamped_while_it_is_dragged_and_the_page_keeps_its_width() => OnUi(async () =>
     {
         var (window, _) = await OpenSheet(width: 1400);
         var sheet = window.Get<Border>("Sheet");
@@ -160,12 +160,11 @@ public sealed class SheetEnterFocusTests : IDisposable
 
         grip.RaiseEvent(new VectorEventArgs { RoutedEvent = Thumb.DragDeltaEvent, Vector = new Vector(-900, 0) });   // far past the widest
         Settle(window);
-        var wide = window.Get<Border>("Page").Margin.Right;
+        var wide = sheet.Width;
         grip.RaiseEvent(new VectorEventArgs { RoutedEvent = Thumb.DragDeltaEvent, Vector = new Vector(2000, 0) });   // far below the narrowest
         Settle(window);
-        var narrow = window.Get<Border>("Page").Margin.Right;
 
-        Assert.Equal((sheet.MaxWidth, sheet.MinWidth), (wide, narrow));
+        Assert.Equal((sheet.MaxWidth, sheet.MinWidth, default(Thickness)), (wide, sheet.Width, window.Get<Border>("Page").Margin));
     });
 
     [Fact]
@@ -190,17 +189,48 @@ public sealed class SheetEnterFocusTests : IDisposable
         window.FocusManager?.GetFocusedElement() is Visual focused && (sheet == focused || sheet.IsVisualAncestorOf(focused));
 
     [Fact]
-    public Task The_focused_rows_ring_is_not_drawn_over_the_open_sheet() => OnUi(async () =>
+    public Task The_title_column_keeps_its_width_with_the_sheet_beside_the_page() => OnUi(async () =>
     {
-        var (window, _) = await OpenSheet(width: 1400);
-        var row = window.FocusManager?.GetFocusedElement() as Control;
-        Assert.NotNull(row);
+        var (window, shell) = await OpenSheet(width: 1290);
+        var row = OpenRow(window, shell);
 
-        var ring = AdornerLayer.GetAdornerLayer(row)!.Children.OfType<Border>().Single(b => b.IsEffectivelyVisible && AdornerLayer.GetAdornedElement(b) == row);
-        var sheet = window.Get<Border>("Sheet");
-        var ringRight = ring.TranslatePoint(new Point(ring.Bounds.Width, 0), window)!.Value.X;
-        var sheetLeft = sheet.TranslatePoint(default, window)!.Value.X;
+        var title = row.GetVisualDescendants().OfType<Button>().First(b => b.Name == "TitleButton");
+        var cell = row.GetVisualDescendants().OfType<Grid>().First(g => g.Name == "TableRow").Children[1];
 
-        Assert.True(ringRight <= sheetLeft + 0.5, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the ring ends at {ringRight}, the sheet starts at {sheetLeft}"));
+        Assert.True(title.Bounds.Width > 0 && cell.Bounds.Width >= 160, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"title {title.Bounds.Width} wide, its cell {cell.Bounds.Width}"));
     });
+
+    [Fact]
+    public Task A_row_draws_its_own_focus_border_and_has_no_adorner_so_the_sheet_covers_it() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenSheet(width: 1290);
+        var row = OpenRow(window, shell);
+        var frame = row.GetVisualDescendants().OfType<Border>().First(b => b.Name == "RowFrame");
+
+        _ = frame.Focus(NavigationMethod.Tab);
+        Settle(window);
+
+        var adorners = AdornerLayer.GetAdornerLayer(frame)!.Children.Count(c => AdornerLayer.GetAdornedElement(c) == frame && c.IsEffectivelyVisible);
+        var ring = frame.BorderBrush as ISolidColorBrush;
+        var expected = (ISolidColorBrush)frame.FindResource("Brush.PrimaryHover")!;
+        Assert.Equal((0, 2.0, expected.Color), (adorners, frame.BorderThickness.Top, ring?.Color));
+        Assert.Null(frame.FocusAdorner);
+    });
+
+    [Fact]
+    public Task A_focused_title_button_in_a_row_draws_its_border_in_its_own_template() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenSheet(width: 1290);
+        var title = OpenRow(window, shell).GetVisualDescendants().OfType<Button>().First(b => b.Name == "TitleButton");
+
+        _ = title.Focus(NavigationMethod.Tab);
+        Settle(window);
+
+        var presenter = title.GetVisualDescendants().OfType<ContentPresenter>().First(p => p.Name == "PART_ContentPresenter");
+        Assert.Equal((0, 2.0), (AdornerLayer.GetAdornerLayer(title)!.Children.Count(c => AdornerLayer.GetAdornedElement(c) == title), presenter.BorderThickness.Top));
+    });
+
+    private static Control OpenRow(ShellWindow window, ShellViewModel shell) =>
+        window.GetVisualDescendants().OfType<Control>()
+            .First(c => c.GetType().Name == "ItemRow" && c.DataContext is ViewModels.Queue.ItemRowViewModel r && string.Equals(r.Id, shell.Item.ItemId, StringComparison.Ordinal));
 }
