@@ -123,7 +123,11 @@ that graph plus rank fusion across adapters.
 - **Repo scope.** A `session` caller sees only records reachable from its `X-Sindri-Repo`: that repo's files and code,
   graph nodes the repo implements and their cascade, and intent records linked to those nodes or from the Linear teams
   the profile maps to that repo (`context.repoTeams`). Anything else answers as an unknown anchor (`SND-CONTEXT-003`),
-  never as a hint that it exists.
+  never as a hint that it exists. Owner decision 2026-10-15: B. The intent linked to the repo's nodes (a `decides` edge from a
+  decision, a `mentions` edge from a record, and the records those decisions quote) is visible to the session now, with
+  its quotes fenced and scrubbed, without waiting for `context.repoTeams`; a record or decision linked only to nodes
+  outside the repo stays invisible (`SND-CONTEXT-003`). The source-level rule (a session queries repo-docs sources only,
+  not Onyx or Linear search) is unchanged until `context.repoTeams`.
 - **Every command writes an event.** `context.map.built`, `context.map.promoted`, `context.map.reviewed` (keyed by the first
   override id it wrote), `context.map.proposed` (keyed by the run and a hash of the propose rows the call names, not the draft: a repeat, a repeat after a promote and a return to an earlier set of surfaces write none), `context.map.imported` and
   `context.sources.synced` go to the ledger through the API chain, so the app refreshes.

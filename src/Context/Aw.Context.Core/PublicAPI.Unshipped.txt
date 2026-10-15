@@ -3178,6 +3178,7 @@ static Aw.Context.Core.Graph.PathStep.operator ==(Aw.Context.Core.Graph.PathStep
 static Aw.Context.Core.Graph.PathView.operator !=(Aw.Context.Core.Graph.PathView? left, Aw.Context.Core.Graph.PathView? right) -> bool
 static Aw.Context.Core.Graph.PathView.operator ==(Aw.Context.Core.Graph.PathView? left, Aw.Context.Core.Graph.PathView? right) -> bool
 static Aw.Context.Core.Graph.RepoScope.NodesFor(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Engine.ContextRepoName repo) -> System.Collections.Generic.IReadOnlySet<string!>!
+static Aw.Context.Core.Graph.RepoScope.WithLinkedIntent(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlySet<string!>! scope) -> System.Collections.Generic.IReadOnlySet<string!>!
 static Aw.Context.Core.Graph.TextAnchors.operator !=(Aw.Context.Core.Graph.TextAnchors? left, Aw.Context.Core.Graph.TextAnchors? right) -> bool
 static Aw.Context.Core.Graph.TextAnchors.operator ==(Aw.Context.Core.Graph.TextAnchors? left, Aw.Context.Core.Graph.TextAnchors? right) -> bool
 static Aw.Context.Core.Graph.TrustPolicy.For(Aw.Context.Core.Results.Provenance provenance, bool accepted) -> Aw.Context.Core.Results.Trust

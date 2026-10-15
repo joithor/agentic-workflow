@@ -362,8 +362,11 @@ $SINDRI context map export [<name-or-path>] [--json]
   `services:` (`doctor` warns on `context:retention` otherwise).
 - HTTP: `GET /sindri/context/map` and `GET /sindri/context/map/export?path=…`.
 - **Sessions** (with `context.sessions.enabled: true`) see only the nodes their repo implements: the targets of
-  `implements` edges whose file evidence is `repo:<their X-Sindri-Repo>/…`, and the edges between those nodes. A repo
-  that implements nothing in the map answers `SND-CONTEXT-003`.
+  `implements` edges whose file evidence is `repo:<their X-Sindri-Repo>/…`, and the edges between those nodes, plus
+  the intent linked to those nodes (owner decision 2026-10-15: B): the decisions that `decide` one, the records that
+  `mention` one and the records those decisions quote, with their quotes fenced and scrubbed. A record or decision
+  linked only to nodes outside the repo answers `SND-CONTEXT-003`. A repo that implements nothing in the map answers
+  `SND-CONTEXT-003`.
 - No map yet: `SND-CONTEXT-030` (fix: `sindri context map import <file>`).
 
 ### Doctor and the purge
@@ -422,8 +425,11 @@ in the profile (0–4, default 2), and `--depth` overrides it. Each affected nod
 
 **A session sees only its repo.** A session sees only the nodes its repo implements (`implements` edges with file
 evidence in its `X-Sindri-Repo`), the code files those edges start from, and the edges among them (so `lenses` shows its code band and
-`query --symbol <file>` resolves its files), so its cascade, neighbors and paths stay inside that set;
-anything else is `SND-CONTEXT-003`.
+`query --symbol <file>` resolves its files), so its cascade, neighbors and paths stay inside that set. It also sees the
+records that mention those nodes and the decisions that decide them (and the records those decisions quote) in the lenses'
+intent band and the query's `decisions` section, fenced and scrubbed like every session text (owner decision 2026-10-15: B;
+no wait for `context.repoTeams`). A record whose only links lead outside that set stays invisible; anything else is
+`SND-CONTEXT-003`.
 
 ### Text questions find anchors too
 

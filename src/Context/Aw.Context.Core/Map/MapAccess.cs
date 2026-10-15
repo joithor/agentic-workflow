@@ -7,7 +7,7 @@ namespace Aw.Context.Core.Map;
 
 /// <summary>
 /// Who may read which part of the map (spec §3): humans and services see all of it; a session only while
-/// 'context.sessions.enabled' is on (SND-CONTEXT-020), for a repo the profile maps, and only the nodes that repo implements,
+/// 'context.sessions.enabled' is on (SND-CONTEXT-020), for a repo the profile maps, and only the nodes that repo implements and the records and decisions linked to them (owner decision 2026-10-15, B),
 /// with what lies between them. A repo that implements nothing answers SND-CONTEXT-003, like any unknown anchor.
 /// </summary>
 public static class MapAccess
