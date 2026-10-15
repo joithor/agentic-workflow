@@ -92,7 +92,7 @@ public sealed class ContextGraphMcpTests : IDisposable
 
         Assert.NotEqual(true, result.IsError);
         Assert.True(JsonNode.DeepEquals(http, JsonNode.Parse(result.StructuredContent!.Value.GetRawText())));
-        Assert.Contains("Mentions in</untrusted>", result.StructuredContent.Value.GetRawText(), StringComparison.Ordinal);
+        Assert.Equal("<untrusted source=\"map\">Mentions in</untrusted>", result.StructuredContent.Value.GetProperty("node").GetProperty("label").GetString());
         var outs = http["out"]!.AsArray().Count;
         var ins = http["in"]!.AsArray().Count;
         var summary = Text(result);
@@ -121,7 +121,7 @@ public sealed class ContextGraphMcpTests : IDisposable
         Assert.Contains(string.Create(CultureInfo.InvariantCulture, $"{http["nodes"]!.AsArray().Count} nodes and {http["edges"]!.AsArray().Count} edges"), summary, StringComparison.Ordinal);
         Assert.DoesNotContain("Mentions in", summary, StringComparison.Ordinal);
         Assert.DoesNotContain("In scope", summary, StringComparison.Ordinal);
-        Assert.Contains("Mentions in</untrusted>", result.StructuredContent.Value.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains(result.StructuredContent.Value.GetProperty("nodes").EnumerateArray(), n => n.GetProperty("node").GetProperty("label").GetString() == "<untrusted source=\"map\">Mentions in</untrusted>");
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
