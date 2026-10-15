@@ -5,6 +5,8 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -16,14 +18,16 @@ namespace Aw.Sindri.Host.Endpoints;
 /// <summary>
 /// GET /sindri/events: the ledger's public events as a server-sent event stream (API spec §5; factory addendum §17.21). Everything
 /// that can refuse the request is decided before the first frame, as a ProblemDetails answer: a bad filter (400), a cursor past the
-/// ledger's head (400) and no free stream slot (429, SND-API-012). The cursor is the Last-Event-ID header when it holds a sequence,
+/// ledger's head (400), an item filter that names no item the caller may see (404) and no free stream slot (429, SND-API-012). The cursor is the Last-Event-ID header when it holds a sequence,
 /// else ?after=, else 0 (C4). ?item= (an id or tracker alias), ?types= (globs) and ?instance= (engine spec S1-D6) filter the stream.
 /// </summary>
 /// <param name="ledger">The ledger, for the head.</param>
 /// <param name="slots">The open streams.</param>
+/// <param name="items">Resolves a filter item named by alias.</param>
+/// <param name="repos">Resolves a filter item named by id, from the ledger (never the views).</param>
 /// <param name="callers">Who opens the stream.</param>
 /// <param name="shutdown">Ends open streams on stop.</param>
-internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots, ICallerContextAccessor callers, IShutdown shutdown)
+internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots, IItemResolver items, IItemRepos repos, ICallerContextAccessor callers, IShutdown shutdown)
 {
     /// <summary>The answer for <paramref name="context"/>'s request: an open stream or the refusal.</summary>
     /// <param name="context">The request.</param>
@@ -53,6 +57,12 @@ internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots
                 StatusCodes.Status400BadRequest);
         }
 
+        var item = await ItemFilters.Resolve(request.Value.Ref, items, repos, callers, context.RequestAborted).ConfigureAwait(false);
+        if (item.IsError)
+        {
+            return HttpResults.Problem(item.Error);   // 404 SND-ITEM-404 for an item that isn't there or that a session may not see
+        }
+
         var caller = callers.Current?.Class ?? CallerClass.Human;
         if (!slots.TryEnter(caller, out var slot))
         {
@@ -60,7 +70,8 @@ internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots
         }
 
         StreamTelemetry.Opened(caller, slots.Open(caller));
-        return new SseResult(pump, service, request.Value, new Counted(slot, slots, caller), shutdown.Stopping);
+        var resolved = request.Value with { Ref = item.Value is { } id ? ItemRef.To(id) : null };   // the pages resolve it again, by id, from the ledger
+        return new SseResult(pump, service, resolved, new Counted(slot, slots, caller), shutdown.Stopping);
     }
 
     /// <summary>A ProblemDetails answer, as every other route sends one: title the code, detail the message.</summary>

@@ -15,15 +15,16 @@ namespace Aw.Sindri.Features.StreamEvents;
 /// decided the call keeps what it has and the cursor stays before the row.
 /// </summary>
 /// <param name="view">What the caller sees of a row.</param>
-/// <param name="items">Resolves an item named by id or alias.</param>
+/// <param name="items">Resolves an item named by alias.</param>
+/// <param name="repos">Resolves an item named by id, from the ledger.</param>
 /// <param name="callers">The caller, for the item resolution.</param>
-internal sealed class StreamEventsService(CallerEventView view, IItemResolver items, ICallerContextAccessor callers)
+internal sealed class StreamEventsService(CallerEventView view, IItemResolver items, IItemRepos repos, ICallerContextAccessor callers)
     : IService<StreamEventsRequest, StreamEventsResponse>
 {
     public async ValueTask<Result<StreamEventsResponse>> Handle(StreamEventsRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var item = await ItemFilters.Resolve(request.Ref, items, callers, cancellationToken).ConfigureAwait(false);
+        var item = await ItemFilters.Resolve(request.Ref, items, repos, callers, cancellationToken).ConfigureAwait(false);
         if (item.IsError)
         {
             return item.Error;

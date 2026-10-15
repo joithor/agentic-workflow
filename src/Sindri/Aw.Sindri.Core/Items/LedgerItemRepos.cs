@@ -24,9 +24,23 @@ internal sealed class LedgerItemRepos(ILedgerReader ledger, EventFactory events)
 
     public async ValueTask<Result<RepoName?>> RepoOf(ItemId item, CancellationToken cancellationToken)
     {
+        var found = await Find(item, cancellationToken).ConfigureAwait(false);
+        return found.IsError ? found.Error : found.Value.Repo;
+    }
+
+    public async ValueTask<Result<bool>> Exists(ItemId item, CancellationToken cancellationToken)
+    {
+        var found = await Find(item, cancellationToken).ConfigureAwait(false);
+        return found.IsError ? found.Error : found.Value.Exists;
+    }
+
+    public void Dispose() => _pass.Dispose();
+
+    private async ValueTask<Result<(bool Exists, RepoName? Repo)>> Find(ItemId item, CancellationToken cancellationToken)
+    {
         if (_known.TryGetValue(item.Value, out var known))
         {
-            return known;
+            return (true, known);
         }
 
         await _pass.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -58,10 +72,8 @@ internal sealed class LedgerItemRepos(ILedgerReader ledger, EventFactory events)
             _ = _pass.Release();
         }
 
-        return _known.TryGetValue(item.Value, out var found) ? found : null;
+        return _known.TryGetValue(item.Value, out var found) ? (true, found) : (false, null);
     }
-
-    public void Dispose() => _pass.Dispose();
 
     private void Index(LedgerEvent row)
     {

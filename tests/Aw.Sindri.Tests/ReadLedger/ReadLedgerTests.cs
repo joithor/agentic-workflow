@@ -136,7 +136,7 @@ public sealed class ReadLedgerTests
     }
 
     private ReadLedgerService Service(ITextScrubber? scrubber = null) =>
-        new(_h.Store, StreamEventsServices.View(_h, scrubber ?? new PassThroughScrubber()), new NoItems(), _h.Callers);
+        new(_h.Store, StreamEventsServices.View(_h, scrubber ?? new PassThroughScrubber()), new NoItems(), StreamEventsServices.Repos(_h), _h.Callers);
 
     private Task Heartbeat(LeaseGrant grant, int slot)
     {

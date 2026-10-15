@@ -5765,6 +5765,7 @@ static readonly Aw.Sindri.Core.SindriErrors.StreamsFull -> Aw.Kernel.ErrorDefini
 ~Aw.Sindri.Core.Ids.EventId.ToString(string format, System.IFormatProvider provider) -> string
 Aw.Sindri.Core.Items.EventVisibility
 Aw.Sindri.Core.Items.IItemRepos
+Aw.Sindri.Core.Items.IItemRepos.Exists(Aw.Sindri.Core.Ids.ItemId item, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 Aw.Sindri.Core.Items.IItemRepos.RepoOf(Aw.Sindri.Core.Ids.ItemId item, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ids.RepoName?>!>
 Aw.Sindri.Core.Events.PublicEvent
 Aw.Sindri.Core.Events.PublicEvent.<Clone>$() -> Aw.Sindri.Core.Events.PublicEvent!
@@ -6873,6 +6874,6 @@ override Aw.Sindri.Core.Items.ViewedPage.GetHashCode() -> int
 override Aw.Sindri.Core.Items.ViewedPage.ToString() -> string!
 static Aw.Sindri.Core.Items.EventQuery.operator !=(Aw.Sindri.Core.Items.EventQuery? left, Aw.Sindri.Core.Items.EventQuery? right) -> bool
 static Aw.Sindri.Core.Items.EventQuery.operator ==(Aw.Sindri.Core.Items.EventQuery? left, Aw.Sindri.Core.Items.EventQuery? right) -> bool
-static Aw.Sindri.Core.Items.ItemFilters.Resolve(Aw.Sindri.Core.Ids.ItemRef? reference, Aw.Sindri.Core.Items.IItemResolver! items, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ids.ItemId?>!>
+static Aw.Sindri.Core.Items.ItemFilters.Resolve(Aw.Sindri.Core.Ids.ItemRef? reference, Aw.Sindri.Core.Items.IItemResolver! items, Aw.Sindri.Core.Items.IItemRepos! repos, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ids.ItemId?>!>
 static Aw.Sindri.Core.Items.ViewedPage.operator !=(Aw.Sindri.Core.Items.ViewedPage? left, Aw.Sindri.Core.Items.ViewedPage? right) -> bool
 static Aw.Sindri.Core.Items.ViewedPage.operator ==(Aw.Sindri.Core.Items.ViewedPage? left, Aw.Sindri.Core.Items.ViewedPage? right) -> bool

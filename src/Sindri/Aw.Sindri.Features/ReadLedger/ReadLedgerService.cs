@@ -15,9 +15,10 @@ namespace Aw.Sindri.Features.ReadLedger;
 /// </summary>
 /// <param name="ledger">The ledger, for its head.</param>
 /// <param name="view">What the caller sees of a row.</param>
-/// <param name="items">Resolves an item named by id or alias.</param>
+/// <param name="items">Resolves an item named by alias.</param>
+/// <param name="repos">Resolves an item named by id, from the ledger.</param>
 /// <param name="callers">The caller.</param>
-internal sealed class ReadLedgerService(ILedgerReader ledger, CallerEventView view, IItemResolver items, ICallerContextAccessor callers)
+internal sealed class ReadLedgerService(ILedgerReader ledger, CallerEventView view, IItemResolver items, IItemRepos repos, ICallerContextAccessor callers)
     : IService<ReadLedgerRequest, LedgerPage>
 {
     private const int MaxPage = 500;
@@ -68,7 +69,7 @@ internal sealed class ReadLedgerService(ILedgerReader ledger, CallerEventView vi
             return SindriErrors.InvalidInput.With(string.Create(CultureInfo.InvariantCulture, $"after {request.After} is past the ledger's head {head.Value} (fix: --after {head.Value}, or leave it out)"));
         }
 
-        var item = await ItemFilters.Resolve(request.Item, items, callers, cancellationToken).ConfigureAwait(false);
+        var item = await ItemFilters.Resolve(request.Item, items, repos, callers, cancellationToken).ConfigureAwait(false);
         return item.IsError ? item.Error : (new LedgerFilter(types, item.Value), head.Value);
     }
 }

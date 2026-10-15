@@ -11,8 +11,10 @@ internal static class StreamEventsServices
     public static StreamEventsService Over(SliceHarness h) => Over(h, new PassThroughScrubber());
 
     public static StreamEventsService Over(SliceHarness h, ITextScrubber scrubber, IItemResolver? items = null) =>
-        new(View(h, scrubber), items ?? new NoItems(), h.Callers);
+        new(View(h, scrubber), items ?? new NoItems(), Repos(h), h.Callers);
 
     public static CallerEventView View(SliceHarness h, ITextScrubber scrubber) =>
-        new(h.Callers, new LedgerItemRepos(h.Store, h.Events), scrubber, SliceHarness.Json, h.Store);
+        new(h.Callers, Repos(h), scrubber, SliceHarness.Json, h.Store);
+
+    public static LedgerItemRepos Repos(SliceHarness h) => new(h.Store, h.Events);
 }

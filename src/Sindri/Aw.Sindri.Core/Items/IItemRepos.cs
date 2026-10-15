@@ -14,4 +14,10 @@ public interface IItemRepos
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The repo, or null.</returns>
     public ValueTask<Result<RepoName?>> RepoOf(ItemId item, CancellationToken cancellationToken);
+
+    /// <summary>True when the ledger holds an item.created for <paramref name="item"/>.</summary>
+    /// <param name="item">The item.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>Whether the item exists.</returns>
+    public ValueTask<Result<bool>> Exists(ItemId item, CancellationToken cancellationToken);
 }
