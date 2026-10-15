@@ -40,7 +40,7 @@ public sealed partial class CommandPaletteViewModelTests
 
         Assert.Equal(2, spoken.Count(t => t.Contains("SND-API-005: failed", StringComparison.Ordinal)));
         Assert.Equal(2, live.Count(t => t.Contains("SND-API-005: failed", StringComparison.Ordinal)));
-        Assert.DoesNotContain("Command palette", live);   // the neutral text it rests on is never spoken: the region is dark for it
+        Assert.DoesNotContain("Command palette", live, StringComparer.Ordinal);   // the neutral text it rests on is never spoken: the region is dark for it
     }
 
     [Fact]
