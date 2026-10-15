@@ -227,4 +227,27 @@ public sealed class ProtectedActionButtonTests
         Assert.Equal("The served command can't be shown", name);
         Assert.True(back);
     }
+
+    // testing-3 / arch-1: with Copy enabled the popover has a focusable action, so the served line is not a focus stop and
+    // opening does not move focus to it; with none (the test above) it is the stop.
+    [Fact]
+    public async Task A_safe_command_popover_does_not_focus_the_served_line()
+    {
+        var (focusable, onCli, agentEnabled) = await OnUi(() =>
+        {
+            var (window, _, button, _) = Show();
+            _ = button.Focus(NavigationMethod.Tab);
+            Press(window, Key.Enter, PhysicalKey.Enter);
+            Settle(window);
+            var root = (Visual)((Flyout)button.Flyout!).Content!;
+            var cli = Named<TextBlock>(root, "ServedCli");
+            var result = (cli.Focusable, window.FocusManager?.GetFocusedElement() == cli, Named<Button>(root, "OpenInAgent").IsEnabled);
+            window.Close();
+            return result;
+        });
+
+        Assert.False(focusable);
+        Assert.False(onCli);
+        Assert.False(agentEnabled);   // pending: the control stays disabled until a phase serves the action
+    }
 }
