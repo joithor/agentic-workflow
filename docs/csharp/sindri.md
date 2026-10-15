@@ -141,7 +141,7 @@ in-memory store and the SQLite adapter). Append-only, idempotent and fenced.
 | `epoch` | the writer's lease epoch |
 | `idempotency_key` | unique: a second append with the same key writes nothing and returns the first event's position |
 | `payload_json` | the payload record, through AwJson |
-| `temporal_event_id` | nullable (migration 0005, UI E-30): on a row the Temporal mirror (`RecordEvent`) wrote, the id of the Temporal activity it ran as, which is the third part of its `idempotency_key` (`workflow:<workflow id>:<run id>:<activity id>`), so the column and the key never disagree; null on every other row. Indexed with the payload's `instance` (`events_instance_temporal`, mirrored rows only), so `GET /engine/instances/{address}/history` joins a page of event ids to ledger sequences with one query. The join is on `idempotency_key`, which carries the run id; `(instance, temporal_event_id)` alone is not unique across a reset (a new run reuses the activity ids), so nothing may treat it as a key |
+| `temporal_event_id` | nullable (migration 0005, UI E-30): on a row the Temporal mirror (`RecordEvent`) wrote, the id of the Temporal activity it ran as, which is the third part of its `idempotency_key` (`workflow:<workflow id>:<run id>:<activity id>`), so the column and the key never disagree; null on every other row. Indexed with the payload's `instance` (`events_instance_temporal`, mirrored rows only), so `GET /engine/instances/{address}/history` joins a page of event ids to ledger sequences with one query. The join is on `idempotency_key`, which carries the run id (the row for (run, activity id) is the newest row whose key is `workflow:<workflow id>:<run id>:<activity id>` or starts with it and `:`, since a replayed activity that mirrored a different event keeps its own `…:<content hash>` row); `(instance, temporal_event_id)` alone is not unique across a reset (a new run reuses the activity ids), so nothing may treat it as a key |
 
 S1 events and their keys: `process.started` (`process.started:<epoch>`), `process.stopped` (`process.stopped:<epoch>`),
 `profile.approved` (`profile.approved:<hash>:after:<seq of the latest profile.approved event, or 0>`, so each
@@ -149,8 +149,12 @@ approval is recorded: approving A, B, A, B, A records five events), `service.hea
 `command.handled` (`command.handled:<commandId>`; the command chain's audit row, see Command chain). It is flagged
 non-public in `EventCatalog`, but `GET /sindri/events` still streams it, like every ledger row, until P5 filters the
 stream by that flag (API spec, Phases: P5's signal "`command.handled` never appears"). P4a's Temporal mirror adds
-`workflow.started` and `workflow.transition` (both keyed `workflow:<workflow id>:<run id>:<activity id>`, the RecordEvent
-activity id; engine spec rev 8.1 §5.6). A service's
+six mirrored types: `workflow.started`, `workflow.transition`, `workflow.refused`, `workflow.expired`, `workflow.shifted` and
+`workflow.notified`, each keyed `workflow:<workflow id>:<run id>:<activity id>[:<content hash>]` (the RecordEvent activity id;
+engine spec rev 8.1 §5.6). The suffix appears only when a workflow-task retry replayed the same activity id with a different
+event: the first row keeps the plain key and the different one is recorded under the key plus the first 12 hex digits of
+SHA-256 over its type and serialized payload. The join rule, stated once: the row for (run, activity id) is the newest row
+whose `idempotency_key` is that key, or starts with that key and `:`; a content-hash row supersedes the plain one. A service's
 run event is `service.<name>`. `outbox_commands` is Kernel.Data's outbox table (migration 3), empty in S1: outward
 actions join it in later stages.
 
