@@ -1,6 +1,9 @@
 using Aw.Kernel.Services;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Messages;
+using Aw.Meta.Features.Inbox;
+using Aw.Meta.Features.InboxDefer;
+using Aw.Meta.Features.InboxDismiss;
 using Aw.Meta.Features.Lanes;
 using Aw.Meta.Features.OutboxRecord;
 using Aw.Meta.Features.Roles;
@@ -39,7 +42,15 @@ public static class MetaFeaturesServiceCollectionExtensions
             .Validated<StopCheckService, StopCheckRequest, StopCheckResponse>()
             .AddScoped<OutboxRecordService>()
             .AddScoped<IValidator<OutboxRecordRequest>, OutboxRecordValidator>()
-            .Validated<OutboxRecordService, OutboxRecordRequest, OutboxRecordResponse>();
+            .Validated<OutboxRecordService, OutboxRecordRequest, OutboxRecordResponse>()
+            .AddScoped<ListInboxService>()
+            .Plain<ListInboxService, ListInboxRequest, ListInboxResponse>()
+            .AddScoped<DismissInboxService>()
+            .AddScoped<IValidator<DismissInboxRequest>, DismissInboxValidator>()
+            .Validated<DismissInboxService, DismissInboxRequest, DismissInboxResponse>()
+            .AddScoped<DeferInboxService>()
+            .AddScoped<IValidator<DeferInboxRequest>, DeferInboxValidator>()
+            .Validated<DeferInboxService, DeferInboxRequest, DeferInboxResponse>();
         return services;
     }
 

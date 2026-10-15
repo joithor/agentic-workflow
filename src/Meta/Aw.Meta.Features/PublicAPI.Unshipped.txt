@@ -1,4 +1,108 @@
 #nullable enable
+Aw.Meta.Features.Inbox.InboxItem
+Aw.Meta.Features.Inbox.InboxItem.<Clone>$() -> Aw.Meta.Features.Inbox.InboxItem!
+Aw.Meta.Features.Inbox.InboxItem.At.get -> System.DateTimeOffset
+Aw.Meta.Features.Inbox.InboxItem.At.init -> void
+Aw.Meta.Features.Inbox.InboxItem.Body.get -> string!
+Aw.Meta.Features.Inbox.InboxItem.Body.init -> void
+Aw.Meta.Features.Inbox.InboxItem.Deconstruct(out Aw.Meta.Core.Ids.MessageId Id, out string! From, out string! Body, out System.DateTimeOffset At, out string! Kind, out string! State, out System.DateTimeOffset? Until) -> void
+Aw.Meta.Features.Inbox.InboxItem.Equals(Aw.Meta.Features.Inbox.InboxItem? other) -> bool
+override Aw.Meta.Features.Inbox.InboxItem.Equals(object? obj) -> bool
+Aw.Meta.Features.Inbox.InboxItem.From.get -> string!
+Aw.Meta.Features.Inbox.InboxItem.From.init -> void
+override Aw.Meta.Features.Inbox.InboxItem.GetHashCode() -> int
+Aw.Meta.Features.Inbox.InboxItem.Id.get -> Aw.Meta.Core.Ids.MessageId
+Aw.Meta.Features.Inbox.InboxItem.Id.init -> void
+Aw.Meta.Features.Inbox.InboxItem.InboxItem(Aw.Meta.Core.Ids.MessageId Id, string! From, string! Body, System.DateTimeOffset At, string! Kind, string! State, System.DateTimeOffset? Until) -> void
+Aw.Meta.Features.Inbox.InboxItem.Kind.get -> string!
+Aw.Meta.Features.Inbox.InboxItem.Kind.init -> void
+Aw.Meta.Features.Inbox.InboxItem.State.get -> string!
+Aw.Meta.Features.Inbox.InboxItem.State.init -> void
+override Aw.Meta.Features.Inbox.InboxItem.ToString() -> string!
+Aw.Meta.Features.Inbox.InboxItem.Until.get -> System.DateTimeOffset?
+Aw.Meta.Features.Inbox.InboxItem.Until.init -> void
+static Aw.Meta.Features.Inbox.InboxItem.operator !=(Aw.Meta.Features.Inbox.InboxItem? left, Aw.Meta.Features.Inbox.InboxItem? right) -> bool
+static Aw.Meta.Features.Inbox.InboxItem.operator ==(Aw.Meta.Features.Inbox.InboxItem? left, Aw.Meta.Features.Inbox.InboxItem? right) -> bool
+Aw.Meta.Features.Inbox.ListInboxRequest
+Aw.Meta.Features.Inbox.ListInboxRequest.<Clone>$() -> Aw.Meta.Features.Inbox.ListInboxRequest!
+Aw.Meta.Features.Inbox.ListInboxRequest.All.get -> bool
+Aw.Meta.Features.Inbox.ListInboxRequest.All.init -> void
+Aw.Meta.Features.Inbox.ListInboxRequest.Deconstruct(out bool All) -> void
+Aw.Meta.Features.Inbox.ListInboxRequest.Equals(Aw.Meta.Features.Inbox.ListInboxRequest? other) -> bool
+override Aw.Meta.Features.Inbox.ListInboxRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.Inbox.ListInboxRequest.GetHashCode() -> int
+Aw.Meta.Features.Inbox.ListInboxRequest.ListInboxRequest(bool All) -> void
+override Aw.Meta.Features.Inbox.ListInboxRequest.ToString() -> string!
+static Aw.Meta.Features.Inbox.ListInboxRequest.operator !=(Aw.Meta.Features.Inbox.ListInboxRequest? left, Aw.Meta.Features.Inbox.ListInboxRequest? right) -> bool
+static Aw.Meta.Features.Inbox.ListInboxRequest.operator ==(Aw.Meta.Features.Inbox.ListInboxRequest? left, Aw.Meta.Features.Inbox.ListInboxRequest? right) -> bool
+Aw.Meta.Features.Inbox.ListInboxResponse
+Aw.Meta.Features.Inbox.ListInboxResponse.<Clone>$() -> Aw.Meta.Features.Inbox.ListInboxResponse!
+Aw.Meta.Features.Inbox.ListInboxResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Features.Inbox.InboxItem!>! Items) -> void
+Aw.Meta.Features.Inbox.ListInboxResponse.Equals(Aw.Meta.Features.Inbox.ListInboxResponse? other) -> bool
+override Aw.Meta.Features.Inbox.ListInboxResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.Inbox.ListInboxResponse.GetHashCode() -> int
+Aw.Meta.Features.Inbox.ListInboxResponse.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Features.Inbox.InboxItem!>!
+Aw.Meta.Features.Inbox.ListInboxResponse.Items.init -> void
+Aw.Meta.Features.Inbox.ListInboxResponse.ListInboxResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Features.Inbox.InboxItem!>! Items) -> void
+override Aw.Meta.Features.Inbox.ListInboxResponse.ToString() -> string!
+static Aw.Meta.Features.Inbox.ListInboxResponse.operator !=(Aw.Meta.Features.Inbox.ListInboxResponse? left, Aw.Meta.Features.Inbox.ListInboxResponse? right) -> bool
+static Aw.Meta.Features.Inbox.ListInboxResponse.operator ==(Aw.Meta.Features.Inbox.ListInboxResponse? left, Aw.Meta.Features.Inbox.ListInboxResponse? right) -> bool
+Aw.Meta.Features.InboxDefer.DeferInboxRequest
+Aw.Meta.Features.InboxDefer.DeferInboxRequest.<Clone>$() -> Aw.Meta.Features.InboxDefer.DeferInboxRequest!
+Aw.Meta.Features.InboxDefer.DeferInboxRequest.Deconstruct(out Aw.Meta.Core.Ids.MessageId Id, out string! Reason, out string! Until) -> void
+Aw.Meta.Features.InboxDefer.DeferInboxRequest.DeferInboxRequest(Aw.Meta.Core.Ids.MessageId Id, string! Reason, string! Until) -> void
+Aw.Meta.Features.InboxDefer.DeferInboxRequest.Equals(Aw.Meta.Features.InboxDefer.DeferInboxRequest? other) -> bool
+override Aw.Meta.Features.InboxDefer.DeferInboxRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.InboxDefer.DeferInboxRequest.GetHashCode() -> int
+Aw.Meta.Features.InboxDefer.DeferInboxRequest.Id.get -> Aw.Meta.Core.Ids.MessageId
+Aw.Meta.Features.InboxDefer.DeferInboxRequest.Id.init -> void
+Aw.Meta.Features.InboxDefer.DeferInboxRequest.Reason.get -> string!
+Aw.Meta.Features.InboxDefer.DeferInboxRequest.Reason.init -> void
+override Aw.Meta.Features.InboxDefer.DeferInboxRequest.ToString() -> string!
+Aw.Meta.Features.InboxDefer.DeferInboxRequest.Until.get -> string!
+Aw.Meta.Features.InboxDefer.DeferInboxRequest.Until.init -> void
+static Aw.Meta.Features.InboxDefer.DeferInboxRequest.operator !=(Aw.Meta.Features.InboxDefer.DeferInboxRequest? left, Aw.Meta.Features.InboxDefer.DeferInboxRequest? right) -> bool
+static Aw.Meta.Features.InboxDefer.DeferInboxRequest.operator ==(Aw.Meta.Features.InboxDefer.DeferInboxRequest? left, Aw.Meta.Features.InboxDefer.DeferInboxRequest? right) -> bool
+Aw.Meta.Features.InboxDefer.DeferInboxResponse
+Aw.Meta.Features.InboxDefer.DeferInboxResponse.<Clone>$() -> Aw.Meta.Features.InboxDefer.DeferInboxResponse!
+Aw.Meta.Features.InboxDefer.DeferInboxResponse.Deconstruct(out Aw.Meta.Core.Ids.MessageId Id, out System.DateTimeOffset Until) -> void
+Aw.Meta.Features.InboxDefer.DeferInboxResponse.DeferInboxResponse(Aw.Meta.Core.Ids.MessageId Id, System.DateTimeOffset Until) -> void
+Aw.Meta.Features.InboxDefer.DeferInboxResponse.Equals(Aw.Meta.Features.InboxDefer.DeferInboxResponse? other) -> bool
+override Aw.Meta.Features.InboxDefer.DeferInboxResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.InboxDefer.DeferInboxResponse.GetHashCode() -> int
+Aw.Meta.Features.InboxDefer.DeferInboxResponse.Id.get -> Aw.Meta.Core.Ids.MessageId
+Aw.Meta.Features.InboxDefer.DeferInboxResponse.Id.init -> void
+override Aw.Meta.Features.InboxDefer.DeferInboxResponse.ToString() -> string!
+Aw.Meta.Features.InboxDefer.DeferInboxResponse.Until.get -> System.DateTimeOffset
+Aw.Meta.Features.InboxDefer.DeferInboxResponse.Until.init -> void
+static Aw.Meta.Features.InboxDefer.DeferInboxResponse.operator !=(Aw.Meta.Features.InboxDefer.DeferInboxResponse? left, Aw.Meta.Features.InboxDefer.DeferInboxResponse? right) -> bool
+static Aw.Meta.Features.InboxDefer.DeferInboxResponse.operator ==(Aw.Meta.Features.InboxDefer.DeferInboxResponse? left, Aw.Meta.Features.InboxDefer.DeferInboxResponse? right) -> bool
+Aw.Meta.Features.InboxDismiss.DismissInboxRequest
+Aw.Meta.Features.InboxDismiss.DismissInboxRequest.<Clone>$() -> Aw.Meta.Features.InboxDismiss.DismissInboxRequest!
+Aw.Meta.Features.InboxDismiss.DismissInboxRequest.Deconstruct(out Aw.Meta.Core.Ids.MessageId Id, out string! Reason) -> void
+Aw.Meta.Features.InboxDismiss.DismissInboxRequest.DismissInboxRequest(Aw.Meta.Core.Ids.MessageId Id, string! Reason) -> void
+Aw.Meta.Features.InboxDismiss.DismissInboxRequest.Equals(Aw.Meta.Features.InboxDismiss.DismissInboxRequest? other) -> bool
+override Aw.Meta.Features.InboxDismiss.DismissInboxRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.InboxDismiss.DismissInboxRequest.GetHashCode() -> int
+Aw.Meta.Features.InboxDismiss.DismissInboxRequest.Id.get -> Aw.Meta.Core.Ids.MessageId
+Aw.Meta.Features.InboxDismiss.DismissInboxRequest.Id.init -> void
+Aw.Meta.Features.InboxDismiss.DismissInboxRequest.Reason.get -> string!
+Aw.Meta.Features.InboxDismiss.DismissInboxRequest.Reason.init -> void
+override Aw.Meta.Features.InboxDismiss.DismissInboxRequest.ToString() -> string!
+static Aw.Meta.Features.InboxDismiss.DismissInboxRequest.operator !=(Aw.Meta.Features.InboxDismiss.DismissInboxRequest? left, Aw.Meta.Features.InboxDismiss.DismissInboxRequest? right) -> bool
+static Aw.Meta.Features.InboxDismiss.DismissInboxRequest.operator ==(Aw.Meta.Features.InboxDismiss.DismissInboxRequest? left, Aw.Meta.Features.InboxDismiss.DismissInboxRequest? right) -> bool
+Aw.Meta.Features.InboxDismiss.DismissInboxResponse
+Aw.Meta.Features.InboxDismiss.DismissInboxResponse.<Clone>$() -> Aw.Meta.Features.InboxDismiss.DismissInboxResponse!
+Aw.Meta.Features.InboxDismiss.DismissInboxResponse.Deconstruct(out Aw.Meta.Core.Ids.MessageId Id) -> void
+Aw.Meta.Features.InboxDismiss.DismissInboxResponse.DismissInboxResponse(Aw.Meta.Core.Ids.MessageId Id) -> void
+Aw.Meta.Features.InboxDismiss.DismissInboxResponse.Equals(Aw.Meta.Features.InboxDismiss.DismissInboxResponse? other) -> bool
+override Aw.Meta.Features.InboxDismiss.DismissInboxResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.InboxDismiss.DismissInboxResponse.GetHashCode() -> int
+Aw.Meta.Features.InboxDismiss.DismissInboxResponse.Id.get -> Aw.Meta.Core.Ids.MessageId
+Aw.Meta.Features.InboxDismiss.DismissInboxResponse.Id.init -> void
+override Aw.Meta.Features.InboxDismiss.DismissInboxResponse.ToString() -> string!
+static Aw.Meta.Features.InboxDismiss.DismissInboxResponse.operator !=(Aw.Meta.Features.InboxDismiss.DismissInboxResponse? left, Aw.Meta.Features.InboxDismiss.DismissInboxResponse? right) -> bool
+static Aw.Meta.Features.InboxDismiss.DismissInboxResponse.operator ==(Aw.Meta.Features.InboxDismiss.DismissInboxResponse? left, Aw.Meta.Features.InboxDismiss.DismissInboxResponse? right) -> bool
 Aw.Meta.Features.Lanes.LanesResponse
 Aw.Meta.Features.Lanes.LanesResponse.<Clone>$() -> Aw.Meta.Features.Lanes.LanesResponse!
 Aw.Meta.Features.Lanes.LanesResponse.Announcement.get -> string!
