@@ -26,6 +26,9 @@
 
 set -euo pipefail
 
+# Glob expansion and sort follow the locale; the Rules Index order must not (csharp-testing vs csharp).
+export LC_ALL=C
+
 CHECK=false
 FORCE=false
 REPO=""
