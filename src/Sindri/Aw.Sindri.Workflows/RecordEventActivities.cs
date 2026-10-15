@@ -50,16 +50,27 @@ internal sealed class RecordEventActivities(ILedgerStore ledger, HeldLease lease
     /// <param name="record">The event.</param>
     /// <returns>Its ledger position, and whether it was already there.</returns>
     [Activity("RecordEvent")]
-    public async Task<LedgerAppend> RecordAsync(WorkflowEventRecord record)
+    public Task<LedgerAppend> RecordAsync(WorkflowEventRecord record)
     {
         ArgumentNullException.ThrowIfNull(record);
-        var grant = lease.Current ?? throw new InvalidOperationException("SND-LEASE-002: this process holds no lease; the event waits for one");
         var activity = ActivityExecutionContext.Current;
+        return Record(record, KeyOf(activity.Info), activity.Info.ActivityId, activity.CancellationToken);
+    }
+
+    /// <summary>Appends <paramref name="record"/> under <paramref name="key"/>; the activity id is the row's 'temporal_event_id'.</summary>
+    /// <param name="record">The event.</param>
+    /// <param name="key">The ledger idempotency key.</param>
+    /// <param name="activityId">The activity id.</param>
+    /// <param name="cancellationToken">Cancels the append.</param>
+    /// <returns>Its ledger position, and whether it was already there.</returns>
+    internal async Task<LedgerAppend> Record(WorkflowEventRecord record, string key, string activityId, CancellationToken cancellationToken)
+    {
+        var grant = lease.Current ?? throw new InvalidOperationException("SND-LEASE-002: this process holds no lease; the event waits for one");
         var payload = new WorkflowEventPayload(record.WorkflowId, record.From, record.To, record.Trigger, record.Outcome, record.Run);
         var own = events.Scope;
         var scope = new EventScope(record.Actor ?? own.Actor, record.Tenant ?? own.Tenant, record.Ring ?? own.Ring);
-        var entry = events.Entry(record.Type, payload, KeyOf(activity.Info), record.Item, scope) with { TemporalEvent = activity.Info.ActivityId };   // the key's third part (UI E-30)
-        var appended = await ledger.Append(entry, grant, activity.CancellationToken).ConfigureAwait(false);
+        var entry = events.Entry(record.Type, payload, key, record.Item, scope) with { TemporalEvent = activityId };   // the key's third part (UI E-30)
+        var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         return appended.IsError
             ? throw new InvalidOperationException($"{appended.Error.Code}: {appended.Error.Message}")
             : appended.Value;
