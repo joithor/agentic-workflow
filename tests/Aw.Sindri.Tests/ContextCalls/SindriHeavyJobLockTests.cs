@@ -3,6 +3,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Features.ContextCalls;
+using Aw.Sindri.Tests.Locks;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 
@@ -40,15 +41,14 @@ public sealed class SindriHeavyJobLockTests
     {
         var lease = new Lease();
         var slots = new Slots(new HeavySlotTaken(lease, string.Empty));
-        var told = new List<string>();
+        var told = new SyncProgress();
 
-        var taken = await new SindriHeavyJobLock(slots, TimeSpan.FromSeconds(30)).Take(new Progress<string>(told.Add), TestContext.Current.CancellationToken);
+        var taken = await new SindriHeavyJobLock(slots, TimeSpan.FromSeconds(30)).Take(told, TestContext.Current.CancellationToken);
         await taken.Value.DisposeAsync();
 
         Assert.Equal(("sindri context-map-build", TimeSpan.FromSeconds(30)), (slots.Holder, slots.Timeout));
         Assert.True(lease.Disposed);
-        await Task.Delay(50, TestContext.Current.CancellationToken);
-        Assert.Contains("waiting for heavy-job lock (slot 1/2 held by 77)", told, StringComparer.Ordinal);
+        Assert.Contains("waiting for heavy-job lock (slot 1/2 held by 77)", told.Lines, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

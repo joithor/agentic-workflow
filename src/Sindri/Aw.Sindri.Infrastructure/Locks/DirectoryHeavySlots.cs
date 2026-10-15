@@ -22,6 +22,9 @@ internal sealed class DirectoryHeavySlots(HeavyLockSettings settings, TimeProvid
 
     private static readonly TimeSpan _poll = TimeSpan.FromSeconds(1);
 
+    /// <summary>Called with a slot's path after it was judged stale and before it is taken over (tests use it to play the other waiter).</summary>
+    internal Action<string> BeforeTakeover { get; init; } = static _ => { };
+
     public async ValueTask<Result<HeavySlotTaken>> Take(string holder, TimeSpan timeout, IProgress<string>? waiting, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(holder);
