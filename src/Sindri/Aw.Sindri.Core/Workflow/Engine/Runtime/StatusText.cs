@@ -44,12 +44,13 @@ public static class StatusText
     public static string Clock(DateTimeOffset at, DateTimeOffset now) =>
         at.UtcDateTime.ToString(now - at >= TimeSpan.FromDays(1) ? "MM-dd HH:mm" : "HH:mm", CultureInfo.InvariantCulture);
 
-    /// <summary>A token count: '0', '950', '1.5k', '200k', '1M'.</summary>
+    /// <summary>A token count: '0', '950', '1.5k', '200k', '1M', '1.5M'.</summary>
     /// <param name="tokens">The count.</param>
     /// <returns>The text.</returns>
     public static string Tokens(int tokens) => tokens switch
     {
         > 0 when tokens % 1_000_000 == 0 => string.Create(CultureInfo.InvariantCulture, $"{tokens / 1_000_000}M"),
+        >= 1_000_000 => string.Create(CultureInfo.InvariantCulture, $"{tokens / 1_000_000.0:0.#}M"),
         > 0 when tokens % 1_000 == 0 => string.Create(CultureInfo.InvariantCulture, $"{tokens / 1_000}k"),
         >= 1_000 => string.Create(CultureInfo.InvariantCulture, $"{tokens / 1_000.0:0.#}k"),
         _ => tokens.ToString(CultureInfo.InvariantCulture),

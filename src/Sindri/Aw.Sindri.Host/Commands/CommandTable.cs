@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Context.Core.Facade;
 using Aw.Kernel.Telemetry;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Auth;
@@ -59,15 +60,18 @@ internal static class CommandTable
         var probe = services.GetRequiredService<IControlPlaneProbe>();
         var output = new Output(Console.Out, Console.Error, options);
         using var client = new ControlPlaneClient(probe, options, Headers(session, services));
-        var start = new StartCommand(probe, services.GetRequiredService<IControlPlaneLauncher>(), client, output, services.GetRequiredService<TimeProvider>(), session);
+        StartCommand Start(bool headless) => new(probe, services.GetRequiredService<IControlPlaneLauncher>(), client, output,
+            services.GetRequiredService<TimeProvider>(), session, UiOpener(headless, environment));
+        var start = Start(headless: true);   // 'sindri --headless', and the start a human 'profile approve' may need
         var verbs = new Verbs(client, probe, output, services);
-        var ct = CancellationToken.None;
+        using var interrupt = Interrupt.For(args);   // Ctrl-C ends 'workflow events --follow' with exit 0; no other verb listens
+        var ct = interrupt.Token;
         var harnesses = new ProbeCommands(services.GetRequiredService<IProcessAncestry>(), services.GetRequiredService<IHarnessVersions>(), environment, Interactive());
         return args switch
         {
             // ---- verbs: one arm per verb ----
-            [] => await start.Run(headless: false, ct).ConfigureAwait(false),
-            ["--headless"] => await start.Run(headless: true, ct).ConfigureAwait(false),
+            [] => await Start(headless: false).Run(ct).ConfigureAwait(false),
+            ["--headless"] => await start.Run(ct).ConfigureAwait(false),
             ["status", .. var rest] when Json(rest) is { } json => await verbs.Status(json, ct).ConfigureAwait(false),
             ["stop"] => await verbs.Stop(ct).ConfigureAwait(false),
             ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
@@ -79,6 +83,8 @@ internal static class CommandTable
             ["doctor", "--probe", "--harness", var name, .. var rest] when Json(rest) is not null => await output.Json(await harnesses.Probe(name, ct).ConfigureAwait(false), 0).ConfigureAwait(false),
             ["doctor", .. var rest] when Json(rest) is { } json => await verbs.Doctor(json, ct, harnesses.DoctorChecks).ConfigureAwait(false),
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
+            ["context", "show" or "neighbors" or "path", ..] => await new ContextGraphVerbs(client, output).Run(args[1..], ct).ConfigureAwait(false),
+            ["context", "eval", .. var rest] => await new ContextEvalVerbs(client, output, services.GetRequiredService<IContextEngine>()).Run(rest, ct).ConfigureAwait(false),
             ["context", "map", .. var rest] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(rest, ct).ConfigureAwait(false),
             ["context", .. var rest] => await new ContextVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
@@ -97,6 +103,10 @@ internal static class CommandTable
     private static CallerHeaders Headers(AgentSession session, IServiceProvider services) =>
         CallerHeaders.For(session, services.GetRequiredService<IHumanTokenStore>(),
             ct => CallerHeaders.RepoOf(services.GetRequiredService<IApprovals>(), services.GetRequiredService<IRepoLocator>(), Environment.CurrentDirectory, ct));
+
+    /// <summary>What bare 'sindri' does to open the app; 'sindri --headless' opens nothing.</summary>
+    internal static Func<string>? UiOpener(bool headless, Func<string, string?> environment) =>
+        headless ? null : () => UiLauncher.Open(UiLauncher.Locate(environment, AppContext.BaseDirectory));
 
     private static bool? Json(string[] rest) => rest switch
     {

@@ -7,19 +7,13 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// The instances on Temporal, as the slices see them (port; engine spec rev 8 §5.1–§5.4). The adapter is the Temporal
 /// client in Aw.Sindri.Workflows; every caller check (the API chain, the nonce, the approval check) runs before it.
 /// </summary>
-public interface IInstanceRuntime
+public interface IInstanceRuntime : IInstanceReader
 {
     /// <summary>Starts a 'RecipeWorkflow' with id <see cref="InstanceStart.WorkflowId"/>, or finds the running one (UseExisting).</summary>
     /// <param name="start">The workflow input.</param>
     /// <param name="cancellationToken">Cancels the start.</param>
     /// <returns>The instance as 'GetInstance' shows it, or SND-API-001 (Temporal unreachable).</returns>
     public ValueTask<Result<InstanceView>> Start(InstanceStart start, CancellationToken cancellationToken);
-
-    /// <summary>The 'GetInstance' Query.</summary>
-    /// <param name="address">The instance.</param>
-    /// <param name="cancellationToken">Cancels the query.</param>
-    /// <returns>The instance, or SND-WF-001.</returns>
-    public ValueTask<Result<InstanceView>> Get(InstanceAddress address, CancellationToken cancellationToken);
 
     /// <summary>
     /// Sends <paramref name="command"/> as the Update its kind names ('complete', 'answer', 'command', 'cancel',

@@ -18,7 +18,7 @@ namespace Aw.Sindri.Host.Commands;
 /// caller (an agent session is refused SND-AUTH-002). Each prints the new status header and what happened (an answer:
 /// the resume action it ran); a repeated nonce prints 'already applied (…)'. A protected answer (grant, grant-tokens,
 /// accept) asks the server for its challenge, shows the instance and the action to type, and sends what the human types
-/// (§4.2); a session sends none and is refused. Exit 0 applied, 2 refused, 1 invalid or not running.
+/// (§4.2); a session sends none and is refused. Exit 0 applied, 1 not running, 2 invalid, refused or error.
 /// </summary>
 /// <param name="desk">The API client, the terminal and the start rule.</param>
 /// <param name="services">The scope the clock resolves from.</param>

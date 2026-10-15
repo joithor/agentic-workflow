@@ -14,7 +14,8 @@ namespace Aw.Sindri.Features.CompleteStep;
 
 /// <summary>
 /// 'workflow complete' (engine spec rev 8.1 §5.2, §5.3, §6.3): checks each output is at most 1 MiB, claims the nonce for
-/// this exact report (SND-WF-009 when it named another command, before anything is stored or sent), stores the outputs
+/// this exact report (SND-WF-009 when it named another command, before anything is stored or sent), checks that the
+/// instance's recipe is still approved (SND-RECIPE-005, -006; the claim is given back), stores the outputs
 /// owner-only, and sends the 'complete' Update with the nonce as its id. The workflow's validator answers a stale run
 /// token (SND-WF-005) or a malformed report (SND-WF-008) synchronously; such a refusal gives the nonce back, so a
 /// refused report consumes nothing. A report already applied with this nonce returns the first outcome, marked
@@ -22,10 +23,11 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// </summary>
 /// <param name="directory">Resolves the instance the request names.</param>
 /// <param name="runtime">The instances on Temporal.</param>
+/// <param name="recipes">The approval check (spec §5.2: complete is not exempt).</param>
 /// <param name="facts">Where the outputs are stored.</param>
 /// <param name="nonces">The nonce table.</param>
 /// <param name="callers">The caller the API chain classed: its actor reports.</param>
-internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers)
+internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers)
     : IService<CompleteStepRequest, CompleteStepResponse>
 {
     public async ValueTask<Result<CompleteStepResponse>> Handle(CompleteStepRequest request, CancellationToken cancellationToken)
@@ -49,49 +51,67 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
 
         var address = resolved.Value;
         var nonce = request.Nonce ?? nonces.Issue();
-        var shas = request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span)));
-        var reportSha = ReportSha(request, shas);
-        var claim = await nonces.Claim(nonce, address.Value + "\n" + reportSha, cancellationToken).ConfigureAwait(false);
+        var reportSha = ReportSha(request, request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span))));
+        var subject = address.Value + "\n" + reportSha;
+        var claim = await nonces.Claim(nonce, subject, cancellationToken).ConfigureAwait(false);
         if (claim.IsError)
         {
             return claim.Error;
         }
 
-        var stored = await Store(request, cancellationToken).ConfigureAwait(false);
+        var stored = claim.Value == NonceClaim.Fresh && await Approved(address, cancellationToken).ConfigureAwait(false) is { IsError: true } refused   // only a fresh claim is checked, as ApplyCommand does
+            ? refused.Error
+            : await Store(request, cancellationToken).ConfigureAwait(false);
         if (stored.IsError)
         {
             return await GiveBack(nonce, claim.Value, stored.Error, cancellationToken).ConfigureAwait(false);
         }
 
         var report = new StepCompleted(caller.Actor, request.Run, request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, reportSha);
-        return await Send(address, nonce, report, alreadyApplied: claim.Value, cancellationToken).ConfigureAwait(false);
+        return await Send(address, new SentReport(nonce, subject, claim.Value), report, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Sends the report as the Update keyed by the nonce; a refusal gives the claim back, an unconfirmed send keeps it.</summary>
-    private async ValueTask<Result<CompleteStepResponse>> Send(InstanceAddress address, CommandNonce nonce, StepCompleted report, bool alreadyApplied, CancellationToken cancellationToken)
+    /// <summary>A report is not exempt from the approval check (spec §5.2): the instance's recipe must still hold, else nothing is stored or sent.</summary>
+    private async ValueTask<Result<Unit>> Approved(InstanceAddress address, CancellationToken cancellationToken)
     {
-        var sent = await runtime.Send(address, nonce, report, cancellationToken).ConfigureAwait(false);
+        var view = await runtime.Get(address, cancellationToken).ConfigureAwait(false);
+        if (view.IsError)
+        {
+            return view.Error;
+        }
+
+        var approval = await recipes.Check(view.Value.Recipe, cancellationToken).ConfigureAwait(false);
+        return approval.IsError ? approval.Error : ApprovalRefusal.Of(approval.Value, view.Value.Recipe, address);
+    }
+
+    /// <summary>Sends the report as the Update keyed by the nonce; a refusal gives back a claim this call created, an unconfirmed send keeps it.</summary>
+    private async ValueTask<Result<CompleteStepResponse>> Send(InstanceAddress address, SentReport sentReport, StepCompleted report, CancellationToken cancellationToken)
+    {
+        var sent = await runtime.Send(address, sentReport.Nonce, report, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
         {
             return sent.Error.Kind is ErrorKind.Unavailable or ErrorKind.Timeout
-                ? sent.Error   // it may have applied: keep the claim, so the retry with this nonce is deduplicated
-                : await GiveBack(nonce, alreadyApplied, sent.Error, cancellationToken).ConfigureAwait(false);
+                ? sent.Error   // it may have applied: keep the claim, so the retry with this nonce resends the same Update id
+                : await GiveBack(sentReport.Nonce, sentReport.Claim, sent.Error, cancellationToken).ConfigureAwait(false);
         }
 
-        var applied = await nonces.Applied(nonce, cancellationToken).ConfigureAwait(false);
-        return applied.IsError ? applied.Error : new CompleteStepResponse(sent.Value, nonce, alreadyApplied);
+        var applied = await nonces.Applied(sentReport.Nonce, sentReport.Subject, cancellationToken).ConfigureAwait(false);
+        return applied.IsError ? applied.Error : new CompleteStepResponse(sent.Value, sentReport.Nonce, sentReport.Claim == NonceClaim.Applied);
     }
 
-    /// <summary>A refused report consumes nothing (spec §5.2, W12): the claim is given back, unless the nonce had already applied it.</summary>
-    private async ValueTask<Result<CompleteStepResponse>> GiveBack(CommandNonce nonce, bool alreadyApplied, Error refusal, CancellationToken cancellationToken)
+    /// <summary>A refused report consumes nothing (spec §5.2, W12): a claim this call created is given back; a pending or applied one stays, as its Update id was used.</summary>
+    private async ValueTask<Result<CompleteStepResponse>> GiveBack(CommandNonce nonce, NonceClaim claim, Error refusal, CancellationToken cancellationToken)
     {
-        if (!alreadyApplied)
+        if (claim == NonceClaim.Fresh)
         {
             _ = await nonces.Release(nonce, cancellationToken).ConfigureAwait(false);
         }
 
         return refusal;
     }
+
+    /// <summary>The nonce a report went out with, the subject it claimed it for and what the claim found.</summary>
+    private readonly record struct SentReport(CommandNonce Nonce, string Subject, NonceClaim Claim);
 
     private async ValueTask<Result<IReadOnlyDictionary<FactKey, FactValue>>> Store(CompleteStepRequest request, CancellationToken cancellationToken)
     {
@@ -111,7 +131,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
     }
 
     /// <summary>The SHA-256 of the canonical report (run, outcome, each output's key and content digest in key order), so two different reports never share a key.</summary>
-    private static string ReportSha(CompleteStepRequest request, Dictionary<FactKey, string> shas)
+    internal static string ReportSha(CompleteStepRequest request, Dictionary<FactKey, string> shas)
     {
         var text = new StringBuilder()
             .Append(CultureInfo.InvariantCulture, $"run {request.Run.Value}\noutcome {request.Outcome.Value}\n");

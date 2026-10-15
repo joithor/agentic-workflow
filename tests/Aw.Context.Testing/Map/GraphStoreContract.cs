@@ -74,6 +74,25 @@ public abstract class GraphStoreContract
         Expect.That(Expect.Ok(await store.Read(first.Number, None), test).Nodes.Count == 0, test, "a deleted version's graph is still there");
     }
 
+    /// <summary>A snapshot is the current version with its graph and overrides; an empty store and a store with no draft have none.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_snapshot_is_the_current_version_with_its_graph_and_overrides()
+    {
+        const string test = nameof(A_snapshot_is_the_current_version_with_its_graph_and_overrides);
+        var store = CreateStore();
+        Expect.That(Expect.Ok(await store.Snapshot(draft: false, None), test) is null, test, "a snapshot in an empty store");
+        _ = Expect.Ok(await store.SaveCurrent(SampleMap.Build(), SampleMap.At, None), test);
+        var second = Expect.Ok(await store.SaveCurrent(SampleMap.Build(" (2)"), SampleMap.At.AddDays(1), None), test);
+
+        var snapshot = Expect.Ok(await store.Snapshot(draft: false, None), test);
+
+        Expect.That(snapshot?.Version.Number == second.Number, test, "the snapshot isn't the current version");
+        Expect.That(snapshot is not null && Canonical.Of(snapshot.Graph) == Canonical.Of(SampleMap.Build(" (2)").Graph), test, "the snapshot's graph differs");
+        Expect.That(snapshot?.Overrides.Count == 1, test, "the snapshot's overrides differ");
+        Expect.That(Expect.Ok(await store.Snapshot(draft: true, None), test) is null, test, "a draft snapshot with no draft");
+    }
+
     /// <summary>A fresh, empty store.</summary>
     /// <returns>The store.</returns>
     protected abstract IGraphStore CreateStore();

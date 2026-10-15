@@ -17,7 +17,7 @@ namespace Aw.Sindri.Features.ListInstances;
 /// <param name="directory">Resolves an address or a bare item ('address').</param>
 /// <param name="instances">The visibility query.</param>
 /// <param name="runtime">Each instance's 'GetInstance' Query; one that ended between the list and its query (SND-WF-001) is left out.</param>
-internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceRuntime runtime) : IService<ListInstancesRequest, ListInstancesResponse>
+internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceReader runtime) : IService<ListInstancesRequest, ListInstancesResponse>
 {
     public async ValueTask<Result<ListInstancesResponse>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {

@@ -88,6 +88,14 @@ public static class SindriErrors
 
     /// <summary>SND-VIEW-001: the projector stalled on an event; 'sindri views rebuild' clears it.</summary>
     public static readonly ErrorDefinition ViewsStalled = new("SND-VIEW-001", ErrorKind.Unavailable, "The projector stalled on an event");
+    /// <summary>SND-SECRET-001: a secret pointer has no scheme, an unknown scheme or a malformed target.</summary>
+    public static readonly ErrorDefinition SecretPointerInvalid = new("SND-SECRET-001", ErrorKind.Invalid, "The secret pointer is invalid");
+
+    /// <summary>SND-SECRET-002: a secret pointer doesn't resolve (unset variable, missing file or entry, missing tool, timeout).</summary>
+    public static readonly ErrorDefinition SecretUnresolved = new("SND-SECRET-002", ErrorKind.Unavailable, "The secret doesn't resolve");
+
+    /// <summary>SND-SECRET-003: a file: pointer names a file others may read or write, or something that isn't a regular file.</summary>
+    public static readonly ErrorDefinition SecretFileUnsafe = new("SND-SECRET-003", ErrorKind.Forbidden, "The secret file is unsafe");
 
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
@@ -95,6 +103,6 @@ public static class SindriErrors
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
-        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, ViewsStalled,
+        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, ViewsStalled, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
     ];
 }

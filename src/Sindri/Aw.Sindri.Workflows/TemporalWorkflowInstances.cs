@@ -35,7 +35,8 @@ internal sealed class TemporalWorkflowInstances(TemporalFrontend frontend) : IWo
                 rows.Add(new InstanceRow(
                     execution.Id,
                     attributes.TryGetValue(SindriTemporal.StateKey, out var state) ? state : null,
-                    attributes.TryGetValue(SindriTemporal.NeedsYouKey, out var needsYou) && needsYou));
+                    attributes.TryGetValue(SindriTemporal.NeedsYouKey, out var needsYou) && needsYou,
+                    new DateTimeOffset(DateTime.SpecifyKind(execution.StartTime, DateTimeKind.Utc))));
             }
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.InvalidArgument)

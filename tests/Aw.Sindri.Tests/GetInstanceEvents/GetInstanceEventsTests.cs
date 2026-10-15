@@ -1,9 +1,13 @@
+using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Host.Endpoints;
+using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.GetInstance;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.GetInstanceEvents;
 
@@ -22,7 +26,7 @@ public sealed class GetInstanceEventsTests
     {
         var h = await Ledger();
 
-        var read = (await new GetInstanceEventsService(h.Store, h.Events).Handle(new GetInstanceEventsRequest(_address), TestContext.Current.CancellationToken)).Value;
+        var read = (await Service(h).Handle(new GetInstanceEventsRequest(_address.Value), TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal([2L, 4L], read.Events.Select(static e => e.Sequence));
         Assert.Equal(5, read.Cursor);
@@ -39,7 +43,7 @@ public sealed class GetInstanceEventsTests
     {
         var h = await Ledger();
 
-        var read = (await new GetInstanceEventsService(h.Store, h.Events).Handle(new GetInstanceEventsRequest(_address, After: 5), TestContext.Current.CancellationToken)).Value;
+        var read = (await Service(h).Handle(new GetInstanceEventsRequest(_address.Value, After: 5), TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal((0, 5L, "no events\n"), (read.Events.Count, read.Cursor, EventsCommand.Lines(read.Events, empty: true)));
     }
@@ -75,6 +79,133 @@ public sealed class GetInstanceEventsTests
     [Fact]
     public void The_event_streams_filter_reads_an_item_and_an_address() =>
         Assert.Equal((ItemKey.From("T-1"), _address), (EventStream.Filter("T-1", "T-1/step/1").Value.Item, EventStream.Filter(item: null, "T-1/step/1").Value.Instance));
+
+    [Fact]
+    public async Task An_address_no_instance_has_is_SND_WF_001_not_no_events()
+    {
+        var h = await Ledger();
+
+        var read = await Service(h).Handle(new GetInstanceEventsRequest("T-9/step/1"), TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-WF-001", read.Error.Code);
+    }
+
+    [Fact]
+    public async Task A_live_instance_with_no_events_yet_reads_as_none_and_a_later_read_does_not_ask_for_it_again()
+    {
+        var h = await Ledger();
+        var quiet = new OneInstance(StatusCases.View("done") with { Address = InstanceAddress.From("T-3/step/1") });
+        var first = await new GetInstanceEventsService(h.Store, h.Events, quiet, quiet).Handle(new GetInstanceEventsRequest("T-3/step/1"), TestContext.Current.CancellationToken);
+        var later = await Service(h).Handle(new GetInstanceEventsRequest("T-9/step/1", After: 5), TestContext.Current.CancellationToken);
+
+        Assert.Equal((0, 5L), (first.Value.Events.Count, first.Value.Cursor));
+        Assert.Equal((0, 5L), (later.Value.Events.Count, later.Value.Cursor));
+    }
+
+    [Fact]
+    public async Task A_bare_item_reads_the_root_of_its_latest_attempt()
+    {
+        var h = await Ledger();
+
+        var read = await Service(h).Handle(new GetInstanceEventsRequest("T-1"), TestContext.Current.CancellationToken);
+
+        Assert.Equal([2L, 4L], read.Value.Events.Select(static e => e.Sequence));
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task Following_ends_with_exit_0_when_it_is_interrupted()
+    {
+        var h = await Ledger();
+        using var interrupt = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var stdout = new CancelOnWrite(interrupt);
+
+        using var api = Api(h);
+
+        var exit = await EventsCommand.Run(["T-1/step/1", "--follow"], api.Desk, Services(h), new Output(stdout, new StringWriter(), SliceHarness.Json), interrupt.Token);
+
+        Assert.Equal(0, exit);
+        Assert.Contains("workflow.started", stdout.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task Following_prints_an_event_appended_after_it_started_exactly_once()
+    {
+        var h = await Ledger();
+        using var interrupt = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var stdout = new SignalOnWrite();
+        using var api = Api(h);
+        var run = EventsCommand.Run(["T-1/step/1", "--follow"], api.Desk, Services(h), new Output(stdout, new StringWriter(), SliceHarness.Json), interrupt.Token);
+        await stdout.Wait(2);   // the two rows it read first, one write each
+
+        var entry = h.Events.Entry("workflow.transition", new InstanceEventFields("checks", "done", "step.completed", "done", "1.2"), "workflow:T-1/step/1:run-a:5") with { Item = "T-1" };
+        Assert.False((await h.Store.Append(entry, h.Held.Current!, TestContext.Current.CancellationToken)).IsError);
+        while (!await stdout.Wait(3, TimeSpan.FromMilliseconds(50)))
+        {
+            h.Clock.Advance(EventsCommand.Poll);   // the poll's delay may not have started yet: advance until it has read the row
+        }
+
+        h.Clock.Advance(EventsCommand.Poll);   // more polls after the row: none may print it again
+        h.Clock.Advance(EventsCommand.Poll);
+        await interrupt.CancelAsync();
+        var exit = await run.WaitAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+        var lines = stdout.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(3, lines.Length);
+        _ = Assert.Single(lines, static l => l.Contains("checks -> done", StringComparison.Ordinal));
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task Following_ends_with_exit_0_when_stdout_is_closed()
+    {
+        var h = await Ledger();
+
+        using var api = Api(h);
+
+        var exit = await EventsCommand.Run(["T-1/step/1", "--follow", "--json"], api.Desk, Services(h), new Output(new ClosedPipe(), new StringWriter(), SliceHarness.Json), TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exit);
+    }
+
+    [Theory(Timeout = 30_000)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task The_events_command_on_an_unknown_instance_is_SND_WF_001_with_exit_2_and_never_follows(bool follow)
+    {
+        var h = await Ledger();
+        var stdout = new StringWriter();
+        var stderr = new StringWriter();
+
+        using var api = Api(h);
+
+        var exit = await EventsCommand.Run(follow ? ["T-9/step/1", "--follow"] : ["T-9/step/1"], api.Desk, Services(h), new Output(stdout, stderr, SliceHarness.Json), TestContext.Current.CancellationToken);
+
+        Assert.Equal((2, string.Empty), (exit, stdout.ToString()));
+        Assert.StartsWith("SND-WF-001 ", stderr.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Only_events_with_follow_listens_for_an_interrupt()
+    {
+        Assert.True(Interrupt.Streams(["workflow", "events", "T-1", "--follow"]));
+        Assert.False(Interrupt.Streams(["workflow", "events", "T-1"]));
+        Assert.False(Interrupt.Streams(["workflow", "status", "T-1", "--follow"]));
+    }
+
+    private static GetInstanceEventsService Service(SliceHarness h)
+    {
+        var instances = Instances();
+        return new GetInstanceEventsService(h.Store, h.Events, instances, instances);
+    }
+
+    private static OneInstance Instances() => new(StatusCases.View("done") with { Address = _address, Id = WorkflowInstanceId.Of(_address) });
+
+    /// <summary>The events and instance routes over this ledger and the one instance <see cref="Instances"/> holds.</summary>
+    private static ReadApi Api(SliceHarness h) => ReadApi.Over(Instances(), services => services.AddSingleton<IService<GetInstanceEventsRequest, GetInstanceEventsResponse>>(Service(h)));
+
+    private static ServiceProvider Services(SliceHarness h) => new ServiceCollection()
+        .AddSingleton<TimeProvider>(h.Clock)
+        .BuildServiceProvider();
 
     /// <summary>Five rows: a heartbeat, T-1/step/1's start, its child's start, its transition, and T-2/step/1's start.</summary>
     private static async Task<SliceHarness> Ledger()

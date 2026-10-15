@@ -29,7 +29,7 @@ public sealed class MapStatusTests : IDisposable
         var status = (await _world.Map.MapStatus(MapWorld.Human, MapWorld.None)).Value;
 
         Assert.Equal((2, MapVersionStatus.Current), (status.Version.Number, status.Version.Status));
-        Assert.Equal(new MapCounts(19, 19, 1, 1, 2), status.Counts);
+        Assert.Equal(new MapCounts(20, 21, 1, 1, 2), status.Counts);
         Assert.Equal((0, 1), (status.Orphaned, status.Retained));
         Assert.Null(status.ScopedTo);
     }

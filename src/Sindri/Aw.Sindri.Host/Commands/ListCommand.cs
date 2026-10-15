@@ -1,5 +1,4 @@
 using System.Text;
-using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -9,7 +8,7 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri workflow list [--needs-me | --item &lt;id&gt; | --state &lt;s&gt;] [--query &lt;visibility query&gt;] [--json]'
-/// (engine spec §6.3; engine P4 unit (e)): one status header per line. '--needs-me' shows <b>Decisions</b> and then
+/// (engine spec §6.3; engine P4 unit (e)): one status header per line. A client of serve's 'GET /workflow/instances' (review run 2); it never starts serve. '--needs-me' shows <b>Decisions</b> and then
 /// <b>Tasks</b>, each under its heading; empty, it prints 'nothing needs you', and the other filters 'no instances match'.
 /// Exit 0, empty included; 1 when Sindri isn't running; 2 on any other error.
 /// </summary>
@@ -17,7 +16,7 @@ internal static class ListCommand
 {
     private const string Usage = "usage: sindri workflow list [--needs-me | --item <id> | --state <s>] [--query <visibility query>] [--json]";
 
-    internal static async Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct)
+    internal static async Task<int> Run(string[] args, RecipeDesk desk, IServiceProvider services, Output output, CancellationToken ct)
     {
         var json = args.Contains("--json", StringComparer.Ordinal);
         var request = Parse([.. args.Where(static a => a != "--json")]);
@@ -26,15 +25,42 @@ internal static class ListCommand
             return await output.Error(SindriErrors.InvalidInput.With(Usage)).ConfigureAwait(false);
         }
 
-        var listed = await services.GetRequiredService<IService<ListInstancesRequest, ListInstancesResponse>>().Handle(request, ct).ConfigureAwait(false);
+        var listed = await desk.Client.Get<ListInstancesResponse>(Route(request), ct).ConfigureAwait(false);
         if (listed.IsError)
         {
-            return await output.Error(listed.Error).ConfigureAwait(false);
+            return await output.Error(InstanceReads.NotRunning(listed.Error)).ConfigureAwait(false);
         }
 
         return json
-            ? await output.Json(listed.Value, 0).ConfigureAwait(false)
-            : await output.Text(Text(listed.Value, services.GetRequiredService<TimeProvider>().GetUtcNow()), 0).ConfigureAwait(false);
+            ? await output.Json(listed.Value.Value, 0).ConfigureAwait(false)
+            : await output.Text(Text(listed.Value.Value, services.GetRequiredService<TimeProvider>().GetUtcNow()), 0).ConfigureAwait(false);
+    }
+
+    /// <summary>'GET /workflow/instances' with each filter given as its query parameter.</summary>
+    private static string Route(ListInstancesRequest request)
+    {
+        var parts = new List<string>(4);
+        if (request.NeedsMe)
+        {
+            parts.Add("needsMe=true");
+        }
+
+        if (request.Item is { } item)
+        {
+            parts.Add("item=" + Uri.EscapeDataString(item.Value));
+        }
+
+        if (request.State is { } state)
+        {
+            parts.Add("state=" + Uri.EscapeDataString(state));
+        }
+
+        if (request.Query is { } query)
+        {
+            parts.Add("query=" + Uri.EscapeDataString(query));
+        }
+
+        return parts.Count == 0 ? InstanceReads.Instances : $"{InstanceReads.Instances}?{string.Join('&', parts)}";
     }
 
     /// <summary>The flags, each at most once, '--needs-me' alone of the filters it excludes; null when they don't parse.</summary>

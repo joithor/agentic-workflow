@@ -52,7 +52,7 @@ Lanes are xUnit traits named `Lane`. Every test carries exactly one. A budget co
 |---|---|---|
 | `unit` | `Core` logic and services with in-memory fakes; architecture tests. No I/O | < 10 s |
 | `integration` | Repositories on a real temp SQLite file; endpoints on the real host on loopback (`LoopbackBinding` + `Pipeline.Configure`, as the scaffolded tests do) or through `WebApplicationFactory` | < 60 s |
-| `heavy` | Real containers, browsers, index builds | none; nightly, or under a slot of the heavy-job lock (at most two heavy jobs at a time) |
+| `heavy` | Real containers, browsers, index builds, multi-megabyte real-clock scale cases | none; nightly, or under a slot of the heavy-job lock (at most two heavy jobs at a time) |
 
 ```csharp
 [Fact, Trait("Lane", "unit")]
@@ -100,7 +100,8 @@ ArchUnitNET (not NetArchTest), in the `unit` lane, in `tests/Aw.Architecture.Tes
 | `ARCH-DI-001` | Service-locator types only in Host (with `Program`; small shape: the `App` root namespace and `App.Commands`) and `*ServiceCollectionExtensions` classes |
 | `ARCH-PORT-001`, `002` | No technology type in Core, Features or the small shape's `App.Commands`; only `Composition` uses Infrastructure |
 | `ARCH-ID-001`, `002` | `TypedIdGuard`: the VogenDefaults block, and every id and id property (`docs/csharp/typed-ids.md`) |
-| `ARCH-REG-001`, `002` | `Packages.cs` lists every production project in the solution (by project name; analyzers excluded), and each one's assembly (its `<AssemblyName>` if set) loads |
+| `ARCH-REG-001`, `002`, `003` | `Packages.cs` lists every production project in the solution (by project name; analyzers excluded), each one's assembly (its `<AssemblyName>` if set) loads, and a project that is neither tier 0 nor a layer project is declared in `Packages.Unshaped` (the UI and its heads) |
+| `ARCH-UI-001` | The UI package: no UI type uses a Sindri type; a view model uses no `Avalonia.*` type; a platform head holds no view or view model |
 
 The layer rules apply to shaped packages (assemblies named `Aw.<Pkg>.Core`, `.Features`, `.Infrastructure`, `.Host`
 or `.App`, and not tier 0 in `deps.yaml`, which `RegistryTests` checks against `Rules/TierZero.cs`); tier-0 packages (`Aw.Kernel`, `Aw.Kernel.Data`) get the cycle, naming, service-provider and typed-id rules.

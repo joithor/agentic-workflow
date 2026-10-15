@@ -59,23 +59,44 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         }
         catch (WorkflowAlreadyStartedException) // boundary: the attempt ended; RejectDuplicate keeps its id, and Get shows it as it ended
         {
-            return await Get(address, cancellationToken).ConfigureAwait(false);
+            return Remembered(await Get(address, cancellationToken).ConfigureAwait(false));
         }
         catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal
         {
             return TemporalUpdates.NotServes(client.Value, e);
         }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client.Value, e);
+        }
 
+        return await WaitStarted(address, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Asks every 50 ms whether the new instance has left 'starting', up to <see cref="StartPolls"/> times.</summary>
+    private async ValueTask<Result<InstanceView>> WaitStarted(InstanceAddress address, CancellationToken cancellationToken)
+    {
         for (var poll = 1; ; poll++)
         {
             var view = await Get(address, cancellationToken).ConfigureAwait(false);
             if (view.IsError || view.Value.State != "starting" || poll >= StartPolls)
             {
-                return view;
+                return Remembered(view);
             }
 
             await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>A start remembers the instance it shows (the directory finds its id); a read (Get) changes nothing.</summary>
+    private Result<InstanceView> Remembered(Result<InstanceView> view)
+    {
+        if (view.IsSuccess)
+        {
+            known.Remember(view.Value.Address);
+        }
+
+        return view;
     }
 
     /// <summary>
@@ -96,7 +117,6 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
             var view = await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value)
                 .QueryAsync(static wf => wf.GetInstance(), new WorkflowQueryOptions { Rpc = new RpcOptions { Timeout = QueryPatience, CancellationToken = cancellationToken } })
                 .ConfigureAwait(false);
-            known.Remember(view.Address);
             return view;
         }
         catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal; says nothing about the instance
@@ -158,6 +178,10 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)   // boundary: no such instance, or it has ended
         {
             return WorkflowErrors.InstanceNotFound.With($"no running instance {address.Value} (fix: sindri workflow list)");
+        }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return TemporalUpdates.Down(client.Value, e);
         }
     }
 }

@@ -18,10 +18,10 @@ internal sealed class BlockedService : IScheduledService
 
     public void Release() => _release.TrySetResult();
 
-    public async ValueTask<Result<Unit>> Run(ScheduledRun run, CancellationToken cancellationToken)
+    public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _started);
         await _release.Task.WaitAsync(cancellationToken);
-        return Unit.Value;
+        return ScheduledResult.Worked;
     }
 }

@@ -31,17 +31,23 @@ public sealed class InterpreterEvalTests(SindriTimeSkippingServer server) : ICla
 
     public void Dispose() => _harness.Dispose();
 
-    [Theory]
-    [InlineData("happy", "T-11")]
-    [InlineData("no-progress", "T-12")]
-    [InlineData("rounds", "T-13")]
+    private const string EvalDirectory = "sindri/evals/workflow.step/";
+
+    /// <summary>Every shipped 'workflow.step' case, each with its own item (T-11 up), so a case added later runs here too.</summary>
+    public static TheoryData<string, string> Cases { get; } =
+        [.. ShippedRecipes.Paths
+            .Where(static p => p.StartsWith(EvalDirectory, StringComparison.Ordinal) && p.EndsWith(".jsonl", StringComparison.Ordinal))
+            .Select(static (p, i) => (Path.GetFileNameWithoutExtension(p), "T-" + (11 + i).ToString(CultureInfo.InvariantCulture)))];
+
+    [Theory(Timeout = 120_000)]
+    [MemberData(nameof(Cases))]
     public async Task Each_workflow_step_eval_case_through_the_interpreter_agrees_with_recipe_eval(string name, string item)
     {
         var ct = TestContext.Current.CancellationToken;
         var env = server.Environment;
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
-        var evalCase = EvalCaseReader.Read(name, ShippedRecipes.Read($"sindri/evals/workflow.step/{name}.jsonl"), EvalComposition.Options).Case!; // why: a shipped case reads (P3's EvalRecipeTests)
+        var evalCase = EvalCaseReader.Read(name, ShippedRecipes.Read($"{EvalDirectory}{name}.jsonl"), EvalComposition.Options).Case!; // why: a shipped case reads (P3's EvalRecipeTests)
         var started = EvalSimulation.Start(evalCase, EvalComposition.Recipe(StepRecipe), EvalComposition.Catalog, NoChildRecipes.Instance);
         Assert.False(started.IsError, started.IsError ? started.Error.Message : null);
         var simulation = started.Value;
@@ -57,7 +63,7 @@ public sealed class InterpreterEvalTests(SindriTimeSkippingServer server) : ICla
                 var line = evalCase.Steps[i];
                 Assert.Equal(TriggerNames.StepCompleted, line.Trigger.Kind);
                 var report = new StepCompleted("human:cli", view.Run!.Value, line.Trigger.Outcome!.Value, Outputs(line.Trigger), Tokens: 0, StepRuntime.Desk, Sha(name + ":" + i.ToString(CultureInfo.InvariantCulture))); // why: the view before a step.completed line has an open run (asserted through Seen)
-                _ = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(Sha("nonce:" + name + ":" + i.ToString(CultureInfo.InvariantCulture))[..32]));
+                _ = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(Sha("nonce:" + name + ":" + i.ToString(CultureInfo.InvariantCulture))[..32])).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
                 var folded = simulation.Step(line, i + 2);
                 Assert.False(folded.IsError, folded.IsError ? folded.Error.Message : null);
                 simulation = folded.Value.Next;

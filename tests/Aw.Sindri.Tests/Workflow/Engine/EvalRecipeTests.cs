@@ -42,6 +42,19 @@ public sealed class EvalRecipeTests
         Assert.Equal(lines.Split('|'), response.Cases.Select(c => c.ToLine()), StringComparer.Ordinal);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [MemberData(nameof(RecipesWithEvals))]
+    public async Task Every_shipped_recipe_with_evals_passes_all_of_them(string recipe)
+    {
+        var response = await Eval(recipe);
+
+        Assert.NotEmpty(response.Cases);
+        Assert.True(response.Passed, string.Join('\n', response.Cases.Select(c => c.ToLine())));
+    }
+
+    public static TheoryData<string> RecipesWithEvals =>
+        [.. ShippedRecipes.Recipes.Where(path => RecipeComposition.ReadClean(ShippedRecipes.Read(path), Path.GetFileName(path)).Recipe.Evals.Count > 0)];
+
     [Fact, Trait("Lane", "unit")]
     public async Task A_diverging_expect_names_the_eval_file_and_the_line_with_expected_and_actual()
     {

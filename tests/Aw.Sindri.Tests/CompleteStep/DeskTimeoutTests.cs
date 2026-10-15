@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Infrastructure.Workflows;
@@ -25,16 +26,14 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
 
     public void Dispose() => _harness.Dispose();
 
-    [Fact]
+    [Fact(Timeout = 120_000)]
     public async Task Desk_timeout_never_retries()
     {
         var ct = TestContext.Current.CancellationToken;
         var env = server.Environment;
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
-        var attributes = new AddSearchAttributesRequest { Namespace = env.Client.Options.Namespace };
-        attributes.SearchAttributes.Add(SindriTemporal.SearchAttributes.ToDictionary(static a => a.Name, static a => a.Type, StringComparer.Ordinal));
-        _ = await env.Client.OperatorService.AddSearchAttributesAsync(attributes);   // what serve registers on the dev server
+        await RegisterAttributes(env);
         using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var running = worker.ExecuteAsync(stop.Token);
@@ -45,7 +44,7 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
             _ = await desk.Until(static v => v.Task is not null);
             var output = new FactValue("fact:sha256:" + new string('e', 64), new string('e', 64), HeadSha: null);
             var report = new StepCompleted("human:cli", RunToken.From("1.1"), OutcomeName.From("done"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:output")] = output }, Tokens: 0, StepRuntime.Desk, new string('f', 64));
-            var done = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('a', 32)));
+            var done = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('a', 32))).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
             Assert.Equal("-> checks", done.Happened);   // 'checks': timeout { after: 30m, then: retry }
 
             await env.DelayAsync(TimeSpan.FromHours(1), ct);
@@ -65,6 +64,61 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
             await handle.TerminateAsync("test over");
             await stop.CancelAsync();
             _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => running);
+        }
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task A_complete_for_the_open_run_of_a_parked_desk_step_is_rejected_until_it_is_resumed()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var env = server.Environment;
+        await using var sindri = _harness.Sindri();
+        await WorkflowsHarness.HoldLease(sindri, ct);
+        await RegisterAttributes(env);
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var running = worker.ExecuteAsync(stop.Token);
+        var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.StepStart(sindri, "T-8", ct));
+        var desk = new DeskInstance(sindri, handle);
+        try
+        {
+            _ = await desk.Until(static v => v.Task is not null);
+            await env.DelayAsync(TimeSpan.FromDays(3), ct);
+            var parked = await desk.Until(static v => v.State == "parked");
+            var output = new FactValue("fact:sha256:" + new string('e', 64), new string('e', 64), HeadSha: null);
+            var report = new StepCompleted("human:cli", parked.Run!.Value, OutcomeName.From("done"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:output")] = output }, Tokens: 0, StepRuntime.Desk, new string('f', 64));
+
+            var rejected = await Assert.ThrowsAnyAsync<Exception>(() => Complete(handle, report, 'c', ct));
+            var resume = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('a', 32)), new string('b', 64)), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
+            _ = await handle.ExecuteUpdateAsync(wf => wf.AnswerAsync(resume), new WorkflowUpdateOptions(new string('a', 32))).WaitAsync(TimeSpan.FromSeconds(30), ct);
+            var done = await Complete(handle, report, 'd', ct);
+
+            Assert.Equal("SND-WF-003", (rejected.InnerException as Temporalio.Exceptions.ApplicationFailureException)?.ErrorType);
+            Assert.Equal("-> checks", done.Happened);
+            Assert.Contains("answer --resume first", rejected.InnerException?.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            await handle.TerminateAsync("test over");
+            await stop.CancelAsync();
+            _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => running);
+        }
+    }
+
+    private static Task<CommandResult> Complete(WorkflowHandle<RecipeWorkflow> handle, StepCompleted report, char id, CancellationToken ct) =>
+        handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string(id, 32))).WaitAsync(TimeSpan.FromSeconds(30), ct);
+
+    internal static async Task RegisterAttributes(Temporalio.Testing.WorkflowEnvironment env)
+    {
+        var attributes = new AddSearchAttributesRequest { Namespace = env.Client.Options.Namespace };
+        attributes.SearchAttributes.Add(SindriTemporal.SearchAttributes.ToDictionary(static a => a.Name, static a => a.Type, StringComparer.Ordinal));
+        try
+        {
+            _ = await env.Client.OperatorService.AddSearchAttributesAsync(attributes);   // what serve registers on the dev server
+        }
+        catch (Temporalio.Exceptions.RpcException e) when (e.Message.Contains("already exists", StringComparison.Ordinal))
+        {
+            // the class fixture's server keeps the attributes the other test registered
         }
     }
 }

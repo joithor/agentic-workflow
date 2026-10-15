@@ -25,6 +25,16 @@ internal static class Composition
             .AddSindriWorkflows(environment)   // the Temporal dev server serve keeps beside itself (engine spec rev 8 §0), the worker and 'workflow complete'
             .AddContextCore()
             .AddContextFeatures()
-            .AddContextInfrastructure(environment)   // context engine: $AW_SINDRI_HOME/context (compose edge)
+            .AddContextInfrastructure(ContextEnvironment(environment))   // context engine: $AW_SINDRI_HOME/context (compose edge); pointers resolve here
             .AddSindriHost();
+
+    /// <summary>
+    /// The environment function Composition passes to AddContextInfrastructure (context spec §4 "Secrets"): a name that is a
+    /// secret pointer (keychain:, env:, op:, file:) resolves here, in Sindri Host, so Aw.Context never resolves pointers or
+    /// reads the keychain; every other name reads <paramref name="environment"/>.
+    /// </summary>
+    /// <param name="environment">The process environment (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
+    /// <returns>The wrapped environment function.</returns>
+    internal static Func<string, string?> ContextEnvironment(Func<string, string?> environment)
+        => SecretPointerEnvironment.Over(environment, SindriInfrastructureServiceCollectionExtensions.CreateSecretPointers(environment));
 }

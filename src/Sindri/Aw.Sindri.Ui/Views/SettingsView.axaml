@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aw.Sindri.Ui.ViewModels.Settings"
+             x:Class="Aw.Sindri.Ui.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+  <!-- Settings (UI spec §3.3 ⌘,, §11.4, §14.2): local preferences only. The shell hosts it as its Settings page, inside
+       the page region's own margin and scroll viewer, so it adds neither (its title lines up with every other page's). -->
+  <StackPanel Spacing="{StaticResource Space.MD}" MinWidth="480"
+              MaxWidth="640" HorizontalAlignment="Left">
+    <TextBlock x:Name="TitleText" Classes="page-title" Text="{Binding Title}"
+               AutomationProperties.Name="{Binding Title}" AutomationProperties.HeadingLevel="1" />
+
+    <Border Background="{DynamicResource Brush.Surface1}" BorderBrush="{DynamicResource Brush.Hairline}"
+            BorderThickness="1" CornerRadius="{StaticResource Radius.LG}" Padding="{StaticResource Space.MD.Thickness}">
+      <StackPanel Spacing="{StaticResource Space.MD}">
+        <!-- Reduce motion: the switch, and a note while the OS already reduces motion (§11.4). -->
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource Space.MD}">
+          <StackPanel VerticalAlignment="Center" Spacing="{StaticResource Space.XXS}">
+            <TextBlock x:Name="ReduceMotionText" Classes="body-strong" Text="{Binding ReduceMotionLabel}"
+                       AutomationProperties.Name="{Binding ReduceMotionLabel}" />
+            <TextBlock x:Name="SystemMotionText" Classes="caption" Foreground="{DynamicResource Brush.InkSubtle}"
+                       Text="{Binding SystemReducesMotionNote}" IsVisible="{Binding SystemReducesMotion}"
+                       AutomationProperties.Name="{Binding SystemReducesMotionNote}" />
+          </StackPanel>
+          <ToggleSwitch x:Name="ReduceMotionSwitch" Grid.Column="1" VerticalAlignment="Center"
+                        IsChecked="{Binding ReduceMotion, Mode=TwoWay}"
+                        AutomationProperties.Name="{Binding ReduceMotionLabel}" />
+        </Grid>
+
+        <Border Height="1" Background="{DynamicResource Brush.Hairline}" />
+
+        <!-- Text size: the type ramp's scale, 90–130% (§14.2). -->
+        <StackPanel Spacing="{StaticResource Space.XS}">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock x:Name="TextSizeText" Classes="body-strong" Text="{Binding TextSizeLabel}"
+                       AutomationProperties.Name="{Binding TextSizeLabel}" />
+            <TextBlock x:Name="TextScaleValueText" Grid.Column="1" Classes="body" Foreground="{DynamicResource Brush.InkMuted}"
+                       Text="{Binding TextScaleText}" AutomationProperties.Name="{Binding TextScaleText}" />
+          </Grid>
+          <Slider x:Name="TextScaleSlider" Minimum="{Binding MinTextScale}" Maximum="{Binding MaxTextScale}"
+                  Value="{Binding TextScale, Mode=TwoWay}" TickFrequency="0.1" IsSnapToTickEnabled="True"
+                  SmallChange="0.1" LargeChange="0.1"
+                  AutomationProperties.Name="{Binding TextSizeLabel}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

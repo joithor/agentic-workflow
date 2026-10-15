@@ -14,7 +14,7 @@ namespace Aw.Sindri.Host.Commands;
 /// 1 MiB) and sends its content, never its path, to the API's complete route, where the command chain classes the caller
 /// (an agent session is refused SND-AUTH-002). It prints the new status header and what happened ('-> checks', or
 /// 'already applied (-> checks)' for a repeated nonce); '--json' prints the response with the nonce it used. Without
-/// '--nonce' the instance's nonce route issues one first. Exit 0 applied, 2 refused (SND-WF-005, -008, -009 …), 1 not running.
+/// '--nonce' the instance's nonce route issues one first. Exit 0 applied, 1 not running, 2 invalid, refused (SND-WF-005, -008, -009 …) or error.
 /// </summary>
 internal static class CompleteCommand
 {
@@ -79,15 +79,15 @@ internal static class CompleteCommand
         }
 
         var (run, outcome, nonce) = fields.Value;
-        return (new CompleteStepRequest(instance.Value, run, outcome, outputs, nonce), json, null);
+        return (new CompleteStepRequest(instance, run, outcome, outputs, nonce), json, null);
     }
 
     /// <summary>The address and the '--flag value' pairs, each flag one this verb takes.</summary>
-    private static Result<(InstanceAddress Instance, List<(string Flag, string Value)> Flags)> Options(string[] args)
+    private static Result<(string Instance, List<(string Flag, string Value)> Flags)> Options(string[] args)
     {
-        if (args is not [var address, .. var pairs] || !InstanceAddress.TryFrom(address, out var instance))
+        if (args is not [{ Length: > 0 } instance, .. var pairs] || instance.StartsWith("--", StringComparison.Ordinal))
         {
-            return SindriErrors.InvalidInput.With($"the first argument is the instance address ('{{item}}/{{recipe}}/{{attempt}}') ({Usage})");
+            return SindriErrors.InvalidInput.With($"the first argument is the instance: its address ('{{item}}/{{recipe}}/{{attempt}}') or a bare item ({Usage})");
         }
 
         if (pairs.Length % 2 != 0)

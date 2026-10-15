@@ -12,7 +12,7 @@ public sealed class DevServer : IAsyncLifetime
     public WorkflowEnvironment Environment => _environment ?? throw new InvalidOperationException("the dev server has not started");
 
     /// <inheritdoc/>
-    public async ValueTask InitializeAsync() => _environment = await WorkflowsHarness.StartDevServer();
+    public async ValueTask InitializeAsync() => _environment = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
 
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()

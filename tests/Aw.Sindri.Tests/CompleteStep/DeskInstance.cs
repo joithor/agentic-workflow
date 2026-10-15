@@ -29,4 +29,12 @@ internal sealed record DeskInstance(IServiceProvider Sindri, WorkflowHandle<Reci
         Assert.False(read.IsError, read.IsError ? read.Error.Message : null);
         return [.. read.Value.Where(static e => e.Envelope.Type.StartsWith("workflow.", StringComparison.Ordinal)).Select(static e => e.Envelope.Type)];
     }
+
+    /// <summary>The payload of each 'workflow.*' ledger event of <paramref name="type"/>, in order.</summary>
+    public async Task<IReadOnlyList<System.Text.Json.JsonElement>> Payloads(string type)
+    {
+        var read = await Sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 1000, TestContext.Current.CancellationToken);
+        Assert.False(read.IsError, read.IsError ? read.Error.Message : null);
+        return [.. read.Value.Where(e => string.Equals(e.Envelope.Type, type, StringComparison.Ordinal)).Select(static e => System.Text.Json.JsonDocument.Parse(e.Envelope.Payload).RootElement.Clone())];
+    }
 }

@@ -80,7 +80,7 @@ fetch() {
   tmp="$(mktemp -d "${TMPDIR:-/tmp}/binaries-lock.XXXXXX")"   # global: the EXIT trap runs after fetch returns
   trap '[ -z "${tmp:-}" ] || find "$tmp" -delete' EXIT
   curl -fsSL --retry 2 -o "$tmp/archive.tar.gz" "$url" || { echo "binaries-lock: download failed: $url" >&2; exit 2; }
-  got="$(shasum -a 256 "$tmp/archive.tar.gz" | awk '{print $1}')"
+  got="$( { shasum -a 256 "$tmp/archive.tar.gz" 2>/dev/null || sha256sum "$tmp/archive.tar.gz"; } | awk '{print $1}')"
   if [ "$got" != "$sha" ]; then
     echo "binaries-lock: sha256 mismatch for $url: got $got, binaries.lock has $sha" >&2
     exit 1

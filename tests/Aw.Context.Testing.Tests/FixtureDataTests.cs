@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Aw.Context.Testing.Fixtures;
@@ -50,7 +51,7 @@ public sealed partial class FixtureDataTests
     }
 
     [Fact]
-    public void Onyx_documents_key_linear_issues_by_uuid_with_the_identifier_in_metadata()
+    public void Onyx_documents_key_linear_issues_by_uuid_with_the_identifier_in_the_semantic_identifier()
     {
         var issues = Nodes("linear/issues.json", "issues");
         var linearDocs = OnyxDocs().Where(d => (string?)d["search_doc"]!["source_type"] == "linear").ToList();
@@ -59,7 +60,7 @@ public sealed partial class FixtureDataTests
         foreach (var issue in issues)
         {
             var doc = Assert.Single(linearDocs, d => (string?)d["search_doc"]!["document_id"] == (string?)issue["id"])["search_doc"]!;
-            Assert.Equal((string?)issue["identifier"], (string?)doc["metadata"]!["identifier"]);
+            Assert.Equal($"[{issue["identifier"]}] {issue["title"]}", (string?)doc["semantic_identifier"]);
             var chunks = linearDocs.Single(d => (string?)d["search_doc"]!["document_id"] == (string?)issue["id"])["chunks"]!.AsArray().Select(c => (string?)c);
             Assert.Equal(issue["comments"]!["nodes"]!.AsArray().Select(c => (string?)c!["body"]).Prepend((string?)issue["description"]), chunks, StringComparer.Ordinal);
             Assert.Equal(DateTimeOffset.Parse((string)issue["updatedAt"]!, CultureInfo.InvariantCulture),
@@ -69,6 +70,26 @@ public sealed partial class FixtureDataTests
         var slack = Assert.Single(OnyxDocs(), d => (string?)d["search_doc"]!["source_type"] == "slack")["search_doc"]!;
         var ts = long.Parse(((string)slack["document_id"]!).Split("__")[1].Split('.')[0], CultureInfo.InvariantCulture);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(ts), At(slack["updated_at"]));
+    }
+
+    [Fact]
+    public void Onyx_linear_metadata_holds_only_what_the_v4_9_0_connector_writes_as_strings_from_the_issue()
+    {
+        string[] connectorKeys = ["team", "creator", "assignee", "state", "priority", "estimate", "started_at", "completed_at", "created_at", "due_date"];
+        var issues = Nodes("linear/issues.json", "issues").ToDictionary(i => (string)i["id"]!, StringComparer.Ordinal);
+
+        foreach (var doc in OnyxDocs().Select(d => d["search_doc"]!).Where(d => (string?)d["source_type"] == "linear"))
+        {
+            var metadata = doc["metadata"]!.AsObject();
+            var issue = issues[(string)doc["document_id"]!];
+            Assert.All(metadata, m => Assert.Contains(m.Key, connectorKeys, StringComparer.Ordinal));
+            Assert.All(metadata, m => Assert.Equal(JsonValueKind.String, m.Value!.GetValueKind()));
+            Assert.Equal((string?)issue["team"]!["name"], (string?)metadata["team"]);
+            Assert.Equal((string?)issue["state"]!["name"], (string?)metadata["state"]);
+            Assert.Equal((string?)issue["createdAt"], (string?)metadata["created_at"]);
+            Assert.Equal(((int)issue["priority"]!).ToString(CultureInfo.InvariantCulture), (string?)metadata["priority"]);
+            Assert.Equal((string?)issue["completedAt"], (string?)metadata["completed_at"]);
+        }
     }
 
     [Fact]
