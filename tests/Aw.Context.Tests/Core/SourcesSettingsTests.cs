@@ -70,7 +70,7 @@ public sealed class SourcesSettingsTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("env:ONYX_KEY")]
     [InlineData("file:/Users/me/.config/sindri/onyx.key")]
-    [InlineData("keychain:onyx/sindri-read")]
+    [InlineData("keychain:onyx/sindri-onyx")]
     [InlineData("op:work/onyx/credential")]
     public void Every_pointer_scheme_is_accepted(string token) => Assert.Equal(token, Read(WithToken(token)).Value.Onyx?.Token);
 

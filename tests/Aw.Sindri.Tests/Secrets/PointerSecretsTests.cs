@@ -41,12 +41,12 @@ public sealed class PointerSecretsTests
     {
         var runner = new FakeToolRunner(new ToolRun(ToolOutcome.Exited, 0, Fixture + "\n"));
 
-        var result = Secrets(_ => null, runner).Resolve(Pointer("keychain:onyx/sindri-read"));
+        var result = Secrets(_ => null, runner).Resolve(Pointer("keychain:onyx/sindri-onyx"));
 
         Assert.Equal(Fixture, result.Value);
         var call = Assert.Single(runner.Calls);
         Assert.Equal("security", call.FileName);
-        Assert.Equal(["find-generic-password", "-s", "onyx", "-a", "sindri-read", "-w"], call.Arguments);
+        Assert.Equal(["find-generic-password", "-s", "onyx", "-a", "sindri-onyx", "-w"], call.Arguments);
         Assert.Equal(TimeSpan.FromSeconds(5), call.Timeout);
     }
 
@@ -65,11 +65,11 @@ public sealed class PointerSecretsTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("keychain:onyx/sindri-read", "exit 44")]
-    [InlineData("keychain:onyx/sindri-read", "empty")]
-    [InlineData("keychain:onyx/sindri-read", "newline only")]
-    [InlineData("keychain:onyx/sindri-read", "missing")]
-    [InlineData("keychain:onyx/sindri-read", "timed out")]
+    [InlineData("keychain:onyx/sindri-onyx", "exit 44")]
+    [InlineData("keychain:onyx/sindri-onyx", "empty")]
+    [InlineData("keychain:onyx/sindri-onyx", "newline only")]
+    [InlineData("keychain:onyx/sindri-onyx", "missing")]
+    [InlineData("keychain:onyx/sindri-onyx", "timed out")]
     [InlineData("op:Work/Onyx/credential", "exit 1")]
     [InlineData("op:Work/Onyx/credential", "empty")]
     [InlineData("op:Work/Onyx/credential", "missing")]

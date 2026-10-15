@@ -100,6 +100,7 @@ public sealed class OnyxKeyResolutionTests
 
         Assert.Equal(ContextErrors.SourceNotConfigured.Code, search.Error.Code);
         Assert.DoesNotContain("fixture: the pointer's file", search.Error.Message, StringComparison.Ordinal);
+        Assert.All(harness.Log.Lines, line => Assert.DoesNotContain("fixture: the pointer's file", line, StringComparison.Ordinal));
         Assert.Empty(onyx.Requests);
     }
 
@@ -107,10 +108,19 @@ public sealed class OnyxKeyResolutionTests
     public async Task A_search_whose_deadline_is_already_spent_is_010_not_an_exception()
     {
         await using var onyx = await FakeOnyxServer.Start();
-        using var harness = new OnyxSourceHarness(onyx.Url, name => name == OnyxSourceHarness.Pointer ? onyx.Token : null);
+        var resolutions = 0;
+        using var harness = new OnyxSourceHarness(onyx.Url, name =>
+        {
+            resolutions++;
+            return name == OnyxSourceHarness.Pointer ? onyx.Token : null;
+        });
 
         var search = await harness.Source.Search(OnyxSourceHarness.Query("pane") with { Deadline = TimeSpan.FromMilliseconds(-250) }, TestContext.Current.CancellationToken);
 
         Assert.Equal(ContextErrors.SourceUnavailable.Code, search.Error.Code);
+        Assert.Empty(onyx.Requests);
+        Assert.Equal(0, resolutions);
+        Assert.Contains("deadline was spent", search.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("-0.25", search.Error.Message, StringComparison.Ordinal);
     }
 }

@@ -187,7 +187,7 @@ pinned to **Onyx v4.9.0** (`FakeOnyxServer.PinnedVersion`; checked against the r
   link (Sindri's `OnyxContextTests`) or another reported version (`FakeOnyxServerTests`, which checks the rewrite
   itself). The plant must return valid JSON (the server parses it). Null, the default, sends the replies as they are.
 
-There is no change feed (§12: none a key can read) and no route that gives a document's `updated_at` by id.
+There is no change feed (§12) and no route that gives a document's `updated_at` by id.
 
 ## What later stages add
 

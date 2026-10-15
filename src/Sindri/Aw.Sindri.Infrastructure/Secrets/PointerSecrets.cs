@@ -42,6 +42,18 @@ internal sealed class PointerSecrets(Func<string, string?> environment, IToolRun
 
     private static Result<string> FromFile(SecretPointer secretPointer)
     {
+        try
+        {
+            return CheckedFile(secretPointer);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return Unresolved(secretPointer, $"{secretPointer.Target} can't be checked or read ({e.GetType().Name}); check its directory's and its own owner and mode");
+        }
+    }
+
+    private static Result<string> CheckedFile(SecretPointer secretPointer)
+    {
         var path = secretPointer.Target;
         if (new FileInfo(path).LinkTarget is not null || Directory.Exists(path))
         {
@@ -60,14 +72,7 @@ internal sealed class PointerSecrets(Func<string, string?> environment, IToolRun
             return SindriErrors.SecretFileUnsafe.With($"The {secretPointer} secret is unsafe: {path} is readable or writable by others than its owner. Run 'chmod 600 {path}'.");
         }
 
-        try
-        {
-            return NonEmpty(secretPointer, TrimNewline(File.ReadAllText(path)), $"{path} is empty; write the secret into it");
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return Unresolved(secretPointer, $"{path} can't be read ({e.GetType().Name}); check its owner and mode");
-        }
+        return NonEmpty(secretPointer, TrimNewline(File.ReadAllText(path)), $"{path} is empty; write the secret into it");
     }
 
     private Result<string> Keychain(SecretPointer secretPointer)

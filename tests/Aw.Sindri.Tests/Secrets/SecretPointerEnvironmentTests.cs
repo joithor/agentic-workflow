@@ -16,7 +16,7 @@ public sealed class SecretPointerEnvironmentTests
         ["ONYX_TOKEN"] = Fixture,
         ["AW_STATE_DIR"] = "/tmp/aw-state",
         ["LINEAR_API_KEY"] = "fixture-linear-key",
-        ["keychain:onyx/sindri-read"] = "fixture-same-named-variable",
+        ["keychain:onyx/sindri-onyx"] = "fixture-same-named-variable",
         ["on_rawsecret"] = "fixture-raw",
     };
 
@@ -26,14 +26,14 @@ public sealed class SecretPointerEnvironmentTests
 
     [Fact, Trait("Lane", "unit")]
     public void A_keychain_pointer_resolves_through_the_tool()
-        => Assert.Equal(Fixture, Wrapped(new FakeToolRunner(new ToolRun(ToolOutcome.Exited, 0, Fixture + "\n")))("keychain:onyx/sindri-read"));
+        => Assert.Equal(Fixture, Wrapped(new FakeToolRunner(new ToolRun(ToolOutcome.Exited, 0, Fixture + "\n")))("keychain:onyx/sindri-onyx"));
 
     [Fact, Trait("Lane", "unit")]
     public void A_plain_name_reads_the_real_environment()
         => Assert.Equal("/tmp/aw-state", Wrapped(new FakeToolRunner(ToolRun.Missing))("AW_STATE_DIR"));
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("keychain:onyx/sindri-read")]
+    [InlineData("keychain:onyx/sindri-onyx")]
     [InlineData("env:MISSING_TOKEN")]
     [InlineData("vault:onyx")]
     [InlineData("env:bad-name")]

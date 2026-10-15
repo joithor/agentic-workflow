@@ -17,7 +17,7 @@ public static class SecretPointerSamples
         "file:/home/me/.onyx-token",
         "file:/Users/me/Library/Application Support/sindri/onyx",
         "file:/tmp/odd\tname",
-        "keychain:onyx/sindri-read",
+        "keychain:onyx/sindri-onyx",
         "keychain:Onyx Keys/sindri read",
         "op:Work/Onyx/credential",
         "op:Private Vault/Onyx/credential",

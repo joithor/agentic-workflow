@@ -41,8 +41,13 @@ internal sealed partial class OnyxClient(OnyxSettings settings, OnyxSourceParts 
     public async ValueTask<Result<T>> Call<T>(OnyxCall call, TimeSpan deadline, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(call);
+        if (deadline <= TimeSpan.Zero)
+        {
+            return Failed(call, Unavailable($"wasn't called: the query's deadline was spent before {call.Route}"), status: null);   // never a race, never an ArgumentOutOfRangeException
+        }
+
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(deadline > TimeSpan.Zero ? deadline : TimeSpan.FromMilliseconds(1));   // a spent query deadline is 010, never an ArgumentOutOfRangeException
+        timeout.CancelAfter(deadline);
         try
         {
             var key = await Key(timeout.Token).ConfigureAwait(false);

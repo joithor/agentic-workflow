@@ -9,7 +9,7 @@ public sealed class SecretPointerParseTests
     [InlineData("env:ONYX_TOKEN", SecretScheme.Env, "ONYX_TOKEN")]
     [InlineData("env:_x1", SecretScheme.Env, "_x1")]
     [InlineData("file:/home/me/.onyx-token", SecretScheme.File, "/home/me/.onyx-token")]
-    [InlineData("keychain:onyx/sindri-read", SecretScheme.Keychain, "onyx/sindri-read")]
+    [InlineData("keychain:onyx/sindri-onyx", SecretScheme.Keychain, "onyx/sindri-onyx")]
     [InlineData("op:Work/Onyx/credential", SecretScheme.OnePassword, "Work/Onyx/credential")]
     public void A_valid_pointer_parses(string text, SecretScheme scheme, string target)
     {
@@ -72,7 +72,7 @@ public sealed class SecretPointerParseTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("env:ONYX_TOKEN", true)]
-    [InlineData("keychain:onyx/sindri-read", true)]
+    [InlineData("keychain:onyx/sindri-onyx", true)]
     [InlineData("AW_STATE_DIR", false)]
     [InlineData("LINEAR_API_KEY", false)]
     public void A_name_with_a_colon_is_a_pointer(string name, bool isPointer)

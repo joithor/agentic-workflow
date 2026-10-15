@@ -47,6 +47,27 @@ public sealed class SecretFileTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public void A_file_under_a_directory_the_owner_cannot_search_is_an_error_not_an_exception()
+    {
+        var locked = Path.Combine(_home.Path, "locked");
+        var path = Path.Combine(locked, "token");
+        _ = Directory.CreateDirectory(locked);
+        File.WriteAllText(path, Fixture);
+        File.SetUnixFileMode(locked, UnixFileMode.None);
+        try
+        {
+            var result = _secrets.Resolve(PointerSecretsTests.Pointer("file:" + path));
+
+            Assert.False(result.IsSuccess);
+            Assert.DoesNotContain(Fixture, result.Error.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.SetUnixFileMode(locked, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public void A_missing_file_is_SND_SECRET_002()
     {
         var result = _secrets.Resolve(PointerSecretsTests.Pointer("file:" + Path.Combine(_home.Path, "absent")));
