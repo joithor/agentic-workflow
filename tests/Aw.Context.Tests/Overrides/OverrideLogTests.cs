@@ -32,7 +32,7 @@ public sealed class OverrideLogTests
 
         var undone = OverrideLog.Undone([rename, undo]);
 
-        Assert.Equal([rename.ToId().Value], undone);
+        Assert.Equal([rename.ToId().Value], undone, StringComparer.Ordinal);
         Assert.Empty(OverrideLog.Active([rename, undo]));
     }
 
@@ -46,7 +46,7 @@ public sealed class OverrideLogTests
         var active = OverrideLog.Active([rename, undo, redo]);
 
         Assert.Same(rename, Assert.Single(active));
-        Assert.Equal([undo.ToId().Value], OverrideLog.Undone([rename, undo, redo]));
+        Assert.Equal([undo.ToId().Value], OverrideLog.Undone([rename, undo, redo]), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

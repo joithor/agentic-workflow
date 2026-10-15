@@ -14,12 +14,13 @@ public static class LensesBuilder
     /// <param name="draft">True when the draft was read.</param>
     /// <param name="graph">The graph a caller may see: overrides applied, a session's scope already cut.</param>
     /// <param name="anchor">The anchor (a key or an alias).</param>
+    /// <param name="depth">How far the neighbors reach and the cascade runs, 0 to 4.</param>
     /// <returns>The view, or SND-CONTEXT-003 when the graph has no such node.</returns>
-    public static Result<LensesView> Build(string map, bool draft, GraphSnapshot graph, NodeKey anchor)
+    public static Result<LensesView> Build(string map, bool draft, GraphSnapshot graph, NodeKey anchor, int depth)
     {
         ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(graph);
-        _ = (draft, anchor);
+        _ = (draft, anchor, depth);
         throw new NotSupportedException("S-4: LensesBuilder.Build is not built yet");
     }
 }

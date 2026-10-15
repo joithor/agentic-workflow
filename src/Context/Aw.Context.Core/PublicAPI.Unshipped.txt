@@ -2599,7 +2599,7 @@ static Aw.Context.Core.Lenses.LensItem.operator !=(Aw.Context.Core.Lenses.LensIt
 static Aw.Context.Core.Lenses.LensItem.operator ==(Aw.Context.Core.Lenses.LensItem? left, Aw.Context.Core.Lenses.LensItem? right) -> bool
 static Aw.Context.Core.Lenses.LensSymbols.operator !=(Aw.Context.Core.Lenses.LensSymbols? left, Aw.Context.Core.Lenses.LensSymbols? right) -> bool
 static Aw.Context.Core.Lenses.LensSymbols.operator ==(Aw.Context.Core.Lenses.LensSymbols? left, Aw.Context.Core.Lenses.LensSymbols? right) -> bool
-static Aw.Context.Core.Lenses.LensesBuilder.Build(string! map, bool draft, Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey anchor) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesView!>!
+static Aw.Context.Core.Lenses.LensesBuilder.Build(string! map, bool draft, Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey anchor, int depth) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesView!>!
 static Aw.Context.Core.Lenses.LensesView.operator !=(Aw.Context.Core.Lenses.LensesView? left, Aw.Context.Core.Lenses.LensesView? right) -> bool
 static Aw.Context.Core.Lenses.LensesView.operator ==(Aw.Context.Core.Lenses.LensesView? left, Aw.Context.Core.Lenses.LensesView? right) -> bool
 static Aw.Context.Core.Map.ExportedFile.operator !=(Aw.Context.Core.Map.ExportedFile? left, Aw.Context.Core.Map.ExportedFile? right) -> bool
