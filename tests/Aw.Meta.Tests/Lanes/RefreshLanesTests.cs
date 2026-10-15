@@ -1,8 +1,8 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using Aw.Meta.Core;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Core.Lanes;
 using Aw.Meta.Features.Lanes;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Testing;
 using Microsoft.Extensions.Time.Testing;
 
@@ -16,7 +16,7 @@ public sealed class RefreshLanesTests
     private readonly InMemoryLaneStore _lanes = new();
     private readonly FakeTimeProvider _clock = new(A.T0);
 
-    private RefreshLanesService Service() => new();
+    private RefreshLanesService Service() => new(_config, new LaneRefresher(_sessions, _messages, _lanes), _clock);
 
     private async Task<LanesResponse> Refresh()
     {

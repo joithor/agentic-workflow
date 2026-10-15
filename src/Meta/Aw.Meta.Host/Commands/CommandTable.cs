@@ -17,6 +17,8 @@ internal static class CommandTable
         TeamInitCommand.Entry,
         TeamShowCommand.Entry,
         SyncInboxCommand.Entry,
+        LanesRefreshCommand.Entry,
+        LanesCommand.Entry,
     ];
 
     internal static IReadOnlyList<CommandEntry> Entries => _entries;

@@ -1,4 +1,5 @@
 using Aw.Meta.Core.Ids;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Infrastructure.Files;
 using Aw.Meta.Infrastructure.Sqlite;
@@ -11,10 +12,11 @@ public sealed class SyncInboxIntegrationTests : IDisposable
 {
     private readonly TempDirectory _dir = new();
 
-    private SyncInboxService Service() => new(
-        new FileTranscriptReader(),
-        new SqliteMessageStore(new MetaDatabase(MetaDatabase.OptionsFor(Path.Combine(_dir.Path, "state")), new FakeTimeProvider())),
-        new FakeTimeProvider());
+    private SyncInboxService Service()
+    {
+        var database = new MetaDatabase(MetaDatabase.OptionsFor(Path.Combine(_dir.Path, "state")), new FakeTimeProvider());
+        return new SyncInboxService(new InboxSync(new FileTranscriptReader(), new SqliteMessageStore(database), new SqliteOwnerStore(database), new FakeTimeProvider()));
+    }
 
     [Fact, Trait("Lane", "integration")]
     public async Task A_transcript_on_disk_is_synced_into_meta_db_once_even_across_processes_restarts()

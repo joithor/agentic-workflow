@@ -1,6 +1,7 @@
 using Aw.Meta.Core;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Core.Obligations;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Testing;
 using Microsoft.Extensions.Time.Testing;
@@ -13,11 +14,12 @@ public sealed class SyncInboxTests
 
     private readonly InMemoryTranscriptReader _reader = new();
     private readonly InMemoryMessageStore _store = new();
+    private readonly InMemoryOwnerStore _owner = new();
     private readonly SyncInboxService _service;
 
     public SyncInboxTests()
     {
-        _service = new SyncInboxService(_reader, _store, new FakeTimeProvider(A.T0));
+        _service = new SyncInboxService(new InboxSync(_reader, _store, _owner, new FakeTimeProvider(A.T0)));
     }
 
     private static string UserPeer(string id, string name, string body) =>
@@ -116,4 +118,17 @@ public sealed class SyncInboxTests
 
     [Fact, Trait("Lane", "unit")]
     public void The_session_id_type_rejects_blank() => Assert.False(SessionId.TryFrom(" ", out _));
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_owner_question_is_queued_once_with_its_lead_in_stripped()
+    {
+        _reader.Write(Transcript, UserPeer("m1", "sindri-api", "OWNER QUESTION: postgres or sqlite?") + UserPeer("m2", "sindri-ui", "hello"));
+
+        _ = await Sync();
+        _ = await Sync();
+
+        var queued = Assert.Single((await _owner.List(includeAnswered: true, CancellationToken.None)).Value);
+        Assert.Equal(("sindri-api", "postgres or sqlite?"), (queued.AskedBy, queued.Text));
+        Assert.Contains("m1", (await Open()).Select(o => o.Key), StringComparer.Ordinal);
+    }
 }

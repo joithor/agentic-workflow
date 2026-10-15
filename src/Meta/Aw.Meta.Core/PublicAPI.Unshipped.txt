@@ -125,6 +125,32 @@ Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Col
 override Aw.Meta.Core.Config.TeamConfig.ToString() -> string!
 static Aw.Meta.Core.Config.TeamConfig.operator !=(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
 static Aw.Meta.Core.Config.TeamConfig.operator ==(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
+Aw.Meta.Core.Coordination.InboxSync
+Aw.Meta.Core.Coordination.InboxSync.InboxSync(Aw.Meta.Core.Ports.ITranscriptReader! transcripts, Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.IOwnerStore! owner, System.TimeProvider! clock) -> void
+Aw.Meta.Core.Coordination.InboxSync.Run(string! transcript, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ids.MessageId>!>!>
+Aw.Meta.Core.Coordination.LaneRefresh
+Aw.Meta.Core.Coordination.LaneRefresh.<Clone>$() -> Aw.Meta.Core.Coordination.LaneRefresh!
+Aw.Meta.Core.Coordination.LaneRefresh.Changed.get -> bool
+Aw.Meta.Core.Coordination.LaneRefresh.Changed.init -> void
+Aw.Meta.Core.Coordination.LaneRefresh.Deconstruct(out Aw.Meta.Core.Lanes.LaneMapState! Map, out bool Changed) -> void
+Aw.Meta.Core.Coordination.LaneRefresh.Equals(Aw.Meta.Core.Coordination.LaneRefresh? other) -> bool
+override Aw.Meta.Core.Coordination.LaneRefresh.Equals(object? obj) -> bool
+override Aw.Meta.Core.Coordination.LaneRefresh.GetHashCode() -> int
+Aw.Meta.Core.Coordination.LaneRefresh.LaneRefresh(Aw.Meta.Core.Lanes.LaneMapState! Map, bool Changed) -> void
+Aw.Meta.Core.Coordination.LaneRefresh.Map.get -> Aw.Meta.Core.Lanes.LaneMapState!
+Aw.Meta.Core.Coordination.LaneRefresh.Map.init -> void
+override Aw.Meta.Core.Coordination.LaneRefresh.ToString() -> string!
+static Aw.Meta.Core.Coordination.LaneRefresh.operator !=(Aw.Meta.Core.Coordination.LaneRefresh? left, Aw.Meta.Core.Coordination.LaneRefresh? right) -> bool
+static Aw.Meta.Core.Coordination.LaneRefresh.operator ==(Aw.Meta.Core.Coordination.LaneRefresh? left, Aw.Meta.Core.Coordination.LaneRefresh? right) -> bool
+Aw.Meta.Core.Coordination.LaneRefresher
+Aw.Meta.Core.Coordination.LaneRefresher.LaneRefresher(Aw.Meta.Core.Ports.ISessionDirectory! sessions, Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.ILaneStore! lanes) -> void
+Aw.Meta.Core.Coordination.LaneRefresher.Run(Aw.Meta.Core.Config.TeamConfig! config, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.LaneRefresh!>!>
+Aw.Meta.Core.Coordination.MetaSession
+Aw.Meta.Core.Coordination.MetaSession.MetaSession(Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.IMetaConfig! config) -> void
+Aw.Meta.Core.Coordination.MetaSession.Resolve(Aw.Meta.Core.Ids.SessionId session, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Config.TeamConfig?>!>
+Aw.Meta.Core.Coordination.ObligationReader
+Aw.Meta.Core.Coordination.ObligationReader.ObligationReader(Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.ILaneStore! lanes, Aw.Meta.Core.Ports.IOwnerStore! owner, Aw.Meta.Core.Ports.IGateStore! gates, Aw.Meta.Core.Ports.IKeyValueStore! values) -> void
+Aw.Meta.Core.Coordination.ObligationReader.Open(string! metaLane, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>!>!>
 Aw.Meta.Core.Gate.FlakeRule
 static Aw.Meta.Core.Gate.FlakeRule.Classify(Aw.Meta.Core.Gate.RerunOutcome! alone, Aw.Meta.Core.Gate.RerunOutcome! onMain, string! gateFailure) -> Aw.Meta.Core.Gate.FlakeVerdict
 Aw.Meta.Core.Gate.FlakeVerdict
@@ -663,6 +689,8 @@ Aw.Meta.Core.Owner.OwnerQuestion.Text.init -> void
 override Aw.Meta.Core.Owner.OwnerQuestion.ToString() -> string!
 static Aw.Meta.Core.Owner.OwnerQuestion.operator !=(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
 static Aw.Meta.Core.Owner.OwnerQuestion.operator ==(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
+Aw.Meta.Core.Owner.OwnerQuestionText
+static Aw.Meta.Core.Owner.OwnerQuestionText.From(string! body) -> string!
 Aw.Meta.Core.Ports.ICommandRunner
 Aw.Meta.Core.Ports.ICommandRunner.Run(Aw.Meta.Core.Commands.CommandRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Commands.CommandResult!>!>
 Aw.Meta.Core.Ports.IGateStore
