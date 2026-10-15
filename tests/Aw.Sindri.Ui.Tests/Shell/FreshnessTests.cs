@@ -16,7 +16,7 @@ namespace Aw.Sindri.Ui.Tests.Shell;
 /// rebuilding banners from the services view, the catalog read on connect, and every view re-read on an event.
 /// </summary>
 [Lane(TestLane.Unit)]
-public sealed class FreshnessTests : IDisposable
+public sealed partial class FreshnessTests : IDisposable
 {
     private readonly InMemoryEndpointRecords _records = new();
     private readonly FakeSindriApi _server = new();

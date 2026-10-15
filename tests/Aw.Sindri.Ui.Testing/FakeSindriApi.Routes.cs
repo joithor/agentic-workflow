@@ -41,7 +41,8 @@ internal sealed partial class FakeSindriApi
     public Task<Result<ServiceList>> Services(Uri api, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _servicesCalls);
-        return Task.FromResult(Answer<ServiceList>(api, "/sindri/services", ServiceView));
+        var carried = TakePending();
+        return Task.FromResult(carried > 0 && Lag != ViewsLag.None ? Behind(carried) : Answer<ServiceList>(api, "/sindri/services", ServiceView));
     }
 
     public async Task<Result<CommandAcceptedView>> RebuildViews(Uri api, CancellationToken cancellationToken)
@@ -52,7 +53,13 @@ internal sealed partial class FakeSindriApi
             await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return Answer<CommandAcceptedView>(api, "/sindri/views/rebuild", Rebuild);
+        var accepted = Answer<CommandAcceptedView>(api, "/sindri/views/rebuild", Rebuild);
+        if (accepted.IsSuccess)
+        {
+            _ = Interlocked.Exchange(ref _pending, accepted.Value.Sequence);
+        }
+
+        return accepted;
     }
 
     // What the real client makes of the same answer: the record, or the refusal's code, detail and kind as served (the

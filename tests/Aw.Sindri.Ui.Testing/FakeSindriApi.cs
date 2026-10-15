@@ -38,6 +38,20 @@ internal sealed partial class FakeSindriApi : ISindriApi
     /// <summary>When set, status calls answer this error (the handler serves it as a 503 problem): SND-API-011 is "views behind".</summary>
     public Error? StatusError { get; set; }
 
+    /// <summary>
+    /// How the views answer a read that carries X-Sindri-After (API §2.4, ReadYourWrites.cs): <see cref="ViewsLag.Stalled"/>
+    /// and <see cref="ViewsLag.Behind"/> are both SND-API-011 (the server answers a stalled projection at once and one
+    /// that is behind after its 2 s wait; the fake has no clock to wait on). A read without the sequence is never held.
+    /// </summary>
+    public ViewsLag Lag { get; set; }
+
+    /// <summary>The sequence each status call carried as X-Sindri-After (0 when it carried none), in order.</summary>
+    public IReadOnlyList<long> StatusAfters => [.. _statusAfters];
+
+    private readonly List<long> _statusAfters = [];
+    private long _pending;
+    private (int Pid, long Epoch)? _pinged;
+
     /// <summary>What an unreadable status says (SND-UI-003's message), for a layout test that needs a long one.</summary>
     public string UnreadableReason { get; set; } = "/sindri/status answered 500";
 
@@ -110,18 +124,27 @@ internal sealed partial class FakeSindriApi : ISindriApi
     public Task<Result<PingView>> Ping(Uri api, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _pingCalls);
+        if (_pinged is { } last && last != (Pong.Pid, Pong.Epoch))
+        {
+            _pending = 0;   // another process or epoch is another ledger: a sequence from the old one means nothing
+        }
+
+        _pinged = (Pong.Pid, Pong.Epoch);
         return Task.FromResult(Refusal is { } refusal ? Refused<PingView>(refusal) : Down || FailPing ? Unreachable<PingView>(api) : Pong);
     }
 
     public async Task<Result<StatusView>> Status(Uri api, CancellationToken cancellationToken)
     {
         StatusCalls++;
+        var carried = TakePending();
+        _statusAfters.Add(carried);
         if (StatusGate is { } gate)
         {
             await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return StatusError is { } failure ? failure
+        return carried > 0 && Lag != ViewsLag.None ? Behind(carried)
+            : StatusError is { } failure ? failure
             : Refusal is { } refusal ? Refused<StatusView>(refusal)
             : Down || FailStatus ? Unreachable<StatusView>(api)
             : UnreadableStatus ? SindriUiErrors.BadAnswer.With(UnreadableReason)
@@ -157,6 +180,12 @@ internal sealed partial class FakeSindriApi : ISindriApi
             yield return e;
         }
     }
+
+    // A view query uses the pending sequence once, whatever the answer is (best effort, UI spec §9.1).
+    private long TakePending() => Interlocked.Exchange(ref _pending, 0);
+
+    private static Error Behind(long sequence) =>
+        new("SND-API-011", ErrorKind.Unavailable, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"The views have not reached sequence {sequence} (fix: retry shortly)"));
 
     // The client's reading of a 403 ProblemDetails: Sindri's code and detail as they are (API §3.6, UI spec §2).
     private static Result<T> Refused<T>((string Code, string Detail) refusal) => new Error(refusal.Code, ErrorKind.Forbidden, refusal.Detail);

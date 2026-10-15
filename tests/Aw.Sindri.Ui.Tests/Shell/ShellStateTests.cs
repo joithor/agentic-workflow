@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
@@ -388,6 +389,21 @@ public sealed class ShellStateTests
         Assert.True(shell.Pill.IsRefreshShown);
         _clock.Advance(TimeSpan.FromSeconds(1));
         Assert.True(shell.IsNotRespondingBanner);
+    }
+
+    // G1(c): "views behind" is an answer from a live Sindri (API §2.4), not a failed refresh.
+    [Fact]
+    public async Task A_refresh_that_hears_views_behind_does_not_count_toward_not_responding()
+    {
+        var shell = await Stale();
+        _server.StatusError = new Error("SND-API-011", ErrorKind.Unavailable, "The views have not reached sequence 43 (fix: retry shortly)");
+
+        for (var i = 0; i < 3; i++)
+        {
+            await shell.Health.Refresh(Token);
+        }
+
+        Assert.False(shell.IsNotRespondingBanner);
     }
 
     [Fact]

@@ -182,9 +182,10 @@ public sealed class SindriApiClientHeaderTests
         Assert.True((await query).IsSuccess);
     }
 
-    // F2: SND-API-011 ("views behind") on such a read is Sindri's code as served, and the sequence is kept for the next.
+    // G1: SND-API-011 ("views behind") on such a read is Sindri's code as served, and it used the sequence up: read-your-writes
+    // is best effort, so the next read goes without it and shows what Sindri says (a stalled projection never catches up).
     [Fact]
-    public async Task Views_behind_is_sindris_code_and_keeps_the_sequence()
+    public async Task Views_behind_is_sindris_code_and_the_sequence_is_used_up()
     {
         var handler = new FakeSindriHandler(new FakeSindriApi());
         var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
@@ -197,7 +198,40 @@ public sealed class SindriApiClientHeaderTests
         _ = await client.Status(_api, Token);
 
         Assert.Equal(new Error("SND-API-011", ErrorKind.Unavailable, "The views have not reached sequence 43 (fix: retry shortly)"), behind.Error);
-        Assert.Equal(["43", "43", null], handler.Requests.Skip(1).Select(r => r.After), StringComparer.Ordinal);
+        Assert.Equal(["43", null, null], handler.Requests.Skip(1).Select(r => r.After), StringComparer.Ordinal);
+    }
+
+    // G1(d): a new process or epoch is another ledger; a sequence from the old one is dropped when ping shows it.
+    [Fact]
+    public async Task A_ping_from_a_new_epoch_drops_the_pending_sequence()
+    {
+        var server = new FakeSindriApi();
+        var handler = new FakeSindriHandler(server);
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+        _ = await client.Ping(_api, Token);
+        _ = await client.RebuildViews(_api, Token);
+        _ = await client.Ping(_api, Token);
+        server.Pong = new PingView(4242, 8);
+
+        _ = await client.Ping(_api, Token);
+        _ = await client.Status(_api, Token);
+
+        Assert.Null(handler.Requests[^1].After);
+    }
+
+    // The same process and epoch (a periodic ping) leaves it for the next view query.
+    [Fact]
+    public async Task A_ping_from_the_same_epoch_keeps_the_pending_sequence()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi());
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+        _ = await client.Ping(_api, Token);
+        _ = await client.RebuildViews(_api, Token);
+
+        _ = await client.Ping(_api, Token);
+        _ = await client.Status(_api, Token);
+
+        Assert.Equal("43", handler.Requests[^1].After);
     }
 
     // Answers a view query only when released; an ordinary call it never answers (the deadline decides).
