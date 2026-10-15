@@ -21,6 +21,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Gate/Golden/*.log" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>

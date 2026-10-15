@@ -46,7 +46,7 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
         }
 
         var (view, main) = current.Value;
-        var (gate, repoPassed) = Choose(history.Value, view.Head, team.Value.Gate.Always);
+        var (gate, repoPassed, scopeRuns) = Choose(history.Value, view.Head, team.Value.Gate);
         var (names, counts) = await FailingTests(gate).ConfigureAwait(false);
         var facts = new MergeFacts
         {
@@ -61,6 +61,7 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
             MergeOrder = team.Value.MergeOrder,
             DocsOnly = team.Value.Gate.DocsOnly,
             PlannedScopes = await Planned(team.Value, gate).ConfigureAwait(false),
+            ScopeRuns = scopeRuns,
             FailingTests = names,
             FailureCounts = counts,
         };
@@ -77,13 +78,45 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
 
     // The gate the merge rests on. When the latest run was only the always scopes (a re-check after a docs commit), it vouches
     // for the new head but not for the code: the newest run that went beyond them is the one the head is measured from.
-    private static (GateRecord Gate, bool RepoPassedOnHead) Choose(IReadOnlyList<GateRecord> history, string head, IReadOnlyList<string> always)
+    private static (GateRecord Gate, bool RepoPassedOnHead, IReadOnlyDictionary<string, int> ScopeRuns) Choose(IReadOnlyList<GateRecord> history, string head, GateConfig config)
+    {
+        var (chosen, repoPassed) = ChooseRun(history, head, config.Always);
+        var (combined, scopeRuns) = Combine(history, chosen, config);
+        return (combined, repoPassed, scopeRuns);
+    }
+
+    private static (GateRecord Gate, bool RepoPassedOnHead) ChooseRun(IReadOnlyList<GateRecord> history, string head, IReadOnlyList<string> always)
     {
         var latest = history[0];
         var beyond = history.FirstOrDefault(g => g.Scopes.Any(scope => !always.Contains(scope, StringComparer.Ordinal)));
         return beyond is not null && beyond.Run != latest.Run && latest.Scopes.All(scope => always.Contains(scope, StringComparer.Ordinal))
             ? (beyond, latest.Head == head && latest.Verdict == GateVerdict.Pass)
             : (latest, false);
+    }
+
+    // Every run at the chosen run's head and main counts: a scope is judged by the newest of those runs that ran it, so a
+    // scoped re-gate (gate-run <pr> bash-scripts) completes an earlier run instead of replacing it. Runs at another head
+    // or main never count. Steps are matched to scopes by the team config; a step no scope names stays with the chosen run.
+    private static (GateRecord Gate, IReadOnlyDictionary<string, int> ScopeRuns) Combine(IReadOnlyList<GateRecord> history, GateRecord chosen, GateConfig config)
+    {
+        var same = history.Where(g => g.Head == chosen.Head && g.Main == chosen.Main).ToList();
+        var known = config.Scopes.Values.SelectMany(scope => scope.Steps.Select(step => step.Name)).ToHashSet(StringComparer.Ordinal);
+        var scopeRuns = new Dictionary<string, int>(StringComparer.Ordinal);
+        var steps = chosen.Steps.Where(step => !known.Contains(step.Name)).ToList();
+        var used = new List<GateRecord>();
+        foreach (var scope in same.SelectMany(g => g.Scopes).Distinct(StringComparer.Ordinal))
+        {
+            var run = same.First(g => g.Scopes.Contains(scope, StringComparer.Ordinal));   // newest first
+            scopeRuns[scope] = run.Run;
+            used.Add(run);
+            var names = config.Scopes.TryGetValue(scope, out var scopeConfig) ? scopeConfig.Steps.Select(step => step.Name).ToHashSet(StringComparer.Ordinal) : [];
+            steps.AddRange(run.Steps.Where(step => names.Contains(step.Name) && !steps.Exists(have => have.Name == step.Name)));
+        }
+
+        var verdict = steps.Exists(step => step.Verdict != GateVerdict.Pass)
+            ? GateVerdict.Fail
+            : used.Where(run => run.Verdict != GateVerdict.Pass && run.Steps.All(step => step.Verdict == GateVerdict.Pass)).Select(run => run.Verdict).FirstOrDefault(GateVerdict.Pass);
+        return (chosen with { Scopes = [.. scopeRuns.Keys], Steps = steps, Verdict = verdict }, scopeRuns);
     }
 
     private async ValueTask<IReadOnlyList<string>?> Delta(string repoDirectory, GateRecord gate, string head)
