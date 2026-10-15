@@ -166,6 +166,10 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
                 Close();
                 _goTo(PageId.Health);
                 break;
+            case { Control.Action: "CreateItem" }:
+                Close();
+                CreateItem?.Invoke();   // the form's own control sends it
+                break;
             default:
                 // why: an enabled entry without a page has a control
                 await Send(entry, entry.Control!, cancellationToken).ConfigureAwait(true);
@@ -176,8 +180,8 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     private List<PaletteSection> Build()
     {
         var actions = _catalog.Controls.Where(c => !_sindri.Contains(c.Action, StringComparer.Ordinal)).OrderBy(c => c.Kind)
-            .Select(c => PaletteEntry.For(c, Runs(c)));
-        var sindri = _sindri.Select(_catalog.For).OfType<ControlViewModel>().Select(c => PaletteEntry.For(c, Runs(c)))
+            .Select(c => PaletteEntry.For(c, Runs(c), NotRun(c)));
+        var sindri = _sindri.Select(_catalog.For).OfType<ControlViewModel>().Select(c => PaletteEntry.For(c, Runs(c), NotRun(c)))
             .Append(PaletteEntry.For(PageId.Health, "G ."));
         return
         [
@@ -189,8 +193,14 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
 
     // Enter does something with a ready row that has a sender, with Stop Sindri (it goes to Health) and with a cli-only row it can copy.
     // Never sends a destructive one: its in-app confirm is on its own control (Stop Sindri's is on Health, where Enter goes).
-    private static bool Runs(ControlViewModel control) =>
-        (control.IsSendable && !control.IsDestructive) || (control.IsReady && control.Action == "StopProcess") || (control.IsCliOnly && control.CanCopy);
+    // Create item opens its form (when the shell has one); the item sheet's close actions need the version the sheet shows.
+    private bool Runs(ControlViewModel control) =>
+        (control.IsSendable && !control.IsDestructive) || (control.IsReady && control.Action == "StopProcess")
+        || (control.IsReady && control.Action == "CreateItem" && CreateItem is not null) || (control.IsCliOnly && control.CanCopy);
+
+    // What a ready row that Enter skips says instead of "ready": where it lives, or that the app has no sender for it.
+    private static string NotRun(ControlViewModel control) =>
+        control.Action.StartsWith("CloseItem:", StringComparison.Ordinal) ? Labels.OnItemSheet : Labels.NotInApp;
 
     // The entries ↑/↓ stop at: those that run now, and the selection even while it sends (it is disabled then, but it is
     // where the user is: arrowing off it goes to its neighbour).

@@ -51,11 +51,11 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health.PropertyChanged += OnHealthChanged;
         Health.Pill.PropertyChanged += OnPillChanged;
         CommandOutcome = new CommandOutcomeRegion(control => Health.Banner.HasRebuild && ReferenceEquals(Health.Banner.Rebuild, control));
-        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome);
+        Create = new CreateItemViewModel(Health.Catalog, () => Health.ApiUrl(), api);
+        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome, () => Create.Open());
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
         Queue = new QueueViewModel(api, Health.Catalog, clock);
         Item = new ItemSheetViewModel(api, Health.Catalog, clock);
-        Create = new CreateItemViewModel(Health.Catalog, () => Health.ApiUrl(), api);
         Health.Follow(Queue.Refresh);
         Health.Follow(Item.Refresh);
         Queue.PropertyChanged += OnQueueChanged;

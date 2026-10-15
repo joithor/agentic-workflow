@@ -321,7 +321,9 @@ re-decided. A cancelled send returns the control to Idle, so the palette lets go
 replaced mid-run (a reconnect) releases every run, so a send that was already in flight is spoken by no live region.
 A send that did not start from the palette is never muted: its control speaks the outcome even while the palette is
 open, and the palette says nothing about it. A ready row the app has no sender for (the catalog's `IssueChallenge`,
-`RegisterRecipe`) is shown as "not in the app yet" and skipped by Enter; every action id in the catalog has its own
+`RegisterRecipe`) is shown as "not in the app yet" and skipped by Enter. U2's actions are not among them: `CreateItem`
+runs (ready; Enter closes the palette and opens the Create item form, whose own control sends it), and `CloseItem:done` /
+`CloseItem:cancelled` read "on the item's sheet" and are skipped, because they send the version the sheet shows. Every action id in the catalog has its own
 label, and an id without one shows a humanised form of itself, never the raw `X:y`.
 
 **The `?` sheet.** `?` (not while typing in a field, nor over the palette) opens §8's keys plus each catalog row's own
