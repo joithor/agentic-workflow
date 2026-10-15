@@ -87,14 +87,14 @@ internal sealed partial class ShellWindow
         _ = target?.Focus(Method());
     }
 
-    // The sheet's opener (the edge tab) or the page region for the sheet; the health pill for the top bar; the page
+    // The sheet's opener (the row it was opened from, by id, or the edge tab) or the page region for the sheet; the health pill for the top bar; the page
     // region, or the sheet's heading while the sheet covers the page.
     private Control? Neighbour(Control last)
     {
         var page = Usable(this.Get<Control>("Page")) ?? (Covering ? Usable(this.Get<TextBlock>("SheetTitle")) : null);
         if (SheetPanel == last || SheetPanel.IsVisualAncestorOf(last))
         {
-            return Usable(_sheetOpener) ?? page;
+            return (Shell?.OpenerRow is { } id ? RowFrame(id) : null) ?? Usable(_sheetOpener) ?? page;
         }
 
         return TopBar.IsVisualAncestorOf(last) ? Usable(TopBar.Get<Control>("HealthPill")) : page;

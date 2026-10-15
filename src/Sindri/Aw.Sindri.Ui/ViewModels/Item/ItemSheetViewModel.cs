@@ -114,15 +114,26 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     /// <returns>A task that completes when the sheet shows the answer.</returns>
     internal async Task Open(Uri url, string itemId, CancellationToken cancellationToken)
     {
+        Show(itemId);
+        (_url, _pages) = (url, Math.Max(_pages, 1));
+        await Read(cancellationToken).ConfigureAwait(true);
+        IsLoading = false;
+    }
+
+    /// <summary>
+    /// Names the sheet's subject at once (a deep link, even before the app is connected): the skeleton shows until a read
+    /// answers, and the first re-read after connecting loads it (§3.3).
+    /// </summary>
+    /// <param name="itemId">The item's id.</param>
+    internal void Show(string itemId)
+    {
         if (!string.Equals(itemId, ItemId, StringComparison.Ordinal))
         {
             Clear();
             ItemId = itemId;
         }
 
-        (_url, _pages, IsLoading) = (url, Math.Max(_pages, 1), !HasItem);
-        await Read(cancellationToken).ConfigureAwait(true);
-        IsLoading = false;
+        IsLoading = !HasItem;
     }
 
     /// <summary>Re-reads the open item and the timeline pages read so far (on every event, §9.2).</summary>
@@ -137,7 +148,14 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
         }
 
         _url = url;
-        return Read(cancellationToken);
+        _pages = Math.Max(_pages, 1);
+        return ReadAndSettle(cancellationToken);
+    }
+
+    private async Task ReadAndSettle(CancellationToken cancellationToken)
+    {
+        await Read(cancellationToken).ConfigureAwait(true);
+        IsLoading = false;
     }
 
     /// <summary>Load more: appends the page the API's 'next' names.</summary>

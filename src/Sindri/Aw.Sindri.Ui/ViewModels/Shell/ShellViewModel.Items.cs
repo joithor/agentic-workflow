@@ -30,7 +30,14 @@ internal sealed partial class ShellViewModel
 
     /// <summary>Opens an item's sheet (a row's Enter or title click, §3.2).</summary>
     /// <param name="itemId">The item's id.</param>
-    internal void OpenItem(string itemId) => Navigate(new DeepLink(DeepLinkKind.Item, itemId));
+    internal void OpenItem(string itemId)
+    {
+        Navigate(new DeepLink(DeepLinkKind.Item, itemId));
+        OpenerRow = itemId;
+    }
+
+    /// <summary>The row the sheet was opened from (its item id), where Esc returns focus; null when the sheet came from elsewhere.</summary>
+    internal string? OpenerRow { get; private set; }
 
     private static NavEntry[] Nav(string queued) =>
     [
@@ -67,10 +74,17 @@ internal sealed partial class ShellViewModel
         }
 
         SheetSubject = link.Subject;
+        OpenerRow = null;
         IsSheetOpen = true;
         IsItemSheet = link.Kind == DeepLinkKind.Item;
         Changed(nameof(SheetSubject), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsItemSheet));
-        if (IsItemSheet && Health.ApiUrl() is { } url)
+        if (!IsItemSheet)
+        {
+            return;
+        }
+
+        Item.Show(link.Subject);
+        if (Health.ApiUrl() is { } url)
         {
             _ = Item.Open(url, link.Subject, CancellationToken.None);
         }
@@ -91,7 +105,7 @@ internal sealed partial class ShellViewModel
             return;
         }
 
-        IsSheetOpen = true;
+        (IsSheetOpen, OpenerRow) = (true, null);
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 }
