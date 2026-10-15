@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.Navigation;
+
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
 /// <summary>The detail sheet and its subject (UI spec §3.3, §4.2): open, closed to the edge tab, reopened. <see cref="Navigate"/> opens it.</summary>
@@ -8,6 +10,9 @@ internal sealed partial class ShellViewModel
 
     /// <summary>The sheet's subject (the deep link's subject); kept after the sheet closes for the edge tab; empty before the first.</summary>
     public string SheetSubject { get; private set; } = string.Empty;
+
+    /// <summary>The link the sheet was opened by (its kind and subject); null before the first.</summary>
+    public DeepLink? SheetLink { get; private set; }
 
     /// <summary>True when the closed sheet shows its edge tab (a subject was opened before).</summary>
     public bool HasEdgeTab => SheetSubject.Length > 0;
