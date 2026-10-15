@@ -72,6 +72,22 @@ public sealed class ShellItemsTests
         await Until(() => shell.Item.StateWord == "Done");
     }
 
+    // L5 (§3.3): a deep link names the sheet's subject even before the app is connected; the first read after connect loads it.
+    [Fact]
+    public async Task An_item_link_before_the_connection_loads_once_connected()
+    {
+        _records.Write(A.Record());
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+        await shell.Restore(Token);
+
+        shell.Navigate(new DeepLink(DeepLinkKind.Item, A.NewItem));
+        Assert.Equal((A.NewItem, true, false), (shell.Item.ItemId, shell.Item.IsLoading, shell.Item.HasItem));
+
+        _ = shell.Run(Token);
+        await Until(() => shell.Item.HasItem && !shell.Item.IsLoading);
+        Assert.Equal("Try the queue", shell.Item.Title);
+    }
+
     // §8: G then Q / R / W within 1 s; the chord shows "G …" while it waits and lapses after 1 s.
     [Fact]
     public async Task The_g_chord_goes_to_the_queue_and_its_filters()

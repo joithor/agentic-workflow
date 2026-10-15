@@ -75,7 +75,7 @@ public sealed class QueueFocusTests : IDisposable
         Dispatcher.UIThread.RunJobs();
     }
 
-    private static async Task Until(Window window, Func<bool> condition)
+    private static async Task Until(Window window, Func<bool> condition, string what = "the view never reached the expected state")
     {
         for (var i = 0; i < 300 && !condition(); i++)
         {
@@ -84,7 +84,7 @@ public sealed class QueueFocusTests : IDisposable
         }
 
         Settle(window);
-        Assert.True(condition(), "the view never reached the expected state");
+        Assert.True(condition(), what);
     }
 
     private static T Named<T>(Visual within, string name)
@@ -233,5 +233,47 @@ public sealed class QueueFocusTests : IDisposable
         Settle(window);
 
         Assert.Equal(selected, shell.Queue.SelectedId);
+    });
+
+    private static bool OnRowFrame(Window window, string id) =>
+        Focused(window) is Border frame && string.Equals(frame.Name, "RowFrame", StringComparison.Ordinal) && (frame.DataContext as ViewModels.Queue.ItemRowViewModel)?.Id == id;
+
+    // L5 (§11.2): the sheet that covers the page takes focus (its title); Esc gives it back to the row that opened it, by id.
+    [Fact]
+    public Task Esc_from_the_covering_sheet_returns_focus_to_the_row_that_opened_it() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(width: 1000);
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+        window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
+        window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
+        await Until(window, () => shell.Queue.SelectedId is not null && FocusedRowId(window) == shell.Queue.SelectedId);
+        var opener = shell.Queue.SelectedId!;
+
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        await Until(window, () => shell.IsSheetShown && string.Equals(Focused(window)?.Name, "SheetTitle", StringComparison.Ordinal));
+        Assert.Equal(opener, shell.SheetSubject);
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        await Until(window, () => !shell.IsSheetShown && OnRowFrame(window, opener));
+    });
+
+    // L5: beside the page (wide window) the same: Esc from inside the sheet returns to the opening row.
+    [Fact]
+    public Task Esc_from_the_beside_sheet_returns_focus_to_the_row_that_opened_it() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(width: 1400);
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+        window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
+        await Until(window, () => shell.Queue.SelectedId is not null && FocusedRowId(window) == shell.Queue.SelectedId);
+        var opener = shell.Queue.SelectedId!;
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        await Until(window, () => shell.IsSheetShown);
+        await Until(window, () => shell.Item.HasItem || shell.Item.IsNotFound);
+
+        Assert.True(Named<Button>(window, "SheetClose").Focus(NavigationMethod.Tab));
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        await Until(window, () => !shell.IsSheetShown && OnRowFrame(window, opener));
     });
 }
