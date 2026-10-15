@@ -10,6 +10,7 @@ public sealed class ProbeRunnerTests
     private static readonly ProbeFile _file = new("/probes/probes.json", "abc123",
         new ProbeSet([Answers.Probe("one", nodes: ["feature:a"]), Answers.Probe("two", nodes: ["feature:b"])]));
 
+    private static readonly string[] _nodes = ["feature:a", "feature:b", "feature:c"];
     private static CancellationToken None => TestContext.Current.CancellationToken;
 
     [Fact, Trait("Lane", "unit")]
@@ -47,6 +48,34 @@ public sealed class ProbeRunnerTests
         Assert.Equal(ContextErrors.SessionsDisabled.Code, some.Probes[1].Error);
         Assert.Equal(0.0, some.Probes[1].PrecisionAt5);
         Assert.Equal(ContextErrors.SessionsDisabled.Code, all.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_run_with_a_failed_question_is_incomplete_and_never_a_regression_whatever_its_scores()
+    {
+        var previous = new ProbeReport(1, _file.Path, _file.Hash, "v1", [], new ProbeTotals(1.0, 1.0, 2, Answers.At.AddDays(-1)), Previous: null, Regressed: false);
+
+        var report = (await ProbeRunner.Run(_file, Fails("two"), previous, Answers.At, None)).Value;
+
+        Assert.True(report.Incomplete);
+        Assert.False(report.Regressed);
+        Assert.False(report.IsBaseline);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(0, 1, true)]
+    [InlineData(1, 1, false)]
+    [InlineData(2, 1, false)]
+    public async Task A_run_that_names_more_absent_nodes_than_the_previous_one_regressed_even_when_the_scores_hold(int before, int now, bool regressed)
+    {
+        var file = new ProbeFile("/probes/probes.json", "abc123", new ProbeSet([Answers.Probe("one", nodes: ["feature:a"], absent: ["feature:b", "feature:c"])]));
+        var previous = new ProbeReport(1, file.Path, file.Hash, "v1", [], new ProbeTotals(1.0, 1.0, 1, Answers.At.AddDays(-1), AbsentReturned: before), Previous: null, Regressed: false);
+        var items = _nodes.Take(1 + now).Select(n => ("graph", Answers.Item(n))).ToArray();
+
+        var report = (await ProbeRunner.Run(file, (_, _) => ValueTask.FromResult(Results.Success(Answers.Of(items))), previous, Answers.At, None)).Value;
+
+        Assert.Equal(now, report.Totals.AbsentReturned);
+        Assert.Equal(regressed, report.Regressed);
     }
 
     [Theory, Trait("Lane", "unit")]

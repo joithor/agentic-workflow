@@ -5,4 +5,5 @@ namespace Aw.Context.Core.Eval;
 /// <param name="CitationCorrectness">The mean citation correctness.</param>
 /// <param name="Probes">How many probes ran.</param>
 /// <param name="RunAt">When the run was.</param>
-public sealed record ProbeTotals(double PrecisionAt5, double CitationCorrectness, int Probes, DateTimeOffset RunAt);
+/// <param name="AbsentReturned">How many absent nodes (a probe's 'absentNodes') the answers named anyway, over all probes; more than the previous run's is a regression. 0 in a report written before this count existed.</param>
+public sealed record ProbeTotals(double PrecisionAt5, double CitationCorrectness, int Probes, DateTimeOffset RunAt, int AbsentReturned = 0);

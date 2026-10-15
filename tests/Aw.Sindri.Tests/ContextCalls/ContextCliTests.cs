@@ -84,6 +84,35 @@ public sealed class ContextCliTests
     }
 
     [Theory, Trait("Lane", "unit")]
+    [InlineData(false, false, 0)]
+    [InlineData(true, false, 1)]
+    [InlineData(false, true, 2)]
+    [InlineData(true, true, 2)]
+    public void An_incomplete_probe_run_exits_2_before_it_can_be_a_regression(bool regressed, bool failedProbe, int exit)
+    {
+        var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
+        ProbeScore[] probes = [new ProbeScore(ProbeId.From("one"), 0, 0, [], [], [], failedProbe ? "SND-CONTEXT-011" : null)];
+        var report = new ProbeReport(1, "/p/probes.json", "h", "v1", probes, new ProbeTotals(0.6, 1, 1, at), Previous: null, regressed);
+
+        Assert.Equal(exit, ContextEvalVerbs.Exit(new ProbeRun(report, failedProbe ? null : "/p/r.json")));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_text_of_an_incomplete_run_names_each_failed_probe_and_says_nothing_was_saved()
+    {
+        var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
+        var report = new ProbeReport(1, "/p/probes.json", "h", "v1", [new ProbeScore(ProbeId.From("orientation-cascade"), 0, 0, [], [], [], "SND-CONTEXT-011")],
+            new ProbeTotals(0, 0, 1, at), Previous: null, Regressed: false);
+
+        var text = ContextEvalText.Report(report, path: null);
+
+        Assert.Contains("INCOMPLETE", text, StringComparison.Ordinal);
+        Assert.Contains("orientation-cascade: SND-CONTEXT-011", text, StringComparison.Ordinal);
+        Assert.Contains("not saved", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("REGRESSED", text, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
     [InlineData(null, false, "first run: nothing to compare")]
     [InlineData(0.5, false, "no regression")]
     [InlineData(0.9, true, "REGRESSED: SND-CONTEXT-038")]

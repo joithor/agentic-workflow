@@ -14,4 +14,12 @@ public sealed record ProbeReport(int SchemaVersion, string ProbeFile, string Pro
 {
     /// <summary>The report format this build writes.</summary>
     public const int CurrentSchemaVersion = 1;
+
+    /// <summary>True when any probe's query failed: the run says nothing about retrieval, so it is neither a regression nor a baseline, and it is not saved.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool Incomplete => Probes.Any(p => p.Error is not null);
+
+    /// <summary>True when a later run may be compared with this one: it is complete and did not regress.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsBaseline => !Regressed && !Incomplete;
 }

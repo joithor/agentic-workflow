@@ -7,7 +7,7 @@ namespace Aw.Sindri.Host.Text;
 /// <summary>The text form of a probe run: each probe's precision@5, the means, the previous run beside them, and the verdict in words.</summary>
 internal static class ContextEvalText
 {
-    internal static string Report(ProbeReport report, string path)
+    internal static string Report(ProbeReport report, string? path)
     {
         var text = new StringBuilder(Invariant($"probes {report.ProbeFile} · map {report.MapVersion ?? "none"} · {report.Totals.Probes} probe(s)\n"));
         foreach (var probe in report.Probes)
@@ -23,7 +23,7 @@ internal static class ContextEvalText
             : "previous run: none");
         _ = text.AppendLine(report.Regressed ? "REGRESSED: SND-CONTEXT-038 (lower than the previous run of this probe file)"
             : report.Previous is null ? "first run: nothing to compare" : "no regression");
-        return text.Append("report ").AppendLine(path).ToString();
+        return text.Append("report ").AppendLine(path ?? "not written").ToString();
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);

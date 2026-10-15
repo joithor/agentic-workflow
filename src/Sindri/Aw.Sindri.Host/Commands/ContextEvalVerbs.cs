@@ -34,11 +34,16 @@ internal sealed class ContextEvalVerbs(ControlPlaneClient client, Output output,
             return await Failed(run.Error).ConfigureAwait(false);
         }
 
-        var exit = run.Value.Report.Regressed ? 1 : 0;
+        var exit = Exit(run.Value);
         return json
             ? await output.Json(run.Value.Report, exit).ConfigureAwait(false)
             : await output.Text(ContextEvalText.Report(run.Value.Report, run.Value.Path), exit).ConfigureAwait(false);
     }
+
+    /// <summary>The exit code of a finished run: 0 no worse, 1 regressed.</summary>
+    /// <param name="run">The run.</param>
+    /// <returns>The code.</returns>
+    internal static int Exit(ProbeRun run) => run.Report.Regressed ? 1 : 0;
 
     private async ValueTask<Result<ContextResult>> Ask(ProbeCase probe, CancellationToken ct)
     {
