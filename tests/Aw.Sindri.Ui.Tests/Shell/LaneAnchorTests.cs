@@ -55,7 +55,9 @@ public sealed class LaneAnchorTests
     private static bool IsArmOrBlank(string line)
     {
         var text = line.Trim();
-        return text.Length == 0 || (text.StartsWith("DeepLinkKind.", StringComparison.Ordinal) && text.EndsWith("=> false,", StringComparison.Ordinal));
+        // An arm may wrap: `DeepLinkKind.A` on one line and `or DeepLinkKind.B => false,` on the next.
+        var kind = text.StartsWith("DeepLinkKind.", StringComparison.Ordinal) || text.StartsWith("or DeepLinkKind.", StringComparison.Ordinal);
+        return text.Length == 0 || (kind && (text.EndsWith("=> false,", StringComparison.Ordinal) || !text.Contains("=>", StringComparison.Ordinal)));
     }
 
     private static void AssertSwitch(string[] lines)
@@ -158,5 +160,16 @@ public sealed class LaneAnchorTests
         Assert.Empty(u3.Intersect(u8, StringComparer.Ordinal));
         Assert.Equal(u3.Order(StringComparer.Ordinal), Kinds("src/Sindri/Aw.Sindri.Ui/Views/Shell/ShellWindow.axaml", "LANE ANCHOR U3'").Order(StringComparer.Ordinal));
         Assert.Equal(u8.Order(StringComparer.Ordinal), Kinds("src/Sindri/Aw.Sindri.Ui/Views/Shell/ShellWindow.axaml", "LANE ANCHOR U8").Order(StringComparer.Ordinal));
+    }
+
+    // arch-3: every kind has an owner: one of the two lanes, U2's item sheet, Home's page link, or the phase that renders it later.
+    [Fact]
+    public void Every_deep_link_kind_is_claimed_by_a_lane_or_named_as_later()
+    {
+        string[] owned = ["Item", "HomeNeedsYou"];
+        string[] later = ["Recipe", "Node", "Session", "System", "Service", "Job"];
+        var claimed = Kinds(SheetPath, "LANE ANCHOR U3'").Concat(Kinds(SheetPath, "LANE ANCHOR U8")).Concat(owned).Concat(later);
+
+        Assert.Equal(Enum.GetNames<DeepLinkKind>().Order(StringComparer.Ordinal), claimed.Order(StringComparer.Ordinal));
     }
 }

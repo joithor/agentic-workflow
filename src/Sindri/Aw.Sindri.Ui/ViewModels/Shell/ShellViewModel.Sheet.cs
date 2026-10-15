@@ -24,7 +24,7 @@ internal sealed partial class ShellViewModel
     public string SheetName => SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? noun + " " + SheetSubject : SheetSubject;
 
     /// <summary>The edge tab's accessible name: "Reopen" and the sheet's name, its kind's noun in lower case.</summary>
-    public string EdgeTabName => Labels.Reopen + " " + (SheetName.Length > SheetSubject.Length ? char.ToLowerInvariant(SheetName[0]) + SheetName[1..] : SheetSubject);
+    public string EdgeTabName => Labels.Reopen + " " + (SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? char.ToLowerInvariant(noun[0]) + noun[1..] + " " + SheetSubject : SheetSubject);
 
     /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
     public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;

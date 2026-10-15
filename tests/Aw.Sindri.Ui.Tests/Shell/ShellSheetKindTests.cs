@@ -79,7 +79,9 @@ public sealed class ShellSheetKindTests
             shell.OpenSheet(new DeepLink(kind, kind == DeepLinkKind.HomeNeedsYou ? null : "X"));
 
             Assert.True(shell.IsSheetPlaceholderShown, kind.ToString());
-            Assert.EndsWith(kind == DeepLinkKind.HomeNeedsYou ? string.Empty : "X", shell.SheetName, StringComparison.Ordinal);
+            var noun = Labels.KindNoun(kind);
+            var subject = kind == DeepLinkKind.HomeNeedsYou ? string.Empty : "X";
+            Assert.Equal(noun.Length > 0 ? noun + " " + subject : subject, shell.SheetName);
         }
     }
 
