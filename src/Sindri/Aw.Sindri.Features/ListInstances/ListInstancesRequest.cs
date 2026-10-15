@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 
 namespace Aw.Sindri.Features.ListInstances;
 
@@ -10,10 +11,15 @@ namespace Aw.Sindri.Features.ListInstances;
 /// <param name="NeedsMe">What needs you: the Decisions and Tasks sections.</param>
 /// <param name="Item">Only this item's instances.</param>
 /// <param name="State">Only instances in this state ('produce', 'parked', 'done').</param>
+/// <param name="Recipe">Only instances of this recipe (the recipe id).</param>
+/// <param name="Urgency">Only instances of recipes with this urgency.</param>
+/// <param name="Subject">Only instances whose first input fact has this key.</param>
+/// <param name="Root">Only top-level instances (true) or only children (false).</param>
 /// <param name="Query">A visibility query on the search attributes, ANDed with the rest.</param>
 /// <param name="Address">
 /// A CLI address ('T-3/item/1') or bare item: the one instance it names (spec §6.3 'address'), whose id the CLI then
 /// uses on the instance routes; SND-WF-001 when there is none. The other filters don't apply with it.
 /// </param>
-public sealed record ListInstancesRequest(bool NeedsMe = false, ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null)
+public sealed record ListInstancesRequest(bool NeedsMe = false, ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null,
+    string? Recipe = null, Urgency? Urgency = null, string? Subject = null, bool? Root = null)
     : IQuery<ListInstancesResponse>;

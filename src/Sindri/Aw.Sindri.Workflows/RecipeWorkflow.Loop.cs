@@ -1,9 +1,11 @@
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
+using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Temporalio.Common;
@@ -147,8 +149,9 @@ internal sealed partial class RecipeWorkflow
     };
 
     /// <summary>
-    /// Sets the search attributes (spec §5.1) as they stand: 'Item', 'Recipe', 'State', 'NeedsYou', 'Tenant' and 'Ring'
-    /// from the input and the instance, and 'Repo' when 'fact:item' named one.
+    /// Sets the search attributes (spec §5.1) as they stand: 'Item', 'Recipe', 'State', 'NeedsYou', 'Tenant', 'Ring' and
+    /// 'Root' from the input and the instance, 'Urgency' and 'Subject' (the first declared input's key) from the recipe,
+    /// and 'Repo' when 'fact:item' named one.
     /// </summary>
     private void Upsert(string state, bool needsYou)
     {
@@ -161,7 +164,17 @@ internal sealed partial class RecipeWorkflow
             SindriTemporal.NeedsYouKey.ValueSet(needsYou),
             SindriTemporal.TenantKey.ValueSet(start.Tenant),
             SindriTemporal.RingKey.ValueSet(start.Ring.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            SindriTemporal.RootKey.ValueSet(Workflow.Info.Parent is null),
         ];
+        if (_recipe is { } recipe)
+        {
+            updates.Add(SindriTemporal.UrgencyKey.ValueSet(InstanceFilters.Name(RecipeUrgency.Of(recipe))));
+            if (recipe.Recipe.Inputs.Count > 0)
+            {
+                updates.Add(SindriTemporal.SubjectKey.ValueSet(recipe.Recipe.Inputs[0].Key.Value));
+            }
+        }
+
         if (_repo is { } repo)
         {
             updates.Add(SindriTemporal.RepoKey.ValueSet(repo));

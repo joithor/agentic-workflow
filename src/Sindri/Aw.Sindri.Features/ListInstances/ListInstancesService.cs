@@ -32,7 +32,11 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return SindriErrors.InvalidInput.With($"'{state}' isn't a state name (fix: --state <name>, e.g. --state produce or --state parked)");
         }
 
-        var rows = await instances.List(Query(request), ended: request.Item is not null || request.State is not null, cancellationToken).ConfigureAwait(false);
+        var filter = Filter(request);
+        var ended = request.Item is not null || request.State is not null;
+        var rows = request.Query is { Length: > 0 } query
+            ? await instances.List(Joined(InstanceFilters.ToQuery(filter), query), ended, cancellationToken).ConfigureAwait(false)
+            : await instances.List(filter, ended, cancellationToken).ConfigureAwait(false);
         if (rows.IsError)
         {
             return rows.Error;
@@ -57,7 +61,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             }
         }
 
-        return Listed(request.NeedsMe, views);
+        return Listed(request.NeedsMe, views, byAddress: request.Query is { Length: > 0 });
     }
 
     /// <summary>The one instance an address or bare item names, as 'GetInstance' shows it (its id included).</summary>
@@ -73,7 +77,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         return view.IsError ? view.Error : new ListInstancesResponse([view.Value], NeedsYou: null, Empty: null);
     }
 
-    private static ListInstancesResponse Listed(bool needsMe, List<InstanceView> views)
+    private static ListInstancesResponse Listed(bool needsMe, List<InstanceView> views, bool byAddress)
     {
         if (needsMe)
         {
@@ -81,36 +85,22 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return new([.. sections.Decisions, .. sections.Tasks], sections, sections.IsEmpty ? NeedsYouList.Nothing : null);
         }
 
-        var sorted = views.OrderBy(static v => v.Address.Value, StringComparer.Ordinal).ToList();
+        var sorted = byAddress ? views.OrderBy(static v => v.Address.Value, StringComparer.Ordinal).ToList() : views;   // a typed list keeps the port's order: urgency, then oldest
         return new(sorted, NeedsYou: null, sorted.Count == 0 ? "no instances match" : null);
     }
 
-    /// <summary>The visibility query: each filter given, ANDed.</summary>
-    private static string? Query(ListInstancesRequest request)
-    {
-        var parts = new List<string>(4);
-        if (request.NeedsMe)
-        {
-            parts.Add("NeedsYou = true");
-        }
+    /// <summary>The typed filters the request gives ('--needs-me' is "NeedsYou = true").</summary>
+    private static InstanceFilter Filter(ListInstancesRequest request) => new(
+        request.Recipe,
+        request.State,
+        request.NeedsMe ? true : null,
+        request.Urgency,
+        request.Item?.Value,
+        request.Subject,
+        request.Root);
 
-        if (request.Item is { } item)
-        {
-            parts.Add($"Item = '{item.Value}'");
-        }
-
-        if (request.State is { } state)
-        {
-            parts.Add($"State = '{state}'");
-        }
-
-        if (request.Query is { Length: > 0 } query)
-        {
-            parts.Add($"({query})");
-        }
-
-        return parts.Count == 0 ? null : string.Join(" AND ", parts);
-    }
+    /// <summary>The typed filters' query, ANDed with the caller's raw one.</summary>
+    private static string Joined(string? typed, string query) => typed is null ? $"({query})" : $"{typed} AND ({query})";
 
     [GeneratedRegex("^[a-z][a-z0-9-]{0,63}\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex StateName { get; }

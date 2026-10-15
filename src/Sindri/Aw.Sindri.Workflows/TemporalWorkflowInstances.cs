@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
+using Aw.Sindri.Core.Workflow.Engine.Runtime.Layout;
 using Temporalio.Exceptions;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -16,6 +17,18 @@ internal sealed class TemporalWorkflowInstances(TemporalFrontend frontend) : IWo
     private const string Recipes = "WorkflowType = 'RecipeWorkflow'";
 
     private const string Open = Recipes + " AND ExecutionStatus = 'Running'";
+
+    public async ValueTask<Result<IReadOnlyList<InstanceRow>>> List(InstanceFilter filter, bool ended, CancellationToken cancellationToken)
+    {
+        // why: the query is built from quoted literals only (InstanceFilters.ToQuery), so it never fails as a query
+        var listed = await List(InstanceFilters.ToQuery(filter), ended, cancellationToken).ConfigureAwait(false);
+        if (listed.IsError)
+        {
+            return listed.Error;
+        }
+
+        return Results.Success(InstanceFilters.Order(listed.Value));
+    }
 
     public async ValueTask<Result<IReadOnlyList<InstanceRow>>> List(string? query, bool ended, CancellationToken cancellationToken)
     {
@@ -36,7 +49,11 @@ internal sealed class TemporalWorkflowInstances(TemporalFrontend frontend) : IWo
                     execution.Id,
                     attributes.TryGetValue(SindriTemporal.StateKey, out var state) ? state : null,
                     attributes.TryGetValue(SindriTemporal.NeedsYouKey, out var needsYou) && needsYou,
-                    new DateTimeOffset(DateTime.SpecifyKind(execution.StartTime, DateTimeKind.Utc))));
+                    new DateTimeOffset(DateTime.SpecifyKind(execution.StartTime, DateTimeKind.Utc)),
+                    attributes.TryGetValue(SindriTemporal.RecipeKey, out var recipe) ? recipe : null,
+                    attributes.TryGetValue(SindriTemporal.UrgencyKey, out var urgency) && InstanceFilters.TryParse(urgency, out var parsed) ? parsed : Urgency.Work,
+                    attributes.TryGetValue(SindriTemporal.SubjectKey, out var subject) ? subject : null,
+                    !attributes.TryGetValue(SindriTemporal.RootKey, out var root) || root));
             }
         }
         catch (RpcException e) when (e.Code == RpcException.StatusCode.InvalidArgument)
