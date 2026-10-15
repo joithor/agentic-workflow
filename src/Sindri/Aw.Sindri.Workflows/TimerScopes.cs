@@ -130,10 +130,16 @@ internal sealed class TimerScopes(string actor)
         {
             return;   // the scope was cancelled: a park, a stop, a re-arm, or the workflow's own cancellation
         }
+        finally
+        {
+            if (arming == _armed)
+            {
+                _cancel = null;   // the scope is disposed on leaving: a later Stop() must not reach it (a newer arming keeps its own)
+            }
+        }
 
         if (arming == _armed)
         {
-            _cancel = null;
             _firesAt = null;
             _fired = fired;
         }
@@ -215,10 +221,16 @@ internal sealed class TimerScopes(string actor)
         {
             return;   // the handback, a cancel, or the workflow's own cancellation
         }
+        finally
+        {
+            if (arming == _idleArmed)
+            {
+                _idleCancel = null;   // the scope is disposed on leaving: a later StopIdle() must not reach it (a newer arming keeps its own)
+            }
+        }
 
         if (arming == _idleArmed)
         {
-            _idleCancel = null;
             _idleFired = fired;
         }
     }
