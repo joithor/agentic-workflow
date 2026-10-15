@@ -4,7 +4,7 @@ import { chromium, type Browser, type Page } from "playwright";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ScriptStep } from "../../src/script-schema.js";
-import { executeStep, type RepairFn } from "../../src/step-exec.js";
+import { executeStep, performAction, type RepairFn } from "../../src/step-exec.js";
 import { startFixture } from "./fixture.js";
 
 let browser: Browser;
@@ -129,6 +129,54 @@ describe("executeStep selector repair", () => {
     };
     expect(await executeStep(page, brokenClick, fixture.host, repair, T)).toBe("broken");
   }, 20_000);
+});
+
+describe("executeStep role/text targets", () => {
+  it("clicks by role + exact accessible name", async () => {
+    expect(await executeStep(page, click("role:button|Save", saved), fixture.host, never, T)).toBe("passed");
+  });
+
+  it("fills by role + accessible name", async () => {
+    expect(await executeStep(page, { action: "fill", target: "role:textbox|Note", value: "hi", expectedState: { kind: "input-value", testId: "note-input", value: "hi" } }, fixture.host, never, T)).toBe("passed");
+  });
+
+  it("clicks by exact text", async () => {
+    expect(await executeStep(page, click("text:Do nothing", { kind: "text-visible", text: "Schedule" }), fixture.host, never, T)).toBe("passed");
+  });
+
+  it("matches the accessible name exactly, not as a substring", async () => {
+    expect(await executeStep(page, click("role:button|Sav", saved), fixture.host, never, T)).toBe("broken");
+  });
+
+  it("fails loudly on an ambiguous locator and never clicks the first match", async () => {
+    const outcome = await executeStep(page, click("role:button|Twin", { kind: "text-visible", text: "Twin" }), fixture.host, never, T);
+    expect(outcome).toBe("broken");
+    expect(await out()).toBe("");
+    await expect(performAction(page, click("text:Twin", saved), fixture.host, T)).rejects.toThrow(/strict mode violation/);
+  });
+
+  it("fails text: substrings and ambiguous fills", async () => {
+    expect(await executeStep(page, click("text:Do", { kind: "text-visible", text: "Schedule" }), fixture.host, never, T)).toBe("broken");
+    expect(await executeStep(page, { action: "fill", target: "role:textbox|Dup", value: "x", expectedState: { kind: "testid-visible", testId: "note-input" } }, fixture.host, never, T)).toBe("broken");
+  });
+
+  it("picks the nth of duplicate matches with #<n> and fails clearly when out of range", async () => {
+    const twin = (n: number): ScriptStep => click(`role:button|Twin#${n}`, { kind: "text-visible", text: "Twin" });
+    expect(await executeStep(page, twin(2), fixture.host, never, T)).toBe("passed");
+    expect(await out()).toBe("Twin");
+    expect(await executeStep(page, twin(3), fixture.host, never, T)).toBe("broken");
+    await expect(performAction(page, twin(3), fixture.host, T)).rejects.toThrow(/asked for match #3 but only 2 found/);
+  });
+
+  it("never asks the judge to repair a missing role/text target", async () => {
+    const repair = vi.fn(async () => null);
+    expect(await executeStep(page, click("role:button|Nope", saved), fixture.host, repair, T)).toBe("broken");
+    expect(repair).not.toHaveBeenCalled();
+  });
+
+  it("a bare target still resolves as a test id", async () => {
+    expect(await executeStep(page, click("save-renamed", saved), fixture.host, never, T)).toBe("passed");
+  });
 });
 
 describe("executeStep scroll", () => {

@@ -44,4 +44,9 @@ describe("parseDesignManifest", () => {
   it("rejects duplicate frame names, which would overwrite each other's PNGs", () => {
     expect(parseDesignManifest({ ...base, frames: [frame("A"), frame("A")] })).toEqual({ error: 'duplicate frame name "A"' });
   });
+  it("accepts role:/text: step targets and rejects malformed ones", () => {
+    const step = (target: string) => ({ action: "click", target, expectedState: { kind: "text-visible", text: "x" } });
+    expect(parseDesignManifest({ ...base, frames: [{ ...frame("A"), steps: [step("role:button|Save"), step("text:Unit 4200")] }] })).not.toHaveProperty("error");
+    expect(parseDesignManifest({ ...base, frames: [{ ...frame("A"), steps: [step("role:button")] }] })).toHaveProperty("error");
+  });
 });
