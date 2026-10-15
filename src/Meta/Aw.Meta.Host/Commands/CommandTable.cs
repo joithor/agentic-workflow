@@ -24,6 +24,11 @@ internal static class CommandTable
         InboxDeferCommand.Entry,
         LanesRefreshCommand.Entry,
         LanesCommand.Entry,
+        OwnerCommand.Entry,
+        OwnerAnswerCommand.Entry,
+        OwnerAskCommand.Entry,
+        LogAppendCommand.Entry,
+        StatusCommand.Entry,
     ];
 
     internal static IReadOnlyList<CommandEntry> Entries => _entries;
