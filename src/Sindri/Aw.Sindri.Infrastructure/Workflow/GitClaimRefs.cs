@@ -39,7 +39,7 @@ internal sealed class GitClaimRefs : IClaimRefs
 
         if (head is null)
         {
-            return WorkflowErrors.NoRuntime.With($"{repository} has no commit to point {reference} at (fix: commit once on its default branch; the claim waits and retries)");
+            return WorkflowErrors.NoRuntime.With($"{repository} has no commit to point {reference} at (fix: commit once on its default branch, then resume the parked instance to send the claim again)");
         }
 
         var created = await Git(repository, ["update-ref", "-m", "sindri: claim", reference, head, ""], cancellationToken).ConfigureAwait(false);
@@ -48,9 +48,15 @@ internal sealed class GitClaimRefs : IClaimRefs
             return true;
         }
 
-        return await Commit(repository, reference, cancellationToken).ConfigureAwait(false) is { Exit: 0 }
-            ? false   // created by a concurrent take between the check and the write
-            : WorkflowErrors.NoRuntime.With($"git update-ref {reference} failed in {repository}: {created.Error.Trim()} (fix: check the repo; the claim retries)");
+        if (await Commit(repository, reference, cancellationToken).ConfigureAwait(false) is { Exit: 0 })
+        {
+            return false;   // created by a concurrent take between the check and the write
+        }
+
+        // A lock another git holds passes: the error is retryable (the effect retries it). Anything else can't be fixed by trying again.
+        return created.Error.Contains(".lock", StringComparison.Ordinal)
+            ? WorkflowErrors.EffectFailed.With($"git update-ref {reference} in {repository} is locked: {created.Error.Trim()} (retrying)")
+            : WorkflowErrors.NoRuntime.With($"git update-ref {reference} failed in {repository}: {created.Error.Trim()} (fix: check the repo, then resume the parked instance to send the claim again)");
     }
 
     /// <summary>The commit <paramref name="name"/> names, if it names one.</summary>
