@@ -104,7 +104,16 @@ public sealed class InMemorySindriStore(TimeProvider clock, IProcessProbe probe)
 
     /// <inheritdoc/>
     public ValueTask<Result<LedgerScan>> Scan(long sequence, int max, LedgerFilter filter, CancellationToken cancellationToken)
-        => throw new NotSupportedException("InMemorySindriStore.Scan: P5 unit B makes the LedgerReaderContract Scan cases pass");
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        lock (_gate)
+        {
+            var upper = filter.UpperFrom(sequence);
+            var kept = _events.Where(e => e.Sequence > sequence && e.Sequence <= upper && filter.Keeps(e)).Take(Math.Max(max, 1)).ToList();
+            var head = _events.Count == 0 ? 0 : _events[^1].Sequence;
+            return ValueTask.FromResult<Result<LedgerScan>>(filter.Scanned(sequence, head, max, kept));
+        }
+    }
 
     /// <inheritdoc cref="ILedgerStore.ReadAfter"/>
     public ValueTask<Result<IReadOnlyList<LedgerEvent>>> ReadAfter(long sequence, int max, CancellationToken cancellationToken)

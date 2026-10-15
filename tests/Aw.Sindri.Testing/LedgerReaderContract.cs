@@ -137,6 +137,29 @@ public abstract class LedgerReaderContract
         Expect.Equal(6L, second.ScannedTo);
     }
 
+    /// <summary>A page that fills ends at its last row, so the next call resumes right after it; an exact type matches no longer type.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Scan_ends_a_full_page_at_its_last_row()
+    {
+        var (lease, ledger) = await Create(Clock, Probe);
+        var grant = (await lease.Acquire(Probe.Self(), Token)).Value;
+        _ = await ledger.Append(Entry("service.ran", "k1"), grant, Token);
+        _ = await ledger.Append(Entry("service.ran-late", "k2"), grant, Token);
+        _ = await ledger.Append(Entry("service.ran", "k3"), grant, Token);
+        _ = await ledger.Append(Entry("service.ran", "k4"), grant, Token);
+        var filter = new LedgerFilter(TypeFilter.Parse("service.ran").Value, Item: null);
+        var reader = Reader();
+
+        var first = (await reader.Scan(0, 2, filter, Token)).Value;
+        var second = (await reader.Scan(first.ScannedTo, 2, filter, Token)).Value;
+
+        Expect.Sequence(["k1", "k3"], first.Events.Select(e => e.IdempotencyKey));
+        Expect.Equal(3L, first.ScannedTo);
+        Expect.Sequence(["k4"], second.Events.Select(e => e.IdempotencyKey));
+        Expect.Equal(4L, second.ScannedTo);
+    }
+
     /// <summary>On a ledger nothing was written to, a scan is empty at sequence 0 and creates no file.</summary>
     /// <returns>The test.</returns>
     [Fact]

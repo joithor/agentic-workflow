@@ -15,8 +15,18 @@ internal sealed class SqliteLedgerReader(LedgerDatabase database) : ILedgerReade
         Read(new SqlStatement(LedgerSql.SelectAfter, c => c.Bind("$seq", sequence).Bind("$max", Math.Max(max, 1))), LedgerEventMapper.Instance,
             cancellationToken);
 
-    public ValueTask<Result<LedgerScan>> Scan(long sequence, int max, LedgerFilter filter, CancellationToken cancellationToken)
-        => throw new NotSupportedException("SqliteLedgerReader.Scan: P5 unit B makes the LedgerReaderContract Scan cases pass");
+    public async ValueTask<Result<LedgerScan>> Scan(long sequence, int max, LedgerFilter filter, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        var head = await Head(cancellationToken).ConfigureAwait(false);   // before the rows: a row appended in between is only ever read twice, never skipped
+        if (head.IsError)
+        {
+            return head.Error;
+        }
+
+        var rows = await Read(LedgerSql.ScanAfter(sequence, Math.Max(max, 1), filter), LedgerEventMapper.Instance, cancellationToken).ConfigureAwait(false);
+        return rows.IsError ? rows.Error : filter.Scanned(sequence, head.Value, max, rows.Value);
+    }
 
     public async ValueTask<Result<LedgerEvent?>> Latest(string type, CancellationToken cancellationToken)
     {

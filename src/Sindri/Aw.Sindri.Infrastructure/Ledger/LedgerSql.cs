@@ -1,3 +1,7 @@
+using System.Globalization;
+using Aw.Kernel.Data;
+using Aw.Sindri.Core.Ledger;
+
 namespace Aw.Sindri.Infrastructure.Ledger;
 
 /// <summary>The ledger's SQL. Engine-specific forms (ON CONFLICT upserts, RETURNING) stay here, named.</summary>
@@ -31,6 +35,40 @@ internal static class LedgerSql
         "$ring, $item, $correlationId, $causationId, $traceId, $epoch, $key, $payload, $temporalEventId) RETURNING seq";
 
     internal const string SelectAfter = "SELECT " + EventColumns + " FROM events WHERE seq > $seq ORDER BY seq LIMIT $max";
+
+    /// <summary>
+    /// The filtered read: rows after the cursor, no further than the scan limit, that the filter keeps, oldest first. Each glob is a
+    /// bound parameter ('type = $t0' or "type LIKE $t1 ESCAPE '\'"); no text from a caller reaches the SQL string. The walk is over
+    /// the primary key, so it needs no index.
+    /// </summary>
+    internal static SqlStatement ScanAfter(long sequence, int max, LedgerFilter filter)
+    {
+        var globs = filter.Types?.Globs ?? [];
+        var types = globs.Count == 0
+            ? string.Empty
+            : " AND (" + string.Join(" OR ", globs.Select(static (g, i) => IsPrefix(g) ? "type LIKE " + TypeParam(i) + " ESCAPE '\\'" : "type = " + TypeParam(i))) + ")";
+        var sql = "SELECT " + EventColumns + " FROM events WHERE seq > $seq AND seq <= $upper" + types +
+            (filter.Item is null ? string.Empty : " AND item = $item") + " ORDER BY seq LIMIT $max";
+        return new SqlStatement(sql, c =>
+        {
+            _ = c.Bind("$seq", sequence).Bind("$upper", filter.UpperFrom(sequence)).Bind("$max", max);
+            if (filter.Item is { } item)
+            {
+                _ = c.Bind("$item", item.Value);
+            }
+
+            for (var i = 0; i < globs.Count; i++)
+            {
+                _ = c.Bind(TypeParam(i), IsPrefix(globs[i]) ? EscapeLike(globs[i][..^1]) + "%" : globs[i]);
+            }
+        });
+    }
+
+    private static string TypeParam(int index) => "$t" + index.ToString(CultureInfo.InvariantCulture);
+
+    private static bool IsPrefix(string glob) => glob.EndsWith(".*", StringComparison.Ordinal);
+
+    private static string EscapeLike(string text) => text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("%", "\\%", StringComparison.Ordinal).Replace("_", "\\_", StringComparison.Ordinal);
 
     internal const string SelectHead = "SELECT COALESCE(MAX(seq), 0) FROM events";
 

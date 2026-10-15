@@ -7,7 +7,7 @@ using Aw.Sindri.Core.Ledger;
 namespace Aw.Sindri.Core.Items;
 
 /// <summary>
-/// <see cref="IItemRepos"/> over the ledger: one forward pass over the 'item.created' rows, remembered, so each lookup
+/// <see cref="IItemRepos"/> over the ledger: a forward scan over the 'item.created' rows, remembered, so each lookup
 /// reads only what no earlier lookup read (an item's repo never changes). It reads the ledger itself, never the views.
 /// </summary>
 /// <param name="ledger">The ledger, read-only.</param>
@@ -15,6 +15,8 @@ namespace Aw.Sindri.Core.Items;
 internal sealed class LedgerItemRepos(ILedgerReader ledger, EventFactory events) : IItemRepos, IDisposable
 {
     private const int Page = 500;
+
+    private static readonly LedgerFilter _created = new(TypeFilter.Parse(EventTypes.ItemCreated).Value, Item: null);
 
     private readonly ConcurrentDictionary<string, RepoName?> _known = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _pass = new(1, 1);
@@ -32,26 +34,23 @@ internal sealed class LedgerItemRepos(ILedgerReader ledger, EventFactory events)
         {
             while (!_known.ContainsKey(item.Value))
             {
-                var page = await ledger.ReadAfter(_readTo, Page, cancellationToken).ConfigureAwait(false);
-                if (page.IsError)
+                var scan = await ledger.Scan(_readTo, Page, _created, cancellationToken).ConfigureAwait(false);
+                if (scan.IsError)
                 {
-                    return page.Error;
+                    return scan.Error;
                 }
 
-                foreach (var row in page.Value)
+                foreach (var row in scan.Value.Events)
                 {
                     Index(row);
                 }
 
-                if (page.Value.Count > 0)
+                if (scan.Value.ScannedTo <= _readTo)
                 {
-                    _readTo = page.Value[^1].Sequence;
+                    break;   // no progress: the head
                 }
 
-                if (page.Value.Count < Page)
-                {
-                    break;
-                }
+                _readTo = scan.Value.ScannedTo;
             }
         }
         finally
