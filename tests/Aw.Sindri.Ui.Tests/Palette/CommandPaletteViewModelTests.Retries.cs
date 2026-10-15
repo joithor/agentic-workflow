@@ -26,11 +26,21 @@ public sealed partial class CommandPaletteViewModelTests
         _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005", "failed");
         var rebuild = SelectRebuild();
         var spoken = Spoken();
+        var live = new List<string>();
+        _palette.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CommandPaletteViewModel.Announcement) && _palette.IsAnnouncing)
+            {
+                live.Add(_palette.Announcement);
+            }
+        };
 
         await _palette.Run(rebuild, Token);
         await _palette.Run(rebuild, Token);
 
         Assert.Equal(2, spoken.Count(t => t.Contains("SND-API-005: failed", StringComparison.Ordinal)));
+        Assert.Equal(2, live.Count(t => t.Contains("SND-API-005: failed", StringComparison.Ordinal)));
+        Assert.DoesNotContain("Command palette", live);   // the neutral text it rests on is never spoken: the region is dark for it
     }
 
     [Fact]

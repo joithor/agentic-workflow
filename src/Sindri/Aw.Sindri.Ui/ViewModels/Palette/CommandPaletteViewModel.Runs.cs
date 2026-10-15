@@ -6,8 +6,17 @@ namespace Aw.Sindri.Ui.ViewModels.Palette;
 /// <summary>The command palette (<see cref="CommandPaletteViewModel"/>, continued): the runs it started and how it announces them.</summary>
 internal sealed partial class CommandPaletteViewModel
 {
-    // The entries the palette ran whose control it mutes until it has announced the outcome (true: a copy).
-    private readonly Dictionary<PaletteEntry, bool> _ran = [];
+    // The entries the palette ran whose control it mutes until it has announced the outcome.
+    private readonly Dictionary<PaletteEntry, Ran> _ran = [];
+
+    // One run the palette announces: a copy or a send, and the entry's name as last said, so the same status is said once
+    // (the outcome arrives through several changes) and a new run says its outcome even when it equals the last run's.
+    private sealed class Ran(bool copy)
+    {
+        public bool Copy { get; } = copy;
+
+        public string? Said { get; set; }
+    }
 
     // The palette speaks the lifecycle of the entries it runs through its own live region, so it mutes those entries' controls
     // for that run and no others (a run that did not start here is spoken by its control, whatever is open): the run is
@@ -15,7 +24,7 @@ internal sealed partial class CommandPaletteViewModel
     private void Track(PaletteEntry entry, ControlViewModel control, bool copy)
     {
         Release(entry);
-        _ran[entry] = copy;
+        _ran[entry] = new Ran(copy);
         control.IsMuted = true;
         entry.PropertyChanged += OnRanChanged;
     }
@@ -38,6 +47,10 @@ internal sealed partial class CommandPaletteViewModel
         if (!IsCopied(control))
         {
             Release(entry);   // nothing was copied: nothing to announce, nothing to wait for
+        }
+        else if (_ran.TryGetValue(entry, out var ran))
+        {
+            Say(entry, ran);   // a second Copy inside the 1.5 s changes nothing the entry shows; this says "Copied" again
         }
     }
 
@@ -72,17 +85,17 @@ internal sealed partial class CommandPaletteViewModel
     // is not announced: the first 300 ms of a send (the region would say the entry again) and the settling back to ready.
     private void OnRanChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(PaletteEntry.Name) || sender is not PaletteEntry { Control: { } control } entry || !_ran.TryGetValue(entry, out var copy))
+        if (e.PropertyName != nameof(PaletteEntry.Name) || sender is not PaletteEntry { Control: { } control } entry || !_ran.TryGetValue(entry, out var ran))
         {
             return;
         }
 
         if (Speaks(control))
         {
-            Say(entry);
+            Say(entry, ran);
         }
 
-        if (copy ? !IsCopied(control) : control.IsAccepted || control.IsFailed)
+        if (ran.Copy ? !IsCopied(control) : control.IsAccepted || control.IsFailed)
         {
             Release(entry);
         }
@@ -90,15 +103,24 @@ internal sealed partial class CommandPaletteViewModel
 
     private static bool Speaks(ControlViewModel control) => control.IsAnnouncingSending || control.IsAccepted || control.IsFailed || IsCopied(control);
 
-    private void Say(PaletteEntry entry)
+    // Says the entry's status once: skipped when its name is what this run said last. A text the region already holds (the
+    // same refusal on a retry) is rested on a neutral text with the region dark first, as the controls do, so it is a change.
+    private void Say(PaletteEntry entry, Ran ran)
     {
-        if (entry == Selected)
+        if (string.Equals(ran.Said, entry.Name, StringComparison.Ordinal))
         {
-            Announce();
+            return;
         }
-        else
+
+        ran.Said = entry.Name;
+        var text = entry == Selected ? Describe() : entry.Name;
+        if (string.Equals(Announcement, text, StringComparison.Ordinal))
         {
-            Announcement = entry.Name;
+            IsAnnouncing = false;
+            Announcement = Labels.Palette;
+            IsAnnouncing = true;
         }
+
+        Announcement = text;
     }
 }

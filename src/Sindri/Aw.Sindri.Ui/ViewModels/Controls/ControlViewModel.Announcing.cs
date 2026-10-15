@@ -42,6 +42,11 @@ internal sealed partial class ControlViewModel
             return;
         }
 
+        if (IsAnnouncing && string.Equals(Announcement, text, StringComparison.Ordinal))
+        {
+            IsAnnouncing = false;   // the same text again (a second Copy) is still a change: dark first, then the resting text
+        }
+
         if (!IsAnnouncing)
         {
             Announcement = Label;

@@ -537,6 +537,7 @@ public sealed partial class CommandPaletteViewModelTests
 
         await _palette.Run(rebuild, Token);
 
+        Assert.Contains(spoken, t => t.StartsWith("Rebuild views: done", StringComparison.Ordinal));
         Assert.All(spoken, t =>
         {
             Assert.DoesNotContain(", :", t, StringComparison.Ordinal);

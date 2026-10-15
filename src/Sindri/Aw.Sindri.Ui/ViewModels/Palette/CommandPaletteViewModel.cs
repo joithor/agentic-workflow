@@ -78,6 +78,9 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     /// <summary>The polite live region's text: never empty (Avalonia #22312 crashes VoiceOver on an empty live region).</summary>
     public string Announcement { get; private set => Set(ref field, value); } = Labels.Palette;
 
+    /// <summary>The live region's gate: true except for the moment it rests on a neutral text so that a repeated announcement is a change (flag first, then the text).</summary>
+    public bool IsAnnouncing { get; private set => Set(ref field, value); } = true;
+
     /// <summary>True when nothing matches the query.</summary>
     public bool IsEmpty => Entries.Count == 0;
 
@@ -202,10 +205,12 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
 
     // The live region says the selected entry (its name carries the status) and where it is among the entries that run;
     // "Nothing matches" when empty; never "" (Avalonia #22312 crashes VoiceOver on an empty live region).
-    private void Announce()
+    private void Announce() => Announcement = Describe();
+
+    private string Describe()
     {
         var runs = Counted();
-        Announcement = Entries.Count == 0 ? Labels.NoMatches
+        return Entries.Count == 0 ? Labels.NoMatches
             : Selected is { } selected ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{selected.Name}, {runs.IndexOf(selected) + 1} of {runs.Count}")
             : Labels.Palette;
     }
