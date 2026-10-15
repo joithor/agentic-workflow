@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -24,8 +25,21 @@ internal sealed partial class ItemSheet : UserControl
     {
         base.OnDataContextChanged(e);
         _sheet?.ControlsLeaving -= OnControlsLeaving;
+        _sheet?.PropertyChanged -= OnSheetChanged;
         _sheet = DataContext as ItemSheetViewModel;
         _sheet?.ControlsLeaving += OnControlsLeaving;
+        _sheet?.PropertyChanged += OnSheetChanged;
+    }
+
+    // The item is gone (404 on a refresh) and its body goes with it: focus inside the body moves to the sheet's title first.
+    private void OnSheetChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(ItemSheetViewModel.IsNotFound), StringComparison.Ordinal) && _sheet is { IsNotFound: true }
+            && TopLevel.GetTopLevel(this) is Window window && window.FocusManager?.GetFocusedElement() is Visual focused
+            && this.FindControl<Control>("ItemBody") is { } body && body.IsVisualAncestorOf(focused))
+        {
+            _ = window.FindControl<TextBlock>("SheetTitle")?.Focus(NavigationMethod.Tab);
+        }
     }
 
     // L8: a control that holds the focus is about to go (its action is no longer allowed): focus moves to the sheet's title
