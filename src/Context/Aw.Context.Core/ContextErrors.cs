@@ -4,9 +4,8 @@ namespace Aw.Context.Core;
 
 /// <summary>
 /// The context engine's error catalogue (spec §8.6), codes SND-CONTEXT-NNN. Stage S-1A owns 001–019 and defines 020
-/// (the session gate, spec §3); S-3a adds 030–034 (the map file and its store); S-5A adds 050–055 (Onyx, in the
-/// S-5A/B range 050–069); later stages add theirs in their ranges. HTTP status follows the kind; the CLI exit code is
-/// 1 for attention (003, 005, 006, 020, 030–034) and 2 for a tool error.
+/// (the session gate, spec §3); S-3a adds 030–034 (the map file and its store); S-3b adds 035–038 (the probe runner and anchors; 039 is reserved); S-5A adds 050–055 (Onyx, in the
+/// S-5A/B range 050–069); later stages add theirs in their ranges. HTTP status follows the kind; the CLI exit code is 1 for attention (<see cref="Attention"/>) and 2 for a tool error.
 /// </summary>
 public static class ContextErrors
 {
@@ -70,6 +69,18 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-034: the map file changed since its content hash was confirmed; nothing was written.</summary>
     public static readonly ErrorDefinition MapFileChanged = new("SND-CONTEXT-034", ErrorKind.Conflict, "The map file changed since its hash was confirmed");
 
+    /// <summary>SND-CONTEXT-035: the probe file is invalid (its shape or schema version, an unknown key, a duplicate, empty or non-slug id, an empty, wordless or over-long question); the message names the key path and nothing was run.</summary>
+    public static readonly ErrorDefinition ProbeFileInvalid = new("SND-CONTEXT-035", ErrorKind.Invalid, "The probe file is invalid");
+
+    /// <summary>SND-CONTEXT-036: no probe file: the one named doesn't exist, or none was named and $AW_SINDRI_HOME/context/eval/probes.json doesn't exist.</summary>
+    public static readonly ErrorDefinition NoProbeFile = new("SND-CONTEXT-036", ErrorKind.NotFound, "No probe file");
+
+    /// <summary>SND-CONTEXT-037: a node name (label) matches several nodes; the message lists their keys.</summary>
+    public static readonly ErrorDefinition AmbiguousAnchor = new("SND-CONTEXT-037", ErrorKind.Conflict, "The name matches several nodes");
+
+    /// <summary>SND-CONTEXT-038: a probe run scored lower than the baseline of the same probe file (its newest complete run that did not regress) in precision@5 or citation correctness, or a probe returned more absent nodes than it did there.</summary>
+    public static readonly ErrorDefinition ProbesRegressed = new("SND-CONTEXT-038", ErrorKind.Conflict, "The probes regressed");
+
     /// <summary>
     /// SND-CONTEXT-050: Onyx refused the key (HTTP 403): it is missing, wrong, or lacks the admin role that
     /// 'POST /api/admin/search' needs (spec §8.8). Fix: create an admin key for a dedicated service account, store it
@@ -102,6 +113,16 @@ public static class ContextErrors
     public static IReadOnlyList<ErrorDefinition> All { get; } =
         [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled,
          McpRepoMissing, McpArgumentsInvalid, McpToolUnknown, McpRegisterRepoUnknown, McpRegisterFailed, McpUserWide,
-         NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged,
+         NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
          OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback];
+
+    /// <summary>
+    /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or
+    /// path, sessions off, no map, a refused map or probe file, a regression. The rest are tool errors (exit 2).
+    /// </summary>
+    public static IReadOnlySet<string> Attention { get; } = new HashSet<string>(StringComparer.Ordinal)
+    {
+        UnknownAnchor.Code, PathInWorktree.Code, QueryInvalid.Code, SessionsDisabled.Code, NoMap.Code, MapFileInvalid.Code, MapNodeUndefined.Code,
+        ExportOutsideHome.Code, MapFileChanged.Code, ProbeFileInvalid.Code, NoProbeFile.Code, AmbiguousAnchor.Code, ProbesRegressed.Code,
+    };
 }

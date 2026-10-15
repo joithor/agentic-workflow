@@ -43,7 +43,7 @@ public static partial class SettingsReader
 
         if (UnknownKey(element) is { } unknown)
         {
-            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, deadline, maxBudget, minHits, scrub, sessions, sources)");
+            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, deadline, maxBudget, minHits, scrub, sessions, sources)");
         }
 
         if (SourcesReader.Shape(element) is { } shape)
@@ -73,6 +73,7 @@ public static partial class SettingsReader
                 Deadline = deadline.Value,
                 MaxBudget = section.MaxBudget ?? settings.MaxBudget,
                 MinHits = section.MinHits ?? settings.MinHits,
+                CascadeDepth = section.CascadeDepth ?? settings.CascadeDepth,
                 SessionsEnabled = section.Sessions?.Enabled ?? false,
                 Onyx = sources.Value.Onyx,
                 LinearTeams = sources.Value.Teams,
@@ -114,6 +115,7 @@ public static partial class SettingsReader
         {
             { MaxBudget: < 1_000 or > 200_000 } => Invalid("context.maxBudget", "is 1000 to 200000 tokens"),
             { MinHits: < 0 or > 50 } => Invalid("context.minHits", "is 0 to 50"),
+            { CascadeDepth: < 0 or > QueryRules.MaxDepth } => Invalid("context.cascadeDepth", "is 0 to 4 steps"),
             _ => null,
         };
     }
@@ -128,7 +130,7 @@ public static partial class SettingsReader
 
     private static string? UnknownKey(JsonElement element)
     {
-        string[] known = ["repos", "docs", "deadline", "maxBudget", "minHits", "scrub", "sessions", "sources"];
+        string[] known = ["repos", "docs", "cascadeDepth", "deadline", "maxBudget", "minHits", "scrub", "sessions", "sources"];
         return element.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
