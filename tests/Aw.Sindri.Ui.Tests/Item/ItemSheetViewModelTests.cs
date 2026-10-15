@@ -125,7 +125,9 @@ public sealed class ItemSheetViewModelTests
         await sheet.Refresh(_api, Token);
 
         Assert.Equal([(A.NewItem, new Ui.Api.CloseItemRequest("done", 1))], _server.Closed);
-        Assert.Equal(("Done", "version 2", 0), (sheet.StateWord, sheet.VersionText, sheet.Actions.Count));
+        Assert.Equal(("Done", "version 2", 1), (sheet.StateWord, sheet.VersionText, sheet.Actions.Count));   // L8: the control shows its outcome first
+        _clock.Advance(ControlViewModel.AcceptedFor);
+        Assert.Empty(sheet.Actions);
     }
 
     // §9.1, §18 U2's signal: a stale version is SND-ITEM-409; the sheet shows its detail as served and re-reads the item.

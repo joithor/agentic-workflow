@@ -93,6 +93,12 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     /// <summary>True when the last read failed: what's shown is the last good answer.</summary>
     public bool IsStale { get; private set => Set(ref field, value); }
 
+    /// <summary>True while the sheet's polite live region is live (its gate, set before its text changes).</summary>
+    public bool IsAnnouncing { get; private set => Set(ref field, value); }
+
+    /// <summary>The live region's text: the problem line the sheet speaks once; resting on the app name, never empty.</summary>
+    public string Announcement { get; private set => Set(ref field, value); } = Labels.Sindri;
+
     /// <summary>The item's actions that the catalog has, in the API's order.</summary>
     public IReadOnlyList<ControlViewModel> Actions { get; private set => Set(ref field, value); } = [];
 

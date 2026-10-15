@@ -229,6 +229,49 @@ public sealed class QueueFramesTests : IDisposable
         Frame(window, "item-409");
     });
 
+    private static IInputElement? Focused(Window window) => window.FocusManager?.GetFocusedElement();
+
+    private static Button FirstRunButton(Window window) =>
+        Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Button>().First(b => b.Name == "RunButton");
+
+    // L8: the control the human pressed is gone with its action; focus moves to the sheet title and is never lost.
+    [Fact]
+    public Task When_a_refused_controls_action_is_gone_focus_moves_to_the_sheet_title() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+        _server.Close = RouteAnswer.Problem("items-id-close", "stale-version");
+        _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
+        var close = FirstRunButton(window);
+        Assert.True(close.Focus(NavigationMethod.Tab));
+
+        close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Until(window, () => shell.Item.HasProblem && shell.Item.Actions.Count == 0);
+
+        Assert.Same(Named<TextBlock>(window, "ItemTitle"), Focused(window));
+    });
+
+    // L8: the accepted control stays while it shows its outcome, with focus; when it settles, focus moves to the title.
+    [Fact]
+    public Task An_accepted_control_keeps_focus_until_it_settles_then_focus_moves_to_the_sheet_title() => OnUi(async () =>
+    {
+        var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
+        _server.OnClosed = (_, _) => _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
+        var close = FirstRunButton(window);
+        Assert.True(close.Focus(NavigationMethod.Tab));
+
+        close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        _server.Push(A.Event(58, "item.state-changed"));
+        await Until(window, () => shell.Item.StateWord == "Done");
+
+        Assert.Same(close, Focused(window));
+        Assert.Equal(1, shell.Item.Actions.Count(a => a.Phase == Ui.ViewModels.Controls.CommandPhase.Accepted));
+
+        _clock.Advance(Ui.ViewModels.Controls.ControlViewModel.AcceptedFor);
+        Settle(window);
+
+        Assert.Same(Named<TextBlock>(window, "ItemTitle"), Focused(window));
+    });
+
     [Fact]
     public Task An_unknown_item_shows_SND_ITEM_404s_detail() => OnUi(async () =>
     {
