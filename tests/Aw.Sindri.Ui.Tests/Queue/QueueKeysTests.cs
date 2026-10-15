@@ -59,21 +59,41 @@ public sealed class QueueKeysTests
         Assert.Equal((12, false), (queue.Total, queue.HasHeld));
         _server.QueueView = RouteAnswer.SpecShaped("queue", "fixture");
         await queue.Refresh(_api, Token);
-        Assert.Equal(12, queue.Total);
+        Assert.Equal((4, false), (queue.Total, queue.HasHeld));   // L4: removals are not held
     }
 
-    // A held refresh that only removes rows has nothing new: no pill, and it shows on leave.
+    // L4 (§8): hold only keeps rows from shifting in under the pointer. A removal is shown at once: no pill, nothing stale to click.
     [Fact]
-    public async Task A_held_refresh_without_new_rows_shows_no_pill()
+    public async Task A_held_refresh_without_new_rows_shows_no_pill_and_applies_the_removals()
     {
         var queue = await Queue();
         queue.Hold(holding: true);
         _server.QueueView = RouteAnswer.SpecShaped("queue", "empty");
         await queue.Refresh(_api, Token);
 
-        Assert.Equal((5, false), (queue.Total, queue.HasHeld));
+        Assert.Equal((0, false), (queue.Total, queue.HasHeld));
         queue.Hold(holding: false);
         Assert.Equal(0, queue.Total);
+    }
+
+    // L4: an in-place update (a new title) and a removal show at once while only the new rows wait behind the pill, which is spoken.
+    [Fact]
+    public async Task A_held_refresh_applies_updates_and_removals_and_holds_only_the_new_rows()
+    {
+        var queue = await Queue();
+        queue.Hold(holding: true);
+        var row = queue.Groups[3].Rows[3];
+
+        var added = GoldenFiles.SpecShaped("queue", "extra-p11-running").Replace("Try the queue", "Renamed item", StringComparison.Ordinal);
+        _server.QueueView = new RouteAnswer(System.Net.HttpStatusCode.OK, added);
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal(("Renamed item", 5, true, "7 new"), (row.Title, queue.Total, queue.HasHeld, queue.HeldText));
+        Assert.Equal((true, "7 new"), (queue.IsAnnouncing, queue.Announcement));
+
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p4-waiting");
+        await queue.Refresh(_api, Token);
+        Assert.Equal((false, 5), (queue.HasHeld, queue.Total));
     }
 
     // §8 key guard: for 500 ms after a refresh moved the selection on its own, single keys are ignored.

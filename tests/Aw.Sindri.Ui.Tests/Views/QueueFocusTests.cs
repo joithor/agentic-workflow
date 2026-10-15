@@ -137,4 +137,25 @@ public sealed class QueueFocusTests : IDisposable
         Assert.Same(row, Focused(window));
         Assert.True(row.IsEffectivelyVisible);
     });
+
+    // L3 (§3.3, §11.2): the row that clears is spoken once through the gated polite region, and focus moves to the row now in its place.
+    [Fact]
+    public Task A_cleared_row_is_spoken_once_and_focus_moves_to_the_next_row() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected();
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+        var gone = Rows(window)[1].ItemId;
+        Assert.True(Named<Border>(Rows(window)[1], "RowFrame").Focus(NavigationMethod.Tab));
+        shell.Queue.Select(gone);
+        var live = Named<TextBlock>(window, "QueueLive");
+        Assert.Equal(Labels.Sindri, live.Text);
+
+        _server.QueueView = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("queue", "fixture").Replace(gone, "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff", StringComparison.Ordinal));
+        _server.Push(A.Event(58, "item.state-changed"));
+        await Until(window, () => shell.Queue.SelectedId == "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff");
+
+        Assert.Equal((Labels.Cleared(gone), Avalonia.Automation.AutomationLiveSetting.Polite), (live.Text, Avalonia.Automation.AutomationProperties.GetLiveSetting(live)));
+        await Until(window, () => Focused(window) is Border frame && string.Equals(frame.Name, "RowFrame", StringComparison.Ordinal) && (frame.DataContext as ViewModels.Queue.ItemRowViewModel)?.Id == shell.Queue.SelectedId);
+    });
 }

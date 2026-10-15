@@ -74,6 +74,9 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     /// <summary>The polite announcement when the selected row cleared ("ITM-… cleared"), else empty.</summary>
     public string Announcement { get; private set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>The polite region's gate: true while it is live (set before its text changes).</summary>
+    public bool IsAnnouncing { get; private set => Set(ref field, value); }
+
     /// <summary>The filter the page shows (G Q, G R, G W).</summary>
     public QueueFilter Showing { get; private set; }
 

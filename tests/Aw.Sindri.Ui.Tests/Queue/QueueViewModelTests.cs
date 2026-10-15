@@ -1,6 +1,7 @@
 using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Queue;
 using Microsoft.Extensions.Time.Testing;
@@ -176,7 +177,7 @@ public sealed class QueueViewModelTests
 
         await queue.Refresh(_api, Token);
         Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302", queue.SelectedId);
-        Assert.Equal(string.Empty, queue.Announcement);
+        Assert.Equal((false, Labels.Sindri), (queue.IsAnnouncing, queue.Announcement));
 
         // The selected row cleared; another took its place in the group.
         _server.QueueView = new RouteAnswer(HttpStatusCode.OK, GoldenFiles.SpecShaped("queue", "fixture").Replace("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302", "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff", StringComparison.Ordinal));
@@ -184,6 +185,36 @@ public sealed class QueueViewModelTests
 
         Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff", queue.SelectedId);
         Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302 cleared", queue.Announcement);
+        Assert.True(queue.IsAnnouncing);
+    }
+
+    // L3 (§3.3, §11.2): "<id> cleared" goes through a gated polite region, as U1's do: the flag changes before the text, the
+    // text rests on a neutral label (never ""), it is spoken once, and the next refresh puts the region dark again.
+    [Fact]
+    public async Task A_cleared_row_is_announced_once_through_a_gated_region()
+    {
+        var queue = await Queue();
+        await queue.Refresh(_api, Token);
+        queue.Select("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302");
+        var states = new List<(bool Live, string Text)>();
+        queue.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(QueueViewModel.IsAnnouncing), StringComparison.Ordinal) || string.Equals(e.PropertyName, nameof(QueueViewModel.Announcement), StringComparison.Ordinal))
+            {
+                states.Add((queue.IsAnnouncing, queue.Announcement));
+            }
+        };
+
+        _server.QueueView = new RouteAnswer(HttpStatusCode.OK, GoldenFiles.SpecShaped("queue", "fixture").Replace("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302", "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff", StringComparison.Ordinal));
+        await queue.Refresh(_api, Token);
+        var cleared = Labels.Cleared("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a302");
+
+        Assert.DoesNotContain(states, s => s.Text.Length == 0);
+        Assert.Equal(1, states.Count(s => s.Live && s.Text == cleared));
+        Assert.DoesNotContain(states, s => !s.Live && s.Text == cleared);
+
+        await queue.Refresh(_api, Token);
+        Assert.Equal((false, Labels.Sindri), (queue.IsAnnouncing, queue.Announcement));
     }
 
     // §8: J and K move between the visible rows in the API's order.
