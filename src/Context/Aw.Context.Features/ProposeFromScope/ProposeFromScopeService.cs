@@ -45,7 +45,7 @@ internal sealed class ProposeFromScopeService(IGraphStore store, IProposalRuns r
     private static List<OverrideId> RowsOf(ScopeProposal proposal, IReadOnlyList<MapOverride> planned, IReadOnlyList<MapOverride> standing)
     {
         var keys = proposal.Surfaces.Select(ProposalNodes.KeyOf).OfType<NodeKey>().Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
-        return [.. planned.Concat(standing.Where(o => o.Action == OverrideAction.Propose && o.Proposal?.Run == proposal.Run && keys.Contains(o.Target.Value)))
+        return [.. planned.Concat(OverrideLog.Active(standing).Where(o => o.Action == OverrideAction.Propose && o.Proposal?.Run == proposal.Run && keys.Contains(o.Target.Value)))
             .Select(o => o.ToId()).DistinctBy(id => id.Value, StringComparer.Ordinal).OrderBy(id => id.Value, StringComparer.Ordinal)];
     }
 

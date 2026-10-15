@@ -17,7 +17,7 @@ public static class EventCatalog
         new(EventTypes.ContextMapImported, Public: true, typeof(ContextMapImported), "context.map.imported:<hash>:v<version>"),
         new(EventTypes.ContextMapReviewed, Public: true, typeof(ContextMapReviewed), "context.map.reviewed:<overrideId>"),
         new(EventTypes.ContextMapPromoted, Public: true, typeof(ContextMapPromoted), "context.map.promoted:<repo>:v<version>"),
-        new(EventTypes.ContextMapProposed, Public: true, typeof(ContextMapProposed), "context.map.proposed:<run>:v<draft>:<added>:<existing>:<rejected>"),
+        new(EventTypes.ContextMapProposed, Public: true, typeof(ContextMapProposed), "context.map.proposed:<run>:<rows hash16>"),
         new(EventTypes.ContextMapBuilt, Public: true, typeof(ContextMapBuilt), "context.map.built:<epoch>:<slot>"),
         new(EventTypes.CommandHandled, Public: false, PublicPayload: null, "command.handled:<commandId>"),
         new(EventTypes.RecipeRegistered, Public: true, typeof(RecipeRegistered), "recipe.registered:<hash>"),

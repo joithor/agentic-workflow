@@ -231,7 +231,7 @@ public sealed class ContextLensesApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task A_proposal_without_the_lease_is_refused_before_any_row_is_written_and_the_event_key_names_the_run_and_its_rows()
+    public async Task A_proposal_without_the_lease_is_refused_before_any_row_is_written_and_the_event_key_is_the_run_and_a_hash_of_its_rows()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host();
@@ -249,7 +249,7 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal((HttpStatusCode.ServiceUnavailable, "SND-LEDGER-002"), (refused.Status, refused.Code));   // the command gate needs the lease to record the call, so it answers before the service does
         Assert.Empty(Json(view.Body).GetProperty("surfaces").EnumerateArray());   // no row and no run list were written
         Assert.Equal(1, Json(accepted.Body).GetProperty("result").GetProperty("added").GetInt32());   // so the retry adds the row and records the event
-        Assert.StartsWith("context.map.proposed:scope-2:v", recorded.Value!.IdempotencyKey, StringComparison.Ordinal);
+        Assert.Matches(@"^context\.map\.proposed:scope-2:[0-9a-f]{16}$", recorded.Value!.IdempotencyKey);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -268,6 +268,8 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal(JsonValueKind.Number, sequences[1].ValueKind);   // the second call added one row, so it has its own event even though its counts equal the first call's
         Assert.NotEqual(sequences[0].GetInt64(), sequences[1].GetInt64());
         Assert.Equal(JsonValueKind.Null, sequences[2].ValueKind);
+        var back = await host.Http.Ask(Post("/sindri/context/map/proposals", Body("Zoom"), App(host)));   // the first set of surfaces again: its event is in the ledger
+        Assert.Equal(JsonValueKind.Null, Json(back.Body).GetProperty("sequence").ValueKind);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -290,6 +292,9 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal(0, Json(retry.Body).GetProperty("result").GetProperty("added").GetInt32());   // the row committed the first time
         Assert.Equal(JsonValueKind.Number, Json(retry.Body).GetProperty("sequence").ValueKind);   // and the retry wrote its event
         Assert.Equal(JsonValueKind.Null, Json(again.Body).GetProperty("sequence").ValueKind);
+        var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, TestContext.Current.CancellationToken);
+        var payload = Json(recorded.Value!.Envelope.Payload);
+        Assert.Equal((1, 0), (payload.GetProperty("added").GetInt32(), payload.GetProperty("existing").GetInt32()));   // the re-emitted event says what the committed call added, not the retry's 0
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

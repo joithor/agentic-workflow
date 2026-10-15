@@ -19,6 +19,7 @@ public static class ProposalPlanner
         ArgumentNullException.ThrowIfNull(basis);
         var applied = OverrideApplier.Apply(basis, overrides).Graph;
         var rejects = OverrideLog.Active(overrides).Where(o => o.Action == OverrideAction.Reject).ToList();
+        var undone = OverrideLog.Undone(overrides);
         var rows = new List<MapOverride>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var (existing, rejected, unmapped) = (0, 0, 0);
@@ -38,7 +39,7 @@ public static class ProposalPlanner
             }
             else
             {
-                rows.Add(Row(proposal, surface, key, who, at));
+                rows.Add(WithGeneration(Row(proposal, surface, key, who, at), Generation(overrides, undone, proposal.Run, key)));
             }
         }
 
@@ -51,7 +52,14 @@ public static class ProposalPlanner
         return rejects.Exists(r => r.Target.Value == key.Value && (r.Rejection is null || r.Rejection == identity));
     }
 
+    // The undo of a run's propose row is respected, not overwritten: asking again is a new row, whose id carries how many were undone before it.
+    private static int Generation(IReadOnlyList<MapOverride> overrides, IReadOnlySet<string> undone, string run, NodeKey key) =>
+        overrides.Count(o => o.Action == OverrideAction.Propose && o.Target.Value == key.Value && o.Proposal?.Run == run && undone.Contains(o.ToId().Value));
+
     private static MapOverride Row(ScopeProposal proposal, ProposedSurface surface, NodeKey key, string who, DateTimeOffset at) =>
         new(OverrideAction.Propose, key, who, at, surface.Name,
             Proposal: new ProposalPayload(proposal.Run, proposal.Repo, surface.Kind ?? key.Kind, surface.Parent, surface.Evidence, surface.Quote));
+
+    private static MapOverride WithGeneration(MapOverride row, int generation) =>
+        generation == 0 ? row : row with { Proposal = row.Proposal! with { Generation = generation } };   // why: Row always sets the payload
 }

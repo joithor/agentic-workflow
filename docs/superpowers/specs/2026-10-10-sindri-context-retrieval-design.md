@@ -125,7 +125,7 @@ that graph plus rank fusion across adapters.
   the profile maps to that repo (`context.repoTeams`). Anything else answers as an unknown anchor (`SND-CONTEXT-003`),
   never as a hint that it exists.
 - **Every command writes an event.** `context.map.built`, `context.map.promoted`, `context.map.reviewed` (keyed by the first
-  override id it wrote), `context.map.proposed` (keyed by run, draft and the call's counts), `context.map.imported` and
+  override id it wrote), `context.map.proposed` (keyed by the run and a hash of the propose rows the call names, not the draft: a repeat, a repeat after a promote and a return to an earlier set of surfaces write none), `context.map.imported` and
   `context.sources.synced` go to the ledger through the API chain, so the app refreshes.
 
 ## 4. Package shape and composition

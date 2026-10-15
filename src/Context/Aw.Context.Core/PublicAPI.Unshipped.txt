@@ -1646,7 +1646,6 @@ Aw.Context.Core.Overrides.OverrideId.Value.get -> string!
 Aw.Context.Core.Overrides.OverrideLog
 Aw.Context.Core.Overrides.ProposalPayload
 Aw.Context.Core.Overrides.ProposalPayload.<Clone>$() -> Aw.Context.Core.Overrides.ProposalPayload!
-Aw.Context.Core.Overrides.ProposalPayload.Deconstruct(out string! Run, out Aw.Context.Core.Engine.ContextRepoName Repo, out Aw.Context.Core.Graph.NodeKind Kind, out Aw.Context.Core.Graph.NodeKey? Parent, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence, out string? Quote) -> void
 Aw.Context.Core.Overrides.ProposalPayload.Equals(Aw.Context.Core.Overrides.ProposalPayload? other) -> bool
 Aw.Context.Core.Overrides.ProposalPayload.Evidence.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>?
 Aw.Context.Core.Overrides.ProposalPayload.Evidence.init -> void
@@ -1654,7 +1653,6 @@ Aw.Context.Core.Overrides.ProposalPayload.Kind.get -> Aw.Context.Core.Graph.Node
 Aw.Context.Core.Overrides.ProposalPayload.Kind.init -> void
 Aw.Context.Core.Overrides.ProposalPayload.Parent.get -> Aw.Context.Core.Graph.NodeKey?
 Aw.Context.Core.Overrides.ProposalPayload.Parent.init -> void
-Aw.Context.Core.Overrides.ProposalPayload.ProposalPayload(string! Run, Aw.Context.Core.Engine.ContextRepoName Repo, Aw.Context.Core.Graph.NodeKind Kind, Aw.Context.Core.Graph.NodeKey? Parent = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence = null, string? Quote = null) -> void
 Aw.Context.Core.Overrides.ProposalPayload.Quote.get -> string?
 Aw.Context.Core.Overrides.ProposalPayload.Quote.init -> void
 Aw.Context.Core.Overrides.ProposalPayload.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
@@ -3569,3 +3567,7 @@ static Aw.Context.Core.Review.ReviewBasis.operator !=(Aw.Context.Core.Review.Rev
 static Aw.Context.Core.Review.ReviewBasis.operator ==(Aw.Context.Core.Review.ReviewBasis? left, Aw.Context.Core.Review.ReviewBasis? right) -> bool
 static Aw.Context.Core.Review.ReviewDrafts.Visible(Aw.Context.Core.Map.MapSnapshot! draft, Aw.Context.Core.Engine.ContextScope! scope) -> Aw.Kernel.Result<(Aw.Context.Core.Map.MapView! View, Aw.Context.Core.Review.ReviewQueueView! Queue)>!
 static Aw.Context.Core.Review.ReviewPlanner.Plan(Aw.Context.Core.Review.ReviewDecision! decision, Aw.Context.Core.Review.ReviewBasis! basis, string! who, System.DateTimeOffset at) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!>!
+Aw.Context.Core.Overrides.ProposalPayload.Deconstruct(out string! Run, out Aw.Context.Core.Engine.ContextRepoName Repo, out Aw.Context.Core.Graph.NodeKind Kind, out Aw.Context.Core.Graph.NodeKey? Parent, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence, out string? Quote, out int Generation) -> void
+Aw.Context.Core.Overrides.ProposalPayload.Generation.get -> int
+Aw.Context.Core.Overrides.ProposalPayload.Generation.init -> void
+Aw.Context.Core.Overrides.ProposalPayload.ProposalPayload(string! Run, Aw.Context.Core.Engine.ContextRepoName Repo, Aw.Context.Core.Graph.NodeKind Kind, Aw.Context.Core.Graph.NodeKey? Parent = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence = null, string? Quote = null, int Generation = 0) -> void
