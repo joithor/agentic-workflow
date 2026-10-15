@@ -367,6 +367,67 @@ public sealed class OneVisibleViewTests : IDisposable
         await AssertNeitherSeenNorPromoted(visibleNodes: 1, decision);
     }
 
+    // ---- overrides about nodes a promote cut (review #220 run 4 follow-up: orphaned overrides of cut nodes) ----
+
+    private async Task<(int Orphans, int Queued)> OrphansAfterTheCut(ContextScope scope)
+    {
+        var queue = (await _world.Map.ReviewQueue(limit: null, scope, MapWorld.None)).Value;
+        var status = (await _world.Map.MapStatus(anchor: null, scope, MapWorld.None)).Value;
+        return (status.Orphaned, queue.Entries.Count(e => e.Group == ReviewGroup.Orphaned));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_override_about_a_denied_surface_or_code_node_a_promote_cut_is_cut_not_orphaned_and_blocks_nothing()
+    {
+        await DraftOf(
+            "nodes:",
+            "  - {key: \"feature:kept\", label: \"Kept\"}",
+            "  - {key: \"code:private/a.ts\", label: \"a.ts\"}",
+            "  - {key: \"code:src/b.ts\", label: \"b.ts\"}",
+            "  - {key: \"surface:setting/secret\", label: \"secret\", provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/private/s.json\"}]}",
+            "edges:",
+            "  - {from: \"code:src/b.ts\", to: \"feature:kept\", type: implements}",
+            "  - {from: \"surface:setting/secret\", to: \"feature:kept\", type: part-of, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/private/s.json\"}]}");
+        await Decide(Drafts.Scope, On(ReviewVerb.Delete, "code:private/a.ts"));
+        await Decide(Drafts.Scope, On(ReviewVerb.Reject, "surface:setting/secret"));
+        Assert.True((await _world.Map.Promote(Denying(), MapWorld.None)).IsSuccess);
+        _ = await _world.Store.OpenDraft(_world.Clock.GetUtcNow(), MapWorld.None);
+
+        var (orphans, queued) = await OrphansAfterTheCut(Denying());
+        var names = await ExportNames(Denying());
+        var again = await _world.Map.Promote(Denying(), MapWorld.None);
+
+        Assert.Equal((0, 0), (orphans, queued));
+        Assert.DoesNotContain(names, n => n.Contains("private/", StringComparison.Ordinal));
+        Assert.True(again.IsSuccess, again.IsError ? again.Error.Message : null);
+        foreach (var reader in new[] { "show", "lenses", "neighbors", "status", "path", "query" })
+        {
+            Assert.Equal(ContextErrors.UnknownAnchor.Code, await Answer(reader, "code:private/a.ts"));
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_override_about_a_gone_node_with_a_key_no_glob_denies_stays_an_orphan()
+    {
+        await DraftOf(
+            "nodes:",
+            "  - {key: \"feature:kept\", label: \"Kept\"}",
+            "  - {key: \"feature:gone\", label: \"Gone\", provenance: model}",
+            "  - {key: \"code:src/b.ts\", label: \"b.ts\"}",
+            "edges:",
+            "  - {from: \"code:src/b.ts\", to: \"feature:kept\", type: implements}");
+        await Decide(Drafts.Scope, On(ReviewVerb.Accept, "feature:gone"));
+        var draft = (await _world.Store.Snapshot(draft: true, MapWorld.None)).Value!;
+        var without = draft.Graph with { Nodes = [.. draft.Graph.Nodes.Where(n => n.Key.Value != "feature:gone")] };
+        _ = await _world.Store.ReplaceDraft(draft.Version.Number, new MapImport(draft.Version.Repo, draft.Version.Commit, without, []), draft.Version.Created, MapWorld.None);   // a rebuild that no longer finds it
+
+        var (_, queued) = await OrphansAfterTheCut(Denying());
+        var refused = await _world.Map.Promote(Denying(), MapWorld.None);
+
+        Assert.Equal(1, queued);
+        Assert.True(refused.IsError);
+    }
+
     // ---- a reject names the same proposal whichever came first, the glob or the reject ----
 
     public static TheoryData<bool> RejectedAfterTheGlob => [false, true];
