@@ -477,6 +477,9 @@ what the interpreter must do; the **mechanism** is Temporal's. Rev 7's text is i
   `loops`, `spent`, `facts { ref, sha256, headSha }`. Rev 7's two-deep frame stack is these two optional fields.
 - **Determinism.** Workflow code calls no I/O, clock or random except through `Workflow.*`. Every read of a store, every
   gate, every effect and every ledger write is an activity. The SDK's analyzer and the replayer test (§10) enforce it.
+  *Versioning:* P4b's start now also runs the local activity `ReadSubject` (it names the `Subject` attribute) and has no
+  `Workflow.Patched` guard: a workflow started before it would not replay. That is accepted before the cutover, as nothing
+  is installed; from the cutover on, a change to what start runs is guarded with `Workflow.Patched`.
 - **Search attributes**, set on start and on every transition: `Item`, `Recipe`, `State`, `NeedsYou` (true while
   parked, escalated or holding an open desk task), `Repo`, `Tenant`, `Ring`. *Rev 8.2:* `Repo` is the `repo` field of
   the instance's `fact:item`, read once on start; an instance without that fact, or whose item names no repo, leaves

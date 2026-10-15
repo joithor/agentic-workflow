@@ -8,7 +8,7 @@ namespace Aw.Sindri.Tests.GetInstance;
 
 /// <summary>
 /// One instance per §6.4 layout and per §3.8 row P4 can reach, over the shipped workflow.step, as 'GetInstance' builds
-/// its view (<see cref="InstanceViews.Of(WorkflowInstance, InterpretedRecipe, DateTimeOffset, DateTimeOffset?, IReadOnlyList{ChildView})"/>).
+/// its view (<see cref="InstanceViews.Of(WorkflowInstance, InterpretedRecipe, DateTimeOffset, DateTimeOffset?, InstanceViewContext)"/>).
 /// </summary>
 internal static class StatusCases
 {
@@ -34,7 +34,7 @@ internal static class StatusCases
         "parked-no-progress-child" => Of(MirroringChild(), Ago(12), children: [new ChildView(InstanceAddress.From("T-3/step/1/step.4"), "parked: no-progress")]),
         "parked-budget" => Of(Park(ParkReason.Budget, ParkKind.Step, "produce used 200k of 200k tokens") with { Spent = Spent(200_000) }, Ago(3)),
         "escalated-gate" => Of(Escalated(), Ago(120)),
-        "taken-over" => Of(TakenOver(), Ago(5)) with { Paused = TimeSpan.FromSeconds(40) },
+        "taken-over" => Of(TakenOver(TimeSpan.FromSeconds(40)), Ago(5)),
         "done" => Of(Ended("done", "resolved"), Ago(1)),
         "parked-rounds" => Of(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds"), Ago(30)),
         "parked-needs-answer-step" => Of(Park(ParkReason.NeedsAnswer, ParkKind.Step, "step.produce failed: the spec is ambiguous"), Ago(8)),
@@ -49,7 +49,7 @@ internal static class StatusCases
     };
 
     private static InstanceView Of(WorkflowInstance instance, DateTimeOffset since, DateTimeOffset? timeoutAt = null, IReadOnlyList<ChildView>? children = null) =>
-        InstanceViews.Of(instance, Recipe, since, timeoutAt, children ?? []) with { Version = 4 };
+        InstanceViews.Of(instance, Recipe, since, timeoutAt, new InstanceViewContext(Version: 4, Children: children));
 
     private static DateTimeOffset Ago(int minutes) => Now - TimeSpan.FromMinutes(minutes);
 
@@ -69,9 +69,9 @@ internal static class StatusCases
         Suspension = Suspended(ParkReason.NoProgress, ParkKind.Loop, "checks failed twice with the same findings") with { Mirrors = EngineFixture.ChildId },
     };
 
-    private static WorkflowInstance TakenOver() => Produce() with
+    private static WorkflowInstance TakenOver(TimeSpan? paused = null) => Produce() with
     {
-        Suspension = new Suspension(SuspensionKind.Takeover, Reason: null, ParkKind: null, Escalation: null, string.Empty, "human:thor", Mirrors: null, Resume(ResumeKind.Return)),
+        Suspension = new Suspension(SuspensionKind.Takeover, Reason: null, ParkKind: null, Escalation: null, string.Empty, "human:thor", Mirrors: null, Resume(ResumeKind.Return)) { Remaining = paused is { } left ? new RemainingTimer(DeadlineKind.State, left) : null },
     };
 
     /// <summary>gate.verify.judge escalated on verify -> done (transition 3 of workflow.step).</summary>

@@ -12,6 +12,16 @@ public static class Urgencies
     /// <summary>Whether <paramref name="urgency"/> is one of <see cref="All"/>.</summary>
     public static bool IsKnown(string urgency) => All.Contains(urgency, StringComparer.Ordinal);
 
+    /// <summary>The word of <paramref name="urgency"/> as recipes and the search attribute write it.</summary>
+    /// <param name="urgency">The urgency.</param>
+    /// <returns>'incident', 'triage' or 'work'.</returns>
+    public static string Word(RecipeUrgency urgency) => urgency switch
+    {
+        RecipeUrgency.Incident => "incident",
+        RecipeUrgency.Triage => "triage",
+        RecipeUrgency.Work or _ => Default,
+    };
+
     /// <summary>The enum value of a recipe's urgency word; an absent word is <see cref="RecipeUrgency.Work"/>.</summary>
     /// <param name="urgency">The word, or null.</param>
     /// <returns>The urgency.</returns>

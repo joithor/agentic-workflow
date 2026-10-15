@@ -15,7 +15,7 @@ internal static class SindriWorker
     /// <param name="items">The ReadItemRepo activity instance (a local activity on start).</param>
     /// <param name="effects">The effect activities: RecordEffect, RecheckEffect, RunEffect (engine P6).</param>
     /// <returns>The options, on <see cref="TemporalSettings.TaskQueue"/>.</returns>
-    public static TemporalWorkerOptions Options(TemporalSettings settings, RunStepActivities activities, RecordEventActivities events, ItemFactActivities items, EffectActivities effects) =>
+    public static TemporalWorkerOptions Options(TemporalSettings settings, RunStepActivities activities, RecordEventActivities events, FactReadActivities items, EffectActivities effects) =>
         new TemporalWorkerOptions(settings.TaskQueue)
             .AddWorkflow<RecipeWorkflow>()
             .AddAllActivities(activities)

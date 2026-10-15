@@ -18,7 +18,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="effects">The effect activities (engine P6).</param>
 /// <param name="logger">The log.</param>
 internal sealed partial class SindriWorkerHost(
-    TemporalSettings settings, RunStepActivities steps, RecordEventActivities events, ItemFactActivities items, EffectActivities effects, ILogger<SindriWorkerHost> logger) : ITemporalWorker
+    TemporalSettings settings, RunStepActivities steps, RecordEventActivities events, FactReadActivities items, EffectActivities effects, ILogger<SindriWorkerHost> logger) : ITemporalWorker
 {
     public async Task Run(TemporalEndpoint endpoint, CancellationToken cancellationToken)
     {

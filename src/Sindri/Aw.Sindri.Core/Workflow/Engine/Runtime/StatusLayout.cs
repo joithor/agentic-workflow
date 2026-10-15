@@ -1,14 +1,13 @@
 using System.Text;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
-namespace Aw.Sindri.Host.Commands;
+namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 /// <summary>
 /// 'workflow status' (engine spec §6.4): the header, then labelled lines in a fixed order — next, child, inputs, drift,
 /// timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands — leaving out the empty ones. Labels take 12 columns; a long 'next' wraps
 /// at 120 and every continuation line is indented to the value column. Plain ASCII.
 /// </summary>
-internal static class StatusLayout
+public static class StatusLayout
 {
     private const int Width = 120;
     private const string Indent = "            ";
@@ -23,7 +22,7 @@ internal static class StatusLayout
         var text = new StringBuilder().Append(InstanceHeader.Line(view, now)).Append('\n');
         Labelled(text, "next", Wrap(view.Next));
         Labelled(text, "child", [.. view.Children.Select(static c => $"{c.Address.Value}  {c.State}")]);
-        Labelled(text, "inputs", view.Task is { } task ? [.. task.Inputs.Select(static i => $"{i.Key.Value}  {i.Value.Name}  sha256:{Short(i.Value.Value.Sha256)}")] : []);
+        Labelled(text, "inputs", view.Task is { } task ? [.. task.Inputs.Select(static i => $"{i.Key.Value}  {i.Value.Name}  sha256:{StatusText.Digest(i.Value.Value.Sha256)}")] : []);
         Labelled(text, "drift", view.Drift is { } drift ? [drift] : []);
         Labelled(text, "timeout", view.Task?.TimeoutAt is { } at ? [$"parks in {StatusText.Duration(at - now)} (desk)"] : []);
         Labelled(text, "paused", view.Paused is { } left ? [$"timeout {StatusText.Duration(left)} left"] : []);
@@ -43,7 +42,10 @@ internal static class StatusLayout
         return string.Join(", ", view.AllowedCommands.Select(c => Verb(c.Action) is var verb && verb == "answer" && forwarded ? "answer (forwarded)" : verb));
     }
 
-    private static string Verb(string action) => action switch
+    /// <summary>The verb of an action id: 'complete' for 'CompleteStep', else what follows the colon.</summary>
+    /// <param name="action">The action id.</param>
+    /// <returns>The verb.</returns>
+    public static string Verb(string action) => action switch
     {
         "CompleteStep" => "complete",
         _ => action[(action.IndexOf(':', StringComparison.Ordinal) + 1)..],
@@ -83,24 +85,16 @@ internal static class StatusLayout
 
     private static string Budget(BudgetView budget)
     {
-        var parts = new List<string>(2);
-        if (budget.StateCap is { } state)
-        {
-            parts.Add($"{StatusText.Tokens(budget.State)} / {StatusText.Tokens(state)} (state)");
-        }
-
-        if (budget.InstanceCap is { } instance)
-        {
-            parts.Add($"{StatusText.Tokens(budget.Instance)} / {StatusText.Tokens(instance)} (instance)");
-        }
+        List<string> parts =
+        [
+            budget.StateCap is { } state
+                ? $"{StatusText.Tokens(budget.State)} / {StatusText.Tokens(state)} (state)"
+                : $"{StatusText.Tokens(budget.State)} used (state)",   // no cap: "used" only, never "/ <limit>"
+            budget.InstanceCap is { } instance
+                ? $"{StatusText.Tokens(budget.Instance)} / {StatusText.Tokens(instance)} (instance)"
+                : $"{StatusText.Tokens(budget.Instance)} used (instance)",
+        ];
 
         return "tokens " + string.Join(", ", parts);
-    }
-
-    /// <summary>A fact's digest as status shortens it: its first four hex digits and '...'.</summary>
-    private static string Short(string sha256)
-    {
-        var digits = sha256.StartsWith("sha256:", StringComparison.Ordinal) ? sha256["sha256:".Length..] : sha256;
-        return digits.Length > 4 ? digits[..4] + "..." : digits;
     }
 }
