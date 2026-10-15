@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Xml.Linq;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Tests.Theme;
 
 namespace Aw.Sindri.Ui.Tests.Shell;
@@ -148,7 +149,7 @@ public sealed class LaneAnchorTests
     {
         var u3 = Kinds(SheetPath, "LANE ANCHOR U3'");
         var u8 = Kinds(SheetPath, "LANE ANCHOR U8");
-        var real = Enum.GetNames<Aw.Sindri.Ui.Navigation.DeepLinkKind>().ToHashSet(StringComparer.Ordinal);
+        var real = Enum.GetNames<DeepLinkKind>().ToHashSet(StringComparer.Ordinal);
 
         Assert.NotEmpty(u3);
         Assert.NotEmpty(u8);
