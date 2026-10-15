@@ -219,5 +219,15 @@ out="$(bash -c 'set -euo pipefail; source "$1"; with_tty sh -c "sleep 0.6; echo 
 check "with_tty_under_set_e_outlives_its_feeder: the caller carries on" "$rc" "0"
 contains "with_tty_under_set_e_outlives_its_feeder: the caller reaches its next line" "$out" "after"
 
+# --- with_tty_under_set_e_stops_its_feeder_when_the_command_fails ---
+# A caller with errexit and pipefail on, and a command that fails: with_tty still cleans up (its temp folder, its
+# feeder) before it returns the command's status, instead of the failed pipeline ending it halfway.
+FT="$WORK/feeder-tmp"; mkdir -p "$FT"
+out="$(TMPDIR="$FT" bash -c 'set -euo pipefail; source "$1"; with_tty sh -c "echo hi; exit 3" < <(sleep 8 >/dev/null 2>&1); echo "after"' _ "$ROOT/scripts/lib/with-tty.sh" 2>&1)"; rc=$?
+check "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: the command's status ends the caller" "$rc" "3"
+contains "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: the output arrives" "$out" "hi"
+check "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: no temp folder is left" "$(ls "$FT" | wc -l | tr -d ' ')" "0"
+check "with_tty_under_set_e_stops_its_feeder_when_the_command_fails: no feeder is left running" "$(pgrep -f "$FT/with-tty" | wc -l | tr -d ' ')" "0"
+
 if [ "$fail" -ne 0 ]; then echo "FAIL: sindri-prove tests"; exit 1; fi
 echo "PASS: sindri-prove tests"
