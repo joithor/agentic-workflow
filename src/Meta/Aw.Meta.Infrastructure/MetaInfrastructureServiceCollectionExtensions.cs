@@ -31,6 +31,7 @@ public static class MetaInfrastructureServiceCollectionExtensions
             .AddScoped<ILaneStore, SqliteLaneStore>()
             .AddScoped<IOwnerStore, SqliteOwnerStore>()
             .AddScoped<IGateStore, SqliteGateStore>()
+            .AddScoped<IKeyValueStore, SqliteKeyValueStore>()
             .AddScoped<IMetaConfig>(sp => new FileMetaConfig(settings.ConfigPath, sp.GetRequiredService<JsonSerializerOptions>()))
             .AddSingleton<ITranscriptReader, FileTranscriptReader>()
             .AddSingleton<ISessionDirectory>(new DirectorySessionDirectory(settings.SessionsDirectory))

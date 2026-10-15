@@ -35,7 +35,10 @@ public static class MetaErrors
     /// <summary>AW-META-010.</summary>
     public static readonly ErrorDefinition HostUnreadable = new("AW-META-010", ErrorKind.Unavailable, "The process table can't be read");
 
+    /// <summary>AW-META-011.</summary>
+    public static readonly ErrorDefinition ConfigExists = new("AW-META-011", ErrorKind.Conflict, "A team config already exists");
+
     /// <summary>Every Meta error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
-        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable];
+        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable, ConfigExists];
 }

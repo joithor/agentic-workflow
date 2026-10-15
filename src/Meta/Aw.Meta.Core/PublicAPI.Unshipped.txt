@@ -10,23 +10,33 @@ Aw.Meta.Core.Commands.CommandRequest.Deconstruct(out System.Collections.Generic.
 Aw.Meta.Core.Commands.CommandRequest.Env.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 Aw.Meta.Core.Commands.CommandRequest.Env.init -> void
 Aw.Meta.Core.Commands.CommandRequest.Equals(Aw.Meta.Core.Commands.CommandRequest? other) -> bool
+override Aw.Meta.Core.Commands.CommandRequest.Equals(object? obj) -> bool
+override Aw.Meta.Core.Commands.CommandRequest.GetHashCode() -> int
 Aw.Meta.Core.Commands.CommandRequest.LogFile.get -> string?
 Aw.Meta.Core.Commands.CommandRequest.LogFile.init -> void
 Aw.Meta.Core.Commands.CommandRequest.Timeout.get -> System.TimeSpan
 Aw.Meta.Core.Commands.CommandRequest.Timeout.init -> void
+override Aw.Meta.Core.Commands.CommandRequest.ToString() -> string!
+static Aw.Meta.Core.Commands.CommandRequest.operator !=(Aw.Meta.Core.Commands.CommandRequest? left, Aw.Meta.Core.Commands.CommandRequest? right) -> bool
+static Aw.Meta.Core.Commands.CommandRequest.operator ==(Aw.Meta.Core.Commands.CommandRequest? left, Aw.Meta.Core.Commands.CommandRequest? right) -> bool
 Aw.Meta.Core.Commands.CommandResult
 Aw.Meta.Core.Commands.CommandResult.<Clone>$() -> Aw.Meta.Core.Commands.CommandResult!
 Aw.Meta.Core.Commands.CommandResult.CommandResult(int ExitCode, string! Stdout, string! Stderr, bool TimedOut) -> void
 Aw.Meta.Core.Commands.CommandResult.Deconstruct(out int ExitCode, out string! Stdout, out string! Stderr, out bool TimedOut) -> void
 Aw.Meta.Core.Commands.CommandResult.Equals(Aw.Meta.Core.Commands.CommandResult? other) -> bool
+override Aw.Meta.Core.Commands.CommandResult.Equals(object? obj) -> bool
 Aw.Meta.Core.Commands.CommandResult.ExitCode.get -> int
 Aw.Meta.Core.Commands.CommandResult.ExitCode.init -> void
+override Aw.Meta.Core.Commands.CommandResult.GetHashCode() -> int
 Aw.Meta.Core.Commands.CommandResult.Stderr.get -> string!
 Aw.Meta.Core.Commands.CommandResult.Stderr.init -> void
 Aw.Meta.Core.Commands.CommandResult.Stdout.get -> string!
 Aw.Meta.Core.Commands.CommandResult.Stdout.init -> void
 Aw.Meta.Core.Commands.CommandResult.TimedOut.get -> bool
 Aw.Meta.Core.Commands.CommandResult.TimedOut.init -> void
+override Aw.Meta.Core.Commands.CommandResult.ToString() -> string!
+static Aw.Meta.Core.Commands.CommandResult.operator !=(Aw.Meta.Core.Commands.CommandResult? left, Aw.Meta.Core.Commands.CommandResult? right) -> bool
+static Aw.Meta.Core.Commands.CommandResult.operator ==(Aw.Meta.Core.Commands.CommandResult? left, Aw.Meta.Core.Commands.CommandResult? right) -> bool
 Aw.Meta.Core.Config.GateConfig
 Aw.Meta.Core.Config.GateConfig.<Clone>$() -> Aw.Meta.Core.Config.GateConfig!
 Aw.Meta.Core.Config.GateConfig.Always.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -34,10 +44,16 @@ Aw.Meta.Core.Config.GateConfig.Always.init -> void
 Aw.Meta.Core.Config.GateConfig.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Always, out System.Collections.Generic.IReadOnlyList<string!>! DocsOnly, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>! Scopes) -> void
 Aw.Meta.Core.Config.GateConfig.DocsOnly.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.GateConfig.DocsOnly.init -> void
+static Aw.Meta.Core.Config.GateConfig.Empty.get -> Aw.Meta.Core.Config.GateConfig!
 Aw.Meta.Core.Config.GateConfig.Equals(Aw.Meta.Core.Config.GateConfig? other) -> bool
+override Aw.Meta.Core.Config.GateConfig.Equals(object? obj) -> bool
 Aw.Meta.Core.Config.GateConfig.GateConfig(System.Collections.Generic.IReadOnlyList<string!>! Always, System.Collections.Generic.IReadOnlyList<string!>! DocsOnly, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>! Scopes) -> void
+override Aw.Meta.Core.Config.GateConfig.GetHashCode() -> int
 Aw.Meta.Core.Config.GateConfig.Scopes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>!
 Aw.Meta.Core.Config.GateConfig.Scopes.init -> void
+override Aw.Meta.Core.Config.GateConfig.ToString() -> string!
+static Aw.Meta.Core.Config.GateConfig.operator !=(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
+static Aw.Meta.Core.Config.GateConfig.operator ==(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
 Aw.Meta.Core.Config.MergeOrderRule
 Aw.Meta.Core.Config.MergeOrderRule.<Clone>$() -> Aw.Meta.Core.Config.MergeOrderRule!
 Aw.Meta.Core.Config.MergeOrderRule.After.get -> int
@@ -46,20 +62,32 @@ Aw.Meta.Core.Config.MergeOrderRule.Before.get -> int
 Aw.Meta.Core.Config.MergeOrderRule.Before.init -> void
 Aw.Meta.Core.Config.MergeOrderRule.Deconstruct(out int Before, out int After) -> void
 Aw.Meta.Core.Config.MergeOrderRule.Equals(Aw.Meta.Core.Config.MergeOrderRule? other) -> bool
+override Aw.Meta.Core.Config.MergeOrderRule.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.MergeOrderRule.GetHashCode() -> int
 Aw.Meta.Core.Config.MergeOrderRule.MergeOrderRule(int Before, int After) -> void
+override Aw.Meta.Core.Config.MergeOrderRule.ToString() -> string!
+static Aw.Meta.Core.Config.MergeOrderRule.operator !=(Aw.Meta.Core.Config.MergeOrderRule? left, Aw.Meta.Core.Config.MergeOrderRule? right) -> bool
+static Aw.Meta.Core.Config.MergeOrderRule.operator ==(Aw.Meta.Core.Config.MergeOrderRule? left, Aw.Meta.Core.Config.MergeOrderRule? right) -> bool
 Aw.Meta.Core.Config.ScopeConfig
 Aw.Meta.Core.Config.ScopeConfig.<Clone>$() -> Aw.Meta.Core.Config.ScopeConfig!
 Aw.Meta.Core.Config.ScopeConfig.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Paths, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.StepConfig!>! Steps) -> void
 Aw.Meta.Core.Config.ScopeConfig.Equals(Aw.Meta.Core.Config.ScopeConfig? other) -> bool
+override Aw.Meta.Core.Config.ScopeConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.ScopeConfig.GetHashCode() -> int
 Aw.Meta.Core.Config.ScopeConfig.Paths.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.ScopeConfig.Paths.init -> void
 Aw.Meta.Core.Config.ScopeConfig.ScopeConfig(System.Collections.Generic.IReadOnlyList<string!>! Paths, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.StepConfig!>! Steps) -> void
 Aw.Meta.Core.Config.ScopeConfig.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.StepConfig!>!
 Aw.Meta.Core.Config.ScopeConfig.Steps.init -> void
+override Aw.Meta.Core.Config.ScopeConfig.ToString() -> string!
+static Aw.Meta.Core.Config.ScopeConfig.operator !=(Aw.Meta.Core.Config.ScopeConfig? left, Aw.Meta.Core.Config.ScopeConfig? right) -> bool
+static Aw.Meta.Core.Config.ScopeConfig.operator ==(Aw.Meta.Core.Config.ScopeConfig? left, Aw.Meta.Core.Config.ScopeConfig? right) -> bool
 Aw.Meta.Core.Config.StepConfig
 Aw.Meta.Core.Config.StepConfig.<Clone>$() -> Aw.Meta.Core.Config.StepConfig!
 Aw.Meta.Core.Config.StepConfig.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Run, out bool Heavy) -> void
 Aw.Meta.Core.Config.StepConfig.Equals(Aw.Meta.Core.Config.StepConfig? other) -> bool
+override Aw.Meta.Core.Config.StepConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.StepConfig.GetHashCode() -> int
 Aw.Meta.Core.Config.StepConfig.Heavy.get -> bool
 Aw.Meta.Core.Config.StepConfig.Heavy.init -> void
 Aw.Meta.Core.Config.StepConfig.Name.get -> string!
@@ -67,11 +95,16 @@ Aw.Meta.Core.Config.StepConfig.Name.init -> void
 Aw.Meta.Core.Config.StepConfig.Run.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.StepConfig.Run.init -> void
 Aw.Meta.Core.Config.StepConfig.StepConfig(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run, bool Heavy = false) -> void
+override Aw.Meta.Core.Config.StepConfig.ToString() -> string!
+static Aw.Meta.Core.Config.StepConfig.operator !=(Aw.Meta.Core.Config.StepConfig? left, Aw.Meta.Core.Config.StepConfig? right) -> bool
+static Aw.Meta.Core.Config.StepConfig.operator ==(Aw.Meta.Core.Config.StepConfig? left, Aw.Meta.Core.Config.StepConfig? right) -> bool
 Aw.Meta.Core.Config.TeamConfig
 Aw.Meta.Core.Config.TeamConfig.<Clone>$() -> Aw.Meta.Core.Config.TeamConfig!
 Aw.Meta.Core.Config.TeamConfig.Equals(Aw.Meta.Core.Config.TeamConfig? other) -> bool
+override Aw.Meta.Core.Config.TeamConfig.Equals(object? obj) -> bool
 Aw.Meta.Core.Config.TeamConfig.Gate.get -> Aw.Meta.Core.Config.GateConfig!
 Aw.Meta.Core.Config.TeamConfig.Gate.init -> void
+override Aw.Meta.Core.Config.TeamConfig.GetHashCode() -> int
 Aw.Meta.Core.Config.TeamConfig.KnownFlakes.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.TeamConfig.KnownFlakes.init -> void
 Aw.Meta.Core.Config.TeamConfig.Lanes.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -89,7 +122,11 @@ Aw.Meta.Core.Config.TeamConfig.Repo.init -> void
 Aw.Meta.Core.Config.TeamConfig.Team.get -> string!
 Aw.Meta.Core.Config.TeamConfig.Team.init -> void
 Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null) -> void
+override Aw.Meta.Core.Config.TeamConfig.ToString() -> string!
+static Aw.Meta.Core.Config.TeamConfig.operator !=(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
+static Aw.Meta.Core.Config.TeamConfig.operator ==(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
 Aw.Meta.Core.Gate.FlakeRule
+static Aw.Meta.Core.Gate.FlakeRule.Classify(Aw.Meta.Core.Gate.RerunOutcome! alone, Aw.Meta.Core.Gate.RerunOutcome! onMain, string! gateFailure) -> Aw.Meta.Core.Gate.FlakeVerdict
 Aw.Meta.Core.Gate.FlakeVerdict
 Aw.Meta.Core.Gate.FlakeVerdict.Flake = 1 -> Aw.Meta.Core.Gate.FlakeVerdict
 Aw.Meta.Core.Gate.FlakeVerdict.Real = 2 -> Aw.Meta.Core.Gate.FlakeVerdict
@@ -99,7 +136,9 @@ Aw.Meta.Core.Gate.GateRecord.At.get -> System.DateTimeOffset
 Aw.Meta.Core.Gate.GateRecord.At.init -> void
 Aw.Meta.Core.Gate.GateRecord.Deconstruct(out int Pr, out string! Head, out string! Main, out System.Collections.Generic.IReadOnlyList<string!>! Scopes, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.GateStep!>! Steps, out Aw.Meta.Core.Gate.GateVerdict Verdict, out System.DateTimeOffset At) -> void
 Aw.Meta.Core.Gate.GateRecord.Equals(Aw.Meta.Core.Gate.GateRecord? other) -> bool
+override Aw.Meta.Core.Gate.GateRecord.Equals(object? obj) -> bool
 Aw.Meta.Core.Gate.GateRecord.GateRecord(int Pr, string! Head, string! Main, System.Collections.Generic.IReadOnlyList<string!>! Scopes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.GateStep!>! Steps, Aw.Meta.Core.Gate.GateVerdict Verdict, System.DateTimeOffset At) -> void
+override Aw.Meta.Core.Gate.GateRecord.GetHashCode() -> int
 Aw.Meta.Core.Gate.GateRecord.Head.get -> string!
 Aw.Meta.Core.Gate.GateRecord.Head.init -> void
 Aw.Meta.Core.Gate.GateRecord.Main.get -> string!
@@ -112,42 +151,59 @@ Aw.Meta.Core.Gate.GateRecord.Scopes.get -> System.Collections.Generic.IReadOnlyL
 Aw.Meta.Core.Gate.GateRecord.Scopes.init -> void
 Aw.Meta.Core.Gate.GateRecord.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.GateStep!>!
 Aw.Meta.Core.Gate.GateRecord.Steps.init -> void
+override Aw.Meta.Core.Gate.GateRecord.ToString() -> string!
 Aw.Meta.Core.Gate.GateRecord.Verdict.get -> Aw.Meta.Core.Gate.GateVerdict
 Aw.Meta.Core.Gate.GateRecord.Verdict.init -> void
+static Aw.Meta.Core.Gate.GateRecord.operator !=(Aw.Meta.Core.Gate.GateRecord? left, Aw.Meta.Core.Gate.GateRecord? right) -> bool
+static Aw.Meta.Core.Gate.GateRecord.operator ==(Aw.Meta.Core.Gate.GateRecord? left, Aw.Meta.Core.Gate.GateRecord? right) -> bool
 Aw.Meta.Core.Gate.GateStep
 Aw.Meta.Core.Gate.GateStep.<Clone>$() -> Aw.Meta.Core.Gate.GateStep!
 Aw.Meta.Core.Gate.GateStep.Deconstruct(out string! Name, out Aw.Meta.Core.Gate.GateVerdict Verdict, out string! Log) -> void
 Aw.Meta.Core.Gate.GateStep.Equals(Aw.Meta.Core.Gate.GateStep? other) -> bool
+override Aw.Meta.Core.Gate.GateStep.Equals(object? obj) -> bool
 Aw.Meta.Core.Gate.GateStep.Flake.get -> Aw.Meta.Core.Gate.FlakeVerdict?
 Aw.Meta.Core.Gate.GateStep.Flake.init -> void
 Aw.Meta.Core.Gate.GateStep.GateStep(string! Name, Aw.Meta.Core.Gate.GateVerdict Verdict, string! Log) -> void
+override Aw.Meta.Core.Gate.GateStep.GetHashCode() -> int
 Aw.Meta.Core.Gate.GateStep.Log.get -> string!
 Aw.Meta.Core.Gate.GateStep.Log.init -> void
 Aw.Meta.Core.Gate.GateStep.Name.get -> string!
 Aw.Meta.Core.Gate.GateStep.Name.init -> void
+override Aw.Meta.Core.Gate.GateStep.ToString() -> string!
 Aw.Meta.Core.Gate.GateStep.Verdict.get -> Aw.Meta.Core.Gate.GateVerdict
 Aw.Meta.Core.Gate.GateStep.Verdict.init -> void
+static Aw.Meta.Core.Gate.GateStep.operator !=(Aw.Meta.Core.Gate.GateStep? left, Aw.Meta.Core.Gate.GateStep? right) -> bool
+static Aw.Meta.Core.Gate.GateStep.operator ==(Aw.Meta.Core.Gate.GateStep? left, Aw.Meta.Core.Gate.GateStep? right) -> bool
 Aw.Meta.Core.Gate.GateVerdict
 Aw.Meta.Core.Gate.GateVerdict.Conflict = 3 -> Aw.Meta.Core.Gate.GateVerdict
 Aw.Meta.Core.Gate.GateVerdict.Fail = 2 -> Aw.Meta.Core.Gate.GateVerdict
 Aw.Meta.Core.Gate.GateVerdict.Pass = 1 -> Aw.Meta.Core.Gate.GateVerdict
 Aw.Meta.Core.Gate.GlobMatcher
+static Aw.Meta.Core.Gate.GlobMatcher.IsMatch(string! pattern, string! path) -> bool
 Aw.Meta.Core.Gate.RerunOutcome
 Aw.Meta.Core.Gate.RerunOutcome.<Clone>$() -> Aw.Meta.Core.Gate.RerunOutcome!
 Aw.Meta.Core.Gate.RerunOutcome.Deconstruct(out bool Passed, out string? Failure) -> void
 Aw.Meta.Core.Gate.RerunOutcome.Equals(Aw.Meta.Core.Gate.RerunOutcome? other) -> bool
+override Aw.Meta.Core.Gate.RerunOutcome.Equals(object? obj) -> bool
 Aw.Meta.Core.Gate.RerunOutcome.Failure.get -> string?
 Aw.Meta.Core.Gate.RerunOutcome.Failure.init -> void
+override Aw.Meta.Core.Gate.RerunOutcome.GetHashCode() -> int
 Aw.Meta.Core.Gate.RerunOutcome.Passed.get -> bool
 Aw.Meta.Core.Gate.RerunOutcome.Passed.init -> void
 Aw.Meta.Core.Gate.RerunOutcome.RerunOutcome(bool Passed, string? Failure = null) -> void
+override Aw.Meta.Core.Gate.RerunOutcome.ToString() -> string!
+static Aw.Meta.Core.Gate.RerunOutcome.operator !=(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
+static Aw.Meta.Core.Gate.RerunOutcome.operator ==(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
 Aw.Meta.Core.Gate.ScopePlanner
+static Aw.Meta.Core.Gate.ScopePlanner.Plan(System.Collections.Generic.IReadOnlyList<string!>! changedPaths, Aw.Meta.Core.Config.GateConfig! gate) -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Health.HostSnapshot
 Aw.Meta.Core.Health.HostSnapshot.<Clone>$() -> Aw.Meta.Core.Health.HostSnapshot!
 Aw.Meta.Core.Health.HostSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Processes, out long MemAvailableKb, out long SwapUsedKb, out long DiskFreeBytes) -> void
 Aw.Meta.Core.Health.HostSnapshot.DiskFreeBytes.get -> long
 Aw.Meta.Core.Health.HostSnapshot.DiskFreeBytes.init -> void
 Aw.Meta.Core.Health.HostSnapshot.Equals(Aw.Meta.Core.Health.HostSnapshot? other) -> bool
+override Aw.Meta.Core.Health.HostSnapshot.Equals(object? obj) -> bool
+override Aw.Meta.Core.Health.HostSnapshot.GetHashCode() -> int
 Aw.Meta.Core.Health.HostSnapshot.HostSnapshot(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Processes, long MemAvailableKb, long SwapUsedKb, long DiskFreeBytes) -> void
 Aw.Meta.Core.Health.HostSnapshot.MemAvailableKb.get -> long
 Aw.Meta.Core.Health.HostSnapshot.MemAvailableKb.init -> void
@@ -155,7 +211,11 @@ Aw.Meta.Core.Health.HostSnapshot.Processes.get -> System.Collections.Generic.IRe
 Aw.Meta.Core.Health.HostSnapshot.Processes.init -> void
 Aw.Meta.Core.Health.HostSnapshot.SwapUsedKb.get -> long
 Aw.Meta.Core.Health.HostSnapshot.SwapUsedKb.init -> void
+override Aw.Meta.Core.Health.HostSnapshot.ToString() -> string!
+static Aw.Meta.Core.Health.HostSnapshot.operator !=(Aw.Meta.Core.Health.HostSnapshot? left, Aw.Meta.Core.Health.HostSnapshot? right) -> bool
+static Aw.Meta.Core.Health.HostSnapshot.operator ==(Aw.Meta.Core.Health.HostSnapshot? left, Aw.Meta.Core.Health.HostSnapshot? right) -> bool
 Aw.Meta.Core.Health.OrphanRule
+static Aw.Meta.Core.Health.OrphanRule.IsOrphan(Aw.Meta.Core.Health.ProcessInfo! process, string? parentCmdline) -> bool
 Aw.Meta.Core.Health.ProcessInfo
 Aw.Meta.Core.Health.ProcessInfo.<Clone>$() -> Aw.Meta.Core.Health.ProcessInfo!
 Aw.Meta.Core.Health.ProcessInfo.AgeSeconds.get -> long
@@ -164,6 +224,8 @@ Aw.Meta.Core.Health.ProcessInfo.Cmdline.get -> string!
 Aw.Meta.Core.Health.ProcessInfo.Cmdline.init -> void
 Aw.Meta.Core.Health.ProcessInfo.Deconstruct(out int Pid, out int Ppid, out string! Cmdline, out long RssKb, out long AgeSeconds) -> void
 Aw.Meta.Core.Health.ProcessInfo.Equals(Aw.Meta.Core.Health.ProcessInfo? other) -> bool
+override Aw.Meta.Core.Health.ProcessInfo.Equals(object? obj) -> bool
+override Aw.Meta.Core.Health.ProcessInfo.GetHashCode() -> int
 Aw.Meta.Core.Health.ProcessInfo.Pid.get -> int
 Aw.Meta.Core.Health.ProcessInfo.Pid.init -> void
 Aw.Meta.Core.Health.ProcessInfo.Ppid.get -> int
@@ -171,26 +233,49 @@ Aw.Meta.Core.Health.ProcessInfo.Ppid.init -> void
 Aw.Meta.Core.Health.ProcessInfo.ProcessInfo(int Pid, int Ppid, string! Cmdline, long RssKb, long AgeSeconds) -> void
 Aw.Meta.Core.Health.ProcessInfo.RssKb.get -> long
 Aw.Meta.Core.Health.ProcessInfo.RssKb.init -> void
+override Aw.Meta.Core.Health.ProcessInfo.ToString() -> string!
+static Aw.Meta.Core.Health.ProcessInfo.operator !=(Aw.Meta.Core.Health.ProcessInfo? left, Aw.Meta.Core.Health.ProcessInfo? right) -> bool
+static Aw.Meta.Core.Health.ProcessInfo.operator ==(Aw.Meta.Core.Health.ProcessInfo? left, Aw.Meta.Core.Health.ProcessInfo? right) -> bool
 Aw.Meta.Core.Ids.MessageId
 Aw.Meta.Core.Ids.MessageId.Equals(Aw.Meta.Core.Ids.MessageId other) -> bool
 Aw.Meta.Core.Ids.MessageId.Equals(Aw.Meta.Core.Ids.MessageId other, System.Collections.Generic.IEqualityComparer<Aw.Meta.Core.Ids.MessageId>! comparer) -> bool
+override Aw.Meta.Core.Ids.MessageId.Equals(object? obj) -> bool
+static Aw.Meta.Core.Ids.MessageId.From(string! value) -> Aw.Meta.Core.Ids.MessageId
+override Aw.Meta.Core.Ids.MessageId.GetHashCode() -> int
 Aw.Meta.Core.Ids.MessageId.GetTypeCode() -> System.TypeCode
 Aw.Meta.Core.Ids.MessageId.IsInitialized() -> bool
 Aw.Meta.Core.Ids.MessageId.MessageId() -> void
+static Aw.Meta.Core.Ids.MessageId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Meta.Core.Ids.MessageId
+override Aw.Meta.Core.Ids.MessageId.ToString() -> string!
 Aw.Meta.Core.Ids.MessageId.ToString(System.IFormatProvider? provider) -> string!
+static Aw.Meta.Core.Ids.MessageId.TryFrom(string? value, out Aw.Meta.Core.Ids.MessageId vo) -> bool
+static Aw.Meta.Core.Ids.MessageId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Meta.Core.Ids.MessageId result) -> bool
 Aw.Meta.Core.Ids.MessageId.Value.get -> string!
+static Aw.Meta.Core.Ids.MessageId.operator !=(Aw.Meta.Core.Ids.MessageId left, Aw.Meta.Core.Ids.MessageId right) -> bool
+static Aw.Meta.Core.Ids.MessageId.operator ==(Aw.Meta.Core.Ids.MessageId left, Aw.Meta.Core.Ids.MessageId right) -> bool
 Aw.Meta.Core.Ids.SessionId
 Aw.Meta.Core.Ids.SessionId.Equals(Aw.Meta.Core.Ids.SessionId other) -> bool
 Aw.Meta.Core.Ids.SessionId.Equals(Aw.Meta.Core.Ids.SessionId other, System.Collections.Generic.IEqualityComparer<Aw.Meta.Core.Ids.SessionId>! comparer) -> bool
+override Aw.Meta.Core.Ids.SessionId.Equals(object? obj) -> bool
+static Aw.Meta.Core.Ids.SessionId.From(string! value) -> Aw.Meta.Core.Ids.SessionId
+override Aw.Meta.Core.Ids.SessionId.GetHashCode() -> int
 Aw.Meta.Core.Ids.SessionId.GetTypeCode() -> System.TypeCode
 Aw.Meta.Core.Ids.SessionId.IsInitialized() -> bool
+static Aw.Meta.Core.Ids.SessionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Meta.Core.Ids.SessionId
 Aw.Meta.Core.Ids.SessionId.SessionId() -> void
+override Aw.Meta.Core.Ids.SessionId.ToString() -> string!
 Aw.Meta.Core.Ids.SessionId.ToString(System.IFormatProvider? provider) -> string!
+static Aw.Meta.Core.Ids.SessionId.TryFrom(string? value, out Aw.Meta.Core.Ids.SessionId vo) -> bool
+static Aw.Meta.Core.Ids.SessionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Meta.Core.Ids.SessionId result) -> bool
 Aw.Meta.Core.Ids.SessionId.Value.get -> string!
+static Aw.Meta.Core.Ids.SessionId.operator !=(Aw.Meta.Core.Ids.SessionId left, Aw.Meta.Core.Ids.SessionId right) -> bool
+static Aw.Meta.Core.Ids.SessionId.operator ==(Aw.Meta.Core.Ids.SessionId left, Aw.Meta.Core.Ids.SessionId right) -> bool
 Aw.Meta.Core.Lanes.LaneAssignment
 Aw.Meta.Core.Lanes.LaneAssignment.<Clone>$() -> Aw.Meta.Core.Lanes.LaneAssignment!
 Aw.Meta.Core.Lanes.LaneAssignment.Deconstruct(out string! Lane, out string! SessionName, out Aw.Meta.Core.Ids.SessionId? Session, out Aw.Meta.Core.Lanes.LaneSource Source) -> void
 Aw.Meta.Core.Lanes.LaneAssignment.Equals(Aw.Meta.Core.Lanes.LaneAssignment? other) -> bool
+override Aw.Meta.Core.Lanes.LaneAssignment.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.LaneAssignment.GetHashCode() -> int
 Aw.Meta.Core.Lanes.LaneAssignment.Lane.get -> string!
 Aw.Meta.Core.Lanes.LaneAssignment.Lane.init -> void
 Aw.Meta.Core.Lanes.LaneAssignment.LaneAssignment(string! Lane, string! SessionName, Aw.Meta.Core.Ids.SessionId? Session, Aw.Meta.Core.Lanes.LaneSource Source) -> void
@@ -200,16 +285,26 @@ Aw.Meta.Core.Lanes.LaneAssignment.SessionName.get -> string!
 Aw.Meta.Core.Lanes.LaneAssignment.SessionName.init -> void
 Aw.Meta.Core.Lanes.LaneAssignment.Source.get -> Aw.Meta.Core.Lanes.LaneSource
 Aw.Meta.Core.Lanes.LaneAssignment.Source.init -> void
+override Aw.Meta.Core.Lanes.LaneAssignment.ToString() -> string!
+static Aw.Meta.Core.Lanes.LaneAssignment.operator !=(Aw.Meta.Core.Lanes.LaneAssignment? left, Aw.Meta.Core.Lanes.LaneAssignment? right) -> bool
+static Aw.Meta.Core.Lanes.LaneAssignment.operator ==(Aw.Meta.Core.Lanes.LaneAssignment? left, Aw.Meta.Core.Lanes.LaneAssignment? right) -> bool
 Aw.Meta.Core.Lanes.LaneMap
+static Aw.Meta.Core.Lanes.LaneMap.Refresh(string! team, System.Collections.Generic.IReadOnlyList<string!>! lanes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LiveSession!>! live, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Messages.InboxMessage!>! announcements, Aw.Meta.Core.Lanes.LaneMapState! previous) -> Aw.Meta.Core.Lanes.LaneMapState!
 Aw.Meta.Core.Lanes.LaneMapState
 Aw.Meta.Core.Lanes.LaneMapState.<Clone>$() -> Aw.Meta.Core.Lanes.LaneMapState!
 Aw.Meta.Core.Lanes.LaneMapState.Deconstruct(out int Version, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries) -> void
+static Aw.Meta.Core.Lanes.LaneMapState.Empty.get -> Aw.Meta.Core.Lanes.LaneMapState!
 Aw.Meta.Core.Lanes.LaneMapState.Entries.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>!
 Aw.Meta.Core.Lanes.LaneMapState.Entries.init -> void
 Aw.Meta.Core.Lanes.LaneMapState.Equals(Aw.Meta.Core.Lanes.LaneMapState? other) -> bool
+override Aw.Meta.Core.Lanes.LaneMapState.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.LaneMapState.GetHashCode() -> int
 Aw.Meta.Core.Lanes.LaneMapState.LaneMapState(int Version, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneAssignment!>! Entries) -> void
+override Aw.Meta.Core.Lanes.LaneMapState.ToString() -> string!
 Aw.Meta.Core.Lanes.LaneMapState.Version.get -> int
 Aw.Meta.Core.Lanes.LaneMapState.Version.init -> void
+static Aw.Meta.Core.Lanes.LaneMapState.operator !=(Aw.Meta.Core.Lanes.LaneMapState? left, Aw.Meta.Core.Lanes.LaneMapState? right) -> bool
+static Aw.Meta.Core.Lanes.LaneMapState.operator ==(Aw.Meta.Core.Lanes.LaneMapState? left, Aw.Meta.Core.Lanes.LaneMapState? right) -> bool
 Aw.Meta.Core.Lanes.LaneSource
 Aw.Meta.Core.Lanes.LaneSource.Announcement = 2 -> Aw.Meta.Core.Lanes.LaneSource
 Aw.Meta.Core.Lanes.LaneSource.Direct = 1 -> Aw.Meta.Core.Lanes.LaneSource
@@ -219,6 +314,8 @@ Aw.Meta.Core.Lanes.LiveSession.Cwd.get -> string!
 Aw.Meta.Core.Lanes.LiveSession.Cwd.init -> void
 Aw.Meta.Core.Lanes.LiveSession.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! Name, out int Pid, out string! Status, out string! Cwd) -> void
 Aw.Meta.Core.Lanes.LiveSession.Equals(Aw.Meta.Core.Lanes.LiveSession? other) -> bool
+override Aw.Meta.Core.Lanes.LiveSession.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.LiveSession.GetHashCode() -> int
 Aw.Meta.Core.Lanes.LiveSession.LiveSession(Aw.Meta.Core.Ids.SessionId Session, string! Name, int Pid, string! Status, string! Cwd) -> void
 Aw.Meta.Core.Lanes.LiveSession.Name.get -> string!
 Aw.Meta.Core.Lanes.LiveSession.Name.init -> void
@@ -228,17 +325,25 @@ Aw.Meta.Core.Lanes.LiveSession.Session.get -> Aw.Meta.Core.Ids.SessionId
 Aw.Meta.Core.Lanes.LiveSession.Session.init -> void
 Aw.Meta.Core.Lanes.LiveSession.Status.get -> string!
 Aw.Meta.Core.Lanes.LiveSession.Status.init -> void
+override Aw.Meta.Core.Lanes.LiveSession.ToString() -> string!
+static Aw.Meta.Core.Lanes.LiveSession.operator !=(Aw.Meta.Core.Lanes.LiveSession? left, Aw.Meta.Core.Lanes.LiveSession? right) -> bool
+static Aw.Meta.Core.Lanes.LiveSession.operator ==(Aw.Meta.Core.Lanes.LiveSession? left, Aw.Meta.Core.Lanes.LiveSession? right) -> bool
 Aw.Meta.Core.Merge.MergeCheck
 Aw.Meta.Core.Merge.MergeCheck.<Clone>$() -> Aw.Meta.Core.Merge.MergeCheck!
 Aw.Meta.Core.Merge.MergeCheck.Deconstruct(out string! Name, out bool Ok, out string! Detail) -> void
 Aw.Meta.Core.Merge.MergeCheck.Detail.get -> string!
 Aw.Meta.Core.Merge.MergeCheck.Detail.init -> void
 Aw.Meta.Core.Merge.MergeCheck.Equals(Aw.Meta.Core.Merge.MergeCheck? other) -> bool
+override Aw.Meta.Core.Merge.MergeCheck.Equals(object? obj) -> bool
+override Aw.Meta.Core.Merge.MergeCheck.GetHashCode() -> int
 Aw.Meta.Core.Merge.MergeCheck.MergeCheck(string! Name, bool Ok, string! Detail) -> void
 Aw.Meta.Core.Merge.MergeCheck.Name.get -> string!
 Aw.Meta.Core.Merge.MergeCheck.Name.init -> void
 Aw.Meta.Core.Merge.MergeCheck.Ok.get -> bool
 Aw.Meta.Core.Merge.MergeCheck.Ok.init -> void
+override Aw.Meta.Core.Merge.MergeCheck.ToString() -> string!
+static Aw.Meta.Core.Merge.MergeCheck.operator !=(Aw.Meta.Core.Merge.MergeCheck? left, Aw.Meta.Core.Merge.MergeCheck? right) -> bool
+static Aw.Meta.Core.Merge.MergeCheck.operator ==(Aw.Meta.Core.Merge.MergeCheck? left, Aw.Meta.Core.Merge.MergeCheck? right) -> bool
 Aw.Meta.Core.Merge.MergeFacts
 Aw.Meta.Core.Merge.MergeFacts.<Clone>$() -> Aw.Meta.Core.Merge.MergeFacts!
 Aw.Meta.Core.Merge.MergeFacts.CurrentHead.get -> string!
@@ -250,8 +355,10 @@ Aw.Meta.Core.Merge.MergeFacts.DeltaPaths.init -> void
 Aw.Meta.Core.Merge.MergeFacts.DocsOnly.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Merge.MergeFacts.DocsOnly.init -> void
 Aw.Meta.Core.Merge.MergeFacts.Equals(Aw.Meta.Core.Merge.MergeFacts? other) -> bool
+override Aw.Meta.Core.Merge.MergeFacts.Equals(object? obj) -> bool
 Aw.Meta.Core.Merge.MergeFacts.Gate.get -> Aw.Meta.Core.Gate.GateRecord?
 Aw.Meta.Core.Merge.MergeFacts.Gate.init -> void
+override Aw.Meta.Core.Merge.MergeFacts.GetHashCode() -> int
 Aw.Meta.Core.Merge.MergeFacts.IsDraft.get -> bool
 Aw.Meta.Core.Merge.MergeFacts.IsDraft.init -> void
 Aw.Meta.Core.Merge.MergeFacts.MergeFacts() -> void
@@ -263,18 +370,27 @@ Aw.Meta.Core.Merge.MergeFacts.Pr.get -> int
 Aw.Meta.Core.Merge.MergeFacts.Pr.init -> void
 Aw.Meta.Core.Merge.MergeFacts.RepoGatePassedOnHead.get -> bool
 Aw.Meta.Core.Merge.MergeFacts.RepoGatePassedOnHead.init -> void
+override Aw.Meta.Core.Merge.MergeFacts.ToString() -> string!
+static Aw.Meta.Core.Merge.MergeFacts.operator !=(Aw.Meta.Core.Merge.MergeFacts? left, Aw.Meta.Core.Merge.MergeFacts? right) -> bool
+static Aw.Meta.Core.Merge.MergeFacts.operator ==(Aw.Meta.Core.Merge.MergeFacts? left, Aw.Meta.Core.Merge.MergeFacts? right) -> bool
 Aw.Meta.Core.Merge.MergeGate
+static Aw.Meta.Core.Merge.MergeGate.Evaluate(Aw.Meta.Core.Merge.MergeFacts! facts) -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.MergeCheck!>!
 Aw.Meta.Core.Messages.Classification
 Aw.Meta.Core.Messages.Classification.<Clone>$() -> Aw.Meta.Core.Messages.Classification!
 Aw.Meta.Core.Messages.Classification.Classification(Aw.Meta.Core.Messages.MessageKind Kind, int? Pr = null, string? Lane = null) -> void
 Aw.Meta.Core.Messages.Classification.Deconstruct(out Aw.Meta.Core.Messages.MessageKind Kind, out int? Pr, out string? Lane) -> void
 Aw.Meta.Core.Messages.Classification.Equals(Aw.Meta.Core.Messages.Classification? other) -> bool
+override Aw.Meta.Core.Messages.Classification.Equals(object? obj) -> bool
+override Aw.Meta.Core.Messages.Classification.GetHashCode() -> int
 Aw.Meta.Core.Messages.Classification.Kind.get -> Aw.Meta.Core.Messages.MessageKind
 Aw.Meta.Core.Messages.Classification.Kind.init -> void
 Aw.Meta.Core.Messages.Classification.Lane.get -> string?
 Aw.Meta.Core.Messages.Classification.Lane.init -> void
 Aw.Meta.Core.Messages.Classification.Pr.get -> int?
 Aw.Meta.Core.Messages.Classification.Pr.init -> void
+override Aw.Meta.Core.Messages.Classification.ToString() -> string!
+static Aw.Meta.Core.Messages.Classification.operator !=(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
+static Aw.Meta.Core.Messages.Classification.operator ==(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
 Aw.Meta.Core.Messages.InboxMessage
 Aw.Meta.Core.Messages.InboxMessage.<Clone>$() -> Aw.Meta.Core.Messages.InboxMessage!
 Aw.Meta.Core.Messages.InboxMessage.At.get -> System.DateTimeOffset
@@ -285,16 +401,23 @@ Aw.Meta.Core.Messages.InboxMessage.Class.get -> Aw.Meta.Core.Messages.Classifica
 Aw.Meta.Core.Messages.InboxMessage.Class.init -> void
 Aw.Meta.Core.Messages.InboxMessage.Deconstruct(out Aw.Meta.Core.Ids.MessageId Id, out string! From, out string! FromName, out string! Body, out System.DateTimeOffset At, out Aw.Meta.Core.Messages.Classification! Class) -> void
 Aw.Meta.Core.Messages.InboxMessage.Equals(Aw.Meta.Core.Messages.InboxMessage? other) -> bool
+override Aw.Meta.Core.Messages.InboxMessage.Equals(object? obj) -> bool
 Aw.Meta.Core.Messages.InboxMessage.From.get -> string!
 Aw.Meta.Core.Messages.InboxMessage.From.init -> void
 Aw.Meta.Core.Messages.InboxMessage.FromName.get -> string!
 Aw.Meta.Core.Messages.InboxMessage.FromName.init -> void
+override Aw.Meta.Core.Messages.InboxMessage.GetHashCode() -> int
 Aw.Meta.Core.Messages.InboxMessage.Id.get -> Aw.Meta.Core.Ids.MessageId
 Aw.Meta.Core.Messages.InboxMessage.Id.init -> void
 Aw.Meta.Core.Messages.InboxMessage.InboxMessage(Aw.Meta.Core.Ids.MessageId Id, string! From, string! FromName, string! Body, System.DateTimeOffset At, Aw.Meta.Core.Messages.Classification! Class) -> void
+static Aw.Meta.Core.Messages.InboxMessage.Of(Aw.Meta.Core.Messages.PeerMessage! peer) -> Aw.Meta.Core.Messages.InboxMessage!
 Aw.Meta.Core.Messages.InboxMessage.Resolution.get -> Aw.Meta.Core.Messages.MessageResolution?
 Aw.Meta.Core.Messages.InboxMessage.Resolution.init -> void
+override Aw.Meta.Core.Messages.InboxMessage.ToString() -> string!
+static Aw.Meta.Core.Messages.InboxMessage.operator !=(Aw.Meta.Core.Messages.InboxMessage? left, Aw.Meta.Core.Messages.InboxMessage? right) -> bool
+static Aw.Meta.Core.Messages.InboxMessage.operator ==(Aw.Meta.Core.Messages.InboxMessage? left, Aw.Meta.Core.Messages.InboxMessage? right) -> bool
 Aw.Meta.Core.Messages.MessageClassifier
+static Aw.Meta.Core.Messages.MessageClassifier.Classify(string! body) -> Aw.Meta.Core.Messages.Classification!
 Aw.Meta.Core.Messages.MessageKind
 Aw.Meta.Core.Messages.MessageKind.LaneAnnounce = 4 -> Aw.Meta.Core.Messages.MessageKind
 Aw.Meta.Core.Messages.MessageKind.OwnerQuestion = 2 -> Aw.Meta.Core.Messages.MessageKind
@@ -304,13 +427,18 @@ Aw.Meta.Core.Messages.MessageResolution
 Aw.Meta.Core.Messages.MessageResolution.<Clone>$() -> Aw.Meta.Core.Messages.MessageResolution!
 Aw.Meta.Core.Messages.MessageResolution.Deconstruct(out Aw.Meta.Core.Messages.MessageResolutionKind Kind, out string! Reason, out System.DateTimeOffset? Until) -> void
 Aw.Meta.Core.Messages.MessageResolution.Equals(Aw.Meta.Core.Messages.MessageResolution? other) -> bool
+override Aw.Meta.Core.Messages.MessageResolution.Equals(object? obj) -> bool
+override Aw.Meta.Core.Messages.MessageResolution.GetHashCode() -> int
 Aw.Meta.Core.Messages.MessageResolution.Kind.get -> Aw.Meta.Core.Messages.MessageResolutionKind
 Aw.Meta.Core.Messages.MessageResolution.Kind.init -> void
 Aw.Meta.Core.Messages.MessageResolution.MessageResolution(Aw.Meta.Core.Messages.MessageResolutionKind Kind, string! Reason, System.DateTimeOffset? Until = null) -> void
 Aw.Meta.Core.Messages.MessageResolution.Reason.get -> string!
 Aw.Meta.Core.Messages.MessageResolution.Reason.init -> void
+override Aw.Meta.Core.Messages.MessageResolution.ToString() -> string!
 Aw.Meta.Core.Messages.MessageResolution.Until.get -> System.DateTimeOffset?
 Aw.Meta.Core.Messages.MessageResolution.Until.init -> void
+static Aw.Meta.Core.Messages.MessageResolution.operator !=(Aw.Meta.Core.Messages.MessageResolution? left, Aw.Meta.Core.Messages.MessageResolution? right) -> bool
+static Aw.Meta.Core.Messages.MessageResolution.operator ==(Aw.Meta.Core.Messages.MessageResolution? left, Aw.Meta.Core.Messages.MessageResolution? right) -> bool
 Aw.Meta.Core.Messages.MessageResolutionKind
 Aw.Meta.Core.Messages.MessageResolutionKind.Deferred = 2 -> Aw.Meta.Core.Messages.MessageResolutionKind
 Aw.Meta.Core.Messages.MessageResolutionKind.Dismissed = 1 -> Aw.Meta.Core.Messages.MessageResolutionKind
@@ -318,17 +446,24 @@ Aw.Meta.Core.Messages.MetaRole
 Aw.Meta.Core.Messages.MetaRole.<Clone>$() -> Aw.Meta.Core.Messages.MetaRole!
 Aw.Meta.Core.Messages.MetaRole.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! Name) -> void
 Aw.Meta.Core.Messages.MetaRole.Equals(Aw.Meta.Core.Messages.MetaRole? other) -> bool
+override Aw.Meta.Core.Messages.MetaRole.Equals(object? obj) -> bool
+override Aw.Meta.Core.Messages.MetaRole.GetHashCode() -> int
 Aw.Meta.Core.Messages.MetaRole.MetaRole(Aw.Meta.Core.Ids.SessionId Session, string! Name) -> void
 Aw.Meta.Core.Messages.MetaRole.Name.get -> string!
 Aw.Meta.Core.Messages.MetaRole.Name.init -> void
 Aw.Meta.Core.Messages.MetaRole.Session.get -> Aw.Meta.Core.Ids.SessionId
 Aw.Meta.Core.Messages.MetaRole.Session.init -> void
+override Aw.Meta.Core.Messages.MetaRole.ToString() -> string!
+static Aw.Meta.Core.Messages.MetaRole.operator !=(Aw.Meta.Core.Messages.MetaRole? left, Aw.Meta.Core.Messages.MetaRole? right) -> bool
+static Aw.Meta.Core.Messages.MetaRole.operator ==(Aw.Meta.Core.Messages.MetaRole? left, Aw.Meta.Core.Messages.MetaRole? right) -> bool
 Aw.Meta.Core.Messages.Outbound
 Aw.Meta.Core.Messages.Outbound.<Clone>$() -> Aw.Meta.Core.Messages.Outbound!
 Aw.Meta.Core.Messages.Outbound.At.get -> System.DateTimeOffset
 Aw.Meta.Core.Messages.Outbound.At.init -> void
 Aw.Meta.Core.Messages.Outbound.Deconstruct(out string! To, out string! Message, out System.DateTimeOffset At) -> void
 Aw.Meta.Core.Messages.Outbound.Equals(Aw.Meta.Core.Messages.Outbound? other) -> bool
+override Aw.Meta.Core.Messages.Outbound.Equals(object? obj) -> bool
+override Aw.Meta.Core.Messages.Outbound.GetHashCode() -> int
 Aw.Meta.Core.Messages.Outbound.Id.get -> Aw.Meta.Core.Ids.MessageId?
 Aw.Meta.Core.Messages.Outbound.Id.init -> void
 Aw.Meta.Core.Messages.Outbound.Message.get -> string!
@@ -336,6 +471,9 @@ Aw.Meta.Core.Messages.Outbound.Message.init -> void
 Aw.Meta.Core.Messages.Outbound.Outbound(string! To, string! Message, System.DateTimeOffset At) -> void
 Aw.Meta.Core.Messages.Outbound.To.get -> string!
 Aw.Meta.Core.Messages.Outbound.To.init -> void
+override Aw.Meta.Core.Messages.Outbound.ToString() -> string!
+static Aw.Meta.Core.Messages.Outbound.operator !=(Aw.Meta.Core.Messages.Outbound? left, Aw.Meta.Core.Messages.Outbound? right) -> bool
+static Aw.Meta.Core.Messages.Outbound.operator ==(Aw.Meta.Core.Messages.Outbound? left, Aw.Meta.Core.Messages.Outbound? right) -> bool
 Aw.Meta.Core.Messages.PeerMessage
 Aw.Meta.Core.Messages.PeerMessage.<Clone>$() -> Aw.Meta.Core.Messages.PeerMessage!
 Aw.Meta.Core.Messages.PeerMessage.At.get -> System.DateTimeOffset
@@ -344,41 +482,61 @@ Aw.Meta.Core.Messages.PeerMessage.Body.get -> string!
 Aw.Meta.Core.Messages.PeerMessage.Body.init -> void
 Aw.Meta.Core.Messages.PeerMessage.Deconstruct(out Aw.Meta.Core.Ids.MessageId Id, out string! From, out string! FromName, out string! Body, out System.DateTimeOffset At) -> void
 Aw.Meta.Core.Messages.PeerMessage.Equals(Aw.Meta.Core.Messages.PeerMessage? other) -> bool
+override Aw.Meta.Core.Messages.PeerMessage.Equals(object? obj) -> bool
 Aw.Meta.Core.Messages.PeerMessage.From.get -> string!
 Aw.Meta.Core.Messages.PeerMessage.From.init -> void
 Aw.Meta.Core.Messages.PeerMessage.FromName.get -> string!
 Aw.Meta.Core.Messages.PeerMessage.FromName.init -> void
+override Aw.Meta.Core.Messages.PeerMessage.GetHashCode() -> int
 Aw.Meta.Core.Messages.PeerMessage.Id.get -> Aw.Meta.Core.Ids.MessageId
 Aw.Meta.Core.Messages.PeerMessage.Id.init -> void
 Aw.Meta.Core.Messages.PeerMessage.PeerMessage(Aw.Meta.Core.Ids.MessageId Id, string! From, string! FromName, string! Body, System.DateTimeOffset At) -> void
+override Aw.Meta.Core.Messages.PeerMessage.ToString() -> string!
+static Aw.Meta.Core.Messages.PeerMessage.operator !=(Aw.Meta.Core.Messages.PeerMessage? left, Aw.Meta.Core.Messages.PeerMessage? right) -> bool
+static Aw.Meta.Core.Messages.PeerMessage.operator ==(Aw.Meta.Core.Messages.PeerMessage? left, Aw.Meta.Core.Messages.PeerMessage? right) -> bool
 Aw.Meta.Core.Messages.TranscriptChunk
 Aw.Meta.Core.Messages.TranscriptChunk.<Clone>$() -> Aw.Meta.Core.Messages.TranscriptChunk!
 Aw.Meta.Core.Messages.TranscriptChunk.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Lines, out long NextOffset) -> void
 Aw.Meta.Core.Messages.TranscriptChunk.Equals(Aw.Meta.Core.Messages.TranscriptChunk? other) -> bool
+override Aw.Meta.Core.Messages.TranscriptChunk.Equals(object? obj) -> bool
+override Aw.Meta.Core.Messages.TranscriptChunk.GetHashCode() -> int
 Aw.Meta.Core.Messages.TranscriptChunk.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Messages.TranscriptChunk.Lines.init -> void
 Aw.Meta.Core.Messages.TranscriptChunk.NextOffset.get -> long
 Aw.Meta.Core.Messages.TranscriptChunk.NextOffset.init -> void
+override Aw.Meta.Core.Messages.TranscriptChunk.ToString() -> string!
 Aw.Meta.Core.Messages.TranscriptChunk.TranscriptChunk(System.Collections.Generic.IReadOnlyList<string!>! Lines, long NextOffset) -> void
+static Aw.Meta.Core.Messages.TranscriptChunk.operator !=(Aw.Meta.Core.Messages.TranscriptChunk? left, Aw.Meta.Core.Messages.TranscriptChunk? right) -> bool
+static Aw.Meta.Core.Messages.TranscriptChunk.operator ==(Aw.Meta.Core.Messages.TranscriptChunk? left, Aw.Meta.Core.Messages.TranscriptChunk? right) -> bool
 Aw.Meta.Core.Messages.TranscriptRecordParser
+static Aw.Meta.Core.Messages.TranscriptRecordParser.Parse(string! line, System.DateTimeOffset fallbackAt) -> Aw.Meta.Core.Messages.PeerMessage?
 Aw.Meta.Core.MetaCoreServiceCollectionExtensions
+static Aw.Meta.Core.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 Aw.Meta.Core.MetaErrors
+static Aw.Meta.Core.MetaErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 Aw.Meta.Core.Obligations.MergeRecord
 Aw.Meta.Core.Obligations.MergeRecord.<Clone>$() -> Aw.Meta.Core.Obligations.MergeRecord!
 Aw.Meta.Core.Obligations.MergeRecord.At.get -> System.DateTimeOffset
 Aw.Meta.Core.Obligations.MergeRecord.At.init -> void
 Aw.Meta.Core.Obligations.MergeRecord.Deconstruct(out int Pr, out string! Sha, out System.DateTimeOffset At) -> void
 Aw.Meta.Core.Obligations.MergeRecord.Equals(Aw.Meta.Core.Obligations.MergeRecord? other) -> bool
+override Aw.Meta.Core.Obligations.MergeRecord.Equals(object? obj) -> bool
+override Aw.Meta.Core.Obligations.MergeRecord.GetHashCode() -> int
 Aw.Meta.Core.Obligations.MergeRecord.MergeRecord(int Pr, string! Sha, System.DateTimeOffset At) -> void
 Aw.Meta.Core.Obligations.MergeRecord.Pr.get -> int
 Aw.Meta.Core.Obligations.MergeRecord.Pr.init -> void
 Aw.Meta.Core.Obligations.MergeRecord.Sha.get -> string!
 Aw.Meta.Core.Obligations.MergeRecord.Sha.init -> void
 Aw.Meta.Core.Obligations.MergeRecord.ShortSha.get -> string!
+override Aw.Meta.Core.Obligations.MergeRecord.ToString() -> string!
+static Aw.Meta.Core.Obligations.MergeRecord.operator !=(Aw.Meta.Core.Obligations.MergeRecord? left, Aw.Meta.Core.Obligations.MergeRecord? right) -> bool
+static Aw.Meta.Core.Obligations.MergeRecord.operator ==(Aw.Meta.Core.Obligations.MergeRecord? left, Aw.Meta.Core.Obligations.MergeRecord? right) -> bool
 Aw.Meta.Core.Obligations.Obligation
 Aw.Meta.Core.Obligations.Obligation.<Clone>$() -> Aw.Meta.Core.Obligations.Obligation!
 Aw.Meta.Core.Obligations.Obligation.Deconstruct(out Aw.Meta.Core.Obligations.ObligationKind Kind, out string! Key, out string! Summary, out string! NextCommand) -> void
 Aw.Meta.Core.Obligations.Obligation.Equals(Aw.Meta.Core.Obligations.Obligation? other) -> bool
+override Aw.Meta.Core.Obligations.Obligation.Equals(object? obj) -> bool
+override Aw.Meta.Core.Obligations.Obligation.GetHashCode() -> int
 Aw.Meta.Core.Obligations.Obligation.Key.get -> string!
 Aw.Meta.Core.Obligations.Obligation.Key.init -> void
 Aw.Meta.Core.Obligations.Obligation.Kind.get -> Aw.Meta.Core.Obligations.ObligationKind
@@ -388,12 +546,18 @@ Aw.Meta.Core.Obligations.Obligation.NextCommand.init -> void
 Aw.Meta.Core.Obligations.Obligation.Obligation(Aw.Meta.Core.Obligations.ObligationKind Kind, string! Key, string! Summary, string! NextCommand) -> void
 Aw.Meta.Core.Obligations.Obligation.Summary.get -> string!
 Aw.Meta.Core.Obligations.Obligation.Summary.init -> void
+override Aw.Meta.Core.Obligations.Obligation.ToString() -> string!
+static Aw.Meta.Core.Obligations.Obligation.operator !=(Aw.Meta.Core.Obligations.Obligation? left, Aw.Meta.Core.Obligations.Obligation? right) -> bool
+static Aw.Meta.Core.Obligations.Obligation.operator ==(Aw.Meta.Core.Obligations.Obligation? left, Aw.Meta.Core.Obligations.Obligation? right) -> bool
 Aw.Meta.Core.Obligations.ObligationEvaluator
+static Aw.Meta.Core.Obligations.ObligationEvaluator.Evaluate(Aw.Meta.Core.Obligations.ObligationFacts! facts) -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>!
 Aw.Meta.Core.Obligations.ObligationFacts
 Aw.Meta.Core.Obligations.ObligationFacts.<Clone>$() -> Aw.Meta.Core.Obligations.ObligationFacts!
 Aw.Meta.Core.Obligations.ObligationFacts.Answers.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.OwnerAnswer!>!
 Aw.Meta.Core.Obligations.ObligationFacts.Answers.init -> void
 Aw.Meta.Core.Obligations.ObligationFacts.Equals(Aw.Meta.Core.Obligations.ObligationFacts? other) -> bool
+override Aw.Meta.Core.Obligations.ObligationFacts.Equals(object? obj) -> bool
+override Aw.Meta.Core.Obligations.ObligationFacts.GetHashCode() -> int
 Aw.Meta.Core.Obligations.ObligationFacts.Heartbeat.get -> System.DateTimeOffset?
 Aw.Meta.Core.Obligations.ObligationFacts.Heartbeat.init -> void
 Aw.Meta.Core.Obligations.ObligationFacts.Lanes.get -> Aw.Meta.Core.Lanes.LaneMapState!
@@ -409,8 +573,11 @@ Aw.Meta.Core.Obligations.ObligationFacts.Now.init -> void
 Aw.Meta.Core.Obligations.ObligationFacts.ObligationFacts() -> void
 Aw.Meta.Core.Obligations.ObligationFacts.Outbound.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Messages.Outbound!>!
 Aw.Meta.Core.Obligations.ObligationFacts.Outbound.init -> void
+override Aw.Meta.Core.Obligations.ObligationFacts.ToString() -> string!
 Aw.Meta.Core.Obligations.ObligationFacts.WatchInterval.get -> System.TimeSpan
 Aw.Meta.Core.Obligations.ObligationFacts.WatchInterval.init -> void
+static Aw.Meta.Core.Obligations.ObligationFacts.operator !=(Aw.Meta.Core.Obligations.ObligationFacts? left, Aw.Meta.Core.Obligations.ObligationFacts? right) -> bool
+static Aw.Meta.Core.Obligations.ObligationFacts.operator ==(Aw.Meta.Core.Obligations.ObligationFacts? left, Aw.Meta.Core.Obligations.ObligationFacts? right) -> bool
 Aw.Meta.Core.Obligations.ObligationKind
 Aw.Meta.Core.Obligations.ObligationKind.AnnounceMain = 3 -> Aw.Meta.Core.Obligations.ObligationKind
 Aw.Meta.Core.Obligations.ObligationKind.BroadcastLanes = 2 -> Aw.Meta.Core.Obligations.ObligationKind
@@ -425,11 +592,16 @@ Aw.Meta.Core.Obligations.OwnerAnswer.AskedBy.get -> string!
 Aw.Meta.Core.Obligations.OwnerAnswer.AskedBy.init -> void
 Aw.Meta.Core.Obligations.OwnerAnswer.Deconstruct(out int Question, out string! AskedBy, out string! Text, out System.DateTimeOffset AnsweredAt) -> void
 Aw.Meta.Core.Obligations.OwnerAnswer.Equals(Aw.Meta.Core.Obligations.OwnerAnswer? other) -> bool
+override Aw.Meta.Core.Obligations.OwnerAnswer.Equals(object? obj) -> bool
+override Aw.Meta.Core.Obligations.OwnerAnswer.GetHashCode() -> int
 Aw.Meta.Core.Obligations.OwnerAnswer.OwnerAnswer(int Question, string! AskedBy, string! Text, System.DateTimeOffset AnsweredAt) -> void
 Aw.Meta.Core.Obligations.OwnerAnswer.Question.get -> int
 Aw.Meta.Core.Obligations.OwnerAnswer.Question.init -> void
 Aw.Meta.Core.Obligations.OwnerAnswer.Text.get -> string!
 Aw.Meta.Core.Obligations.OwnerAnswer.Text.init -> void
+override Aw.Meta.Core.Obligations.OwnerAnswer.ToString() -> string!
+static Aw.Meta.Core.Obligations.OwnerAnswer.operator !=(Aw.Meta.Core.Obligations.OwnerAnswer? left, Aw.Meta.Core.Obligations.OwnerAnswer? right) -> bool
+static Aw.Meta.Core.Obligations.OwnerAnswer.operator ==(Aw.Meta.Core.Obligations.OwnerAnswer? left, Aw.Meta.Core.Obligations.OwnerAnswer? right) -> bool
 Aw.Meta.Core.Owner.OwnerQuestion
 Aw.Meta.Core.Owner.OwnerQuestion.<Clone>$() -> Aw.Meta.Core.Owner.OwnerQuestion!
 Aw.Meta.Core.Owner.OwnerQuestion.Answer.get -> string?
@@ -442,11 +614,16 @@ Aw.Meta.Core.Owner.OwnerQuestion.AskedBy.get -> string!
 Aw.Meta.Core.Owner.OwnerQuestion.AskedBy.init -> void
 Aw.Meta.Core.Owner.OwnerQuestion.Deconstruct(out int Number, out string! AskedBy, out string! Text, out System.DateTimeOffset AskedAt) -> void
 Aw.Meta.Core.Owner.OwnerQuestion.Equals(Aw.Meta.Core.Owner.OwnerQuestion? other) -> bool
+override Aw.Meta.Core.Owner.OwnerQuestion.Equals(object? obj) -> bool
+override Aw.Meta.Core.Owner.OwnerQuestion.GetHashCode() -> int
 Aw.Meta.Core.Owner.OwnerQuestion.Number.get -> int
 Aw.Meta.Core.Owner.OwnerQuestion.Number.init -> void
 Aw.Meta.Core.Owner.OwnerQuestion.OwnerQuestion(int Number, string! AskedBy, string! Text, System.DateTimeOffset AskedAt) -> void
 Aw.Meta.Core.Owner.OwnerQuestion.Text.get -> string!
 Aw.Meta.Core.Owner.OwnerQuestion.Text.init -> void
+override Aw.Meta.Core.Owner.OwnerQuestion.ToString() -> string!
+static Aw.Meta.Core.Owner.OwnerQuestion.operator !=(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
+static Aw.Meta.Core.Owner.OwnerQuestion.operator ==(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
 Aw.Meta.Core.Ports.ICommandRunner
 Aw.Meta.Core.Ports.ICommandRunner.Run(Aw.Meta.Core.Commands.CommandRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Commands.CommandResult!>!>
 Aw.Meta.Core.Ports.IGateStore
@@ -455,6 +632,9 @@ Aw.Meta.Core.Ports.IGateStore.Latest(int pr, System.Threading.CancellationToken 
 Aw.Meta.Core.Ports.IGateStore.LatestMerge(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Obligations.MergeRecord?>!>
 Aw.Meta.Core.Ports.IGateStore.RecordMerge(Aw.Meta.Core.Obligations.MergeRecord! merge, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Meta.Core.Ports.IGateStore.Save(Aw.Meta.Core.Gate.GateRecord! gate, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Gate.GateRecord!>!>
+Aw.Meta.Core.Ports.IKeyValueStore
+Aw.Meta.Core.Ports.IKeyValueStore.Get(string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string?>!>
+Aw.Meta.Core.Ports.IKeyValueStore.Set(string! key, string! value, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Meta.Core.Ports.ILaneStore
 Aw.Meta.Core.Ports.ILaneStore.Current(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Lanes.LaneMapState!>!>
 Aw.Meta.Core.Ports.ILaneStore.Save(Aw.Meta.Core.Lanes.LaneMapState! map, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -492,6 +672,8 @@ Aw.Meta.Core.Watch.PrView
 Aw.Meta.Core.Watch.PrView.<Clone>$() -> Aw.Meta.Core.Watch.PrView!
 Aw.Meta.Core.Watch.PrView.Deconstruct(out int Number, out Aw.Meta.Core.Watch.PrState State, out bool IsDraft, out string! Head, out string! Mergeable) -> void
 Aw.Meta.Core.Watch.PrView.Equals(Aw.Meta.Core.Watch.PrView? other) -> bool
+override Aw.Meta.Core.Watch.PrView.Equals(object? obj) -> bool
+override Aw.Meta.Core.Watch.PrView.GetHashCode() -> int
 Aw.Meta.Core.Watch.PrView.Head.get -> string!
 Aw.Meta.Core.Watch.PrView.Head.init -> void
 Aw.Meta.Core.Watch.PrView.IsDraft.get -> bool
@@ -503,44 +685,66 @@ Aw.Meta.Core.Watch.PrView.Number.init -> void
 Aw.Meta.Core.Watch.PrView.PrView(int Number, Aw.Meta.Core.Watch.PrState State, bool IsDraft, string! Head, string! Mergeable) -> void
 Aw.Meta.Core.Watch.PrView.State.get -> Aw.Meta.Core.Watch.PrState
 Aw.Meta.Core.Watch.PrView.State.init -> void
+override Aw.Meta.Core.Watch.PrView.ToString() -> string!
+static Aw.Meta.Core.Watch.PrView.operator !=(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool
+static Aw.Meta.Core.Watch.PrView.operator ==(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool
 Aw.Meta.Core.Watch.WatchDiff
+static Aw.Meta.Core.Watch.WatchDiff.Step(Aw.Meta.Core.Watch.WatchState! state, Aw.Meta.Core.Watch.WatchSnapshot! snapshot) -> Aw.Meta.Core.Watch.WatchStep!
 Aw.Meta.Core.Watch.WatchSnapshot
 Aw.Meta.Core.Watch.WatchSnapshot.<Clone>$() -> Aw.Meta.Core.Watch.WatchSnapshot!
 Aw.Meta.Core.Watch.WatchSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, out string! MainSha, out bool DiskLow) -> void
 Aw.Meta.Core.Watch.WatchSnapshot.DiskLow.get -> bool
 Aw.Meta.Core.Watch.WatchSnapshot.DiskLow.init -> void
 Aw.Meta.Core.Watch.WatchSnapshot.Equals(Aw.Meta.Core.Watch.WatchSnapshot? other) -> bool
+override Aw.Meta.Core.Watch.WatchSnapshot.Equals(object? obj) -> bool
+override Aw.Meta.Core.Watch.WatchSnapshot.GetHashCode() -> int
 Aw.Meta.Core.Watch.WatchSnapshot.MainSha.get -> string!
 Aw.Meta.Core.Watch.WatchSnapshot.MainSha.init -> void
 Aw.Meta.Core.Watch.WatchSnapshot.Prs.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>!
 Aw.Meta.Core.Watch.WatchSnapshot.Prs.init -> void
+override Aw.Meta.Core.Watch.WatchSnapshot.ToString() -> string!
 Aw.Meta.Core.Watch.WatchSnapshot.WatchSnapshot(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, string! MainSha, bool DiskLow) -> void
+static Aw.Meta.Core.Watch.WatchSnapshot.operator !=(Aw.Meta.Core.Watch.WatchSnapshot? left, Aw.Meta.Core.Watch.WatchSnapshot? right) -> bool
+static Aw.Meta.Core.Watch.WatchSnapshot.operator ==(Aw.Meta.Core.Watch.WatchSnapshot? left, Aw.Meta.Core.Watch.WatchSnapshot? right) -> bool
 Aw.Meta.Core.Watch.WatchState
 Aw.Meta.Core.Watch.WatchState.<Clone>$() -> Aw.Meta.Core.Watch.WatchState!
 Aw.Meta.Core.Watch.WatchState.Deconstruct(out bool Initialized, out System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, out string? MainSha, out bool DiskLow) -> void
 Aw.Meta.Core.Watch.WatchState.DiskLow.get -> bool
 Aw.Meta.Core.Watch.WatchState.DiskLow.init -> void
 Aw.Meta.Core.Watch.WatchState.Equals(Aw.Meta.Core.Watch.WatchState? other) -> bool
+override Aw.Meta.Core.Watch.WatchState.Equals(object? obj) -> bool
+override Aw.Meta.Core.Watch.WatchState.GetHashCode() -> int
+static Aw.Meta.Core.Watch.WatchState.Initial.get -> Aw.Meta.Core.Watch.WatchState!
 Aw.Meta.Core.Watch.WatchState.Initialized.get -> bool
 Aw.Meta.Core.Watch.WatchState.Initialized.init -> void
 Aw.Meta.Core.Watch.WatchState.MainSha.get -> string?
 Aw.Meta.Core.Watch.WatchState.MainSha.init -> void
 Aw.Meta.Core.Watch.WatchState.Prs.get -> System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>!
 Aw.Meta.Core.Watch.WatchState.Prs.init -> void
+override Aw.Meta.Core.Watch.WatchState.ToString() -> string!
 Aw.Meta.Core.Watch.WatchState.WatchState(bool Initialized, System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, string? MainSha, bool DiskLow) -> void
+static Aw.Meta.Core.Watch.WatchState.operator !=(Aw.Meta.Core.Watch.WatchState? left, Aw.Meta.Core.Watch.WatchState? right) -> bool
+static Aw.Meta.Core.Watch.WatchState.operator ==(Aw.Meta.Core.Watch.WatchState? left, Aw.Meta.Core.Watch.WatchState? right) -> bool
 Aw.Meta.Core.Watch.WatchStep
 Aw.Meta.Core.Watch.WatchStep.<Clone>$() -> Aw.Meta.Core.Watch.WatchStep!
 Aw.Meta.Core.Watch.WatchStep.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Lines, out Aw.Meta.Core.Watch.WatchState! State) -> void
 Aw.Meta.Core.Watch.WatchStep.Equals(Aw.Meta.Core.Watch.WatchStep? other) -> bool
+override Aw.Meta.Core.Watch.WatchStep.Equals(object? obj) -> bool
+override Aw.Meta.Core.Watch.WatchStep.GetHashCode() -> int
 Aw.Meta.Core.Watch.WatchStep.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Watch.WatchStep.Lines.init -> void
 Aw.Meta.Core.Watch.WatchStep.State.get -> Aw.Meta.Core.Watch.WatchState!
 Aw.Meta.Core.Watch.WatchStep.State.init -> void
+override Aw.Meta.Core.Watch.WatchStep.ToString() -> string!
 Aw.Meta.Core.Watch.WatchStep.WatchStep(System.Collections.Generic.IReadOnlyList<string!>! Lines, Aw.Meta.Core.Watch.WatchState! State) -> void
+static Aw.Meta.Core.Watch.WatchStep.operator !=(Aw.Meta.Core.Watch.WatchStep? left, Aw.Meta.Core.Watch.WatchStep? right) -> bool
+static Aw.Meta.Core.Watch.WatchStep.operator ==(Aw.Meta.Core.Watch.WatchStep? left, Aw.Meta.Core.Watch.WatchStep? right) -> bool
 Aw.Meta.Core.Watch.WatchedPr
 Aw.Meta.Core.Watch.WatchedPr.<Clone>$() -> Aw.Meta.Core.Watch.WatchedPr!
 Aw.Meta.Core.Watch.WatchedPr.Deconstruct(out Aw.Meta.Core.Watch.PrState State, out bool IsDraft, out string! Head, out string? Mergeable, out string? Pending, out int PendingPolls) -> void
 Aw.Meta.Core.Watch.WatchedPr.Equals(Aw.Meta.Core.Watch.WatchedPr? other) -> bool
+override Aw.Meta.Core.Watch.WatchedPr.Equals(object? obj) -> bool
+override Aw.Meta.Core.Watch.WatchedPr.GetHashCode() -> int
 Aw.Meta.Core.Watch.WatchedPr.Head.get -> string!
 Aw.Meta.Core.Watch.WatchedPr.Head.init -> void
 Aw.Meta.Core.Watch.WatchedPr.IsDraft.get -> bool
@@ -553,213 +757,13 @@ Aw.Meta.Core.Watch.WatchedPr.PendingPolls.get -> int
 Aw.Meta.Core.Watch.WatchedPr.PendingPolls.init -> void
 Aw.Meta.Core.Watch.WatchedPr.State.get -> Aw.Meta.Core.Watch.PrState
 Aw.Meta.Core.Watch.WatchedPr.State.init -> void
-Aw.Meta.Core.Watch.WatchedPr.WatchedPr(Aw.Meta.Core.Watch.PrState State, bool IsDraft, string! Head, string? Mergeable, string? Pending, int PendingPolls) -> void
-const Aw.Meta.Core.Health.OrphanRule.MinimumAgeSeconds = 300 -> long
-override Aw.Meta.Core.Commands.CommandRequest.Equals(object? obj) -> bool
-override Aw.Meta.Core.Commands.CommandRequest.GetHashCode() -> int
-override Aw.Meta.Core.Commands.CommandRequest.ToString() -> string!
-override Aw.Meta.Core.Commands.CommandResult.Equals(object? obj) -> bool
-override Aw.Meta.Core.Commands.CommandResult.GetHashCode() -> int
-override Aw.Meta.Core.Commands.CommandResult.ToString() -> string!
-override Aw.Meta.Core.Config.GateConfig.Equals(object? obj) -> bool
-override Aw.Meta.Core.Config.GateConfig.GetHashCode() -> int
-override Aw.Meta.Core.Config.GateConfig.ToString() -> string!
-override Aw.Meta.Core.Config.MergeOrderRule.Equals(object? obj) -> bool
-override Aw.Meta.Core.Config.MergeOrderRule.GetHashCode() -> int
-override Aw.Meta.Core.Config.MergeOrderRule.ToString() -> string!
-override Aw.Meta.Core.Config.ScopeConfig.Equals(object? obj) -> bool
-override Aw.Meta.Core.Config.ScopeConfig.GetHashCode() -> int
-override Aw.Meta.Core.Config.ScopeConfig.ToString() -> string!
-override Aw.Meta.Core.Config.StepConfig.Equals(object? obj) -> bool
-override Aw.Meta.Core.Config.StepConfig.GetHashCode() -> int
-override Aw.Meta.Core.Config.StepConfig.ToString() -> string!
-override Aw.Meta.Core.Config.TeamConfig.Equals(object? obj) -> bool
-override Aw.Meta.Core.Config.TeamConfig.GetHashCode() -> int
-override Aw.Meta.Core.Config.TeamConfig.ToString() -> string!
-override Aw.Meta.Core.Gate.GateRecord.Equals(object? obj) -> bool
-override Aw.Meta.Core.Gate.GateRecord.GetHashCode() -> int
-override Aw.Meta.Core.Gate.GateRecord.ToString() -> string!
-override Aw.Meta.Core.Gate.GateStep.Equals(object? obj) -> bool
-override Aw.Meta.Core.Gate.GateStep.GetHashCode() -> int
-override Aw.Meta.Core.Gate.GateStep.ToString() -> string!
-override Aw.Meta.Core.Gate.RerunOutcome.Equals(object? obj) -> bool
-override Aw.Meta.Core.Gate.RerunOutcome.GetHashCode() -> int
-override Aw.Meta.Core.Gate.RerunOutcome.ToString() -> string!
-override Aw.Meta.Core.Health.HostSnapshot.Equals(object? obj) -> bool
-override Aw.Meta.Core.Health.HostSnapshot.GetHashCode() -> int
-override Aw.Meta.Core.Health.HostSnapshot.ToString() -> string!
-override Aw.Meta.Core.Health.ProcessInfo.Equals(object? obj) -> bool
-override Aw.Meta.Core.Health.ProcessInfo.GetHashCode() -> int
-override Aw.Meta.Core.Health.ProcessInfo.ToString() -> string!
-override Aw.Meta.Core.Ids.MessageId.Equals(object? obj) -> bool
-override Aw.Meta.Core.Ids.MessageId.GetHashCode() -> int
-override Aw.Meta.Core.Ids.MessageId.ToString() -> string!
-override Aw.Meta.Core.Ids.SessionId.Equals(object? obj) -> bool
-override Aw.Meta.Core.Ids.SessionId.GetHashCode() -> int
-override Aw.Meta.Core.Ids.SessionId.ToString() -> string!
-override Aw.Meta.Core.Lanes.LaneAssignment.Equals(object? obj) -> bool
-override Aw.Meta.Core.Lanes.LaneAssignment.GetHashCode() -> int
-override Aw.Meta.Core.Lanes.LaneAssignment.ToString() -> string!
-override Aw.Meta.Core.Lanes.LaneMapState.Equals(object? obj) -> bool
-override Aw.Meta.Core.Lanes.LaneMapState.GetHashCode() -> int
-override Aw.Meta.Core.Lanes.LaneMapState.ToString() -> string!
-override Aw.Meta.Core.Lanes.LiveSession.Equals(object? obj) -> bool
-override Aw.Meta.Core.Lanes.LiveSession.GetHashCode() -> int
-override Aw.Meta.Core.Lanes.LiveSession.ToString() -> string!
-override Aw.Meta.Core.Merge.MergeCheck.Equals(object? obj) -> bool
-override Aw.Meta.Core.Merge.MergeCheck.GetHashCode() -> int
-override Aw.Meta.Core.Merge.MergeCheck.ToString() -> string!
-override Aw.Meta.Core.Merge.MergeFacts.Equals(object? obj) -> bool
-override Aw.Meta.Core.Merge.MergeFacts.GetHashCode() -> int
-override Aw.Meta.Core.Merge.MergeFacts.ToString() -> string!
-override Aw.Meta.Core.Messages.Classification.Equals(object? obj) -> bool
-override Aw.Meta.Core.Messages.Classification.GetHashCode() -> int
-override Aw.Meta.Core.Messages.Classification.ToString() -> string!
-override Aw.Meta.Core.Messages.InboxMessage.Equals(object? obj) -> bool
-override Aw.Meta.Core.Messages.InboxMessage.GetHashCode() -> int
-override Aw.Meta.Core.Messages.InboxMessage.ToString() -> string!
-override Aw.Meta.Core.Messages.MessageResolution.Equals(object? obj) -> bool
-override Aw.Meta.Core.Messages.MessageResolution.GetHashCode() -> int
-override Aw.Meta.Core.Messages.MessageResolution.ToString() -> string!
-override Aw.Meta.Core.Messages.MetaRole.Equals(object? obj) -> bool
-override Aw.Meta.Core.Messages.MetaRole.GetHashCode() -> int
-override Aw.Meta.Core.Messages.MetaRole.ToString() -> string!
-override Aw.Meta.Core.Messages.Outbound.Equals(object? obj) -> bool
-override Aw.Meta.Core.Messages.Outbound.GetHashCode() -> int
-override Aw.Meta.Core.Messages.Outbound.ToString() -> string!
-override Aw.Meta.Core.Messages.PeerMessage.Equals(object? obj) -> bool
-override Aw.Meta.Core.Messages.PeerMessage.GetHashCode() -> int
-override Aw.Meta.Core.Messages.PeerMessage.ToString() -> string!
-override Aw.Meta.Core.Messages.TranscriptChunk.Equals(object? obj) -> bool
-override Aw.Meta.Core.Messages.TranscriptChunk.GetHashCode() -> int
-override Aw.Meta.Core.Messages.TranscriptChunk.ToString() -> string!
-override Aw.Meta.Core.Obligations.MergeRecord.Equals(object? obj) -> bool
-override Aw.Meta.Core.Obligations.MergeRecord.GetHashCode() -> int
-override Aw.Meta.Core.Obligations.MergeRecord.ToString() -> string!
-override Aw.Meta.Core.Obligations.Obligation.Equals(object? obj) -> bool
-override Aw.Meta.Core.Obligations.Obligation.GetHashCode() -> int
-override Aw.Meta.Core.Obligations.Obligation.ToString() -> string!
-override Aw.Meta.Core.Obligations.ObligationFacts.Equals(object? obj) -> bool
-override Aw.Meta.Core.Obligations.ObligationFacts.GetHashCode() -> int
-override Aw.Meta.Core.Obligations.ObligationFacts.ToString() -> string!
-override Aw.Meta.Core.Obligations.OwnerAnswer.Equals(object? obj) -> bool
-override Aw.Meta.Core.Obligations.OwnerAnswer.GetHashCode() -> int
-override Aw.Meta.Core.Obligations.OwnerAnswer.ToString() -> string!
-override Aw.Meta.Core.Owner.OwnerQuestion.Equals(object? obj) -> bool
-override Aw.Meta.Core.Owner.OwnerQuestion.GetHashCode() -> int
-override Aw.Meta.Core.Owner.OwnerQuestion.ToString() -> string!
-override Aw.Meta.Core.Watch.PrView.Equals(object? obj) -> bool
-override Aw.Meta.Core.Watch.PrView.GetHashCode() -> int
-override Aw.Meta.Core.Watch.PrView.ToString() -> string!
-override Aw.Meta.Core.Watch.WatchSnapshot.Equals(object? obj) -> bool
-override Aw.Meta.Core.Watch.WatchSnapshot.GetHashCode() -> int
-override Aw.Meta.Core.Watch.WatchSnapshot.ToString() -> string!
-override Aw.Meta.Core.Watch.WatchState.Equals(object? obj) -> bool
-override Aw.Meta.Core.Watch.WatchState.GetHashCode() -> int
-override Aw.Meta.Core.Watch.WatchState.ToString() -> string!
-override Aw.Meta.Core.Watch.WatchStep.Equals(object? obj) -> bool
-override Aw.Meta.Core.Watch.WatchStep.GetHashCode() -> int
-override Aw.Meta.Core.Watch.WatchStep.ToString() -> string!
-override Aw.Meta.Core.Watch.WatchedPr.Equals(object? obj) -> bool
-override Aw.Meta.Core.Watch.WatchedPr.GetHashCode() -> int
 override Aw.Meta.Core.Watch.WatchedPr.ToString() -> string!
-static Aw.Meta.Core.Commands.CommandRequest.operator !=(Aw.Meta.Core.Commands.CommandRequest? left, Aw.Meta.Core.Commands.CommandRequest? right) -> bool
-static Aw.Meta.Core.Commands.CommandRequest.operator ==(Aw.Meta.Core.Commands.CommandRequest? left, Aw.Meta.Core.Commands.CommandRequest? right) -> bool
-static Aw.Meta.Core.Commands.CommandResult.operator !=(Aw.Meta.Core.Commands.CommandResult? left, Aw.Meta.Core.Commands.CommandResult? right) -> bool
-static Aw.Meta.Core.Commands.CommandResult.operator ==(Aw.Meta.Core.Commands.CommandResult? left, Aw.Meta.Core.Commands.CommandResult? right) -> bool
-static Aw.Meta.Core.Config.GateConfig.Empty.get -> Aw.Meta.Core.Config.GateConfig!
-static Aw.Meta.Core.Config.GateConfig.operator !=(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
-static Aw.Meta.Core.Config.GateConfig.operator ==(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
-static Aw.Meta.Core.Config.MergeOrderRule.operator !=(Aw.Meta.Core.Config.MergeOrderRule? left, Aw.Meta.Core.Config.MergeOrderRule? right) -> bool
-static Aw.Meta.Core.Config.MergeOrderRule.operator ==(Aw.Meta.Core.Config.MergeOrderRule? left, Aw.Meta.Core.Config.MergeOrderRule? right) -> bool
-static Aw.Meta.Core.Config.ScopeConfig.operator !=(Aw.Meta.Core.Config.ScopeConfig? left, Aw.Meta.Core.Config.ScopeConfig? right) -> bool
-static Aw.Meta.Core.Config.ScopeConfig.operator ==(Aw.Meta.Core.Config.ScopeConfig? left, Aw.Meta.Core.Config.ScopeConfig? right) -> bool
-static Aw.Meta.Core.Config.StepConfig.operator !=(Aw.Meta.Core.Config.StepConfig? left, Aw.Meta.Core.Config.StepConfig? right) -> bool
-static Aw.Meta.Core.Config.StepConfig.operator ==(Aw.Meta.Core.Config.StepConfig? left, Aw.Meta.Core.Config.StepConfig? right) -> bool
-static Aw.Meta.Core.Config.TeamConfig.operator !=(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
-static Aw.Meta.Core.Config.TeamConfig.operator ==(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
-static Aw.Meta.Core.Gate.FlakeRule.Classify(Aw.Meta.Core.Gate.RerunOutcome! alone, Aw.Meta.Core.Gate.RerunOutcome! onMain, string! gateFailure) -> Aw.Meta.Core.Gate.FlakeVerdict
-static Aw.Meta.Core.Gate.GateRecord.operator !=(Aw.Meta.Core.Gate.GateRecord? left, Aw.Meta.Core.Gate.GateRecord? right) -> bool
-static Aw.Meta.Core.Gate.GateRecord.operator ==(Aw.Meta.Core.Gate.GateRecord? left, Aw.Meta.Core.Gate.GateRecord? right) -> bool
-static Aw.Meta.Core.Gate.GateStep.operator !=(Aw.Meta.Core.Gate.GateStep? left, Aw.Meta.Core.Gate.GateStep? right) -> bool
-static Aw.Meta.Core.Gate.GateStep.operator ==(Aw.Meta.Core.Gate.GateStep? left, Aw.Meta.Core.Gate.GateStep? right) -> bool
-static Aw.Meta.Core.Gate.GlobMatcher.IsMatch(string! pattern, string! path) -> bool
-static Aw.Meta.Core.Gate.RerunOutcome.operator !=(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
-static Aw.Meta.Core.Gate.RerunOutcome.operator ==(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
-static Aw.Meta.Core.Gate.ScopePlanner.Plan(System.Collections.Generic.IReadOnlyList<string!>! changedPaths, Aw.Meta.Core.Config.GateConfig! gate) -> System.Collections.Generic.IReadOnlyList<string!>!
-static Aw.Meta.Core.Health.HostSnapshot.operator !=(Aw.Meta.Core.Health.HostSnapshot? left, Aw.Meta.Core.Health.HostSnapshot? right) -> bool
-static Aw.Meta.Core.Health.HostSnapshot.operator ==(Aw.Meta.Core.Health.HostSnapshot? left, Aw.Meta.Core.Health.HostSnapshot? right) -> bool
-static Aw.Meta.Core.Health.OrphanRule.IsOrphan(Aw.Meta.Core.Health.ProcessInfo! process, string? parentCmdline) -> bool
-static Aw.Meta.Core.Health.ProcessInfo.operator !=(Aw.Meta.Core.Health.ProcessInfo? left, Aw.Meta.Core.Health.ProcessInfo? right) -> bool
-static Aw.Meta.Core.Health.ProcessInfo.operator ==(Aw.Meta.Core.Health.ProcessInfo? left, Aw.Meta.Core.Health.ProcessInfo? right) -> bool
-static Aw.Meta.Core.Ids.MessageId.From(string! value) -> Aw.Meta.Core.Ids.MessageId
-static Aw.Meta.Core.Ids.MessageId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Meta.Core.Ids.MessageId
-static Aw.Meta.Core.Ids.MessageId.TryFrom(string? value, out Aw.Meta.Core.Ids.MessageId vo) -> bool
-static Aw.Meta.Core.Ids.MessageId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Meta.Core.Ids.MessageId result) -> bool
-static Aw.Meta.Core.Ids.MessageId.operator !=(Aw.Meta.Core.Ids.MessageId left, Aw.Meta.Core.Ids.MessageId right) -> bool
-static Aw.Meta.Core.Ids.MessageId.operator ==(Aw.Meta.Core.Ids.MessageId left, Aw.Meta.Core.Ids.MessageId right) -> bool
-static Aw.Meta.Core.Ids.SessionId.From(string! value) -> Aw.Meta.Core.Ids.SessionId
-static Aw.Meta.Core.Ids.SessionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Meta.Core.Ids.SessionId
-static Aw.Meta.Core.Ids.SessionId.TryFrom(string? value, out Aw.Meta.Core.Ids.SessionId vo) -> bool
-static Aw.Meta.Core.Ids.SessionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Meta.Core.Ids.SessionId result) -> bool
-static Aw.Meta.Core.Ids.SessionId.operator !=(Aw.Meta.Core.Ids.SessionId left, Aw.Meta.Core.Ids.SessionId right) -> bool
-static Aw.Meta.Core.Ids.SessionId.operator ==(Aw.Meta.Core.Ids.SessionId left, Aw.Meta.Core.Ids.SessionId right) -> bool
-static Aw.Meta.Core.Lanes.LaneAssignment.operator !=(Aw.Meta.Core.Lanes.LaneAssignment? left, Aw.Meta.Core.Lanes.LaneAssignment? right) -> bool
-static Aw.Meta.Core.Lanes.LaneAssignment.operator ==(Aw.Meta.Core.Lanes.LaneAssignment? left, Aw.Meta.Core.Lanes.LaneAssignment? right) -> bool
-static Aw.Meta.Core.Lanes.LaneMap.Refresh(string! team, System.Collections.Generic.IReadOnlyList<string!>! lanes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LiveSession!>! live, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Messages.InboxMessage!>! announcements, Aw.Meta.Core.Lanes.LaneMapState! previous) -> Aw.Meta.Core.Lanes.LaneMapState!
-static Aw.Meta.Core.Lanes.LaneMapState.Empty.get -> Aw.Meta.Core.Lanes.LaneMapState!
-static Aw.Meta.Core.Lanes.LaneMapState.operator !=(Aw.Meta.Core.Lanes.LaneMapState? left, Aw.Meta.Core.Lanes.LaneMapState? right) -> bool
-static Aw.Meta.Core.Lanes.LaneMapState.operator ==(Aw.Meta.Core.Lanes.LaneMapState? left, Aw.Meta.Core.Lanes.LaneMapState? right) -> bool
-static Aw.Meta.Core.Lanes.LiveSession.operator !=(Aw.Meta.Core.Lanes.LiveSession? left, Aw.Meta.Core.Lanes.LiveSession? right) -> bool
-static Aw.Meta.Core.Lanes.LiveSession.operator ==(Aw.Meta.Core.Lanes.LiveSession? left, Aw.Meta.Core.Lanes.LiveSession? right) -> bool
-static Aw.Meta.Core.Merge.MergeCheck.operator !=(Aw.Meta.Core.Merge.MergeCheck? left, Aw.Meta.Core.Merge.MergeCheck? right) -> bool
-static Aw.Meta.Core.Merge.MergeCheck.operator ==(Aw.Meta.Core.Merge.MergeCheck? left, Aw.Meta.Core.Merge.MergeCheck? right) -> bool
-static Aw.Meta.Core.Merge.MergeFacts.operator !=(Aw.Meta.Core.Merge.MergeFacts? left, Aw.Meta.Core.Merge.MergeFacts? right) -> bool
-static Aw.Meta.Core.Merge.MergeFacts.operator ==(Aw.Meta.Core.Merge.MergeFacts? left, Aw.Meta.Core.Merge.MergeFacts? right) -> bool
-static Aw.Meta.Core.Merge.MergeGate.Evaluate(Aw.Meta.Core.Merge.MergeFacts! facts) -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.MergeCheck!>!
-static Aw.Meta.Core.Messages.Classification.operator !=(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
-static Aw.Meta.Core.Messages.Classification.operator ==(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
-static Aw.Meta.Core.Messages.InboxMessage.Of(Aw.Meta.Core.Messages.PeerMessage! peer) -> Aw.Meta.Core.Messages.InboxMessage!
-static Aw.Meta.Core.Messages.InboxMessage.operator !=(Aw.Meta.Core.Messages.InboxMessage? left, Aw.Meta.Core.Messages.InboxMessage? right) -> bool
-static Aw.Meta.Core.Messages.InboxMessage.operator ==(Aw.Meta.Core.Messages.InboxMessage? left, Aw.Meta.Core.Messages.InboxMessage? right) -> bool
-static Aw.Meta.Core.Messages.MessageClassifier.Classify(string! body) -> Aw.Meta.Core.Messages.Classification!
-static Aw.Meta.Core.Messages.MessageResolution.operator !=(Aw.Meta.Core.Messages.MessageResolution? left, Aw.Meta.Core.Messages.MessageResolution? right) -> bool
-static Aw.Meta.Core.Messages.MessageResolution.operator ==(Aw.Meta.Core.Messages.MessageResolution? left, Aw.Meta.Core.Messages.MessageResolution? right) -> bool
-static Aw.Meta.Core.Messages.MetaRole.operator !=(Aw.Meta.Core.Messages.MetaRole? left, Aw.Meta.Core.Messages.MetaRole? right) -> bool
-static Aw.Meta.Core.Messages.MetaRole.operator ==(Aw.Meta.Core.Messages.MetaRole? left, Aw.Meta.Core.Messages.MetaRole? right) -> bool
-static Aw.Meta.Core.Messages.Outbound.operator !=(Aw.Meta.Core.Messages.Outbound? left, Aw.Meta.Core.Messages.Outbound? right) -> bool
-static Aw.Meta.Core.Messages.Outbound.operator ==(Aw.Meta.Core.Messages.Outbound? left, Aw.Meta.Core.Messages.Outbound? right) -> bool
-static Aw.Meta.Core.Messages.PeerMessage.operator !=(Aw.Meta.Core.Messages.PeerMessage? left, Aw.Meta.Core.Messages.PeerMessage? right) -> bool
-static Aw.Meta.Core.Messages.PeerMessage.operator ==(Aw.Meta.Core.Messages.PeerMessage? left, Aw.Meta.Core.Messages.PeerMessage? right) -> bool
-static Aw.Meta.Core.Messages.TranscriptChunk.operator !=(Aw.Meta.Core.Messages.TranscriptChunk? left, Aw.Meta.Core.Messages.TranscriptChunk? right) -> bool
-static Aw.Meta.Core.Messages.TranscriptChunk.operator ==(Aw.Meta.Core.Messages.TranscriptChunk? left, Aw.Meta.Core.Messages.TranscriptChunk? right) -> bool
-static Aw.Meta.Core.Messages.TranscriptRecordParser.Parse(string! line, System.DateTimeOffset fallbackAt) -> Aw.Meta.Core.Messages.PeerMessage?
-static Aw.Meta.Core.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Aw.Meta.Core.MetaErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
-static Aw.Meta.Core.Obligations.MergeRecord.operator !=(Aw.Meta.Core.Obligations.MergeRecord? left, Aw.Meta.Core.Obligations.MergeRecord? right) -> bool
-static Aw.Meta.Core.Obligations.MergeRecord.operator ==(Aw.Meta.Core.Obligations.MergeRecord? left, Aw.Meta.Core.Obligations.MergeRecord? right) -> bool
-static Aw.Meta.Core.Obligations.Obligation.operator !=(Aw.Meta.Core.Obligations.Obligation? left, Aw.Meta.Core.Obligations.Obligation? right) -> bool
-static Aw.Meta.Core.Obligations.Obligation.operator ==(Aw.Meta.Core.Obligations.Obligation? left, Aw.Meta.Core.Obligations.Obligation? right) -> bool
-static Aw.Meta.Core.Obligations.ObligationEvaluator.Evaluate(Aw.Meta.Core.Obligations.ObligationFacts! facts) -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>!
-static Aw.Meta.Core.Obligations.ObligationFacts.operator !=(Aw.Meta.Core.Obligations.ObligationFacts? left, Aw.Meta.Core.Obligations.ObligationFacts? right) -> bool
-static Aw.Meta.Core.Obligations.ObligationFacts.operator ==(Aw.Meta.Core.Obligations.ObligationFacts? left, Aw.Meta.Core.Obligations.ObligationFacts? right) -> bool
-static Aw.Meta.Core.Obligations.OwnerAnswer.operator !=(Aw.Meta.Core.Obligations.OwnerAnswer? left, Aw.Meta.Core.Obligations.OwnerAnswer? right) -> bool
-static Aw.Meta.Core.Obligations.OwnerAnswer.operator ==(Aw.Meta.Core.Obligations.OwnerAnswer? left, Aw.Meta.Core.Obligations.OwnerAnswer? right) -> bool
-static Aw.Meta.Core.Owner.OwnerQuestion.operator !=(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
-static Aw.Meta.Core.Owner.OwnerQuestion.operator ==(Aw.Meta.Core.Owner.OwnerQuestion? left, Aw.Meta.Core.Owner.OwnerQuestion? right) -> bool
-static Aw.Meta.Core.Watch.PrView.operator !=(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool
-static Aw.Meta.Core.Watch.PrView.operator ==(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool
-static Aw.Meta.Core.Watch.WatchDiff.Step(Aw.Meta.Core.Watch.WatchState! state, Aw.Meta.Core.Watch.WatchSnapshot! snapshot) -> Aw.Meta.Core.Watch.WatchStep!
-static Aw.Meta.Core.Watch.WatchSnapshot.operator !=(Aw.Meta.Core.Watch.WatchSnapshot? left, Aw.Meta.Core.Watch.WatchSnapshot? right) -> bool
-static Aw.Meta.Core.Watch.WatchSnapshot.operator ==(Aw.Meta.Core.Watch.WatchSnapshot? left, Aw.Meta.Core.Watch.WatchSnapshot? right) -> bool
-static Aw.Meta.Core.Watch.WatchState.Initial.get -> Aw.Meta.Core.Watch.WatchState!
-static Aw.Meta.Core.Watch.WatchState.operator !=(Aw.Meta.Core.Watch.WatchState? left, Aw.Meta.Core.Watch.WatchState? right) -> bool
-static Aw.Meta.Core.Watch.WatchState.operator ==(Aw.Meta.Core.Watch.WatchState? left, Aw.Meta.Core.Watch.WatchState? right) -> bool
-static Aw.Meta.Core.Watch.WatchStep.operator !=(Aw.Meta.Core.Watch.WatchStep? left, Aw.Meta.Core.Watch.WatchStep? right) -> bool
-static Aw.Meta.Core.Watch.WatchStep.operator ==(Aw.Meta.Core.Watch.WatchStep? left, Aw.Meta.Core.Watch.WatchStep? right) -> bool
+Aw.Meta.Core.Watch.WatchedPr.WatchedPr(Aw.Meta.Core.Watch.PrState State, bool IsDraft, string! Head, string? Mergeable, string? Pending, int PendingPolls) -> void
 static Aw.Meta.Core.Watch.WatchedPr.operator !=(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
 static Aw.Meta.Core.Watch.WatchedPr.operator ==(Aw.Meta.Core.Watch.WatchedPr? left, Aw.Meta.Core.Watch.WatchedPr? right) -> bool
+const Aw.Meta.Core.Health.OrphanRule.MinimumAgeSeconds = 300 -> long
 static readonly Aw.Meta.Core.MetaErrors.CommandNotStarted -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.ConfigExists -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.ConfigInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.GateStepNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.HostUnreadable -> Aw.Kernel.ErrorDefinition!

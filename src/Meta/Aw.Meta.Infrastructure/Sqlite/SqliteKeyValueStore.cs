@@ -1,0 +1,27 @@
+using Aw.Kernel;
+using Aw.Kernel.Data;
+using Aw.Meta.Core.Ports;
+
+namespace Aw.Meta.Infrastructure.Sqlite;
+
+/// <summary>IKeyValueStore over meta.db (the kv table).</summary>
+/// <param name="database">The meta database.</param>
+internal sealed class SqliteKeyValueStore(MetaDatabase database) : IKeyValueStore
+{
+    public async ValueTask<Result<string?>> Get(string key, CancellationToken cancellationToken)
+    {
+        var rows = await database.Query(
+            new SqlStatement("SELECT value FROM kv WHERE key = $key", c => c.Bind("$key", key), "kv " + key),
+            r => r.GetString(0),
+            cancellationToken).ConfigureAwait(false);
+        return rows.IsError ? rows.Error : Results.Success<string?>(rows.Value.Count == 0 ? null : rows.Value[0]);
+    }
+
+    public ValueTask<Result<Unit>> Set(string key, string value, CancellationToken cancellationToken) =>
+        database.Run(
+            new SqlStatement(
+                "INSERT INTO kv (key, value) VALUES ($key, $value) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                c => c.Bind("$key", key).Bind("$value", value),
+                "kv " + key),
+            cancellationToken);
+}

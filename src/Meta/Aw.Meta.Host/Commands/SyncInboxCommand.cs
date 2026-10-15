@@ -1,35 +1,30 @@
 using System.Globalization;
-using System.Text.Json;
-using Aw.Kernel.Services;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Features.SyncInbox;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Meta.Host.Commands;
 
-/// <summary>The 'inbox-sync' command: binds its arguments, calls SyncInbox and maps the result to an exit code.</summary>
+/// <summary>The 'inbox-sync' command.</summary>
 internal static class SyncInboxCommand
 {
-    internal const string Name = "inbox-sync";
+    internal static CommandEntry Entry { get; } = new(
+        "inbox-sync",
+        new CommandSpec("inbox-sync --session <uuid> --transcript <path> [--json]", ["session", "transcript"], [], []),
+        NeedsConfig: true,
+        Run);
 
-    internal static async Task<int> Run(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
+    private static Task<int> Run(CommandContext context)
     {
-        if (args.Count != 4
-            || Option(args, "--session") is not { } session
-            || Option(args, "--transcript") is not { } transcript
-            || !SessionId.TryParse(session, CultureInfo.InvariantCulture, out var sessionId))
+        if (!SessionId.TryParse(context.Line.Value("session"), CultureInfo.InvariantCulture, out var session))
         {
-            return CommandOutput.Usage("inbox-sync --session <uuid> --transcript <path>");
+            return Task.FromResult(CommandOutput.Usage(context.Io, "--session must not be blank", Entry.Spec.Usage));
         }
 
-        var service = services.GetRequiredService<IService<SyncInboxRequest, SyncInboxResponse>>();
-        var result = await service.Handle(new SyncInboxRequest(sessionId, transcript), CancellationToken.None).ConfigureAwait(false);
-        return CommandOutput.Write(result, json);
+        return CommandOutput.Call<SyncInboxRequest, SyncInboxResponse>(context, new SyncInboxRequest(session, context.Line.Value("transcript")), Text);
     }
 
-    private static string? Option(IReadOnlyList<string> args, string name)
-    {
-        var at = args.ToList().IndexOf(name);
-        return at >= 0 && at + 1 < args.Count && !args[at + 1].StartsWith("--", StringComparison.Ordinal) ? args[at + 1] : null;
-    }
+    private static string Text(SyncInboxResponse response) =>
+        response.NewMessages.Count == 0
+            ? "no new messages"
+            : string.Create(CultureInfo.InvariantCulture, $"{response.NewMessages.Count} new message(s): ") + string.Join(", ", response.NewMessages.Select(id => id.Value));
 }

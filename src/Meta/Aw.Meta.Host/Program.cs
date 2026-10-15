@@ -10,5 +10,5 @@ var provider = services.BuildServiceProvider();   // validation runs in HostTest
 await using (provider.ConfigureAwait(false))
 {
     _ = provider.GetRequiredService<TelemetryRuntime>();   // resolved so the container disposes it on exit, which flushes
-    return await CommandTable.Run(args, provider, json).ConfigureAwait(false);
+    return await CommandTable.Run(args, provider, json, ConsoleIo.Standard()).ConfigureAwait(false);
 }
