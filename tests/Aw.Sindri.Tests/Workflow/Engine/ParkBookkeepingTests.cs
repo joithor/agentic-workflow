@@ -144,6 +144,42 @@ public sealed class ParkBookkeepingTests
         Assert.Equal([_e1], [.. released.Changes[0].Event.Effects]);
     }
 
+    /// <summary>(a) PR 232 run 4 (I3): the child's end (wait.satisfied from the child) frees the mirror park; the approved drift park's effect behind it is sent once.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void A_child_ending_resends_the_effect_of_an_approved_drift_park_behind_the_mirror()
+    {
+        var approved = MirroredWithApprovedDrift();
+        var ended = new WaitSatisfied("service:workflow.inbox", new ChildWaitSource(ChildId, TriggerKey.For(ChildId, "cmd:y")), OutcomeName.From("resolved"), new Dictionary<FactKey, FactValue>());
+
+        var released = Assert.IsType<Applied>(Decide(approved, Item, ended, rules: EngineRules.Default));
+
+        Assert.Equal([_e1], [.. released.Effects.Select(static e => e.Identity)]);
+        Assert.Equal([_e1], [.. released.Changes[0].Event.Effects]);
+    }
+
+    /// <summary>(a) PR 232 run 4 (I3): a second child park replaces the mirror; the approved drift park's effect behind the old one is sent once and the parent sits on the new mirror.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void A_second_child_park_replaces_the_mirror_and_sends_the_approved_drift_effect_once()
+    {
+        var approved = MirroredWithApprovedDrift();
+        var again = new ChildChanged("service:workflow.inbox", ChildId, ChildChange.Parked, ParkReason.NoProgress, "again", TriggerKey.For(ChildId, "run:4.1:" + new string('1', 64)));
+
+        var replaced = Assert.IsType<Applied>(Decide(approved, Item, again, rules: EngineRules.Default));
+
+        Assert.Equal([_e1], [.. replaced.Effects.Select(static e => e.Identity)]);
+        Assert.Equal([_e1], [.. replaced.Changes[0].Event.Effects]);
+        var suspension = replaced.Changes[0].After.Suspension!;
+        Assert.Equal((SuspensionKind.Park, ChildId, "again"), (suspension.Kind, suspension.Mirrors, suspension.Question));
+    }
+
+    /// <summary>The parent mirroring the child's park, with an approved drift park (holding e1) queued behind it.</summary>
+    private static WorkflowInstance MirroredWithApprovedDrift()
+    {
+        var running = At(Item, "running", entry: 4);
+        var mirrored = Applied(running with { Frame = running.Frame with { Child = ChildId } }, ChildParked());
+        return Applied(Refuse(mirrored, _first, "SND-RECIPE-006"), new RecipeWake(Engine, RecipeWakeKind.Approved, 8));
+    }
+
     /// <summary>(d) I4a: answering a timeout park with an approved drift park behind it re-sends the drift park's effect once.</summary>
     [Fact, Trait("Lane", "unit")]
     public void Answering_a_timeout_park_resends_the_effect_of_an_approved_drift_park_behind_it()

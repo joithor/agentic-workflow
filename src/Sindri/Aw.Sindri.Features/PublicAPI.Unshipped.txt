@@ -77,10 +77,12 @@ Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.<Clone>$() -> Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse!
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.Accepted.get -> Aw.Sindri.Core.Commands.CommandAccepted!
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.Accepted.init -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.AlreadyApproved.get -> bool
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.AlreadyApproved.init -> void
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.Approval.get -> Aw.Sindri.Core.Workflow.Registry.RecipeApproval!
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.Approval.init -> void
-Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.ApproveRecipeResponse(Aw.Sindri.Core.Commands.CommandAccepted! Accepted, Aw.Sindri.Core.Workflow.Registry.RecipeApproval! Approval, Aw.Sindri.Core.Workflow.Registry.ApprovalPreview! Preview, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! Resumed) -> void
-Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.Deconstruct(out Aw.Sindri.Core.Commands.CommandAccepted! Accepted, out Aw.Sindri.Core.Workflow.Registry.RecipeApproval! Approval, out Aw.Sindri.Core.Workflow.Registry.ApprovalPreview! Preview, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! Resumed) -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.ApproveRecipeResponse(Aw.Sindri.Core.Commands.CommandAccepted! Accepted, Aw.Sindri.Core.Workflow.Registry.RecipeApproval! Approval, Aw.Sindri.Core.Workflow.Registry.ApprovalPreview! Preview, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! Resumed, bool AlreadyApproved = false) -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.Deconstruct(out Aw.Sindri.Core.Commands.CommandAccepted! Accepted, out Aw.Sindri.Core.Workflow.Registry.RecipeApproval! Approval, out Aw.Sindri.Core.Workflow.Registry.ApprovalPreview! Preview, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId>! Resumed, out bool AlreadyApproved) -> void
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.Equals(Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse? other) -> bool
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.Preview.get -> Aw.Sindri.Core.Workflow.Registry.ApprovalPreview!
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeResponse.Preview.init -> void

@@ -45,6 +45,20 @@ public sealed class RecipeWakeTests
         Assert.Null(resumed.Changes[0].After.Suspension);
     }
 
+    /// <summary>PR 232 run 4 (I1): the same approval wake sent again (a re-approval with the same pins) resumes a drift park the first one missed.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void The_approval_wake_sent_again_resumes_a_drift_park_the_first_one_missed()
+    {
+        var missed = Claimed();
+        _ = Assert.IsType<Absorbed>(Decide(missed, Item, Wake(RecipeWakeKind.Approved, sequence: 7), rules: EngineRules.Default));   // why: absorbed before the drift park exists
+        var drifted = DriftParked();
+
+        var again = Assert.IsType<Applied>(Decide(drifted, Item, Wake(RecipeWakeKind.Approved, sequence: 7), rules: EngineRules.Default));
+
+        Assert.Null(again.Changes[0].After.Suspension);
+        Assert.Equal([_claim], [.. again.Effects.Select(static e => e.Identity)]);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void An_approval_leaves_every_other_park_alone()
     {
