@@ -21,6 +21,7 @@ internal static class ApiScenarios
         ("profile-approve", "preview"), ("profile-approve", "approved"), ("profile-approve", "already-approved"),
         ("profile-approve", "refused-session"), ("profile-approve", "refused-no-terminal"), ("profile-approve", "refused-origin"),
         ("profile-approve", "stale-hash"), ("profile-approve", "bad-body"),
+        ("workflow-recipe", "not-found"),
         .. ContextApiScenarios.Rows,
         .. ViewScenarios.All,
         .. ItemScenarios.All,
@@ -74,6 +75,7 @@ internal static class ApiScenarios
             ("ping", "running") => await Ask(host, Get("/sindri/ping", Human(token))),
             ("commands", "catalog") => await Ask(host, Get("/sindri/commands", Human(token))),
             ("events", "process-started") => await FirstEventData(host, ct),
+            ("workflow-recipe", "not-found") => await Ask(host, Get(UnknownRecipe, Human(token))),
             ("stop", "accepted") => await Ask(host, Post("/sindri/stop", json: null, Human(token))),
             ("stop", "refused-session") => await Ask(host, Post("/sindri/stop", json: null, Session)),
             ("stop", "refused-origin") => await Ask(host, Post("/sindri/stop", json: null, [.. Human(token), Origin])),
@@ -82,6 +84,10 @@ internal static class ApiScenarios
     }
 
     private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
+
+    // An unknown recipe answers the engine's SND-RECIPE-002 (WorkflowErrors.RecipeNotFound; API spec §3.8). Served today by
+    // the recipe show route (id@hash); P11 serves GET /workflow/recipes/{id} and re-records this file from that route.
+    private static string UnknownRecipe => "/sindri/workflow/recipes/workflow.unknown@" + new string('0', 64);
 
     private static (string Name, string Value) Origin => ("Origin", "http://localhost:3000");
 
