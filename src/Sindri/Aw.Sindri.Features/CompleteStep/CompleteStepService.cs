@@ -14,7 +14,8 @@ namespace Aw.Sindri.Features.CompleteStep;
 
 /// <summary>
 /// 'workflow complete' (engine spec rev 8.1 §5.2, §5.3, §6.3): checks each output is at most 1 MiB, claims the nonce for
-/// this exact report (SND-WF-009 when it named another command, before anything is stored or sent), stores the outputs
+/// this exact report (SND-WF-009 when it named another command, before anything is stored or sent), checks that the
+/// instance's recipe is still approved (SND-RECIPE-005, -006; the claim is given back), stores the outputs
 /// owner-only, and sends the 'complete' Update with the nonce as its id. The workflow's validator answers a stale run
 /// token (SND-WF-005) or a malformed report (SND-WF-008) synchronously; such a refusal gives the nonce back, so a
 /// refused report consumes nothing. A report already applied with this nonce returns the first outcome, marked
@@ -50,8 +51,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
 
         var address = resolved.Value;
         var nonce = request.Nonce ?? nonces.Issue();
-        var shas = request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span)));
-        var reportSha = ReportSha(request, shas);
+        var reportSha = ReportSha(request, request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span))));
         var subject = address.Value + "\n" + reportSha;
         var claim = await nonces.Claim(nonce, subject, cancellationToken).ConfigureAwait(false);
         if (claim.IsError)
@@ -59,9 +59,9 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return claim.Error;
         }
 
-        _ = await runtime.Get(address, cancellationToken).ConfigureAwait(false);   // red stub: the approval check comes here
-        _ = recipes;
-        var stored = await Store(request, cancellationToken).ConfigureAwait(false);
+        var stored = claim.Value == NonceClaim.Fresh && await Approved(address, cancellationToken).ConfigureAwait(false) is { IsError: true } refused   // only a fresh claim is checked, as ApplyCommand does
+            ? refused.Error
+            : await Store(request, cancellationToken).ConfigureAwait(false);
         if (stored.IsError)
         {
             return await GiveBack(nonce, claim.Value, stored.Error, cancellationToken).ConfigureAwait(false);
@@ -69,6 +69,19 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
 
         var report = new StepCompleted(caller.Actor, request.Run, request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, reportSha);
         return await Send(address, new SentReport(nonce, subject, claim.Value), report, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>A report is not exempt from the approval check (spec §5.2): the instance's recipe must still hold, else nothing is stored or sent.</summary>
+    private async ValueTask<Result<Unit>> Approved(InstanceAddress address, CancellationToken cancellationToken)
+    {
+        var view = await runtime.Get(address, cancellationToken).ConfigureAwait(false);
+        if (view.IsError)
+        {
+            return view.Error;
+        }
+
+        var approval = await recipes.Check(view.Value.Recipe, cancellationToken).ConfigureAwait(false);
+        return approval.IsError ? approval.Error : ApprovalRefusal.Of(approval.Value, view.Value.Recipe, address);
     }
 
     /// <summary>Sends the report as the Update keyed by the nonce; a refusal gives back a claim this call created, an unconfirmed send keeps it.</summary>

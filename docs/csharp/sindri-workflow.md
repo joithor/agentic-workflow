@@ -177,8 +177,8 @@ with the register call's `SND-RECIPE-007` and its `RCP-VERSION-001` line.
 
 `sindri recipe revoke <id@hash>` (the hash by 8 or more digits) previews the instances that will park, the takeovers it
 ends, the generated recipes approved from it (revoked with it, recursively) and the parents pinning it as a child
-(marked `child-stale`), asks for `revoke <id>@<hash12>`, and prints `revoked …; N instances parked` (N is 0 until P4's
-wake reaches instances). Revoking an already revoked hash is `SND-RECIPE-005`, unless a revoke stopped partway through
+(marked `child-stale`), asks for `revoke <id>@<hash12>`, and prints `revoked …; N instances parked` (N is 0 until P6's
+`TemporalRecipeWake` reaches instances; P4 keeps `NoOpRecipeWake`). Revoking an already revoked hash is `SND-RECIPE-005`, unless a revoke stopped partway through
 its cascade: then the same command finishes it (each step is keyed by its hash, so nothing is recorded twice).
 
 Each approval appends `recipe.approved` (keyed `recipe.approved:<hash>:after:<seq>`) and an approval row keyed by
@@ -632,6 +632,9 @@ Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and 
   (`SND-RECIPE-008`); the Core port `IApprovalEvals` names the hook and has no implementation or caller yet. Binding it
   (moving `EvalRecipe`'s case running into Core) is a later phase's work.
   `workflow events` reads the ledger directly until API P3's item timeline exists.
+- **Not yet (P6):** the revoke and drift wake. `IRecipeWake` is bound to `NoOpRecipeWake`, so a revoke or a pin drift parks no
+  running instance in P4 (the approval check at each command, answer and `complete` still refuses a revoked or drifted recipe
+  with `SND-RECIPE-005`/`-006`). P6 brings `TemporalRecipeWake`, which signals the running instances.
 
 ## The event bridge (engine P4 unit (d))
 

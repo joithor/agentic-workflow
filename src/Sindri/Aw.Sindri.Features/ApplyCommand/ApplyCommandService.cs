@@ -8,7 +8,6 @@ using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
@@ -128,13 +127,7 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
             return approval.Error;
         }
 
-        var recipe = view.Value.Recipe;
-        return approval.Value switch
-        {
-            ApprovalCheck.Revoked => WorkflowErrors.RecipeRevoked.With($"{recipe.Id.Value}@{recipe.Hash.Display} was revoked; nothing was sent (fix: approve a new version, or sindri workflow cancel {address.Value})"),
-            ApprovalCheck.Drifted => WorkflowErrors.RecipePinDrift.With($"a block {recipe.Id.Value}@{recipe.Hash.Display} pins changed since approval; nothing was sent (fix: re-approve it, see sindri recipe list --stale)"),
-            ApprovalCheck.Holds or _ => Unit.Value,
-        };
+        return ApprovalRefusal.Of(approval.Value, view.Value.Recipe, address);
     }
 
     /// <summary>A protected answer's challenge (spec §4.2): its action text and the instance as it is now must match; any attempt uses it up (SND-WF-013).</summary>

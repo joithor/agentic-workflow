@@ -4508,6 +4508,8 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.IApprovedRecipes
 Aw.Sindri.Core.Workflow.Engine.Runtime.IApprovedRecipes.Check(Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IApprovedRecipes.Find(Aw.Sindri.Core.Workflow.Ids.RecipeId id, Aw.Sindri.Core.Workflow.Ids.RecipeHash hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IApprovedRecipes.Latest(Aw.Sindri.Core.Workflow.Ids.RecipeId id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe!>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovalRefusal
+static Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovalRefusal.Of(Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck check, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! recipe, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.IInstanceReader
 Aw.Sindri.Core.Workflow.Engine.Runtime.IInstanceReader.Get(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IInstanceRuntime
