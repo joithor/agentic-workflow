@@ -79,7 +79,7 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
         if (!appended.IsError && appended.Value.AlreadyRecorded && await Differs(appended.Value.Sequence, entry, cancellationToken).ConfigureAwait(false))
         {
             // a workflow-task retry replayed with other signals: the same activity id now mirrors another event, so it keeps its own row
-            var other = entry with { IdempotencyKey = $"{key}:{ContentHash(record)}" };
+            var other = entry with { IdempotencyKey = $"{key}:{ContentHash(entry)}" };
             appended = await ledger.Append(other, grant, cancellationToken).ConfigureAwait(false);
         }
 
@@ -92,9 +92,14 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
     private async Task<bool> Differs(long sequence, LedgerEntry entry, CancellationToken cancellationToken)
     {
         var read = await ledger.ReadAfter(sequence - 1, 1, cancellationToken).ConfigureAwait(false);
-        if (read.IsError || read.Value.Count == 0 || read.Value[0].Sequence != sequence)
+        if (read.IsError)
         {
-            return false;   // can't see the stored row: keep the spec's behaviour (the first record stands)
+            throw new InvalidOperationException($"{read.Error.Code}: {read.Error.Message}");   // not knowing is not 'same': the activity retries until the stored row can be compared
+        }
+
+        if (read.Value.Count == 0 || read.Value[0].Sequence != sequence)
+        {
+            throw new InvalidOperationException($"the ledger row {sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)} recorded under {entry.IdempotencyKey} can't be read back; the activity retries");
         }
 
         var stored = read.Value[0].Envelope;
@@ -107,8 +112,9 @@ internal sealed partial class RecordEventActivities(ILedgerStore ledger, HeldLea
         return differs;
     }
 
-    private static string ContentHash(WorkflowEventRecord record) =>
-        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes($"{record.Type}|{record.From}|{record.To}|{record.Trigger}|{record.Run}")))[..12];
+    /// <summary>The first 12 hex digits of SHA-256 over exactly what <see cref="Differs"/> compares: the type and the serialized payload.</summary>
+    private static string ContentHash(LedgerEntry entry) =>
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(entry.Envelope.Type + "\n" + entry.Envelope.Payload)))[..12];
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "RecordEvent replay under {Key} mirrors a different event than the ledger holds ({Stored} there, {Replayed} now); recording it under a content-hash key")]
     private static partial void ReplayDiffers(ILogger logger, string key, string stored, string replayed);
