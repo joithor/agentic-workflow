@@ -416,7 +416,7 @@ those surfaces' actions (the `graph` section). Each step costs 1:
 
 A reached surface or action is reported as the feature that owns it. Only the reached node steps on, never that
 feature's other surfaces, so a sibling such as "Pane resize" is never pulled in. The depth is `context.cascadeDepth`
-in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path, starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`.
+in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path (between equally deep paths, the one with the fewest `owns` steps, then key order), starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`.
 
 **A session sees only its repo.** A session sees only the nodes its repo implements (`implements` edges with file
 evidence in its `X-Sindri-Repo`) and the edges among them, so its cascade, neighbors and paths stay inside that set;
@@ -456,7 +456,7 @@ A probe file is JSON, kept outside every repo:
                             "records": ["linear:issue/…"], "files": ["src/layout/SplitPane.ts"], "decisions": [] } } ] }
 ```
 
-Ids are unique slugs; questions are 1–2000 characters; unknown keys are refused (`SND-CONTEXT-035` with the key path).
+Ids are unique slugs; questions are 1–2000 characters with at least one word (a letter or digit) and at most 6000 characters once percent-encoded for the query URL; unknown keys are refused. A wordless or over-long question is refused with `SND-CONTEXT-035` and its key path, and nothing runs.
 
 ```bash
 $SINDRI context eval probes [--file ~/probes/probes.json] [--json]

@@ -368,12 +368,12 @@ routes through the real pipeline (preview, protected import and its refusals, ev
 
 | Code | Kind (HTTP) | CLI exit | Meaning |
 |---|---|---|---|
-| `SND-CONTEXT-035` | Invalid (400) | 1 | The probe file is invalid (shape, unknown key, duplicate or non-slug id, empty question, schema version); key path given; nothing run |
+| `SND-CONTEXT-035` | Invalid (400) | 1 | The probe file is invalid (shape, unknown key, duplicate or non-slug id, empty, wordless or over-long question (6000 characters percent-encoded), schema version); key path given; nothing run |
 | `SND-CONTEXT-036` | NotFound (404) | 1 | No probe file: the named one doesn't exist, or none was named and `context/eval/probes.json` doesn't exist |
 | `SND-CONTEXT-037` | Conflict (409) | 1 | A node name matches several nodes; the message lists their keys (fix: ask by key) |
 | `SND-CONTEXT-038` | Conflict (409) | 1 | A probe run scored lower than the baseline of the same file (its newest complete run that did not regress) in precision@5 or citation correctness, or a probe returned more absent nodes than it did there |
 
-039 is reserved. Neighbors outside depth 0–4 reuse `SND-CONTEXT-006`; a graph read with no map reuses 030; a key, alias
+039 is reserved. A depth (neighbors, query) or a budget that is not a whole number, or is out of range (depth 0–4, budget 1 or more), is `SND-CONTEXT-006` in the CLI (exit 1), HTTP and MCP alike, parsed once in `QueryRules.ParseDepth` and `ParseBudget`; the CLI adds its own `--depth` or `--budget` hint; a graph read with no map reuses 030; a key, alias
 or name not in the caller's map reuses 003.
 
 ### Tests
