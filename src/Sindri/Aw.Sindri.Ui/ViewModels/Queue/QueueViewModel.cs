@@ -141,6 +141,11 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         _view = view;
         Show();
         Keep(before);
+        if (_spoken is { } text)
+        {
+            _spoken = null;
+            Say(text);
+        }
     }
 
     private IEnumerable<ItemRowViewModel> Visible() => Groups.Where(g => g.IsVisible).SelectMany(g => g.Rows);

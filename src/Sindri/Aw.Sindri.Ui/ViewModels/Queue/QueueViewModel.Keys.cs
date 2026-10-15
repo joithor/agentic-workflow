@@ -41,7 +41,21 @@ internal sealed partial class QueueViewModel
         }
     } = string.Empty;
 
-    private int HeldCount { get; set { field = value; OnChanged(nameof(HasHeld)); OnChanged(nameof(HeldText)); } }
+    private int HeldCount
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;   // nothing changed: the window moves focus on when the pill hides, and must not on every refresh
+            }
+
+            field = value;
+            OnChanged(nameof(HasHeld));
+            OnChanged(nameof(HeldText));
+        }
+    }
 
     /// <summary>The pointer entered (true) or left (false) a panel; leaving shows what was held.</summary>
     /// <param name="holding">True while the pointer is over a panel.</param>
@@ -115,11 +129,14 @@ internal sealed partial class QueueViewModel
         if (HeldCount != added.Count)
         {
             HeldCount = added.Count;
-            Say(HeldText);
+            _spoken = HeldText;
         }
 
         return view with { Groups = [.. view.Groups.Select(g => g with { Items = [.. g.Items.Where(i => !added.Contains(i.Id))] })] };
     }
+
+    // What this refresh has to say, so "N new" and "cleared" in one refresh are one sentence (Apply says it).
+    private string? _spoken;
 
     private bool Matches(ItemRowViewModel row) =>
         FilterText.Length == 0 || row.Id.Contains(FilterText, StringComparison.OrdinalIgnoreCase)

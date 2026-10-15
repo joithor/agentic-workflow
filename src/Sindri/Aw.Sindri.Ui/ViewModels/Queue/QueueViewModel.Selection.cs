@@ -86,7 +86,7 @@ internal sealed partial class QueueViewModel
         }
 
         var next = Successor(id, before);
-        Say(Labels.Cleared(id));
+        _spoken = _spoken is { } held ? Labels.NewAndCleared(held, id) : Labels.Cleared(id);
         SelectedId = next?.Id;
         _movedAt = clock.GetUtcNow();
         Mark();
