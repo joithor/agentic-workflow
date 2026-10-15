@@ -99,9 +99,9 @@ public sealed class ShellViewModelTests
         var changed = new List<string?>();
         shell.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
 
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
 
-        Assert.Equal(PageId.Health, shell.CurrentPage);
+        Assert.Equal(PageId.System, shell.CurrentPage);
         Assert.Contains(nameof(ShellViewModel.CurrentPage), changed, StringComparer.Ordinal);
     }
 
@@ -125,7 +125,7 @@ public sealed class ShellViewModelTests
     public async Task The_home_needs_you_link_goes_Home_and_leaves_the_sheet_alone()
     {
         var shell = await Shell();
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
 
         shell.Navigate(DeepLink.HomeNeedsYou);
 
@@ -210,10 +210,12 @@ public sealed class ShellViewModelTests
     // §11.2: the page region is read with the page it shows, not always "Home".
     [Theory]
     [InlineData(PageId.Home, Labels.Home)]
-    [InlineData(PageId.Queue, Labels.Queue)]
-    [InlineData(PageId.Decisions, Labels.Decisions)]
-    [InlineData(PageId.Services, Labels.Services)]
-    [InlineData(PageId.Health, Labels.Health)]
+    [InlineData(PageId.Workflows, Labels.Workflows)]
+    [InlineData(PageId.Work, Labels.Work)]
+    [InlineData(PageId.Recipes, Labels.Recipes)]
+    [InlineData(PageId.Context, Labels.Context)]
+    [InlineData(PageId.Agents, Labels.Agents)]
+    [InlineData(PageId.System, Labels.System)]
     [InlineData(PageId.Settings, Labels.Settings)]
     internal async Task The_page_region_is_named_after_the_page_shown(PageId page, string name)
     {
@@ -230,9 +232,9 @@ public sealed class ShellViewModelTests
     [Fact]
     public async Task The_last_page_is_remembered_and_reopened()
     {
-        (await Shell()).GoTo(PageId.Decisions);
+        (await Shell()).GoTo(PageId.Context);
 
-        Assert.Equal("Decisions", (await new Preferences(_preferences).Load(Token)).LastPage);
-        Assert.Equal(PageId.Decisions, (await Shell()).CurrentPage);
+        Assert.Equal("Context", (await new Preferences(_preferences).Load(Token)).LastPage);
+        Assert.Equal(PageId.Context, (await Shell()).CurrentPage);
     }
 }

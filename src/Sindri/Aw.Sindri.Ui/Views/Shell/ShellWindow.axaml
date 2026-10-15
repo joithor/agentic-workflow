@@ -172,10 +172,13 @@
             <ScrollViewer x:Name="Pages" IsVisible="{Binding IsPageVisible}">
               <Panel x:Name="PageContent" Classes="page-content" Classes.edge="{Binding IsEdgeTabShown}">
                 <views:HomePage x:Name="HomePage" IsVisible="{Binding IsHome}" />
-                <views:PlaceholderPage x:Name="QueuePage" Title="{Binding Text.Queue}" IsVisible="{Binding IsQueue}" />
-                <views:PlaceholderPage x:Name="DecisionsPage" Title="{Binding Text.Decisions}" IsVisible="{Binding IsDecisions}" />
-                <views:PlaceholderPage x:Name="ServicesPage" Title="{Binding Text.Services}" IsVisible="{Binding IsServices}" />
-                <Panel IsVisible="{Binding IsHealth}">
+                <views:PlaceholderPage x:Name="WorkflowsPage" Title="{Binding Text.Workflows}" Note="{Binding Text.ArrivesWorkflows}" IsVisible="{Binding IsWorkflows}" />
+                <views:PlaceholderPage x:Name="WorkPage" Title="{Binding Text.Work}" Note="{Binding Text.ArrivesWork}" IsVisible="{Binding IsWork}" />
+                <views:PlaceholderPage x:Name="RecipesPage" Title="{Binding Text.Recipes}" Note="{Binding Text.ArrivesRecipes}" IsVisible="{Binding IsRecipes}" />
+                <views:PlaceholderPage x:Name="ContextPage" Title="{Binding Text.Context}" Note="{Binding Text.ArrivesContext}" IsVisible="{Binding IsContext}" />
+                <views:PlaceholderPage x:Name="AgentsPage" Title="{Binding Text.Agents}" Note="{Binding Text.ArrivesAgents}" IsVisible="{Binding IsAgents}" />
+                <!-- System hosts the control plane's health until U12 builds the rest (screens spec §4.6). -->
+                <Panel IsVisible="{Binding IsSystem}">
                   <views:HealthPage x:Name="HealthPage" DataContext="{Binding Health}" />
                 </Panel>
                 <!-- Settings (⌘,): SindriApp puts Settings' view here at start-up; the placeholder shows where nothing does (view tests). -->

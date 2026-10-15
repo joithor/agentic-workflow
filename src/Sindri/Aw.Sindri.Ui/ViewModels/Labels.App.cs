@@ -40,10 +40,6 @@ internal static partial class Labels
     internal static string Page(PageId page) => page switch
     {
         PageId.Home => Home,
-        PageId.Queue => Queue,
-        PageId.Decisions => Decisions,
-        PageId.Services => Services,
-        PageId.Health => Health,
         PageId.Workflows => Workflows,
         PageId.Work => Work,
         PageId.Recipes => Recipes,
@@ -54,10 +50,34 @@ internal static partial class Labels
         _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
     };
 
+    /// <summary>Workflows' placeholder.</summary>
+    internal const string ArrivesWorkflows = "arrives with U8";
+
+    /// <summary>Work's placeholder.</summary>
+    internal const string ArrivesWork = "arrives with U3'";
+
+    /// <summary>Recipes' placeholder.</summary>
+    internal const string ArrivesRecipes = "arrives with U10";
+
+    /// <summary>Context's placeholder.</summary>
+    internal const string ArrivesContext = "arrives with U9";
+
+    /// <summary>Agents' placeholder.</summary>
+    internal const string ArrivesAgents = "arrives with U11";
+
     /// <summary>What an unbuilt page says it waits for ("arrives with U8"), or null for a built page.</summary>
     /// <param name="page">The page.</param>
     /// <returns>The words, or null.</returns>
-    internal static string? ArrivesWith(PageId page) => page == PageId.Home ? null : string.Empty;
+    internal static string? ArrivesWith(PageId page) => page switch
+    {
+        PageId.Workflows => ArrivesWorkflows,
+        PageId.Work => ArrivesWork,
+        PageId.Recipes => ArrivesRecipes,
+        PageId.Context => ArrivesContext,
+        PageId.Agents => ArrivesAgents,
+        PageId.Home or PageId.System or PageId.Settings => null,
+        _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
+    };
 
     /// <summary>A scale as a percentage ("110%").</summary>
     /// <param name="scale">The scale (1.0 is 100%).</param>

@@ -134,7 +134,7 @@ public sealed class FocusRingTests : IDisposable
         var reached = TabThroughTopBar(window);
         // §11.2: navigation and the health pill. The ⌘K field is inert until U1 brings the palette, so it is no Tab stop
         // (review run 3, accessibility-tester-1): a keyboard user never lands on a control that does nothing.
-        string[] expected = ["Navigation", "LaterButton", "HealthPill"];
+        string[] expected = ["Navigation", "HealthPill"];
 
         var names = reached.Select(Name).ToList();
         Assert.Equal(["TopBar", .. expected], names);

@@ -24,8 +24,8 @@ internal sealed partial class ShellViewModel : ObservableObject
 
     private static readonly string[] _pageProperties =
     [
-        nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsQueue), nameof(IsDecisions), nameof(IsServices),
-        nameof(IsHealth), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
+        nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsWorkflows), nameof(IsWork), nameof(IsRecipes), nameof(IsContext),
+        nameof(IsAgents), nameof(IsSystem), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
     ];
 
     private readonly Preferences _store;
@@ -53,31 +53,25 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>The connection and the Health page's status card.</summary>
     public HealthViewModel Health { get; }
 
-    /// <summary>The top bar's segments, in order: Home, Queue, Decisions, Services.</summary>
+    /// <summary>The top bar's segments, in order: Home, Workflows, Work, Recipes, Context, Agents, System (screens spec §3).</summary>
     public IReadOnlyList<NavEntry> Navigation { get; } =
     [
         new(PageId.Home, Labels.Home, "H", string.Empty),
-        new(PageId.Queue, Labels.Queue, "Q", string.Empty),
-        new(PageId.Decisions, Labels.Decisions, "D", string.Empty),
-        new(PageId.Services, Labels.Services, "S", string.Empty),
+        new(PageId.Workflows, Labels.Workflows, "W", string.Empty),
+        new(PageId.Work, Labels.Work, "Q", string.Empty),
+        new(PageId.Recipes, Labels.Recipes, "R", string.Empty),
+        new(PageId.Context, Labels.Context, "C", string.Empty),
+        new(PageId.Agents, Labels.Agents, "A", string.Empty),
+        new(PageId.System, Labels.System, ".", string.Empty),
     ];
 
-    /// <summary>"Later ▾": Agents, Repos, Today, Automatic work, each "not served yet".</summary>
-    public IReadOnlyList<LaterEntry> Later { get; } =
-    [
-        new(Labels.Agents, Labels.NotServedYet),
-        new(Labels.Repos, Labels.NotServedYet),
-        new(Labels.Today, Labels.NotServedYet),
-        new(Labels.AutomaticWork, Labels.NotServedYet),
-    ];
-
-    /// <summary>Every page the window can show, in order: Home, Queue, Decisions, Services, Health, Settings.</summary>
+    /// <summary>Every page the window can show, in order: the seven tabs, then Settings.</summary>
     public IReadOnlyList<PageId> Pages { get; } = Enum.GetValues<PageId>();
 
     /// <summary>The page shown.</summary>
     public PageId CurrentPage { get; private set; } = PageId.Home;
 
-    /// <summary>The top bar's segment for the page shown; null on Health and Settings. Setting it goes to its page.</summary>
+    /// <summary>The top bar's segment for the page shown; null on Settings. Setting it goes to its page.</summary>
     public NavEntry? SelectedNav
     {
         get => Navigation.FirstOrDefault(n => n.Page == CurrentPage);
@@ -96,17 +90,23 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <summary>True on Home.</summary>
     public bool IsHome => CurrentPage == PageId.Home;
 
-    /// <summary>True on Queue.</summary>
-    public bool IsQueue => CurrentPage == PageId.Queue;
+    /// <summary>True on Workflows.</summary>
+    public bool IsWorkflows => CurrentPage == PageId.Workflows;
 
-    /// <summary>True on Decisions.</summary>
-    public bool IsDecisions => CurrentPage == PageId.Decisions;
+    /// <summary>True on Work.</summary>
+    public bool IsWork => CurrentPage == PageId.Work;
 
-    /// <summary>True on Services.</summary>
-    public bool IsServices => CurrentPage == PageId.Services;
+    /// <summary>True on Recipes.</summary>
+    public bool IsRecipes => CurrentPage == PageId.Recipes;
 
-    /// <summary>True on Health.</summary>
-    public bool IsHealth => CurrentPage == PageId.Health;
+    /// <summary>True on Context.</summary>
+    public bool IsContext => CurrentPage == PageId.Context;
+
+    /// <summary>True on Agents.</summary>
+    public bool IsAgents => CurrentPage == PageId.Agents;
+
+    /// <summary>True on System.</summary>
+    public bool IsSystem => CurrentPage == PageId.System;
 
     /// <summary>True on Settings.</summary>
     public bool IsSettings => CurrentPage == PageId.Settings;

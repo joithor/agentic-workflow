@@ -19,7 +19,7 @@
       <Setter Property="Foreground" Value="{DynamicResource Brush.Ink}" />
     </Style>
   </UserControl.Styles>
-  <!-- The top bar (UI spec §3.2): brand, the segmented navigation with its counts, Later ▾, the ⌘K field (a placeholder
+  <!-- The top bar (UI spec §3.2): brand, the segmented navigation with its counts, the ⌘K field (a placeholder
        until U1's palette) and the health pill, which opens Health. The ⌘K field's column is a star column that outweighs the
        spacer and stops at 300 px plus its margins: with room it is 300 px wide at the right, and as the window narrows it
        gives way down to 160 px. Below that the bar steps down (TopBar.axaml.cs): first the ⌘K field folds to its
@@ -42,8 +42,7 @@
       </StackPanel>
 
       <!-- The segmented navigation (§3.2, home.html): one group on Surface1 with a hairline; unselected labels muted, the
-           selected segment on PrimarySoft with a Primary dot and its label in PrimaryHover. Later ▾ is a flat segment of
-           the same group. Dimmed and disabled while Sindri isn't running (states.html). -->
+           selected segment on PrimarySoft with a Primary dot and its label in PrimaryHover. Dimmed and disabled while Sindri isn't running (states.html). -->
       <Border x:Name="NavSegments" Grid.Column="1" Grid.ColumnSpan="2" Classes="seg" HorizontalAlignment="Left">
         <StackPanel x:Name="NavigationGroup" Orientation="Horizontal" Spacing="2" IsEnabled="{Binding IsNavigationEnabled}">
           <ListBox x:Name="Navigation" Classes="nav" ItemsSource="{Binding Navigation}"
@@ -64,32 +63,11 @@
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <Ellipse Classes="nav-dot" VerticalAlignment="Center" />
                   <TextBlock Classes="body-strong nav-label" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
-                  <TextBlock Classes="caption subtle" Text="{Binding Count}" AutomationProperties.Name="{Binding Count}" />
+                  <TextBlock Classes="caption subtle" Text="{Binding Count}" IsVisible="{Binding HasCount}" AutomationProperties.Name="{Binding Count}" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-
-          <Button x:Name="LaterButton" Classes="later" AutomationProperties.Name="{Binding Text.Later}">
-            <StackPanel Orientation="Horizontal" Spacing="4">
-              <TextBlock Classes="body-strong nav-label" Text="{Binding Text.Later}" AutomationProperties.Name="{Binding Text.Later}" />
-              <TextBlock Classes="caption nav-label" Text="▾" VerticalAlignment="Center" />
-            </StackPanel>
-            <Button.Flyout>
-              <Flyout Placement="BottomEdgeAlignedLeft">
-                <ItemsControl x:Name="LaterList" ItemsSource="{Binding Later}" AutomationProperties.Name="{Binding Text.Later}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="shell:LaterEntry">
-                      <Grid ColumnDefinitions="140,Auto" Margin="4,6" AutomationProperties.Name="{Binding Label}">
-                        <TextBlock Classes="body muted" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
-                        <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding Note}" AutomationProperties.Name="{Binding Note}" />
-                      </Grid>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </Flyout>
-            </Button.Flyout>
-          </Button>
         </StackPanel>
       </Border>
 

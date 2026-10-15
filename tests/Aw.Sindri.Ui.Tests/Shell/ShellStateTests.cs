@@ -163,12 +163,12 @@ public sealed class ShellStateTests
         var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_preferences));
         await shell.Restore(Token);
 
-        shell.SelectedNav = shell.Navigation[2];
-        Assert.Equal((PageId.Decisions, true), (shell.CurrentPage, shell.IsDecisions));
+        shell.SelectedNav = shell.Navigation[4];
+        Assert.Equal((PageId.Context, true), (shell.CurrentPage, shell.IsContext));
 
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.Settings);
         Assert.Null(shell.SelectedNav);
-        Assert.True(shell.IsHealth);
+        Assert.True(shell.IsSettings);
     }
 
     // §4.1 Stale and §11.3: a stale pill is the ⌛ glyph and the word stale, still saying how old the views are, with a

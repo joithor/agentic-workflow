@@ -8,7 +8,7 @@
   <StackPanel Spacing="12">
     <TextBlock Classes="page-title" Text="{Binding $parent[views:PlaceholderPage].Title}"
                AutomationProperties.Name="{Binding $parent[views:PlaceholderPage].Title}" />
-    <TextBlock Classes="body muted" Text="{Binding Text.NotServedYet}"
-               AutomationProperties.Name="{Binding Text.NotServedYet}" />
+    <TextBlock Classes="body muted" Text="{Binding $parent[views:PlaceholderPage].Note}"
+               AutomationProperties.Name="{Binding $parent[views:PlaceholderPage].Note}" />
   </StackPanel>
 </UserControl>

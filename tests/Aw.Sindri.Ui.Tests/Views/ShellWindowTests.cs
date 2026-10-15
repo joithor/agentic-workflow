@@ -164,7 +164,7 @@ public sealed class ShellWindowTests : IDisposable
 
         Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
         shell.Navigate(link);
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         Settle(window);
         EveryTextIsOnTheRampAt130(window);
     });
@@ -214,7 +214,7 @@ public sealed class ShellWindowTests : IDisposable
         Application.Current!.TryGetResource(key, theme: null, out var v) && v is Color c ? c : default;
 
     // I1 (home.html .seg): one group; unselected labels muted, the selected one in PrimaryHover with the Primary dot;
-    // Later ▾ a flat segment of the same group; the whole group disabled while not running.
+    // The whole group disabled while not running.
     [Fact]
     public Task The_navigation_is_one_segmented_group_with_the_selected_dot() => OnUi(async () =>
     {
@@ -226,7 +226,6 @@ public sealed class ShellWindowTests : IDisposable
         Assert.All(labels.Where(t => t.Text != Labels.Home), t => Assert.Equal(Colour("Color.InkSubtle"), Ink(t)));
         _ = Assert.Single(window.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Ellipse>(), e => e.Classes.Contains("nav-dot") && e.IsEffectivelyVisible);
         var group = Named<StackPanel>(window, "NavigationGroup");
-        Assert.True(group.IsVisualAncestorOf(Named<Button>(window, "LaterButton")));
         Assert.True(group.IsVisualAncestorOf(Named<ListBox>(window, "Navigation")));
         Frame(window, "nav");
     });
@@ -334,7 +333,7 @@ public sealed class ShellWindowTests : IDisposable
         Assert.Equal(Brush("Success"), Named<StateIcon>(window, "PillGlyph").Foreground);
         var profile = Named<ItemsControl>(window, "HealthCells").GetVisualDescendants().OfType<StateIcon>().Single(i => i.IsEffectivelyVisible);
         Assert.Equal(Brush("Success"), profile.Foreground);
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         Settle(window);
         Assert.Equal(Brush("Success"), Named<StateIcon>(window, "ProfileHeadGlyph").Foreground);
 
@@ -377,7 +376,7 @@ public sealed class ShellWindowTests : IDisposable
         _records.Write(A.Record());
         _server.Push(A.Event(3));
         var (window, shell) = await Show(s => s.State == ShellState.Normal && s.Health.LastEvent.EndsWith("#3", StringComparison.Ordinal));
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         Settle(window);
 
         static double Baseline(TextBlock t, Window w) => t.TranslatePoint(default, w)!.Value.Y + t.TextLayout.Baseline; // why: in the window
@@ -1232,7 +1231,7 @@ public sealed class ShellWindowTests : IDisposable
     {
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         _server.FailPing = true;
         _clock.Advance(ShellViewModel.StaleAfter);
         await Until(() => shell.State == ShellState.Stale);
@@ -1253,7 +1252,7 @@ public sealed class ShellWindowTests : IDisposable
         window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "HealthPill").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Settle(window);
 
-        Assert.Equal(PageId.Health, shell.CurrentPage);
+        Assert.Equal(PageId.System, shell.CurrentPage);
         Assert.True(Visible(window, "HealthPage"));
 
         // I5 (services-health.html HEALTH): label/value rows at Body size under section heads that carry the state's
@@ -1293,14 +1292,14 @@ public sealed class ShellWindowTests : IDisposable
 
         strip.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Settle(window);
-        Assert.Equal(PageId.Health, shell.CurrentPage);
+        Assert.Equal(PageId.System, shell.CurrentPage);
 
         shell.GoTo(PageId.Home);
         Settle(window);
         Assert.True(strip.Focus(NavigationMethod.Tab));
         window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, keySymbol: null);
         Settle(window);
-        Assert.Equal(PageId.Health, shell.CurrentPage);
+        Assert.Equal(PageId.System, shell.CurrentPage);
     });
 
     [Fact]
@@ -1467,7 +1466,8 @@ public sealed class ShellWindowTests : IDisposable
             Assert.True(Visible(window, "RefreshSpinner"), "no spinner while sending");
             Assert.Equal(Labels.Sending, Named<TextBlock>(window, "RefreshSending").Text);
             Assert.Equal(0, Named<TextBlock>(window, "RefreshSending").Bounds.Width);
-            Assert.True(Visible(window, "BrandWord"), "the brand word dropped while sending");
+            // Seven tabs (screens spec §3) leave no room for the word at 1.3x; the bar steps down to the mark alone, as stale does.
+            Assert.True(scale > 1.0 || Visible(window, "BrandWord"), "the brand word dropped while sending");
         }
 
         if (state == BarState.NotResponding)
@@ -1593,9 +1593,9 @@ public sealed class ShellWindowTests : IDisposable
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
 
-        shell.GoTo(PageId.Queue);
+        shell.GoTo(PageId.Work);
         Settle(window);
-        Assert.Equal(Labels.Queue, AutomationProperties.GetName(window.Get<Border>("Page")));
+        Assert.Equal(Labels.Work, AutomationProperties.GetName(window.Get<Border>("Page")));
 
         shell.GoTo(PageId.Settings);
         Settle(window);
@@ -1615,7 +1615,7 @@ public sealed class ShellWindowTests : IDisposable
             ? title.TranslatePoint(new Point(0, 0), window) ?? default : default;
 
         var home = Title();
-        shell.GoTo(PageId.Health);
+        shell.GoTo(PageId.System);
         Settle(window);
         var health = Title();
         shell.GoTo(PageId.Settings);
@@ -1676,7 +1676,7 @@ public sealed class ShellWindowTests : IDisposable
         }
     }
 
-    private static readonly string[] _topBarControls = ["Navigation", "LaterButton", "SearchField", "RefreshSending", "RefreshButton", "HealthPill"];
+    private static readonly string[] _topBarControls = ["Navigation", "SearchField", "RefreshSending", "RefreshButton", "HealthPill"];
 
     private static Rect Box(Window window, string name)
     {

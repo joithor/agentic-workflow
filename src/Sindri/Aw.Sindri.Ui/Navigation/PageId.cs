@@ -6,18 +6,6 @@ internal enum PageId
     /// <summary>Needs you, Running and With you, Queued, and the health strip (the default).</summary>
     Home,
 
-    /// <summary>All five queue groups.</summary>
-    Queue,
-
-    /// <summary>Decisions and requests.</summary>
-    Decisions,
-
-    /// <summary>Services and jobs.</summary>
-    Services,
-
-    /// <summary>The control plane's health (S1b's status card in U0).</summary>
-    Health,
-
     /// <summary>Open root instances grouped by recipe, and the instance frame (screens spec §4.2).</summary>
     Workflows,
 
