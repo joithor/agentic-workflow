@@ -77,6 +77,37 @@ public sealed class HeldItemEventsTests
         Assert.Equal(3, owed.Value.Count);   // T-45 owes two events to attempt 1, T-46 one
     }
 
+    [Fact]
+    public async Task A_delivered_event_is_not_owed_again()
+    {
+        var held = new HeldItemEvents(_instances, _clock);
+        var trigger = Item(1);
+        held.Hold("T-45", trigger, []);
+        _instances.Rows = [Row("T-45", 1, _event - TimeSpan.FromSeconds(2))];
+        _clock.Advance(TimeSpan.FromSeconds(5));
+        var first = await held.Owed(TestContext.Current.CancellationToken);
+
+        held.Delivered(trigger, Address("T-45", 1));
+        var again = await held.Owed(TestContext.Current.CancellationToken);
+
+        Assert.Equal([(trigger, Address("T-45", 1))], first.Value);
+        Assert.Empty(again.Value);
+    }
+
+    [Fact]
+    public async Task An_instance_started_at_the_event_time_gets_it()
+    {
+        var held = new HeldItemEvents(_instances, _clock);
+        var trigger = Item(1);
+        held.Hold("T-45", trigger, []);
+        _instances.Rows = [Row("T-45", 1, _event)];   // the boundary: at or before the event counts
+        _clock.Advance(TimeSpan.FromSeconds(5));
+
+        var owed = await held.Owed(TestContext.Current.CancellationToken);
+
+        Assert.Equal([(trigger, Address("T-45", 1))], owed.Value);
+    }
+
     private static WaitSatisfied Item(long sequence) =>
         new("service:workflow.events", new EventWaitSource(EventKind.From("item.routed"), sequence), OutcomeName.From("startable"), new Dictionary<FactKey, FactValue>())
         {
