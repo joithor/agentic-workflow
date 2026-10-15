@@ -255,6 +255,66 @@ public sealed class FreshnessTests : IDisposable
         Assert.True(condition());
     }
 
+    // F14 (test-2, corr-6): the banner is the last thing Sindri said about the views. A services read that fails for any
+    // reason but "no such route" (before P2) leaves it as it was; the status still moves the pill.
+    [Fact]
+    public async Task A_stalled_banner_stays_when_the_services_read_then_fails()
+    {
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
+        await Connected(() => _vm.Banner.IsShown);
+        var services = _server.ServicesCalls;
+        _server.ServiceView = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-009", "Sindri is busy (fix: retry)");
+
+        _server.Push(A.Event(1, "service.ran"));
+        await Until(() => _server.ServicesCalls > services);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+
+        Assert.Equal((ShellState.Normal, true, true), (_vm.State, _vm.Banner.IsStalled, _vm.Banner.HasRebuild));
+    }
+
+    [Fact]
+    public async Task A_stalled_banner_clears_when_the_services_view_says_fresh()
+    {
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
+        await Connected(() => _vm.Banner.IsShown);
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "fixture");
+
+        _server.Push(A.Event(1, "views.rebuilt"));
+        await Until(() => !_vm.Banner.IsShown);
+
+        Assert.False(_vm.Banner.IsShown);
+    }
+
+    // The route is gone again (an older Sindri after a downgrade): no banner, not a stale one.
+    [Fact]
+    public async Task A_services_route_that_is_not_there_hides_the_banner()
+    {
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
+        await Connected(() => _vm.Banner.IsShown);
+        _server.ServiceView = new RouteAnswer(HttpStatusCode.NotFound, "{}");
+
+        _server.Push(A.Event(1, "service.ran"));
+        await Until(() => !_vm.Banner.IsShown);
+
+        Assert.False(_vm.Banner.IsShown);
+    }
+
+    // F14: a catalog that failed on connect is read again with the next refresh, so Rebuild views shows once it answers.
+    [Fact]
+    public async Task A_catalog_that_failed_on_connect_is_read_again_on_the_next_refresh()
+    {
+        _server.Catalog = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-009", "Sindri is busy (fix: retry)");
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
+        await Connected(() => _vm.Banner.IsShown);
+        Assert.Equal((0, false), (_vm.Catalog.Controls.Count, _vm.Banner.HasRebuild));
+        _server.Catalog = RouteAnswer.Api("commands", "catalog");
+
+        _server.Push(A.Event(1, "service.ran"));
+        await Until(() => _vm.Banner.HasRebuild);
+
+        Assert.Equal((37, true, ShellState.Normal), (_vm.Catalog.Controls.Count, _vm.Banner.HasRebuild, _vm.State));
+    }
+
     // F13: the pill words come from the goldens, not from records built by hand.
     [Theory]
     [InlineData("running-healthy", "Healthy · updated 2s ago")]
