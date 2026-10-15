@@ -544,6 +544,12 @@ public static class WorkflowViewFixtures
             ],
             [], Counts(7, 0, 0));
 
+    /// <summary>A workflow.step child at produce, round 2 of 3, with its parent (red stub).</summary>
+    public static InstanceDetail ItemProduce() => throw new NotSupportedException("red: item-produce");
+
+    /// <summary>A project whose build state has more children than the first 20 rows (red stub).</summary>
+    public static InstanceDetail ProjectManyChildren() => throw new NotSupportedException("red: project-many-children");
+
     // ---- the recipe additions (E-22) ---------------------------------------------------------------------------------
 
     private static RecipeStateView[] StateViews(string[] states) => [.. states.Select((s, i) => new RecipeStateView(s, i + 1, null))];
