@@ -26,6 +26,9 @@ internal sealed partial class ShellViewModel
     /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
     public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
 
+    /// <summary>True while the sheet shows its "not served yet" placeholder: until a lane's content claims the link's kind.</summary>
+    public bool IsSheetPlaceholderShown => throw new NotSupportedException(SheetSubject);
+
     /// <summary>Opens the sheet on a deep link's subject, keeping the link's kind (an item and a workflow with one subject are two sheets).</summary>
     /// <param name="link">The link, with a subject.</param>
     internal void OpenSheet(DeepLink link)

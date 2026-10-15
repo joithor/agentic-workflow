@@ -78,6 +78,61 @@ public sealed class ShellSheetKindTests
     }
 
     [Fact]
+    public async Task Before_any_sheet_is_opened_the_placeholder_shows()
+    {
+        var shell = await Shell();
+
+        Assert.True(shell.IsSheetPlaceholderShown);
+    }
+
+    [Fact]
+    public async Task The_placeholder_shows_for_every_kind_until_a_lane_claims_it()
+    {
+        var shell = await Shell();
+
+        foreach (var kind in Enum.GetValues<DeepLinkKind>())
+        {
+            shell.OpenSheet(new DeepLink(kind, kind == DeepLinkKind.HomeNeedsYou ? null : "X"));
+
+            Assert.True(shell.IsSheetPlaceholderShown, kind.ToString());
+        }
+    }
+
+    [Fact]
+    public async Task Opening_the_sheet_raises_the_placeholder_flag()
+    {
+        var shell = await Shell();
+        var seen = new List<string>();
+        shell.PropertyChanged += (_, e) => seen.Add(e.PropertyName ?? string.Empty);
+
+        shell.OpenSheet(Link("item/X"));
+
+        Assert.Contains(seen, name => string.Equals(name, nameof(ShellViewModel.IsSheetPlaceholderShown), StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_sheet_body_is_the_placeholder_and_shows_by_the_flag()
+    {
+        var xaml = File.ReadAllText(Path.Combine(UiSource.Library, "Views", "Shell", "ShellWindow.axaml"));
+        var body = xaml[xaml.IndexOf("x:Name=\"SheetBody\"", StringComparison.Ordinal)..];
+        body = body[..body.IndexOf("/>", StringComparison.Ordinal)];
+
+        Assert.Contains("IsVisible=\"{Binding IsSheetPlaceholderShown}\"", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Both_lane_markers_sit_inside_the_placeholder_switch_just_before_its_default_arm()
+    {
+        var lines = File.ReadAllLines(Path.Combine(UiSource.Library, "ViewModels", "Shell", "ShellViewModel.Sheet.cs"));
+        var property = Array.FindIndex(lines, l => l.Contains("IsSheetPlaceholderShown =>", StringComparison.Ordinal));
+        var u3 = Array.FindIndex(lines, l => l.Contains("LANE ANCHOR U3'", StringComparison.Ordinal));
+        var u8 = Array.FindIndex(lines, l => l.Contains("LANE ANCHOR U8", StringComparison.Ordinal));
+        var fallback = Array.FindIndex(lines, l => l.Contains("_ => true", StringComparison.Ordinal));
+
+        Assert.True(property >= 0 && u3 > property && u8 == u3 + 1 && fallback == u8 + 1, "the markers are adjacent inside the switch, above its '_ => true' arm");
+    }
+
+    [Fact]
     public void Every_marker_says_where_to_insert_and_not_between_the_markers()
     {
         var files = new[]
