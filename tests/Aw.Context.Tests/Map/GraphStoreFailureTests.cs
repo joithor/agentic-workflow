@@ -1,4 +1,7 @@
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Proposals;
 using Aw.Context.Infrastructure.Graph;
 using Aw.Context.Infrastructure.Store;
 using Aw.Context.Testing.Map;
@@ -42,6 +45,23 @@ public sealed class GraphStoreFailureTests : IDisposable
         Assert.Equal(first.Number, Assert.Single((await store.Versions(Ct)).Value).Number);
         Assert.Equal(1L, await Count("SELECT count(*) FROM map_version"));
         Assert.Equal(Canonical.Of(SampleMap.Build().Graph), Canonical.Of((await store.Read(first.Number, Ct)).Value));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_propose_whose_run_list_cant_be_saved_leaves_no_propose_rows()
+    {
+        var store = new SqliteGraphStore(_database, _settings);
+        _ = await store.SaveCurrent(SampleMap.Build(), SampleMap.At, Ct);
+        var rows = await Count("SELECT count(*) FROM map_override");
+        await Execute("CREATE TRIGGER refuse_run BEFORE INSERT ON proposal_run BEGIN SELECT RAISE(ABORT, 'the run list is refused'); END");
+        var proposal = new ScopeProposal("run-1", ContextRepoName.From("aw-split-panes"), [new ProposedSurface("Zoom", Key: null, NodeKind.Feature)]);
+        var row = new MapOverride(OverrideAction.Propose, NodeKey.From("feature:zoom"), "service:engine", SampleMap.At, "Zoom", Proposal: new ProposalPayload("run-1", ContextRepoName.From("aw-split-panes"), NodeKind.Feature));
+
+        var proposed = await store.Propose(proposal, [row], Ct);
+
+        Assert.Equal("SND-CONTEXT-004", proposed.Error.Code);
+        Assert.Equal(rows, await Count("SELECT count(*) FROM map_override"));
+        Assert.Equal(0L, await Count("SELECT count(*) FROM proposal_run"));
     }
 
     [Fact, Trait("Lane", "integration")]

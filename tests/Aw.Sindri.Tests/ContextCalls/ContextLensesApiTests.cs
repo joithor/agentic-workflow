@@ -5,6 +5,7 @@ using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.Fixtures;
 using Aw.Context.Testing.Map;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.ApiGoldens;
@@ -212,6 +213,29 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal(1, Json(third.Body).GetProperty("result").GetProperty("rejected").GetInt32());
         Assert.Contains("\"status\":\"current\"", status.Body, StringComparison.Ordinal);
         Assert.Contains("scope-1", recorded.Value!.Envelope.Payload, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_proposal_without_the_lease_is_refused_before_any_row_is_written_and_the_event_key_names_the_run_and_the_counts()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        var body = $$"""{"run":"scope-2","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Zoom","kind":"feature"}]}""";
+        var held = host.App.Services.GetRequiredService<HeldLease>();
+        var grant = held.Current!;
+        held.Clear();
+
+        var refused = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        held.Hold(grant);
+        var view = await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-2", App(host)));
+        var accepted = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, ct);
+
+        Assert.NotEqual(HttpStatusCode.OK, refused.Status);
+        Assert.Empty(Json(view.Body).GetProperty("surfaces").EnumerateArray());   // no row and no run list were written
+        Assert.Equal(1, Json(accepted.Body).GetProperty("result").GetProperty("added").GetInt32());   // so the retry adds the row and records the event
+        Assert.StartsWith("context.map.proposed:scope-2:v", recorded.Value!.IdempotencyKey, StringComparison.Ordinal);
+        Assert.EndsWith(":1:0:0", recorded.Value.IdempotencyKey, StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

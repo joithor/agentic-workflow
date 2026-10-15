@@ -47,6 +47,34 @@ public sealed class GetFileMapTests : IDisposable
         Assert.DoesNotContain(".env", view.Entries.Select(e => e.Name), StringComparer.Ordinal);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("./src")]
+    [InlineData("/src/")]
+    [InlineData("src//")]
+    [InlineData("./src/./")]
+    public async Task A_path_written_with_a_leading_dot_or_slash_or_a_doubled_one_lists_the_same_directory(string path)
+    {
+        await ImportTabs();
+
+        var view = (await Ask(path)).Value;
+
+        Assert.Equal("src/", view.Path);
+        Assert.Equal(["layout/", "tabs/"], view.Entries.Select(e => e.Name + "/"), StringComparer.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("/")]
+    [InlineData(".")]
+    [InlineData("./")]
+    public async Task The_root_is_written_as_nothing_a_slash_or_a_dot(string path)
+    {
+        await ImportTabs();
+
+        var view = (await Ask(path)).Value;
+
+        Assert.Equal(string.Empty, view.Path);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task A_suggested_file_carries_the_id_of_the_link_to_accept()
     {

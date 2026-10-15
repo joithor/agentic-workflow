@@ -27,6 +27,9 @@ public sealed class SymbolQueryTests : IDisposable
     [Theory, Trait("Lane", "unit")]
     [InlineData("code:src/layout/SplitPane.ts")]
     [InlineData(" src/layout/SplitPane.ts ")]
+    [InlineData("./src/layout/SplitPane.ts")]
+    [InlineData("/src/layout/SplitPane.ts")]
+    [InlineData("src//layout/SplitPane.ts")]
     public async Task The_code_prefix_and_surrounding_space_are_accepted(string symbol)
     {
         _ = await _world.ImportFixture();

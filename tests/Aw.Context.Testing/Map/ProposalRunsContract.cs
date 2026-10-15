@@ -41,6 +41,26 @@ public abstract class ProposalRunsContract
         Expect.That(run!.Repo == repo, test, "the run lost its repo");
     }
 
+    /// <summary>Propose saves the run's whole list with the rows it is given; a repeat of the same rows adds none and keeps the list.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Propose_saves_the_run_with_its_rows_and_a_repeat_adds_none()
+    {
+        const string test = nameof(Propose_saves_the_run_with_its_rows_and_a_repeat_adds_none);
+        var store = CreateRuns();
+        var repo = ContextRepoName.From("aw-split-panes");
+        var run = new ScopeProposal("run-9", repo, [new ProposedSurface("Zoom", Key: null, NodeKind.Feature), new ProposedSurface("Something vague")]);
+        var row = new Aw.Context.Core.Overrides.MapOverride(Aw.Context.Core.Overrides.OverrideAction.Propose, NodeKey.From("feature:zoom"), "service:engine", DateTimeOffset.UnixEpoch, "Zoom",
+            Proposal: new Aw.Context.Core.Overrides.ProposalPayload("run-9", repo, NodeKind.Feature));
+
+        var first = Expect.Ok(await store.Propose(run, [row], None), test);
+        var again = Expect.Ok(await store.Propose(run, [row], None), test);
+        var saved = Expect.Ok(await store.Run("run-9", None), test);
+
+        Expect.That(first == 1 && again == 0, test, "the rows added are wrong");
+        Expect.That(saved is { Surfaces.Count: 2 }, test, "the run's list wasn't saved with its rows");
+    }
+
     /// <summary>A fresh, empty store.</summary>
     /// <returns>The store.</returns>
     protected abstract IProposalRuns CreateRuns();

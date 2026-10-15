@@ -1705,6 +1705,7 @@ Aw.Context.Core.Proposals.GraphStatusKind.New = 1 -> Aw.Context.Core.Proposals.G
 Aw.Context.Core.Proposals.GraphStatusKind.Unmapped = 2 -> Aw.Context.Core.Proposals.GraphStatusKind
 Aw.Context.Core.Proposals.GraphStatuses
 Aw.Context.Core.Proposals.IProposalRuns
+Aw.Context.Core.Proposals.IProposalRuns.Propose(Aw.Context.Core.Proposals.ScopeProposal! proposal, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! rows, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
 Aw.Context.Core.Proposals.IProposalRuns.Run(string! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ScopeProposal?>!>
 Aw.Context.Core.Proposals.IProposalRuns.SaveRun(Aw.Context.Core.Proposals.ScopeProposal! proposal, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
 Aw.Context.Core.Proposals.ProposalNodes

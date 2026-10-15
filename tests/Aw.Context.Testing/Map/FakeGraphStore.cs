@@ -131,6 +131,16 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     });
 
     /// <inheritdoc/>
+    public ValueTask<Result<int>> Propose(ScopeProposal proposal, IReadOnlyList<MapOverride> rows, CancellationToken cancellationToken) => Done(() =>
+    {
+        ArgumentNullException.ThrowIfNull(proposal);
+        ArgumentNullException.ThrowIfNull(rows);
+        var added = Append(rows);
+        _runs[proposal.Run] = proposal;
+        return Results.Success(added);
+    });
+
+    /// <inheritdoc/>
     public ValueTask<Result<ScopeProposal?>> Run(string run, CancellationToken cancellationToken) =>
         Done(() => Results.Success(_runs.TryGetValue(run, out var saved) ? saved : null));
 

@@ -39,6 +39,16 @@ public sealed class ContextReviewRowsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void The_service_asks_for_a_typed_answer_exactly_where_the_catalog_says_protected_and_takes_exactly_the_catalog_variants()
+    {
+        var reviewRows = _catalog.Rows.Where(r => r.Action.Value.StartsWith("ReviewContextMap:", StringComparison.Ordinal)).ToList();
+        static string Verb(CommandRow r) => r.Action.Value["ReviewContextMap:".Length..];
+
+        Assert.Equal(reviewRows.Where(r => r.Class == ActionClass.Protected).Select(Verb).Order(StringComparer.Ordinal), ReviewInput.Protected.Order(StringComparer.Ordinal));
+        Assert.Equal(reviewRows.Select(Verb).Order(StringComparer.Ordinal), ReviewInput.Verbs.Order(StringComparer.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Promote_is_protected_and_proposing_is_a_job_the_app_the_terminal_and_the_engine_may_call_but_a_session_may_not()
     {
         var promote = Row("PromoteContextMap");

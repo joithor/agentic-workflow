@@ -79,6 +79,21 @@ public sealed class ProposalPlannerTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_reject_that_was_undone_no_longer_blocks_the_surface_and_it_is_in_the_queue_again()
+    {
+        var plan = Plan(Run(Pinning()));
+        var rejected = ReviewPlanner.Plan(new ReviewDecision(ReviewVerb.Reject, SampleDrafts.Key("feature:tab pinning")), SampleDrafts.Draft(), plan.Rows, "avery", SampleDrafts.At.AddMinutes(1)).Value;
+        var undone = ReviewPlanner.Plan(new ReviewDecision(ReviewVerb.Undo, Undoes: rejected[0].ToId()), SampleDrafts.Draft(), [.. plan.Rows, .. rejected], "avery", SampleDrafts.At.AddMinutes(2)).Value;
+        MapOverride[] history = [.. plan.Rows, .. rejected, .. undone];
+
+        var again = Plan(Run(Pinning()), history);
+
+        Assert.Equal(0, again.Rejected);
+        Assert.Equal(1, again.Existing);   // the proposal row is still there: nothing is written twice
+        Assert.Contains(ReviewBacklog.Build("v1@a", SampleDrafts.Draft(), history).Entries, e => e.Node.Value == "feature:tab pinning");
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_rejected_surface_comes_back_when_its_evidence_changed()
     {
         var plan = Plan(Run(Pinning()));

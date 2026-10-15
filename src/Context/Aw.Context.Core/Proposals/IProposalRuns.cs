@@ -1,3 +1,4 @@
+using Aw.Context.Core.Overrides;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Proposals;
@@ -13,6 +14,13 @@ public interface IProposalRuns
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>How many surfaces are remembered, or SND-CONTEXT-004.</returns>
     public ValueTask<Result<int>> SaveRun(ScopeProposal proposal, CancellationToken cancellationToken);
+
+    /// <summary>Writes a scoping run's 'propose' rows and its surface list in one transaction: both are kept or neither (a busy database never leaves the rows without the run's list).</summary>
+    /// <param name="proposal">The run and its surfaces.</param>
+    /// <param name="rows">The 'propose' rows the planner made; one already stored is kept once.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>How many rows were added, or SND-CONTEXT-004.</returns>
+    public ValueTask<Result<int>> Propose(ScopeProposal proposal, IReadOnlyList<MapOverride> rows, CancellationToken cancellationToken);
 
     /// <summary>The run as last saved: its repo and every surface it submitted.</summary>
     /// <param name="run">The run's address.</param>

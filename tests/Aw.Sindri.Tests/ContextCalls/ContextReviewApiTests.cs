@@ -224,6 +224,21 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Promoting_a_draft_that_is_no_longer_the_latest_is_046_promote_refused_and_names_both_drafts_not_047()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host(sessions: false);
+        Assert.True((await Run(host, "context-rebuild")).IsSuccess);
+        Assert.Equal(HttpStatusCode.OK, (await host.Http.Ask(Post("/sindri/context/map/review", Review("accept-deterministic"), App(host)))).Status);
+
+        var stale = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft = "v99@0000000" }), Terminal(host)));
+
+        Assert.Equal((HttpStatusCode.Conflict, "SND-CONTEXT-046"), (stale.Status, stale.Code));
+        Assert.Contains("v99@0000000", stale.Body, StringComparison.Ordinal);
+        Assert.Contains("latest draft", stale.Body, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task Applying_a_review_file_is_protected_to_the_terminal_and_acts_only_with_the_typed_confirmation()
     {
         var ct = TestContext.Current.CancellationToken;

@@ -232,6 +232,34 @@ public sealed class ReviewMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_file_map_link_decision_is_undone_against_the_current_map_when_there_is_no_draft()
+    {
+        _ = await _world.ImportYaml(MapWorld.TabsMap);
+        var link = LinkIds.For(new GraphEdge(NodeKey.From("code:src/tabs/TabGroups.ts"), NodeKey.From("feature:tabs.tab-groups"), EdgeType.Implements));
+        var accepted = (await Decide(new ReviewDecision(ReviewVerb.Accept, Link: link))).Value.Written.Single();
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+
+        var undone = await Decide(new ReviewDecision(ReviewVerb.Undo, Undoes: accepted));
+
+        Assert.True(undone.IsSuccess, undone.IsError ? undone.Error.Message : null);
+        Assert.Contains((await _world.Store.Overrides(MapWorld.None)).Value, o => o.Action == OverrideAction.Undo && o.Undoes == accepted);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_list_undo_works_with_no_draft_too()
+    {
+        _ = await _world.ImportYaml(MapWorld.TabsMap);
+        var link = LinkIds.For(new GraphEdge(NodeKey.From("code:src/tabs/TabGroups.ts"), NodeKey.From("feature:tabs.tab-groups"), EdgeType.Implements));
+        var accepted = (await Decide(new ReviewDecision(ReviewVerb.Accept, Link: link))).Value.Written.Single();
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+
+        var undone = await Decide(new ReviewDecision(ReviewVerb.Undo, UndoesAll: [accepted]));
+
+        Assert.True(undone.IsSuccess, undone.IsError ? undone.Error.Message : null);
+        _ = Assert.Single(undone.Value.Written);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Undo_of_a_list_undoes_every_decision_with_one_row_each_in_one_call()
     {
         _ = await Drafts.Build(_world);

@@ -35,15 +35,8 @@ internal sealed class ProposeFromScopeService(IGraphStore store, IProposalRuns r
         }
 
         var plan = ProposalPlanner.Plan(proposal, draft.Value.Graph, draft.Value.Overrides, Who, now);
-        var written = await Write(plan, proposal, cancellationToken).ConfigureAwait(false);
+        var written = await runs.Propose(proposal, plan.Rows, cancellationToken).ConfigureAwait(false);
         return written.IsError ? written.Error : new ProposeResult(opened.Value, plan.Rows.Count, plan.Existing, plan.Rejected);
-    }
-
-    // The rows, then the run's whole surface list.
-    private async ValueTask<Result<int>> Write(ProposalPlan plan, ScopeProposal proposal, CancellationToken cancellationToken)
-    {
-        var added = await store.AppendOverrides(plan.Rows, cancellationToken).ConfigureAwait(false);
-        return added.IsError ? added : await runs.SaveRun(proposal, cancellationToken).ConfigureAwait(false);
     }
 
     private static Error? Addressable(ContextScope scope, ScopeProposal proposal)

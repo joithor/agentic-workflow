@@ -86,6 +86,17 @@ public sealed class ReviewBacklogTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_reject_that_no_longer_applies_because_the_evidence_changed_is_undecided_not_decided_and_not_counted_twice()
+    {
+        var queue = Queue(SampleDrafts.Row(OverrideAction.Reject, "feature:layout", rejection: "an-identity-the-draft-no-longer-has"));
+
+        Assert.Contains(queue.Entries, e => e.Node.Value == "feature:layout" && e.Link is null);
+        Assert.Equal(0, queue.Decided);
+        Assert.Equal(queue.Entries.Count, queue.Undecided);
+        Assert.Equal(queue.Decided + queue.Counts.Deterministic + queue.Counts.Model, queue.Proposals);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_rename_or_a_move_does_not_decide_a_proposal()
     {
         var queue = Queue(SampleDrafts.Row(OverrideAction.Rename, "feature:layout", "Panes"), SampleDrafts.Row(OverrideAction.Move, "feature:layout", other: "feature:tabs"));
