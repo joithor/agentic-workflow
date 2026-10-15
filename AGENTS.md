@@ -134,8 +134,8 @@ node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid
 scripts/binaries-lock.sh check          # Shape of binaries.lock: six fields, one version per name, all four platforms
 scripts/binaries-lock.sh fetch <name>   # Download this platform's row, verify its sha256, install under $AW_STATE_DIR/cache/bin/<name>-<version>/
 
-# External tools, once per box (setup.sh runs it): uv, graphify at sindri's pin, both Temporal binaries, Linux system-package checks
-scripts/install-deps.sh                 # AW_DRY_RUN=1 prints only; a missing apt package prints its sudo command and exits 1
+# External tools, once per box (setup.sh runs it): uv, graphify at sindri's pin, both Temporal binaries, system packages (installed when missing)
+scripts/install-deps.sh                 # AW_DRY_RUN=1 prints only; missing system packages are installed (brew on macOS; sudo + apt-get, dnf, yum, pacman or zypper on Linux); AW_NO_SYSTEM_INSTALL=1 prints the commands and exits 1 instead
 
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
 node scripts/check-rules.mjs [--json]   # Every §4b rule has a record; every active check exists; pending ones wait on their PR

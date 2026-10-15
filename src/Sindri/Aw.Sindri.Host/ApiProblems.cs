@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Core;
 
 namespace Aw.Sindri.Host;
@@ -41,6 +42,13 @@ internal static partial class ApiProblems
     {
         context.Response.Clear();
         return TypedResults.Problem(title: code, detail: detail, statusCode: status).ExecuteAsync(context);
+    }
+
+    /// <summary>Replaces whatever the response holds with an error as a ProblemDetails answer at <paramref name="status"/>, extension members included.</summary>
+    internal static Task Write(HttpContext context, Error error, int status)
+    {
+        context.Response.Clear();
+        return HttpResults.Problem(error, status).ExecuteAsync(context);
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "SND-API-005 {Method} {Path} failed with an unhandled exception")]
