@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Review;
 using Aw.Sindri.Features.ContextCalls;
 
@@ -17,6 +18,7 @@ internal sealed class ReviewSession(ReviewQueueView queue)
     private int _index;
     private (int Accepted, int Rejected, int Edited, int Skipped, int Dropped) _counts;
     private string _pending = string.Empty;
+    private bool _bulkAccepted;
 
     private enum Stage
     {
@@ -31,24 +33,49 @@ internal sealed class ReviewSession(ReviewQueueView queue)
     /// <summary>How many items each action decided or passed over.</summary>
     internal ReviewCounts Counts => new(_counts.Accepted, _counts.Rejected, _counts.Edited, _counts.Skipped, _counts.Dropped);
 
-    /// <summary>How many undecided items the queue left out (it is cut per group); they are not walked here.</summary>
-    internal int Hidden => _items.Count * 0;
+    /// <summary>
+    /// How many undecided items the queue left out (the server cuts each group): they are not walked here, and the shell says so.
+    /// The deterministic ones are not missed when the bulk accept took the whole backlog.
+    /// </summary>
+    internal int Hidden =>
+        Math.Max(0, queue.Counts.Model - queue.Entries.Count(e => e.Group == ReviewGroup.Model))
+        + Math.Max(0, queue.Counts.Orphaned - queue.Entries.Count(e => e.Group == ReviewGroup.Orphaned))
+        + (_bulkAccepted ? 0 : Math.Max(0, queue.Counts.Deterministic - queue.Entries.Count(e => e.Group == ReviewGroup.Deterministic)));
 
-    /// <summary>The server took <paramref name="step"/>'s request.</summary>
+    /// <summary>The server took <paramref name="step"/>'s request: it counts now, and an item renamed or moved shows its new name or parent.</summary>
     /// <param name="step">The step that was sent.</param>
     /// <returns>The step to go on with.</returns>
     internal ReviewStep Applied(ReviewStep step)
     {
-        _ = Counts;
-        return step;
-    }
+        ArgumentNullException.ThrowIfNull(step);
+        if (step.Tally is not { } tally)
+        {
+            return step;
+        }
 
-    /// <summary>The server refused <paramref name="step"/>'s request.</summary>
-    /// <param name="step">The step that was sent.</param>
-    /// <returns>The step to go on with.</returns>
-    internal ReviewStep Refused(ReviewStep step)
-    {
-        _ = Counts;
+        switch (tally.Outcome)
+        {
+            case ReviewOutcome.Accepted:
+                _counts.Accepted += tally.Count;
+                break;
+            case ReviewOutcome.Rejected:
+                _counts.Rejected += tally.Count;
+                break;
+            case ReviewOutcome.Dropped:
+                _counts.Dropped += tally.Count;
+                break;
+            case ReviewOutcome.Edited:
+                _counts.Edited += tally.Count;
+                _items[_index] = _items[_index] with
+                {
+                    Label = tally.Label ?? _items[_index].Label,
+                    Parent = tally.Parent is { } parent && NodeKey.TryFrom(parent, out var key) ? key : _items[_index].Parent,
+                };
+                return step with { Prompt = ItemPrompt() };
+            default:
+                break;
+        }
+
         return step;
     }
 
@@ -58,7 +85,7 @@ internal sealed class ReviewSession(ReviewQueueView queue)
     /// <returns>The step.</returns>
     internal ReviewStep Start()
     {
-        var bulk = queue.Entries.Count(Bulkable);
+        var bulk = queue.Counts.Deterministic;
         if (bulk == 0)
         {
             return Begin([.. queue.Entries]);
@@ -90,8 +117,8 @@ internal sealed class ReviewSession(ReviewQueueView queue)
         switch (text.ToLowerInvariant())
         {
             case "y" or "yes":
-                _counts.Accepted += queue.Entries.Count(Bulkable);
-                return Begin([.. queue.Entries.Where(e => !Bulkable(e))], new ReviewContextMapRequest("accept-deterministic"));
+                _bulkAccepted = true;
+                return Begin([.. queue.Entries.Where(e => !Bulkable(e))], new ReviewContextMapRequest("accept-deterministic"), new ReviewTally(ReviewOutcome.Accepted, queue.Counts.Deterministic));
             case "n" or "no":
                 return Begin([.. queue.Entries]);
             case "q" or "quit":
@@ -108,11 +135,9 @@ internal sealed class ReviewSession(ReviewQueueView queue)
         switch (text.ToLowerInvariant())
         {
             case "a":
-                _counts.Accepted++;
-                return Advance(target("accept"));
+                return Advance(target("accept"), new ReviewTally(ReviewOutcome.Accepted));
             case "r":
-                _counts.Rejected++;
-                return Advance(target("reject"));
+                return Advance(target("reject"), new ReviewTally(ReviewOutcome.Rejected));
             case "s":
                 _counts.Skipped++;
                 return Advance(send: null);
@@ -133,8 +158,7 @@ internal sealed class ReviewSession(ReviewQueueView queue)
         switch (text.ToLowerInvariant())
         {
             case "d":
-                _counts.Dropped++;
-                return Advance(new ReviewContextMapRequest("drop", Override: entry.Override?.Value));
+                return Advance(new ReviewContextMapRequest("drop", Override: entry.Override?.Value), new ReviewTally(ReviewOutcome.Dropped));
             case "p":
                 return Ask(Stage.AskTarget, "Point it at which node key? ");
             case "s":
@@ -156,44 +180,44 @@ internal sealed class ReviewSession(ReviewQueueView queue)
         }
 
         var entry = _items[_index];
-        switch (_stage)
+        return _stage switch
         {
-            case Stage.AskLabel:
-                _counts.Edited++;
-                return Advance(new ReviewContextMapRequest("rename", Node: entry.Node.Value, Label: text));
-            case Stage.AskParent:
-                _counts.Edited++;
-                return Advance(new ReviewContextMapRequest("move", Node: entry.Node.Value, Other: text));
-            case Stage.AskTarget:
-                _counts.Dropped++;
-                return Advance(new ReviewContextMapRequest("repoint", Node: text, Override: entry.Override?.Value));
-            case Stage.Bulk or Stage.Item or Stage.Done:
-            default:
-                return Finish();
-        }
+            Stage.AskLabel => Stay(new ReviewContextMapRequest("rename", Node: entry.Node.Value, Label: text), new ReviewTally(ReviewOutcome.Edited, Label: text)),
+            Stage.AskParent => Stay(new ReviewContextMapRequest("move", Node: entry.Node.Value, Other: text), new ReviewTally(ReviewOutcome.Edited, Parent: text)),
+            Stage.AskTarget => Advance(new ReviewContextMapRequest("repoint", Node: text, Override: entry.Override?.Value), new ReviewTally(ReviewOutcome.Dropped)),
+            Stage.Bulk or Stage.Item or Stage.Done => Finish(),
+            _ => Finish(),
+        };
     }
 
     private static Func<string, ReviewContextMapRequest> Target(ReviewEntry entry) => verb =>
         entry.Link is { } link ? new ReviewContextMapRequest(verb, Link: link.Value) : new ReviewContextMapRequest(verb, Node: entry.Node.Value);
 
-    private ReviewStep Begin(List<ReviewEntry> items, ReviewContextMapRequest? send = null)
+    private ReviewStep Begin(List<ReviewEntry> items, ReviewContextMapRequest? send = null, ReviewTally? tally = null)
     {
         _items = items;
         _index = -1;
-        return Advance(send);
+        return Advance(send, tally);
     }
 
-    private ReviewStep Advance(ReviewContextMapRequest? send)
+    private ReviewStep Advance(ReviewContextMapRequest? send, ReviewTally? tally = null)
     {
         _index++;
         _stage = Stage.Item;
         if (_index >= _items.Count)
         {
             _stage = Stage.Done;
-            return new ReviewStep(Prompt: null, send);
+            return new ReviewStep(Prompt: null, send, tally);
         }
 
-        return new ReviewStep(ItemPrompt(), send);
+        return new ReviewStep(ItemPrompt(), send, tally);
+    }
+
+    // A rename or a move doesn't decide: the item stays current, and shows its new value once the server has taken the change.
+    private ReviewStep Stay(ReviewContextMapRequest send, ReviewTally tally)
+    {
+        _stage = Stage.Item;
+        return new ReviewStep(ItemPrompt(), send, tally);
     }
 
     private ReviewStep Finish()

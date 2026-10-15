@@ -172,12 +172,20 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
         {
             await output.Out.WriteAsync(step.Prompt).ConfigureAwait(false);
             step = session.Answer(await input.ReadLineAsync(ct).ConfigureAwait(false) ?? "q");
-            exit = Math.Max(exit, await Apply(step, ct).ConfigureAwait(false));
+            var code = await Apply(step, ct).ConfigureAwait(false);
+            exit = Math.Max(exit, code);
+            step = code == 0 ? session.Applied(step) : step;   // a count moves only when the server took the request
         }
 
         var c = session.Counts;
         await output.Out.WriteAsync(string.Create(CultureInfo.InvariantCulture,
             $"\naccepted {c.Accepted}, rejected {c.Rejected}, edited {c.Edited}, dropped {c.Dropped}, skipped {c.Skipped} (skipped items stay in the queue)\n")).ConfigureAwait(false);
+        if (session.Hidden > 0)
+        {
+            await output.Out.WriteAsync(string.Create(CultureInfo.InvariantCulture,
+                $"{session.Hidden} more undecided not shown here (the queue lists a limited number per group): run 'sindri context map review' again\n")).ConfigureAwait(false);
+        }
+
         return exit;
     }
 

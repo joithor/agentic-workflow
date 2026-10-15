@@ -158,21 +158,19 @@ public sealed class ReviewSessionTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_rename_keeps_the_item_current_shows_its_new_name_once_the_server_agrees_and_a_refused_one_counts_for_nothing()
+    public void A_rename_keeps_the_item_current_shows_its_new_name_only_once_the_server_agrees_and_counts_then()
     {
         var session = new ReviewSession(ReviewQueueView.Of("v14@0a1b2c3", [Entry("feature:layout", ReviewGroup.Model, "Layout"), Entry("feature:zoom", ReviewGroup.Model, "Zoom")], 0));
         _ = session.Start();
         _ = session.Answer("n");
 
         var rename = session.Answer("Pane layout");
-        var refused = session.Refused(rename);
         var renamed = session.Answer("n");
         var again = session.Answer("Pane layout");
         var shown = session.Applied(again);
         var accept = session.Answer("a");
 
         Assert.Contains("[1/2] Layout", rename.Prompt, StringComparison.Ordinal);
-        Assert.Contains("[1/2] Layout", refused.Prompt, StringComparison.Ordinal);
         Assert.Contains("new name", renamed.Prompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("[1/2] Pane layout", shown.Prompt, StringComparison.Ordinal);
         Assert.Equal(("accept", "feature:layout"), (accept.Send!.Verb, accept.Send.Node));
