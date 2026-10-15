@@ -860,6 +860,7 @@ Aw.Sindri.Core.Items.Vocabulary.ItemState.Parked = 5 -> Aw.Sindri.Core.Items.Voc
 Aw.Sindri.Core.Items.Vocabulary.ItemState.Queued = 1 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
 Aw.Sindri.Core.Items.Vocabulary.ItemState.Running = 2 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
 Aw.Sindri.Core.Items.Vocabulary.ItemState.TakenOver = 6 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
+Aw.Sindri.Core.Items.Vocabulary.ItemStateNames
 Aw.Sindri.Core.Items.Vocabulary.QueueGroup
 Aw.Sindri.Core.Items.Vocabulary.QueueGroup.Parked = 2 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
 Aw.Sindri.Core.Items.Vocabulary.QueueGroup.Queued = 4 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
@@ -5734,6 +5735,7 @@ static Aw.Sindri.Core.Items.ItemTimelineKeys.Of(string! item, long sequence) -> 
 static Aw.Sindri.Core.Items.QueueGroups.GroupOf(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup?
 static Aw.Sindri.Core.Items.QueueGroups.Order.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.Vocabulary.QueueGroup>!
 static Aw.Sindri.Core.Items.TimelineLine.For(Aw.Sindri.Core.Ledger.LedgerEvent! recorded, System.Text.Json.JsonSerializerOptions! json) -> string!
+static Aw.Sindri.Core.Items.Vocabulary.ItemStateNames.Of(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> string!
 static Aw.Sindri.Core.Lease.LeaseDecision.Acquire(Aw.Sindri.Core.Lease.LeaseRow? row, Aw.Sindri.Core.Lease.LeaseHolder! candidate, System.DateTimeOffset now, Aw.Sindri.Core.Lease.HolderLiveness liveness) -> Aw.Kernel.Result<Aw.Sindri.Core.Lease.LeaseGrant!>!
 static Aw.Sindri.Core.Lease.LeaseDecision.Holds(Aw.Sindri.Core.Lease.LeaseRow? row, Aw.Sindri.Core.Lease.LeaseGrant! grant) -> bool
 static Aw.Sindri.Core.Lease.LeaseDecision.Liveness(Aw.Sindri.Core.Lease.LeaseHolder! holder, Aw.Sindri.Core.Lease.LeaseHolder! self, Aw.Sindri.Core.Lease.ProcessFacts! facts) -> Aw.Sindri.Core.Lease.HolderLiveness

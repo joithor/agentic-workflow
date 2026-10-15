@@ -51,7 +51,7 @@ public sealed class CliItemVerbsTests : IDisposable
         var code = await Verbs(api, Human).Run(["queue"], Token);
 
         Assert.Equal(0, code);
-        Assert.Equal($"waitingOnYou\n  Nothing is waiting on you.\nqueued\n  {A.FirstItemId.Value}  Try the queue  [demo]  new  since 1970-01-01T00:00:00Z\n", _out.ToString().ReplaceLineEndings("\n"));
+        Assert.Equal($"waitingOnYou\n  Nothing is waiting on you.\nqueued\n  {A.FirstItemId.Value}  Try the queue  [demo]  new  since 2026-01-01T00:00:00Z\n", _out.ToString().ReplaceLineEndings("\n"));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -87,7 +87,7 @@ public sealed class CliItemVerbsTests : IDisposable
 
         Assert.Equal((0, $"{A.FirstItemId.Value} created (sequence 4)\n"), (code, _out.ToString().ReplaceLineEndings("\n")));
         var call = Assert.Single(api.Calls);
-        Assert.Equal(("POST", "human", """{"title":"Try the queue","repo":"demo"}"""), (call.Method, call.Headers[SindriHeaders.Caller], call.Body));
+        Assert.Equal(("POST", "human", """{"title":"Try the queue","repo":"demo","body":null,"link":null}"""), (call.Method, call.Headers[SindriHeaders.Caller], call.Body));
     }
 
     [Fact, Trait("Lane", "unit")]

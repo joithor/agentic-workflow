@@ -2,7 +2,7 @@
 namespace Aw.Sindri.Core.Items.Vocabulary;
 
 /// <summary>The wire names of the item states, for the text a person reads (the JSON converter writes the same names).</summary>
-internal static class ItemStateNames
+public static class ItemStateNames
 {
     /// <summary>The kebab-case name of <paramref name="state"/>.</summary>
     /// <param name="state">The state.</param>
