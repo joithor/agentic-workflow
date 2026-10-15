@@ -68,7 +68,7 @@ internal sealed partial class ShellWindow
     }
 
     // Esc's U2 layers, above the sheet (§8 "the topmost layer"): the create form, then a destructive control's question.
-    private static bool EscapeItemLayer(ViewModels.Shell.ShellViewModel shell)
+    private bool EscapeItemLayer(ViewModels.Shell.ShellViewModel shell)
     {
         if (shell.Create.IsOpen)
         {
@@ -79,6 +79,8 @@ internal sealed partial class ShellWindow
         if (shell.Item.Actions.FirstOrDefault(a => a.IsConfirming) is { } asking)
         {
             asking.Keep();
+            // L11: the question goes and focus returns to the control that asked it (the same path as a click on Keep).
+            this.GetVisualDescendants().OfType<Controls.CommandControl>().FirstOrDefault(c => ReferenceEquals(c.DataContext, asking))?.FocusRun();
             return true;
         }
 

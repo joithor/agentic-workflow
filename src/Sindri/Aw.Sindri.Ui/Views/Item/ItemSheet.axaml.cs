@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Item;
@@ -46,7 +47,27 @@ internal sealed partial class ItemSheet : UserControl
     {
         if (DataContext is ItemSheetViewModel sheet)
         {
-            _ = sheet.LoadMore(CancellationToken.None);
+            _ = LoadMoreAndFocus(sheet);
+        }
+    }
+
+    // L12: the page lands and the button may hide (the last page): focus goes to the first new row, never to nothing.
+    private async Task LoadMoreAndFocus(ItemSheetViewModel sheet)
+    {
+        var before = sheet.Timeline.Count;
+        await sheet.LoadMore(CancellationToken.None).ConfigureAwait(true);
+        if (sheet.Timeline.Count > before)
+        {
+            Dispatcher.UIThread.Post(() => FocusRow(before), DispatcherPriority.Loaded);
+        }
+    }
+
+    private void FocusRow(int index)
+    {
+        var rows = this.FindControl<ItemsControl>("TimelineList")?.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("timeline-row")).ToList();
+        if (rows is { } && index < rows.Count)
+        {
+            _ = rows[index].Focus(NavigationMethod.Tab);
         }
     }
 }

@@ -93,7 +93,7 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
         <Button x:Name="LoadMoreButton" Classes="copy" Click="OnLoadMore" IsVisible="{Binding HasMore}"
-                AutomationProperties.Name="{Binding Text.LoadMore}">
+                AutomationProperties.Name="{Binding LoadMoreName}">
           <TextBlock Classes="caption" Text="{Binding Text.LoadMore}" />
         </Button>
       </StackPanel>

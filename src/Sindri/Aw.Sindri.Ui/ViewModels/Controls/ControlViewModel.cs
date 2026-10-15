@@ -39,6 +39,7 @@ internal sealed partial class ControlViewModel : ObservableObject
         _send = send;
         _clipboard = clipboard;
         _clock = clock;
+        Subject = subject ?? string.Empty;
         Action = row.Action;
         Label = Labels.Action(row.Action);
         Shortcut = row.Shortcut ?? string.Empty;

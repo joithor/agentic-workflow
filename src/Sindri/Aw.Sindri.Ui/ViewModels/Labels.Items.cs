@@ -57,6 +57,11 @@ internal static partial class Labels
     /// <summary>The Load more button under a timeline with a next page.</summary>
     internal const string LoadMore = "Load more";
 
+    /// <summary>The Load more button's accessible name: which timeline it extends.</summary>
+    /// <param name="itemId">The item's id.</param>
+    /// <returns>"Load more timeline for ITM-…".</returns>
+    internal static string LoadMoreFor(string itemId) => LoadMore + " timeline for " + itemId;
+
     /// <summary>The item sheet's timeline heading.</summary>
     internal const string Timeline = "TIMELINE";
 

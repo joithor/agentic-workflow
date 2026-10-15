@@ -32,11 +32,11 @@
     <!-- A destructive control asks first (§8, E-8): its question, Confirm (sends once) and Keep (Esc; nothing sent). -->
     <WrapPanel x:Name="ConfirmRow" Orientation="Horizontal" IsVisible="{Binding IsConfirming}">
       <TextBlock x:Name="ConfirmText" Classes="caption" Text="{Binding ConfirmQuestion}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,4"
-                 AutomationProperties.Name="{Binding ConfirmQuestion}" />
-      <Button x:Name="ConfirmButton" Classes="command-control destructive" Margin="0,0,8,4" Click="OnConfirm" AutomationProperties.Name="{Binding ConfirmQuestion}">
+                 AutomationProperties.AccessibilityView="Raw" />
+      <Button x:Name="ConfirmButton" Classes="command-control destructive" Margin="0,0,8,4" Click="OnConfirm" AutomationProperties.Name="{Binding ConfirmName}">
         <TextBlock Classes="button" Text="{Binding ConfirmLabel}" />
       </Button>
-      <Button x:Name="KeepButton" Classes="copy" Click="OnKeep" AutomationProperties.Name="{Binding KeepLabel}">
+      <Button x:Name="KeepButton" Classes="copy" Click="OnKeep" AutomationProperties.Name="{Binding KeepName}">
         <TextBlock Classes="caption" Text="{Binding KeepLabel}" />
       </Button>
     </WrapPanel>

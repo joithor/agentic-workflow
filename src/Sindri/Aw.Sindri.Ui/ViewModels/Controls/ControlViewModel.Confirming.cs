@@ -19,10 +19,12 @@ internal sealed partial class ControlViewModel
     public string ConfirmQuestion { get; }
 
     /// <summary>The Confirm button's accessible name: "Confirm: Close as cancelled ITM-…?".</summary>
-    public string ConfirmName => ConfirmLabel;
+    public string ConfirmName => Labels.Confirm + ": " + ConfirmQuestion;
+
+    private string Subject { get; }
 
     /// <summary>The Keep button's accessible name: "Keep ITM-…".</summary>
-    public string KeepName => KeepLabel;
+    public string KeepName => Subject.Length > 0 ? KeepLabel + " " + Subject : KeepLabel;
 
     /// <summary>A press: a destructive control asks first; any other sends at once.</summary>
     /// <param name="cancellationToken">Cancels the wait for the answer.</param>
@@ -35,6 +37,7 @@ internal sealed partial class ControlViewModel
         }
 
         IsConfirming = true;
+        Announce(ConfirmQuestion);   // spoken once, when the row appears: the question text itself is not read again
         return Task.CompletedTask;
     }
 
@@ -53,5 +56,9 @@ internal sealed partial class ControlViewModel
     }
 
     /// <summary>The asked question's Keep (or Esc): nothing is sent.</summary>
-    internal void Keep() => IsConfirming = false;
+    internal void Keep()
+    {
+        IsConfirming = false;
+        Rest();
+    }
 }

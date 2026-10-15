@@ -26,7 +26,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     public ItemText Text { get; } = ItemText.Instance;
 
     /// <summary>The item's id ('ITM-…'), or empty before one is opened.</summary>
-    public string ItemId { get; private set => Set(ref field, value); } = string.Empty;
+    public string ItemId { get; private set { Set(ref field, value); OnChanged(nameof(LoadMoreName)); } } = string.Empty;
 
     /// <summary>True between Open and the first answer (§4.1: skeleton once).</summary>
     public bool IsLoading { get; private set => Set(ref field, value); }
@@ -110,7 +110,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     public ObservableCollection<TimelineRow> Timeline { get; } = [];
 
     /// <summary>The Load more button's accessible name: "Load more timeline for ITM-…".</summary>
-    public string LoadMoreName => Text.LoadMore;
+    public string LoadMoreName => Labels.LoadMoreFor(ItemId);
 
     /// <summary>True when the API names a next page.</summary>
     public bool HasMore => Next is not null;
