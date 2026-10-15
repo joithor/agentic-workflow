@@ -25,7 +25,9 @@ args=(stop-check --session "$SESSION" --transcript "$TRANSCRIPT")
 OUT="$(AW_LOG_LEVEL=none "$META" "${args[@]}" 2>&1)"
 rc=$?
 case "$rc" in
-  0) exit 0 ;;
+  0) # the loop guard's "stop allowed …" warning: shown to the user, since exit 0 output otherwise goes nowhere
+     [ -z "$OUT" ] || jq -nc --arg m "$OUT" '{systemMessage: $m}' 2> /dev/null
+     exit 0 ;;
   1) printf '%s\n' "$OUT" >&2; exit 2 ;;
   *) failopen "meta-exit-$rc"; exit 0 ;;
 esac

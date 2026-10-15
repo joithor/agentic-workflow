@@ -44,6 +44,11 @@ STUB_RC=1 stop '{"session_id":"s-1","transcript_path":"/t/x","stop_hook_active":
 check "hook active: still asks, with --hook-active" "$(cat "$CALLS")" "stop-check --session s-1 --transcript /t/x --hook-active"
 check "hook active: aw-meta decides (blocks)" "$RC" "2"
 
+OUT="$(STUB_OUT="aw-meta: stop allowed after 3 identical blocks; still open: reply" stop "$P")"; RC=$?
+check "loop guard let it through: exit 0, the warning shown as a systemMessage" "$RC:$(jq -r .systemMessage <<< "$OUT")" "0:aw-meta: stop allowed after 3 identical blocks; still open: reply"
+OUT="$(stop "$P")"
+check "nothing owed: prints nothing" "$OUT" ""
+
 STUB_RC=2 stop "$P"; RC=$?
 check "tool error: fails open" "$RC" "0"
 grep -q '"hook":"meta-stop-gate","cause":"meta-exit-2"' "$AW_STATE_DIR/logs/failopen.log" 2> /dev/null

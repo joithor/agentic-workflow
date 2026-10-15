@@ -77,6 +77,9 @@ mkdir -p "$WORK/path"; printf '#!/usr/bin/env bash\necho "$1" > "%s"\n' "$WORK/o
 OUT="$(PATH="$WORK/path:$PATH" bash "$DIR/meta-launch.sh" --lanes api)"
 for _ in $(seq 50); do [ -s "$WORK/opened" ] && break; sleep 0.1; done   # xdg-open runs in the background
 check "open: by the config's name, URI-encoded" "$(tail -1 <<< "$OUT"):$(cat "$WORK/opened" 2> /dev/null)" "warp: opening warp://launch/demo%20team:warp://launch/demo%20team"
+tmux kill-session -t demo-api; tmux new-session -d -s demo-api bash   # claude exited; the pane is back at its shell
+OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes api)"
+check "rerun: a lane whose claude exited is restarted in place" "$(head -1 <<< "$OUT")" "tmux demo-api: restarted (claude had exited)"
 tmux kill-server 2> /dev/null
 OUT="$(bash "$DIR/meta-launch.sh" --no-open --lanes api)"
 check "after tmux died: recreated" "$(printf '%s\n' "$OUT" | head -1)" "tmux demo-api: started"

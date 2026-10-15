@@ -2,8 +2,8 @@
 # meta-launch.sh — stand up a meta-orchestrated team in one Warp window: a pane per lane (the meta lane first, then
 # the team config's lanes), each attached to tmux session <team>-<lane> running that lane's Claude session
 # (scripts/meta-lane.sh: resumed by id when one exists, else started from its kickoff prompt). Missing tmux sessions
-# are recreated first (tmux may have died with the box), so the panes only attach. Writes the Warp launch
-# configuration and opens it. One command restores the whole team after a crash.
+# are recreated first (tmux may have died with the box), and a lane whose claude exited is restarted in place, so
+# the panes only attach. Writes the Warp launch configuration and opens it. One command restores the whole team.
 #   meta-launch.sh [--lanes a,b,...] [--no-open] [--dry-run]
 #   AW_META_CONFIG      team config (default $AW_STATE_DIR/meta/team.json; `aw-meta team-init` writes it)
 #   AW_WARP_LAUNCH_DIR  default ${XDG_DATA_HOME:-~/.local/share}/warp-terminal/launch_configurations (Linux),
@@ -41,7 +41,17 @@ yaml="$dir/$team-team.yaml"
 # 1. tmux sessions: create the missing ones (detached), keep the live ones.
 for l in "${L[@]}"; do
   s="$team-$l"
-  if tmux has-session -t "=$s" 2> /dev/null; then echo "tmux $s: running"
+  if tmux has-session -t "=$s" 2> /dev/null; then
+    # Claude exited or crashed and the pane fell back to its shell: start the lane again in place (resumed by id).
+    case "$(tmux display-message -p -t "=$s:" '#{pane_current_command}' 2> /dev/null)" in
+      bash|zsh|sh|fish|dash)
+        if [ "$dry" = 1 ]; then echo "[dry-run] tmux respawn-pane -k -t $s $here/meta-lane.sh $team $l"
+        else
+          tmux respawn-pane -k -t "=$s:" -c "$repo" -e "AW_META_CONFIG=$config" "$here/meta-lane.sh $team $l"
+          echo "tmux $s: restarted (claude had exited)"
+        fi ;;
+      *) echo "tmux $s: running" ;;
+    esac
   elif [ "$dry" = 1 ]; then echo "[dry-run] tmux new-session -d -s $s -c $repo $here/meta-lane.sh $team $l"
   else
     tmux new-session -d -s "$s" -c "$repo" -e "AW_META_CONFIG=$config" "$here/meta-lane.sh $team $l"
