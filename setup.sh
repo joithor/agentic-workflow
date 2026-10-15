@@ -5,6 +5,7 @@
 #   ./setup.sh [--providers claude,codex,cursor] [--dry-run]
 #   ./setup.sh --install-agents [--providers ...] [--dry-run]
 #   ./setup.sh [--providers ...] --with-sindri   # also build and install the sindri CLI (opt-in)
+#   ./setup.sh [--providers ...] --with-meta     # also install the /meta harness: aw-meta CLI, hooks, launcher (opt-in)
 #   ./setup.sh --profile <web-app|ios|personal> --target <dir> [--dry-run]
 #
 # --providers defaults to every provider whose CLI is installed
@@ -137,6 +138,7 @@ MODE="install"
 PROVIDERS_ARG=""
 AW_DRY_RUN=0
 WITH_SINDRI=0
+WITH_META=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --providers) PROVIDERS_ARG="${2:-}"; shift 2 || { echo "--providers needs a value"; exit 1; } ;;
@@ -144,6 +146,7 @@ while [ $# -gt 0 ]; do
     --install-agents) MODE="agents"; shift ;;
     --dry-run) AW_DRY_RUN=1; shift ;;
     --with-sindri) WITH_SINDRI=1; shift ;;
+    --with-meta) WITH_META=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1"; echo ""; usage; exit 1 ;;
   esac
@@ -220,7 +223,7 @@ fi
 # Note: skills/_shared/ is intentionally excluded from MANAGED_SKILLS. It is not
 # linked into any provider's skills dir — skills read it through the stable path
 # $HOME/.agentic-workflow/toolkit/skills/_shared (toolkit symlink created below).
-MANAGED_SKILLS=(review postReview addressReview enhancePrompt rootCause bugHunt bugReport shipRelease syncDocs weeklyRetro officeHours productReview archReview withInterview design-analyze design-analyze-web design-analyze-ios design-language design-evolve design-evolve-web design-evolve-ios design-mockup design-mockup-web design-mockup-ios design-implement design-implement-web design-implement-ios design-refine design-verify design-verify-web design-verify-ios verify-app verify-web verify-ios autoplan planDesignReview planDevexReview cso design-shotgun landAndDeploy canary prismStatus specToProvenPR testAudit judge ui-evidence bugFixOrchestrator reflect correct new-package new-slice)
+MANAGED_SKILLS=(review postReview addressReview enhancePrompt rootCause bugHunt bugReport shipRelease syncDocs weeklyRetro officeHours productReview archReview withInterview design-analyze design-analyze-web design-analyze-ios design-language design-evolve design-evolve-web design-evolve-ios design-mockup design-mockup-web design-mockup-ios design-implement design-implement-web design-implement-ios design-refine design-verify design-verify-web design-verify-ios verify-app verify-web verify-ios autoplan planDesignReview planDevexReview cso design-shotgun landAndDeploy canary prismStatus specToProvenPR testAudit judge ui-evidence bugFixOrchestrator reflect correct new-package new-slice meta)
 
 # Stale standalone copies of impeccable skills from an older setup.sh that
 # copied (cp -r) individual skills. Canonical pbakaus/impeccable v3.1.1+ is a
@@ -279,6 +282,7 @@ fi
 # User-level installs happen here; a missing system package (needs root) prints its sudo command and stops setup.
 echo ""
 bash "$SCRIPT_DIR/scripts/install-deps.sh" || { echo "FATAL: external tools missing (see above). Fix, then re-run setup.sh."; exit 1; }
+
 
 # --- Skill packages (TypeScript helpers run by SKILL.md) ---
 echo ""
@@ -623,6 +627,28 @@ for _p in $PROVIDERS; do
   "${_p}_install"
   REGISTRY_ENTRIES+=("$_p $("${_p}_skills_dir")")
 done
+
+# --- Permission mode (owner, 2026-10-14): every Claude session starts in bypassPermissions, so lanes never run in
+# different modes (cross-session messages are held across a mode mismatch). After the provider installs, so a fresh
+# ~/.claude/settings.json exists; AW_NO_CLAUDE_BYPASS=1 opts out ---
+if [[ " $PROVIDERS " == *" claude "* ]]; then
+  # shellcheck source=config/lib/claude-bypass.sh
+  source "$SCRIPT_DIR/config/lib/claude-bypass.sh"
+  aw_claude_bypass "$CLAUDE_DIR/settings.json"
+fi
+
+# --- Meta harness (opt-in: ./setup.sh --with-meta; owner decision 2026-10-14; Claude Code only). After install-deps
+# (its NativeAOT publish needs clang and zlib) and after the provider install (its hooks merge into the settings.json
+# that install copies from the template) ---
+if [ "$WITH_META" = "1" ]; then
+  if [[ " $PROVIDERS " != *" claude "* ]]; then
+    echo "  meta: skipped (Claude Code only; claude is not among the providers)"
+  elif aw_dry; then
+    echo "  [dry-run] would run scripts/install-meta.sh"
+  else
+    bash "$SCRIPT_DIR/scripts/install-meta.sh" --provider claude
+  fi
+fi
 
 # --- Provider registry (read by the skill preamble) ---
 echo ""

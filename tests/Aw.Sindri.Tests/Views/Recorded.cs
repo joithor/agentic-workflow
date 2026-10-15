@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Ledger;
 
 namespace Aw.Sindri.Tests.Views;
@@ -11,6 +12,13 @@ internal static class Recorded
     public static LedgerEvent Of<TPayload>(EventFactory events, string type, TPayload payload, long sequence)
     {
         var entry = events.Entry(type, payload, string.Create(CultureInfo.InvariantCulture, $"{type}:{sequence}"));
+        return new LedgerEvent(sequence, Epoch: 1, entry.Envelope, entry.IdempotencyKey, entry.Item);
+    }
+
+    /// <summary>A recorded <paramref name="type"/> event about <paramref name="item"/>, carrying <paramref name="payload"/> at <paramref name="sequence"/>.</summary>
+    public static LedgerEvent Of<TPayload>(EventFactory events, string type, TPayload payload, long sequence, ItemId item)
+    {
+        var entry = events.Entry(type, payload, string.Create(CultureInfo.InvariantCulture, $"{type}:{sequence}"), item.Value);
         return new LedgerEvent(sequence, Epoch: 1, entry.Envelope, entry.IdempotencyKey, entry.Item);
     }
 }

@@ -1,0 +1,20 @@
+{
+  "entries": [
+    {
+      "sequence": 106,
+      "time": "2026-01-01T00:00:00.0000000Z",
+      "type": "item.linked",
+      "actor": "service:host",
+      "line": "Linked to linear:issue/abc-100"
+    }
+  ],
+  "next": null,
+  "empty": null,
+  "asOf": {
+    "cursor": 106,
+    "ledgerHead": 106,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

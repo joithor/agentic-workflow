@@ -52,6 +52,35 @@ internal sealed class SqliteViewRows(ISqliteSession session, long sequence, Json
         }
 
         var texts = await SqliteQueries.List(session, new SqlStatement(table.SelectAll), RowJsonMapper.Instance, cancellationToken).ConfigureAwait(false);
+        return Decode<TRow>(texts);
+    }
+
+    /// <summary>The rows of <paramref name="view"/> with keys strictly between the bounds, ordered by key, at most <paramref name="max"/>.</summary>
+    /// <typeparam name="TRow">The row record.</typeparam>
+    /// <param name="view">The view.</param>
+    /// <param name="afterKey">The lower bound (exclusive).</param>
+    /// <param name="beforeKey">The upper bound (exclusive), or null for none.</param>
+    /// <param name="max">The most rows to return.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>The rows.</returns>
+    public async ValueTask<Result<IReadOnlyList<TRow>>> Range<TRow>(string view, string afterKey, string? beforeKey, int max, CancellationToken cancellationToken)
+        where TRow : class
+    {
+        if (ViewSql.Table(view) is not { } table)
+        {
+            return Unknown(view);
+        }
+
+        var statement = beforeKey is null
+            ? new SqlStatement(table.SelectAfter, c => c.Bind("$after", afterKey).Bind("$max", max))
+            : new SqlStatement(table.SelectBetween, c => c.Bind("$after", afterKey).Bind("$before", beforeKey).Bind("$max", max));
+        var texts = await SqliteQueries.List(session, statement, RowJsonMapper.Instance, cancellationToken).ConfigureAwait(false);
+        return Decode<TRow>(texts);
+    }
+
+    private Result<IReadOnlyList<TRow>> Decode<TRow>(Result<IReadOnlyList<string>> texts)
+        where TRow : class
+    {
         if (texts.IsError)
         {
             return ViewsDatabase.Translate(texts.Error);
