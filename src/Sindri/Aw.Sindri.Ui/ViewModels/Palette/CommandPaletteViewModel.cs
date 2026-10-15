@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Controls;
+using Aw.Sindri.Ui.ViewModels.Item;
 
 namespace Aw.Sindri.Ui.ViewModels.Palette;
 
@@ -200,7 +201,7 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
 
     // What a ready row that Enter skips says instead of "ready": where it lives, or that the app has no sender for it.
     private static string NotRun(ControlViewModel control) =>
-        control.Action.StartsWith("CloseItem:", StringComparison.Ordinal) ? Labels.OnItemSheet : Labels.NotInApp;
+        ItemSheetViewModel.IsSheetAction(control.Action) ? Labels.OnItemSheet : Labels.NotInApp;
 
     // The entries ↑/↓ stop at: those that run now, and the selection even while it sends (it is disabled then, but it is
     // where the user is: arrowing off it goes to its neighbour).

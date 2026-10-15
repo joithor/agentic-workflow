@@ -98,16 +98,19 @@ internal sealed partial class ItemSheetViewModel
     /// <summary>True for an action only the item's sheet sends (it needs the version the sheet shows): the palette says "on the item's sheet" for it.</summary>
     /// <param name="action">The catalog action.</param>
     /// <returns>True when the sheet has a sender for it.</returns>
-    internal static bool IsSheetAction(string action) => throw new NotSupportedException();
+    internal static bool IsSheetAction(string action) => _closes.ContainsKey(action);
+
+    // The actions the sheet sends, with the reason each closes the item for: the one set IsSheetAction and Sender read.
+    private static readonly Dictionary<string, string> _closes = new(StringComparer.Ordinal)
+    {
+        ["CloseItem:done"] = "done",
+        ["CloseItem:cancelled"] = "cancelled",
+    };
 
     // What each action the sheet can send does. CloseItem's variants send the version shown at the click (§4.5); every
     // other action is drawn by the catalog (pending with its phase, or a copy block) and sends nothing from here.
-    private Func<CancellationToken, Task<Result<CommandAcceptedView>>>? Sender(string action) => action switch
-    {
-        "CloseItem:done" => ct => Close(action, "done", ct),
-        "CloseItem:cancelled" => ct => Close(action, "cancelled", ct),
-        _ => null,
-    };
+    private Func<CancellationToken, Task<Result<CommandAcceptedView>>>? Sender(string action) =>
+        _closes.TryGetValue(action, out var reason) ? ct => Close(action, reason, ct) : null;
 
     private async Task<Result<CommandAcceptedView>> Close(string action, string reason, CancellationToken cancellationToken)
     {
