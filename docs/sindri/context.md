@@ -561,7 +561,7 @@ Accept all 31 deterministic proposals at once? [y]es / [n]o, go through them one
 
 | Command | What it does | Class |
 |---|---|---|
-| `context map review` | At a terminal, the loop above; otherwise (or with `--list`/`--json`) the queue, read-only; `--limit N` caps each group (default 100) | query |
+| `context map review` | At a terminal, the loop above; otherwise (or with `--list`, `--limit` or `--json`) the queue, read-only; `--limit N` caps each group (default 100), so `review --limit 500` lists and does not run the loop | query |
 | `review accept\|reject <node\|edge:id>` | Decide one proposal or one suggested file link | desk |
 | `review rename <node> <name>`, `review move <node> --under <node>` | Edit a proposal | desk |
 | `review --accept-deterministic` | Accept every deterministic proposal at once | desk |
