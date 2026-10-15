@@ -130,4 +130,32 @@ public sealed class CreateItemViewModelTests
 
         Assert.Equal((false, string.Empty), (form.HasTitleError, form.TitleError));
     }
+
+    // corr-2: an answer belongs to the form that sent it; Esc and C make a new form, and the old answer does not close its door.
+    [Fact]
+    public async Task A_late_answer_for_a_closed_form_does_not_block_the_form_opened_since()
+    {
+        var form = await Form();
+        form.Title = "First";
+        var gate = _server.CommandGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            var sent = form.Submit(Token);
+            form.Close();
+            form.Open();
+
+            gate.SetResult();
+            await sent.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
+
+        Assert.Equal(string.Empty, form.CreatedId);
+        form.Title = "Second";
+        await form.Submit(Token).WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+
+        Assert.Equal(["First", "Second"], _server.Created.Select(c => c.Title), StringComparer.Ordinal);
+    }
 }
