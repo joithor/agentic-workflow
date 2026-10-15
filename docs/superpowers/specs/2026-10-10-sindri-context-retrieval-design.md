@@ -560,7 +560,7 @@ services:                                 # S1's map; the engine's services run 
 Defaults are what's shown; `profile validate` reports any `context.*` error with its key path.
 
 **Linear key:** a personal API key created with read-only permission, stored with `security add-generic-password -s
-linear -a work-read -w`; `context sources status` checks it can read projects, documents and issues of the listed
+linear -a work-read -w` (Linux: `secret-tool store --label "linear/work-read" service linear account work-read`); `context sources status` checks it can read projects, documents and issues of the listed
 teams.
 
 **Onyx setup (Phase 5 deliverable, `docs/sindri/onyx.md`):** a pinned Onyx release (the tag, not `latest`, recorded in

@@ -6,7 +6,7 @@ using Aw.Sindri.Core.Secrets;
 namespace Aw.Sindri.Infrastructure.Secrets;
 
 /// <summary>
-/// ISecretPointers over the environment, owner-only files, the macOS keychain ('security') and the 1Password CLI ('op').
+/// ISecretPointers over the environment, owner-only files, the macOS keychain ('security'), libsecret on Linux ('secret-tool') and the 1Password CLI ('op').
 /// Each pointer reads only the source it names: no fallback to another variable or tool. Values are never logged or put
 /// in an error message.
 /// </summary>
@@ -83,10 +83,17 @@ internal sealed class PointerSecrets(Func<string, string?> environment, IToolRun
 
     private Result<string> Keychain(SecretPointer secretPointer)
     {
-        _ = _platform;   // red stub: every platform still reads 'security'
         var parts = secretPointer.Target.Split('/');
-        return FromTool(secretPointer, "security", ["find-generic-password", "-s", parts[0], "-a", parts[1], "-w"], _keychainTimeout,
-            $"add it with 'security add-generic-password -s {parts[0]} -a {parts[1]} -w' (macOS keychain)");
+        var (service, account) = (parts[0], parts[1]);
+        return _platform switch
+        {
+            KeychainPlatform.MacOS => FromTool(secretPointer, "security", ["find-generic-password", "-s", service, "-a", account, "-w"], _keychainTimeout,
+                $"add it with 'security add-generic-password -s {service} -a {account} -w' (macOS keychain)"),
+            KeychainPlatform.Linux => FromTool(secretPointer, "secret-tool", ["lookup", "service", service, "account", account], _keychainTimeout,
+                $"add it with 'secret-tool store --label \"{service}/{account}\" service {service} account {account}' (libsecret)"),
+            KeychainPlatform.Unsupported => Unresolved(secretPointer, "keychain: isn't supported on this OS (macOS uses the keychain, Linux libsecret); use env:, file: or op:"),
+            _ => throw new ArgumentOutOfRangeException(nameof(secretPointer), _platform, "unknown platform"),
+        };
     }
 
     private Result<string> OnePassword(SecretPointer secretPointer)

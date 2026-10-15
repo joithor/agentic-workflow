@@ -84,8 +84,13 @@ Store it by pointer, never in the profile. Add the `context:` section below to y
 both, and `docs/sindri/context.md` "Trying it in a throwaway profile" writes a whole one):
 
 ```bash
-security add-generic-password -s onyx -a sindri-onyx -w      # prompts for the key
+security add-generic-password -s onyx -a sindri-onyx -w      # macOS: prompts for the key
+secret-tool store --label "onyx/sindri-onyx" service onyx account sindri-onyx   # Linux (libsecret): prompts for the key
 ```
+
+The profile pointer is the same on both machines: `keychain:onyx/sindri-onyx`. Sindri reads it with `security
+find-generic-password -s onyx -a sindri-onyx -w` on macOS and `secret-tool lookup service onyx account sindri-onyx` on
+Linux; on any other OS a `keychain:` pointer doesn't resolve (`SND-SECRET-002`), so use `env:`, `file:` or `op:`.
 
 ```yaml
 context:
