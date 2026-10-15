@@ -69,7 +69,7 @@ internal sealed partial class ShellViewModel : ObservableObject
     public HealthViewModel Health { get; }
 
     /// <summary>The top bar's segments, in order: Home, Queue, Decisions, Services.</summary>
-    public IReadOnlyList<NavEntry> Navigation { get; private set; } = Nav(queued: string.Empty);
+    public IReadOnlyList<NavEntry> Navigation { get; } = Nav(queued: string.Empty);
 
     /// <summary>"Later ▾": Agents, Repos, Today, Automatic work, each "not served yet".</summary>
     public IReadOnlyList<LaterEntry> Later { get; } =
