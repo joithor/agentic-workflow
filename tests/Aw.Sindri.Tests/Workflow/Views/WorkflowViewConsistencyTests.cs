@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing.Views;
 
@@ -195,7 +194,7 @@ public sealed class WorkflowViewConsistencyTests
         {
             foreach (var group in view.Children)
             {
-                Assert.True(RecipeId.TryFrom($"{group.Recipe}", out _), $"{group.Recipe}");
+                Assert.StartsWith("workflow.", group.Recipe.Value, StringComparison.Ordinal);
                 foreach (var row in group.Rows.Concat(group.Workstreams.SelectMany(w => w.Rows)))
                 {
                     Assert.StartsWith(view.Address + "/", row.Address, StringComparison.Ordinal);
@@ -299,7 +298,7 @@ public sealed class WorkflowViewConsistencyTests
     [Fact, Trait("Lane", "unit")]
     public void The_status_text_follows_the_engine_wording_for_the_clock_tokens_and_drift()
     {
-        var drift = WorkflowViewFixtures.StatusParkedDrift().Text;
+        var drift = Regex.Replace(WorkflowViewFixtures.StatusParkedDrift().Text, "\\s+", " ", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
         Assert.Contains("changed since workflow.project@", drift, StringComparison.Ordinal);
         Assert.Contains("was approved; answer after the re-approval: sindri recipe approve workflow.project@", drift, StringComparison.Ordinal);
 

@@ -1,6 +1,6 @@
 {
   "address": "workflow/sentry-8809",
-  "id": "WFI-1c27917745e492bbe90b58eff5286628",
+  "id": "WFI-1c27917745e482bba90b58eff5286628",
   "parent": null,
   "itemId": null,
   "title": "429s on stream",
@@ -94,7 +94,7 @@
         "since": "2026-10-12T11:58:00.0000000Z",
         "ageSeconds": 1680
       },
-      "next": "",
+      "next": null,
       "answer": null,
       "child": null,
       "drift": null,
@@ -116,7 +116,7 @@
       "status": "produced",
       "summary": "sentry #8809 429s on stream",
       "at": "2026-10-12T11:40:00.0000000Z",
-      "by": "human:webhook",
+      "by": "service:webhook",
       "ref": {
         "name": null,
         "size": null,

@@ -1,12 +1,12 @@
 {
   "address": "workflow/desk-round-trip-1",
-  "id": "WFI-e2a5da0e9cc3dceb5a974a0a888e0c23",
+  "id": "WFI-e2a5da0e9cc38ceb9a974a0a888e0c23",
   "parent": null,
   "itemId": null,
   "title": "Desk round trip",
   "recipe": {
     "id": "workflow.dev-desk-round-trip",
-    "hash": "sha256:93b5c0f400000000000000000000000000000000000000000000000000000000",
+    "hash": "sha256:42e9e8ab897f90e38c74f9a3a5aa499f9a56475b4c1a416c0ad5b01a79bb2346",
     "version": 1,
     "urgency": "work"
   },
@@ -90,7 +90,7 @@
       "header": {
         "address": "workflow/desk-round-trip-1",
         "recipe": "workflow.dev-desk-round-trip",
-        "hash12": "93b5c0f40000",
+        "hash12": "42e9e8ab897f",
         "version": 1,
         "state": "desk",
         "detail": "desk task",
@@ -134,7 +134,7 @@
           "confirm": "Cancel workflow/desk-round-trip-1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "workflow/desk-round-trip-1  workflow.dev-desk-round-trip@93b5c0f40000  v1  desk: desk task  since 12:00 (26m)\n  next      Produce the report file, then run: sindri workflow complete workflow/desk-round-trip-1\n            --run 1.1 --outcome done --output fact:report=<file>\n  inputs    fact:request  request.txt  sha256:7ab2…\n  commands  complete, takeover, cancel\n"
+      "text": "workflow/desk-round-trip-1  workflow.dev-desk-round-trip@42e9e8ab897f  v1  desk: desk task  since 12:00 (26m)\n  next      Produce the report file, then run: sindri workflow complete workflow/desk-round-trip-1\n            --run 1.1 --outcome done --output fact:report=<file>\n  inputs    fact:request  request.txt  sha256:7ab2…\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [

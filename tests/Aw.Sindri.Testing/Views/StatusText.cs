@@ -37,9 +37,9 @@ public static class StatusText
 
     private static IEnumerable<(string Label, string Value)> Identity(StatusFields status)
     {
-        if (status.Next.Length > 0)
+        if (status.Next is { Length: > 0 } next)
         {
-            yield return ("next", status.Next);
+            yield return ("next", next);
         }
 
         if (status.Child is { } child)
@@ -49,12 +49,12 @@ public static class StatusText
 
         if (status.Drift is { } drift)
         {
-            yield return ("drift", $"{drift.Block.Value} changed{(drift.NeedsReapproval ? "; the answer needs the re-approval first" : string.Empty)}");
+            yield return ("drift", Drift(status.Header, drift));
         }
 
         foreach (var input in status.Inputs)
         {
-            yield return ("inputs", $"{input.Key}  {input.Name}{(input.Hash is null ? string.Empty : $"  sha256:{input.Hash[..4]}…")}");
+            yield return ("inputs", $"{input.Key}  {input.Name}{(input.Hash is null ? string.Empty : $"  sha256:{(input.Hash.Length > 4 ? input.Hash[..4] : input.Hash)}…")}");
         }
     }
 
@@ -135,8 +135,18 @@ public static class StatusText
         text.Append(line).Append('\n');
     }
 
+    // WF section 6.4: 'since' adds the date once the age is a day or more.
     private static string Clock(DateTimeOffset at, DateTimeOffset now) =>
-        at.Date == now.Date ? at.ToString("HH:mm", CultureInfo.InvariantCulture) : at.ToString("MM-dd HH:mm", CultureInfo.InvariantCulture);
+        at.UtcDateTime.ToString(now - at >= TimeSpan.FromDays(1) ? "MM-dd HH:mm" : "HH:mm", CultureInfo.InvariantCulture);
+
+    // The engine's wording (P4b InstanceWords.Drift): the block, the pinned recipe it changed under, and the re-approval to run first.
+    private static string Drift(StatusHeader header, StatusDrift drift)
+    {
+        var pinned = $"{header.Recipe.Value}@{header.Hash12}";
+        return drift.NeedsReapproval
+            ? $"{drift.Block.Value} changed since {pinned} was approved; answer after the re-approval: sindri recipe approve {pinned}"
+            : $"{drift.Block.Value} changed since {pinned} was approved";
+    }
 
     /// <summary>A whole-second duration the way the CLI prints it: '40s', '32m', '3h 16m', '1d 22h 48m'.</summary>
     private static string Span(long seconds)
@@ -168,10 +178,13 @@ public static class StatusText
         return string.Join(' ', parts);
     }
 
+    // The engine's token words (P4b StatusText.Tokens): '950', '1.5k', '200k', '1M', '1.5M'.
     private static string Tokens(long n) => n switch
     {
-        >= 1_000_000 => string.Create(CultureInfo.InvariantCulture, $"{n / 1_000_000d:0.##}M"),
-        >= 1_000 => string.Create(CultureInfo.InvariantCulture, $"{n / 1_000}k"),
+        > 0 when n % 1_000_000 == 0 => string.Create(CultureInfo.InvariantCulture, $"{n / 1_000_000}M"),
+        >= 1_000_000 => string.Create(CultureInfo.InvariantCulture, $"{n / 1_000_000.0:0.#}M"),
+        > 0 when n % 1_000 == 0 => string.Create(CultureInfo.InvariantCulture, $"{n / 1_000}k"),
+        >= 1_000 => string.Create(CultureInfo.InvariantCulture, $"{n / 1_000.0:0.#}k"),
         _ => string.Create(CultureInfo.InvariantCulture, $"{n}"),
     };
 }

@@ -1,20 +1,20 @@
 {
   "header": {
-    "address": "workflow/PRJ-exports",
+    "address": "workflow/PRJ-reports",
     "recipe": "workflow.project",
     "hash12": "a8c21e7f0000",
     "version": 12,
-    "state": "design",
-    "detail": "parked: needs-answer",
-    "since": "2026-10-11T16:02:00.0000000Z",
-    "ageSeconds": 73440
+    "state": "parked",
+    "detail": "needs-answer",
+    "since": "2026-10-12T10:30:00.0000000Z",
+    "ageSeconds": 6960
   },
   "next": "Parked (needs-answer) in design: import the design output, then resume.",
   "answer": {
     "kind": "resume",
     "actionId": "ApplyCommand:answer-resume",
     "class": "desk",
-    "cli": "sindri workflow answer workflow/PRJ-exports --resume --text <answer>",
+    "cli": "sindri workflow answer workflow/PRJ-reports --resume --text <answer>",
     "atTerminal": false
   },
   "child": null,
@@ -28,23 +28,23 @@
       "verb": "answer",
       "actionId": "ApplyCommand:answer-resume",
       "class": "desk",
-      "cli": "sindri workflow answer workflow/PRJ-exports --resume --text <answer>",
+      "cli": "sindri workflow answer workflow/PRJ-reports --resume --text <answer>",
       "confirm": null
     },
     {
-      "verb": "handback",
-      "actionId": "ApplyCommand:handback",
-      "class": "desk",
-      "cli": "sindri workflow handback workflow/PRJ-exports",
+      "verb": "takeover",
+      "actionId": "ApplyCommand:takeover",
+      "class": "pause",
+      "cli": "sindri workflow takeover workflow/PRJ-reports",
       "confirm": null
     },
     {
       "verb": "cancel",
       "actionId": "ApplyCommand:cancel",
       "class": "desk",
-      "cli": "sindri workflow cancel workflow/PRJ-exports",
-      "confirm": "Cancel workflow/PRJ-exports? 0 running steps stop; 0 children are cancelled."
+      "cli": "sindri workflow cancel workflow/PRJ-reports",
+      "confirm": "Cancel workflow/PRJ-reports? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "workflow/PRJ-exports  workflow.project@a8c21e7f0000  v12  design: parked: needs-answer  since 10-11 16:02 (20h 24m)\n  next      Parked (needs-answer) in design: import the design output, then resume.\n  answer    sindri workflow answer workflow/PRJ-exports --resume --text <answer>\n  commands  answer, handback, cancel\n"
+  "text": "workflow/PRJ-reports  workflow.project@a8c21e7f0000  v12  parked: needs-answer  since 10:30 (1h 56m)\n  next      Parked (needs-answer) in design: import the design output, then resume.\n  answer    sindri workflow answer workflow/PRJ-reports --resume --text <answer>\n  commands  answer, takeover, cancel\n"
 }

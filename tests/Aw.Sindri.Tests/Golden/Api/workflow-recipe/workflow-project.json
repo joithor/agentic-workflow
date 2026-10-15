@@ -3,7 +3,7 @@
     {
       "key": "project",
       "label": "Linear project",
-      "type": "text",
+      "type": "link",
       "kind": "linear-project",
       "required": true
     },
@@ -68,5 +68,11 @@
       "branchOf": null
     }
   ],
-  "loops": []
+  "loops": [
+    {
+      "name": "challenge",
+      "from": "scoping",
+      "to": "scoping"
+    }
+  ]
 }

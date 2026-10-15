@@ -4,7 +4,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>The workflow status layout as fields (E-23); text is what the CLI prints.</summary>
 /// <param name="Header">The header line's parts.</param>
-/// <param name="Next">The next sentence.</param>
+/// <param name="Next">The next sentence; null when the layout has none (a finished instance).</param>
 /// <param name="Answer">The answer the layout offers.</param>
 /// <param name="Child">The child a park mirrors.</param>
 /// <param name="Drift">A recorded drift.</param>
@@ -17,7 +17,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record StatusFields(
     StatusHeader Header,
-    string Next,
+    string? Next,
     StatusAnswer? Answer,
     StatusChild? Child,
     StatusDrift? Drift,

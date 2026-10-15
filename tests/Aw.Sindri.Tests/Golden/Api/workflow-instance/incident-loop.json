@@ -1,6 +1,6 @@
 {
   "address": "workflow/INC-14",
-  "id": "WFI-94b6ae3d7a1765f13f27cca4fa325c7c",
+  "id": "WFI-94b6ae3d7a1785f1bf27cca4fa325c7c",
   "parent": null,
   "itemId": null,
   "title": "Outbox retry storm",
@@ -82,7 +82,7 @@
       "id": "comms",
       "order": 4,
       "branchOf": null,
-      "glyph": "pending",
+      "glyph": "active",
       "badge": null,
       "round": null,
       "loops": [],
@@ -165,23 +165,23 @@
     {
       "key": "alert",
       "label": "Alert",
-      "type": "link",
+      "type": "payload",
       "direction": "input",
       "from": null,
       "status": "produced",
       "summary": "PagerDuty P-2211",
       "at": "2026-10-12T11:02:00.0000000Z",
-      "by": "human:webhook",
+      "by": "service:webhook",
       "ref": {
         "name": null,
         "size": null,
         "hash": null,
         "path": null,
         "itemId": null,
-        "url": "https://pagerduty.example/incidents/P-2211",
-        "host": "pagerduty.example",
-        "title": "P-2211",
-        "factKey": null
+        "url": null,
+        "host": null,
+        "title": null,
+        "factKey": "alert"
       },
       "progress": null,
       "pending": null
@@ -189,14 +189,24 @@
     {
       "key": "severity",
       "label": "Severity",
-      "type": "decision",
+      "type": "text",
       "direction": "output",
       "from": "assess",
       "status": "produced",
       "summary": "sev2",
       "at": "2026-10-12T11:04:00.0000000Z",
       "by": "step.assess",
-      "ref": null,
+      "ref": {
+        "name": null,
+        "size": null,
+        "hash": null,
+        "path": null,
+        "itemId": null,
+        "url": null,
+        "host": null,
+        "title": null,
+        "factKey": "severity"
+      },
       "progress": null,
       "pending": null
     },
@@ -218,13 +228,13 @@
   "children": [
     {
       "state": "comms",
-      "recipe": "builder.comms",
+      "recipe": "workflow.item",
       "done": 0,
       "total": 1,
       "workstreams": [],
       "rows": [
         {
-          "address": "workflow/ITM-01JG3",
+          "address": "workflow/INC-14/ITM-01JG3",
           "itemId": "ITM-01JG3",
           "title": "Post status updates",
           "glyph": "active",
@@ -254,7 +264,6 @@
     "context": null
   },
   "actions": [
-    "OpenItem",
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],

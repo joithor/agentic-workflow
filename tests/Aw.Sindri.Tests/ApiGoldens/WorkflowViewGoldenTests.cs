@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Features.GetInstanceFact;
 using Aw.Sindri.Testing.Views;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,7 +27,7 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-status", "escalated-gate"), ("workflow-status", "taken-over"), ("workflow-status", "done"),
         ("workflow-status", "parked-drift"), ("workflow-status", "needs-answer-wait"),
         ("workflow-recipe", "workflow-project"), ("workflow-recipe", "incident-response"), ("workflow-recipe", "no-outputs"),
-        ("workflow-instance-fact", "scope-map"), ("workflow-instance-fact", "packet"), ("workflow-instance-fact", "evidence"), ("workflow-instance-fact", "payload"),
+        ("workflow-instance-fact", "scope-map"), ("workflow-instance-fact", "packet"), ("workflow-instance-fact", "evidence"), ("workflow-instance-fact", "payload"), ("workflow-instance-fact", "packet-unfrozen"),
         ("workflow-instance-fact", "text"), ("workflow-instance-fact", "truncated"), ("workflow-instance-fact", "not-found"),
     ];
 
@@ -58,6 +60,31 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         var options = host.App.Services.GetRequiredService<JsonSerializerOptions>();
 
         ApiGolden.Match(Body(slug, scenario, options), host.Home, slug, scenario);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [MemberData(nameof(Rows))]
+    public void View_reads_back_into_its_record_and_writes_the_same_body(string slug, string scenario)
+    {
+        if (scenario == "not-found")
+        {
+            return;
+        }
+
+        var host = _host ?? throw new InvalidOperationException("the host isn't started");
+        var options = host.App.Services.GetRequiredService<JsonSerializerOptions>();
+        var body = Body(slug, scenario, options);
+        var again = slug switch
+        {
+            "workflow-instances" => Json(JsonSerializer.Deserialize<InstanceList>(body, options), options),
+            "workflow-instance" => Json(JsonSerializer.Deserialize<InstanceDetail>(body, options), options),
+            "workflow-status" => Json(JsonSerializer.Deserialize<StatusFields>(body, options), options),
+            "workflow-recipe" => Json(JsonSerializer.Deserialize<RecipeView>(body, options), options),
+            "workflow-instance-fact" => Json(JsonSerializer.Deserialize<FactView>(body, options), options),
+            _ => throw new ArgumentOutOfRangeException(nameof(slug), slug, "no record for this slug"),
+        };
+
+        Assert.Equal(body, again);
     }
 
     private static string Body(string slug, string scenario, JsonSerializerOptions options) => (slug, scenario) switch

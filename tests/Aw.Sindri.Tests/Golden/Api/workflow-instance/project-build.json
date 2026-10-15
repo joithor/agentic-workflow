@@ -1,6 +1,6 @@
 {
   "address": "workflow/PRJ-sync",
-  "id": "WFI-481a06672961bc2fd3228cddb2c4d4e3",
+  "id": "WFI-481a066729618c2f93228cddb2c4d4e3",
   "parent": null,
   "itemId": null,
   "title": "Offline sync",
@@ -42,7 +42,13 @@
       "glyph": "done",
       "badge": null,
       "round": null,
-      "loops": [],
+      "loops": [
+        {
+          "with": "scoping",
+          "n": 0,
+          "max": 3
+        }
+      ],
       "desk": false,
       "child": false,
       "children": null,
@@ -237,7 +243,7 @@
       "direction": "output",
       "from": "scoping",
       "status": "produced",
-      "summary": "12 areas, 31 cited files",
+      "summary": "4 areas, 9 cited files",
       "at": "2026-10-12T09:40:00.0000000Z",
       "by": "step.scope.draft",
       "ref": {
@@ -256,7 +262,7 @@
     },
     {
       "key": "packet",
-      "label": "Packet 3f1c09",
+      "label": "Packet",
       "type": "packet",
       "direction": "output",
       "from": "design",
@@ -309,7 +315,7 @@
   "children": [
     {
       "state": "build",
-      "recipe": "builder.feature",
+      "recipe": "workflow.item",
       "done": 4,
       "total": 9,
       "workstreams": [
@@ -318,7 +324,7 @@
           "label": "UI",
           "rows": [
             {
-              "address": "workflow/ITM-01JC3",
+              "address": "workflow/PRJ-sync/ITM-01JC3",
               "itemId": "ITM-01JC3",
               "title": "Sync status pill",
               "glyph": "done",
@@ -333,12 +339,11 @@
               "engineOwned": null,
               "mirroredPark": null,
               "actions": [
-                "OpenItem",
-                "ApplyCommand:takeover"
+                "OpenItem"
               ]
             },
             {
-              "address": "workflow/ITM-01JC5",
+              "address": "workflow/PRJ-sync/ITM-01JC5",
               "itemId": "ITM-01JC5",
               "title": "Conflict resolver dialog",
               "glyph": "done",
@@ -353,8 +358,7 @@
               "engineOwned": null,
               "mirroredPark": null,
               "actions": [
-                "OpenItem",
-                "ApplyCommand:takeover"
+                "OpenItem"
               ]
             }
           ]
@@ -364,7 +368,7 @@
           "label": "Store",
           "rows": [
             {
-              "address": "workflow/ITM-01JC1",
+              "address": "workflow/PRJ-sync/ITM-01JC1",
               "itemId": "ITM-01JC1",
               "title": "PUT /sync/changes",
               "glyph": "done",
@@ -379,12 +383,11 @@
               "engineOwned": null,
               "mirroredPark": null,
               "actions": [
-                "OpenItem",
-                "ApplyCommand:takeover"
+                "OpenItem"
               ]
             },
             {
-              "address": "workflow/ITM-01JC2",
+              "address": "workflow/PRJ-sync/ITM-01JC2",
               "itemId": "ITM-01JC2",
               "title": "Outbox queue",
               "glyph": "done",
@@ -399,12 +402,11 @@
               "engineOwned": null,
               "mirroredPark": null,
               "actions": [
-                "OpenItem",
-                "ApplyCommand:takeover"
+                "OpenItem"
               ]
             },
             {
-              "address": "workflow/ITM-01JD6",
+              "address": "workflow/PRJ-sync/ITM-01JD6",
               "itemId": "ITM-01JD6",
               "title": "Services page job panel",
               "glyph": "active",
@@ -414,7 +416,7 @@
                 "tone": "ok"
               },
               "round": null,
-              "agent": null,
+              "agent": "factory worker",
               "ageSeconds": 0,
               "engineOwned": null,
               "mirroredPark": null,
@@ -430,7 +432,7 @@
           "label": "Mobile",
           "rows": [
             {
-              "address": "workflow/ITM-01JD7",
+              "address": "workflow/PRJ-sync/ITM-01JD7",
               "itemId": "ITM-01JD7",
               "title": "Background sync (iOS)",
               "glyph": "active",
@@ -446,17 +448,15 @@
                 "kind": "parked",
                 "reason": "no-progress"
               },
-              "mirroredPark": {
-                "kind": "parked",
-                "reason": "no-progress"
-              },
+              "mirroredPark": null,
               "actions": [
                 "OpenItem",
+                "ApplyCommand:answer-grant",
                 "ApplyCommand:takeover"
               ]
             },
             {
-              "address": "workflow/ITM-01JF3",
+              "address": "workflow/PRJ-sync/ITM-01JF3",
               "itemId": "ITM-01JF3",
               "title": "doctor views line",
               "glyph": "pending",
@@ -467,7 +467,7 @@
               },
               "round": null,
               "agent": null,
-              "ageSeconds": 600,
+              "ageSeconds": 3120,
               "engineOwned": null,
               "mirroredPark": null,
               "actions": [
@@ -476,7 +476,7 @@
               ]
             },
             {
-              "address": "workflow/ITM-01JF4",
+              "address": "workflow/PRJ-sync/ITM-01JF4",
               "itemId": "ITM-01JF4",
               "title": "Tray badge on Linux",
               "glyph": "pending",
@@ -487,7 +487,7 @@
               },
               "round": null,
               "agent": null,
-              "ageSeconds": 600,
+              "ageSeconds": 2400,
               "engineOwned": null,
               "mirroredPark": null,
               "actions": [
@@ -502,7 +502,7 @@
           "label": "Rollout",
           "rows": [
             {
-              "address": "workflow/ITM-01JF8",
+              "address": "workflow/PRJ-sync/ITM-01JF8",
               "itemId": "ITM-01JF8",
               "title": "Receipt verify route",
               "glyph": "pending",
@@ -513,7 +513,7 @@
               },
               "round": null,
               "agent": null,
-              "ageSeconds": 600,
+              "ageSeconds": 720,
               "engineOwned": null,
               "mirroredPark": null,
               "actions": [

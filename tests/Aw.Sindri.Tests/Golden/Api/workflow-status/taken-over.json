@@ -1,15 +1,15 @@
 {
   "header": {
-    "address": "workflow/ITM-01JA1",
-    "recipe": "workflow.dev-timeout",
-    "hash12": "77aa01c30000",
-    "version": 3,
+    "address": "workflow/ITM-01JA1/step",
+    "recipe": "workflow.step",
+    "hash12": "1b13bd920351",
+    "version": 9,
     "state": "taken-over",
     "detail": null,
     "since": "2026-10-12T12:01:00.0000000Z",
     "ageSeconds": 1500
   },
-  "next": "With you since 12:01. Run `sindri workflow handback workflow/ITM-01JA1` when you're done.",
+  "next": "With you since 12:01. Run `sindri workflow handback workflow/ITM-01JA1/step` when you're done.",
   "answer": null,
   "child": null,
   "drift": null,
@@ -24,16 +24,16 @@
       "verb": "handback",
       "actionId": "ApplyCommand:handback",
       "class": "desk",
-      "cli": "sindri workflow handback workflow/ITM-01JA1",
+      "cli": "sindri workflow handback workflow/ITM-01JA1/step",
       "confirm": null
     },
     {
       "verb": "cancel",
       "actionId": "ApplyCommand:cancel",
       "class": "desk",
-      "cli": "sindri workflow cancel workflow/ITM-01JA1",
-      "confirm": "Cancel workflow/ITM-01JA1? 0 running steps stop; 0 children are cancelled."
+      "cli": "sindri workflow cancel workflow/ITM-01JA1/step",
+      "confirm": "Cancel workflow/ITM-01JA1/step? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "workflow/ITM-01JA1  workflow.dev-timeout@77aa01c30000  v3  taken-over  since 12:01 (25m)\n  next      With you since 12:01. Run `sindri workflow handback workflow/ITM-01JA1` when you're\n            done.\n  paused    timeout 40s left\n  commands  handback, cancel\n"
+  "text": "workflow/ITM-01JA1/step  workflow.step@1b13bd920351  v9  taken-over  since 12:01 (25m)\n  next      With you since 12:01. Run `sindri workflow handback workflow/ITM-01JA1/step` when you're\n            done.\n  paused    timeout 40s left\n  commands  handback, cancel\n"
 }

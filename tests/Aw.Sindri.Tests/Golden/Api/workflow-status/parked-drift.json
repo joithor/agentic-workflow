@@ -4,8 +4,8 @@
     "recipe": "workflow.project",
     "hash12": "a8c21e7f0000",
     "version": 12,
-    "state": "scoping",
-    "detail": "parked: spec-conflict",
+    "state": "parked",
+    "detail": "spec-conflict (drift)",
     "since": "2026-10-12T11:50:00.0000000Z",
     "ageSeconds": 2160
   },
@@ -49,5 +49,5 @@
       "confirm": "Cancel workflow/PRJ-cache? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "workflow/PRJ-cache  workflow.project@a8c21e7f0000  v12  scoping: parked: spec-conflict  since 11:50 (36m)\n  next      Parked (spec-conflict, drift): block step.scope.draft changed in this build. Re-approve\n            it at a terminal, then resume.\n  drift     step.scope.draft changed; the answer needs the re-approval first\n  answer    sindri workflow answer workflow/PRJ-cache --resume\n  commands  answer, takeover, cancel\n"
+  "text": "workflow/PRJ-cache  workflow.project@a8c21e7f0000  v12  parked: spec-conflict (drift)  since 11:50 (36m)\n  next      Parked (spec-conflict, drift): block step.scope.draft changed in this build. Re-approve\n            it at a terminal, then resume.\n  drift     step.scope.draft changed since workflow.project@a8c21e7f0000 was approved; answer after\n            the re-approval: sindri recipe approve workflow.project@a8c21e7f0000\n  answer    sindri workflow answer workflow/PRJ-cache --resume\n  commands  answer, takeover, cancel\n"
 }

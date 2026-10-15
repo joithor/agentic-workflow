@@ -59,16 +59,16 @@ public sealed class WorkflowViewJsonTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_root_list_is_in_urgency_then_since_order()
+    public void The_root_list_is_unfinished_first_then_urgency_then_subject_label()
     {
         var addresses = WorkflowViewFixtures.RootList().Instances.Select(r => r.Address);
 
-        // The incident, then the triage rows by oldest since, then the work rows by oldest since (spelled out, so a change of the sort key shows).
+        // Unfinished rows first, the parked and escalated one behind the moving ones, the finished rows last; inside each, urgency, then the
+        // subject label (spelled out, so a change of the sort key shows). The first five are the Home strip of the screens fixture.
         Assert.Equal(
             [
-                "workflow/INC-14", "workflow/sentry-8790", "workflow/sentry-8797", "workflow/sentry-8801", "workflow/pagerduty-P-2211",
-                "workflow/sentry-8809", "workflow/sentry-8812", "workflow/PRJ-exports", "workflow/PRJ-sync", "workflow/PRJ-tabs", "workflow/LIN-ENG",
-                "workflow/LIN-APP",
+                "workflow/INC-14", "workflow/sentry-8812", "workflow/PRJ-sync", "workflow/PRJ-exports", "workflow/PRJ-tabs", "workflow/LIN-APP",
+                "workflow/LIN-ENG", "workflow/pagerduty-P-2211", "workflow/sentry-8790", "workflow/sentry-8797", "workflow/sentry-8801", "workflow/sentry-8809",
             ],
             addresses,
             StringComparer.Ordinal);

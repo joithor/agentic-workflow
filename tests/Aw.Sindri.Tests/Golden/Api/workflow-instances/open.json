@@ -2,7 +2,7 @@
   "instances": [
     {
       "address": "workflow/INC-14",
-      "id": "WFI-94b6ae3d7a1765f13f27cca4fa325c7c",
+      "id": "WFI-94b6ae3d7a1785f1bf27cca4fa325c7c",
       "itemId": null,
       "recipe": {
         "id": "workflow.incident-response",
@@ -94,7 +94,7 @@
           "id": "comms",
           "order": 4,
           "branchOf": null,
-          "glyph": "pending",
+          "glyph": "active",
           "badge": null,
           "round": null,
           "loops": [],
@@ -125,124 +125,13 @@
       "now": "agent rolling back in ITM-01JG2 · comms posting",
       "answer": null,
       "actions": [
-        "OpenItem",
-        "ApplyCommand:takeover",
-        "ApplyCommand:cancel"
-      ]
-    },
-    {
-      "address": "workflow/pagerduty-P-2211",
-      "id": "WFI-b71b3d84f36a597dee179eed2a4bb914",
-      "itemId": null,
-      "recipe": {
-        "id": "workflow.triage-alert",
-        "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
-        "version": 2,
-        "urgency": "triage"
-      },
-      "state": "route",
-      "chip": {
-        "word": "ESCALATED",
-        "tone": "attn"
-      },
-      "since": "2026-10-12T11:02:00.0000000Z",
-      "engineOwned": {
-        "kind": "escalated",
-        "reason": "gate.severity 0.91 → INC-14 opened"
-      },
-      "subject": {
-        "kind": "webhook",
-        "key": "P-2211",
-        "label": "PagerDuty P-2211",
-        "href": null
-      },
-      "inputs": [
-        {
-          "key": "alert",
-          "label": "Alert",
-          "kind": "webhook",
-          "required": true,
-          "present": true
-        }
-      ],
-      "states": [
-        {
-          "id": "ingest",
-          "order": 1,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "classify",
-          "order": 2,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "route",
-          "order": 3,
-          "branchOf": null,
-          "glyph": "active",
-          "badge": {
-            "kind": "escalated",
-            "reason": "gate.severity 0.91 → INC-14 opened"
-          },
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "done",
-          "order": 4,
-          "branchOf": null,
-          "glyph": "pending",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": true
-        }
-      ],
-      "now": "accept at a terminal",
-      "answer": {
-        "kind": "accept",
-        "actionId": "ApplyCommand:answer-accept",
-        "class": "protected",
-        "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
-        "atTerminal": true
-      },
-      "actions": [
-        "ApplyCommand:answer-accept",
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
       ]
     },
     {
       "address": "workflow/sentry-8812",
-      "id": "WFI-0461ac4604c04a9c3696f4f6335a0868",
+      "id": "WFI-0461ac4604c08a9cb696f4f6335a0868",
       "itemId": null,
       "recipe": {
         "id": "workflow.triage-alert",
@@ -339,153 +228,8 @@
       ]
     },
     {
-      "address": "workflow/PRJ-exports",
-      "id": "WFI-0201cfc8b6dc47e6861bf35dd2064807",
-      "itemId": null,
-      "recipe": {
-        "id": "workflow.project",
-        "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
-        "version": 12,
-        "urgency": "work"
-      },
-      "state": "design",
-      "chip": {
-        "word": "WITH YOU",
-        "tone": "neutral"
-      },
-      "since": "2026-10-11T16:02:00.0000000Z",
-      "engineOwned": {
-        "kind": "taken-over",
-        "reason": "with you since 10-11 16:02"
-      },
-      "subject": {
-        "kind": "linear-project",
-        "key": "ENG",
-        "label": "ENG · Billing exports",
-        "href": null
-      },
-      "inputs": [
-        {
-          "key": "project",
-          "label": "Linear project",
-          "kind": "linear-project",
-          "required": true,
-          "present": true
-        },
-        {
-          "key": "prd",
-          "label": "PRD",
-          "kind": "file",
-          "required": true,
-          "present": true
-        }
-      ],
-      "states": [
-        {
-          "id": "intake",
-          "order": 1,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "scoping",
-          "order": 2,
-          "branchOf": null,
-          "glyph": "done",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "design",
-          "order": 3,
-          "branchOf": null,
-          "glyph": "active",
-          "badge": {
-            "kind": "taken-over",
-            "reason": "with you since 10-11 16:02"
-          },
-          "round": null,
-          "loops": [],
-          "desk": true,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "build",
-          "order": 4,
-          "branchOf": null,
-          "glyph": "pending",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "verify",
-          "order": 5,
-          "branchOf": null,
-          "glyph": "pending",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": false
-        },
-        {
-          "id": "done",
-          "order": 6,
-          "branchOf": null,
-          "glyph": "pending",
-          "badge": null,
-          "round": null,
-          "loops": [],
-          "desk": false,
-          "child": false,
-          "children": null,
-          "outcome": null,
-          "terminal": true
-        }
-      ],
-      "now": "with you: import the design output",
-      "answer": {
-        "kind": "resume",
-        "actionId": "ApplyCommand:answer-resume",
-        "class": "desk",
-        "cli": "sindri workflow answer workflow/PRJ-exports --resume --text <answer>",
-        "atTerminal": false
-      },
-      "actions": [
-        "ApplyCommand:answer-resume",
-        "ApplyCommand:handback",
-        "ApplyCommand:cancel"
-      ]
-    },
-    {
       "address": "workflow/PRJ-sync",
-      "id": "WFI-481a06672961bc2fd3228cddb2c4d4e3",
+      "id": "WFI-481a066729618c2f93228cddb2c4d4e3",
       "itemId": null,
       "recipe": {
         "id": "workflow.project",
@@ -517,7 +261,7 @@
         {
           "key": "prd",
           "label": "PRD",
-          "kind": "file",
+          "kind": null,
           "required": true,
           "present": true
         }
@@ -544,7 +288,13 @@
           "glyph": "done",
           "badge": null,
           "round": null,
-          "loops": [],
+          "loops": [
+            {
+              "with": "scoping",
+              "n": 0,
+              "max": 3
+            }
+          ],
           "desk": false,
           "child": false,
           "children": null,
@@ -619,8 +369,152 @@
       ]
     },
     {
+      "address": "workflow/PRJ-exports",
+      "id": "WFI-0201cfc8b6dc87e6861bf35dd2064807",
+      "itemId": null,
+      "recipe": {
+        "id": "workflow.project",
+        "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
+        "version": 12,
+        "urgency": "work"
+      },
+      "state": "design",
+      "chip": {
+        "word": "WITH YOU",
+        "tone": "neutral"
+      },
+      "since": "2026-10-11T16:02:00.0000000Z",
+      "engineOwned": {
+        "kind": "taken-over",
+        "reason": "with you since 10-11 16:02"
+      },
+      "subject": {
+        "kind": "linear-project",
+        "key": "ENG",
+        "label": "ENG · Billing exports",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "project",
+          "label": "Linear project",
+          "kind": "linear-project",
+          "required": true,
+          "present": true
+        },
+        {
+          "key": "prd",
+          "label": "PRD",
+          "kind": null,
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "intake",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "scoping",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [
+            {
+              "with": "scoping",
+              "n": 0,
+              "max": 3
+            }
+          ],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "design",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "active",
+          "badge": {
+            "kind": "taken-over",
+            "reason": "with you since 10-11 16:02"
+          },
+          "round": null,
+          "loops": [],
+          "desk": true,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "build",
+          "order": 4,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "verify",
+          "order": 5,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 6,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "with you: import the design output",
+      "answer": null,
+      "actions": [
+        "ApplyCommand:handback",
+        "ApplyCommand:cancel"
+      ]
+    },
+    {
       "address": "workflow/PRJ-tabs",
-      "id": "WFI-a4e936160bc2f8dd8eabd080cc471780",
+      "id": "WFI-a4e936160bc288dd8eabd080cc471780",
       "itemId": null,
       "recipe": {
         "id": "workflow.project",
@@ -652,7 +546,7 @@
         {
           "key": "prd",
           "label": "PRD",
-          "kind": "file",
+          "kind": null,
           "required": true,
           "present": true
         }
@@ -760,8 +654,76 @@
       ]
     },
     {
+      "address": "workflow/LIN-APP",
+      "id": "WFI-baa44e0633358beab0cd158d5da5348b",
+      "itemId": null,
+      "recipe": {
+        "id": "workflow.intake-linear",
+        "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
+        "version": 1,
+        "urgency": "work"
+      },
+      "state": "poll",
+      "chip": {
+        "word": "RUNNING",
+        "tone": "ok"
+      },
+      "since": "2026-10-12T12:15:00.0000000Z",
+      "engineOwned": null,
+      "subject": {
+        "kind": "linear-team",
+        "key": "APP",
+        "label": "Linear APP",
+        "href": null
+      },
+      "inputs": [
+        {
+          "key": "team",
+          "label": "Linear team",
+          "kind": "linear-team",
+          "required": true,
+          "present": true
+        }
+      ],
+      "states": [
+        {
+          "id": "poll",
+          "order": 1,
+          "branchOf": null,
+          "glyph": "active",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "emit",
+          "order": 2,
+          "branchOf": null,
+          "glyph": "pending",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": true
+        }
+      ],
+      "now": "polling every 15m · last 12:15 · 2 new items",
+      "answer": null,
+      "actions": [
+        "ApplyCommand:cancel"
+      ]
+    },
+    {
       "address": "workflow/LIN-ENG",
-      "id": "WFI-2b509939d6a7f6fcaed8695ab66cebab",
+      "id": "WFI-2b509939d6a786fcaed8695ab66cebab",
       "itemId": null,
       "recipe": {
         "id": "workflow.intake-linear",
@@ -828,43 +790,46 @@
       ]
     },
     {
-      "address": "workflow/LIN-APP",
-      "id": "WFI-baa44e0633350bea70cd158d5da5348b",
+      "address": "workflow/pagerduty-P-2211",
+      "id": "WFI-b71b3d84f36a897dae179eed2a4bb914",
       "itemId": null,
       "recipe": {
-        "id": "workflow.intake-linear",
-        "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
-        "version": 1,
-        "urgency": "work"
+        "id": "workflow.triage-alert",
+        "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
+        "version": 2,
+        "urgency": "triage"
       },
-      "state": "poll",
+      "state": "route",
       "chip": {
-        "word": "RUNNING",
-        "tone": "ok"
+        "word": "ESCALATED",
+        "tone": "attn"
       },
-      "since": "2026-10-12T12:15:00.0000000Z",
-      "engineOwned": null,
+      "since": "2026-10-12T11:02:00.0000000Z",
+      "engineOwned": {
+        "kind": "escalated",
+        "reason": "gate.severity 0.91 → INC-14 opened"
+      },
       "subject": {
-        "kind": "linear-team",
-        "key": "APP",
-        "label": "Linear APP",
+        "kind": "webhook",
+        "key": "P-2211",
+        "label": "PagerDuty P-2211",
         "href": null
       },
       "inputs": [
         {
-          "key": "team",
-          "label": "Linear team",
-          "kind": "linear-team",
+          "key": "alert",
+          "label": "Alert",
+          "kind": "webhook",
           "required": true,
           "present": true
         }
       ],
       "states": [
         {
-          "id": "poll",
+          "id": "ingest",
           "order": 1,
           "branchOf": null,
-          "glyph": "active",
+          "glyph": "done",
           "badge": null,
           "round": null,
           "loops": [],
@@ -875,8 +840,39 @@
           "terminal": false
         },
         {
-          "id": "emit",
+          "id": "classify",
           "order": 2,
+          "branchOf": null,
+          "glyph": "done",
+          "badge": null,
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "route",
+          "order": 3,
+          "branchOf": null,
+          "glyph": "active",
+          "badge": {
+            "kind": "escalated",
+            "reason": "gate.severity 0.91 → INC-14 opened"
+          },
+          "round": null,
+          "loops": [],
+          "desk": false,
+          "child": false,
+          "children": null,
+          "outcome": null,
+          "terminal": false
+        },
+        {
+          "id": "done",
+          "order": 4,
           "branchOf": null,
           "glyph": "pending",
           "badge": null,
@@ -889,9 +885,17 @@
           "terminal": true
         }
       ],
-      "now": "polling every 15m · last 12:15 · 2 new items",
-      "answer": null,
+      "now": "accept at a terminal",
+      "answer": {
+        "kind": "accept",
+        "actionId": "ApplyCommand:answer-accept",
+        "class": "protected",
+        "cli": "sindri workflow answer workflow/pagerduty-P-2211 --accept",
+        "atTerminal": true
+      },
       "actions": [
+        "ApplyCommand:answer-accept",
+        "ApplyCommand:takeover",
         "ApplyCommand:cancel"
       ]
     }

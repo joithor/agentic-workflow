@@ -1,12 +1,12 @@
 {
   "address": "workflow/triage-three-state-1",
-  "id": "WFI-1ddb7bb95ef2efc12297ee47f8d2c752",
+  "id": "WFI-1ddb7bb95ef28fc1a297ee47f8d2c752",
   "parent": null,
   "itemId": null,
   "title": "Three-state triage",
   "recipe": {
     "id": "workflow.dev-triage-three-state",
-    "hash": "sha256:e2d7a5b100000000000000000000000000000000000000000000000000000000",
+    "hash": "sha256:88a0e8fc810fb8dbdccb244b1a601e16743ade3c4230b57c7c0cf782b3ed0f66",
     "version": 1,
     "urgency": "triage"
   },
@@ -77,7 +77,7 @@
       "header": {
         "address": "workflow/triage-three-state-1",
         "recipe": "workflow.dev-triage-three-state",
-        "hash12": "e2d7a5b10000",
+        "hash12": "88a0e8fc810f",
         "version": 1,
         "state": "classify",
         "detail": "running",
@@ -114,7 +114,7 @@
           "confirm": "Cancel workflow/triage-three-state-1? 1 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "workflow/triage-three-state-1  workflow.dev-triage-three-state@e2d7a5b10000  v1  classify: running  since 12:00 (26m)\n  next      classify.rules is running.\n  inputs    fact:request  request.txt  sha256:5cd0…\n  commands  takeover, cancel\n"
+      "text": "workflow/triage-three-state-1  workflow.dev-triage-three-state@88a0e8fc810f  v1  classify: running  since 12:00 (26m)\n  next      classify.rules is running.\n  inputs    fact:request  request.txt  sha256:5cd0…\n  commands  takeover, cancel\n"
     }
   },
   "facts": [

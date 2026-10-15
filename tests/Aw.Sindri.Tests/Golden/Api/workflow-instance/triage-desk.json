@@ -1,6 +1,6 @@
 {
   "address": "workflow/sentry-8812",
-  "id": "WFI-0461ac4604c04a9c3696f4f6335a0868",
+  "id": "WFI-0461ac4604c08a9cb696f4f6335a0868",
   "parent": null,
   "itemId": null,
   "title": "TypeError in tabs.layout",
@@ -173,7 +173,7 @@
       "status": "produced",
       "summary": "sentry #8812 TypeError",
       "at": "2026-10-12T12:22:00.0000000Z",
-      "by": "human:webhook",
+      "by": "service:webhook",
       "ref": {
         "name": null,
         "size": null,

@@ -9,7 +9,8 @@
         "graph": "mapped",
         "files": [
           "src/sync/store.ts",
-          "src/sync/outbox.ts"
+          "src/sync/outbox.ts",
+          "src/sync/queue.ts"
         ],
         "items": [
           "ITM-01JC1",
@@ -30,7 +31,8 @@
         "name": "conflict dialog",
         "graph": "new",
         "files": [
-          "ui/conflict-dialog.tsx"
+          "ui/conflict-dialog.tsx",
+          "ui/conflict-diff.tsx"
         ],
         "items": [
           "ITM-01JC5"
@@ -40,9 +42,13 @@
         "name": "background sync (iOS)",
         "graph": "unmapped",
         "files": [
-          "ios/BackgroundSync.swift"
+          "ios/BackgroundSync.swift",
+          "ios/SyncScheduler.swift",
+          "ios/Reachability.swift"
         ],
-        "items": []
+        "items": [
+          "ITM-01JD7"
+        ]
       }
     ]
   },

@@ -10,6 +10,14 @@
       {
         "task": "t2",
         "verdict": "pass"
+      },
+      {
+        "task": "t3",
+        "verdict": "pass"
+      },
+      {
+        "task": "t9",
+        "verdict": "pass"
       }
     ],
     "done": 4,

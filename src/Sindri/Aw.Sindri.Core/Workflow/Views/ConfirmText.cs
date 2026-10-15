@@ -10,6 +10,10 @@ public static class ConfirmText
     /// <param name="runningSteps">How many steps are running now (the open run).</param>
     /// <param name="openChildren">How many child instances are still open.</param>
     /// <returns>The sentence.</returns>
-    public static string Cancel(string address, int runningSteps, int openChildren) =>
-        string.Create(CultureInfo.InvariantCulture, $"Cancel {address}? {runningSteps} running steps stop; {openChildren} children are cancelled.");
+    public static string Cancel(string address, int runningSteps, int openChildren)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(runningSteps);
+        ArgumentOutOfRangeException.ThrowIfNegative(openChildren);
+        return string.Create(CultureInfo.InvariantCulture, $"Cancel {address}? {runningSteps} running steps stop; {openChildren} children are cancelled.");
+    }
 }

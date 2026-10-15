@@ -4,8 +4,8 @@
     "recipe": "workflow.project",
     "hash12": "a8c21e7f0000",
     "version": 12,
-    "state": "build",
-    "detail": "parked: no-progress (child)",
+    "state": "parked",
+    "detail": "no-progress (child)",
     "since": "2026-10-12T11:54:00.0000000Z",
     "ageSeconds": 1920
   },
@@ -50,5 +50,5 @@
       "confirm": "Cancel workflow/PRJ-search? 0 running steps stop; 1 children are cancelled."
     }
   ],
-  "text": "workflow/PRJ-search  workflow.project@a8c21e7f0000  v12  build: parked: no-progress (child)  since 11:54 (32m)\n  next      Parked (no-progress) in workflow/PRJ-search/ITM-01JF9: checks failed twice with the same\n            findings. Grant more rounds at a terminal, or cancel.\n  child     workflow/PRJ-search/ITM-01JF9  parked: no-progress\n  answer    sindri workflow answer workflow/PRJ-search --grant 1     (at a terminal; forwarded to\n            the child)\n  commands  answer (forwarded), takeover, cancel\n"
+  "text": "workflow/PRJ-search  workflow.project@a8c21e7f0000  v12  parked: no-progress (child)  since 11:54 (32m)\n  next      Parked (no-progress) in workflow/PRJ-search/ITM-01JF9: checks failed twice with the same\n            findings. Grant more rounds at a terminal, or cancel.\n  child     workflow/PRJ-search/ITM-01JF9  parked: no-progress\n  answer    sindri workflow answer workflow/PRJ-search --grant 1     (at a terminal; forwarded to\n            the child)\n  commands  answer (forwarded), takeover, cancel\n"
 }
