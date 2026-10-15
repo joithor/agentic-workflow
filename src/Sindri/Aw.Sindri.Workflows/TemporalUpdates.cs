@@ -77,8 +77,15 @@ internal static class TemporalUpdates
     /// <param name="reason">What the probe found.</param>
     /// <param name="nonce">The Update's id when the call has one.</param>
     /// <returns>The error.</returns>
-    internal static Error Down(ITemporalClient client, string reason, CommandNonce? nonce) =>
-        SindriErrors.NotRunning.With($"Temporal at {client.Connection.Options.TargetHost} doesn't answer: {reason} ("
+    internal static Error Down(ITemporalClient client, string reason, CommandNonce? nonce) => Down(client.Connection.Options.TargetHost, reason, nonce);
+
+    /// <summary><see cref="Down(ITemporalClient, string, CommandNonce?)"/> for a frontend known by its address.</summary>
+    /// <param name="target">The frontend's host:port.</param>
+    /// <param name="reason">What the probe found.</param>
+    /// <param name="nonce">The Update's id when the call has one.</param>
+    /// <returns>The error.</returns>
+    internal static Error Down(string? target, string reason, CommandNonce? nonce) =>
+        SindriErrors.NotRunning.With($"Temporal at {target} doesn't answer: {reason} ("
             + (nonce is { } n
                 ? $"fix: check `sindri workflow status` or `sindri workflow events` first; if the command didn't apply, run the same command again with --nonce {n.Value}; "
                 : "fix: ")
@@ -94,17 +101,27 @@ internal static class TemporalUpdates
     /// <param name="nonce">The Update's id.</param>
     /// <param name="cancellationToken">The caller's token.</param>
     /// <returns>The error.</returns>
-    internal static async ValueTask<Error> NoAnswer(ITemporalClient client, InstanceAddress address, CommandNonce nonce, CancellationToken cancellationToken)
+    internal static ValueTask<Error> NoAnswer(ITemporalClient client, InstanceAddress address, CommandNonce nonce, CancellationToken cancellationToken) =>
+        NoAnswer(client.Connection.Options.TargetHost, options => client.Connection.CheckHealthAsync(options: options), address, nonce, cancellationToken);
+
+    /// <summary><see cref="NoAnswer(ITemporalClient, InstanceAddress, CommandNonce, CancellationToken)"/> over a health probe (the test seam).</summary>
+    /// <param name="target">The frontend's host:port.</param>
+    /// <param name="healthy">The health check, run with its 2 s RPC options.</param>
+    /// <param name="address">The instance.</param>
+    /// <param name="nonce">The Update's id.</param>
+    /// <param name="cancellationToken">The caller's token.</param>
+    /// <returns>The error.</returns>
+    internal static async ValueTask<Error> NoAnswer(string? target, Func<RpcOptions, Task<bool>> healthy, InstanceAddress address, CommandNonce nonce, CancellationToken cancellationToken)
     {
         try
         {
-            return await client.Connection.CheckHealthAsync(options: new RpcOptions { Timeout = TimeSpan.FromSeconds(2), CancellationToken = cancellationToken }).ConfigureAwait(false)
+            return await healthy(new RpcOptions { Timeout = TimeSpan.FromSeconds(2), CancellationToken = cancellationToken }).ConfigureAwait(false)
                 ? NoWorker(address, nonce)
-                : Down(client, "its health check failed", nonce);
+                : Down(target, "its health check failed", nonce);
         }
         catch (RpcException e) // boundary: the probe says the frontend is gone
         {
-            return Down(client, e, nonce);
+            return Down(target, e.Message, nonce);
         }
     }
 
