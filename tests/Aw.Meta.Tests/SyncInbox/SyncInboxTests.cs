@@ -1,7 +1,7 @@
 using Aw.Meta.Core;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Core.Obligations;
-using Aw.Meta.Core.Coordination;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Testing;
 using Microsoft.Extensions.Time.Testing;

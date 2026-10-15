@@ -48,9 +48,9 @@ public sealed class InboxTests
     {
         await _world.Ready();
         await Receive(("m1", "sindri-api", "a"), ("m2", "sindri-ui", "b"), ("m3", "sindri-api", "c"), ("m4", "sindri-ui", "d"));
-        _ = await _world.Messages.Resolve(MessageId.From("m2"), new(Aw.Meta.Core.Messages.MessageResolutionKind.Dismissed, "fyi"), CancellationToken.None);
+        _ = await _world.Messages.Resolve(MessageId.From("m2"), new(Core.Messages.MessageResolutionKind.Dismissed, "fyi"), CancellationToken.None);
         var until = _world.Clock.GetUtcNow().AddHours(1);
-        _ = await _world.Messages.Resolve(MessageId.From("m3"), new(Aw.Meta.Core.Messages.MessageResolutionKind.Deferred, "later", until), CancellationToken.None);
+        _ = await _world.Messages.Resolve(MessageId.From("m3"), new(Core.Messages.MessageResolutionKind.Deferred, "later", until), CancellationToken.None);
         _ = await _world.Messages.RecordOutbound(A.Sent("sindri-api", "ok", 61), CancellationToken.None);
 
         var all = await Items(all: true);

@@ -73,7 +73,7 @@ internal sealed class SqliteMessageStore(MetaDatabase database) : IMessageStore
             MessageSql.SelectRole,
             reader => new MetaRole(SessionId.From(reader.GetString(0)), reader.GetString(1)),
             cancellationToken).ConfigureAwait(false);
-        return rows.IsError ? rows.Error : Results.Success<MetaRole?>(rows.Value.Count == 0 ? null : rows.Value[0]);
+        return rows.IsError ? rows.Error : Results.Success(rows.Value.Count == 0 ? null : rows.Value[0]);
     }
 
     public ValueTask<Result<Unit>> SetRole(MetaRole role, CancellationToken cancellationToken) =>

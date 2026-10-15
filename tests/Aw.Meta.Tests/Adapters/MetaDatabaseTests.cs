@@ -1,6 +1,6 @@
 using Aw.Meta.Core.Ids;
-using Aw.Meta.Testing;
 using Aw.Meta.Infrastructure.Sqlite;
+using Aw.Meta.Testing;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Meta.Tests.Adapters;

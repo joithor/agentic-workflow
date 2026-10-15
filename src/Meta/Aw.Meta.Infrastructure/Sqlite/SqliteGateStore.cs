@@ -72,6 +72,6 @@ internal sealed class SqliteGateStore(MetaDatabase database) : IGateStore
             GateSql.LatestMerge,
             r => new MergeRecord(checked((int)r.GetInt64(0)), r.GetString(1), SqliteRead.GetTimestamp(r, 2)),
             cancellationToken).ConfigureAwait(false);
-        return rows.IsError ? rows.Error : Results.Success<MergeRecord?>(rows.Value.Count == 0 ? null : rows.Value[0]);
+        return rows.IsError ? rows.Error : Results.Success(rows.Value.Count == 0 ? null : rows.Value[0]);
     }
 }

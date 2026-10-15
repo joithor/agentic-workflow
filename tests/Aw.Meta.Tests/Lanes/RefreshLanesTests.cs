@@ -1,8 +1,8 @@
 using Aw.Meta.Core;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Core.Lanes;
 using Aw.Meta.Features.Lanes;
-using Aw.Meta.Core.Coordination;
 using Aw.Meta.Testing;
 using Microsoft.Extensions.Time.Testing;
 
@@ -102,6 +102,6 @@ public sealed class RefreshLanesTests
         Assert.Equal(MetaErrors.NoTeamConfig.Code, result.Error.Code);
     }
 
-    private static Aw.Meta.Core.Messages.InboxMessage InboxFrom(string id, string name, string body) =>
-        Aw.Meta.Core.Messages.InboxMessage.Of(new(MessageId.From(id), $"uds:/run/{name}.sock", name, body, A.At(1)));
+    private static Core.Messages.InboxMessage InboxFrom(string id, string name, string body) =>
+        Core.Messages.InboxMessage.Of(new(MessageId.From(id), $"uds:/run/{name}.sock", name, body, A.At(1)));
 }

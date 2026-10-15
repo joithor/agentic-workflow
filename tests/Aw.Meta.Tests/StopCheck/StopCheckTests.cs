@@ -65,8 +65,8 @@ public sealed class StopCheckTests
         await _world.Ready();
         _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "a") + MetaWorld.PeerLine("m2", "sindri-ui", "b"));
         _ = await Check();
-        _ = await _world.Messages.Resolve(MessageId.From("m1"), new(Aw.Meta.Core.Messages.MessageResolutionKind.Dismissed, "fyi"), CancellationToken.None);
-        _ = await _world.Messages.Resolve(MessageId.From("m2"), new(Aw.Meta.Core.Messages.MessageResolutionKind.Deferred, "later", _world.Clock.GetUtcNow().AddMinutes(30)), CancellationToken.None);
+        _ = await _world.Messages.Resolve(MessageId.From("m1"), new(Core.Messages.MessageResolutionKind.Dismissed, "fyi"), CancellationToken.None);
+        _ = await _world.Messages.Resolve(MessageId.From("m2"), new(Core.Messages.MessageResolutionKind.Deferred, "later", _world.Clock.GetUtcNow().AddMinutes(30)), CancellationToken.None);
 
         var snoozed = await Check();
         _world.Clock.Advance(TimeSpan.FromMinutes(31));

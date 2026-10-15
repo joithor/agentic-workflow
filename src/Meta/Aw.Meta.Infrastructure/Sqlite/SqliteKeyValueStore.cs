@@ -14,7 +14,7 @@ internal sealed class SqliteKeyValueStore(MetaDatabase database) : IKeyValueStor
             new SqlStatement("SELECT value FROM kv WHERE key = $key", c => c.Bind("$key", key), "kv " + key),
             r => r.GetString(0),
             cancellationToken).ConfigureAwait(false);
-        return rows.IsError ? rows.Error : Results.Success<string?>(rows.Value.Count == 0 ? null : rows.Value[0]);
+        return rows.IsError ? rows.Error : Results.Success(rows.Value.Count == 0 ? null : rows.Value[0]);
     }
 
     public ValueTask<Result<Unit>> Set(string key, string value, CancellationToken cancellationToken) =>
