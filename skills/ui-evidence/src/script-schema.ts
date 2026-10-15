@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ScriptLoginSchema } from "./login.js";
+import { parseStepTarget } from "./step-target.js";
 
 // A machine-checkable post-step expectation. Free-form prose can't be
 // asserted, so the planner must emit one of these shapes; runStep checks it
@@ -29,6 +30,10 @@ export const ScriptStepSchema = z
   .superRefine((step, ctx) => {
     if (step.index !== undefined && step.action !== "click" && step.action !== "fill" && step.action !== "scroll") {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["index"], message: "index is only allowed for click, fill and scroll steps" });
+    }
+    if (step.action === "click" || step.action === "fill") {
+      const parsed = parseStepTarget(step.target);
+      if ("error" in parsed) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["target"], message: parsed.error });
     }
     if (step.action === "scroll" && step.value !== undefined && !SCROLL_VALUE.test(step.value)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["value"], message: 'scroll value must be "end", "start", "bottom", "top" or a non-negative integer pixel offset' });
