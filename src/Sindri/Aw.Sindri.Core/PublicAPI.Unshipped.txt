@@ -3729,6 +3729,28 @@ static Aw.Sindri.Core.Health.HealthReport.operator ==(Aw.Sindri.Core.Health.Heal
 static Aw.Sindri.Core.Health.HealthSummary.For(bool running, Aw.Sindri.Core.Views.ViewsStatus! views, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! services, bool profileNeedsApproval, bool profileChanged) -> Aw.Sindri.Core.Health.HealthReport!
 Aw.Sindri.Core.Profile.ProfileCheck
 static Aw.Sindri.Core.Profile.ProfileCheck.Decide(Aw.Sindri.Core.Events.ProfileChecked? previous, Aw.Sindri.Core.Profile.LoadedProfile? approved, Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>! live, Aw.Sindri.Core.Ids.CommandId commandId) -> Aw.Sindri.Core.Events.ProfileChecked?
+Aw.Sindri.Core.Secrets.ISecretPointers
+Aw.Sindri.Core.Secrets.ISecretPointers.Resolve(Aw.Sindri.Core.Secrets.SecretPointer! secretPointer) -> Aw.Kernel.Result<string!>!
+Aw.Sindri.Core.Secrets.SecretPointer
+Aw.Sindri.Core.Secrets.SecretPointer.<Clone>$() -> Aw.Sindri.Core.Secrets.SecretPointer!
+Aw.Sindri.Core.Secrets.SecretPointer.Equals(Aw.Sindri.Core.Secrets.SecretPointer? other) -> bool
+Aw.Sindri.Core.Secrets.SecretPointer.Scheme.get -> Aw.Sindri.Core.Secrets.SecretScheme
+Aw.Sindri.Core.Secrets.SecretPointer.Target.get -> string!
+Aw.Sindri.Core.Secrets.SecretScheme
+Aw.Sindri.Core.Secrets.SecretScheme.Env = 1 -> Aw.Sindri.Core.Secrets.SecretScheme
+Aw.Sindri.Core.Secrets.SecretScheme.File = 2 -> Aw.Sindri.Core.Secrets.SecretScheme
+Aw.Sindri.Core.Secrets.SecretScheme.Keychain = 3 -> Aw.Sindri.Core.Secrets.SecretScheme
+Aw.Sindri.Core.Secrets.SecretScheme.OnePassword = 4 -> Aw.Sindri.Core.Secrets.SecretScheme
+override Aw.Sindri.Core.Secrets.SecretPointer.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Secrets.SecretPointer.GetHashCode() -> int
+override Aw.Sindri.Core.Secrets.SecretPointer.ToString() -> string!
+static Aw.Sindri.Core.Secrets.SecretPointer.IsPointer(string! name) -> bool
+static Aw.Sindri.Core.Secrets.SecretPointer.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Secrets.SecretPointer!>!
+static Aw.Sindri.Core.Secrets.SecretPointer.operator !=(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
+static Aw.Sindri.Core.Secrets.SecretPointer.operator ==(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.SecretFileUnsafe -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.SecretPointerInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.SecretUnresolved -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Challenges.ChallengeId
 Aw.Sindri.Core.Challenges.ChallengeId.ChallengeId() -> void
 Aw.Sindri.Core.Challenges.ChallengeId.Equals(Aw.Sindri.Core.Challenges.ChallengeId other) -> bool
