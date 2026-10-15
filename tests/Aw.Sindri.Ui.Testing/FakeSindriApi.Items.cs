@@ -29,6 +29,9 @@ internal sealed partial class FakeSindriApi
         [151] = RouteAnswer.SpecShaped("items-id-timeline", "page-2"),
     };
 
+    /// <summary>Held open until set: the queue read waits for it (the skeleton shows until the first answer).</summary>
+    public TaskCompletionSource? QueueGate { get; set; }
+
     /// <summary>Held open until set, per item id: that item's read waits for its gate (others answer at once).</summary>
     public Dictionary<string, TaskCompletionSource> ItemGates { get; } = new(StringComparer.Ordinal);
 
@@ -75,10 +78,15 @@ internal sealed partial class FakeSindriApi
         TimelinePages.TryGetValue(after, out var page) ? page
             : new RouteAnswer(System.Net.HttpStatusCode.OK, """{"entries":[],"next":null,"asOf":{"cursor":57,"ledgerHead":57,"projectedAt":null,"rebuilding":false,"stalled":false}}""");
 
-    public Task<Result<QueueView>> Queue(Uri api, CancellationToken cancellationToken)
+    public async Task<Result<QueueView>> Queue(Uri api, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _queueCalls);
-        return Task.FromResult(Answer<QueueView>(api, "/sindri/queue", QueueView));
+        if (QueueGate is { } gate)
+        {
+            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return Answer<QueueView>(api, "/sindri/queue", QueueView);
     }
 
     public async Task<Result<ItemView>> Item(Uri api, string itemId, CancellationToken cancellationToken)

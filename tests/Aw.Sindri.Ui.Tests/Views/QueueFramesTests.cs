@@ -150,7 +150,7 @@ public sealed class QueueFramesTests : IDisposable
     [Fact]
     public Task The_queue_is_skeleton_rows_until_its_first_answer() => OnUi(async () =>
     {
-        _server.QueueView = new RouteAnswer(System.Net.HttpStatusCode.ServiceUnavailable, "{}");
+        _server.QueueGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var (window, shell) = await Connected(s => s.State == ShellState.Normal);
         shell.GoTo(PageId.Queue);
         Settle(window);
@@ -247,7 +247,7 @@ public sealed class QueueFramesTests : IDisposable
         close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Until(window, () => shell.Item.HasProblem && shell.Item.Actions.Count == 0);
 
-        Assert.Same(Named<TextBlock>(window, "ItemTitle"), Focused(window));
+        Assert.Same(Named<TextBlock>(window, "SheetTitle"), Focused(window));
     });
 
     // L8: the accepted control stays while it shows its outcome, with focus; when it settles, focus moves to the title.
@@ -269,7 +269,7 @@ public sealed class QueueFramesTests : IDisposable
         _clock.Advance(Ui.ViewModels.Controls.ControlViewModel.AcceptedFor);
         Settle(window);
 
-        Assert.Same(Named<TextBlock>(window, "ItemTitle"), Focused(window));
+        Assert.Same(Named<TextBlock>(window, "SheetTitle"), Focused(window));
     });
 
     [Fact]

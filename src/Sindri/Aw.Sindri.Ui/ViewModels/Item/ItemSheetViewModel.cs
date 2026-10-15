@@ -16,6 +16,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private const string NotFound = "SND-ITEM-404";
 
     private readonly Dictionary<string, ControlViewModel> _controls = new(StringComparer.Ordinal);
+    private IReadOnlyList<string> _allowed = [];
     private Uri? _url;
     private bool _readProblem;
     private long _version;
@@ -100,7 +101,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     public string Announcement { get; private set => Set(ref field, value); } = Labels.Sindri;
 
     /// <summary>The item's actions that the catalog has, in the API's order.</summary>
-    public IReadOnlyList<ControlViewModel> Actions { get; private set => Set(ref field, value); } = [];
+    public ObservableCollection<ControlViewModel> Actions { get; } = [];
 
     /// <summary>True when the item has actions to show.</summary>
     public bool HasActions => Actions.Count > 0;
@@ -115,11 +116,13 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
 
     private void Show(ItemView item)
     {
+        var previous = _version;
         (HasItem, IsNotFound, IsStale, _version) = (true, false, false, item.Version);
         if (ProblemCode == NotFound || _readProblem)
         {
             _readProblem = false;
             Problem(string.Empty, string.Empty);
+            Rest();
         }
 
         (Title, Repo, StateWord, Step) = (item.Title, item.Repo ?? string.Empty, Labels.ItemState(item.State), item.Step ?? string.Empty);
@@ -129,15 +132,36 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
         OnChanged(nameof(HasWaitingOn));
         OnChanged(nameof(HasInstance));
         ShowActions(item.Actions);
+        CancelQuestions(previous, item.Version);
+    }
+
+    // corr-9: a question asked about one version is not answered for another; the human is asked again at the new one.
+    private void CancelQuestions(long previous, long current)
+    {
+        if (previous == current)
+        {
+            return;
+        }
+
+        foreach (var asking in _controls.Values.Where(c => c.IsConfirming))
+        {
+            asking.Keep();
+        }
     }
 
     private void Failed(Error error)
     {
         if (error.Code == NotFound)
         {
+            var first = ProblemCode != NotFound;
             (IsNotFound, HasItem) = (true, false);
             Problem(error.Code, error.Message);
             ShowActions([]);
+            if (first)
+            {
+                Say($"{error.Code}: {error.Message}");
+            }
+
             return;
         }
 
@@ -164,7 +188,11 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
         (Title, Repo, StateWord, VersionText, Age, Step, CreatedBy, WaitingOn, Instance) =
             (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         Timeline.Clear();
-        (Actions, Body, Link) = ([], string.Empty, string.Empty);
+        Actions.Clear();
+        OnChanged(nameof(HasActions));
+        (Body, Link) = (string.Empty, string.Empty);
+        _allowed = [];
         Problem(string.Empty, string.Empty);
+        Rest();
     }
 }

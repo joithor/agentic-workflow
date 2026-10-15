@@ -279,6 +279,9 @@
     <!-- The queue's polite region (§3.3): "ITM-… cleared" and "N new", live only while it speaks (the view model changes the flag first). -->
     <TextBlock x:Name="QueueLive" Classes="live-region" Classes.live="{Binding Queue.IsAnnouncing}" Text="{Binding Queue.Announcement}"
                Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
+    <!-- The item sheet's polite region (L8): the refusal a gone control leaves behind, spoken once; the flag changes before the text. -->
+    <TextBlock x:Name="ItemLive" Classes="live-region" Classes.live="{Binding Item.IsAnnouncing}" Text="{Binding Item.Announcement}"
+               Width="0" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
     <!-- The palette and the ? sheet (§8): layers over everything, shown by their view models; Esc closes the topmost. -->
     <Panel x:Name="PaletteLayer" IsVisible="{Binding Palette.IsOpen}">
       <root:CommandPalette x:Name="CommandPalette" DataContext="{Binding Palette}" />
