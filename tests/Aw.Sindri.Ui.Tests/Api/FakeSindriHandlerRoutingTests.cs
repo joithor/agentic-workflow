@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Theme;
@@ -11,10 +12,16 @@ public sealed class FakeSindriHandlerRoutingTests
 {
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
 
+    // Each row is a route a GET answers, read from the goldens on disk: only the method keeps a POST out.
+    public static TheoryData<string> ServedRoutes() =>
+    [
+        "instances",
+        "instances/" + (string)JsonNode.Parse(GoldenFiles.Api("workflow-instance", "project-build"))!["id"]!, // why: an instance golden has its id
+        "recipes/" + WorkflowAnswers.NamedRecipeGoldens.Values.First(),
+    ];
+
     [Theory]
-    [InlineData("instances")]
-    [InlineData("instances/WFI-b8af4435da648073ac3a2a152fab1f4b")]   // the project-build golden's id: a GET answers it, so only the method keeps a POST out
-    [InlineData("recipes/workflow.project")]
+    [MemberData(nameof(ServedRoutes))]
     public async Task A_post_under_the_workflow_routes_is_not_answered_as_a_read(string route)
     {
         using var http = new HttpClient(new FakeSindriHandler(new FakeSindriApi()));
