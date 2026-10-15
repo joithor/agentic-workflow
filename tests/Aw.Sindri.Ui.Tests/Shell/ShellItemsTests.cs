@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Queue;
 using Aw.Sindri.Ui.ViewModels;
@@ -243,11 +244,31 @@ public sealed class ShellItemsTests
         Assert.Equal(PageId.Decisions, shell.CurrentPage);
 
         _server.QueueView = QueueKeysTests.Without("extra-p11-running", selected);
-        _server.Push(A.Event(59, "item.updated"));
-        await Until(() => shell.Queue.Groups.SelectMany(g => g.Rows).All(r => r.Id != selected));
+        await shell.Queue.Refresh(new Uri("http://127.0.0.1:7410/"), Token);   // awaited here: an event's refresh would race the keys
 
         _ = shell.Press("G");
         _ = shell.Press("H");
         Assert.Equal((PageId.Home, false), (shell.CurrentPage, shell.Queue.IsGuarded));
+    }
+
+    // V3: a restored page without rows tells the queue (PageShown), so a row regrouped elsewhere keeps its selection, silently.
+    [Fact]
+    public async Task A_row_regrouped_while_the_restored_page_has_no_rows_keeps_its_selection_silently()
+    {
+        var store = new InMemoryPreferencesStore();
+        await new Preferences(store).Update(_ => UiPreferences.Defaults with { LastPage = nameof(PageId.Decisions) });
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        _records.Write(A.Record());
+        var shell = new ShellViewModel(_records, _server, _clock, new Preferences(store), new FakeClipboard());
+        shell.Queue.Select(QueueKeysTests.Running(1), QueueScope.Home);
+        await shell.Restore(Token);
+        _ = shell.Run(Token);
+        await Until(() => shell.State == ShellState.Normal && shell.Queue.Total > 0);
+        Assert.Equal(PageId.Decisions, shell.CurrentPage);
+
+        _server.QueueView = QueueKeysTests.Regrouped("extra-p11-running", QueueKeysTests.Running(1), "waitingOnYou");
+        await shell.Queue.Refresh(new Uri("http://127.0.0.1:7410/"), Token);   // awaited here: an event's refresh would race the assertions
+
+        Assert.Equal((QueueKeysTests.Running(1), false, Labels.Sindri, false), (shell.Queue.SelectedId, shell.Queue.IsAnnouncing, shell.Queue.Announcement, shell.Queue.IsGuarded));
     }
 }

@@ -166,7 +166,7 @@ public sealed class ShellViewModelTests
         var shell = await Running(ShellState.Normal);
 
         await Until(() => shell.Pill.Text.StartsWith(Labels.Running, StringComparison.Ordinal));
-        Assert.Equal((true, false), (shell.Pill.Text.StartsWith(Labels.Running, StringComparison.Ordinal), shell.Health.Banner.IsShown));
+        Assert.Equal((ShellState.Normal, Labels.Running, false), (shell.State, shell.Pill.Word, shell.Health.Banner.IsShown));
     }
 
     [Fact]

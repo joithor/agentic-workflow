@@ -289,8 +289,8 @@ Mockups: `mockups/park-grant.html` (protected answer), `mockups/park-needs-answe
 
 - **Queue:** the four groups in the API's order (`waitingOnYou`, `withYou`, `running`, `queued`; API §3.6), each a
   collapsible section with its count; items within a group in the API's order. There is no parked group: a parked item
-  sits in Waiting on you and carries a "parked" badge, from its `state`. (The wire enum keeps `parked` only as a reserved
-  value the API never fills.) Each row: id, title, repo, state as a
+  sits in Waiting on you and carries a "parked" badge, from its `state`. The app keeps a heading for a `parked` group only as a
+  fallback; the API never sends one. Each row: id, title, repo, state as a
   word, step, agent (once launched), since, and the row's primary action from `actions`.
 - **Running** (Home's left panel, and the Queue page filtered by `G R`): the `running` group, with the step (`produce round 2/3`), the agent and where it runs ("Claude Code in
   Warp", "factory worker"), the budget line as text plus a thin `ink-subtle` bar, **Open ▾** and **Take over** (§6.2). **Attach** belongs to With-you rows
