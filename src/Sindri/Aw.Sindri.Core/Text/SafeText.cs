@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Aw.Sindri.Core.Text;
 
-/// <summary>The shared sanitizer (API spec \u00A73.6): text a view stores is scrubbed, then escaped so a terminal or the UI shows it as written, then cut to one line.</summary>
+/// <summary>The shared sanitizer (API spec \u00A73.6): text a view stores is scrubbed, then escaped so a terminal or the UI shows it as written, then cut to one line (a title, a timeline line; a body keeps its paragraphs, <see cref="CleanBlock"/>).</summary>
 public static class SafeText
 {
     private const char Ellipsis = '…';
@@ -62,19 +62,7 @@ public static class SafeText
             }
         }
 
-        var folded = line.ToString().Trim();
-        if (folded.Length <= max)
-        {
-            return folded;
-        }
-
-        var keep = max - 1;
-        if (keep > 0 && char.IsHighSurrogate(folded[keep - 1]))
-        {
-            keep--;
-        }
-
-        return folded[..keep] + Ellipsis;
+        return Cut(line.ToString().Trim(), max);
     }
 
     /// <summary>Scrubs, escapes and folds <paramref name="text"/> into one line of at most <paramref name="max"/> characters.</summary>
@@ -86,6 +74,34 @@ public static class SafeText
     {
         ArgumentNullException.ThrowIfNull(scrubber);
         return Line(Escape(scrubber.Scrub(text)), max);
+    }
+
+    /// <summary>Scrubs and escapes <paramref name="text"/> but keeps its line breaks and tabs (a body's paragraphs), trims its ends and cuts it to <paramref name="max"/> characters.</summary>
+    /// <param name="scrubber">The secret scrubber.</param>
+    /// <param name="text">The text.</param>
+    /// <param name="max">The most characters to keep, the '…' included.</param>
+    /// <returns>The clean block.</returns>
+    public static string CleanBlock(ITextScrubber scrubber, string text, int max)
+    {
+        ArgumentNullException.ThrowIfNull(scrubber);
+        ArgumentOutOfRangeException.ThrowIfLessThan(max, 1);
+        return Cut(Escape(scrubber.Scrub(text)).Trim(), max);
+    }
+
+    private static string Cut(string text, int max)
+    {
+        if (text.Length <= max)
+        {
+            return text;
+        }
+
+        var keep = max - 1;
+        if (keep > 0 && char.IsHighSurrogate(text[keep - 1]))
+        {
+            keep--;
+        }
+
+        return text[..keep] + Ellipsis;
     }
 
     private static string? Mark(Rune rune)

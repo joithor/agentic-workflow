@@ -11,7 +11,7 @@ namespace Aw.Sindri.Features.CloseItem;
 public sealed record CloseItemRequest(ItemRef Item, CloseReason Reason, long ItemVersion) : ICommand<CommandAccepted>, IClassifiedCommand
 {
     /// <inheritdoc/>
-    public string Variant => Reason == CloseReason.Cancelled ? "cancelled" : "done";
+    public string Variant => CloseReasons.Variant(Reason);
 
     /// <inheritdoc/>
     public bool CarriesProtectedFields => false;

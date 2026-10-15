@@ -64,7 +64,7 @@ internal sealed class ItemsProjection(EventFactory events, ITextScrubber scrubbe
             at,
             created.Link,
             Alias: null,
-            created.Body is null ? null : SafeText.Clean(scrubber, created.Body, BodyMax),
+            created.Body is null ? null : SafeText.CleanBlock(scrubber, created.Body, BodyMax),
             WaitingOn: null,
             Instance: null,
             created.Owner,

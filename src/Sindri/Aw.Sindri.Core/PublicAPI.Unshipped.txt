@@ -850,6 +850,7 @@ Aw.Sindri.Core.Items.TimelineLine
 Aw.Sindri.Core.Items.Vocabulary.CloseReason
 Aw.Sindri.Core.Items.Vocabulary.CloseReason.Cancelled = 1 -> Aw.Sindri.Core.Items.Vocabulary.CloseReason
 Aw.Sindri.Core.Items.Vocabulary.CloseReason.Done = 0 -> Aw.Sindri.Core.Items.Vocabulary.CloseReason
+Aw.Sindri.Core.Items.Vocabulary.CloseReasons
 Aw.Sindri.Core.Items.Vocabulary.ItemState
 Aw.Sindri.Core.Items.Vocabulary.ItemState.Cancelled = 8 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
 Aw.Sindri.Core.Items.Vocabulary.ItemState.Done = 7 -> Aw.Sindri.Core.Items.Vocabulary.ItemState
@@ -867,6 +868,8 @@ Aw.Sindri.Core.Items.Vocabulary.QueueGroup.Queued = 4 -> Aw.Sindri.Core.Items.Vo
 Aw.Sindri.Core.Items.Vocabulary.QueueGroup.Running = 3 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
 Aw.Sindri.Core.Items.Vocabulary.QueueGroup.WaitingOnYou = 0 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
 Aw.Sindri.Core.Items.Vocabulary.QueueGroup.WithYou = 1 -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup
+Aw.Sindri.Core.Items.Vocabulary.StrictEnumConverter<TEnum>
+Aw.Sindri.Core.Items.Vocabulary.StrictEnumConverter<TEnum>.StrictEnumConverter() -> void
 Aw.Sindri.Core.Lease.HeldLease
 Aw.Sindri.Core.Lease.HeldLease.Clear() -> void
 Aw.Sindri.Core.Lease.HeldLease.Current.get -> Aw.Sindri.Core.Lease.LeaseGrant?
@@ -5753,6 +5756,8 @@ static Aw.Sindri.Core.Items.ItemTimelineKeys.Of(string! item, long sequence) -> 
 static Aw.Sindri.Core.Items.QueueGroups.GroupOf(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> Aw.Sindri.Core.Items.Vocabulary.QueueGroup?
 static Aw.Sindri.Core.Items.QueueGroups.Order.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.Vocabulary.QueueGroup>!
 static Aw.Sindri.Core.Items.TimelineLine.For(Aw.Sindri.Core.Ledger.LedgerEvent! recorded, System.Text.Json.JsonSerializerOptions! json) -> string!
+static Aw.Sindri.Core.Items.Vocabulary.CloseReasons.TryTarget(Aw.Sindri.Core.Items.Vocabulary.CloseReason reason, out Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> bool
+static Aw.Sindri.Core.Items.Vocabulary.CloseReasons.Variant(Aw.Sindri.Core.Items.Vocabulary.CloseReason reason) -> string!
 static Aw.Sindri.Core.Items.Vocabulary.ItemStateNames.Of(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> string!
 static Aw.Sindri.Core.Lease.LeaseDecision.Acquire(Aw.Sindri.Core.Lease.LeaseRow? row, Aw.Sindri.Core.Lease.LeaseHolder! candidate, System.DateTimeOffset now, Aw.Sindri.Core.Lease.HolderLiveness liveness) -> Aw.Kernel.Result<Aw.Sindri.Core.Lease.LeaseGrant!>!
 static Aw.Sindri.Core.Lease.LeaseDecision.Holds(Aw.Sindri.Core.Lease.LeaseRow? row, Aw.Sindri.Core.Lease.LeaseGrant! grant) -> bool
@@ -5828,6 +5833,7 @@ static Aw.Sindri.Core.Secrets.SecretPointer.operator !=(Aw.Sindri.Core.Secrets.S
 static Aw.Sindri.Core.Secrets.SecretPointer.operator ==(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
 static Aw.Sindri.Core.SindriErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Sindri.Core.Text.SafeText.Clean(Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! text, int max) -> string!
+static Aw.Sindri.Core.Text.SafeText.CleanBlock(Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! text, int max) -> string!
 static Aw.Sindri.Core.Text.SafeText.Escape(string! text) -> string!
 static Aw.Sindri.Core.Text.SafeText.Line(string! text, int max) -> string!
 static Aw.Sindri.Core.Views.AliasRow.operator !=(Aw.Sindri.Core.Views.AliasRow? left, Aw.Sindri.Core.Views.AliasRow? right) -> bool

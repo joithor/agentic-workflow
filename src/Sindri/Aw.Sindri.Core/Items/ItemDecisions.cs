@@ -19,6 +19,11 @@ public static class ItemDecisions
     public static Result<ItemStateChanged> Close(ItemRow item, CloseReason reason, long seenVersion, CommandId command)
     {
         ArgumentNullException.ThrowIfNull(item);
+        if (!CloseReasons.TryTarget(reason, out var to))
+        {
+            return SindriErrors.InvalidInput.With(string.Create(CultureInfo.InvariantCulture, $"{(int)reason} isn't a close reason (fix: done or cancelled)"));
+        }
+
         if (ItemStates.IsClosed(item.State))
         {
             return SindriErrors.ItemConflict.With($"{item.Id.Value} is already {ItemStateNames.Of(item.State)}");
@@ -29,7 +34,6 @@ public static class ItemDecisions
             return SindriErrors.ItemConflict.With(string.Create(CultureInfo.InvariantCulture, $"{item.Id.Value} changed since you looked: it is at version {item.Version}, you saw {seenVersion}"));
         }
 
-        var to = reason == CloseReason.Done ? ItemState.Done : ItemState.Cancelled;
         return new ItemStateChanged(command, item.Id, item.State, to, item.Version + 1, Reason: null);
     }
 }
