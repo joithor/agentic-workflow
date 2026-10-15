@@ -37,6 +37,23 @@ internal static class InstanceReads
             : WorkflowErrors.InstanceNotFound.With($"'{reference}' names no one instance (fix: sindri workflow list)");
     }
 
+    /// <summary>
+    /// The id for reading an instance's trail: <see cref="IdOf"/>, except that an address Temporal no longer knows (retention,
+    /// SND-WF-001) or can't answer for (no worker, SND-API-002) still names its ledger rows, whose reader needs no Temporal.
+    /// </summary>
+    /// <param name="desk">The API client.</param>
+    /// <param name="reference">The address or bare item.</param>
+    /// <param name="ct">Cancels the call.</param>
+    /// <returns>The id, or the error when the reference can't name an instance without Temporal.</returns>
+    internal static async Task<Result<WorkflowInstanceId>> IdForTrail(RecipeDesk desk, string reference, CancellationToken ct)
+    {
+        var resolved = await IdOf(desk, reference, ct).ConfigureAwait(false);
+        return resolved.IsError && InstanceAddress.TryFrom(reference, out var typed)
+            && (resolved.Error.Code == WorkflowErrors.InstanceNotFound.Code || resolved.Error.Code == SindriErrors.ApiTimeout.Code)
+            ? WorkflowInstanceId.Of(typed)
+            : resolved;
+    }
+
     /// <summary>A query never starts the control plane; when it is down the error says so.</summary>
     /// <param name="error">The error a call returned.</param>
     /// <returns>The error, prefixed 'not running: ' when it is SND-API-001.</returns>

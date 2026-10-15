@@ -22,7 +22,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="frontend">Finds the dev server serve keeps (Start, unit (b); Get, unit (e); the 'event' signal, unit (d)).</param>
 /// <param name="commands">The answer, command and cancel Updates (unit (b)).</param>
 /// <param name="settings">The task queue instances start on.</param>
-/// <param name="known">The ids this process has seen: every instance it starts or shows.</param>
+/// <param name="known">The ids this process has seen: every instance it starts or queries (a read cache for the id-to-address hop; it holds no instance state).</param>
 internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, TemporalDeskReports deskReports, TemporalCommands commands, TemporalSettings settings, KnownInstances known) : IInstanceRuntime
 {
     /// <summary>How long a Query waits for a worker to answer; past it, status says no worker answered.</summary>
@@ -88,7 +88,7 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
         }
     }
 
-    /// <summary>A start remembers the instance it shows (the directory finds its id); a read (Get) changes nothing.</summary>
+    /// <summary>A start remembers the instance it shows (the directory finds its id).</summary>
     private Result<InstanceView> Remembered(Result<InstanceView> view)
     {
         if (view.IsSuccess)
@@ -117,6 +117,7 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
             var view = await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value)
                 .QueryAsync(static wf => wf.GetInstance(), new WorkflowQueryOptions { Rpc = new RpcOptions { Timeout = QueryPatience, CancellationToken = cancellationToken } })
                 .ConfigureAwait(false);
+            known.Remember(address);   // a read cache for the id-to-address hop, not instance state
             return view;
         }
         catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal; says nothing about the instance
