@@ -207,6 +207,76 @@ public sealed class EvalRecipeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_deadline_line_on_a_park_state_fires_its_timeout_and_parks()
+    {
+        var response = await EvalTimed("park", ["""{"trigger":{"kind":"deadline"},"expect":{"state":"parked","park":"timeout"}}"""]);
+
+        Assert.Equal(["happy pass"], response.Cases.Select(c => c.ToLine()), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Two_deadline_lines_on_a_retry_state_stay_in_the_state_once_and_then_park()
+    {
+        var response = await EvalTimed("retry",
+        [
+            """{"trigger":{"kind":"deadline"},"expect":{"state":"waiting"}}""",
+            """{"trigger":{"kind":"deadline"},"expect":{"state":"parked","park":"timeout"}}""",
+        ]);
+
+        Assert.Equal(["happy pass"], response.Cases.Select(c => c.ToLine()), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_deadline_line_while_taken_over_fires_the_idle_reminder_and_changes_nothing()
+    {
+        var response = await EvalTimed("park",
+        [
+            """{"trigger":{"kind":"takeover","variant":"takeover"},"expect":{"state":"taken-over"}}""",
+            """{"trigger":{"kind":"deadline"},"expect":{"state":"taken-over"}}""",
+            """{"trigger":{"kind":"handback"},"expect":{"state":"waiting"}}""",
+        ]);
+
+        Assert.Equal(["happy pass"], response.Cases.Select(c => c.ToLine()), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_deadline_line_with_no_running_timer_fails_at_that_line()
+    {
+        var response = await EvalTimed("park",
+        [
+            """{"trigger":{"kind":"deadline"},"expect":{"state":"parked","park":"timeout"}}""",
+            """{"trigger":{"kind":"deadline"},"expect":{"state":"parked","park":"timeout"}}""",
+        ]);
+
+        var failed = response.Cases[0];
+        Assert.Equal((false, 3), (failed.Passed, failed.Line));
+        Assert.Contains("no running timer", failed.Detail, StringComparison.Ordinal);
+    }
+
+    /// <summary>Evals a wait state that times out after 10m with 'then: <paramref name="then"/>' over the given lines.</summary>
+    private async Task<EvalRecipeResponse> EvalTimed(string then, string[] lines)
+    {
+        const string recipe = "dev/workflow.timed.yaml";
+        _ = _files.With(recipe, string.Join('\n',
+        [
+            "schema: 1",
+            "id: workflow.timed",
+            "version: 1",
+            "initial: waiting",
+            "states:",
+            "  waiting: { kind: wait, waitFor: { event: item.routed }, timeout: { after: 10m, then: " + then + " },",
+            "             next: \"Waiting for the router to route {item}.\" }",
+            "  done:    { kind: terminal, outcome: resolved }",
+            "transitions:",
+            "  - { from: waiting, to: done, on: wait.satisfied }",
+            "evals: [evals/workflow.timed/happy.jsonl]",
+            string.Empty,
+        ]));
+        _ = _files.With("dev/evals/workflow.timed/happy.jsonl", AskStart + "\n" + string.Join('\n', lines) + "\n");
+        return await Eval(recipe);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_missing_eval_file_is_a_tool_error()
     {
         var files = new InMemoryRecipeFiles().With(Step, ShippedRecipes.Read(Step));

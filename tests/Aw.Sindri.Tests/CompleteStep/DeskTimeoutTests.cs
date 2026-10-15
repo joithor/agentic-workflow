@@ -30,7 +30,7 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
     public async Task Desk_timeout_never_retries()
     {
         var ct = TestContext.Current.CancellationToken;
-        var env = await TemporalServerFixture.Start(ServerKind.TimeSkipping);   // its own server: after the other test on the class's, the server's clock sits days ahead and the first skip can wait in wall clock
+        await using var env = await TemporalServerFixture.Start(ServerKind.TimeSkipping);   // its own server: after the other test on the class's, the server's clock sits days ahead and the first skip can wait in wall clock
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
         await RegisterAttributes(env);
@@ -66,7 +66,6 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
             await handle.TerminateAsync("test over");
             await stop.CancelAsync();
             _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => running);
-            await env.ShutdownAsync();
         }
     }
 

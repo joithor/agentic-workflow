@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Core.Events;
 
 /// <summary>
@@ -12,4 +14,12 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Outcome">The trigger's outcome.</param>
 /// <param name="Run">The run token.</param>
 /// <param name="Detail">The rest of the event's data; none for an event the interpreter mirrors without a decision.</param>
-public sealed record WorkflowEventPayload(string Instance, string From, string To, string Trigger, string? Outcome, string? Run, WorkflowEventDetail? Detail = null);
+public sealed record WorkflowEventPayload(string Instance, string From, string To, string Trigger, string? Outcome, string? Run, WorkflowEventDetail? Detail = null)
+{
+    /// <summary>
+    /// What caused the change when it isn't the trigger itself (engine P5; UI spec E-6, E-19): the launch request
+    /// ('LCH-…') an 'open-request' takeover, or a start taken over, answers. Not written when null.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Causation { get; init; }
+}

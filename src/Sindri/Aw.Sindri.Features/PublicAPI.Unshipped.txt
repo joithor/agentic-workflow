@@ -1485,3 +1485,5 @@ static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest.operator !=(Aw.Si
 static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest.operator ==(Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest? left, Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest? right) -> bool
 static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.operator !=(Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? left, Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? right) -> bool
 static Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse.operator ==(Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? left, Aw.Sindri.Features.ValidateRecipe.ValidateRecipeResponse? right) -> bool
+Aw.Sindri.Features.ApplyCommand.ApplyCommandKind.Takeover = 4 -> Aw.Sindri.Features.ApplyCommand.ApplyCommandKind
+Aw.Sindri.Features.ApplyCommand.ApplyCommandKind.Handback = 5 -> Aw.Sindri.Features.ApplyCommand.ApplyCommandKind

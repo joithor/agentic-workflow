@@ -62,6 +62,7 @@ public static class InstanceViews
             Answer = words.Answer(),
             Drift = words.Drift(),
             Budget = Budget(instance, recipe),
+            Paused = instance.Suspension is { Kind: SuspensionKind.Takeover, Remaining: { } paused } ? paused.Left : null,
         };
     }
 
