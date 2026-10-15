@@ -211,7 +211,7 @@ public sealed class StateTimerTests(SindriTimeSkippingServer server) : IClassFix
             Assert.Equal("-> checks", done.Happened);
 
             _ = await handle.ExecuteUpdateAsync(wf => wf.TakeoverAsync(new TakeoverRequested("human:cli", Stamp('1'))), new WorkflowUpdateOptions(new string('1', 32)));
-            await WorkflowsHarness.Skip(env, TimeSpan.FromDays(3), ct);   // past the desk timeout (2d): only 'takeoverIdle' (2h) may fire
+            await env.DelayAsync(TimeSpan.FromDays(3), ct);   // past the desk timeout (2d): only 'takeoverIdle' (2h) may fire
             var fired = (await handle.FetchHistoryAsync()).Events.Count(static e => e.EventType == EventType.TimerFired);
 
             Assert.Equal(1, fired);
