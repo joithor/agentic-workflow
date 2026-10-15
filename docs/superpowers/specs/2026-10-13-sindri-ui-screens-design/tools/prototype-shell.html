@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sindri</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+{{STYLE}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="layer"></div>
+<div id="chord" class="px-chord" aria-hidden="true"><kbd>G</kbd> …</div>
+<div id="live" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
+<aside id="proto" class="collapsed" aria-label="Prototype controls (not part of the app)">
+  <button id="protoToggle" class="ph2" aria-expanded="false" aria-controls="protoBody"><b>Prototype controls</b><span>(not part of the app)</span></button>
+  <div class="pb" id="protoBody">
+    <div class="lbl">Shared state</div>
+    <div class="states" id="connStates"></div>
+    <label><input type="checkbox" id="optRm"> Reduced motion</label>
+    <label for="optScale">Text scale <input type="range" id="optScale" min="0.9" max="1.3" step="0.1" value="1"> <span id="scaleVal">1.0</span></label>
+    <label><input type="checkbox" id="optLarge"> Large fixture (30 items, 12 need you)</label>
+    <button class="btn sm reset" id="optReset">Reset</button>
+  </div>
+</aside>
+<script>
+{{SCRIPT}}
+</script>
+</body>
+</html>

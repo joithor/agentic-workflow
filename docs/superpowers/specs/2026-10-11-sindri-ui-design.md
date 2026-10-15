@@ -1,6 +1,7 @@
 # Sindri UI app design: the control plane's views, actions and launching sessions
 
 Status:
+- **Revision 8 note (owner session, 2026-10-13):** the app's contents were re-evaluated around five questions. `2026-10-13-sindri-ui-screens-design.md` supersedes this spec's §3, §4.2–§4.8, §10, §16, §18 and §19 with seven pages (Home · Workflows · Work · Recipes · Context · Agents · System), a recipe-driven instance frame, the context lens stack and phases U3', U5', U8–U13. Everything else here stands and is referenced from there.
 - **Revision 7 amendment (owner, 2026-10-12; PR #184):** §12.4 lists two more app-owned sentences, "On in your system
   settings" (Settings, while the OS reduces motion) and "Looks again every 2 s" (the Not running card); §15's deps cycle
   row is decided (a `DEPS-CYCLE-001` exception). Lane decisions relayed by the orchestrator (2026-10-12): §7 and §18.1
