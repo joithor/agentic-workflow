@@ -15,7 +15,7 @@ namespace Aw.Sindri.Ui.Tests.Palette;
 /// (Rebuild views, Stop Sindri, Health); fuzzy matching on labels and ids; ↑/↓, Enter, Esc; the history of entries run.
 /// </summary>
 [Lane(TestLane.Unit)]
-public sealed class CommandPaletteViewModelTests
+public sealed partial class CommandPaletteViewModelTests
 {
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
     private readonly FakeTimeProvider _clock = new(A.Noon);
