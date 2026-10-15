@@ -86,7 +86,7 @@ internal static class GraphAnswer
         var provenances = affected.Edges.Select(e => e.Provenance).Concat(onPath).ToList();
         var provenance = provenances.Contains(Provenance.Model) ? Provenance.Model : provenances.Contains(Provenance.Deterministic) ? Provenance.Deterministic : Provenance.Human;
         var confirmed = provenances.TrueForAll(p => p == Provenance.Human);
-        var trust = node.Key.Kind == NodeKind.Record ? Trust.Untrusted : TrustPolicy.For(provenance, confirmed);   // a record's title stays fenced however trusted its path
+        var trust = TrustPolicy.ForNode(node.Key.Kind, provenance, confirmed);   // the cascade never reaches a record today (Cascade.Steps ends at one), so this is the rule for the day it does; a record's title stays fenced however trusted its path
         var fact = text.Fact(node);
         var path = affected.Path.Select(text.Line).ToList();
         var item = Item(fact with { Label = trust == fact.Trust ? fact.Label : text.Label(node.Label, trust) }, text: null, (provenance, confirmed, trust),

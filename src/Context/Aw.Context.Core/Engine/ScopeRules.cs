@@ -27,9 +27,7 @@ public static class ScopeRules
                 $"context.repos: '{unknown[0]}' is not a profile repo (repos: {string.Join(", ", repos.Select(r => r.Name.Value))})");
         }
 
-        var mapped = settings.Repos is { } names
-            ? repos.Where(r => names.Contains(r.Name)).ToList()
-            : [.. repos];
+        var mapped = Mapped(settings, repos).ToList();
         if (caller.Kind != ContextCallerKind.Session)
         {
             return mapped;
@@ -45,6 +43,17 @@ public static class ScopeRules
         return own.Count == 1
             ? own
             : ContextErrors.UnknownAnchor.With("no context is mapped for this session's repo (X-Sindri-Repo)");
+    }
+
+    /// <summary>The repos the map is built from and maps: <c xml:lang="en">context.repos</c> narrows the profile's, whoever asks.</summary>
+    /// <param name="settings">The checked settings.</param>
+    /// <param name="repos">The profile's repos.</param>
+    /// <returns>The mapped repos, in profile order.</returns>
+    public static IReadOnlyList<ContextRepo> Mapped(ContextSettings settings, IReadOnlyList<ContextRepo> repos)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(repos);
+        return settings.Repos is { } names ? [.. repos.Where(r => names.Contains(r.Name))] : [.. repos];
     }
 
     /// <summary>

@@ -367,7 +367,10 @@ $SINDRI context map export [<name-or-path>] [--json]
   `mention` one and the records those decisions quote. Record titles and decision quotes reach a session inside the
   `<untrusted>` fence, and every text is scrubbed in the read answers. A record or decision linked only to nodes
   outside the repo answers `SND-CONTEXT-003`. A repo that implements nothing in the map answers `SND-CONTEXT-003`.
-  The deny globs of every profile repo apply to a session too, not only its own repo's, and whatever `context.repos` narrows the map to. A session can't export the
+  The deny globs of every profile repo apply to a session too, not only its own repo's, and whatever `context.repos`
+  narrows the map to: a record key (`record:repo:<name>/…`) and an evidence ref name their repo and are judged by the
+  globs of every profile repo, but a `code:` key names no repo, so only the globs of the repos the map is built from
+  (`context.repos`, else all) judge it; another repo's glob never hides this repo's file. A session can't export the
   map (`SND-CONTEXT-020`): the file is not scrubbed and now holds the linked work text.
 - No map yet: `SND-CONTEXT-030` (fix: `sindri context map import <file>`).
 

@@ -485,7 +485,7 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-006` | The question itself is invalid (empty, two shapes, a value out of range, neighbors depth outside 0 to 4) | Fix the question |
 | `SND-CONTEXT-010` | A source is unavailable (degraded, not fatal) | `context sources status` |
 | `SND-CONTEXT-011` | **Every** source is unavailable (exit 2, not "no results") | `context sources status`; start Onyx or check the repos |
-| `SND-CONTEXT-020` | MCP is disabled (`context.sessions.enabled: false`); the `context_*` tools answer this code and `context sources status` says so | Enable it in the profile and approve |
+| `SND-CONTEXT-020` | MCP is disabled (`context.sessions.enabled: false`); the `context_*` tools answer this code and `context sources status` says so. A session's map export answers it too, whatever the setting | Enable it in the profile and approve; export the map as a human |
 | `SND-CONTEXT-030` | No map yet | `context map import <file>` (`context map build` once API P6 lands) |
 | `SND-CONTEXT-031` | The map file is invalid (schema version, shape, an unknown kind or a disallowed edge); the key path is given and nothing was written (exit 1) | Fix the file at that key path |
 | `SND-CONTEXT-032` | The map file refers to a node it doesn't define (an edge end, an alias target, a decided node); nothing was written (exit 1) | Define the node or fix the reference |

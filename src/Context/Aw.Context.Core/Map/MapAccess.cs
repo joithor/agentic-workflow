@@ -44,9 +44,9 @@ public static class MapAccess
             return repos.Error;
         }
 
-        // Whoever asks, every profile repo's deny globs apply, not just the ones context.repos maps: the snapshot is global, so a session in repo A must not reach a document repo B denies (review #234 runs 1 and 2).
+        // Whoever asks, every profile repo's deny globs judge record keys and evidence refs (they name their repo), not just the ones context.repos maps; a code: key names no repo, so only the mapped repos' globs judge it: the snapshot is global, so a session in repo A must not reach a document repo B denies (review #234 runs 1 and 2).
         // The resolved repos are for the gate and the session's scope step only.
-        var cut = DenyCut.Of(graph, overrides, scope.Repos);   // every override, pending or not: what is hidden doesn't depend on which reader asks
+        var cut = DenyCut.Of(graph, overrides, scope.Repos, ScopeRules.Mapped(settings.Value, scope.Repos));   // every override, pending or not: what is hidden doesn't depend on which reader asks
         var (cutGraph, cutOverrides) = (cut.Apply(graph), cut.Apply(overrides));
         var applied = OverrideApplier.Apply(cutGraph, pending ? cutOverrides : [.. cutOverrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
         var view = new MapView(cutGraph, applied, cutOverrides, cut);
@@ -112,15 +112,17 @@ public static class MapAccess
     /// </summary>
     /// <param name="current">The current graph.</param>
     /// <param name="overrides">Every override.</param>
-    /// <param name="built">The repos whose deny globs apply.</param>
+    /// <param name="profile">Every profile repo: their deny globs judge record keys and evidence refs.</param>
+    /// <param name="mapped">The repos the map is built from: only their deny globs judge a <c xml:lang="en">code:</c> key.</param>
     /// <param name="at">When the build runs.</param>
     /// <returns>The graph itself and no rows when nothing is denied.</returns>
-    public static (GraphSnapshot Graph, IReadOnlyList<MapOverride> Undo) WithoutDenied(GraphSnapshot current, IReadOnlyList<MapOverride> overrides, IReadOnlyList<ContextRepo> built, DateTimeOffset at)
+    public static (GraphSnapshot Graph, IReadOnlyList<MapOverride> Undo) WithoutDenied(GraphSnapshot current, IReadOnlyList<MapOverride> overrides, IReadOnlyList<ContextRepo> profile, IReadOnlyList<ContextRepo> mapped, DateTimeOffset at)
     {
         ArgumentNullException.ThrowIfNull(current);
         ArgumentNullException.ThrowIfNull(overrides);
-        ArgumentNullException.ThrowIfNull(built);
-        var cut = DenyCut.Of(current, overrides, built);
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(mapped);
+        var cut = DenyCut.Of(current, overrides, profile, mapped);
         return (cut.Apply(current), cut.UndoRows(overrides, at));
     }
 

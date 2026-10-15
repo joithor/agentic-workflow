@@ -51,9 +51,15 @@ public sealed class BuildMapDenyAcrossReposTests : IDisposable
         _world.Clusters.Set = new ClusterSet([new FileCluster(ClusterId.From("c1"), ["src/commands/ids.ts", "src/commands/registry.ts"], 0.7)], Available: true);
         _ = await _world.Map.BuildMap(progress: null, MapWorld.HumanWith(MapWorld.OnlyFixtureRepo), MapWorld.None);
         var feature = (await _world.Store.Snapshot(draft: true, MapWorld.None)).Value!.Graph.Nodes.First(n => n.Key.Kind == NodeKind.Feature && n.Provenance == Provenance.Model).Key;
-        var accepted = await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.Accept, feature), MapWorld.Human, MapWorld.None);
-        Assert.True(accepted.IsSuccess, accepted.IsError ? accepted.Error.Message : null);
-        _ = await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.AcceptDeterministic), MapWorld.Human, MapWorld.None);
+        var rest = await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.AcceptDeterministic), MapWorld.Human, MapWorld.None);
+        Assert.True(rest.IsSuccess, rest.IsError ? rest.Error.Message : null);
+        var queue = (await _world.Map.ReviewQueue(limit: null, MapWorld.HumanWith(MapWorld.OnlyFixtureRepo), MapWorld.None)).Value;
+        foreach (var entry in queue.Entries)
+        {
+            var accepted = await _world.Map.ApplyReview(entry.Link is { } link ? new ReviewDecision(ReviewVerb.Accept, Link: link) : new ReviewDecision(ReviewVerb.Accept, entry.Node), MapWorld.Human, MapWorld.None);
+            Assert.True(accepted.IsSuccess, accepted.IsError ? accepted.Error.Message : null);
+        }
+
         var promoted = await _world.Map.Promote(MapWorld.Human, MapWorld.None);
         Assert.True(promoted.IsSuccess, promoted.IsError ? promoted.Error.Message : null);
 

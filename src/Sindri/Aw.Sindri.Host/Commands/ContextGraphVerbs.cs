@@ -29,7 +29,7 @@ internal sealed class ContextGraphVerbs(ControlPlaneClient client, Output output
         var answer = await client.Get<NodeView>("/sindri/context/node?key=" + Uri.EscapeDataString(key), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text(ContextGraphText.Node(answer.Value.Value), 0).ConfigureAwait(false);
+            : await output.Text(ContextGraphText.Node(answer.Value.Value, fence: client.SessionReason is null), 0).ConfigureAwait(false);
     }
 
     private async Task<int> Neighbors(string key, (string? Depth, bool Json) options, CancellationToken ct)
@@ -38,7 +38,7 @@ internal sealed class ContextGraphVerbs(ControlPlaneClient client, Output output
         var answer = await client.Get<NeighborsView>("/sindri/context/neighbors?key=" + Uri.EscapeDataString(key) + depth, ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : options.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text(ContextGraphText.Neighbors(answer.Value.Value), 0).ConfigureAwait(false);
+            : await output.Text(ContextGraphText.Neighbors(answer.Value.Value, fence: client.SessionReason is null), 0).ConfigureAwait(false);
     }
 
     private async Task<int> Path(string from, string to, bool json, CancellationToken ct)
@@ -46,7 +46,7 @@ internal sealed class ContextGraphVerbs(ControlPlaneClient client, Output output
         var answer = await client.Get<PathView>($"/sindri/context/path?from={Uri.EscapeDataString(from)}&to={Uri.EscapeDataString(to)}", ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text(ContextGraphText.Path(answer.Value.Value), 0).ConfigureAwait(false);
+            : await output.Text(ContextGraphText.Path(answer.Value.Value, fence: client.SessionReason is null), 0).ConfigureAwait(false);
     }
 
     private async Task<int> Failed(Kernel.Error error)

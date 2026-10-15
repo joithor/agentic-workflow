@@ -19,6 +19,14 @@ public static class TrustPolicy
     public static Results.Trust ForNode(GraphNode node, bool accepted)
     {
         ArgumentNullException.ThrowIfNull(node);
-        return node.Key.Kind == NodeKind.Record ? Results.Trust.Untrusted : For(node.Provenance, accepted);
+        return ForNode(node.Key.Kind, node.Provenance, accepted);
     }
+
+    /// <summary>The trust of a node known by its kind and the provenance of what led to it (a cascade's path): a record's title is untrusted whoever imported it; any other kind follows <see cref="For"/>.</summary>
+    /// <param name="kind">The node's kind.</param>
+    /// <param name="provenance">Who produced it.</param>
+    /// <param name="accepted">Whether a human accepted it.</param>
+    /// <returns>Its trust.</returns>
+    public static Results.Trust ForNode(NodeKind kind, Provenance provenance, bool accepted) =>
+        kind == NodeKind.Record ? Results.Trust.Untrusted : For(provenance, accepted);
 }
