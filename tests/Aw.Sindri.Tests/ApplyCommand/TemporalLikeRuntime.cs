@@ -33,6 +33,9 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
 
     public int Gets { get; private set; }
 
+    /// <summary>What the approval check answers (Holds unless a test says otherwise).</summary>
+    public ApprovalCheck Approval { get; set; } = ApprovalCheck.Holds;
+
     /// <summary>Every nonce a Send used, in order.</summary>
     public IReadOnlyList<CommandNonce> Sent => _sent;
 
@@ -119,7 +122,7 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
         throw new NotSupportedException("not asked by these tests");
 
     public ValueTask<Result<ApprovalCheck>> Check(RecipeVersion recipe, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<ApprovalCheck>>(ApprovalCheck.Holds);
+        ValueTask.FromResult<Result<ApprovalCheck>>(Approval);
 
     public IDisposable Enter(CallerContext context) => throw new NotSupportedException("the caller is fixed");
 

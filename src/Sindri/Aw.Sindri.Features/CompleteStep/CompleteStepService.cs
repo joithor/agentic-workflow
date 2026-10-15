@@ -22,10 +22,11 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// </summary>
 /// <param name="directory">Resolves the instance the request names.</param>
 /// <param name="runtime">The instances on Temporal.</param>
+/// <param name="recipes">The approval check (spec §5.2: complete is not exempt).</param>
 /// <param name="facts">Where the outputs are stored.</param>
 /// <param name="nonces">The nonce table.</param>
 /// <param name="callers">The caller the API chain classed: its actor reports.</param>
-internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers)
+internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers)
     : IService<CompleteStepRequest, CompleteStepResponse>
 {
     public async ValueTask<Result<CompleteStepResponse>> Handle(CompleteStepRequest request, CancellationToken cancellationToken)
@@ -58,6 +59,8 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return claim.Error;
         }
 
+        _ = await runtime.Get(address, cancellationToken).ConfigureAwait(false);   // red stub: the approval check comes here
+        _ = recipes;
         var stored = await Store(request, cancellationToken).ConfigureAwait(false);
         if (stored.IsError)
         {
