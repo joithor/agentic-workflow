@@ -497,6 +497,8 @@ blocks.
 
 ## Errors
 
+**Extension members (RFC 9457 §3.2).** A slice may attach typed members to its `Error` with `error.WithExtension(name, value, typeInfo)` (or a `JsonElement` built with its own source-generated type info; `Aw.Kernel.ErrorExtensions`). The names are camelCase, at most 64 characters and not `type`, `title`, `status`, `detail`, `instance` or `traceId` (a bad or repeated name throws `ArgumentException`: a bug in the slice). `HttpResults.Problem` writes them as top-level members of the ProblemDetails body in the order attached, after the standard ones (ASP.NET's `traceId` follows), and cleans every string in them (values, and member names inside objects) with `SafeText.Clean`: scrubbed, escaped, one line, at most 200 characters; sessions and the human get the same body. An error without extensions answers byte for byte as before. The writer caps each array at 100 items and ends it with a `"…(N more)"` string item, and gives object member names that clean to the same text a `~2`, `~3` suffix; a slice should still bound its own lists. The middleware refusals that carry an `Error` (read-your-writes, caller context) go through `ApiProblems.Write(context, error, status)` and carry them too. The CLI (`Output.Error`) and the UI client (`SindriApiClient.Refusal`) ignore them and use the code and message. Each code that uses them lists the members in its row below. Not carried over MCP tool errors or the event stream's 400 yet.
+
 | Code | When |
 |---|---|
 | `SND-LEASE-001` | Another live process holds the lease |
