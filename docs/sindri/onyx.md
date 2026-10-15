@@ -19,11 +19,16 @@ cd ~/onyx/deployment/docker_compose
 cp env.template .env
 ```
 
-In `.env` set:
+In `.env` set (v4.9.0's API server refuses to start while `USER_AUTH_SECRET` is empty), then make the file yours only:
 
 ```bash
 IMAGE_TAG=v4.9.0
 DISABLE_TELEMETRY=true
+USER_AUTH_SECRET=<the output of: openssl rand -hex 32>
+```
+
+```bash
+chmod 600 .env
 ```
 
 The profile records the same tag (`context.sources.onyx.version`), and `$SINDRI doctor` (`context:onyx`) compares it with
@@ -48,6 +53,36 @@ Leave every other service's `ports:` commented out, as shipped. Start it:
 docker compose up -d
 lsof -nP -iTCP:3000 -sTCP:LISTEN     # must show 127.0.0.1:3000 only
 ```
+
+### A one-user dev box (optional)
+
+The stock compose file sizes Onyx for a team. On a single-user dev machine, these settings keep it near 4.6 GB of
+container memory (about 6 GB on the host with Docker Desktop's VM capped at 6 GB) and change nothing Sindri uses. Put
+them in the same `docker-compose.override.yml` as §2's port binding:
+
+```yaml
+services:
+  opensearch:
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"      # stock: 2g
+    mem_limit: 2g
+  indexing_model_server:
+    profiles: ["indexing-model-server"]           # not started: the inference server also indexes (below)
+  code-interpreter:
+    profiles: ["code-interpreter"]                # not started: Sindri doesn't use it
+  background:
+    depends_on:
+      indexing_model_server: { condition: service_started, required: false }
+    environment:
+      - CELERY_WORKER_DOCFETCHING_CONCURRENCY=1
+      - CELERY_WORKER_DOCPROCESSING_CONCURRENCY=1
+      - CELERY_WORKER_LIGHT_CONCURRENCY=1
+```
+
+and in `.env`, `INDEXING_MODEL_SERVER_HOST=inference_model_server` (the API server and the background workers both
+read it). The background container also runs Onyx's Slack and Discord bots, which Sindri doesn't need. To keep them
+from starting, copy its `/etc/supervisor/conf.d/supervisord.conf` out, add `autostart=false` under
+`[program:slack_bot]` and `[program:discord_bot]`, and mount the copy over the original (read-only) in the override.
 
 ## 3. Keep models local
 
