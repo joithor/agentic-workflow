@@ -288,6 +288,28 @@ public sealed class QueueFocusTests : IDisposable
         await Until(window, () => !shell.IsSheetShown && OnRowFrame(window, opener));
     });
 
+    // a11y-2: the opener row cleared while the sheet was open: Esc focuses the row the selection moved to, not the page region.
+    [Fact]
+    public Task Esc_after_the_opener_row_cleared_returns_focus_to_the_row_the_selection_moved_to() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(width: 1000);
+        shell.GoTo(PageId.Queue);
+        Settle(window);
+        window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
+        await Until(window, () => shell.Queue.SelectedId is not null && FocusedRowId(window) == shell.Queue.SelectedId);
+        var opener = shell.Queue.SelectedId!;
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        await Until(window, () => shell.IsSheetShown && string.Equals(Focused(window)?.Name, "SheetTitle", StringComparison.Ordinal));
+
+        const string successor = "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a3ff";
+        _server.QueueView = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("queue", "fixture").Replace(opener, successor, StringComparison.Ordinal));
+        _server.Push(A.Event(58, "item.state-changed"));
+        await Until(window, () => shell.Queue.SelectedId == successor);
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        await Until(window, () => !shell.IsSheetShown && OnRowFrame(window, successor), "Esc did not focus the successor row");
+    });
+
     // L5: beside the page (wide window) the same: Esc from inside the sheet returns to the opening row.
     [Fact]
     public Task Esc_from_the_beside_sheet_returns_focus_to_the_row_that_opened_it() => OnUi(async () =>
