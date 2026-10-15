@@ -106,7 +106,7 @@ public sealed class EffectSettingsTests
 
         Assert.False(loaded.IsError, loaded.IsError ? loaded.Error.Message : null);
         var settings = EffectSettings.Of(loaded.Value.Profile);
-        Assert.Equal(new HashSet<BlockId> { BlockId.From("effect.notify.desk") }, settings.Allowlist);
+        Assert.Equal(new HashSet<BlockId> { BlockId.From("effect.notify.desk"), BlockId.From("effect.claim.ref") }, settings.Allowlist);
         Assert.Equal(TimeSpan.FromSeconds(60), settings.DispatchDelay);
     }
 

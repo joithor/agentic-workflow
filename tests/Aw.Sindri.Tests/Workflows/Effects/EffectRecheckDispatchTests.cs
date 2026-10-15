@@ -163,29 +163,30 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
     [Fact]
     public async Task A_drift_reapproval_wakes_the_parked_instance_and_resends_the_refused_effect()
     {
-        var env = server.Environment;
+        var window = TimeSpan.FromSeconds(5);   // the profile's shortest dispatch delay: the dev server runs in real time, and the wake finds the instance through its visibility store, which the time-skipping server lacks
+        await using var env = await WorkflowsHarness.StartDevServer(ct: Token);
         var recipe = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
-        await Allow(_notify);
-        await using var sindri = Sindri();
+        await Allow("5s", _notify);
+        await using var sindri = Sindri(env);
         await WorkflowsHarness.HoldLease(sindri, Token);
         using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
 
         await worker.ExecuteAsync(async () =>
         {
             _ = await WorkflowsHarness.AsServe(sindri, env, Token);
-            var handle = await Completed(sindri, "T-96");
-            await Armed(handle, timers: 1);
+            var handle = await Completed(sindri, "T-96", env);
+            await Armed(handle, timers: 1, window);
             var original = await Pins(sindri, recipe);
             await Drift(sindri, recipe);
-            await env.DelayAsync(_delay + TimeSpan.FromSeconds(1), Token);
+            await Task.Delay(window + TimeSpan.FromSeconds(1), Token);
             var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
 
-            await Pins(sindri, recipe, original);   // the re-approval: the pins match this build again
+            _ = await Pins(sindri, recipe, original);   // the re-approval: the pins match this build again
             var woken = await sindri.GetRequiredService<IRecipeWake>().Wake(new RecipeWakeNotice(recipe.Hash, RecipeWakeKind.Approved, Sequence: 99, "human:cli"), Token);
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "sent");
-            await Armed(handle, timers: 2);
-            await env.DelayAsync(_delay + TimeSpan.FromSeconds(1), Token);
+            await Armed(handle, timers: 2, window);
+            await Task.Delay(window + TimeSpan.FromSeconds(1), Token);
             var dispatched = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Dispatched, CommandOrigin.Recipe));
 
             Assert.True(woken.IsSuccess);
@@ -227,18 +228,20 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
     }
 
     /// <summary>The host over the harness home, with the fake desk block and <see cref="_profiles"/> as the approved profile.</summary>
-    private ServiceProvider Sindri() => _harness.Sindri(
+    private ServiceProvider Sindri(WorkflowEnvironment? on = null) => _harness.Sindri(
         services =>
         {
             _desk.Replace(services);
             _ = services.AddSingleton<IApprovedProfile>(_profiles);
         },
-        name => name == "AW_SINDRI_TEMPORAL_NAMESPACE" ? server.Environment.Client.Options.Namespace : null);   // the registry's wake signals in the server's namespace
+        name => name == "AW_SINDRI_TEMPORAL_NAMESPACE" ? (on ?? server.Environment).Client.Options.Namespace : null);   // the registry's wake signals in the server's namespace
 
     /// <summary>Approves a profile whose 'workflow.effects' lists <paramref name="kinds"/> (none: no allowlist at all).</summary>
-    private async Task Allow(params BlockId[] kinds)
+    private Task Allow(params BlockId[] kinds) => Allow(delay: null, kinds);
+
+    private async Task Allow(string? delay, params BlockId[] kinds)
     {
-        var workflow = kinds.Length == 0 ? null : new WorkflowSettings(Effects: [.. kinds.Select(static k => k.Value)]);
+        var workflow = kinds.Length == 0 ? null : new WorkflowSettings(Effects: [.. kinds.Select(static k => k.Value)], DispatchDelay: delay);
         var profile = new SindriProfile(SindriProfile.CurrentSchemaVersion, "tester", Workflow: workflow);
         var saved = await _profiles.Save(new LoadedProfile(profile, ProfileHash.From(new string((char)('a' + kinds.Length), 64)), "/home/profile.yaml"), Token);
         Assert.False(saved.IsError);
@@ -256,9 +259,9 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
     }
 
     /// <summary>Starts 'workflow.dev-notify' on <paramref name="item"/> and completes its desk Step: 'ask -> sent' with 'effect.notify.desk'.</summary>
-    private async Task<WorkflowHandle<RecipeWorkflow, RecipeResult>> Completed(IServiceProvider sindri, string item)
+    private async Task<WorkflowHandle<RecipeWorkflow, RecipeResult>> Completed(IServiceProvider sindri, string item, WorkflowEnvironment? on = null)
     {
-        var handle = await WorkflowsHarness.Start(server.Environment.Client, await WorkflowsHarness.RecipeStart(sindri, "workflow.dev-notify", item, Token));
+        var handle = await WorkflowsHarness.Start((on ?? server.Environment).Client, await WorkflowsHarness.RecipeStart(sindri, "workflow.dev-notify", item, Token));
         _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
         var report = new StepCompleted("human:cli", RunToken.From("1.1"), OutcomeName.From("done"),
             new Dictionary<FactKey, FactValue> { [FactKey.From("fact:output")] = _harness.Fact("Hello.") }, Tokens: 0, StepRuntime.Desk, new string('f', 64));
@@ -268,13 +271,15 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
     }
 
     /// <summary>Waits until the instance's history has <paramref name="timers"/> dispatch-delay timers (each follows a pending row).</summary>
-    private static async Task Armed(WorkflowHandle handle, int timers)
+    private static Task Armed(WorkflowHandle handle, int timers) => Armed(handle, timers, _delay);
+
+    private static async Task Armed(WorkflowHandle handle, int timers, TimeSpan delay)
     {
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
         while (DateTime.UtcNow < deadline)
         {
             var started = (await handle.FetchHistoryAsync()).Events
-                .Count(static e => e.EventType == EventType.TimerStarted && e.TimerStartedEventAttributes.StartToFireTimeout.ToTimeSpan() == _delay);
+                .Count(e => e.EventType == EventType.TimerStarted && e.TimerStartedEventAttributes.StartToFireTimeout.ToTimeSpan() == delay);
             if (started >= timers)
             {
                 return;

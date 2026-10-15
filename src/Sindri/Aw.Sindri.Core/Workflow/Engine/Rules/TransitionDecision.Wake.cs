@@ -19,6 +19,11 @@ public static partial class TransitionDecision
             return new Absorbed(d.Key, $"{instance.Address.Value} has ended; the {wake.Name} wake has nothing to park or resume");
         }
 
+        if (wake.Kind == RecipeWakeKind.Revoked && instance.Suspension is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Revoked })
+        {
+            return new Absorbed(d.Key, "already parked for the revoke");   // Suspend rebuilds a revoke park, so the repeat is caught here
+        }
+
         return wake.Kind switch
         {
             RecipeWakeKind.Revoked => d.ChangedOrAbsorbed(

@@ -15,7 +15,7 @@ internal sealed class FakeDeskEffect : IEffectKind
     private readonly List<EffectContext> _calls = [];
     private readonly HashSet<string> _performed = new(StringComparer.Ordinal);
 
-    /// <summary>When set, every dispatch fails with it (a setup the effect can't run in) instead of performing the effect.</summary>
+    /// <summary>When set, every recipe effect's dispatch fails with it (a setup the effect can't run in) instead of performing the effect; the engine's own notices still go through.</summary>
     public Error? Failure { get; set; }
 
     /// <summary>Every dispatch, in order.</summary>
@@ -58,7 +58,7 @@ internal sealed class FakeDeskEffect : IEffectKind
         lock (_gate)
         {
             _calls.Add(context);
-            if (Failure is { } failure)
+            if (Failure is { } failure && !context.FromEngine)
             {
                 return ValueTask.FromResult<Result<EffectDone>>(failure);
             }
