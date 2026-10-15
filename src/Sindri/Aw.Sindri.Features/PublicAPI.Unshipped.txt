@@ -211,7 +211,6 @@ Aw.Sindri.Features.ContextCalls.GetContextReviewRequest.Equals(Aw.Sindri.Feature
 Aw.Sindri.Features.ContextCalls.GetContextReviewRequest.GetContextReviewRequest(int? Limit = null) -> void
 Aw.Sindri.Features.ContextCalls.GetContextReviewRequest.Limit.get -> int?
 Aw.Sindri.Features.ContextCalls.GetContextReviewRequest.Limit.init -> void
-Aw.Sindri.Features.ContextCalls.GetContextMapRequest.GetContextMapRequest() -> void
 Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest
 Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest!
 Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextSourcesRequest? other) -> bool
