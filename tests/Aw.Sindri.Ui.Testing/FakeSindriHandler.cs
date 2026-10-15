@@ -150,12 +150,14 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
 
     // Null until API P2's projector fills them; the status always carries both fields, as Sindri's does.
     private static string Views(AsOfView? v) => v is null ? ",\"views\":null" : string.Create(CultureInfo.InvariantCulture,
-        $$""","views":{"cursor":{{v.Cursor}},"ledgerHead":{{v.LedgerHead}},"projectedAt":{{Quoted(v.ProjectedAt)}},"rebuilding":{{Bool(v.Rebuilding)}},"stalled":{{Bool(v.Stalled)}}}""");
+        $$""","views":{"cursor":{{v.Cursor}},"ledgerHead":{{v.LedgerHead}},"projectedAt":{{Quoted(v.ProjectedAt)}},"rebuilding":{{Bool(v.Rebuilding)}},"stalled":{{Bool(v.Stalled)}},"stalledAt":{{Number(v.StalledAt)}},"stalledType":{{Quoted(v.StalledType)}}}""");
 
     private static string Health(HealthView? h) => h is null ? ",\"health\":null" :
         $$""","health":{"word":"{{h.Word}}","problems":[{{string.Join(',', h.Problems.Select(p => $$"""{"code":"{{p.Code}}","text":"{{p.Text}}"}"""))}}]}""";
 
     private static string Service(ServiceView v) => $$"""{"name":"{{v.Name}}","every":"{{v.Every}}","lastRun":{{Quoted(v.LastRun)}}}""";
+
+    private static string Number(long? n) => n is { } v ? v.ToString(CultureInfo.InvariantCulture) : "null";
 
     private static string Bool(bool b) => b ? "true" : "false";
 
