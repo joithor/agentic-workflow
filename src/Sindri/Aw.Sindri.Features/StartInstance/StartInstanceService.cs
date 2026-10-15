@@ -13,7 +13,8 @@ namespace Aw.Sindri.Features.StartInstance;
 /// 'workflow start' (engine spec rev 8 §5.1, §6.1, §6.3): resolves the item (<see cref="IItems"/>) and the approved
 /// recipe (the latest, or 'id@hash') and its approval (RCP-CAP-003), checks that 'fact:item' names the same item (SND-WF-014) and that every input the
 /// recipe declares is given, picks the attempt, stores the facts owner-only, and starts the workflow whose id is the
-/// address. Without '--attempt' the attempt is the latest one, or 1: a live one is returned as it is, an ended one is
+/// address; taken over when a launch is still requested for the item (UI spec E-19), so automation never runs beside a
+/// session that's opening. Without '--attempt' the attempt is the latest one, or 1: a live one is returned as it is, an ended one is
 /// shown with the hint to start the next. '--attempt next' is the one after the latest, refused while that one is
 /// live (SND-WF-012).
 /// </summary>
@@ -22,7 +23,8 @@ namespace Aw.Sindri.Features.StartInstance;
 /// <param name="directory">The attempts that exist.</param>
 /// <param name="facts">Where the input facts are stored.</param>
 /// <param name="runtime">The instances on Temporal.</param>
-internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipes, IInstanceDirectory directory, IFactStore facts, IInstanceRuntime runtime)
+/// <param name="launches">The item's launches (UI spec E-19): one still requested starts the instance taken over.</param>
+internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipes, IInstanceDirectory directory, IFactStore facts, IInstanceRuntime runtime, ILaunchRequests launches)
     : IService<StartInstanceRequest, StartInstanceResponse>
 {
     /// <summary>The tenant and ring every start runs under until the profile names them (S1-D11).</summary>
@@ -58,14 +60,28 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return view.IsError ? view.Error : new StartInstanceResponse(view.Value, Existing: true, Finished: true);
         }
 
+        return await Begin(request, item, recipe.Version, plan.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Starts the instance: the launches are read before any write, so a read error leaves no facts behind (UI spec E-19).</summary>
+    private async ValueTask<Result<StartInstanceResponse>> Begin(StartInstanceRequest request, ResolvedItem item, RecipeVersion recipe, AttemptPlan plan, CancellationToken cancellationToken)
+    {
+        var launch = await launches.Requested(item.Id, cancellationToken).ConfigureAwait(false);
+        if (launch.IsError)
+        {
+            return launch.Error;
+        }
+
         var inputs = await Store(request, cancellationToken).ConfigureAwait(false);
         if (inputs.IsError)
         {
             return inputs.Error;
         }
 
-        var started = await runtime.Start(new InstanceStart(recipe.Version, item.Id, plan.Value.Attempt, inputs.Value, Tenant, Ring: 0), cancellationToken).ConfigureAwait(false);
-        return started.IsError ? started.Error : new StartInstanceResponse(started.Value, plan.Value.Existing, Finished: false);
+        var started = await runtime.Start(
+            new InstanceStart(recipe, item.Id, plan.Attempt, inputs.Value, Tenant, Ring: 0) { OpenLaunch = launch.Value?.Value },
+            cancellationToken).ConfigureAwait(false);
+        return started.IsError ? started.Error : new StartInstanceResponse(started.Value, plan.Existing, Finished: false);
     }
 
     /// <summary>

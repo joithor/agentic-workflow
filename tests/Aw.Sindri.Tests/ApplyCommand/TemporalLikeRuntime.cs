@@ -118,6 +118,9 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
         return outcome;
     }
 
+    public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, LaunchId launch, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("not requested by these tests");
+
     public ValueTask<Result<Unit>> Signal(InstanceAddress address, WaitSatisfied delivered, CancellationToken cancellationToken) =>
         throw new NotSupportedException("not signalled by these tests");
 
