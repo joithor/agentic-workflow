@@ -150,6 +150,29 @@ public sealed class ListInstancesServiceTests
     }
 
     [Fact]
+    public async Task The_rows_are_the_summaries_of_the_listed_views_in_the_same_order()
+    {
+        var (result, _) = await Run(
+            new ListInstancesRequest(Recipe: "workflow.step"),
+            View("desk-task", "T-3/step/1"),
+            View("desk-task", "T-4/step/1", RecipeUrgency.Triage));
+
+        Assert.Equal(result.Value.Instances.Select(static v => InstanceSummaries.Of(v)), result.Value.Rows);
+        Assert.Equal(["T-4/step/1", "T-3/step/1"], result.Value.Rows.Select(static r => r.Address), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_needs_me_list_has_the_rows_of_its_sections_in_their_order()
+    {
+        var (result, _) = await Run(
+            new ListInstancesRequest(NeedsMe: "true"),
+            View("desk-task", "T-1/step/1"),
+            View("parked-rounds", "T-3/step/1"));
+
+        Assert.Equal(["T-3/step/1", "T-1/step/1"], result.Value.Rows.Select(static r => r.Address), StringComparer.Ordinal);
+    }
+
+    [Fact]
     public async Task A_subject_matches_the_subject_key_or_a_part_of_its_label_and_is_not_sent_to_the_port()
     {
         var views = new[]

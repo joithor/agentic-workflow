@@ -210,4 +210,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(IReadOnlyList<Core.Workflow.Engine.Runtime.Layout.LoopPair>), TypeInfoPropertyName = "LayoutListLoopPair")]
 [JsonSerializable(typeof(IReadOnlyList<Core.Workflow.Engine.Runtime.Layout.StateCell>), TypeInfoPropertyName = "LayoutListStateCell")]
 [JsonSerializable(typeof(IReadOnlyList<Core.Workflow.Engine.Runtime.Layout.Workstream>), TypeInfoPropertyName = "LayoutListWorkstream")]
+[JsonSerializable(typeof(Core.Workflow.Engine.Runtime.Layout.InstanceSummary), TypeInfoPropertyName = "LayoutInstanceSummary")]
+[JsonSerializable(typeof(IReadOnlyList<Core.Workflow.Engine.Runtime.Layout.InstanceSummary>), TypeInfoPropertyName = "LayoutListInstanceSummary")]
+[JsonSerializable(typeof(Core.Workflow.Engine.Runtime.Layout.RecipeRef), TypeInfoPropertyName = "LayoutRecipeRef")]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;
