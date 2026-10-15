@@ -1,7 +1,7 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Workflow.Engine.Decisions;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
-namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
+namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
 /// <summary>What a human trigger's approval check answers, as the error it refuses with (SND-RECIPE-005, -006); shared by every slice that sends one.</summary>
 public static class ApprovalRefusal

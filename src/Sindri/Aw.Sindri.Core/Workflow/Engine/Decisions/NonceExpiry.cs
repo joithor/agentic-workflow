@@ -1,8 +1,8 @@
 using Aw.Kernel;
 
-namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
+namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 
-/// <summary>The refusal for a nonce past its lifetime (SND-WF-009); shared by every <see cref="ICommandNonces"/>.</summary>
+/// <summary>The refusal for a nonce past its lifetime (SND-WF-009); shared by every <see cref="Runtime.ICommandNonces"/>.</summary>
 public static class NonceExpiry
 {
     /// <summary>
