@@ -159,6 +159,7 @@ internal sealed partial class RecipeWorkflow
         [
             SindriTemporal.ItemKey.ValueSet(start.Item.Value),
             SindriTemporal.RecipeKey.ValueSet(start.Recipe.Id.Value),
+            SindriTemporal.RecipeHashKey.ValueSet(start.Recipe.Hash.Value),
             SindriTemporal.StateKey.ValueSet(state),
             SindriTemporal.NeedsYouKey.ValueSet(needsYou),
             SindriTemporal.TenantKey.ValueSet(start.Tenant),
