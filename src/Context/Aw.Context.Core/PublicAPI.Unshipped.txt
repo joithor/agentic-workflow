@@ -3540,6 +3540,7 @@ Aw.Context.Core.Map.MapView.<Clone>$() -> Aw.Context.Core.Map.MapView!
 Aw.Context.Core.Map.MapView.Applied.get -> Aw.Context.Core.Graph.GraphSnapshot!
 Aw.Context.Core.Map.MapView.Applied.init -> void
 Aw.Context.Core.Map.MapView.AllowedEvidence(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? evidence) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>?
+Aw.Context.Core.Map.MapView.CutDecisions(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!
 Aw.Context.Core.Map.MapView.Deconstruct(out Aw.Context.Core.Graph.GraphSnapshot! Graph, out Aw.Context.Core.Graph.GraphSnapshot! Applied, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Overrides, out bool Filtered) -> void
 Aw.Context.Core.Map.MapView.Equals(Aw.Context.Core.Map.MapView? other) -> bool
 Aw.Context.Core.Map.MapView.Filtered.get -> bool

@@ -72,7 +72,7 @@ internal static class Engines
         var admin = new MapAdmin(new PreviewMapService(reader), new ImportMapService(reader, store, clock), new ExportMapService(store, exports, clock),
             new ShowMapStatusService(store), new CheckMapService(store), new CheckRetentionService(store, exports, clock), new PurgeMapService(store, exports, clock));
         var review = new MapReview(new ReviewQueueService(store, scrubbers), new ReviewMapService(store, new FakeCurrentUser(), clock), new ReviewHistoryService(store), new ExportReviewService(store, scrubbers, new FakeReviewFileStore(), clock),
-            new PreviewReviewFileService(new FakeReviewFileStore()), new ApplyReviewFileService(store, new FakeReviewFileStore(), new FakeCurrentUser(), clock), new PromoteMapService(store));
+            new PreviewReviewFileService(new FakeReviewFileStore()), new ApplyReviewFileService(store, new FakeReviewFileStore(), new FakeCurrentUser(), clock), new PromoteMapService(store, new FakeCurrentUser(), clock));
         return new ContextMap(admin, review, new MapProposals(Build(clock, store), new ProposeFromScopeService(store, store, clock), new GetProposalsService(store, store, scrubbers)));
     }
 

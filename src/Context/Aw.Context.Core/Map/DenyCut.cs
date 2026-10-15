@@ -98,6 +98,15 @@ internal sealed class DenyCut
         return kept;
     }
 
+    /// <summary>
+    /// The decisions a person made about a node or link this cut takes out: once a promote stores the cut graph their target is gone, and a decision about a gone node whose key no glob
+    /// denies (a surface only a denied file evidenced) would be an orphan, shown in the queue and blocking the next promote. A promote undoes them, so they are cut rather than orphaned.
+    /// </summary>
+    /// <param name="overrides">Every override.</param>
+    /// <returns>The active decisions about what is cut (a proposal and an add are not decisions about a stored node).</returns>
+    public IReadOnlyList<MapOverride> CutDecisions(IReadOnlyList<MapOverride> overrides) =>
+        [.. OverrideLog.Active(overrides).Where(o => o.Action is not (OverrideAction.Propose or OverrideAction.Add) && (_removed.Contains(o.Target.Value) || (o.Link is { } link && _cutLinks.Contains(link.Value))))];
+
     // Every form a node was first seen in: as stored, and as each active propose row would add it. A reject names its proposal by the evidence it had then.
     private static Dictionary<string, List<GraphNode>> Origin(GraphSnapshot stored, IReadOnlyList<MapOverride> overrides)
     {

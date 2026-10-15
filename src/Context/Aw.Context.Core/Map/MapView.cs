@@ -15,6 +15,11 @@ public sealed record MapView(GraphSnapshot Graph, GraphSnapshot Applied, IReadOn
 {
     internal DenyCut? Cut { get; init; }
 
+    /// <summary>The active decisions about nodes and links the deny globs take out (see <see cref="DenyCut.CutDecisions"/>).</summary>
+    /// <param name="overrides">Every override.</param>
+    /// <returns>The decisions, none when nothing is denied.</returns>
+    public IReadOnlyList<MapOverride> CutDecisions(IReadOnlyList<MapOverride> overrides) => Cut is null ? [] : Cut.CutDecisions(overrides);
+
     /// <summary>The evidence a deny glob leaves of a scoping run's surface.</summary>
     /// <param name="evidence">The evidence, or null.</param>
     /// <returns>The same list when no glob applies.</returns>
