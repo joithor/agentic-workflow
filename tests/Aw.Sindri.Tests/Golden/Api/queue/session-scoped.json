@@ -1,0 +1,47 @@
+{
+  "groups": [
+    {
+      "group": "waitingOnYou",
+      "items": [],
+      "empty": "Nothing is waiting on you."
+    },
+    {
+      "group": "withYou",
+      "items": [],
+      "empty": "Nothing is with you."
+    },
+    {
+      "group": "running",
+      "items": [],
+      "empty": "Nothing running."
+    },
+    {
+      "group": "queued",
+      "items": [
+        {
+          "id": "ITM-0000000000000000000000000000000e",
+          "title": "In demo",
+          "repo": "demo",
+          "state": "new",
+          "step": null,
+          "since": "2026-01-01T00:00:00.0000000Z",
+          "primaryAction": null,
+          "actions": [
+            "CloseItem:done",
+            "CloseItem:cancelled"
+          ],
+          "owner": null
+        }
+      ],
+      "empty": null
+    }
+  ],
+  "empty": null,
+  "asOf": {
+    "cursor": 8,
+    "ledgerHead": 8,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}
