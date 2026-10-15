@@ -138,7 +138,7 @@ internal sealed partial class RecipeWorkflow
                 // refused and parked, never a failed workflow. A cancel is the one failure that isn't.
                 var (code, reason) = FailureOf(e);
                 var failed = await Record(row with { State = EffectState.Refused, Code = code, Reason = reason }).ConfigureAwait(true);
-                await Refuse(new OutboxRefused(Dispatcher, new RefusedEffect(effect.Effect, effect.Identity, effect.With), code, failed.Sequence, reason)).ConfigureAwait(true);
+                await Refuse(new OutboxRefused(Dispatcher, new RefusedEffect(effect.Effect, effect.Identity, effect.With, effect.Origin), code, failed.Sequence, reason)).ConfigureAwait(true);
             }
         }
         finally
@@ -176,7 +176,7 @@ internal sealed partial class RecipeWorkflow
         }
 
         var refused = await Record(row with { State = EffectState.Refused, Code = code, Reason = checkedNow.Reason }).ConfigureAwait(true);
-        await Refuse(new OutboxRefused(Dispatcher, new RefusedEffect(effect.Effect, effect.Identity, effect.With), code, refused.Sequence)).ConfigureAwait(true);
+        await Refuse(new OutboxRefused(Dispatcher, new RefusedEffect(effect.Effect, effect.Identity, effect.With, effect.Origin), code, refused.Sequence)).ConfigureAwait(true);
         return false;
     }
 

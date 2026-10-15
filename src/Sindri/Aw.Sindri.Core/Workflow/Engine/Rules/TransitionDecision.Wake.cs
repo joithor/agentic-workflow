@@ -78,7 +78,7 @@ public static partial class TransitionDecision
         return applied with
         {
             Changes = [own with { Event = own.Event with { Effects = [.. own.Event.Effects ?? [], .. more.Select(static e => e.Identity)] } }, .. applied.Changes.Skip(1)],
-            Effects = [.. applied.Effects, .. more.Select(static e => new EffectCommand(e.Kind, e.Identity, CommandOrigin.Recipe, e.With))],
+            Effects = [.. applied.Effects, .. more.Select(static e => new EffectCommand(e.Kind, e.Identity, e.Origin, e.With))],
         };
     }
 }
