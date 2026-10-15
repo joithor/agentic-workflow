@@ -11,4 +11,10 @@ public static class Urgencies
 
     /// <summary>Whether <paramref name="urgency"/> is one of <see cref="All"/>.</summary>
     public static bool IsKnown(string urgency) => All.Contains(urgency, StringComparer.Ordinal);
+
+    /// <summary>The enum value of a recipe's urgency word; an absent word is <see cref="RecipeUrgency.Work"/>.</summary>
+    /// <param name="urgency">The word, or null.</param>
+    /// <returns>The urgency.</returns>
+    /// <exception cref="ArgumentException">The word is none of <see cref="All"/> (RCP-URG-001 keeps a validated recipe from it).</exception>
+    public static RecipeUrgency Parse(string? urgency) => throw new NotSupportedException();
 }
