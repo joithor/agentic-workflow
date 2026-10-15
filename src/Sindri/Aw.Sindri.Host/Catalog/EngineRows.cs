@@ -32,7 +32,7 @@ internal static class EngineRows
         Protected("IssueChallenge", "POST /sindri/workflow/challenges", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(IssueChallengeRequest), Class = ActionClass.Issue, Ui = "ready" },
 
         // ---- P4: instances (bound and mapped), and P5's takeover and handback ----
-        Ready("StartInstance", typeof(StartInstanceRequest), ActionClass.Desk, "POST /sindri/workflow/instances", "sindri workflow start <recipe> --item <itemId>"),
+        Ready("StartInstance", typeof(StartInstanceRequest), ActionClass.Desk, "POST /sindri/workflow/instances", "sindri workflow start <recipe> --item <itemId>") with { ReadsViews = true }, // UI spec E-19: it waits for the launches view head
         Ready("IssueNonce", typeof(IssueNonceRequest), ActionClass.Issue, "POST /sindri/workflow/instances/{instanceId}/nonce", "sindri workflow command <address> <verb>"),
         Ready("ApplyCommand:answer-text", typeof(ApplyCommandRequest), ActionClass.Desk, Commands, "sindri workflow answer <address> --text <text>"),
         Ready("ApplyCommand:answer-resume", typeof(ApplyCommandRequest), ActionClass.Desk, Commands, "sindri workflow answer <address> --resume"),

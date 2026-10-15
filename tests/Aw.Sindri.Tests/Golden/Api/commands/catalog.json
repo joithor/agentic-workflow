@@ -538,7 +538,7 @@
       "cli": "sindri workflow start <recipe> --item <itemId>",
       "ui": "ready",
       "destructive": false,
-      "readsViews": false,
+      "readsViews": true,
       "shortcut": null
     },
     {

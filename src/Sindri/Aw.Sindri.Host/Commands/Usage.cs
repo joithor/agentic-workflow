@@ -38,6 +38,7 @@ internal static class Usage
         "       sindri workflow answer <address> [--text <t> | --file <f>] [--grant <n> | --grant-tokens <n> | --accept | --reject | --resume] [--nonce <n>] [--json]   answer a parked instance (grant, grant-tokens, accept: type the challenge at a terminal)",
         "       sindri workflow command <address> <verb> [--nonce <n>] [--json]   send a recipe command to the instance",
         "       sindri workflow cancel <address> [--nonce <n>] [--json]   cancel the instance",
+        "       sindri handback <item-or-address> [--nonce <n>] [--json]   short form of 'workflow handback': hand a taken-over instance back (a bare item is its latest attempt)",
         "       sindri workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--nonce <n>] [--json]   report an open desk run (exit 0 applied, 1 not running, 2 refused)",
     ];
 

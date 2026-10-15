@@ -17,6 +17,16 @@ internal static class WorkflowCommandTable
         + "answer <address> [--text …|--file …] [--grant n | --grant-tokens n | --accept | --reject | --resume] | "
         + "command <address> <verb> | cancel <address> | takeover <address> | handback <address> | complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--nonce <n>] [--json]";
 
+    /// <summary>
+    /// The top-level short forms of 'workflow' verbs (engine spec §6.3): 'sindri handback &lt;item-or-address&gt;' is
+    /// 'sindri workflow handback', and a bare item resolves to the root of its latest attempt.
+    /// </summary>
+    internal static Task<int> RunShort(string[] args, IServiceProvider services, Output output, RecipeDesk desk, CancellationToken ct) => args switch
+    {
+        ["handback", .. var rest] => new ApplyCommandVerbs(desk, services, output).Handback(rest, ct, shortForm: true),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', args)}' is not a sindri command")),
+    };
+
     /// <summary>Runs one 'workflow' verb: the writes as clients of the API through <paramref name="desk"/>, the reads in process.</summary>
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, RecipeDesk desk, CancellationToken ct) => args switch
     {
