@@ -24,8 +24,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// takeover waits for a delivered event that fits or a command an Update submits. Every trigger is decided at the wait,
 /// one at a time; each change is mirrored into the ledger through 'RecordEvent' (§5.6) and the search attributes are
 /// set. The other Updates of §5.2 have their final signatures and hand their trigger to the loop through 'Submit':
-/// (b) 'answer', 'command', 'cancel' (and P5 'takeover', 'handback'); (c) 'complete' and its validator; (d) the bridge's
-/// 'event' signal (§5.4).
+/// (b) 'answer', 'command', 'cancel'; (c) 'complete' and its validator; (d) the bridge's 'event' signal (§5.4). Engine
+/// P5 adds the timer scopes ('TimerScopes', §5.5) and 'takeover', 'handback' and 'open-request'
+/// ('RecipeWorkflow.Takeover.cs').
 /// </para>
 /// </summary>
 [Workflow("RecipeWorkflow")]
@@ -37,14 +38,13 @@ internal sealed partial class RecipeWorkflow
     private readonly Queue<WaitSatisfied> _delivered = new();
     private readonly HashSet<long> _eventsTaken = [];
     private readonly Dictionary<string, Reported> _reported = new(StringComparer.Ordinal);
+    private readonly TimerScopes _timers = new(Timers);   // engine P5 (§5.5): unit (a) arms the state timers through it, unit (b) pauses and resumes them
     private InstanceStart? _start;
     private InterpretedRecipe? _recipe;
     private Interpreting? _context;
     private WorkflowInstance? _instance;
     private DateTimeOffset _since;
-    private DateTimeOffset? _timeoutAt;
     private TimeSpan _deskTimeout;
-    private TimeSpan _waited;
     private string? _repo;
     private string? _recorded;
     private StepCompleted? _report;
@@ -71,8 +71,7 @@ internal sealed partial class RecipeWorkflow
                 : await Wait(instance, context).ConfigureAwait(true);
         }
 
-        Close(instance, context);
-        await Workflow.WaitConditionAsync(static () => Workflow.AllHandlersFinished).ConfigureAwait(true);   // the Update that ended it returns its result
+        await SettleLeftovers(instance, context).ConfigureAwait(true);
         return new RecipeResult(instance.State, instance.Outcome?.Value);
     }
 
@@ -92,13 +91,12 @@ internal sealed partial class RecipeWorkflow
         _recipe = new InterpretedRecipe(loaded.Version, loaded.Recipe, catalog, start.Inputs);
         _deskTimeout = loaded.DeskTimeout;
         _eventHold = loaded.EventHold;
-        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance);
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
         var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
-        var instance = change.After;
-        Enter(instance);
-        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: WorkflowEventDetail.Of(change.Event, trigger: null)), NeedsYou(instance)).ConfigureAwait(true);
+        var instance = Enter(change.After);
+        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: WorkflowEventDetail.Of(change.Event, trigger: null), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
         return (instance, _context);
     }
 
@@ -109,34 +107,12 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timeoutAt) with { Version = _mirrored, Id = instance.Id }
+            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt()) with { Version = _mirrored, Id = instance.Id }
             : new InstanceView(start.WorkflowId(), start.Recipe, "starting", Detail: null, _since, string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
             {
                 Id = WorkflowInstanceId.Of(start.WorkflowId()),
             };
     }
-
-    /// <summary>'workflow takeover' (class pause, spec §5.5): suspends the instance and pauses its timer. P5.</summary>
-    /// <param name="takeover">The takeover.</param>
-    /// <returns>The instance after it.</returns>
-    [WorkflowUpdate("takeover")]
-    public Task<CommandResult> TakeoverAsync(TakeoverRequested takeover) => throw Unbuilt("P5: the takeover Update");
-
-    /// <summary>Rejects a takeover where none is allowed (SND-WF-003). P5.</summary>
-    /// <param name="takeover">The takeover.</param>
-    [WorkflowUpdateValidator(nameof(TakeoverAsync))]
-    public void ValidateTakeover(TakeoverRequested takeover) => throw Unbuilt("P5: the takeover validator");
-
-    /// <summary>'workflow handback' (spec §5.5): ends the takeover and re-arms the timer with what remained. P5.</summary>
-    /// <param name="handback">The handback.</param>
-    /// <returns>The instance after it.</returns>
-    [WorkflowUpdate("handback")]
-    public Task<CommandResult> HandbackAsync(HandbackRequested handback) => throw Unbuilt("P5: the handback Update");
-
-    /// <summary>Rejects a handback of an instance that isn't taken over (SND-WF-003). P5.</summary>
-    /// <param name="handback">The handback.</param>
-    [WorkflowUpdateValidator(nameof(HandbackAsync))]
-    public void ValidateHandback(HandbackRequested handback) => throw Unbuilt("P5: the handback validator");
 
     /// <summary>
     /// A registered ledger event the bridge routed here (spec §5.4). Temporal buffers it until the instance reaches the
@@ -188,27 +164,49 @@ internal sealed partial class RecipeWorkflow
         null => instance.Frame.Run is { Runtime: StepRuntime.Desk },
     };
 
-    private void Enter(WorkflowInstance instance)
+    /// <summary>
+    /// Takes <paramref name="instance"/> as the instance after a decided change, and does what the change asks of the
+    /// timers (spec §5.5, <see cref="StateTimers.Between"/>): a new entry or run, or an answer that ended a park, arms the
+    /// state's full timeout; a park, escalation or end stops it; a 'then: retry' arms the retry timer; a takeover pauses
+    /// it and keeps what was left on its suspension, which the handback re-arms. The first entry arms its state's
+    /// timeout unless it parked at once; a start taken over (E-19) keeps the full timeout for the handback.
+    /// </summary>
+    /// <returns>The instance as the interpreter holds it: a takeover's suspension carries what it paused.</returns>
+    private WorkflowInstance Enter(WorkflowInstance instance)
     {
-        if (_instance is null || !string.Equals(_instance.State, instance.State, StringComparison.Ordinal) || _instance.Frame.Entry != instance.Frame.Entry)
+        var before = _instance;
+        if (before is null || !string.Equals(before.State, instance.State, StringComparison.Ordinal) || before.Frame.Entry != instance.Frame.Entry)
         {
             _since = Now;
         }
 
-        if (_instance?.Suspension is not null && instance.Suspension is null)
-        {
-            _timeoutAt = null;   // an answer ended the suspension: its resume re-arms the desk deadline from now (§5.8 'rearm'; unit (b))
-        }
+        var recipe = _context!.Recipe; // why: Begin sets the context before the first entry
+        var kept = before is null
+            ? First(instance, recipe)
+            : _timers.Apply(StateTimers.Between(before, instance, recipe, _deskTimeout), instance.Frame.Entry);
+        _instance = kept is not null && instance.Suspension is { Kind: SuspensionKind.Takeover } takeover
+            ? instance with { Suspension = takeover with { Remaining = kept } }
+            : instance;
+        return _instance;
+    }
 
-        _instance = instance;
+    /// <summary>
+    /// The first entry's timers: its state's timeout, unless it ended or parked at once; started taken over (E-19), the
+    /// full timeout is kept for the handback and 'takeoverIdle' runs.
+    /// </summary>
+    private RemainingTimer? First(WorkflowInstance instance, Core.Workflow.Recipes.Recipe recipe)
+    {
+        var full = instance.Ended ? null : StateTimers.Timeout(recipe.States[instance.Frame.State], instance.Frame.Run, _deskTimeout);
+        return (instance.Suspension, full) switch
+        {
+            ({ Kind: SuspensionKind.Takeover }, _) => _timers.Held(instance.PendingPark is null ? full : null, instance.Frame.Entry),   // parked at once: the handback returns to the park, no timer to resume
+            (null, { } after) => _timers.Apply(new TimerAction(TimerActionKind.Arm, DeadlineKind.State, after), instance.Frame.Entry),
+            _ => _timers.Apply(TimerAction.Stop, instance.Frame.Entry),
+        };
     }
 
     /// <summary>The workflow's deterministic clock, as an offset in UTC.</summary>
     private static DateTimeOffset Now => new(Workflow.UtcNow, TimeSpan.Zero);
-
-    /// <summary>The exception a stubbed handler throws: a rejected Update in a validator, recording nothing.</summary>
-    private NotSupportedException Unbuilt(string what) =>
-        new($"engine P4 {what} is not built yet ({_start?.WorkflowId().Value ?? "no instance"})");
 
     private static StartRequest StartOf(InstanceStart start, LoadedRecipe loaded)
     {
@@ -224,7 +222,7 @@ internal sealed partial class RecipeWorkflow
             Parent: null,
             start.Inputs.ToDictionary(static i => i.Key, static i => i.Value.Value),
             Desk,
-            TakenOver: false,
+            TakenOver: start.OpenLaunch is not null,
             start.Tenant,
             start.Ring);
     }

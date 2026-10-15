@@ -28,6 +28,9 @@ public sealed class NoInstances : IInstanceDirectory, IInstanceRuntime
     public ValueTask<Result<CommandResult>> Send(InstanceAddress address, CommandNonce nonce, Trigger command, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<CommandResult>>(NotFound(address.Value));
 
+    public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, LaunchId launch, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<CommandResult>>(NotFound(address.Value));
+
     public ValueTask<Result<Unit>> Signal(InstanceAddress address, WaitSatisfied delivered, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<Unit>>(NotFound(address.Value));
 

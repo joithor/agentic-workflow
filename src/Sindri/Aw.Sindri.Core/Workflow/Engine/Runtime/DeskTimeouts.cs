@@ -7,8 +7,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <summary>
 /// The desk runtime's timeout (engine spec W20, §3.4, §3.8): a desk Step's wait is at least the profile's
 /// 'workflow.deskTimeout' (default 2d), and its expiry always parks with 'timeout'; 'then: retry' and 'then: escalate'
-/// are replaced by 'park' in desk mode. Pure, so the interpreter and its unit tests call the same code. Engine P4 unit
-/// (c); the agent runtime's timers and 'then: retry' are P5's.
+/// are replaced by 'park' in desk mode. Pure, so the interpreter and its unit tests call the same code. Whether a timer
+/// has expired is decided by TransitionDecision.Expired, which builds its park with <see cref="TimeoutPark"/>.
 /// </summary>
 public static class DeskTimeouts
 {
@@ -22,26 +22,17 @@ public static class DeskTimeouts
     public static TimeSpan Wait(TimeoutSpec? timeout, TimeSpan floor) =>
         timeout is { After: var after } && after.Span > floor ? after.Span : floor;
 
-    /// <summary>The instance after its desk wait of <paramref name="waited"/> expired: parked with 'timeout', the same run left open.</summary>
-    /// <param name="instance">The instance, in an active state with an open desk run.</param>
-    /// <param name="waited">How long it waited (<see cref="Wait"/>).</param>
-    /// <param name="actor">The timer's actor ('service:workflow.timers').</param>
-    /// <returns>The parked instance; the same instance when it is already suspended or ended.</returns>
-    public static WorkflowInstance Expire(WorkflowInstance instance, TimeSpan waited, string actor)
-    {
-        ArgumentNullException.ThrowIfNull(instance);
-        ArgumentNullException.ThrowIfNull(actor);
-        if (instance.Ended || instance.Suspension is not null)
-        {
-            return instance;
-        }
+    /// <summary>The 'timeout' park (spec §3.8): '{state} ran past {after}'; '--resume' goes back to the frame with a fresh deadline.</summary>
+    /// <param name="state">The state that ran past its timeout.</param>
+    /// <param name="after">How long it had.</param>
+    /// <param name="actor">The timer's actor.</param>
+    /// <returns>The park.</returns>
+    internal static Suspension TimeoutPark(string state, TimeSpan after, string actor) => new(
+        SuspensionKind.Park, ParkReason.Timeout, ParkKind: null, Escalation: null, RanPast(state, after), actor, Mirrors: null,
+        new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effect: null));
 
-        var park = new Suspension(
-            SuspensionKind.Park, ParkReason.Timeout, ParkKind: null, Escalation: null,
-            $"{instance.Frame.State} ran past {Text(waited)}", actor, Mirrors: null,
-            new ResumeAction(ResumeKind.Rearm, Withheld: null, Gate: null, Effect: null));
-        return instance with { Suspension = park };
-    }
+    /// <summary>What a timeout park or escalation says (spec §3.8): '{state} ran past {after}'.</summary>
+    internal static string RanPast(string state, TimeSpan after) => $"{state} ran past {Text(after)}";
 
     /// <summary>A duration as status writes it (spec §6.4): '2d', '2d 1h', '4h 30m', or '40s' under a minute.</summary>
     private static string Text(TimeSpan span)

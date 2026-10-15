@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Features.ApplyCommand;
 
-/// <summary>Which command 'ApplyCommand' carries (engine spec §6.3): an answer, a recipe command, or a cancel. Takeover and handback are P5's.</summary>
+/// <summary>Which command 'ApplyCommand' carries (engine spec §6.3): an answer, a recipe command, a cancel, a takeover or a handback.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<ApplyCommandKind>))]
 public enum ApplyCommandKind
 {
@@ -17,4 +17,12 @@ public enum ApplyCommandKind
     /// <summary>'workflow cancel'.</summary>
     [JsonStringEnumMemberName("cancel")]
     Cancel = 3,
+
+    /// <summary>'workflow takeover' (class pause: a session may take over; spec §5.5, §6.2).</summary>
+    [JsonStringEnumMemberName("takeover")]
+    Takeover = 4,
+
+    /// <summary>'workflow handback' (class desk: a session may not).</summary>
+    [JsonStringEnumMemberName("handback")]
+    Handback = 5,
 }
