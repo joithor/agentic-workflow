@@ -17,7 +17,7 @@ public sealed class MapTextTests : IDisposable
 
     private static string Decision => DecisionRow.KeyFor(RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000301"), Quote).Value;
 
-    private Task<Aw.Context.Core.Map.MapImported> Import() => _world.ImportYaml(MapWorld.Yaml(
+    private Task<Context.Core.Map.MapImported> Import() => _world.ImportYaml(MapWorld.Yaml(
         "schemaVersion: 1",
         "kind: authored",
         "repo: aw-split-panes",
@@ -65,6 +65,6 @@ public sealed class MapTextTests : IDisposable
         Assert.DoesNotContain("<!--", decision.Text, StringComparison.Ordinal);
     }
 
-    private static string Everything(Aw.Context.Core.Results.ContextResult result) =>
+    private static string Everything(Context.Core.Results.ContextResult result) =>
         string.Join('\n', result.Sections.SelectMany(s => s.Items).SelectMany(i => new[] { i.Title, i.Text }.Concat(i.Path ?? [])));
 }

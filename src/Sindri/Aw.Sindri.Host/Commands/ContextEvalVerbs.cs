@@ -29,7 +29,7 @@ internal sealed class ContextEvalVerbs(ControlPlaneClient client, Output output,
 
     private async Task<int> Probes(string? file, bool json, CancellationToken ct)
     {
-        var run = await engine.EvalProbes(file is null ? null : System.IO.Path.GetFullPath(file), Ask, ct).ConfigureAwait(false);
+        var run = await engine.EvalProbes(file is null ? null : Path.GetFullPath(file), Ask, ct).ConfigureAwait(false);
         if (run.IsError)
         {
             return await Failed(run.Error).ConfigureAwait(false);

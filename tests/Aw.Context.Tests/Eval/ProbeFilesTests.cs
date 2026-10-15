@@ -1,10 +1,10 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Eval;
-using Aw.Kernel;
 using Aw.Context.Infrastructure.Eval;
 using Aw.Context.Infrastructure.Store;
 using Aw.Context.Testing.Fixtures;
 using Aw.Context.Tests.Map;
+using Aw.Kernel;
 
 namespace Aw.Context.Tests.Eval;
 
@@ -103,13 +103,13 @@ public sealed class ProbeFilesTests : IDisposable
     {
         var store = new FileProbeReportStore(_settings, EvalJson.Options);
         var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero));
-        var service = new Aw.Context.Features.EvalProbes.EvalProbesService(new OneFile(), store, clock);
+        var service = new Features.EvalProbes.EvalProbesService(new OneFile(), store, clock);
         async Task<ProbeReport> Run(bool good)
         {
             clock.Advance(TimeSpan.FromMinutes(1));
-            ValueTask<Result<Aw.Context.Core.Results.ContextResult>> Ask(ProbeCase p, CancellationToken ct) =>
+            ValueTask<Result<Context.Core.Results.ContextResult>> Ask(ProbeCase p, CancellationToken ct) =>
                 ValueTask.FromResult(Results.Success(good ? Answers.Of(("graph", Answers.Item("feature:x"))) : Answers.Of()));
-            return (await service.Handle(new Aw.Context.Features.EvalProbes.EvalProbesRequest(File: null, Ask), None)).Value.Report;
+            return (await service.Handle(new Features.EvalProbes.EvalProbesRequest(File: null, Ask), None)).Value.Report;
         }
 
         var first = await Run(good: true);
@@ -121,8 +121,8 @@ public sealed class ProbeFilesTests : IDisposable
 
     private sealed class OneFile : IProbeFileReader
     {
-        public ValueTask<Result<Aw.Context.Core.Eval.ProbeFile>> Read(string? path, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Result<Aw.Context.Core.Eval.ProbeFile>>(new Aw.Context.Core.Eval.ProbeFile("/probes.json", "hash-x", new ProbeSet([Answers.Probe("p1", nodes: ["feature:x"])])));
+        public ValueTask<Result<Context.Core.Eval.ProbeFile>> Read(string? path, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<Context.Core.Eval.ProbeFile>>(new Context.Core.Eval.ProbeFile("/probes.json", "hash-x", new ProbeSet([Answers.Probe("p1", nodes: ["feature:x"])])));
     }
 
     private string Place(string name, string text)
