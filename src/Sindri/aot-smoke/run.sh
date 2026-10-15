@@ -179,11 +179,11 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   run items --state done
   run queue
   echo "## sindri ledger --json --after 0 | jq (human: command.handled is listed)"
-  bounded "$bin" ledger --json --after 0 </dev/null | jq -c '[.events[].type] | any(. == "command.handled")'
+  with_tty "${alarm[@]}" "$bin" ledger --json --after 0 </dev/null | jq -c '[.events[].type] | any(. == "command.handled")'
   echo "## sindri ledger --json --after 0 | jq (session: public types only)"
   CLAUDECODE=1 bounded "$bin" ledger --json --after 0 </dev/null | jq -c '[.events[].type] | any(. == "command.handled")'
   echo "## sindri ledger --item <closed item> --json | jq (the item's events)"
-  bounded "$bin" ledger --item "$item" --type 'item.*' --json </dev/null | jq -c '[.events[].type]'
+  with_tty "${alarm[@]}" "$bin" ledger --item "$item" --type 'item.*' --json </dev/null | jq -c '[.events[].type]'
   echo "## GET /sindri/events/catalog | jq (public types, their invalidates)"
   curl -s -m 30 "$(jq -r '.url' "$AW_SINDRI_HOME/control.json" | sed 's|/$||')/sindri/events/catalog" -H 'X-Sindri-Repo: smoke' \
     | jq -c '{commandHandled: any(.types[]; .type == "command.handled"), itemCreated: (.types[] | select(.type == "item.created") | .invalidates)}'
