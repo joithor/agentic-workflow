@@ -141,6 +141,7 @@ in-memory store and the SQLite adapter). Append-only, idempotent and fenced.
 | `temporal_event_id` | nullable integer (workflow-engine spec §5.6, UI screens E-30). The Temporal history event id a mirrored `workflow.*` or `recipe.*` row was written for; null on every other row. Added with the interpreter's mirror (engine phase P4) and indexed where not null, so `GET /engine/instances/{address}/history` can link a history line to its ledger sequence. Part of `RecordEvent`'s idempotency `(workflow id, run id, history event id)` |
 | `idempotency_key` | unique: a second append with the same key writes nothing and returns the first event's position |
 | `payload_json` | the payload record, through AwJson |
+| `temporal_event_id` | nullable (migration 0005, UI E-30): on a row the Temporal mirror (`RecordEvent`) wrote, the id of the Temporal activity it ran as, which is the third part of its `idempotency_key` (`workflow:<workflow id>:<run id>:<activity id>`), so the column and the key never disagree; null on every other row. Indexed with the payload's `instance` (`events_instance_temporal`, mirrored rows only), so `GET /engine/instances/{address}/history` joins a page of event ids to ledger sequences with one query |
 
 S1 events and their keys: `process.started` (`process.started:<epoch>`), `process.stopped` (`process.stopped:<epoch>`),
 `profile.approved` (`profile.approved:<hash>:after:<seq of the latest profile.approved event, or 0>`, so each

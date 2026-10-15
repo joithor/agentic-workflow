@@ -10,7 +10,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <summary>
 /// 'RecordEvent' (engine spec rev 8.1 §5.6): mirrors one interpreter event into the ledger, fenced by the held lease and
 /// idempotent on 'workflow:{workflow id}:{run id}:{activity id}'. Every Temporal activity, local or regular, has a
-/// deterministic ActivityInfo.ActivityId, the same on every replay; no activity sees a history event id. The interpreter
+/// deterministic ActivityInfo.ActivityId, the same on every replay; no activity sees a history event id, so the id the ledger records (column 'temporal_event_id', UI E-30) is that activity id. The interpreter
 /// runs it as a <b>local</b> activity, so it costs one marker per row: a replay reads the marker and never executes it
 /// again, and the one case that runs it twice (a worker that dies after the append but before the workflow task
 /// completes) has the same activity id, so S1's ledger refuses the repeated key and records nothing. Failures throw, so
@@ -58,7 +58,7 @@ internal sealed class RecordEventActivities(ILedgerStore ledger, HeldLease lease
         var payload = new WorkflowEventPayload(record.WorkflowId, record.From, record.To, record.Trigger, record.Outcome, record.Run);
         var own = events.Scope;
         var scope = new EventScope(record.Actor ?? own.Actor, record.Tenant ?? own.Tenant, record.Ring ?? own.Ring);
-        var entry = events.Entry(record.Type, payload, KeyOf(activity.Info), record.Item, scope);
+        var entry = events.Entry(record.Type, payload, KeyOf(activity.Info), record.Item, scope) with { TemporalEvent = activity.Info.ActivityId };   // the key's third part (UI E-30)
         var appended = await ledger.Append(entry, grant, activity.CancellationToken).ConfigureAwait(false);
         return appended.IsError
             ? throw new InvalidOperationException($"{appended.Error.Code}: {appended.Error.Message}")

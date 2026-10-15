@@ -27,8 +27,8 @@ internal static class LedgerSql
 
     internal const string InsertEvent =
         "INSERT INTO events (id, type, schema_version, occurred_at, actor, tenant, ring, item, correlation_id, causation_id, " +
-        "trace_id, epoch, idempotency_key, payload_json) VALUES ($id, $type, $schemaVersion, $occurredAt, $actor, $tenant, " +
-        "$ring, $item, $correlationId, $causationId, $traceId, $epoch, $key, $payload) RETURNING seq";
+        "trace_id, epoch, idempotency_key, payload_json, temporal_event_id) VALUES ($id, $type, $schemaVersion, $occurredAt, $actor, $tenant, " +
+        "$ring, $item, $correlationId, $causationId, $traceId, $epoch, $key, $payload, $temporalEventId) RETURNING seq";
 
     internal const string SelectAfter = "SELECT " + EventColumns + " FROM events WHERE seq > $seq ORDER BY seq LIMIT $max";
 

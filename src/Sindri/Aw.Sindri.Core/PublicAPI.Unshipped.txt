@@ -242,7 +242,7 @@ Aw.Sindri.Core.Ledger.LedgerAppend.Sequence.get -> long
 Aw.Sindri.Core.Ledger.LedgerAppend.Sequence.init -> void
 Aw.Sindri.Core.Ledger.LedgerEntry
 Aw.Sindri.Core.Ledger.LedgerEntry.<Clone>$() -> Aw.Sindri.Core.Ledger.LedgerEntry!
-Aw.Sindri.Core.Ledger.LedgerEntry.Deconstruct(out Aw.Kernel.Events.EventEnvelope<string!>! Envelope, out string! IdempotencyKey, out string? Item) -> void
+Aw.Sindri.Core.Ledger.LedgerEntry.Deconstruct(out Aw.Kernel.Events.EventEnvelope<string!>! Envelope, out string! IdempotencyKey, out string? Item, out string? TemporalEvent) -> void
 Aw.Sindri.Core.Ledger.LedgerEntry.Envelope.get -> Aw.Kernel.Events.EventEnvelope<string!>!
 Aw.Sindri.Core.Ledger.LedgerEntry.Envelope.init -> void
 Aw.Sindri.Core.Ledger.LedgerEntry.Equals(Aw.Sindri.Core.Ledger.LedgerEntry? other) -> bool
@@ -250,7 +250,9 @@ Aw.Sindri.Core.Ledger.LedgerEntry.IdempotencyKey.get -> string!
 Aw.Sindri.Core.Ledger.LedgerEntry.IdempotencyKey.init -> void
 Aw.Sindri.Core.Ledger.LedgerEntry.Item.get -> string?
 Aw.Sindri.Core.Ledger.LedgerEntry.Item.init -> void
-Aw.Sindri.Core.Ledger.LedgerEntry.LedgerEntry(Aw.Kernel.Events.EventEnvelope<string!>! Envelope, string! IdempotencyKey, string? Item) -> void
+Aw.Sindri.Core.Ledger.LedgerEntry.LedgerEntry(Aw.Kernel.Events.EventEnvelope<string!>! Envelope, string! IdempotencyKey, string? Item, string? TemporalEvent = null) -> void
+Aw.Sindri.Core.Ledger.LedgerEntry.TemporalEvent.get -> string?
+Aw.Sindri.Core.Ledger.LedgerEntry.TemporalEvent.init -> void
 Aw.Sindri.Core.Ledger.LedgerEvent
 Aw.Sindri.Core.Ledger.LedgerEvent.<Clone>$() -> Aw.Sindri.Core.Ledger.LedgerEvent!
 Aw.Sindri.Core.Ledger.LedgerEvent.Deconstruct(out long Sequence, out long Epoch, out Aw.Kernel.Events.EventEnvelope<string!>! Envelope, out string! IdempotencyKey, out string? Item) -> void
