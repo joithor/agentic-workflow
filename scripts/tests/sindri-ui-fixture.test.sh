@@ -88,6 +88,13 @@ out="$(AW_SINDRI_HOME="$H" SINDRI_UI_FIXTURE_SQL=python bash "$FIXTURE" stall 2>
 contains "stall through python3 prints the row it inserted" "$out" " service.ran"
 check "the python3 row has the same shape" "$(sqlq "$H/ledger.db" "SELECT id, correlation_id, length(occurred_at) FROM events WHERE idempotency_key = 'sindri-ui-fixture:stall'")" "7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b04|7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b05|28"
 out="$(AW_SINDRI_HOME="$H" SINDRI_UI_FIXTURE_SQL=python bash "$FIXTURE" unstall 2>&1)"; check "unstall through python3 says what it removed" "$out" "1 row(s) removed"
+
+# A python3 without the sqlite3 module is a missing tool, not a traceback in the middle of a verb.
+mkdir -p "$WORK/nosql"
+printf '#!/bin/sh\ncase "$*" in *"import sqlite3"*) exit 1 ;; esac\nexit 0\n' > "$WORK/nosql/python3"
+chmod +x "$WORK/nosql/python3"
+out="$(PATH="$WORK/nosql:$PATH" AW_SINDRI_HOME="$H" SINDRI_UI_FIXTURE_SQL=python bash "$FIXTURE" stall 2>&1)"; check "python3 without sqlite3 exits 2" "$?" "2"
+contains "it says which tool is missing" "$out" "sqlite3 (or python3) is needed for 'stall'"
 out="$(AW_SINDRI_HOME="$TMPDIR/empty" bash "$FIXTURE" stall 2>&1)"; check "stall with no ledger exits 2" "$?" "2"
 contains "stall with no ledger says to run up" "$out" "run 'up' first"
 
