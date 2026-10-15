@@ -15,7 +15,7 @@ internal sealed partial class CommandControl : UserControl
     }
 
     /// <summary>Puts focus back on the control's button (after its question is answered or dismissed), on the keyboard's ring.</summary>
-    internal void FocusRun() => _ = this.FindControl<Button>("RunButton")?.Focus(NavigationMethod.Tab);
+    internal bool FocusRun() => this.FindControl<Button>("RunButton")?.Focus(NavigationMethod.Tab) == true;
 
     private void OnRun(object? sender, RoutedEventArgs e)
     {
@@ -35,7 +35,7 @@ internal sealed partial class CommandControl : UserControl
         if (DataContext is ControlViewModel control)
         {
             _ = control.Confirm(CancellationToken.None);
-            FocusRun();
+            _ = FocusRun();
         }
     }
 
@@ -44,7 +44,7 @@ internal sealed partial class CommandControl : UserControl
         if (DataContext is ControlViewModel control)
         {
             control.Keep();
-            FocusRun();
+            _ = FocusRun();
         }
     }
 

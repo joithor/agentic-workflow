@@ -37,24 +37,19 @@ internal sealed partial class ShellWindow
         || shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen
         || (e.KeyModifiers & ~KeyModifiers.Shift) != KeyModifiers.None;
 
-    // §11.2: with the sheet beside the page and open on the selected row's item, Enter again moves into its first action
+    // §11.2: with the sheet beside the page and open on the selected row's item (the row drawn on this page), Enter again moves into its first action
     // (its heading when it has none). Covering the page, focus is already in the sheet.
     private bool EnterIntoSheet(ViewModels.Shell.ShellViewModel shell)
     {
-        if (!shell.IsSheetShown || Covering || FocusInSheet() || shell.Queue.IsGuarded || shell.Queue.SelectedId is not { } id
-            || !string.Equals(shell.Item.ItemId, id, StringComparison.Ordinal) || !(shell.IsHome || shell.IsQueue))
+        if (!shell.IsSheetShown || Covering || FocusInSheet() || shell.Queue.IsGuarded || !shell.IsSelectedRowOpen)
         {
             return false;
         }
 
         var action = SheetPanel.GetVisualDescendants().OfType<Controls.CommandControl>().FirstOrDefault(c => c.IsEffectivelyVisible);
-        if (action is not null)
+        if (action?.FocusRun() != true)
         {
-            action.FocusRun();
-        }
-        else
-        {
-            _ = this.Get<TextBlock>("SheetTitle").Focus(NavigationMethod.Tab);
+            _ = this.Get<TextBlock>("SheetTitle").Focus(NavigationMethod.Tab);   // no action, or none takes focus (pending): the heading
         }
 
         return true;
@@ -110,7 +105,7 @@ internal sealed partial class ShellWindow
         {
             asking.Keep();
             // L11: the question goes and focus returns to the control that asked it (the same path as a click on Keep).
-            this.GetVisualDescendants().OfType<Controls.CommandControl>().FirstOrDefault(c => ReferenceEquals(c.DataContext, asking))?.FocusRun();
+            _ = this.GetVisualDescendants().OfType<Controls.CommandControl>().FirstOrDefault(c => ReferenceEquals(c.DataContext, asking))?.FocusRun();
             return true;
         }
 
