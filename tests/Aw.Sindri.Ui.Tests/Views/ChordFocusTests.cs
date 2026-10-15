@@ -199,4 +199,28 @@ public sealed class ChordFocusTests : IDisposable
         Assert.Equal(shell.Navigation[1].Page, shell.CurrentPage);
         Assert.Same(items[1], window.FocusManager?.GetFocusedElement());
     });
+
+    // Review re-check R2: an arrowed tab keeps a visible keyboard focus ring (WCAG 2.4.7), not only the focus.
+    [Theory]
+    [InlineData(Key.Right)]
+    [InlineData(Key.End)]
+    public Task An_arrowed_nav_tab_keeps_the_keyboard_focus_ring(Key key) => OnUi(async () =>
+    {
+        var (window, shell) = await Opened("nav");
+        var items = window.GetVisualDescendants().OfType<ListBoxItem>().Where(i => i.IsEffectivelyVisible).ToList();
+        Assert.True(items[0].Focus(NavigationMethod.Tab));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(items[0].Classes, c => string.Equals(c, ":focus-visible", StringComparison.Ordinal));
+
+        Press(window, key);
+        for (var i = 0; i < 5; i++)
+        {
+            await Task.Delay(10, Token);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        var focused = Assert.IsType<ListBoxItem>(window.FocusManager?.GetFocusedElement());
+        Assert.Equal(shell.CurrentPage, shell.Navigation[items.IndexOf(focused)].Page);
+        Assert.Contains(focused.Classes, c => string.Equals(c, ":focus-visible", StringComparison.Ordinal));
+    });
 }
