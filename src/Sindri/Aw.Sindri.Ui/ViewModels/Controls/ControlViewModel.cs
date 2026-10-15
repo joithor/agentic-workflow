@@ -145,6 +145,9 @@ internal sealed class ControlViewModel : ObservableObject
     /// <summary>True while "Sending…" is announced (the live region's gate, set before its text changes).</summary>
     public bool IsAnnouncingSending { get; private set => Set(ref field, value); }
 
+    /// <summary>True while the live region is live (its gate, set before its text changes): the resting label is never spoken.</summary>
+    public bool IsAnnouncing { get; private set => Set(ref field, value); }
+
     /// <summary>The polite live region's text: "Sending…", the outcome, "Copied"; never empty (Avalonia #22312).</summary>
     public string Announcement { get; private set => Set(ref field, value); } = Labels.Copy;
 

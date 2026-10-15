@@ -165,6 +165,42 @@ public sealed class ControlViewModelTests
         Assert.Equal("SND-API-010: Views are rebuilding (fix: retry after the rebuild)", control.Announcement);
     }
 
+    // G4 (a11y-1): the live region is live only while the control announces something (flag, then text, as the shell's
+    // regions do), so the resting label is never spoken: not at rest, not as the reset before a run, not after.
+    [Fact]
+    public async Task The_live_region_is_gated_so_the_resting_label_is_never_spoken()
+    {
+        var control = Control(Row("RebuildViews", "ready"));
+        var spoken = new List<string>();
+        control.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ControlViewModel.Announcement) && control.IsAnnouncing)
+            {
+                spoken.Add(control.Announcement);
+            }
+        };
+        Assert.False(control.IsAnnouncing);
+
+        await control.Run(Token);
+        Assert.True(control.IsAnnouncing);
+        _clock.Advance(ControlViewModel.AcceptedFor);
+
+        Assert.Equal(["Rebuild views: done"], spoken);
+        Assert.False(control.IsAnnouncing);
+    }
+
+    [Fact]
+    public async Task A_copy_is_spoken_through_the_gate_and_the_gate_closes_with_the_label()
+    {
+        var control = Control(Row("RunDoctor", "cli-only:no-protection", "sindri doctor"));
+
+        await control.Copy(Token);
+        Assert.Equal((true, "Copied"), (control.IsAnnouncing, control.Announcement));
+        _clock.Advance(ControlViewModel.CopiedFor);
+
+        Assert.False(control.IsAnnouncing);
+    }
+
     // F4 (corr-2): the same outcome twice is two announcements; the live region changes between them.
     [Fact]
     public async Task The_same_outcome_twice_changes_the_announcement_each_time()

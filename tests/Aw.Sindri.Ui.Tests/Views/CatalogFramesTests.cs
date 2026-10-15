@@ -198,6 +198,7 @@ public sealed class CatalogFramesTests : IDisposable
         var banner = Named<Control>(window, "ViewsBanner");
         var run = Named<Button>(banner, "RunButton");
         Assert.True(run.Focus(NavigationMethod.Tab));
+        Assert.DoesNotContain("live", Named<TextBlock>(banner, "Announcer").Classes, StringComparer.Ordinal);   // G4: the resting label is not live
 
         run.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Settle(window);
@@ -212,6 +213,7 @@ public sealed class CatalogFramesTests : IDisposable
 
         Assert.Same(run, Focused(window));
         Assert.Equal("SND-API-010: Views are rebuilding (fix: retry after the rebuild)", Named<TextBlock>(banner, "Announcer").Text);
+        Assert.Contains("live", Named<TextBlock>(banner, "Announcer").Classes, StringComparer.Ordinal);
     });
 
     // F4: when the banner (and so the control that had focus) goes, focus lands on a usable control, never nowhere.
