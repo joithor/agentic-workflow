@@ -13,7 +13,7 @@ internal static class Composition
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
         => services
             .AddSingleton(clock)
-            .AddSingleton(AwJson.CreateOptions(MetaJsonContext.Default, indented: true))   // for the files Infrastructure persists
+            .AddSingleton(AwJson.CreateOptions(MetaJsonContext.Default))   // the host's one Kernel JSON profile: CLI output, and the files Infrastructure persists (indented there)
             .AddKernelTelemetry(TelemetryOptions.FromEnvironment("aw-meta", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off
             .AddMetaCore()
             .AddMetaFeatures()

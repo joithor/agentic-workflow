@@ -53,8 +53,15 @@ merges, lane map versions and owner answers, not stored as state.
 | `rearm-watch` | a started watch whose heartbeat is older than two intervals | `watch` running again |
 
 `stop-check` exits 0 silently for any session that isn't the registered meta session (`role-set`), so the hook is safe
-to install globally. Loop guard: when the same open set has blocked `AW_META_STOP_MAX` (default 3) stops in a row with
-`stop_hook_active`, it lets the stop through with a one-line warning instead of looping the session.
+to install globally. Loop guard: a stop-check without `stop_hook_active` starts a new turn (it blocks and resets the count); each
+continuation with `stop_hook_active` and the same open set counts one block, and after `AW_META_STOP_MAX` (default 3) of
+them the next continuation is let through with a one-line warning instead of looping the session. Every turn gets the
+full allowance again.
+
+`/clear` in the meta pane gives it a new session id under the same `-n` name. `stop-check` and `outbox-record` treat a
+session as the meta when its id is the registered one, or when the live session with that id in the sessions directory
+(`AW_CLAUDE_SESSIONS_DIR`, `<pid>.json`) carries the registered name; the new id is then registered (as `role-set` would)
+and the hook carries on.
 
 ## Commands
 
@@ -75,9 +82,9 @@ the team config (`AW-META-002` otherwise); the two hook commands must let any se
 | `stop-check --session <id> --transcript <path> [--hook-active]` | Syncs, refreshes the lane map, prints every open obligation with the command that settles it; exit 1 if any |
 | `lanes-refresh` / `lanes [--announce]` | Rebuilds the lane map from live sessions named `<team>-<lane>` (`~/.claude/sessions`), then lane announcements ("API lane: …"); `lanes` refreshes first; `--announce` prints the `LANE MAP v<n>:` text |
 | `gate-run <pr> [scope...]` | Runs the merge gate in a gate tree (PR head merged onto `origin/main`); scopes come from the changed paths and the team config |
-| `gate-rerun <pr> --step <s> --test <filter>` | Reruns one red test alone and on plain main; records `flake` or `real` |
-| `merge-check <pr>` | The merge preconditions: gate green (or reds all flakes), the gate ran every scope its diff needs, head and main unmoved since the gate (a docs-only delta needs only the `always` scopes), merge order, not a draft |
-| `merge-run <pr>` | `merge-check`, then `gh pr merge <pr> --merge`, logs it and opens `announce-main` with the "main moved to <sha>" text |
+| `gate-rerun <pr> --step <s> --test <filter>` | Reruns one red test alone and on plain main (the main tree is built first: `--no-build` is dropped there); records `flake` or `real` for that test. A filter that matches no test is an error (AW-META-001), whatever `--ignore-exit-code` the step carries |
+| `merge-check <pr>` | The merge preconditions: gate green (or every failing test of every red step, read from the step log's `failed <name>` lines, was rerun and classified a flake; a log that can't be read refuses), the gate ran every scope its diff needs, head and main unmoved since the gate (a docs-only delta needs only the `always` scopes), merge order, not a draft |
+| `merge-run <pr>` | `merge-check`, then `gh pr merge <pr> --merge`, logs it and opens `announce-main` with the "main moved to <sha>" text. The merge is recorded as soon as gh succeeds: main's sha comes from a fetch, else from `gh pr view --json mergeCommit`, else it stays unknown ("main moved (#N merged)"). Running it again on a pull request that is already merged with no merge recorded records it and opens `announce-main` |
 | `owner [--all]` / `owner-answer <q> --answer <t>` / `owner-ask --text <t>` | The owner question queue (inbound messages starting `OWNER QUESTION`); an answer is dated in the decision log and owed back to the lane |
 | `health [--kill-orphans]` | Memory by group, orphaned Temporal dev servers, duplicate MCP server copies, lanes with no live session, heavy-lock holders; `--kill-orphans` kills only orphans by the rule below, by pid |
 | `watch [--interval <s>] [--for <dur>]` | Prints one line per settled change (PR opened, merged, ready, head moved, mergeable after two equal polls and never `UNKNOWN`, main moved, disk low) and keeps a heartbeat |
@@ -100,7 +107,7 @@ its parent is `systemd --user` or init, and it is older than five minutes.
 | `log` | The running log (default `$AW_STATE_DIR/meta/log.md`) |
 | `gate.always`, `gate.docsOnly`, `gate.scopes.<name>.{paths,steps}` | The merge gate. A step is `{name, run: argv, heavy, rerun?}`; `heavy` runs it through the heavy-job wrapper (`AW_HEAVY`, used when the file exists); `rerun` is the argv `gate-rerun` uses, with a `{test}` placeholder (default for a `dotnet test` step: its argv plus `--filter-method *<test>*`). Step names are unique across scopes |
 | `mergeOrder` | `[{before, after}]`: `after` can't merge while `before` is open |
-| `knownFlakes` | Test names a red is checked against before it counts as real |
+| `knownFlakes` | Test names (or Class.Method, or a class) a red is checked against before it counts as real; matched as whole dot-separated segments, never as a substring |
 
 ## Files
 

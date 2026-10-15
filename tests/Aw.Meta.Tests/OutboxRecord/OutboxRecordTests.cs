@@ -38,6 +38,19 @@ public sealed class OutboxRecordTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task After_clear_a_send_from_the_new_session_id_under_the_registered_name_is_recorded()
+    {
+        await _world.Ready();
+        _world.Sessions.Add(A.Live("sindri-meta", "s-after-clear"));
+
+        var response = await Send("sindri-api", "hi", session: "s-after-clear");
+
+        Assert.True(response.Recorded);
+        _ = Assert.Single((await _world.Messages.Sent(CancellationToken.None)).Value);
+        Assert.Equal("s-after-clear", (await _world.Messages.Role(CancellationToken.None)).Value!.Session.Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_send_to_the_peer_closes_its_reply_obligation_and_names_what_it_closed()
     {
         await _world.Ready();

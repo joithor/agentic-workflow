@@ -3,8 +3,9 @@ using Aw.Meta.Core.Obligations;
 namespace Aw.Meta.Core.Guard;
 
 /// <summary>
-/// Stops a stop-check from blocking forever on an obligation the meta can't or won't close: the identical open set blocks
-/// at most 'max' times in a row, and only a stop that the hook says is already a continuation (hook-active) is allowed.
+/// Stops a stop-check from blocking forever on an obligation the meta can't or won't close. A stop-check that is not a
+/// continuation (no hook-active) starts a new turn: it blocks and resets the count. Each continuation (hook-active) with the
+/// identical open set counts one block, and after 'max' of them the next continuation is allowed.
 /// </summary>
 public static class StopLoopGuard
 {
@@ -21,7 +22,7 @@ public static class StopLoopGuard
     /// <param name="previous">The remembered state.</param>
     /// <param name="fingerprint">The current open set's fingerprint.</param>
     /// <param name="hookActive">Whether the stop hook is already continuing a block.</param>
-    /// <param name="max">How many identical blocks in a row are allowed before a continuation is let through.</param>
+    /// <param name="max">How many counted blocks (continuations) a turn gets before the next continuation is let through.</param>
     /// <returns>The decision.</returns>
     public static GuardDecision Decide(GuardState previous, string fingerprint, bool hookActive, int max)
     {
@@ -32,8 +33,13 @@ public static class StopLoopGuard
             return new GuardDecision(Block: false, GuardState.None, Allowed: false, FirstAllowed: false);
         }
 
+        if (!hookActive)
+        {
+            return new GuardDecision(Block: true, new GuardState(fingerprint, 0), Allowed: false, FirstAllowed: false);
+        }
+
         var count = string.Equals(previous.Fingerprint, fingerprint, StringComparison.Ordinal) ? previous.Count : 0;
-        return hookActive && count >= max
+        return count >= max
             ? new GuardDecision(Block: false, new GuardState(fingerprint, Math.Max(count, max + 1)), Allowed: true, FirstAllowed: count == max)
             : new GuardDecision(Block: true, new GuardState(fingerprint, count + 1), Allowed: false, FirstAllowed: false);
     }

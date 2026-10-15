@@ -86,7 +86,7 @@ public sealed class MetaWorld
     public ObligationReader Reader => new(Messages, Lanes, Owner, Gates, Values);
 
     /// <summary>The meta-session check.</summary>
-    public MetaSession Session => new(Messages, Config);
+    public MetaSession Session => new(Messages, Config, Sessions);
 
     /// <summary>The stop-check sweep.</summary>
     public MetaSweep Sweep => new(Sync, Refresher, Reader);
@@ -130,4 +130,16 @@ public sealed class MetaWorld
     /// <returns>The JSONL line with its line ending.</returns>
     public static string PeerLine(string id, string name, string body) =>
         $$"""{"type":"user","origin":{"kind":"peer","from":"uds:/run/{{name}}.sock","msg_id":"{{id}}","name":"{{name}}","body":"{{body}}"},"timestamp":"2026-10-15T04:05:00.000Z"}""" + "\n";
+
+    /// <summary>A transcript line holding a peer message that arrived mid-turn: the queued_command attachment shape.</summary>
+    /// <param name="id">The message id; empty for none (the delivery id then names it).</param>
+    /// <param name="name">The sender's session name.</param>
+    /// <param name="body">The text.</param>
+    /// <param name="deliveryId">The delivery id.</param>
+    /// <returns>The JSONL line with its line ending.</returns>
+    public static string QueuedLine(string id, string name, string body, string deliveryId = "d-1")
+    {
+        var msgId = id.Length > 0 ? "\"msg_id\":\"" + id + "\"," : string.Empty;
+        return $$$"""{"type":"attachment","attachment":{"type":"queued_command","prompt":"p","delivery_id":"{{{deliveryId}}}","origin":{"kind":"peer","from":"uds:/run/{{{name}}}.sock",{{{msgId}}}"name":"{{{name}}}","body":"{{{body}}}"}},"timestamp":"2026-10-15T04:05:00.000Z"}""" + "\n";
+    }
 }

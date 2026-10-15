@@ -33,7 +33,7 @@ public static class MetaInfrastructureServiceCollectionExtensions
             .AddScoped<IOwnerStore, SqliteOwnerStore>()
             .AddScoped<IGateStore, SqliteGateStore>()
             .AddScoped<IKeyValueStore, SqliteKeyValueStore>()
-            .AddScoped<IMetaConfig>(sp => new FileMetaConfig(settings.ConfigPath, sp.GetRequiredService<JsonSerializerOptions>()))
+            .AddScoped<IMetaConfig>(sp => new FileMetaConfig(settings.ConfigPath, new JsonSerializerOptions(sp.GetRequiredService<JsonSerializerOptions>()) { WriteIndented = true }))
             .AddSingleton<ITranscriptReader, FileTranscriptReader>()
             .AddSingleton<ISessionDirectory>(new DirectorySessionDirectory(settings.SessionsDirectory))
             .AddSingleton<IProcessTable>(new ProcProcessTable(settings.StateDirectory))

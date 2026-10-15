@@ -1,4 +1,4 @@
-using Aw.Kernel.Json;
+using System.Text.Json;
 using Aw.Kernel.Telemetry;
 using Aw.Meta.Host;
 using Aw.Meta.Host.Commands;
@@ -42,7 +42,7 @@ internal sealed class CliHarness : IDisposable
         await using (provider.ConfigureAwait(false))
         {
             _ = provider.GetRequiredService<TelemetryRuntime>();
-            var exit = await CommandTable.Run(args, provider, AwJson.CreateOptions(MetaJsonContext.Default), io).ConfigureAwait(false);
+            var exit = await CommandTable.Run(args, provider, provider.GetRequiredService<JsonSerializerOptions>(), io).ConfigureAwait(false);
             return new CliResult(exit, output.ToString(), error.ToString());
         }
     }

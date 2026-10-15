@@ -8,19 +8,39 @@ public sealed class StopLoopGuardTests
     private static GuardDecision Step(GuardState state, string fingerprint, bool hookActive = true) =>
         StopLoopGuard.Decide(state, fingerprint, hookActive, max: 3);
 
-    [Fact, Trait("Lane", "unit")]
-    public void An_identical_set_blocks_max_times_and_then_a_continuation_is_allowed()
+    // One turn: the stop that starts it, then continuations.
+    private static (List<bool> Blocks, GuardState State) Turn(GuardState state, int continuations)
     {
-        var state = GuardState.None;
         var blocks = new List<bool>();
-        for (var i = 0; i < 5; i++)
+        var first = Step(state, "Reply:m1", hookActive: false);
+        blocks.Add(first.Block);
+        state = first.State;
+        for (var i = 0; i < continuations; i++)
         {
             var decision = Step(state, "Reply:m1");
             blocks.Add(decision.Block);
             state = decision.State;
         }
 
-        Assert.Equal([true, true, true, false, false], blocks);
+        return (blocks, state);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_identical_set_blocks_max_continuations_and_then_a_continuation_is_allowed()
+    {
+        var (blocks, _) = Turn(GuardState.None, continuations: 5);
+
+        Assert.Equal([true, true, true, true, false, false], blocks);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_turn_gets_the_full_allowance_again_after_a_release()
+    {
+        var (first, afterFirst) = Turn(GuardState.None, continuations: 4);
+        var (second, _) = Turn(afterFirst, continuations: 4);
+
+        Assert.Equal([true, true, true, true, false], first);
+        Assert.Equal(first, second);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -36,11 +56,11 @@ public sealed class StopLoopGuardTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Without_hook_active_it_keeps_blocking()
+    public void Without_hook_active_it_blocks_and_starts_the_count_over()
     {
         var decision = Step(new GuardState("Reply:m1", 9), "Reply:m1", hookActive: false);
 
-        Assert.True(decision.Block);
+        Assert.Equal((true, 0), (decision.Block, decision.State.Count));
     }
 
     [Fact, Trait("Lane", "unit")]

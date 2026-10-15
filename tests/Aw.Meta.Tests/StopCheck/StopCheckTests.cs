@@ -32,6 +32,66 @@ public sealed class StopCheckTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task After_clear_the_new_session_id_under_the_registered_name_is_still_the_meta_and_is_registered()
+    {
+        await _world.Ready();
+        _world.Sessions.Add(A.Live("sindri-meta", "s-after-clear"));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "please rebase"));
+
+        var response = await Check(session: "s-after-clear");
+
+        Assert.Equal((true, true), (response.IsMeta, response.Blocked));
+        Assert.Equal("s-after-clear", (await _world.Messages.Role(CancellationToken.None)).Value!.Session.Value);
+        Assert.True((await Check(session: "s-after-clear")).IsMeta);
+        Assert.False((await Check()).IsMeta);   // the old id no longer is
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("sindri-api", "s-new")]
+    [InlineData("", "s-new")]
+    public async Task A_live_session_with_another_name_is_not_the_meta(string name, string session)
+    {
+        await _world.Ready();
+        _world.Sessions.Add(A.Live(name, session));
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "please rebase"));
+
+        var response = await Check(session: session);
+
+        Assert.False(response.IsMeta);
+        Assert.Equal(MetaWorld.MetaSessionId, (await _world.Messages.Role(CancellationToken.None)).Value!.Session.Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_session_that_is_not_live_is_not_the_meta_even_with_the_registered_name_elsewhere()
+    {
+        await _world.Ready();
+        _world.Sessions.Add(A.Live("sindri-meta", "s-someone-else"));
+
+        Assert.False((await Check(session: "s-not-listed")).IsMeta);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_new_turn_restarts_the_block_count()
+    {
+        await _world.Ready();
+        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m1", "sindri-api", "stuck"));
+        var turns = new List<bool[]>();
+        for (var turn = 0; turn < 2; turn++)
+        {
+            var blocks = new List<bool> { (await Check(hookActive: false)).Blocked };
+            for (var i = 0; i < 4; i++)
+            {
+                blocks.Add((await Check(hookActive: true)).Blocked);
+            }
+
+            turns.Add([.. blocks]);
+        }
+
+        Assert.Equal([true, true, true, true, false], turns[0]);
+        Assert.Equal(turns[0], turns[1]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task The_meta_with_an_unanswered_peer_message_is_blocked_with_the_exact_next_command()
     {
         await _world.Ready();
