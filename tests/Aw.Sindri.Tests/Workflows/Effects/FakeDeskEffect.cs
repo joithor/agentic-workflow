@@ -18,6 +18,9 @@ internal sealed class FakeDeskEffect : IEffectKind
     /// <summary>When set, every recipe effect's dispatch fails with it (a setup the effect can't run in) instead of performing the effect; the engine's own notices still go through.</summary>
     public Error? Failure { get; set; }
 
+    /// <summary>The outcome a recipe effect replies; 'delivered' is the one registered reply event declares.</summary>
+    public string ReplyOutcome { get; set; } = "delivered";
+
     /// <summary>Every dispatch, in order.</summary>
     public IReadOnlyList<EffectContext> Calls
     {
@@ -66,6 +69,6 @@ internal sealed class FakeDeskEffect : IEffectKind
             existed = !_performed.Add(context.Identity);
         }
 
-        return ValueTask.FromResult<Result<EffectDone>>(new EffectDone(context.FromEngine ? null : OutcomeName.From("delivered"), existed));
+        return ValueTask.FromResult<Result<EffectDone>>(new EffectDone(context.FromEngine ? null : OutcomeName.From(ReplyOutcome), existed));
     }
 }

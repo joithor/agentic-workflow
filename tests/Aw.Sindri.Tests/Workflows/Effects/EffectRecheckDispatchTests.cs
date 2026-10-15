@@ -134,6 +134,92 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server) 
         }, Token);
     }
 
+    /// <summary>A block that replies an outcome no registered event declares can't fail the workflow: the effect is refused and the instance parks dispatch.</summary>
+    [Fact]
+    public async Task An_effect_replying_an_undeclared_outcome_is_refused_and_parks_dispatch_instead_of_failing_the_workflow()
+    {
+        var env = server.Environment;
+        _harness.Recipe("workflow.dev-notify", WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
+        await Allow(_notify);
+        _desk.ReplyOutcome = "undeclared";
+        await using var sindri = Sindri();
+        await WorkflowsHarness.HoldLease(sindri, Token);
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            var handle = await Completed(sindri, "T-97");
+            await Armed(handle, timers: 1);
+            await env.DelayAsync(_delay + TimeSpan.FromSeconds(1), Token);
+            var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));
+            var parked = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
+
+            Assert.Equal(("SND-WF-015", "spec-conflict (dispatch)"), (refused.Code, parked.Detail));
+            Assert.Contains("undeclared", refused.Reason, StringComparison.Ordinal);
+            Assert.Equal(WorkflowExecutionStatus.Running, (await handle.DescribeAsync()).Status);
+            await handle.TerminateAsync("test over");
+        }, Token);
+    }
+
+    /// <summary>An effect that keeps failing is tried the outbox policy's 8 times, then refused and parked (spec A-F20-F25), not retried forever.</summary>
+    [Fact]
+    public async Task An_effect_that_fails_every_attempt_is_refused_after_the_outbox_retry_policys_attempts()
+    {
+        var env = server.Environment;
+        _harness.Recipe("workflow.dev-notify", WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
+        await Allow(_notify);
+        _desk.Failure = Core.Workflow.WorkflowErrors.TriggerNotAllowed.With("the desk is down");
+        await using var sindri = Sindri();
+        await WorkflowsHarness.HoldLease(sindri, Token);
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
+
+        await worker.ExecuteAsync(async () =>
+        {
+            var handle = await Completed(sindri, "T-98");
+            await Armed(handle, timers: 1);
+            await env.DelayAsync(_delay + TimeSpan.FromHours(4), Token);
+            var refused = Assert.Single(await EffectRows.Eventually(sindri, OutboxEvents.Refused, CommandOrigin.Recipe));
+            var parked = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
+
+            Assert.Equal(("SND-WF-015", "spec-conflict (dispatch)"), (refused.Code, parked.Detail));
+            Assert.Equal(Aw.Kernel.Outbox.OutboxRetryPolicy.Default.MaxAttempts, _desk.RecipeCalls.Count);
+            await handle.TerminateAsync("test over");
+        }, Token);
+    }
+
+    /// <summary>A revoke after the delay but before the activity runs is still honoured: the run re-checks the approval.</summary>
+    [Fact]
+    public async Task RunEffect_refuses_when_the_recipe_was_revoked_after_the_delay()
+    {
+        var recipe = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
+        await Allow(_notify);
+        _harness.Revoke(recipe);
+        await using var sindri = Sindri();
+        await WorkflowsHarness.HoldLease(sindri, Token);
+        var command = new EffectCommand(_notify, new EffectIdentity(WorkflowInstanceId.From("WFI-" + new string('8', 32)), Entry: 2, Index: 0), CommandOrigin.Recipe, new Dictionary<string, Core.Workflow.Recipes.WithValue>(StringComparer.Ordinal));
+        var run = new EffectRun(InstanceAddress.Root(ItemKey.From("T-99"), RecipeId.From("workflow.dev-notify"), 1).Value, "T-99", Attempt: 1, command, "cmd-1", Text: null, new Dictionary<FactKey, FactValue>(), new RecipeVersion(recipe.Id, recipe.Version, recipe.Hash));
+        var regular = new ActivityEnvironment { Info = ActivityEnvironment.DefaultInfo with { IsLocal = false } };
+
+        var failure = await Assert.ThrowsAsync<ApplicationFailureException>(() => regular.RunAsync(() => sindri.GetRequiredService<EffectActivities>().RunAsync(run)));
+
+        Assert.Equal(("SND-RECIPE-005", true), (failure.ErrorType, failure.NonRetryable));
+        Assert.Empty(_desk.Calls);
+    }
+
+    /// <summary>The recheck now covers an engine-origin command too: only the desk notice may be one, whatever the instance's recipe.</summary>
+    [Fact]
+    public async Task An_engine_origin_command_other_than_the_desk_notice_is_refused_by_the_recheck()
+    {
+        var recipe = _harness.Approve(WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
+        await using var sindri = Sindri();
+        var local = new ActivityEnvironment { Info = ActivityEnvironment.DefaultInfo with { IsLocal = true } };
+
+        var refused = await local.RunAsync(() => sindri.GetRequiredService<EffectActivities>().RecheckAsync(
+            new EffectRecheck(new RecipeVersion(recipe.Id, recipe.Version, recipe.Hash), BlockId.From("effect.claim.ref"), CommandOrigin.Engine)));
+
+        Assert.Equal("SND-WF-011", refused.Code);
+    }
+
     [Fact]
     public async Task A_drifted_recipes_effect_is_refused_and_the_instance_parks_drift()
     {
