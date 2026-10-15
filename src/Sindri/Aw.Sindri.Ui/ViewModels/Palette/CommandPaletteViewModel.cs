@@ -236,7 +236,8 @@ internal sealed class CommandPaletteViewModel : ObservableObject
 
     private void OnSelectedChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(PaletteEntry.Name))
+        // Not while the selection sends and "Sending…" isn't on yet: it would say "Rebuild views, 3 of 14" again (J2).
+        if (e.PropertyName == nameof(PaletteEntry.Name) && Selected?.Control is not { IsSending: true, IsAnnouncingSending: false })
         {
             Announce();
         }
