@@ -1816,4 +1816,24 @@ public sealed class ShellWindowTests : IDisposable
         Assert.True(peer.IsControlElement());
         Assert.Equal(shell.PageName, peer.GetName());
     });
+
+    // W4 (a11y-1): the sheet title's peer is named for the kind noun and subject ("Workflow WFI-1"), not the bare subject.
+    [Fact]
+    public Task The_sheet_title_focus_target_is_text_named_for_the_kind_and_subject() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        Settle(window);
+        var title = window.Get<Border>("SheetTitle");
+
+        var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(title);
+
+        Assert.True(peer.IsControlElement());
+        Assert.Equal(Avalonia.Automation.Peers.AutomationControlType.Text, peer.GetAutomationControlType());
+        Assert.Equal(shell.SheetName, peer.GetName());
+        Assert.NotEqual(shell.SheetSubject, peer.GetName());
+        Assert.Equal(shell.SheetSubject, title.GetVisualDescendants().OfType<TextBlock>().Single().Text);
+    });
 }
