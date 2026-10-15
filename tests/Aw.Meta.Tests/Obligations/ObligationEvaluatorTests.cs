@@ -75,6 +75,17 @@ public sealed class ObligationEvaluatorTests
         Assert.DoesNotContain("api", open.Summary.Replace("LANE MAP", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void Broadcast_and_announce_name_each_lane_by_its_address()
+    {
+        var facts = A.Facts() with { Lanes = Lanes(1), LatestMerge = new MergeRecord(190, "abcdef1234567890", A.At(10)) };
+
+        var open = ObligationEvaluator.Evaluate(facts);
+
+        Assert.All(open, o => Assert.EndsWith("to: sindri-api, sindri-engine", o.NextCommand, StringComparison.Ordinal));
+        Assert.All(open, o => Assert.Contains("api (sindri-api), engine (sindri-engine)", o.Summary, StringComparison.Ordinal));
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("LANE MAP v2: x", true)]
     [InlineData("LANE MAP v1: x", false)]

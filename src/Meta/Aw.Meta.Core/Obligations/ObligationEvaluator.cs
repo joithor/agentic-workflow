@@ -58,12 +58,11 @@ public static class ObligationEvaluator
         var missing = Missing(facts, Targets(facts), o => Recipient.Contains(o.Message, marker));
         if (facts.Lanes.Version > 0 && missing.Count > 0)
         {
-            var names = string.Join(", ", missing);
             yield return new Obligation(
                 ObligationKind.BroadcastLanes,
                 string.Create(CultureInfo.InvariantCulture, $"v{facts.Lanes.Version}"),
-                string.Create(CultureInfo.InvariantCulture, $"lane map v{facts.Lanes.Version} not sent to: {names}"),
-                $"aw-meta lanes --announce, then SendMessage the printed text to: {names}");
+                string.Create(CultureInfo.InvariantCulture, $"lane map v{facts.Lanes.Version} not sent to: {Described(missing)}"),
+                $"aw-meta lanes --announce, then SendMessage the printed text to: {Addresses(missing)}");
         }
     }
 
@@ -77,17 +76,24 @@ public static class ObligationEvaluator
         var missing = Missing(facts, Targets(facts), o => o.At >= merge.At && o.Message.Contains(merge.ShortSha, StringComparison.Ordinal));
         if (missing.Count > 0)
         {
-            var names = string.Join(", ", missing);
             yield return new Obligation(
                 ObligationKind.AnnounceMain,
                 merge.ShortSha,
-                string.Create(CultureInfo.InvariantCulture, $"main moved to {merge.ShortSha} (#{merge.Pr}); not sent to: {names}"),
-                string.Create(CultureInfo.InvariantCulture, $"SendMessage \"main moved to {merge.ShortSha}: #{merge.Pr} merged. Merge main into your branches.\" to: {names}"));
+                string.Create(CultureInfo.InvariantCulture, $"main moved to {merge.ShortSha} (#{merge.Pr}); not sent to: {Described(missing)}"),
+                string.Create(CultureInfo.InvariantCulture, $"SendMessage \"main moved to {merge.ShortSha}: #{merge.Pr} merged. Merge main into your branches.\" to: {Addresses(missing)}"));
         }
     }
 
-    private static List<string> Missing(ObligationFacts facts, IEnumerable<LaneAssignment> lanes, Func<Outbound, bool> sent) =>
-        [.. lanes.Where(lane => !facts.Outbound.Any(o => Recipient.Matches(o.To, lane) && sent(o))).Select(lane => lane.Lane)];
+    private static List<LaneAssignment> Missing(ObligationFacts facts, IEnumerable<LaneAssignment> lanes, Func<Outbound, bool> sent) =>
+        [.. lanes.Where(lane => !facts.Outbound.Any(o => Recipient.Matches(o.To, lane) && sent(o)))];
+
+    // The address SendMessage takes is the session name; a lane label alone reaches no one.
+    private static string Address(LaneAssignment lane) => lane.SessionName.Length > 0 ? lane.SessionName : lane.Lane;
+
+    private static string Addresses(List<LaneAssignment> lanes) => string.Join(", ", lanes.Select(Address));
+
+    private static string Described(List<LaneAssignment> lanes) =>
+        string.Join(", ", lanes.Select(l => Address(l) == l.Lane ? l.Lane : $"{l.Lane} ({Address(l)})"));
 
     private static IEnumerable<Obligation> Relays(ObligationFacts facts) =>
         facts.Answers
