@@ -426,7 +426,8 @@ not show yet wait behind the "N new" pill (spoken through the shell's gated queu
 updates show at once. Leaving, or the pill, shows the held rows. For 500 ms after a refresh moved the selection because
 its row cleared, single keys do nothing. `Y` copies the selected row's primary-action CLI (through its control:
 "Copied"); `/` opens the Queue page's filter (id, title, repo; "Nothing matches"), the last Esc layer after the sheet;
-Home's panels ignore it. The top bar shows "G …" while the chord waits.
+Home's panels ignore it. The top bar shows "G …" while the chord waits: a visual cue only, with no live region and
+not a control element for a screen reader.
 
 **Selection is focus (U2 review run 1).** A refresh reconciles in place: groups by name (so a collapsed group stays
 collapsed), rows by id and timeline rows by sequence are updated, and the bound lists (`ObservableCollection`, via
@@ -439,6 +440,19 @@ unfiltered view, so a row hidden by the filter is not "cleared". When the select
 the row now at its place, "<id> cleared" is spoken once through the gated queue region, and focus goes there if the
 old row had it. The sheet's subject is set by every deep link (before the connection too: the first re-read loads it),
 and Esc from the sheet returns focus to the row that opened it, by id.
+
+**Focus and speech, review runs 2 and 3.** Every selection call names its `QueueScope` (`Page`, the Queue page's visible,
+expanded groups; `Home`, the two panels as drawn); there is no default, so a caller cannot pick the wrong page. A
+selected row that a refresh leaves off the page it was selected on (served in a group Home does not draw, pushed past
+Home's cap of five, or in a group the Queue page's filter hides) is treated as cleared from that page: the selection
+passes to the row now at its place, "<id> cleared" is spoken once, and focus follows if the old row had it. "N new" and
+"<id> cleared" in one refresh are one sentence, spoken once. Pressing the "N new" pill hides it and moves focus once, onto
+the first row it showed (the window's keep-focus fallback waits while a row request is pending). Esc from the sheet
+returns focus to the opener row by id, else the edge tab that opened it, else the row the selection moved to, else the
+page region. Load more is keyed to the item it was sent for (a page in flight for an item the sheet left blocks nothing
+on the next); a page that fails is spoken once and the rows stay, and a page that lands for another item, or after a
+refresh moved the cursor, is dropped. A Close that meets a 409 does not return until a read has settled the conflict
+(the sheet speaks it when the item no longer allows the action, the control when it still does), so it is spoken once.
 
 **The event stream (P5).** API P5 replaces `/events`' body with `PublicEvent`; the follower switches its event record
 when P5 merges. U2 doesn't touch the stream: it only re-reads views on each event.
