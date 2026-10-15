@@ -209,4 +209,71 @@ public abstract class SindriApiContract
         Expect.Equal("SND-UI-003", (await api.Services(_api, Token)).Error.Code);
         Expect.Equal("SND-UI-003", (await api.RebuildViews(_api, Token)).Error.Code);
     }
+
+    // H3 (arch-0, test-2): read-your-writes (API §2.4) under both bindings. The command's sequence is used up by the next
+    // view read, whatever it answers: SND-API-011 when the views lag, then a read that shows what Sindri says.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_status_read_after_an_accepted_command_is_views_behind_once_when_the_views_lag(bool stalled)
+    {
+        var api = Reach(new FakeSindriApi { Lag = stalled ? ViewsLag.Stalled : ViewsLag.Behind });
+        _ = await api.RebuildViews(_api, Token);
+
+        var first = await api.Status(_api, Token);
+
+        Expect.Equal(("SND-API-011", ErrorKind.Unavailable), (first.Error.Code, first.Error.Kind));
+        Expect.Equal(4242, (await api.Status(_api, Token)).Value.Pid);
+    }
+
+    [Fact]
+    public async Task A_services_read_after_an_accepted_command_is_views_behind_once_when_the_views_lag()
+    {
+        var api = Reach(new FakeSindriApi { Lag = ViewsLag.Behind });
+        _ = await api.RebuildViews(_api, Token);
+
+        var first = await api.Services(_api, Token);
+
+        Expect.Equal(("SND-API-011", ErrorKind.Unavailable), (first.Error.Code, first.Error.Kind));
+        Expect.True((await api.Services(_api, Token)).IsSuccess);
+    }
+
+    // With no lag the read is answered at once, with the sequence or without.
+    [Fact]
+    public async Task A_read_after_an_accepted_command_is_answered_when_the_views_have_caught_up()
+    {
+        var api = Reach(new FakeSindriApi());
+        _ = await api.RebuildViews(_api, Token);
+
+        Expect.Equal(4242, (await api.Status(_api, Token)).Value.Pid);
+    }
+
+    // Another process or epoch is another ledger: the sequence from the old one is dropped when a ping shows the change.
+    [Fact]
+    public async Task A_ping_that_shows_a_new_epoch_drops_the_pending_sequence()
+    {
+        var server = new FakeSindriApi { Lag = ViewsLag.Behind };
+        var api = Reach(server);
+        _ = await api.Ping(_api, Token);
+        _ = await api.RebuildViews(_api, Token);
+        server.Pong = new PingView(4242, 8);
+        _ = await api.Ping(_api, Token);
+
+        Expect.Equal(4242, (await api.Status(_api, Token)).Value.Pid);
+    }
+
+    // A read that never got an answer (a transport failure) didn't use the sequence: the next one carries it.
+    [Fact]
+    public async Task A_status_read_that_never_got_an_answer_leaves_the_sequence_for_the_next_one()
+    {
+        var server = new FakeSindriApi { Lag = ViewsLag.Behind };
+        var api = Reach(server);
+        _ = await api.RebuildViews(_api, Token);
+        server.FailStatus = true;
+
+        Expect.Equal("SND-UI-002", (await api.Status(_api, Token)).Error.Code);
+        server.FailStatus = false;
+
+        Expect.Equal("SND-API-011", (await api.Status(_api, Token)).Error.Code);
+    }
 }

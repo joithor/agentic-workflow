@@ -128,6 +128,29 @@ public sealed class SindriApiClientHeaderTests
             handler.Requests.Select(r => (r.Method, r.After)));
     }
 
+    // H3: the model answers views-behind only for a request that carries the header, so a client that forgot to send it fails.
+    [Fact]
+    public async Task A_view_read_without_the_header_is_never_held_whatever_the_model_remembers()
+    {
+        var server = new FakeSindriApi { Lag = ViewsLag.Behind };
+        var client = new SindriApiClient(new HttpClient(new FakeSindriHandler(server)), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+        _ = await server.RebuildViews(_api, Token);   // the model has a pending sequence the client never heard of
+
+        Assert.True((await client.Status(_api, Token)).IsSuccess);
+    }
+
+    // H3: a ping through the handler is a ping on the model (it is counted).
+    [Fact]
+    public async Task A_ping_over_http_reaches_the_model()
+    {
+        var server = new FakeSindriApi();
+        var client = new SindriApiClient(new HttpClient(new FakeSindriHandler(server)), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+
+        _ = await client.Ping(_api, Token);
+
+        Assert.Equal(1, server.PingCalls);
+    }
+
     // F2: a view query that never got an answer didn't use it: the next one carries it.
     [Fact]
     public async Task A_query_that_got_no_answer_leaves_the_sequence_for_the_next_one()
