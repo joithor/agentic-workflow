@@ -253,4 +253,25 @@ public sealed class ItemSheetViewModelTests
 
         Assert.Equal((true, false), (sheet.HasItem, sheet.HasProblem));
     }
+
+    // L13 (testing-1): a read made while the views are behind the last command is SND-API-011, once. The sheet keeps its last
+    // answer marked stale; the next read (the views caught up) shows the new state.
+    [Fact]
+    public async Task A_read_the_views_are_behind_for_keeps_the_last_answer_stale_until_they_catch_up()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        var before = (sheet.StateWord, sheet.VersionText, sheet.Timeline.Count);
+        _server.Lag = ViewsLag.Behind;
+        _ = await _server.CloseItem(_api, A.NewItem, new Ui.Api.CloseItemRequest("done", 1), Token);
+        _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
+
+        await sheet.Refresh(_api, Token);
+
+        Assert.Equal((true, true, before), (sheet.IsStale, sheet.HasItem, (sheet.StateWord, sheet.VersionText, sheet.Timeline.Count)));
+
+        await sheet.Refresh(_api, Token);
+
+        Assert.Equal((false, "Done", "version 2"), (sheet.IsStale, sheet.StateWord, sheet.VersionText));
+    }
 }

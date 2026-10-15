@@ -324,4 +324,27 @@ public sealed class QueueViewModelTests
 
         Assert.Equal((false, false, 5), (queue.HasProblem, queue.IsLoading, queue.Total));
     }
+
+    // L13 (testing-1): a read made while the views are behind the last command is SND-API-011, once. The queue keeps its rows,
+    // marked stale; the next read (the views caught up) shows what the command changed.
+    [Fact]
+    public async Task A_read_the_views_are_behind_for_keeps_the_rows_stale_and_is_read_again_once_they_catch_up()
+    {
+        var queue = await Queue();
+        await queue.Refresh(_api, Token);
+        _server.Lag = ViewsLag.Behind;
+        _ = await _server.CloseItem(_api, A.NewItem, new Ui.Api.CloseItemRequest("done", 1), Token);
+        _server.QueueView = new RouteAnswer(HttpStatusCode.OK, GoldenFiles.SpecShaped("queue", "extra-p4-waiting").Replace("Try the queue", "Renamed item", StringComparison.Ordinal));
+
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal((5, true, false), (queue.Total, queue.IsStale, queue.HasProblem));
+        Assert.Contains("Try the queue", queue.Groups[3].Rows.Select(r => r.Title), StringComparer.Ordinal);
+
+        await queue.Refresh(_api, Token);
+
+        Assert.False(queue.IsStale);
+        Assert.Contains("Renamed item", queue.Groups[3].Rows.Select(r => r.Title), StringComparer.Ordinal);
+        Assert.DoesNotContain("Try the queue", queue.Groups[3].Rows.Select(r => r.Title), StringComparer.Ordinal);
+    }
 }

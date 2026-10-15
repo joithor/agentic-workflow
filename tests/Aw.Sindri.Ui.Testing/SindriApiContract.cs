@@ -164,6 +164,7 @@ public abstract partial class SindriApiContract
         Expect.Equal(expected, (await api.Commands(_api, Token)).Error);
         Expect.Equal(expected, (await api.Services(_api, Token)).Error);
         Expect.Equal(expected, (await api.RebuildViews(_api, Token)).Error);
+        Expect.Sequence(Enumerable.Repeat(expected, 5), await P3Errors(api));   // L13: the P3 routes too
     }
 
     // J5 (arch-1): the order a real server answers in: nothing answers (Down), then the caller check (a refusal), then the route's own
@@ -195,6 +196,7 @@ public abstract partial class SindriApiContract
         Expect.Equal("SND-UI-002", (await api.Commands(_api, Token)).Error.Code);
         Expect.Equal("SND-UI-002", (await api.Services(_api, Token)).Error.Code);
         Expect.Equal("SND-UI-002", (await api.RebuildViews(_api, Token)).Error.Code);
+        Expect.Sequence(Enumerable.Repeat("SND-UI-002", 5), (await P3Errors(api)).Select(e => e.Code));
     }
 
     [Theory]
@@ -206,12 +208,23 @@ public abstract partial class SindriApiContract
     public async Task A_refusal_keeps_its_code_detail_and_kind_on_every_route(int status, ErrorKind kind)
     {
         var problem = RouteAnswer.Problem((HttpStatusCode)status, "SND-API-777", "Not now (fix: later)");
-        var api = Reach(new FakeSindriApi { Catalog = problem, ServiceView = problem, Rebuild = problem });
+        var api = Reach(new FakeSindriApi
+        {
+            Catalog = problem,
+            ServiceView = problem,
+            Rebuild = problem,
+            QueueView = problem,
+            Items = { [A.NewItem] = problem },
+            TimelinePages = { [0] = problem },
+            Create = problem,
+            Close = problem,
+        });
         var expected = new Error("SND-API-777", kind, "Not now (fix: later)");
 
         Expect.Equal(expected, (await api.Commands(_api, Token)).Error);
         Expect.Equal(expected, (await api.Services(_api, Token)).Error);
         Expect.Equal(expected, (await api.RebuildViews(_api, Token)).Error);
+        Expect.Sequence(Enumerable.Repeat(expected, 5), await P3Errors(api));
     }
 
     // A body that isn't Sindri's ProblemDetails (not an SND title, no detail, not JSON) is an answer the app can't read.
@@ -222,11 +235,22 @@ public abstract partial class SindriApiContract
     public async Task A_body_that_is_not_sindris_is_an_unreadable_answer_on_every_route(int status, string body)
     {
         var odd = new RouteAnswer((HttpStatusCode)status, body);
-        var api = Reach(new FakeSindriApi { Catalog = odd, ServiceView = odd, Rebuild = odd });
+        var api = Reach(new FakeSindriApi
+        {
+            Catalog = odd,
+            ServiceView = odd,
+            Rebuild = odd,
+            QueueView = odd,
+            Items = { [A.NewItem] = odd },
+            TimelinePages = { [0] = odd },
+            Create = odd,
+            Close = odd,
+        });
 
         Expect.Equal("SND-UI-003", (await api.Commands(_api, Token)).Error.Code);
         Expect.Equal("SND-UI-003", (await api.Services(_api, Token)).Error.Code);
         Expect.Equal("SND-UI-003", (await api.RebuildViews(_api, Token)).Error.Code);
+        Expect.Sequence(Enumerable.Repeat("SND-UI-003", 5), (await P3Errors(api)).Select(e => e.Code));
     }
 
     // H3 (arch-0, test-2): read-your-writes (API §2.4) under both bindings. The command's sequence is used up by the next
