@@ -49,7 +49,7 @@
             PointerEntered="OnPanelEntered" PointerExited="OnPanelExited">
       <StackPanel>
         <Border Classes="phead">
-          <Grid>
+          <Grid x:Name="QueueHeader">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="150" /><ColumnDefinition Width="*" MinWidth="160" /><ColumnDefinition Width="150" /><ColumnDefinition Width="130" />
         <ColumnDefinition Width="110" /><ColumnDefinition Width="70" /><ColumnDefinition Width="260" />

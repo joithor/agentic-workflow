@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.Navigation;
@@ -15,6 +16,32 @@ internal sealed partial class HomePage : UserControl
         InitializeComponent();
         AddHandler(ItemRow.OpenEvent, OnOpen);
         AddHandler(ItemRow.SelectEvent, OnSelect);
+    }
+
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == PageLayout.TierProperty)
+        {
+            Stack(change.GetNewValue<PageTier>() >= PageTier.Narrow);
+        }
+    }
+
+    // Below 1000 px the two panel columns become one (proof B8): Running over Queued, each the page's full width.
+    private void Stack(bool stacked)
+    {
+        var grid = this.FindControl<Grid>("PanelGrid");
+        var queued = this.FindControl<Border>("QueuedPanel");
+        if (grid is null || queued is null)
+        {
+            return;
+        }
+
+        grid.ColumnDefinitions = stacked ? [new ColumnDefinition(GridLength.Star)] : [new ColumnDefinition(GridLength.Star), new ColumnDefinition(16, GridUnitType.Pixel), new ColumnDefinition(GridLength.Star)];
+        grid.RowDefinitions = stacked ? [new RowDefinition(GridLength.Auto), new RowDefinition(16, GridUnitType.Pixel), new RowDefinition(GridLength.Auto)] : [];
+        Grid.SetColumn(queued, stacked ? 0 : 2);
+        Grid.SetRow(queued, stacked ? 2 : 0);
     }
 
     private void OnHealthStrip(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.GoTo(PageId.Health);

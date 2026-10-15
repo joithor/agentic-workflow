@@ -429,12 +429,17 @@ its row cleared, single keys do nothing. `Y` copies the selected row's primary-a
 Home's panels ignore it. The top bar shows "G …" while the chord waits: a visual cue only, with no live region and
 not a control element for a screen reader.
 
-**Focus rings on rows (proof B2, B7).** The page runs full width under the sheet beside it (UI spec §3.2 "over the page").
-The default focus ring is an adorner, drawn above the sheet, so a row and the buttons in it (`Border.item-row`, in
-`Views/Queue/QueueStyles.axaml`) have no adorner (`FocusAdorner` null) and draw the same 2 px PrimaryHover ring inside
-their own template on `:focus-visible`: the row on its own border, a button on its content presenter. That ring is part
-of the page, so the sheet covers it and the page's scroll viewer clips it. The title column has a 160 px minimum so a
-narrow page shrinks it last.
+**Focus rings on rows, and the page beside the sheet (proof B2, B7, B8, N9).** A sheet beside the page never covers page
+content (WCAG 2.2 2.4.11 Focus Not Obscured; a provisional owner default, a deviation from the spec's "over the page"): the page
+region is the window minus the sheet, and the page adapts to the narrower width. The shell sets `PageLayout.Tier` (an
+inherited view-side class, no view-model logic) on the page region from its width: Wide (1120 px and up) shows every column;
+Mid (1000 to 1120) drops step and since; Narrow (790 to 1000) drops repo too and Home stacks its two panels into one column;
+Tight (under 790) keeps id (100), title (at least 160) and the primary action (170). The queue's header and its rows use the
+same widths so columns line up. The default focus ring is an adorner, drawn above the sheet, so a row and the buttons in it
+(`Border.item-row`, `Views/Queue/QueueStyles.axaml`) have no adorner (`FocusAdorner` null) and draw the same 2 px
+PrimaryHover ring inside their own template on `:focus-visible`: the row on its own border, a button on its content
+presenter. Focusing never changes layout (N9): a title's presenter always has a transparent 2 px border and a -2 margin, a
+command control's padding gives up the pixel its border gains, and the selected row's padding gives up its 2 px bar.
 
 **Selection is focus (U2 review run 1).** A refresh reconciles in place: groups by name (so a collapsed group stays
 collapsed), rows by id and timeline rows by sequence are updated, and the bound lists (`ObservableCollection`, via

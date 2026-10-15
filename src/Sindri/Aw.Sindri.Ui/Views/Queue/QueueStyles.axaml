@@ -13,6 +13,7 @@
     <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Primary}" />
     <Setter Property="BorderThickness" Value="2,1,0,0" />
+    <Setter Property="Padding" Value="14,8,16,8" />
   </Style>
   <!-- Proof B2/B7: a row and the controls in it draw their focus ring inside their own template, not in the window's adorner
        layer, which is above the sheet: the page runs full width under the sheet, the sheet covers the ring and the page's
@@ -32,10 +33,21 @@
   <Style Selector="Border.item-row Button">
     <Setter Property="FocusAdorner" Value="{x:Null}" />
   </Style>
+  <!-- N9: focusing changes only the colour. A title button's presenter always has the 2 px border (transparent) and a -2
+       margin that gives its size back; a command control's 1 px border grows to 2 px while its padding gives 1 px up. -->
+  <Style Selector="Border.item-row Button.row-title /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="Margin" Value="-2" />
+    <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+  </Style>
   <Style Selector="Border.item-row Button:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHover}" />
     <Setter Property="BorderThickness" Value="2" />
     <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+  </Style>
+  <Style Selector="Border.item-row Button.command-control:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Padding" Value="9,3" />
   </Style>
   <Style Selector="Button.row-title">
     <Setter Property="Background" Value="Transparent" />

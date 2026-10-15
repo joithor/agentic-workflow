@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Queue;
+using Aw.Sindri.Ui.Views.Shell;
 
 namespace Aw.Sindri.Ui.Views.Queue;
 
@@ -35,6 +37,16 @@ internal sealed partial class ItemRow : UserControl
 
     /// <summary>The row's item id, or empty.</summary>
     internal string ItemId => (DataContext as ItemRowViewModel)?.Id ?? string.Empty;
+
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == PageLayout.TierProperty && this.FindControl<Grid>("TableRow") is { } table)
+        {
+            PageLayout.Apply(table, change.GetNewValue<PageTier>());
+        }
+    }
 
     private void OnOpen(object? sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(OpenEvent, this));
 }

@@ -166,7 +166,7 @@ public sealed class SheetEnterFocusTests : IDisposable
         grip.RaiseEvent(new VectorEventArgs { RoutedEvent = Thumb.DragDeltaEvent, Vector = new Vector(2000, 0) });   // far below the narrowest
         Settle(window);
 
-        Assert.Equal((sheet.MaxWidth, sheet.MinWidth, default(Thickness)), (wide, sheet.Width, window.Get<Border>("Page").Margin));
+        Assert.Equal((sheet.MaxWidth, sheet.MinWidth, new Thickness(0, 0, sheet.MinWidth, 0)), (wide, sheet.Width, window.Get<Border>("Page").Margin));
     });
 
     [Fact]

@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Shell;
 
 namespace Aw.Sindri.Ui.Views.Queue;
 
@@ -12,6 +14,16 @@ internal sealed partial class QueuePage : UserControl
         InitializeComponent();
         AddHandler(ItemRow.OpenEvent, OnOpen);
         AddHandler(ItemRow.SelectEvent, OnSelect);
+    }
+
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == PageLayout.TierProperty && this.FindControl<Grid>("QueueHeader") is { } header)
+        {
+            PageLayout.Apply(header, change.GetNewValue<PageTier>());   // the same columns as the rows, so they line up
+        }
     }
 
     // Focus arriving on a row, or on a control in it, selects it: the selection is the focus (§3.3).

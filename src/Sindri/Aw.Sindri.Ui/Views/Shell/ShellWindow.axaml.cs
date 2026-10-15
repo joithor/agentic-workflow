@@ -39,6 +39,7 @@ internal sealed partial class ShellWindow : Window
     {
         InitializeComponent();
         AddHandler(GotFocusEvent, OnGotFocus, handledEventsToo: true);
+        PagePanel.SizeChanged += (_, e) => PageLayout.SetTier(PagePanel, PageLayout.For(e.NewSize.Width));
     }
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
@@ -191,7 +192,19 @@ internal sealed partial class ShellWindow : Window
     // While the sheet covers the page, the page and its controls leave the tab order, F6's cycle and hit-testing, so focus
     // never lands where it can't be seen (WCAG 2.4.3, 2.4.7). The sheet hides the page's disabled look. The page is
     // enabled again as soon as the sheet closes or stops covering, before focus returns to it (KeepFocus runs later).
-    private void CoverPage() => PagePanel.IsEnabled = !(Covering && Shell is { IsSheetShown: true });
+    private void CoverPage()
+    {
+        PagePanel.IsEnabled = !(Covering && Shell is { IsSheetShown: true });
+        ReservePage();
+    }
+
+    // Beside the page the sheet takes its width from the page region: the page is the window minus the sheet, so nothing the
+    // keyboard reaches is under it (WCAG 2.4.11, proof B8), and the page's rows and Home adapt to the narrower width
+    // (PageLayout). The width is the sheet's clamped one, not the requested.
+    private void ReservePage() =>
+        PagePanel.Margin = new Thickness(0, 0, !Covering && Shell is { IsSheetShown: true } && !double.IsNaN(SheetPanel.Width) ? ClampedSheetWidth() : 0, 0);
+
+    private double ClampedSheetWidth() => Math.Clamp(SheetPanel.Width, SheetPanel.MinWidth, SheetPanel.MaxWidth);
 
     private bool Covering => SheetPanel.Classes.Contains("covers");
 
@@ -242,8 +255,11 @@ internal sealed partial class ShellWindow : Window
     // A keyboard user's focus moves with its ring (Tab); a pointer user's without.
     private NavigationMethod Method() => _lastMethod == NavigationMethod.Pointer ? NavigationMethod.Pointer : NavigationMethod.Tab;
 
-    private void OnSheetDrag(object? sender, VectorEventArgs e) =>
+    private void OnSheetDrag(object? sender, VectorEventArgs e)
+    {
         SheetPanel.Width = Math.Clamp(SheetPanel.Bounds.Width - e.Vector.X, SheetPanel.MinWidth, SheetPanel.MaxWidth);
+        ReservePage();
+    }
 
     private void OnSheetDragged(object? sender, VectorEventArgs e) => Shell?.ResizeSheet(SheetPanel.Bounds.Width);
 
