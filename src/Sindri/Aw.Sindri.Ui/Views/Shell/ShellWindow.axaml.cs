@@ -191,7 +191,16 @@ internal sealed partial class ShellWindow : Window
     // While the sheet covers the page, the page and its controls leave the tab order, F6's cycle and hit-testing, so focus
     // never lands where it can't be seen (WCAG 2.4.3, 2.4.7). The sheet hides the page's disabled look. The page is
     // enabled again as soon as the sheet closes or stops covering, before focus returns to it (KeepFocus runs later).
-    private void CoverPage() => PagePanel.IsEnabled = !(Covering && Shell is { IsSheetShown: true });
+    private void CoverPage()
+    {
+        PagePanel.IsEnabled = !(Covering && Shell is { IsSheetShown: true });
+        ReservePage();
+    }
+
+    // Beside the page the sheet takes its width from the page region, so the page's rows and their focus rings (drawn in the
+    // adorner layer, above the sheet) end where the sheet starts (proof B2).
+    private void ReservePage() =>
+        PagePanel.Margin = new Thickness(0, 0, !Covering && Shell is { IsSheetShown: true } && !double.IsNaN(SheetPanel.Width) ? SheetPanel.Width : 0, 0);
 
     private bool Covering => SheetPanel.Classes.Contains("covers");
 
@@ -242,7 +251,11 @@ internal sealed partial class ShellWindow : Window
     // A keyboard user's focus moves with its ring (Tab); a pointer user's without.
     private NavigationMethod Method() => _lastMethod == NavigationMethod.Pointer ? NavigationMethod.Pointer : NavigationMethod.Tab;
 
-    private void OnSheetDrag(object? sender, VectorEventArgs e) => SheetPanel.Width = SheetPanel.Bounds.Width - e.Vector.X;
+    private void OnSheetDrag(object? sender, VectorEventArgs e)
+    {
+        SheetPanel.Width = SheetPanel.Bounds.Width - e.Vector.X;
+        ReservePage();
+    }
 
     private void OnSheetDragged(object? sender, VectorEventArgs e) => Shell?.ResizeSheet(SheetPanel.Bounds.Width);
 
