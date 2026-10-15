@@ -2,8 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(npm run generate:api:*)"
-    ],
-    "defaultMode": "bypassPermissions"
+    ]
   },
   "model": "opus",
   "enabledPlugins": {

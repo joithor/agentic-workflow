@@ -256,11 +256,6 @@ else
   bash "$SCRIPT_DIR/scripts/install-judge.sh" --build-only
 fi
 
-# --- Permission mode (owner, 2026-10-14): every Claude session starts in bypassPermissions ---
-# shellcheck source=config/lib/claude-bypass.sh
-source "$SCRIPT_DIR/config/lib/claude-bypass.sh"
-aw_claude_bypass "${CLAUDE_SETTINGS_FILE:-$HOME/.claude/settings.json}"
-
 # --- Sindri (opt-in: ./setup.sh --with-sindri) ---
 if [ "$WITH_SINDRI" = "1" ]; then
   if aw_dry; then
@@ -641,6 +636,15 @@ for _p in $PROVIDERS; do
   "${_p}_install"
   REGISTRY_ENTRIES+=("$_p $("${_p}_skills_dir")")
 done
+
+# --- Permission mode (owner, 2026-10-14): every Claude session starts in bypassPermissions, so lanes never run in
+# different modes (cross-session messages are held across a mode mismatch). After the provider installs, so a fresh
+# ~/.claude/settings.json exists; AW_NO_CLAUDE_BYPASS=1 opts out ---
+if [[ " $PROVIDERS " == *" claude "* ]]; then
+  # shellcheck source=config/lib/claude-bypass.sh
+  source "$SCRIPT_DIR/config/lib/claude-bypass.sh"
+  aw_claude_bypass "$CLAUDE_DIR/settings.json"
+fi
 
 # --- Provider registry (read by the skill preamble) ---
 echo ""
