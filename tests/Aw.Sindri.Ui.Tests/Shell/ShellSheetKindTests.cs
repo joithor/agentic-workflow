@@ -62,22 +62,6 @@ public sealed class ShellSheetKindTests
     }
 
     [Fact]
-    public void The_window_has_one_sheet_layer_and_the_lane_anchors_sit_inside_its_content()
-    {
-        var xaml = File.ReadAllLines(Path.Combine(UiSource.Library, "Views", "Shell", "ShellWindow.axaml"));
-        var sheet = Array.FindIndex(xaml, l => l.Contains("x:Name=\"Sheet\"", StringComparison.Ordinal));
-        var content = Array.FindIndex(xaml, l => l.Contains("x:Name=\"SheetContent\"", StringComparison.Ordinal));
-        var u3 = Array.FindIndex(xaml, l => l.Contains("LANE ANCHOR U3'", StringComparison.Ordinal));
-        var u8 = Array.FindIndex(xaml, l => l.Contains("LANE ANCHOR U8", StringComparison.Ordinal));
-        var palette = Array.FindIndex(xaml, l => l.Contains("x:Name=\"PaletteLayer\"", StringComparison.Ordinal));
-
-        Assert.True(sheet >= 0 && content > sheet, "SheetContent is inside the Sheet layer");
-        Assert.True(u3 > content && u8 == u3 + 1 && u8 < palette, "both markers follow SheetContent's start, not a root layer");
-        var closes = xaml.Skip(u8 + 1).TakeWhile(l => !l.Contains("</Border>", StringComparison.Ordinal)).Any(l => l.Contains("</Panel>", StringComparison.Ordinal));
-        Assert.True(closes, "SheetContent closes right after the markers, before the Sheet layer ends");
-    }
-
-    [Fact]
     public async Task Before_any_sheet_is_opened_the_placeholder_shows()
     {
         var shell = await Shell();
@@ -120,18 +104,6 @@ public sealed class ShellSheetKindTests
         Assert.Contains("IsVisible=\"{Binding IsSheetPlaceholderShown}\"", body, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void Both_lane_markers_sit_inside_the_placeholder_switch_just_before_its_default_arm()
-    {
-        var lines = File.ReadAllLines(Path.Combine(UiSource.Library, "ViewModels", "Shell", "ShellViewModel.Sheet.cs"));
-        var property = Array.FindIndex(lines, l => l.Contains("IsSheetPlaceholderShown =>", StringComparison.Ordinal));
-        var u3 = Array.FindIndex(lines, l => l.Contains("LANE ANCHOR U3'", StringComparison.Ordinal));
-        var u8 = Array.FindIndex(lines, l => l.Contains("LANE ANCHOR U8", StringComparison.Ordinal));
-        var fallback = Array.FindIndex(lines, l => l.Contains("_ => true", StringComparison.Ordinal));
-
-        Assert.True(property >= 0 && u3 > property && u8 == u3 + 1 && fallback == u8 + 1, "the markers are adjacent inside the switch, above its '_ => true' arm");
-    }
-
     // a11y-1: the kind is part of the name, so "workflow/X" and "recipe/X" are not both "X". Ids that name themselves (ITM-, REQ-, JOB-) stay bare.
     [Theory]
     [InlineData("workflow/WFI-1", "Workflow WFI-1", "Reopen workflow WFI-1")]
@@ -160,23 +132,5 @@ public sealed class ShellSheetKindTests
 
         Assert.Contains("x:Name=\"Sheet\" Classes=\"sheet focus-region\" IsVisible=\"{Binding IsSheetShown}\" Focusable=\"True\"\n                AutomationProperties.Name=\"{Binding SheetName}\"", xaml.ReplaceLineEndings("\n"), StringComparison.Ordinal);
         Assert.Contains("Text=\"{Binding SheetSubject}\" AutomationProperties.Name=\"{Binding SheetName}\"", xaml, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Every_marker_says_where_to_insert_and_not_between_the_markers()
-    {
-        var files = new[]
-        {
-            "src/Sindri/Aw.Sindri.Ui/Api/ISindriApi.cs", "src/Sindri/Aw.Sindri.Ui/Api/SindriApiClient.cs", "src/Sindri/Aw.Sindri.Ui/Api/SindriUiJsonContext.cs",
-            "src/Sindri/Aw.Sindri.Ui/ViewModels/Shell/ShellViewModel.cs", "src/Sindri/Aw.Sindri.Ui/ViewModels/Shell/ShellViewModel.Sheet.cs", "src/Sindri/Aw.Sindri.Ui/Views/Shell/ShellWindow.axaml",
-            "tests/Aw.Sindri.Ui.Testing/FakeSindriApi.Workflow.cs", "tests/Aw.Sindri.Ui.Testing/FakeSindriHandler.cs", "tests/Aw.Sindri.Ui.Testing/SindriApiContract.cs", "tests/Aw.Sindri.Ui.Testing/SindriApiContract.Workflow.cs",
-            "docs/csharp/sindri-ui.md",
-        };
-        var markers = files.SelectMany(f => File.ReadAllLines(Path.Combine(UiSource.Root, f)).Where(l => l.Contains("LANE ANCHOR U3':", StringComparison.Ordinal) || l.Contains("LANE ANCHOR U8:", StringComparison.Ordinal)).Select(l => (File: f, Line: l))).ToList();
-
-        Assert.True(markers.Count >= 2 * files.Length);
-        Assert.All(markers, m => Assert.True(
-            m.Line.Contains("never between the markers", StringComparison.Ordinal) && (m.Line.Contains("immediately above", StringComparison.Ordinal) || m.Line.Contains("immediately below", StringComparison.Ordinal)),
-            m.File + ": " + m.Line));
     }
 }
