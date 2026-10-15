@@ -27,7 +27,7 @@ internal static class GraphAnswer
         {
             var cascade = Cascade.Affects(graph, anchor.Key, depth);
             own.AddRange(cascade.OwnScope.Where(k => !own.Exists(o => o.Key.Value == k.Value)).Select(k => (k, anchor.Key)));
-            foreach (var a in cascade.Affected.Where(a => !affected.TryGetValue(a.Node.Value, out var known) || a.Depth < known.Depth))
+            foreach (var a in cascade.Affected.Where(a => !affected.TryGetValue(a.Node.Value, out var known) || Better(a, known)))
             {
                 affected[a.Node.Value] = a;
             }
@@ -53,6 +53,19 @@ internal static class GraphAnswer
         return new GraphPart(candidates, cites, [.. anchors.Select(a => a.Key.Value)], map.Snapshot.Label, [.. suggested.Select(k => k.Value)]);
     }
 
+    // Between anchors the shallower path wins; at equal depth the one with fewer owns hops (as Cascade orders one anchor's), then the key the path starts from.
+    private static bool Better(AffectedNode candidate, AffectedNode known)
+    {
+        var byDepth = candidate.Depth.CompareTo(known.Depth);
+        if (byDepth != 0)
+        {
+            return byDepth < 0;
+        }
+
+        var byOwns = Cascade.OwnsHops(candidate.Path).CompareTo(Cascade.OwnsHops(known.Path));
+        return byOwns != 0 ? byOwns < 0 : string.CompareOrdinal(candidate.Path[0], known.Path[0]) < 0;
+    }
+
     private static PackCandidate Fact(GraphNode node, GraphSnapshot graph, MapText text, string why)
     {
         var fact = text.Fact(node);
@@ -70,7 +83,7 @@ internal static class GraphAnswer
         var node = nodes[affected.Node.Value];
         var onPath = affected.Edges.SelectMany(e => new[] { e.From.Value, e.To.Value }).Append(affected.Node.Value).Distinct(StringComparer.Ordinal)
             .Select(k => nodes.TryGetValue(k, out var n) ? n.Provenance : Provenance.Human);   // why: a cut-away node can't weaken what the caller sees
-        var provenances = affected.Edges.Select(e => e.Provenance).Concat(onPath).Append(node.Provenance).ToList();
+        var provenances = affected.Edges.Select(e => e.Provenance).Concat(onPath).ToList();
         var provenance = provenances.Contains(Provenance.Model) ? Provenance.Model : provenances.Contains(Provenance.Deterministic) ? Provenance.Deterministic : Provenance.Human;
         var confirmed = provenances.TrueForAll(p => p == Provenance.Human);
         var trust = TrustPolicy.For(provenance, confirmed);

@@ -23,7 +23,7 @@ public static class Cascade
         var visited = new HashSet<string>(ownKeys, StringComparer.Ordinal);
         var affected = new List<AffectedNode>();
         var reported = new HashSet<string>(ownKeys, StringComparer.Ordinal);
-        var frontier = own.Select(d => new Reach(d.Key, d.Path, d.Edges)).OrderBy(OwnsHops).ThenBy(r => r.Node.Value, StringComparer.Ordinal).ToList();
+        var frontier = own.Select(d => new Reach(d.Key, d.Path, d.Edges)).OrderBy(r => OwnsHops(r.Path)).ThenBy(r => r.Node.Value, StringComparer.Ordinal).ToList();
         for (var level = 1; level <= depth && frontier.Count > 0; level++)
         {
             var next = new List<Reach>();
@@ -41,7 +41,7 @@ public static class Cascade
                 }
             }
 
-            frontier = [.. next.OrderBy(OwnsHops).ThenBy(r => r.Node.Value, StringComparer.Ordinal)];
+            frontier = [.. next.OrderBy(r => OwnsHops(r.Path)).ThenBy(r => r.Node.Value, StringComparer.Ordinal)];
         }
 
         return new CascadeResult([.. own.Select(d => d.Key)], [.. affected.OrderBy(a => a.Depth).ThenBy(a => a.Node.Value, StringComparer.Ordinal)]);
@@ -112,8 +112,14 @@ public static class Cascade
         return index.Out(s, EdgeType.PartOf).Select(e => (NodeKey?)e.To).FirstOrDefault(k => k is { Kind: NodeKind.Feature }) ?? node;
     }
 
-    // Among paths of equal depth the one with the fewest owns hops claims a node first, then key order.
-    private static int OwnsHops(Reach reach) => reach.Path.Count(p => p.StartsWith("owns ", StringComparison.Ordinal));
+    /// <summary>How many 'owns' steps a path walks down the anchor's own scope: among equally deep paths the one with the fewest claims a node, then key order.</summary>
+    /// <param name="path">The path as <see cref="AffectedNode.Path"/> writes it.</param>
+    /// <returns>The count.</returns>
+    public static int OwnsHops(IReadOnlyList<string> path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.Count(p => p.StartsWith("owns ", StringComparison.Ordinal));
+    }
 
     private sealed record Descent(NodeKey Key, IReadOnlyList<string> Path, IReadOnlyList<GraphEdge> Edges)
     {

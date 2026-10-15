@@ -69,7 +69,7 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-034: the map file changed since its content hash was confirmed; nothing was written.</summary>
     public static readonly ErrorDefinition MapFileChanged = new("SND-CONTEXT-034", ErrorKind.Conflict, "The map file changed since its hash was confirmed");
 
-    /// <summary>SND-CONTEXT-035: the probe file is invalid (its shape, a duplicate or empty id, an empty question); the message names the key path and nothing was run.</summary>
+    /// <summary>SND-CONTEXT-035: the probe file is invalid (its shape or schema version, an unknown key, a duplicate, empty or non-slug id, an empty, wordless or over-long question); the message names the key path and nothing was run.</summary>
     public static readonly ErrorDefinition ProbeFileInvalid = new("SND-CONTEXT-035", ErrorKind.Invalid, "The probe file is invalid");
 
     /// <summary>SND-CONTEXT-036: no probe file: the one named doesn't exist, or none was named and $AW_SINDRI_HOME/context/eval/probes.json doesn't exist.</summary>

@@ -28,13 +28,19 @@ public static class QueryRules
     /// <summary>What a bad budget's 006 starts with (a transport adds its own hint after it).</summary>
     public const string BudgetMessage = "budget must be a whole number of tokens, 1 or more";
 
+    /// <summary>What the 006 for two or no question shapes says (a transport adds its own spelling of the shapes after it).</summary>
+    public const string ShapeMessage = "ask exactly one of: text, node, item or symbol";
+
+    /// <summary>What the 006 for a bad node anchor says (2000 is <see cref="MaxTextLength"/>; a transport adds its own spelling after it).</summary>
+    public const string NodeMessage = "a node anchor names a node key, alias or name of 1 to 2000 characters";
+
     /// <summary>Whether a value, percent-encoded, fits <see cref="MaxEncodedText"/>.</summary>
     /// <param name="value">The question text or node name.</param>
     /// <returns>True when a GET query string can carry it.</returns>
     public static bool FitsQueryUrl(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        throw new NotSupportedException("review #212 run 5: FitsQueryUrl is not built yet");
+        return Uri.EscapeDataString(value).Length <= MaxEncodedText;
     }
 
     /// <summary>Checks <paramref name="query"/>.</summary>
@@ -48,7 +54,7 @@ public static class QueryRules
         var shapes = new[] { query.Text, query.Node, query.Item, query.Symbol }.Count(s => s is not null);
         if (shapes != 1)
         {
-            return ContextErrors.QueryInvalid.With("ask exactly one of: text, --node, --item or --symbol");
+            return ContextErrors.QueryInvalid.With(ShapeMessage);
         }
 
         if (CheckDepth(query.Depth) is { } depthError)
@@ -110,7 +116,7 @@ public static class QueryRules
         if (query.Node is { } node)
         {
             return string.IsNullOrWhiteSpace(node) || node.Length > MaxTextLength
-                ? ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture, $"--node names a node key, alias or name of 1 to {MaxTextLength} characters"))
+                ? ContextErrors.QueryInvalid.With(NodeMessage)
                 : new ValidQuery([], budget);
         }
 

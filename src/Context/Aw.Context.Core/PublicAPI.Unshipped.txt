@@ -1455,6 +1455,8 @@ const Aw.Context.Core.Engine.QueryRules.MaxDepth = 4 -> int
 const Aw.Context.Core.Engine.QueryRules.MaxEncodedText = 6000 -> int
 const Aw.Context.Core.Engine.QueryRules.MaxTerms = 16 -> int
 const Aw.Context.Core.Engine.QueryRules.MaxTextLength = 2000 -> int
+const Aw.Context.Core.Engine.QueryRules.NodeMessage = "a node anchor names a node key, alias or name of 1 to 2000 characters" -> string!
+const Aw.Context.Core.Engine.QueryRules.ShapeMessage = "ask exactly one of: text, node, item or symbol" -> string!
 const Aw.Context.Core.Eval.ProbeReport.CurrentSchemaVersion = 1 -> int
 const Aw.Context.Core.Eval.ProbeScoring.K = 5 -> int
 const Aw.Context.Core.Graph.EntryKey.Version = 1 -> int
@@ -1824,6 +1826,7 @@ static Aw.Context.Core.Graph.AffectedNode.operator ==(Aw.Context.Core.Graph.Affe
 static Aw.Context.Core.Graph.AnchorMatch.FromText(Aw.Context.Core.Graph.GraphSnapshot! graph, string! question) -> Aw.Context.Core.Graph.TextAnchors!
 static Aw.Context.Core.Graph.AnchorMatch.Resolve(Aw.Context.Core.Graph.GraphSnapshot! graph, string! name) -> Aw.Kernel.Result<Aw.Context.Core.Graph.GraphNode!>!
 static Aw.Context.Core.Graph.Cascade.Affects(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey anchor, int depth) -> Aw.Context.Core.Graph.CascadeResult!
+static Aw.Context.Core.Graph.Cascade.OwnsHops(System.Collections.Generic.IReadOnlyList<string!>! path) -> int
 static Aw.Context.Core.Graph.CascadeResult.operator !=(Aw.Context.Core.Graph.CascadeResult? left, Aw.Context.Core.Graph.CascadeResult? right) -> bool
 static Aw.Context.Core.Graph.CascadeResult.operator ==(Aw.Context.Core.Graph.CascadeResult? left, Aw.Context.Core.Graph.CascadeResult? right) -> bool
 static Aw.Context.Core.Graph.DecisionRow.KeyFor(Aw.Context.Core.Sources.RecordKey record, string! quote) -> Aw.Context.Core.Graph.NodeKey
