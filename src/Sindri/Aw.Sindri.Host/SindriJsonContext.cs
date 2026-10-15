@@ -3,6 +3,7 @@ using Aw.Context.Core.Eval;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Review;
 using Aw.Kernel;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
@@ -97,6 +98,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ContextSourcesSynced))]
 [JsonSerializable(typeof(ContextMapImported))]
 [JsonSerializable(typeof(MapDocument))]
+[JsonSerializable(typeof(ReviewFile))]
 [JsonSerializable(typeof(MapStatusView))]
 [JsonSerializable(typeof(MapExported))]
 [JsonSerializable(typeof(MapHealth))]

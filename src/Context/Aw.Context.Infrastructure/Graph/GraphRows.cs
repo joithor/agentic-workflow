@@ -77,6 +77,7 @@ internal static class GraphRows
     private sealed class OverrideMapper : IRowMapper<MapOverride>
     {
         public MapOverride Map(SqliteDataReader r) => new(GraphText.Action(r.GetString(0)), NodeKey.From(r.GetString(1)), r.GetString(2),
-            GraphText.Time(r.GetString(3)) ?? default, Text(r, 4), Text(r, 5) is { } other ? NodeKey.From(other) : null, Text(r, 6));
+            GraphText.Time(r.GetString(3)) ?? default, Text(r, 4), Text(r, 5) is { } other ? NodeKey.From(other) : null, Text(r, 6),
+            Text(r, 7) is { } link ? LinkId.From(link) : null, Text(r, 8) is { } undoes ? OverrideId.From(undoes) : null, GraphPayload.Read(Text(r, 9)));
     }
 }

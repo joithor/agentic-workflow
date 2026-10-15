@@ -1,6 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Overrides;
 using Aw.Context.Infrastructure.Store;
 using Aw.Kernel;
 using Aw.Kernel.Data;
@@ -17,7 +18,7 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
     /// (with the file's overrides) in one transaction. Leftover 'building' versions (an earlier crash) are removed first;
     /// a failed or cancelled save removes its own.
     /// </summary>
-    public async ValueTask<Result<MapVersion>> Save(MapImport map, DateTimeOffset created, CancellationToken cancellationToken)
+    public async ValueTask<Result<MapVersion>> Save(MapImport map, DateTimeOffset created, CancellationToken cancellationToken, bool draft = false)
     {
         var swept = await Run([new SqlStatement(GraphSql.DeleteBuilding)], returnsId: false, cancellationToken).ConfigureAwait(false);
         var begun = swept.IsError ? swept : await Run([new SqlStatement(GraphSql.InsertVersion, c => c.Bind("$repo", map.Repo.Value).Bind("$commit", map.Commit)
@@ -30,10 +31,10 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
         var version = begun.Value;
         try
         {
-            var written = await Write(map, version, cancellationToken).ConfigureAwait(false);
+            var written = await Write(map, version, draft, cancellationToken).ConfigureAwait(false);
             return written.IsError
                 ? await Abandon(version, written.Error).ConfigureAwait(false)
-                : new MapVersion((int)version, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Current);
+                : new MapVersion((int)version, map.Repo, map.Commit, EntryKey.Version, created, draft ? MapVersionStatus.Draft : MapVersionStatus.Current);
         }
         catch (Exception)
         {
@@ -49,7 +50,7 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
         return deleted.IsError ? deleted.Error : (int)deleted.Value;
     }
 
-    private async ValueTask<Result<long>> Write(MapImport map, long version, CancellationToken cancellationToken)
+    private async ValueTask<Result<long>> Write(MapImport map, long version, bool draft, CancellationToken cancellationToken)
     {
         foreach (var batch in GraphStatements.Graph(version, map.Graph).Chunk(batchSize))
         {
@@ -60,14 +61,14 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
             }
         }
 
-        return await Flip(map, version, cancellationToken).ConfigureAwait(false);
+        return await Flip(map, version, cancellationToken, draft).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Retires the current version, makes this one current and adds the file's overrides, in one transaction that commits
+    /// Retires the current version (or, for a draft, deletes the open draft), makes this one current (or the draft) and adds the file's overrides, in one transaction that commits
     /// only when this version was still 'building' (another import's sweep may have removed it); otherwise nothing changes.
     /// </summary>
-    internal async ValueTask<Result<long>> Flip(MapImport map, long version, CancellationToken cancellationToken)
+    internal async ValueTask<Result<long>> Flip(MapImport map, long version, CancellationToken cancellationToken, bool draft = false)
     {
         var begun = await sessions.BeginSession(cancellationToken).ConfigureAwait(false);
         if (begun.IsError)
@@ -84,7 +85,10 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
                     : ContextErrors.StoreUnavailable.With("another import removed this one before it became current; nothing changed (fix: import again)");
             }
 
-            SqlStatement[] flip = [new(GraphSql.RetireCurrent), new(GraphSql.MakeCurrent, c => c.Bind("$v", version)), .. map.Overrides.Select(GraphStatements.Override)];
+            SqlStatement[] switchOver = draft
+                ? [new(GraphSql.DeleteDrafts), new(GraphSql.MakeDraft, c => c.Bind("$v", version))]
+                : [new(GraphSql.RetireCurrent), new(GraphSql.MakeCurrent, c => c.Bind("$v", version))];
+            SqlStatement[] flip = [.. switchOver, .. map.Overrides.Select(GraphStatements.Override)];
             foreach (var statement in flip)
             {
                 var done = await SqliteQueries.Execute(begun.Value, statement, cancellationToken).ConfigureAwait(false);
@@ -97,6 +101,109 @@ internal sealed class GraphWrites(SqliteUnitOfWorkFactory sessions, int batchSiz
             var committed = await begun.Value.Commit(cancellationToken).ConfigureAwait(false);
             return committed.IsError ? ContextDatabase.Translate(committed.Error) : version;
         }
+    }
+
+    /// <summary>The open draft, or a copy of the current version made in one transaction when there is none.</summary>
+    public async ValueTask<Result<MapVersion>> OpenDraft(DateTimeOffset created, CancellationToken cancellationToken)
+    {
+        var begun = await sessions.BeginSession(cancellationToken).ConfigureAwait(false);
+        if (begun.IsError)
+        {
+            return ContextDatabase.Translate(begun.Error);
+        }
+
+        await using (begun.Value.ConfigureAwait(false))
+        {
+            var versions = await SqliteQueries.List(begun.Value, new SqlStatement(GraphSql.SelectVersions), GraphRows.Version, cancellationToken).ConfigureAwait(false);
+            if (versions.IsError)
+            {
+                return ContextDatabase.Translate(versions.Error);
+            }
+
+            if (versions.Value.FirstOrDefault(v => v.Status == MapVersionStatus.Draft) is { } open)
+            {
+                return open;
+            }
+
+            if (versions.Value.FirstOrDefault(v => v.Status == MapVersionStatus.Current) is not { } current)
+            {
+                return ContextErrors.NoMap.With("there is no current map to open a draft from (fix: run 'sindri context map build' or import a map file)");
+            }
+
+            var copy = await SqliteQueries.One(begun.Value, new SqlStatement(GraphSql.CopyVersion, c => c.Bind("$created", created).Bind("$from", (long)current.Number)), GraphRows.Id, cancellationToken).ConfigureAwait(false);
+            if (copy.IsError)
+            {
+                return ContextDatabase.Translate(copy.Error);
+            }
+
+            var copied = await CopyGraph(begun.Value, current.Number, copy.Value, cancellationToken).ConfigureAwait(false);
+            if (copied.IsError)
+            {
+                return ContextDatabase.Translate(copied.Error);
+            }
+
+            var committed = await begun.Value.Commit(cancellationToken).ConfigureAwait(false);
+            return committed.IsError ? ContextDatabase.Translate(committed.Error) : current with { Number = (int)copy.Value, Created = created, Status = MapVersionStatus.Draft };
+        }
+    }
+
+    private static async ValueTask<Result<Unit>> CopyGraph(ISqliteSession session, int from, long to, CancellationToken cancellationToken)
+    {
+        foreach (var sql in GraphSql.CopyGraph)
+        {
+            var copied = await SqliteQueries.Execute(session, new SqlStatement(sql, c => c.Bind("$to", to).Bind("$from", (long)from)), cancellationToken).ConfigureAwait(false);
+            if (copied.IsError)
+            {
+                return copied.Error;
+            }
+        }
+
+        return Unit.Value;
+    }
+
+    /// <summary>Retires the current version and makes the draft current, in one transaction; anything but a draft is SND-CONTEXT-046.</summary>
+    public async ValueTask<Result<MapVersion>> Promote(int draft, CancellationToken cancellationToken)
+    {
+        var begun = await sessions.BeginSession(cancellationToken).ConfigureAwait(false);
+        if (begun.IsError)
+        {
+            return ContextDatabase.Translate(begun.Error);
+        }
+
+        await using (begun.Value.ConfigureAwait(false))
+        {
+            var isDraft = await SqliteQueries.One(begun.Value, new SqlStatement(GraphSql.VersionStatus, c => c.Bind("$v", (long)draft)), GraphRows.Id, cancellationToken).ConfigureAwait(false);
+            if (isDraft.IsError || isDraft.Value != 1)
+            {
+                return isDraft.IsError ? ContextDatabase.Translate(isDraft.Error)
+                    : ContextErrors.PromoteRefused.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"version {draft} isn't a draft (fix: list the versions with 'sindri context map status')"));
+            }
+
+            foreach (var statement in (SqlStatement[])[new(GraphSql.RetireCurrent), new(GraphSql.MakeCurrentDraft, c => c.Bind("$v", (long)draft))])
+            {
+                var done = await SqliteQueries.Execute(begun.Value, statement, cancellationToken).ConfigureAwait(false);
+                if (done.IsError)
+                {
+                    return ContextDatabase.Translate(done.Error);
+                }
+            }
+
+            var version = await SqliteQueries.One(begun.Value, new SqlStatement(GraphSql.SelectVersion, c => c.Bind("$v", (long)draft)), GraphRows.Version, cancellationToken).ConfigureAwait(false);
+            if (version.IsError)
+            {
+                return ContextDatabase.Translate(version.Error);
+            }
+
+            var committed = await begun.Value.Commit(cancellationToken).ConfigureAwait(false);
+            return committed.IsError ? ContextDatabase.Translate(committed.Error) : version.Value;
+        }
+    }
+
+    /// <summary>Adds the overrides in one transaction (all or none); one already there is kept once.</summary>
+    public async ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken)
+    {
+        var added = await Run([.. overrides.Select(GraphStatements.Override)], returnsId: false, cancellationToken).ConfigureAwait(false);
+        return added.IsError ? added.Error : (int)added.Value;
     }
 
     /// <summary>Removes a version that didn't become current, whatever the caller's token says; reports both failures if that fails too.</summary>

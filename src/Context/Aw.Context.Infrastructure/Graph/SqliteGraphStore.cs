@@ -25,8 +25,20 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
     public ValueTask<Result<IReadOnlyList<MapVersion>>> Versions(CancellationToken cancellationToken) =>
         Query(new SqlStatement(GraphSql.SelectVersions), GraphRows.Version, cancellationToken);
 
-    public ValueTask<Result<IReadOnlyList<MapOverride>>> Overrides(CancellationToken cancellationToken) =>
-        Query(new SqlStatement(GraphSql.SelectOverrides), GraphRows.Override, cancellationToken);
+    public async ValueTask<Result<IReadOnlyList<MapOverride>>> Overrides(CancellationToken cancellationToken)
+    {
+        var read = await OpenRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError || read.Value is not { } session)
+        {
+            return read.IsError ? read.Error : Results.Success<IReadOnlyList<MapOverride>>([]);
+        }
+
+        await using (session.ConfigureAwait(false))
+        {
+            var rows = await ReadOverrides(session, cancellationToken).ConfigureAwait(false);
+            return rows.IsError ? ContextDatabase.Translate(rows.Error) : rows;
+        }
+    }
 
     public async ValueTask<Result<MapSnapshot?>> Snapshot(bool draft, CancellationToken cancellationToken)
     {
@@ -99,8 +111,17 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         }
 
         var graph = await GraphReads.Version(session, version.Number, cancellationToken).ConfigureAwait(false);
-        var overrides = await SqliteQueries.List(session, new SqlStatement(GraphSql.SelectOverrides), GraphRows.Override, cancellationToken).ConfigureAwait(false);
+        var overrides = await ReadOverrides(session, cancellationToken).ConfigureAwait(false);
         return graph.IsError ? graph.Error : overrides.IsError ? overrides.Error : new MapSnapshot(version, graph.Value, overrides.Value);
+    }
+
+    /// <summary>Every override; a store not yet upgraded to migration 0004 (reads never migrate) answers with the new fields empty.</summary>
+    private static async ValueTask<Result<IReadOnlyList<MapOverride>>> ReadOverrides(SqliteReadSession session, CancellationToken cancellationToken)
+    {
+        var upgraded = await SqliteQueries.One(session, new SqlStatement(GraphSql.HasReviewColumns), GraphRows.Id, cancellationToken).ConfigureAwait(false);
+        return upgraded.IsError
+            ? upgraded.Error
+            : await SqliteQueries.List(session, new SqlStatement(upgraded.Value > 0 ? GraphSql.SelectOverrides : GraphSql.SelectOverridesBefore0004), GraphRows.Override, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>A read-only session when the file exists and has the graph tables; null for 'no map yet'.</summary>
@@ -127,17 +148,36 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         return tables.IsError ? ContextDatabase.Translate(tables.Error) : (SqliteReadSession?)null;
     }
 
-    public ValueTask<Result<MapVersion>> SaveDraft(MapImport map, DateTimeOffset created, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("S-4: SaveDraft is not built yet");
+    public async ValueTask<Result<MapVersion>> SaveDraft(MapImport map, DateTimeOffset created, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+        var open = await database.Writable(cancellationToken).ConfigureAwait(false);
+        return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).Save(map, created, cancellationToken, draft: true).ConfigureAwait(false);
+    }
 
-    public ValueTask<Result<MapVersion>> OpenDraft(DateTimeOffset created, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("S-4: OpenDraft is not built yet");
+    public async ValueTask<Result<MapVersion>> OpenDraft(DateTimeOffset created, CancellationToken cancellationToken)
+    {
+        var open = await database.Writable(cancellationToken).ConfigureAwait(false);
+        return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).OpenDraft(created, cancellationToken).ConfigureAwait(false);
+    }
 
-    public ValueTask<Result<MapVersion>> Promote(int draft, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("S-4: Promote is not built yet");
+    public async ValueTask<Result<MapVersion>> Promote(int draft, CancellationToken cancellationToken)
+    {
+        var open = await database.Writable(cancellationToken).ConfigureAwait(false);
+        return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).Promote(draft, cancellationToken).ConfigureAwait(false);
+    }
 
-    public ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("S-4: AppendOverrides is not built yet");
+    public async ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(overrides);
+        if (overrides.Count == 0)
+        {
+            return 0;
+        }
+
+        var open = await database.Writable(cancellationToken).ConfigureAwait(false);
+        return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).AppendOverrides(overrides, cancellationToken).ConfigureAwait(false);
+    }
 
     private async ValueTask<Result<IReadOnlyList<T>>> Query<T>(SqlStatement statement, IRowMapper<T> mapper, CancellationToken cancellationToken)
     {

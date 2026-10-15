@@ -17,7 +17,7 @@ public sealed class FakeRepoReader(ContextRepo known, string head, IReadOnlyDict
 
     /// <inheritdoc/>
     public ValueTask<Result<IReadOnlyList<string>>> ListFiles(ContextRepo repo, string commit, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<IReadOnlyList<string>>>(Knows(repo) && commit == head ? Results.Success<IReadOnlyList<string>>([.. files.Keys.Order(StringComparer.Ordinal)]) : Unreadable);
+        ValueTask.FromResult(Knows(repo) && commit == head ? Results.Success<IReadOnlyList<string>>([.. files.Keys.Order(StringComparer.Ordinal)]) : Unreadable);
 
     /// <inheritdoc/>
     public ValueTask<Result<string>> Read(ContextRepo repo, string commit, string path, CancellationToken cancellationToken)

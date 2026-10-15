@@ -5,12 +5,12 @@ using Aw.Context.Core.Results;
 
 namespace Aw.Context.Infrastructure.Graph;
 
-/// <summary>The text each enum is stored as (the CHECK constraints in 0002_s3a_graph.sql), both ways.</summary>
+/// <summary>The text each enum is stored as (the CHECK constraints in 0002_s3a_graph.sql and 0004_s4_map_review.sql), both ways.</summary>
 internal static class GraphText
 {
     private static readonly string[] _provenance = ["deterministic", "model", "human"];
     private static readonly string[] _status = ["building", "draft", "current", "retained"];
-    private static readonly string[] _actions = ["accept", "reject", "rename", "merge", "move", "add", "delete"];
+    private static readonly string[] _actions = ["accept", "reject", "rename", "merge", "move", "add", "delete", "propose", "undo"];
 
     public static string Of(Provenance value) => _provenance[(int)value];
 

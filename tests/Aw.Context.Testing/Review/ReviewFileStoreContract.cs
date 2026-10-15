@@ -12,9 +12,9 @@ public abstract class ReviewFileStoreContract
 
     private static ReviewFile File => new("v14@7c3e1a2",
     [
-        new ReviewFileEntry(NodeKey.From("feature:tabs.groups"), Link: null, "Tab groups", ReviewGroup.Model, 0.62, ReviewVerb.Rename),
-        new ReviewFileEntry(Node: null, LinkId.From("edge:0123456789abcdef"), "TabManager.ts implements Tab manager", ReviewGroup.Model, 0.74, ReviewVerb.Accept),
-        new ReviewFileEntry(NodeKey.From("surface:keybinding/ctrl+t"), Link: null, "Ctrl+T", ReviewGroup.Deterministic, 1.0),
+        new ReviewFileEntry("Tab groups", ReviewGroup.Model, 0.62, NodeKey.From("feature:tabs.groups"), Decision: ReviewVerb.Rename),
+        new ReviewFileEntry("TabManager.ts implements Tab manager", ReviewGroup.Model, 0.74, Link: LinkId.From("edge:0123456789abcdef"), Decision: ReviewVerb.Accept),
+        new ReviewFileEntry("Ctrl+T", ReviewGroup.Deterministic, 1.0, NodeKey.From("surface:keybinding/ctrl+t")),
     ]);
 
     /// <summary>A file written to the exports folder reads back as written; a relative name lands under the folder.</summary>

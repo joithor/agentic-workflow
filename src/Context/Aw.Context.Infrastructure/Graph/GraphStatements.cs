@@ -42,7 +42,8 @@ internal static class GraphStatements
 
     public static SqlStatement Override(MapOverride o) => new(GraphSql.InsertOverride, c => c
         .Bind("$id", o.ToId().Value).Bind("$action", GraphText.Of(o.Action)).Bind("$target", o.Target.Value).Bind("$label", o.Label)
-        .Bind("$other", o.Other?.Value).Bind("$who", o.Who).Bind("$at", GraphText.Time(o.At)).Bind("$rejection", o.Rejection));
+        .Bind("$other", o.Other?.Value).Bind("$who", o.Who).Bind("$at", GraphText.Time(o.At)).Bind("$rejection", o.Rejection)
+        .Bind("$link", o.Link?.Value).Bind("$undoes", o.Undoes?.Value).Bind("$payload", GraphPayload.Write(o.Proposal)));
 
     private static SqlStatement Node(long version, GraphNode node) => new(GraphSql.InsertNode, c => c
         .Bind("$v", version).Bind("$key", node.Key.Value).Bind("$label", node.Label).Bind("$attributes", node.Attributes?.GetRawText())

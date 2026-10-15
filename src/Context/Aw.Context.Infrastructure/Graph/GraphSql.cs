@@ -24,7 +24,7 @@ internal static class GraphSql
         "INSERT INTO decision (map_version, key, quote, wording, provenance, trust, written_at) VALUES ($v, $key, $quote, $wording, $provenance, $trust, $at)";
 
     public const string InsertOverride =
-        "INSERT INTO map_override (id, action, target, label, other, who, at, rejection) VALUES ($id, $action, $target, $label, $other, $who, $at, $rejection) ON CONFLICT (id) DO NOTHING";
+        "INSERT INTO map_override (id, action, target, label, other, who, at, rejection, link, undoes, payload) VALUES ($id, $action, $target, $label, $other, $who, $at, $rejection, $link, $undoes, $payload) ON CONFLICT (id) DO NOTHING";
 
     public const string DeleteBuilding = "DELETE FROM map_version WHERE status = 'building'";
 
@@ -63,5 +63,36 @@ internal static class GraphSql
         "JOIN edge e ON e.map_version = d.map_version AND e.from_key = d.key AND e.type = 'quotes' WHERE d.map_version = $v ORDER BY d.key";
 
     public const string SelectOverrides =
-        "SELECT action, target, who, at, label, other, rejection FROM map_override ORDER BY at, id";
+        "SELECT action, target, who, at, label, other, rejection, link, undoes, payload FROM map_override ORDER BY at, id";
+
+    // A store not yet upgraded to 0004 (reads never migrate): the same columns, the new ones as NULL.
+    public const string SelectOverridesBefore0004 =
+        "SELECT action, target, who, at, label, other, rejection, NULL, NULL, NULL FROM map_override ORDER BY at, id";
+
+    public const string HasReviewColumns = "SELECT count(*) FROM pragma_table_info('map_override') WHERE name = 'payload'";
+
+    public const string DeleteDrafts = "DELETE FROM map_version WHERE status = 'draft'";
+
+    public const string MakeDraft = "UPDATE map_version SET status = 'draft' WHERE id = $v AND status = 'building'";
+
+    public const string VersionStatus = "SELECT count(*) FROM map_version WHERE id = $v AND status = 'draft'";
+
+    public const string MakeCurrentDraft = "UPDATE map_version SET status = 'current' WHERE id = $v AND status = 'draft'";
+
+    public const string SelectVersion =
+        "SELECT id, repo, commit_sha, key_version, created, status FROM map_version WHERE id = $v";
+
+    public const string CopyVersion =
+        "INSERT INTO map_version (repo, commit_sha, key_version, created, status) SELECT repo, commit_sha, key_version, $created, 'draft' FROM map_version WHERE id = $from RETURNING id";
+
+    public static readonly string[] CopyGraph =
+    [
+        "INSERT INTO node (map_version, key, label, attributes, provenance, confidence, trust, written_at) SELECT $to, key, label, attributes, provenance, confidence, trust, written_at FROM node WHERE map_version = $from",
+        "INSERT INTO node_evidence (map_version, node_key, position, record, span) SELECT $to, node_key, position, record, span FROM node_evidence WHERE map_version = $from",
+        "INSERT INTO node_alias (map_version, alias, target) SELECT $to, alias, target FROM node_alias WHERE map_version = $from",
+        "INSERT INTO edge (map_version, from_key, to_key, type, provenance, confidence, trust, step_order, written_at) SELECT $to, from_key, to_key, type, provenance, confidence, trust, step_order, written_at FROM edge WHERE map_version = $from ORDER BY id",
+        "INSERT INTO edge_evidence (edge_id, position, record, span) SELECT n.id, ee.position, ee.record, ee.span FROM edge_evidence ee JOIN edge o ON o.id = ee.edge_id " +
+        "JOIN edge n ON n.map_version = $to AND n.from_key = o.from_key AND n.to_key = o.to_key AND n.type = o.type WHERE o.map_version = $from",
+        "INSERT INTO decision (map_version, key, quote, wording, provenance, trust, written_at) SELECT $to, key, quote, wording, provenance, trust, written_at FROM decision WHERE map_version = $from",
+    ];
 }

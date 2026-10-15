@@ -5,8 +5,8 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Docs;
-using Aw.Context.Infrastructure.Extract;
 using Aw.Context.Infrastructure.Eval;
+using Aw.Context.Infrastructure.Extract;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Graph;
 using Aw.Context.Infrastructure.Labeling;
@@ -65,5 +65,5 @@ public static class ContextInfrastructureServiceCollectionExtensions
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddContextLabeling(this IServiceCollection services, int maxTokens)
         => services.AddSingleton<ILabeler>(sp => new ModelLabeler(
-            sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<Core.Trust.IScrubberFactory>(), maxTokens));
+            sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>(), maxTokens));
 }

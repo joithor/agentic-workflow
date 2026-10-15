@@ -1,8 +1,8 @@
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Models;
 using Aw.Context.Infrastructure.Labeling;
-using Aw.Context.Testing.Engine;
 using Aw.Context.Infrastructure.Scrubbing;
+using Aw.Context.Testing.Engine;
 using Aw.Context.Tests.Infrastructure;
 using Microsoft.Extensions.Time.Testing;
 
@@ -101,7 +101,7 @@ public sealed class ModelLabelerTests
 
     private sealed class FailingModel : IModelPort
     {
-        public ValueTask<Aw.Kernel.Result<ModelAnswer>> Ask(ModelRequest request, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Aw.Kernel.Result<ModelAnswer>>(Aw.Context.Core.ContextErrors.SourceUnavailable.With("no model"));
+        public ValueTask<Kernel.Result<ModelAnswer>> Ask(ModelRequest request, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Kernel.Result<ModelAnswer>>(Context.Core.ContextErrors.SourceUnavailable.With("no model"));
     }
 }

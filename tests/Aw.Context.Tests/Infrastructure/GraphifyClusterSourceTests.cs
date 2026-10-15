@@ -40,7 +40,7 @@ public sealed class GraphifyClusterSourceTests
     public async Task The_fixture_app_clusters_under_the_sandbox_or_degrades_without_running_graphify()
     {
         using var fixture = FixtureRepo.Build();
-        var repo = new Aw.Context.Core.Engine.ContextRepo(Aw.Context.Core.Engine.ContextRepoName.From("aw-split-panes"), fixture.Path);
+        var repo = new Context.Core.Engine.ContextRepo(Context.Core.Engine.ContextRepoName.From("aw-split-panes"), fixture.Path);
         var source = new GraphifyClusterSource(new GitCli(), GraphifyOptions.Default);
 
         var set = await source.Clusters(repo, fixture.Head, Ct);

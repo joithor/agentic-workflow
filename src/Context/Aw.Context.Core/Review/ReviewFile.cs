@@ -15,6 +15,6 @@ public sealed record ReviewFile(string Draft, IReadOnlyList<ReviewFileEntry> Ent
     {
         ArgumentNullException.ThrowIfNull(queue);
         return new ReviewFile(queue.Draft, [.. queue.Entries.Where(e => e.Group != ReviewGroup.Orphaned).Select(e =>
-            new ReviewFileEntry(e.Link is null ? e.Node : null, e.Link, e.Label, e.Group, e.Confidence))]);
+            new ReviewFileEntry(e.Label, e.Group, e.Confidence, e.Link is null ? e.Node : null, e.Link))]);
     }
 }
