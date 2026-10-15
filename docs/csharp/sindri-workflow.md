@@ -123,12 +123,16 @@ form under its hash: `registered <id>@<hash12> (unapproved)`, or `already regist
 `recipe.registered` event per hash). Other content under a registered id and version is `SND-RECIPE-007`; any other
 failing rule is `SND-RECIPE-001`, each followed by its rule lines.
 
-`sindri recipe show <id@hash>` (a query; the hash by 8 or more digits) prints the recipe's line and the approval preview;
+`sindri recipe show <id@hash>` (a query; the hash by 8 or more digits) prints the recipe's line, then `urgency: <urgency>`, one
+`input: <key> type=<type> kind=<kind|->` line per input and one `output: <key> type=<type> from=<state>` line per output, then the approval preview;
 an unknown hash is `SND-RECIPE-002`. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
 `<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
 `pin-drift` (a pinned block's descriptor changed in this build) or `child-stale` (a pinned child was revoked);
 `--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
-`{"recipes":[{id, version, hash, standing, via, stale, inputs}]}`. The queries never start the control plane: when it
+`{"recipes":[{id, version, hash, standing, via, stale, inputs, urgency, outputs}]}`, where an input is `{key, label, type, kind}`
+(type and kind `null` when not declared) and an output is `{key, label, type, from}`. A row registered before `urgency`, `outputs` and
+`inputs[].kind` existed keeps its stored text and hash and lists with the defaults (`work`, no outputs, no kinds); registering the same
+file again hashes differently and is `SND-RECIPE-007` naming `RCP-VERSION-001` until the author raises `version`. The queries never start the control plane: when it
 isn't running they print `SND-API-001 not running: …` and exit 1.
 
 ## `sindri recipe approve` and `sindri recipe revoke`
@@ -214,13 +218,23 @@ needs re-approval.
 | `version` | yes | An integer. Same id and version with another hash, or a version not above the highest registered, is refused once the registry exists (`RCP-VERSION-001`/`-002`, P2) |
 | `description` | no | |
 | `base` | generated recipes only | Written by Sindri's generator; on a hand-written recipe it is `RCP-CAP-004`, and `recipe validate` treats every recipe as hand-written |
-| `inputs` | no | The facts a start supplies: `{ key, label?, type?: text \| file \| item }` |
+| `urgency` | no | `incident`, `triage` or `work` (default `work`; UI E-21). The app orders its Workflows strip by it; the engine never reads it. The normalizer writes `work` when it is absent, so an absent urgency and `urgency: work` hash the same. Any other value is `RCP-URG-001` |
+| `inputs` | no | The facts a start supplies: `{ key, label?, type?, kind? }`. `type` is a fact type (default `text`), `kind` a subject kind; the first input is the instance's subject (UI E-22) |
+| `outputs` | no | What the recipe produces for a human: `{ key, label?, type?, from }`. `from` names the state that produces the fact. Declarations only: they add no wiring (UI E-22) |
 | `initial` | yes | An `active` or `wait` state (`RCP-INIT-001`) |
 | `states` | yes | At least one non-terminal and one terminal state. `cancelled`, `escalated`, `parked` and `taken-over` are reserved (`RCP-STATE-001`) |
 | `transitions` | yes | |
 | `loops`, `budget` | no | |
 | `evals` | to approve (P2) | Paths of eval files, relative to the recipe's directory (`evals/<id>/<case>.jsonl`, spec §9.2). The paths' form isn't checked yet |
 | `hash` | no | Checked when present |
+
+### Fact types and subject kinds
+
+Fact type: `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision`, `payload` (`FactTypes`). It picks a viewer in
+the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text` (`SubjectKinds`); `item`, `file` and `text`
+pair with the type of the same name, `linear-project` and `webhook` with `payload`. Both are strings in the long form, so a bad value
+reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-OUT-001` to `-003`, `RCP-URG-001`) instead of a reader error. Those rules are
+checked from P2b part B; until then a value of another spelling is read and hashed as written.
 
 ### Value grammars
 
