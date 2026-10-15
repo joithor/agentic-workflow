@@ -259,7 +259,7 @@ public sealed class ApproveProfileTests
             new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))))),
             new FakeControlPlaneProbe(), new FakeTemporalServer(), _h.Clock)
             .Handle(new RunDoctorRequest(), Token)).Value.Checks.Single(c => c.Name == "profile");
-        var summary = SummaryText.Render(status, new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 1, 1), showUi: false)
+        var summary = SummaryText.Render(status, new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 1, 1), ui: null)
             .Split('\n').Single(l => l.TrimStart().StartsWith("profile ", StringComparison.Ordinal))["  profile   ".Length..].TrimEnd('\r');
         return (preview.Approved, status.Profile.NeedsApproval, validated.Approved, doctor.State, summary);
     }

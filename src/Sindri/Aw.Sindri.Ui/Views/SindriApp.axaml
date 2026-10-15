@@ -1,0 +1,70 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Aw.Sindri.Ui.Views.SindriApp"
+             Name="Sindri"
+             RequestedThemeVariant="Dark">
+  <!-- macOS titles the app from Name (the menu bar's app menu, "Hide Sindri"). The app menu is the app's own, so
+       Avalonia.Native adds only the standard items (Services, Hide, Show All, Quit) and no "About Avalonia". -->
+  <NativeMenu.Menu>
+    <NativeMenu />
+  </NativeMenu.Menu>
+  <!-- docs/sindri/DESIGN.md (Linear's look) through the UI spec's token plan (§14): the tokens, the Fluent theme mapped to
+       them, and the type ramp. No colour value is written outside Theme/; styles here bind the Brush.* tokens. -->
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Aw.Sindri.Ui/Theme/Tokens.axaml" />
+        <ResourceInclude Source="avares://Aw.Sindri.Ui/Theme/Icons.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <StyleInclude Source="avares://Aw.Sindri.Ui/Theme/FluentOverrides.axaml" />
+    <StyleInclude Source="avares://Aw.Sindri.Ui/Theme/Typography.axaml" />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{DynamicResource Brush.Canvas}" />
+      <Setter Property="FontFamily" Value="{DynamicResource Font.Text}" />
+      <!-- Text with no ramp class inherits Body, so it follows the text scale too (§14.2). -->
+      <Setter Property="FontSize" Value="{DynamicResource Type.Body.Size}" />
+    </Style>
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Ink}" />
+    </Style>
+
+    <!-- S1b's status card (the window until U0's shell replaces it; its content becomes the Health page). -->
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.LG}" />
+      <Setter Property="Padding" Value="{StaticResource Space.MD.Thickness}" />
+    </Style>
+    <Style Selector="TextBlock.muted">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
+    </Style>
+    <Style Selector="TextBlock.subtle">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+    </Style>
+    <Style Selector="Border.command">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.HairlineStrong}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+      <Setter Property="Padding" Value="10,6" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Border.pill">
+      <Setter Property="Background" Value="{DynamicResource Brush.PrimarySoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Primary}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}" />
+      <Setter Property="Padding" Value="12,4" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.pill.down">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.HairlineStrong}" />
+    </Style>
+  </Application.Styles>
+</Application>

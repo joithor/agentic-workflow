@@ -2,7 +2,7 @@ schemaVersion: 1
 id: engineering.csharp.declared-graph
 kind: engineering
 section: "4b.1a"
-text: "Declare every package edge in deps.yaml with its kind (project, cli, db, file); an undeclared or stale edge fails."
+text: "Declare every package edge in deps.yaml with its kind (project, compose, cli, db, file, http); an undeclared or stale edge fails."
 why: "The graph is reviewed as a declaration, so a new dependency is a decision, not an accident."
 select:
   languages: [csharp]
@@ -47,12 +47,15 @@ checks:
   - type: check-deps
     id: "DEPS-KIND-002"
     status: active
+  - type: check-deps
+    id: "DEPS-KIND-004"
+    status: active
   - type: ci
     id: "deps.yaml matches the code"
     ref: .github/workflows/ci.yml
     status: active
 gap: partial
-gapNote: "The cli/db/file scan is a heuristic (deps.yaml lists what it can't see: npx indirection, JSON and plist config)."
+gapNote: "The cli/db/file scan is a heuristic (deps.yaml lists what it can't see: npx indirection, JSON and plist config); the C# scan sees route literals (http) and state-path segment literals (file, db) in C# projects, not a route after a base URL or computed paths, and cli edges in C# aren't scanned."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b1a"
