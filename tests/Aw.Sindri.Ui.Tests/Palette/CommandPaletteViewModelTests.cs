@@ -394,6 +394,33 @@ public sealed class CommandPaletteViewModelTests
         await run;
     }
 
+    // J4 (corr-2): the accepted outcome settling back to idle (2 s later) is not announced: no unprompted "ready".
+    [Fact]
+    public async Task The_accepted_outcome_settling_to_idle_is_not_announced()
+    {
+        _palette.Open();
+        for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+        {
+            _palette.Move(1);
+        }
+
+        var rebuild = _palette.Selected!;
+        await _palette.Run(rebuild, Token);
+        var spoken = new List<string>();
+        _palette.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CommandPaletteViewModel.Announcement))
+            {
+                spoken.Add(_palette.Announcement);
+            }
+        };
+
+        _clock.Advance(ControlViewModel.AcceptedFor);
+
+        Assert.Equal("ready", rebuild.Status);
+        Assert.Empty(spoken);
+    }
+
     // F2: a refusal shows Sindri's code as the entry's status and its detail as served; the palette stays open.
     [Fact]
     public async Task A_refused_ready_entry_shows_sindris_code_and_detail()
