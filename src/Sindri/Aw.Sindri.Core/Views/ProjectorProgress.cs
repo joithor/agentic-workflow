@@ -34,12 +34,26 @@ internal sealed class ProjectorProgress(TimeProvider clock) : IProjectorStatus, 
         TaskCompletionSource pulse;
         lock (_gate)
         {
-            _current = _rebuildRequested ? status with { Rebuilding = true } : status;
+            // the head is read before the cursor moves, so mid-rebuild it can lag it ("cursor 66 of 65"): never show it behind
+            var shown = status.LedgerHead < status.Cursor ? status with { LedgerHead = status.Cursor } : status;
+            _current = _rebuildRequested ? shown with { Rebuilding = true } : shown;
             pulse = _pulse;
             _pulse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
         _ = pulse.TrySetResult();
+    }
+
+    /// <inheritdoc/>
+    public bool RebuildRequested
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _rebuildRequested;
+            }
+        }
     }
 
     /// <inheritdoc/>
@@ -97,6 +111,6 @@ internal sealed class ProjectorProgress(TimeProvider clock) : IProjectorStatus, 
 
     private static Error Behind(ViewsStatus status, long sequence) => SindriErrors.ViewsBehind.With(status.Stalled
         ? string.Create(CultureInfo.InvariantCulture,
-            $"views stalled at {status.StalledAt} ({status.StalledType}) with the cursor at {status.Cursor}, waiting for {sequence}: run sindri views rebuild")
+            $"views {status.StalledPhrase()} with the cursor at {status.Cursor}, waiting for {sequence}: run {status.StalledFix()}")
         : string.Create(CultureInfo.InvariantCulture, $"views at cursor {status.Cursor}, waiting for {sequence}"));
 }

@@ -1,0 +1,24 @@
+{
+  "services": [
+    {
+      "name": "heartbeat",
+      "every": "5s",
+      "paused": false,
+      "lastRun": {
+        "slot": "2026-01-01T00:00:00.0000000Z",
+        "outcome": "failed",
+        "code": "SND-SCHED-001",
+        "ranAt": "2026-01-01T00:00:00.0000000Z"
+      },
+      "nextSlot": "2026-01-01T00:00:05.0000000Z"
+    }
+  ],
+  "empty": null,
+  "asOf": {
+    "cursor": 5,
+    "ledgerHead": 5,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}
