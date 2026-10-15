@@ -587,7 +587,7 @@ API serves, so the app never parses YAML or recomputes an order (README X52: the
 |---|---|---|---|---|---|
 | `GET /workflow/instances?root=&open=&recipe=&subject=&state=&needsMe=` | `ListInstances` (engine) | `root=true` keeps top-level instances; `open=true` keeps those whose state is not terminal; `recipe` is a recipe id; `subject` matches the subject key or label | `InstanceList(instances, counts, empty, asOf)` (E-20, below) | query | P11 |
 | `GET /workflow/instances/{address}` | `GetInstance` (engine) | — | `InstanceView` (E-20, E-23, below) | query | P11 |
-| `GET /workflow/instances/{address}/facts/{key}` | `GetInstanceFact` | — | `FactView{key, type, body, truncated}`: the scrubbed body behind one fact row (the scope-map table with its graph and items columns, the packet's tasks and `PKT-*` check results, a payload tree). `body` is an object for `scope-map`, `packet` and `payload` and a string for `text`. Large bodies are capped at 256 KiB with `truncated: true`; a truncated object loses its tail entries and stays an object. An undeclared key answers `SND-ITEM-404` | query | P11 |
+| `GET /workflow/instances/{address}/facts/{key}` | `GetInstanceFact` | — | `FactView{key, type, body, truncated}`: the scrubbed body behind one fact row (the scope-map table with its graph and items columns, the packet's tasks and `PKT-*` check results, a payload tree). `body` is an object for `scope-map`, `packet`, `evidence` (`{packs[], done, total}`: the packs produced so far) and `payload` and a string for `text`. Large bodies are capped at 256 KiB with `truncated: true`; a truncated object loses its tail entries and stays an object. An undeclared key answers `SND-ITEM-404` | query | P11 |
 | `GET /workflow/recipes?window=` | `ListRecipes` (engine) | `window`: `7d`, `30d` (default) or `90d` | `RecipeList(recipes, window, empty, asOf)` (E-25) | query | P12 |
 | `GET /workflow/recipes/{id}` and `{id}@{hash}` | `ShowRecipe` (engine) | `{id}` resolves to the approved hash | `RecipeView` (E-22) | query | P11 |
 | `GET /workflow/recipes/{id}/stats?window=&hash=` | `GetRecipeStats` | `window` as above; `hash` re-scopes to runs under one approved version | `RecipeStats` (E-24) | query | P12 |
@@ -596,8 +596,7 @@ API serves, so the app never parses YAML or recomputes an order (README X52: the
 | `GET /engine/instances/{address}/history?page=` | `GetEngineHistory` | `page` from 1; 50 events a page, newest first | `EngineHistory(events, page, total, next)` (E-30) | query | P13 |
 
 **The instance list (E-20).** `InstanceList.instances` is ordered by the recipe's `urgency` (`incident`, then `triage`,
-then `work`; WF E-21), then oldest `since` first, so the Home strip (screens §4.1) is the first five rows with
-`state` not terminal, and the Workflows page groups the same rows by `recipe.id`. `counts` is `{open, needsYou, withYou, running, done}`, computed over the whole root set before `recipe` or `open` narrows the rows, so every head count comes from rows. Each `InstanceSummary`:
+then `work`; WF E-21), then by `subject.label` (ordinal), after two moves: unfinished rows come before finished ones, and an instance the engine has parked or escalated comes after the ones still moving (Needs you carries it). The Home strip (screens §4.1) is the first five rows, which reproduces the screens fixture's strip (the fixture's rows are not age-ordered, so the label is the stable tiebreak), and the Workflows page groups the same rows by `recipe.id`. `counts` is `{open, needsYou, withYou, running, done}`, computed over the whole root set before `recipe` or `open` narrows the rows, so every head count comes from rows. Each `InstanceSummary`:
 
 | Field | What it holds |
 |---|---|
@@ -607,9 +606,9 @@ then `work`; WF E-21), then oldest `since` first, so the Home strip (screens §4
 | `chip` | `{word, tone}`: the one state chip (`PARKED`, `ESCALATED`, `WITH YOU`, `DECISION`, `QUEUED`, `DONE`, `RUNNING`) and its colour class `attn`, `fail`, `ok` or `neutral`; the same record is on `ChildRow` |
 | `engineOwned` | `null`, or `{kind: parked \| escalated \| taken-over, reason}`: the badge that replaces the state's glyph |
 | `subject` | `{kind, key, label, href?}`, from the recipe's first input (screens §5.4); `kind` is `inputs[].kind` (E-22) |
-| `inputs[]` | `{key, label, kind, required, present}`, in declaration order, for the INPUTS column |
+| `inputs[]` | `{key, label, kind?, required, present}`, in declaration order, for the INPUTS column. `kind` is the input's declared kind exactly as `RecipeView.inputs[].kind` serves it (the subject adapter; `null` for every input but the first) |
 | `states[]` | The compact `StateCell` list below, so the list renders every stage cell without a second call |
-| `now` | The engine's `next` sentence, shortened to 80 characters (the full text is on the view) |
+| `now` | Its own short sentence of at most 80 characters, composed by the engine's layout for the row (screens fixture, NOW column); it is not a shortening of `next` (the full `next` is on the view) |
 | `answer?` | The same `StatusAnswer` as `current.status.answer`, including `atTerminal`, so the row can offer `[Answer]` |
 | `actions` | The action ids allowed now, as on `ItemView` |
 
@@ -624,7 +623,7 @@ The engine computes the order once per recipe hash and serves it, so a client ne
 | `glyph` | `done`, `active` or `pending` (the app draws ●, ◐, ○). A terminal state is `done` once reached |
 | `badge?` | `{kind: parked \| escalated \| taken-over, reason}` on the state the instance is interrupted in; it replaces the glyph |
 | `round?` | `{n, max}` for a state in a loop (`r2/3`) |
-| `loops` | `[{with: <stateId>, n, max}]`: the loop pairs this state belongs to (`mitigate ⇄ verify`) |
+| `loops` | `[{with: <stateId>, n, max}]`: the loop pairs this state belongs to (`mitigate ⇄ verify`). Loops belong to the recipe hash, so every instance of a hash serves the same pairs (`n` is 0 where the instance has not looped). A self-loop is `with` = the state itself (`scoping`, round 2 of 3) |
 | `desk` | `true` for a desk state |
 | `child` | `true` when the state waits on children |
 | `children?` | `{done, total}`: progress for a children state (`4/9`) |
@@ -660,7 +659,7 @@ The view's top level adds `orderedBy`: `"path"`, or `"transition-list"` when the
   },
   "facts": [ /* FactRow, below */ ],
   "children": [ /* ChildGroup, below */ ],
-  "counts": { "timeline": 41, "decisions": 3, "requests": 1, "context": 14 },
+  "counts": { "timeline": 41, "decisions": 3, "requests": 1, "context": 14 },   // context: null until CTX serves the lenses
   "actions": [ "ApplyCommand:takeover", "ApplyCommand:cancel" ],
   "asOf": "…"
 }
@@ -672,40 +671,40 @@ every §6.4 layout both ways. Lines the layout leaves out are `null` or `[]`.
 
 | Field | What it holds |
 |---|---|
-| `header` | `{address, recipe, hash12, version, state, detail?, since, ageSeconds}`: the header line's parts |
-| `next` | The rendered `next` sentence, whole |
-| `answer?` | `{kind: text \| resume \| grant \| grantTokens \| accept \| cancel-only, actionId, class, cli, atTerminal}`; `class` is `desk` or `protected`, and `cli` is the exact command the layout prints |
+| `header` | `{address, recipe, hash12, version, state, detail?, since, ageSeconds}`: the header line's parts, as WF §6.4 prints them (`<state>[: <detail>]`). `state` is the reserved engine word while the engine owns the instance (`parked`, `escalated`, `taken-over`) and the recipe state otherwise; `detail` is the reason (`budget`, `no-progress (child)`, `gate`, `desk task`) and never contains the engine word. The recipe state the instance is covered in stays on the view (`state`) and on the `states[]` badge |
+| `next?` | The rendered `next` sentence, whole; `null` when the layout has none (a finished instance) |
+| `answer?` | `{kind: text \| resume \| grant \| grantTokens \| accept \| cancel-only, actionId, class, cli, atTerminal}`; `class` is `desk` or `protected`, and `cli` is the exact command the layout prints. Only `accept` is served for an escalated gate: `reject` is CLI-only for now |
 | `child?` | `{address, state, reason?}` when the park mirrors a child |
 | `drift?` | `{block, needsReapproval}` for a recorded drift |
 | `inputs[]` | `{key, name, hash?}` for the Step's inputs |
 | `timeout?` | `{kind: parks \| escalates, inSeconds, on}` (`parks in 1d 22h 48m (desk)`) |
 | `budget?` | `{scope: state, used, limit, instance: {used, limit}}` in tokens |
 | `paused?` | `{timeoutLeftSeconds}` on a taken-over instance |
-| `commands[]` | The instance's own verbs first, in `answer, complete, handback, takeover, cancel` order: `{verb, actionId, class, cli, confirm?}`, each a row of the catalog (§3.3). `confirm` is `null` except on `cancel`, where it is `Cancel <address>? <N> running steps stop; <M> children are cancelled.` (owner decision, 2026-10-14; N is the open run's running steps and M the open children) |
+| `commands[]` | The instance's own verbs first, in `answer, complete, handback, takeover, cancel` order: `{verb, actionId, class, cli, confirm?}`, each a row of the catalog (§3.3). `confirm` is `null` except on `cancel`, where it is `Cancel <address>? <N> running steps stop; <M> children are cancelled.` (owner decision, 2026-10-14; N is the open run's running steps and M the open children; an open desk run is not a running step, so N excludes it) |
 | `text` | The CLI's text form |
 
 **`FactRow` (E-20).** One per input and output the recipe declares, in declaration order (screens §5.2).
 
 | Field | What it holds |
 |---|---|
-| `key`, `label`, `type` | `type` is `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision` or `payload`; an unknown type is served as `payload` |
+| `key`, `label`, `type` | `label` and `type` equal the recipe's declaration of the key (`RecipeView.inputs[]` and `outputs[]`); `type` is `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision` or `payload`; an unknown type is served as `payload` |
 | `direction` | `input` or `output` |
 | `from?` | The state that produces it (E-22 `outputs[].from`), which places the band's ◐ mark |
 | `status` | `produced`, `in-progress` or `pending` |
 | `summary` | The one-line summary the viewer shows |
-| `at?`, `by?` | When it was produced, and by whom (`you`, a Step, an agent) |
+| `at?`, `by?` | When it was produced, and by whom. `by` is the actor string (README X61, never parsed by the API): `human:<client>`, `step.<id>`, `agent:<name>` or `service:<name>` (a webhook is `service:webhook`); the UI renders `human:*` as "you" |
 | `ref?` | The per-type handle: `{name, size, hash, path}` for `file`; `{itemId}`; `{url, host, title}`; `{factKey}` for the viewers that call `GetInstanceFact` |
 | `progress?` | `{done, total}` for `evidence` (`4 of 9 packs`) |
 | `pending?` | On a pending output of an open desk state: `{required, checks[], completeAction}`, which the complete form needs |
 
 **`ChildGroup` (E-20).** `children` is a list of groups, one per state that declares `child` or runs `step.children`
-(screens §5.5), in path order:
+(screens §5.5), in path order. `recipe` is the `workflow.*` id of the recipe the children run. A child's `address` is nested under its parent's (`workflow/PRJ-sync/ITM-01JE7`); a finished child offers no verbs, and `mirroredPark` is set only while the parent is parked on the child (the parent's `status.child` names it):
 
 ```jsonc
-{ "state": "build", "recipe": "builder.feature", "done": 4, "total": 9,
+{ "state": "build", "recipe": "workflow.item", "done": 4, "total": 9,
   "workstreams": [                     // [] unless the state's input is a packet; in the packet's order
     { "id": "ws-1", "label": "UI",
-      "rows": [ { "address": "…", "itemId": "ITM-01JE7", "title": "Sync status pill",
+      "rows": [ { "address": "workflow/PRJ-sync/ITM-01JE7", "itemId": "ITM-01JE7", "title": "Sync status pill",
                   "glyph": "active", "state": "produce", "chip": { "word": "RUNNING", "tone": "ok" }, "round": { "n": 2, "max": 3 },
                   "agent": "claude-code", "ageSeconds": 360,
                   "engineOwned": null, "mirroredPark": null, "actions": [ "OpenItem", "ApplyCommand:takeover" ] } ] } ],
@@ -718,7 +717,7 @@ definition (states, transitions, evals, pins, open instances placed per state, t
 
 | Field | What it holds |
 |---|---|
-| `inputs[]` | `{key, label?, type, kind?, required}`. `type` is `text`, `file` or `item` today; **`kind`** is the subject adapter (`item`, `linear-project`, `webhook`, `file`, `text`) and is read from the first input only (screens §5.4) |
+| `inputs[]` | `{key, label?, type, kind?, required}`. `type` is a fact type (the nine of `FactRow.type`); **`kind`** is the subject adapter (`item`, `linear-project`, `webhook`, `file`, `text`) and is read from the first input only (screens §5.4) |
 | `outputs[]` | `{key, label?, type, from}`: the new output declarations (WF `outputs`, E-22), with the added fact types of screens §5.2 |
 
 The CLI prints both under the recipe header as `inputs:` and `outputs:` lines, one per key, `key  type[/kind]  [from <state>]`.
