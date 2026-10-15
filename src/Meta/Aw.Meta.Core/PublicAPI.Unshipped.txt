@@ -1116,3 +1116,5 @@ static readonly Aw.Meta.Core.MetaErrors.QuestionNotFound -> Aw.Kernel.ErrorDefin
 static readonly Aw.Meta.Core.MetaErrors.TranscriptUnreadable -> Aw.Kernel.ErrorDefinition!
 Aw.Meta.Core.Commands.ProgramPath
 static Aw.Meta.Core.Commands.ProgramPath.Resolve(string! program, string? cwd) -> string!
+Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.get -> System.Collections.Generic.IReadOnlyDictionary<string!, int>?
+Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.init -> void
