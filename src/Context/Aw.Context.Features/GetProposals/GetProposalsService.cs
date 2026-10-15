@@ -42,16 +42,35 @@ internal sealed class GetProposalsService(IGraphStore store, IProposalRuns runs,
         }
 
         var overrides = Visible(current.Overrides, request.Scope.Caller);
-        var currentGraph = OverrideApplier.Apply(current.Graph, [.. overrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
-        var draftGraph = draft is null ? null : OverrideApplier.Apply(draft.Graph, overrides).Graph;
+        var views = Views(current, draft, overrides, request.Scope);
+        if (views.IsError)
+        {
+            return views.Error;
+        }
+
+        var (currentGraph, draftGraph) = views.Value;
         var statuses = GraphStatuses.Of(GraphStatuses.ForRun(request.Run, overrides, Visible(saved.Value, request.Scope.Caller)), currentGraph, draftGraph)
-            .Select(s => s with { Surface = text.Label(s.Surface, Trust.Untrusted), Node = KeepNode(s, request.Scope.Caller) });
+            .Select(s => s with { Surface = text.Label(s.Surface, Trust.Untrusted), Node = KeepNode(s, request.Scope.Caller, text) });
         return new ProposalsView(request.Run, current.Label, draft?.Label, [.. statuses]);
     }
 
+    // Both maps as the caller may see them (MapAccess.View: the deny globs, and a session's repo for the current map). A session whose repo implements nothing sees an empty current map: every surface reads unmapped or new.
+    private static Result<(GraphSnapshot Current, GraphSnapshot? Draft)> Views(MapSnapshot current, MapSnapshot? draft, IReadOnlyList<MapOverride> overrides, ContextScope scope)
+    {
+        var now = MapAccess.View(current.Graph, overrides, scope, pending: false);
+        if (now.IsError && now.Error.Code != ContextErrors.UnknownAnchor.Code)
+        {
+            return now.Error;
+        }
+
+        var next = draft is null ? null : MapAccess.View(draft.Graph, overrides, scope, pending: true, callerScope: false);
+        return next is { IsError: true } ? next.Error : (now.IsError ? GraphSnapshot.Empty : now.Value.Applied, next?.Value.Applied);
+    }
+
     // A new proposal's node key is built from the model-written name, so a fenced caller (a session) gets no key for it: the name is already there, fenced.
-    private static NodeKey? KeepNode(GraphStatus status, ContextCaller caller) =>
-        status.Status == GraphStatusKind.New && FencePolicies.For(caller) == FencePolicy.Fenced ? null : status.Node;
+    // Every key goes out through the egress scrubber like the other reads' keys.
+    private static NodeKey? KeepNode(GraphStatus status, ContextCaller caller, MapText text) =>
+        status.Node is { } node && !(status.Status == GraphStatusKind.New && FencePolicies.For(caller) == FencePolicy.Fenced) && NodeKey.TryFrom(text.Line(node.Value), out var clean) ? clean : null;
 
     private async ValueTask<Result<(MapSnapshot Current, MapSnapshot? Draft)>> Load(CancellationToken cancellationToken)
     {

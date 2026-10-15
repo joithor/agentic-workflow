@@ -33,7 +33,7 @@ internal sealed class ExportMapService(IGraphStore store, IExportStore exports, 
             return graph.IsError ? graph.Error : overrides.Error;
         }
 
-        var visible = MapAccess.Visible(graph.Value, overrides.Value, request.Scope);
+        var visible = MapAccess.View(graph.Value, overrides.Value, request.Scope, pending: false);
         if (visible.IsError)
         {
             return visible.Error;

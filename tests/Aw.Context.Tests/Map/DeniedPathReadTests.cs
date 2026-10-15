@@ -1,5 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
+using Aw.Context.Core.Overrides;
 using Aw.Context.Testing.Map;
 using Aw.Context.Tests.ReviewMap;
 
@@ -138,5 +140,27 @@ public sealed class DeniedPathReadTests : IDisposable
 
         Assert.Contains(plain.Entries, e => e.Files.Any(f => f.Value.Contains("src/commands/", StringComparison.Ordinal)) || e.Node.Value.Contains("close-pane", StringComparison.Ordinal));
         Assert.DoesNotContain(queue.Entries, e => e.Files.Any(f => f.Value.Contains("src/commands/", StringComparison.Ordinal)) || e.Node.Value.Contains("close-pane", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_export_keeps_a_person_s_node_without_its_denied_evidence_and_drops_every_override_about_a_denied_path()
+    {
+        var lines = _deniedMap.ToList();
+        lines.Insert(lines.FindIndex(l => string.Equals(l, "edges:", StringComparison.Ordinal)), "  - {key: \"surface:setting/human\", label: \"human\", provenance: human, evidence: [{key: \"repo:aw-split-panes/private/s.json\"}]}");
+        _ = await _world.ImportYaml(MapWorld.Yaml([.. lines]));
+        var at = DateTimeOffset.Parse("2026-08-01T12:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
+        var orphan = new MapOverride(OverrideAction.Rename, NodeKey.From("code:private/x.ts"), "tester", at, "x");   // a decision about a file the map no longer has
+        var onNode = new MapOverride(OverrideAction.Rename, NodeKey.From("code:private/a.ts"), "tester", at, "a");
+        var kept = new MapOverride(OverrideAction.Rename, NodeKey.From("code:src/b.ts"), "tester", at, "b");
+        _ = await _world.Store.AppendOverrides([orphan, onNode, kept], MapWorld.None);
+
+        var exported = await _world.Map.ExportMap(path: null, Denying("private/**"), MapWorld.None);
+
+        var document = _world.Exports.Documents[exported.Value.Path];
+        var human = Assert.Single(document.Nodes, n => n.Key.Value == "surface:setting/human");
+        Assert.Empty(human.EvidenceOrEmpty);
+        Assert.Equal("code:src/b.ts", Assert.Single(document.Overrides ?? []).Target.Value);
+        Assert.Equal(1, exported.Value.Counts.Overrides);
+        Assert.DoesNotContain(document.Orphaned ?? [], k => k.Value.Contains("private/", StringComparison.Ordinal));
     }
 }

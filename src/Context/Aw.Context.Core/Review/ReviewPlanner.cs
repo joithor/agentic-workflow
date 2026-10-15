@@ -14,13 +14,22 @@ public static class ReviewPlanner
     /// <param name="who">The OS user who decided.</param>
     /// <param name="at">When.</param>
     /// <returns>The rows to append, or SND-CONTEXT-047 when the target is gone or decided already.</returns>
-    public static Result<IReadOnlyList<MapOverride>> Plan(ReviewDecision decision, GraphSnapshot draft, IReadOnlyList<MapOverride> overrides, string who, DateTimeOffset at)
+    public static Result<IReadOnlyList<MapOverride>> Plan(ReviewDecision decision, GraphSnapshot draft, IReadOnlyList<MapOverride> overrides, string who, DateTimeOffset at) =>
+        Plan(decision, new ReviewBasis(draft, overrides), who, at);
+
+    /// <summary>Plans the rows for a decision against a basis (the latest draft, or the current map when a link or an undo is decided with no draft).</summary>
+    /// <param name="decision">What the person decided.</param>
+    /// <param name="basis">The map as the caller may see it, before overrides.</param>
+    /// <param name="who">The OS user who decided.</param>
+    /// <param name="at">When.</param>
+    /// <returns>The rows to append, or SND-CONTEXT-047 when the target is gone or decided already.</returns>
+    public static Result<IReadOnlyList<MapOverride>> Plan(ReviewDecision decision, ReviewBasis basis, string who, DateTimeOffset at)
     {
         ArgumentNullException.ThrowIfNull(decision);
-        ArgumentNullException.ThrowIfNull(draft);
-        ArgumentNullException.ThrowIfNull(overrides);
+        ArgumentNullException.ThrowIfNull(basis);
+        var (draft, overrides, onDraft) = basis;
         var applied = OverrideApplier.Apply(draft, overrides);
-        var world = new World(who, at, overrides, applied, ReviewBacklog.Build(string.Empty, draft, overrides), draft);
+        var world = new World(who, at, overrides, applied, ReviewBacklog.Build(string.Empty, draft, overrides), draft, onDraft);
         return decision.Verb switch
         {
             ReviewVerb.AcceptDeterministic => world.AcceptDeterministic(),
@@ -37,9 +46,13 @@ public static class ReviewPlanner
 
     private static Error Stale(string message) => ContextErrors.ReviewTargetStale.With(message);
 
-    private sealed record World(string Who, DateTimeOffset At, IReadOnlyList<MapOverride> Overrides, AppliedMap Applied, ReviewQueueView Queue, GraphSnapshot Draft)
+    private sealed record World(string Who, DateTimeOffset At, IReadOnlyList<MapOverride> Overrides, AppliedMap Applied, ReviewQueueView Queue, GraphSnapshot Draft, bool OnDraft)
     {
         private GraphSnapshot Graph => Applied.Graph;
+
+        private string Basis => OnDraft ? "the draft" : "the current map";
+
+        private string OrphanFix => OnDraft ? "list the queue again" : "find the orphan's id with 'sindri context map review --history'";
 
         internal Result<IReadOnlyList<MapOverride>> AcceptDeterministic()
         {
@@ -51,7 +64,7 @@ public static class ReviewPlanner
         {
             var entry = Queue.Entries.FirstOrDefault(e => e.Link?.Value == link.Value);
             return entry is null
-                ? Stale($"link {link.Value} is not in the review queue (fix: list it again with 'sindri context map review')")
+                ? Stale($"link {link.Value} is not in {Basis} (fix: {(OnDraft ? "list it again with 'sindri context map review'" : "find its id with 'sindri context filemap'")})")
                 : Row(Verb(d), entry.Node) with { Link = link };
         }
 
@@ -102,13 +115,13 @@ public static class ReviewPlanner
             var orphan = d.Undoes is { } id ? Applied.Orphaned.FirstOrDefault(o => o.ToId().Value == id.Value) : null;
             if (orphan is null || orphan.Link is not null)
             {
-                return Stale($"{d.Undoes?.Value ?? "no override"} is not an orphaned decision about a node (fix: list the queue again)");
+                return Stale($"{d.Undoes?.Value ?? "no override"} is not an orphaned decision about a node (fix: {OrphanFix})");
             }
 
             var node = d.Node is { } key ? Graph.Resolve(key) : null;
             if (node is null)
             {
-                return Stale($"{d.Node?.Value ?? "no node"} is not in the draft (fix: pass --to with a node of the draft)");
+                return Stale($"{d.Node?.Value ?? "no node"} is not in {Basis} (fix: pass --to with a node of {Basis})");
             }
 
             return new List<MapOverride>
@@ -122,7 +135,7 @@ public static class ReviewPlanner
         {
             var orphan = d.Undoes is { } id ? Applied.Orphaned.FirstOrDefault(o => o.ToId().Value == id.Value) : null;
             return orphan is null
-                ? Stale($"{d.Undoes?.Value ?? "no override"} is not an orphaned override (fix: list the queue again)")
+                ? Stale($"{d.Undoes?.Value ?? "no override"} is not an orphaned override (fix: {OrphanFix})")
                 : Row(OverrideAction.Undo, orphan.Target) with { Undoes = orphan.ToId() };
         }
 

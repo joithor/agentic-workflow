@@ -27,14 +27,14 @@ internal sealed class ShowMapStatusService(IGraphStore store) : IService<ShowMap
 
         var graph = await store.Read(version.Number, cancellationToken).ConfigureAwait(false);
         var overrides = await store.Overrides(cancellationToken).ConfigureAwait(false);
-        var visible = graph.IsError ? graph.Error : overrides.IsError ? overrides.Error : MapAccess.Visible(graph.Value, overrides.Value, request.Scope);
+        var visible = graph.IsError ? graph.Error : overrides.IsError ? overrides.Error : MapAccess.View(graph.Value, overrides.Value, request.Scope, pending: false);
         if (visible.IsError)
         {
             return visible.Error;
         }
 
-        var (shown, layer) = visible.Value;
-        var coverage = request.Anchor is { } name ? Coverage(shown, layer, name) : Results.Success<LensCoverage?>(value: null);
+        var (shown, applied, layer, _) = visible.Value;
+        var coverage = request.Anchor is { } name ? Coverage(applied, name) : Results.Success<LensCoverage?>(value: null);
         if (coverage.IsError)
         {
             return coverage.Error;
@@ -47,9 +47,8 @@ internal sealed class ShowMapStatusService(IGraphStore store) : IService<ShowMap
     private static ContextRepoName? ScopedTo(ContextCaller caller) => caller.Kind == ContextCallerKind.Session ? caller.Repo : null;
 
     // The coverage of the anchor's own scope over the map as a caller reads it (overrides applied, a pending proposal not part of the current map): the lenses' record.
-    private static Result<LensCoverage?> Coverage(GraphSnapshot shown, IReadOnlyList<MapOverride> layer, string anchor)
+    private static Result<LensCoverage?> Coverage(GraphSnapshot applied, string anchor)
     {
-        var applied = OverrideApplier.Apply(shown, [.. layer.Where(o => o.Action != OverrideAction.Propose)]).Graph;
         var node = AnchorMatch.Resolve(applied, anchor);
         return node.IsError ? node.Error : Results.Success<LensCoverage?>(LensCoverageBuilder.ForAnchor(applied, node.Value.Key));
     }

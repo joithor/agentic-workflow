@@ -28,28 +28,38 @@ internal sealed class ApplyReviewFileService(IGraphStore store, IReviewFileStore
             return file.IsError ? file.Error : draft.Error;
         }
 
-        var map = draft.Value;
-        var matched = ReviewFileMatcher.Match(file.Value, ReviewBacklog.Build(map.Label, map.Graph, map.Overrides));
-        if (matched.IsError)
+        var prepared = Prepare(draft.Value, file.Value, request.Scope);
+        if (prepared.IsError)
         {
-            return matched.Error;
+            return prepared.Error;
         }
 
-        var (rows, skipped) = Plan(matched.Value, map, (ReviewDrafts.Who(request.Scope.Caller, user), clock.GetUtcNow()));
+        var (basis, matched) = prepared.Value;
+        var (rows, skipped) = Plan(matched, basis, (ReviewDrafts.Who(request.Scope.Caller, user), clock.GetUtcNow()));
         var added = await store.AppendOverrides(rows, cancellationToken).ConfigureAwait(false);
         return added.IsError
             ? added.Error
-            : new ReviewResult([.. rows.Select(r => r.ToId())], skipped, ReviewBacklog.Build(map.Label, map.Graph, [.. map.Overrides, .. rows]).Undecided);
+            : new ReviewResult([.. rows.Select(r => r.ToId())], skipped, ReviewBacklog.Build(draft.Value.Label, basis.Graph, [.. basis.Overrides, .. rows]).Undecided);
+    }
+
+    // What the file may decide: the entries that match the queue the caller sees, so a hidden item can't be matched, decided or counted.
+    private static Result<(ReviewBasis Basis, ReviewFileMatch Matched)> Prepare(MapSnapshot draft, ReviewFile file, ContextScope scope)
+    {
+        var seen = ReviewDrafts.Visible(draft, scope);
+        var matched = seen.IsError ? seen.Error : ReviewFileMatcher.Match(file, seen.Value.Queue);
+        return seen.IsError || matched.IsError
+            ? (seen.IsError ? seen.Error : matched.Error)
+            : (new ReviewBasis(seen.Value.View.Graph, seen.Value.View.Overrides), matched.Value);
     }
 
     // Each decision is planned on top of the ones before it, so two entries of one file can't both claim the same item.
-    private static (List<MapOverride> Rows, List<string> Skipped) Plan(ReviewFileMatch matched, MapSnapshot map, (string Who, DateTimeOffset At) by)
+    private static (List<MapOverride> Rows, List<string> Skipped) Plan(ReviewFileMatch matched, ReviewBasis basis, (string Who, DateTimeOffset At) by)
     {
         var rows = new List<MapOverride>();
         var skipped = new List<string>(matched.Skipped);
         foreach (var decision in matched.Decisions)
         {
-            var planned = ReviewPlanner.Plan(decision, map.Graph, [.. map.Overrides, .. rows], by.Who, by.At);
+            var planned = ReviewPlanner.Plan(decision, basis with { Overrides = [.. basis.Overrides, .. rows] }, by.Who, by.At);
             if (planned.IsSuccess)
             {
                 rows.AddRange(planned.Value);

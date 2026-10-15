@@ -1,5 +1,4 @@
 using Aw.Context.Core.Engine;
-using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Trust;
 using Aw.Kernel;
 
@@ -35,11 +34,9 @@ public sealed class MapReader(IGraphStore store)
         }
 
         // A 'propose' row only adds its node to a draft: a pending proposal is never part of the current map (a promote makes an accepted one a node of the version).
-        var layer = draft ? map.Overrides : [.. map.Overrides.Where(o => o.Action != OverrideAction.Propose)];
-        var applied = OverrideApplier.Apply(map.Graph, layer).Graph;
-        // A deny glob added after the map was built hides its code nodes now, before any rebuild (review #220 run 1: security-sentinel-1).
-        var visible = MapAccess.Visible(applied, [], scope);
-        return visible.IsError ? visible.Error : new VisibleMap(map, visible.Value.Graph);
+        // A deny glob added after the map was built hides its paths now, before any rebuild: the one view every reader uses (review #220 run 3).
+        var visible = MapAccess.View(map.Graph, map.Overrides, scope, pending: draft);
+        return visible.IsError ? visible.Error : new VisibleMap(map, visible.Value.Applied);
     }
 
     /// <summary>The map the app's lenses and file-map reads start from: <see cref="Read"/>, but a draft that doesn't exist is SND-CONTEXT-044 (a missing map stays 030).</summary>

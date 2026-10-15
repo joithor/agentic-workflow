@@ -28,8 +28,16 @@ internal sealed class ReviewMapService(IGraphStore store, ICurrentUser user, Tim
             return basis.Error;
         }
 
-        var map = basis.Value;
-        var rows = ReviewPlanner.Plan(request.Decision, map.Graph, map.Overrides, ReviewDrafts.Who(request.Scope.Caller, user), clock.GetUtcNow());
+        // The decision is planned against what the caller may see: a bulk accept writes only the items shown, and the answer's count is the queue's (review #220 run 3).
+        var (map, onDraft) = basis.Value;
+        var seen = MapAccess.View(map.Graph, map.Overrides, request.Scope, pending: true, callerScope: false);
+        if (seen.IsError)
+        {
+            return seen.Error;
+        }
+
+        var visible = new ReviewBasis(seen.Value.Graph, seen.Value.Overrides, onDraft);
+        var rows = ReviewPlanner.Plan(request.Decision, visible, ReviewDrafts.Who(request.Scope.Caller, user), clock.GetUtcNow());
         if (rows.IsError)
         {
             return rows.Error;
@@ -41,16 +49,21 @@ internal sealed class ReviewMapService(IGraphStore store, ICurrentUser user, Tim
             return added.Error;
         }
 
-        var undecided = ReviewBacklog.Build(map.Label, map.Graph, [.. map.Overrides, .. rows.Value]).Undecided;
+        var undecided = ReviewBacklog.Build(map.Label, visible.Graph, [.. visible.Overrides, .. rows.Value]).Undecided;
         return new ReviewResult([.. rows.Value.Select(r => r.ToId())], [], undecided);
     }
 
-    private async ValueTask<Result<MapSnapshot>> Basis(ReviewDecision decision, CancellationToken cancellationToken)
+    private async ValueTask<Result<(MapSnapshot Map, bool OnDraft)>> Basis(ReviewDecision decision, CancellationToken cancellationToken)
     {
         var draft = await ReviewDrafts.Draft(store, cancellationToken).ConfigureAwait(false);
-        if (draft.IsSuccess || !(decision.Link is not null || decision.Verb is ReviewVerb.Undo or ReviewVerb.Drop or ReviewVerb.Repoint) || draft.Error.Code != ContextErrors.NoDraftMap.Code)
+        if (draft.IsSuccess)
         {
-            return draft;
+            return (draft.Value, true);
+        }
+
+        if (!(decision.Link is not null || decision.Verb is ReviewVerb.Undo or ReviewVerb.Drop or ReviewVerb.Repoint) || draft.Error.Code != ContextErrors.NoDraftMap.Code)
+        {
+            return draft.Error;
         }
 
         var current = await store.Snapshot(draft: false, cancellationToken).ConfigureAwait(false);
@@ -59,6 +72,6 @@ internal sealed class ReviewMapService(IGraphStore store, ICurrentUser user, Tim
             return current.Error;
         }
 
-        return current.Value is { } found ? found : ContextErrors.NoMap.With("there is no map yet (fix: sindri context map import <file>)");
+        return current.Value is { } found ? (found, false) : ContextErrors.NoMap.With("there is no map yet (fix: sindri context map import <file>)");
     }
 }
