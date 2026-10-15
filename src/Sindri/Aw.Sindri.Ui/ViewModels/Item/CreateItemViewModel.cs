@@ -48,6 +48,21 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
     /// </summary>
     public bool IsGateOpen => Control is not { IsReady: true } || !string.IsNullOrWhiteSpace(Title);
 
+    /// <summary>"Title is required" after a blank submit, until a title is typed; else empty.</summary>
+    public string TitleError { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>True while <see cref="TitleError"/> shows.</summary>
+    public bool HasTitleError { get; private set => Set(ref field, value); }
+
+    /// <summary>True while the title's live region is live (its gate, set before its text changes).</summary>
+    public bool IsAnnouncing { get; private set => Set(ref field, value); }
+
+    /// <summary>The title's live region text; never empty.</summary>
+    public string Announcement { get; private set => Set(ref field, value); } = Labels.TitleRequired;
+
+    /// <summary>Counts the blank submits that ask the view to put focus on the title.</summary>
+    public int TitleFocusRequests { get; private set => Set(ref field, value); }
+
     /// <summary>The new item's id once accepted, else empty.</summary>
     public string CreatedId { get; private set => Set(ref field, value); } = string.Empty;
 

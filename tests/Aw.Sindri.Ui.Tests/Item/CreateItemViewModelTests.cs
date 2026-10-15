@@ -81,4 +81,53 @@ public sealed class CreateItemViewModelTests
         await form.Submit(Token);
         Assert.Empty(_server.Created);
     }
+
+    // L10 (corr-5): the second press, and one in the 2 s the accepted outcome shows, send nothing more: one create.
+    [Fact]
+    public async Task Submit_twice_while_sending_and_again_while_the_outcome_shows_creates_once()
+    {
+        var form = await Form();
+        form.Title = "Once";
+        var gate = _server.CommandGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var first = form.Submit(Token);
+        var second = form.Submit(Token);
+        gate.SetResult();
+        await Task.WhenAll(first, second);
+        await form.Submit(Token);
+
+        _ = Assert.Single(_server.Created);
+        Assert.Equal((false, true), (form.CanSubmit, form.IsOpen));
+    }
+
+    // L10 (a11y-5): Create stays enabled; a blank submit says what is missing under the field, speaks it once (the flag
+    // before the text, never an empty text), asks for focus on the title and sends nothing. Typing a title takes the message away.
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task A_blank_submit_says_the_title_is_required_once_and_sends_nothing(string title)
+    {
+        var form = await Form();
+        form.Title = title;
+        var spoken = new List<(bool Live, string Text)>();
+        form.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is { } name && (string.Equals(name, nameof(CreateItemViewModel.IsAnnouncing), StringComparison.Ordinal) || string.Equals(name, nameof(CreateItemViewModel.Announcement), StringComparison.Ordinal)))
+            {
+                spoken.Add((form.IsAnnouncing, form.Announcement));
+            }
+        };
+
+        await form.Submit(Token);
+
+        Assert.Empty(_server.Created);
+        Assert.Equal((true, "Title is required", 1, CommandPhase.Idle), (form.HasTitleError, form.TitleError, form.TitleFocusRequests, form.Control!.Phase));
+        Assert.Equal([(true, "Title is required")], spoken.Where(s => s.Live && !string.Equals(s.Text, "Title (required)", StringComparison.Ordinal)).Distinct());
+        Assert.DoesNotContain(spoken, s => s.Live && string.Equals(s.Text, "Title (required)", StringComparison.Ordinal));   // the resting text is never spoken
+        Assert.All(spoken, s => Assert.NotEmpty(s.Text));
+
+        form.Title = "Now there is one";
+
+        Assert.Equal((false, string.Empty), (form.HasTitleError, form.TitleError));
+    }
 }

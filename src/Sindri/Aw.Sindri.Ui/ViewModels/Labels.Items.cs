@@ -89,6 +89,12 @@ internal static partial class Labels
     /// <summary>The create form's title field.</summary>
     internal const string ItemTitle = "Title";
 
+    /// <summary>The create form's title field: it says the field is required (L10).</summary>
+    internal const string TitleRequired = "Title (required)";
+
+    /// <summary>What a blank submit says under the title field and through its live region (L10).</summary>
+    internal const string TitleIsRequired = "Title is required";
+
     /// <summary>The create form's repo field.</summary>
     internal const string ItemRepo = "Repo";
 
