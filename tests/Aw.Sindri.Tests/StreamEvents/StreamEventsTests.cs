@@ -1,8 +1,8 @@
-using Aw.Sindri.Core.Commands;
-using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Kernel.Ids;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Features.RecordHeartbeat;
