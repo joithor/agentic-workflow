@@ -611,7 +611,7 @@ API serves, so the app never parses YAML or recomputes an order (README X52: the
 | `chip` | `{word, tone}`: the one state chip (`PARKED`, `ESCALATED`, `WITH YOU`, `DECISION`, `QUEUED`, `DONE`, `RUNNING`) and its colour class `attn`, `fail`, `ok` or `neutral`; the same record is on `ChildRow` |
 | `engineOwned` | `null`, or `{kind: parked \| escalated \| taken-over, reason}`: the badge that replaces the state's glyph |
 | `subject` | `{kind, key, label, href?}`, from the recipe's first input (screens §5.4); `kind` is `inputs[].kind` (E-22) |
-| `inputs[]` | `{key, label, kind?, required, present}`, in declaration order, for the INPUTS column. `kind` is the input's declared kind exactly as `RecipeView.inputs[].kind` serves it (the subject adapter; `null` for every input but the first). **v1 serves `required: true` and `present: true` for every started instance**: StartInstance refuses a missing input, and the recipe schema has no optional input yet (a future change). The missing and optional renders are previews with data in one golden, `workflow-instances/preview-missing-input` (ITM-01JKH, a marked preview like the fan-out one); `workflow-recipe/no-outputs`' optional `fact:context` is the same kind of preview |
+| `inputs[]` | `{key, label, kind?, required, present}`, in declaration order, for the INPUTS column. `kind` is the input's declared kind exactly as `RecipeView.inputs[].kind` serves it (the subject adapter; `null` for every input but the first). **v1 serves `required: true` and `present: true` for every started instance**: StartInstance refuses a missing input, and the recipe schema has no optional input yet (a future change). The missing and optional renders are previews with data in one golden, `workflow-instances/preview-missing-input` (ITM-01JKH, a marked preview like the fan-out one); `workflow-recipe/workflow.no-outputs`' optional `fact:context` is the same kind of preview |
 | `states[]` | The compact `StateCell` list below, so the list renders every stage cell without a second call |
 | `now` | Its own short sentence of at most 80 characters, composed by the engine's layout for the row (screens fixture, NOW column); it is not a shortening of `next` (the full `next` is on the view) |
 | `answer?` | The same `StatusAnswer` as `current.status.answer`, including `atTerminal`, so the row can offer `[Answer]` |
@@ -729,6 +729,7 @@ definition (states, transitions, evals, pins, open instances placed per state, t
 
 | Field | What it holds |
 |---|---|
+| `id`, `hash`, `version` | The recipe's stamp (the same one an instance carries in `recipe`), served now ahead of the engine's full body: its id, its `sha256:<64 hex>` hash and its version |
 | `inputs[]` | `{key, label?, type, kind?, required}`. `type` is a fact type (the nine of `FactRow.type`); **`kind`** is the subject adapter (`item`, `linear-project`, `webhook`, `file`, `text`) and is read from the first input only (screens §5.4) |
 | `outputs[]` | `{key, label?, type, from}`: the new output declarations (WF `outputs`, E-22), with the added fact types of screens §5.2 |
 | `orderedBy` | `"path"`, or `"transition-list"` when the graph has more than one initial path: the same field and meaning as on `InstanceView` |

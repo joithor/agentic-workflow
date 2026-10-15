@@ -1,9 +1,13 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
-/// <summary>The additions the recipe view makes (E-22): inputs, outputs, urgency, path-ordered states and loops.</summary>
+/// <summary>The recipe view: the recipe's stamp (id, hash, version; the same one an instance carries in `recipe`), served now ahead of the engine's full body, and the E-22 additions (inputs, outputs, urgency, path-ordered states and loops).</summary>
+/// <param name="Id">The recipe id.</param>
+/// <param name="Hash">The recipe hash, sha256: and 64 hex digits.</param>
+/// <param name="Version">The recipe version.</param>
 /// <param name="Inputs">The inputs.</param>
 /// <param name="Outputs">The outputs.</param>
 /// <param name="Urgency">The urgency.</param>
@@ -12,6 +16,9 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Loops">The loops.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RecipeView(
+    RecipeId Id,
+    RecipeHash Hash,
+    int Version,
     IReadOnlyList<RecipeInputView> Inputs,
     IReadOnlyList<RecipeOutputView> Outputs,
     RecipeUrgency Urgency,
