@@ -3,6 +3,7 @@ using Aw.Meta.Infrastructure.Processes;
 
 namespace Aw.Meta.Tests.Adapters;
 
+[System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
 public sealed class SystemCommandRunnerTests : IDisposable
 {
     private readonly TempDirectory _dir = new();
@@ -21,6 +22,21 @@ public sealed class SystemCommandRunnerTests : IDisposable
         Assert.True(result.IsSuccess);
         Assert.Contains(Path.GetFileName(_dir.Path), result.Value.Stdout, StringComparison.Ordinal);
         Assert.EndsWith("value-1", result.Value.Stdout, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_relative_script_runs_from_the_working_directory_whatever_ours_is()
+    {
+        var scripts = Directory.CreateDirectory(Path.Combine(_dir.Path, "scripts")).FullName;
+        var script = Path.Combine(scripts, "mine.sh");
+        await File.WriteAllTextAsync(script, "#!/bin/sh\necho from-the-tree\n", TestContext.Current.CancellationToken);
+        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var request = new CommandRequest(["scripts/mine.sh"], TimeSpan.FromSeconds(20)) { Cwd = _dir.Path };
+
+        var result = await new SystemCommandRunner().Run(request, CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.IsSuccess ? "" : result.Error.ToString());
+        Assert.Contains("from-the-tree", result.Value.Stdout, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]
