@@ -123,8 +123,9 @@ that graph plus rank fusion across adapters.
   graph nodes the repo implements and their cascade, and intent records linked to those nodes or from the Linear teams
   the profile maps to that repo (`context.repoTeams`). Anything else answers as an unknown anchor (`SND-CONTEXT-003`),
   never as a hint that it exists.
-- **Every command writes an event.** `context.map.built`, `context.map.promoted`, `context.map.reviewed`,
-  `context.map.imported` and `context.sources.synced` go to the ledger through the API chain, so the app refreshes.
+- **Every command writes an event.** `context.map.built`, `context.map.promoted`, `context.map.reviewed` (keyed by the first
+  override id it wrote), `context.map.proposed` (keyed by run, draft and the call's counts), `context.map.imported` and
+  `context.sources.synced` go to the ledger through the API chain, so the app refreshes.
 
 ## 4. Package shape and composition
 
@@ -318,7 +319,8 @@ available in the bundled `e_sqlite3` before Phase 1 relies on it.
 | `map_version` | id, repo, commit sha, extractor and key version, created, status (`building`, `draft`, `current`, `retained`) |
 | `node`, `node_alias` | key, kind, label, attributes (JSON), provenance, confidence, trust, map version |
 | `edge`, `edge_evidence` | from, to, type, provenance, confidence, map version; evidence refs |
-| `map_override` | action, target key, payload, who (the OS user at the terminal), when, rejection identity |
+| `map_override` | action (including `propose` and `undo`), target key, link, undoes, payload (a `propose` row's run, repo, kind, parent, evidence, quote), who (the OS user at the terminal), when, rejection identity |
+| `proposal_run` | run address, repo, the run's whole surface list as JSON (mapped and unmapped surfaces too); a second submission of the run replaces it |
 | `decision` | key, wording, quote span, provenance, trust |
 | `source_cursor` | source id, cursor, last sync, last error code |
 | `snippet` | content hash, canonical key, version, scrubbed text, expires (14 days) |
@@ -451,7 +453,7 @@ All of them call `IContextEngine`; they differ only in transport.
 | Surface | Shape | Phase |
 |---|---|---|
 | **HTTP** | `GET /sindri/context/query?q=&node=&item=&symbol=&depth=&budget=&draft=`; `GET /sindri/context/node?key=`; `GET /sindri/context/neighbors?key=&depth=`; `GET /sindri/context/path?from=&to=`; `GET /sindri/context/lenses?anchor=&depth=&draft=` (§8.9); `GET /sindri/context/filemap?repo=&path=&draft=` (§8.9); `POST /sindri/context/map/import`; `GET /sindri/context/map/export`; `POST /sindri/context/map/build`; `GET /sindri/context/map`; `GET /sindri/context/map/review`, `/review/history` and `/review/export?path=`; `POST /sindri/context/map/review` (a classified command: `desk` for accept, reject, rename, move, accept-deterministic, undo, drop and repoint; `protected` for apply-file, merge, add and delete; §3); `POST /sindri/context/map/promote` (`protected`); `POST /sindri/context/map/proposals` and `GET /sindri/context/map/proposals?run=` (a scoping run's surfaces as draft proposals, and their graph status against the current map, §8.7); `GET /sindri/context/sources`; `POST /sindri/context/sources/sync`. Each `POST` is a command with a catalog row and the class API §3.7 gives it (`lenses` and `filemap` are `query`, repo-scoped for sessions; `POST map/proposals` is `job`: it writes only drafts, like `map build`; until API P6's job runtime merges it runs synchronously, callable from the terminal, the app and `service:engine`, and `map build` is the catalog row `pending:API-P6` with no route, so a draft comes from proposals and the `context-rebuild` scheduled service). `lenses` and `filemap` have no workflow block; `filemap` has no MCP tool (the app is its only client). Keys travel in query strings or bodies, never in the path (they hold `/` and `#`). Errors are ProblemDetails with the `SND-CONTEXT-*` code as `title` | 1 (query, sources), 3–4 (the rest; `lenses`, `filemap` file level and `map/proposals` in 4, the symbol column of `filemap` and `lenses` in 9) |
-| **CLI** | `$SINDRI context query "<q>" [--draft] [--node K \| --item ENG-1 \| --symbol S] [--depth N] [--budget N] [--json]`; `context show <key>`, `neighbors <key> [--depth N]`, `path <a> <b>`, `lenses <key> [--depth N] [--draft] [--json]`, `filemap [--repo R] [--path P] [--unmapped] [--draft] [--json]`, `filemap accept <link-id> \| reject <link-id>` (one `map_override` row each, through `map review`'s apply path), `map import <file> \| export <file> \| build \| status \| promote \| propose <file> \| review [--export F \| --apply F \| --history \| --undo ID \| --drop ID \| --repoint ID --to NODE \| --accept-deterministic \| accept\|reject NODE-OR-LINK \| rename \| move \| merge \| add \| delete] \| proposals --run ADDR`, `sources status \| sync`, `eval backtest \| probes \| map` | as HTTP |
+| **CLI** | `$SINDRI context query "<q>" [--draft] [--node K \| --item ENG-1 \| --symbol S] [--depth N] [--budget N] [--json]`; `context show <key>`, `neighbors <key> [--depth N]`, `path <a> <b>`, `lenses <key> [--depth N] [--draft] [--json]`, `filemap --repo R [--path P] [--unmapped] [--draft] [--json]`, `filemap accept <link-id> \| reject <link-id>` (one `map_override` row each, through `map review`'s apply path), `map import <file> \| export <file> \| build \| status \| promote \| propose <file> \| review [--export F \| --apply F \| --history \| --undo ID \| --drop ID \| --repoint ID --to NODE \| --accept-deterministic \| accept\|reject NODE-OR-LINK \| rename \| move \| merge \| add \| delete] \| proposals --run ADDR`, `sources status \| sync`, `eval backtest \| probes \| map` | as HTTP |
 | **MCP** | The shared Sindri endpoint `/sindri/mcp` (API §8): Streamable HTTP on the API port, **stateless mode** (so a Sindri restart doesn't break a session), behind the API guard. Read-only tools: `context_query {q, node?, item?, symbol?, depth?, budget?}`, `context_node {key}`, `context_neighbors {key, depth?}`, `context_lenses {anchor}` (never the draft), `context_sources {}`. Results: `structuredContent` with the result JSON, and a short text summary (anchors, counts, conflicts, degraded; not the full text a second time). Errors map to tool errors carrying the `SND-CONTEXT-*` code and fix. The `context_*` tools are off when `context.sessions.enabled` is false; the endpoint itself stays up for the `sindri_*` tools | 1 (`context_query`, `context_sources`), 3 (the rest), 4 (`context_lenses`) |
 | **Workflow block** | `input.context.retrieve`, a `StepInput` block (engine §2): fills injection-plan sections before a recipe Step starts | 10 |
 
@@ -479,7 +481,7 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-010` | A source is unavailable (degraded, not fatal) | `context sources status` |
 | `SND-CONTEXT-011` | **Every** source is unavailable (exit 2, not "no results") | `context sources status`; start Onyx or check the repos |
 | `SND-CONTEXT-020` | MCP is disabled (`context.sessions.enabled: false`); the `context_*` tools answer this code and `context sources status` says so | Enable it in the profile and approve |
-| `SND-CONTEXT-030` | No map yet | `context map import` or `context map build` |
+| `SND-CONTEXT-030` | No map yet | `context map import <file>` (`context map build` once API P6 lands) |
 | `SND-CONTEXT-031` | The map file is invalid (schema version, shape, an unknown kind or a disallowed edge); the key path is given and nothing was written (exit 1) | Fix the file at that key path |
 | `SND-CONTEXT-032` | The map file refers to a node it doesn't define (an edge end, an alias target, a decided node); nothing was written (exit 1) | Define the node or fix the reference |
 | `SND-CONTEXT-033` | An export path outside `$AW_SINDRI_HOME/context/exports/` (a worktree path is `-005`) (exit 1) | Give a name or a path under the exports folder |
@@ -492,9 +494,9 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-041` | Retired: applying a review, `import` and `promote` are `protected` commands and use the engine's challenge, refused with `SND-AUTH-002` | — |
 | `SND-CONTEXT-042` | Labeling disabled or over its token cap | Enable `context.labeling` or raise `maxTokens` |
 | `SND-CONTEXT-043` | No entry in the review file matches the latest draft (exit 1; HTTP 409) | `map review --export` again |
-| `SND-CONTEXT-044` | `draft` requested on `lenses` or `filemap` and no draft map exists (exit 1; HTTP 404) | `context map build`, then retry; or drop `--draft` |
+| `SND-CONTEXT-044` | `draft` requested on `lenses` or `filemap` and no draft map exists (exit 1; HTTP 404) | `context map propose <file>` or the `context-rebuild` service (`context map build` once API P6 lands), then retry; or drop `--draft` |
 | `SND-CONTEXT-045` | `repo` (or an anchor's repo) is not in the profile's repos, or is outside the session caller's `X-Sindri-Repo` scope (exit 1; HTTP 404, the same answer for both so scope is not revealed) | Add the repo to the profile and `profile approve`, or use a listed repo |
-| `SND-CONTEXT-046` | `map promote` refused: there is no draft, or the draft still has undecided review items; a skipped item is not decided (exit 1; HTTP 409) | `map build` or `map review`, then promote |
+| `SND-CONTEXT-046` | `map promote` refused: there is no draft, or the draft still has undecided review items; a skipped item is not decided (exit 1; HTTP 409) | `map propose <file>` or the `context-rebuild` service (`map build` once API P6 lands), or `map review`, then promote |
 | `SND-CONTEXT-047` | A review target is stale: the node or link is not in the latest draft's queue (decided already, or gone), or `--undo` names an override that is unknown or already undone (exit 1; HTTP 409) | `map review` to list the queue, or `--history` for the ids |
 | `SND-CONTEXT-048` | Extraction cannot read the repo from git at the commit (a missing repo or sha; exit 2; HTTP 503) | Fix the repo path in the profile, or fetch the commit |
 | `SND-CONTEXT-049` | Reserved for findings in the S-4 review loop | — |
@@ -544,7 +546,7 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
   subcommands for nodes outside the queue.
 - **Scoping proposals (UI E-31, decision R8-11; the scoping recipe spec owns the run's half).** A scoping run
   submits the surfaces its brief cites that have no node with `POST /sindri/context/map/proposals`
-  (`{run, repo, surfaces[{label, kind, parent?, evidence[], briefQuote?}]}`; CLI `context map proposals --run ADDR`).
+  (`{run, repo, surfaces[{name, key?, kind?, parent?, evidence?, quote?}]}`; CLI `context map propose <file>` submits and `context map proposals --run ADDR` reads where they stand).
   Each surface with a key, or a kind and a name, becomes a `propose` row in `map_override` (who: `service:engine`; evidence:
   the run's address as a `SourceRef` plus the brief quote), applied to the **latest draft**; if none exists the call
   opens one as a copy of `current`, so `current` is never written. Identity is (kind, label key, evidence canonical
@@ -688,12 +690,13 @@ directory rolled up, and the app requests a subtree when the user expands it.
     { "path": "src/session/restore.ts", "type": "file", "status": "suggested",
       "features": [{ "key": "feature:session.restore", "provenance": "model", "confidence": 0.74, "confirmed": false,
                     "linkId": "edge:…" }],
-      "intent": { "records": 0, "decisions": 0 }, "symbols": { "state": "unavailable", "reason": "index not built" } },
+      "intent": { "records": 0, "decisions": 0 } },
     { "path": "src/billing/", "type": "dir", "status": "unmapped", "files": 14, "features": [], "intent": null } ],
   "unmapped": [{ "path": "src/billing/", "files": 14 }],
   "suggested": [{ "linkId": "edge:…", "file": "src/session/restore.ts", "feature": "feature:session.restore", "confidence": 0.74,
                   "evidence": ["linear:issue/ENG-482"] }],
-  "totals": { "files": 212, "mapped": 190, "suggested": 3, "unmapped": 19 } }
+  "totals": { "files": 212, "mapped": 190, "suggested": 3, "unmapped": 19 },
+  "symbols": { "state": "unavailable", "reason": "index not built" } }
 ```
 
 - `status` is `mapped` (at least one confirmed `implements` edge), `suggested` (only unconfirmed model edges), or
@@ -706,8 +709,8 @@ directory rolled up, and the app requests a subtree when the user expands it.
   `{verb: "accept" | "reject", link: <linkId>}` (CLI `context filemap accept <link-id>` or `reject <link-id>`):
   exactly one `map_override` row each, undoable with `map review --undo`. They are `desk` actions (README X63): the
   app runs them directly with an Undo toast, a session is `SND-AUTH-002`.
-- **Phase 9** fills the `symbols` column of each file (the symbols it defines and the features each implements);
-  until then the field reads `index not built`. The file-level tree is complete without it.
+- **Phase 9** fills the top-level `symbols` object (the symbols each file defines and the features each implements);
+  until then it reads `index not built`. The file-level tree is complete without it.
 
 ## 9. Evaluation
 

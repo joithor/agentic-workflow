@@ -400,8 +400,8 @@ User-facing behaviour is in `docs/sindri/context.md` (S-4). This is where the co
 
 - **Core `Extract/`.** `MapExtractor` composes the deterministic map from file text through table-driven `Recognizers` (command ids,
   keybindings, settings keys, routes, UI names), each node with a file-level `implements` from `code:<path>`; `ClusterFeatures` turns
-  graphify clusters (`IClusterSource`) into candidate features, optionally named by `ILabeler.Label(clusters, maxTokens, ct)` (the token cap
-  arrives with each pass, from `context.labeling.maxTokens`). Ports: `IRepoReader` (files at a sha), `IClusterSource`, `ILabeler`.
+  graphify clusters (`IClusterSource`) into candidate features, optionally named by `ILabeler.Label(clusters, extraPatterns, maxTokens, ct)` (the token cap
+  arrives with each pass, from `context.labeling.maxTokens`; the profile's `context.scrub.extraPatterns` scrub every path sent to the model). Ports: `IRepoReader` (files at a sha), `IClusterSource`, `ILabeler`.
 - **Core `Overrides/`, `Review/`, `Proposals/`, `Lenses/`.** Pure: `OverrideApplier`, `ReviewBacklog` (the queue), `ReviewPlanner` (one
   decision to override rows; `Repoint` is an undo of the orphan plus the same decision on the new node), `ReviewFileMatcher`, `PromoteReadiness`,
   `ReviewHistory`, `ProposalPlanner`, `GraphStatuses`, `LensesBuilder`, `FileMapBuilder`. `ReviewDrafts.Gate` (the whole-map paths: session callers

@@ -113,6 +113,21 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Contains("SND-CONTEXT-020", refused.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
     }
 
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_lenses_over_mcp_fences_the_untrusted_labels_the_way_a_session_over_http_reads_them()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await ImportDrafted(host);
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var result = await mcp.Call("context_lenses", """{"anchor":"feature:a"}""", ct);
+
+        Assert.NotEqual(true, result.IsError);
+        var own = result.StructuredContent!.Value.GetProperty("bands").GetProperty("product").GetProperty("own").EnumerateArray().Single(i => i.GetProperty("node").GetString() == "feature:b");
+        Assert.Equal(("<untrusted source=\"map\">Drafted B</untrusted>", "untrusted"), (own.GetProperty("label").GetString(), own.GetProperty("trust").GetString()));
+    }
+
     private async Task<GoldenHost> OffHost() => await Host(sessions: false);
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

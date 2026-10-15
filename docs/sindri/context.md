@@ -433,7 +433,7 @@ $SINDRI context query "What else is affected if I change how split orientation w
 
 A question anchors on every node whose whole name it uses (case ignored, plurals and small words and a parenthesized kind
 such as `(command)` ignored; the most specific name wins), adds that node's `graph` and `affects` sections, and still
-searches the sources with the question's words. `suggestedAnchors` lists close names. With no map, the answer is S-1A's. `--draft` with no draft map is `SND-CONTEXT-030` (fix: drop `--draft`); drafts come with `context map build` (S-4).
+searches the sources with the question's words. `suggestedAnchors` lists close names. With no map, the answer is S-1A's. `--draft` with no draft map is `SND-CONTEXT-030` (fix: drop `--draft`); drafts come from `context map propose <file>` and the `context-rebuild` service (S-4).
 
 ### One node, its neighbors, a path
 
@@ -525,10 +525,10 @@ services:
 ```
 
 - `index.denyPaths` adds to the built-in secret globs (`.env*`, `*.pem`, `**/secrets/**` and the like) and never
-  replaces them. A denied path never reaches the recognizers, graphify, the labeler or the graph. A glob is relative
+  replaces them. A denied path never reaches the recognizers, graphify, the labeler or the graph; a glob added after a map exists removes that path's code nodes, their links and the features only they made from the next draft, so it leaves the map when you promote that draft. A glob is relative
   to the repo root, uses `/`, and has no `..`; `profile validate` names the bad one (`repos.work-app.index.denyPaths[1]: …`).
 - Labeling is off by default. When on, it asks your own agent CLI (Claude Code, Codex or Cursor, in that order, never a
-  remote API) to name each cluster from its file paths, scrubbed, in batches of twenty, inside `maxTokens`. If no CLI
+  remote API) to name each cluster from its file paths, scrubbed (with your `context.scrub.extraPatterns` too), in batches of twenty, inside `maxTokens`. If no CLI
   answers, the build goes on with unnamed clusters and reports `degraded: labels`.
 - Clusters need graphify (pinned) under a working sandbox: `bwrap` on Linux, `sandbox-exec` on macOS. Without either,
   the build still proposes the deterministic anchors and reports `degraded: clusters`; it is not an error. On Linux
@@ -605,7 +605,7 @@ current map has it: after a promote) or `unmapped` (you rejected it). The `POST`
 ### Lenses and the file map
 
 ```
-$ sindri context lenses feature:tabs.tab-manager [--draft] [--json]
+$ sindri context lenses feature:tabs.tab-manager [--depth <0-4>] [--draft] [--json]
 lenses of feature:tabs.tab-manager · map v13
 intent (2): …
 product (7): …

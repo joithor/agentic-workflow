@@ -31,7 +31,7 @@ internal static class Usage
         "       sindri context map promote       make the latest draft current when nothing is left to decide (SND-CONTEXT-046); type the challenge at a terminal",
         "       sindri context map propose <file> [--json]   a scoping run's surfaces (run, repo, surfaces) as proposals in the draft; map proposals --run <id> reads where they stand",
         "       sindri context map build         pending:API-P6 (drafts come from 'propose' and the context-rebuild service)",
-        "       sindri context lenses <anchor> [--draft] [--json]   the intent, product and code lenses of one node, with conflicts and coverage",
+        "       sindri context lenses <anchor> [--depth <0-4>] [--draft] [--json]   the intent, product and code lenses of one node, with conflicts and coverage",
         "       sindri context filemap --repo <repo> [--path <dir>] [--unmapped] [--draft] [--json]   a directory's children with their map status; filemap accept|reject <link-id> decides a suggested file link",
         "       sindri context sources sync      pending:S-5B (repo docs refresh through the context-docs-refresh service)",
         "       sindri recipe validate <file> [--json]   check a recipe in-process: rule lines, then its hash (exit 0 pass, 1 fail, 2 error)",

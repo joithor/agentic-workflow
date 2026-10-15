@@ -184,15 +184,15 @@ public sealed class ContextReviewVerbsTests : IDisposable
         var humanExit = await LensAs(new AgentSession(Signal: null, Terminal: true, Prover: false), human, "lenses", "feature:a", "--depth", "3");
         var humanText = _out.ToString();
         _out.GetStringBuilder().Clear();
-        var session = new ScriptedApi(Ok(Lenses));
+        var session = new ScriptedApi(Ok(Lenses.Replace("\"label\":\"Spec <x>\"", "\"label\":\"<untrusted source=\\\"map\\\">Spec &lt;x&gt;</untrusted>\"", StringComparison.Ordinal)));   // what the server sends a session
 
         var sessionExit = await LensAs(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false), session, "lenses", "feature:a");
 
         Assert.True(humanExit == 0 && sessionExit == 0, _error.ToString());
         Assert.Equal("/sindri/context/lenses?anchor=feature%3Aa&depth=3", human.Calls[0].Route);
         Assert.Contains("<untrusted source=\"map\">Spec &lt;x&gt;</untrusted>", humanText, StringComparison.Ordinal);
-        Assert.Contains("Spec <x>", _out.ToString(), StringComparison.Ordinal);   // the server fenced it for a session; the CLI doesn't fence again
-        Assert.DoesNotContain("<untrusted", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("<untrusted source=\"map\">Spec &lt;x&gt;</untrusted>", _out.ToString(), StringComparison.Ordinal);
+        _ = Assert.Single(System.Text.RegularExpressions.Regex.Matches(_out.ToString(), "<untrusted", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(1)));   // the server fenced it for a session; the CLI doesn't fence again
     }
 
     [Fact, Trait("Lane", "unit")]
