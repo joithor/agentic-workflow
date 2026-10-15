@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Sindri.Host.Text;
 
@@ -32,6 +33,19 @@ internal static class McpSummaries
         }
 
         return text.Append("The records, their text fenced as untrusted, are in structuredContent; cite them as [Cn].").ToString();
+    }
+
+    /// <summary>context_lenses' summary: the band sizes, the conflicts and the coverage; never record text.</summary>
+    /// <param name="view">The lenses.</param>
+    /// <returns>The text.</returns>
+    internal static string Lenses(LensesView view)
+    {
+        var text = new StringBuilder(string.Create(CultureInfo.InvariantCulture,
+            $"lenses of {view.Anchor.Value} · map {view.Map}: intent {view.Intent.Items.Count}, product {view.Product.Items.Count}, code {view.Code.Items.Count}\n"));
+        _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"{view.Conflicts.Count} conflicts{(view.Conflicts.Count == 0 ? string.Empty : ": " + string.Join(", ", view.Conflicts.Select(c => c.Kind)))}"));
+        var c = view.Coverage;
+        _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"coverage: {c.Covered} of {c.Scope} in scope have a record, {c.Confirmed} confirmed, {c.Implemented} implemented in code"));
+        return text.Append("The bands, their text fenced as untrusted, are in structuredContent.").ToString();
     }
 
     /// <summary>context_sources' summary: which instance answered, then the sources table the CLI prints.</summary>

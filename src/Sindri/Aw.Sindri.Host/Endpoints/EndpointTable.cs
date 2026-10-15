@@ -14,8 +14,14 @@ internal static class EndpointTable
 
         // ---- queries: one line per slice, sorted ----
         _ = queries.MapExportContextMap();
+        _ = queries.MapExportContextReview();
         _ = queries.MapFindContextPath();
+        _ = queries.MapGetContextFileMap();
+        _ = queries.MapGetContextLenses();
         _ = queries.MapGetContextMap();
+        _ = queries.MapGetContextProposals();
+        _ = queries.MapGetContextReview();
+        _ = queries.MapGetContextReviewHistory();
         _ = queries.MapGetContextSources();
         _ = queries.MapGetStatus();
         _ = queries.MapListContextNeighbors();
@@ -30,6 +36,9 @@ internal static class EndpointTable
         // ---- commands: one line per slice, sorted ----
         _ = commands.MapApproveProfile();
         _ = commands.MapImportContextMap();
+        _ = commands.MapPromoteContextMap();
+        _ = commands.MapProposeContextMap();
+        _ = commands.MapReviewContextMap();
         _ = commands.MapStopProcess();
         _ = commands.MapApproveRecipe();
         _ = commands.MapRevokeRecipe();

@@ -108,8 +108,15 @@ that graph plus rank fusion across adapters.
   any user-wide `sindri` entry in `~/.claude.json`, `~/.codex/config.toml` or `~/.cursor/mcp.json`. S-1M, which
   creates `/sindri/mcp`, ships this check, `sindri mcp register`, and the probe of whether Claude Code's local scope
   reaches the repo's worktree sessions.
-- **Decisions stay human:** applying a map review is a `protected` command (API §3.7), so it records `human`
-  provenance only from a human at an interactive terminal (the same rule as `profile approve`); there is no review tool over MCP.
+- **Decisions stay human (README X63):** a map review decision is made by a person, never a session, and there is no
+  review tool over MCP. The classes follow how far a decision reaches. A single accept, reject, rename or move, the
+  bulk deterministic accept, `--undo`, and the orphan repoint and drop are `desk` actions: the terminal or the app may run
+  them, each is one reversible `map_override` row, and Undo is the recovery. `map review --apply <file>`, merge, add,
+  delete, `map promote` and `map import` are `protected`: a human at an interactive terminal types the engine's
+  challenge (`review <verb> <hash6>`, `promote map v<N>`, `import map <hash6>`; the same rule as `profile approve`).
+  The class check is Sindri's (a session is `SND-AUTH-002` on both); the engine adds its own `SND-CONTEXT-020` for a
+  session caller on the whole-map paths (bulk accept, `--apply`, export, promote, build) and leaves a single decision to
+  the class check.
 - **Session reads, any transport.** `context.sessions.enabled` gates every `session`-class context read: MCP, the CLI
   run inside an agent session, and plain HTTP. Off, they answer `SND-CONTEXT-020`; `human` reads are unaffected.
 - **Repo scope.** A `session` caller sees only records reachable from its `X-Sindri-Repo`: that repo's files and code,
@@ -441,9 +448,9 @@ All of them call `IContextEngine`; they differ only in transport.
 
 | Surface | Shape | Phase |
 |---|---|---|
-| **HTTP** | `GET /sindri/context/query?q=&node=&item=&symbol=&depth=&budget=&draft=`; `GET /sindri/context/node?key=`; `GET /sindri/context/neighbors?key=&depth=`; `GET /sindri/context/path?from=&to=`; `GET /sindri/context/lenses?anchor=&depth=&draft=` (§8.9); `GET /sindri/context/filemap?repo=&path=&draft=` (§8.9); `POST /sindri/context/map/import`; `GET /sindri/context/map/export`; `POST /sindri/context/map/build`; `GET /sindri/context/map`; `GET /sindri/context/map/review`; `POST /sindri/context/map/review` (`protected`, §3); `POST /sindri/context/map/promote`; `POST /sindri/context/map/proposals` and `GET /sindri/context/map/proposals?run=` (a scoping run's surfaces as draft proposals, and their graph status against the current map, §8.7); `GET /sindri/context/sources`; `POST /sindri/context/sources/sync`. Each `POST` is a command with a catalog row and the class API §3.7 gives it (`lenses` and `filemap` are `query`, repo-scoped for sessions; `POST map/proposals` is `job`: it writes only drafts, like `map build`). `lenses` and `filemap` have no workflow block; `filemap` has no MCP tool (the app is its only client). Keys travel in query strings or bodies, never in the path (they hold `/` and `#`). Errors are ProblemDetails with the `SND-CONTEXT-*` code as `title` | 1 (query, sources), 3–4 (the rest; `lenses`, `filemap` file level and `map/proposals` in 4, the symbol column of `filemap` and `lenses` in 9) |
-| **CLI** | `$SINDRI context query "<q>" [--draft] [--node K \| --item ENG-1 \| --symbol S] [--depth N] [--budget N] [--json]`; `context show <key>`, `neighbors <key> [--depth N]`, `path <a> <b>`, `lenses <key> [--depth N] [--draft] [--json]`, `filemap [--repo R] [--path P] [--unmapped] [--draft] [--json]`, `filemap accept <link-id> \| reject <link-id>` (one `map_override` row each, through `map review`'s apply path), `map import <file> \| export <file> \| build \| status \| promote \| review [--export F \| --apply F \| --history \| --undo ID] \| proposals --run ADDR`, `sources status \| sync`, `eval backtest \| probes \| map` | as HTTP |
-| **MCP** | The shared Sindri endpoint `/sindri/mcp` (API §8): Streamable HTTP on the API port, **stateless mode** (so a Sindri restart doesn't break a session), behind the API guard. Read-only tools: `context_query {q, node?, item?, symbol?, depth?, budget?}`, `context_node {key}`, `context_neighbors {key, depth?}`, `context_lenses {anchor, depth?, draft?}`, `context_sources {}`. Results: `structuredContent` with the result JSON, and a short text summary (anchors, counts, conflicts, degraded; not the full text a second time). Errors map to tool errors carrying the `SND-CONTEXT-*` code and fix. The `context_*` tools are off when `context.sessions.enabled` is false; the endpoint itself stays up for the `sindri_*` tools | 1 (`context_query`, `context_sources`), 3 (the rest), 4 (`context_lenses`) |
+| **HTTP** | `GET /sindri/context/query?q=&node=&item=&symbol=&depth=&budget=&draft=`; `GET /sindri/context/node?key=`; `GET /sindri/context/neighbors?key=&depth=`; `GET /sindri/context/path?from=&to=`; `GET /sindri/context/lenses?anchor=&depth=&draft=` (§8.9); `GET /sindri/context/filemap?repo=&path=&draft=` (§8.9); `POST /sindri/context/map/import`; `GET /sindri/context/map/export`; `POST /sindri/context/map/build`; `GET /sindri/context/map`; `GET /sindri/context/map/review`, `/review/history` and `/review/export?path=`; `POST /sindri/context/map/review` (a classified command: `desk` for accept, reject, rename, move, accept-deterministic, undo, drop and repoint; `protected` for apply-file, merge, add and delete; §3); `POST /sindri/context/map/promote` (`protected`); `POST /sindri/context/map/proposals` and `GET /sindri/context/map/proposals?run=` (a scoping run's surfaces as draft proposals, and their graph status against the current map, §8.7); `GET /sindri/context/sources`; `POST /sindri/context/sources/sync`. Each `POST` is a command with a catalog row and the class API §3.7 gives it (`lenses` and `filemap` are `query`, repo-scoped for sessions; `POST map/proposals` is `job`: it writes only drafts, like `map build`; until API P6's job runtime merges it runs synchronously, callable from the terminal, the app and `service:engine`, and `map build` is the catalog row `pending:API-P6` with no route, so a draft comes from proposals and the `context-rebuild` scheduled service). `lenses` and `filemap` have no workflow block; `filemap` has no MCP tool (the app is its only client). Keys travel in query strings or bodies, never in the path (they hold `/` and `#`). Errors are ProblemDetails with the `SND-CONTEXT-*` code as `title` | 1 (query, sources), 3–4 (the rest; `lenses`, `filemap` file level and `map/proposals` in 4, the symbol column of `filemap` and `lenses` in 9) |
+| **CLI** | `$SINDRI context query "<q>" [--draft] [--node K \| --item ENG-1 \| --symbol S] [--depth N] [--budget N] [--json]`; `context show <key>`, `neighbors <key> [--depth N]`, `path <a> <b>`, `lenses <key> [--depth N] [--draft] [--json]`, `filemap [--repo R] [--path P] [--unmapped] [--draft] [--json]`, `filemap accept <link-id> \| reject <link-id>` (one `map_override` row each, through `map review`'s apply path), `map import <file> \| export <file> \| build \| status \| promote \| propose <file> \| review [--export F \| --apply F \| --history \| --undo ID \| --drop ID \| --repoint ID --to NODE \| --accept-deterministic \| accept\|reject NODE-OR-LINK \| rename \| move \| merge \| add \| delete] \| proposals --run ADDR`, `sources status \| sync`, `eval backtest \| probes \| map` | as HTTP |
+| **MCP** | The shared Sindri endpoint `/sindri/mcp` (API §8): Streamable HTTP on the API port, **stateless mode** (so a Sindri restart doesn't break a session), behind the API guard. Read-only tools: `context_query {q, node?, item?, symbol?, depth?, budget?}`, `context_node {key}`, `context_neighbors {key, depth?}`, `context_lenses {anchor}` (never the draft), `context_sources {}`. Results: `structuredContent` with the result JSON, and a short text summary (anchors, counts, conflicts, degraded; not the full text a second time). Errors map to tool errors carrying the `SND-CONTEXT-*` code and fix. The `context_*` tools are off when `context.sessions.enabled` is false; the endpoint itself stays up for the `sindri_*` tools | 1 (`context_query`, `context_sources`), 3 (the rest), 4 (`context_lenses`) |
 | **Workflow block** | `input.context.retrieve`, a `StepInput` block (engine §2): fills injection-plan sections before a recipe Step starts | 10 |
 
 **Telling sessions to use it:** Phase 1 ships an agent-rules snippet in `docs/sindri/context.md` for the work repo's
@@ -482,9 +489,13 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy | Retry; the message names the holder |
 | `SND-CONTEXT-041` | Retired: applying a review, `import` and `promote` are `protected` commands and use the engine's challenge, refused with `SND-AUTH-002` | — |
 | `SND-CONTEXT-042` | Labeling disabled or over its token cap | Enable `context.labeling` or raise `maxTokens` |
-| `SND-CONTEXT-043` | No entry in the review file matches the latest draft | `map review --export` again |
+| `SND-CONTEXT-043` | No entry in the review file matches the latest draft (exit 1; HTTP 409) | `map review --export` again |
 | `SND-CONTEXT-044` | `draft` requested on `lenses` or `filemap` and no draft map exists (exit 1; HTTP 404) | `context map build`, then retry; or drop `--draft` |
 | `SND-CONTEXT-045` | `repo` (or an anchor's repo) is not in the profile's repos, or is outside the session caller's `X-Sindri-Repo` scope (exit 1; HTTP 404, the same answer for both so scope is not revealed) | Add the repo to the profile and `profile approve`, or use a listed repo |
+| `SND-CONTEXT-046` | `map promote` refused: there is no draft, or the draft still has undecided review items; a skipped item is not decided (exit 1; HTTP 409) | `map build` or `map review`, then promote |
+| `SND-CONTEXT-047` | A review target is stale: the node or link is not in the latest draft's queue (decided already, or gone), or `--undo` names an override that is unknown or already undone (exit 1; HTTP 409) | `map review` to list the queue, or `--history` for the ids |
+| `SND-CONTEXT-048` | Extraction cannot read the repo from git at the commit (a missing repo or sha; exit 2; HTTP 503) | Fix the repo path in the profile, or fetch the commit |
+| `SND-CONTEXT-049` | Reserved for findings in the S-4 review loop | — |
 | `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
 | `SND-CONTEXT-055` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
 
@@ -510,7 +521,7 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
 
 - **Map version lifecycle:** `map build` writes a `draft`; queries read the `current` version (`--draft` reads the draft);
   `map review` works on the latest draft; only `map promote`, a `protected` command (API §3.7), makes it `current`. An empty review queue, from review or from
-  a build, only marks the draft ready to promote;
+  a build, marks the draft ready to promote; `map promote` refuses while any proposal is undecided (`SND-CONTEXT-046`; skipping does not decide), and the proposals a person accepted become nodes of the version first;
   a scoping run's proposals (below) join the latest draft, or open one if none exists, and never `current`;
   `map import` writes `current` directly and, like `promote`, is a `protected` command (API §3.7); doctor `context:map` warns with the draft's age and how many commits `current`
   is behind HEAD; and the old
@@ -518,17 +529,21 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
   listed as skipped (`SND-CONTEXT-043` only when nothing matches). `map review --history` lists overrides with their ids
   for `--undo`.
 - The queue is ordered by impact (how many links and decisions hang on a proposal), deterministic proposals can be
-  accepted in bulk, and every action is one `map_override` row.
+  accepted in bulk, and every action is one `map_override` row; skip writes none (it only moves the cursor). Single
+  accept, reject, rename, move, the bulk accept, undo and the orphan repoint and drop are `desk` actions (README X63).
 - **Non-interactive form:** `map review --export review.yaml` writes the queue outside repos; the owner edits it;
-  `map review --apply review.yaml` applies it **at an interactive terminal** (it prints the counts and asks for
-  confirmation).
+  `map review --apply review.yaml` applies it **at an interactive terminal** (a `protected` command: it shows the file's
+  entry count and asks for the typed challenge `review apply-file <hash6>`, bound to the file's content).
 - Quitting mid-queue keeps every decision made so far, and the next `map review` resumes the rest.
-- `map review --undo <override-id>` reverses one decision (a reject included), itself recorded as an override.
-- Rename, merge, move, add and delete are also available as `map review` subcommands for nodes outside the queue.
+- `map review --undo <override-id>` reverses one decision (a reject included), itself recorded as an override (`desk`). An
+  orphaned override is dropped (`--drop <id>`) or repointed at another node of the draft (`--repoint <id> --to <node>`; an
+  undo of the orphan and the same decision on the new node), both `desk`.
+- Rename and move are `desk`; merge, add and delete are `protected` (typed challenge), available as `map review`
+  subcommands for nodes outside the queue.
 - **Scoping proposals (UI E-31, decision R8-11; the scoping recipe spec owns the run's half).** A scoping run
   submits the surfaces its brief cites that have no node with `POST /sindri/context/map/proposals`
   (`{run, repo, surfaces[{label, kind, parent?, evidence[], briefQuote?}]}`; CLI `context map proposals --run ADDR`).
-  Each surface with a kind and evidence becomes a `propose` row in `map_override` (who: `service:engine`; evidence:
+  Each surface with a key, or a kind and a name, becomes a `propose` row in `map_override` (who: `service:engine`; evidence:
   the run's address as a `SourceRef` plus the brief quote), applied to the **latest draft**; if none exists the call
   opens one as a copy of `current`, so `current` is never written. Identity is (kind, label key, evidence canonical
   keys), so repeating the call is idempotent and a rejected proposal is not re-proposed. A proposal is `model`
@@ -652,7 +667,7 @@ descendant features, their surfaces and those surfaces' actions).
   `decides`), `product.confirmed` counts those that are not model-only (`human`, or `deterministic`, or an accepted
   override), `code.implemented` counts those with an `implements` edge (`level` is `file` until Phase 9). `gaps` lists
   nodes missing a lens, with what is missing. The same numbers drive the map review queue's `Open gaps` filter.
-- **MCP** `context_lenses {anchor, depth?, draft?}` returns this JSON as `structuredContent` and a text summary
+- **MCP** `context_lenses {anchor}` (the draft map is never read over MCP) returns this JSON as `structuredContent` and a text summary
   (anchor, band counts, conflicts, the coverage line, degraded). The CLI prints the three bands as headings and the
   coverage block with every status as a word (§8.4's rules).
 
@@ -686,8 +701,8 @@ directory rolled up, and the app requests a subtree when the user expands it.
   (Phase 4), and the app shows it as the command to run.
 - **Accept and reject of a suggested link** are `POST /sindri/context/map/review` with a single entry
   `{action: "accept" | "reject", target: <linkId>}` (CLI `context filemap accept <link-id>` or `reject <link-id>`):
-  exactly one `map_override` row each, undoable with `map review --undo`. The route keeps the `protected` class of
-  §8.5 and §3, so the app presents it the way it presents any protected action.
+  exactly one `map_override` row each, undoable with `map review --undo`. They are `desk` actions (README X63): the
+  app runs them directly with an Undo toast, a session is `SND-AUTH-002`.
 - **Phase 9** fills the `symbols` column of each file (the symbols it defines and the features each implements);
   until then the field reads `index not built`. The file-level tree is complete without it.
 

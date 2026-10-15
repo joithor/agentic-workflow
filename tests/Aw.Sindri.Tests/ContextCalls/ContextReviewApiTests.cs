@@ -225,7 +225,8 @@ public sealed class ContextReviewApiTests : IDisposable
 
         var commands = await host.Http.Ask(Get("/sindri/commands", Terminal(host)));
 
-        var rows = Json(commands.Body).GetProperty("commands").EnumerateArray().ToDictionary(r => r.GetProperty("action").GetString()!, r => r.GetProperty("class").GetString()!, StringComparer.Ordinal);
+        Assert.True(commands.Status == HttpStatusCode.OK, commands.Body);
+        var rows = Json(commands.Body).GetProperty("rows").EnumerateArray().ToDictionary(r => r.GetProperty("action").GetString()!, r => r.GetProperty("class").GetString()!, StringComparer.Ordinal);
         Assert.All(["accept", "reject", "rename", "move", "accept-deterministic", "undo", "drop", "repoint"], v => Assert.Equal("desk", rows["ReviewContextMap:" + v]));
         Assert.All(["apply-file", "merge", "add", "delete"], v => Assert.Equal("protected", rows["ReviewContextMap:" + v]));
         Assert.Equal(("protected", "job", "job"), (rows["PromoteContextMap"], rows["ProposeContextMap"], rows["BuildContextMap"]));

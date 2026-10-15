@@ -392,6 +392,77 @@ or name not in the caller's map reuses 003.
 - **Fixture.** `surface:command/switch-tab` (part-of the tab manager, restore-layout `on` it) lets the ascend reach the
   tab manager; S-3a's golden export follows.
 
+## S-4: the extractor, the draft, map review, lenses and the file map (X63)
+
+User-facing behaviour is in `docs/sindri/context.md` (S-4). This is where the code lives.
+
+### Shape
+
+- **Core `Extract/`.** `MapExtractor` composes the deterministic map from file text through table-driven `Recognizers` (command ids,
+  keybindings, settings keys, routes, UI names), each node with a file-level `implements` from `code:<path>`; `ClusterFeatures` turns
+  graphify clusters (`IClusterSource`) into candidate features, optionally named by `ILabeler.Label(clusters, maxTokens, ct)` (the token cap
+  arrives with each pass, from `context.labeling.maxTokens`). Ports: `IRepoReader` (files at a sha), `IClusterSource`, `ILabeler`.
+- **Core `Overrides/`, `Review/`, `Proposals/`, `Lenses/`.** Pure: `OverrideApplier`, `ReviewBacklog` (the queue), `ReviewPlanner` (one
+  decision to override rows; `Repoint` is an undo of the orphan plus the same decision on the new node), `ReviewFileMatcher`, `PromoteReadiness`,
+  `ReviewHistory`, `ProposalPlanner`, `GraphStatuses`, `LensesBuilder`, `FileMapBuilder`. `ReviewDrafts.Gate` (the whole-map paths: session callers
+  are `SND-CONTEXT-020`) and `ReviewDrafts.GateDecision` (a single decision is left to Sindri's class check; only the bulk accept keeps the gate).
+- **Core `Locks/IHeavyJobLock`** is the context engine's lock port; `Sindri.Core/Locks/IHeavySlots` is Sindri's own (one lock for the engine,
+  the workflow engine's `heavy` allocator and the shell tools).
+- **Infrastructure.** `GitRepoReader` over `GitCli` (048), `GraphifyClusterSource` (pinned, sandboxed, fail-closed), `ModelLabeler` over `IModelPort`
+  (042), `FileReviewFileStore`, migration `0004_s4_map_review.sql` (`map_override` rebuilt with `propose` and `undo`, `link`, `undoes` and `payload` columns).
+- **Features.** Slices `BuildMap`, `ReviewQueue`, `ReviewMap`, `ReviewHistory`, `ExportReview`, `PreviewReviewFile`, `ApplyReviewFile`, `PromoteMap`,
+  `ProposeFromScope`, `GetProposals`, `GetLenses`, `GetFileMap`; the facade methods are on `IContextMap` and `IContextLenses`.
+- **Sindri Core.** `IHeavySlots`/`HeavySlotTaken`; the events `context.map.reviewed`, `context.map.promoted`, `context.map.proposed`
+  (the sixth public context event, added by S-4) and `context.map.built`; `IndexSettings` (`index.denyPaths` on the profile and on a repo).
+- **Sindri Infrastructure.** `DirectoryHeavySlots` over `locks/heavy-job.lock[.k]` (`mkdir` mutex, owner file `<pid> <utc> <who>`,
+  `AW_HEAVY_SLOTS` default 2, `AW_HEAVY_LOCK_HELD=1` makes it a no-op, a dead owner's slot is reclaimed like the heavy wrapper does);
+  it interoperates with `config/lib/locks.sh` (an integration test takes both slots from bash).
+- **Sindri Features `ContextCalls/`.**
+  - Queries: `GetContextReview`, `GetContextReviewHistory`, `ExportContextReview`, `GetContextProposals`, `GetContextLenses`, `GetContextFileMap`.
+  - Commands: `ReviewContextMap` (classified: the variant is the verb), `PromoteContextMap`, `ProposeContextMap`.
+  - `ContextRebuildService` (`context-rebuild`), `SindriHeavyJobLock : IHeavyJobLock` over `IHeavySlots` (wait 60 s, then 040), `ContextChallenges` (the shared X30 challenge), `ReviewInput`.
+  - `ContextScopes.Entries` maps the profile's repos and `index.denyPaths` to the engine's `ProfileRepoEntry`.
+- **Sindri Host.** Routes: `GET /sindri/context/map/review`, `/review/history`, `/review/export`, `/map/proposals`, `/lenses`, `/filemap`; `POST /sindri/context/map/review`,
+  `/promote`, `/proposals`. CLI: `ContextReviewVerbs` (review, promote, propose, proposals), `ContextLensVerbs` (lenses, filemap), `ReviewArguments` (the pure parse),
+  `ReviewSession` (the review loop as a state machine; the TTY shell only reads lines and sends), `ContextExit` (040 is 75), text in `Text/ContextReviewText` and `ContextLensText`.
+  MCP: `context_lenses {anchor}` in `ContextTools`. `Models/JudgeModelPort` adapts Judge's `IProviderCatalog` as `IModelPort` (agent CLIs only, never `jev`), the catalog built in a container of its own (`JudgeCatalog`).
+
+### Classes (README X63)
+
+| Row | Class | Who may run it |
+|---|---|---|
+| `ReviewContextMap:accept`, `reject`, `rename`, `move`, `accept-deterministic`, `undo`, `drop`, `repoint` | desk | terminal, app |
+| `ReviewContextMap:apply-file`, `merge`, `add`, `delete` | protected (`NeedsTerminal`) | terminal, with the typed challenge `review <verb> <hash6>` bound to the request's fields (a file's content for apply-file) |
+| `PromoteContextMap` | protected (`NeedsTerminal`) | terminal, challenge `promote map v<N>` bound to the draft |
+| `ProposeContextMap` | job | terminal, app, `service:engine` |
+| `BuildContextMap` | job, `pending:API-P6`, no `CommandType`, no route | nobody yet |
+
+API P6 (the job runtime) has not merged, so `map build` has no route; the `BuildMap` slice is reachable through `ContextRebuildService` only, outside the command gate.
+
+### Errors (S-4 range 040, 042–048)
+
+| Code | Kind (HTTP) | CLI exit | Meaning |
+|---|---|---|---|
+| `SND-CONTEXT-040` | Unavailable (503) | 75 | The heavy-job lock stayed busy, or its directory can't be used; the message names the holder |
+| `SND-CONTEXT-042` | Invalid (400) | 1 | Labeling over its token cap (or the host has no model for it) |
+| `SND-CONTEXT-043` | Conflict (409) | 1 | No entry of the review file matches the latest draft |
+| `SND-CONTEXT-044` | NotFound (404) | 1 | `draft` asked and no draft map exists |
+| `SND-CONTEXT-045` | NotFound (404) | 1 | A repo outside the profile or the session's repo (one answer for both) |
+| `SND-CONTEXT-046` | Conflict (409) | 1 | Promote refused: no draft, or undecided review items |
+| `SND-CONTEXT-047` | Conflict (409) | 1 | Stale review target, or an undo of an unknown or undone override |
+| `SND-CONTEXT-048` | Unavailable (503) | 2 | Git can't read the repo at the commit |
+
+041 is retired; 049 is reserved for findings in the review loop.
+
+### Tests
+
+- **Unit.** The planner (repoint, undo, bulk), `ReviewHistory`, the review-file preview, `ReviewDrafts` gating (a single decision from a session is not refused by the engine;
+  the bulk accept, apply, export, promote and build are 020), the catalog classes with `Authorization` for every caller, `ReviewInput`, `ReviewArguments`, `ReviewSession`,
+  `ContextExit`, the text renderers (every status a word), the verbs over a scripted API, `DirectoryHeavySlots` and `SindriHeavyJobLock`, `JudgeModelPort` over a fake catalog,
+  the profile's `index.denyPaths` (parse, hash stability, validation, the scope).
+- **Integration.** `ContextReviewApiTests` (the rebuild service, desk and protected review, promote and its challenge, apply-file, 005, 043, 048, 040 with the bash helper holding both slots),
+  `ContextLensesApiTests` (lenses, filemap, 003/044/045, MCP `context_lenses`, proposals), and the lock directory shared with `config/lib/locks.sh`.
+
 ## S-5A: the onyx adapter
 
 ### Shape

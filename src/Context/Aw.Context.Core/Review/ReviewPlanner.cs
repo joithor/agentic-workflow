@@ -27,13 +27,11 @@ public static class ReviewPlanner
             ReviewVerb.Accept or ReviewVerb.Reject => One(decision.Link is { } link ? world.DecideLink(decision, link) : world.DecideNode(decision)),
             ReviewVerb.Undo => One(world.Undo(decision)),
             ReviewVerb.Drop => One(world.Drop(decision)),
-            ReviewVerb.Repoint => Plan_Repoint(),
+            ReviewVerb.Repoint => world.Repoint(decision),
             ReviewVerb.Rename or ReviewVerb.Move or ReviewVerb.Merge or ReviewVerb.Add or ReviewVerb.Delete => One(world.Edit(decision)),
             _ => One(Stale($"{decision.Verb.ToString().ToLowerInvariant()} is not a review action")),
         };
     }
-
-    private static Result<IReadOnlyList<MapOverride>> Plan_Repoint() => throw new NotSupportedException();
 
     private static Result<IReadOnlyList<MapOverride>> One(Result<MapOverride> row) => row.Map<IReadOnlyList<MapOverride>>(r => [r]);
 
@@ -73,6 +71,28 @@ public static class ReviewPlanner
             d.Undoes is not { } id
                 ? Stale("undo names an override id (fix: list the history with 'sindri context map review --history')")
                 : UndoRules.Check(Overrides, id).Map(o => Row(OverrideAction.Undo, o.Target) with { Undoes = o.ToId() });
+
+        /// <summary>Points an orphaned node decision at a node of the draft: an undo of the orphan, then the same decision on the new node.</summary>
+        internal Result<IReadOnlyList<MapOverride>> Repoint(ReviewDecision d)
+        {
+            var orphan = d.Undoes is { } id ? Applied.Orphaned.FirstOrDefault(o => o.ToId().Value == id.Value) : null;
+            if (orphan is null || orphan.Link is not null)
+            {
+                return Stale($"{d.Undoes?.Value ?? "no override"} is not an orphaned decision about a node (fix: list the queue again)");
+            }
+
+            var node = d.Node is { } key ? Graph.Resolve(key) : null;
+            if (node is null)
+            {
+                return Stale($"{d.Node?.Value ?? "no node"} is not in the draft (fix: pass --to with a node of the draft)");
+            }
+
+            return new List<MapOverride>
+            {
+                Row(OverrideAction.Undo, orphan.Target) with { Undoes = orphan.ToId() },
+                orphan with { Target = node.Key, Who = Who, At = At, Rejection = null },
+            };
+        }
 
         internal Result<MapOverride> Drop(ReviewDecision d)
         {

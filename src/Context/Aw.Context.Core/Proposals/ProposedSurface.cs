@@ -9,4 +9,4 @@ namespace Aw.Context.Core.Proposals;
 /// <param name="Parent">The feature it belongs under, or null.</param>
 /// <param name="Evidence">The records it rests on, or null.</param>
 /// <param name="Quote">The brief's quote that names it, or null.</param>
-public sealed record ProposedSurface(string Name, NodeKey? Key, NodeKind? Kind, NodeKey? Parent, IReadOnlyList<EvidenceRef>? Evidence, string? Quote);
+public sealed record ProposedSurface(string Name, NodeKey? Key = null, NodeKind? Kind = null, NodeKey? Parent = null, IReadOnlyList<EvidenceRef>? Evidence = null, string? Quote = null);

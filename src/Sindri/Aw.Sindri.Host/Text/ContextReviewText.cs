@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Sindri.Features.ContextCalls;
@@ -7,21 +9,86 @@ namespace Aw.Sindri.Host.Text;
 /// <summary>Plain text for the review verbs: words, never colour, so NO_COLOR and pipes read the same.</summary>
 internal static class ContextReviewText
 {
-    internal static string Queue(ReviewQueueView queue) => queue.Draft;
+    private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
-    internal static string Entry(ReviewEntry entry, int index, int total) => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{entry.Label}{index}{total}");
+    internal static string Queue(ReviewQueueView queue)
+    {
+        var text = new StringBuilder(Invariant($"draft {queue.Draft} · {queue.Undecided} undecided, {queue.Decided} decided\n"));
+        if (queue.Entries.Count == 0)
+        {
+            return text.AppendLine("nothing left to decide: 'sindri context map promote' makes the draft current").ToString();
+        }
 
-    internal static string History(ReviewHistoryView history) => history.Entries.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        for (var i = 0; i < queue.Entries.Count; i++)
+        {
+            _ = text.Append(Entry(queue.Entries[i], i + 1, queue.Entries.Count));
+        }
 
-    internal static string Result(string verb, ReviewResult result) => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{verb}{result.Undecided}");
+        return text.ToString();
+    }
 
-    internal static string Review(ReviewContextMapResponse response) => response.Summary ?? string.Empty;
+    internal static string Entry(ReviewEntry entry, int index, int total)
+    {
+        var files = entry.Files.Count == 0 ? string.Empty : "  files: " + string.Join(", ", entry.Files.Select(f => f.Value));
+        var link = entry.Link is { } id ? $"  link: {id.Value}" : string.Empty;
+        var orphan = entry.Override is { } o ? $"  override: {o.Value}" : string.Empty;
+        return Invariant($"{index}/{total} {entry.Group.ToString().ToLowerInvariant()} {entry.Confidence:0.00}  {entry.Label}  ({entry.Node.Value}, impact {entry.Impact}){files}{link}{orphan}\n");
+    }
 
-    internal static string Exported(ReviewExported exported) => exported.Path;
+    internal static string History(ReviewHistoryView history)
+    {
+        if (history.Entries.Count == 0)
+        {
+            return "no decisions yet\n";
+        }
 
-    internal static string Promote(PromoteContextMapResponse response) => response.Draft;
+        var text = new StringBuilder();
+        foreach (var e in history.Entries)
+        {
+            _ = text.AppendLine(Invariant($"{e.Id.Value}  {e.Action.ToString().ToLowerInvariant()} {e.Link?.Value ?? e.Target.Value}{(e.Label is null ? string.Empty : $" '{e.Label}'")}  by {e.Who} at {e.At:O}{(e.Undoes is { } u ? $"  (undoes {u.Value})" : string.Empty)}{(e.Undone ? "  undone" : string.Empty)}"));
+        }
 
-    internal static string Proposals(ProposalsView view) => view.Run;
+        return text.ToString();
+    }
 
-    internal static string Proposed(ProposeContextMapResponse response) => response.Result.Draft.Number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    internal static string Result(string verb, ReviewResult result)
+    {
+        var text = new StringBuilder(Invariant($"{verb}: {result.Written.Count} {(result.Written.Count == 1 ? "row" : "rows")} written, {result.Undecided} undecided\n"));
+        if (result.Written.Count > 0)
+        {
+            _ = text.Append("  ").AppendJoin(", ", result.Written.Select(w => w.Value)).AppendLine();
+        }
+
+        foreach (var skipped in result.Skipped)
+        {
+            _ = text.Append("  skipped: ").AppendLine(skipped);
+        }
+
+        return text.ToString();
+    }
+
+    internal static string Review(ReviewContextMapResponse response) => response.Result is { } result
+        ? Result("review", result) + (response.Sequence is { } seq ? Invariant($"recorded as event {seq}\n") : string.Empty)
+        : (response.Summary ?? string.Empty) + "\n";
+
+    internal static string Exported(ReviewExported exported) =>
+        Invariant($"Exported the review queue ({exported.Entries} entries) to {exported.Path}\nedit the 'decision' of each entry, then: sindri context map review --apply {exported.Path}\n");
+
+    internal static string Promote(PromoteContextMapResponse response) => response.Promoted is { } promoted
+        ? Invariant($"Promoted {response.Draft} to current for {promoted.Version.Repo.Value} (v{promoted.Version.Number}){(promoted.Retained is { } old ? Invariant($"; v{old.Number} is retained") : string.Empty)}; recorded as event {response.Sequence}\n")
+        : $"draft {response.Draft} has nothing left to decide\n";
+
+    internal static string Proposals(ProposalsView view)
+    {
+        var text = new StringBuilder(Invariant($"run {view.Run} · map {view.Map}{(view.Draft is { } d ? $" · draft {d}" : string.Empty)}\n"));
+        foreach (var s in view.Surfaces)
+        {
+            _ = text.AppendLine($"  {s.Status.ToString().ToLowerInvariant(),-9} {s.Surface}{(s.Node is { } node ? " → " + node.Value : string.Empty)}");
+        }
+
+        return text.ToString();
+    }
+
+    internal static string Proposed(ProposeContextMapResponse response) =>
+        Invariant($"Proposed into draft v{response.Result.Draft.Number}: {response.Result.Added} added, {response.Result.Existing} already mapped, {response.Result.Rejected} rejected earlier{(response.Sequence is { } seq ? Invariant($"; recorded as event {seq}") : string.Empty)}\n");
 }

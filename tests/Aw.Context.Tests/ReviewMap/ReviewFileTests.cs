@@ -36,6 +36,17 @@ public sealed class ReviewFileTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_session_cant_export_the_queue_it_is_a_whole_map_path()
+    {
+        _ = await Drafts.Build(_world);
+
+        var exported = await _world.Map.ExportReview(path: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None);
+
+        Assert.Equal(ContextErrors.SessionsDisabled.Code, exported.Error.Code);
+        Assert.Empty(_world.ReviewFiles.Files);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Exporting_inside_a_worktree_is_SND_CONTEXT_005_and_outside_the_folder_033()
     {
         _ = await Drafts.Build(_world);

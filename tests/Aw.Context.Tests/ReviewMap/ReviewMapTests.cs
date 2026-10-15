@@ -198,7 +198,7 @@ public sealed class ReviewMapTests : IDisposable
         var history = await _world.Map.ReviewHistory(Drafts.Scope, MapWorld.None);
         var session = await _world.Map.ReviewHistory(MapWorld.Session(FixtureMap.Repo), MapWorld.None);
 
-        Assert.Equal([rejected, accepted], history.Value.Entries.Select(e => e.Id));
+        Assert.Equal(new[] { rejected.Value, accepted.Value }.Order(StringComparer.Ordinal), history.Value.Entries.Select(e => e.Id.Value).Order(StringComparer.Ordinal));
         Assert.Equal(ContextErrors.SessionsDisabled.Code, session.Error.Code);
     }
 

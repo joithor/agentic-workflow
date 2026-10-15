@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 
@@ -21,8 +22,10 @@ public sealed record ReviewContextMapRequest(string Verb, string? Node = null, s
     string? Other = null, string? Path = null, ChallengeAnswer? Answer = null) : ICommand<ReviewContextMapResponse>, IClassifiedCommand
 {
     /// <inheritdoc/>
+    [JsonIgnore]
     public string Variant => Verb;
 
     /// <inheritdoc/>
+    [JsonIgnore]
     public bool CarriesProtectedFields => false;
 }

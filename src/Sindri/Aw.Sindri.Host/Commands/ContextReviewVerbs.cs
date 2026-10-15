@@ -87,7 +87,7 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
 
     internal async Task<int> Proposals(string run, bool json, CancellationToken ct)
     {
-        var answer = await client.Get<Aw.Context.Core.Proposals.ProposalsView>(Route + "/proposals?run=" + Uri.EscapeDataString(run), ct).ConfigureAwait(false);
+        var answer = await client.Get<Context.Core.Proposals.ProposalsView>(Route + "/proposals?run=" + Uri.EscapeDataString(run), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
             : await output.Text(ContextReviewText.Proposals(answer.Value.Value), 0).ConfigureAwait(false);

@@ -510,6 +510,17 @@ edges:
     kind: compose
     status: current
     note: "Sindri's Host calls AddContextFeatures and AddContextInfrastructure (and nothing else from those projects) in Composition"
+  # ---- the labeler's model port (context spec §4, stage S-4) ----
+  - from: Sindri
+    to: Judge
+    kind: project
+    status: current
+    note: "Sindri's Host adapts Judge's provider catalog (IProviderCatalog, IModelProvider in Aw.Judge.Core) as the context engine's IModelPort, so the labeling pass runs through the owner's own agent CLIs (Claude Code, Codex, Cursor) and never the remote jev API"
+  - from: Sindri
+    to: Judge
+    kind: compose
+    status: current
+    note: "Sindri's Host calls AddJudgeInfrastructure (and nothing else from that project), in a container of its own: Judge's stores and ids never join Sindri's container (Host/Models/JudgeCatalog)"
   - from: Sindri
     to: SindriUi
     kind: cli

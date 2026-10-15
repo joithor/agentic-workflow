@@ -472,10 +472,12 @@ is a command with a catalog row and an action class, and every route goes throug
 
 | Route | Class |
 |---|---|
-| `GET /context/query`, `/context/node`, `/context/neighbors`, `/context/path`, `/context/map`, `/context/map/export`, `/context/map/review`, `/context/sources` | query (session callers repo-scoped, §3.1) |
+| `GET /context/query`, `/context/node`, `/context/neighbors`, `/context/path`, `/context/map`, `/context/map/export`, `/context/map/review`, `/context/map/review/history`, `/context/map/review/export`, `/context/map/proposals`, `/context/lenses`, `/context/filemap`, `/context/sources` | query (session callers repo-scoped, §3.1) |
 | `POST /context/map/build`, `POST /context/sources/sync` | `job` |
 | `POST /context/map/import`, `POST /context/map/promote` (both make content `current`) | `protected` |
-| `POST /context/map/review` (apply a review) | `protected` |
+| `POST /context/map/review`, variants `accept`, `reject`, `rename`, `move`, `accept-deterministic`, `undo`, `drop`, `repoint` (one reversible `map_override` row, with Undo; README X63) | `desk` |
+| `POST /context/map/review`, variants `apply-file`, `merge`, `add`, `delete` | `protected` |
+| `POST /context/map/proposals` (a scoping run's surfaces as draft proposals; synchronous until API P6) | `job` |
 
 ### 3.6 Views the UI renders: states, groups and needs-you
 

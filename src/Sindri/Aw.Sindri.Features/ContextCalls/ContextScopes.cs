@@ -41,7 +41,12 @@ internal sealed class ContextScopes(IApprovedProfile approvals, ICallerContextAc
     internal static IReadOnlyList<ProfileRepoEntry> Entries(SindriProfile profile)
     {
         ArgumentNullException.ThrowIfNull(profile);
-        return [.. (profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path))];
+        var shared = profile.Index?.DenyPaths ?? [];
+        return [.. (profile.Repos ?? []).Select(r =>
+        {
+            string[] globs = [.. shared, .. r.Index?.DenyPaths ?? []];
+            return new ProfileRepoEntry(r.Name, r.Path, globs.Length == 0 ? null : globs);
+        })];
     }
 
     /// <summary>The engine's caller for a Sindri caller; no caller at all is an in-process service.</summary>

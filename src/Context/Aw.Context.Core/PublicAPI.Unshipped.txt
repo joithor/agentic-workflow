@@ -1426,7 +1426,7 @@ Aw.Context.Core.Proposals.ProposedSurface.Name.get -> string!
 Aw.Context.Core.Proposals.ProposedSurface.Name.init -> void
 Aw.Context.Core.Proposals.ProposedSurface.Parent.get -> Aw.Context.Core.Graph.NodeKey?
 Aw.Context.Core.Proposals.ProposedSurface.Parent.init -> void
-Aw.Context.Core.Proposals.ProposedSurface.ProposedSurface(string! Name, Aw.Context.Core.Graph.NodeKey? Key, Aw.Context.Core.Graph.NodeKind? Kind, Aw.Context.Core.Graph.NodeKey? Parent, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence, string? Quote) -> void
+Aw.Context.Core.Proposals.ProposedSurface.ProposedSurface(string! Name, Aw.Context.Core.Graph.NodeKey? Key = null, Aw.Context.Core.Graph.NodeKind? Kind = null, Aw.Context.Core.Graph.NodeKey? Parent = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence = null, string? Quote = null) -> void
 Aw.Context.Core.Proposals.ProposedSurface.Quote.get -> string?
 Aw.Context.Core.Proposals.ProposedSurface.Quote.init -> void
 Aw.Context.Core.Proposals.ScopeProposal

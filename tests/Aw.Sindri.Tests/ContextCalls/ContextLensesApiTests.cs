@@ -36,6 +36,11 @@ public sealed class ContextLensesApiTests : IDisposable
 
     private static (string Name, string Value)[] Session(string repo = FixtureMap.Repo) => [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, repo)];
 
+    private static Microsoft.Extensions.Time.Testing.FakeTimeProvider Clock(GoldenHost host) =>
+        (Microsoft.Extensions.Time.Testing.FakeTimeProvider)host.App.Services.GetRequiredService<TimeProvider>();
+
+    private static List<string?> Statuses(string body) => [.. Json(body).GetProperty("surfaces").EnumerateArray().Select(s => s.GetProperty("status").GetString())];
+
     private static JsonElement Json(string body) => JsonDocument.Parse(body).RootElement;
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -117,18 +122,19 @@ public sealed class ContextLensesApiTests : IDisposable
         var second = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
         var session = await host.Http.Ask(Post("/sindri/context/map/proposals", body, Session()));
         var view = await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-1", App(host)));
+        Clock(host).Advance(TimeSpan.FromMinutes(1));   // why: the golden host's clock stands still, and a decision is ordered after what it decides about by its time
         var reject = await host.Http.Ask(Post("/sindri/context/map/review", """{"verb":"reject","node":"feature:zoom"}""", App(host)));
         var third = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
         var status = await host.Http.Ask(Get("/sindri/context/map", Terminal(host)));
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, ct);
 
-        Assert.Equal(HttpStatusCode.OK, first.Status);
+        Assert.True(first.Status == HttpStatusCode.OK, first.Body);
         Assert.Equal(1, Json(first.Body).GetProperty("result").GetProperty("added").GetInt32());
         Assert.Equal(0, Json(second.Body).GetProperty("result").GetProperty("added").GetInt32());
         Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
-        var statuses = Json(view.Body).GetProperty("surfaces").EnumerateArray().Select(s => s.GetProperty("status").GetString()).ToList();
-        Assert.Equal(["mapped", "new", "unmapped"], statuses.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["new"], Statuses(view.Body), StringComparer.Ordinal);   // why: only a surface that got a 'propose' row is remembered; the mapped one and the one with no kind wrote none
         Assert.Equal(HttpStatusCode.OK, reject.Status);
+        Assert.Equal(["unmapped"], Statuses((await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-1", App(host)))).Body), StringComparer.Ordinal);
         Assert.Equal(0, Json(third.Body).GetProperty("result").GetProperty("added").GetInt32());
         Assert.Equal(1, Json(third.Body).GetProperty("result").GetProperty("rejected").GetInt32());
         Assert.Contains("\"status\":\"current\"", status.Body, StringComparison.Ordinal);
