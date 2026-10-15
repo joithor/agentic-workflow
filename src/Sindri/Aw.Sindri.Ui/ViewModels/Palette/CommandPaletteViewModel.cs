@@ -236,8 +236,9 @@ internal sealed class CommandPaletteViewModel : ObservableObject
 
     private void OnSelectedChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // Not while the selection sends and "Sending…" isn't on yet: it would say "Rebuild views, 3 of 14" again (J2).
-        if (e.PropertyName == nameof(PaletteEntry.Name) && Selected?.Control is not { IsSending: true, IsAnnouncingSending: false })
+        // Not while the selection sends and "Sending…" isn't on yet: it would say "Rebuild views, 3 of 14" again (J2); nor when it
+        // settles back to rest (the accepted outcome after 2 s, "Copied" after 1.5 s): no unprompted "ready" (J4).
+        if (e.PropertyName == nameof(PaletteEntry.Name) && Selected?.Control is not ({ IsSending: true, IsAnnouncingSending: false } or { Phase: CommandPhase.Idle, CopyLabel: Labels.Copy }))
         {
             Announce();
         }
