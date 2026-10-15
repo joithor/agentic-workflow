@@ -1,4 +1,3 @@
-#pragma warning disable CA1822, IDE0052 // red stage: removed when the service takes its ports
 using Aw.Meta.Core;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Core.Obligations;
@@ -11,7 +10,7 @@ public sealed class StopCheckTests
 {
     private readonly MetaWorld _world = new();
 
-    private StopCheckService Service() => new();
+    private StopCheckService Service() => new(_world.Session, _world.Sweep, _world.Guard, _world.Clock);
 
     private async Task<StopCheckResponse> Check(string session = MetaWorld.MetaSessionId, bool hookActive = false)
     {
