@@ -6837,5 +6837,42 @@ Aw.Sindri.Core.Ledger.LedgerFilter.Keeps(Aw.Sindri.Core.Ledger.LedgerEvent! row)
 Aw.Sindri.Core.Ledger.LedgerFilter.Scanned(long cursor, long head, int max, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ledger.LedgerEvent!>! kept) -> Aw.Sindri.Core.Ledger.LedgerScan!
 Aw.Sindri.Core.Ledger.LedgerFilter.UpperFrom(long cursor) -> long
 Aw.Sindri.Core.Items.CallerEventView
-Aw.Sindri.Core.Items.CallerEventView.CallerEventView(Aw.Sindri.Core.Commands.ICallerContextAccessor! callers, Aw.Sindri.Core.Items.IItemRepos! repos, Aw.Sindri.Core.Text.ITextScrubber! scrubber, System.Text.Json.JsonSerializerOptions! json) -> void
 Aw.Sindri.Core.Items.CallerEventView.Shown(Aw.Sindri.Core.Ledger.LedgerEvent! row, bool includeNonPublic, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Events.PublicEvent?>!>
+Aw.Sindri.Core.Items.CallerEventView.CallerEventView(Aw.Sindri.Core.Commands.ICallerContextAccessor! callers, Aw.Sindri.Core.Items.IItemRepos! repos, Aw.Sindri.Core.Text.ITextScrubber! scrubber, System.Text.Json.JsonSerializerOptions! json, Aw.Sindri.Core.Ledger.ILedgerReader! ledger) -> void
+Aw.Sindri.Core.Items.CallerEventView.Read(Aw.Sindri.Core.Items.EventQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Items.ViewedPage!>!>
+Aw.Sindri.Core.Items.EventQuery
+Aw.Sindri.Core.Items.EventQuery.<Clone>$() -> Aw.Sindri.Core.Items.EventQuery!
+Aw.Sindri.Core.Items.EventQuery.After.get -> long
+Aw.Sindri.Core.Items.EventQuery.After.init -> void
+Aw.Sindri.Core.Items.EventQuery.Deconstruct(out long After, out int Max, out Aw.Sindri.Core.Ledger.LedgerFilter! Filter, out bool IncludeNonPublic, out System.Func<Aw.Sindri.Core.Ledger.LedgerEvent!, bool>? Keep) -> void
+Aw.Sindri.Core.Items.EventQuery.Equals(Aw.Sindri.Core.Items.EventQuery? other) -> bool
+Aw.Sindri.Core.Items.EventQuery.EventQuery(long After, int Max, Aw.Sindri.Core.Ledger.LedgerFilter! Filter, bool IncludeNonPublic, System.Func<Aw.Sindri.Core.Ledger.LedgerEvent!, bool>? Keep = null) -> void
+Aw.Sindri.Core.Items.EventQuery.Filter.get -> Aw.Sindri.Core.Ledger.LedgerFilter!
+Aw.Sindri.Core.Items.EventQuery.Filter.init -> void
+Aw.Sindri.Core.Items.EventQuery.IncludeNonPublic.get -> bool
+Aw.Sindri.Core.Items.EventQuery.IncludeNonPublic.init -> void
+Aw.Sindri.Core.Items.EventQuery.Keep.get -> System.Func<Aw.Sindri.Core.Ledger.LedgerEvent!, bool>?
+Aw.Sindri.Core.Items.EventQuery.Keep.init -> void
+Aw.Sindri.Core.Items.EventQuery.Max.get -> int
+Aw.Sindri.Core.Items.EventQuery.Max.init -> void
+Aw.Sindri.Core.Items.ItemFilters
+Aw.Sindri.Core.Items.ViewedPage
+Aw.Sindri.Core.Items.ViewedPage.<Clone>$() -> Aw.Sindri.Core.Items.ViewedPage!
+Aw.Sindri.Core.Items.ViewedPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>! Events, out long ScannedTo) -> void
+Aw.Sindri.Core.Items.ViewedPage.Equals(Aw.Sindri.Core.Items.ViewedPage? other) -> bool
+Aw.Sindri.Core.Items.ViewedPage.Events.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>!
+Aw.Sindri.Core.Items.ViewedPage.Events.init -> void
+Aw.Sindri.Core.Items.ViewedPage.ScannedTo.get -> long
+Aw.Sindri.Core.Items.ViewedPage.ScannedTo.init -> void
+Aw.Sindri.Core.Items.ViewedPage.ViewedPage(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.PublicEvent!>! Events, long ScannedTo) -> void
+override Aw.Sindri.Core.Items.EventQuery.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Items.EventQuery.GetHashCode() -> int
+override Aw.Sindri.Core.Items.EventQuery.ToString() -> string!
+override Aw.Sindri.Core.Items.ViewedPage.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Items.ViewedPage.GetHashCode() -> int
+override Aw.Sindri.Core.Items.ViewedPage.ToString() -> string!
+static Aw.Sindri.Core.Items.EventQuery.operator !=(Aw.Sindri.Core.Items.EventQuery? left, Aw.Sindri.Core.Items.EventQuery? right) -> bool
+static Aw.Sindri.Core.Items.EventQuery.operator ==(Aw.Sindri.Core.Items.EventQuery? left, Aw.Sindri.Core.Items.EventQuery? right) -> bool
+static Aw.Sindri.Core.Items.ItemFilters.Resolve(Aw.Sindri.Core.Ids.ItemRef? reference, Aw.Sindri.Core.Items.IItemResolver! items, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ids.ItemId?>!>
+static Aw.Sindri.Core.Items.ViewedPage.operator !=(Aw.Sindri.Core.Items.ViewedPage? left, Aw.Sindri.Core.Items.ViewedPage? right) -> bool
+static Aw.Sindri.Core.Items.ViewedPage.operator ==(Aw.Sindri.Core.Items.ViewedPage? left, Aw.Sindri.Core.Items.ViewedPage? right) -> bool
