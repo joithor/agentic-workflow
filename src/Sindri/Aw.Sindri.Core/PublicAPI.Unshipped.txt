@@ -3931,13 +3931,15 @@ Aw.Sindri.Core.Workflow.Views.RecipeInputView.Type.get -> Aw.Sindri.Core.Workflo
 Aw.Sindri.Core.Workflow.Views.RecipeInputView.Type.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeLoopView
 Aw.Sindri.Core.Workflow.Views.RecipeLoopView.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.RecipeLoopView!
-Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Deconstruct(out string? Name, out string! From, out string! To) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Cap.get -> int
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Cap.init -> void
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Deconstruct(out string? Name, out string! From, out string! To, out int Cap) -> void
 Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Equals(Aw.Sindri.Core.Workflow.Views.RecipeLoopView? other) -> bool
 Aw.Sindri.Core.Workflow.Views.RecipeLoopView.From.get -> string!
 Aw.Sindri.Core.Workflow.Views.RecipeLoopView.From.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Name.get -> string?
 Aw.Sindri.Core.Workflow.Views.RecipeLoopView.Name.init -> void
-Aw.Sindri.Core.Workflow.Views.RecipeLoopView.RecipeLoopView(string? Name, string! From, string! To) -> void
+Aw.Sindri.Core.Workflow.Views.RecipeLoopView.RecipeLoopView(string? Name, string! From, string! To, int Cap) -> void
 Aw.Sindri.Core.Workflow.Views.RecipeLoopView.To.get -> string!
 Aw.Sindri.Core.Workflow.Views.RecipeLoopView.To.init -> void
 Aw.Sindri.Core.Workflow.Views.RecipeOutputView

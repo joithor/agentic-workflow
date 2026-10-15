@@ -97,7 +97,7 @@ public sealed record RecipeShape(string Id, int Version, string HashPrefix, Reci
     public RecipeView View() => new(
         [.. Inputs.Select(i => new RecipeInputView(i.Key, i.Label, i.Type, i.Kind, true))],
         [.. Outputs.Select(o => new RecipeOutputView(o.Key, o.Label, o.Type, o.From))],
-        Urgency, States.Any(s => s.BranchOf is not null) ? PathOrdering.TransitionList : PathOrdering.Path, [.. States.Select(s => new RecipeStateView(s.Id, s.Order, s.BranchOf))], [.. Loops.Select(l => new RecipeLoopView(l.Name, l.From, l.To))]);
+        Urgency, States.Any(s => s.BranchOf is not null) ? PathOrdering.TransitionList : PathOrdering.Path, [.. States.Select(s => new RecipeStateView(s.Id, s.Order, s.BranchOf))], [.. Loops.Select(l => new RecipeLoopView(l.Name, l.From, l.To, l.Max))]);
 
     private static string Plain(string key) => key[(key.IndexOf(':', StringComparison.Ordinal) + 1)..];
 }

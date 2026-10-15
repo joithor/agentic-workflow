@@ -63,7 +63,9 @@ public static class StatusText
         if (status.Timeout is { } timeout)
         {
             var kind = timeout.Kind == TimeoutKind.Parks ? "parks" : "escalates";
-            yield return ("timeout", $"{kind} in {Span(timeout.InSeconds)} ({timeout.On})");
+            // Main's StatusLayout prints '(desk)' for the timeout of an open desk task; the 'on' field stays the owning state (API spec 3.8).
+            var where = status.Commands.Any(c => c.Verb == StatusVerb.Complete) ? "desk" : timeout.On;
+            yield return ("timeout", $"{kind} in {Span(timeout.InSeconds)} ({where})");
         }
 
         if (status.Budget is { } budget)
@@ -121,19 +123,29 @@ public static class StatusText
         var first = $"{Label}{label,-10}";
         var pad = new string(' ', first.Length);
         var line = new StringBuilder(first);
-        foreach (var word in value.Split(' '))
+        var paragraphs = value.Split('\n');
+        for (var i = 0; i < paragraphs.Length; i++)
         {
-            if (line.Length > pad.Length && line.Length + 1 + word.Length > WrapAt)
+            if (i > 0)
             {
                 text.Append(line).Append('\n');
                 line.Clear().Append(pad);
             }
-            else if (line.Length > pad.Length)
-            {
-                line.Append(' ');
-            }
 
-            line.Append(word);
+            foreach (var word in paragraphs[i].Split(' '))
+            {
+                if (line.Length > pad.Length && line.Length + 1 + word.Length > WrapAt)
+                {
+                    text.Append(line).Append('\n');
+                    line.Clear().Append(pad);
+                }
+                else if (line.Length > pad.Length)
+                {
+                    line.Append(' ');
+                }
+
+                line.Append(word);
+            }
         }
 
         text.Append(line).Append('\n');

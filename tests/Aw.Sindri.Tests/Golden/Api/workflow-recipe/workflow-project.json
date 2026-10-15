@@ -73,7 +73,8 @@
     {
       "name": "challenge",
       "from": "scoping",
-      "to": "scoping"
+      "to": "scoping",
+      "cap": 3
     }
   ]
 }

@@ -117,11 +117,17 @@ public static class WorkflowViewFixtures
         _project.Cells("design"), "parked: needs-answer",
         "ApplyCommand:answer-text", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
-    // The one instance whose required input is really missing: the intake agent parked asking for the PRD (not a root row and not in the screens fixture).
+    // A PREVIEW (MissingInputPreviews): the intake agent parked asking for the PRD, so the PRD input is missing. v1 never starts an instance with a missing
+    // input; the golden workflow-instances/preview-missing-input gives the UI data for the missing and blocked renders (not a root row, not in the screens fixture).
     private static readonly InstanceSummary _prjNoPrd = Row("ITM-01JKH/project/1", _project, "intake", Today(12, 5), new EngineOwnedBadge(EngineOwnedKind.Parked, "needs-answer"),
         Subject("linear-project", "ENG", "ENG · Docs site"), _project.Cells("intake"), "parked: needs-answer",
         "ApplyCommand:answer-text", "ApplyCommand:takeover", "ApplyCommand:cancel") with
     { Inputs = _project.InputRows("fact:prd"), };
+
+    // A wait park of its own: dev-triage-three-state at its 'answer' wait, the reply couldn't be read. Not a root row.
+    private static readonly InstanceSummary _triageAnswer = Row("ITM-01JL4/dev-triage-three-state/1", _devTriage, "answer", Today(12, 3), new EngineOwnedBadge(EngineOwnedKind.Parked, "needs-answer"),
+        Subject("item", "ITM-01JL4", "dev-triage-three-state"), _devTriage.Cells("answer"), "parked: needs-answer",
+        "ApplyCommand:answer-resume", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     private static readonly InstanceSummary _prjCache = Row("ITM-01JKF/project/1", _project, "scoping", Today(11, 50), new EngineOwnedBadge(EngineOwnedKind.Parked, "spec-conflict (drift)"),
         Subject("linear-project", "ENG", "ENG · Cache layer"), _project.Cells("scoping"), "parked: spec-conflict", "ApplyCommand:takeover", "ApplyCommand:cancel", "ApproveRecipe");
@@ -154,7 +160,7 @@ public static class WorkflowViewFixtures
 
     /// <summary>Every summary row the fixtures build: the 12 roots, and the instances only the status layouts and instance views name.</summary>
     /// <returns>The rows.</returns>
-    public static IReadOnlyList<InstanceSummary> AllSummaries() => [.. Roots(), _itemParked, _budgetStep, _takenOver, _prjReports, _prjCache, _prjDocs, _prjNoPrd];
+    public static IReadOnlyList<InstanceSummary> AllSummaries() => [.. Roots(), _itemParked, _budgetStep, _takenOver, _prjReports, _prjCache, _prjDocs, _prjNoPrd, _triageAnswer];
 
     /// <summary>
     /// The addresses whose child group previews schema v2 fan-out (WF 3.9): several live children of one wait. A v1 child wait starts
@@ -162,12 +168,15 @@ public static class WorkflowViewFixtures
     /// </summary>
     public static IReadOnlySet<string> FanOutPreviews { get; } = new HashSet<string>(StringComparer.Ordinal) { "ITM-01JK3/project/1", "ITM-01JKG/project/1" };
 
-    /// <summary>The addresses whose inputs preview a missing input (a future optional-input recipe schema; v1 serves every input present).</summary>
-    public static IReadOnlySet<string> MissingInputPreviews { get; } = new HashSet<string>(StringComparer.Ordinal);
+    /// <summary>
+    /// The addresses whose inputs preview a missing input. v1 serves every input of a started instance as required and present
+    /// (StartInstance refuses a missing one; an optional input is a future recipe-schema change), so this row is a marked preview.
+    /// </summary>
+    public static IReadOnlySet<string> MissingInputPreviews { get; } = new HashSet<string>(StringComparer.Ordinal) { "ITM-01JKH/project/1" };
 
     /// <summary>The Workflows page preview of a missing required input (the INPUTS column's missing state).</summary>
     /// <returns>The list.</returns>
-    public static InstanceList PreviewMissingInput() => throw new NotSupportedException("not implemented");
+    public static InstanceList PreviewMissingInput() => Ordered([_prjNoPrd]);
 
     /// <summary>The Workflows page: the 12 roots, unfinished first, the parked and escalated behind the moving ones, then by urgency and subject label (API spec section 3.8).</summary>
     public static InstanceList RootList() => Ordered(Roots());
@@ -332,17 +341,22 @@ public static class WorkflowViewFixtures
 
     private static string Pinned(InstanceSummary row) => $"{row.Recipe.Id.Value}@{row.Recipe.Hash.Display}";
 
-    /// <summary>A needs-answer park at a Step on a project of its own: the answer is its text (WF 6.4; a wait takes --resume).</summary>
-    public static StatusFields StatusNeedsAnswerWait() => Status(_prjReports, "needs-answer",
-        "Parked (needs-answer) in design: import the design output, then answer.", new OpenWork(),
+    /// <summary>A needs-answer park at a Step on a project of its own: the answer is its text and the Step runs again (WF 6.4; the engine's Step park wording).</summary>
+    public static StatusFields StatusNeedsAnswerStep() => Status(_prjReports, "needs-answer",
+        "Parked (needs-answer): import the design output, then answer.\nAnswer with --text; the Step runs again with your answer.", new OpenWork(),
         new StatusLines { Answer = Answer(AnswerKind.Text, "ITM-01JKE/project/1", "--text <answer>") });
+
+    /// <summary>A needs-answer park at a wait (dev-triage-three-state's 'answer'): the answer resumes it, with an optional text (WF 6.4).</summary>
+    public static StatusFields StatusNeedsAnswerWait() => Status(_triageAnswer, "needs-answer",
+        "Parked: the reply to 'Accept the draft?' was not understood.\nFix the cause, then resume to check again, or cancel.", new OpenWork(),
+        new StatusLines { Answer = Answer(AnswerKind.Resume, "ITM-01JL4/dev-triage-three-state/1", "--resume [--text <answer>]") });
 
     /// <summary>Every status the fixtures serve: the eight layouts, then the status block of each instance view.</summary>
     /// <returns>The statuses.</returns>
     public static IReadOnlyList<StatusFields> AllStatuses() =>
     [
         StatusParkedChild(), StatusDeskTask(), StatusParkedBudget(), StatusEscalatedGate(), StatusTakenOver(), StatusDone(),
-        StatusParkedDrift(), StatusNeedsAnswerWait(), .. AllDetails().Select(d => d.Current.Status),
+        StatusParkedDrift(), StatusNeedsAnswerStep(), StatusNeedsAnswerWait(), .. AllDetails().Select(d => d.Current.Status),
     ];
 
     /// <summary>Every instance view the fixtures serve.</summary>
@@ -479,7 +493,7 @@ public static class WorkflowViewFixtures
     {
         var pending = new FactPending(true, ["output.nonempty"], Act("CompleteStep"));
         return Detail(_sentry8812, "TypeError in tabs.layout", PathOrdering.Path,
-            new CurrentState("classify", new StepDeclaration("active", "step.produce", "a person classifies the alert"),
+            new CurrentState("classify", new StepDeclaration("active", "step.classify", "a person classifies the alert"),
                 [], new DeskForm(RunToken.From("2.1"), [new DeskOutput("fact:severity", FactType.Text, true)], ["output.nonempty"], Act("CompleteStep")), StatusDeskTask()),
             _triage.Facts(
                 Produced(_triage, "fact:alert", "sentry #8812 TypeError", At(10, 12, 12, 22), "service:webhook", Ref(factKey: "fact:alert")),
@@ -500,18 +514,19 @@ public static class WorkflowViewFixtures
 
     /// <summary>
     /// ITM-01JE7 (the screens fixture's item): the workflow.step child of its workflow.item instance, at its produce desk task, round 2 of 3
-    /// (the second entry of produce, so run 3.1). A workflow.step declares no outputs, so the sheet's other facts come from the parent.
+    /// (the second entry of produce, so run 3.1). The recipe's 'outputs:' list is empty, so its fact sheet shows only the inputs; the Step's report
+    /// contract is the shipped step.produce's, and the desk form and the complete command carry its required fact:output (WF 5.5).
     /// </summary>
     public static InstanceDetail ItemProduce()
     {
         var row = Row("ITM-01JE7/item/1/step.4", _step, "produce", Today(12, 20), null, Subject("text", "ITM-01JE7", "Linear ENG-511 · repo agentic-workflow · no project · feature:needs-you.ack"),
             _step.Cells("produce", round: 1, Shape(("produce", c => c with { Round = new Round(2, 3) }))),
             "your output for the Step (desk) · round 2/3", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
-        var status = DeskStatus(row, "Produce the Step output for ITM-01JE7 (round 2/3)", "3.1", null,
-            DeskLines(new StatusInput("fact:spec", "spec.md", "1c0e5a77"), 172_440, "produce", new StatusBudget("state", 84_000, 200_000, new BudgetFigures(84_000, 400_000))));
+        var status = DeskStatus(row, "Produce the Step output for ITM-01JE7 (round 2/3)", "3.1", ("fact:output", "<file>"),
+            DeskLines(new StatusInput("fact:spec", "spec.md", "1c0e5a77"), 172_440, "produce", new StatusBudget("state", 0, 200_000, new BudgetFigures(0, 400_000))));
         return Detail(row, "Add needs-you ack route", PathOrdering.Path,
             new CurrentState("produce", new StepDeclaration("active", "step.produce", "produce the output for the item"), [],
-                new DeskForm(RunToken.From("3.1"), [], [], Act("CompleteStep")), status),
+                new DeskForm(RunToken.From("3.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")), status),
             _step.Facts(Produced(_step, "fact:spec", "spec.md", At(10, 12, 12, 20), "service:item", Ref(name: "spec.md", hash: Hash("1c0e5a77")))),
             [], Counts(6, 0, 0),
             new ParentRef(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JE7/item/1")), InstanceAddress.From("ITM-01JE7/item/1"), "ITM-01JE7 · Add needs-you ack route", null, null));

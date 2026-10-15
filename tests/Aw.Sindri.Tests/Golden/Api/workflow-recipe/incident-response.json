@@ -61,7 +61,8 @@
     {
       "name": "remediate",
       "from": "verify",
-      "to": "mitigate"
+      "to": "mitigate",
+      "cap": 3
     }
   ]
 }

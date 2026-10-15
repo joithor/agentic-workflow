@@ -19,13 +19,13 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
     /// <summary>Every (slug, scenario) pair this class pins, in the order of the plan's golden list.</summary>
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
-        ("workflow-instances", "root"), ("workflow-instances", "recipe-filter"), ("workflow-instances", "empty"), ("workflow-instances", "open"),
+        ("workflow-instances", "root"), ("workflow-instances", "recipe-filter"), ("workflow-instances", "empty"), ("workflow-instances", "open"), ("workflow-instances", "preview-missing-input"),
         ("workflow-instance", "project-build"), ("workflow-instance", "incident-loop"), ("workflow-instance", "triage-desk"),
         ("workflow-instance", "escalated-gate"), ("workflow-instance", "dev-desk-round-trip"), ("workflow-instance", "dev-triage-three-state"),
         ("workflow-instance", "item-produce"), ("workflow-instance", "project-many-children"), ("workflow-instance", "transition-list"), ("workflow-instance", "done"), ("workflow-instance", "not-found"),
         ("workflow-status", "parked-child"), ("workflow-status", "desk-task"), ("workflow-status", "parked-budget"),
         ("workflow-status", "escalated-gate"), ("workflow-status", "taken-over"), ("workflow-status", "done"),
-        ("workflow-status", "parked-drift"), ("workflow-status", "needs-answer-wait"),
+        ("workflow-status", "parked-drift"), ("workflow-status", "needs-answer-step"), ("workflow-status", "needs-answer-wait"),
         ("workflow-recipe", "workflow-project"), ("workflow-recipe", "incident-response"), ("workflow-recipe", "no-outputs"),
         ("workflow-instance-fact", "scope-map"), ("workflow-instance-fact", "packet"), ("workflow-instance-fact", "evidence"), ("workflow-instance-fact", "payload"), ("workflow-instance-fact", "packet-unfrozen"),
         ("workflow-instance-fact", "text"), ("workflow-instance-fact", "truncated"), ("workflow-instance-fact", "not-found"),
@@ -92,6 +92,7 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-instances", "root") => Json(WorkflowViewFixtures.RootList(), options),
         ("workflow-instances", "recipe-filter") => Json(WorkflowViewFixtures.RecipeFilter(), options),
         ("workflow-instances", "open") => Json(WorkflowViewFixtures.OpenList(), options),
+        ("workflow-instances", "preview-missing-input") => Json(WorkflowViewFixtures.PreviewMissingInput(), options),
         ("workflow-instances", "empty") => Json(WorkflowViewFixtures.EmptyList(), options),
         ("workflow-instance", "project-build") => Json(WorkflowViewFixtures.ProjectBuild(), options),
         ("workflow-instance", "incident-loop") => Json(WorkflowViewFixtures.IncidentLoop(), options),
@@ -111,6 +112,7 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-status", "taken-over") => Json(WorkflowViewFixtures.StatusTakenOver(), options),
         ("workflow-status", "done") => Json(WorkflowViewFixtures.StatusDone(), options),
         ("workflow-status", "parked-drift") => Json(WorkflowViewFixtures.StatusParkedDrift(), options),
+        ("workflow-status", "needs-answer-step") => Json(WorkflowViewFixtures.StatusNeedsAnswerStep(), options),
         ("workflow-status", "needs-answer-wait") => Json(WorkflowViewFixtures.StatusNeedsAnswerWait(), options),
         ("workflow-recipe", "workflow-project") => Json(WorkflowViewFixtures.ProjectRecipe(), options),
         ("workflow-recipe", "incident-response") => Json(WorkflowViewFixtures.IncidentRecipe(), options),
@@ -129,7 +131,7 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
     // The same for a key the recipe doesn't declare (plan row 29): the facts route answers the item's 404 until U7 gives it a code.
     private const string FactNotFound =
         "{\n  \"type\": \"https://tools.ietf.org/html/rfc9110#section-15.5.5\",\n  \"title\": \"SND-ITEM-404\",\n  \"status\": 404,\n"
-        + "  \"detail\": \"ITM-01JK3/project/1 declares no fact 'unknown'.\",\n  \"traceId\": \"<trace>\"\n}";
+        + "  \"detail\": \"ITM-01JK3/project/1 declares no fact 'fact:unknown'.\",\n  \"traceId\": \"<trace>\"\n}";
 
     private static string Json<T>(T value, JsonSerializerOptions options) =>
         ApiGolden.Reindent(JsonSerializer.Serialize(value, options));

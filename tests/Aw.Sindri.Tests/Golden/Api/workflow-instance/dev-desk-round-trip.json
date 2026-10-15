@@ -153,7 +153,7 @@
           "confirm": "Cancel ITM-01JL1/dev-desk-round-trip/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JL1/dev-desk-round-trip/1  workflow.dev-desk-round-trip@42e9e8ab897f  v1  export: desk task  since 12:00 (26m)\n  next      Export the file for the request (round 1/2), then run: sindri workflow complete\n            ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output fact:output=<file>\n  inputs    fact:request  request.txt  sha256:7ab2...\n  timeout   parks in 1d 23h 34m (export)\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JL1/dev-desk-round-trip/1  workflow.dev-desk-round-trip@42e9e8ab897f  v1  export: desk task  since 12:00 (26m)\n  next      Export the file for the request (round 1/2), then run: sindri workflow complete\n            ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output fact:output=<file>\n  inputs    fact:request  request.txt  sha256:7ab2...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [

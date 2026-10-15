@@ -45,7 +45,7 @@ public sealed class WorkflowViewStatusWordsTests
     [Fact, Trait("Lane", "unit")]
     public void A_step_park_answers_with_text_and_a_desk_step_answers_through_complete()
     {
-        Assert.Equal("sindri workflow answer ITM-01JKE/project/1 --text <answer>", WorkflowViewFixtures.StatusNeedsAnswerWait().Answer!.Cli);
+        Assert.Equal("sindri workflow answer ITM-01JKE/project/1 --text <answer>", WorkflowViewFixtures.StatusNeedsAnswerStep().Answer!.Cli);
 
         var desk = WorkflowViewFixtures.StatusDeskTask();
         Assert.Null(desk.Answer);

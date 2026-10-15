@@ -120,8 +120,16 @@
     "gates": [],
     "desk": {
       "run": "3.1",
-      "outputs": [],
-      "checks": [],
+      "outputs": [
+        {
+          "key": "fact:output",
+          "type": "file",
+          "required": true
+        }
+      ],
+      "checks": [
+        "output.file"
+      ],
       "completeAction": "CompleteStep"
     },
     "status": {
@@ -135,7 +143,7 @@
         "since": "2026-10-12T12:20:00.0000000Z",
         "ageSeconds": 360
       },
-      "next": "Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete ITM-01JE7/item/1/step.4 --run 3.1 --outcome done",
+      "next": "Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>",
       "answer": null,
       "child": null,
       "drift": null,
@@ -153,10 +161,10 @@
       },
       "budget": {
         "scope": "state",
-        "used": 84000,
+        "used": 0,
         "limit": 200000,
         "instance": {
-          "used": 84000,
+          "used": 0,
           "limit": 400000
         }
       },
@@ -166,7 +174,7 @@
           "verb": "complete",
           "actionId": "CompleteStep",
           "class": "desk",
-          "cli": "sindri workflow complete ITM-01JE7/item/1/step.4 --run 3.1 --outcome done",
+          "cli": "sindri workflow complete ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>",
           "confirm": null
         },
         {
@@ -184,7 +192,7 @@
           "confirm": "Cancel ITM-01JE7/item/1/step.4? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JE7/item/1/step.4  workflow.step@1b13bd920351  v1  produce: desk task  since 12:20 (6m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete\n            ITM-01JE7/item/1/step.4 --run 3.1 --outcome done\n  inputs    fact:spec  spec.md  sha256:1c0e...\n  timeout   parks in 1d 23h 54m (produce)\n  budget    tokens 84k / 200k (state), 84k / 400k (instance)\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JE7/item/1/step.4  workflow.step@1b13bd920351  v1  produce: desk task  since 12:20 (6m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete\n            ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>\n  inputs    fact:spec  spec.md  sha256:1c0e...\n  timeout   parks in 1d 23h 54m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
     }
   },
   "facts": [

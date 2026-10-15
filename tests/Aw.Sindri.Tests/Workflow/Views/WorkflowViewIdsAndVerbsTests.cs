@@ -12,7 +12,7 @@ public sealed class WorkflowViewIdsAndVerbsTests
     public void Every_child_row_parent_ref_and_status_child_carries_the_id_of_its_address()
     {
         var details = WorkflowViewFixtures.AllDetails();
-        var rows = details.SelectMany(d => d.Children).SelectMany(g => g.Rows).ToList();
+        var rows = details.SelectMany(d => d.Children).SelectMany(g => g.Workstreams.SelectMany(w => w.Rows).Concat(g.Rows)).ToList();
         var parents = details.Select(d => d.Parent).OfType<ParentRef>().ToList();
         var childs = WorkflowViewFixtures.AllStatuses().Select(s => s.Child).OfType<StatusChild>().ToList();
 
