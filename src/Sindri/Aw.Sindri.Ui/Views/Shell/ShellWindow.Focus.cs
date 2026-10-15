@@ -17,16 +17,43 @@ internal sealed partial class ShellWindow
     // activation, review re-check Y1): the page changes and focus stays on the tab. Any other key, or a pointer press, clears it.
     private bool _navArrowing;
 
+    // Avalonia's ListBox moves focus to the next tab on an arrow with NavigationMethod.Unspecified, which draws no focus ring
+    // (no :focus-visible; review re-check R2, WCAG 2.4.7). A key the nav handled is remembered here so the tab it focused is
+    // focused again as a keyboard focus (Directional).
+    private bool _navKey;
+
     private void WatchNavigationKeys()
     {
         AddHandler(KeyDownEvent, OnNavigationKeyDown, RoutingStrategies.Tunnel);
-        AddHandler(PointerPressedEvent, (_, _) => _navArrowing = false, RoutingStrategies.Tunnel);
+        AddHandler(PointerPressedEvent, (_, _) => _navArrowing = _navKey = false, RoutingStrategies.Tunnel);
+        TopBar.Get<ListBox>("Navigation").AddHandler(GotFocusEvent, OnNavigationGotFocus, RoutingStrategies.Bubble);
     }
 
     private void OnNavigationKeyDown(object? sender, KeyEventArgs e) =>
-        _navArrowing = e is { Key: Key.Left or Key.Right or Key.Home or Key.End, KeyModifiers: KeyModifiers.None }
+        _navArrowing = _navKey = e is { Key: Key.Left or Key.Right or Key.Home or Key.End, KeyModifiers: KeyModifiers.None }
             && FocusManager?.GetFocusedElement() is Visual focused
             && TopBar.Get<ListBox>("Navigation").IsVisualAncestorOf(focused);
+
+    private void OnNavigationGotFocus(object? sender, FocusChangedEventArgs e)
+    {
+        if (!_navKey || e.NavigationMethod != NavigationMethod.Unspecified || e.Source is not ListBoxItem tab)
+        {
+            return;
+        }
+
+        _navKey = false;
+        Dispatcher.UIThread.Post(() => RefocusAsKeyboard(tab), DispatcherPriority.Loaded);
+    }
+
+    // Focus on the element it is already on does nothing, so it goes to the health pill (next to the tabs) for a moment first.
+    private void RefocusAsKeyboard(ListBoxItem tab)
+    {
+        if (ReferenceEquals(FocusManager?.GetFocusedElement(), tab) && Usable(TopBar.Get<Control>("HealthPill")) is { } pill)
+        {
+            _ = pill.Focus(NavigationMethod.Directional);
+            _ = tab.Focus(NavigationMethod.Directional);
+        }
+    }
 
     private void Listen(ShellViewModel? shell, bool on)
     {
