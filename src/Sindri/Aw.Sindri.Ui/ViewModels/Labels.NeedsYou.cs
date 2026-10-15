@@ -50,4 +50,55 @@ internal static partial class Labels
         < 1440 => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalHours}h"),
         _ => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalDays}d"),
     };
+
+    // The attention summary: window title, tray tooltips and menu, the summary line, the live region (UI spec §5, §12.4).
+
+    /// <summary>The window title while rows need the user.</summary>
+    /// <param name="count">How many rows.</param>
+    /// <returns>"(N) Needs you · Sindri".</returns>
+    internal static string TitleNeedsYou(int count) => string.Create(CultureInfo.InvariantCulture, $"({count}) Needs you · {Sindri}");
+
+    /// <summary>The tray's tooltip while a pulse or colour row exists.</summary>
+    /// <param name="count">How many rows need the user.</param>
+    /// <param name="running">How many items run.</param>
+    /// <returns>The words.</returns>
+    internal static string TrayNeedYou(int count, int running) => string.Create(CultureInfo.InvariantCulture, $"Sindri · {count} need you · {running} running");
+
+    /// <summary>The tray's tooltip while nothing needs the user.</summary>
+    /// <param name="running">How many items run.</param>
+    /// <returns>The words.</returns>
+    internal static string TrayNothingNeedsYou(int running) => string.Create(CultureInfo.InvariantCulture, $"Sindri · {running} running · nothing needs you");
+
+    /// <summary>The tray's tooltip while only calm rows exist.</summary>
+    /// <param name="count">How many rows.</param>
+    /// <returns>The words.</returns>
+    internal static string TrayToLookAt(int count) => string.Create(CultureInfo.InvariantCulture, $"Sindri · {count} to look at");
+
+    /// <summary>The tray menu's disabled running item.</summary>
+    /// <param name="running">How many items run.</param>
+    /// <returns>The words.</returns>
+    internal static string TrayRunningItem(int running) => string.Create(CultureInfo.InvariantCulture, $"Running: {running}");
+
+    /// <summary>One needs-you row in the tray menu: chip word, id, title and age.</summary>
+    /// <param name="chip">The chip word.</param>
+    /// <param name="id">The id shown at rest (or the row id).</param>
+    /// <param name="title">The title.</param>
+    /// <param name="age">The age.</param>
+    /// <returns>The label.</returns>
+    internal static string TrayRow(string chip, string id, string title, string age) =>
+        string.Join(' ', new[] { chip, id, title }.Where(part => part.Length > 0)) + (age.Length > 0 ? " · " + age : "");
+
+    /// <summary>Home's summary line.</summary>
+    /// <param name="needYou">Rows that need the user.</param>
+    /// <param name="running">Items running.</param>
+    /// <param name="withYou">Items the user took over.</param>
+    /// <param name="queued">Items queued.</param>
+    /// <returns>The words.</returns>
+    internal static string Summary(int needYou, int running, int withYou, int queued) =>
+        string.Create(CultureInfo.InvariantCulture, $"{needYou} need you · {running} running · {withYou} with you · {queued} queued");
+
+    /// <summary>The live region's line when rows arrive.</summary>
+    /// <param name="count">How many rows need the user now.</param>
+    /// <returns>The words.</returns>
+    internal static string NowNeedYou(int count) => string.Create(CultureInfo.InvariantCulture, $"{count} now need you");
 }
