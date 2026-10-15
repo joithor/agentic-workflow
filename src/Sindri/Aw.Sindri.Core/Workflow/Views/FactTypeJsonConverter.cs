@@ -16,7 +16,17 @@ public sealed class FactTypeJsonConverter : JsonConverter<FactType>
     /// <inheritdoc />
     public override FactType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        var name = reader.TokenType == JsonTokenType.String ? reader.GetString() : null;
+        // A name this build doesn't know, null or a structured token all read as payload; the reader is left after the value.
+        string? name = null;
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            name = reader.GetString();
+        }
+        else if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+        {
+            reader.Skip();
+        }
+
         foreach (var (value, text) in _names)
         {
             if (string.Equals(text, name, StringComparison.Ordinal))

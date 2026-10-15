@@ -1,10 +1,11 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>The status header line's parts (E-23).</summary>
 /// <param name="Address">The address.</param>
-/// <param name="Recipe">The recipe id.</param>
+/// <param name="Recipe">The instance's own recipe id.</param>
 /// <param name="Hash12">The first 12 hash digits.</param>
 /// <param name="Version">The version.</param>
 /// <param name="State">The state.</param>
@@ -14,7 +15,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record StatusHeader(
     string Address,
-    string Recipe,
+    RecipeId Recipe,
     string Hash12,
     int Version,
     string State,

@@ -503,6 +503,32 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 0 pass, 1 fail, 2 usage or tool error. The recipe reference, the eval format, the `RCP-*` rule table and how to add
 a block are in `docs/csharp/sindri-workflow.md`.
 
+## Workflow views (API spec §3.8; rev 8 contract unit)
+
+The instance, recipe and status view shapes the UI codes against (screens spec E-20, E-22, E-23) are records in
+`Aw.Sindri.Core/Workflow/Views/` (ids typed where Core has a typed id; a state, workstream or fact-row key stays text, and
+the display address `workflow/PRJ-sync` is text because the engine's `InstanceAddress` has a narrower shape), plus
+`FactView` in `Features/GetInstanceFact`. The routes are not served yet; the catalog and this page list them as
+`pending:API-P11`:
+
+| Route | Slice | Shape |
+|---|---|---|
+| `GET /workflow/instances?root=&open=&recipe=&subject=&state=&needsMe=` | `ListInstances` (engine) | `InstanceList` |
+| `GET /workflow/instances/{address}` | `GetInstance` (engine) | `InstanceDetail` |
+| `GET /workflow/instances/{address}/facts/{key}` | `GetInstanceFact` (a stub, not registered) | `FactView` |
+| `GET /workflow/recipes/{id}` | `ShowRecipe` (engine) | `RecipeView` |
+
+**Golden contract.** Each scenario's fixture (`tests/Aw.Sindri.Testing/Views/WorkflowViewFixtures.cs`, `FactFixtures.cs`)
+is serialized through the host's own JSON options and pinned at `tests/Aw.Sindri.Tests/Golden/Api/<slug>/<scenario>.json`
+(`workflow-instances`, `workflow-instance`, `workflow-instance-fact`, `workflow-status`, `workflow-recipe`; 30 files, in
+`WorkflowViewGoldenTests`). The UI lanes build their fake `ISindriApi` on these files, so a change to one is a contract
+change the UI lane is told about; re-record with `AW_GOLDEN_UPDATE=1`. Every instance fixture carries its own status
+(address, recipe stamp, commands and cancel sentence come from its row), the status text is rendered from the fields,
+and its commands are catalog rows of the same class (`WorkflowViewFixtureTests`). The `not-found` files are hand-written
+ProblemDetails until API P11 U7 swaps in the served body. `WorkflowViewComposer` and the `GetInstanceFact` service throw
+`NotSupportedException` until P11 U2 to U5; U7 serves the routes from the engine's views and leaves the files alone, and
+whoever lands engine P2b re-records the goldens (recipe hashes are placeholders until then).
+
 ## Hook contract
 
 None in S1. The `Hooks → Sindri` cli edge in `deps.yaml` (sindri-nudge) is the TS sindri's until the switch; the C#

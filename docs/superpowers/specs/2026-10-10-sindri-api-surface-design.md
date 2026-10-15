@@ -585,9 +585,9 @@ API serves, so the app never parses YAML or recomputes an order (README X52: the
 
 | Route | Slice | Request | Response | Class | Phase |
 |---|---|---|---|---|---|
-| `GET /workflow/instances?root=&recipe=&subject=&state=&needsMe=` | `ListInstances` (engine) | `root=true` keeps top-level instances; `recipe` is a recipe id; `subject` matches the subject key or label | `InstanceList(instances, empty, asOf)` (E-20, below) | query | P11 |
+| `GET /workflow/instances?root=&open=&recipe=&subject=&state=&needsMe=` | `ListInstances` (engine) | `root=true` keeps top-level instances; `open=true` keeps those whose state is not terminal; `recipe` is a recipe id; `subject` matches the subject key or label | `InstanceList(instances, counts, empty, asOf)` (E-20, below) | query | P11 |
 | `GET /workflow/instances/{address}` | `GetInstance` (engine) | — | `InstanceView` (E-20, E-23, below) | query | P11 |
-| `GET /workflow/instances/{address}/facts/{key}` | `GetInstanceFact` | — | `FactView`: the scrubbed body behind one fact row (the scope-map table, the packet's tasks and check results, a payload tree). Large bodies are capped at 256 KiB with `truncated: true` | query | P11 |
+| `GET /workflow/instances/{address}/facts/{key}` | `GetInstanceFact` | — | `FactView{key, type, body, truncated}`: the scrubbed body behind one fact row (the scope-map table with its graph and items columns, the packet's tasks and `PKT-*` check results, a payload tree). `body` is an object for `scope-map`, `packet` and `payload` and a string for `text`. Large bodies are capped at 256 KiB with `truncated: true`; a truncated object loses its tail entries and stays an object. An undeclared key answers `SND-ITEM-404` | query | P11 |
 | `GET /workflow/recipes?window=` | `ListRecipes` (engine) | `window`: `7d`, `30d` (default) or `90d` | `RecipeList(recipes, window, empty, asOf)` (E-25) | query | P12 |
 | `GET /workflow/recipes/{id}` and `{id}@{hash}` | `ShowRecipe` (engine) | `{id}` resolves to the approved hash | `RecipeView` (E-22) | query | P11 |
 | `GET /workflow/recipes/{id}/stats?window=&hash=` | `GetRecipeStats` | `window` as above; `hash` re-scopes to runs under one approved version | `RecipeStats` (E-24) | query | P12 |
@@ -597,18 +597,20 @@ API serves, so the app never parses YAML or recomputes an order (README X52: the
 
 **The instance list (E-20).** `InstanceList.instances` is ordered by the recipe's `urgency` (`incident`, then `triage`,
 then `work`; WF E-21), then oldest `since` first, so the Home strip (screens §4.1) is the first five rows with
-`state` not terminal, and the Workflows page groups the same rows by `recipe.id`. Each `InstanceSummary`:
+`state` not terminal, and the Workflows page groups the same rows by `recipe.id`. `counts` is `{open, needsYou, withYou, running, done}`, computed over the whole root set before `recipe` or `open` narrows the rows, so every head count comes from rows. Each `InstanceSummary`:
 
 | Field | What it holds |
 |---|---|
-| `address`, `itemId?` | The CLI address, and the `ITM-…` id when the instance is an item's |
+| `address`, `id`, `itemId?` | The CLI address; the engine's `WFI-…` instance id, which the id routes take; and the `ITM-…` id when the instance is an item's |
 | `recipe` | `{id, hash, version, urgency}` |
 | `state`, `since` | The current state id, and when the instance entered it |
+| `chip` | `{word, tone}`: the one state chip (`PARKED`, `ESCALATED`, `WITH YOU`, `DECISION`, `QUEUED`, `DONE`, `RUNNING`) and its colour class `attn`, `fail`, `ok` or `neutral`; the same record is on `ChildRow` |
 | `engineOwned` | `null`, or `{kind: parked \| escalated \| taken-over, reason}`: the badge that replaces the state's glyph |
 | `subject` | `{kind, key, label, href?}`, from the recipe's first input (screens §5.4); `kind` is `inputs[].kind` (E-22) |
 | `inputs[]` | `{key, label, kind, required, present}`, in declaration order, for the INPUTS column |
 | `states[]` | The compact `StateCell` list below, so the list renders every stage cell without a second call |
 | `now` | The engine's `next` sentence, shortened to 80 characters (the full text is on the view) |
+| `answer?` | The same `StatusAnswer` as `current.status.answer`, including `atTerminal`, so the row can offer `[Answer]` |
 | `actions` | The action ids allowed now, as on `ItemView` |
 
 **`StateCell` and the full `states[]` (E-20).** One entry per state of the recipe, in **path order** (screens §5.1).
@@ -617,7 +619,7 @@ The engine computes the order once per recipe hash and serves it, so a client ne
 | Field | What it holds |
 |---|---|
 | `id` | The state id |
-| `order` | The 0-based position in path order |
+| `order` | The 1-based position in path order on the main path; `null` for a branch state (WF §3.10) |
 | `branchOf?` | The state this one is folded under, for a branch (the app draws `⤷`) |
 | `glyph` | `done`, `active` or `pending` (the app draws ●, ◐, ○). A terminal state is `done` once reached |
 | `badge?` | `{kind: parked \| escalated \| taken-over, reason}` on the state the instance is interrupted in; it replaces the glyph |
@@ -635,14 +637,15 @@ The view's top level adds `orderedBy`: `"path"`, or `"transition-list"` when the
 ```jsonc
 // GET /workflow/instances/workflow%2FPRJ-sync   (InstanceView; E-20, E-23)
 {
-  "address": "workflow/PRJ-sync", "itemId": null, "title": "Offline sync",
+  "address": "workflow/PRJ-sync", "id": "WFI-…", "parent": null,   // parent?: {address, title, task?, workstream?}
+  "itemId": null, "title": "Offline sync",
   "recipe": { "id": "workflow.project", "hash": "a8c21e7f…", "version": 12, "urgency": "work" },
   "state": "build", "since": "2026-10-14T09:14:00Z",
   "engineOwned": null,
   "subject": { "kind": "linear-project", "key": "APP", "label": "APP · Offline sync", "href": "https://linear.app/…" },
   "orderedBy": "path",
   "states": [
-    { "id": "intake", "order": 0, "glyph": "done", "loops": [], "desk": false, "child": false, "terminal": false },
+    { "id": "intake", "order": 1, "glyph": "done", "loops": [], "desk": false, "child": false, "terminal": false },
     { "id": "build",  "order": 4, "glyph": "active", "loops": [], "desk": false, "child": true,
       "children": { "done": 4, "total": 9 } }
     // … every state, in path order
@@ -652,7 +655,7 @@ The view's top level adds `orderedBy`: `"path"`, or `"transition-list"` when the
     "step": { "kind": "step.children", "ref": "builder.feature", "declaration": "one child per packet task" },
     "gates": [ { "id": "gate.evidence.all", "on": "exit", "threshold": null, "description": "…" },
                { "id": "gate.judge.verify", "on": "exit", "threshold": 0.8, "description": "…" } ],
-    "desk": null,                    // or {outputs:[{key,type,required}], checks:[…], completeAction:"CompleteStep"}
+    "desk": null,                    // or {run:"1.1", outputs:[{key,type,required}], checks:[…], completeAction:"CompleteStep"}
     "status": { /* StatusFields, E-23, below */ }
   },
   "facts": [ /* FactRow, below */ ],
@@ -703,7 +706,7 @@ every §6.4 layout both ways. Lines the layout leaves out are `null` or `[]`.
   "workstreams": [                     // [] unless the state's input is a packet; in the packet's order
     { "id": "ws-1", "label": "UI",
       "rows": [ { "address": "…", "itemId": "ITM-01JE7", "title": "Sync status pill",
-                  "glyph": "active", "state": "produce", "round": { "n": 2, "max": 3 },
+                  "glyph": "active", "state": "produce", "chip": { "word": "RUNNING", "tone": "ok" }, "round": { "n": 2, "max": 3 },
                   "agent": "claude-code", "ageSeconds": 360,
                   "engineOwned": null, "mirroredPark": null, "actions": [ "OpenItem", "ApplyCommand:takeover" ] } ] } ],
   "rows": [],                          // used instead of workstreams when there are none

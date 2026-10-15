@@ -60,12 +60,37 @@ public sealed class WorkflowViewJsonTests
     [Fact, Trait("Lane", "unit")]
     public void The_root_list_is_in_urgency_then_since_order()
     {
-        var rows = WorkflowViewFixtures.RootList().Instances;
+        var addresses = WorkflowViewFixtures.RootList().Instances.Select(r => r.Address);
 
-        Assert.Equal(12, rows.Count);
-        Assert.True(rows.OrderBy(r => r.Recipe.Urgency).ThenBy(r => r.Since).Select(r => r.Address).SequenceEqual(rows.Select(r => r.Address), StringComparer.Ordinal));
-        Assert.Equal("workflow/INC-14", rows[0].Address);
+        // The incident, then the triage rows by oldest since, then the work rows by oldest since (spelled out, so a change of the sort key shows).
+        Assert.Equal(
+            [
+                "workflow/INC-14", "workflow/sentry-8790", "workflow/sentry-8797", "workflow/sentry-8801", "workflow/pagerduty-P-2211",
+                "workflow/sentry-8809", "workflow/sentry-8812", "workflow/PRJ-exports", "workflow/PRJ-sync", "workflow/PRJ-tabs", "workflow/LIN-ENG",
+                "workflow/LIN-APP",
+            ],
+            addresses);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(FactType.Text), InlineData(FactType.File), InlineData(FactType.Item), InlineData(FactType.Link), InlineData(FactType.ScopeMap),
+        InlineData(FactType.Packet), InlineData(FactType.Evidence), InlineData(FactType.Decision), InlineData(FactType.Payload)]
+    public void Every_fact_type_round_trips(FactType type) =>
+        Assert.Equal(type, JsonSerializer.Deserialize<FactType>(JsonSerializer.Serialize(type, _options), _options));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("{\"type\":{\"a\":1},\"n\":2}")]
+    [InlineData("{\"type\":[1,2],\"n\":2}")]
+    [InlineData("{\"type\":null,\"n\":2}")]
+    public void A_fact_type_that_is_not_a_name_reads_as_payload_and_leaves_the_rest_readable(string json)
+    {
+        var typed = JsonSerializer.Deserialize<TypeHolder>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.Equal(FactType.Payload, typed!.Type);
+        Assert.Equal(2, typed.N);
+    }
+
+    private sealed record TypeHolder(FactType Type, int N);
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("mitigate", null, false, false, "RUNNING", ChipTone.Ok)]

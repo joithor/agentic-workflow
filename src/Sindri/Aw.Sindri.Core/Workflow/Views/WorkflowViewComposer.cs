@@ -6,7 +6,8 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <summary>
 /// Composes the API spec section 3.8 view records (E-20, E-22, E-23) from the engine's instance and recipe. A stub: every
 /// method throws until its unit (API P11 U2 to U5, U9) writes it, after engine P2b (StatePathOrder) and P4 (the instance
-/// query). The records and goldens are the contract it must produce.
+/// query). The records and goldens are the contract it must produce. The signatures are provisional: U2 sets the inputs
+/// (likely the engine's query view and the path order) once engine #192 merges, and the PublicAPI lines move with them.
 /// </summary>
 public static class WorkflowViewComposer
 {
