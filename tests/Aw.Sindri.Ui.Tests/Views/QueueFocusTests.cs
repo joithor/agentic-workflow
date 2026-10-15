@@ -212,7 +212,7 @@ public sealed class QueueFocusTests : IDisposable
         window.KeyPressQwerty(PhysicalKey.J, RawInputModifiers.None);
         await Until(window, () => shell.Queue.SelectedId == shell.Queue.QueuedRows[0].Id && FocusedRowId(window) == shell.Queue.SelectedId);
 
-        Assert.NotNull(Focused(window)!.FindAncestorOfType<CompactItemRow>());
+        Assert.NotNull(Focused(window).FindAncestorOfType<CompactItemRow>());
     });
 
     // L2 (§11.2): keys are scoped to the focused region: with focus in the sheet, J does not drive the queue behind it.

@@ -164,7 +164,7 @@ public sealed class QueueKeysTests
             walked.Add(queue.SelectedId);
         }
 
-        Assert.Equal(home, walked.Select(w => w!), StringComparer.Ordinal);
+        Assert.Equal(home, walked.Select(w => w), StringComparer.Ordinal);
 
         queue.Select(string.Empty);
         queue.Groups.Single(g => g.Group == "queued").IsExpanded = false;
@@ -176,7 +176,7 @@ public sealed class QueueKeysTests
             seen.Add(queue.SelectedId);
         }
 
-        Assert.Equal([.. page, page[^1], page[^1]], seen.Select(w => w!), StringComparer.Ordinal);
+        Assert.Equal([.. page, page[^1], page[^1]], seen.Select(w => w), StringComparer.Ordinal);
     }
 
     // L2: a filter change moves the selection off a row it hides (silently: no announcement, no key guard).
