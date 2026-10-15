@@ -354,6 +354,26 @@ public sealed class QueueViewModelTests
         Assert.Equal((5, true, false), (queue.Total, queue.IsStale, queue.IsLoading));
     }
 
+    // testing-0: a waiter on the end of loading finds the problem there already (the shell runs this off the test's thread).
+    [Fact]
+    public async Task A_failed_first_read_shows_its_problem_before_loading_ends()
+    {
+        _server.QueueView = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views didn't catch up within 2 s (fix: retry)");
+        var queue = await Queue();
+        string? codeWhenLoadingEnded = null;
+        queue.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(QueueViewModel.IsLoading) && !queue.IsLoading)
+            {
+                codeWhenLoadingEnded = queue.ProblemCode;
+            }
+        };
+
+        await queue.Refresh(_api, Token);
+
+        Assert.Equal("SND-API-011", codeWhenLoadingEnded);
+    }
+
     // L7 (corr-7): a first read that fails ends the skeleton and says what the API said, so the page is never blank.
     [Fact]
     public async Task A_failed_first_read_ends_loading_and_shows_the_apis_code_and_detail()
