@@ -54,7 +54,7 @@ public sealed class TypeFilterTests
     [Fact, Trait("Lane", "unit")]
     public void Typefilter_takes_16_globs_and_refuses_17()
     {
-        string List(int count) => string.Join(',', Enumerable.Range(0, count).Select(i => "t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".*"));
+        static string List(int count) => string.Join(',', Enumerable.Range(0, count).Select(i => "t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".*"));
 
         Assert.True(TypeFilter.Parse(List(16)).IsSuccess);
         Assert.Equal(SindriErrors.InvalidInput.Code, TypeFilter.Parse(List(17)).Error.Code);
