@@ -217,6 +217,21 @@ public sealed class ShellStateTests
         Assert.True(shell.Pill.IsStale);
     }
 
+    // H6 (corr-2, arch-1): a manual Refresh is a status read like the follower's: when the views are behind the sequence
+    // of the last command, the sequence is used up and the status is read once more at once, so Refresh shows it.
+    [Fact]
+    public async Task Refresh_after_a_command_the_views_have_not_reached_shows_the_re_read()
+    {
+        var shell = await Stale();
+        _server.Lag = ViewsLag.Behind;
+        _ = await _server.RebuildViews(new Uri("http://127.0.0.1:7410/"), Token);
+
+        await shell.Health.Refresh(Token);
+
+        Assert.Equal(ShellState.Normal, shell.State);
+        Assert.Equal([0L, 43L, 0L], _server.StatusAfters.TakeLast(3));
+    }
+
     [Fact]
     public async Task Refresh_reads_the_status_again_and_the_views_are_fresh()
     {
