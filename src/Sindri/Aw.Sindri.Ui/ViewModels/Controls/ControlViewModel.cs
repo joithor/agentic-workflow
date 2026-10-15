@@ -104,6 +104,9 @@ internal sealed class ControlViewModel : ObservableObject
     /// <summary>True when a click sends it: a ready row with a sender, not already in flight.</summary>
     public bool CanRun => IsReady && _send is not null && Phase != CommandPhase.Sending;
 
+    /// <summary>True when the control is a live button: a ready row with a sender, even while it sends (so focus stays on it).</summary>
+    public bool IsSendable => IsReady && _send is not null;
+
     /// <summary>True while sending (the spinner).</summary>
     public bool IsSending => Phase == CommandPhase.Sending;
 

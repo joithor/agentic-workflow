@@ -123,7 +123,7 @@ public sealed class CatalogFramesTests : IDisposable
         Frame(window, "banner-rebuilding");
     });
 
-    // §4.1 sending: disabled, its label kept, the spinner; the answer then shows the accepted outcome.
+    // §4.1 sending: the label kept, the spinner (enabled for focus, F4; the view model refuses a second run); the answer then shows the accepted outcome.
     [Fact]
     public Task Rebuild_views_shows_sending_then_its_outcome() => OnUi(async () =>
     {
@@ -136,7 +136,7 @@ public sealed class CatalogFramesTests : IDisposable
         run.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Settle(window);
 
-        Assert.Equal((false, true, "Rebuild views"), (run.IsEffectivelyEnabled, Visible(banner, "RunSpinner"), Named<TextBlock>(banner, "RunLabel").Text));
+        Assert.Equal((true, true, "Rebuild views"), (run.IsEffectivelyEnabled, Visible(banner, "RunSpinner"), Named<TextBlock>(banner, "RunLabel").Text));
         Frame(window, "control-sending");
 
         _server.RebuildGate.SetResult();
@@ -176,5 +176,58 @@ public sealed class CatalogFramesTests : IDisposable
         Settle(window);
         Assert.Same(lines[0], window.FocusManager?.GetFocusedElement());
         Frame(window, "health-controls");
+    });
+
+    private static Visual? Focused(Window window) => window.FocusManager?.GetFocusedElement() as Visual;
+
+    // F4 (a11y-5, corr-2): focus stays on the control while it sends and after Sindri refuses; the live region says the
+    // code and detail.
+    [Fact]
+    public Task A_refused_rebuild_keeps_focus_on_the_control_and_announces_the_refusal() => OnUi(async () =>
+    {
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
+        _server.RebuildGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.Conflict, "SND-API-010", "Views are rebuilding (fix: retry after the rebuild)");
+        var (window, _) = await Connected(s => s.Health.Banner.IsShown);
+        var banner = Named<Control>(window, "ViewsBanner");
+        var run = Named<Button>(banner, "RunButton");
+        Assert.True(run.Focus(NavigationMethod.Tab));
+
+        run.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+        Assert.Same(run, Focused(window));
+
+        _server.RebuildGate.SetResult();
+        for (var i = 0; i < 200 && !Visible(banner, "ErrorLine"); i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Assert.Same(run, Focused(window));
+        Assert.Equal("SND-API-010: Views are rebuilding (fix: retry after the rebuild)", Named<TextBlock>(banner, "Announcer").Text);
+    });
+
+    // F4: when the banner (and so the control that had focus) goes, focus lands on a usable control, never nowhere.
+    [Fact]
+    public Task Focus_moves_sensibly_when_the_banner_with_the_control_hides() => OnUi(async () =>
+    {
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
+        var (window, shell) = await Connected(s => s.Health.Banner.IsShown);
+        var run = Named<Button>(Named<Control>(window, "ViewsBanner"), "RunButton");
+        Assert.True(run.Focus(NavigationMethod.Tab));
+
+        run.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        _server.ServiceView = RouteAnswer.SpecShaped("services", "fixture");
+        _server.Push(A.Event(1, "views.rebuilt"));
+        for (var i = 0; i < 200 && shell.Health.Banner.IsShown; i++)
+        {
+            await Task.Delay(10, Token);
+            Settle(window);
+        }
+
+        Assert.False(shell.Health.Banner.IsShown);
+        var focused = Assert.IsType<Control>(Focused(window), exactMatch: false);
+        Assert.True(focused.IsEffectivelyVisible && focused.IsEffectivelyEnabled);
     });
 }

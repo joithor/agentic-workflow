@@ -153,4 +153,51 @@ public sealed class ControlViewModelTests
     public void Labels_are_keyed_by_action_id_and_an_unknown_one_shows_its_id(string action, string label) =>
         Assert.Equal(label, Control(Row(action, "cli-only:typed-confirmation", "sindri workflow answer <address> --grant <n>")).Label);
 
+    // F4 (corr-2): a refusal is announced with its code and detail, so a screen reader hears what the eyes read.
+    [Fact]
+    public async Task A_refusal_is_announced_with_its_code_and_detail()
+    {
+        _server.Rebuild = RouteAnswer.Problem(HttpStatusCode.Conflict, "SND-API-010", "Views are rebuilding (fix: retry after the rebuild)");
+        var control = Control(Row("RebuildViews", "ready"));
+
+        await control.Run(Token);
+
+        Assert.Equal("SND-API-010: Views are rebuilding (fix: retry after the rebuild)", control.Announcement);
+    }
+
+    // F4 (corr-2): the same outcome twice is two announcements; the live region changes between them.
+    [Fact]
+    public async Task The_same_outcome_twice_changes_the_announcement_each_time()
+    {
+        var control = Control(Row("RebuildViews", "ready"));
+        var heard = new List<string>();
+        control.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ControlViewModel.Announcement))
+            {
+                heard.Add(control.Announcement);
+            }
+        };
+
+        await control.Run(Token);
+        _clock.Advance(ControlViewModel.AcceptedFor);
+        await control.Run(Token);
+
+        Assert.Equal(2, heard.Count(text => text == "Rebuild views: done"));
+        Assert.All(heard, Assert.NotEmpty);
+    }
+
+    // F4 (a11y-5): while it sends the control stays enabled for the keyboard (focus stays on it); the view model refuses a second run.
+    [Fact]
+    public async Task While_sending_the_control_stays_focusable_and_a_second_run_is_refused()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        var control = Control(Row("RebuildViews", "ready"));
+
+        var first = control.Run(Token);
+
+        Assert.Equal((true, false), (control.IsSendable, control.CanRun));
+        _server.RebuildGate.SetResult();
+        await first;
+    }
 }
