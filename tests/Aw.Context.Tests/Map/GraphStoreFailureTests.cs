@@ -71,7 +71,7 @@ public sealed class GraphStoreFailureTests : IDisposable
         var first = (await store.SaveCurrent(SampleMap.Build(), SampleMap.At, Ct)).Value;
         var overrides = (await store.Overrides(Ct)).Value.Count;
         var late = SampleMap.Build(" (late)");
-        late = late with { Overrides = [new MapOverride(OverrideAction.Delete, Context.Core.Graph.NodeKey.From("feature:x"), "avery", SampleMap.At)] };
+        late = late with { Overrides = [new MapOverride(OverrideAction.Delete, NodeKey.From("feature:x"), "avery", SampleMap.At)] };
 
         var flipped = await new GraphWrites((await _database.Writable(Ct)).Value, 500).Flip(late, version: 99, Ct);
 

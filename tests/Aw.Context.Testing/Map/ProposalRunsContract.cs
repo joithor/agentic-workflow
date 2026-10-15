@@ -1,5 +1,6 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Sources;
 using Xunit;
@@ -50,8 +51,8 @@ public abstract class ProposalRunsContract
         var store = CreateRuns();
         var repo = ContextRepoName.From("aw-split-panes");
         var run = new ScopeProposal("run-9", repo, [new ProposedSurface("Zoom", Key: null, NodeKind.Feature), new ProposedSurface("Something vague")]);
-        var row = new Aw.Context.Core.Overrides.MapOverride(Aw.Context.Core.Overrides.OverrideAction.Propose, NodeKey.From("feature:zoom"), "service:engine", DateTimeOffset.UnixEpoch, "Zoom",
-            Proposal: new Aw.Context.Core.Overrides.ProposalPayload("run-9", repo, NodeKind.Feature));
+        var row = new MapOverride(OverrideAction.Propose, NodeKey.From("feature:zoom"), "service:engine", DateTimeOffset.UnixEpoch, "Zoom",
+            Proposal: new ProposalPayload("run-9", repo, NodeKind.Feature));
 
         var first = Expect.Ok(await store.Propose(run, [row], None), test);
         var again = Expect.Ok(await store.Propose(run, [row], None), test);
