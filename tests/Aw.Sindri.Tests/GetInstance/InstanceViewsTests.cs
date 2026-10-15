@@ -61,6 +61,24 @@ public sealed class InstanceViewsTests
     }
 
     [Fact]
+    public void A_drift_park_that_the_reapproval_already_ended_is_no_drift_note_and_no_drift_line()
+    {
+        var view = StatusCases.View("parked-rounds-with-approved-drift");
+
+        Assert.Null(view.Drift);
+        Assert.Null(view.DriftNote);
+    }
+
+    [Fact]
+    public void A_drift_park_queued_behind_another_park_gives_the_same_drift_line_and_note()
+    {
+        var view = StatusCases.View("parked-rounds-with-later-drift");
+
+        Assert.NotNull(view.Drift);
+        Assert.Equal(("step.produce", true), (view.DriftNote!.Block.Value, view.DriftNote.NeedsReapproval));
+    }
+
+    [Fact]
     public void An_ended_instance_has_its_outcome_as_detail_and_nothing_else()
     {
         var view = StatusCases.View("done");

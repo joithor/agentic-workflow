@@ -45,6 +45,12 @@ internal static class StatusCases
         "parked-no-runtime" => Of(Park(ParkReason.NoRuntime, kind: null, "step.test.agent"), Ago(2)),
         "parked-rounds-with-drift" => Of(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") }, Ago(30)),
         "cancelled" => Of(Ended("cancelled", "cancelled"), Ago(1)),
+        "parked-rounds-with-approved-drift" => Of(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") with { Approved = true } }, Ago(30)),
+        "parked-rounds-with-later-drift" => Of(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with
+        {
+            PendingPark = Suspended(ParkReason.Timeout, kind: null, "produce waited too long"),
+            LaterParks = [Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce")],
+        }, Ago(30)),
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "no such status case"),
     };
 
