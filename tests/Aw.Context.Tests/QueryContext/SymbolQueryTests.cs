@@ -1,5 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
+using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
 
 namespace Aw.Context.Tests.QueryContext;
@@ -62,7 +63,7 @@ public sealed class SymbolQueryTests : IDisposable
     {
         _ = await _world.ImportFixture();
 
-        var result = await _world.Engine.Query(new ContextQuery(Text: null, Symbol: "src/layout/SplitPane.ts"), MapWorld.Session(Context.Testing.Map.FixtureMap.Repo), MapWorld.None);
+        var result = await _world.Engine.Query(new ContextQuery(Text: null, Symbol: "src/layout/SplitPane.ts"), MapWorld.Session(FixtureMap.Repo), MapWorld.None);
 
         Assert.True(result.IsSuccess, result.IsError ? result.Error.Code : string.Empty);
         Assert.Equal(["feature:layout.split-pane", "feature:layout.split-pane.orientation"], result.Value.Anchors, StringComparer.Ordinal);
