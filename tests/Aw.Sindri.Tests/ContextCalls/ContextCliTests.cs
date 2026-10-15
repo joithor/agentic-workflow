@@ -1,3 +1,4 @@
+using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Graph;
@@ -17,6 +18,29 @@ public sealed class ContextCliTests
 
         Assert.Equal("?q=split%20pane%26x%3D1&depth=2&draft=true", parsed.Value.QueryString);
         Assert.True(parsed.Value.Json);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("depth", "abc", "(fix: --depth 2)")]
+    [InlineData("depth", "9", "(fix: --depth 2)")]
+    [InlineData("budget", "abc", "(fix: --budget 4000)")]
+    public void The_cli_adds_its_own_flag_to_a_depth_or_budget_006(string field, string text, string fix)
+    {
+        var error = (field == "depth" ? QueryRules.ParseDepth(text) : QueryRules.ParseBudget(text)).Error;
+
+        var shown = QueryFlagHints.Add(error);
+
+        Assert.Equal(error.Code, shown.Code);
+        Assert.StartsWith(error.Message, shown.Message, StringComparison.Ordinal);
+        Assert.EndsWith(fix, shown.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Any_other_error_passes_through_the_cli_hints_unchanged()
+    {
+        var other = ContextErrors.UnknownAnchor.With("no node is named 'x'");
+
+        Assert.Same(other, QueryFlagHints.Add(other));
     }
 
     [Theory, Trait("Lane", "unit")]

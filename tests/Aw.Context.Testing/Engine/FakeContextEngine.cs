@@ -20,12 +20,20 @@ public sealed class FakeContextEngine : IContextEngine
 {
     private readonly FakeScrubberFactory _scrubbers = new();
 
-    private FakeContextEngine()
+    private readonly ProbeSet? _probes;
+
+    private FakeContextEngine(ProbeSet? probes)
     {
+        _probes = probes;
     }
 
-    /// <summary>The one instance.</summary>
-    public static FakeContextEngine Instance { get; } = new();
+    /// <summary>The one instance, with no probe file.</summary>
+    public static FakeContextEngine Instance { get; } = new(probes: null);
+
+    /// <summary>An engine like <see cref="Instance"/> whose probe file is <paramref name="probes"/>: a run asks its questions through the caller's delegate and scores them with the real runner (nothing is saved).</summary>
+    /// <param name="probes">The probes of the file.</param>
+    /// <returns>The engine.</returns>
+    public static FakeContextEngine WithProbes(ProbeSet probes) => new(probes);
 
     /// <inheritdoc />
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
@@ -55,9 +63,17 @@ public sealed class FakeContextEngine : IContextEngine
     /// <inheritdoc/>
     public ValueTask<Result<MapStatusView>> MapStatus(ContextScope scope, CancellationToken cancellationToken) => NoMap<MapStatusView>();
 
-    /// <summary>No probe file: a run answers SND-CONTEXT-036.</summary>
-    public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<ProbeRun>>(ContextErrors.NoProbeFile.With("this test engine has no probe file"));
+    /// <summary>With no probes a run answers SND-CONTEXT-036; with <see cref="WithProbes"/> it runs them.</summary>
+    public async ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken)
+    {
+        if (_probes is null)
+        {
+            return ContextErrors.NoProbeFile.With("this test engine has no probe file");
+        }
+
+        var report = await ProbeRunner.Run(new ProbeFile(file ?? "/probes/probes.json", "fake-hash", _probes), ask, baseline: null, DateTimeOffset.UnixEpoch, cancellationToken).ConfigureAwait(false);
+        return report.IsError ? report.Error : new ProbeRun(report.Value, Path: null);
+    }
 
     /// <inheritdoc/>
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => NoMap<NodeView>();

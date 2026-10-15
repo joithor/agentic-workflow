@@ -38,6 +38,68 @@ public sealed class QueryRulesTests
     }
 
     [Theory, Trait("Lane", "unit")]
+    [InlineData(null, null)]
+    [InlineData("0", 0)]
+    [InlineData("4", 4)]
+    public void A_depth_from_text_is_absent_or_a_whole_number_from_0_to_4(string? text, int? expected) =>
+        Assert.Equal(expected, QueryRules.ParseDepth(text).Value);
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("abc")]
+    [InlineData("1.5")]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void A_depth_that_is_not_a_whole_number_is_006_without_a_transport_hint(string text)
+    {
+        var error = QueryRules.ParseDepth(text).Error;
+
+        Assert.Equal(ContextErrors.QueryInvalid.Code, error.Code);
+        Assert.Equal("depth must be a whole number from 0 to 4", error.Message);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("-1")]
+    [InlineData("5")]
+    [InlineData("99999999999999999999")]
+    public void A_whole_depth_outside_0_to_4_is_out_of_range_not_a_non_number(string text)
+    {
+        var error = QueryRules.ParseDepth(text).Error;
+
+        Assert.Equal(ContextErrors.QueryInvalid.Code, error.Code);
+        Assert.Contains("out of range", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("is not a whole number", error.Message, StringComparison.Ordinal);
+        Assert.StartsWith("depth must be a whole number from 0 to 4", error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null, null)]
+    [InlineData("1", 1)]
+    [InlineData("8000", 8000)]
+    public void A_budget_from_text_is_absent_or_a_positive_whole_number(string? text, int? expected) =>
+        Assert.Equal(expected, QueryRules.ParseBudget(text).Value);
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("abc", "budget must be a whole number of tokens, 1 or more")]
+    [InlineData("0", "out of range")]
+    [InlineData("-5", "out of range")]
+    public void A_bad_budget_is_006(string text, string message)
+    {
+        var error = QueryRules.ParseBudget(text).Error;
+
+        Assert.Equal(ContextErrors.QueryInvalid.Code, error.Code);
+        Assert.Contains(message, error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_depth_check_for_a_number_gives_the_same_006_as_the_text_parse()
+    {
+        Assert.Null(QueryRules.CheckDepth(null));
+        Assert.Null(QueryRules.CheckDepth(3));
+        Assert.Equal(QueryRules.ParseDepth("9").Error, QueryRules.CheckDepth(9));
+        Assert.Equal(QueryRules.ParseDepth("-1").Error, QueryRules.CheckDepth(-1));
+    }
+
+    [Theory, Trait("Lane", "unit")]
     [InlineData("ENG-1", null)]
     [InlineData(null, "src/a.ts")]
     public void Item_and_symbol_anchors_are_unknown_until_their_phases(string? item, string? symbol) =>

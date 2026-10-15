@@ -42,6 +42,33 @@ public static class QueryRules
         return Shaped(query, Math.Min(query.Budget ?? DefaultBudget, settings.MaxBudget));
     }
 
+    /// <summary>A depth as a transport sent it: absent, or a whole number from 0 to <see cref="MaxDepth"/>.</summary>
+    /// <param name="text">The text, or null.</param>
+    /// <returns>The depth (null when absent); SND-CONTEXT-006 when it is not a whole number or is out of range. The message names no flag: a transport adds its own hint.</returns>
+    public static Result<int?> ParseDepth(string? text)
+    {
+        _ = text;
+        throw new NotSupportedException("review run 4: ParseDepth is not built yet");
+    }
+
+    /// <summary>A token budget as a transport sent it: absent, or a whole number of 1 or more.</summary>
+    /// <param name="text">The text, or null.</param>
+    /// <returns>The budget (null when absent); SND-CONTEXT-006 when it is not a whole number or is out of range.</returns>
+    public static Result<int?> ParseBudget(string? text)
+    {
+        _ = text;
+        throw new NotSupportedException("review run 4: ParseBudget is not built yet");
+    }
+
+    /// <summary>The 006 for a depth already a number, worded as <see cref="ParseDepth"/> words it.</summary>
+    /// <param name="depth">The depth, or null.</param>
+    /// <returns>Null when absent or 0 to <see cref="MaxDepth"/>, else the error.</returns>
+    public static Error? CheckDepth(int? depth)
+    {
+        _ = depth;
+        throw new NotSupportedException("review run 4: CheckDepth is not built yet");
+    }
+
     /// <summary>The one shape's own checks: a node name's length; the text's words; item and symbol not yet (003).</summary>
     private static Result<ValidQuery> Shaped(ContextQuery query, int budget)
     {

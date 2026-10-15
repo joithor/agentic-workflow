@@ -75,4 +75,28 @@ public sealed class AnchorMatchTests
         Assert.Empty(anchors.Anchors);
         Assert.Empty(anchors.Suggested);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_label_with_this_or_does_anchors_on_a_question_that_says_the()
+    {
+        var graph = new GraphBuilder().Node("feature:close-tab", "Close this tab").Node("feature:other", "Other thing").Build();
+
+        var anchors = AnchorMatch.FromText(graph, "what happens if I close the tab");
+
+        Assert.Equal(["feature:close-tab"], anchors.Anchors.Select(k => k.Value), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Small_words_that_lose_their_s_never_become_words_or_suggestions()
+    {
+        var graph = new GraphBuilder().Node("feature:a", "This does it").Node("feature:b", "Widgets").Build();
+
+        var anchors = AnchorMatch.FromText(graph, "this does that");
+
+        Assert.Empty(anchors.Suggested);
+        Assert.Empty(anchors.Anchors);
+        Assert.DoesNotContain("thi", AnchorMatch.Words("this does"));
+        Assert.DoesNotContain("doe", AnchorMatch.Words("this does"));
+        Assert.Empty(AnchorMatch.Words("this does"));
+    }
 }
