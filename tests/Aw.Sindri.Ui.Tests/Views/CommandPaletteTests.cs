@@ -315,7 +315,7 @@ public sealed class CommandPaletteTests : IDisposable
 
         var region = Named<TextBlock>(window, "CommandOutcomeLive");
         Assert.True(region.IsEffectivelyVisible);
-        Assert.DoesNotContain("live", region.Classes, StringComparer.Ordinal);   // released with the run: dark again, the text stays
+        Assert.Contains("live", region.Classes, StringComparer.Ordinal);
     });
 
     // F2: a refusal shows Sindri's code as the entry's status and the detail as served under it; the palette stays open.

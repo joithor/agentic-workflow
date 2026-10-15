@@ -144,32 +144,6 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.DoesNotContain(spoken, t => t.Contains("Rebuild views, ready", StringComparison.Ordinal));
     }
 
-    // Final pass: the shell region goes dark when the run it spoke for is released; it never sets "".
-    [Fact]
-    public async Task The_shell_region_goes_dark_when_the_run_it_spoke_for_is_released()
-    {
-        _server.RebuildGate = new TaskCompletionSource();
-        var (palette, region, _) = Closing(bannerShowsControl: false);
-        var rebuild = Find(palette, "RebuildViews");
-        var texts = new List<string>();
-        region.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(CommandOutcomeRegion.Text))
-            {
-                texts.Add(region.Text);
-            }
-        };
-
-        var run = palette.Run(rebuild, Token);
-        palette.Close();
-        _server.RebuildGate.SetResult();
-        await run;
-
-        Assert.False(region.IsLive);
-        Assert.Equal("Rebuild views: done", region.Text);   // rests on its last text, unspoken
-        Assert.DoesNotContain(string.Empty, texts, StringComparer.Ordinal);
-    }
-
     // K2 (run 5, a11y-1 and corr-0): Esc, or the close-first policy, mid-send hands the outcome to a control whose only view is the stalled
     // banner, hidden unless stalled: it was announced 0 times. The shell's command-outcome region speaks it instead, once, and the control stays dark.
     private (CommandPaletteViewModel Palette, CommandOutcomeRegion Region, List<string> Said) Closing(bool bannerShowsControl)
@@ -216,7 +190,7 @@ public sealed partial class CommandPaletteViewModelTests
         await run;
 
         Assert.Equal(1, said.Count(t => t.Contains(outcome, StringComparison.Ordinal)));
-        Assert.False(region.IsLive);   // released with the run: dark again
+        Assert.True(region.IsLive);
         Assert.False(controlSpoke);
         Assert.False(control.IsMuted);   // the run is over: the control is back to speaking its own runs
     }
