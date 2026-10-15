@@ -5,8 +5,6 @@ namespace Aw.Context.Tests.Infrastructure;
 
 public sealed class GraphifyClusterSourceTests
 {
-    private static readonly string[] _bwrapPaths = ["/usr/bin/bwrap", "/bin/bwrap"];
-
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact, Trait("Lane", "integration")]
@@ -83,16 +81,40 @@ public sealed class GraphifyClusterSourceTests
         _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await source.Clusters(repo.Repo, repo.Head, Ct));
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task Unpack_writes_source_files_and_leaves_out_a_file_under_a_deny_glob()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["src/keys/bindings.ts"] = "export const bind = 1;\n",
+            ["config/secrets/keys.ts"] = "export const token = 'not-a-real-secret';\n",
+        });
+        var snapshot = Directory.CreateTempSubdirectory("aw-unpack-").FullName;
+        try
+        {
+            var exported = await new GitCli().Archive(repo.Path, repo.Head, (stream, token) => GraphifyClusterSource.Unpack(stream, snapshot, repo.Repo, token), Ct);
+
+            Assert.False(exported.IsError);
+            Assert.True(File.Exists(Path.Combine(snapshot, "src", "keys", "bindings.ts")), "a source file is unpacked");
+            Assert.False(File.Exists(Path.Combine(snapshot, "config", "secrets", "keys.ts")), "a denied file never reaches graphify");
+        }
+        finally
+        {
+            Directory.Delete(snapshot, recursive: true);
+        }
+    }
+
     /// <summary>
     /// The real pinned graphify under the real sandbox on a small TS repo whose files import each other, one of them under a
-    /// deny glob. Where the machine can't run it (no root-owned bwrap that starts, no graphify at the pin on PATH) the test is
+    /// deny glob. Where the machine can't run it (the production probe says why: no sandbox, no graphify, or not the pin) the test is
     /// skipped with the reason; where it can, it must cluster: a silent pass without graphify running is not allowed.
     /// </summary>
     [Fact, Trait("Lane", "heavy")]
     public async Task The_real_graphify_clusters_a_small_repo_under_the_sandbox_and_never_sees_a_denied_file()
     {
-        var unrunnable = WhyGraphifyCannotRun();
-        Assert.SkipWhen(unrunnable is not null, unrunnable ?? string.Empty);
+        var source = new GraphifyClusterSource(new GitCli(), GraphifyOptions.Default);
+        var unrunnable = await source.WhyUnavailable(Ct);
+        Assert.SkipWhen(unrunnable is not null, $"the real graphify can't run here: {unrunnable}");
         using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["src/app.ts"] = "import { open } from './layout/pane';\nimport { bind } from './keys/bindings';\nexport const app = () => [open(), bind()];\n",
@@ -101,7 +123,6 @@ public sealed class GraphifyClusterSourceTests
             ["src/keys/bindings.ts"] = "import { open } from '../layout/pane';\nimport { token } from '../../config/secrets/keys';\nexport function bind() { return [open(), token]; }\n",
             ["config/secrets/keys.ts"] = "export const token = 'not-a-real-secret';\n",
         });
-        var source = new GraphifyClusterSource(new GitCli(), GraphifyOptions.Default);
 
         var set = await source.Clusters(repo.Repo, repo.Head, Ct);
 
@@ -114,53 +135,7 @@ public sealed class GraphifyClusterSourceTests
         Assert.All(members, f => Assert.Contains(f, tracked, StringComparer.Ordinal));
         Assert.DoesNotContain(members, f => f.Contains("secrets/", StringComparison.Ordinal));
         Assert.Contains(members, f => f.EndsWith("pane.ts", StringComparison.Ordinal));
+        Assert.Contains("src/keys/bindings.ts", members, StringComparer.Ordinal);   // the file that imports the denied one is clustered, so the absence of keys.ts below means something
         TestContext.Current.SendDiagnosticMessage($"graphify produced {set.Value.Clusters.Count} cluster(s) over {members.Count} file(s)");
-    }
-
-    // Null when the real run is possible; else the reason to skip. A root-owned bwrap that starts and a graphify on PATH printing the pin.
-    private static string? WhyGraphifyCannotRun()
-    {
-        if (!OperatingSystem.IsLinux())
-        {
-            return "the real-graphify run is only wired for Linux (bwrap)";
-        }
-
-        var bwrap = _bwrapPaths.FirstOrDefault(File.Exists);
-        if (bwrap is null || Probe(bwrap, "--ro-bind", "/", "/", "true") is not { } sandboxed || sandboxed.Exit != 0)
-        {
-            return "no root-owned bwrap that can start a sandbox here";
-        }
-
-        var graphify = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
-            .Select(dir => Path.Combine(dir, "graphify")).FirstOrDefault(File.Exists);
-        return graphify is null ? "no graphify on PATH"
-            : Probe(graphify, "--version") is { Exit: 0 } version && version.Output.Contains(GraphifyOptions.Default.Pin, StringComparison.Ordinal) ? null
-            : $"the graphify on PATH is not the pin {GraphifyOptions.Default.Pin}";
-    }
-
-    private static (int Exit, string Output)? Probe(string file, params string[] args)
-    {
-        var start = new System.Diagnostics.ProcessStartInfo(file) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
-        foreach (var arg in args)
-        {
-            start.ArgumentList.Add(arg);
-        }
-
-        try
-        {
-            using var process = System.Diagnostics.Process.Start(start);
-            if (process is null)
-            {
-                return null;
-            }
-
-            var stderr = process.StandardError.ReadToEndAsync(CancellationToken.None);
-            var output = process.StandardOutput.ReadToEnd();
-            return process.WaitForExit(TimeSpan.FromSeconds(60)) ? (process.ExitCode, output + stderr.Result) : null;
-        }
-        catch (System.ComponentModel.Win32Exception)
-        {
-            return null;
-        }
     }
 }
