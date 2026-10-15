@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Aw.Kernel;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Items.Vocabulary;
@@ -11,7 +12,6 @@ using Aw.Sindri.Features.GetItem;
 using Aw.Sindri.Features.GetQueue;
 using Aw.Sindri.Features.ListItems;
 using Aw.Sindri.Host.Endpoints;
-using Aw.Sindri.Core.Commands;
 
 namespace Aw.Sindri.Host.Commands;
 
