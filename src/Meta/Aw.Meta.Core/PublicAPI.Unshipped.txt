@@ -7,6 +7,47 @@ Aw.Meta.Core.Ids.MessageId.IsInitialized() -> bool
 Aw.Meta.Core.Ids.MessageId.MessageId() -> void
 Aw.Meta.Core.Ids.MessageId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Meta.Core.Ids.MessageId.Value.get -> string!
+Aw.Meta.Core.Ids.SessionId
+Aw.Meta.Core.Ids.SessionId.Equals(Aw.Meta.Core.Ids.SessionId other) -> bool
+Aw.Meta.Core.Ids.SessionId.Equals(Aw.Meta.Core.Ids.SessionId other, System.Collections.Generic.IEqualityComparer<Aw.Meta.Core.Ids.SessionId>! comparer) -> bool
+Aw.Meta.Core.Ids.SessionId.GetTypeCode() -> System.TypeCode
+Aw.Meta.Core.Ids.SessionId.IsInitialized() -> bool
+Aw.Meta.Core.Ids.SessionId.SessionId() -> void
+Aw.Meta.Core.Ids.SessionId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Meta.Core.Ids.SessionId.Value.get -> string!
+Aw.Meta.Core.Messages.Classification
+Aw.Meta.Core.Messages.Classification.<Clone>$() -> Aw.Meta.Core.Messages.Classification!
+Aw.Meta.Core.Messages.Classification.Classification(Aw.Meta.Core.Messages.MessageKind Kind, int? Pr = null, string? Lane = null) -> void
+Aw.Meta.Core.Messages.Classification.Deconstruct(out Aw.Meta.Core.Messages.MessageKind Kind, out int? Pr, out string? Lane) -> void
+Aw.Meta.Core.Messages.Classification.Equals(Aw.Meta.Core.Messages.Classification? other) -> bool
+Aw.Meta.Core.Messages.Classification.Kind.get -> Aw.Meta.Core.Messages.MessageKind
+Aw.Meta.Core.Messages.Classification.Kind.init -> void
+Aw.Meta.Core.Messages.Classification.Lane.get -> string?
+Aw.Meta.Core.Messages.Classification.Lane.init -> void
+Aw.Meta.Core.Messages.Classification.Pr.get -> int?
+Aw.Meta.Core.Messages.Classification.Pr.init -> void
+Aw.Meta.Core.Messages.MessageClassifier
+Aw.Meta.Core.Messages.MessageKind
+Aw.Meta.Core.Messages.MessageKind.LaneAnnounce = 4 -> Aw.Meta.Core.Messages.MessageKind
+Aw.Meta.Core.Messages.MessageKind.OwnerQuestion = 2 -> Aw.Meta.Core.Messages.MessageKind
+Aw.Meta.Core.Messages.MessageKind.Ready = 3 -> Aw.Meta.Core.Messages.MessageKind
+Aw.Meta.Core.Messages.MessageKind.Request = 1 -> Aw.Meta.Core.Messages.MessageKind
+Aw.Meta.Core.Messages.PeerMessage
+Aw.Meta.Core.Messages.PeerMessage.<Clone>$() -> Aw.Meta.Core.Messages.PeerMessage!
+Aw.Meta.Core.Messages.PeerMessage.At.get -> System.DateTimeOffset
+Aw.Meta.Core.Messages.PeerMessage.At.init -> void
+Aw.Meta.Core.Messages.PeerMessage.Body.get -> string!
+Aw.Meta.Core.Messages.PeerMessage.Body.init -> void
+Aw.Meta.Core.Messages.PeerMessage.Deconstruct(out Aw.Meta.Core.Ids.MessageId Id, out string! From, out string! FromName, out string! Body, out System.DateTimeOffset At) -> void
+Aw.Meta.Core.Messages.PeerMessage.Equals(Aw.Meta.Core.Messages.PeerMessage? other) -> bool
+Aw.Meta.Core.Messages.PeerMessage.From.get -> string!
+Aw.Meta.Core.Messages.PeerMessage.From.init -> void
+Aw.Meta.Core.Messages.PeerMessage.FromName.get -> string!
+Aw.Meta.Core.Messages.PeerMessage.FromName.init -> void
+Aw.Meta.Core.Messages.PeerMessage.Id.get -> Aw.Meta.Core.Ids.MessageId
+Aw.Meta.Core.Messages.PeerMessage.Id.init -> void
+Aw.Meta.Core.Messages.PeerMessage.PeerMessage(Aw.Meta.Core.Ids.MessageId Id, string! From, string! FromName, string! Body, System.DateTimeOffset At) -> void
+Aw.Meta.Core.Messages.TranscriptRecordParser
 Aw.Meta.Core.MetaCoreServiceCollectionExtensions
 Aw.Meta.Core.MetaErrors
 Aw.Meta.Core.Ports.IMessageStore
@@ -14,12 +55,33 @@ Aw.Meta.Core.Ports.ITranscriptReader
 override Aw.Meta.Core.Ids.MessageId.Equals(object? obj) -> bool
 override Aw.Meta.Core.Ids.MessageId.GetHashCode() -> int
 override Aw.Meta.Core.Ids.MessageId.ToString() -> string!
+override Aw.Meta.Core.Ids.SessionId.Equals(object? obj) -> bool
+override Aw.Meta.Core.Ids.SessionId.GetHashCode() -> int
+override Aw.Meta.Core.Ids.SessionId.ToString() -> string!
+override Aw.Meta.Core.Messages.Classification.Equals(object? obj) -> bool
+override Aw.Meta.Core.Messages.Classification.GetHashCode() -> int
+override Aw.Meta.Core.Messages.Classification.ToString() -> string!
+override Aw.Meta.Core.Messages.PeerMessage.Equals(object? obj) -> bool
+override Aw.Meta.Core.Messages.PeerMessage.GetHashCode() -> int
+override Aw.Meta.Core.Messages.PeerMessage.ToString() -> string!
 static Aw.Meta.Core.Ids.MessageId.From(string! value) -> Aw.Meta.Core.Ids.MessageId
 static Aw.Meta.Core.Ids.MessageId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Meta.Core.Ids.MessageId
 static Aw.Meta.Core.Ids.MessageId.TryFrom(string? value, out Aw.Meta.Core.Ids.MessageId vo) -> bool
 static Aw.Meta.Core.Ids.MessageId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Meta.Core.Ids.MessageId result) -> bool
 static Aw.Meta.Core.Ids.MessageId.operator !=(Aw.Meta.Core.Ids.MessageId left, Aw.Meta.Core.Ids.MessageId right) -> bool
 static Aw.Meta.Core.Ids.MessageId.operator ==(Aw.Meta.Core.Ids.MessageId left, Aw.Meta.Core.Ids.MessageId right) -> bool
+static Aw.Meta.Core.Ids.SessionId.From(string! value) -> Aw.Meta.Core.Ids.SessionId
+static Aw.Meta.Core.Ids.SessionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Meta.Core.Ids.SessionId
+static Aw.Meta.Core.Ids.SessionId.TryFrom(string? value, out Aw.Meta.Core.Ids.SessionId vo) -> bool
+static Aw.Meta.Core.Ids.SessionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Meta.Core.Ids.SessionId result) -> bool
+static Aw.Meta.Core.Ids.SessionId.operator !=(Aw.Meta.Core.Ids.SessionId left, Aw.Meta.Core.Ids.SessionId right) -> bool
+static Aw.Meta.Core.Ids.SessionId.operator ==(Aw.Meta.Core.Ids.SessionId left, Aw.Meta.Core.Ids.SessionId right) -> bool
+static Aw.Meta.Core.Messages.Classification.operator !=(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
+static Aw.Meta.Core.Messages.Classification.operator ==(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
+static Aw.Meta.Core.Messages.MessageClassifier.Classify(string! body) -> Aw.Meta.Core.Messages.Classification!
+static Aw.Meta.Core.Messages.PeerMessage.operator !=(Aw.Meta.Core.Messages.PeerMessage? left, Aw.Meta.Core.Messages.PeerMessage? right) -> bool
+static Aw.Meta.Core.Messages.PeerMessage.operator ==(Aw.Meta.Core.Messages.PeerMessage? left, Aw.Meta.Core.Messages.PeerMessage? right) -> bool
+static Aw.Meta.Core.Messages.TranscriptRecordParser.Parse(string! line, System.DateTimeOffset fallbackAt) -> Aw.Meta.Core.Messages.PeerMessage?
 static Aw.Meta.Core.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Meta.Core.MetaErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static readonly Aw.Meta.Core.MetaErrors.Invalid -> Aw.Kernel.ErrorDefinition!
