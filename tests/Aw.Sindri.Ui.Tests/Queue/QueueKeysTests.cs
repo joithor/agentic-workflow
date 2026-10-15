@@ -536,4 +536,25 @@ public sealed class QueueKeysTests
         Assert.Equal((false, Labels.Sindri, false), (queue.IsAnnouncing, queue.Announcement, queue.IsGuarded));
         Assert.Empty(asked);
     }
+
+    // R2: a collapsed group draws no rows: a focused running row served into one has left the page, like a cleared row.
+    [Fact]
+    public async Task A_focused_page_row_served_into_a_collapsed_group_passes_to_the_next_running_row_and_is_spoken_once()
+    {
+        _server.QueueView = RouteAnswer.SpecShaped("queue", "extra-p11-running");
+        var queue = await Queue();
+        queue.Groups.Single(g => g.Group == "queued").IsExpanded = false;
+        queue.Select(Running(2), QueueScope.Page);
+        var asked = new List<FocusRequestedEventArgs>();
+        queue.FocusRequested += (_, e) => asked.Add(e);
+
+        _server.QueueView = Regrouped("extra-p11-running", Running(2), "queued");
+        await queue.Refresh(_api, Token);
+
+        var drawn = queue.Groups.Where(g => g.IsVisible && g.IsExpanded).SelectMany(g => g.Rows).Select(r => r.Id).ToList();
+        Assert.Contains(queue.SelectedId!, drawn, StringComparer.Ordinal);
+        Assert.NotEqual(Running(2), queue.SelectedId, StringComparer.Ordinal);
+        Assert.Equal([(queue.SelectedId!, true)], asked.Select(a => (a.ItemId, a.OnlyIfLost)));
+        Assert.Equal((true, Labels.Cleared(Running(2))), (queue.IsAnnouncing, queue.Announcement));
+    }
 }
