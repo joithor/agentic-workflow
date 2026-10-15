@@ -36,6 +36,7 @@ public sealed class WorkflowErrorsTests
     [InlineData("SND-WF-010", ErrorKind.Unavailable)]
     [InlineData("SND-WF-011", ErrorKind.Forbidden)]
     [InlineData("SND-WF-014", ErrorKind.Invalid)]
+    [InlineData("SND-WF-015", ErrorKind.Unavailable)]
     public void Each_code_has_the_spec_s_kind(string code, ErrorKind kind) =>
         Assert.Equal(kind, Assert.Single(WorkflowErrors.All, e => e.Code == code).Kind);
 }

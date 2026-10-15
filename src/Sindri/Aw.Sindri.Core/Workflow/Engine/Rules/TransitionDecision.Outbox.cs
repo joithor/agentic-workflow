@@ -49,7 +49,9 @@ public static partial class TransitionDecision
             return DriftPark(recipe, effect, d.Trigger.Actor);
         }
 
-        var question = string.Equals(refused.Code, WorkflowErrors.NoRuntime.Code, StringComparison.Ordinal)
+        var cantRun = string.Equals(refused.Code, WorkflowErrors.NoRuntime.Code, StringComparison.Ordinal)
+            || string.Equals(refused.Code, WorkflowErrors.EffectFailed.Code, StringComparison.Ordinal);
+        var question = cantRun
             ? $"{effect.Kind.Value} can't run: {refused.Reason}. Fix that, then resume to send it again."
             : $"{effect.Kind.Value} isn't on the profile's effect allowlist. Add it and approve the profile, then resume to send it again.";
         return SpecConflict(ParkKind.Dispatch, question,

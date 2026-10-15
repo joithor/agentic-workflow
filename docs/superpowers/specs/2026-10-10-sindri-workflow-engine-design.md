@@ -954,6 +954,7 @@ Outside S1:
 | SND-WF-012 | conflict | An earlier attempt of this item is still live | Finish or cancel it first |
 | SND-WF-013 | conflict | A workflow challenge expired, or its subject changed | Run it again and re-read the preview |
 | SND-WF-014 | invalid | `--item` and `fact:item`'s `id` differ | Use the same id in both |
+| SND-WF-015 | unavailable | An effect couldn't be sent (an undeclared reply outcome, or every retry failed) | Fix the block or its service, then resume the dispatch park |
 
 ## 9. Validator and eval format
 

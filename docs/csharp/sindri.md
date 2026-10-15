@@ -543,6 +543,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-WF-012` | conflict | An earlier attempt of this item is still live |
 | `SND-WF-013` | conflict | A workflow challenge expired, or its subject changed |
 | `SND-WF-014` | invalid | `--item` and `fact:item`'s `id` differ |
+| `SND-WF-015` | unavailable | An effect couldn't be sent: its block replied an undeclared outcome, or every retry failed; the instance parks (dispatch) |
 
 `sindri recipe validate <file> [--json]` and `sindri recipe eval <file>` are local checker verbs (engine spec W27): exit
 0 pass, 1 fail, 2 usage or tool error. The recipe reference, the eval format, the `RCP-*` rule table and how to add

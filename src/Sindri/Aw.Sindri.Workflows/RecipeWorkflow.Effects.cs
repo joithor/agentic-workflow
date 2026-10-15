@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
@@ -131,12 +132,12 @@ internal sealed partial class RecipeWorkflow
         try
         {
             _ = await Record(row).ConfigureAwait(true);
-            if (effect.Origin == CommandOrigin.Recipe && !await Cleared(row, effect).ConfigureAwait(true))
+            if (!await Cleared(row, effect).ConfigureAwait(true))
             {
                 return;
             }
 
-            var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts);
+            var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts, _recipe!.Version);   // why: effects run only after Begin set _recipe
             var options = (ActivityOptions)EffectActivities.RunOptions.Clone();
             options.TaskQueue = Workflow.Info.TaskQueue;   // the instance's queue, from settings (never a constant)
             try
@@ -144,10 +145,13 @@ internal sealed partial class RecipeWorkflow
                 _ = await Workflow.ExecuteActivityAsync((EffectActivities a) => a.RunAsync(run), options).ConfigureAwait(true);
                 _ = _effectsSent.Add(row.Identity);
             }
-            catch (ActivityFailureException e) when (e.InnerException is ApplicationFailureException { NonRetryable: true, ErrorType: { } code } setup)
+            catch (ActivityFailureException e) when (e.InnerException is not CanceledFailureException)
             {
-                var failed = await Record(row with { State = EffectState.Refused, Code = code, Reason = setup.Message }).ConfigureAwait(true);   // the setup can't run it: refused, parked dispatch
-                await Refuse(new OutboxRefused(Dispatcher, new RefusedEffect(effect.Effect, effect.Identity, effect.With), code, failed.Sequence, setup.Message)).ConfigureAwait(true);
+                // Whatever ended the activity (a setup it can't run in, a refusal at run time, an undeclared reply, spent retries):
+                // refused and parked, never a failed workflow. A cancel is the one failure that isn't.
+                var (code, reason) = FailureOf(e);
+                var failed = await Record(row with { State = EffectState.Refused, Code = code, Reason = reason }).ConfigureAwait(true);
+                await Refuse(new OutboxRefused(Dispatcher, new RefusedEffect(effect.Effect, effect.Identity, effect.With), code, failed.Sequence, reason)).ConfigureAwait(true);
             }
         }
         finally
@@ -156,6 +160,14 @@ internal sealed partial class RecipeWorkflow
         }
     }
 
+    /// <summary>The code and message an ended 'RunEffect' is refused with: its own SND code, else SND-WF-015.</summary>
+    private static (string Code, string Reason) FailureOf(ActivityFailureException failure) => failure.InnerException switch
+    {
+        ApplicationFailureException { ErrorType: { } type } app when type.StartsWith("SND-", StringComparison.Ordinal) => (type, app.Message),
+        { } inner => (WorkflowErrors.EffectFailed.Code, inner.Message),
+        _ => (WorkflowErrors.EffectFailed.Code, failure.Message),
+    };
+
     /// <summary>
     /// A recipe effect's undo window and recheck (§5.7): false when a cancel aborted it within the delay (an
     /// 'outbox.cancelled' row; no recheck runs) or the recheck refused it (an 'outbox.refused' row with the code, then
@@ -163,7 +175,7 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task<bool> Cleared(EffectRow row, EffectCommand effect)
     {
-        if (!await Delayed().ConfigureAwait(true))
+        if (effect.Origin == CommandOrigin.Recipe && !await Delayed().ConfigureAwait(true))   // an engine notice skips the delay, not the check
         {
             _ = await Record(row with { State = EffectState.Cancelled, Reason = "cancelled: the instance was cancelled within the dispatch delay" }).ConfigureAwait(true);
             return false;

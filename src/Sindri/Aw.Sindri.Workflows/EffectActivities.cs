@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Aw.Kernel.Outbox;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -49,13 +50,20 @@ internal sealed class EffectActivities(
     private static readonly EffectSettings _noEffects = new(Allowlist: null, EffectSettings.DefaultDispatchDelay);
 
     /// <summary>
-    /// 'RunEffect' runs as a regular activity: retried with backoff and without bound, since the block's existence check
-    /// and the identity-keyed rows make a repeat harmless; a block that answers with an error is retried.
+    /// 'RunEffect' runs as a regular activity: retried with the outbox policy's backoff (Kernel's <see cref="OutboxRetryPolicy"/>,
+    /// 8 attempts, spec A-F20-F25), since the block's existence check and the identity-keyed rows make a repeat harmless;
+    /// a block that answers with an error is retried. Once the attempts are spent the effect is refused and the instance parks.
     /// </summary>
     public static ActivityOptions RunOptions { get; } = new()
     {
         StartToCloseTimeout = TimeSpan.FromMinutes(1),
-        RetryPolicy = new RetryPolicy { InitialInterval = TimeSpan.FromSeconds(1), BackoffCoefficient = 2, MaximumInterval = TimeSpan.FromMinutes(1), MaximumAttempts = 0 },
+        RetryPolicy = new RetryPolicy
+        {
+            InitialInterval = OutboxRetryPolicy.Default.BaseDelay,
+            BackoffCoefficient = 2,
+            MaximumInterval = OutboxRetryPolicy.Default.MaxDelay,
+            MaximumAttempts = OutboxRetryPolicy.Default.MaxAttempts,
+        },
     };
 
     /// <summary>Appends <paramref name="record"/>'s row under 'workflow:{workflow id}:{run id}:{activity id}'.</summary>
@@ -110,6 +118,7 @@ internal sealed class EffectActivities(
         ArgumentNullException.ThrowIfNull(run);
         var cancel = ActivityExecutionContext.Current.CancellationToken;
         var identity = run.Command.Identity.Text;
+        await RecheckOnRun(run).ConfigureAwait(false);
         var done = await dispatch(EffectContexts.Of(run), cancel).ConfigureAwait(false);
         if (done.IsError && done.Error.Code == WorkflowErrors.NoRuntime.Code)
         {
@@ -134,6 +143,21 @@ internal sealed class EffectActivities(
         return new EffectRunResult(at.Sequence, done.Value.Reply?.Value, done.Value.Existed || at.AlreadyRecorded);
     }
 
+    /// <summary>Each attempt re-checks the approval and allowlist (cheap), so a revoke or drift after the delay, or during the retries, is honoured; a refusal is non-retryable.</summary>
+    private async Task RecheckOnRun(EffectRun run)
+    {
+        if (run.Recipe is not { } recipe)
+        {
+            return;
+        }
+
+        var rechecked = await RecheckAsync(new EffectRecheck(recipe, run.Command.Effect, run.Command.Origin)).ConfigureAwait(false);
+        if (rechecked.Code is { } refusal)
+        {
+            throw new ApplicationFailureException(rechecked.Reason ?? refusal, errorType: refusal, nonRetryable: true);
+        }
+    }
+
     /// <summary>
     /// The reply event a block's <paramref name="outcome"/> names (spec §2, §12): the one causation-routed event that
     /// declares it, from that event's producer, caused by the dispatched row so the bridge routes it to this instance only.
@@ -144,7 +168,8 @@ internal sealed class EffectActivities(
         if (replies is not [{ } reply])
         {
             throw new ApplicationFailureException(
-                $"{run.Command.Effect.Value} replied '{outcome.Value}', which {replies.Count} registered reply events declare (one must)", nonRetryable: true);
+                $"{run.Command.Effect.Value} replied '{outcome.Value}', which {replies.Count} registered reply events declare (one must)",
+                errorType: WorkflowErrors.EffectFailed.Code, nonRetryable: true);
         }
 
         var entry = Keyed(events.Entry(reply.Kind.Value, new EffectReply(outcome.Value, run.Command.Identity.Text), $"workflow:{run.WorkflowId}:effect:{run.Command.Identity.Text}:reply", run.Item));

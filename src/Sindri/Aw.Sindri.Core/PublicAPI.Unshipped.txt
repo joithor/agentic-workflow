@@ -6375,6 +6375,7 @@ static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.EffectNotAllowed -> Aw.Ke
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.GateRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.InstanceNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.ItemMismatch -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.EffectFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.MalformedReport -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.NoRuntime -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.NonceRefused -> Aw.Kernel.ErrorDefinition!
