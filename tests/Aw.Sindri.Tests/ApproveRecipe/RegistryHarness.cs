@@ -125,6 +125,10 @@ internal sealed class RegistryHarness : IAsyncDisposable
     public Task<RegisteredRecipe> Shipped(string path) =>
         Register(Workflow.RecipeReaderTests.Reader.Read(ShippedRecipes.Read(path), Path.GetFileName(path)).Document!);   // why: the shipped recipes bind (ShippedRecipesTests)
 
+    /// <summary>The child recipes a served validation resolves (RecipeRegistryReader.Children).</summary>
+    public async Task<IChildRecipeResolver> Children() =>
+        (await _provider.GetRequiredService<RecipeRegistryReader>().Children(TestContext.Current.CancellationToken)).Value;
+
     /// <summary>Asks for a challenge for <paramref name="action"/> as <paramref name="caller"/> (a human at a terminal by default).</summary>
     public Task<Result<IssueChallengeResponse>> Issue(string action, CallerContext? caller = null) =>
         Run<IssueChallengeRequest, IssueChallengeResponse>(new IssueChallengeRequest(action), caller ?? Human);
