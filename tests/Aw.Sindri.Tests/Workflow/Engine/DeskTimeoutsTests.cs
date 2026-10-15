@@ -20,4 +20,8 @@ public sealed class DeskTimeoutsTests
         Assert.Equal(floor, DeskTimeouts.Wait(Step.States["produce"].Timeout, floor));   // 4h
         Assert.Equal(TimeSpan.FromHours(4), DeskTimeouts.Wait(Step.States["produce"].Timeout, TimeSpan.FromMinutes(1)));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_decision_context_defaults_to_the_desk_floor() =>
+        Assert.Equal(DeskTimeouts.DefaultFloor, EngineFixture.Context().DeskTimeout);   // Core's Decisions namespace can't name DeskTimeouts, so the two defaults are pinned here
 }
