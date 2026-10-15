@@ -199,28 +199,33 @@ public abstract partial class SindriApiContract
 
     [Theory]
     [MemberData(nameof(RecipeScenarios))]
-    public async Task Recipe_answers_each_golden_for_the_recipes_it_stands_for(string scenario)
+    public async Task Recipe_answers_each_golden_for_the_recipe_it_is_named_for(string scenario)
     {
         var golden = Golden("workflow-recipe", scenario);
-        var recipes = WorkflowAnswers.RecipesAnsweredBy(scenario).ToList();
-        Expect.True(recipes.Count > 0);
+        var id = WorkflowAnswers.NamedRecipeGoldens[scenario];
 
-        foreach (var id in recipes)
-        {
-            var recipe = (await Reach(new FakeSindriApi()).Recipe(_api, id, hash: null, Token)).Value;
+        var recipe = (await Reach(new FakeSindriApi()).Recipe(_api, id, hash: null, Token)).Value;
 
-            Expect.Equal(golden["inputs"]!.AsArray().Count, recipe.Inputs.Count);
-            Expect.Equal(golden["outputs"]!.AsArray().Count, recipe.Outputs.Count);
-        }
+        Expect.Equal(golden["inputs"]!.AsArray().Count, recipe.Inputs.Count);
+        Expect.Equal(golden["outputs"]!.AsArray().Count, recipe.Outputs.Count);
     }
 
     [Theory]
     [MemberData(nameof(RunningRecipeIds))]
-    public async Task Every_recipe_an_instance_runs_can_be_opened(string recipeId)
+    public async Task Every_recipe_an_instance_runs_answers_with_its_golden_when_it_has_one_and_is_not_found_when_not(string recipeId)
     {
+        var golden = WorkflowAnswers.NamedRecipeGoldens.FirstOrDefault(g => string.Equals(g.Value, recipeId, StringComparison.Ordinal)).Key;
+
         var recipe = await Reach(new FakeSindriApi()).Recipe(_api, recipeId, hash: null, Token);
 
-        Expect.True(recipe.IsSuccess);
+        if (golden is null)
+        {
+            Expect.Equal(("SND-ITEM-404", ErrorKind.NotFound), (recipe.Error.Code, recipe.Error.Kind));
+        }
+        else
+        {
+            Expect.Equal(Golden("workflow-recipe", golden)["inputs"]!.AsArray().Count, recipe.Value.Inputs.Count);
+        }
     }
 
     [Fact]
