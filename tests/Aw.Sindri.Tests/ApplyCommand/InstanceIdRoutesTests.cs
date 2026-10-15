@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Infrastructure.Workflows;
@@ -5,8 +7,6 @@ using Aw.Sindri.Tests.CompleteStep;
 using Aw.Sindri.Tests.Server;
 using Aw.Sindri.Tests.Workflows;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Text.Json;
 
 namespace Aw.Sindri.Tests.ApplyCommand;
 

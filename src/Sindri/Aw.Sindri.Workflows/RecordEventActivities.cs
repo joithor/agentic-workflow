@@ -1,9 +1,9 @@
 using System.Security.Cryptography;
-using System.Text.Json;
 using System.Text;
+using System.Text.Json;
+using Aw.Redaction;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
-using Aw.Redaction;
 using Aw.Sindri.Core.Ledger;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;

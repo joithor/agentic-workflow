@@ -133,7 +133,7 @@ public sealed class RecordEventReplayTests
     private static WorkflowEventRecord Moved(string to) =>
         new("T-1/step/1", EventTypes.WorkflowTransition, "T-1", "produce", to, "step.completed", "done", "1.1");
 
-    private static async Task<(RecordEventActivities Activities, Core.Ledger.ILedgerStore Ledger)> Open(Func<ILedgerStore, ILedgerStore>? wrap = null)
+    private static async Task<(RecordEventActivities Activities, ILedgerStore Ledger)> Open(Func<ILedgerStore, ILedgerStore>? wrap = null)
     {
         var clock = new FakeTimeProvider(KnownInstants.Epoch);
         var probe = new FakeProcessProbe();

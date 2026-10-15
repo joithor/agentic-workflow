@@ -8,7 +8,7 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 namespace Aw.Sindri.Features.GetInstanceEvents;
 
 /// <summary>
-/// Reads the ledger after the cursor to its head and keeps the instance's events (<see cref="InstanceEvents.Belongs(Aw.Sindri.Core.Ledger.LedgerEvent, InstanceAddress)"/>):
+/// Reads the ledger after the cursor to its head and keeps the instance's events (<see cref="InstanceEvents.Belongs(LedgerEvent, InstanceAddress)"/>):
 /// Temporal's own history is never read (engine spec §5.6). An opaque id is matched against the addresses in the ledger's own
 /// keys, so an ended instance's trail reads after Temporal has dropped it (visibility lag, retention); an address or bare item
 /// is resolved through the directory. A first read (no cursor) that finds nothing checks that the instance exists, so a
