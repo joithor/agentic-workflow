@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
@@ -11,6 +12,7 @@ using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Infrastructure.Workflows;
+using Aw.Sindri.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Temporalio.Client;
 using Temporalio.Worker;
@@ -20,7 +22,7 @@ namespace Aw.Sindri.Tests.Workflows.Effects;
 /// <summary>
 /// 'effect.notify.desk' and the engine's notices end to end on the time-skipping server (engine spec §5.7, §6.3, §12;
 /// engine P6 unit (c)), with the real block, the notifications file in the test's home and a fake OS notification
-/// centre. The recheck is unit (b)'s (<see cref="PassingRecheck"/>) and the dev profile's keys unit (d)'s, so the
+/// centre. The shipped recheck runs against an approved profile that allowlists 'effect.notify.desk', so the
 /// dispatch delay is the default.
 /// </summary>
 [Lane(TestLane.Integration)]
@@ -34,6 +36,15 @@ public sealed class DeskNotificationsTests(SindriTimeSkippingServer server) : IC
 
     public void Dispose() => _harness.Dispose();
 
+    /// <summary>The approved profile allowlists 'effect.notify.desk' (default dispatch delay).</summary>
+    private static void Allowing(IServiceCollection services)
+    {
+        var profiles = new InMemoryProfiles();
+        var profile = new SindriProfile(SindriProfile.CurrentSchemaVersion, "tester", Workflow: new WorkflowSettings(Effects: [_notify.Value], DispatchDelay: null));
+        Assert.False(profiles.Save(new LoadedProfile(profile, ProfileHash.From(new string('b', 64)), "/home/profile.yaml"), Token).AsTask().GetAwaiter().GetResult().IsError);
+        _ = services.AddSingleton<IApprovedProfile>(profiles);
+    }
+
     /// <summary>Phase 6 signal 1 as far as unit (c) goes: the recipe's notice is dispatched after the delay, written once, and its delivery ends the instance.</summary>
     [Fact]
     public async Task Dev_notify_writes_its_line_after_the_delay_and_reaches_done_via_notify_delivered()
@@ -41,10 +52,10 @@ public sealed class DeskNotificationsTests(SindriTimeSkippingServer server) : IC
         var env = server.Environment;
         _harness.Recipe("workflow.dev-notify", WorkflowsHarness.Shipped("dev/workflow.dev-notify.yaml"));
         var space = env.Client.Options.Namespace;
-        await using var sindri = _harness.Sindri(static _ => { }, name => name == "AW_SINDRI_TEMPORAL_NAMESPACE" ? space : null);   // the bridge signals in the server's namespace
+        await using var sindri = _harness.Sindri(Allowing, name => name == "AW_SINDRI_TEMPORAL_NAMESPACE" ? space : null);   // the bridge signals in the server's namespace
         await WorkflowsHarness.HoldLease(sindri, Token);
         _ = await WorkflowsHarness.AsServe(sindri, env, Token);
-        using var worker = new TemporalWorker(env.Client, PassingRecheck.Options(sindri));
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
 
         await worker.ExecuteAsync(async () =>
         {
@@ -75,9 +86,9 @@ public sealed class DeskNotificationsTests(SindriTimeSkippingServer server) : IC
     public async Task The_first_desk_task_and_a_park_each_write_an_interrupt_line()
     {
         var env = server.Environment;
-        await using var sindri = _harness.Sindri();
+        await using var sindri = _harness.Sindri(Allowing);
         await WorkflowsHarness.HoldLease(sindri, Token);
-        using var worker = new TemporalWorker(env.Client, PassingRecheck.Options(sindri));
+        using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
 
         await worker.ExecuteAsync(async () =>
         {
