@@ -394,6 +394,89 @@ public sealed class CommandPaletteViewModelTests
         await run;
     }
 
+    // J1 (corr-0, a11y-0): the palette speaks the lifecycle of every entry IT ran, whatever the selection or the query becomes
+    // while it sends, and only that entry's control is dark; a refusal is spoken once, by the palette.
+    private List<string> Spoken()
+    {
+        var spoken = new List<string>();
+        _palette.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CommandPaletteViewModel.Announcement))
+            {
+                spoken.Add(_palette.Announcement);
+            }
+        };
+        return spoken;
+    }
+
+    private async Task RunRefusedWhile(Action change, Action? afterOpen = null)
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005", "failed");
+        _palette.Open();
+        afterOpen?.Invoke();
+        var rebuild = Entry("RebuildViews");
+        var spoken = Spoken();
+        var control = rebuild.Control!;
+        var controlSpoke = false;
+        control.PropertyChanged += (_, e) => controlSpoke |= e.PropertyName == nameof(ControlViewModel.IsAnnouncing) && control.IsAnnouncing;
+
+        var run = _palette.Run(rebuild, Token);
+        change();
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.Equal(1, spoken.Count(t => t.Contains("SND-API-005: failed", StringComparison.Ordinal)));
+        Assert.False(controlSpoke);
+    }
+
+    [Fact]
+    public async Task A_refusal_is_spoken_once_by_the_palette_after_the_selection_moved_off_the_entry()
+    {
+        await RunRefusedWhile(
+            () => _palette.Move(1),
+            () =>
+            {
+                for (var i = 0; i < 200 && _palette.Selected?.Id != "RebuildViews"; i++)
+                {
+                    _palette.Move(1);
+                }
+            });
+    }
+
+    [Fact]
+    public async Task A_refusal_is_spoken_once_by_the_palette_after_the_query_filtered_the_entry_out() =>
+        await RunRefusedWhile(() => _palette.Query = "queue");
+
+    [Fact]
+    public async Task A_run_on_a_control_the_catalog_replaced_while_open_is_spoken_once() =>
+        await RunRefusedWhile(() => { }, () => _controls.Show(_api, _server, _catalog));
+
+    [Fact]
+    public async Task A_send_that_did_not_start_from_the_palette_is_spoken_by_its_control_and_not_by_the_palette()
+    {
+        _server.RebuildGate = new TaskCompletionSource();
+        _server.Rebuild = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-005", "failed");
+        var control = _controls.For("RebuildViews")!;
+        var run = control.Run(Token);
+        _palette.Open();
+        var spoken = Spoken();
+        var said = new List<string>();
+        control.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ControlViewModel.Announcement) && control.IsAnnouncing)
+            {
+                said.Add(control.Announcement);
+            }
+        };
+
+        _server.RebuildGate.SetResult();
+        await run;
+
+        Assert.Equal(1, said.Count(t => t.Contains("SND-API-005: failed", StringComparison.Ordinal)));
+        Assert.DoesNotContain(spoken, t => t.Contains("SND-API-005", StringComparison.Ordinal));
+    }
+
     // J4 (corr-2): the accepted outcome settling back to idle (2 s later) is not announced: no unprompted "ready".
     [Fact]
     public async Task The_accepted_outcome_settling_to_idle_is_not_announced()
