@@ -1,5 +1,4 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Infrastructure.Workflows;
@@ -63,28 +62,17 @@ public sealed class RecipeWorkflowTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
         await using var env = await WorkflowsHarness.StartDevServer();
-        await using var sindri = _harness.Sindri();
-        await WorkflowsHarness.HoldLease(sindri, ct);
-        var temporal = await WorkflowsHarness.AsServe(sindri, env, ct);
-        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var worker = sindri.GetRequiredService<ITemporalWorker>().Run(temporal, stop.Token);
-        try
-        {
-            var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.StepStart(sindri, "T-1", ct));
-            _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
+        await using var served = await ApplyCommand.Served.Start(_harness.Home, env);   // 'workflow list' is a client of serve's route
+        var sindri = served.Sindri;
+        var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.StepStart(sindri, "T-1", ct));
+        _ = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
 
-            Assert.Matches($"^{Address}  workflow\\.step@[0-9a-f]{{12}}  v1  produce: desk task  since .+\n$", await WorkflowsHarness.Listed(sindri, "NeedsYou = true AND Tenant = 'local'", ct));
-            var runId = (await handle.DescribeAsync()).RunId;
-            var rows = (await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 100, ct)).Value
-                .Where(static e => e.Envelope.Type.StartsWith("workflow.", StringComparison.Ordinal)).ToList();
-            Assert.Equal(["workflow.started"], [.. rows.Select(static e => e.Envelope.Type)]);
-            Assert.StartsWith($"workflow:{Address}:{runId}:", rows[0].IdempotencyKey, StringComparison.Ordinal);
-            await handle.TerminateAsync("test over");
-        }
-        finally
-        {
-            await stop.CancelAsync();
-            await worker;
-        }
+        Assert.Matches($"^{Address}  workflow\\.step@[0-9a-f]{{12}}  v1  produce: desk task  since .+\n$", await WorkflowsHarness.Listed(sindri, "NeedsYou = true AND Tenant = 'local'", ct));
+        var runId = (await handle.DescribeAsync()).RunId;
+        var rows = (await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 100, ct)).Value
+            .Where(static e => e.Envelope.Type.StartsWith("workflow.", StringComparison.Ordinal)).ToList();
+        Assert.Equal(["workflow.started"], [.. rows.Select(static e => e.Envelope.Type)]);
+        Assert.StartsWith($"workflow:{Address}:{runId}:", rows[0].IdempotencyKey, StringComparison.Ordinal);
+        await handle.TerminateAsync("test over");
     }
 }
