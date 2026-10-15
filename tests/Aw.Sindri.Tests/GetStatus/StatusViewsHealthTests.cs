@@ -96,6 +96,19 @@ public sealed class StatusViewsHealthTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Views_that_cannot_be_read_are_a_views_problem_not_zero_services()
+    {
+        await RunningAndApproved();
+        _v.Publish(stalledAt: null);
+        var unreadable = new FlakyViewStore(_v.Views) { FailReads = true };
+
+        var status = (await new GetStatusService(H.Held, H.Profiles, H.Profiles, H.Store, H.Events, _v.Progress, unreadable).Handle(new GetStatusRequest(), Token)).Value;
+
+        Assert.NotEqual(HealthWord.Healthy, status.Health!.Word);
+        Assert.Contains(status.Health.Problems, p => p.Code == "SND-VIEW-001");
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_displayed_head_is_never_behind_the_cursor_mid_rebuild()
     {
         _v.Progress.Publish(new ViewsStatus(Cursor: 66, LedgerHead: 65, ProjectedAt: null, Rebuilding: true, Stalled: false, StalledAt: null, StalledType: null));
