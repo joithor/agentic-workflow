@@ -84,7 +84,7 @@ public sealed class StatePathOrderTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_loop_edge_is_named_by_the_looping_state_that_declares_a_loop_and_unnamed_when_none_does()
+    public void A_loop_edge_is_named_by_the_target_loop_else_the_looping_states_and_unnamed_when_none_declares_one()
     {
         var named = Of("a", [("a", Active()), ("b", Active(loop: "fix")), ("done", Terminal())], Go("a", "b"), Go("b", "a"), Go("b", "done"));
         var unnamed = Of("a", [("a", Active()), ("b", Active()), ("done", Terminal())], Go("a", "b"), Go("b", "a"), Go("b", "done"));
@@ -99,6 +99,7 @@ public sealed class StatePathOrderTests
         var order = Of("a", [("a", Active(loop: "retry")), ("done", Terminal())], Go("a", "a"), Go("a", "done"));
 
         Assert.Equal("a=1 done=2", Places(order));
+        Assert.Equal("path", order.OrderedBy);
         Assert.Equal([new PathLoop("retry", "a", "a")], order.Loops);
     }
 
@@ -140,6 +141,39 @@ public sealed class StatePathOrderTests
         var order = Of("a", [("a", Active()), ("done", Terminal())], Go("a", "nowhere"), Go("a", "done"));
 
         Assert.Equal("a=1 done=2", Places(order));
+        Assert.Equal("path", order.OrderedBy);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_terminal_target_listed_first_neither_makes_the_order_follow_the_list_nor_takes_the_main_path()
+    {
+        var order = Of(
+            "a",
+            [("a", Active()), ("b", Active()), ("failed", Terminal("failed")), ("done", Terminal())],
+            Go("a", "failed"), Go("a", "b"), Go("b", "done"));
+
+        Assert.Equal("path", order.OrderedBy);
+        Assert.Equal("a=1 b=2 failed=3 done=4", Places(order));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_shipped_item_recipe_is_ordered_by_path()
+    {
+        var order = Shipped("sindri/workflow.item.yaml");
+
+        Assert.Equal("path", order.OrderedBy);
+        Assert.Equal("triaged=1 startable=2 claimed=3 running=4 done=5 dropped=6", Places(order));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_nested_loops_back_edge_is_named_by_the_target_loop_the_engine_counts_the_round_on()
+    {
+        var order = Of(
+            "a",
+            [("a", Active(loop: "outer")), ("b", Active(loop: "inner")), ("done", Terminal())],
+            Go("a", "b"), Go("b", "a"), Go("b", "done"));
+
+        Assert.Equal([new PathLoop("outer", "b", "a")], order.Loops);
     }
 
     [Fact, Trait("Lane", "unit")]
