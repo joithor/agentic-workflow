@@ -137,4 +137,14 @@ public sealed class CloseItemTests
         Expect.Equal(SindriErrors.InvalidInput.Code, new CloseItemValidator().Validate(request).Error.Code);
         Expect.Equal("undefined", request.Variant);
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-3)]
+    public void A_version_below_one_is_invalid_input_not_a_conflict(long version)
+    {
+        var result = new CloseItemValidator().Validate(A.CloseItemRequest().WithVersion(version).Build());
+
+        Expect.Equal(SindriErrors.InvalidInput.Code, result.Error.Code);
+    }
 }

@@ -107,4 +107,15 @@ public sealed class GetQueueTests
         Expect.Equal(EmptyText.Stalled(5), result.Empty);
         Assert.True(result.AsOf.Stalled);
     }
+
+    [Fact]
+    public async Task Stalled_views_replace_every_groups_sentence_too()
+    {
+        _q.Views.Publish(stalledAt: 5);
+        using var entered = _q.Human();
+
+        var result = (await Service().Handle(new GetQueueRequest(), ItemQueryHarness.Token)).Value;
+
+        Assert.All(result.Groups, g => Expect.Equal(EmptyText.Stalled(5), g.Empty));
+    }
 }

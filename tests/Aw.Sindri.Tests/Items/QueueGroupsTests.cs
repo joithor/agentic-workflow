@@ -45,9 +45,9 @@ public sealed class QueueGroupsTests
     [Fact]
     public void Items_sentence_names_its_filters()
     {
-        Expect.Equal("No items.", EmptyText.Items(state: null, repo: null));
+        Expect.Equal("No open items.", EmptyText.Items(state: null, repo: null));
         Expect.Equal("No needs-decision items.", EmptyText.Items(ItemState.NeedsDecision, repo: null));
-        Expect.Equal("No items in agentic-workflow.", EmptyText.Items(state: null, RepoName.From("agentic-workflow")));
+        Expect.Equal("No open items in agentic-workflow.", EmptyText.Items(state: null, RepoName.From("agentic-workflow")));
         Expect.Equal("No done items in agentic-workflow.", EmptyText.Items(ItemState.Done, RepoName.From("agentic-workflow")));
         Expect.Equal("Nothing has happened to this item yet.", EmptyText.Timeline());
     }

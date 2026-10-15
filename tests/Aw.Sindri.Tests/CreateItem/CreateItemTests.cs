@@ -94,6 +94,20 @@ public sealed class CreateItemTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_header_repo_outside_the_profile_says_what_to_do()
+    {
+        _ = await _h.HoldLease();
+        await Approve("web");
+        using var entered = _h.Callers.Enter(A.Caller().Human().InRepo("checkout").Build());
+
+        var result = await Service().Handle(A.CreateItemRequest().WithRepo(null).Build(), Token);
+
+        Assert.Equal(SindriErrors.InvalidInput.Code, result.Error.Code);
+        Assert.Contains("this checkout, checkout, isn't a repo of the approved profile; pass --repo <name> or add it to the profile", result.Error.Message, StringComparison.Ordinal);
+        Assert.Empty(_h.Store.Events);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Without_a_lease_it_is_not_running()
     {
         using var entered = _h.Callers.Enter(A.Caller().Human().Build());
