@@ -1,4 +1,7 @@
 using System.Net;
+using System.Text;
+using Aw.Kernel;
+using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
@@ -178,7 +181,7 @@ public sealed class FreshnessTests : IDisposable
         _server.ServiceView = RouteAnswer.SpecShaped("services", "stalled");
         await Connected(() => _vm.Banner.IsShown);
         var status = _server.StatusCalls;
-        _server.StatusError = new Aw.Kernel.Error("SND-API-011", Aw.Kernel.ErrorKind.Unavailable, "The views have not reached sequence 43 (fix: retry shortly)");
+        _server.StatusError = new Error("SND-API-011", ErrorKind.Unavailable, "The views have not reached sequence 43 (fix: retry shortly)");
 
         _server.Push(A.Event(1, "views.rebuild.started"));
         await Until(() => _server.StatusCalls > status);
@@ -323,7 +326,7 @@ public sealed class FreshnessTests : IDisposable
     [InlineData("running-stalled", "Stalled · updated 30s ago · views stalled at 42")]
     public async Task The_pill_reads_each_spec_shaped_status_golden(string scenario, string text)
     {
-        var golden = Aw.Kernel.Json.AwJson.Deserialize<StatusView>(System.Text.Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("status", scenario)), SindriApiClient.Json).Value;
+        var golden = AwJson.Deserialize<StatusView>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("status", scenario)), SindriApiClient.Json).Value;
         var age = golden.Views!.ProjectedAt - new DateTimeOffset(2026, 1, 1, 0, 1, 0, TimeSpan.Zero);   // the golden's own "updated Ns ago" at its 00:01:00 clock
         _server.Current = golden with { Views = golden.Views with { ProjectedAt = A.Noon + age } };
 
