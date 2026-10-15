@@ -548,6 +548,50 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 0 pass, 1 fail, 2 usage or tool error. The recipe reference, the eval format, the `RCP-*` rule table and how to add
 a block are in `docs/csharp/sindri-workflow.md`.
 
+## Workflow views (API spec §3.8; rev 8 contract unit)
+
+The instance, recipe and status view shapes the UI codes against (screens spec E-20, E-22, E-23) are records in
+`Aw.Sindri.Core/Workflow/Views/` (ids typed where Core has a typed id; a state, workstream or fact-row key stays text, and
+an address is the typed `InstanceAddress`), plus
+`FactView` in `Features/GetInstanceFact`. The routes are not served yet (API P11):
+
+| Route | Slice | Shape |
+|---|---|---|
+| `GET /workflow/instances?root=&open=&recipe=&subject=&state=&needsMe=` | `ListInstances` (engine) | `InstanceList` |
+| `GET /workflow/instances/{id}` (or `?address=`) | `GetInstance` (engine) | `InstanceDetail` |
+| `GET /workflow/instances/{id}/facts/{key}` | `GetInstanceFact` (not written yet) | `FactView` |
+| `GET /workflow/recipes/{id}` | `ShowRecipe` (engine) | `RecipeView` |
+
+**Golden contract.** Each scenario's fixture (`tests/Aw.Sindri.Testing/Views/WorkflowViewFixtures.cs`, `FactFixtures.cs`,
+and the recipe declarations in `FixtureRecipes.cs`/`RecipeShape.cs`, one declaration per recipe) is serialized through the
+host's own JSON options and pinned at `tests/Aw.Sindri.Tests/Golden/Api/<slug>/<scenario>.json` (`workflow-instances`,
+`workflow-instance`, `workflow-instance-fact`, `workflow-status`, `workflow-recipe`; 36 files, in `WorkflowViewGoldenTests`).
+Addresses are the engine's form (`ITM-01JK3/project/1`, child `ITM-01JK3/project/1/step.1`), every root has an item, and a
+fixture's `id` is the engine's minting rule applied to its address (`WorkflowInstanceId.Of`, pinned by a test vector); every child row, parent reference and status child carries that `id` beside its address. The UI lanes build
+their fake `ISindriApi` on these files, so a change to one is a contract change; re-record with `AW_GOLDEN_UPDATE=1`.
+
+**Who may change the files.** The files change only at these points, and each change is announced to the UI lane: (1) engine
+P4b, if its wording moves (the engine re-records); (2) when a recipe that still carries a placeholder hash lands, its hash
+becomes the real one; (3) the `not-found` files, when API P11 U7 (or P4) swaps in the served ProblemDetails body; (4) P8 re-records the desk-runtime states when the agent runtime lands, and schema v2 re-records the fan-out previews (PRJ-sync and project-many-children). Every
+instance fixture carries its own status (address, recipe stamp, commands and cancel sentence come from its row), the status
+text is rendered from the fields, and its commands are catalog rows of the same class (`WorkflowViewFixtureTests`).
+`WorkflowViewConsistencyTests` and `WorkflowViewRecipeShapeTests` pin that the files agree with each other and with
+`recipes/**` (ids, versions, hashes, states, orders, terminals, inputs and outputs, desk flags, child waits, loop caps, timeouts and kinds), and `WorkflowEngineInvariantsTests` walks every instance fixture against the engine's rules (one current state, v1 children, desk runtime, timeouts, run tokens, park answers), and the golden test reads every file
+back into its record. The composer and the `GetInstanceFact` service arrive with P11 U2 to U5 and their real inputs.
+
+The recipe files (`workflow-recipe/`) are partial: they hold the E-22 additions (inputs, outputs, urgency, `orderedBy`,
+states, loops with their `cap`) only, not the full `RecipeView` body (id, hash, version, the engine's own fields), until UI U1.
+
+**`status.text` is rendered verbatim by the UI and never parsed.** The fixtures render it with a test-only renderer that
+is a provisional rendering in ASCII: it differs from main's `StatusLayout` and `InstanceWords` in wording, wrap width (about 100 columns, main's 120)
+and which layouts carry the timeout and budget lines (main prints them beside an open desk task only), and P4b reconciles them. Its wording, the `since` clock and token counts
+are provisional until engine P4b confirms them (the change then goes through point (1) above). The cancel
+sentence is singular at 1 (a provisional owner default, 2026-10-14 night).
+
+**Marked previews.** v1 serves every input of a started instance as required and present. `workflow-instances/preview-missing-input` (ITM-01JKH) and the optional
+`fact:context` of `workflow-recipe/no-outputs` are previews of a future optional-input recipe schema, like the fan-out previews; they give the UI data for the missing and
+blocked renders and are re-recorded when that schema lands. `workflow-status/needs-answer-step` is a Step's text-answered park and `needs-answer-wait` a wait's `--resume` park.
+
 ## Hook contract
 
 None in S1. The `Hooks → Sindri` cli edge in `deps.yaml` (sindri-nudge) is the TS sindri's until the switch; the C#
