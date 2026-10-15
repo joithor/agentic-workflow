@@ -108,7 +108,7 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
     private static Task<CommandResult> Complete(WorkflowHandle<RecipeWorkflow> handle, StepCompleted report, char id, CancellationToken ct) =>
         handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string(id, 32))).WaitAsync(TimeSpan.FromSeconds(30), ct);
 
-    private static async Task RegisterAttributes(Temporalio.Testing.WorkflowEnvironment env)
+    internal static async Task RegisterAttributes(Temporalio.Testing.WorkflowEnvironment env)
     {
         var attributes = new AddSearchAttributesRequest { Namespace = env.Client.Options.Namespace };
         attributes.SearchAttributes.Add(SindriTemporal.SearchAttributes.ToDictionary(static a => a.Name, static a => a.Type, StringComparer.Ordinal));
