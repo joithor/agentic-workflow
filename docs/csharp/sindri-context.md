@@ -186,7 +186,7 @@ Every facade error passes through to the MCP tool error unchanged (`isError`, te
 
 ## S-2W: extra scrub patterns, per call
 
-Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatterns` reach every scrub the engine does.
+Spec Phase 2 and §7 (D14: one scrubber). The profile's `context.scrub.extraPatterns` reach every scrub the engine does once the context lane's scrubber is wired in; until then the engine's ledger scrub uses the built-in rules (`docs/csharp/sindri-workflow.md`, "The ledger mirror").
 
 - **Settings.** `SettingsReader` reads `scrub: { extraPatterns: [{ id, pattern }] }` into
   `ContextSettings.ExtraPatterns` (`Trust.ScrubPattern(Rule, Pattern)`, as written). Unknown keys are refused by the

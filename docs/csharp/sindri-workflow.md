@@ -525,6 +525,11 @@ same at-least-once execution with three history events per ledger row, so exactl
 and the local activity is the cheaper of the two. Its retry policy is unbounded with backoff, so the workflow waits for
 the ledger.
 
+Each payload is scrubbed before it is appended (free text in an event's detail can carry a secret). Until the context lane's
+scrubber is wired in, the engine's ledger scrub uses `Redactor.Default`, the built-in rules; the profile's
+`context.scrub.extraPatterns` do not reach it yet. A payload the scrub blocks, or breaks so it is no longer JSON, is stored
+without its detail; one that still can't be scrubbed throws, and the activity retries.
+
 **How it was measured.** `AW_SPIKE_LOG=<file> dotnet test --project tests/Aw.Sindri.Tests -- --filter-namespace
 Aw.Sindri.Tests.Workflows.Spike` appends each measurement line to the file; `AW_SPIKE_LEDGER_COPY=<dir>` keeps the
 ledger replay test's `ledger.db`. Counted with `sqlite3 ledger.db "select type, count(*) from events group by type"`
