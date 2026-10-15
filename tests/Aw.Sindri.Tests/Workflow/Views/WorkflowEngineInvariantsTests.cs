@@ -88,11 +88,7 @@ public sealed partial class WorkflowEngineInvariantsTests
             failures.Add(M($"{at}: a state of a recipe under recipes/ has no agent runtime until P8, so it is served as a desk task (WF 12, W5, W20)"));
         }
 
-        if (state.AgentBlock is not null && (state.Desk || state.Kind != StateKind.Active || state.Block is not null))
-        {
-            failures.Add(M($"{at}: an agent-runtime Block belongs to an active, non-desk state of a fixture-only recipe"));
-        }
-
+        failures.AddRange(AgentRuntime(at, state));
         if (state.Block is { } block && _catalog.Find(BlockId.From(block)) is not { DeskCapable: true })
         {
             failures.Add(M($"{at}: {block} is not deskCapable, so it parks with SND-WF-010 instead of running"));
@@ -105,6 +101,11 @@ public sealed partial class WorkflowEngineInvariantsTests
 
         return failures;
     }
+
+    private static List<string> AgentRuntime(string at, ShapeState state) =>
+        state.AgentBlock is not null && (state.Desk || state.Kind != StateKind.Active || state.Block is not null)
+            ? [M($"{at}: an agent-runtime Block belongs to an active, non-desk state of a fixture-only recipe")]
+            : [];
 
     [Fact, Trait("Lane", "unit")]
     public void Exactly_one_state_is_current_only_it_is_active_parked_or_escalated_earlier_states_are_done_and_later_ones_pending() => Walk(OneCurrent);
