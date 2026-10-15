@@ -47,6 +47,7 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
 
         var (view, main) = current.Value;
         var (gate, repoPassed) = Choose(history.Value, view.Head, team.Value.Gate.Always);
+        var (names, counts) = await FailingTests(gate).ConfigureAwait(false);
         var facts = new MergeFacts
         {
             Pr = pr,
@@ -60,7 +61,8 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
             MergeOrder = team.Value.MergeOrder,
             DocsOnly = team.Value.Gate.DocsOnly,
             PlannedScopes = await Planned(team.Value, gate).ConfigureAwait(false),
-            FailingTests = await FailingTests(gate).ConfigureAwait(false),
+            FailingTests = names,
+            FailureCounts = counts,
         };
         return new MergeAssessment(team.Value, [.. MergeGate.Evaluate(facts), State(view)], view);
     }
@@ -104,19 +106,24 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
 
     // The failing tests each red step's log names. A log that can't be read, or is longer than what is read (its first failures
     // may be cut off), leaves the step out: it can't be vouched for.
-    private async ValueTask<IReadOnlyDictionary<string, IReadOnlyList<string>>> FailingTests(GateRecord gate)
+    private async ValueTask<(IReadOnlyDictionary<string, IReadOnlyList<string>> Names, IReadOnlyDictionary<string, (int Summarized, int Named)> Counts)> FailingTests(GateRecord gate)
     {
-        var failing = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        var names = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        var counts = new Dictionary<string, (int Summarized, int Named)>(StringComparer.Ordinal);
         foreach (var step in gate.Steps.Where(s => s.Verdict != GateVerdict.Pass))
         {
             var log = await logs.Tail(step.Log, LogCharacters, CancellationToken.None).ConfigureAwait(false);
             if (log.IsSuccess && log.Value.Length < LogCharacters)
             {
-                failing[step.Name] = TestNames.Failing(log.Value);
+                names[step.Name] = TestNames.Failing(log.Value);
+                if (TestNames.SummarizedFailures(log.Value) is { } summarized)
+                {
+                    counts[step.Name] = (summarized, TestNames.FailedLines(log.Value));
+                }
             }
         }
 
-        return failing;
+        return (names, counts);
     }
 
     private async ValueTask<IReadOnlyList<int>> OpenBefore(TeamConfig team, int pr)

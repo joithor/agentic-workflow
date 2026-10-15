@@ -118,6 +118,23 @@ public sealed class ObligationEvaluatorTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void An_announcement_of_an_unknown_sha_merge_names_the_pull_request_as_a_whole_number()
+    {
+        var merge = new MergeRecord(22, MergeRecord.Unknown, A.At(10));
+        var facts = A.Facts() with
+        {
+            Lanes = Lanes(0),
+            LatestMerge = merge,
+            Outbound = [A.Sent("sindri-api", "main moved (#221 merged).", 11), A.Sent("sindri-engine", "main moved (#22 merged).", 11)],
+        };
+
+        var open = Assert.Single(ObligationEvaluator.Evaluate(facts));
+
+        Assert.Contains("api", open.Summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("engine", open.Summary, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void An_owner_answer_must_go_back_to_the_asking_lane()
     {
         var answer = new OwnerAnswer(3, "sindri-api", "use postgres", A.At(20));

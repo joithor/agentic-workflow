@@ -24,7 +24,7 @@ public static class MergeGate
         return
         [
             new MergeCheck("gate", Ok: true, "gate run " + gate.Run.ToString(CultureInfo.InvariantCulture) + " at " + gate.Head),
-            GateResult(gate, facts.FailingTests),
+            GateResult(gate, facts.FailingTests, facts.FailureCounts),
             Scopes(gate, facts.PlannedScopes),
             Head(facts),
             new MergeCheck("main", gate.Main == facts.CurrentMain, $"gate ran on main {gate.Main}, main is {facts.CurrentMain}"),
@@ -33,7 +33,7 @@ public static class MergeGate
         ];
     }
 
-    private static MergeCheck GateResult(GateRecord gate, IReadOnlyDictionary<string, IReadOnlyList<string>> failing)
+    private static MergeCheck GateResult(GateRecord gate, IReadOnlyDictionary<string, IReadOnlyList<string>> failing, IReadOnlyDictionary<string, (int Summarized, int Named)> counts)
     {
         if (gate.Verdict == GateVerdict.Pass)
         {
@@ -46,18 +46,23 @@ public static class MergeGate
             return new MergeCheck("gate-result", Ok: false, $"{gate.Verdict}: no failing step recorded");
         }
 
-        var unexplained = red.Select(step => Unexplained(step, failing)).Where(text => text is not null).ToList();
+        var unexplained = red.Select(step => Unexplained(step, failing, counts)).Where(text => text is not null).ToList();
         return unexplained.Count == 0
             ? new MergeCheck("gate-result", Ok: true, "every failing test of every red step is a classified flake")
             : new MergeCheck("gate-result", Ok: false, $"{gate.Verdict}: {string.Join("; ", unexplained)}");
     }
 
     // A red step is accepted only when its log names its failing tests and every one of them was rerun and classified a flake.
-    private static string? Unexplained(GateStep step, IReadOnlyDictionary<string, IReadOnlyList<string>> failing)
+    private static string? Unexplained(GateStep step, IReadOnlyDictionary<string, IReadOnlyList<string>> failing, IReadOnlyDictionary<string, (int Summarized, int Named)> counts)
     {
         if (!failing.TryGetValue(step.Name, out var tests) || tests.Count == 0)
         {
             return $"{step.Name}: could not list its failing tests from the log, so no flake classification can vouch for it";
+        }
+
+        if (counts.TryGetValue(step.Name, out var count) && count.Summarized != count.Named)
+        {
+            return $"{step.Name}: the log's summary counts {count.Summarized.ToString(CultureInfo.InvariantCulture)} failed but only {count.Named.ToString(CultureInfo.InvariantCulture)} name a test (a crash or a timeout leaves no name), so no flake classification can vouch for it";
         }
 
         var open = tests.Where(test => !step.Reruns.Any(r => r.Verdict == FlakeVerdict.Flake && TestNames.Matches(r.Test, test))).ToList();

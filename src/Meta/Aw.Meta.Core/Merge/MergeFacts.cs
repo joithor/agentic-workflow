@@ -41,4 +41,7 @@ public sealed record MergeFacts
 
     /// <summary>The failing tests each red step's log names, by step name; a step missing here, or with no names, couldn't be read.</summary>
     public IReadOnlyDictionary<string, IReadOnlyList<string>> FailingTests { get; init; } = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+
+    /// <summary>For each red step whose log has a summary: the failures the summary counts and the failed lines that name a test. A difference is a failure with no name (a crash, a timeout).</summary>
+    public IReadOnlyDictionary<string, (int Summarized, int Named)> FailureCounts { get; init; } = new Dictionary<string, (int Summarized, int Named)>(StringComparer.Ordinal);
 }

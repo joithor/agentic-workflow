@@ -81,7 +81,7 @@ internal sealed class GateRerunService(IMetaConfig config, IGateStore gates, Gat
 
     private async ValueTask<Result<Judgement>> Judge(TeamConfig team, RerunTarget target, GateRerunRequest request, CancellationToken cancellationToken)
     {
-        var alone = await reruns.Run(target.Command, workspace.TreePath(request.Pr), request.Test, cancellationToken).ConfigureAwait(false);
+        var alone = await reruns.Run(target.Command, workspace.TreePath(request.Pr), request.Test, filterMustMatch: true, cancellationToken).ConfigureAwait(false);
         return alone.IsError || alone.Value.Passed
             ? alone.IsError ? alone.Error : new Judgement(FlakeVerdict.Flake, "passes alone on the gate tree")
             : await AgainstMain(team, target, request, alone.Value, cancellationToken).ConfigureAwait(false);
@@ -90,7 +90,7 @@ internal sealed class GateRerunService(IMetaConfig config, IGateStore gates, Gat
     private async ValueTask<Result<Judgement>> AgainstMain(TeamConfig team, RerunTarget target, GateRerunRequest request, RerunOutcome alone, CancellationToken cancellationToken)
     {
         var main = await workspace.PrepareMain(team, request.Pr, target.Gate.Main).ConfigureAwait(false);
-        var onMain = main.IsError ? Results.Failure<RerunOutcome>(main.Error) : await reruns.Run(RerunExecutor.Building(target.Command), main.Value, request.Test, cancellationToken).ConfigureAwait(false);
+        var onMain = main.IsError ? Results.Failure<RerunOutcome>(main.Error) : await reruns.Run(RerunExecutor.Building(target.Command), main.Value, request.Test, filterMustMatch: false, cancellationToken).ConfigureAwait(false);
         var gateLog = await logs.Tail(target.Step.Log, LogCharacters, cancellationToken).ConfigureAwait(false);
         if (onMain.IsError)
         {
@@ -103,7 +103,7 @@ internal sealed class GateRerunService(IMetaConfig config, IGateStore gates, Gat
             return new Judgement(FlakeVerdict.Flake, $"known flake ({known}); it also fails alone");
         }
 
-        return new Judgement(verdict, verdict == FlakeVerdict.Flake ? "fails alone the way it fails on main" : onMain.Value.Passed ? "fails alone and passes on main" : "fails alone, and not the way it fails on main");
+        return new Judgement(verdict, verdict == FlakeVerdict.Flake ? "fails alone the way it fails on main" : onMain.Value.Absent ? "fails alone; the test is not on main" : onMain.Value.Passed ? "fails alone and passes on main" : "fails alone, and not the way it fails on main");
     }
 
     private static string? Known(TeamConfig team, string test) =>

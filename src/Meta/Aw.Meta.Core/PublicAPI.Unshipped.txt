@@ -226,13 +226,15 @@ Aw.Meta.Core.Gate.GateVerdict.Pass = 1 -> Aw.Meta.Core.Gate.GateVerdict
 Aw.Meta.Core.Gate.GlobMatcher
 Aw.Meta.Core.Gate.RerunOutcome
 Aw.Meta.Core.Gate.RerunOutcome.<Clone>$() -> Aw.Meta.Core.Gate.RerunOutcome!
-Aw.Meta.Core.Gate.RerunOutcome.Deconstruct(out bool Passed, out string? Failure) -> void
+Aw.Meta.Core.Gate.RerunOutcome.Deconstruct(out bool Passed, out string? Failure, out bool Absent) -> void
 Aw.Meta.Core.Gate.RerunOutcome.Equals(Aw.Meta.Core.Gate.RerunOutcome? other) -> bool
+Aw.Meta.Core.Gate.RerunOutcome.Absent.get -> bool
+Aw.Meta.Core.Gate.RerunOutcome.Absent.init -> void
 Aw.Meta.Core.Gate.RerunOutcome.Failure.get -> string?
 Aw.Meta.Core.Gate.RerunOutcome.Failure.init -> void
 Aw.Meta.Core.Gate.RerunOutcome.Passed.get -> bool
 Aw.Meta.Core.Gate.RerunOutcome.Passed.init -> void
-Aw.Meta.Core.Gate.RerunOutcome.RerunOutcome(bool Passed, string? Failure = null) -> void
+Aw.Meta.Core.Gate.RerunOutcome.RerunOutcome(bool Passed, string? Failure = null, bool Absent = false) -> void
 Aw.Meta.Core.Gate.ScopePlanner
 Aw.Meta.Core.Gate.TestNames
 Aw.Meta.Core.Gate.TestVerdict
@@ -452,6 +454,8 @@ Aw.Meta.Core.Merge.MergeFacts.DocsOnly.init -> void
 Aw.Meta.Core.Merge.MergeFacts.Equals(Aw.Meta.Core.Merge.MergeFacts? other) -> bool
 Aw.Meta.Core.Merge.MergeFacts.FailingTests.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
 Aw.Meta.Core.Merge.MergeFacts.FailingTests.init -> void
+Aw.Meta.Core.Merge.MergeFacts.FailureCounts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, (int Summarized, int Named)>!
+Aw.Meta.Core.Merge.MergeFacts.FailureCounts.init -> void
 Aw.Meta.Core.Merge.MergeFacts.Gate.get -> Aw.Meta.Core.Gate.GateRecord?
 Aw.Meta.Core.Merge.MergeFacts.Gate.init -> void
 Aw.Meta.Core.Merge.MergeFacts.IsDraft.get -> bool
@@ -984,6 +988,8 @@ static Aw.Meta.Core.Gate.RerunOutcome.operator !=(Aw.Meta.Core.Gate.RerunOutcome
 static Aw.Meta.Core.Gate.RerunOutcome.operator ==(Aw.Meta.Core.Gate.RerunOutcome? left, Aw.Meta.Core.Gate.RerunOutcome? right) -> bool
 static Aw.Meta.Core.Gate.ScopePlanner.Plan(System.Collections.Generic.IReadOnlyList<string!>! changedPaths, Aw.Meta.Core.Config.GateConfig! gate) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Meta.Core.Gate.TestNames.Failing(string! log) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Meta.Core.Gate.TestNames.FailedLines(string! log) -> int
+static Aw.Meta.Core.Gate.TestNames.SummarizedFailures(string! log) -> int?
 static Aw.Meta.Core.Gate.TestNames.Matches(string! filter, string! name) -> bool
 static Aw.Meta.Core.Gate.TestNames.Ran(string! output) -> bool
 static Aw.Meta.Core.Gate.TestNames.RanNone(string! output) -> bool

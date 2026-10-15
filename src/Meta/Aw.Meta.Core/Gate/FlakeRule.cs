@@ -19,7 +19,8 @@ public static partial class FlakeRule
             return FlakeVerdict.Flake;
         }
 
-        return !onMain.Passed && Normalize(onMain.Failure) == Normalize(gateFailure)
+        // A test that is not on main cannot fail there the way it fails here.
+        return !onMain.Passed && !onMain.Absent && Normalize(onMain.Failure) == Normalize(gateFailure)
             ? FlakeVerdict.Flake
             : FlakeVerdict.Real;
     }

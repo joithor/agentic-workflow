@@ -23,6 +23,32 @@ public static partial class TestNames
         return names;
     }
 
+    /// <summary>How many tests the log's summaries say failed: the "failed: N" lines added up (one summary per test project).</summary>
+    /// <param name="log">The step log's text.</param>
+    /// <returns>The sum, or null when the log has no failed count.</returns>
+    public static int? SummarizedFailures(string log)
+    {
+        ArgumentNullException.ThrowIfNull(log);
+        try
+        {
+            var counts = FailedCountLine.Matches(log).Select(m => int.Parse(m.Groups["n"].Value, System.Globalization.CultureInfo.InvariantCulture)).ToList();
+            return counts.Count == 0 ? null : counts.Sum();
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>How many "failed &lt;name&gt; (&lt;duration&gt;)" lines the log has, repeats included.</summary>
+    /// <param name="log">The step log's text.</param>
+    /// <returns>The count.</returns>
+    public static int FailedLines(string log)
+    {
+        ArgumentNullException.ThrowIfNull(log);
+        return log.Split('\n', StringSplitOptions.TrimEntries).Count(line => Match(line) is not null);
+    }
+
     /// <summary>Whether an MTP run summary says no test ran: it prints "total: 0" (and "Zero tests ran").</summary>
     /// <param name="output">The run's output.</param>
     /// <returns>True when the output has totals and they add up to zero.</returns>
@@ -87,6 +113,9 @@ public static partial class TestNames
 
     [GeneratedRegex(@"^failed (?<name>\S.*?) \((\d+(\.\d+)?\s?(ms|s|m|h|d)\s?)+\)$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex FailedLine { get; }
+
+    [GeneratedRegex(@"^\s*failed: (?<n>\d{1,9})\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture | RegexOptions.Multiline, matchTimeoutMilliseconds: 100)]
+    private static partial Regex FailedCountLine { get; }
 
     [GeneratedRegex(@"^\s*total: (?<n>\d{1,12})\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture | RegexOptions.Multiline, matchTimeoutMilliseconds: 100)]
     private static partial Regex TotalLine { get; }

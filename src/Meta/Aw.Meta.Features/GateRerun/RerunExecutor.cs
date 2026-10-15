@@ -7,7 +7,7 @@ using Aw.Meta.Core.Ports;
 
 namespace Aw.Meta.Features.GateRerun;
 
-/// <summary>Runs one test of a step in a tree and reads how it went.</summary>
+/// <summary>Runs one test of a step in a tree and reads how it went. With filterMustMatch, a run that matched no test is an error.</summary>
 /// <param name="runner">Runs the command.</param>
 /// <param name="paths">Names the heavy-job wrapper.</param>
 internal sealed class RerunExecutor(ICommandRunner runner, MetaPaths paths)
@@ -18,7 +18,7 @@ internal sealed class RerunExecutor(ICommandRunner runner, MetaPaths paths)
     /// <summary>The command that runs one test of the step, or null when the step can't.</summary>
     internal IReadOnlyList<string>? Command(StepConfig step, string test) => GateCommand.Rerun(step, test, paths.Heavy);
 
-    internal async ValueTask<Result<RerunOutcome>> Run(IReadOnlyList<string> argv, string tree, string test, CancellationToken cancellationToken)
+    internal async ValueTask<Result<RerunOutcome>> Run(IReadOnlyList<string> argv, string tree, string test, bool filterMustMatch, CancellationToken cancellationToken)
     {
         var ran = await runner.Run(new CommandRequest(argv, _limit) { Cwd = tree }, cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
@@ -31,7 +31,8 @@ internal sealed class RerunExecutor(ICommandRunner runner, MetaPaths paths)
         var ranNothing = TestNames.RanNone(output) || (result.ExitCode == NoTestsRan && !TestNames.Ran(output));
         if (!result.TimedOut && ranNothing && argv.Contains("dotnet", StringComparer.Ordinal))
         {
-            return MetaErrors.Invalid.With($"no test matched '{test}'");
+            // On the gate tree the test exists, so a filter that matches nothing is a bad filter. On main it is a test the PR adds.
+            return filterMustMatch ? MetaErrors.Invalid.With($"no test matched '{test}'") : new RerunOutcome(Passed: false, "no test matched", Absent: true);
         }
 
         // Exit 8 with tests run is some project having none to run, as in a solution-wide filter: the tests that ran passed.

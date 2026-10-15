@@ -73,7 +73,7 @@ public static class ObligationEvaluator
             yield break;
         }
 
-        var missing = Missing(facts, Targets(facts), o => o.At >= merge.At && o.Message.Contains(merge.Marker, StringComparison.Ordinal));
+        var missing = Missing(facts, Targets(facts), o => o.At >= merge.At && Recipient.Contains(o.Message, merge.Marker));
         if (missing.Count > 0)
         {
             var moved = merge.IsKnown ? $"main moved to {merge.ShortSha}" : "main moved";

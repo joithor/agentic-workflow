@@ -176,6 +176,20 @@ public sealed class GateRerunTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_test_that_fails_alone_and_is_not_on_main_is_real()
+    {
+        await SaveRedGate();
+        await UseShippedUnitStep();
+        const string ZeroTests = "Test run summary: Zero tests ran\n  total: 0\n  failed: 0\n  succeeded: 0\n";
+        Script(onGate: Fail(), onMain: new CommandResult(8, ZeroTests, string.Empty, TimedOut: false));
+
+        var response = await Rerun();
+
+        Assert.Equal((FlakeVerdict.Real, FlakeVerdict.Real), (response.Verdict, await Stored()));
+        Assert.Contains("not on main", response.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_rerun_that_ran_tests_and_passed_is_a_flake_under_the_shipped_step()
     {
         await SaveRedGate();

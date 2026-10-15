@@ -179,6 +179,29 @@ public sealed class CheckMergeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_red_step_with_more_failures_than_names_is_refused_with_the_counts()
+    {
+        await _world.ReadyWithGate();
+        await SaveRedUnit("failed Spike.Tests.Eval_runs (20ms)\nTest run summary: Failed!\n  total: 9\n  failed: 2\n  succeeded: 7\n", ("Eval_runs", FlakeVerdict.Flake));
+        Script();
+
+        var refused = await Check();
+
+        Assert.Equal(["gate-result"], Failed(refused));
+        Assert.Contains("2 failed", refused.Checks.Single(c => c.Name == "gate-result").Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_red_step_whose_summary_count_matches_its_names_is_accepted()
+    {
+        await _world.ReadyWithGate();
+        await SaveRedUnit("failed Spike.Tests.Eval_runs (20ms)\nTest run summary: Failed!\n  total: 9\n  failed: 1\n  succeeded: 8\n", ("Eval_runs", FlakeVerdict.Flake));
+        Script();
+
+        Assert.True((await Check()).Ready);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_test_classified_real_or_not_classified_keeps_the_gate_red()
     {
         await _world.ReadyWithGate();
