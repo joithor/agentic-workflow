@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.Views;
@@ -23,6 +24,7 @@ internal sealed class AppLifetime : IDisposable
     private readonly Action _shutdown;
     private readonly Func<Task> _settle;
     private readonly TimeProvider _clock;
+    private readonly IDockBadge _badge;
     /// <summary>Raised on the UI thread the moment Quit, or the OS ending the app, begins (the single instance retires on it).</summary>
     internal event EventHandler? Quitting
     {
@@ -41,8 +43,10 @@ internal sealed class AppLifetime : IDisposable
     /// <param name="shutdown">Ends the app (the lifetime's Shutdown).</param>
     /// <param name="settle">Records the window's bounds and returns the preferences writes still pending; the app ends once they are done, or after <see cref="SettleWithin"/>.</param>
     /// <param name="clock">The clock <see cref="SettleWithin"/> runs on.</param>
-    internal AppLifetime(Window window, ITray tray, Action<DeepLink> navigate, Action shutdown, Func<Task> settle, TimeProvider clock)
+    /// <param name="badge">The dock or taskbar badge; none when null.</param>
+    internal AppLifetime(Window window, ITray tray, Action<DeepLink> navigate, Action shutdown, Func<Task> settle, TimeProvider clock, IDockBadge? badge = null)
     {
+        _badge = badge ?? new NullDockBadge();
         (_window, _tray, _navigate, _shutdown, _settle, _clock) = (window, tray, navigate, shutdown, settle, clock);
         _window.Closing += OnClosing;
         _tray.OpenRequested += OnOpen;
@@ -82,6 +86,18 @@ internal sealed class AppLifetime : IDisposable
     };
 
     private static TrayView Hollow { get; } = new(TrayState.Stale, Labels.TrayNotResponding, Labels.TrayOpen, Labels.TrayQuit);
+
+    /// <summary>Shows what the needs-you rows add up to in the tray and on the dock or taskbar badge.</summary>
+    /// <param name="summary">The summary.</param>
+    internal void ShowAttention(AttentionSummary summary)
+    {
+        _ = (summary, _badge);
+        throw new NotSupportedException();
+    }
+
+    /// <summary>Follows the shell's attention summary from now on, whether or not the window is shown.</summary>
+    /// <param name="shell">The shell.</param>
+    internal void Follow(ShellViewModel shell) => throw new NotSupportedException();
 
     /// <summary>Shows the shell's state in the tray.</summary>
     /// <param name="state">The state.</param>
