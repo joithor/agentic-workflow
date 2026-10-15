@@ -60,7 +60,7 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
 
     private async Task<int> Failed(Kernel.Error error)
     {
-        var code = await output.Error(error).ConfigureAwait(false);
+        var code = await output.Error(QueryFlagHints.Add(error)).ConfigureAwait(false);
         return error.Code == "SND-API-001" || ContextErrors.Attention.Contains(error.Code) ? 1 : code;
     }
 

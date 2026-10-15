@@ -4,7 +4,7 @@ namespace Aw.Context.Core.Graph;
 public static class GraphWalk
 {
     /// <summary>The deepest neighborhood a request may ask for (spec §8.3).</summary>
-    public const int MaxDepth = 4;
+    public const int MaxDepth = Engine.QueryRules.MaxDepth;
 
     /// <summary>The longest path searched (spec §8.3).</summary>
     public const int MaxPathLength = 8;

@@ -45,7 +45,8 @@ public sealed class CascadeTests
         var result = Cascade.Affects(FixtureGraph.Applied(), FixtureGraph.Key("feature:layout.split-pane"), depth: 2);
 
         var affected = Assert.Single(result.Affected);
-        Assert.Equal(["feature:layout.split-pane", $"owns {Orientation}", "owns surface:command/toggle-orientation", "owns action:split-pane.toggle-orientation", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"],
+        // both descendant features write pane-layout at the same depth with three owns hops: the first in key order (pane-resize) claims it
+        Assert.Equal(["feature:layout.split-pane", "owns feature:layout.pane-resize", "owns surface:setting/paneResizeStep", "owns action:pane-resize.resize-focused", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"],
             affected.Path);
         Assert.Equal([EdgeType.PartOf, EdgeType.PartOf, EdgeType.On, EdgeType.Writes, EdgeType.Reads], affected.Edges.Select(e => e.Type));
     }
