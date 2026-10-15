@@ -297,6 +297,32 @@ public sealed class ItemSheetViewModelTests
 
     private static Task<T> WithinResult<T>(Task<T> task) => task.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
 
+    // corr-2: a Load more still in flight for the item the sheet has left must not stop Load more on the item now open.
+    [Fact]
+    public async Task A_load_more_in_flight_for_the_previous_item_does_not_block_the_next_items()
+    {
+        var sheet = await Sheet();
+        await sheet.Open(_api, A.NewItem, Token);
+        _server.IgnoreCancellation = true;
+        var gate = _server.TimelineGates[(A.NewItem, 151)] = Gate();
+        bool landed;
+        try
+        {
+            var stuck = sheet.LoadMore(Token);
+            await Within(sheet.Open(_api, A.DecisionItem, Token));
+
+            landed = await WithinResult(sheet.LoadMore(Token));
+            gate.SetResult();
+            Assert.False(await WithinResult(stuck));
+        }
+        finally
+        {
+            _ = gate.TrySetResult();
+        }
+
+        Assert.Equal((true, 101), (landed, sheet.Timeline.Count));
+    }
+
     // testing-2: a page that lands after the sheet moved to another item is not that item's: no row of the old item's page is
     // added, whether or not the two timelines point at the same next page.
     [Fact]
