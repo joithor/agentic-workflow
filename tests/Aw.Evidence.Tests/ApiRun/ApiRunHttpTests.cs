@@ -342,7 +342,7 @@ public sealed class ApiRunHttpTests
             Assert.DoesNotContain(value, response.Document, StringComparison.Ordinal);
         }
 
-        var output = response.Summary.Steps[0].Output!;
+        var output = response.Summary.Steps[0].Output;
         Assert.Contains("\"name\":\"ann\"", output, StringComparison.Ordinal);
         Assert.Contains("\"id\":7", output, StringComparison.Ordinal);
     }

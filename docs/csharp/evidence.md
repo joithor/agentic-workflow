@@ -252,7 +252,7 @@ The UI run's shape for the fields the readers share, so one reader and one judge
 written (`null` or `[]`, never missing), in this order. It is written on every exit but 75, once the script has been
 read (a script that cannot be read, or a run directory that cannot be made, writes none); an earlier `summary.json` in the
 run directory is deleted first, so no exit leaves a stale one. Nothing is written outside the absolute `<run-dir>`
-and the box-wide locks.
+and the box-wide locks, except that each CLI call runs in a fresh temp directory under the system temp dir, removed when the call ends.
 
 | Field | Type | Holds |
 |---|---|---|

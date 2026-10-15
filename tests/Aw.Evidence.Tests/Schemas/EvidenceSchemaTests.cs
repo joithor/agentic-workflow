@@ -4,6 +4,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
+using System.Text.Json.Serialization.Metadata;
 using Aw.Evidence.Core.Data;
 using Aw.Evidence.Core.Ids;
 using Aw.Kernel.Testing;
@@ -48,7 +49,7 @@ public sealed class EvidenceSchemaTests
         var schema = JsonSchemaExporter.GetJsonSchemaAsNode(TestJson.Options, type, new JsonSchemaExporterOptions
         {
             TreatNullObliviousAsNonNullable = true,
-            TransformSchemaNode = static (context, node) => Transform(context.TypeInfo.Type, node),
+            TransformSchemaNode = static (context, node) => Limits(context.PropertyInfo, Transform(context.TypeInfo.Type, node)),
         });
         var root = new JsonObject
         {
@@ -84,6 +85,37 @@ public sealed class EvidenceSchemaTests
         }
 
         return node;
+    }
+
+    // What a produced summary always guarantees: the constants, the caps the recorder applies, and no key beyond the record's own.
+    private static JsonNode Limits(JsonPropertyInfo? property, JsonNode node)
+    {
+        if (node is JsonObject { } record && record["properties"] is not null && record["additionalProperties"] is null)
+        {
+            record["additionalProperties"] = false;
+        }
+
+        if (property is not { DeclaringType: var owner } || node is not JsonObject rules)
+        {
+            return node;
+        }
+
+        return (owner.Name, property.Name) switch
+        {
+            (nameof(ApiSummary), "schema") => new JsonObject { ["const"] = ApiSummary.SchemaName },
+            (nameof(ApiSummary), "kind") => new JsonObject { ["const"] = ApiSummary.KindName },
+            (nameof(ApiSummary), "provenance") => new JsonObject { ["const"] = ApiSummary.Unseeded },
+            (nameof(ApiSummary), "headline") => Capped(rules, 200),
+            (nameof(ApiStep), "output") => Capped(rules, 2000),
+            (nameof(ApiFailure), "pointer" or "expected" or "actual") => Capped(rules, 200),
+            _ => node,
+        };
+    }
+
+    private static JsonObject Capped(JsonObject rules, int limit)
+    {
+        rules["maxLength"] = limit;
+        return rules;
     }
 
     private static string Render(JsonNode node)

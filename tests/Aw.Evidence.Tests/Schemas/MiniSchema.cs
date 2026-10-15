@@ -7,7 +7,7 @@ namespace Aw.Evidence.Tests.Schemas;
 
 /// <summary>
 /// A small JSON Schema checker for the schemas the exporter writes: $ref into the document, type (one or several), properties, required,
-/// additionalProperties, items, enum, pattern, anyOf and oneOf. Anything else in a schema is ignored. It reports where a document
+/// additionalProperties, items, enum, pattern, const, maxLength, anyOf and oneOf. Anything else in a schema is ignored. It reports where a document
 /// breaks the schema, which is all a test needs to say "this produced summary is valid".
 /// </summary>
 internal sealed class MiniSchema(JsonNode root)
@@ -78,10 +78,25 @@ internal sealed class MiniSchema(JsonNode root)
             found.Add($"{at}: {value?.ToJsonString()} is not one of {choices.ToJsonString()}");
         }
 
+        CheckConstAndLength(rules, value, at, found);
+
         if (rules["pattern"]?.GetValue<string>() is { } pattern && value is JsonValue text && text.TryGetValue<string>(out var s)
             && !Regex.IsMatch(s, pattern, RegexOptions.None, TimeSpan.FromSeconds(1)))
         {
             found.Add($"{at}: \"{s}\" does not match {pattern}");
+        }
+    }
+
+    private static void CheckConstAndLength(JsonObject rules, JsonNode? value, string at, List<string> found)
+    {
+        if (rules["const"] is { } expected && !JsonNode.DeepEquals(expected, value))
+        {
+            found.Add($"{at}: {value?.ToJsonString()} is not the constant {expected.ToJsonString()}");
+        }
+
+        if (rules["maxLength"]?.GetValue<int>() is { } maxLength && value is JsonValue longText && longText.TryGetValue<string>(out var t) && t.Length > maxLength)
+        {
+            found.Add(string.Create(CultureInfo.InvariantCulture, $"{at}: {t.Length} characters, more than {maxLength}"));
         }
     }
 

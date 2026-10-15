@@ -5,10 +5,10 @@
   "type": "object",
   "properties": {
     "schema": {
-      "type": "string"
+      "const": "evidence.api.summary/1"
     },
     "kind": {
-      "type": "string"
+      "const": "api"
     },
     "runId": {
       "type": "string",
@@ -50,7 +50,8 @@
       ]
     },
     "headline": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 200
     },
     "steps": {
       "type": "array",
@@ -88,7 +89,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "maxLength": 2000
           },
           "headerNames": {
             "type": "array",
@@ -105,7 +107,8 @@
           "code",
           "output",
           "headerNames"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     "failures": {
@@ -120,13 +123,16 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "maxLength": 200
           },
           "expected": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "actual": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           }
         },
         "required": [
@@ -134,7 +140,8 @@
           "pointer",
           "expected",
           "actual"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     "declaredWrites": {
@@ -150,7 +157,7 @@
       }
     },
     "provenance": {
-      "type": "string"
+      "const": "unseeded"
     },
     "seedSha256": {
       "type": [
@@ -174,7 +181,8 @@
       "required": [
         "code",
         "message"
-      ]
+      ],
+      "additionalProperties": false
     },
     "error": {
       "type": [
@@ -192,7 +200,8 @@
       "required": [
         "code",
         "message"
-      ]
+      ],
+      "additionalProperties": false
     },
     "invocations": {
       "type": "array",
@@ -245,7 +254,8 @@
           "inputTokens",
           "outputTokens",
           "cacheHit"
-        ]
+        ],
+        "additionalProperties": false
       }
     }
   },
@@ -271,5 +281,6 @@
     "refusal",
     "error",
     "invocations"
-  ]
+  ],
+  "additionalProperties": false
 }

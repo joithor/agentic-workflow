@@ -81,4 +81,22 @@ public sealed class ApiSchemaValidationTests
         Assert.NotEmpty(Violations("api-script", literal));
         Assert.NotEmpty(Violations("api-script", unknown));
     }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task The_schema_rejects_an_extra_key_a_wrong_constant_and_a_201_character_headline()
+    {
+        var response = (await With(Get).Run()).Value;
+        var summary = JsonNode.Parse(response.Document)!.AsObject();
+        summary["extra"] = 1;
+        summary["headline"] = new string('h', 201);
+        summary["kind"] = "ui";
+        summary["steps"]![0]!["stepExtra"] = 1;
+
+        var violations = MiniSchema.Violations(EvidenceSchemaTests.Committed("api-summary"), summary);
+
+        Assert.Contains(violations, static v => v.Contains("extra", StringComparison.Ordinal));
+        Assert.Contains(violations, static v => v.Contains("201 characters", StringComparison.Ordinal));
+        Assert.Contains(violations, static v => v.Contains("constant", StringComparison.Ordinal));
+        Assert.Contains(violations, static v => v.Contains("stepExtra", StringComparison.Ordinal));
+    }
 }
