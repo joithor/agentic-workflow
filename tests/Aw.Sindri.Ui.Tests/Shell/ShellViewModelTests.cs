@@ -83,6 +83,96 @@ public sealed class ShellViewModelTests
         Assert.Null(Labels.ArrivesWith(PageId.System));
     }
 
+    // Screens spec §3: G then a page's key; G S is System as G . is.
+    [Theory]
+    [InlineData("H", PageId.Home)]
+    [InlineData("W", PageId.Workflows)]
+    [InlineData("Q", PageId.Work)]
+    [InlineData("R", PageId.Recipes)]
+    [InlineData("C", PageId.Context)]
+    [InlineData("A", PageId.Agents)]
+    [InlineData(".", PageId.System)]
+    [InlineData("S", PageId.System)]
+    [InlineData("N", PageId.Home)]
+    [InlineData("D", PageId.Home)]
+    internal async Task Chords_follow_screens_section_3(string second, PageId page)
+    {
+        var shell = await Shell();
+        shell.GoTo(page == PageId.Context ? PageId.Agents : PageId.Context);
+
+        Assert.True(shell.PressKey("G"));
+        Assert.True(shell.IsChordPending);
+        Assert.Equal("G …", shell.ChordHint);
+        Assert.True(shell.PressKey(second));
+
+        Assert.Equal(page, shell.CurrentPage);
+        Assert.False(shell.IsChordPending);
+        Assert.Equal(string.Empty, shell.ChordHint);
+    }
+
+    [Fact]
+    public async Task G_D_filters_Home_to_the_decision_rows_and_G_H_clears_it()
+    {
+        var shell = await Shell();
+        shell.GoTo(PageId.Work);
+
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("D");
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+        Assert.Equal(HomeFilter.Decisions, shell.HomeFilter);
+
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("N");
+        Assert.Equal(HomeFilter.All, shell.HomeFilter);
+    }
+
+    [Fact]
+    public async Task A_chord_waits_one_second_and_any_other_key_cancels_it()
+    {
+        var shell = await Shell();
+
+        _ = shell.PressKey("G");
+        _clock.Advance(TimeSpan.FromMilliseconds(1001));
+        Assert.False(shell.IsChordPending);
+        Assert.False(shell.PressKey("W"));
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+
+        _ = shell.PressKey("G");
+        Assert.False(shell.PressKey("X"));
+        Assert.False(shell.IsChordPending);
+        Assert.False(shell.PressKey("W"));
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+    }
+
+    [Fact]
+    public async Task A_second_key_alone_is_not_a_chord()
+    {
+        var shell = await Shell();
+
+        Assert.False(shell.PressKey("W"));
+        Assert.Equal(PageId.Home, shell.CurrentPage);
+    }
+
+    [Theory]
+    [InlineData("workflow/INC-14", DeepLinkKind.Workflow, PageId.Workflows)]
+    [InlineData("workflow/ITM-01JC8/step", DeepLinkKind.Workflow, PageId.Workflows)]
+    [InlineData("recipe/workflow.project-build", DeepLinkKind.Recipe, PageId.Recipes)]
+    [InlineData("node/feature:tabs.tab-manager", DeepLinkKind.Node, PageId.Context)]
+    [InlineData("session/snd-01JE7.2", DeepLinkKind.Session, PageId.Agents)]
+    [InlineData("system/temporal", DeepLinkKind.System, PageId.System)]
+    internal async Task A_rev8_link_opens_its_page_and_the_sheet(string text, DeepLinkKind kind, PageId page)
+    {
+        var shell = await Shell();
+        Assert.True(DeepLink.TryParse(text, out var link));
+        Assert.Equal(kind, link.Kind);
+
+        shell.Navigate(link);
+
+        Assert.Equal(page, shell.CurrentPage);
+        Assert.True(shell.IsSheetOpen);
+        Assert.Equal(link.Subject, shell.SheetSubject);
+    }
+
     [Fact]
     public async Task Every_page_is_reachable_and_Home_is_the_default()
     {
