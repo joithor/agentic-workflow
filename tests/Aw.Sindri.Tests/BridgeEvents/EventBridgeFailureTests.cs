@@ -30,6 +30,7 @@ public sealed class EventBridgeFailureTests : IDisposable
     private const string Router = "router.stub";
     private readonly WorkflowsHarness _harness = new();
     private int _events;
+    private FakeInstances? _instances;
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -99,13 +100,14 @@ public sealed class EventBridgeFailureTests : IDisposable
     [Fact]
     public async Task An_item_event_goes_to_an_instance_that_started_before_it_and_not_to_one_that_started_after_it()
     {
-        var before = await Prepared(TimeSpan.FromSeconds(-2), Unit.Value);
-        var after = await Prepared(TimeSpan.FromSeconds(2), Unit.Value);
+        var (bridge, _, _, runtime) = await Prepared([TimeSpan.FromSeconds(-2), TimeSpan.FromSeconds(2)], Unit.Value);
 
-        _ = await before.Bridge.Run(Token);
-        _ = await after.Bridge.Run(Token);
+        _instances!.Visible = false;   // why: visibility lags the starts, so the first delivery finds no instance
+        _ = await bridge.Run(Token);
+        _instances.Visible = true;
+        _ = await bridge.Run(Token);
 
-        Assert.Equal((1, 0), (before.Runtime.Signals, after.Runtime.Signals));
+        Assert.Equal(["T-47/relay/1"], runtime.Addresses);
     }
 
     /// <summary>A bridge over the real ledger whose live instance of 'T-47' answers a signal with the given errors (the last repeats), and its event.</summary>
@@ -116,14 +118,19 @@ public sealed class EventBridgeFailureTests : IDisposable
     }
 
     /// <summary>The same, with the instance's start <paramref name="startedAt"/> after the event happened, and the runtime that counts the signals.</summary>
-    private async Task<(Bridge Bridge, long Sequence, EventBridgeCursor Cursor, RefusingRuntime Runtime)> Prepared(TimeSpan startedAt, params Result<Unit>[] answers)
+    private Task<(Bridge Bridge, long Sequence, EventBridgeCursor Cursor, RefusingRuntime Runtime)> Prepared(TimeSpan startedAt, params Result<Unit>[] answers) =>
+        Prepared([startedAt], answers);
+
+    /// <summary>The same, with one live instance for each start offset (the first is generation 1, the next generation 2, and so on).</summary>
+    private async Task<(Bridge Bridge, long Sequence, EventBridgeCursor Cursor, RefusingRuntime Runtime)> Prepared(TimeSpan[] startedAt, params Result<Unit>[] answers)
     {
         BridgeRecipes.WriteTo(_harness);
         var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, Token);
         var sequence = await Append(sindri, "T-47");
-        var address = InstanceAddress.Root(ItemKey.From("T-47"), RecipeId.From("workflow.relay"), 1);
-        var rows = new FakeInstances(new InstanceRow(address.Value, "routed", NeedsYou: false, sindri.GetRequiredService<TimeProvider>().GetUtcNow() + startedAt));
+        var now = sindri.GetRequiredService<TimeProvider>().GetUtcNow();
+        var rows = _instances = new FakeInstances([.. startedAt.Select((offset, i) =>
+            new InstanceRow(InstanceAddress.Root(ItemKey.From("T-47"), RecipeId.From("workflow.relay"), i + 1).Value, "routed", NeedsYou: false, now + offset))]);
         var held = new HeldItemEvents(rows, sindri.GetRequiredService<TimeProvider>());
         var cursor = sindri.GetRequiredService<EventBridgeCursor>();
         var runtime = new RefusingRuntime(answers);
@@ -154,18 +161,23 @@ public sealed class EventBridgeFailureTests : IDisposable
     private sealed class FakeInstances(params InstanceRow[] rows) : IWorkflowInstances
     {
         public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(string? query, bool ended, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Result<IReadOnlyList<InstanceRow>>>(rows.ToList());
+            ValueTask.FromResult<Result<IReadOnlyList<InstanceRow>>>(Visible ? rows.ToList() : []);
+
+        public bool Visible { get; set; } = true;
     }
 
     /// <summary>Answers every signal with the next of its answers, the last one for good.</summary>
     private sealed class RefusingRuntime(Result<Unit>[] answers) : IInstanceRuntime
     {
-        private int _next;
+        public int Signals { get; private set; }
 
-        public int Signals => _next;
+        public List<string> Addresses { get; } = [];
 
-        public ValueTask<Result<Unit>> Signal(InstanceAddress address, WaitSatisfied delivered, CancellationToken cancellationToken) =>
-            ValueTask.FromResult(answers[Math.Min(_next++, answers.Length - 1)]);
+        public ValueTask<Result<Unit>> Signal(InstanceAddress address, WaitSatisfied delivered, CancellationToken cancellationToken)
+        {
+            Addresses.Add(address.Value);
+            return ValueTask.FromResult(answers[Math.Min(Signals++, answers.Length - 1)]);
+        }
 
         public ValueTask<Result<InstanceView>> Start(InstanceStart start, CancellationToken cancellationToken) => throw new NotSupportedException();
 
