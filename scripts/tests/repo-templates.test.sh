@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Tests for the human-facing repo files (readiness spec §4d, §6 W5, W6): the devcontainer, the issue forms,
-# the PR template and the label scheme. YAML is parsed with Ruby's stdlib (present on the macOS and Ubuntu
-# runners), JSONC with node after stripping comment lines.
+# the PR template and the label scheme. YAML is parsed with Ruby's stdlib (present on macOS and the Ubuntu CI
+# runners) or, where Ruby is missing (a stock Ubuntu box), with python3's PyYAML (apt python3-yaml); JSONC with node
+# after stripping comment lines.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -13,9 +14,19 @@ fail() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
 # The check runs in a subshell, so an `exit 1` inside it fails that check only and the suite goes on.
 check() { if (eval "$2"); then ok "$1"; else fail "$1"; fi; }
 
-yaml_ok() { ruby -ryaml -e 'YAML.safe_load(File.read(ARGV[0]), permitted_classes: [], aliases: false)' "$1" 2>/dev/null; }
-# Prints the value of a top-level YAML key as JSON.
-yaml_get() { ruby -ryaml -rjson -e 'puts JSON.generate(YAML.safe_load(File.read(ARGV[0]))[ARGV[1]])' "$1" "$2"; }
+if command -v ruby >/dev/null 2>&1; then
+  yaml_ok() { ruby -ryaml -e 'YAML.safe_load(File.read(ARGV[0]), permitted_classes: [], aliases: false)' "$1" 2>/dev/null; }
+  yaml_json() { ruby -ryaml -rjson -e 'puts JSON.generate(YAML.safe_load(File.read(ARGV[0])))' "$1"; }
+  # Prints the value of a top-level YAML key as JSON.
+  yaml_get() { ruby -ryaml -rjson -e 'puts JSON.generate(YAML.safe_load(File.read(ARGV[0]))[ARGV[1]])' "$1" "$2"; }
+elif python3 -c 'import yaml' >/dev/null 2>&1; then
+  yaml_ok() { python3 -I -c 'import sys, yaml; yaml.safe_load(open(sys.argv[1]))' "$1" 2>/dev/null; }
+  yaml_json() { python3 -I -c 'import sys, json, yaml; print(json.dumps(yaml.safe_load(open(sys.argv[1]))))' "$1"; }
+  yaml_get() { python3 -I -c 'import sys, json, yaml; print(json.dumps(yaml.safe_load(open(sys.argv[1]))[sys.argv[2]]))' "$1" "$2"; }
+else
+  echo "FAIL: no YAML parser. Install ruby (macOS has it; Debian/Ubuntu: sudo apt-get install -y ruby) or python3-yaml (sudo apt-get install -y python3-yaml)." >&2
+  exit 1
+fi
 
 echo "devcontainer"
 DC=.devcontainer/devcontainer.json
@@ -64,7 +75,7 @@ for kind in bug feature skill-change idea-card; do
   check "$kind form has name, description, labels and a body" \
     "[ \"\$(yaml_get $f name)\" != null ] && [ \"\$(yaml_get $f description)\" != null ] && [ \"\$(yaml_get $f labels)\" != null ] && [ \"\$(yaml_get $f body)\" != null ]"
   check "$kind form's labels all exist in .github/labels.yml" \
-    "yaml_get $f labels | ruby -rjson -ryaml -e 'l=JSON.parse(STDIN.read); n=YAML.safe_load(File.read(\".github/labels.yml\")).map{|x| x[\"name\"]}; exit((l-n).empty? ? 0 : 1)'"
+    "yaml_get $f labels | node -e 'const l=JSON.parse(require(\"fs\").readFileSync(0,\"utf8\")); const n=JSON.parse(process.argv[1]).map(x=>x.name); process.exit(l.every(x=>n.includes(x))?0:1)' \"\$(yaml_json .github/labels.yml)\""
 done
 check "config.yml parses and turns blank issues off" \
   "yaml_ok .github/ISSUE_TEMPLATE/config.yml && [ \"\$(yaml_get .github/ISSUE_TEMPLATE/config.yml blank_issues_enabled)\" = false ]"
@@ -81,8 +92,8 @@ echo "labels"
 LB=.github/labels.yml
 check "labels.yml parses" "yaml_ok $LB"
 check "every label is family:value with a 6-hex color and a description" \
-  "ruby -ryaml -e 'YAML.safe_load(File.read(\"$LB\")).each{|l| exit 1 unless l[\"name\"] =~ /\\A(type|area|size|ring):[a-z0-9-]+\\z/ && l[\"color\"].to_s =~ /\\A[0-9a-f]{6}\\z/ && !l[\"description\"].to_s.empty? && l[\"description\"].length <= 100 }'"
-check "no duplicate label names" "ruby -ryaml -e 'n=YAML.safe_load(File.read(\"$LB\")).map{|l| l[\"name\"]}; exit(n.uniq.size == n.size ? 0 : 1)'"
+  "yaml_json $LB | node -e 'const L=JSON.parse(require(\"fs\").readFileSync(0,\"utf8\")); process.exit(L.every(l=>/^(type|area|size|ring):[a-z0-9-]+\$/.test(l.name) && /^[0-9a-f]{6}\$/.test(String(l.color)) && String(l.description??\"\").length>0 && l.description.length<=100)?0:1)'"
+check "no duplicate label names" "yaml_json $LB | node -e 'const n=JSON.parse(require(\"fs\").readFileSync(0,\"utf8\")).map(l=>l.name); process.exit(new Set(n).size===n.length?0:1)'"
 for fam in type area size ring; do
   check "the $fam: family is present" "grep -qE '^- name: \"?$fam:' $LB"
 done
